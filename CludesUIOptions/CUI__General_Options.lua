@@ -110,6 +110,44 @@ end
 -------------------------------------------------------------------------------
 CludesUI._WHATSNEW_PATCHES = {
     {
+        version = "1.1.0",
+        heroes = {
+            { module = "Global Settings",
+              title  = "A look of its own",
+              desc   = "Every page groups its settings into cards, each setting has a one-line description under its name, and corners are square throughout. Tabs, the sidebar and the footer are restyled to match." },
+            { module = "Layout Mode",
+              title  = "New Layout Mode bar",
+              desc   = "A toolbar across the top of the screen: square toggle buttons with captions, the element filter, and Exit and Save & Exit on the right. Opening it plays a new animation.",
+              onClick = function() if CludesUI.OpenUnlockMode then CludesUI:OpenUnlockMode() end end },
+        },
+        features = {
+            { module = "Global Settings",
+              title  = "Buttons for short choices",
+              desc   = "Settings with two or three choices, such as Orientation or Grow Direction, show every choice as a button instead of a dropdown." },
+            { module = "Global Settings",
+              title  = "Sidebar groups",
+              desc   = "Modules are grouped as Combat, Raid & Dungeon, Interface and Tools." },
+            { module = "Global Settings",
+              title  = "Minimap button",
+              desc   = "The minimap button uses LibDBIcon, so minimap button collectors handle it like any other addon's." },
+            { module = "Global Settings",
+              title  = "Default themes",
+              desc   = "WoW Forever opens in the CludesUI Forever theme, retail in the blue CludesUI theme." },
+            { module = "Raid Frames",
+              title  = "Preview window",
+              desc   = "The raid and party preview opens in its own window beside the panel." },
+            { module = "Global Settings",
+              title  = "/cuiperf",
+              desc   = "Prints how much CPU time each CludesUI addon is using." },
+        },
+        fixes = {
+            { module = "Unit Frames", text = "The Unit Frames page opens on WoW Forever again." },
+            { module = "Forever Tools", text = "The Restock alert, the Discovery tracker and its librarian tooltip no longer cause Lua errors." },
+            { module = "Forever Tools", text = "The Training page opens for every class." },
+            { module = "Global Settings", text = "Setting descriptions no longer run under the icons and buttons beside a control." },
+        },
+    },
+    {
         version = "1.0.0",
         features = {
             { module = "Tank Kit",

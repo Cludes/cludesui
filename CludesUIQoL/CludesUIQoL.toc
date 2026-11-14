@@ -4,7 +4,7 @@
 ## Group: CludesUI
 ## Notes: Lightweight quality of life tools and enhancements.
 ## Author: Cludes
-## Version: 1.0.0
+## Version: 1.1.0
 ## Dependencies: CludesUI
 ## SavedVariables: CludesUIQoLDB
 ## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga

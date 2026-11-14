@@ -4,7 +4,7 @@
 ## Group: CludesUI
 ## Notes: Simple unit frames with a modern visual style.
 ## Author: Cludes
-## Version: 1.0.0
+## Version: 1.1.0
 ## Dependencies: CludesUI
 ## SavedVariables: CludesUIUnitFramesDB
 ## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga
