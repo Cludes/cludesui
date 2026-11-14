@@ -1,301 +1,256 @@
 if CUI_CLIENT_BLOCKED then
     return
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
--- Blocks\Currency.lua
--- Currency block factory.
-
-local ADDON_NAME, mod = ...
+-------------------------------------------------------------------------------
+--  Blocks\Currency.lua - Info Bar block: one currency the player picks.
+--
+--  Shows the currency's icon and amount; until one is picked it says so, and
+--  a click opens the block's settings to pick it. Hover shows the name (in
+--  its quality colour), the description (unless turned off), the total
+--  against any cap, and the click hint.
+--
+--  Settings (blockCfg.settings): currencyId, showIcon (default on),
+--  showDescription (default on).
+-------------------------------------------------------------------------------
+local _, mod = ...
 local L = mod.L
 local K = mod.BlockKit
 
--- Upvalues
-local CreateFrame = CreateFrame
-local floor = math.floor
-local max = math.max
-local min = math.min
+local floor, max, min = math.floor, math.max, math.min
 
-local ICON_GAP = K.ICON_GAP
-local CONTENT_BASE = K.CONTENT_BASE
-local InstKey = K.InstKey
-local MakeEventFrame = K.MakeEventFrame
-local RegisterInstEvents = K.RegisterInstEvents
-local UnregisterInstEvents = K.UnregisterInstEvents
-local HBudget = K.HBudget
-local VSlotW = K.VSlotW
-local MaybeRelayout = K.MaybeRelayout
-local AttachTextOffset = K.AttachTextOffset
-local BlockColorOf = K.BlockColorOf
-local IconColorOf = K.IconColorOf
+-- A currency icon's own border, trimmed (5 of 64 pixels each side).
+local TRIM = 5 / 64
 
--------------------------------------------------------------------------------
---  CURRENCY (searchable-picker driven; icon + amount + owned tooltip)
--------------------------------------------------------------------------------
+local function Number(n)
+    n = n or 0
+    return BreakUpLargeNumbers and BreakUpLargeNumbers(n) or tostring(n)
+end
+
 mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
-    instance.key = InstKey(barCtx, blockCfg)
-    instance.events = { "CURRENCY_DISPLAY_UPDATE" }
+    local inst = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
+    inst.key = K.InstKey(barCtx, blockCfg)
+    inst.events = { "CURRENCY_DISPLAY_UPDATE" }
 
-    local mouseOver = false
-    local _curFitBuf = { "" }
-
-    local function D()
+    local function Settings()
         return blockCfg.settings or {}
     end
-    local function BC()
-        return barCtx.cfg
-    end
 
-    local btnFrame = CreateFrame("Button", nil, contentFrame)
-    btnFrame:SetAllPoints()
-    btnFrame:EnableMouse(true)
-    btnFrame:RegisterForClicks("AnyUp")
+    local button = CreateFrame("Button", nil, contentFrame)
+    button:SetAllPoints()
+    button:EnableMouse(true)
+    button:RegisterForClicks("AnyUp")
+    local icon = button:CreateTexture(nil, "OVERLAY")
+    local label = button:CreateFontString(nil, "OVERLAY")
+    K.AttachTextOffset(inst, label)
 
-    local icon = btnFrame:CreateTexture(nil, "OVERLAY")
-    local amountText = btnFrame:CreateFontString(nil, "OVERLAY")
-    AttachTextOffset(instance, amountText)
-
-    local function GetInfo()
-        local s = D()
-        if not s.currencyId then
+    -- The picked currency's details, or nil (none picked, unknown, or not discovered yet).
+    local function Details()
+        local id = Settings().currencyId
+        if not (id and C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo) then
             return nil
         end
-        if not (C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo) then
-            return nil
+        local d = C_CurrencyInfo.GetCurrencyInfo(id)
+        if d and d.discovered ~= false then
+            return d
         end
-        local details = C_CurrencyInfo.GetCurrencyInfo(s.currencyId)
-        if details and details.discovered ~= false then
-            return details
-        end
-        return nil
     end
 
-    local function Num(val)
-        if BreakUpLargeNumbers then
-            return BreakUpLargeNumbers(val or 0)
-        end
-        return tostring(val or 0)
-    end
+    local hovered = false
 
-    function instance:Refresh()
-        local s = D()
-        local barCfg = BC()
-        local barH = barCtx.GetThickness()
-        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
-        local isSide = barCtx.IsVertical()
-        local gap = ICON_GAP
-
-        local details = GetInfo()
-        local textValue
-        if not s.currencyId then
-            -- Bar text goes straight through SetText, which does not route through the
-            -- locale like the Tip_* helpers, so translate by hand (as the Great Vault block does for its own label).
-            textValue = CludesUI.L(L["SELECT_CURRENCY"])
-        elseif details then
-            if BreakUpLargeNumbers then
-                textValue = BreakUpLargeNumbers(details.quantity or 0)
-            else
-                textValue = tostring(details.quantity or 0)
-            end
+    -- The text colour alone: grey until a currency is picked, the accent on hover.
+    local function PaintText()
+        if not Settings().currencyId then
+            label:SetTextColor(0.55, 0.55, 0.55, 1)
+        elseif hovered then
+            local r, g, b = mod.GetAccent()
+            label:SetTextColor(r, g, b, 1)
         else
-            textValue = "-"
+            local r, g, b = K.BlockColorOf(blockCfg)
+            label:SetTextColor(r, g, b, 1)
+        end
+    end
+
+    function inst:Refresh()
+        local s = Settings()
+        local d = Details()
+        local barH = barCtx.GetThickness()
+        local fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
+        local text
+        if not s.currencyId then
+            -- Bar text is set directly, not through the tooltip helpers that
+            -- translate, so it is translated here.
+            text = CludesUI.L(L["SELECT_CURRENCY"])
+        elseif d then
+            text = Number(d.quantity)
+        else
+            text = "-"
         end
 
-        local iconSz = 0
-        if s.showIcon ~= false and details and details.iconFileID then
-            iconSz = fontSize + 2
-            icon:SetTexture(details.iconFileID)
-            icon:SetTexCoord(5 / 64, 59 / 64, 5 / 64, 59 / 64)
+        local iconSize = 0
+        if s.showIcon ~= false and d and d.iconFileID then
+            iconSize = fontSize + 2
+            icon:SetTexture(d.iconFileID)
+            icon:SetTexCoord(TRIM, 1 - TRIM, TRIM, 1 - TRIM)
             icon:Show()
         else
             icon:Hide()
         end
+        local r, g, b = K.IconColorOf(blockCfg)
+        icon:SetVertexColor(r, g, b, 1)
+        mod.SetFont(label, fontSize, barCtx.cfg)
 
-        if isSide then
-            local slotW = VSlotW(instance)
-            local innerW = max(24, slotW - 8)
-            _curFitBuf[1] = textValue
-            mod.SetFont(amountText, fontSize, barCfg)
-            amountText:SetText(textValue)
-            local totalH = 8
-            if iconSz > 0 then
-                icon:SetSize(iconSz, iconSz)
+        if barCtx.IsVertical() then
+            -- Icon above the amount, both centred in the bar's width.
+            local slotW = K.VSlotW(inst)
+            label:SetText(text)
+            local height = 8
+            if iconSize > 0 then
+                icon:SetSize(iconSize, iconSize)
                 icon:ClearAllPoints()
-                icon:SetPoint("TOP", btnFrame, "TOP", 0, -4)
-                totalH = totalH + iconSz + 2
+                icon:SetPoint("TOP", button, "TOP", 0, -4)
+                height = height + iconSize + 2
             end
-            mod.SetWrappedText(amountText, innerW, "CENTER")
-            amountText:ClearAllPoints()
-            if iconSz > 0 then
-                amountText:SetPoint("TOP", icon, "BOTTOM", 0, -2)
+            mod.SetWrappedText(label, max(24, slotW - 8), "CENTER")
+            label:ClearAllPoints()
+            if iconSize > 0 then
+                label:SetPoint("TOP", icon, "BOTTOM", 0, -2)
             else
-                amountText:SetPoint("TOP", btnFrame, "TOP", 0, -4)
+                label:SetPoint("TOP", button, "TOP", 0, -4)
             end
-            totalH = totalH + mod.SnapToPixelGrid(amountText:GetStringHeight()) + 4
-            totalH = max(totalH, barH)
-            contentFrame:SetSize(slotW, totalH)
-            btnFrame:SetSize(slotW, totalH)
+            height = max(height + mod.SnapToPixelGrid(label:GetStringHeight()) + 4, barH)
+            contentFrame:SetSize(slotW, height)
+            button:SetSize(slotW, height)
         else
-            local slotW = HBudget(instance, 120)
-            local textBudget = max(20, slotW - iconSz - gap - 8)
-            _curFitBuf[1] = textValue
-            mod.SetFont(amountText, fontSize, barCfg)
-            mod.ResetInlineText(amountText, "LEFT")
-            amountText:SetText(textValue)
-            if iconSz > 0 then
-                iconSz = fontSize + 2
-                icon:SetSize(iconSz, iconSz)
+            -- Icon then amount, as wide as they need (up to the slot's budget).
+            local budget = K.HBudget(inst, 120)
+            mod.ResetInlineText(label, "LEFT")
+            label:SetText(text)
+            local x = 0
+            if iconSize > 0 then
+                icon:SetSize(iconSize, iconSize)
                 icon:ClearAllPoints()
-                icon:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
+                icon:SetPoint("LEFT", button, "LEFT", 0, 0)
+                x = iconSize + K.ICON_GAP
             end
-            amountText:ClearAllPoints()
-            local xOff = 0
-            if iconSz > 0 then
-                xOff = iconSz + gap
-            end
-            amountText:SetPoint("LEFT", btnFrame, "LEFT", xOff, 0)
-            local tw = mod.SnapToPixelGrid(amountText:GetStringWidth())
-            local totalW = min(slotW, iconSz + (iconSz > 0 and gap or 0) + tw + 4)
-            contentFrame:SetSize(max(totalW, 10), barH)
-            btnFrame:SetSize(max(totalW, 10), barH)
+            label:ClearAllPoints()
+            label:SetPoint("LEFT", button, "LEFT", x, 0)
+            local width = max(min(budget, x + mod.SnapToPixelGrid(label:GetStringWidth()) + 4), 10)
+            contentFrame:SetSize(width, barH)
+            button:SetSize(width, barH)
         end
-
-        local cbr, cbg, cbb = BlockColorOf(blockCfg)
-        do
-            local ir, ig, ib = IconColorOf(blockCfg)
-            icon:SetVertexColor(ir, ig, ib, 1)
-        end
-        if not s.currencyId then
-            amountText:SetTextColor(0.55, 0.55, 0.55, 1)
-        elseif mouseOver then
-            local ar, ag, ab = mod.GetAccent()
-            amountText:SetTextColor(ar, ag, ab, 1)
-        else
-            amountText:SetTextColor(cbr, cbg, cbb, 1)
-        end
-        MaybeRelayout(instance)
+        PaintText()
+        K.MaybeRelayout(inst)
     end
 
-    -- Manual tooltip composition (the owned tooltip has no SetCurrencyByID).
-    local function ShowCurrencyTooltip()
-        local s = D()
+    -- Composed by hand: the owned tooltip has no SetCurrencyByID.
+    local function ShowTooltip()
+        local s = Settings()
         local ar, ag, ab = mod.GetAccent()
-        -- Unconfigured: the placeholder is the whole block, so the tooltip has to say where the currency is actually picked.
         if not s.currencyId then
-            mod.Tip_Begin(btnFrame)
+            -- The placeholder is the whole block, so the tooltip says where a currency is picked.
+            mod.Tip_Begin(button)
             mod.Tip_AddLine(L["SELECT_CURRENCY"], 1, 1, 1)
             mod.Tip_AddLine(" ")
             mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_SETTINGS"], 1, 1, 1, ar, ag, ab)
             mod.Tip_Show()
             return
         end
-        local details = nil
-        if C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo then
-            details = C_CurrencyInfo.GetCurrencyInfo(s.currencyId)
-        end
-        if not details then
+        local d = C_CurrencyInfo
+            and C_CurrencyInfo.GetCurrencyInfo
+            and C_CurrencyInfo.GetCurrencyInfo(s.currencyId)
+        if not d then
             return
         end
-        mod.Tip_Begin(btnFrame)
-        local qr, qg, qb = 1, 1, 1
-        if details.quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[details.quality] then
-            local qc = ITEM_QUALITY_COLORS[details.quality]
-            qr, qg, qb = qc.r, qc.g, qc.b
-        end
-        mod.Tip_AddLine(details.name or "?", qr, qg, qb)
-        -- Some currencies carry paragraphs of flavor text that tower over the bar. Opt-out keeps name, total and click hint; only the text goes.
-        if s.showDescription ~= false and details.description and details.description ~= "" then
+        mod.Tip_Begin(button)
+        local q = d.quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[d.quality]
+        mod.Tip_AddLine(d.name or "?", q and q.r or 1, q and q.g or 1, q and q.b or 1)
+        -- Some descriptions run to paragraphs; the setting drops just the text.
+        if s.showDescription ~= false and d.description and d.description ~= "" then
             mod.Tip_AddLine(" ")
-            mod.Tip_AddWrappedLine(details.description, 280, 0.8, 0.8, 0.8)
+            mod.Tip_AddWrappedLine(d.description, 280, 0.8, 0.8, 0.8)
         end
         mod.Tip_AddLine(" ")
-        local qty = Num(details.quantity)
-        local cap = details.maxQuantity
-        if cap and cap > 0 then
-            -- useTotalEarnedForMaxQty currencies (crests) cap what you EARNED this
-            -- season, not what you hold, so the wallet total is the wrong numerator.
-            if details.useTotalEarnedForMaxQty then
-                mod.Tip_AddDouble(
-                    L["TOTAL"],
-                    qty .. " |cffaaaaaa(" .. Num(details.totalEarned) .. "/" .. Num(cap) .. ")|r",
-                    0.6,
-                    0.6,
-                    0.6,
-                    1,
-                    1,
-                    1
-                )
-            else
-                mod.Tip_AddDouble(L["TOTAL"], qty .. " / " .. Num(cap), 0.6, 0.6, 0.6, 1, 1, 1)
-            end
-        else
-            mod.Tip_AddDouble(L["TOTAL"], qty, 0.6, 0.6, 0.6, 1, 1, 1)
+        local total = Number(d.quantity)
+        local cap = d.maxQuantity
+        if cap and cap > 0 and d.useTotalEarnedForMaxQty then
+            -- A season cap (crests) limits what was EARNED, not what is held.
+            total = total .. " |cffaaaaaa(" .. Number(d.totalEarned) .. "/" .. Number(cap) .. ")|r"
+        elseif cap and cap > 0 then
+            total = total .. " / " .. Number(cap)
         end
+        mod.Tip_AddDouble(L["TOTAL"], total, 0.6, 0.6, 0.6, 1, 1, 1)
         mod.Tip_AddLine(" ")
         mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_CURRENCIES"], 1, 1, 1, ar, ag, ab)
         mod.Tip_Show()
     end
 
-    btnFrame:SetScript("OnEnter", function()
-        mouseOver = true
-        instance:Refresh()
-        ShowCurrencyTooltip()
+    -- Hovering only recolours the text; nothing moves, so nothing is laid out again.
+    button:SetScript("OnEnter", function()
+        hovered = true
+        PaintText()
+        ShowTooltip()
     end)
-    btnFrame:SetScript("OnLeave", function()
-        mouseOver = false
-        mod.Tip_Hide(btnFrame)
-        instance:Refresh()
+    button:SetScript("OnLeave", function()
+        hovered = false
+        mod.Tip_Hide(button)
+        PaintText()
     end)
-    btnFrame:SetScript("OnClick", function(_, mb)
-        if mb == "LeftButton" then
-            -- No currency picked yet: the Blizzard panel cannot assign one, so send the player to the picker instead of dead-ending there.
-            if not D().currencyId then
-                -- The options never open in combat.
-                if InCombatLockdown() then
-                    CludesUI.PrintError("Cannot open options during combat.")
-                    return
-                end
-                -- Options surface is LoadOnDemand; load it so OpenBlockSettings exists.
-                if not mod.OpenBlockSettings then
-                    CludesUI:EnsureLoaded()
-                end
-                if mod.OpenBlockSettings then
-                    mod.OpenBlockSettings(barCtx.id, blockCfg.id, "currency")
-                end
+    button:SetScript("OnClick", function(_, mouseButton)
+        if mouseButton ~= "LeftButton" then
+            return
+        end
+        if not Settings().currencyId then
+            -- Nothing picked: the game's panel cannot pick one, so open the block's settings.
+            if InCombatLockdown() then
+                CludesUI.PrintError("Cannot open options during combat.")
                 return
             end
-            if C_CurrencyInfo and C_CurrencyInfo.OpenCurrencyPanel then
-                C_CurrencyInfo.OpenCurrencyPanel()
-            elseif ToggleCharacter then
-                ToggleCharacter("TokenFrame")
+            if not mod.OpenBlockSettings then
+                CludesUI:EnsureLoaded() -- the settings load on demand
             end
+            if mod.OpenBlockSettings then
+                mod.OpenBlockSettings(barCtx.id, blockCfg.id, "currency")
+            end
+        elseif C_CurrencyInfo and C_CurrencyInfo.OpenCurrencyPanel then
+            C_CurrencyInfo.OpenCurrencyPanel()
+        elseif ToggleCharacter then
+            ToggleCharacter("TokenFrame")
         end
     end)
 
-    instance.eventFrame = MakeEventFrame(instance, function(self)
+    -- Only this block's currency (or an update of every currency, which names
+    -- none) redraws it; the game sends this event for any currency that moves.
+    inst.eventFrame = K.MakeEventFrame(inst, function(self, _, currencyId)
+        if currencyId and currencyId ~= Settings().currencyId then
+            return
+        end
         self:Refresh()
     end)
 
-    function instance:Enable()
+    function inst:Enable()
         contentFrame:Show()
-        RegisterInstEvents(self)
+        K.RegisterInstEvents(self)
     end
 
-    function instance:Disable()
-        UnregisterInstEvents(self)
+    function inst:Disable()
+        K.UnregisterInstEvents(self)
         contentFrame:Hide()
     end
 
-    function instance:GetAutoLength()
+    function inst:GetAutoLength()
         if barCtx.IsVertical() then
             return max(contentFrame:GetHeight() or 40, 30)
         end
         return max(contentFrame:GetWidth() or 60, 24)
     end
 
-    function instance:Destroy()
+    -- A removed block stops listening too (the old one kept redrawing its
+    -- hidden frames on every currency change until a reload).
+    function inst:Destroy()
         self._dead = true
+        K.UnregisterInstEvents(self)
         contentFrame:Hide()
     end
 
-    return instance
+    return inst
 end
