@@ -37,3 +37,24 @@ for _, f in ipairs({ UIParent:GetChildren() }) do
     if f.__name and f.__name:find("Input") then input = f end
 end
 SNAP("input", input)
+
+-- Every confirm option.
+CUI:ShowConfirmPopup({ title = "Remember", message = "Use this for every character?", checkbox = "Don't ask again", onConfirm = function() end })
+SNAP("confirm checkbox", rawget(_G, "CUIConfirmPopup"))
+CUI:ShowConfirmPopup({ title = "Import", message = "Import this layout?", scaleWarning = "Made at a different UI scale.", disclaimer = "Your current layout is replaced.", onConfirm = function() end })
+SNAP("confirm warning", rawget(_G, "CUIConfirmPopup"))
+CUI:ShowConfirmPopup({ title = "Delete", message = "Delete every profile?", typeToConfirm = "delete", onConfirm = function() end })
+SNAP("confirm type gate", rawget(_G, "CUIConfirmPopup"))
+CUI:ShowConfirmPopup({ title = "Wait", message = "Not yet.", confirmDisabled = true, modal = true, onConfirm = function() end })
+SNAP("confirm disabled modal", rawget(_G, "CUIConfirmPopup"))
+-- Clicking confirm runs the callback and closes; a handle closes only its own request.
+local ran = 0
+CUI:ShowConfirmPopup({ title = "Run", message = "Run it?", onConfirm = function() ran = ran + 1 end })
+local f = rawget(_G, "CUIConfirmPopup")
+f._confirmBtn:GetScript("OnClick")(f._confirmBtn)
+local h1 = CUI:ShowConfirmPopup({ title = "First", message = "1", onConfirm = function() end })
+local h2 = CUI:ShowConfirmPopup({ title = "Second", message = "2", onConfirm = function() end })
+CUI:CloseConfirmPopup(h1)
+local still = rawget(_G, "CUIConfirmDimmer"):IsShown()
+CUI:CloseConfirmPopup(h2)
+OUT:write("== behaviour ran=", ran, " stale-handle-left-open=", tostring(still), " closed=", tostring(not rawget(_G, "CUIConfirmDimmer"):IsShown()), "\n")

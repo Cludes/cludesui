@@ -454,8 +454,8 @@ local function MakePopupCheckbox(popup, width)
     popup._cbLabel = cbLabel
 end
 
--- Shows the checkbox row unchecked with its label, centred y above the
--- popup's bottom edge.
+-- Shows the checkbox row unchecked with its label, its centre y above the
+-- popup's bottom edge (the confirm dialog's layout then places it again).
 local function ShowPopupCheckbox(popup, label, y)
     local EG = CLUDES_GREEN
     popup._cbChecked = false
@@ -473,6 +473,7 @@ end
 -- (DIALOG_FOOT tall), each with a hairline divider. Titles sit left in the
 -- header band, buttons right in the footer.
 local DIALOG_HEAD, DIALOG_FOOT, DIALOG_PAD = 40, 46, 18
+local CONFIRM_MIN_H = 150 -- the confirm dialog's least height: a header, two lines, the footer
 local function DressDialog(popup)
     local function Tex(layer, sub, a)
         local tx = popup:CreateTexture(nil, layer, nil, sub)
@@ -521,7 +522,7 @@ local function CreateConfirmPopup()
         return confirmPopup
     end
 
-    local POPUP_W, POPUP_H = 400, 186
+    local POPUP_W, POPUP_H = 400, CONFIRM_MIN_H
 
     -- Full-screen dimming overlay
     local dimmer = CreateFrame("Frame", "CUIConfirmDimmer", UIParent)
@@ -778,50 +779,22 @@ function CludesUI:ShowConfirmPopup(opts)
     end
 
     -- Scale/resolution mismatch warning (red)
-    local scaleWarnH = 0
     if opts.scaleWarning and opts.scaleWarning ~= "" then
-        popup._scaleWarnLabel:ClearAllPoints()
-        if opts.disclaimer and opts.disclaimer ~= "" then
-            popup._scaleWarnLabel:SetPoint("TOPLEFT", popup._disclaimer, "BOTTOMLEFT", 0, -14)
-        else
-            popup._scaleWarnLabel:SetPoint("TOPLEFT", popup._msg, "BOTTOMLEFT", 0, -14)
-        end
         popup._scaleWarnLabel:SetText(CludesUI.L(opts.scaleWarning))
         popup._scaleWarnLabel:Show()
-        scaleWarnH = 16
     else
         popup._scaleWarnLabel:SetText("")
         popup._scaleWarnLabel:Hide()
     end
-    -- Optional checkbox
-    local cbH = 0
+    -- Optional checkbox (placed by the layout below)
     if opts.checkbox then
-        ShowPopupCheckbox(popup, opts.checkbox, 13 + 27 + 10)
-        cbH = 28
+        ShowPopupCheckbox(popup, opts.checkbox, 0)
     else
         popup._cbRow:Hide()
     end
 
-    -- The base height affords roughly three message lines; a longer message or a
-    -- disclaimer grows the popup by the measured overflow, so no text runs under
-    -- the buttons. A secret metric (tainted M+ execution) counts as no overflow.
-    local isv = issecretvalue
-    local textH = popup._msg:GetStringHeight() or 0
-    if isv and isv(textH) then
-        textH = 0
-    end
-    if opts.disclaimer then
-        local discH = popup._disclaimer:GetStringHeight() or 0
-        if isv and isv(discH) then
-            discH = 0
-        end
-        textH = textH + discH + 8
-    end
-    local overflowH = math.max(0, textH - 44)
-
     -- Optional type-to-confirm gate (lazy, like the macro overlay): the user must type the given
     -- word (case-insensitive) before confirm accepts clicks. NOT supported with confirmMacro (secure overlay clicks cannot be gated).
-    local typeH = 0
     popup._typeGateOn = nil
     popup._padGate = nil
     -- Controller: the word cannot be typed, so the gate becomes a second press of confirm.
@@ -876,10 +849,7 @@ function CludesUI:ShowConfirmPopup(opts)
         row._label:SetText(string.format(CludesUI.L('Type "%s" to enable:'), tostring(opts.typeToConfirm)))
         row._box:SetText("")
         row:SetWidth(row._label:GetStringWidth() + 10 + 110)
-        row:ClearAllPoints()
-        row:SetPoint("BOTTOM", popup, "BOTTOM", 0, 13 + 27 + 10 + cbH)
         row:Show()
-        typeH = 36
     elseif popup._typeRow then
         popup._typeRow._box:ClearFocus()
         popup._typeRow:Hide()
@@ -888,23 +858,56 @@ function CludesUI:ShowConfirmPopup(opts)
         local lbl = popup._padGateLbl
         if not lbl then
             lbl = MakeFont(popup, 12, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
-            lbl:SetWidth(popup:GetWidth() - 60)
-            lbl:SetJustifyH("CENTER")
+            lbl:SetWidth(popup:GetWidth() - 2 * DIALOG_PAD)
+            lbl:SetJustifyH("LEFT")
             popup._padGateLbl = lbl
         end
         popup._typeGateOn = true
         popup._typeGateOk = false
         popup._padGate = true
-        lbl:ClearAllPoints()
-        lbl:SetPoint("BOTTOM", popup, "BOTTOM", 0, 13 + 27 + 10 + cbH + 6)
         lbl:SetText(CludesUI.Lf('Press "%1$s" twice to continue.', CludesUI.L(opts.confirmText or "Confirm")))
         lbl:Show()
-        typeH = 36
     elseif popup._padGateLbl then
         popup._padGateLbl:Hide()
     end
 
-    popup:SetHeight((popup._baseH or 176) + overflowH + scaleWarnH + cbH + typeH)
+    -- Layout: what sits between the header and the footer stacks from the top
+    -- in reading order (message, disclaimer, warning, type-to-confirm or the
+    -- controller's note, checkbox), each at its measured height, and the
+    -- dialog takes exactly that much room. A height the client keeps secret
+    -- (a restricted moment) counts as a few lines.
+    do
+        local function Measure(fs, fallback)
+            local h = fs:GetStringHeight() or fallback
+            if issecretvalue and issecretvalue(h) then
+                h = fallback
+            end
+            return math.ceil(h)
+        end
+        local y = DIALOG_HEAD + 14
+        local function Stack(region, h, gap)
+            region:ClearAllPoints()
+            region:SetPoint("TOPLEFT", popup, "TOPLEFT", DIALOG_PAD, -(y + gap))
+            y = y + gap + h
+        end
+        Stack(popup._msg, Measure(popup._msg, 48), 0)
+        if popup._disclaimer:IsShown() then
+            Stack(popup._disclaimer, Measure(popup._disclaimer, 28), 8)
+        end
+        if popup._scaleWarnLabel:IsShown() then
+            Stack(popup._scaleWarnLabel, Measure(popup._scaleWarnLabel, 24), 10)
+        end
+        if popup._typeRow and popup._typeRow:IsShown() then
+            Stack(popup._typeRow, 26, 14)
+        end
+        if popup._padGateLbl and popup._padGateLbl:IsShown() then
+            Stack(popup._padGateLbl, Measure(popup._padGateLbl, 14), 14)
+        end
+        if popup._cbRow:IsShown() then
+            Stack(popup._cbRow, 18, 12)
+        end
+        popup:SetHeight(math.max(CONFIRM_MIN_H, y + 16 + DIALOG_FOOT))
+    end
     -- A popup shown again keeps its layer seat: refit for the new height.
     popup._brd:Fit()
     popup._cancelBtn._lbl:SetText(CludesUI.L(opts.cancelText or "Cancel"))
