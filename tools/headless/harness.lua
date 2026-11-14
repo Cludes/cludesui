@@ -150,8 +150,17 @@ function methods.GetNumLines() return 1 end
 function methods.IsTruncated() return false end
 function methods.SetFont(o, path, size, flags) o.__v.Font = { path, size, flags }; return true end
 function methods.GetFont(o) local f = o.__v.Font or { "Fonts/FRIZQT__.TTF", 12, "" }; return f[1], f[2], f[3] end
-function methods.GetTextColor() return 1, 1, 1, 1 end
-function methods.GetVertexColor() return 1, 1, 1, 1 end
+-- Colours are recorded with all their parts, so a snapshot (tools/headless/snapshot.lua)
+-- can compare what two versions of the code painted.
+function methods.SetTextColor(o, r, g, b, a) o.__v.TextColor = { r, g, b, a or 1 } end
+function methods.GetTextColor(o) local c = o.__v.TextColor or { 1, 1, 1, 1 }; return c[1], c[2], c[3], c[4] end
+function methods.SetVertexColor(o, r, g, b, a) o.__v.VertexColor = { r, g, b, a or 1 } end
+function methods.GetVertexColor(o) local c = o.__v.VertexColor or { 1, 1, 1, 1 }; return c[1], c[2], c[3], c[4] end
+function methods.SetColorTexture(o, r, g, b, a) o.__v.ColorTexture = { r, g, b, a or 1 } end
+function methods.SetGradient(o, dir, c1, c2)
+    local function C(c) return type(c) == "table" and { c.r, c.g, c.b, c.a } or c end
+    o.__v.Gradient = { dir, C(c1), C(c2) }
+end
 function methods.GetShadowColor() return 0, 0, 0, 1 end
 function methods.GetShadowOffset() return 0, 0 end
 function methods.GetTexCoord() return 0, 0, 0, 1, 1, 0, 1, 1 end

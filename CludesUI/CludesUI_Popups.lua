@@ -1075,7 +1075,9 @@ local function BuildInfoDialog()
     frame:EnableMouse(true)
     local bg = SolidTex(frame, "BACKGROUND", 0.062, 0.070, 0.082, 1)
     bg:SetAllPoints()
-    CludesUI.MakeRoundedBorder(frame, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15, bg)
+    -- Radius 4 as the other dialogs: the size is not known yet, so the automatic
+    -- choice (by size) would take a control's 2.
+    CludesUI.MakeRoundedBorder(frame, BORDER_COLOR.r, BORDER_COLOR.g, BORDER_COLOR.b, 0.15, bg, 4)
     DressDialog(frame)
 
     local title = MakeFont(frame, 15, "", 1, 1, 1)
@@ -1143,9 +1145,12 @@ local function FitInfoDialog(d, w, maxH)
         textH = maxH -- unreadable in a restricted moment: take the full size and scroll
     end
     textH = math.max(INFO.MIN_TEXT, math.ceil(textH))
-    d.child:SetHeight(textH + 4)
+    -- Exactly the text's height: the visible area is textH tall when it fits,
+    -- so anything taller would show a scroll bar for a short message.
+    d.child:SetHeight(textH)
     local chrome = DIALOG_HEAD + DIALOG_FOOT + 2 * INFO.TEXT_PAD
-    d.frame:SetHeight(math.min(maxH, chrome + textH))
+    -- One pixel of slack, so rounding at the UI scale can never leave a sliver to scroll.
+    d.frame:SetHeight(math.min(maxH, chrome + textH + 1))
     d.UpdateBar()
 end
 
