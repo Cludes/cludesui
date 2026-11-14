@@ -52,7 +52,7 @@ end
 function ns.TrainingPlan()
     local _, class = UnitClass("player")
     local data = ns.TrainingData and ns.TrainingData[class]
-    local plan = { now = {}, coming = {}, levels = {}, nowCost = 0 }
+    local plan = { now = {}, coming = {}, levels = {}, blocked = {}, nowCost = 0 }
     if not data then return plan end
     local level = UnitLevel("player")
 

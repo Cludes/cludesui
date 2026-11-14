@@ -464,16 +464,12 @@ local FONT_PATH   = (CludesUI.GetFontPath("extras"))
 -- At very low UI scale the overlays/top bar are hard to read, so they're nudged up.
 -- The `UIParent:GetEffectiveScale() < 0.6` test is inlined at each use site (not a
 -- helper) because overlay builders are already at Lua 5.1's 60-upvalue limit.
-local LOCK_INNER  = "Interface\\AddOns\\CludesUI\\media\\cui-unlocked-inner-2.png"
-local LOCK_OUTER  = "Interface\\AddOns\\CludesUI\\media\\cui-unlocked-outer-2.png"
-local LOCK_TOP    = "Interface\\AddOns\\CludesUI\\media\\cui-unlocked-top-2.png"
 local GRID_SPACING = 32          -- pixels between grid lines
 local SNAP_THRESH  = 6            -- px distance to trigger snap-to-element
 local MOVER_ALPHA  = 0.55        -- resting alpha for mover overlays
 local MOVER_HOVER  = 0.85        -- hover alpha
 local MOVER_DRAG   = 0.95        -- dragging alpha
 local TRANSITION_DUR = 0.35      -- seconds for the open/close fade-in
-local GEAR_ROTATION  = math.pi / 4  -- 45 deg rotation for gear effect
 
 -- Movable bar keys (action bars + stance + micro + bag); populated by EAB if loaded, else empty.
 local BAR_LOOKUP    = ns.BAR_LOOKUP or {}
@@ -733,9 +729,9 @@ CludesUI._unlockHoverIntentDelay = 0.12 -- seconds to wait after settling before
 UM.EAB, UM.floor, UM.abs = EAB, floor, abs
 UM.min, UM.max, UM.sqrt, UM.sin = min, max, sqrt, sin
 UM.round, UM.PP, UM.DeferMoverSync, UM.FONT_PATH = round, PP, DeferMoverSync, FONT_PATH
-UM.LOCK_INNER, UM.LOCK_OUTER, UM.LOCK_TOP, UM.GRID_SPACING = LOCK_INNER, LOCK_OUTER, LOCK_TOP, GRID_SPACING
+UM.GRID_SPACING = GRID_SPACING
 UM.SNAP_THRESH, UM.MOVER_ALPHA, UM.MOVER_HOVER, UM.MOVER_DRAG = SNAP_THRESH, MOVER_ALPHA, MOVER_HOVER, MOVER_DRAG
-UM.GEAR_ROTATION, UM.BAR_LOOKUP, UM.ALL_BAR_ORDER, UM.GetVisibilityOnly = GEAR_ROTATION, BAR_LOOKUP, ALL_BAR_ORDER, GetVisibilityOnly
+UM.BAR_LOOKUP, UM.ALL_BAR_ORDER, UM.GetVisibilityOnly = BAR_LOOKUP, ALL_BAR_ORDER, GetVisibilityOnly
 UM.registeredElements, UM.registeredOrder, UM.RebuildRegisteredOrder, UM.guidePool = registeredElements, registeredOrder, RebuildRegisteredOrder, guidePool
 UM.movers, UM.lockAnimFrame, UM.pendingPositions, UM.snapshotPositions = movers, lockAnimFrame, pendingPositions, snapshotPositions
 UM.snapshotAnchors, UM.snapshotSizes, UM.snapshotWidthMatch, UM.snapshotHeightMatch = snapshotAnchors, snapshotSizes, snapshotWidthMatch, snapshotHeightMatch
@@ -919,7 +915,11 @@ local function ResumeAfterCombat()
     if UM.arrowKeyFrame then UM.arrowKeyFrame:Show() end
     if UM.unlockFrame then UM.unlockFrame:Show(); UM.unlockFrame:SetAlpha(1) end
     if UM.gridFrame and UM.gridMode ~= "disabled" then UM.gridFrame:Show() end
-    if UM.hudFrame then UM.hudFrame:Show() end
+    if UM.hudFrame then
+        UM.hudFrame:Show()
+        -- A combat cut mid-animation left the badge waiting for the emblem.
+        if UM.hudFrame._badgeLogo then UM.hudFrame._badgeLogo:SetAlpha(1) end
+    end
 
     -- Mirrors the OpenUnlockMode entry strip: provider enter hooks first (CDM's
     -- Additional Bar Offset may have re-applied to un-anchored bars during the

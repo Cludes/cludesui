@@ -10,8 +10,7 @@ CUI_NS = CUI_NS.__cuiCoreNS or CUI_NS  -- standalone builds: the core's own tabl
 CUI_NS.unlockParts = CUI_NS.unlockParts or {}
 CUI_NS.unlockParts.Session = function(UM)
 local ns, EAB, min, max = CUI_NS, UM.EAB, UM.min, UM.max
-local sin, FONT_PATH, LOCK_INNER, LOCK_OUTER = UM.sin, UM.FONT_PATH, UM.LOCK_INNER, UM.LOCK_OUTER
-local LOCK_TOP, MOVER_ALPHA, GEAR_ROTATION, ALL_BAR_ORDER = UM.LOCK_TOP, UM.MOVER_ALPHA, UM.GEAR_ROTATION, UM.ALL_BAR_ORDER
+local sin, FONT_PATH, MOVER_ALPHA, ALL_BAR_ORDER = UM.sin, UM.FONT_PATH, UM.MOVER_ALPHA, UM.ALL_BAR_ORDER
 local registeredElements, registeredOrder, RebuildRegisteredOrder, movers = UM.registeredElements, UM.registeredOrder, UM.RebuildRegisteredOrder, UM.movers
 local lockAnimFrame, pendingPositions, snapshotPositions, snapshotAnchors = UM.lockAnimFrame, UM.pendingPositions, UM.snapshotPositions, UM.snapshotAnchors
 local snapshotSizes, snapshotWidthMatch, snapshotHeightMatch, snapshotGrowDirs = UM.snapshotSizes, UM.snapshotWidthMatch, UM.snapshotHeightMatch, UM.snapshotGrowDirs
@@ -23,9 +22,9 @@ local SelectMover, DeselectMover, ApplyDarkOverlays, SetupArrowKeyFrame = UM.Sel
 local SortMoverFrameLevels, ShowBlizzOwnedOverlays, HideBlizzOwnedOverlays, CreateMover = UM.SortMoverFrameLevels, UM.ShowBlizzOwnedOverlays, UM.HideBlizzOwnedOverlays, UM.CreateMover
 
 -------------------------------------------------------------------------------
---  Top Banner Bar: single pre-rendered banner image (1144x120), displayed
---  pixel-perfect at native resolution, flush with top of screen. Grid + magnet
---  toggle icons overlaid on top. Slides down during the SHACKLE animation phase.
+--  Top bar: pixel-perfect, flush with the top of the screen, drawn in code by
+--  the element filter (CUI_UnlockMode_Filter.lua, DrawBanner); the toggles sit
+--  on it. Drops in during the open animation.
 -------------------------------------------------------------------------------
 local GRID_ICON       = "Interface\\AddOns\\CludesUI\\media\\icons\\grid.png"
 local MAGNET_ICON     = "Interface\\AddOns\\CludesUI\\media\\icons\\magnet.png"
@@ -35,7 +34,6 @@ local DARK_OVERLAY_ICON = "Interface\\AddOns\\CludesUI\\media\\icons\\dark-overl
 local COORD_ICON      = "Interface\\AddOns\\CludesUI\\media\\icons\\coordinates.png"
 local INFO_ICON       = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-info.png"
 local INFO_ICON_SZ    = 20
-local BANNER_TEX      = "Interface\\AddOns\\CludesUI\\media\\cui-unlocked-banner-2.png"
 
 local HUD_ON_ALPHA  = 0.60
 local HUD_OFF_ALPHA = 0.30
@@ -84,13 +82,6 @@ local function CreateHUD(parent)
     -- Start off-screen above
     UM.hudFrame:SetPoint("TOP", UIParent, "TOP", 0, (BANNER_PX_H + 10) * uiScale)
 
-    -- Banner image at native resolution
-    local bannerTex = UM.hudFrame:CreateTexture(nil, "ARTWORK")
-    bannerTex:SetTexture(BANNER_TEX)
-    bannerTex:SetSize(BANNER_PX_W, BANNER_PX_H)
-    bannerTex:SetPoint("TOPLEFT", UM.hudFrame, "TOPLEFT", 0, 0)
-    if bannerTex.SetSnapToPixelGrid then bannerTex:SetSnapToPixelGrid(false); bannerTex:SetTexelSnappingBias(0) end
-    UM.hudFrame._bannerTex = bannerTex
 
     -- Icons at native 28x28 resolution (banner frame is already pixel-perfect scaled)
     -- Vertically centered within the 58px visible banner area, shifted up 1px
@@ -652,6 +643,25 @@ local function CreateHUD(parent)
         }
 
         RefreshScaleBtns()
+    end
+
+    -- A toggle's icon takes the accent colour while its setting is on (its
+    -- resting alpha above the off level); hover (0.9) keeps the colour it had.
+    do
+        local function AccentWhenOn(tex)
+            hooksecurefunc(tex, "SetAlpha", function(self, a)
+                if a > 0.85 then return end
+                if a > HUD_OFF_ALPHA + 0.05 then
+                    local c = CludesUI.CLUDES_GREEN
+                    self:SetVertexColor(c.r, c.g, c.b)
+                else
+                    self:SetVertexColor(1, 1, 1)
+                end
+            end)
+            tex:SetAlpha(tex:GetAlpha())
+        end
+        AccentWhenOn(gridTex); AccentWhenOn(darkOverlayTex); AccentWhenOn(flashTex)
+        AccentWhenOn(magnetTex); AccentWhenOn(coordTex); AccentWhenOn(hoverTex)
     end
 
     -- Element filter right of the logo, the banner widened for it (CUI_UnlockMode_Filter.lua)
@@ -1899,82 +1909,94 @@ local function CreateUnlockFrame()
 end
 
 -------------------------------------------------------------------------------
---  Open lock animation frame (panel shrink -> gear rotate -> shackle unlock).
---  Uses a container frame + SetScale for guaranteed uniform aspect ratio; each
---  texture is set to its NATIVE pixel dimensions so proportions stay exact.
+--  Open animation: the options panel folds away while four corner brackets
+--  close in from its size onto the CludesUI logo at the centre of the screen
+--  and lock on; the bar drops in from the top, the logo flies up into the
+--  bar's badge with its brackets, and a scan line sweeps down the screen with
+--  the grid showing behind it. Plain textures, no art files.
 -------------------------------------------------------------------------------
--- Native pixel dimensions of each PNG (from Photoshop)
-local INNER_W, INNER_H = 253, 253
-local OUTER_W, OUTER_H = 368, 353
-local TOP_W,   TOP_H   = 412, 412
-
--- Container size = largest piece so everything fits
-local CONTAINER_SZ = 412
--- The "icon size" we want the logo to appear at on screen (in UI pixels)
-local ICON_SZ = 100
--- Base scale to shrink native-res textures down to icon size
-local BASE_SCALE = ICON_SZ / CONTAINER_SZ
-
-local SHACKLE_LIFT = 62  -- how far the shackle lifts (in container-space pixels)
-local OUTER_Y_OFFSET = -7  -- outer ring sits 7px lower than center
+local EMBLEM_LOGO = 64           -- logo size at the centre of the screen
+local EMBLEM_HALF = 46           -- the brackets' half span round it
+local ARM, THICK = 16, 2         -- bracket arm length and line thickness
+local SCAN_GLOW = 18             -- glow above and below the scan line
 
 local function CreateOpenAnimFrame(parent)
     if UM.openAnimFrame then return UM.openAnimFrame end
+    local A = CreateFrame("Frame", nil, parent)
+    UM.openAnimFrame = A
+    A:SetFrameLevel(50)  -- above movers (~20), below confirm popup (100)
+    A:SetAllPoints(UIParent)
 
-    UM.openAnimFrame = CreateFrame("Frame", nil, parent)
-    UM.openAnimFrame:SetFrameLevel(50)  -- above movers (~20), below confirm popup (100)
-    UM.openAnimFrame:SetAllPoints(UIParent)
+    local emblem = CreateFrame("Frame", nil, A)
+    emblem:SetSize(2 * EMBLEM_HALF, 2 * EMBLEM_HALF)
+    emblem:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    A._emblem = emblem
+    local logo = emblem:CreateTexture(nil, "ARTWORK")
+    logo:SetSize(EMBLEM_LOGO, EMBLEM_LOGO)
+    logo:SetPoint("CENTER")
+    logo:SetTexture("Interface\\AddOns\\CludesUI\\media\\logo-full-thin.png")
+    A._logo = logo
+    -- Four corner brackets, two arms each (odd = across, even = down).
+    local arms = {}
+    for i = 1, 8 do
+        local a = emblem:CreateTexture(nil, "OVERLAY")
+        if i % 2 == 1 then a:SetSize(ARM, THICK) else a:SetSize(THICK, ARM) end
+        arms[i] = a
+    end
+    local CORNERS = { { "TOPLEFT", -1, 1 }, { "TOPRIGHT", 1, 1 }, { "BOTTOMLEFT", -1, -1 }, { "BOTTOMRIGHT", 1, -1 } }
+    function A.SetBrackets(half)
+        for c = 1, 4 do
+            local p = CORNERS[c]
+            for k = 0, 1 do
+                local a = arms[2 * c - 1 + k]
+                a:ClearAllPoints()
+                a:SetPoint(p[1], emblem, "CENTER", p[2] * half, p[3] * half)
+            end
+        end
+    end
+    function A.SetBracketAlpha(v) for i = 1, 8 do arms[i]:SetAlpha(v) end end
 
-    -- Container frame: sized to hold the largest texture at native res.
-    -- SetScale on this frame handles ALL sizing uniformly.
-    local container = CreateFrame("Frame", nil, UM.openAnimFrame)
-    container:SetSize(CONTAINER_SZ, CONTAINER_SZ)
-    container:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
-    container:SetScale(BASE_SCALE)
-    UM.openAnimFrame._container = container
+    -- Scan line: the screen's width, a bright line with a soft glow either side.
+    local scan = CreateFrame("Frame", nil, A)
+    scan:SetHeight(THICK + 2 * SCAN_GLOW)
+    local line = scan:CreateTexture(nil, "OVERLAY")
+    line:SetPoint("LEFT")
+    line:SetPoint("RIGHT")
+    line:SetHeight(THICK)
+    local above = scan:CreateTexture(nil, "ARTWORK")
+    above:SetPoint("BOTTOMLEFT", line, "TOPLEFT")
+    above:SetPoint("BOTTOMRIGHT", line, "TOPRIGHT")
+    above:SetHeight(SCAN_GLOW)
+    above:SetColorTexture(1, 1, 1, 1)
+    local below = scan:CreateTexture(nil, "ARTWORK")
+    below:SetPoint("TOPLEFT", line, "BOTTOMLEFT")
+    below:SetPoint("TOPRIGHT", line, "BOTTOMRIGHT")
+    below:SetHeight(SCAN_GLOW)
+    below:SetColorTexture(1, 1, 1, 1)
+    scan:Hide()
+    A._scan = scan
+    function A.SetScanY(y)
+        scan:ClearAllPoints()
+        scan:SetPoint("LEFT", UIParent, "LEFT", 0, y)
+        scan:SetPoint("RIGHT", UIParent, "RIGHT", 0, y)
+    end
 
-    -- Each texture at its NATIVE pixel dimensions, centered in container
-    -- Disable pixel snapping for smooth sub-pixel animation
-    local outer = container:CreateTexture(nil, "ARTWORK", nil, 1)
-    outer:SetTexture(LOCK_OUTER)
-    outer:SetSize(OUTER_W, OUTER_H)
-    outer:SetPoint("CENTER", container, "CENTER", 0, OUTER_Y_OFFSET)
-    if outer.SetSnapToPixelGrid then outer:SetSnapToPixelGrid(false); outer:SetTexelSnappingBias(0) end
-    UM.openAnimFrame._outer = outer
+    -- The accent colour, or gold for a spec-override session (as the bar).
+    function A.Paint(special)
+        local r, g, b = 1, 0.82, 0.30
+        if not special then
+            local c = CludesUI.CLUDES_GREEN
+            r, g, b = c.r, c.g, c.b
+        end
+        logo:SetVertexColor(r, g, b, 1)
+        for i = 1, 8 do arms[i]:SetColorTexture(r, g, b, 1) end
+        line:SetColorTexture(r, g, b, 0.9)
+        above:SetGradient("VERTICAL", CreateColor(r, g, b, 0.22), CreateColor(r, g, b, 0))
+        below:SetGradient("VERTICAL", CreateColor(r, g, b, 0), CreateColor(r, g, b, 0.22))
+    end
 
-    local inner = container:CreateTexture(nil, "ARTWORK", nil, 2)
-    inner:SetTexture(LOCK_INNER)
-    inner:SetSize(INNER_W, INNER_H)
-    inner:SetPoint("CENTER", container, "CENTER", 0, 0)
-    if inner.SetSnapToPixelGrid then inner:SetSnapToPixelGrid(false); inner:SetTexelSnappingBias(0) end
-    UM.openAnimFrame._inner = inner
-
-    local top = container:CreateTexture(nil, "ARTWORK", nil, 3)
-    top:SetTexture(LOCK_TOP)
-    top:SetSize(TOP_W, TOP_H)
-    top:SetPoint("CENTER", container, "CENTER", 0, 0)
-    if top.SetSnapToPixelGrid then top:SetSnapToPixelGrid(false); top:SetTexelSnappingBias(0) end
-    UM.openAnimFrame._top = top
-
-    -- Sweep shine: tightly clipped to logo center (lives inside container)
-    local sweepClip = CreateFrame("Frame", nil, container)
-    sweepClip:SetSize(CONTAINER_SZ * 0.75, CONTAINER_SZ * 0.75)
-    sweepClip:SetPoint("CENTER", container, "CENTER", 0, 0)
-    sweepClip:SetFrameLevel(container:GetFrameLevel() + 5)
-    sweepClip:SetClipsChildren(true)
-    UM.openAnimFrame._sweepClip = sweepClip
-
-    local sweep = sweepClip:CreateTexture(nil, "OVERLAY", nil, 7)
-    sweep:SetColorTexture(1, 1, 1, 0.30)
-    sweep:SetSize(12, 120)
-    sweep:SetRotation(math.rad(20))
-    sweep:ClearAllPoints()
-    sweep:SetPoint("CENTER", sweepClip, "LEFT", -20, 0)
-    sweep:Hide()
-    UM.openAnimFrame._sweep = sweep
-
-    UM.openAnimFrame:Hide()
-    return UM.openAnimFrame
+    A:Hide()
+    return A
 end
 
 -------------------------------------------------------------------------------
@@ -2192,30 +2214,9 @@ function ns.OpenUnlockMode()
     CludesUI:_NotifyUnlockModeListeners(true)
     CreateOpenAnimFrame(UM.unlockFrame)
 
-    -- Special (spec-override) sessions swap the unlock art for the override
-    -- variants; normal sessions restore the standard art. Re-set every open:
-    -- the frames are created once and reused across sessions.
-    do
-        local ov = CludesUI._specialUnlockGroup and "-override" or ""
-        if UM.hudFrame and UM.hudFrame._bannerTex then
-            UM.hudFrame._bannerTex:SetTexture(
-                "Interface\\AddOns\\CludesUI\\media\\cui-unlocked-banner-2" .. ov .. ".png")
-        end
-        if UM.openAnimFrame then
-            if UM.openAnimFrame._outer then
-                UM.openAnimFrame._outer:SetTexture(
-                    "Interface\\AddOns\\CludesUI\\media\\cui-unlocked-outer-2" .. ov .. ".png")
-            end
-            if UM.openAnimFrame._inner then
-                UM.openAnimFrame._inner:SetTexture(
-                    "Interface\\AddOns\\CludesUI\\media\\cui-unlocked-inner-2" .. ov .. ".png")
-            end
-            if UM.openAnimFrame._top then
-                UM.openAnimFrame._top:SetTexture(
-                    "Interface\\AddOns\\CludesUI\\media\\cui-unlocked-top-2" .. ov .. ".png")
-            end
-        end
-    end
+    -- Special (spec-override) sessions paint the bar gold, normal sessions in
+    -- the accent colour. Re-set every open: the bar is created once and reused.
+    if UM.PaintBanner then UM.PaintBanner(CludesUI._specialUnlockGroup) end
 
     -- Capture the options panel frame for the shrink animation
     local panel = CludesUI and CludesUI._mainFrame
@@ -2226,12 +2227,6 @@ function ns.OpenUnlockMode()
     end
     panelStartW = panelStartW or 600
     panelStartH = panelStartH or 400
-    -- Use the larger dimension for the scale factor
-    local panelStartSz = max(panelStartW, panelStartH)
-    -- startScale: how big the container needs to be so it appears panel-sized
-    -- BASE_SCALE makes the container appear as ICON_SZ on screen,
-    -- so to appear as panelStartSz we need: BASE_SCALE * (panelStartSz / ICON_SZ)
-    local startScale = BASE_SCALE * (panelStartSz / ICON_SZ) * 0.6
 
     -- Controller Back steps out like Escape: registered with the escape proxy
     -- on the first open with a controller in use (padOnly: it counts only then),
@@ -2250,54 +2245,36 @@ function ns.OpenUnlockMode()
     if UM.hudFrame then UM.hudFrame:Hide() end
     for _, m in pairs(movers) do m:Hide() end
 
-    local container = UM.openAnimFrame._container
-    local outerTex  = UM.openAnimFrame._outer
-    local innerTex  = UM.openAnimFrame._inner
-    local topTex    = UM.openAnimFrame._top
-
-    if UM.openAnimFrame._sweep then UM.openAnimFrame._sweep:Hide() end
-
-    -- Container starts at panel-sized scale, textures stay at native dims always
-    local TOTAL_GEAR_ROT = GEAR_ROTATION * 4
-
-    -- Reset textures anchored to container center -- ONCE
-    -- (sizes are already set to native dims at creation, never change them)
-    outerTex:ClearAllPoints()
-    outerTex:SetPoint("CENTER", container, "CENTER", 0, OUTER_Y_OFFSET)
-    outerTex:SetAlpha(0)
-    outerTex:SetRotation(TOTAL_GEAR_ROT)
-
-    innerTex:ClearAllPoints()
-    innerTex:SetPoint("CENTER", container, "CENTER", 0, 0)
-    innerTex:SetAlpha(0)
-    innerTex:SetRotation(-TOTAL_GEAR_ROT)
-
-    topTex:ClearAllPoints()
-    topTex:SetPoint("CENTER", container, "CENTER", 0, 0)
-    topTex:SetAlpha(0)
-    topTex:SetRotation(0)
-
-    -- Container starts at panel scale
-    container:SetScale(startScale)
-
-    UM.openAnimFrame:Show()
-    UM.openAnimFrame:SetAlpha(1)
+    -- The open animation (CreateOpenAnimFrame): the emblem at the centre, its
+    -- brackets starting round the panel; the bar's badge logo waits for the
+    -- emblem to land in it.
+    local A = UM.openAnimFrame
+    local emblem = A._emblem
+    A.Paint(CludesUI._specialUnlockGroup)
+    local startHalf = max(EMBLEM_HALF + 20, min(panelStartW, panelStartH) * 0.5)
+    emblem:SetScale(1)
+    emblem:ClearAllPoints()
+    emblem:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    A._logo:SetAlpha(0)
+    A.SetBrackets(startHalf)
+    A.SetBracketAlpha(0)
+    A._scan:Hide()
+    if UM.hudFrame and UM.hudFrame._badgeLogo then UM.hudFrame._badgeLogo:SetAlpha(0) end
+    A:Show()
+    A:SetAlpha(1)
 
     -- Start overlay at 0 alpha, will fade in during animation
     if UM.unlockFrame._overlay then
         UM.unlockFrame._overlay:SetColorTexture(0.030, 0.023, 0.018, 0)
     end
 
-    -- Phase timings
-    local MORPH     = 0.50  -- panel shrinks + lock appears simultaneously
-    local IDLE_SPIN = 1.00  -- gears keep spinning at icon size
-    local OVERLAP   = 0.75  -- shackle starts this much BEFORE idle spin ends
-    local SHACKLE   = 0.75  -- shackle lifts + sweep duration (slowed)
-
-    -- Gear rotation: one continuous motion across MORPH + IDLE_SPIN
-    local SPIN_DUR = MORPH + IDLE_SPIN  -- total time gears rotate
-    -- Shackle/HUD start time (0.75s before scaling/spinning stops)
-    local SHACKLE_START = MORPH + IDLE_SPIN - OVERLAP
+    -- Phase timings, in seconds from the click
+    local MORPH = 0.35                          -- panel folds away, brackets close in on the logo
+    local LOCK = 0.15                           -- brackets snap on (a small pull-in and back)
+    local BAR_START, BAR_DUR = 0.42, 0.40       -- the bar drops in
+    local FLY_START, FLY_DUR = 0.55, 0.40       -- the emblem flies up into the bar's badge
+    local SCAN_START, SCAN_DUR = 0.45, 0.55     -- the scan line sweeps down; the grid shows behind it
+    local DONE = FLY_START + FLY_DUR + 0.05
 
     local panelHidden = false
     local panelRealScale = panel and panel:GetScale() or 1
@@ -2323,8 +2300,8 @@ function ns.OpenUnlockMode()
         if autoFlash then UM.FlashSelectHighlight(m) end
     end
 
-    -- Grid glitch starts immediately and lasts 0.75s
-    local GLITCH_DUR = 0.75
+    -- Grid, movers and overlays start at once; the movers fade in over GLITCH_DUR
+    local GLITCH_DUR = 0.60
     local GRID_START = 0  -- grid begins immediately
     local gridStarted = false
 
@@ -2515,14 +2492,11 @@ function ns.OpenUnlockMode()
             end
 
             local glitchT = elapsed - GRID_START
-            local glitchProgress = min(1, glitchT / GLITCH_DUR)
 
-            -- (Banner slides down during shackle phase, not here)
-
-            -- Movers fade in over 0.75s, delayed by 0.5s. A mover selected
-            -- meanwhile (the auto-select, a click) keeps the alpha the
-            -- selection gave it.
-            local MOVER_DELAY = 0.50
+            -- Movers fade in over GLITCH_DUR, delayed by MOVER_DELAY (both
+            -- end before the animation does). A mover selected meanwhile (the
+            -- auto-select, a click) keeps the alpha the selection gave it.
+            local MOVER_DELAY = 0.40
             local moverFadeT = glitchT - MOVER_DELAY
             for _, m in pairs(movers) do
                 if m:IsShown() and not m._selected then
@@ -2571,58 +2545,21 @@ function ns.OpenUnlockMode()
                 end
             end
 
-            -- Grid glitch effect
+            -- The grid shows behind the scan line as it sweeps down.
             if UM.gridFrame and UM.gridFrame:IsShown() then
-                local baseA = glitchProgress
-                local flicker = 0
-                if glitchProgress < 0.9 then
-                    local intensity = (1 - glitchProgress) * 0.7
-                    local t1 = glitchT * 37.3
-                    local t2 = glitchT * 13.7
-                    local t3 = glitchT * 71.1
-                    flicker = (sin(t1) * 0.4 + sin(t2) * 0.35 + sin(t3) * 0.25) * intensity
-                    if sin(glitchT * 5.3) > 0.85 and glitchProgress < 0.6 then
-                        flicker = flicker - 0.5
-                    end
-                end
-                UM.gridFrame:SetAlpha(max(0, min(1, baseA + flicker)))
+                UM.gridFrame:SetAlpha(max(0, min(1, (elapsed - SCAN_START) / SCAN_DUR)))
             end
         end
 
         -------------------------------------------------------------------
-        --  Continuous gear rotation: one smooth ease-out across MORPH +
-        --  IDLE_SPIN combined. Rotation goes from TOTAL_GEAR_ROT -> 0.
-        -------------------------------------------------------------------
-        local gearRot = 0
-        -- Extended taper with quintic ease-out for imperceptible final frames
-        local SPIN_TAPER = SPIN_DUR + 0.5
-        if elapsed < SPIN_TAPER then
-            local spinT = elapsed / SPIN_TAPER
-            -- Quintic ease-out: (1-t)^5 -- extremely gradual deceleration
-            local inv = 1 - spinT
-            local eased = 1 - inv * inv * inv * inv * inv
-            gearRot = TOTAL_GEAR_ROT * (1 - eased)
-        end
-        outerTex:SetRotation(gearRot)
-        innerTex:SetRotation(-gearRot)
-
-        -------------------------------------------------------------------
-        --  Phase 1: Panel shrinks + fades while lock container scales down
-        --           from startScale -> BASE_SCALE over MORPH seconds.
-        --           After MORPH, container stays at BASE_SCALE (no hard snap).
+        --  Fold: the panel scales down and fades while the brackets close in
+        --  from its size onto the logo, which grows in.
         -------------------------------------------------------------------
         if elapsed < MORPH then
             local t = EaseInOutCubic(elapsed / MORPH)
-            local sc = startScale + (BASE_SCALE - startScale) * t
-
-            -- Panel scales down, slides to center, and fades out
-            -- Panel scales down + fades out (relative to its real scale)
             if panel and not panelHidden then
-                local s = panelRealScale * max(0.01, 1 - t)
-                panel:SetScale(s)
-                -- Alpha fades to 0 in 0.25s (twice as fast as the scale)
-                local alphaT = min(1, elapsed / 0.25)
-                panel:SetAlpha(1 - alphaT)
+                panel:SetScale(panelRealScale * max(0.01, 1 - 0.4 * t))
+                panel:SetAlpha(1 - min(1, elapsed / 0.2))
                 if t > 0.95 then
                     panelHidden = true
                     panel:SetScale(panelRealScale)
@@ -2630,20 +2567,11 @@ function ns.OpenUnlockMode()
                     CludesUI:Hide()
                 end
             end
-
-            -- Scale the container uniformly
-            container:SetScale(sc)
-
-            -- Fade textures in: delayed 0.25s, then 0->1 over remaining 0.25s
-            -- Top stays hidden until shackle phase
-            local LOGO_FADE_DELAY = 0.15
-            local logoAlpha = 0
-            if elapsed > LOGO_FADE_DELAY then
-                logoAlpha = min(1, (elapsed - LOGO_FADE_DELAY) / (MORPH - LOGO_FADE_DELAY))
-            end
-            outerTex:SetAlpha(logoAlpha)
-            innerTex:SetAlpha(logoAlpha)
-            topTex:SetAlpha(0)
+            A.SetBrackets(startHalf + (EMBLEM_HALF - startHalf) * t)
+            A.SetBracketAlpha(min(1, elapsed / 0.12))
+            local ls = EMBLEM_LOGO * (1.4 - 0.4 * t)
+            A._logo:SetSize(ls, ls)
+            A._logo:SetAlpha(t)
             return
         end
 
@@ -2653,83 +2581,63 @@ function ns.OpenUnlockMode()
             if panel then panel:SetScale(panelRealScale); panel:SetAlpha(1) end
             CludesUI:Hide()
         end
+        A._logo:SetSize(EMBLEM_LOGO, EMBLEM_LOGO)
+        A._logo:SetAlpha(1)
+        A.SetBracketAlpha(1)
 
-        -- Post-morph: container at final scale, inner/outer fully visible
-        -- (these are already at their final values from the last morph frame,
-        --  but we set them once cleanly without causing a visual snap)
-        container:SetScale(BASE_SCALE)
-
-        -------------------------------------------------------------------
-        --  Shackle + HUD: starts at SHACKLE_START (0.25s before spin ends)
-        --  Overlaps the final gear deceleration.
-        -------------------------------------------------------------------
-        local shackleT = elapsed - SHACKLE_START
-        if shackleT >= 0 and shackleT < SHACKLE then
-            local t = EaseInOutCubic(shackleT / SHACKLE)
-            -- Top piece fades from 0->100% over 0.5s, delayed 0.2s from shackle start
-            -- (movement still starts immediately, only alpha is delayed)
-            local TOP_FADE_IN = 0.25
-            local TOP_FADE_DELAY = 0.20
-            local topAlphaT = shackleT - TOP_FADE_DELAY
-            if topAlphaT > 0 then
-                topTex:SetAlpha(min(1, topAlphaT / TOP_FADE_IN))
-            else
-                topTex:SetAlpha(0)
-            end
-            topTex:ClearAllPoints()
-            topTex:SetPoint("CENTER", container, "CENTER", 0, SHACKLE_LIFT * t)
-
-            -- Banner slides down from off-screen, synced with shackle
-            if UM.hudFrame and UM.hudFrame:IsShown() then
-                local ppS = UM.hudFrame:GetScale() or 1
-                local offScreen = (BANNER_PX_H + 10) * ppS
-                local bannerY = offScreen * (1 - t)
-                UM.hudFrame:ClearAllPoints()
-                UM.hudFrame:SetPoint("TOP", UIParent, "TOP", 0, bannerY)
-            end
-
-            -- Sweep runs during shackle phase
-            local sweepTex = UM.openAnimFrame._sweep
-            if sweepTex then
-                if not sweepTex:IsShown() then sweepTex:Show() end
-                local st = min(1, shackleT / SHACKLE)
-                local clipW = UM.openAnimFrame._sweepClip:GetWidth()
-                local xPos = -20 + (clipW + 40) * st
-                sweepTex:ClearAllPoints()
-                sweepTex:SetPoint("CENTER", UM.openAnimFrame._sweepClip, "LEFT", xPos, 0)
-                local sweepAlpha
-                if st < 0.15 then sweepAlpha = st / 0.15
-                elseif st > 0.85 then sweepAlpha = (1 - st) / 0.15
-                else sweepAlpha = 1 end
-                sweepTex:SetAlpha(0.30 * sweepAlpha)
-            end
+        -- Lock: the brackets pull in a few pixels and spring back.
+        local lt = elapsed - MORPH
+        if lt < LOCK then
+            A.SetBrackets(EMBLEM_HALF - 6 * sin(lt / LOCK * math.pi))
+        else
+            A.SetBrackets(EMBLEM_HALF)
         end
 
-        -- After shackle completes, settle top piece and hide sweep
-        if shackleT >= SHACKLE then
-            topTex:SetAlpha(1)
-            topTex:ClearAllPoints()
-            topTex:SetPoint("CENTER", container, "CENTER", 0, SHACKLE_LIFT)
-            if UM.openAnimFrame._sweep then UM.openAnimFrame._sweep:Hide() end
+        -- The bar drops in from above, settling with a slight overshoot.
+        local hud = UM.hudFrame
+        if hud and hud:IsShown() then
+            local u = min(1, max(0, (elapsed - BAR_START) / BAR_DUR)) - 1
+            local e = 1 + 2.2 * u * u * u + 1.2 * u * u
+            hud:ClearAllPoints()
+            hud:SetPoint("TOP", UIParent, "TOP", 0, (BANNER_PX_H + 10) * (hud:GetScale() or 1) * (1 - e))
         end
 
-        -- Still in idle spin phase (before shackle or during overlap), keep waiting
-        if elapsed < SPIN_DUR and shackleT < SHACKLE then
-            return
+        -- The emblem flies up into the bar's badge, shrinking to its size:
+        -- the brackets land on the badge's border and the logo on its logo.
+        local ft = (elapsed - FLY_START) / FLY_DUR
+        if ft > 0 and hud and hud._badgeY then
+            local f = EaseInOutCubic(min(1, ft))
+            local uiS = UIParent:GetEffectiveScale()
+            local hudR = hud:GetEffectiveScale() / uiS
+            local aR = A:GetEffectiveScale() / uiS
+            local tScale = hud._badgeLogoSz / EMBLEM_LOGO * hudR / aR
+            emblem:SetScale(1 + (tScale - 1) * f)
+            local y = (UIParent:GetHeight() / 2 - hud._badgeY * hudR) * f
+            emblem:ClearAllPoints()
+            emblem:SetPoint("CENTER", UIParent, "CENTER", 0, y * uiS / emblem:GetEffectiveScale())
         end
 
-        -- If shackle hasn't finished yet, keep going
-        if shackleT < SHACKLE then
-            return
+        -- The scan line leaves the emblem and sweeps to the bottom of the screen.
+        local sp = (elapsed - SCAN_START) / SCAN_DUR
+        if sp > 0 and sp < 1 then
+            local e = 1 - (1 - sp) * (1 - sp) * (1 - sp)
+            A._scan:Show()
+            A.SetScanY(-(UIParent:GetHeight() / 2 + SCAN_GLOW) * e)
+            A._scan:SetAlpha(sp < 0.15 and sp / 0.15 or (sp > 0.8 and (1 - sp) / 0.2 or 1))
+        else
+            A._scan:Hide()
         end
+
+        if elapsed < DONE then return end
 
         -------------------------------------------------------------------
         --  Done -- logo stays at full alpha, grid fully visible,
         --  banner is at final position (flush with top of screen)
         -------------------------------------------------------------------
-        UM.openAnimFrame:SetAlpha(1)
-        outerTex:SetRotation(0)
-        innerTex:SetRotation(0)
+        -- The emblem has landed: the badge's own logo takes over.
+        A._scan:Hide()
+        A:Hide()
+        if UM.hudFrame and UM.hudFrame._badgeLogo then UM.hudFrame._badgeLogo:SetAlpha(1) end
         if UM.gridFrame then UM.gridFrame:SetAlpha(1) end
         if UM.hudFrame then
             UM.hudFrame:ClearAllPoints()
@@ -2756,31 +2664,6 @@ function ns.OpenUnlockMode()
                 CludesUI._unlockAutoSelectFlash = nil
             end)
         end
-
-        -- Fade ONLY the lock logo to 0% over 2 seconds, after 1s hold.
-        -- Banner stays visible permanently (it has functional toggles).
-        local LOGO_HOLD = 1.0
-        local LOGO_FADE_DUR = 2.0
-        local fadeElapsed = 0
-        if not UM.logoFadeFrame then
-            UM.logoFadeFrame = CreateFrame("Frame", nil, UIParent)
-        end
-        UM.logoFadeFrame:Show()
-        UM.logoFadeFrame:SetScript("OnUpdate", function(ff, fdt)
-            fadeElapsed = fadeElapsed + fdt
-            if fadeElapsed < LOGO_HOLD then return end
-            local ft = fadeElapsed - LOGO_HOLD
-            if ft >= LOGO_FADE_DUR then
-                if UM.openAnimFrame then UM.openAnimFrame:SetAlpha(0) end
-                ff:SetScript("OnUpdate", nil)
-                ff:Hide()
-                return
-            end
-            local t = ft / LOGO_FADE_DUR
-            if UM.openAnimFrame then
-                UM.openAnimFrame:SetAlpha(1 - t)
-            end
-        end)
 
         -- Show one-time toolbar tip (after animation settles)
         ns.ShowUnlockTip()

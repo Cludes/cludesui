@@ -42,13 +42,13 @@ local function FilterKeeps(words, label)
     return shown ~= label and HasAllWords(words, shown) or false
 end
 
--- Banner art (media/cui-unlocked-banner-2*.png, 1144x120): slanted ends in
--- columns 0-58 and 1085-1143, the logo in 519-621, plain bar (identical
--- columns with the accent line) in 59-518 and 622-1084.
-local BANNER_W, BANNER_H = 1144, 120
-local END_W, LOGO_L, LOGO_R = 59, 519, 622
-local FLAT_L1, FLAT_L2, FLAT_R1, FLAT_R2 = 100, 500, 650, 1050
-local BANNER_TEX = "Interface\\AddOns\\CludesUI\\media\\cui-unlocked-banner-2.png"
+-- The bar's base width (CreateHUD's frame, before Layout widens it) and the
+-- drawn bar's parts (DrawBanner): its height, and the logo badge hung from
+-- its centre, which the open animation's logo flies into (its centre BADGE_Y
+-- below the top of the bar, its logo BADGE_LOGO wide).
+local BANNER_W = 1144
+local BAR_H, BADGE, BADGE_TOP, BADGE_LOGO = 58, 56, 8, 38
+local LOGO_TEX = "Interface\\AddOns\\CludesUI\\media\\logo-full-thin.png"
 local FILTER_ICON = "Interface\\AddOns\\CludesUI\\media\\icons\\filter.png"
 -- The bar's own numbers (toggle edges and gaps, the clearance before Exit /
 -- Save & Exit, the - and + reach, the scale range) come from CreateHUD
@@ -116,48 +116,73 @@ local function Apply()
     if CludesUI._SetOverrideGhostsAlpha then CludesUI._SetOverrideGhostsAlpha(1) end
 end
 
--- The banner art in five pieces, so the banner can grow on both sides: its
--- own texture keeps the logo at its place and size, the slanted ends stay 1:1
--- at the edges, and only plain bar stretches between them. The pieces follow
--- the art swap of special sessions.
-local function SliceBanner(hud)
-    local logo = hud._bannerTex
-    local lEnd, lFlat = hud:CreateTexture(nil, "ARTWORK"), hud:CreateTexture(nil, "ARTWORK")
-    local rFlat, rEnd = hud:CreateTexture(nil, "ARTWORK"), hud:CreateTexture(nil, "ARTWORK")
-    local function Coords()
-        logo:SetTexCoord(LOGO_L / BANNER_W, LOGO_R / BANNER_W, 0, 1)
-        lEnd:SetTexCoord(0, END_W / BANNER_W, 0, 1)
-        lFlat:SetTexCoord(FLAT_L1 / BANNER_W, FLAT_L2 / BANNER_W, 0, 1)
-        rFlat:SetTexCoord(FLAT_R1 / BANNER_W, FLAT_R2 / BANNER_W, 0, 1)
-        rEnd:SetTexCoord((BANNER_W - END_W) / BANNER_W, 1, 0, 1)
+-- The bar, drawn in code: a dark plate the bar's width with square ends, an
+-- accent line along its bottom edge with a soft glow under it, and the
+-- CludesUI logo on a square badge that hangs over that line at the centre.
+-- Every part is anchored to the bar's edges, so it follows Layout's width.
+-- Spec-override sessions paint it gold (UM.PaintBanner).
+local function DrawBanner(hud)
+    local plate = hud:CreateTexture(nil, "BACKGROUND")
+    plate:SetPoint("TOPLEFT")
+    plate:SetPoint("TOPRIGHT")
+    plate:SetHeight(BAR_H)
+    plate:SetColorTexture(0.035, 0.043, 0.052, 0.94)
+    local sheen = hud:CreateTexture(nil, "BACKGROUND", nil, 1)
+    sheen:SetAllPoints(plate)
+    sheen:SetColorTexture(1, 1, 1, 1)
+    sheen:SetGradient("VERTICAL", CreateColor(1, 1, 1, 0), CreateColor(1, 1, 1, 0.04))
+    local line = hud:CreateTexture(nil, "ARTWORK", nil, 2)
+    line:SetPoint("TOPLEFT", 0, -(BAR_H - 2))
+    line:SetPoint("TOPRIGHT", 0, -(BAR_H - 2))
+    line:SetHeight(2)
+    local glow = hud:CreateTexture(nil, "ARTWORK", nil, 1)
+    glow:SetPoint("TOPLEFT", 0, -BAR_H)
+    glow:SetPoint("TOPRIGHT", 0, -BAR_H)
+    glow:SetHeight(14)
+    glow:SetColorTexture(1, 1, 1, 1)
+    local lEdge = hud:CreateTexture(nil, "ARTWORK", nil, 2)
+    lEdge:SetPoint("TOPLEFT")
+    lEdge:SetSize(2, BAR_H)
+    local rEdge = hud:CreateTexture(nil, "ARTWORK", nil, 2)
+    rEdge:SetPoint("TOPRIGHT")
+    rEdge:SetSize(2, BAR_H)
+
+    local badge = CreateFrame("Frame", nil, hud)
+    badge:SetSize(BADGE, BADGE)
+    badge:SetPoint("TOP", hud, "TOP", 0, -BADGE_TOP)
+    badge:SetFrameLevel(hud:GetFrameLevel() + 1)
+    local bbg = badge:CreateTexture(nil, "BACKGROUND")
+    bbg:SetAllPoints()
+    bbg:SetColorTexture(0.05, 0.062, 0.075, 1)
+    local bbrd = CludesUI.MakeRoundedBorder(badge, 1, 1, 1, 1, bbg, 2)
+    hud._outlines[#hud._outlines + 1] = bbrd
+    local logo = badge:CreateTexture(nil, "ARTWORK")
+    logo:SetSize(BADGE_LOGO, BADGE_LOGO)
+    logo:SetPoint("CENTER")
+    logo:SetTexture(LOGO_TEX)
+    hud._badgeLogo = logo
+    hud._badgeY, hud._badgeLogoSz = BADGE_TOP + BADGE / 2, BADGE_LOGO
+
+    local function Paint(r, g, b)
+        line:SetColorTexture(r, g, b, 0.9)
+        glow:SetGradient("VERTICAL", CreateColor(r, g, b, 0), CreateColor(r, g, b, 0.22))
+        lEdge:SetColorTexture(r, g, b, 0.5)
+        rEdge:SetColorTexture(r, g, b, 0.5)
+        bbrd:SetColor(r, g, b, 0.85)
+        logo:SetVertexColor(r, g, b, 1)
     end
-    logo:ClearAllPoints()
-    logo:SetSize(LOGO_R - LOGO_L, BANNER_H)
-    logo:SetPoint("TOPLEFT", hud, "TOP", LOGO_L - BANNER_W / 2, 0)
-    lEnd:SetSize(END_W, BANNER_H)
-    lEnd:SetPoint("TOPLEFT", hud, "TOPLEFT", 0, 0)
-    rEnd:SetSize(END_W, BANNER_H)
-    rEnd:SetPoint("TOPRIGHT", hud, "TOPRIGHT", 0, 0)
-    lFlat:SetPoint("TOPLEFT", lEnd, "TOPRIGHT", 0, 0)
-    lFlat:SetPoint("BOTTOMRIGHT", logo, "BOTTOMLEFT", 0, 0)
-    rFlat:SetPoint("TOPLEFT", logo, "TOPRIGHT", 0, 0)
-    rFlat:SetPoint("BOTTOMRIGHT", rEnd, "BOTTOMLEFT", 0, 0)
-    local pieces = { lEnd, lFlat, rFlat, rEnd }
-    for i = 1, #pieces do
-        local t = pieces[i]
-        t:SetTexture(BANNER_TEX)
-        if t.SetSnapToPixelGrid then t:SetSnapToPixelGrid(false); t:SetTexelSnappingBias(0) end
+    function UM.PaintBanner(special)
+        if special then Paint(1, 0.82, 0.30); return end
+        local c = CludesUI.CLUDES_GREEN
+        Paint(c.r, c.g, c.b)
     end
-    Coords()
-    hooksecurefunc(logo, "SetTexture", function(_, path)
-        for i = 1, #pieces do pieces[i]:SetTexture(path) end
-        Coords()
-    end)
+    UM.PaintBanner(CludesUI._specialUnlockGroup)
+    CludesUI.RegAccent({ type = "callback", fn = function() UM.PaintBanner(CludesUI._specialUnlockGroup) end })
 end
 
 -- Sizes the box and the banner for a half screen width V (banner units at
 -- banner scale 100%, nil = no limit) and returns the half width the banner
--- then needs: its art (whole slanted ends) or its - and + buttons, whichever
+-- then needs: its own width or its - and + buttons, whichever
 -- reaches farther. Exit and Save & Exit sit at the default inset (BuildFilter);
 -- the box evens out the two halves, those buttons included, so both keep the
 -- toggles' own gap to the chains, and the banner grows until they do.
@@ -213,7 +238,7 @@ end
 -- Elements (moved over); right of it: the funnel, the box, Coordinates,
 -- Hover Top Bar and Save & Exit.
 function UM.BuildFilter(hud, centerY)
-    SliceBanner(hud)
+    DrawBanner(hud)
     local L = hud._hudLayout
     local FONT_PATH = UM.FONT_PATH
     local BR, BG, BB = CludesUI.BORDER_R, CludesUI.BORDER_G, CludesUI.BORDER_B
@@ -254,7 +279,7 @@ function UM.BuildFilter(hud, centerY)
     hud._infoBtn:ClearAllPoints()
     hud._infoBtn:SetPoint("LEFT", hud._hoverBtn, "RIGHT", L.gapL, 0)
     -- Exit and Save & Exit at the default inset: Layout grows the banner around the
-    -- chains instead, so - and + keep clear of the slanted ends on both sides.
+    -- chains instead, so - and + keep clear of the bar's ends on both sides.
     local exit, save = hud._exitBtn, hud._saveBtn
     local _, _, _, _, exitY = exit:GetPoint(1)
     local _, _, _, _, saveY = save:GetPoint(1)
