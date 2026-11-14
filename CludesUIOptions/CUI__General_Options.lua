@@ -122,6 +122,9 @@ CludesUI._WHATSNEW_PATCHES = {
         },
         features = {
             { module = "Global Settings",
+              title  = "New icons and colours",
+              desc   = "A new set of interface icons, a cool slate colour for pop-ups, menus and input boxes, and pop-ups with the title on the left and buttons on the right." },
+            { module = "Global Settings",
               title  = "Buttons for short choices",
               desc   = "Settings with two or three choices, such as Orientation or Grow Direction, show every choice as a button instead of a dropdown." },
             { module = "Global Settings",
@@ -669,7 +672,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- Row 1: CUI Options Theme | UI Accent Color (the accent follows the theme)
         local themeRow
         themeRow, h = W:DualRow(parent, y,
-            { type="dropdown", text="CUI Options Theme",
+            { type="dropdown", text="CUI Options Theme", tooltip="The look of this options window: its frame art and colours.",
               values=themeValues,
               order=CludesUI.THEME_ORDER,
               getValue=function()
@@ -1004,7 +1007,7 @@ initFrame:SetScript("OnEvent", function(self)
         _, h = W:SectionHeader(parent, "COMBAT", y);  y = y - h
 
         _, h = W:DualRow(parent, y,
-            { type="slider", text="Max Camera Distance",
+            { type="slider", text="Max Camera Distance", tooltip="How far the camera can zoom out.",
               min=1, max=2.6, step=0.1,
               getValue=function() return GetCVarNum("cameraDistanceMaxZoomFactor") end,
               setValue=function(v)
@@ -1276,7 +1279,7 @@ initFrame:SetScript("OnEvent", function(self)
             _, h = W:SectionHeader(parent, "DEVELOPER", y);  y = y - h
 
             _, h = W:DualRow(parent, y,
-                { type="toggle", text="Suppress Lua Errors",
+                { type="toggle", text="Suppress Lua Errors", tooltip="Turns off the game's own Lua error pop-ups. Error addons such as BugSack still catch them.",
                   getValue=function()
                     return not (CludesUIDB and CludesUIDB.suppressErrors == false)
                   end,
@@ -1285,7 +1288,7 @@ initFrame:SetScript("OnEvent", function(self)
                     CludesUIDB.suppressErrors = v
                     SetCVarSafe("scriptErrors", v and "0" or "1")
                   end },
-                { type="toggle", text="Spell ID on Tooltip",
+                { type="toggle", text="Spell ID on Tooltip", tooltip="Adds the spell ID to spell tooltips.",
                   getValue=function()
                     return CludesUI.SpellIDOn()
                   end,

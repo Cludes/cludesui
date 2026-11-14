@@ -1568,7 +1568,7 @@ function _G._CUI_BuildFontsPage(pageName, parent, yOffset)
     local intro = CludesUI.MakeFont(introHost, 14, nil, 1, 1, 1, 0.65)
     intro:SetPoint("TOPLEFT", introHost, "TOPLEFT", 0, -2)
     intro:SetPoint("TOPRIGHT", introHost, "TOPRIGHT", 0, -2)
-    intro:SetJustifyH("CENTER")
+    intro:SetJustifyH("LEFT")
     intro:SetWordWrap(true)
     intro:SetText(CludesUI.L("A quick view of every font setting in one place.") .. "\n"
         .. CludesUI.L("These are the same settings found on each module's own pages, not separate ones."))

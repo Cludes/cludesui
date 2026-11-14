@@ -712,7 +712,7 @@ function _G._CUI_BuildGlowsPage(pageName, parent, yOffset)
     local intro = CludesUI.MakeFont(introHost, 14, nil, 1, 1, 1, 0.65)
     PP.Point(intro, "TOPLEFT", introHost, "TOPLEFT", 0, -2)
     PP.Point(intro, "TOPRIGHT", introHost, "TOPRIGHT", 0, -2)
-    intro:SetJustifyH("CENTER")
+    intro:SetJustifyH("LEFT")
     intro:SetWordWrap(true)
     intro:SetText(CludesUI.L("Set a glow once. Apply to All changes the active custom glows listed below.") .. "\n"
         .. CludesUI.L("Module and row buttons also replace off glows, Blizzard Default, Blizzard Border and Solid Border.") .. "\n"

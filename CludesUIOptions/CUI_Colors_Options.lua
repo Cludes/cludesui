@@ -350,7 +350,7 @@ function _G._CUI_BuildColorsPage(pageName, parent, yOffset)
                   -- Force rebuild: the toggle flips the dropdown's enabled state and the section's gate.
                   CludesUI:RefreshPage(true)
               end },
-            { type="dropdown", text="Pull Colors From",
+            { type="dropdown", text="Pull Colors From", tooltip="Copies this section's colours from another profile.",
               values=pullValues, order=profileOrder,
               disabled=function() return not CludesUI.ColorSectionApplyAll(section) end,
               disabledTooltip="Apply to All Profiles",
