@@ -3,100 +3,86 @@ if CUI_CLIENT_BLOCKED then
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 if CludesUI.IS_FOREVER then
     return
-end -- Mythic+ Tools does not load on WoW Forever: no runs, no factory (the main file drops the block from BLOCK_TYPES too)
--- Blocks\MythicSummary.lua
--- Mythic+ run summary block factory.
-
-local ADDON_NAME, mod = ...
+end -- Mythic+ Tools does not load on WoW Forever (the main file drops the block type there too)
+-------------------------------------------------------------------------------
+--  Blocks\MythicSummary.lua - Info Bar block: the latest Mythic+ run.
+--
+--  Shows the newest run (level in its keystone colour, then the dungeon).
+--  Hover lists every recorded run with its time (green in time, red over);
+--  left-click opens the Run Summary (as /ov does), right-click clears the
+--  history after asking.
+--
+--  The runs are kept by Mythic+ Tools (CludesUI._MythicRuns), which calls
+--  OnChanged when one is added or the history is cleared. That hook is set
+--  only while a block is enabled, so the block registers no events at all.
+--
+--  Settings (blockCfg.settings): hideWhenEmpty (no runs = no block).
+-------------------------------------------------------------------------------
+local _, mod = ...
 local L = mod.L
 local K = mod.BlockKit
 
--- Upvalues
-local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
-local pairs = pairs
-local type = type
-local format = string.format
-local floor = math.floor
-local max = math.max
-local min = math.min
+local format, floor, max, min = string.format, math.floor, math.max, math.min
 
-local CONTENT_BASE = K.CONTENT_BASE
-local InstKey = K.InstKey
-local HBudget = K.HBudget
-local VSlotW = K.VSlotW
-local MaybeRelayout = K.MaybeRelayout
-local AttachTextOffset = K.AttachTextOffset
-local BlockColorOf = K.BlockColorOf
+local blocks = {} -- every enabled block, as a set
 
--------------------------------------------------------------------------------
---  M+ SUMMARY (newest Run Summary record; click opens it like /ov, the
---  tooltip lists every stored run, Right Click clears them)
---
---  Runs are stored by Mythic+ Tools (CludesUI._MythicRuns), which calls its
---  OnChanged when one is added or the history is cleared. The hook is set only
---  while a block is enabled and cleared with the last one, so this registers
---  no events.
--------------------------------------------------------------------------------
-local liveInsts = {}
-
-local function OnRunsChanged()
-    for instance in pairs(liveInsts) do
-        instance:Refresh()
+local function RunsChanged()
+    for block in pairs(blocks) do
+        block:Refresh()
     end
 end
 
--- Bars are built at login, after Mythic+ Tools has loaded.
-local function SyncRunsHook()
-    local mr = CludesUI._MythicRuns
-    if mr then
-        mr.OnChanged = next(liveInsts) and OnRunsChanged or nil
+-- The hook is held while any block is enabled (bars are built after
+-- Mythic+ Tools has loaded, so it exists by then).
+local function Hook()
+    local store = CludesUI._MythicRuns
+    if store then
+        store.OnChanged = next(blocks) and RunsChanged or nil
     end
 end
 
 local function Runs()
-    local mr = CludesUI._MythicRuns
-    return mr and mr.Get()
+    local store = CludesUI._MythicRuns
+    return store and store.Get()
 end
 
-local function LatestRun()
+local function Newest()
     local runs = Runs()
     return runs and runs[1]
 end
 
--- Level in its keystone-rarity color, as in the Run Summary header.
-local function RunText(rec)
-    if not rec then
+-- "+12 Ara-Kara", the level in its keystone colour as in the Run Summary.
+local function RunName(run)
+    if not run then
         return CludesUI.L("No runs recorded yet")
     end
-    local level = "+" .. (rec.level or 0)
-    local kcol = C_ChallengeMode
+    local level = "+" .. (run.level or 0)
+    local color = C_ChallengeMode
         and C_ChallengeMode.GetKeystoneLevelRarityColor
-        and C_ChallengeMode.GetKeystoneLevelRarityColor(rec.level or 0)
-    if type(kcol) == "table" and kcol.r then
-        level = CludesUI.HexColor(kcol.r, kcol.g, kcol.b) .. level .. "|r"
+        and C_ChallengeMode.GetKeystoneLevelRarityColor(run.level or 0)
+    if type(color) == "table" and color.r then
+        level = CludesUI.HexColor(color.r, color.g, color.b) .. level .. "|r"
     end
-    return level .. " " .. (rec.mapName or "?")
+    return level .. " " .. (run.mapName or "?")
 end
 
--- Completion time as m:ss, green when timed, red when depleted.
-local function RunTime(rec)
-    local ms = rec.timeMS
-    if not ms then
+-- The run's time as m:ss, and its colour: green in time, red over.
+local function RunTime(run)
+    if not run.timeMS then
         return "-", 0.6, 0.6, 0.6
     end
-    local secs = floor(ms / 1000)
-    local textValue = format("%d:%02d", floor(secs / 60), secs % 60)
-    if rec.onTime then
-        return textValue, 0.176, 0.796, 0.349
+    local secs = floor(run.timeMS / 1000)
+    local text = format("%d:%02d", floor(secs / 60), secs % 60)
+    if run.onTime then
+        return text, 0.176, 0.796, 0.349
     end
-    return textValue, 0.9, 0.3, 0.3
+    return text, 0.9, 0.3, 0.3
 end
 
-local function ConfirmClear()
-    local mr = CludesUI._MythicRuns
-    local clear = mr and mr.Clear
-    if not clear then
+local function AskClear()
+    local store = CludesUI._MythicRuns
+    if not (store and store.Clear) then
         return
     end
     CludesUI:ShowConfirmPopup({
@@ -104,159 +90,149 @@ local function ConfirmClear()
         message = "Delete every recorded Mythic+ run for this character?",
         confirmText = "Delete",
         cancelText = "Cancel",
-        onConfirm = clear,
+        onConfirm = store.Clear,
     })
 end
 
 mod.BlockFactories.mplussummary = function(blockCfg, slot, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
-    instance.key = InstKey(barCtx, blockCfg)
+    local inst = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
+    inst.key = K.InstKey(barCtx, blockCfg)
+    local deferKey = "mplussummary:" .. inst.key
 
-    local mouseOver = false
+    local button = CreateFrame("Button", nil, contentFrame)
+    button:SetAllPoints()
+    button:EnableMouse(true)
+    button:RegisterForClicks("AnyUp")
+    local label = button:CreateFontString(nil, "OVERLAY")
+    K.AttachTextOffset(inst, label)
 
-    local function D()
-        return blockCfg.settings or {}
+    local hovered = false
+
+    local function PaintText()
+        if hovered then
+            label:SetTextColor(mod.GetAccent())
+        else
+            label:SetTextColor(K.BlockColorOf(blockCfg))
+        end
     end
 
-    local btnFrame = CreateFrame("Button", nil, contentFrame)
-    btnFrame:SetAllPoints()
-    btnFrame:EnableMouse(true)
-    btnFrame:RegisterForClicks("AnyUp")
+    local function AfterCombat()
+        inst:Refresh()
+    end
 
-    local labelText = btnFrame:CreateFontString(nil, "OVERLAY")
-    AttachTextOffset(instance, labelText)
-
-    function instance:Refresh()
+    function inst:Refresh()
         if self._dead then
             return
         end
-        local barCfg = barCtx.cfg
-        local barH = barCtx.GetThickness()
-        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
-        local rec = LatestRun()
-        -- Hide When Empty: no runs collapses the block (GetAutoLength reports
-        -- 0, so the solver drops the slot). Show/Hide wait out lockdown.
-        local collapsed = not rec and D().hideWhenEmpty == true
+        local run = Newest()
+        -- Hide When Empty: no runs, no block (the bar drops its slot). A
+        -- Show/Hide waits out combat.
+        local collapsed = not run and (blockCfg.settings or {}).hideWhenEmpty == true
         if contentFrame:IsShown() == collapsed then
             if InCombatLockdown() then
-                mod.DeferUntilOOC("mplussummary:" .. instance.key, function()
-                    instance:Refresh()
-                end)
-            elseif collapsed then
-                contentFrame:Hide()
+                mod.DeferUntilOOC(deferKey, AfterCombat)
             else
-                contentFrame:Show()
+                contentFrame:SetShown(not collapsed)
             end
         end
         if collapsed then
-            MaybeRelayout(instance)
+            K.MaybeRelayout(self)
             return
         end
-        local textValue = RunText(rec)
-
-        mod.SetFont(labelText, fontSize, barCfg)
-        if mouseOver then
-            labelText:SetTextColor(mod.GetAccent())
-        else
-            labelText:SetTextColor(BlockColorOf(blockCfg))
-        end
-        -- A secure overlay elsewhere on the bar protects its geometry in
-        -- lockdown: only the text updates now, sizing waits for regen.
+        local text = RunName(run)
+        mod.SetFont(label, max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5)), barCtx.cfg)
+        PaintText()
+        -- A secure overlay elsewhere on the bar fixes its layout in combat:
+        -- the text changes now, the size when combat ends.
         if InCombatLockdown() then
-            labelText:SetText(textValue)
-            mod.DeferUntilOOC("mplussummary:" .. instance.key, function()
-                instance:Refresh()
-            end)
+            label:SetText(text)
+            mod.DeferUntilOOC(deferKey, AfterCombat)
             return
         end
+        local barH = barCtx.GetThickness()
         if barCtx.IsVertical() then
-            local slotW = VSlotW(instance)
-            local innerW = max(24, slotW - 8)
-            labelText:SetText(textValue)
-            mod.SetWrappedText(labelText, innerW, "CENTER")
-            labelText:ClearAllPoints()
-            labelText:SetPoint("TOP", btnFrame, "TOP", 0, -4)
-            local totalH = max(8 + mod.SnapToPixelGrid(labelText:GetStringHeight()) + 4, barH)
-            contentFrame:SetSize(slotW, totalH)
-            btnFrame:SetSize(slotW, totalH)
+            local slotW = K.VSlotW(self)
+            label:SetText(text)
+            mod.SetWrappedText(label, max(24, slotW - 8), "CENTER")
+            label:ClearAllPoints()
+            label:SetPoint("TOP", button, "TOP", 0, -4)
+            local height = max(8 + mod.SnapToPixelGrid(label:GetStringHeight()) + 4, barH)
+            contentFrame:SetSize(slotW, height)
+            button:SetSize(slotW, height)
         else
-            local slotW = HBudget(instance, 180)
-            mod.ResetInlineText(labelText, "LEFT")
-            labelText:SetText(textValue)
-            labelText:ClearAllPoints()
-            labelText:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
-            local tw = mod.SnapToPixelGrid(labelText:GetStringWidth())
-            local totalW = max(min(slotW, tw + 4), 10)
-            contentFrame:SetSize(totalW, barH)
-            btnFrame:SetSize(totalW, barH)
+            local budget = K.HBudget(self, 180)
+            mod.ResetInlineText(label, "LEFT")
+            label:SetText(text)
+            label:ClearAllPoints()
+            label:SetPoint("LEFT", button, "LEFT", 0, 0)
+            local width = max(min(budget, mod.SnapToPixelGrid(label:GetStringWidth()) + 4), 10)
+            contentFrame:SetSize(width, barH)
+            button:SetSize(width, barH)
         end
-        MaybeRelayout(instance)
+        K.MaybeRelayout(self)
     end
 
-    local function ShowSummaryTooltip()
-        local ar, ag, ab = mod.GetAccent()
+    local function ShowTooltip()
+        local r, g, b = mod.GetAccent()
         local runs = Runs()
-        local total = runs and #runs or 0
-        mod.Tip_Begin(btnFrame)
-        mod.Tip_AddLine("|cFFFFFFFF[|r" .. CludesUI.L("Run Summary") .. "|cFFFFFFFF]|r", ar, ag, ab)
+        local count = runs and #runs or 0
+        mod.Tip_Begin(button)
+        mod.Tip_AddLine("|cFFFFFFFF[|r" .. CludesUI.L("Run Summary") .. "|cFFFFFFFF]|r", r, g, b)
         mod.Tip_AddLine(" ")
-        if total == 0 then
+        if count == 0 then
             mod.Tip_AddLine(CludesUI.L("No runs recorded yet"), 0.6, 0.6, 0.6)
         end
-        for idx = 1, total do
-            local rec = runs[idx]
-            local t, tr, tg, tb = RunTime(rec)
-            mod.Tip_AddDouble(RunText(rec), t, 0.8, 0.8, 0.8, tr, tg, tb)
+        for i = 1, count do
+            local time, tr, tg, tb = RunTime(runs[i])
+            mod.Tip_AddDouble(RunName(runs[i]), time, 0.8, 0.8, 0.8, tr, tg, tb)
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["LEFT_CLICK"], CludesUI.L("Open Run Summary"), 1, 1, 1, ar, ag, ab)
-        if total > 0 then
-            mod.Tip_AddDouble(L["RIGHT_CLICK"], CludesUI.L("Clear Run History"), 1, 1, 1, ar, ag, ab)
+        mod.Tip_AddDouble(L["LEFT_CLICK"], CludesUI.L("Open Run Summary"), 1, 1, 1, r, g, b)
+        if count > 0 then
+            mod.Tip_AddDouble(L["RIGHT_CLICK"], CludesUI.L("Clear Run History"), 1, 1, 1, r, g, b)
         end
         mod.Tip_Show()
     end
 
-    btnFrame:SetScript("OnEnter", function()
-        mouseOver = true
-        instance:Refresh()
-        ShowSummaryTooltip()
+    -- Hovering only recolours the text; nothing moves, so nothing is laid out again.
+    button:SetScript("OnEnter", function()
+        hovered = true
+        PaintText()
+        ShowTooltip()
     end)
-    btnFrame:SetScript("OnLeave", function()
-        mouseOver = false
-        mod.Tip_Hide(btnFrame)
-        instance:Refresh()
+    button:SetScript("OnLeave", function()
+        hovered = false
+        mod.Tip_Hide(button)
+        PaintText()
     end)
-    -- Same path as typing /ov, so a disabled Run Summary prints the same error.
-    btnFrame:SetScript("OnClick", function(_, mb)
-        if mb == "RightButton" then
-            if LatestRun() then
-                ConfirmClear()
+    button:SetScript("OnClick", function(_, mouseButton)
+        if mouseButton == "RightButton" then
+            if Newest() then
+                AskClear()
             end
-            return
-        end
-        if mb ~= "LeftButton" then
-            return
-        end
-        local shade = SlashCmdList and SlashCmdList.CUIMPLUS
-        if shade then
-            shade("")
+        elseif mouseButton == "LeftButton" then
+            -- The /ov path, so a disabled Run Summary says so the same way.
+            local open = SlashCmdList and SlashCmdList.CUIMPLUS
+            if open then
+                open("")
+            end
         end
     end)
 
-    function instance:Enable()
-        liveInsts[self] = true
-        SyncRunsHook()
+    function inst:Enable()
+        blocks[self] = true
+        Hook()
         self:Refresh()
     end
 
-    function instance:Disable()
-        liveInsts[self] = nil
-        SyncRunsHook()
-        mod.Tip_Hide(btnFrame)
+    function inst:Disable()
+        blocks[self] = nil
+        Hook()
+        mod.Tip_Hide(button)
         contentFrame:Hide()
     end
 
-    function instance:GetAutoLength()
+    function inst:GetAutoLength()
         if not contentFrame:IsShown() then
             return 0
         end
@@ -266,12 +242,12 @@ mod.BlockFactories.mplussummary = function(blockCfg, slot, contentFrame, barCtx)
         return max(contentFrame:GetWidth() or 60, 24)
     end
 
-    function instance:Destroy()
+    function inst:Destroy()
         self._dead = true
-        liveInsts[self] = nil
-        SyncRunsHook()
+        blocks[self] = nil
+        Hook()
         contentFrame:Hide()
     end
 
-    return instance
+    return inst
 end
