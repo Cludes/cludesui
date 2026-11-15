@@ -87,3 +87,38 @@ if menuBtn then
     menuBtn["\0scripts"].OnClick(menuBtn, "LeftButton")
     Popups("menu open")
 end
+
+-- The Preset Style menu, empty and then with two saved presets (the second
+-- selected): its dropdown is the 30-tall button under "Preset Style".
+local function OpenPresetMenu(label)
+    if menuBtn then menuBtn["\0scripts"].OnClick(menuBtn, "LeftButton") end -- close the bar menu
+    local found
+    for _, root in ipairs(roots) do
+        for _, b in ipairs(Find(root, function(f)
+            if not (f["\0kind"] == "Button" and f["\0shown"] and math.floor((f["\0h"] or 0) + 0.5) == 30 and f["\0scripts"].OnClick) then return false end
+            for _, r in ipairs(f["\0regions"] or {}) do
+                local t = r["\0v"] and r["\0v"].Text
+                if t == "No Saved Presets" or t == "Steady" or t == "Bright" then return true end
+            end
+            return false
+        end)) do found = found or b end
+    end
+    OUT:write("== preset button " .. tostring(found ~= nil) .. "\n")
+    if not found then return end
+    found["\0scripts"].OnClick(found, "LeftButton")
+    local n = 0
+    for _, c in ipairs({ UIParent:GetChildren() }) do
+        if c:IsShown() and c.GetFrameStrata and c:GetFrameStrata() == "FULLSCREEN_DIALOG" and c:GetFrameLevel() == 200 then
+            n = n + 1
+            SNAP(label .. " " .. n, c)
+        end
+    end
+    found["\0scripts"].OnClick(found, "LeftButton")
+end
+OpenPresetMenu("presets empty")
+if mod.SaveTBBStylePreset and b1 then
+    mod.SaveTBBStylePreset("Steady", b1)
+    mod.SaveTBBStylePreset("Bright", b2 or b1)
+    Rebuild()
+    OpenPresetMenu("presets saved")
+end

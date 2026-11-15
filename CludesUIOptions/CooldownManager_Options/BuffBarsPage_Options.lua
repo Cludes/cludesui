@@ -3463,209 +3463,185 @@ local function InitBuffBarsPage(
             end)
 
             local X_SZ = 14
-            local MEDIA_PR = "Interface\\AddOns\\CludesUI\\media\\icons\\"
             local prItems = {}
 
+            -- A small icon button on a preset row (delete, rename), resting dim.
+            local function RowIconButton(row, icon, anchor, relPoint, x)
+                local button = CreateFrame("Button", nil, row)
+                button:SetSize(X_SZ, X_SZ)
+                button:SetPoint("RIGHT", anchor, relPoint, x, 0)
+                button:SetFrameLevel(row:GetFrameLevel() + 2)
+                local tex = button:CreateTexture(nil, "OVERLAY")
+                tex:SetAllPoints()
+                if tex.SetSnapToPixelGrid then
+                    tex:SetSnapToPixelGrid(false)
+                    tex:SetTexelSnappingBias(0)
+                end
+                tex:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\" .. icon)
+                button:SetAlpha(0.4)
+                return button
+            end
+
+            -- One preset row, made once and reused: its name, delete and rename.
+            -- Hovering the row or either button lights the row and both buttons.
+            local function MakePresetRow()
+                local row = CreateFrame("Button", nil, prMenu)
+                row:SetHeight(26)
+                row:SetFrameLevel(prMenu:GetFrameLevel() + 1)
+                local label = row:CreateFontString(nil, "OVERLAY")
+                label:SetFont(FONT_PATH, 13, GetCDMOptOutline())
+                label:SetPoint("LEFT", row, "LEFT", 10, 0)
+                label:SetPoint("RIGHT", row, "RIGHT", -(X_SZ * 2 + 26), 0)
+                label:SetJustifyH("LEFT")
+                label:SetWordWrap(false)
+                label:SetMaxLines(1)
+                label:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
+                row._lbl = label
+                local highlight = row:CreateTexture(nil, "ARTWORK")
+                highlight:SetAllPoints()
+                highlight:SetColorTexture(1, 1, 1, 1)
+                highlight:SetAlpha(0)
+                row._hl = highlight
+                local del = RowIconButton(row, "cui-close.png", row, "RIGHT", -8)
+                local rename = RowIconButton(row, "cui-edit.png", del, "LEFT", -4)
+                row._xBtn, row._editBtn = del, rename
+
+                local function OverButton()
+                    return del:IsMouseOver() or rename:IsMouseOver()
+                end
+                local function Lit()
+                    label:SetTextColor(1, 1, 1, 1)
+                    highlight:SetAlpha(CludesUI.DD_ITEM_HL_A)
+                    del:SetAlpha(0.8)
+                    rename:SetAlpha(0.8)
+                end
+                local function Rest()
+                    label:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
+                    highlight:SetAlpha(row._isSel and CludesUI.DD_ITEM_SEL_A or 0)
+                    del:SetAlpha(0.4)
+                    rename:SetAlpha(0.4)
+                end
+                row:SetScript("OnEnter", function()
+                    if not row._isEmpty then
+                        Lit()
+                    end
+                end)
+                row:SetScript("OnLeave", function()
+                    if not row._isEmpty and not OverButton() then
+                        Rest()
+                    end
+                end)
+                for button, tip in pairs({ [del] = "Delete", [rename] = "Rename" }) do
+                    button:SetScript("OnEnter", function(self)
+                        Lit()
+                        self:SetAlpha(1)
+                        CludesUI.ShowWidgetTooltip(self, CludesUI.L(tip))
+                    end)
+                    button:SetScript("OnLeave", function(self)
+                        if row:IsMouseOver() or OverButton() then
+                            self:SetAlpha(0.8)
+                        else
+                            Rest()
+                        end
+                        CludesUI.HideWidgetTooltip()
+                    end)
+                end
+                return row
+            end
+
+            local function DeletePreset(name)
+                prMenu:Hide()
+                CludesUI:ShowConfirmPopup({
+                    title = CludesUI.L("Delete Preset"),
+                    message = CludesUI.Lf('Delete "%1$s"?', name),
+                    confirmText = CludesUI.L("Delete"),
+                    cancelText = CludesUI.L("Cancel"),
+                    onConfirm = function()
+                        if mod.DeleteTBBStylePreset then
+                            mod.DeleteTBBStylePreset(name)
+                        end
+                        CludesUI:RefreshPage(true)
+                    end,
+                })
+            end
+            -- A new name must be new: an empty or unchanged one does nothing, a taken one says so.
+            local function RenamePreset(name)
+                prMenu:Hide()
+                CludesUI:ShowInputPopup({
+                    title = CludesUI.L("Rename Preset"),
+                    message = CludesUI.Lf('Enter a new name for "%1$s":', name),
+                    placeholder = name,
+                    confirmText = CludesUI.L("Rename"),
+                    cancelText = CludesUI.L("Cancel"),
+                    onConfirm = function(newName)
+                        newName = newName and strtrim(newName) or ""
+                        if newName == "" or newName == name then
+                            return
+                        end
+                        if mod.FindTBBStylePreset and mod.FindTBBStylePreset(newName) then
+                            CludesUI.PrintError(CludesUI.Lf('A preset named "%1$s" already exists.', newName))
+                            return
+                        end
+                        if mod.RenameTBBStylePreset then
+                            mod.RenameTBBStylePreset(name, newName)
+                        end
+                        CludesUI:RefreshPage(true)
+                    end,
+                })
+            end
+
+            -- Dresses a row for a saved preset (pick, delete, rename), or with
+            -- none saved as the one dim row that only closes the menu.
+            local function DressPresetRow(row, preset, selName)
+                local empty = preset == nil
+                row._isEmpty = empty
+                row._isSel = not empty and preset.name == selName
+                row._lbl:SetText(empty and CludesUI.L("No Saved Presets") or preset.name)
+                row._lbl:SetTextColor(1, 1, 1, empty and 0.35 or CludesUI.TEXT_DIM_A)
+                row._hl:SetAlpha(row._isSel and CludesUI.DD_ITEM_SEL_A or 0)
+                for _, button in ipairs({ row._xBtn, row._editBtn }) do
+                    button:SetShown(not empty)
+                    if not empty then
+                        button:SetAlpha(0.4)
+                    end
+                end
+                if empty then
+                    row:SetScript("OnClick", function()
+                        prMenu:Hide()
+                    end)
+                    return
+                end
+                local name = preset.name
+                row:SetScript("OnClick", function()
+                    prMenu:Hide()
+                    local p = DB()
+                    if p then
+                        p.tbbSelectedStylePreset = name
+                    end
+                    UpdatePrDDLabel()
+                end)
+                row._xBtn:SetScript("OnClick", function()
+                    DeletePreset(name)
+                end)
+                row._editBtn:SetScript("OnClick", function()
+                    RenamePreset(name)
+                end)
+            end
+
             local function RebuildPresetMenu()
-                for _, itm in ipairs(prItems) do
-                    itm:Hide()
+                for _, row in ipairs(prItems) do
+                    row:Hide()
                 end
                 local presets = (mod.GetTBBStylePresets and mod.GetTBBStylePresets()) or {}
                 local selName = SelectedPresetName()
                 local mH = 4
                 for i = 1, math.max(#presets, 1) do
-                    local itm = prItems[i]
-                    if not itm then
-                        itm = CreateFrame("Button", nil, prMenu)
-                        itm:SetHeight(26)
-                        itm:SetFrameLevel(prMenu:GetFrameLevel() + 1)
-
-                        local labelFS = itm:CreateFontString(nil, "OVERLAY")
-                        labelFS:SetFont(FONT_PATH, 13, GetCDMOptOutline())
-                        labelFS:SetPoint("LEFT", itm, "LEFT", 10, 0)
-                        labelFS:SetPoint("RIGHT", itm, "RIGHT", -(X_SZ * 2 + 26), 0)
-                        labelFS:SetJustifyH("LEFT")
-                        labelFS:SetWordWrap(false)
-                        labelFS:SetMaxLines(1)
-                        labelFS:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-                        itm._lbl = labelFS
-
-                        local highlight = itm:CreateTexture(nil, "ARTWORK")
-                        highlight:SetAllPoints()
-                        highlight:SetColorTexture(1, 1, 1, 1)
-                        highlight:SetAlpha(0)
-                        itm._hl = highlight
-
-                        local xBtn = CreateFrame("Button", nil, itm)
-                        xBtn:SetSize(X_SZ, X_SZ)
-                        xBtn:SetPoint("RIGHT", itm, "RIGHT", -8, 0)
-                        xBtn:SetFrameLevel(itm:GetFrameLevel() + 2)
-                        local xIcon = xBtn:CreateTexture(nil, "OVERLAY")
-                        xIcon:SetAllPoints()
-                        if xIcon.SetSnapToPixelGrid then
-                            xIcon:SetSnapToPixelGrid(false)
-                            xIcon:SetTexelSnappingBias(0)
-                        end
-                        xIcon:SetTexture(MEDIA_PR .. "cui-close.png")
-                        xBtn:SetAlpha(0.4)
-                        itm._xBtn = xBtn
-
-                        local editBtn = CreateFrame("Button", nil, itm)
-                        editBtn:SetSize(X_SZ, X_SZ)
-                        editBtn:SetPoint("RIGHT", xBtn, "LEFT", -4, 0)
-                        editBtn:SetFrameLevel(itm:GetFrameLevel() + 2)
-                        local editIcon = editBtn:CreateTexture(nil, "OVERLAY")
-                        editIcon:SetAllPoints()
-                        if editIcon.SetSnapToPixelGrid then
-                            editIcon:SetSnapToPixelGrid(false)
-                            editIcon:SetTexelSnappingBias(0)
-                        end
-                        editIcon:SetTexture(MEDIA_PR .. "cui-edit.png")
-                        editBtn:SetAlpha(0.4)
-                        itm._editBtn = editBtn
-
-                        local function IsOverInlineBtn()
-                            return xBtn:IsMouseOver() or editBtn:IsMouseOver()
-                        end
-                        local function SetAllInlineAlpha(a)
-                            xBtn:SetAlpha(a)
-                            editBtn:SetAlpha(a)
-                        end
-
-                        itm:SetScript("OnEnter", function()
-                            if itm._isEmpty then
-                                return
-                            end
-                            labelFS:SetTextColor(1, 1, 1, 1)
-                            highlight:SetAlpha(CludesUI.DD_ITEM_HL_A)
-                            SetAllInlineAlpha(0.8)
-                        end)
-                        itm:SetScript("OnLeave", function()
-                            if itm._isEmpty then
-                                return
-                            end
-                            if IsOverInlineBtn() then
-                                return
-                            end
-                            labelFS:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-                            highlight:SetAlpha(itm._isSel and CludesUI.DD_ITEM_SEL_A or 0)
-                            SetAllInlineAlpha(0.4)
-                        end)
-
-                        local function InlineBtnEnter(self)
-                            labelFS:SetTextColor(1, 1, 1, 1)
-                            highlight:SetAlpha(CludesUI.DD_ITEM_HL_A)
-                            SetAllInlineAlpha(0.8)
-                            self:SetAlpha(1)
-                        end
-                        local function InlineBtnLeave(hoveredSelf)
-                            if itm:IsMouseOver() or IsOverInlineBtn() then
-                                hoveredSelf:SetAlpha(0.8)
-                                return
-                            end
-                            labelFS:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-                            highlight:SetAlpha(itm._isSel and CludesUI.DD_ITEM_SEL_A or 0)
-                            SetAllInlineAlpha(0.4)
-                        end
-
-                        xBtn:SetScript("OnEnter", function(self)
-                            InlineBtnEnter(self)
-                            CludesUI.ShowWidgetTooltip(self, CludesUI.L("Delete"))
-                        end)
-                        xBtn:SetScript("OnLeave", function(self)
-                            InlineBtnLeave(self)
-                            CludesUI.HideWidgetTooltip()
-                        end)
-                        editBtn:SetScript("OnEnter", function(self)
-                            InlineBtnEnter(self)
-                            CludesUI.ShowWidgetTooltip(self, CludesUI.L("Rename"))
-                        end)
-                        editBtn:SetScript("OnLeave", function(self)
-                            InlineBtnLeave(self)
-                            CludesUI.HideWidgetTooltip()
-                        end)
-                        prItems[i] = itm
-                    end
-
-                    itm:SetPoint("TOPLEFT", prMenu, "TOPLEFT", 1, -mH)
-                    itm:SetPoint("TOPRIGHT", prMenu, "TOPRIGHT", -1, -mH)
-
-                    local pr = presets[i]
-                    if not pr then
-                        -- Empty state: a single dim, non-interactive row
-                        itm._isEmpty = true
-                        itm._isSel = false
-                        itm._lbl:SetText(CludesUI.L("No Saved Presets"))
-                        itm._lbl:SetTextColor(1, 1, 1, 0.35)
-                        itm._hl:SetAlpha(0)
-                        itm._xBtn:Hide()
-                        itm._editBtn:Hide()
-                        itm:SetScript("OnClick", function()
-                            prMenu:Hide()
-                        end)
-                    else
-                        local capName = pr.name
-                        itm._isEmpty = false
-                        itm._lbl:SetText(capName)
-                        itm._lbl:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-                        itm._isSel = (capName == selName)
-                        itm._hl:SetAlpha(itm._isSel and CludesUI.DD_ITEM_SEL_A or 0)
-                        itm._xBtn:Show()
-                        itm._xBtn:SetAlpha(0.4)
-                        itm._editBtn:Show()
-                        itm._editBtn:SetAlpha(0.4)
-                        itm:SetScript("OnClick", function()
-                            prMenu:Hide()
-                            local p = DB()
-                            if p then
-                                p.tbbSelectedStylePreset = capName
-                            end
-                            UpdatePrDDLabel()
-                        end)
-                        itm._xBtn:SetScript("OnClick", function()
-                            prMenu:Hide()
-                            CludesUI:ShowConfirmPopup({
-                                title = CludesUI.L("Delete Preset"),
-                                message = CludesUI.Lf('Delete "%1$s"?', capName),
-                                confirmText = CludesUI.L("Delete"),
-                                cancelText = CludesUI.L("Cancel"),
-                                onConfirm = function()
-                                    if mod.DeleteTBBStylePreset then
-                                        mod.DeleteTBBStylePreset(capName)
-                                    end
-                                    CludesUI:RefreshPage(true)
-                                end,
-                            })
-                        end)
-                        itm._editBtn:SetScript("OnClick", function()
-                            prMenu:Hide()
-                            CludesUI:ShowInputPopup({
-                                title = CludesUI.L("Rename Preset"),
-                                message = CludesUI.Lf('Enter a new name for "%1$s":', capName),
-                                placeholder = capName,
-                                confirmText = CludesUI.L("Rename"),
-                                cancelText = CludesUI.L("Cancel"),
-                                onConfirm = function(newName)
-                                    newName = newName and strtrim(newName) or ""
-                                    if newName == "" or newName == capName then
-                                        return
-                                    end
-                                    if mod.FindTBBStylePreset and mod.FindTBBStylePreset(newName) then
-                                        CludesUI.PrintError(
-                                            CludesUI.Lf('A preset named "%1$s" already exists.', newName)
-                                        )
-                                        return
-                                    end
-                                    if mod.RenameTBBStylePreset then
-                                        mod.RenameTBBStylePreset(capName, newName)
-                                    end
-                                    CludesUI:RefreshPage(true)
-                                end,
-                            })
-                        end)
-                    end
-
-                    itm:Show()
+                    prItems[i] = prItems[i] or MakePresetRow()
+                    local row = prItems[i]
+                    row:SetPoint("TOPLEFT", prMenu, "TOPLEFT", 1, -mH)
+                    row:SetPoint("TOPRIGHT", prMenu, "TOPRIGHT", -1, -mH)
+                    DressPresetRow(row, presets[i], selName)
+                    row:Show()
                     mH = mH + 26
                 end
                 prMenu:SetHeight(mH + 4)
