@@ -4,13 +4,36 @@ end
 if not CludesUI.IS_FOREVER then
     return
 end
--- Carried class resources on WoW Forever. Banks and crafting materials are excluded.
-local ADDON_NAME, mod = ...
+-------------------------------------------------------------------------------
+--  Blocks\Supplies.lua - Info Bar block (WoW Forever): class resources.
+--
+--  The reagents a class carries for its spells (soul shards, candles,
+--  powders, poisons...), plus ammo and the thrown weapon for hunters, rogues
+--  and warriors. Counted from the carried bags (the reagent bag too), never
+--  the bank, and crafting materials do not count. Each shows its icon and
+--  count (or name: count); right-click picks which to show.
+--
+--  What counts:
+--    - plain reagents show at 0 when missing; ones a spell needs (flash
+--      powder, poisons) only once the spell is known;
+--    - a poison counts only at a rank the player is high enough to use;
+--    - ammo is the equipped ammo, counted by the ammo slot (and shown only
+--      with a bow, gun or crossbow);
+--    - a thrown weapon counts its durability (uses left), or its stack.
+--
+--  Bags change constantly, so a bag update redraws only when a shown count or
+--  icon changed.
+--
+--  Settings (blockCfg.settings): showIcon (default on), showLabel,
+--  hiddenItems = { [key] = true }.
+-------------------------------------------------------------------------------
+local _, mod = ...
 local K = mod.BlockKit
 local max, floor = math.max, math.floor
-local QUESTION_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
+local UNKNOWN_ICON = "Interface\\Icons\\INV_Misc_QuestionMark"
 
--- Spell reagents span several item classes; projectile/thrown IDs are discovered.
+-- Per class: { item id, English name, spells = known-spell gate, ranks =
+-- { item id, spell id } per rank, tooltipOnly = listed in the tooltip only }.
 local CLASS_ITEMS = {
     WARLOCK = { { 6265, "Soul Shard" }, { 5565, "Infernal Stone" }, { 16583, "Demonic Figurine" } },
     MAGE = {
@@ -62,40 +85,34 @@ local CLASS_ITEMS = {
     },
 }
 
-local RANGED_CLASS = { HUNTER = true, ROGUE = true, WARRIOR = true }
+local RANGED = { HUNTER = true, ROGUE = true, WARRIOR = true }
 
--- Ammo and thrown come first for ranged classes. Spell requirements are
--- normalised to the ranks' {itemID, spellID} shape.
-local function BuildResources(class)
-    local resources, byID = {}, {}
-    if RANGED_CLASS[class] then
-        resources[1] = { key = "ammo", label = "Ammo", fallback = "Interface\\Icons\\INV_Ammo_Arrow_02" }
-        resources[2] =
-            { key = "thrown", label = "Thrown", fallback = "Interface\\Icons\\INV_ThrowingKnife_02" }
+-- The class's resource list (ammo and thrown first for ranged classes) and an
+-- item id -> resource map. A spell gate becomes { item, spell } pairs, the
+-- same shape as the ranks.
+local function Resources(class)
+    local list, byItem = {}, {}
+    if RANGED[class] then
+        list[1] = { key = "ammo", label = "Ammo", fallback = "Interface\\Icons\\INV_Ammo_Arrow_02" }
+        list[2] = { key = "thrown", label = "Thrown", fallback = "Interface\\Icons\\INV_ThrowingKnife_02" }
     end
-    for _, specInfo in ipairs(CLASS_ITEMS[class] or {}) do
-        local ident = specInfo[1]
-        local resource = {
-            key = ident,
-            id = ident,
-            label = specInfo[2],
-            ranks = specInfo.ranks,
-            learn = specInfo.ranks,
-            tooltipOnly = specInfo.tooltipOnly,
-        }
-        if specInfo.spells then
-            resource.learn = {}
-            for idx, spellId in ipairs(specInfo.spells) do
-                resource.learn[idx] = { ident, spellId }
+    for _, spec in ipairs(CLASS_ITEMS[class] or {}) do
+        local id = spec[1]
+        local res = { key = id, id = id, label = spec[2], ranks = spec.ranks, tooltipOnly = spec.tooltipOnly }
+        res.learn = spec.ranks
+        if spec.spells then
+            res.learn = {}
+            for i, spell in ipairs(spec.spells) do
+                res.learn[i] = { id, spell }
             end
         end
-        for _, rank in ipairs(specInfo.ranks or {}) do
-            byID[rank[1]] = resource
+        for _, rank in ipairs(spec.ranks or {}) do
+            byItem[rank[1]] = res
         end
-        byID[ident] = resource
-        resources[#resources + 1] = resource
+        byItem[id] = res
+        list[#list + 1] = res
     end
-    return resources, byID
+    return list, byItem
 end
 
 function mod.ClassResourceShown(prefs, key)
@@ -103,77 +120,88 @@ function mod.ClassResourceShown(prefs, key)
     return not (hidden and hidden[key])
 end
 
+-- For the settings' show/hide list: the class's resources with item names.
 function mod.ClassResourceChoices()
     local _, class = UnitClass("player")
-    local choices = BuildResources(class)
+    local choices = Resources(class)
     for _, choice in ipairs(choices) do
         choice.label = choice.id and C_Item.GetItemNameByID(choice.id) or choice.label
     end
     return choices
 end
 
+local function IsLauncher(subclass)
+    local W = Enum.ItemWeaponSubclass
+    return subclass == W.Bows or subclass == W.Guns or subclass == W.Crossbow
+end
+
 mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
-    instance.key = K.InstKey(barCtx, blockCfg)
-    instance.events = { "PLAYER_ENTERING_WORLD", "BAG_UPDATE_DELAYED", "GET_ITEM_INFO_RECEIVED" }
+    local inst = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
+    inst.key = K.InstKey(barCtx, blockCfg)
+    inst.events = { "PLAYER_ENTERING_WORLD", "BAG_UPDATE_DELAYED", "GET_ITEM_INFO_RECEIVED" }
     local _, class = UnitClass("player")
-    -- Equipped ammo and thrown weapons change outside the bags. Ammo itself
-    -- lives in the bags (BAG_UPDATE_DELAYED); UNIT_INVENTORY_CHANGED only
-    -- matters for a stacked thrown weapon (see the handler).
-    if RANGED_CLASS[class] then
-        instance.events[#instance.events + 1] = "UNIT_INVENTORY_CHANGED"
-        instance.events[#instance.events + 1] = "PLAYER_EQUIPMENT_CHANGED"
-        instance.events[#instance.events + 1] = "UPDATE_INVENTORY_DURABILITY"
+    local ranged = RANGED[class]
+    if ranged then
+        -- The equipped ammo and thrown weapon change outside the bags.
+        local e = inst.events
+        e[#e + 1] = "UNIT_INVENTORY_CHANGED"
+        e[#e + 1] = "PLAYER_EQUIPMENT_CHANGED"
+        e[#e + 1] = "UPDATE_INVENTORY_DURABILITY"
     end
     if class == "ROGUE" then
-        instance.events[#instance.events + 1] = "SPELLS_CHANGED"
-        instance.events[#instance.events + 1] = "PLAYER_LEVEL_UP"
-        instance.events[#instance.events + 1] = "SKILL_LINES_CHANGED"
+        -- Learning a poison or powder spell, or a level that unlocks a rank.
+        local e = inst.events
+        e[#e + 1] = "SPELLS_CHANGED"
+        e[#e + 1] = "PLAYER_LEVEL_UP"
+        e[#e + 1] = "SKILL_LINES_CHANGED"
     end
-    local resources, byID = BuildResources(class)
-    local itemCounts, itemOrder, pending, itemUses = {}, {}, {}, {}
-    local rangedClass = RANGED_CLASS[class]
-    local ammoSlot = rangedClass and GetInventorySlotInfo("AmmoSlot")
-    local rangedSlot = rangedClass and GetInventorySlotInfo("RangedSlot")
-    local ammo, thrown, rangedCount
-    if rangedClass then
+
+    local resources, byItem = Resources(class)
+    local ammo, thrown = nil, nil
+    if ranged then
         ammo, thrown = resources[1], resources[2]
     end
-    -- Nothing to show: a dim "None" (no icon or count) keeps the hover and
-    -- right-click target.
-    local empty = {}
-    local dirty, hovered = true, false
-    local btnFrame = CreateFrame("Button", nil, contentFrame)
-    btnFrame:SetAllPoints()
-    btnFrame:EnableMouse(true)
-    btnFrame:RegisterForClicks("RightButtonUp")
-    local rowList = {}
+    local ammoSlot = ranged and GetInventorySlotInfo("AmmoSlot")
+    local rangedSlot = ranged and GetInventorySlotInfo("RangedSlot")
+    local rangedCount -- the ranged slot's count at the last scan
 
-    local function AddItem(resource, ident, amount)
-        resource.present = true
-        resource.count = resource.count + amount
-        if not resource.firstID or ident < resource.firstID then
-            resource.firstID = ident
+    -- The last scan: count per item id, the ids in order, ids whose data is
+    -- loading, and thrown weapons counted by uses.
+    local counts, order, loading, byUses = {}, {}, {}, {}
+    local stale, hovered = true, false
+    local none = {} -- the dim "None" row: nothing to show, but still a target
+
+    local button = CreateFrame("Button", nil, contentFrame)
+    button:SetAllPoints()
+    button:EnableMouse(true)
+    button:RegisterForClicks("RightButtonUp")
+    local rows = {}
+
+    local function Load(id)
+        if not loading[id] then
+            loading[id] = true
+            C_Item.RequestLoadItemDataByID(id)
         end
-        if not itemCounts[ident] then
-            itemOrder[#itemOrder + 1] = ident
-        end
-        itemCounts[ident] = (itemCounts[ident] or 0) + amount
     end
 
-    local function Request(ident)
-        if pending[ident] then
-            return
+    local function Add(res, id, amount)
+        res.present = true
+        res.count = res.count + amount
+        if not res.firstID or id < res.firstID then
+            res.firstID = id
         end
-        pending[ident] = true
-        C_Item.RequestLoadItemDataByID(ident)
+        if not counts[id] then
+            order[#order + 1] = id
+        end
+        counts[id] = (counts[id] or 0) + amount
     end
 
-    local function RangedResource(ident)
-        if ammo.id == ident then
+    -- Ammo or thrown, for a ranged class's item; nil if neither (or unknown yet).
+    local function RangedKind(id)
+        if ammo.id == id then
             return ammo
         end
-        local _, _, _, _, _, itemClass, subclass = C_Item.GetItemInfoInstant(ident)
+        local _, _, _, _, _, itemClass, subclass = C_Item.GetItemInfoInstant(id)
         if itemClass == Enum.ItemClass.Projectile then
             return ammo
         end
@@ -182,162 +210,167 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
         end
         if not itemClass then
             ammo.unknown, thrown.unknown = true, true
-            Request(ident)
+            Load(id)
         end
     end
 
-    local function Sample()
-        dirty = false
-        wipe(itemCounts)
-        wipe(itemOrder)
-        wipe(itemUses)
+    -- Resets each resource and marks which the player can use now.
+    local function ResetResources()
+        for _, res in ipairs(resources) do
+            res.count, res.firstID, res.unknown, res.present = 0, nil, false, false
+            -- Plain reagents always show (0 when missing); gated ones once learned.
+            res.available = not res.learn
+            for _, pair in ipairs(res.learn or {}) do
+                if C_SpellBook.IsSpellKnown(pair[2]) then
+                    res.available, res.zeroID = true, pair[1]
+                end
+            end
+            if res.id and res ~= ammo and not res.ranks and res.available then
+                counts[res.id] = 0
+                order[#order + 1] = res.id
+            end
+        end
+    end
+
+    local function ReadRangedSlots()
+        ammo.id = GetInventoryItemID("player", ammoSlot)
+        local launcher = GetInventoryItemID("player", rangedSlot)
+        local _, _, _, _, _, itemClass, subclass = C_Item.GetItemInfoInstant(launcher or 0)
+        ammo.active = itemClass == Enum.ItemClass.Weapon and IsLauncher(subclass)
+        if launcher and not itemClass then
+            Load(launcher)
+        end
+        rangedCount = GetInventoryItemCount("player", rangedSlot)
+    end
+
+    -- Every carried bag; a poison counts only at a rank the player can use.
+    local function ScanBags()
+        for bag = 0, NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS or 4 do
+            for bagSlot = 1, C_Container.GetContainerNumSlots(bag) do
+                -- The id read allocates nothing; the info table is read only for ours.
+                local id = C_Container.GetContainerItemID(bag, bagSlot)
+                local res = id and (byItem[id] or (ranged and RangedKind(id)))
+                if res and res ~= thrown then
+                    local usable = res.available
+                    if res.ranks then
+                        local _, _, _, _, needLevel = C_Item.GetItemInfo(id)
+                        if needLevel then
+                            usable = UnitLevel("player") >= needLevel
+                        else
+                            usable = false
+                            res.unknown = true
+                            Load(id)
+                        end
+                    end
+                    if usable then
+                        local info = C_Container.GetContainerItemInfo(bag, bagSlot)
+                        Add(res, id, info and info.stackCount or 0)
+                        res.available = true
+                    end
+                end
+            end
+        end
+    end
+
+    -- Only the equipped thrown weapon counts: its durability, or its stack.
+    local function CountThrown()
+        local id = GetInventoryItemID("player", rangedSlot)
+        if not id or RangedKind(id) ~= thrown then
+            return
+        end
+        local current, most = GetInventoryItemDurability(rangedSlot)
+        if current ~= nil and most and most > 0 then
+            Add(thrown, id, current)
+            byUses[id] = true
+            thrown.id, thrown.count, thrown.unknown = id, current, false
+        else
+            Add(thrown, id, GetInventoryItemCount("player", rangedSlot) or 0)
+        end
+    end
+
+    -- The ammo slot counts the equipped ammo across every carried stack, so it
+    -- is not added to the bags, and other ammo is not combined with it.
+    local function CountAmmo()
+        local id = ammo.id
+        local total = id and GetInventoryItemCount("player", ammoSlot)
+        ammo.firstID = nil
+        ammo.icon = id and GetInventoryItemTexture("player", ammoSlot) or nil
+        ammo.count, ammo.unknown = total or 0, id ~= nil and total == nil
+        if id then
+            if not counts[id] then
+                order[#order + 1] = id
+            end
+            counts[id] = total
+            if not C_Item.GetItemNameByID(id) then
+                Load(id)
+            end
+        end
+    end
+
+    local function Scan()
+        stale = false
+        wipe(counts)
+        wipe(order)
+        wipe(byUses)
         if thrown then
             thrown.id = nil
         end
-        for _, resource in ipairs(resources) do
-            resource.count, resource.firstID, resource.unknown, resource.present = 0, nil, false, false
-            -- Every class reagent shows by default (0 when missing); the player
-            -- hides unwanted ones. Only spell-gated entries wait to be learned.
-            resource.available = not resource.learn
-            if resource.learn then
-                for _, pair in ipairs(resource.learn) do
-                    if C_SpellBook.IsSpellKnown(pair[2]) then
-                        resource.available, resource.zeroID = true, pair[1]
-                    end
-                end
-            end
-            -- Keep learned reagents visible at zero; poison ranks are added below.
-            if resource.id and resource ~= ammo and not resource.ranks and resource.available then
-                itemCounts[resource.id] = 0
-                itemOrder[#itemOrder + 1] = resource.id
-            end
-        end
+        ResetResources()
         if ammo then
-            ammo.id = GetInventoryItemID("player", ammoSlot)
-            local rangedID = GetInventoryItemID("player", rangedSlot)
-            local _, _, _, _, _, itemClass, subclass = C_Item.GetItemInfoInstant(rangedID or 0)
-            ammo.active = itemClass == Enum.ItemClass.Weapon
-                and (
-                    subclass == Enum.ItemWeaponSubclass.Bows
-                    or subclass == Enum.ItemWeaponSubclass.Guns
-                    or subclass == Enum.ItemWeaponSubclass.Crossbow
-                )
-            if rangedID and not itemClass then
-                Request(rangedID)
-            end
-            rangedCount = GetInventoryItemCount("player", rangedSlot)
+            ReadRangedSlots()
         end
-        -- Every carried bag, the reagent bag included.
-        for bag = 0, NUM_TOTAL_EQUIPPED_BAG_SLOTS or NUM_BAG_SLOTS or 4 do
-            for bagSlot = 1, C_Container.GetContainerNumSlots(bag) do
-                -- The ID read allocates nothing; the info table only for our items.
-                local itemId = C_Container.GetContainerItemID(bag, bagSlot)
-                if itemId then
-                    local resource = byID[itemId]
-                    if not resource and rangedClass then
-                        resource = RangedResource(itemId)
-                    end
-                    if resource and resource ~= thrown then
-                        local usable = resource.available
-                        if resource.ranks then
-                            local _, _, _, _, requiredLevel = C_Item.GetItemInfo(itemId)
-                            if requiredLevel then
-                                usable = UnitLevel("player") >= requiredLevel
-                            else
-                                usable = false
-                                resource.unknown = true
-                                Request(itemId)
-                            end
-                        end
-                        if usable then
-                            local details = C_Container.GetContainerItemInfo(bag, bagSlot)
-                            AddItem(resource, itemId, details and details.stackCount or 0)
-                            resource.available = true
-                        end
-                    end
-                end
-            end
-        end
-        -- Only the equipped thrown weapon contributes uses or stack units.
+        ScanBags()
         if thrown then
-            local ident = GetInventoryItemID("player", rangedSlot)
-            if ident and RangedResource(ident) == thrown then
-                local current, maximum = GetInventoryItemDurability(rangedSlot)
-                if current ~= nil and maximum and maximum > 0 then
-                    AddItem(thrown, ident, current)
-                    itemUses[ident] = true
-                    -- Durable thrown weapons spend durability instead of stack units.
-                    thrown.id, thrown.count = ident, current
-                    thrown.unknown = false
-                else
-                    AddItem(thrown, ident, GetInventoryItemCount("player", rangedSlot) or 0)
-                end
-            end
+            CountThrown()
         end
         if ammo then
-            -- The ammo slot already counts the selected item across carried
-            -- stacks. Do not add it to the bags or combine other projectile IDs.
-            local ident = ammo.id
-            local total = ident and GetInventoryItemCount("player", ammoSlot)
-            ammo.id, ammo.firstID = ident, nil
-            ammo.icon = ident and GetInventoryItemTexture("player", ammoSlot) or nil
-            ammo.count, ammo.unknown = total or 0, ident ~= nil and total == nil
-            if ident then
-                if not itemCounts[ident] then
-                    itemOrder[#itemOrder + 1] = ident
-                end
-                itemCounts[ident] = total
-                if not C_Item.GetItemNameByID(ident) then
-                    Request(ident)
-                end
+            CountAmmo()
+        end
+        -- Data still loading for an item no longer carried is no longer waited for.
+        for id in pairs(loading) do
+            if C_Item.GetItemCount(id, false, false, false, false) == 0 then
+                loading[id] = nil
             end
         end
-        for ident in pairs(pending) do
-            if C_Item.GetItemCount(ident, false, false, false, false) == 0 then
-                pending[ident] = nil
+        -- A learned poison with none carried shows at 0, under its learned rank.
+        for _, res in ipairs(resources) do
+            if res.ranks and res.available and not res.present then
+                local id = res.zeroID or res.id
+                counts[id] = 0
+                order[#order + 1] = id
             end
         end
-        for _, resource in ipairs(resources) do
-            if resource.ranks and resource.available and not resource.present then
-                local ident = resource.zeroID or resource.id
-                itemCounts[ident] = 0
-                itemOrder[#itemOrder + 1] = ident
-            end
-        end
-        table.sort(itemOrder)
+        table.sort(order)
     end
 
-    local function Name(resource)
-        return (resource.id and C_Item.GetItemNameByID(resource.id)) or CludesUI.L(resource.label)
+    local function Name(res)
+        return (res.id and C_Item.GetItemNameByID(res.id)) or CludesUI.L(res.label)
     end
 
     local function ShowTooltip()
-        mod.Tip_Begin(btnFrame)
+        local s = blockCfg.settings or {}
+        mod.Tip_Begin(button)
         mod.Tip_AddLine(CludesUI.L("Class Resources"), 1, 1, 1)
-        local isShown = 0
-        for _, ident in ipairs(itemOrder) do
-            local resource = byID[ident] or (rangedClass and RangedResource(ident))
-            if
-                resource
-                and (resource ~= ammo or ammo.active)
-                and mod.ClassResourceShown(blockCfg.settings or {}, resource.key)
-            then
-                local name = C_Item.GetItemNameByID(ident) or Name(resource)
-                if itemUses[ident] then
+        local listed = 0
+        for _, id in ipairs(order) do
+            local res = byItem[id] or (ranged and RangedKind(id))
+            if res and (res ~= ammo or ammo.active) and mod.ClassResourceShown(s, res.key) then
+                local name = C_Item.GetItemNameByID(id) or Name(res)
+                if byUses[id] then
                     name = name .. " - " .. CludesUI.L("Remaining uses")
                 end
-                local value = itemCounts[ident] == nil and "?" or tostring(itemCounts[ident])
-                if resource.tooltipOnly then
-                    value = CludesUI.L(itemCounts[ident] > 0 and "Available" or "Missing")
+                local value = counts[id] == nil and "?" or tostring(counts[id])
+                if res.tooltipOnly then
+                    value = CludesUI.L(counts[id] > 0 and "Available" or "Missing")
                 end
                 mod.Tip_AddDouble(name, value, 0.8, 0.8, 0.8, 1, 1, 1)
-                isShown = isShown + 1
+                listed = listed + 1
             end
         end
-        if isShown == 0 then
+        if listed == 0 then
             mod.Tip_AddLine(CludesUI.L("No class resources in inventory"), 0.6, 0.6, 0.6)
         end
-        if next(pending) then
+        if next(loading) then
             mod.Tip_AddLine(CludesUI.L("Loading item data..."), 0.6, 0.6, 0.6)
         end
         mod.Tip_AddLine(" ")
@@ -345,206 +378,250 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
         mod.Tip_Show()
     end
 
-    -- Per-refresh layout state shared with Draw, so no closure is built per refresh.
-    local s, fontSize, iconSize, vertical, width, posX, posY, used
-    local tr, tg, tb, ir, ig, ib
+    -- The resources drawn on the bar, in order.
+    local function Shown(s)
+        local out = {}
+        for _, res in ipairs(resources) do
+            if
+                not res.tooltipOnly
+                and (res.available or res.unknown)
+                and mod.ClassResourceShown(s, res.key)
+                and (res ~= ammo or ammo.active)
+                and (res ~= thrown or thrown.present)
+            then
+                out[#out + 1] = res
+            end
+        end
+        if #out == 0 then
+            out[1] = none
+        end
+        return out
+    end
 
-    local function Draw(resource)
+    local function Icon(res)
+        local id = res.id or res.firstID
+        return res.icon or (id and C_Item.GetItemIconByID(id)) or res.fallback or UNKNOWN_ICON
+    end
+
+    -- Everything the drawn rows show, as one string: equal = nothing to redraw.
+    local function Fingerprint(list)
+        local parts = {}
+        for i, res in ipairs(list) do
+            parts[i] = res == none and "none"
+                or table.concat(
+                    { tostring(res.key), res.count, tostring(res.unknown), Icon(res), Name(res) },
+                    ":"
+                )
+        end
+        return table.concat(parts, "|")
+    end
+    local drawn, used -- the fingerprint on screen, and the rows it took
+
+    -- Layout of one Refresh, shared by DrawRow.
+    local pass = {}
+
+    local function DrawRow(res)
         used = used + 1
-        local row = rowList[used]
+        local row = rows[used]
         if not row then
             row = {
-                icon = btnFrame:CreateTexture(nil, "OVERLAY"),
-                text = btnFrame:CreateFontString(nil, "OVERLAY"),
+                icon = button:CreateTexture(nil, "OVERLAY"),
+                text = button:CreateFontString(nil, "OVERLAY"),
             }
-            rowList[used] = row
-            K.AttachTextOffset(instance, row.text)
+            rows[used] = row
+            K.AttachTextOffset(inst, row.text)
         end
-        local isEmpty = resource == empty
+        local blank = res == none
         local value
-        if isEmpty then
+        if blank then
             value = CludesUI.L("None")
         else
-            value = resource.unknown and "?"
-                or (BreakUpLargeNumbers and BreakUpLargeNumbers(resource.count) or tostring(resource.count))
-            -- Without icons, names keep unrelated resource counts identifiable.
-            if s.showLabel or iconSize == 0 then
-                value = Name(resource) .. ": " .. value
+            value = res.unknown and "?"
+                or (BreakUpLargeNumbers and BreakUpLargeNumbers(res.count) or tostring(res.count))
+            -- With no icons the names tell the counts apart.
+            if pass.s.showLabel or pass.iconSize == 0 then
+                value = Name(res) .. ": " .. value
             end
         end
-        mod.SetFont(row.text, fontSize, barCtx.cfg)
-        row.text:SetText(value)
-        row.alpha = isEmpty and 0.5 or 1
-        row.text:SetTextColor(tr, tg, tb, row.alpha)
-        row.text:ClearAllPoints()
-        row.text:Show()
-        local ident = resource.id or resource.firstID
-        row.icon:SetTexture(
-            resource.icon or (ident and C_Item.GetItemIconByID(ident)) or resource.fallback or QUESTION_ICON
-        )
-        K.CropStockIcon(row.icon)
-        row.icon:SetVertexColor(ir, ig, ib, 1)
-        row.icon:ClearAllPoints()
-        local iconShown = iconSize > 0 and not isEmpty
-        if iconShown then
-            row.icon:SetSize(iconSize, iconSize)
-            row.icon:Show()
+        local text, icon = row.text, row.icon
+        mod.SetFont(text, pass.fontSize, barCtx.cfg)
+        text:SetText(value)
+        row.alpha = blank and 0.5 or 1
+        text:SetTextColor(pass.r, pass.g, pass.b, row.alpha)
+        text:ClearAllPoints()
+        text:Show()
+        icon:SetTexture(Icon(res))
+        K.CropStockIcon(icon)
+        icon:SetVertexColor(pass.ir, pass.ig, pass.ib, 1)
+        icon:ClearAllPoints()
+        local withIcon = pass.iconSize > 0 and not blank
+        if withIcon then
+            icon:SetSize(pass.iconSize, pass.iconSize)
+            icon:Show()
         else
-            row.icon:Hide()
+            icon:Hide()
         end
-        if vertical then
-            mod.SetWrappedText(row.text, max(24, width - 8), "CENTER")
-            if iconShown then
-                row.icon:SetPoint("TOP", btnFrame, "TOP", 0, -posY)
-                posY = posY + iconSize + 2
+        if pass.vertical then
+            -- Stacked: icon, then its count, down the slot.
+            mod.SetWrappedText(text, max(24, pass.width - 8), "CENTER")
+            if withIcon then
+                icon:SetPoint("TOP", button, "TOP", 0, -pass.y)
+                pass.y = pass.y + pass.iconSize + 2
             end
-            row.text:SetPoint("TOP", btnFrame, "TOP", 0, -posY)
-            posY = posY + mod.SnapToPixelGrid(row.text:GetStringHeight()) + 4
+            text:SetPoint("TOP", button, "TOP", 0, -pass.y)
+            pass.y = pass.y + mod.SnapToPixelGrid(text:GetStringHeight()) + 4
         else
-            mod.ResetInlineText(row.text, "LEFT")
+            -- In a row, 12px between resources.
+            mod.ResetInlineText(text, "LEFT")
             if used > 1 then
-                posX = posX + 12
+                pass.x = pass.x + 12
             end
-            if iconShown then
-                row.icon:SetPoint("LEFT", btnFrame, "LEFT", posX, 0)
-                posX = posX + iconSize + K.ICON_GAP
+            if withIcon then
+                icon:SetPoint("LEFT", button, "LEFT", pass.x, 0)
+                pass.x = pass.x + pass.iconSize + K.ICON_GAP
             end
-            row.text:SetPoint("LEFT", btnFrame, "LEFT", posX, 0)
-            posX = posX + mod.SnapToPixelGrid(row.text:GetStringWidth())
+            text:SetPoint("LEFT", button, "LEFT", pass.x, 0)
+            pass.x = pass.x + mod.SnapToPixelGrid(text:GetStringWidth())
         end
     end
 
-    function instance:Refresh()
-        if dirty then
-            Sample()
-        end
-        s = blockCfg.settings or {}
-        fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
-        iconSize = s.showIcon ~= false and fontSize + 2 or 0
-        vertical = barCtx.IsVertical()
-        local barH = barCtx.GetThickness()
-        width = vertical and K.VSlotW(instance) or 0
-        posX, posY, used = 0, 4, 0
-        tr, tg, tb = K.BlockColorOf(blockCfg)
+    local function Draw(list)
+        local s = blockCfg.settings or {}
+        pass.s = s
+        pass.fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
+        pass.iconSize = s.showIcon ~= false and pass.fontSize + 2 or 0
+        pass.vertical = barCtx.IsVertical()
+        pass.width = pass.vertical and K.VSlotW(inst) or 0
+        pass.x, pass.y = 0, 4
+        used = 0
         if hovered then
-            tr, tg, tb = mod.GetAccent()
-        end
-        ir, ig, ib = K.IconColorOf(blockCfg)
-        for _, resource in ipairs(resources) do
-            if
-                not resource.tooltipOnly
-                and (resource.available or resource.unknown)
-                and mod.ClassResourceShown(s, resource.key)
-                and (resource ~= ammo or ammo.active)
-                and (resource ~= thrown or thrown.present)
-            then
-                Draw(resource)
-            end
-        end
-        if used == 0 then
-            Draw(empty)
-        end
-        for idx = used + 1, #rowList do
-            rowList[idx].icon:Hide()
-            rowList[idx].text:Hide()
-        end
-        if vertical then
-            contentFrame:SetSize(width, max(barH, posY))
+            pass.r, pass.g, pass.b = mod.GetAccent()
         else
-            contentFrame:SetSize(max(10, posX + 4), barH)
+            pass.r, pass.g, pass.b = K.BlockColorOf(blockCfg)
         end
-        K.MaybeRelayout(instance)
+        pass.ir, pass.ig, pass.ib = K.IconColorOf(blockCfg)
+        for _, res in ipairs(list) do
+            DrawRow(res)
+        end
+        for i = used + 1, #rows do
+            rows[i].icon:Hide()
+            rows[i].text:Hide()
+        end
+        local barH = barCtx.GetThickness()
+        if pass.vertical then
+            contentFrame:SetSize(pass.width, max(barH, pass.y))
+        else
+            contentFrame:SetSize(max(10, pass.x + 4), barH)
+        end
+        drawn = Fingerprint(list)
+        K.MaybeRelayout(inst)
+    end
+
+    -- A full pass (settings, the bar's layout): always draws.
+    function inst:Refresh()
+        if stale then
+            Scan()
+        end
+        Draw(Shown(blockCfg.settings or {}))
         if hovered then
             ShowTooltip()
         end
     end
 
-    -- Hover only recolors the drawn rows unless the data is stale.
-    local function Recolor()
+    -- Hover recolours the drawn rows only (unless the counts are stale).
+    local function Recolour()
         local r, g, b
         if hovered then
             r, g, b = mod.GetAccent()
         else
             r, g, b = K.BlockColorOf(blockCfg)
         end
-        for idx = 1, used or 0 do
-            rowList[idx].text:SetTextColor(r, g, b, rowList[idx].alpha)
+        for i = 1, used or 0 do
+            rows[i].text:SetTextColor(r, g, b, rows[i].alpha)
         end
     end
-    btnFrame:SetScript("OnEnter", function()
+    button:SetScript("OnEnter", function()
         hovered = true
-        if dirty or not used then
-            instance:Refresh()
+        if stale or not used then
+            inst:Refresh()
         else
-            Recolor()
+            Recolour()
             ShowTooltip()
         end
     end)
-    btnFrame:SetScript("OnLeave", function()
+    button:SetScript("OnLeave", function()
         hovered = false
-        mod.Tip_Hide(btnFrame)
-        Recolor()
+        mod.Tip_Hide(button)
+        Recolour()
     end)
-    btnFrame:SetScript("OnClick", function(_, mouseButton)
+    button:SetScript("OnClick", function(_, mouseButton)
         if mouseButton ~= "RightButton" then
             return
         end
-        -- The options never open in combat.
         if InCombatLockdown() then
             CludesUI.PrintError("Cannot open options during combat.")
             return
         end
         if not mod.OpenBlockSettings then
-            CludesUI:EnsureLoaded()
+            CludesUI:EnsureLoaded() -- the settings load on demand
         end
         if mod.OpenBlockSettings then
             mod.OpenBlockSettings(barCtx.id, blockCfg.id, "resources")
         end
     end)
-    instance.eventFrame = K.MakeEventFrame(instance, function(self, evt, arg, success)
-        -- Every shot fires this; rescan only when the equipped ranged stack changed.
+
+    inst.eventFrame = K.MakeEventFrame(inst, function(_, event, arg, success)
+        -- Every shot sends this; only a change of the ranged slot's count matters.
         if
-            evt == "UNIT_INVENTORY_CHANGED"
+            event == "UNIT_INVENTORY_CHANGED"
             and (arg ~= "player" or GetInventoryItemCount("player", rangedSlot) == rangedCount)
         then
             return
         end
-        if evt == "PLAYER_EQUIPMENT_CHANGED" and arg ~= ammoSlot and arg ~= rangedSlot then
+        if event == "PLAYER_EQUIPMENT_CHANGED" and arg ~= ammoSlot and arg ~= rangedSlot then
             return
         end
-        -- Armor wear too: only an equipped durable thrown weapon reads durability.
-        if evt == "UPDATE_INVENTORY_DURABILITY" and not (thrown and thrown.id) then
+        -- Armour wears too; only an equipped thrown weapon counts durability.
+        if event == "UPDATE_INVENTORY_DURABILITY" and not (thrown and thrown.id) then
             return
         end
-        if evt == "GET_ITEM_INFO_RECEIVED" then
-            if not success or (not pending[arg] and not byID[arg] and not itemCounts[arg]) then
+        if event == "GET_ITEM_INFO_RECEIVED" then
+            if not success or (not loading[arg] and not byItem[arg] and not counts[arg]) then
                 return
             end
-            pending[arg] = nil
+            loading[arg] = nil
         end
-        dirty = true
-        self:Refresh()
+        Scan()
+        local list = Shown(blockCfg.settings or {})
+        if Fingerprint(list) ~= drawn then
+            Draw(list)
+        end
+        -- The tooltip also lists items the bar does not draw.
+        if hovered then
+            ShowTooltip()
+        end
     end)
-    function instance:Enable()
-        dirty = true
+
+    function inst:Enable()
+        stale = true
         contentFrame:Show()
         K.RegisterInstEvents(self)
     end
-    function instance:Disable()
+    function inst:Disable()
         K.UnregisterInstEvents(self)
         hovered = false
-        mod.Tip_Hide(btnFrame)
+        mod.Tip_Hide(button)
         contentFrame:Hide()
     end
-    function instance:GetAutoLength()
+    function inst:GetAutoLength()
         if barCtx.IsVertical() then
             return max(contentFrame:GetHeight(), 30)
         end
         return max(contentFrame:GetWidth(), 24)
     end
-    function instance:Destroy()
+    function inst:Destroy()
         self._dead = true
         self:Disable()
     end
-    return instance
+    return inst
 end
