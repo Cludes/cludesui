@@ -353,6 +353,23 @@ local function ScanUnit(unit)
     return name
 end
 
+-- The nameplates already shown: plates added before the events were registered
+-- (a reload, logging in among players, the feature switched on) fire no
+-- NAME_PLATE_UNIT_ADDED, so without this they stayed unseen until their plate
+-- left and came back. C_NamePlate.GetNamePlates() does not answer in combat;
+-- the next zone change or switch-on reads them then.
+local function SeedPlates()
+    if InCombatLockdown() or not (C_NamePlate and C_NamePlate.GetNamePlates) then
+        return
+    end
+    for _, plate in ipairs(C_NamePlate.GetNamePlates() or {}) do
+        local unit = plate.namePlateUnitToken
+        if unit then
+            plates[unit] = true
+        end
+    end
+end
+
 local function NoteTargetingMe(unit, name)
     local ok, same = pcall(UnitIsUnit, unit .. "target", "player")
     if ok and R(same) then
@@ -1487,6 +1504,15 @@ ev:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
         end
         return
     end
+    -- The plate roster is kept whether or not the list is live here (an off zone,
+    -- an instance), so the plates already up when it goes live are scanned too.
+    if event == "NAME_PLATE_UNIT_ADDED" then
+        plates[a1] = true
+    elseif event == "NAME_PLATE_UNIT_REMOVED" then
+        plates[a1] = nil
+    elseif event == "PLAYER_ENTERING_WORLD" or event == "ZONE_CHANGED_NEW_AREA" then
+        SeedPlates()
+    end
     if not Live() then
         if event == "PLAYER_REGEN_ENABLED" and dirtyInCombat then
             Refresh()
@@ -1494,10 +1520,7 @@ ev:SetScript("OnEvent", function(_, event, a1, a2, a3, a4)
         return
     end
     if event == "NAME_PLATE_UNIT_ADDED" then
-        plates[a1] = true
         ScanUnit(a1)
-    elseif event == "NAME_PLATE_UNIT_REMOVED" then
-        plates[a1] = nil
     elseif event == "PLAYER_TARGET_CHANGED" then
         ScanUnit("target")
     elseif event == "UPDATE_MOUSEOVER_UNIT" then
@@ -1544,6 +1567,7 @@ local function Apply()
         if not ticker then
             ticker = C_Timer.NewTicker(SCAN, Tick)
         end
+        SeedPlates()
         BuildKoSButton()
         if not tipHooked then
             tipHooked = true
