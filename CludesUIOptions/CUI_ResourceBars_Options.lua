@@ -2189,45 +2189,42 @@ initFrame:SetScript("OnEvent", function(self)
         )
     end
 
-    -- Multi-band threshold editor (opt-in): popup opened per threshold-spec entry from
-    -- its "Bands" button, editing entry.bands -- an ordered list of { to=<boundary>, r,g,b,a }
-    -- color stops. `to` is a resource count for pip resources, or a percent/value for bars.
-    -- ShowBandEditor() rebinds it to the calling bar each time it opens.
+    ---------------------------------------------------------------------------
+    --  Colour bands (opt-in): a popup per threshold entry, opened from its
+    --  "Bands" button, editing entry.bands, an ordered list of colour stops
+    --  { to = boundary, r, g, b, a }. `to` is a count for pip resources and a
+    --  percent or value for bars. ShowBandEditor binds it to the calling bar
+    --  on every open.
+    ---------------------------------------------------------------------------
     local _bandCloseIcon = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png"
-    local bandPopup
-    local _bandRows = {}
-    local _bandEntryIdx
-    local _bandGetBarData, _bandRefreshFn, _bandCountBased
-    local _bandLockPercent, _bandPercentMax -- Brewmaster stagger: force percent, cap 500
-    local _bandDefR, _bandDefG, _bandDefB, _bandDefA = 1, 0.2, 0.2, 1
-    local _bandModeRow, _bandModeSeg, _bandModeSegRefresh, _bandModeHint, _bandAddBtn, _bandTitleFS
-    local _bandReverseRow, _bandReverseSeg, _bandReverseSegRefresh
-    local BAND_POPUP_W = 300
-    local BAND_ROW_H = 26
-    local BAND_PAD = 14
-    local BAND_GAP = 10
-    local RefreshBandEditor -- forward decl
+    local BAND_POPUP_W, BAND_ROW_H, BAND_PAD, BAND_GAP = 300, 26, 14, 10
 
-    -- Shared explainer tooltip: Multi toggle + Bands button
+    -- The tooltip shared by the Multi toggle and the Bands button.
     local BAND_HELP_TIP = "Color the bar by ranges instead of a single threshold.\n"
         .. "Up to (<=) / From (>=)\n"
         .. "Any remaning values outside the bands will use fill color.\n"
         .. "|cff888888Bars can use % or actual value; pip resources use counts.|r"
-
     local BAND_REPLACES_TIP = "Single threshold is off while Multi-band is on.\n"
-
-    -- Shown on the greyed percent/value control for Brewmaster stagger
+    -- On the greyed percent / value control for Brewmaster stagger.
     local STAGGER_PCT_TIP = "Stagger value can only be percent based"
 
+    -- The popup and what the open is bound to.
+    local Band = {
+        rows = {},
+        default = { 1, 0.2, 0.2, 1 },
+    }
+
     local function CurrentBandEntry()
-        if not _bandEntryIdx or not _bandGetBarData then
+        if not (Band.entryIdx and Band.getBar) then
             return nil
         end
-        local edge = _bandGetBarData()
-        if not edge or not edge.thresholdSpecs then
-            return nil
-        end
-        return edge.thresholdSpecs[_bandEntryIdx]
+        local bar = Band.getBar()
+        return bar and bar.thresholdSpecs and bar.thresholdSpecs[Band.entryIdx]
+    end
+    -- The band of a row, if it still exists.
+    local function RowBand(row)
+        local entry = CurrentBandEntry()
+        return entry and entry.bands and entry.bands[row._idx], entry
     end
 
     local function SortBands(bands)
@@ -2236,278 +2233,284 @@ initFrame:SetScript("OnEvent", function(self)
         end)
     end
 
-    local function BuildBandPopup()
-        bandPopup = CreateFrame("Frame", nil, CludesUI.OverlayParent())
-        bandPopup:SetFrameStrata("FULLSCREEN_DIALOG")
-        bandPopup:SetFrameLevel(260)
-        bandPopup:SetClampedToScreen(true)
-        bandPopup:EnableMouse(true)
-        bandPopup:SetScale(CludesUI.GetPopupScale())
-        bandPopup:Hide()
-        Pix.Size(bandPopup, BAND_POPUP_W, 200)
+    local RefreshBandEditor -- set below
+    -- After any change: the bar, then the popup.
+    local function BandChanged(redraw)
+        if Band.refresh then
+            Band.refresh()
+        end
+        if redraw ~= false then
+            RefreshBandEditor()
+        end
+    end
 
-        local backdrop = bandPopup:CreateTexture(nil, "BACKGROUND")
-        backdrop:SetAllPoints()
-        backdrop:SetColorTexture(0.062, 0.070, 0.082, 0.97)
-        bandPopup._brd = CludesUI.MakeRoundedBorder(bandPopup, 1, 1, 1, 0.18, backdrop)
+    -- A popup that closes on a click outside it (and outside the options
+    -- panel and an open dropdown), on entering combat, and with the panel.
+    local function DismissablePopup(width, level)
+        local popup = CreateFrame("Frame", nil, CludesUI.OverlayParent())
+        popup:SetFrameStrata("FULLSCREEN_DIALOG")
+        popup:SetFrameLevel(level)
+        popup:SetClampedToScreen(true)
+        popup:EnableMouse(true)
+        popup:SetScale(CludesUI.GetPopupScale())
+        popup:Hide()
+        Pix.Size(popup, width, 200)
+        local bg = popup:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints()
+        bg:SetColorTexture(0.062, 0.070, 0.082, 0.97)
+        popup._brd = CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.18, bg)
 
-        local clickCatcher = CreateFrame("Button", nil, bandPopup)
-        clickCatcher:SetFrameStrata("FULLSCREEN_DIALOG")
-        clickCatcher:SetFrameLevel(bandPopup:GetFrameLevel() - 1)
-        clickCatcher:SetAllPoints((CludesUI:GetMainFrame()) or UIParent)
-        clickCatcher:SetScript("OnClick", function()
-            bandPopup:Hide()
+        local catcher = CreateFrame("Button", nil, popup)
+        catcher:SetFrameStrata("FULLSCREEN_DIALOG")
+        catcher:SetFrameLevel(popup:GetFrameLevel() - 1)
+        catcher:SetAllPoints((CludesUI:GetMainFrame()) or UIParent)
+        catcher:SetScript("OnClick", function()
+            popup:Hide()
         end)
-        clickCatcher:Hide()
-        -- Close on entering combat
-        bandPopup:SetScript("OnEvent", function(self, evt)
-            if evt == "PLAYER_REGEN_DISABLED" then
+        catcher:Hide()
+        popup:SetScript("OnEvent", function(self, event)
+            if event == "PLAYER_REGEN_DISABLED" then
                 self:Hide()
             end
         end)
-        bandPopup:SetScript("OnShow", function(self)
-            clickCatcher:Show()
+        popup:SetScript("OnShow", function(self)
+            catcher:Show()
             self:RegisterEvent("PLAYER_REGEN_DISABLED")
-            self:SetScript("OnUpdate", function(p)
-                if IsMouseButtonDown("LeftButton") then
-                    local mf = CludesUI._mainFrame
-                    local dm = CludesUI._openDropdownMenu
-                    if
-                        not p:IsMouseOver()
-                        and not (mf and mf:IsMouseOver())
-                        and not (dm and dm:IsShown() and dm:IsMouseOver())
-                    then
-                        p:Hide()
-                    end
+            self:SetScript("OnUpdate", function(me)
+                if not IsMouseButtonDown("LeftButton") then
+                    return
+                end
+                local panel, menu = CludesUI._mainFrame, CludesUI._openDropdownMenu
+                if
+                    not me:IsMouseOver()
+                    and not (panel and panel:IsMouseOver())
+                    and not (menu and menu:IsShown() and menu:IsMouseOver())
+                then
+                    me:Hide()
                 end
             end)
         end)
-        bandPopup:SetScript("OnHide", function(self)
-            clickCatcher:Hide()
+        popup:SetScript("OnHide", function(self)
+            catcher:Hide()
             self:UnregisterEvent("PLAYER_REGEN_DISABLED")
             self:SetScript("OnUpdate", nil)
         end)
-        CludesUI.TrackOverlay(bandPopup)
-        CludesUI.PadHint(bandPopup, "nodepass")
-        CludesUI.PadHint(clickCatcher, "nodepass")
-        CludesUI._popupFrames[#CludesUI._popupFrames + 1] = { popup = bandPopup }
+        CludesUI.TrackOverlay(popup)
+        CludesUI.PadHint(popup, "nodepass")
+        CludesUI.PadHint(catcher, "nodepass")
+        CludesUI._popupFrames[#CludesUI._popupFrames + 1] = { popup = popup }
         CludesUI:RegisterOnHide(function()
-            bandPopup:Hide()
+            popup:Hide()
         end)
         CludesUI:RegisterOnCollapse(function(on)
             if on then
-                bandPopup:Hide()
+                popup:Hide()
             end
         end)
-
-        _bandTitleFS = CludesUI.MakeFont(bandPopup, 13, nil, 1, 1, 1)
-        _bandTitleFS:SetAlpha(0.6)
-        _bandTitleFS:SetPoint("TOP", bandPopup, "TOP", 0, -BAND_PAD)
-        _bandTitleFS:SetText(CludesUI.L("Color Bands"))
-
-        -- Labeled row (label left, control right), matching the detail-pane rows
-        local function HeaderRow(labelText)
-            local rf = CreateFrame("Frame", nil, bandPopup)
-            rf:SetFrameLevel(bandPopup:GetFrameLevel() + 3)
-            Pix.Height(rf, BAND_ROW_H)
-            local labelFS = CludesUI.MakeFont(rf, 12, nil, 1, 1, 1)
-            labelFS:SetAlpha(0.6)
-            labelFS:SetPoint("LEFT", rf, "LEFT", 0, 0)
-            labelFS:SetText(CludesUI.L(labelText))
-            rf._lbl = labelFS
-            return rf
-        end
-
-        local _ -- the switches' unused second return (never the global)
-        -- Value units segmented switch (Amount / Percent), bar-type only; count-based shows a hint instead.
-        _bandModeRow = HeaderRow("Values as")
-        _bandModeSeg, _, _bandModeSegRefresh = CludesUI.BuildSegmentedControl({
-            parent = _bandModeRow,
-            keys = { "amount", "percent" },
-            labels = { amount = "Amount", percent = "Percent" },
-            autoWidth = true,
-            square = true,
-            height = 22,
-            getChecked = function(key)
-                local ent = CurrentBandEntry()
-                local isPercent = _bandLockPercent or not (ent and ent.bandMode == "value")
-                if key == "percent" then
-                    return isPercent
-                else
-                    return not isPercent
-                end
-            end,
-            isDisabled = function()
-                return _bandLockPercent and true or false
-            end,
-            onToggle = function(key)
-                if _bandLockPercent then
-                    return
-                end
-                local ent = CurrentBandEntry()
-                if not ent then
-                    return
-                end
-                ent.bandMode = (key == "percent") and "percent" or "value"
-                if _bandRefreshFn then
-                    _bandRefreshFn()
-                end
-                RefreshBandEditor()
-            end,
-        })
-        _bandModeSeg:SetPoint("RIGHT", _bandModeRow, "RIGHT", 0, 0)
-        -- Disabled-state tooltip: Brewmaster stagger is percent-only
-        local _bandModeDis = CreateFrame("Frame", nil, _bandModeRow)
-        _bandModeDis:SetAllPoints(_bandModeSeg)
-        _bandModeDis:SetFrameLevel(_bandModeSeg:GetFrameLevel() + 5)
-        _bandModeDis:EnableMouse(true)
-        _bandModeDis:SetScript("OnEnter", function(self)
-            CludesUI.ShowWidgetTooltip(self, CludesUI.L(STAGGER_PCT_TIP))
-        end)
-        _bandModeDis:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
-        _bandModeDis:Hide()
-        _bandModeRow._staggerDis = _bandModeDis
-        _bandModeHint = CludesUI.MakeFont(bandPopup, 10, nil, 1, 1, 1)
-        _bandModeHint:SetAlpha(0.4)
-
-        -- Direction segmented switch (always one of two values)
-        _bandReverseRow = HeaderRow("Direction")
-        _bandReverseSeg, _, _bandReverseSegRefresh = CludesUI.BuildSegmentedControl({
-            parent = _bandReverseRow,
-            keys = { "upto", "from" },
-            labels = { upto = "Up to", from = "From" },
-            autoWidth = true,
-            square = true,
-            height = 22,
-            getChecked = function(key)
-                local ent = CurrentBandEntry()
-                local reverse = ent and ent.bandReverse and true or false
-                if key == "from" then
-                    return reverse
-                else
-                    return not reverse
-                end
-            end,
-            onToggle = function(key)
-                local ent = CurrentBandEntry()
-                if not ent then
-                    return
-                end
-                ent.bandReverse = (key == "from")
-                if _bandRefreshFn then
-                    _bandRefreshFn()
-                end
-                RefreshBandEditor()
-            end,
-        })
-        _bandReverseSeg:SetPoint("RIGHT", _bandReverseRow, "RIGHT", 0, 0)
-
-        -- Add Band button
-        _bandAddBtn = CreateFrame("Button", nil, bandPopup)
-        Pix.Size(_bandAddBtn, BAND_POPUP_W - BAND_PAD * 2, 26)
-        _bandAddBtn:SetFrameLevel(bandPopup:GetFrameLevel() + 3)
-        local abg = CludesUI.SolidTex(_bandAddBtn, "BACKGROUND", 0.050, 0.058, 0.068, 0.92)
-        abg:SetAllPoints()
-        _bandAddBtn._border = CludesUI.MakeRoundedBorder(_bandAddBtn, 1, 1, 1, 0.4, abg)
-        local albl = CludesUI.MakeFont(_bandAddBtn, 12, nil, 1, 1, 1)
-        albl:SetAlpha(0.5)
-        albl:SetPoint("CENTER")
-        albl:SetText(CludesUI.L("+ Add Band"))
-        _bandAddBtn:SetScript("OnEnter", function()
-            albl:SetAlpha(0.7)
-            if _bandAddBtn._border and _bandAddBtn._border.SetColor then
-                _bandAddBtn._border:SetColor(1, 1, 1, 0.6)
-            end
-        end)
-        _bandAddBtn:SetScript("OnLeave", function()
-            albl:SetAlpha(0.5)
-            if _bandAddBtn._border and _bandAddBtn._border.SetColor then
-                _bandAddBtn._border:SetColor(1, 1, 1, 0.4)
-            end
-        end)
-        _bandAddBtn:SetScript("OnClick", function()
-            local ent = CurrentBandEntry()
-            if not ent then
-                return
-            end
-            if not ent.bands then
-                ent.bands = {}
-            end
-            local last = ent.bands[#ent.bands]
-            local nextTo = last and ((last.to or 0) + 1) or 1
-            ent.bands[#ent.bands + 1] =
-                { to = nextTo, r = _bandDefR, g = _bandDefG, b = _bandDefB, a = _bandDefA }
-            SortBands(ent.bands)
-            if _bandRefreshFn then
-                _bandRefreshFn()
-            end
-            RefreshBandEditor()
-        end)
+        return popup
     end
 
-    -- Lazily create the widgets for band row k; returns the row table
-    local function EnsureBandRow(k)
-        local row = _bandRows[k]
-        if row then
-            return row
+    -- A labelled row (label left, control right), as the detail pane's rows.
+    local function BandHeaderRow(text)
+        local row = CreateFrame("Frame", nil, Band.popup)
+        row:SetFrameLevel(Band.popup:GetFrameLevel() + 3)
+        Pix.Height(row, BAND_ROW_H)
+        local label = CludesUI.MakeFont(row, 12, nil, 1, 1, 1)
+        label:SetAlpha(0.6)
+        label:SetPoint("LEFT", row, "LEFT", 0, 0)
+        label:SetText(CludesUI.L(text))
+        row._lbl = label
+        return row
+    end
+
+    -- A two-way switch on a header row; isOn(key) and set(key) over the entry.
+    local function BandSwitch(row, keys, labels, isOn, set, isDisabled)
+        local seg, _, refresh = CludesUI.BuildSegmentedControl({
+            parent = row,
+            keys = keys,
+            labels = labels,
+            autoWidth = true,
+            square = true,
+            height = 22,
+            getChecked = isOn,
+            isDisabled = isDisabled,
+            onToggle = function(key)
+                local entry = CurrentBandEntry()
+                if entry and set(entry, key) ~= false then
+                    BandChanged()
+                end
+            end,
+        })
+        seg:SetPoint("RIGHT", row, "RIGHT", 0, 0)
+        return seg, refresh
+    end
+
+    local function BuildBandPopup()
+        local popup = DismissablePopup(BAND_POPUP_W, 260)
+        Band.popup = popup
+
+        Band.title = CludesUI.MakeFont(popup, 13, nil, 1, 1, 1)
+        Band.title:SetAlpha(0.6)
+        Band.title:SetPoint("TOP", popup, "TOP", 0, -BAND_PAD)
+        Band.title:SetText(CludesUI.L("Color Bands"))
+
+        -- Values as: Amount / Percent (bars only; a count-based resource
+        -- shows a hint instead). Brewmaster stagger is percent only.
+        Band.modeRow = BandHeaderRow("Values as")
+        local function IsPercent()
+            local entry = CurrentBandEntry()
+            return Band.lockPercent or not (entry and entry.bandMode == "value")
         end
-        row = {}
-        local rf = CreateFrame("Frame", nil, bandPopup)
-        rf:SetSize(BAND_POPUP_W - BAND_PAD * 2, BAND_ROW_H)
-        rf:SetFrameLevel(bandPopup:GetFrameLevel() + 2)
-        row.frame = rf
+        Band.modeSeg, Band.modeRefresh = BandSwitch(
+            Band.modeRow,
+            { "amount", "percent" },
+            { amount = "Amount", percent = "Percent" },
+            function(key)
+                return (key == "percent") == IsPercent()
+            end,
+            function(entry, key)
+                if Band.lockPercent then
+                    return false
+                end
+                entry.bandMode = key == "percent" and "percent" or "value"
+            end,
+            function()
+                return Band.lockPercent and true or false
+            end
+        )
+        -- Its disabled-state tooltip (stagger).
+        local why = CreateFrame("Frame", nil, Band.modeRow)
+        why:SetAllPoints(Band.modeSeg)
+        why:SetFrameLevel(Band.modeSeg:GetFrameLevel() + 5)
+        why:EnableMouse(true)
+        why:SetScript("OnEnter", function(self)
+            CludesUI.ShowWidgetTooltip(self, CludesUI.L(STAGGER_PCT_TIP))
+        end)
+        why:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
+        why:Hide()
+        Band.modeRow._staggerDis = why
+        Band.modeHint = CludesUI.MakeFont(popup, 10, nil, 1, 1, 1)
+        Band.modeHint:SetAlpha(0.4)
 
-        local labelFS = CludesUI.MakeFont(rf, 12, nil, 1, 1, 1)
-        labelFS:SetAlpha(0.6)
-        labelFS:SetPoint("LEFT", rf, "LEFT", 2, 0)
-        labelFS:SetText(CludesUI.L("Up to")) -- band colors values up to `to`
-        row.lbl = labelFS
+        -- Direction: Up to / From (always one of the two).
+        Band.dirRow = BandHeaderRow("Direction")
+        Band.dirSeg, Band.dirRefresh = BandSwitch(
+            Band.dirRow,
+            { "upto", "from" },
+            { upto = "Up to", from = "From" },
+            function(key)
+                local entry = CurrentBandEntry()
+                local from = entry and entry.bandReverse and true or false
+                return (key == "from") == from
+            end,
+            function(entry, key)
+                entry.bandReverse = key == "from"
+            end
+        )
 
-        local input = CreateFrame("EditBox", nil, rf)
+        -- + Add Band: one past the last boundary, in the default colour.
+        local add = CreateFrame("Button", nil, popup)
+        Pix.Size(add, BAND_POPUP_W - BAND_PAD * 2, 26)
+        add:SetFrameLevel(popup:GetFrameLevel() + 3)
+        local bg = CludesUI.SolidTex(add, "BACKGROUND", 0.050, 0.058, 0.068, 0.92)
+        bg:SetAllPoints()
+        add._border = CludesUI.MakeRoundedBorder(add, 1, 1, 1, 0.4, bg)
+        local label = CludesUI.MakeFont(add, 12, nil, 1, 1, 1)
+        label:SetAlpha(0.5)
+        label:SetPoint("CENTER")
+        label:SetText(CludesUI.L("+ Add Band"))
+        local function Hover(textAlpha, borderAlpha)
+            label:SetAlpha(textAlpha)
+            if add._border and add._border.SetColor then
+                add._border:SetColor(1, 1, 1, borderAlpha)
+            end
+        end
+        add:SetScript("OnEnter", function()
+            Hover(0.7, 0.6)
+        end)
+        add:SetScript("OnLeave", function()
+            Hover(0.5, 0.4)
+        end)
+        add:SetScript("OnClick", function()
+            local entry = CurrentBandEntry()
+            if not entry then
+                return
+            end
+            entry.bands = entry.bands or {}
+            local last = entry.bands[#entry.bands]
+            local d = Band.default
+            entry.bands[#entry.bands + 1] = {
+                to = last and ((last.to or 0) + 1) or 1,
+                r = d[1],
+                g = d[2],
+                b = d[3],
+                a = d[4],
+            }
+            SortBands(entry.bands)
+            BandChanged()
+        end)
+        Band.addBtn = add
+    end
+
+    -- The widgets of band row k, made on first need.
+    local function EnsureBandRow(k)
+        if Band.rows[k] then
+            return Band.rows[k]
+        end
+        local row = {}
+        local frame = CreateFrame("Frame", nil, Band.popup)
+        frame:SetSize(BAND_POPUP_W - BAND_PAD * 2, BAND_ROW_H)
+        frame:SetFrameLevel(Band.popup:GetFrameLevel() + 2)
+        row.frame = frame
+
+        local label = CludesUI.MakeFont(frame, 12, nil, 1, 1, 1)
+        label:SetAlpha(0.6)
+        label:SetPoint("LEFT", frame, "LEFT", 2, 0)
+        label:SetText(CludesUI.L("Up to")) -- the band colours values up to `to`
+        row.lbl = label
+
+        local input = CreateFrame("EditBox", nil, frame)
         input:SetSize(54, 22)
-        input:SetPoint("LEFT", labelFS, "RIGHT", 6, 0)
-        input:SetFrameLevel(rf:GetFrameLevel() + 2)
+        input:SetPoint("LEFT", label, "RIGHT", 6, 0)
+        input:SetFrameLevel(frame:GetFrameLevel() + 2)
         input:SetAutoFocus(false)
         input:SetFontObject(GameFontHighlightSmall)
-        local inFont = CludesUI.GetFontPath("main") or "Fonts\\FRIZQT__.TTF"
-        input:SetFont(inFont, 12, "")
+        input:SetFont(CludesUI.GetFontPath("main") or "Fonts\\FRIZQT__.TTF", 12, "")
         input:SetTextColor(1, 1, 1, 0.75)
         input:SetJustifyH("CENTER")
         input:SetNumeric(true)
-        local inBg = input:CreateTexture(nil, "BACKGROUND")
-        inBg:SetAllPoints()
-        inBg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
-        CludesUI.MakeRoundedBorder(input, 1, 1, 1, 0.08, inBg)
+        local inputBg = input:CreateTexture(nil, "BACKGROUND")
+        inputBg:SetAllPoints()
+        inputBg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
+        CludesUI.MakeRoundedBorder(input, 1, 1, 1, 0.08, inputBg)
         row.input = input
 
-        -- Commit on focus loss. Enter clears focus -> triggers this; Escape sets _cancelCommit so leaving the field discards the typed text.
-        local function CommitInput(self)
+        -- Commits when the field loses focus (Enter clears focus); Escape
+        -- marks the typed text to be thrown away.
+        input:SetScript("OnEditFocusLost", function(self)
             if self._cancelCommit then
                 self._cancelCommit = nil
                 return
             end
-            local ent = CurrentBandEntry()
-            local band = ent and ent.bands and ent.bands[row._idx]
+            local band, entry = RowBand(row)
             if not band then
                 return
             end
-            local val = tonumber(self:GetText())
-            if val then
-                local pctMax = _bandPercentMax or 100
-                local hi = _bandCountBased and 100
-                    or ((not _bandLockPercent and ent.bandMode == "value") and 1000000 or pctMax)
-                val = math.max(1, math.min(hi, math.floor(val + 0.5)))
-                band.to = val
-                SortBands(ent.bands)
-                if _bandRefreshFn then
-                    _bandRefreshFn()
-                end
+            local v = tonumber(self:GetText())
+            if v then
+                local top = Band.countBased and 100
+                    or (
+                        (not Band.lockPercent and entry.bandMode == "value") and 1000000
+                        or (Band.percentMax or 100)
+                    )
+                band.to = math.max(1, math.min(top, math.floor(v + 0.5)))
+                SortBands(entry.bands)
+                BandChanged(false)
             end
             RefreshBandEditor()
-        end
-        input:SetScript("OnEditFocusLost", CommitInput)
+        end)
         input:SetScript("OnEnterPressed", function(self)
             self:ClearFocus()
         end)
@@ -2517,180 +2520,165 @@ initFrame:SetScript("OnEvent", function(self)
             RefreshBandEditor()
         end)
 
-        local colorSwatch, swatchSnap = CludesUI.BuildColorSwatch(rf, rf:GetFrameLevel() + 3, function()
-            local ent = CurrentBandEntry()
-            local band = ent and ent.bands and ent.bands[row._idx]
+        local swatch, snap = CludesUI.BuildColorSwatch(frame, frame:GetFrameLevel() + 3, function()
+            local band = RowBand(row)
+            local d = Band.default
             if not band then
-                return _bandDefR, _bandDefG, _bandDefB, _bandDefA
+                return d[1], d[2], d[3], d[4]
             end
-            return band.r or _bandDefR, band.g or _bandDefG, band.b or _bandDefB, band.a or _bandDefA
+            return band.r or d[1], band.g or d[2], band.b or d[3], band.a or d[4]
         end, function(r, g, b, a)
-            local ent = CurrentBandEntry()
-            local band = ent and ent.bands and ent.bands[row._idx]
+            local band = RowBand(row)
             if band then
                 band.r, band.g, band.b, band.a = r, g, b, a
-                if _bandRefreshFn then
-                    _bandRefreshFn()
-                end
+                BandChanged(false)
             end
         end, true, 19)
-        colorSwatch:SetPoint("LEFT", input, "RIGHT", 10, 0)
-        row.swatch = colorSwatch
-        row.swatchSnap = swatchSnap
+        swatch:SetPoint("LEFT", input, "RIGHT", 10, 0)
+        row.swatch, row.swatchSnap = swatch, snap
 
-        local delBtn = CreateFrame("Button", nil, rf)
-        delBtn:SetSize(14, 14)
-        delBtn:SetPoint("RIGHT", rf, "RIGHT", -2, 0)
-        delBtn:SetFrameLevel(rf:GetFrameLevel() + 3)
-        local delIcon = delBtn:CreateTexture(nil, "OVERLAY")
-        delIcon:SetAllPoints()
-        delIcon:SetTexture(_bandCloseIcon)
-        delIcon:SetAlpha(0.4)
-        delBtn:SetScript("OnEnter", function()
-            delIcon:SetAlpha(0.9)
+        local remove = CreateFrame("Button", nil, frame)
+        remove:SetSize(14, 14)
+        remove:SetPoint("RIGHT", frame, "RIGHT", -2, 0)
+        remove:SetFrameLevel(frame:GetFrameLevel() + 3)
+        local icon = remove:CreateTexture(nil, "OVERLAY")
+        icon:SetAllPoints()
+        icon:SetTexture(_bandCloseIcon)
+        icon:SetAlpha(0.4)
+        remove:SetScript("OnEnter", function()
+            icon:SetAlpha(0.9)
         end)
-        delBtn:SetScript("OnLeave", function()
-            delIcon:SetAlpha(0.4)
+        remove:SetScript("OnLeave", function()
+            icon:SetAlpha(0.4)
         end)
-        delBtn:SetScript("OnClick", function()
-            local ent = CurrentBandEntry()
-            if ent and ent.bands and ent.bands[row._idx] then
-                table.remove(ent.bands, row._idx)
-                if _bandRefreshFn then
-                    _bandRefreshFn()
-                end
-                RefreshBandEditor()
+        remove:SetScript("OnClick", function()
+            local band, entry = RowBand(row)
+            if band then
+                table.remove(entry.bands, row._idx)
+                BandChanged()
             end
         end)
-        row.delBtn = delBtn
+        row.delBtn = remove
 
-        _bandRows[k] = row
+        Band.rows[k] = row
         return row
     end
 
+    -- Lays the popup out for the bound entry: the mode row (or hint), the
+    -- direction row, one row per band, then + Add Band.
     RefreshBandEditor = function()
-        if not bandPopup then
+        local popup = Band.popup
+        if not popup then
             return
         end
-        local ent = CurrentBandEntry()
-        if not ent then
-            bandPopup:Hide()
+        local entry = CurrentBandEntry()
+        if not entry then
+            popup:Hide()
             return
         end
-        if not ent.bands then
-            ent.bands = {}
+        entry.bands = entry.bands or {}
+
+        local y = -(BAND_PAD + 24) -- below the title
+        local function Place(row)
+            row:ClearAllPoints()
+            Pix.Point(row, "TOPLEFT", popup, "TOPLEFT", BAND_PAD, y)
+            Pix.Point(row, "TOPRIGHT", popup, "TOPRIGHT", -BAND_PAD, y)
+            row:Show()
+            y = y - BAND_ROW_H - BAND_GAP
         end
 
-        local curY = -(BAND_PAD + 24) -- below the title
-
-        local function placeRow(rf)
-            rf:ClearAllPoints()
-            Pix.Point(rf, "TOPLEFT", bandPopup, "TOPLEFT", BAND_PAD, curY)
-            Pix.Point(rf, "TOPRIGHT", bandPopup, "TOPRIGHT", -BAND_PAD, curY)
-            rf:Show()
-            curY = curY - BAND_ROW_H - BAND_GAP
-        end
-
-        -- Mode row (bar-type) or a hint (count-based: boundaries are counts)
-        if _bandCountBased then
-            _bandModeRow:Hide()
-            _bandModeHint:ClearAllPoints()
-            _bandModeHint:SetPoint("TOPLEFT", bandPopup, "TOPLEFT", BAND_PAD, curY - 4)
-            _bandModeHint:SetText(CludesUI.L("Boundaries are resource counts"))
-            _bandModeHint:Show()
-            curY = curY - 18 - BAND_GAP
+        if Band.countBased then
+            -- Boundaries are counts: no unit to pick.
+            Band.modeRow:Hide()
+            Band.modeHint:ClearAllPoints()
+            Band.modeHint:SetPoint("TOPLEFT", popup, "TOPLEFT", BAND_PAD, y - 4)
+            Band.modeHint:SetText(CludesUI.L("Boundaries are resource counts"))
+            Band.modeHint:Show()
+            y = y - 18 - BAND_GAP
         else
-            _bandModeHint:Hide()
-            if _bandModeSegRefresh then
-                _bandModeSegRefresh()
+            Band.modeHint:Hide()
+            if Band.modeRefresh then
+                Band.modeRefresh()
             end
-            -- Brewmaster stagger: percent locked, so grey the control + tooltip
-            if _bandModeRow._staggerDis then
-                _bandModeRow._staggerDis:SetShown(_bandLockPercent and true or false)
+            -- Stagger: the unit is locked, so the control greys and explains why.
+            if Band.modeRow._staggerDis then
+                Band.modeRow._staggerDis:SetShown(Band.lockPercent and true or false)
             end
-            if _bandModeRow._lbl then
-                _bandModeRow._lbl:SetAlpha(_bandLockPercent and 0.3 or 0.6)
+            if Band.modeRow._lbl then
+                Band.modeRow._lbl:SetAlpha(Band.lockPercent and 0.3 or 0.6)
             end
-            placeRow(_bandModeRow)
+            Place(Band.modeRow)
         end
 
-        -- Row label follows direction: "From" (>=) when reverse, else "Up to"
-        local reverse = ent.bandReverse and true or false
-
-        if _bandReverseSegRefresh then
-            _bandReverseSegRefresh()
+        if Band.dirRefresh then
+            Band.dirRefresh()
         end
-        placeRow(_bandReverseRow)
-        local rowLabel = reverse and CludesUI.L("From") or CludesUI.L("Up to")
-        local num = #ent.bands
-        for k = 1, num do
+        Place(Band.dirRow)
+        -- The row label follows the direction: "From" (>=) or "Up to".
+        local rowLabel = entry.bandReverse and CludesUI.L("From") or CludesUI.L("Up to")
+        local count = #entry.bands
+        for k = 1, count do
             local row = EnsureBandRow(k)
             row._idx = k
             row.lbl:SetText(rowLabel)
             row.frame:ClearAllPoints()
-            Pix.Point(row.frame, "TOPLEFT", bandPopup, "TOPLEFT", BAND_PAD, curY)
-            row.input:SetText(tostring(ent.bands[k].to or 1))
+            Pix.Point(row.frame, "TOPLEFT", popup, "TOPLEFT", BAND_PAD, y)
+            row.input:SetText(tostring(entry.bands[k].to or 1))
             if row.swatchSnap then
                 row.swatchSnap()
             end
             row.frame:Show()
-            curY = curY - BAND_ROW_H - 4
+            y = y - BAND_ROW_H - 4
         end
-        for k = num + 1, #_bandRows do
-            if _bandRows[k] then
-                _bandRows[k].frame:Hide()
+        for k = count + 1, #Band.rows do
+            if Band.rows[k] then
+                Band.rows[k].frame:Hide()
             end
         end
 
-        curY = curY - 4
-        _bandAddBtn:ClearAllPoints()
-        Pix.Point(_bandAddBtn, "TOPLEFT", bandPopup, "TOPLEFT", BAND_PAD, curY)
-        curY = curY - 26
-
-        local totalH = math.abs(curY) + BAND_PAD
-        Pix.Size(bandPopup, BAND_POPUP_W, totalH)
-        bandPopup._brd:Fit()
+        y = y - 4
+        Band.addBtn:ClearAllPoints()
+        Pix.Point(Band.addBtn, "TOPLEFT", popup, "TOPLEFT", BAND_PAD, y)
+        y = y - 26
+        Pix.Size(popup, BAND_POPUP_W, math.abs(y) + BAND_PAD)
+        popup._brd:Fit()
     end
 
-    -- params = { getBarData, refreshFn, entryIdx, anchor, countBased, defR/G/B/A }
+    -- params: getBarData, refreshFn, entryIdx, anchor, countBased,
+    -- lockPercent (stagger), percentMax, defR/G/B/A (a new band's colour).
     local function ShowBandEditor(params)
-        if not bandPopup then
+        if not Band.popup then
             BuildBandPopup()
         end
-        _bandGetBarData = params.getBarData
-        _bandRefreshFn = params.refreshFn
-        _bandEntryIdx = params.entryIdx
-        _bandCountBased = params.countBased and true or false
-        _bandLockPercent = params.lockPercent and true or false
-        _bandPercentMax = params.percentMax
-        _bandDefR = params.defR or 1
-        _bandDefG = params.defG or 0.2
-        _bandDefB = params.defB or 0.2
-        _bandDefA = params.defA or 1
-        local ent = CurrentBandEntry()
-        if ent then
-            if _bandLockPercent then
-                ent.bandMode = "percent"
-            end -- stagger: percent-only
-            if not ent.bands then
-                ent.bands = {}
+        Band.getBar = params.getBarData
+        Band.refresh = params.refreshFn
+        Band.entryIdx = params.entryIdx
+        Band.countBased = params.countBased and true or false
+        Band.lockPercent = params.lockPercent and true or false
+        Band.percentMax = params.percentMax
+        Band.default = { params.defR or 1, params.defG or 0.2, params.defB or 0.2, params.defA or 1 }
+        local entry = CurrentBandEntry()
+        if entry then
+            if Band.lockPercent then
+                entry.bandMode = "percent" -- stagger: percent only
             end
-            -- First open seeds a starter band from the single threshold
-            if #ent.bands == 0 then
-                local seedTo = _bandCountBased and (ent.thresholdCount or 3) or (ent.thresholdPct or 30)
-                ent.bands[1] = {
-                    to = seedTo,
-                    r = ent.thresholdR or _bandDefR,
-                    g = ent.thresholdG or _bandDefG,
-                    b = ent.thresholdB or _bandDefB,
-                    a = ent.thresholdA or _bandDefA,
+            entry.bands = entry.bands or {}
+            -- The first open seeds one band from the single threshold.
+            if #entry.bands == 0 then
+                local d = Band.default
+                entry.bands[1] = {
+                    to = Band.countBased and (entry.thresholdCount or 3) or (entry.thresholdPct or 30),
+                    r = entry.thresholdR or d[1],
+                    g = entry.thresholdG or d[2],
+                    b = entry.thresholdB or d[3],
+                    a = entry.thresholdA or d[4],
                 }
             end
         end
         RefreshBandEditor()
-        bandPopup:ClearAllPoints()
-        bandPopup:SetPoint("TOP", params.anchor, "BOTTOM", 0, -4)
-        bandPopup:Show()
+        Band.popup:ClearAllPoints()
+        Band.popup:SetPoint("TOP", params.anchor, "BOTTOM", 0, -4)
+        Band.popup:Show()
     end
 
     -- Colour list editor: a per-threshold-entry list of { spellID, r,g,b,a } stored in
