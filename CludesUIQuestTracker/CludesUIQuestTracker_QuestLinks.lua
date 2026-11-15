@@ -1,16 +1,25 @@
 if CUI_CLIENT_BLOCKED then
     return
 end
+-------------------------------------------------------------------------------
+--  CludesUIQuestTracker_QuestLinks.lua - a "Wowhead Link" entry in quest menus.
+--
+--  Adds the entry to the right-click menus of a quest in the quest log, the
+--  quest details popup and the objective tracker; it opens a box with the
+--  quest's Wowhead address to copy (optionally to its comments, and in the
+--  game's language). The menu hooks exist only while the setting is on.
+-------------------------------------------------------------------------------
 local _, mod = ...
 local EQT = mod.EQT
 
-mod.QT_DEFAULTS.profile.questTracker.wowheadQuestLinks = false
-mod.QT_DEFAULTS.profile.questTracker.wowheadQuestComments = false
-mod.QT_DEFAULTS.profile.questTracker.wowheadQuestClientLanguage = false
+local defaults = mod.QT_DEFAULTS.profile.questTracker
+defaults.wowheadQuestLinks = false
+defaults.wowheadQuestComments = false
+defaults.wowheadQuestClientLanguage = false
 
-local site = CludesUI.IS_FOREVER and "forever/" or ""
--- Wowhead's path for each client language it has (English takes none).
-local WOWHEAD_LANG = {
+local SITE = CludesUI.IS_FOREVER and "forever/" or ""
+-- Wowhead's path per client language (English has none).
+local LANGUAGE_PATH = {
     deDE = "de/",
     ptBR = "pt/",
     esES = "es/",
@@ -22,10 +31,12 @@ local WOWHEAD_LANG = {
     zhCN = "cn/",
     koKR = "ko/",
 }
-local logHandle, detailHandle, trackerHandle, hoverHandle, addedMenus
-local hoverBlock -- the tracker quest block whose header the cursor entered last
 
--- A plain positive quest ID the link can be built from.
+local hooks -- the menu and hover registrations, while the setting is on
+local done -- menus that already have the entry (weak keys)
+local hoveredBlock -- the tracker quest whose header the cursor last entered
+
+-- Whether links are on and questID is a plain positive whole number.
 function EQT.WowheadQuestOK(questID)
     return EQT.Cfg("wowheadQuestLinks")
             and not issecretvalue(questID)
@@ -35,20 +46,25 @@ function EQT.WowheadQuestOK(questID)
         or false
 end
 
--- The copy popup; shared with the WoW Forever custom tracker's menu (Custom.lua).
+-- The copy box; WoW Forever's own tracker menu uses it too (Custom.lua).
 function EQT.ShowWowheadLink(questID)
     if not EQT.WowheadQuestOK(questID) then
         return
     end
-    local questPath = "quest=" .. string.format("%.0f", questID) .. "/"
-    local lang = EQT.Cfg("wowheadQuestClientLanguage") and WOWHEAD_LANG[GetLocale()] or ""
-    -- The popup translates its own texts.
+    local language = EQT.Cfg("wowheadQuestClientLanguage") and LANGUAGE_PATH[GetLocale()] or ""
+    local anchor = EQT.Cfg("wowheadQuestComments") and "#comments" or ""
+    local address = "https://www.wowhead.com/"
+        .. SITE
+        .. language
+        .. "quest="
+        .. string.format("%.0f", questID)
+        .. "/"
+        .. anchor
+    -- The box translates its own texts.
     CludesUI:ShowInputPopup({
         title = "Wowhead Link",
         message = "Press Ctrl+C to copy, then paste the link into your browser.",
-        initialText = "https://www.wowhead.com/" .. site .. lang .. questPath .. (EQT.Cfg(
-            "wowheadQuestComments"
-        ) and "#comments" or ""),
+        initialText = address,
         maxLetters = 256,
         confirmText = "Close",
         hideCancel = true,
@@ -56,57 +72,55 @@ function EQT.ShowWowheadLink(questID)
     })
 end
 
-local function AddLinkButton(questID, root)
-    if addedMenus[root] or not EQT.WowheadQuestOK(questID) then
+local function AddEntry(questID, root)
+    if done[root] or not EQT.WowheadQuestOK(questID) then
         return
     end
-    -- ModifyMenu also visits its last generated description when registered.
-    addedMenus[root] = true
+    -- A menu hook also runs for the last menu built when it registers.
+    done[root] = true
     root:CreateDivider()
     root:CreateButton(CludesUI.L("Wowhead Link"), function()
         EQT.ShowWowheadLink(questID)
     end)
 end
 
--- Quest rows and the quest-details popup both own their questID. Waypoints
--- share the log menu tag but have no questID.
-local function AddQuestLink(ownerFrame, root)
-    AddLinkButton(ownerFrame and ownerFrame.questID, root)
+-- Quest log rows and the details popup carry their quest (waypoints share
+-- the log's menu but have none).
+local function OwnQuestMenu(owner, root)
+    AddEntry(owner and owner.questID, root)
 end
 
--- The tracker's quest menu is owned by the tracker, not the quest. It opens
--- from a click on a quest's header, which Blizzard reports as the cursor
--- enters it, so the quest is that header's while the cursor is still on it.
-local function OnQuestHeaderEnter(_, block)
-    hoverBlock = block
+-- The tracker's menu belongs to the tracker, not the quest. It opens from a
+-- click on a quest's header, which Blizzard announces when the cursor
+-- enters it, so the quest is that header's while the cursor is still there.
+local function HeaderEntered(_, block)
+    hoveredBlock = block
 end
-local function AddTrackerLink(_, root)
-    local header = hoverBlock and hoverBlock.HeaderButton
+local function TrackerMenu(_, root)
+    local header = hoveredBlock and hoveredBlock.HeaderButton
     if header and header:IsMouseOver() then
-        AddLinkButton(hoverBlock.id, root)
+        AddEntry(hoveredBlock.id, root)
     end
 end
 
 function EQT.ApplyQuestLinks()
     if not EQT.Cfg("wowheadQuestLinks") then
-        if not logHandle then
-            return
+        if hooks then
+            for _, handle in ipairs(hooks) do
+                handle:Unregister()
+            end
+            hooks, hoveredBlock = nil, nil
         end
-        logHandle:Unregister()
-        detailHandle:Unregister()
-        trackerHandle:Unregister()
-        hoverHandle:Unregister()
-        logHandle, detailHandle, trackerHandle, hoverHandle, hoverBlock = nil, nil, nil, nil, nil
         return
     end
-    if logHandle then
+    if hooks then
         return
     end
-    if not addedMenus then
-        addedMenus = setmetatable({}, { __mode = "k" })
-    end
-    logHandle = Menu.ModifyMenu("MENU_QUEST_MAP_LOG_TITLE", AddQuestLink)
-    detailHandle = Menu.ModifyMenu("MENU_QUEST_LOG_POPUP_DETAIL_FRAME", AddQuestLink)
-    trackerHandle = Menu.ModifyMenu("MENU_QUEST_OBJECTIVE_TRACKER", AddTrackerLink)
-    hoverHandle = EventRegistry:RegisterCallbackWithHandle("OnQuestBlockHeader.OnEnter", OnQuestHeaderEnter)
+    done = done or setmetatable({}, { __mode = "k" })
+    hooks = {
+        Menu.ModifyMenu("MENU_QUEST_MAP_LOG_TITLE", OwnQuestMenu),
+        Menu.ModifyMenu("MENU_QUEST_LOG_POPUP_DETAIL_FRAME", OwnQuestMenu),
+        Menu.ModifyMenu("MENU_QUEST_OBJECTIVE_TRACKER", TrackerMenu),
+        EventRegistry:RegisterCallbackWithHandle("OnQuestBlockHeader.OnEnter", HeaderEntered),
+    }
 end
