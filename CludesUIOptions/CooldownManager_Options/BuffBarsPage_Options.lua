@@ -5035,277 +5035,217 @@ local function InitBuffBarsPage(
             Dim()
         end
 
-        -- Border Texture dropdown (+ inline offset cog) | empty
+        -- A bar field as read (nil when unset), its write with no follow-up, and
+        -- the border's style and size step.
+        local function BarRaw(key)
+            return function()
+                local bd = SelectedTBB()
+                return bd and bd[key]
+            end
+        end
+        local function BarStore(key)
+            return function(v)
+                local bd = SelectedTBB()
+                if bd then
+                    bd[key] = v
+                end
+            end
+        end
+        local function BorderTex()
+            local bd = SelectedTBB()
+            return bd and bd.borderTexture or "solid"
+        end
+        local function BorderStep()
+            local bd = SelectedTBB()
+            return bd and bd.borderSize or 0
+        end
+        local function Repaint()
+            RefreshTBB()
+        end
+
+        -- A new border style starts from that style's own colour, layering and
+        -- size, with no leftover offsets, shifts or exact pixels.
+        local function PickBorderStyle(v)
+            local bd = SelectedTBB()
+            if not bd then
+                return
+            end
+            bd.borderTexture = v
+            bd.borderTextureOffset, bd.borderTextureOffsetY = nil, nil
+            bd.borderTextureShiftX, bd.borderTextureShiftY = nil, nil
+            local colour, behind = CludesUI.GetBorderStyleSelectDefaults(v)
+            bd.borderR, bd.borderG, bd.borderB = colour.r, colour.g, colour.b
+            bd.borderBehind = behind
+            bd.borderSize = CludesUI.GetBorderDefaultSize("resourcebars", v) or bd.borderSize
+            if bd.borderSizePx then
+                bd.borderSizePx = false
+            end
+            RefreshTBB()
+            CludesUI:RefreshPage(true)
+        end
+
+        -- A Shift slider of the border cog: the stored shift, else the style's
+        -- default (which = the GetBorderDefaults return it reads). Every value is
+        -- stored, 0 included, so a 0 holds against a non-zero style default.
+        local function ShiftRow(label, key, which)
+            return {
+                type = "slider",
+                label = label,
+                min = -10,
+                max = 10,
+                step = 1,
+                get = function()
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return 0
+                    end
+                    if bd[key] then
+                        return bd[key]
+                    end
+                    return (
+                        select(
+                            which,
+                            CludesUI.GetBorderDefaults(
+                                "resourcebars",
+                                bd.borderTexture or "solid",
+                                bd.borderSize or 0
+                            )
+                        )
+                    )
+                end,
+                set = function(v)
+                    local bd = SelectedTBB()
+                    if bd then
+                        bd[key] = v
+                        RefreshTBB()
+                    end
+                end,
+            }
+        end
+
+        -- Border Texture (+ options cog, textured styles only) | Border Size (+
+        -- colour swatch). Under Classic WoW UI the size slot scales the vanilla
+        -- frame instead and has no swatch. A textured style adds its Width |
+        -- Height Offset row (built on the prebuild pass too: the y advance matches).
         do
-            local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
-            local tbbBsRow
-            tbbBsRow, hgt = W:DualRow(
+            local classic = CludesUI.BlizzStyle.Active("cdmbars") == "classic"
+            local values, order = CludesUI.GetBorderTextureDropdown()
+            local sizeCfg
+            if classic then
+                sizeCfg = CludesUI.BlizzStyle.ClassicBorderSizeCfg(BarRaw("stockBorderScale"), function(v)
+                    local bd = SelectedTBB()
+                    if bd then
+                        bd.stockBorderScale = v
+                        RefreshTBB()
+                    end
+                end)
+            else
+                sizeCfg = CludesUI.BlizzStyle.Gate(
+                    "cdmbars",
+                    CludesUI.BorderPxSliderCfg({
+                        text = "Border Size",
+                        getStep = BorderStep,
+                        setStep = BarStore("borderSize"),
+                        getTex = BorderTex,
+                        getPx = BarRaw("borderSizePx"),
+                        setPx = BarStore("borderSizePx"),
+                        apply = Repaint,
+                    })
+                )
+            end
+            local borderRow
+            borderRow, hgt = W:DualRow(
                 hostFrame,
                 posY,
                 CludesUI.BlizzStyle.Gate("cdmbars", {
                     type = "dropdown",
                     text = "Border Texture",
-                    values = texValues,
-                    order = texOrder,
-                    getValue = function()
-                        local bd = SelectedTBB()
-                        return bd and bd.borderTexture or "solid"
-                    end,
-                    setValue = function(v)
-                        local bd = SelectedTBB()
-                        if not bd then
-                            return
-                        end
-                        bd.borderTexture = v
-                        bd.borderTextureOffset = nil
-                        bd.borderTextureOffsetY = nil
-                        bd.borderTextureShiftX = nil
-                        bd.borderTextureShiftY = nil
-                        local _bcol, _bbehind = CludesUI.GetBorderStyleSelectDefaults(v)
-                        bd.borderR = _bcol.r
-                        bd.borderG = _bcol.g
-                        bd.borderB = _bcol.b
-                        bd.borderBehind = _bbehind
-                        local defSz = CludesUI.GetBorderDefaultSize("resourcebars", v)
-                        if defSz then
-                            bd.borderSize = defSz
-                        end
-                        if bd.borderSizePx then
-                            bd.borderSizePx = false
-                        end
-                        RefreshTBB()
-                        CludesUI:RefreshPage(true)
-                    end,
+                    values = values,
+                    order = order,
+                    getValue = BorderTex,
+                    setValue = PickBorderStyle,
                 }),
-                -- Classic WoW UI: the slot sizes the vanilla frame instead.
-                (CludesUI.BlizzStyle.Active("cdmbars") == "classic")
-                        and CludesUI.BlizzStyle.ClassicBorderSizeCfg(function()
-                            local bd = SelectedTBB()
-                            return bd and bd.stockBorderScale
-                        end, function(v)
-                            local bd = SelectedTBB()
-                            if not bd then
-                                return
-                            end
-                            bd.stockBorderScale = v
-                            RefreshTBB()
-                        end)
-                    or CludesUI.BlizzStyle.Gate(
-                        "cdmbars",
-                        CludesUI.BorderPxSliderCfg({
-                            text = "Border Size",
-                            getStep = function()
-                                local bd = SelectedTBB()
-                                return bd and bd.borderSize or 0
-                            end,
-                            setStep = function(step)
-                                local bd = SelectedTBB()
-                                if bd then
-                                    bd.borderSize = step
-                                end
-                            end,
-                            getTex = function()
-                                local bd = SelectedTBB()
-                                return bd and bd.borderTexture or "solid"
-                            end,
-                            getPx = function()
-                                local bd = SelectedTBB()
-                                return bd and bd.borderSizePx
-                            end,
-                            setPx = function(v)
-                                local bd = SelectedTBB()
-                                if bd then
-                                    bd.borderSizePx = v
-                                end
-                            end,
-                            apply = function()
-                                RefreshTBB()
-                            end,
-                        })
-                    )
+                sizeCfg
             )
             posY = posY - hgt
-            -- Width Offset | Height Offset: the textured border's outward offsets,
-            -- present only while a textured style is selected (built on the
-            -- prebuild pass too, so the y advance is identical).
-            do
-                local bd0 = SelectedTBB()
-                local tex0 = bd0 and bd0.borderTexture or "solid"
-                if tex0 ~= "" and tex0 ~= "solid" then
-                    local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
-                        addonKey = "resourcebars",
-                        getTex = function()
-                            local bd = SelectedTBB()
-                            return bd and bd.borderTexture or "solid"
-                        end,
-                        getStep = function()
-                            local bd = SelectedTBB()
-                            return bd and bd.borderSize or 0
-                        end,
-                        getSizeKey = function()
-                            local bd = SelectedTBB()
-                            return bd and bd.borderSize or 0
-                        end,
-                        getPx = function()
-                            local bd = SelectedTBB()
-                            return bd and bd.borderSizePx
-                        end,
-                        getX = function()
-                            local bd = SelectedTBB()
-                            return bd and bd.borderTextureOffset
-                        end,
-                        setX = function(v)
-                            local bd = SelectedTBB()
-                            if bd then
-                                bd.borderTextureOffset = v
-                            end
-                        end,
-                        getY = function()
-                            local bd = SelectedTBB()
-                            return bd and bd.borderTextureOffsetY
-                        end,
-                        setY = function(v)
-                            local bd = SelectedTBB()
-                            if bd then
-                                bd.borderTextureOffsetY = v
-                            end
-                        end,
-                        apply = function()
-                            RefreshTBB()
-                        end,
-                    })
-                    _, hgt = W:DualRow(
-                        hostFrame,
-                        posY,
-                        CludesUI.BlizzStyle.Gate("cdmbars", ocfgL),
-                        CludesUI.BlizzStyle.Gate("cdmbars", ocfgR)
-                    )
-                    posY = posY - hgt
-                end
+
+            local tex = BorderTex()
+            if tex ~= "" and tex ~= "solid" then
+                local left, right = CludesUI.BorderOffsetRowCfgs({
+                    addonKey = "resourcebars",
+                    getTex = BorderTex,
+                    getStep = BorderStep,
+                    getSizeKey = BorderStep,
+                    getPx = BarRaw("borderSizePx"),
+                    getX = BarRaw("borderTextureOffset"),
+                    setX = BarStore("borderTextureOffset"),
+                    getY = BarRaw("borderTextureOffsetY"),
+                    setY = BarStore("borderTextureOffsetY"),
+                    apply = Repaint,
+                })
+                _, hgt = W:DualRow(
+                    hostFrame,
+                    posY,
+                    CludesUI.BlizzStyle.Gate("cdmbars", left),
+                    CludesUI.BlizzStyle.Gate("cdmbars", right)
+                )
+                posY = posY - hgt
             end
-            -- Inline border color swatch on Border Size (right region); none
-            -- under Classic WoW UI, whose slider sizes the vanilla frame.
-            if CludesUI.BlizzStyle.Active("cdmbars") ~= "classic" then
-                local rgn = tbbBsRow._rightRegion
-                local ctrl = rgn._control
-                local borderSwatch, updateBorderSwatch = CludesUI.BuildColorSwatch(
+
+            if not classic then
+                local rgn = borderRow._rightRegion
+                local swatch, refresh = CludesUI.BuildColorSwatch(
                     rgn,
-                    tbbBsRow:GetFrameLevel() + 3,
+                    borderRow:GetFrameLevel() + 3,
                     function()
                         local bd = SelectedTBB()
                         return (bd and bd.borderR or 0), (bd and bd.borderG or 0), (bd and bd.borderB or 0)
                     end,
                     function(r, g, b)
                         local bd = SelectedTBB()
-                        if not bd then
-                            return
+                        if bd then
+                            bd.borderR, bd.borderG, bd.borderB = r, g, b
+                            RefreshTBB()
                         end
-                        bd.borderR, bd.borderG, bd.borderB = r, g, b
-                        RefreshTBB()
                     end,
                     false,
                     20
                 )
-                Pix.Point(borderSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
+                Pix.Point(swatch, "RIGHT", rgn._control, "LEFT", -8, 0)
                 CludesUI.RegisterWidgetRefresh(function()
-                    updateBorderSwatch()
+                    refresh()
                 end)
-                CludesUI.BlizzStyle.BlockInline("cdmbars", borderSwatch)
+                CludesUI.BlizzStyle.BlockInline("cdmbars", swatch)
             end
-            do
-                local rgn = tbbBsRow._leftRegion
-                local cogBtn = CludesUI.BuildInlineCog(rgn, {
-                    title = "Border Options",
-                    rows = {
-                        {
-                            type = "slider",
-                            label = "Shift X",
-                            min = -10,
-                            max = 10,
-                            step = 1,
-                            get = function()
-                                local bd = SelectedTBB()
-                                if not bd then
-                                    return 0
-                                end
-                                local v = bd.borderTextureShiftX
-                                if v then
-                                    return v
-                                end
-                                local _, _, dsx = CludesUI.GetBorderDefaults(
-                                    "resourcebars",
-                                    bd.borderTexture or "solid",
-                                    bd.borderSize or 0
-                                )
-                                return dsx
-                            end,
-                            set = function(v)
-                                local bd = SelectedTBB()
-                                if not bd then
-                                    return
-                                end
-                                bd.borderTextureShiftX = v == 0 and nil or v
+
+            local cog = CludesUI.BuildInlineCog(borderRow._leftRegion, {
+                title = "Border Options",
+                rows = {
+                    ShiftRow("Shift X", "borderTextureShiftX", 3),
+                    ShiftRow("Shift Y", "borderTextureShiftY", 4),
+                    {
+                        type = "toggle",
+                        label = "Show Behind",
+                        get = function()
+                            local bd = SelectedTBB()
+                            return bd and bd.borderBehind or false
+                        end,
+                        set = function(v)
+                            local bd = SelectedTBB()
+                            if bd then
+                                bd.borderBehind = v
                                 RefreshTBB()
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Shift Y",
-                            min = -10,
-                            max = 10,
-                            step = 1,
-                            get = function()
-                                local bd = SelectedTBB()
-                                if not bd then
-                                    return 0
-                                end
-                                local v = bd.borderTextureShiftY
-                                if v then
-                                    return v
-                                end
-                                local _, _, _, dsy = CludesUI.GetBorderDefaults(
-                                    "resourcebars",
-                                    bd.borderTexture or "solid",
-                                    bd.borderSize or 0
-                                )
-                                return dsy
-                            end,
-                            set = function(v)
-                                local bd = SelectedTBB()
-                                if not bd then
-                                    return
-                                end
-                                bd.borderTextureShiftY = v == 0 and nil or v
-                                RefreshTBB()
-                            end,
-                        },
-                        {
-                            type = "toggle",
-                            label = "Show Behind",
-                            get = function()
-                                local bd = SelectedTBB()
-                                return bd and bd.borderBehind or false
-                            end,
-                            set = function(v)
-                                local bd = SelectedTBB()
-                                if not bd then
-                                    return
-                                end
-                                bd.borderBehind = v == false and nil or v
-                                RefreshTBB()
-                            end,
-                        },
+                            end
+                        end,
                     },
-                })
-                if cogBtn then
-                    local function UpdateCogVis()
-                        local bd = SelectedTBB()
-                        local tex = bd and bd.borderTexture or "solid"
-                        cogBtn:SetShown(tex ~= "solid" and not CludesUI.BlizzStyle.Get("cdmbars"))
-                    end
-                    CludesUI.RegisterWidgetRefresh(UpdateCogVis)
-                    UpdateCogVis()
+                },
+            })
+            if cog then
+                local function CogShown()
+                    cog:SetShown(BorderTex() ~= "solid" and not CludesUI.BlizzStyle.Get("cdmbars"))
                 end
+                CludesUI.RegisterWidgetRefresh(CogShown)
+                CogShown()
             end
         end
 
