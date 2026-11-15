@@ -4,71 +4,62 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 if CludesUI.IS_FOREVER then
     return
 end -- one spec per class on WoW Forever, nothing to switch: no factory, no loadout hook (the main file drops the block from BLOCK_TYPES too)
--- Blocks\Spec.lua
--- Specialization block factory (spec, loot spec, loadout popups).
-
-local ADDON_NAME, mod = ...
+-------------------------------------------------------------------------------
+--  Blocks\Spec.lua - Info Bar block: specialisation, loadout and loot spec.
+--
+--  Shows the spec's icon and the loadout name (or the spec name), and the
+--  loot spec in brackets when it differs. Hover opens the spec list (hover
+--  the active spec for its loadouts, click another to switch); Ctrl+click
+--  lists the loadouts, Shift+click opens talents, right-click picks the loot
+--  spec (allowed in combat).
+--
+--  The loadout name comes from the "last selected loadout" pointer, which the
+--  game writes AFTER the talent events fire (they would read the old name),
+--  so the write itself is hooked. SPELLS_CHANGED fires often; the block
+--  redraws only when what it shows changed.
+--
+--  Settings (blockCfg.settings): showLoadout (default on), useUppercase,
+--  iconStyle = "wow", showIcon (default on).
+-------------------------------------------------------------------------------
+local _, mod = ...
 local L = mod.L
 local MEDIA = mod.MEDIA
 local K = mod.BlockKit
 
--- Upvalues
-local CreateFrame = CreateFrame
-local UIParent = UIParent
 local InCombatLockdown = InCombatLockdown
-local ipairs = ipairs
-local select = select
-local floor = math.floor
-local max = math.max
-local min = math.min
+local floor, max, min = math.floor, math.max, math.min
 
-local ICON_GAP = K.ICON_GAP
 local CONTENT_BASE = K.CONTENT_BASE
-local InstKey = K.InstKey
-local MakeEventFrame = K.MakeEventFrame
-local RegisterInstEvents = K.RegisterInstEvents
-local UnregisterInstEvents = K.UnregisterInstEvents
-local HBudget = K.HBudget
-local VSlotW = K.VSlotW
-local MaybeRelayout = K.MaybeRelayout
-local AttachTextOffset = K.AttachTextOffset
-local BlockColorOf = K.BlockColorOf
-local IconColorOf = K.IconColorOf
+local VSlotW, HBudget = K.VSlotW, K.HBudget
+local BlockColorOf, IconColorOf = K.BlockColorOf, K.IconColorOf
 
--------------------------------------------------------------------------------
---  SPEC (specialisation, loot-spec, loadout popups)
--------------------------------------------------------------------------------
--- Loadout-name freshness: the "last selected loadout" pointer is written AFTER
--- talent-commit events fire (TRAIT_CONFIG_UPDATED/SPELLS_CHANGED both race it and
--- read the OLD name), so hook the WRITE itself -- talent UI and loadout addons all
--- funnel through UpdateLastSelectedSavedConfigID. Skips in combat; PLAYER_REGEN_ENABLED catches up.
-local specInstances = {}
-local specPointerHooked = false
+-- Every live spec block, as a set (a destroyed one leaves it, so bar
+-- rebuilds do not pile them up).
+local blocks = {}
+local hooked = false
+-- Talent frames and loadout addons all write the pointer through this.
+-- Skipped in combat; PLAYER_REGEN_ENABLED catches up.
 local function HookLoadoutPointer()
-    if specPointerHooked then
+    if
+        hooked or not (C_ClassTalents and C_ClassTalents.UpdateLastSelectedSavedConfigID and hooksecurefunc)
+    then
         return
     end
-    if not (C_ClassTalents and C_ClassTalents.UpdateLastSelectedSavedConfigID and hooksecurefunc) then
-        return
-    end
-    specPointerHooked = true
+    hooked = true
     hooksecurefunc(C_ClassTalents, "UpdateLastSelectedSavedConfigID", function()
         if InCombatLockdown() then
             return
         end
-        for idx = 1, #specInstances do
-            local si = specInstances[idx]
-            if not si._dead and si.Refresh then
-                si:Refresh()
-            end
+        for block in pairs(blocks) do
+            block:Refresh()
         end
     end)
 end
 
 mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
     local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
-    instance.key = InstKey(barCtx, blockCfg)
-    specInstances[#specInstances + 1] = instance
+    instance.key = K.InstKey(barCtx, blockCfg)
+    blocks[instance] = true
     HookLoadoutPointer()
     instance.events = {
         "PLAYER_SPECIALIZATION_CHANGED",
@@ -86,8 +77,6 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
     }
 
     local SPEC_MEDIA = MEDIA .. "spec\\"
-    local _specFitBuf1 = { "" }
-    local _specFitBuf2 = { "" }
     -- One PNG per spec in media\spec\, named <class>-<spec>.png, listed here in SPEC
     -- INDEX order per class (GetSpecializationInfo order is fixed) -- no spec-ID table; new specs just append.
     local SPEC_ICON_FILES = {
@@ -222,7 +211,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
     local specText = contentFrame:CreateFontString(nil, "OVERLAY")
     local infoText = contentFrame:CreateFontString(nil, "OVERLAY")
     infoText:Hide()
-    AttachTextOffset(instance, specText) -- infoText chains to specText
+    K.AttachTextOffset(instance, specText) -- infoText chains to specText
 
     -- Generic popup builder (shared across the three popups of THIS instance)
     local function BuildPopup(
@@ -694,37 +683,50 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
         end
     end
 
+    -- Everything the block shows, as one string: equal = nothing to redraw.
+    local drawn
+    local function Fingerprint()
+        local d = D()
+        local current = currentSpecIdx and specCache[currentSpecIdx]
+        return table.concat({
+            GetBarDisplayText(),
+            tostring(GetLootSpecName()),
+            tostring(currentSpecIdx),
+            tostring(current and current.icon),
+            tostring(d.showIcon),
+            tostring(d.iconStyle),
+            tostring(d.useUppercase),
+        }, "|")
+    end
+
+    -- Text and icon colours (the accent on hover).
+    local function Paint()
+        if mouseOver then
+            local r, g, b = mod.GetAccent()
+            specText:SetTextColor(r, g, b, 1)
+            specIcon:SetVertexColor(r, g, b, 1)
+        else
+            local r, g, b = BlockColorOf(blockCfg)
+            local ir, ig, ib = IconColorOf(blockCfg)
+            specText:SetTextColor(r, g, b, 1)
+            specIcon:SetVertexColor(ir, ig, ib, 1)
+        end
+    end
+
     function instance:Refresh()
         -- No combat gate: only our own insecure frames (text, textures, sizes),
-        -- and an in-combat loot spec change must repaint immediately.
+        -- and an in-combat loot spec change must repaint at once.
         UpdateCurrentSpec()
         local d = D()
         local barCfg = BC()
         local barH = barCtx.GetThickness()
         local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
-        -- Loot spec rides smaller than the main label (11px at the 30 base).
+        -- The loot spec is smaller than the main label (11px at the 30 base).
         local infoSz = max(8, floor(CONTENT_BASE * 0.36 + 0.5))
-        local gap = 4
-        -- Icon -> content spacing only; text-to-text rows (loot spec info
-        -- after the main label) keep the tighter gap above.
-        local iconGap = ICON_GAP
-        local ar, ag, ab = mod.GetAccent()
+        local gap = 4 -- label to loot spec; the icon uses ICON_GAP
+        local iconGap = K.ICON_GAP
         local isSide = barCtx.IsVertical()
         local specLabel = GetBarDisplayText()
-
-        if isSide then
-            local slotW = VSlotW(instance)
-            local innerW = max(30, slotW - 8)
-            _specFitBuf1[1] = specLabel
-            local lootNameForFit = GetLootSpecName()
-            if lootNameForFit then
-                if d.useUppercase ~= false then
-                    _specFitBuf2[1] = lootNameForFit:upper()
-                else
-                    _specFitBuf2[1] = lootNameForFit
-                end
-            end
-        end
         local iconSz = fontSize + 8
 
         mod.SetFont(specText, fontSize, barCfg)
@@ -746,15 +748,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
             end
         end
 
-        if mouseOver then
-            specText:SetTextColor(ar, ag, ab, 1)
-            specIcon:SetVertexColor(ar, ag, ab, 1)
-        else
-            local br, bgr, bb = BlockColorOf(blockCfg)
-            local ir, ig, ib = IconColorOf(blockCfg)
-            specText:SetTextColor(br, bgr, bb, 1)
-            specIcon:SetVertexColor(ir, ig, ib, 1)
-        end
+        Paint()
 
         local lootName = GetLootSpecName()
         local activeSpecName = nil
@@ -820,13 +814,9 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
             contentFrame:SetSize(slotW, totalH)
         else
             local slotW = HBudget(instance, 120)
-            local textBudget = max(30, slotW - iconSz - gap - 8)
-            _specFitBuf1[1] = specLabel
             mod.SetFont(specText, fontSize, barCfg)
             specText:SetText(specLabel)
             if infoText:IsShown() then
-                local infoLabel = infoText:GetText() or ""
-                _specFitBuf2[1] = infoLabel
                 mod.SetFont(infoText, infoSz, barCfg)
             end
             if showIcon then
@@ -860,7 +850,8 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
         end
         specButton:ClearAllPoints()
         specButton:SetAllPoints(contentFrame)
-        MaybeRelayout(instance)
+        drawn = Fingerprint()
+        K.MaybeRelayout(instance)
     end
 
     -- The spec popup opens on hover, closes only once the cursor is over neither
@@ -894,7 +885,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
 
     specButton:SetScript("OnEnter", function()
         mouseOver = true
-        instance:Refresh()
+        Paint() -- hover only recolours; nothing is laid out again
         -- No combat gate: the hover popup is our own insecure frames, opens
         -- catcher-free and dismisses via the hover watcher; only swap clicks
         -- are gated. Never stomp a click-opened popup (loot spec / loadout).
@@ -912,7 +903,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
     end)
     specButton:SetScript("OnLeave", function()
         mouseOver = false
-        instance:Refresh()
+        Paint()
     end)
     specButton:SetScript("OnClick", function(_, btnFrame)
         -- No blanket combat gate: popups open catcher-free in lockdown and the talent
@@ -943,7 +934,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
         end
     end)
 
-    instance.eventFrame = MakeEventFrame(instance, function(self, evt, eventConfigID)
+    instance.eventFrame = K.MakeEventFrame(instance, function(self, evt, eventConfigID)
         if pendingSwapConfigID then
             if evt == "TRAIT_CONFIG_UPDATED" then
                 -- The commit-landing event carries the ACTIVE combat config's id,
@@ -963,18 +954,23 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
                 pendingSwapSpecId, pendingSwapConfigID = nil, nil
             end
         end
-        self:Refresh()
+        -- Talent and spell events fire often: a redraw only if something shown changed.
+        UpdateCurrentSpec()
+        if Fingerprint() ~= drawn then
+            self:Refresh()
+        end
     end)
 
     function instance:Enable()
         contentFrame:Show()
+        drawn = nil
         BuildSpecCache()
         UpdateCurrentSpec()
-        RegisterInstEvents(self)
+        K.RegisterInstEvents(self)
     end
 
     function instance:Disable()
-        UnregisterInstEvents(self)
+        K.UnregisterInstEvents(self)
         HideAllPopups()
         contentFrame:Hide()
     end
@@ -996,6 +992,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
 
     function instance:Destroy()
         self._dead = true
+        blocks[self] = nil
         HideAllPopups()
         contentFrame:Hide()
     end
