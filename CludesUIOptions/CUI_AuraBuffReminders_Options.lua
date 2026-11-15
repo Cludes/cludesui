@@ -2024,6 +2024,196 @@ initFrame:SetScript("OnEvent", function(self)
         return y, row
     end
 
+    -- Cog rows bound to a display field: a slider (default when unset) and a
+    -- font pick ("__global" = the module font, stored as nil). after runs on
+    -- a change (default: refresh the reminders and the preview).
+    local function CogSlider(label, key, min, max, default, after)
+        return {
+            type = "slider",
+            label = label,
+            min = min,
+            max = max,
+            step = 1,
+            get = Get(key, default),
+            set = Set(key, after),
+        }
+    end
+    local function CogFont(label, key, after)
+        local values, order = CludesUI.BuildFontDropdownData()
+        return {
+            type = "dropdown",
+            label = label,
+            values = values,
+            order = order,
+            get = Get(key, "__global"),
+            set = function(v)
+                local d = DDB()
+                if d then
+                    d[key] = (v ~= "__global") and v or nil
+                    (after or Live)()
+                end
+            end,
+        }
+    end
+    -- A toggle whose change also rebuilds the page (its cogs follow it).
+    local function Rebuilds(key)
+        return Set(key, function()
+            Live()
+            CludesUI:RefreshPage()
+        end)
+    end
+    local NAME_ANCHORS = {
+        BOTTOM = "Below Icon",
+        TOP = "Above Icon",
+        CENTER = "On Icon",
+        LEFT = "Left of Icon",
+        RIGHT = "Right of Icon",
+    }
+
+    -- Show Name's cog (font, size, anchor, offsets) and colour swatch, both
+    -- dimmed while names are off.
+    local function NameInlines(rgn)
+        CludesUI.BuildInlineCog(rgn, {
+            title = "Name Settings",
+            disabled = function()
+                local d = DDB()
+                return not d or not d.showText
+            end,
+            disabledTooltip = "Show Name",
+            rows = {
+                CogFont("Name Font", "nameFont"),
+                CogSlider("Text Size", "textSize", 6, 30, 11),
+                {
+                    type = "dropdown",
+                    label = "Anchor",
+                    values = NAME_ANCHORS,
+                    order = { "BOTTOM", "TOP", "CENTER", "LEFT", "RIGHT" },
+                    get = Get("textAnchor", "BOTTOM"),
+                    set = Set("textAnchor"),
+                },
+                CogSlider("X Offset", "textXOffset", -50, 50, 0),
+                CogSlider("Y Offset", "textYOffset", -50, 50, -2),
+            },
+        })
+        local swatch = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+            local d = DDB()
+            local tc = d and d.textColor or { r = 1, g = 1, b = 1 }
+            return tc.r, tc.g, tc.b, 1
+        end, function(r, g, b)
+            local d = DDB()
+            if d then
+                d.textColor = { r = r, g = g, b = b }
+                Live()
+            end
+        end, false, 20)
+        swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+        rgn._lastInline = swatch
+        local block = CreateFrame("Frame", nil, swatch)
+        block:SetAllPoints()
+        block:SetFrameLevel(swatch:GetFrameLevel() + 10)
+        block:EnableMouse(true)
+        block:SetScript("OnEnter", function()
+            CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip("Show Name"))
+        end)
+        block:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
+        local function Dim()
+            local d = DDB()
+            local off = not d or not d.showText
+            swatch:SetAlpha(off and 0.3 or 1)
+            block:SetShown(off)
+        end
+        Dim()
+        CludesUI.RegisterWidgetRefresh(Dim)
+    end
+
+    -- Show Name (+ cog, swatch) | Show Item Count (+ cog), then Glow Type
+    -- (shared glow controls) | Attach Important Buffs to Cursor (+ cog).
+    -- Returns y and the name row (the preview's text clicks lead there).
+    local function BuildTextRows(parent, y)
+        local W = CludesUI.Widgets
+        local building = not CludesUI._prebuilding
+        local nameRow, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Name",
+            getValue = Raw("showText"),
+            setValue = Rebuilds("showText"),
+        }, {
+            type = "toggle",
+            text = "Show Item Count",
+            tooltip = "Show how many of the consumable you have left in your bags.",
+            getValue = function()
+                local d = DDB()
+                return not d or d.showCount ~= false
+            end,
+            setValue = Rebuilds("showCount"),
+        })
+        y = y - h
+        if building then
+            CludesUI.BuildInlineCog(nameRow._rightRegion, {
+                title = "Item Count Settings",
+                disabled = function()
+                    local d = DDB()
+                    return d and d.showCount == false
+                end,
+                disabledTooltip = "Show Item Count",
+                rows = {
+                    CogFont("Item Count Font", "countFont", RefreshAll),
+                    CogSlider("Text Size", "countSize", 6, 30, 16),
+                    CogSlider("X Offset", "countXOffset", -50, 50, 0),
+                    CogSlider("Y Offset", "countYOffset", -50, 50, 0),
+                },
+            })
+        end
+
+        local GO = CludesUI.GlowOptions
+        local glowRow
+        glowRow, h = W:DualRow(
+            parent,
+            y,
+            abrGlowDesc and GO.DropdownSpec(abrGlowDesc, "Glow Type") or CludesUI.BlankRowCfg(),
+            {
+                type = "toggle",
+                text = "Attach Important Buffs to Cursor",
+                tooltip = "This option only affects Raid Buffs and Paladin Beacons",
+                getValue = Raw("cursorAttach"),
+                setValue = Set("cursorAttach", function()
+                    RefreshAll()
+                    CludesUI:RefreshPage()
+                end),
+            }
+        )
+        y = y - h
+        if abrGlowDesc then
+            GO.AttachInline(glowRow._leftRegion, abrGlowDesc)
+        end
+        if building then
+            CludesUI.BuildInlineCog(glowRow._rightRegion, {
+                title = "Cursor Settings",
+                disabled = function()
+                    local d = DDB()
+                    return not (d and d.cursorAttach)
+                end,
+                disabledTooltip = "Attach Important Buffs to Cursor",
+                rows = {
+                    {
+                        type = "toggle",
+                        label = "Only on Cursor in Combat",
+                        tooltip = "Out of combat, important buffs show with your other reminders.",
+                        get = function()
+                            local d = DDB()
+                            return d and d.cursorAttachCombatOnly == true
+                        end,
+                        set = Set("cursorAttachCombatOnly", RefreshAll),
+                    },
+                },
+            })
+            NameInlines(nameRow._leftRegion)
+        end
+        return y, nameRow
+    end
+
     local function BuildRemindersPage(pageName, parent, yOffset)
         local W = CludesUI.Widgets
         local y = yOffset
@@ -2056,360 +2246,8 @@ initFrame:SetScript("OnEvent", function(self)
         local borderRow
         y, borderRow = BuildBorderRows(parent, y)
 
-        -- Row 2: Show Name (+ inline cog + swatch) | Show Item Count (+ cog)
         local rowText
-        rowText, h = W:DualRow(parent, y, {
-            type = "toggle",
-            text = "Show Name",
-            getValue = function()
-                local d = DDB()
-                return d and d.showText
-            end,
-            setValue = function(v)
-                local d = DDB()
-                if not d then
-                    return
-                end
-                d.showText = v
-                RefreshAll()
-                UpdatePreviewHeader()
-                CludesUI:RefreshPage()
-            end,
-        }, {
-            type = "toggle",
-            text = "Show Item Count",
-            tooltip = "Show how many of the consumable you have left in your bags.",
-            getValue = function()
-                local d = DDB()
-                return not d or d.showCount ~= false
-            end,
-            setValue = function(v)
-                local d = DDB()
-                if not d then
-                    return
-                end
-                d.showCount = v
-                RefreshAll()
-                UpdatePreviewHeader()
-                CludesUI:RefreshPage()
-            end,
-        })
-        y = y - h
-
-        -- Inline cog on Show Item Count (right of row 2): size + offsets
-        if not CludesUI._prebuilding then
-            local rgn = rowText._rightRegion
-            local countFontValues, countFontOrder = CludesUI.BuildFontDropdownData()
-            CludesUI.BuildInlineCog(rgn, {
-                title = "Item Count Settings",
-                disabled = function()
-                    local d = DDB()
-                    return d and d.showCount == false
-                end,
-                disabledTooltip = "Show Item Count",
-                rows = {
-                    {
-                        type = "dropdown",
-                        label = "Item Count Font",
-                        values = countFontValues,
-                        order = countFontOrder,
-                        get = function()
-                            local d = DDB()
-                            return (d and d.countFont) or "__global"
-                        end,
-                        set = function(v)
-                            local d = DDB()
-                            if not d then
-                                return
-                            end
-                            d.countFont = (v ~= "__global") and v or nil
-                            RefreshAll()
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Text Size",
-                        min = 6,
-                        max = 30,
-                        step = 1,
-                        get = function()
-                            local d = DDB()
-                            return d and d.countSize or 16
-                        end,
-                        set = function(v)
-                            local d = DDB()
-                            if not d then
-                                return
-                            end
-                            d.countSize = v
-                            RefreshAll()
-                            UpdatePreviewHeader()
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "X Offset",
-                        min = -50,
-                        max = 50,
-                        step = 1,
-                        get = function()
-                            local d = DDB()
-                            return d and d.countXOffset or 0
-                        end,
-                        set = function(v)
-                            local d = DDB()
-                            if not d then
-                                return
-                            end
-                            d.countXOffset = v
-                            RefreshAll()
-                            UpdatePreviewHeader()
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Y Offset",
-                        min = -50,
-                        max = 50,
-                        step = 1,
-                        get = function()
-                            local d = DDB()
-                            return d and d.countYOffset or 0
-                        end,
-                        set = function(v)
-                            local d = DDB()
-                            if not d then
-                                return
-                            end
-                            d.countYOffset = v
-                            RefreshAll()
-                            UpdatePreviewHeader()
-                        end,
-                    },
-                },
-            })
-        end
-
-        -- Row 3: Glow Type (shared glow controls) | Attach Important Buffs to Cursor
-        local GO = CludesUI.GlowOptions
-        local abrDesc = abrGlowDesc
-        local rowGlow
-        rowGlow, h = W:DualRow(
-            parent,
-            y,
-            abrDesc and GO.DropdownSpec(abrDesc, "Glow Type") or CludesUI.BlankRowCfg(),
-            {
-                type = "toggle",
-                text = "Attach Important Buffs to Cursor",
-                tooltip = "This option only affects Raid Buffs and Paladin Beacons",
-                getValue = function()
-                    local d = DDB()
-                    return d and d.cursorAttach
-                end,
-                setValue = function(v)
-                    local d = DDB()
-                    if not d then
-                        return
-                    end
-                    d.cursorAttach = v
-                    RefreshAll()
-                    CludesUI:RefreshPage()
-                end,
-            }
-        )
-        y = y - h
-        if abrDesc then
-            GO.AttachInline(rowGlow._leftRegion, abrDesc)
-        end
-
-        -- Inline cog on Attach Important Buffs to Cursor (right of row 3)
-        if not CludesUI._prebuilding then
-            CludesUI.BuildInlineCog(rowGlow._rightRegion, {
-                title = "Cursor Settings",
-                disabled = function()
-                    local d = DDB()
-                    return not (d and d.cursorAttach)
-                end,
-                disabledTooltip = "Attach Important Buffs to Cursor",
-                rows = {
-                    {
-                        type = "toggle",
-                        label = "Only on Cursor in Combat",
-                        tooltip = "Out of combat, important buffs show with your other reminders.",
-                        get = function()
-                            local d = DDB()
-                            return d and d.cursorAttachCombatOnly == true
-                        end,
-                        set = function(v)
-                            local d = DDB()
-                            if not d then
-                                return
-                            end
-                            d.cursorAttachCombatOnly = v
-                            RefreshAll()
-                        end,
-                    },
-                },
-            })
-        end
-
-        -- Inline cog + color swatch on Show Name (left of row 2)
-        if not CludesUI._prebuilding then
-            local rgn = rowText._leftRegion
-            -- Inline cog for name settings (font, size, anchor, x/y offset)
-            local nameFontValues, nameFontOrder = CludesUI.BuildFontDropdownData()
-            CludesUI.BuildInlineCog(rgn, {
-                title = "Name Settings",
-                disabled = function()
-                    local d = DDB()
-                    return not d or not d.showText
-                end,
-                disabledTooltip = "Show Name",
-                rows = {
-                    {
-                        type = "dropdown",
-                        label = "Name Font",
-                        values = nameFontValues,
-                        order = nameFontOrder,
-                        get = function()
-                            local d = DDB()
-                            return (d and d.nameFont) or "__global"
-                        end,
-                        set = function(v)
-                            local d = DDB()
-                            if not d then
-                                return
-                            end
-                            d.nameFont = (v ~= "__global") and v or nil
-                            RefreshAll()
-                            UpdatePreviewHeader()
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Text Size",
-                        min = 6,
-                        max = 30,
-                        step = 1,
-                        get = function()
-                            local d = DDB()
-                            return d and d.textSize or 11
-                        end,
-                        set = function(v)
-                            local d = DDB()
-                            if not d then
-                                return
-                            end
-                            d.textSize = v
-                            RefreshAll()
-                            UpdatePreviewHeader()
-                        end,
-                    },
-                    {
-                        type = "dropdown",
-                        label = "Anchor",
-                        values = {
-                            BOTTOM = "Below Icon",
-                            TOP = "Above Icon",
-                            CENTER = "On Icon",
-                            LEFT = "Left of Icon",
-                            RIGHT = "Right of Icon",
-                        },
-                        order = { "BOTTOM", "TOP", "CENTER", "LEFT", "RIGHT" },
-                        get = function()
-                            local d = DDB()
-                            return d and d.textAnchor or "BOTTOM"
-                        end,
-                        set = function(v)
-                            local d = DDB()
-                            if not d then
-                                return
-                            end
-                            d.textAnchor = v
-                            RefreshAll()
-                            UpdatePreviewHeader()
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "X Offset",
-                        min = -50,
-                        max = 50,
-                        step = 1,
-                        get = function()
-                            local d = DDB()
-                            return d and d.textXOffset or 0
-                        end,
-                        set = function(v)
-                            local d = DDB()
-                            if not d then
-                                return
-                            end
-                            d.textXOffset = v
-                            RefreshAll()
-                            UpdatePreviewHeader()
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Y Offset",
-                        min = -50,
-                        max = 50,
-                        step = 1,
-                        get = function()
-                            local d = DDB()
-                            return d and d.textYOffset or -2
-                        end,
-                        set = function(v)
-                            local d = DDB()
-                            if not d then
-                                return
-                            end
-                            d.textYOffset = v
-                            RefreshAll()
-                            UpdatePreviewHeader()
-                        end,
-                    },
-                },
-            })
-
-            local swatch = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
-                local d = DDB()
-                local tc = d and d.textColor or { r = 1, g = 1, b = 1 }
-                return tc.r, tc.g, tc.b, 1
-            end, function(r, g, b)
-                local d = DDB()
-                if not d then
-                    return
-                end
-                d.textColor = { r = r, g = g, b = b }
-                RefreshAll()
-                UpdatePreviewHeader()
-            end, false, 20)
-            swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            rgn._lastInline = swatch
-
-            -- Disabled overlay for swatch when Show Name is off
-            local swatchBlock = CreateFrame("Frame", nil, swatch)
-            swatchBlock:SetAllPoints()
-            swatchBlock:SetFrameLevel(swatch:GetFrameLevel() + 10)
-            swatchBlock:EnableMouse(true)
-            swatchBlock:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip("Show Name"))
-            end)
-            swatchBlock:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
-
-            local function UpdateTextInlinesDisabled()
-                local d = DDB()
-                local off = not d or not d.showText
-                swatch:SetAlpha(off and 0.3 or 1)
-                swatchBlock:SetShown(off)
-            end
-            UpdateTextInlinesDisabled()
-            CludesUI.RegisterWidgetRefresh(UpdateTextInlinesDisabled)
-        end
+        y, rowText = BuildTextRows(parent, y)
 
         -- Row 4: Icon Spacing (+ directions cog) | Frame Strata
         local rowSliders
