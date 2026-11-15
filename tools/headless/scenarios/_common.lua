@@ -1,4 +1,5 @@
 -- Shared helpers for the Info Bar scenarios (dofile'd after the prelude).
+-- The scenario sets H.OUT = OUT (the prelude's output file is local to it).
 local CUI = rawget(_G, "CludesUI")
 local mod = CUI._ModuleNS.CludesUIDataBars
 local H = { mod = mod }
@@ -35,7 +36,7 @@ end
 function H.Hover(label, index)
     local list = H.Buttons()
     local h = list[index or #list]
-    if not h then OUT:write("== " .. label .. ": nothing to hover\n") return end
+    if not h then H.OUT:write("== " .. label .. ": nothing to hover\n") return end
     h.__scripts.OnEnter(h)
     SNAP(label, H.Bar())
     SNAP(label .. " tooltip", rawget(_G, "CludesUIDataBarsTip"))
@@ -45,7 +46,7 @@ end
 function H.Count(label, fn)
     local before = DRAWS
     fn()
-    OUT:write("== draws, " .. label .. ": ", DRAWS - before, "\n")
+    H.OUT:write("== draws, " .. label .. ": ", DRAWS - before, "\n")
 end
 function H.Vertical(label)
     H.bar.orientation = "V"
