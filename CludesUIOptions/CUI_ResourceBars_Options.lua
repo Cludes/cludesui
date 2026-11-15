@@ -3535,21 +3535,24 @@ initFrame:SetScript("OnEvent", function(self)
             local hostFrame = conf.pageParent
             local INNERPAD = 10
             local ROW_H = 50
-            local botY = conf.pageBotY() - (conf.pageBotExtra or 0)
+            local topY, botY = conf.pageTopY, conf.pageBotY() - (conf.pageBotExtra or 0)
 
+            -- The page over its host's content, below the header. A Layout
+            -- Mode cycle can leave this lazily built frame with no rect, so
+            -- its resolved anchors are kept: ToggleFrame sets them again
+            -- (_reanchor) before every Show, which makes the rect resolve.
             thrPage = CreateFrame("Frame", nil, hostFrame)
-            Pix.Point(thrPage, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, conf.pageTopY)
-            Pix.Point(thrPage, "TOPRIGHT", hostFrame, "TOPRIGHT", -CONTENT_PAD, conf.pageTopY)
+            Pix.Point(thrPage, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, topY)
+            Pix.Point(thrPage, "TOPRIGHT", hostFrame, "TOPRIGHT", -CONTENT_PAD, topY)
             Pix.Point(thrPage, "BOTTOMLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, botY)
-            -- The unlock-mode cycle can leave this lazily-built frame with an undefined rect, so capture the resolved anchors: ToggleFrame re-asserts them before every Show to force a rect recompute.
-            local _thrPts = {}
-            for p = 1, thrPage:GetNumPoints() do
-                _thrPts[p] = { thrPage:GetPoint(p) }
+            local anchors = {}
+            for i = 1, thrPage:GetNumPoints() do
+                anchors[i] = { thrPage:GetPoint(i) }
             end
             thrPage._reanchor = function()
                 thrPage:ClearAllPoints()
-                for p = 1, #_thrPts do
-                    thrPage:SetPoint(unpack(_thrPts[p]))
+                for _, point in ipairs(anchors) do
+                    thrPage:SetPoint(unpack(point))
                 end
             end
             thrPage:SetFrameLevel(hostFrame:GetFrameLevel() + 50)
@@ -3928,15 +3931,18 @@ initFrame:SetScript("OnEvent", function(self)
 
             -- A value box that commits when it loses focus (Enter clears focus)
             -- and on Escape puts back saved() and throws the typing away.
-            local function BindBox(box, commit, saved)
+            -- target: what the box edits (default the selected entry; the
+            -- bar-wide row passes the bar), handed to commit and saved.
+            local function BindBox(box, commit, saved, target)
+                target = target or CurEntry
                 box:SetScript("OnEditFocusLost", function(self)
                     if self._cancelCommit then
                         self._cancelCommit = nil
                         return
                     end
-                    local entry = CurEntry()
-                    if entry then
-                        commit(self, entry)
+                    local owner = target()
+                    if owner then
+                        commit(self, owner)
                     end
                 end)
                 box:SetScript("OnEnterPressed", function(self)
@@ -3944,7 +3950,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end)
                 box:SetScript("OnEscapePressed", function(self)
                     self._cancelCommit = true
-                    self:SetText(saved(CurEntry()))
+                    self:SetText(saved(target()))
                     self:ClearFocus()
                 end)
             end
@@ -4362,44 +4368,31 @@ initFrame:SetScript("OnEvent", function(self)
             -- Covers the row when recolouring the text can have no effect (rules.textBlock).
             local textInsteadDis = MakeBlocker(textInsteadRow, textInsteadRow, textInsteadToggle, 2, 6)
 
-            -- Row: a bar-wide number (cfg.barInput), placed only for the entries whose rules ask for it
+            -- A bar-wide number (conf.barInput), shown only for the entries
+            -- whose rules ask for it; a commit is rounded and clamped.
             local barRow, barSnap
             local bi = conf.barInput
             if bi then
                 barRow = DRow(bi.label, ROWH)
-                local barInput = MakeInput(barRow, 50, true)
-                barInput:SetPoint("RIGHT", barRow, "RIGHT", 0, 0)
+                local box = MakeInput(barRow, 50, true)
+                box:SetPoint("RIGHT", barRow, "RIGHT", 0, 0)
                 if bi.letters then
-                    barInput:SetMaxLetters(bi.letters)
+                    box:SetMaxLetters(bi.letters)
+                end
+                local function Saved(bar)
+                    return tostring((bar and bar[bi.field]) or bi.default)
                 end
                 barSnap = function()
-                    local edge = conf.getBarData()
-                    barInput:SetText(tostring((edge and edge[bi.field]) or bi.default))
+                    box:SetText(Saved(conf.getBarData()))
                 end
-                barInput:SetScript("OnEditFocusLost", function(self)
-                    if self._cancelCommit then
-                        self._cancelCommit = nil
-                        return
-                    end
-                    local edge = conf.getBarData()
-                    if not edge then
-                        return
-                    end
+                BindBox(box, function(self, bar)
                     local v = tonumber(self:GetText())
                     if v then
-                        edge[bi.field] = math.max(bi.min, math.min(bi.max, math.floor(v + 0.5)))
+                        bar[bi.field] = math.max(bi.min, math.min(bi.max, math.floor(v + 0.5)))
                         conf.refreshFn()
                     end
-                    barSnap()
-                end)
-                barInput:SetScript("OnEnterPressed", function(self)
-                    self:ClearFocus()
-                end)
-                barInput:SetScript("OnEscapePressed", function(self)
-                    self._cancelCommit = true
-                    self:ClearFocus()
-                    barSnap()
-                end)
+                    self:SetText(Saved(bar))
+                end, Saved, conf.getBarData)
             end
 
             -- The selected entry's rules: the bar's defaults, then
