@@ -4871,100 +4871,57 @@ initFrame:SetScript("OnEvent", function(self)
         return settingsBtn
     end -- BuildThresholdSettingsButton
 
-    -- Unlock Mode page
-    local function BuildUnlockPage(pageName, hostFrame, yOffset)
-        local W = CludesUI.Widgets
-        local posY = yOffset
-        local _, hgt
-
-        CludesUI:ClearContentHeader()
-
-        _, hgt = W:SectionHeader(hostFrame, "POSITIONING", posY)
-        posY = posY - hgt
-
-        _, hgt = W:Toggle(hostFrame, "Unlock Elements", posY, function()
-            return CludesUI._unlockModeActive or false
-        end, function(v)
-            if CludesUI and CludesUI.ToggleUnlockMode then
-                CludesUI:ToggleUnlockMode()
-            end
-        end, nil, "Opens the shared Layout Mode to reposition and scale elements")
-        posY = posY - hgt
-
-        _, hgt = W:Spacer(hostFrame, posY, 12)
-        posY = posY - hgt
-
-        _, hgt = W:SectionHeader(hostFrame, "RESET", posY)
-        posY = posY - hgt
-
-        _, hgt = W:Toggle(hostFrame, "Reset Positions", posY, function()
-            return false
-        end, function()
-            local p = DB()
-            if not p then
-                return
-            end
-            p.health.offsetX = 0
-            p.health.offsetY = -64
-            p.health.unlockPos = nil
-            p.primary.offsetX = 0
-            p.primary.offsetY = -52
-            p.primary.unlockPos = nil
-            p.secondary.offsetX = 0
-            p.secondary.offsetY = -38
-            p.secondary.unlockPos = nil
-            p.secondary.countTextUnlockPos = nil
-            p.castBar.unlockPos = nil
-            p.castBar.anchorX = 0
-            p.castBar.anchorY = -50
-            p.gcdBar.unlockPos = nil
-            p.gcdBar.anchorX = 0
-            p.gcdBar.anchorY = -78
-            Refresh()
-        end, nil, "Click to reset all element positions to defaults")
-        posY = posY - hgt
-
-        return math.abs(posY)
-    end
-
-    -- Cast Bar preview state
-    local _castBarPreviewFill = 0.65
+    ---------------------------------------------------------------------------
+    --  Cast bar preview
+    ---------------------------------------------------------------------------
+    local _castBarPreviewFill = 0.65 -- the made-up progress (randomised on each visit)
     local _castBarPreviewFrames = {}
     local _castBarPreviewScale = 1
 
-    -- Shuffled spell icon pool for cast bar preview (same spells as nameplates)
+    -- The preview's spell icons (as the nameplates'), dealt in a shuffled order.
     local _castBarIconPool = { 136197, 236802, 135808, 136116, 135735, 136048, 135812, 136075 }
     local _castBarIconIdx = 0
     local function ShuffleCastBarIcons()
         _castBarIconIdx = 0
         for i = #_castBarIconPool, 2, -1 do
-            local jdx = math.random(i)
-            _castBarIconPool[i], _castBarIconPool[jdx] = _castBarIconPool[jdx], _castBarIconPool[i]
+            local j = math.random(i)
+            _castBarIconPool[i], _castBarIconPool[j] = _castBarIconPool[j], _castBarIconPool[i]
         end
     end
     local function NextCastBarIcon()
-        _castBarIconIdx = _castBarIconIdx + 1
-        if _castBarIconIdx > #_castBarIconPool then
-            _castBarIconIdx = 1
-        end
+        _castBarIconIdx = _castBarIconIdx % #_castBarIconPool + 1
         return _castBarIconPool[_castBarIconIdx]
     end
 
     -- Rows the Blizzard kit replaces but the classic cast bar leaves to the
-    -- user (its background colour and opacity): gated only while Blizzard
-    -- Style renders, live under Classic WoW UI. Returns cfg for inline use.
+    -- player (background colour and opacity): gated only under Blizzard
+    -- Style, live under Classic WoW UI. Returns conf for inline use.
     function mod.ERB_CastBlizzOnlyGate(conf)
         if CludesUI.BlizzStyle.Active("castbar") == "blizzard" then
             return CludesUI.BlizzStyle.Gate("castbar", conf)
         end
         return conf
     end
-    -- Blizzard Style chrome on the preview mock, mirroring the live bar's
-    -- ns.ERB_ApplyBlizzCastChrome: the stock frame art round the bar and,
-    -- with Spell Text on, the stock text box under it with the spell name
-    -- inside; Classic WoW UI seats the vanilla frame instead (no text box).
-    -- Regions are created once; off the style both hide. On ns (no new
-    -- upvalue for the updater below).
+
+    local function NoSnap(tex)
+        if tex.SetSnapToPixelGrid then
+            tex:SetSnapToPixelGrid(false)
+            tex:SetTexelSnappingBias(0)
+        end
+        return tex
+    end
+    -- Where the spell name sits in the stock text box.
+    local SPELL_TEXT_SIDE = {
+        right = { "RIGHT", "RIGHT", -8 },
+        center = { "CENTER", "CENTER", 0 },
+        left = { "LEFT", "LEFT", 8 },
+    }
+
+    -- Blizzard Style chrome on the preview, as the live bar's
+    -- ns.ERB_ApplyBlizzCastChrome: the stock frame round the bar and, with
+    -- Spell Text on, the stock text box under it holding the spell name.
+    -- Classic WoW UI seats the vanilla frame instead (no text box). Made
+    -- once; off the style both hide. On mod (no new upvalue for the updater).
     function mod.ERB_CastPreviewBlizzChrome(popFrame, cb, barW, blizz)
         if not blizz then
             if popFrame.blizzFrame then
@@ -4976,66 +4933,47 @@ initFrame:SetScript("OnEvent", function(self)
             return
         end
         if not popFrame.blizzFrame then
-            local af = CreateFrame("Frame", nil, popFrame.container)
-            af:SetAllPoints(popFrame.container)
-            af:SetFrameLevel(popFrame.container:GetFrameLevel() + 6)
-            popFrame.blizzArt = af
-            local fr = af:CreateTexture(nil, "OVERLAY", nil, 2)
-            if fr.SetSnapToPixelGrid then
-                fr:SetSnapToPixelGrid(false)
-                fr:SetTexelSnappingBias(0)
-            end
-            popFrame.blizzFrame = fr
-            local tb = popFrame.barFrame:CreateTexture(nil, "BACKGROUND", nil, -1)
-            if tb.SetSnapToPixelGrid then
-                tb:SetSnapToPixelGrid(false)
-                tb:SetTexelSnappingBias(0)
-            end
-            popFrame.blizzTextBox = tb
+            local art = CreateFrame("Frame", nil, popFrame.container)
+            art:SetAllPoints(popFrame.container)
+            art:SetFrameLevel(popFrame.container:GetFrameLevel() + 6)
+            popFrame.blizzArt = art
+            popFrame.blizzFrame = NoSnap(art:CreateTexture(nil, "OVERLAY", nil, 2))
+            popFrame.blizzTextBox = NoSnap(popFrame.barFrame:CreateTexture(nil, "BACKGROUND", nil, -1))
         end
-        local fr, tb = popFrame.blizzFrame, popFrame.blizzTextBox
+        local frame, box = popFrame.blizzFrame, popFrame.blizzTextBox
         if mod.ERB_CastClassic() then
-            -- Classic WoW UI: the vanilla frame round the whole container
-            -- (bar plus icon, the live seat); the spell name stays on the bar.
-            mod.ERB_SeatClassicChrome(fr, popFrame.container, cb.height, false, mod.ERB_ClassicFrameK(cb))
-            tb:Hide()
+            -- Classic WoW UI: the vanilla frame round bar and icon (the live
+            -- seat); the spell name stays on the bar.
+            mod.ERB_SeatClassicChrome(frame, popFrame.container, cb.height, false, mod.ERB_ClassicFrameK(cb))
+            box:Hide()
             return
         end
         local frameAtlas = mod.ERB_BlizzAtlas("frame")
         if frameAtlas then
-            mod.ERB_StockAtlas(fr, frameAtlas)
-            fr:ClearAllPoints()
-            fr:SetPoint("TOPLEFT", popFrame.barFrame, "TOPLEFT", -2, 2)
-            fr:SetPoint("BOTTOMRIGHT", popFrame.barFrame, "BOTTOMRIGHT", 2, -2)
-            fr:Show()
+            mod.ERB_StockAtlas(frame, frameAtlas)
+            frame:ClearAllPoints()
+            frame:SetPoint("TOPLEFT", popFrame.barFrame, "TOPLEFT", -2, 2)
+            frame:SetPoint("BOTTOMRIGHT", popFrame.barFrame, "BOTTOMRIGHT", 2, -2)
+            frame:Show()
         else
-            fr:Hide()
+            frame:Hide()
         end
         local boxAtlas = cb.showSpellText and mod.ERB_BlizzAtlas("textbox")
-        if boxAtlas then
-            mod.ERB_StockAtlas(tb, boxAtlas)
-            tb:ClearAllPoints()
-            tb:SetPoint("TOPLEFT", popFrame.barFrame, "BOTTOMLEFT", 0, 3)
-            tb:SetPoint("BOTTOMRIGHT", popFrame.barFrame, "BOTTOMRIGHT", 0, -13)
-            tb:Show()
-            local nameText = popFrame.spellText
-            local side = cb.spellTextSide or "left"
-            local posX, posY = cb.spellTextX or 0, cb.spellTextY or 0
-            nameText:ClearAllPoints()
-            if side == "right" then
-                nameText:SetJustifyH("RIGHT")
-                nameText:SetPoint("RIGHT", tb, "RIGHT", -8 + posX, posY)
-            elseif side == "center" then
-                nameText:SetJustifyH("CENTER")
-                nameText:SetPoint("CENTER", tb, "CENTER", posX, posY)
-            else
-                nameText:SetJustifyH("LEFT")
-                nameText:SetPoint("LEFT", tb, "LEFT", 8 + posX, posY)
-            end
-            nameText:SetWidth(math.max(10, (barW or cb.width or 220) - 16))
-        else
-            tb:Hide()
+        if not boxAtlas then
+            box:Hide()
+            return
         end
+        mod.ERB_StockAtlas(box, boxAtlas)
+        box:ClearAllPoints()
+        box:SetPoint("TOPLEFT", popFrame.barFrame, "BOTTOMLEFT", 0, 3)
+        box:SetPoint("BOTTOMRIGHT", popFrame.barFrame, "BOTTOMRIGHT", 0, -13)
+        box:Show()
+        local name = popFrame.spellText
+        local place = SPELL_TEXT_SIDE[cb.spellTextSide] or SPELL_TEXT_SIDE.left
+        name:ClearAllPoints()
+        name:SetJustifyH(place[1])
+        name:SetPoint(place[1], box, place[2], place[3] + (cb.spellTextX or 0), cb.spellTextY or 0)
+        name:SetWidth(math.max(10, (barW or cb.width or 220) - 16))
     end
 
     local function UpdateCastBarPreview()
