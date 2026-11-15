@@ -3178,20 +3178,17 @@ local function InitBuffBarsPage(
         -------------------------------------------------------------------
         do
             -- The third card broadcasts the selected bar to every other spec, then flips to
-            -- "Remove Bar from All Specs" (the inverse); dimmed unless a preset/custom-buff bar is selected.
-            local _selForBroadcast = (not _tbbSelectedGroup) and SelectedTBB() or nil
-            local _canBroadcast = mod.IsTrackedBuffBarBroadcastable
-                    and mod.IsTrackedBuffBarBroadcastable(_selForBroadcast)
+            -- "Remove Bar from All Specs" (the inverse); dimmed unless a preset/custom-buff
+            -- bar is selected. WoW Forever runs a class on one spec: nowhere to copy to.
+            local broadcastSel = (not _tbbSelectedGroup) and SelectedTBB() or nil
+            local canBroadcast = not CludesUI.IS_FOREVER
+                    and mod.IsTrackedBuffBarBroadcastable
+                    and mod.IsTrackedBuffBarBroadcastable(broadcastSel)
                 or false
-            -- WoW Forever: the class runs on one spec, so there is nowhere to copy to.
-            if CludesUI.IS_FOREVER then
-                _canBroadcast = false
-            end
-            local _isBroadcast = _canBroadcast
+            local isBroadcast = canBroadcast
                     and mod.IsTrackedBuffBarBroadcast
-                    and mod.IsTrackedBuffBarBroadcast(_selForBroadcast)
+                    and mod.IsTrackedBuffBarBroadcast(broadcastSel)
                 or false
-            local _broadcastLabel = _isBroadcast and "Remove Bar from All Specs" or "Add Bar to All Specs"
             local EGc = CludesUI.CLUDES_GREEN
             local PADc = CludesUI.CONTENT_PAD or 10
             local CARD_H, CARD_GAP, CARD_ICON = 60, 12, 24
@@ -3202,73 +3199,69 @@ local function InitBuffBarsPage(
             Pix.Size(cardRow, cardTotalW, CARD_H)
             Pix.Point(cardRow, "TOPLEFT", hostFrame, "TOPLEFT", PADc, posY)
 
-            local function MakeActionCard(xOff, iconPath, cardTitle, cardDesc, onClick, disabledTip)
-                local cardFrame = CreateFrame("Button", nil, cardRow)
-                Pix.Size(cardFrame, CARD_W, CARD_H)
-                Pix.Point(cardFrame, "TOPLEFT", cardRow, "TOPLEFT", xOff, 0)
-                cardFrame:SetFrameLevel(cardRow:GetFrameLevel() + 2)
-
-                local cbrd = CludesUI.MakeRoundedCard(cardFrame, 0.12, 0.50, 2)
-                local cbg, accentLine = cbrd.bg, cbrd.accent
-
-                -- Accent top edge
-                accentLine:SetColorTexture(EGc.r, EGc.g, EGc.b, 0.6)
-
-                local cIcon = cardFrame:CreateTexture(nil, "ARTWORK")
-                cIcon:SetSize(CARD_ICON, CARD_ICON)
-                Pix.Point(cIcon, "LEFT", cardFrame, "LEFT", 18, 0)
-                cIcon:SetTexture(iconPath)
-                cIcon:SetVertexColor(EGc.r, EGc.g, EGc.b)
-                cIcon:SetAlpha(0.6)
-                if cIcon.SetSnapToPixelGrid then
-                    cIcon:SetSnapToPixelGrid(false)
-                    cIcon:SetTexelSnappingBias(0)
+            -- A card: accent top edge, icon, title and one-line description; hover
+            -- lifts it. disabledTip: dimmed, and the tip says why.
+            local function MakeActionCard(slot, icon, title, desc, onClick, disabledTip)
+                local card = CreateFrame("Button", nil, cardRow)
+                Pix.Size(card, CARD_W, CARD_H)
+                Pix.Point(card, "TOPLEFT", cardRow, "TOPLEFT", (CARD_W + CARD_GAP) * slot, 0)
+                card:SetFrameLevel(cardRow:GetFrameLevel() + 2)
+                local frameArt = CludesUI.MakeRoundedCard(card, 0.12, 0.50, 2)
+                frameArt.accent:SetColorTexture(EGc.r, EGc.g, EGc.b, 0.6)
+                local glyph = card:CreateTexture(nil, "ARTWORK")
+                glyph:SetSize(CARD_ICON, CARD_ICON)
+                Pix.Point(glyph, "LEFT", card, "LEFT", 18, 0)
+                glyph:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\" .. icon)
+                glyph:SetVertexColor(EGc.r, EGc.g, EGc.b)
+                glyph:SetAlpha(0.6)
+                if glyph.SetSnapToPixelGrid then
+                    glyph:SetSnapToPixelGrid(false)
+                    glyph:SetTexelSnappingBias(0)
                 end
-
-                local titleFs = CludesUI.MakeFont(cardFrame, 12, nil, 1, 1, 1, 0.9)
-                Pix.Point(titleFs, "TOPLEFT", cIcon, "TOPRIGHT", 14, 1)
-                Pix.Point(titleFs, "RIGHT", cardFrame, "RIGHT", -10, 0)
-                titleFs:SetJustifyH("LEFT")
-                titleFs:SetWordWrap(false)
-                titleFs:SetText(CludesUI.L(cardTitle))
-
-                local descFs = CludesUI.MakeFont(cardFrame, 10, nil, 1, 1, 1, 0.35)
-                Pix.Point(descFs, "TOPLEFT", titleFs, "BOTTOMLEFT", 0, -4)
-                Pix.Point(descFs, "RIGHT", cardFrame, "RIGHT", -10, 0)
-                descFs:SetJustifyH("LEFT")
-                descFs:SetWordWrap(false)
-                descFs:SetText(CludesUI.L(cardDesc))
-
+                local function Line(size, alpha, text, anchor, relPoint, x, y)
+                    local fs = CludesUI.MakeFont(card, size, nil, 1, 1, 1, alpha)
+                    Pix.Point(fs, "TOPLEFT", anchor, relPoint, x, y)
+                    Pix.Point(fs, "RIGHT", card, "RIGHT", -10, 0)
+                    fs:SetJustifyH("LEFT")
+                    fs:SetWordWrap(false)
+                    fs:SetText(CludesUI.L(text))
+                    return fs
+                end
+                local titleFs = Line(12, 0.9, title, glyph, "TOPRIGHT", 14, 1)
+                Line(10, 0.35, desc, titleFs, "BOTTOMLEFT", 0, -4)
                 if disabledTip then
-                    cardFrame:SetAlpha(0.45)
-                    cardFrame:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(cardFrame, disabledTip)
+                    card:SetAlpha(0.45)
+                    card:SetScript("OnEnter", function()
+                        CludesUI.ShowWidgetTooltip(card, disabledTip)
                     end)
-                    cardFrame:SetScript("OnLeave", function()
+                    card:SetScript("OnLeave", function()
                         CludesUI.HideWidgetTooltip()
                     end)
-                else
-                    cardFrame:SetScript("OnEnter", function()
-                        cbg:SetColorTexture(0.100, 0.110, 0.124, 0.50)
-                        cbrd:SetColor(1, 1, 1, 0.22)
-                        titleFs:SetAlpha(1)
-                        cIcon:SetAlpha(0.85)
-                    end)
-                    cardFrame:SetScript("OnLeave", function()
-                        cbg:SetColorTexture(0.062, 0.070, 0.082, 0.50)
-                        cbrd:SetColor(1, 1, 1, 0.12)
-                        titleFs:SetAlpha(0.9)
-                        cIcon:SetAlpha(0.6)
-                    end)
-                    cardFrame:SetScript("OnClick", onClick)
+                    return card
                 end
-                return cardFrame
+                local function Lift(on)
+                    if on then
+                        frameArt.bg:SetColorTexture(0.100, 0.110, 0.124, 0.50)
+                    else
+                        frameArt.bg:SetColorTexture(0.062, 0.070, 0.082, 0.50)
+                    end
+                    frameArt:SetColor(1, 1, 1, on and 0.22 or 0.12)
+                    titleFs:SetAlpha(on and 1 or 0.9)
+                    glyph:SetAlpha(on and 0.85 or 0.6)
+                end
+                card:SetScript("OnEnter", function()
+                    Lift(true)
+                end)
+                card:SetScript("OnLeave", function()
+                    Lift(false)
+                end)
+                card:SetScript("OnClick", onClick)
+                return card
             end
 
-            local MEDIA_ICONS = "Interface\\AddOns\\CludesUI\\media\\icons\\"
             MakeActionCard(
                 0,
-                MEDIA_ICONS .. "power.png",
+                "power.png",
                 "Use Blizzard CDM Bars",
                 "Switch back to Blizzard's bars.",
                 function()
@@ -3287,71 +3280,63 @@ local function InitBuffBarsPage(
                     })
                 end
             )
-            MakeActionCard(
-                CARD_W + CARD_GAP,
-                MEDIA_ICONS .. "cui-open.png",
-                "Open Blizzard CDM",
-                "Manage your tracked bars.",
-                function()
-                    if mod.OpenBlizzardCDMTab then
-                        mod.OpenBlizzardCDMTab(true)
-                    end
+            MakeActionCard(1, "cui-open.png", "Open Blizzard CDM", "Manage your tracked bars.", function()
+                if mod.OpenBlizzardCDMTab then
+                    mod.OpenBlizzardCDMTab(true)
                 end
-            )
-            MakeActionCard(
-                (CARD_W + CARD_GAP) * 2,
-                MEDIA_ICONS .. "sync.png",
-                _broadcastLabel,
-                "Copy this bar to every spec.",
-                function()
-                    local sel = SelectedTBB()
-                    if _tbbSelectedGroup or not mod.IsTrackedBuffBarBroadcastable(sel) then
-                        return
-                    end
-                    local nm = sel.name or "Bar"
-                    if (not sel.popularKey or sel.popularKey == "") and sel.spellID and sel.spellID > 0 then
-                        local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(sel.spellID)
-                        if details and details.name then
-                            nm = details.name
-                        end
-                    end
-                    if mod.IsTrackedBuffBarBroadcast and mod.IsTrackedBuffBarBroadcast(sel) then
-                        CludesUI:ShowConfirmPopup({
-                            title = "Remove Bar from All Specs",
-                            message = CludesUI.Lf(
+            end)
+
+            -- Add to (or remove from) every other spec, after a confirm naming the bar.
+            local function Broadcast()
+                local sel = SelectedTBB()
+                if _tbbSelectedGroup or not mod.IsTrackedBuffBarBroadcastable(sel) then
+                    return
+                end
+                local name = sel.name or "Bar"
+                if (not sel.popularKey or sel.popularKey == "") and sel.spellID and sel.spellID > 0 then
+                    local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(sel.spellID)
+                    name = (details and details.name) or name
+                end
+                local removing = mod.IsTrackedBuffBarBroadcast and mod.IsTrackedBuffBarBroadcast(sel)
+                local step = removing and mod.RemoveBarFromAllSpecs or mod.AddBarToAllSpecs
+                CludesUI:ShowConfirmPopup({
+                    title = removing and "Remove Bar from All Specs" or "Add Bar to All Specs",
+                    message = removing
+                            and CludesUI.Lf(
                                 'Remove "%1$s" from every other spec? The bar in this spec is kept.',
-                                nm
-                            ),
-                            confirmText = "Remove from All",
-                            cancelText = "Cancel",
-                            onConfirm = function()
-                                if mod.RemoveBarFromAllSpecs then
-                                    mod.RemoveBarFromAllSpecs(_tbbSelectedBar)
-                                end
-                                CludesUI:RefreshPage(true)
-                            end,
-                        })
-                    else
-                        CludesUI:ShowConfirmPopup({
-                            title = "Add Bar to All Specs",
-                            message = CludesUI.Lf(
-                                'Add "%1$s" to every spec? It will be copied to each of your specs that doesn\'t already have it.',
-                                nm
-                            ),
-                            confirmText = "Add to All Specs",
-                            cancelText = "Cancel",
-                            onConfirm = function()
-                                if mod.AddBarToAllSpecs then
-                                    mod.AddBarToAllSpecs(_tbbSelectedBar)
-                                end
-                                CludesUI:RefreshPage(true)
-                            end,
-                        })
-                    end
-                end,
-                not _canBroadcast
-                        and ((CludesUI.IS_FOREVER and "WoW Forever has no other specs to copy this bar to") or (_tbbSelectedGroup and "Select a bar to broadcast it to other specs" or "Only preset or custom buff bars can be added to all specs"))
-                    or nil
+                                name
+                            )
+                        or CludesUI.Lf(
+                            'Add "%1$s" to every spec? It will be copied to each of your specs that doesn\'t already have it.',
+                            name
+                        ),
+                    confirmText = removing and "Remove from All" or "Add to All Specs",
+                    cancelText = "Cancel",
+                    onConfirm = function()
+                        if step then
+                            step(_tbbSelectedBar)
+                        end
+                        CludesUI:RefreshPage(true)
+                    end,
+                })
+            end
+            local whyNot
+            if not canBroadcast then
+                if CludesUI.IS_FOREVER then
+                    whyNot = "WoW Forever has no other specs to copy this bar to"
+                elseif _tbbSelectedGroup then
+                    whyNot = "Select a bar to broadcast it to other specs"
+                else
+                    whyNot = "Only preset or custom buff bars can be added to all specs"
+                end
+            end
+            MakeActionCard(
+                2,
+                "sync.png",
+                isBroadcast and "Remove Bar from All Specs" or "Add Bar to All Specs",
+                "Copy this bar to every spec.",
+                Broadcast,
+                whyNot
             )
             posY = posY - CARD_H - 12
 
