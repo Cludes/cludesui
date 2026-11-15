@@ -405,8 +405,8 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
         return width + (self._xpExtend or 0)
     end
 
-    -- A removed block stops listening too (the old one kept redrawing its
-    -- hidden frames on every XP and reputation change until a reload).
+    -- The bar disables a block before destroying it; this also stops the
+    -- events in case Destroy is ever called on its own.
     function inst:Destroy()
         self._dead = true
         K.UnregisterInstEvents(self)

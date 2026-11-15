@@ -287,8 +287,8 @@ mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
         return max(contentFrame:GetWidth() or 60, 24)
     end
 
-    -- A removed block stops listening too (the old one kept redrawing its
-    -- hidden frames on gear changes until a reload).
+    -- The bar disables a block before destroying it; this also stops the
+    -- events in case Destroy is ever called on its own.
     function inst:Destroy()
         self._dead = true
         K.UnregisterInstEvents(self)
