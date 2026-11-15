@@ -4585,6 +4585,17 @@ local function InitBuffBarsPage(
         AddTBBTextSwatch(stacksRow, stacksRow._leftRegion, "stacks")
         PositionSync(stacksRow._leftRegion, "Stacks Text", "stacks")
 
+        -- Whether the selected bar tracks a cooldown, and one with charges.
+        local function CooldownBar()
+            local bd = SelectedTBB()
+            return bd and bd.trackType == "cooldown" and bd or nil
+        end
+        local function ChargeBar()
+            return CooldownBar() and SelectedTBBSupportsChargeHash() or false
+        end
+        local NOT_COOLDOWN_TIP = "This option requires a cooldown-tracking bar"
+        local NO_CHARGES_TIP = "This option is only available for abilities with multiple charges"
+
         -- Reverse Fill | Fill Up. Deliberately paired on one row: they are the
         -- two options a user reaches for when the bar is not moving the way
         -- they expect, and they do different things. Reverse Fill mirrors the
@@ -4603,39 +4614,30 @@ local function InitBuffBarsPage(
             end,
             setValue = function(v)
                 local bd = SelectedTBB()
-                if not bd then
-                    return
+                if bd then
+                    bd.reverseFill = v
+                    RefreshTBB()
                 end
-                bd.reverseFill = v
-                RefreshTBB()
             end,
         }, {
             type = "toggle",
             text = "Fill Up",
             tooltip = "Fills the bar as the cooldown recovers instead of draining it as the cooldown runs down.",
+            -- Charge Hash Lines drives its own recovery bar, which already fills
+            -- upward, so Fill Up can do nothing there. Tested the way the Charge
+            -- Hash Lines toggle tests it: the stored flag alone is not enough,
+            -- since chargeHashLines rides in TBB_STYLE_KEYS and a style copy or
+            -- preset can set it on a single-charge spell, where the hash fill
+            -- never runs.
             disabled = function()
-                local bd = SelectedTBB()
-                -- Charge Hash Lines drives its own recovery bar, which
-                -- already fills upward, so fillUp cannot do anything there.
-                -- Leaving the toggle live would promise behaviour it has no
-                -- way to deliver. Test the same way the Charge Hash Lines
-                -- toggle does: the stored flag alone is not enough, because
-                -- chargeHashLines rides in TBB_STYLE_KEYS and a style copy
-                -- or preset can set it on a single-charge spell, where the
-                -- hash fill never actually runs.
-                return not bd
-                    or bd.trackType ~= "cooldown"
-                    or (bd.chargeHashLines == true and SelectedTBBSupportsChargeHash())
+                local bd = CooldownBar()
+                return not bd or (bd.chargeHashLines == true and SelectedTBBSupportsChargeHash())
             end,
-            -- rawTooltip: these are whole sentences. Without it they get
-            -- wrapped into "This option requires <text> to be enabled".
+            -- rawTooltip: these are whole sentences, not "This option requires <text>".
             rawTooltip = true,
             disabledTooltip = function()
-                local bd = SelectedTBB()
-                if not bd or bd.trackType ~= "cooldown" then
-                    return "This option requires a cooldown-tracking bar"
-                end
-                return "Charge Hash Lines already fills as charges recover"
+                return CooldownBar() and "Charge Hash Lines already fills as charges recover"
+                    or NOT_COOLDOWN_TIP
             end,
             getValue = function()
                 local bd = SelectedTBB()
@@ -4643,17 +4645,17 @@ local function InitBuffBarsPage(
             end,
             setValue = function(v)
                 local bd = SelectedTBB()
-                if not bd then
-                    return
+                if bd then
+                    bd.fillUp = v and true or nil
+                    RefreshTBB()
                 end
-                bd.fillUp = v and true or nil
-                RefreshTBB()
             end,
         })
         posY = posY - hgt
 
-        -- Charge Hash Lines | Smooth Bars. Hash separator count/orientation resolve
-        -- automatically from the spell's max charges; Smooth Bars is profile-wide, not per bar/spec.
+        -- Charge Hash Lines (+ cog) | Smooth Bars. The hash count and orientation
+        -- follow the spell's max charges; Smooth Bars is profile-wide, not per bar
+        -- or spec.
         local SMOOTH_ITEMS = {
             { key = "buffs", label = "Buffs" },
             { key = "cooldowns", label = "Cooldowns" },
@@ -4665,15 +4667,10 @@ local function InitBuffBarsPage(
             text = "Charge Hash Lines",
             tooltip = "Divides a cooldown-tracking bar into one recovery section per ability charge. The timer shows the next charge's cooldown.",
             disabled = function()
-                local bd = SelectedTBB()
-                return not bd or bd.trackType ~= "cooldown" or not SelectedTBBSupportsChargeHash()
+                return not ChargeBar()
             end,
             disabledTooltip = function()
-                local bd = SelectedTBB()
-                if not bd or bd.trackType ~= "cooldown" then
-                    return "This option requires a cooldown-tracking bar"
-                end
-                return "This option is only available for abilities with multiple charges"
+                return CooldownBar() and NO_CHARGES_TIP or NOT_COOLDOWN_TIP
             end,
             getValue = function()
                 local bd = SelectedTBB()
@@ -4681,10 +4678,7 @@ local function InitBuffBarsPage(
             end,
             setValue = function(v)
                 local bd = SelectedTBB()
-                if not bd then
-                    return
-                end
-                if v and not SelectedTBBSupportsChargeHash() then
+                if not bd or (v and not SelectedTBBSupportsChargeHash()) then
                     return
                 end
                 bd.chargeHashLines = v and true or nil
@@ -4692,6 +4686,7 @@ local function InitBuffBarsPage(
                 CludesUI:RefreshPage()
             end,
         }, {
+            -- A stand-in the checkbox list below takes the place of.
             type = "dropdown",
             text = "Smooth Bars",
             tooltip = "Eases bar movement instead of snapping. Affects all Tracking Bars of that type, in every spec of this profile.",
@@ -4703,148 +4698,107 @@ local function InitBuffBarsPage(
             setValue = function() end,
         })
         posY = posY - hgt
-        do
-            local rgn = chargeHashRow._leftRegion
-            CludesUI.BuildInlineCog(rgn, {
-                title = "Charge Hash Line Settings",
-                disabled = function()
-                    local bd = SelectedTBB()
-                    return not bd
-                        or bd.trackType ~= "cooldown"
-                        or not SelectedTBBSupportsChargeHash()
-                        or bd.chargeHashLines ~= true
-                end,
-                disabledTooltip = function()
-                    local bd = SelectedTBB()
-                    if not bd or bd.trackType ~= "cooldown" then
-                        return "This option requires a cooldown-tracking bar"
-                    end
-                    if not SelectedTBBSupportsChargeHash() then
-                        return "This option is only available for abilities with multiple charges"
-                    end
-                    return "Enable Charge Hash Lines first"
-                end,
-                rawTooltip = true,
-                rows = {
-                    {
-                        type = "slider",
-                        label = "Line Width",
-                        min = 1,
-                        max = 10,
-                        step = 1,
-                        get = function()
-                            local bd = SelectedTBB()
-                            return bd and bd.chargeHashLineWidth or 2
-                        end,
-                        set = function(v)
-                            local bd = SelectedTBB()
-                            if not bd then
-                                return
-                            end
-                            bd.chargeHashLineWidth = v
-                            RefreshTBB()
-                        end,
-                    },
-                    {
-                        type = "colorpicker",
-                        label = "Line Color",
-                        hasAlpha = true,
-                        get = function()
-                            local bd = SelectedTBB()
-                            if not bd then
-                                return 0, 0, 0, 1
-                            end
-                            local a = bd.chargeHashLineA
-                            if a == nil then
-                                a = 1
-                            end
-                            return bd.chargeHashLineR or 0,
-                                bd.chargeHashLineG or 0,
-                                bd.chargeHashLineB or 0,
-                                a
-                        end,
-                        set = function(r, g, b, a)
-                            local bd = SelectedTBB()
-                            if not bd then
-                                return
-                            end
+        CludesUI.BuildInlineCog(chargeHashRow._leftRegion, {
+            title = "Charge Hash Line Settings",
+            disabled = function()
+                local bd = ChargeBar() and SelectedTBB()
+                return not bd or bd.chargeHashLines ~= true
+            end,
+            disabledTooltip = function()
+                if not CooldownBar() then
+                    return NOT_COOLDOWN_TIP
+                end
+                return ChargeBar() and "Enable Charge Hash Lines first" or NO_CHARGES_TIP
+            end,
+            rawTooltip = true,
+            rows = {
+                BarSlider("Line Width", "chargeHashLineWidth", 1, 10, 2),
+                {
+                    type = "colorpicker",
+                    label = "Line Color",
+                    hasAlpha = true,
+                    get = function()
+                        local bd = SelectedTBB()
+                        if not bd then
+                            return 0, 0, 0, 1
+                        end
+                        local a = bd.chargeHashLineA
+                        return bd.chargeHashLineR or 0,
+                            bd.chargeHashLineG or 0,
+                            bd.chargeHashLineB or 0,
+                            a == nil and 1 or a
+                    end,
+                    set = function(r, g, b, a)
+                        local bd = SelectedTBB()
+                        if bd then
                             bd.chargeHashLineR, bd.chargeHashLineG = r, g
                             bd.chargeHashLineB, bd.chargeHashLineA = b, a
                             RefreshTBB()
-                        end,
-                    },
-                    {
-                        type = "toggle",
-                        label = "Partial Charge Shade",
-                        tooltip = "Darkens the section of the bar that is still recharging the next charge.",
-                        get = function()
-                            local bd = SelectedTBB()
-                            return bd and bd.chargeHashShade == true
-                        end,
-                        set = function(v)
-                            local bd = SelectedTBB()
-                            if not bd then
-                                return
-                            end
-                            bd.chargeHashShade = v and true or nil
-                            RefreshTBB()
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Shade Darkness",
-                        min = 5,
-                        max = 95,
-                        step = 5,
-                        disabled = function()
-                            local bd = SelectedTBB()
-                            return not bd or bd.chargeHashShade ~= true
-                        end,
-                        get = function()
-                            local bd = SelectedTBB()
-                            return bd and math.floor(((bd.chargeHashShadeAlpha or 0.5) * 100) + 0.5) or 50
-                        end,
-                        set = function(v)
-                            local bd = SelectedTBB()
-                            if not bd then
-                                return
-                            end
+                        end
+                    end,
+                },
+                BarToggle(
+                    "Partial Charge Shade",
+                    "chargeHashShade",
+                    "Darkens the section of the bar that is still recharging the next charge."
+                ),
+                {
+                    type = "slider",
+                    label = "Shade Darkness",
+                    min = 5,
+                    max = 95,
+                    step = 5,
+                    disabled = function()
+                        local bd = SelectedTBB()
+                        return not bd or bd.chargeHashShade ~= true
+                    end,
+                    get = function()
+                        local bd = SelectedTBB()
+                        return bd and math.floor(((bd.chargeHashShadeAlpha or 0.5) * 100) + 0.5) or 50
+                    end,
+                    set = function(v)
+                        local bd = SelectedTBB()
+                        if bd then
                             bd.chargeHashShadeAlpha = (v or 50) / 100
                             RefreshTBB()
-                        end,
-                    },
+                        end
+                    end,
                 },
-            })
-        end
+            },
+        })
 
+        -- Smooth Bars: a checkbox list per bar type (buffs smooth by default).
         do
             local rgn = chargeHashRow._rightRegion
             if rgn._control then
                 rgn._control:Hide()
             end
-            local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+            local function Smooth()
+                return mod.GetTBBSmoothSettings and mod.GetTBBSmoothSettings()
+            end
+            local dd, refresh = CludesUI.BuildVisOptsCBDropdown(
                 rgn,
                 210,
                 rgn:GetFrameLevel() + 2,
                 SMOOTH_ITEMS,
                 function(k)
-                    local s = mod.GetTBBSmoothSettings and mod.GetTBBSmoothSettings()
+                    local s = Smooth()
                     if not s or s[k] == nil then
                         return SMOOTH_DEFAULT[k]
                     end
                     return s[k] == true
                 end,
                 function(k, v)
-                    local s = mod.GetTBBSmoothSettings and mod.GetTBBSmoothSettings()
+                    local s = Smooth()
                     if s then
                         s[k] = v and true or false
                     end
                 end
             )
-            Pix.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-            rgn._control = cbDD
+            Pix.Point(dd, "RIGHT", rgn, "RIGHT", -20, 0)
+            rgn._control = dd
             rgn._lastInline = nil
-            CludesUI.RegisterWidgetRefresh(cbDDRefresh)
+            CludesUI.RegisterWidgetRefresh(refresh)
         end
 
         -------------------------------------------------------------------

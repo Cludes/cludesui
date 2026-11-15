@@ -31,7 +31,7 @@ if b1 then
     b1.spellID = 774; b1.texture = "flat"; b1.showIcon = true; b1.showTimer = true; b1.showStacks = true
     b1.showSpark = true; b1.width = 260; b1.height = 22
 end
-if b2 then b2.verticalOrientation = true; b2.spellID = 33763 end
+if b2 then b2.verticalOrientation = true; b2.spellID = 33763; b2.trackType = "cooldown"; b2.fillUp = true end
 if mod.TBBNextGroupID and mod.TBBSetBarGroup and b2 and b3 then
     local gid = mod.TBBNextGroupID()
     mod.TBBSetBarGroup(b2, gid); mod.TBBSetBarGroup(b3, gid)
