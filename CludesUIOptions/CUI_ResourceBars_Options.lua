@@ -336,6 +336,8 @@ initFrame:SetScript("OnEvent", function(self)
     local CONTENT_PAD = 45
     local SIDE_PAD = 20
 
+    -- The health preview's fill when no custom colour is set: the player's
+    -- class colour (fixed values, as the live bar uses).
     local CLASS_COLORS = {
         WARRIOR = { 0.78, 0.61, 0.43 },
         PALADIN = { 0.96, 0.55, 0.73 },
@@ -352,129 +354,127 @@ initFrame:SetScript("OnEvent", function(self)
         EVOKER = { 0.20, 0.58, 0.50 },
     }
 
-    -- Dark Mode preview colors come from the global per-profile palette (GetDarkModeFill/GetDarkModeBg); like the live bars, opacity sliders are ignored (background stays at alpha 1).
+    -- Dark Mode colours come from the per-profile palette (GetDarkModeFill /
+    -- GetDarkModeBg). As on the live bars, the opacity sliders do not apply
+    -- there (the background stays opaque).
 
-    -- Snap() uses the preview container's own effective scale, not PixelUtil (which snaps to screen pixels and can disagree with the preview grid).
+    -- Preview textures snap to the preview container's own scale (the
+    -- per-build _previewSnap), never to screen pixels, which can disagree
+    -- with the preview grid.
     local UnsnapTex = CludesUI.PP.DisablePixelSnap
+    local _previewSnap -- set by each preview build
 
-    local _previewSnap -- rebuilt per preview build in _previewHeaderBuilder
+    local _borderRefreshers = {} -- re-snap sizes when the scale changes
 
-    local _borderRefreshers = {} -- re-snap sizes when scale changes
-    -- Pixel-perfect preview border via the unified PP border system (raw integer sizes, never scaled).
+    -- A pixel-perfect border round hostFrame (the shared PP border; raw
+    -- integer sizes, never scaled), as a small handle.
     local function MakePreviewBorder(hostFrame, r, g, b, a, size)
-        local alpha = a or 1
-        local sz = size or 1
-
-        local bf = CreateFrame("Frame", nil, hostFrame)
-        bf:SetAllPoints(hostFrame)
-        bf:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
-
-        local Pix = CludesUI and CludesUI.PP
-        if Pix then
-            Pix.CreateBorder(bf, r, g, b, alpha, sz, "BORDER", 7)
+        local holder = CreateFrame("Frame", nil, hostFrame)
+        holder:SetAllPoints(hostFrame)
+        holder:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
+        local PP = CludesUI and CludesUI.PP
+        if PP then
+            PP.CreateBorder(holder, r, g, b, a or 1, size or 1, "BORDER", 7)
         end
-
-        return {
-            _frame = bf,
-            edges = (Pix and Pix.GetBorders(bf)) or {},
-            SetColor = function(self, cr, cg, cb, ca)
-                if Pix then
-                    Pix.SetBorderColor(bf, cr, cg, cb, ca or 1)
+        local handle = { _frame = holder, edges = (PP and PP.GetBorders(holder)) or {} }
+        function handle.SetColor(_, cr, cg, cb, ca)
+            if PP then
+                PP.SetBorderColor(holder, cr, cg, cb, ca or 1)
+            end
+        end
+        function handle.SetSize(_, px)
+            if PP then
+                PP.SetBorderSize(holder, px)
+            end
+        end
+        function handle.SetShown(_, shown)
+            if PP then
+                if shown then
+                    PP.ShowBorder(holder)
+                else
+                    PP.HideBorder(holder)
                 end
-            end,
-            SetSize = function(self, newSz)
-                if Pix then
-                    Pix.SetBorderSize(bf, newSz)
-                end
-            end,
-            SetShown = function(self, isShown)
-                if Pix then
-                    if isShown then
-                        Pix.ShowBorder(bf)
-                    else
-                        Pix.HideBorder(bf)
-                    end
-                end
-            end,
-        }
+            end
+        end
+        return handle
     end
 
-    local _previewPipCount = 3 -- randomized each page visit
-    local _previewBarFillPct = 65 -- randomized each page visit (30-80)
-    local _headerBaseH = 0 -- preview area height without the hint line (set by every preview build)
+    local _previewPipCount = 3 -- randomised on each visit
+    local _previewBarFillPct = 65 -- randomised on each visit (30-80)
+    local _headerBaseH = 0 -- the preview's height without the hint line (each build sets it)
 
-    -- Power and Health Bar previews: the live bar's shape (an outer frame with
-    -- the border and text over a StatusBar holding the fill and background),
-    -- built through the options pool and styled from the same settings the
-    -- live build reads. Always horizontal: the stack shows size and look, not
-    -- the on-screen placement or orientation.
+    -- Power and Health previews have the live bar's shape (an outer frame
+    -- with border and text over a StatusBar with fill and background), are
+    -- built through the options pool and styled from the settings the live
+    -- build reads. Always horizontal: the stack shows size and look, not
+    -- placement or orientation.
     local PreviewBar = {}
     function PreviewBar.Build(hostFrame)
         local bar = CreateFrame("Frame", nil, hostFrame)
-        local scrollBar = CreateFrame("StatusBar", nil, bar)
-        scrollBar:SetAllPoints()
-        scrollBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-        scrollBar:SetMinMaxValues(0, 100)
-        bar._sb = scrollBar
+        local fill = CreateFrame("StatusBar", nil, bar)
+        fill:SetAllPoints()
+        fill:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
+        fill:SetMinMaxValues(0, 100)
+        bar._sb = fill
         -- ns.ERB_SeatBlizzMask reads the fill through the host, as on a live bar.
         bar.GetStatusBarTexture = function()
-            return scrollBar:GetStatusBarTexture()
+            return fill:GetStatusBarTexture()
         end
-        local backdrop = scrollBar:CreateTexture(nil, "BACKGROUND")
+        local backdrop = fill:CreateTexture(nil, "BACKGROUND")
         UnsnapTex(backdrop)
         bar._bg = backdrop
         bar._border = { _frame = CreateFrame("Frame", nil, bar) }
         -- Hash lines sit above the fill, as the live tick overlay does.
-        local th = CreateFrame("Frame", nil, bar)
-        th:SetAllPoints(scrollBar)
-        th:SetFrameLevel(scrollBar:GetFrameLevel() + 1)
-        bar._tickHost, bar._ticks = th, {}
-        local tf = CreateFrame("Frame", nil, bar)
-        tf:SetAllPoints(bar)
-        tf:SetFrameLevel(bar:GetFrameLevel() + 10)
-        bar._text = tf:CreateFontString(nil, "OVERLAY")
+        local ticks = CreateFrame("Frame", nil, bar)
+        ticks:SetAllPoints(fill)
+        ticks:SetFrameLevel(fill:GetFrameLevel() + 1)
+        bar._tickHost, bar._ticks = ticks, {}
+        local textLayer = CreateFrame("Frame", nil, bar)
+        textLayer:SetAllPoints(bar)
+        textLayer:SetFrameLevel(bar:GetFrameLevel() + 10)
+        bar._text = textLayer:CreateFontString(nil, "OVERLAY")
         return bar
     end
 
-    -- A preview whose bar is off: dimmed like the page's greyed controls, and
-    -- its hit overlays hidden so no click leads to those rows. hits: optional.
+    -- A preview whose bar is off: dimmed like greyed controls, with its click
+    -- overlays (hits, optional) hidden so nothing leads to those rows.
     function PreviewBar.Lock(widget, on, hits)
         widget:SetAlpha(on and 1 or 0.3)
-        if hits then
-            for _, hit in ipairs(hits) do
-                hit:SetShown(on)
-            end
+        for _, hit in ipairs(hits or {}) do
+            hit:SetShown(on)
         end
     end
 
-    -- The click hint of the preview showing now: only while it has something to click.
-    -- hdr: that preview's header; the hint shows only once it sits there.
+    -- The click hint of the preview on screen: only while there is something
+    -- to click, and only once it sits on this preview's header.
     function PreviewBar.HintFor(on, heading)
         -- A dismissed hint is left to its fade (DismissPreviewHint).
         if not _previewHintFS or IsPreviewHintDismissed() then
             return
         end
-        local host = _previewHintFS:GetParent()
-        _previewHintFS:SetShown(on and host and host:GetParent() == heading or false)
+        local holder = _previewHintFS:GetParent()
+        _previewHintFS:SetShown(on and holder and holder:GetParent() == heading or false)
     end
 
-    -- Size the shown header for its preview (baseH) and the hint, only on a
-    -- change of at least one physical pixel (the header snaps to them).
-    -- Silent: a resize here must move the page down, not scroll it under the header.
+    -- Sizes the header for the preview (baseH) plus the hint, only when that
+    -- changes by a physical pixel or more (the header snaps to pixels). Quiet,
+    -- so the page moves down instead of scrolling under the header.
     function PreviewBar.SizeHeader(heading, baseH)
-        -- The hint's dismiss fade sizes the header to this: never another page's.
-        _headerBaseH = baseH
+        _headerBaseH = baseH -- what the hint's dismiss fade sizes to
         local wanted = baseH + ((_previewHintFS and _previewHintFS:IsShown()) and 35 or 0)
-        local es = heading:GetEffectiveScale()
-        local px = (es > 0) and (CludesUI.PP.perfect / es) or 1
-        if math.abs(heading:GetHeight() - wanted) < px * 0.5 then
-            return
+        local scale = heading:GetEffectiveScale()
+        local px = scale > 0 and (CludesUI.PP.perfect / scale) or 1
+        if math.abs(heading:GetHeight() - wanted) >= px * 0.5 then
+            CludesUI:SetContentHeaderHeightSilent(wanted)
         end
-        CludesUI:SetContentHeaderHeightSilent(wanted)
     end
 
-    -- nil while the bar can show in the preview, else the eye's tooltip
-    -- (the house "This option requires X to be enabled" sentence).
+    -- nil while a bar can show in the preview, else why not (the eye icon's
+    -- tooltip, in the usual "This option requires X" form).
+    local NEEDS_SPEC = {
+        classResource = "This option needs a specialization with a class resource",
+        power = "This option needs a specialization with a power bar",
+    }
     function PreviewBar.Avail(p, key)
         local sp = p.secondary
         if key == "classResource" then
@@ -482,20 +482,20 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUI.DisabledTooltip("Class Resource")
             end
             if not HasClassResource() then
-                return CludesUI.L("This option needs a specialization with a class resource")
+                return CludesUI.L(NEEDS_SPEC.classResource)
             end
         elseif key == "power" then
             if p.primary.enabled == false then
                 return CludesUI.DisabledTooltip("Power Bar")
             end
             if not HasPrimaryPower() then
-                return CludesUI.L("This option needs a specialization with a power bar")
+                return CludesUI.L(NEEDS_SPEC.power)
             end
-            -- Druid per-form disable, as the live IsPowerBarHidden.
+            -- The druid per-form switch, as the live IsPowerBarHidden.
             if _G._CURB_BarHiddenByForm and _G._CURB_BarHiddenByForm(p.primary) then
                 return CludesUI.L("This option is turned off for the current form")
             end
-            -- Power hides while the class resource replaces it, as live.
+            -- Power hides while the class resource takes its place, as live.
             if sp.hidePowerIfResource and sp.enabled ~= false and HasClassResource() then
                 return CludesUI.DisabledTooltip("Hide Power Bar if Resource", "disabled")
             end
