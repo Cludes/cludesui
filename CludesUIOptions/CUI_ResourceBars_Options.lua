@@ -4976,400 +4976,359 @@ initFrame:SetScript("OnEvent", function(self)
         name:SetWidth(math.max(10, (barW or cb.width or 220) - 16))
     end
 
-    local function UpdateCastBarPreview()
-        local p = DB()
-        if not p then
-            return
+    -- The cast bar preview, step by step (UpdateCastBarPreview puts them together).
+
+    -- The background: the stock kit's art, Blizzard's casting-bar art, or
+    -- the colour (with the bar texture behind it for Textured Background,
+    -- flat while Fill Color is below 100, as live).
+    local function CastBackground(pf, cb, blizzKit, classic, texKey)
+        local bg = pf.bg
+        if bg._erbBgTex then
+            mod.ERB_BgTexture(bg, nil) -- back to plain before a branch paints it
         end
-        local cb = p.castBar
-        local popFrame = _castBarPreviewFrames
-
-        if not popFrame.bar then
-            return
-        end
-        -- Blizzard Style (latched per session, like the live bar): the stock
-        -- art on the same mock -- the icon spanning the text box, no CUI
-        -- border, stock background, fill and pip, frame art and the spell
-        -- name inside the text box. Everything else stays the CUI mock.
-        local blizz = (mod.ERB_CastBlizz and mod.ERB_CastBlizz()) or false
-        -- classic = Classic WoW UI (the vanilla frame and spark round the
-        -- user's fill); blizzKit = the 12.1 kit (stock background, fill, pip
-        -- and text box). Shared stock-mode geometry stays on blizz.
-        local classic = (mod.ERB_CastClassic and mod.ERB_CastClassic()) or false
-        local blizzKit = blizz and not classic
-
-        -- Snap helper: round to the preview container's physical pixel grid
-        local cScale = popFrame.container:GetEffectiveScale()
-        if cScale <= 0 then
-            cScale = 1
-        end
-        local onePx = CludesUI.PP.perfect / cScale
-        local function Snap(val)
-            return math.floor(val / onePx + 0.5) * onePx
-        end
-
-        local wid, hgt = Snap(cb.width), Snap(cb.height)
-        local bs = cb.borderSize
-
-        -- Container size: icon (hxh) + bar (only when icon shown)
-        local hasIcon = cb.showIcon ~= false and not mod.ERB_CastIconPortrait(cb)
-        local iconFree = mod.ERB_CastIconFree(cb)
-        local iconW = (hasIcon and not iconFree) and Snap(blizz and mod.ERB_CastIconW(cb) or hgt) or 0
-        popFrame.container:SetSize(wid + iconW, hgt)
-
-        -- Scale down to fit when the cast bar is wider than the panel
-        local PAD = CludesUI.CONTENT_PAD
-        local heading = popFrame.container:GetParent()
-        local availW = (heading:GetWidth() - PAD * 2) / _castBarPreviewScale
-        local fitScale = 1
-        if (wid + iconW) > availW and (wid + iconW) > 0 and availW > 0 then
-            fitScale = availW / (wid + iconW)
-        end
-        popFrame.container:SetScale(_castBarPreviewScale * fitScale)
-
-        popFrame.container:ClearAllPoints()
-        popFrame.container:SetPoint("CENTER", heading, "CENTER", 0, 0)
-        -- Dimmed while the bar is off, like the page's greyed controls; no
-        -- click then leads to those rows.
-        local cbOn = cb.enabled and true or false
-        PreviewBar.Lock(popFrame.container, cbOn, popFrame.hits)
-        PreviewBar.HintFor(cbOn, heading)
-        -- Bar frame (sits beside the icon; iconOnRight puts the icon on the right)
-        local iconOnRight = hasIcon and cb.iconOnRight
-        popFrame.barFrame:SetSize(wid, hgt)
-        popFrame.barFrame:ClearAllPoints()
-        popFrame.barFrame:SetPoint("LEFT", popFrame.container, "LEFT", iconOnRight and 0 or iconW, 0)
-
-        -- Background
-        local texKey = cb.texture
-        -- Textured Background: back to the plain background before a branch repaints it.
-        if popFrame.bg._erbBgTex then
-            mod.ERB_BgTexture(popFrame.bg, nil)
-        end
+        bg:ClearAllPoints()
         if blizzKit then
-            -- The retail background under WoW Forever too, as live.
-            local bgAtlas = mod.ERB_BlizzAtlas("bg")
-            if bgAtlas then
-                CludesUI.StockAtlas(popFrame.bg, bgAtlas)
+            -- The retail background on WoW Forever too, as live.
+            local atlas = mod.ERB_BlizzAtlas("bg")
+            if atlas then
+                CludesUI.StockAtlas(bg, atlas)
             else
-                popFrame.bg:SetTexture(nil)
-                popFrame.bg:SetColorTexture(0, 0, 0, 0.7)
+                bg:SetTexture(nil)
+                bg:SetColorTexture(0, 0, 0, 0.7)
             end
-            popFrame.bg:ClearAllPoints()
-            popFrame.bg:SetPoint("TOPLEFT", popFrame.barFrame, "TOPLEFT", -1, 1)
-            popFrame.bg:SetPoint("BOTTOMRIGHT", popFrame.barFrame, "BOTTOMRIGHT", 1, -1)
+            bg:SetPoint("TOPLEFT", pf.barFrame, "TOPLEFT", -1, 1)
+            bg:SetPoint("BOTTOMRIGHT", pf.barFrame, "BOTTOMRIGHT", 1, -1)
         elseif texKey == "blizzard" then
-            -- As live: Classic WoW UI takes the retail background on WoW Forever.
+            -- Classic WoW UI takes the retail background on WoW Forever, as live.
             if classic then
-                mod.ERB_StockAtlas(popFrame.bg, "UI-CastingBar-Background", true)
+                mod.ERB_StockAtlas(bg, "UI-CastingBar-Background", true)
             else
-                popFrame.bg:SetAtlas("UI-CastingBar-Background", true)
+                bg:SetAtlas("UI-CastingBar-Background", true)
             end
-            popFrame.bg:ClearAllPoints()
-            popFrame.bg:SetAllPoints(popFrame.barFrame)
+            bg:SetAllPoints(pf.barFrame)
         else
-            popFrame.bg:SetTexture(nil)
-            popFrame.bg:SetColorTexture(cb.bgR, cb.bgG, cb.bgB, cb.bgA)
-            -- Textured Background: flat while Fill Color is below 100, as live.
+            bg:SetTexture(nil)
+            bg:SetColorTexture(cb.bgR, cb.bgG, cb.bgB, cb.bgA)
             if cb.textureBg and (cb.fillOpacity or 100) >= 100 then
-                mod.ERB_BgTexture(
-                    popFrame.bg,
-                    CludesUI.ResolveTexturePath(_G._CURB_CastBarTextures, texKey, nil),
-                    cb.bgR,
-                    cb.bgG,
-                    cb.bgB,
-                    cb.bgA
-                )
+                local path = CludesUI.ResolveTexturePath(_G._CURB_CastBarTextures, texKey, nil)
+                mod.ERB_BgTexture(bg, path, cb.bgR, cb.bgG, cb.bgB, cb.bgA)
             end
-            popFrame.bg:ClearAllPoints()
-            popFrame.bg:SetAllPoints(popFrame.barFrame)
+            bg:SetAllPoints(pf.barFrame)
         end
+    end
 
-        -- Border wraps container (bar + icon) - PP or textured via ApplyBorderStyle
-        if popFrame.container._border then
-            popFrame.container._border:SetFrameLevel(
-                cb.borderBehind and math.max(0, popFrame.container:GetFrameLevel() - 1)
-                    or (popFrame.container:GetFrameLevel() + 5)
-            )
-            local pbs = blizz and 0 or (cb.borderSize or 0)
-            local pbpx = (not blizz) and CludesUI.BorderPx(cb.borderSizePx, pbs, cb.borderTexture or "solid")
-                or nil
-            -- Extend Top / Extend Bottom, as the live bar draws them (none under a stock style).
-            mod.ERB_AnchorBorderHost(
-                popFrame.container._border,
-                popFrame.container,
-                mod.ERB_BorderExtents((not blizz) and cb or nil)
-            )
+    -- The border round bar and icon (none under a stock style), with Extend
+    -- Top / Bottom; then the bottom separator (none under a stock style or a
+    -- Solid border), as the live bar.
+    local function CastBorder(pf, cb, blizz)
+        local holder = pf.container._border
+        if holder then
+            local level = pf.container:GetFrameLevel()
+            holder:SetFrameLevel(cb.borderBehind and math.max(0, level - 1) or (level + 5))
+            local size = blizz and 0 or (cb.borderSize or 0)
+            local style = cb.borderTexture or "solid"
+            local exact = (not blizz) and CludesUI.BorderPx(cb.borderSizePx, size, style) or nil
+            mod.ERB_AnchorBorderHost(holder, pf.container, mod.ERB_BorderExtents((not blizz) and cb or nil))
             CludesUI.ApplyBorderStyle(
-                popFrame.container._border,
-                pbs,
+                holder,
+                size,
                 cb.borderR or 0,
                 cb.borderG or 0,
                 cb.borderB or 0,
                 cb.borderA or 1,
-                cb.borderTexture or "solid",
+                style,
                 cb.borderTextureOffset,
                 cb.borderTextureOffsetY,
                 cb.borderTextureShiftX,
                 cb.borderTextureShiftY,
                 "resourcebars",
-                pbs,
+                size,
                 nil,
-                pbpx
+                exact
             )
         end
-        -- Bottom Separator, as the live bar draws it (none under a stock style or a Solid border).
-        mod.ERB_Separators(
-            popFrame.container,
-            cb,
-            (cb.edgeSep and not blizz and mod.ERB_Textured(cb)) and true or false,
-            popFrame.container:GetFrameLevel() + 7
-        )
+        local separator = cb.edgeSep and not blizz and mod.ERB_Textured(cb)
+        mod.ERB_Separators(pf.container, cb, separator and true or false, pf.container:GetFrameLevel() + 7)
+    end
 
-        -- Status bar: full bar frame, no inset
-        popFrame.bar:ClearAllPoints()
-        popFrame.bar:SetAllPoints(popFrame.barFrame)
-        popFrame.bar:SetValue(_castBarPreviewFill)
-
-        -- Bar texture
-        local texLookup = _G._CURB_CastBarTextures or {}
-        local texPath = texLookup[texKey]
+    -- The fill: texture (the stock kit's or Blizzard's fill art, else the
+    -- chosen texture), colour or gradient at Fill Color's opacity. Below
+    -- 100 the background covers only the empty part, as live.
+    local function CastFill(pf, cb, blizzKit, texKey)
+        local bar = pf.bar
+        bar:ClearAllPoints()
+        bar:SetAllPoints(pf.barFrame)
+        bar:SetValue(_castBarPreviewFill)
+        local path = (_G._CURB_CastBarTextures or {})[texKey]
         if blizzKit then
-            popFrame.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-            popFrame.bar:GetStatusBarTexture():SetAtlas(mod.ERB_BlizzAtlas("cast") or "UI-CastingBar-Fill")
+            bar:SetStatusBarTexture(WHITE)
+            bar:GetStatusBarTexture():SetAtlas(mod.ERB_BlizzAtlas("cast") or "UI-CastingBar-Fill")
         elseif texKey == "blizzard" then
-            popFrame.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-            popFrame.bar:GetStatusBarTexture():SetAtlas("UI-CastingBar-Fill", true)
-        elseif texPath then
-            popFrame.bar:SetStatusBarTexture(texPath)
+            bar:SetStatusBarTexture(WHITE)
+            bar:GetStatusBarTexture():SetAtlas("UI-CastingBar-Fill", true)
         else
-            popFrame.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
+            bar:SetStatusBarTexture(path or WHITE)
         end
 
-        -- Bar color / gradient
-        local fillTex = popFrame.bar:GetStatusBarTexture()
-        local fR, fG, fB, fA = cb.fillR, cb.fillG, cb.fillB, 1
+        local fill = bar:GetStatusBarTexture()
+        local r, g, b = cb.fillR, cb.fillG, cb.fillB
         if cb.classColored == true then
-            local _, castFrame = UnitClass("player")
-            local cc = castFrame and RAID_CLASS_COLORS and RAID_CLASS_COLORS[castFrame]
-            if cc then
-                fR, fG, fB = cc.r, cc.g, cc.b
+            local _, class = UnitClass("player")
+            local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+            if c then
+                r, g, b = c.r, c.g, c.b
             end
         end
-        local fillOp = (cb.fillOpacity or 100) / 100
+        local opacity = (cb.fillOpacity or 100) / 100
         if blizzKit then
-            -- The stock fill art is pre-coloured; the live bar skips its colour pass too.
-            fillTex:SetVertexColor(1, 1, 1, 1)
+            fill:SetVertexColor(1, 1, 1, 1) -- the stock art is coloured already (live skips it too)
         elseif cb.gradientEnabled then
-            local dir = cb.gradientDir or "HORIZONTAL"
-            fillTex:SetGradient(
-                dir,
-                CreateColor(fR, fG, fB, fA * fillOp),
-                CreateColor(cb.gradientR, cb.gradientG, cb.gradientB, cb.gradientA * fillOp)
+            fill:SetGradient(
+                cb.gradientDir or "HORIZONTAL",
+                CreateColor(r, g, b, opacity),
+                CreateColor(cb.gradientR, cb.gradientG, cb.gradientB, cb.gradientA * opacity)
             )
         else
-            fillTex:SetVertexColor(fR, fG, fB, fA * fillOp)
+            fill:SetVertexColor(r, g, b, opacity)
         end
-        -- Mirror the live bar's Fill Opacity bg behavior: below 100 the bg covers only the empty portion so the translucent fill shows what's behind the bar; at 100 it spans the whole bar frame.
         if texKey ~= "blizzard" and not blizzKit then
-            popFrame.bg:ClearAllPoints()
+            local bg = pf.bg
+            bg:ClearAllPoints()
             if (cb.fillOpacity or 100) < 100 then
-                popFrame.bg:SetPoint("TOPLEFT", fillTex, "TOPRIGHT", 0, 0)
-                popFrame.bg:SetPoint("BOTTOMRIGHT", popFrame.barFrame, "BOTTOMRIGHT", 0, 0)
+                bg:SetPoint("TOPLEFT", fill, "TOPRIGHT", 0, 0)
+                bg:SetPoint("BOTTOMRIGHT", pf.barFrame, "BOTTOMRIGHT", 0, 0)
             else
-                popFrame.bg:SetAllPoints(popFrame.barFrame)
+                bg:SetAllPoints(pf.barFrame)
             end
         end
+        return fill
+    end
 
-        -- Spark: under the style the stock pip replaces the spark art (once,
-        -- drawn plain; the CUI spark art is additive).
-        if blizzKit and not popFrame.blizzSpark then
+    -- The spark at the fill's edge: the stock pip under the kit (set once,
+    -- drawn plain), the vanilla spark under Classic WoW UI (set once; taller
+    -- than the bar and over the frame art, so on its own host above it).
+    local function CastSpark(pf, cb, blizzKit, classic, fill, hgt)
+        local spark = pf.spark
+        if blizzKit and not pf.blizzSpark then
             local pip = mod.ERB_BlizzAtlas("spark")
             if pip then
-                popFrame.blizzSpark = true
-                popFrame.spark:SetAtlas(pip)
-                popFrame.spark:SetBlendMode("BLEND")
+                pf.blizzSpark = true
+                spark:SetAtlas(pip)
+                spark:SetBlendMode("BLEND")
             end
         end
-        -- Classic WoW UI: the vanilla spark file (additive, like the CUI art) once.
-        -- It stands taller than the bar and draws over the frame art
-        -- (container +6) as live does, so it moves to its own host above it.
-        if classic and not popFrame.classicSpark then
-            popFrame.classicSpark = true
-            popFrame.spark:SetTexture(mod.ERB_CLASSIC.spark)
-            local host = CreateFrame("Frame", nil, popFrame.barFrame)
-            host:SetAllPoints(popFrame.bar)
-            host:SetFrameLevel(popFrame.container:GetFrameLevel() + 8)
-            popFrame.spark:SetParent(host)
+        if classic and not pf.classicSpark then
+            pf.classicSpark = true
+            spark:SetTexture(mod.ERB_CLASSIC.spark)
+            local host = CreateFrame("Frame", nil, pf.barFrame)
+            host:SetAllPoints(pf.bar)
+            host:SetFrameLevel(pf.container:GetFrameLevel() + 8)
+            spark:SetParent(host)
         end
-        if cb.showSpark then
-            -- The vanilla spark is a square scaled with the bar, centred a
-            -- little above the bar's centre line (the live bar's numbers).
-            local sparkY = 0
-            if classic then
-                local C = mod.ERB_CLASSIC
-                local ss = C.sparkSize * hgt / C.barH
-                popFrame.spark:SetSize(ss, ss)
-                sparkY = C.sparkY * hgt / C.barH
-            else
-                popFrame.spark:SetSize(8, hgt)
-            end
-            popFrame.spark:ClearAllPoints()
-            popFrame.spark:SetPoint("CENTER", fillTex, "RIGHT", 0, sparkY)
-            popFrame.spark:Show()
+        if not cb.showSpark then
+            spark:Hide()
+            return
+        end
+        -- The vanilla spark is a square scaled with the bar, a little above
+        -- its centre line (the live bar's numbers).
+        local y = 0
+        if classic then
+            local C = mod.ERB_CLASSIC
+            local size = C.sparkSize * hgt / C.barH
+            spark:SetSize(size, size)
+            y = C.sparkY * hgt / C.barH
         else
-            popFrame.spark:Hide()
+            spark:SetSize(8, hgt)
         end
+        spark:ClearAllPoints()
+        spark:SetPoint("CENTER", fill, "RIGHT", 0, y)
+        spark:Show()
+    end
 
-        -- Icon: left or right side of container, full size
-        do
-            -- Under the style the icon also spans the text box (the live
-            -- bar's ns.ERB_CastIconW) and shows the full spell art.
-            local iSize = Snap(blizz and mod.ERB_CastIconW(cb) or hgt)
-            popFrame.iconFrame:SetSize(iSize, iSize)
-            if popFrame.icon then
-                if blizz then
-                    popFrame.icon:SetTexCoord(0, 1, 0, 1)
-                else
-                    popFrame.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-                end
-            end
-            -- Classic WoW UI keeps the icon under the frame art (container
-            -- +6), inside the frame's window beside the bar, as live does.
-            if classic then
-                popFrame.iconFrame:SetFrameLevel(popFrame.container:GetFrameLevel() + 1)
-            end
-            popFrame.iconFrame:ClearAllPoints()
-            if iconOnRight then
-                popFrame.iconFrame:SetPoint("TOPRIGHT", popFrame.container, "TOPRIGHT", 0, 0)
+    -- The spell icon on the left or right (under a stock style it spans the
+    -- text box too and shows the whole art; Classic WoW UI keeps it under
+    -- the frame art, inside the frame's window, as live).
+    local function CastIcon(pf, cb, look, size)
+        local frame = pf.iconFrame
+        frame:SetSize(size, size)
+        if pf.icon then
+            if look.blizz then
+                pf.icon:SetTexCoord(0, 1, 0, 1)
             else
-                popFrame.iconFrame:SetPoint("TOPLEFT", popFrame.container, "TOPLEFT", 0, 0)
-            end
-            mod.ERB_LayoutFreeCastIcon(popFrame.iconFrame, popFrame.container, cb, iconFree)
-            if hasIcon then
-                popFrame.iconFrame:Show()
-            else
-                popFrame.iconFrame:Hide()
+                pf.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
             end
         end
-
-        -- Icon/bar seam divider preview: mirrors the live cast bar's onePixel
-        -- math (PP.perfect / effective scale), NOT the widget-local Snap()
-        -- helper above -- the border itself already renders through that same
-        -- shared PP system (ApplyBorderStyle -> SnapBorderTextures), so the
-        -- divider has to match it, not the panel's own pixel grid.
-        if popFrame.iconDivider then
-            -- Border Art Divider, as the live bar draws it.
-            local showDivider = hasIcon and not iconFree and cb.showIconDivider
-            if
-                mod.ERB_CastDividerArt(
-                    popFrame.iconDivider,
-                    showDivider,
-                    popFrame.iconFrame,
-                    iconOnRight,
-                    cb,
-                    blizz
-                )
-            then
-                popFrame.iconDivider:Show()
-            elseif showDivider then
-                local PPp = CludesUI.PP
-                local des = popFrame.container:GetEffectiveScale()
-                local onePixel = (PPp and des > 0) and (PPp.perfect / des) or 1
-                local dbs = cb.borderSize or 1
-                -- Same rule as the live divider: an exact SOLID size drives it, textured keeps the step.
-                local dtex = cb.borderTexture
-                if not blizz and (not dtex or dtex == "" or dtex == "solid") then
-                    dbs = CludesUI.BorderPx(cb.borderSizePx, cb.borderSize or 0, dtex) or dbs
-                end
-                popFrame.iconDivider:ClearAllPoints()
-                popFrame.iconDivider:SetWidth(math.max(onePixel, math.floor(dbs + 0.5) * onePixel))
-                if iconOnRight then
-                    popFrame.iconDivider:SetPoint("TOPRIGHT", popFrame.iconFrame, "TOPLEFT", 0, 0)
-                    popFrame.iconDivider:SetPoint("BOTTOMRIGHT", popFrame.iconFrame, "BOTTOMLEFT", 0, 0)
-                else
-                    popFrame.iconDivider:SetPoint("TOPLEFT", popFrame.iconFrame, "TOPRIGHT", 0, 0)
-                    popFrame.iconDivider:SetPoint("BOTTOMLEFT", popFrame.iconFrame, "BOTTOMRIGHT", 0, 0)
-                end
-                popFrame.iconDivider:SetColorTexture(
-                    cb.borderR or 0,
-                    cb.borderG or 0,
-                    cb.borderB or 0,
-                    cb.borderA or 1
-                )
-                popFrame.iconDivider:Show()
-            else
-                popFrame.iconDivider:Hide()
-            end
+        if look.classic then
+            frame:SetFrameLevel(pf.container:GetFrameLevel() + 1)
         end
+        frame:ClearAllPoints()
+        if look.iconOnRight then
+            frame:SetPoint("TOPRIGHT", pf.container, "TOPRIGHT", 0, 0)
+        else
+            frame:SetPoint("TOPLEFT", pf.container, "TOPLEFT", 0, 0)
+        end
+        mod.ERB_LayoutFreeCastIcon(frame, pf.container, cb, look.iconFree)
+        frame:SetShown(look.hasIcon and true or false)
+    end
 
-        -- Cast text side-aware layout (mirrors the live cast bar)
-        local cbTimerW = (cb.timerSize or 11) * 2.2
-        local cbDurSide = cb.timerSide or "right"
-        local cbSpellSide = cb.spellTextSide or "left"
-        local cbBarW = popFrame.bar:GetWidth() or 0
-        -- Timer / duration text
+    -- The icon / bar seam: Border Art Divider when it draws, else a line as
+    -- wide as the border in the live bar's pixels (PP.perfect over the
+    -- effective scale; the border renders through the same PP system). An
+    -- exact Solid size drives it; a textured border keeps the step.
+    local function CastDivider(pf, cb, look)
+        local divider = pf.iconDivider
+        if not divider then
+            return
+        end
+        local show = look.hasIcon and not look.iconFree and cb.showIconDivider
+        if mod.ERB_CastDividerArt(divider, show, pf.iconFrame, look.iconOnRight, cb, look.blizz) then
+            divider:Show()
+            return
+        end
+        if not show then
+            divider:Hide()
+            return
+        end
+        local PP = CludesUI.PP
+        local scale = pf.container:GetEffectiveScale()
+        local onePx = (PP and scale > 0) and (PP.perfect / scale) or 1
+        local size = cb.borderSize or 1
+        local style = cb.borderTexture
+        if not look.blizz and (not style or style == "" or style == "solid") then
+            size = CludesUI.BorderPx(cb.borderSizePx, cb.borderSize or 0, style) or size
+        end
+        divider:ClearAllPoints()
+        divider:SetWidth(math.max(onePx, math.floor(size + 0.5) * onePx))
+        if look.iconOnRight then
+            divider:SetPoint("TOPRIGHT", pf.iconFrame, "TOPLEFT", 0, 0)
+            divider:SetPoint("BOTTOMRIGHT", pf.iconFrame, "BOTTOMLEFT", 0, 0)
+        else
+            divider:SetPoint("TOPLEFT", pf.iconFrame, "TOPRIGHT", 0, 0)
+            divider:SetPoint("BOTTOMLEFT", pf.iconFrame, "BOTTOMRIGHT", 0, 0)
+        end
+        divider:SetColorTexture(cb.borderR or 0, cb.borderG or 0, cb.borderB or 0, cb.borderA or 1)
+        divider:Show()
+    end
+
+    -- The timer and spell name, placed by side as the live bar (a 3.0s cast).
+    local function CastTexts(pf, cb, blizzKit)
+        local timerW = (cb.timerSize or 11) * 2.2
+        local timerSide = cb.timerSide or "right"
+        local spellSide = cb.spellTextSide or "left"
+        local barW = pf.bar:GetWidth() or 0
+        local timer, spell = pf.timerText, pf.spellText
         if cb.showTimer then
-            SetPVFont(popFrame.timerText, FONT_PATH, cb.timerSize or 11)
-            local pt, xb, jh = mod.GetCastTextAnchor(cbDurSide, false, cbTimerW)
-            popFrame.timerText:ClearAllPoints()
-            popFrame.timerText:SetJustifyH(jh)
-            popFrame.timerText:SetPoint(pt, popFrame.bar, pt, xb + (cb.timerX or 0), cb.timerY or 0)
-            -- Preview total cast time is 3.0s; mirror the live "elapsed / total" mode.
+            SetPVFont(timer, FONT_PATH, cb.timerSize or 11)
+            local point, x, justify = mod.GetCastTextAnchor(timerSide, false, timerW)
+            timer:ClearAllPoints()
+            timer:SetJustifyH(justify)
+            timer:SetPoint(point, pf.bar, point, x + (cb.timerX or 0), cb.timerY or 0)
             if cb.showTotalDuration then
-                popFrame.timerText:SetText(string.format("%.1f / %.1f", 3.0 * _castBarPreviewFill, 3.0))
+                timer:SetText(string.format("%.1f / %.1f", 3.0 * _castBarPreviewFill, 3.0))
             else
-                popFrame.timerText:SetText(string.format("%.1f", 3.0 * (1 - _castBarPreviewFill)))
+                timer:SetText(string.format("%.1f", 3.0 * (1 - _castBarPreviewFill)))
             end
-            popFrame.timerText:Show()
-            mod.ERB_CastTextColor(popFrame.timerText, cb.timerR, cb.timerG, cb.timerB, cb.timerA)
+            timer:Show()
+            mod.ERB_CastTextColor(timer, cb.timerR, cb.timerG, cb.timerB, cb.timerA)
         else
-            popFrame.timerText:Hide()
+            timer:Hide()
         end
-
-        -- Spell name text
         if cb.showSpellText then
-            SetPVFont(popFrame.spellText, FONT_PATH, cb.spellTextSize or 11)
-            if blizzKit and mod.ERB_BlizzAtlas("textbox") then
-                -- Placed inside the stock text box by the chrome pass below.
-            else
-                local pt, xb, jh =
-                    mod.GetCastTextAnchor(cbSpellSide, cb.showTimer and cbDurSide == cbSpellSide, cbTimerW)
-                popFrame.spellText:ClearAllPoints()
-                popFrame.spellText:SetJustifyH(jh)
-                popFrame.spellText:SetPoint(
-                    pt,
-                    popFrame.bar,
-                    pt,
-                    xb + (cb.spellTextX or 0),
-                    cb.spellTextY or 0
-                )
-                if cbSpellSide == "center" then
-                    popFrame.spellText:SetWidth(cbBarW - 8 - (cb.showTimer and 2 * cbTimerW or 0))
-                elseif cbBarW > 0 then
-                    popFrame.spellText:SetWidth(cbBarW - 8 - (cb.showTimer and cbTimerW or 0))
+            SetPVFont(spell, FONT_PATH, cb.spellTextSize or 11)
+            -- In the stock text box the chrome pass places it.
+            if not (blizzKit and mod.ERB_BlizzAtlas("textbox")) then
+                local shared = cb.showTimer and timerSide == spellSide
+                local point, x, justify = mod.GetCastTextAnchor(spellSide, shared, timerW)
+                spell:ClearAllPoints()
+                spell:SetJustifyH(justify)
+                spell:SetPoint(point, pf.bar, point, x + (cb.spellTextX or 0), cb.spellTextY or 0)
+                if spellSide == "center" then
+                    spell:SetWidth(barW - 8 - (cb.showTimer and 2 * timerW or 0))
+                elseif barW > 0 then
+                    spell:SetWidth(barW - 8 - (cb.showTimer and timerW or 0))
                 end
             end
-            popFrame.spellText:SetText(CludesUI.L("Spell Name"))
-            popFrame.spellText:Show()
-            mod.ERB_CastTextColor(
-                popFrame.spellText,
-                cb.spellTextR,
-                cb.spellTextG,
-                cb.spellTextB,
-                cb.spellTextA
-            )
+            spell:SetText(CludesUI.L("Spell Name"))
+            spell:Show()
+            mod.ERB_CastTextColor(spell, cb.spellTextR, cb.spellTextG, cb.spellTextB, cb.spellTextA)
         else
-            popFrame.spellText:Hide()
+            spell:Hide()
         end
-        -- Blizzard Style chrome: frame art, and the text box with the spell name in it.
-        mod.ERB_CastPreviewBlizzChrome(popFrame, cb, cbBarW, blizz)
-        -- Re-flow so a live JustifyH change takes effect on already-rendered text.
-        mod.ReflowFontString(popFrame.timerText)
-        mod.ReflowFontString(popFrame.spellText)
+        return barW
+    end
 
-        -- Update header height: 80px preview + optional hint text
-        PreviewBar.SizeHeader(heading, 80)
+    local function UpdateCastBarPreview()
+        local p = DB()
+        local pf = _castBarPreviewFrames
+        if not p or not pf.bar then
+            return
+        end
+        local cb = p.castBar
+        -- Under a stock style (fixed per session, as the live bar): Blizzard
+        -- Style's kit (stock background, fill, pip and text box) or Classic
+        -- WoW UI (the vanilla frame and spark round the player's fill); the
+        -- geometry they share follows blizz.
+        local blizz = (mod.ERB_CastBlizz and mod.ERB_CastBlizz()) or false
+        local classic = (mod.ERB_CastClassic and mod.ERB_CastClassic()) or false
+        local blizzKit = blizz and not classic
+
+        -- Sizes on the preview container's pixel grid.
+        local scale = pf.container:GetEffectiveScale()
+        if scale <= 0 then
+            scale = 1
+        end
+        local onePx = CludesUI.PP.perfect / scale
+        local function Snap(v)
+            return math.floor(v / onePx + 0.5) * onePx
+        end
+        local wid, hgt = Snap(cb.width), Snap(cb.height)
+
+        -- The container: icon (square, beside the bar unless free) and bar.
+        local hasIcon = cb.showIcon ~= false and not mod.ERB_CastIconPortrait(cb)
+        local iconFree = mod.ERB_CastIconFree(cb)
+        local iconW = (hasIcon and not iconFree) and Snap(blizz and mod.ERB_CastIconW(cb) or hgt) or 0
+        pf.container:SetSize(wid + iconW, hgt)
+        -- Shrunk to fit when the bar is wider than the panel.
+        local heading = pf.container:GetParent()
+        local room = (heading:GetWidth() - CludesUI.CONTENT_PAD * 2) / _castBarPreviewScale
+        local fit = 1
+        if wid + iconW > room and wid + iconW > 0 and room > 0 then
+            fit = room / (wid + iconW)
+        end
+        pf.container:SetScale(_castBarPreviewScale * fit)
+        pf.container:ClearAllPoints()
+        pf.container:SetPoint("CENTER", heading, "CENTER", 0, 0)
+        -- Dimmed while the bar is off (no click leads to its rows then).
+        local on = cb.enabled and true or false
+        PreviewBar.Lock(pf.container, on, pf.hits)
+        PreviewBar.HintFor(on, heading)
+
+        local iconOnRight = hasIcon and cb.iconOnRight
+        pf.barFrame:SetSize(wid, hgt)
+        pf.barFrame:ClearAllPoints()
+        pf.barFrame:SetPoint("LEFT", pf.container, "LEFT", iconOnRight and 0 or iconW, 0)
+
+        local texKey = cb.texture
+        CastBackground(pf, cb, blizzKit, classic, texKey)
+        CastBorder(pf, cb, blizz)
+        local fill = CastFill(pf, cb, blizzKit, texKey)
+        CastSpark(pf, cb, blizzKit, classic, fill, hgt)
+        local look = {
+            blizz = blizz,
+            classic = classic,
+            hasIcon = hasIcon,
+            iconFree = iconFree,
+            iconOnRight = iconOnRight,
+        }
+        CastIcon(pf, cb, look, Snap(blizz and mod.ERB_CastIconW(cb) or hgt))
+        CastDivider(pf, cb, look)
+        local barW = CastTexts(pf, cb, blizzKit)
+        -- Blizzard Style chrome: the frame art, and the text box with the name in it.
+        mod.ERB_CastPreviewBlizzChrome(pf, cb, barW, blizz)
+        -- Re-flow so a justify change shows on text already drawn.
+        mod.ReflowFontString(pf.timerText)
+        mod.ReflowFontString(pf.spellText)
+        PreviewBar.SizeHeader(heading, 80) -- the 80px preview, plus the hint
     end
 
     local _castBarPreviewBuilder = function(heading, hdrW)
