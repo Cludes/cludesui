@@ -5331,282 +5331,300 @@ initFrame:SetScript("OnEvent", function(self)
         PreviewBar.SizeHeader(heading, 80) -- the 80px preview, plus the hint
     end
 
-    local _castBarPreviewBuilder = function(heading, hdrW)
-        HintBuildStart(PAGE_CASTBAR, heading)
-        local p = DB()
-        if not p then
+    -- The shared preview hint on a Cast, GCD or Totem Bar header build: made
+    -- even while the bar is off but shown only while it is on (nothing to
+    -- click otherwise), so switching the bar on can show it. Held across
+    -- builds and pages (module state), out of its header's pool. Returns
+    -- the height it adds.
+    local function ToggledHint(heading, on)
+        if IsPreviewHintDismissed() then
+            if _previewHintFS then
+                _previewHintFS:Hide()
+            end
             return 0
         end
-        local cb = p.castBar
-
-        local previewScale = UIParent:GetEffectiveScale() / heading:GetEffectiveScale()
-        _castBarPreviewScale = previewScale
-
-        local boxHolder = CreateFrame("Frame", nil, heading)
-        boxHolder:SetPoint("CENTER", heading, "CENTER", 0, 0)
-
-        -- Snap helper: round to the preview container's physical pixel grid (use previewScale for initial snap; adjusted below if we scale-to-fit)
-        local cScale = UIParent:GetEffectiveScale()
-        if cScale <= 0 then
-            cScale = 1
+        if not _previewHintFS then
+            local host = PoolKeep(CreateFrame("Frame", nil, heading))
+            host:SetAllPoints(heading)
+            _previewHintFS = CludesUI.MakeFont(host, 11, nil, 1, 1, 1)
+            _previewHintFS:SetAlpha(0.45)
+            _previewHintFS:SetText(CludesUI.L("Click elements to scroll to and highlight their options"))
         end
-        local onePx = CludesUI.PP.perfect / cScale
-        local function Snap(val)
-            return math.floor(val / onePx + 0.5) * onePx
-        end
+        -- The kept host sits one level above the header, as a new one would.
+        local host = _previewHintFS:GetParent()
+        host:SetParent(heading)
+        host:SetFrameLevel(heading:GetFrameLevel() + 1)
+        host:Show()
+        _previewHintFS:ClearAllPoints()
+        _previewHintFS:SetPoint("BOTTOM", heading, "BOTTOM", 0, 20)
+        _previewHintFS:SetShown(on and true or false)
+        return on and 35 or 0
+    end
 
-        local wid, hgt = Snap(cb.width), Snap(cb.height)
-        local hasIcon = cb.showIcon ~= false and not mod.ERB_CastIconPortrait(cb)
-        local iconW = hasIcon and Snap(hgt) or 0
+    -- The Cast Bar page's header: builds the mock's frames (the updater
+    -- above dresses them for the style) and returns the height.
+    local _castBarPreviewBuilder
+    do
+        local CAST_PREVIEW_H = 80
+        local WHITE = "Interface\\Buttons\\WHITE8x8"
 
-        -- Scale down to fit when the cast bar is wider than the panel
-        local PAD = CludesUI.CONTENT_PAD
-        local availW = (hdrW - PAD * 2) / previewScale
-        local fitScale = 1
-        if (wid + iconW) > availW and (wid + iconW) > 0 and availW > 0 then
-            fitScale = availW / (wid + iconW)
-        end
-        boxHolder:SetScale(previewScale * fitScale)
-
-        boxHolder:SetSize(wid + iconW, hgt)
-
-        -- Bar frame (holds bg, status bar)
-        local barFrame = CreateFrame("Frame", nil, boxHolder)
-        barFrame:SetSize(wid, hgt)
-        barFrame:SetPoint("LEFT", boxHolder, "LEFT", iconW, 0)
-        -- Fresh mocks: the style chrome memos (frame art, text box and the
-        -- spark swaps) belong to the previous build's frames; drop them so
-        -- the next update re-creates the chrome on these.
-        local popFrame = _castBarPreviewFrames
-        if popFrame.blizzArt then
-            popFrame.blizzArt:Hide()
-        end
-        if popFrame.blizzTextBox then
-            popFrame.blizzTextBox:Hide()
-        end
-        popFrame.blizzArt, popFrame.blizzFrame, popFrame.blizzTextBox, popFrame.blizzSpark, popFrame.classicSpark =
-            nil, nil, nil, nil, nil
-        popFrame.barFrame = barFrame
-        popFrame.container = boxHolder
-
-        -- Border: dedicated child frame covering bar + icon (PP or textured)
-        local bdrFrame = CreateFrame("Frame", nil, boxHolder)
-        bdrFrame:SetAllPoints(boxHolder)
-        bdrFrame:SetFrameLevel(boxHolder:GetFrameLevel() + 5)
-        boxHolder._border = bdrFrame
-        mod.ERB_AnchorBorderHost(
-            bdrFrame,
-            boxHolder,
-            mod.ERB_BorderExtents((not mod.ERB_CastBlizz()) and cb or nil)
-        )
-        CludesUI.ApplyBorderStyle(
-            bdrFrame,
-            cb.borderSize or 0,
-            cb.borderR or 0,
-            cb.borderG or 0,
-            cb.borderB or 0,
-            cb.borderA or 1,
-            cb.borderTexture or "solid",
-            cb.borderTextureOffset,
-            cb.borderTextureOffsetY,
-            cb.borderTextureShiftX,
-            cb.borderTextureShiftY,
-            "resourcebars",
-            cb.borderSize or 0,
-            nil,
-            CludesUI.BorderPx(cb.borderSizePx, cb.borderSize or 0, cb.borderTexture or "solid")
-        )
-        -- Bottom Separator, as the live bar draws it.
-        mod.ERB_Separators(
-            boxHolder,
-            cb,
-            (cb.edgeSep and not mod.ERB_CastBlizz() and mod.ERB_Textured(cb)) and true or false,
-            boxHolder:GetFrameLevel() + 7
-        )
-
-        -- Background (full bar area, no inset)
-        local backdrop = barFrame:CreateTexture(nil, "BACKGROUND")
-        backdrop:SetAllPoints()
-        local texKey = cb.texture
-        if texKey == "blizzard" then
-            if mod.ERB_CastClassic() then
-                mod.ERB_StockAtlas(backdrop, "UI-CastingBar-Background", true)
-            else
-                backdrop:SetAtlas("UI-CastingBar-Background", true)
+        -- Rounds to the physical pixel grid (the build's own scale; the
+        -- updater snaps again for the scale-to-fit).
+        local function Snapper()
+            local scale = UIParent:GetEffectiveScale()
+            if scale <= 0 then
+                scale = 1
             end
-        else
-            backdrop:SetColorTexture(cb.bgR, cb.bgG, cb.bgB, cb.bgA)
-            -- Textured Background, as live (never under the Blizzard Style kit).
-            if
-                cb.textureBg
-                and (cb.fillOpacity or 100) >= 100
-                and not (mod.ERB_CastBlizz() and not mod.ERB_CastClassic())
-            then
-                mod.ERB_BgTexture(
-                    backdrop,
-                    CludesUI.ResolveTexturePath(_G._CURB_CastBarTextures, texKey, nil),
-                    cb.bgR,
-                    cb.bgG,
-                    cb.bgB,
-                    cb.bgA
-                )
+            local onePx = CludesUI.PP.perfect / scale
+            return function(v)
+                return math.floor(v / onePx + 0.5) * onePx
             end
         end
-        _castBarPreviewFrames.bg = backdrop
 
-        -- Status bar (full bar area, no inset)
-        local bar = CreateFrame("StatusBar", nil, barFrame)
-        bar:SetAllPoints()
-        bar:SetMinMaxValues(0, 1)
-        bar:SetValue(_castBarPreviewFill)
-
-        local texLookup = _G._CURB_CastBarTextures or {}
-        local texPath = texLookup[texKey]
-        if texKey == "blizzard" then
-            bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-            bar:GetStatusBarTexture():SetAtlas("UI-CastingBar-Fill", true)
-        elseif texPath then
-            bar:SetStatusBarTexture(texPath)
-        else
-            bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
+        -- The holder (bar plus icon), scaled down to fit when the bar is
+        -- wider than the panel, and the bar's frame to the icon's right.
+        local function Shell(heading, hdrW, cb, Snap)
+            local previewScale = UIParent:GetEffectiveScale() / heading:GetEffectiveScale()
+            _castBarPreviewScale = previewScale
+            local box = CreateFrame("Frame", nil, heading)
+            box:SetPoint("CENTER", heading, "CENTER", 0, 0)
+            local wid, hgt = Snap(cb.width), Snap(cb.height)
+            local hasIcon = cb.showIcon ~= false and not mod.ERB_CastIconPortrait(cb)
+            local iconW = hasIcon and Snap(hgt) or 0
+            local total = wid + iconW
+            local availW = (hdrW - CludesUI.CONTENT_PAD * 2) / previewScale
+            local fit = 1
+            if total > availW and total > 0 and availW > 0 then
+                fit = availW / total
+            end
+            box:SetScale(previewScale * fit)
+            box:SetSize(total, hgt)
+            local barFrame = CreateFrame("Frame", nil, box)
+            barFrame:SetSize(wid, hgt)
+            barFrame:SetPoint("LEFT", box, "LEFT", iconW, 0)
+            return box, barFrame, hasIcon, hgt
         end
 
-        local fillTex = bar:GetStatusBarTexture()
-        if cb.gradientEnabled then
-            local dir = cb.gradientDir or "HORIZONTAL"
-            fillTex:SetGradient(
-                dir,
-                CreateColor(cb.fillR, cb.fillG, cb.fillB, 1),
-                CreateColor(cb.gradientR, cb.gradientG, cb.gradientB, cb.gradientA)
+        -- Fresh mocks: the style chrome memos (frame art, text box, the
+        -- spark swaps) belong to the last build's frames; drop them so the
+        -- next update makes the chrome again on these.
+        local function FreshChrome(pf, box, barFrame)
+            if pf.blizzArt then
+                pf.blizzArt:Hide()
+            end
+            if pf.blizzTextBox then
+                pf.blizzTextBox:Hide()
+            end
+            pf.blizzArt, pf.blizzFrame, pf.blizzTextBox, pf.blizzSpark, pf.classicSpark =
+                nil, nil, nil, nil, nil
+            pf.barFrame, pf.container = barFrame, box
+        end
+
+        -- The border on its own child frame over bar and icon (pixel or
+        -- textured), then the Bottom Separator as the live bar draws it.
+        local function BorderHost(box, cb)
+            local host = CreateFrame("Frame", nil, box)
+            host:SetAllPoints(box)
+            host:SetFrameLevel(box:GetFrameLevel() + 5)
+            box._border = host
+            local blizz = mod.ERB_CastBlizz()
+            mod.ERB_AnchorBorderHost(host, box, mod.ERB_BorderExtents((not blizz) and cb or nil))
+            local size, tex = cb.borderSize or 0, cb.borderTexture or "solid"
+            CludesUI.ApplyBorderStyle(
+                host,
+                size,
+                cb.borderR or 0,
+                cb.borderG or 0,
+                cb.borderB or 0,
+                cb.borderA or 1,
+                tex,
+                cb.borderTextureOffset,
+                cb.borderTextureOffsetY,
+                cb.borderTextureShiftX,
+                cb.borderTextureShiftY,
+                "resourcebars",
+                size,
+                nil,
+                CludesUI.BorderPx(cb.borderSizePx, size, tex)
             )
-        else
-            fillTex:SetVertexColor(cb.fillR, cb.fillG, cb.fillB, 1)
+            local edge = (cb.edgeSep and not blizz and mod.ERB_Textured(cb)) and true or false
+            mod.ERB_Separators(box, cb, edge, box:GetFrameLevel() + 7)
+            return host
         end
-        _castBarPreviewFrames.bar = bar
 
-        -- Spark
-        local spark = bar:CreateTexture(nil, "OVERLAY", nil, 1)
-        spark:SetTexture("Interface\\AddOns\\CludesUI\\media\\cast_spark.tga")
-        spark:SetBlendMode("ADD")
-        spark:SetSize(8, hgt)
-        spark:SetPoint("CENTER", fillTex, "RIGHT", 0, 0)
-        if not cb.showSpark then
-            spark:Hide()
-        end
-        _castBarPreviewFrames.spark = spark
-
-        -- Icon: left side of container, full size
-        local iconFrame = CreateFrame("Frame", nil, boxHolder)
-        local icon = iconFrame:CreateTexture(nil, "ARTWORK")
-        icon:SetAllPoints()
-        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        icon:SetTexture(NextCastBarIcon())
-        local iSize = Snap(hgt)
-        iconFrame:SetSize(iSize, iSize)
-        iconFrame:SetPoint("TOPLEFT", boxHolder, "TOPLEFT", 0, 0)
-        if not hasIcon then
-            iconFrame:Hide()
-        end
-        _castBarPreviewFrames.iconFrame = iconFrame
-        _castBarPreviewFrames.icon = icon
-
-        -- Icon/bar seam divider (mirrors the live cast bar's "Show Icon
-        -- Divider"): parented to bdrFrame, same reasoning as the live one --
-        -- a texture on container itself would sit below the icon/bar child
-        -- frames regardless of draw layer.
-        local iconDivider = bdrFrame:CreateTexture(nil, "OVERLAY", nil, 7)
-        iconDivider:Hide()
-        _castBarPreviewFrames.iconDivider = iconDivider
-
-        -- Texts ride an overlay above everything the mock draws (border +5,
-        -- style frame art +6, icon +7, spark host +8), as the live bar keeps
-        -- its texts; their anchors stay on the bar.
-        local textFrame = CreateFrame("Frame", nil, barFrame)
-        textFrame:SetAllPoints(bar)
-        textFrame:SetFrameLevel(boxHolder:GetFrameLevel() + 9)
-
-        -- Timer text
-        local timerText = textFrame:CreateFontString(nil, "OVERLAY")
-        SetPVFont(timerText, FONT_PATH, cb.timerSize or 11)
-        timerText:SetPoint("RIGHT", bar, "RIGHT", -4 + (cb.timerX or 0), cb.timerY or 0)
-        timerText:SetJustifyH("RIGHT")
-        if cb.showTimer then
-            if cb.showTotalDuration then
-                timerText:SetText(string.format("%.1f / %.1f", 3.0 * _castBarPreviewFill, 3.0))
+        -- The bar over the whole frame: background (Textured Background as
+        -- live, never under the Blizzard Style kit), the status bar at the
+        -- made-up fill in its colour or gradient, and the spark.
+        local function BarParts(pf, barFrame, cb, hgt)
+            local texKey = cb.texture
+            local stock = texKey == "blizzard"
+            local back = barFrame:CreateTexture(nil, "BACKGROUND")
+            back:SetAllPoints()
+            if not stock then
+                back:SetColorTexture(cb.bgR, cb.bgG, cb.bgB, cb.bgA)
+                local kit = mod.ERB_CastBlizz() and not mod.ERB_CastClassic()
+                if cb.textureBg and (cb.fillOpacity or 100) >= 100 and not kit then
+                    local path = CludesUI.ResolveTexturePath(_G._CURB_CastBarTextures, texKey, nil)
+                    mod.ERB_BgTexture(back, path, cb.bgR, cb.bgG, cb.bgB, cb.bgA)
+                end
+            elseif mod.ERB_CastClassic() then
+                mod.ERB_StockAtlas(back, "UI-CastingBar-Background", true)
             else
-                timerText:SetText(string.format("%.1f", 3.0 * (1 - _castBarPreviewFill)))
+                back:SetAtlas("UI-CastingBar-Background", true)
             end
-        else
-            timerText:Hide()
-        end
-        mod.ERB_CastTextColor(timerText, cb.timerR, cb.timerG, cb.timerB, cb.timerA)
-        _castBarPreviewFrames.timerText = timerText
+            pf.bg = back
 
-        -- Spell name text
-        local spellText = textFrame:CreateFontString(nil, "OVERLAY")
-        SetPVFont(spellText, FONT_PATH, cb.spellTextSize or 11)
-        spellText:SetPoint("LEFT", bar, "LEFT", 4 + (cb.spellTextX or 0), cb.spellTextY or 0)
-        spellText:SetJustifyH("LEFT")
-        if cb.showSpellText then
-            spellText:SetText(CludesUI.L("Spell Name"))
-        else
-            spellText:Hide()
-        end
-        mod.ERB_CastTextColor(spellText, cb.spellTextR, cb.spellTextG, cb.spellTextB, cb.spellTextA)
-        _castBarPreviewFrames.spellText = spellText
-
-        -- Create hit overlays for preview click-to-scroll (kept for the
-        -- bar-off state: dimmed, no clicks)
-        wipe(_hitOverlays)
-        local hits = {}
-        popFrame.hits = hits
-        local overlayLevel = boxHolder:GetFrameLevel() + 20
-        hits[#hits + 1] = CreateHitOverlay(barFrame, "castBar", overlayLevel)
-        hits[#hits + 1] = CreateHitOverlay(iconFrame, "castIcon", overlayLevel + 5)
-        if cb.showTimer then
-            local ttHit = CreateFrame("Frame", nil, bar)
-            ttHit:SetPoint("TOPLEFT", timerText, "TOPLEFT", -2, 2)
-            ttHit:SetPoint("BOTTOMRIGHT", timerText, "BOTTOMRIGHT", 2, -2)
-            hits[#hits + 1] = CreateHitOverlay(ttHit, "castTimer", overlayLevel + 5)
-        end
-        if cb.showSpellText then
-            local stHit = CreateFrame("Frame", nil, bar)
-            stHit:SetPoint("TOPLEFT", spellText, "TOPLEFT", -2, 2)
-            stHit:SetPoint("BOTTOMRIGHT", spellText, "BOTTOMRIGHT", 2, -2)
-            hits[#hits + 1] = CreateHitOverlay(stHit, "castSpellText", overlayLevel + 5)
-        end
-        PreviewBar.Lock(boxHolder, cb.enabled and true or false, hits)
-
-        -- Hint text: made even while the bar is off, shown only while it is on
-        -- (nothing to click otherwise), so switching the bar on can show it.
-        local TOTAL_H = 80
-        _headerBaseH = TOTAL_H
-        local hintShown = not IsPreviewHintDismissed()
-        if hintShown then
-            if not _previewHintFS then
-                -- Held across builds and pages (module state): out of its header's pool.
-                local hintHost = PoolKeep(CreateFrame("Frame", nil, heading))
-                hintHost:SetAllPoints(heading)
-                _previewHintFS = CludesUI.MakeFont(hintHost, 11, nil, 1, 1, 1)
-                _previewHintFS:SetAlpha(0.45)
-                _previewHintFS:SetText(CludesUI.L("Click elements to scroll to and highlight their options"))
+            local bar = CreateFrame("StatusBar", nil, barFrame)
+            bar:SetAllPoints()
+            bar:SetMinMaxValues(0, 1)
+            bar:SetValue(_castBarPreviewFill)
+            local path = (_G._CURB_CastBarTextures or {})[texKey]
+            bar:SetStatusBarTexture((not stock and path) or WHITE)
+            local fill = bar:GetStatusBarTexture()
+            if stock then
+                fill:SetAtlas("UI-CastingBar-Fill", true)
             end
-            -- The host is kept across builds: one level above the header, as a new one sits.
-            local host = _previewHintFS:GetParent()
-            host:SetParent(heading)
-            host:SetFrameLevel(heading:GetFrameLevel() + 1)
-            host:Show()
-            _previewHintFS:ClearAllPoints()
-            _previewHintFS:SetPoint("BOTTOM", heading, "BOTTOM", 0, 20)
-            _previewHintFS:SetShown(cb.enabled and true or false)
-            if cb.enabled then
-                TOTAL_H = TOTAL_H + 35
+            if cb.gradientEnabled then
+                fill:SetGradient(
+                    cb.gradientDir or "HORIZONTAL",
+                    CreateColor(cb.fillR, cb.fillG, cb.fillB, 1),
+                    CreateColor(cb.gradientR, cb.gradientG, cb.gradientB, cb.gradientA)
+                )
+            else
+                fill:SetVertexColor(cb.fillR, cb.fillG, cb.fillB, 1)
             end
-        elseif _previewHintFS then
-            _previewHintFS:Hide()
+            pf.bar = bar
+
+            local spark = bar:CreateTexture(nil, "OVERLAY", nil, 1)
+            spark:SetTexture("Interface\\AddOns\\CludesUI\\media\\cast_spark.tga")
+            spark:SetBlendMode("ADD")
+            spark:SetSize(8, hgt)
+            spark:SetPoint("CENTER", fill, "RIGHT", 0, 0)
+            spark:SetShown(cb.showSpark and true or false)
+            pf.spark = spark
+            return bar
         end
 
-        return TOTAL_H
+        -- The spell icon at the holder's left, full height, the next in the
+        -- shuffled pool.
+        local function IconParts(pf, box, size, shown)
+            local frame = CreateFrame("Frame", nil, box)
+            local icon = frame:CreateTexture(nil, "ARTWORK")
+            icon:SetAllPoints()
+            icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            icon:SetTexture(NextCastBarIcon())
+            frame:SetSize(size, size)
+            frame:SetPoint("TOPLEFT", box, "TOPLEFT", 0, 0)
+            frame:SetShown(shown)
+            pf.iconFrame, pf.icon = frame, icon
+            return frame
+        end
+
+        -- One of the bar's texts on the overlay, anchored and justified to
+        -- its side; text only while it is on.
+        local function BarText(layer, bar, side, x, y, size, on, text, r, g, b, a)
+            local fs = layer:CreateFontString(nil, "OVERLAY")
+            SetPVFont(fs, FONT_PATH, size or 11)
+            fs:SetPoint(side, bar, side, x, y)
+            fs:SetJustifyH(side)
+            if on then
+                fs:SetText(text)
+            else
+                fs:Hide()
+            end
+            mod.ERB_CastTextColor(fs, r, g, b, a)
+            return fs
+        end
+
+        -- A click target a little larger than a text.
+        local function TextHit(bar, fs, key, level)
+            local area = CreateFrame("Frame", nil, bar)
+            area:SetPoint("TOPLEFT", fs, "TOPLEFT", -2, 2)
+            area:SetPoint("BOTTOMRIGHT", fs, "BOTTOMRIGHT", 2, -2)
+            return CreateHitOverlay(area, key, level)
+        end
+
+        _castBarPreviewBuilder = function(heading, hdrW)
+            HintBuildStart(PAGE_CASTBAR, heading)
+            local p = DB()
+            if not p then
+                return 0
+            end
+            local cb = p.castBar
+            local pf = _castBarPreviewFrames
+            local Snap = Snapper()
+            local box, barFrame, hasIcon, hgt = Shell(heading, hdrW, cb, Snap)
+            FreshChrome(pf, box, barFrame)
+            local border = BorderHost(box, cb)
+            local bar = BarParts(pf, barFrame, cb, hgt)
+            local iconFrame = IconParts(pf, box, Snap(hgt), hasIcon)
+
+            -- The icon/bar seam divider (the live "Show Icon Divider") on the
+            -- border frame: on the holder itself it would sit under the icon
+            -- and bar frames whatever its layer.
+            local divider = border:CreateTexture(nil, "OVERLAY", nil, 7)
+            divider:Hide()
+            pf.iconDivider = divider
+
+            -- Texts ride an overlay above everything the mock draws (border
+            -- +5, style art +6, icon +7, spark host +8), as the live bar
+            -- keeps them; their anchors stay on the bar.
+            local layer = CreateFrame("Frame", nil, barFrame)
+            layer:SetAllPoints(bar)
+            layer:SetFrameLevel(box:GetFrameLevel() + 9)
+            local fill = _castBarPreviewFill
+            local timer = cb.showTotalDuration and string.format("%.1f / %.1f", 3.0 * fill, 3.0)
+                or string.format("%.1f", 3.0 * (1 - fill))
+            local timerText = BarText(
+                layer,
+                bar,
+                "RIGHT",
+                -4 + (cb.timerX or 0),
+                cb.timerY or 0,
+                cb.timerSize,
+                cb.showTimer,
+                timer,
+                cb.timerR,
+                cb.timerG,
+                cb.timerB,
+                cb.timerA
+            )
+            pf.timerText = timerText
+            local spellText = BarText(
+                layer,
+                bar,
+                "LEFT",
+                4 + (cb.spellTextX or 0),
+                cb.spellTextY or 0,
+                cb.spellTextSize,
+                cb.showSpellText,
+                CludesUI.L("Spell Name"),
+                cb.spellTextR,
+                cb.spellTextG,
+                cb.spellTextB,
+                cb.spellTextA
+            )
+            pf.spellText = spellText
+
+            -- Click-to-scroll targets (kept for the bar-off state: dimmed, no clicks).
+            wipe(_hitOverlays)
+            local hits = {}
+            pf.hits = hits
+            local level = box:GetFrameLevel() + 20
+            hits[#hits + 1] = CreateHitOverlay(barFrame, "castBar", level)
+            hits[#hits + 1] = CreateHitOverlay(iconFrame, "castIcon", level + 5)
+            if cb.showTimer then
+                hits[#hits + 1] = TextHit(bar, timerText, "castTimer", level + 5)
+            end
+            if cb.showSpellText then
+                hits[#hits + 1] = TextHit(bar, spellText, "castSpellText", level + 5)
+            end
+            local on = cb.enabled and true or false
+            PreviewBar.Lock(box, on, hits)
+
+            _headerBaseH = CAST_PREVIEW_H
+            return CAST_PREVIEW_H + ToggledHint(heading, on)
+        end
     end
 
     -- Textured Background: the Texture Settings cog row, one per bar kind, shared
@@ -5723,34 +5741,7 @@ initFrame:SetScript("OnEvent", function(self)
         local environ = mod._CURB_OptEnv
         local GCD_PREVIEW_H = 80
 
-        -- The shared preview hint on a GCD or Totem Bar header build, as the
-        -- Cast Bar header places it. Returns the height it adds.
-        -- Made even while the preview is off (shown only while on), so
-        -- switching the bar on can show it.
-        local function PlaceHint(heading, on)
-            if IsPreviewHintDismissed() then
-                if _previewHintFS then
-                    _previewHintFS:Hide()
-                end
-                return 0
-            end
-            if not _previewHintFS then
-                -- Held across builds and pages (module state): out of its header's pool.
-                local hintHost = PoolKeep(CreateFrame("Frame", nil, heading))
-                hintHost:SetAllPoints(heading)
-                _previewHintFS = CludesUI.MakeFont(hintHost, 11, nil, 1, 1, 1)
-                _previewHintFS:SetAlpha(0.45)
-                _previewHintFS:SetText(CludesUI.L("Click elements to scroll to and highlight their options"))
-            end
-            local host = _previewHintFS:GetParent()
-            host:SetParent(heading)
-            host:SetFrameLevel(heading:GetFrameLevel() + 1)
-            host:Show()
-            _previewHintFS:ClearAllPoints()
-            _previewHintFS:SetPoint("BOTTOM", heading, "BOTTOM", 0, 20)
-            _previewHintFS:SetShown(on and true or false)
-            return on and 35 or 0
-        end
+        local PlaceHint = ToggledHint
 
         local gcdFill = 0.6
         local popFrame = {}
