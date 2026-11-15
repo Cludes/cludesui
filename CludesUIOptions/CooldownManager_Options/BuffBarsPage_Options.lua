@@ -4238,206 +4238,155 @@ local function InitBuffBarsPage(
             right = "Right",
         }
         local TBB_POS_ORDER = { "none", "center", "top", "bottom", "left", "right" }
+        local VERTICAL_NAME_TIP = "Horizontal Orientation (name text is not shown on vertical bars)"
 
-        -- When a text element claims a position, evict any other text already there so
-        -- labels never overlap. Compares EFFECTIVE (rendered) positions: name text never
-        -- renders on vertical bars, so its stored slot must not evict anything there.
+        -- A text's position (prefix name / timer / stacks): the stored one, else
+        -- what a bar saved before positions draws (name on the left unless hidden,
+        -- the timer on the right when shown, stacks in the centre).
+        local function TextPosition(bd, prefix)
+            local stored = bd[prefix .. "Position"]
+            if stored then
+                return stored
+            end
+            if prefix == "name" then
+                return (bd.showName ~= false) and "left" or "none"
+            elseif prefix == "timer" then
+                return bd.showTimer and "right" or "none"
+            end
+            return "center"
+        end
+        -- Where it actually draws: name text never draws on a vertical bar.
+        local function DrawnPosition(bd, prefix)
+            if prefix == "name" and bd.verticalOrientation then
+                return "none"
+            end
+            return TextPosition(bd, prefix)
+        end
+
+        -- When a text claims a position, any other text drawn there moves to None,
+        -- so labels never overlap (a vertical bar's stored name slot evicts nothing).
         local function EvictTBBTextConflicts(bd, changedKey, newPos)
             if newPos == "none" then
                 return
             end
-            local function resolvePos(key)
-                if key == "namePosition" and bd.verticalOrientation then
-                    return "none"
-                end
-                local v = bd[key]
-                if v then
-                    return v
-                end
-                if key == "namePosition" then
-                    return (bd.showName ~= false) and "left" or "none"
-                end
-                if key == "timerPosition" then
-                    return bd.showTimer and "right" or "none"
-                end
-                if key == "stacksPosition" then
-                    return "center"
-                end
-                return "none"
-            end
-            local TEXT_KEYS = { "namePosition", "timerPosition", "stacksPosition" }
-            for _, k in ipairs(TEXT_KEYS) do
-                if k ~= changedKey and resolvePos(k) == newPos then
-                    bd[k] = "none"
-                    if k == "namePosition" then
+            for _, prefix in ipairs({ "name", "timer", "stacks" }) do
+                local key = prefix .. "Position"
+                if key ~= changedKey and DrawnPosition(bd, prefix) == newPos then
+                    bd[key] = "none"
+                    if prefix == "name" then
                         bd.showName = false
-                    elseif k == "timerPosition" then
+                    elseif prefix == "timer" then
                         bd.showTimer = false
                     end
                 end
             end
         end
 
-        local function AddTBBTextSwatch(row, regionFrame, prefixText)
-            local ctrl = regionFrame._control
+        local TEXT_LABELS = { name = "Name Text", timer = "Duration Text", stacks = "Stacks Text" }
+        -- A text's colour swatch on its row, dimmed (with why) while the text is
+        -- off, or for name text on a vertical bar.
+        local function AddTBBTextSwatch(row, regionFrame, prefix)
             local function GetColor()
                 local bd = SelectedTBB()
                 if not bd then
                     return 1, 1, 1, 0.9
                 end
-                local r = bd[prefixText .. "TextR"]
-                local g = bd[prefixText .. "TextG"]
-                local b = bd[prefixText .. "TextB"]
-                local a = bd[prefixText .. "TextA"]
-                if r == nil then
-                    r = 1
+                local function Channel(c, default)
+                    local v = bd[prefix .. "Text" .. c]
+                    if v == nil then
+                        return default
+                    end
+                    return v
                 end
-                if g == nil then
-                    g = 1
-                end
-                if b == nil then
-                    b = 1
-                end
-                if a == nil then
-                    a = 0.9
-                end
-                return r, g, b, a
+                return Channel("R", 1), Channel("G", 1), Channel("B", 1), Channel("A", 0.9)
             end
-            local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+            local swatch, updateSwatch = CludesUI.BuildColorSwatch(
                 regionFrame,
                 row:GetFrameLevel() + 3,
                 GetColor,
                 function(r, g, b, a)
                     local bd = SelectedTBB()
-                    if not bd then
-                        return
+                    if bd then
+                        bd[prefix .. "TextR"], bd[prefix .. "TextG"] = r, g
+                        bd[prefix .. "TextB"], bd[prefix .. "TextA"] = b, a
+                        RefreshTBB()
                     end
-                    bd[prefixText .. "TextR"] = r
-                    bd[prefixText .. "TextG"] = g
-                    bd[prefixText .. "TextB"] = b
-                    bd[prefixText .. "TextA"] = a
-                    RefreshTBB()
                 end,
                 true,
                 20
             )
-            Pix.Point(colorSwatch, "RIGHT", regionFrame._lastInline or ctrl, "LEFT", -8, 0)
-            regionFrame._lastInline = colorSwatch
+            Pix.Point(swatch, "RIGHT", regionFrame._lastInline or regionFrame._control, "LEFT", -8, 0)
+            regionFrame._lastInline = swatch
 
-            local block = CreateFrame("Frame", nil, colorSwatch)
+            local block = CreateFrame("Frame", nil, swatch)
             block:SetAllPoints()
-            block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
+            block:SetFrameLevel(swatch:GetFrameLevel() + 10)
             block:EnableMouse(true)
             block:SetScript("OnEnter", function()
                 local bd = SelectedTBB()
-                local tipText
-                if prefixText == "name" and bd and bd.verticalOrientation then
-                    tipText = "Horizontal Orientation (name text is not shown on vertical bars)"
-                else
-                    local label = prefixText == "timer" and "Duration Text"
-                        or (prefixText == "stacks" and "Stacks Text" or "Name Text")
-                    tipText = "This option requires a " .. label .. " position other than None"
-                end
-                CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip(tipText))
+                local tip = (prefix == "name" and bd and bd.verticalOrientation) and VERTICAL_NAME_TIP
+                    or ("This option requires a " .. TEXT_LABELS[prefix] .. " position other than None")
+                CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip(tip))
             end)
             block:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-
-            local function UpdateSwatchState()
+            local function Dim()
                 local bd = SelectedTBB()
-                local position
-                if bd then
-                    position = bd[prefixText .. "Position"]
-                    if not position then
-                        if prefixText == "name" then
-                            position = (bd.showName ~= false) and "left" or "none"
-                        elseif prefixText == "timer" then
-                            position = bd.showTimer and "right" or "none"
-                        else
-                            position = "center"
-                        end
-                    end
-                end
-                local enabled = position ~= nil and position ~= "none"
-                if prefixText == "name" and bd and bd.verticalOrientation then
-                    enabled = false
-                end
-                colorSwatch:SetAlpha(enabled and 1 or 0.3)
-                if enabled then
-                    block:Hide()
-                else
-                    block:Show()
-                end
+                local on = bd ~= nil and DrawnPosition(bd, prefix) ~= "none"
+                swatch:SetAlpha(on and 1 or 0.3)
+                block:SetShown(not on)
             end
-
             CludesUI.RegisterWidgetRefresh(function()
                 updateSwatch()
-                UpdateSwatchState()
+                Dim()
             end)
-            UpdateSwatchState()
+            Dim()
         end
 
+        -- A text's position dropdown; name and timer keep their older show flags in step.
+        local function PositionDropdown(text, prefix, default, showKey)
+            local key = prefix .. "Position"
+            return {
+                type = "dropdown",
+                text = text,
+                values = TBB_POS_VALUES,
+                order = TBB_POS_ORDER,
+                getValue = function()
+                    local bd = SelectedTBB()
+                    return bd and TextPosition(bd, prefix) or default
+                end,
+                setValue = function(v)
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
+                    EvictTBBTextConflicts(bd, key, v)
+                    bd[key] = v
+                    if showKey then
+                        bd[showKey] = (v ~= "none")
+                    end
+                    RefreshTBB()
+                    CludesUI:RefreshPage()
+                end,
+            }
+        end
+
+        local nameCfg = PositionDropdown("Name Text", "name", "left", "showName")
+        nameCfg.disabled = function()
+            local bd = SelectedTBB()
+            return bd and bd.verticalOrientation and true or false
+        end
+        nameCfg.disabledTooltip = VERTICAL_NAME_TIP
         local nameRow
-        nameRow, hgt = W:DualRow(hostFrame, posY, {
-            type = "dropdown",
-            text = "Name Text",
-            values = TBB_POS_VALUES,
-            order = TBB_POS_ORDER,
-            disabled = function()
-                local bd = SelectedTBB()
-                return bd and bd.verticalOrientation and true or false
-            end,
-            disabledTooltip = "Horizontal Orientation (name text is not shown on vertical bars)",
-            getValue = function()
-                local bd = SelectedTBB()
-                if not bd then
-                    return "left"
-                end
-                if bd.namePosition then
-                    return bd.namePosition
-                end
-                return (bd.showName ~= false) and "left" or "none"
-            end,
-            setValue = function(v)
-                local bd = SelectedTBB()
-                if not bd then
-                    return
-                end
-                EvictTBBTextConflicts(bd, "namePosition", v)
-                bd.namePosition = v
-                bd.showName = (v ~= "none")
-                RefreshTBB()
-                CludesUI:RefreshPage()
-            end,
-        }, {
-            type = "dropdown",
-            text = "Duration Text",
-            values = TBB_POS_VALUES,
-            order = TBB_POS_ORDER,
-            getValue = function()
-                local bd = SelectedTBB()
-                if not bd then
-                    return "right"
-                end
-                if bd.timerPosition then
-                    return bd.timerPosition
-                end
-                return bd.showTimer and "right" or "none"
-            end,
-            setValue = function(v)
-                local bd = SelectedTBB()
-                if not bd then
-                    return
-                end
-                EvictTBBTextConflicts(bd, "timerPosition", v)
-                bd.timerPosition = v
-                bd.showTimer = (v ~= "none")
-                RefreshTBB()
-                CludesUI:RefreshPage()
-            end,
-        })
+        nameRow, hgt = W:DualRow(
+            hostFrame,
+            posY,
+            nameCfg,
+            PositionDropdown("Duration Text", "timer", "right", "showTimer")
+        )
         posY = posY - hgt
+
         -- Cog on Name Text: custom name, text size, wrap + x/y
         do
             local rgn = nameRow._leftRegion
