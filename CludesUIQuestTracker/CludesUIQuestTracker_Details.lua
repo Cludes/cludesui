@@ -5,174 +5,170 @@ if not CludesUI.IS_FOREVER then
     return
 end
 -------------------------------------------------------------------------------
--- CludesUIQuestTracker_Details.lua  (WoW Forever only)
+--  CludesUIQuestTracker_Details.lua - our quest details window (WoW Forever).
 --
--- Our own quest details window, opened from the custom tracker. Built only
--- from quest log reads keyed by quest ID, so no Blizzard quest or map code
--- runs from it: opening Blizzard's map or quest popup from addon code taints
--- the map's pins (SetPassThroughButtons blocked in combat). Works in combat.
+--  Opened from our tracker. Everything in it is read from the quest log by
+--  quest ID, so no Blizzard quest or map code runs from it: opening their
+--  map or quest popup from addon code taints the map's pins (their
+--  SetPassThroughButtons is then blocked in combat). It works in combat.
+--
+--  The quest log updates constantly while questing, so the window is drawn
+--  again only when what it shows changed; the buttons are always checked.
 -------------------------------------------------------------------------------
 local _, mod = ...
 local EQT = mod.EQT
 
-local W, H = 360, 480
+local WIDTH, HEIGHT = 360, 480
 local PAD = 14
-local HEADER_H = 52 -- title, meta line, divider
-local FOOTER_H = 50 -- divider, button row
-local BTN_H = 24
+local HEADER = 52 -- title, the level line, a divider
+local FOOTER = 50 -- a divider, the button row
+local BUTTON_H = 24
 local TILE = 34
 local GAP = 6
-local WHEEL = 40
+local WHEEL_STEP = 40
 local CHECK = "Interface\\RaidFrame\\ReadyCheck-Ready"
 local CLOSE = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png"
 
--- CludesUI panel look (see CludesUI_Popups.lua).
-local BG = { 0.062, 0.070, 0.082, 0.97 }
+-- The CludesUI panel look (see CludesUI_Popups.lua).
+local PANEL_BG = { 0.062, 0.070, 0.082, 0.97 }
 local TILE_BG = { 0.11, 0.10, 0.09, 1 }
 
 -------------------------------------------------------------------------------
--- Rewards: XP, money, then one entry per currency, item and choice.
--- Entry: name, texture, count, quality, itemID, type ("reward" / "choice"),
--- index (for the quest log tooltip calls), currency. Nil when none.
+--  Rewards: XP, money, then one entry per currency, item and choice. An
+--  entry: name, texture, count, quality, itemID, type ("reward" or "choice"),
+--  index (for the quest log tooltip calls), currency. Nil when there are none.
 -------------------------------------------------------------------------------
+local function Entry(kind, index, name, texture, count, quality, itemID)
+    return {
+        name = name,
+        texture = texture,
+        count = count,
+        quality = quality,
+        itemID = itemID,
+        type = kind,
+        index = index,
+    }
+end
+
 function EQT.QuestRewards(questID)
     if not C_QuestLog.ShouldShowQuestRewards(questID) then
         return
     end
-    local r = {
+    local found = {
         xp = GetQuestLogRewardXP(questID),
         money = GetQuestLogRewardMoney(questID),
         rewards = {},
         choices = {},
     }
-    for idx, current in ipairs(C_QuestLog.GetQuestRewardCurrencies(questID)) do
-        r.rewards[#r.rewards + 1] = {
-            name = current.name,
-            texture = current.texture,
-            count = current.totalRewardAmount,
-            quality = current.quality,
-            type = "reward",
-            index = idx,
-            currency = true,
-        }
+    for i, c in ipairs(C_QuestLog.GetQuestRewardCurrencies(questID)) do
+        local e = Entry("reward", i, c.name, c.texture, c.totalRewardAmount, c.quality)
+        e.currency = true
+        found.rewards[#found.rewards + 1] = e
     end
-    for idx = 1, GetNumQuestLogRewards(questID) do
-        local name, texture, total, quality, _, itemId = GetQuestLogRewardInfo(idx, questID)
-        r.rewards[#r.rewards + 1] = {
-            name = name,
-            texture = texture,
-            count = total,
-            quality = quality,
-            itemID = itemId,
-            type = "reward",
-            index = idx,
-        }
+    for i = 1, GetNumQuestLogRewards(questID) do
+        local name, texture, count, quality, _, itemID = GetQuestLogRewardInfo(i, questID)
+        found.rewards[#found.rewards + 1] = Entry("reward", i, name, texture, count, quality, itemID)
     end
-    for idx = 1, GetNumQuestLogChoices(questID) do
-        local name, texture, total, quality, _, itemId = GetQuestLogChoiceInfo(idx, questID)
-        r.choices[#r.choices + 1] = {
-            name = name,
-            texture = texture,
-            count = total,
-            quality = quality,
-            itemID = itemId,
-            type = "choice",
-            index = idx,
-        }
+    for i = 1, GetNumQuestLogChoices(questID) do
+        local name, texture, count, quality, _, itemID = GetQuestLogChoiceInfo(i, questID)
+        found.choices[#found.choices + 1] = Entry("choice", i, name, texture, count, quality, itemID)
     end
-    if r.xp <= 0 and r.money <= 0 and #r.rewards == 0 and #r.choices == 0 then
+    if found.xp <= 0 and found.money <= 0 and #found.rewards == 0 and #found.choices == 0 then
         return
     end
-    return r
+    return found
 end
 
--- Calls fn once an entry's uncached item loads.
-function EQT.OnRewardLoad(e, func)
+-- Calls fn once an entry's item, not yet cached, has loaded.
+function EQT.OnRewardLoad(e, fn)
     local item = e.itemID and Item:CreateFromItemID(e.itemID)
     if item and not item:IsItemEmpty() and not item:IsItemDataCached() then
-        item:ContinueOnItemLoad(func)
+        item:ContinueOnItemLoad(fn)
     end
 end
 
 -------------------------------------------------------------------------------
--- Window
+--  The window
 -------------------------------------------------------------------------------
-local window, scroll, childFrame, title, meta
+local window, scroll, content, title, levelLine
 local texts, tiles, marks = {}, {}, {}
-local usedTexts, usedTiles, usedMarks = 0, 0, 0
+local nTexts, nTiles, nMarks = 0, 0, 0
 local questID
-local moved = false -- dragged by the player: stop following the tracker
+local drawn -- what the window shows, as one string
+local dragged = false -- the player moved it: it no longer follows the tracker
 
 local function Accent()
-    local g = CludesUI.CLUDES_GREEN
-    return g.r, g.g, g.b
+    local c = CludesUI.CLUDES_GREEN
+    return c.r, c.g, c.b
 end
 
 local function Dim()
-    local d = CludesUI.TEXT_DIM
-    return d.r, d.g, d.b, d.a
+    local c = CludesUI.TEXT_DIM
+    return c.r, c.g, c.b, c.a
 end
 
-local function StyleText(fontStr, size)
-    local flag = CludesUI.GetFontOutlineFlag("questTracker")
-    if not pcall(fontStr.SetFont, fontStr, EQT.GetFont(), size, flag) then
-        fontStr:SetFont("Fonts/FRIZQT__.TTF", size, flag)
+local function Style(text, size)
+    local outline = CludesUI.GetFontOutlineFlag("questTracker")
+    if not pcall(text.SetFont, text, EQT.GetFont(), size, outline) then
+        text:SetFont("Fonts/FRIZQT__.TTF", size, outline)
     end
 end
 
-local function ContentWidth()
-    return W - PAD * 2
-end
+local INNER = WIDTH - PAD * 2
 
--- Wrapped text at (x, y); returns its height.
-local function AddText(textValue, posX, posY, size, r, g, b, a)
-    usedTexts = usedTexts + 1
-    local fontStr = texts[usedTexts]
-    if not fontStr then
-        fontStr = childFrame:CreateFontString(nil, "OVERLAY")
-        fontStr:SetJustifyH("LEFT")
-        fontStr:SetWordWrap(true)
-        texts[usedTexts] = fontStr
+-- Wrapped text at x, y in the scrolled content; returns its height.
+local function AddText(value, x, y, size, r, g, b, a)
+    nTexts = nTexts + 1
+    local text = texts[nTexts]
+    if not text then
+        text = content:CreateFontString(nil, "OVERLAY")
+        text:SetJustifyH("LEFT")
+        text:SetWordWrap(true)
+        texts[nTexts] = text
     end
-    StyleText(fontStr, size)
-    fontStr:SetSpacing(2)
-    fontStr:SetWidth(ContentWidth() - posX)
-    fontStr:SetTextColor(r, g, b, a or 1)
-    fontStr:SetText(textValue)
-    fontStr:ClearAllPoints()
-    fontStr:SetPoint("TOPLEFT", childFrame, "TOPLEFT", posX, -posY)
-    fontStr:Show()
-    return math.ceil(fontStr:GetStringHeight())
+    Style(text, size)
+    text:SetSpacing(2)
+    text:SetWidth(INNER - x)
+    text:SetTextColor(r, g, b, a or 1)
+    text:SetText(value)
+    text:ClearAllPoints()
+    text:SetPoint("TOPLEFT", content, "TOPLEFT", x, -y)
+    text:Show()
+    return math.ceil(text:GetStringHeight())
 end
 
--- Section header: small accent capitals over a hairline.
-local function AddSection(textValue, posY)
+-- A section heading: small capitals in the accent colour.
+local function AddHeading(value, y)
     local r, g, b = Accent()
-    local hgt = AddText(textValue:upper(), 0, posY, 11, r, g, b)
-    return hgt + 6
+    return AddText(value:upper(), 0, y, 11, r, g, b) + 6
 end
 
--- Objective marker: a check when finished, else a small accent square.
-local function AddMark(done, posY)
-    usedMarks = usedMarks + 1
-    local m = marks[usedMarks]
-    if not m then
-        m = childFrame:CreateTexture(nil, "ARTWORK")
-        marks[usedMarks] = m
+-- An objective's mark: a tick when done, else a small accent square.
+local function AddMark(done, y)
+    nMarks = nMarks + 1
+    local mark = marks[nMarks]
+    if not mark then
+        mark = content:CreateTexture(nil, "ARTWORK")
+        marks[nMarks] = mark
     end
-    m:ClearAllPoints()
+    mark:ClearAllPoints()
     if done then
-        m:SetTexture(CHECK)
-        m:SetVertexColor(1, 1, 1, 1)
-        m:SetSize(12, 12)
-        m:SetPoint("TOPLEFT", childFrame, "TOPLEFT", 0, -posY)
+        mark:SetTexture(CHECK)
+        mark:SetVertexColor(1, 1, 1, 1)
+        mark:SetSize(12, 12)
+        mark:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -y)
     else
         local r, g, b = Accent()
-        m:SetColorTexture(r, g, b, 0.9)
-        m:SetSize(4, 4)
-        m:SetPoint("TOPLEFT", childFrame, "TOPLEFT", 4, -(posY + 5))
+        mark:SetColorTexture(r, g, b, 0.9)
+        mark:SetSize(4, 4)
+        mark:SetPoint("TOPLEFT", content, "TOPLEFT", 4, -(y + 5))
     end
-    m:Show()
+    mark:Show()
+end
+
+local function TileAtRest(tile)
+    local c = CludesUI.BORDER_COLOR
+    tile.frame:SetColor(c.r, c.g, c.b, 0.15)
 end
 
 local function TileEnter(self)
@@ -187,81 +183,81 @@ local function TileEnter(self)
     GameTooltip:Show()
 end
 
-local function TileRest(t)
-    local c = CludesUI.BORDER_COLOR
-    t.frame:SetColor(c.r, c.g, c.b, 0.15)
-end
-
 local function TileLeave(self)
-    TileRest(self)
+    TileAtRest(self)
     GameTooltip:Hide()
 end
 
-local function AddTile(e, posX, posY, wid)
-    usedTiles = usedTiles + 1
-    local t = tiles[usedTiles]
-    if not t then
-        t = CreateFrame("Button", nil, childFrame)
-        local backdrop = t:CreateTexture(nil, "BACKGROUND")
-        backdrop:SetAllPoints()
-        backdrop:SetColorTexture(TILE_BG[1], TILE_BG[2], TILE_BG[3], TILE_BG[4])
-        t.frame = CludesUI.MakeBorder(t, 1, 1, 1, 0.15)
-        local holderFrame = CreateFrame("Frame", nil, t)
-        holderFrame:SetSize(TILE - 8, TILE - 8)
-        holderFrame:SetPoint("LEFT", 4, 0)
-        t.icon = holderFrame:CreateTexture(nil, "ARTWORK")
-        t.icon:SetAllPoints()
-        t.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        t.quality = CludesUI.MakeBorder(holderFrame, 0, 0, 0, 1)
-        t.count = holderFrame:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
-        t.count:SetPoint("BOTTOMRIGHT", 1, 0)
-        t.name = t:CreateFontString(nil, "OVERLAY")
-        t.name:SetPoint("LEFT", holderFrame, "RIGHT", 6, 0)
-        t.name:SetPoint("RIGHT", -4, 0)
-        t.name:SetJustifyH("LEFT")
-        t.name:SetMaxLines(2)
-        t:SetScript("OnEnter", TileEnter)
-        t:SetScript("OnLeave", TileLeave)
-        tiles[usedTiles] = t
+local function NewTile()
+    local tile = CreateFrame("Button", nil, content)
+    local bg = tile:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(TILE_BG[1], TILE_BG[2], TILE_BG[3], TILE_BG[4])
+    tile.frame = CludesUI.MakeBorder(tile, 1, 1, 1, 0.15)
+    local holder = CreateFrame("Frame", nil, tile)
+    holder:SetSize(TILE - 8, TILE - 8)
+    holder:SetPoint("LEFT", 4, 0)
+    tile.icon = holder:CreateTexture(nil, "ARTWORK")
+    tile.icon:SetAllPoints()
+    tile.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    tile.quality = CludesUI.MakeBorder(holder, 0, 0, 0, 1)
+    tile.count = holder:CreateFontString(nil, "OVERLAY", "NumberFontNormalSmall")
+    tile.count:SetPoint("BOTTOMRIGHT", 1, 0)
+    tile.name = tile:CreateFontString(nil, "OVERLAY")
+    tile.name:SetPoint("LEFT", holder, "RIGHT", 6, 0)
+    tile.name:SetPoint("RIGHT", -4, 0)
+    tile.name:SetJustifyH("LEFT")
+    tile.name:SetMaxLines(2)
+    tile:SetScript("OnEnter", TileEnter)
+    tile:SetScript("OnLeave", TileLeave)
+    return tile
+end
+
+local function AddTile(e, x, y, width)
+    nTiles = nTiles + 1
+    local tile = tiles[nTiles]
+    if not tile then
+        tile = NewTile()
+        tiles[nTiles] = tile
     end
-    t.entry = e
-    t:SetSize(wid, TILE)
-    t:ClearAllPoints()
-    t:SetPoint("TOPLEFT", childFrame, "TOPLEFT", posX, -posY)
+    tile.entry = e
+    tile:SetSize(width, TILE)
+    tile:ClearAllPoints()
+    tile:SetPoint("TOPLEFT", content, "TOPLEFT", x, -y)
     local c = e.quality and ColorManager.GetColorDataForItemQuality(e.quality)
     if c then
-        t.quality:SetColor(c.r, c.g, c.b, 1)
+        tile.quality:SetColor(c.r, c.g, c.b, 1)
     else
-        t.quality:SetColor(0, 0, 0, 1)
+        tile.quality:SetColor(0, 0, 0, 1)
     end
-    t.icon:SetTexture(e.texture)
-    t.count:SetText((e.count and e.count > 1) and e.count or "")
-    StyleText(t.name, 11)
-    t.name:SetText(e.name or RETRIEVING_DATA)
+    tile.icon:SetTexture(e.texture)
+    tile.count:SetText((e.count and e.count > 1) and e.count or "")
+    Style(tile.name, 11)
+    tile.name:SetText(e.name or RETRIEVING_DATA)
     if c then
-        t.name:SetTextColor(c.r, c.g, c.b)
+        tile.name:SetTextColor(c.r, c.g, c.b)
     else
-        t.name:SetTextColor(1, 1, 1)
+        tile.name:SetTextColor(1, 1, 1)
     end
-    TileRest(t)
-    t:Show()
+    TileAtRest(tile)
+    tile:Show()
 end
 
--- Two columns of tiles; returns the height used.
-local function AddTiles(entries, posY)
-    local wid = (ContentWidth() - GAP) / 2
-    for idx, e in ipairs(entries) do
-        local col = (idx - 1) % 2
-        AddTile(e, col * (wid + GAP), posY + math.floor((idx - 1) / 2) * (TILE + GAP), wid)
+-- Tiles in two columns; returns the height used.
+local function AddTiles(entries, y)
+    local width = (INNER - GAP) / 2
+    for i, e in ipairs(entries) do
+        local column, row = (i - 1) % 2, math.floor((i - 1) / 2)
+        AddTile(e, column * (width + GAP), y + row * (TILE + GAP), width)
     end
-    local rowList = math.ceil(#entries / 2)
-    return rowList * TILE + math.max(0, rowList - 1) * GAP
+    local rows = math.ceil(#entries / 2)
+    return rows * TILE + math.max(0, rows - 1) * GAP
 end
 
--- Level (difficulty colored) and quest type, e.g. "Level 12  Elite".
-local function MetaText()
-    local level = C_QuestLog.GetQuestDifficultyLevel(questID)
+-- The level (in its difficulty colour), the quest type and "Complete".
+local function LevelLine()
     local parts = {}
+    local level = C_QuestLog.GetQuestDifficultyLevel(questID)
     if level and level > 0 then
         local c = GetQuestDifficultyColor(level)
         parts[1] = CreateColor(c.r, c.g, c.b):WrapTextInColorCode(LEVEL .. " " .. level)
@@ -276,21 +272,51 @@ local function MetaText()
     return table.concat(parts, "   ")
 end
 
-local Refresh
-
-local function SetButtonEnabled(b, enabled)
-    b:SetEnabled(enabled)
-    b:SetAlpha(enabled and 1 or 0.35)
+local function SetButtonOn(button, on)
+    button:SetEnabled(on)
+    button:SetAlpha(on and 1 or 0.35)
 end
 
 local function UpdateButtons()
     local focused = C_SuperTrack.GetSuperTrackedQuestID() == questID
     window.focus.label:SetText(focused and STOP_SUPER_TRACK_QUEST or SUPER_TRACK_QUEST)
-    SetButtonEnabled(window.share, IsInGroup() and C_QuestLog.IsPushableQuest(questID))
-    SetButtonEnabled(window.abandon, C_QuestLog.CanAbandonQuest(questID))
+    SetButtonOn(window.share, IsInGroup() and C_QuestLog.IsPushableQuest(questID))
+    SetButtonOn(window.abandon, C_QuestLog.CanAbandonQuest(questID))
 end
 
-function Refresh()
+-- Everything the window would show, read once, with a fingerprint of it.
+local function Read(logIndex)
+    local q = {
+        title = C_QuestLog.GetTitleForQuestID(questID) or "",
+        level = LevelLine(),
+        objectives = C_QuestLog.GetQuestObjectives(questID) or {},
+        rewards = EQT.QuestRewards(questID),
+    }
+    q.description, q.objectivesText = GetQuestLogQuestText(logIndex)
+    local parts = { q.title, q.level, tostring(q.description), tostring(q.objectivesText) }
+    for _, o in ipairs(q.objectives) do
+        parts[#parts + 1] = tostring(o.text) .. (o.finished and "+" or "-")
+    end
+    local r = q.rewards
+    if r then
+        parts[#parts + 1] = r.xp .. "/" .. r.money
+        for _, list in ipairs({ r.rewards, r.choices }) do
+            for _, e in ipairs(list) do
+                parts[#parts + 1] = table.concat(
+                    { tostring(e.name), tostring(e.texture), tostring(e.count), tostring(e.quality) },
+                    ","
+                )
+            end
+            parts[#parts + 1] = "|"
+        end
+    end
+    return q, table.concat(parts, "\n")
+end
+
+local Refresh
+
+-- force: draw even if nothing seems to have changed.
+function Refresh(force)
     if not (window and window:IsShown() and questID) then
         return
     end
@@ -299,62 +325,67 @@ function Refresh()
         window:Hide()
         return
     end
-    usedTexts, usedTiles, usedMarks = 0, 0, 0
-    local dr, dg, saved, da = Dim()
-    title:SetText(C_QuestLog.GetTitleForQuestID(questID) or "")
-    meta:SetText(MetaText())
+    local q, fingerprint = Read(logIndex)
+    if not force and fingerprint == drawn then
+        UpdateButtons()
+        return
+    end
+    drawn = fingerprint
+    nTexts, nTiles, nMarks = 0, 0, 0
+    local dr, dg, db, da = Dim()
+    title:SetText(q.title)
+    levelLine:SetText(q.level)
     window.bar:SetColorTexture(Accent())
 
-    local description, objectivesText = GetQuestLogQuestText(logIndex)
-    local posY = 0
-    local objectives = C_QuestLog.GetQuestObjectives(questID) or {}
-    if #objectives > 0 or (objectivesText and objectivesText ~= "") then
-        posY = posY + AddSection(QUEST_OBJECTIVES, posY)
-        for _, o in ipairs(objectives) do
+    local y = 0
+    local objectivesText = q.objectivesText
+    if #q.objectives > 0 or (objectivesText and objectivesText ~= "") then
+        y = y + AddHeading(QUEST_OBJECTIVES, y)
+        for _, o in ipairs(q.objectives) do
             if o.text and o.text ~= "" then
-                AddMark(o.finished, posY)
+                AddMark(o.finished, y)
                 if o.finished then
-                    posY = posY + AddText(o.text, 18, posY, 12, dr, dg, saved, da) + 4
+                    y = y + AddText(o.text, 18, y, 12, dr, dg, db, da) + 4
                 else
-                    posY = posY + AddText(o.text, 18, posY, 12, 1, 1, 1) + 4
+                    y = y + AddText(o.text, 18, y, 12, 1, 1, 1) + 4
                 end
             end
         end
         if objectivesText and objectivesText ~= "" then
-            posY = posY + 4 + AddText(objectivesText, 0, posY + 4, 12, dr, dg, saved, da)
+            y = y + 4 + AddText(objectivesText, 0, y + 4, 12, dr, dg, db, da)
         end
-        posY = posY + 16
+        y = y + 16
     end
-    if description and description ~= "" then
-        posY = posY + AddSection(QUEST_DESCRIPTION, posY)
-        posY = posY + AddText(description, 0, posY, 12, 0.9, 0.9, 0.9) + 16
+    if q.description and q.description ~= "" then
+        y = y + AddHeading(QUEST_DESCRIPTION, y)
+        y = y + AddText(q.description, 0, y, 12, 0.9, 0.9, 0.9) + 16
     end
 
-    local r = EQT.QuestRewards(questID)
+    local r = q.rewards
     if r then
-        posY = posY + AddSection(QUEST_REWARDS, posY)
+        y = y + AddHeading(QUEST_REWARDS, y)
         if r.xp > 0 then
-            posY = posY + AddText(BONUS_OBJECTIVE_EXPERIENCE_FORMAT:format(r.xp), 0, posY, 12, 1, 1, 1) + 4
+            y = y + AddText(BONUS_OBJECTIVE_EXPERIENCE_FORMAT:format(r.xp), 0, y, 12, 1, 1, 1) + 4
         end
         if r.money > 0 then
-            posY = posY + AddText(GetMoneyString(r.money), 0, posY, 12, 1, 1, 1) + 4
+            y = y + AddText(GetMoneyString(r.money), 0, y, 12, 1, 1, 1) + 4
         end
         if #r.rewards > 0 then
-            posY = posY + 4 + AddTiles(r.rewards, posY + 4) + 4
+            y = y + 4 + AddTiles(r.rewards, y + 4) + 4
         end
         if #r.choices > 0 then
-            posY = posY + 8
-            posY = posY + AddText(REWARD_CHOICES, 0, posY, 12, dr, dg, saved, da) + 6
-            posY = posY + AddTiles(r.choices, posY)
+            y = y + 8
+            y = y + AddText(REWARD_CHOICES, 0, y, 12, dr, dg, db, da) + 6
+            y = y + AddTiles(r.choices, y)
         end
-        -- Uncached items: redraw once each loads, if still on this quest.
-        local isShown = questID
-        for _, entries in ipairs({ r.rewards, r.choices }) do
-            for _, e in ipairs(entries) do
+        -- An item not cached yet: draw again when it loads, if still on this quest.
+        local shownQuest = questID
+        for _, list in ipairs({ r.rewards, r.choices }) do
+            for _, e in ipairs(list) do
                 if not e.name then
                     EQT.OnRewardLoad(e, function()
-                        if questID == isShown then
-                            Refresh()
+                        if questID == shownQuest then
+                            Refresh(true)
                         end
                     end)
                 end
@@ -362,63 +393,61 @@ function Refresh()
         end
     end
 
-    for idx = usedTexts + 1, #texts do
-        texts[idx]:Hide()
+    for i = nTexts + 1, #texts do
+        texts[i]:Hide()
     end
-    for idx = usedTiles + 1, #tiles do
-        tiles[idx]:Hide()
+    for i = nTiles + 1, #tiles do
+        tiles[i]:Hide()
     end
-    for idx = usedMarks + 1, #marks do
-        marks[idx]:Hide()
+    for i = nMarks + 1, #marks do
+        marks[i]:Hide()
     end
-    childFrame:SetSize(ContentWidth(), math.max(1, posY))
-    local maxScroll = math.max(0, posY - scroll:GetHeight())
-    scroll:SetVerticalScroll(math.min(scroll:GetVerticalScroll(), maxScroll))
+    content:SetSize(INNER, math.max(1, y))
+    local furthest = math.max(0, y - scroll:GetHeight())
+    scroll:SetVerticalScroll(math.min(scroll:GetVerticalScroll(), furthest))
     UpdateButtons()
 end
 
--- Beside the tracker, on the side facing the screen centre.
+-- Beside the tracker, on the side towards the middle of the screen.
 local function Place()
-    if moved then
+    if dragged then
         return
     end
     local tracker = _G.CUI_CustomQuestTracker
     window:ClearAllPoints()
-    local cx = tracker and tracker:GetCenter()
-    if not cx then
+    local x = tracker and tracker:GetCenter()
+    if not x then
         window:SetPoint("CENTER", UIParent, "CENTER", 0, 50)
-        return
-    end
-    if cx * tracker:GetEffectiveScale() > UIParent:GetWidth() * UIParent:GetEffectiveScale() / 2 then
+    elseif x * tracker:GetEffectiveScale() > UIParent:GetWidth() * UIParent:GetEffectiveScale() / 2 then
         window:SetPoint("TOPRIGHT", tracker, "TOPLEFT", -8, 0)
     else
         window:SetPoint("TOPLEFT", tracker, "TOPRIGHT", 8, 0)
     end
 end
 
-local function Button(textValue, onClick)
-    local b = CreateFrame("Button", nil, window)
-    b:SetSize((W - PAD * 2 - GAP * 3) / 4, BTN_H)
-    local _, _, labelFS = CludesUI.MakeStyledButton(b, textValue, 11, CludesUI.WB_COLOURS, onClick)
-    labelFS:SetWidth(b:GetWidth() - 6)
-    labelFS:SetWordWrap(false)
-    b.label = labelFS
-    return b
+local function Button(label, onClick)
+    local button = CreateFrame("Button", nil, window)
+    button:SetSize((WIDTH - PAD * 2 - GAP * 3) / 4, BUTTON_H)
+    local _, _, text = CludesUI.MakeStyledButton(button, label, 11, CludesUI.WB_COLOURS, onClick)
+    text:SetWidth(button:GetWidth() - 6)
+    text:SetWordWrap(false)
+    button.label = text
+    return button
 end
 
-local function Divider(posY, fromBottom)
+local function Divider(y, fromBottom)
     local c = CludesUI.BORDER_COLOR
-    local t = window:CreateTexture(nil, "BORDER")
-    t:SetColorTexture(c.r, c.g, c.b, 0.15)
-    t:SetHeight(1)
-    local anchorPoint = fromBottom and "BOTTOM" or "TOP"
-    t:SetPoint(anchorPoint .. "LEFT", PAD, posY)
-    t:SetPoint(anchorPoint .. "RIGHT", -PAD, posY)
+    local line = window:CreateTexture(nil, "BORDER")
+    line:SetColorTexture(c.r, c.g, c.b, 0.15)
+    line:SetHeight(1)
+    local side = fromBottom and "BOTTOM" or "TOP"
+    line:SetPoint(side .. "LEFT", PAD, y)
+    line:SetPoint(side .. "RIGHT", -PAD, y)
 end
 
 local function Build()
     window = CreateFrame("Frame", "CUI_QuestDetails", UIParent)
-    window:SetSize(W, H)
+    window:SetSize(WIDTH, HEIGHT)
     window:SetFrameStrata("MEDIUM")
     window:SetToplevel(true)
     window:SetClampedToScreen(true)
@@ -430,33 +459,33 @@ local function Build()
     end)
     window:SetScript("OnDragStop", function(self)
         self:StopMovingOrSizing()
-        moved = true
+        dragged = true
     end)
     window:Hide()
 
-    local backdrop = window:CreateTexture(nil, "BACKGROUND")
-    backdrop:SetAllPoints()
-    backdrop:SetColorTexture(BG[1], BG[2], BG[3], BG[4])
+    local bg = window:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(PANEL_BG[1], PANEL_BG[2], PANEL_BG[3], PANEL_BG[4])
     local c = CludesUI.BORDER_COLOR
     CludesUI.MakeBorder(window, c.r, c.g, c.b, 0.15)
 
-    -- Header: accent bar, title, meta line.
+    -- The header: an accent bar, the title, the level line.
     window.bar = window:CreateTexture(nil, "ARTWORK")
     window.bar:SetSize(2, 32)
     window.bar:SetPoint("TOPLEFT", PAD, -PAD + 2)
     title = window:CreateFontString(nil, "OVERLAY")
-    StyleText(title, 15)
+    Style(title, 15)
     title:SetTextColor(1, 1, 1)
     title:SetPoint("TOPLEFT", window.bar, "TOPRIGHT", 8, 0)
     title:SetPoint("RIGHT", -34, 0)
     title:SetJustifyH("LEFT")
     title:SetWordWrap(false)
-    meta = window:CreateFontString(nil, "OVERLAY")
-    StyleText(meta, 11)
-    meta:SetTextColor(Dim())
-    meta:SetPoint("BOTTOMLEFT", window.bar, "BOTTOMRIGHT", 8, 0)
-    meta:SetJustifyH("LEFT")
-    Divider(-HEADER_H)
+    levelLine = window:CreateFontString(nil, "OVERLAY")
+    Style(levelLine, 11)
+    levelLine:SetTextColor(Dim())
+    levelLine:SetPoint("BOTTOMLEFT", window.bar, "BOTTOMRIGHT", 8, 0)
+    levelLine:SetJustifyH("LEFT")
+    Divider(-HEADER)
 
     local close = CreateFrame("Button", nil, window)
     close:SetSize(12, 12)
@@ -476,27 +505,27 @@ local function Build()
     end)
 
     scroll = CreateFrame("ScrollFrame", nil, window)
-    scroll:SetPoint("TOPLEFT", PAD, -HEADER_H - 12)
-    scroll:SetPoint("BOTTOMRIGHT", -PAD, FOOTER_H + 8)
+    scroll:SetPoint("TOPLEFT", PAD, -HEADER - 12)
+    scroll:SetPoint("BOTTOMRIGHT", -PAD, FOOTER + 8)
     scroll:SetClipsChildren(true)
     scroll:EnableMouseWheel(true)
     scroll:SetScript("OnMouseWheel", function(self, delta)
-        local max = math.max(0, childFrame:GetHeight() - self:GetHeight())
-        self:SetVerticalScroll(math.max(0, math.min(self:GetVerticalScroll() - delta * WHEEL, max)))
+        local furthest = math.max(0, content:GetHeight() - self:GetHeight())
+        self:SetVerticalScroll(math.max(0, math.min(self:GetVerticalScroll() - delta * WHEEL_STEP, furthest)))
     end)
-    childFrame = CreateFrame("Frame", nil, scroll)
-    childFrame:SetSize(ContentWidth(), 1)
-    scroll:SetScrollChild(childFrame)
+    content = CreateFrame("Frame", nil, scroll)
+    content:SetSize(INNER, 1)
+    scroll:SetScrollChild(content)
 
-    -- Footer: one row of buttons.
-    Divider(FOOTER_H, true)
-    local a = EQT.CustomQuestActions
+    -- The footer: one row of buttons.
+    Divider(FOOTER, true)
+    local act = EQT.CustomQuestActions
     window.focus = Button(SUPER_TRACK_QUEST, function()
-        a.Focus(questID)
+        act.Focus(questID)
     end)
     window.focus:SetPoint("BOTTOMLEFT", PAD, PAD)
     window.untrack = Button(UNTRACK_QUEST_ABBREV, function()
-        a.Untrack(questID)
+        act.Untrack(questID)
     end)
     window.untrack:SetPoint("LEFT", window.focus, "RIGHT", GAP, 0)
     window.share = Button(SHARE_QUEST_ABBREV, function()
@@ -504,16 +533,16 @@ local function Build()
     end)
     window.share:SetPoint("LEFT", window.untrack, "RIGHT", GAP, 0)
     window.abandon = Button(ABANDON_QUEST_ABBREV, function()
-        a.Abandon(questID)
+        act.Abandon(questID)
     end)
     window.abandon:SetPoint("LEFT", window.share, "RIGHT", GAP, 0)
 
-    window:SetScript("OnEvent", function(_, evt, ident)
-        if evt == "QUEST_REMOVED" then
-            if ident == questID then
+    window:SetScript("OnEvent", function(_, event, id)
+        if event == "QUEST_REMOVED" then
+            if id == questID then
                 window:Hide()
             end
-        elseif evt == "SUPER_TRACKING_CHANGED" or evt == "GROUP_ROSTER_UPDATE" then
+        elseif event == "SUPER_TRACKING_CHANGED" or event == "GROUP_ROSTER_UPDATE" then
             UpdateButtons()
         else
             Refresh()
@@ -528,22 +557,23 @@ local function Build()
     window:SetScript("OnHide", function(self)
         self:UnregisterAllEvents()
         questID = nil
+        drawn = nil
     end)
     CludesUI.RegisterEscapeClose(window)
 end
 
--- Toggles the window for a quest; a second click on the same quest closes it.
-function EQT.ShowQuestDetails(ident)
+-- Opens the window for a quest; a second click on the same quest closes it.
+function EQT.ShowQuestDetails(id)
     if not window then
         Build()
     end
-    if window:IsShown() and questID == ident then
+    if window:IsShown() and questID == id then
         window:Hide()
         return
     end
-    questID = ident
+    questID = id
     scroll:SetVerticalScroll(0)
     Place()
     window:Show()
-    Refresh()
+    Refresh(true)
 end
