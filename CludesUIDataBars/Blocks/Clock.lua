@@ -1,367 +1,253 @@
 if CUI_CLIENT_BLOCKED then
     return
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
--- Blocks\Clock.lua
--- Clock block factory.
-
-local ADDON_NAME, mod = ...
+-------------------------------------------------------------------------------
+--  Blocks\Clock.lua - Info Bar block: the clock.
+--
+--  Server or local time, 12 or 24 hour (both follow the game's own clock
+--  settings until the block's settings pick), with a resting icon while
+--  resting and a mail icon while mail waits. Hover shows the date, server
+--  time, saved instances and the daily and weekly resets. Left-click opens the
+--  calendar, right-click the game's clock, Shift+middle-click reloads.
+--
+--  It draws when what it shows changes: the minute, resting, mail. In combat
+--  the bar is protected, so the text and icons change and the layout waits
+--  for the end of combat.
+--
+--  Settings (blockCfg.settings): localTime, twentyFour (nil = the game's
+--  setting); showResting, showMail (default on); fontSizeClock.
+-------------------------------------------------------------------------------
+local _, mod = ...
 local L = mod.L
 local K = mod.BlockKit
 
--- Upvalues
-local CreateFrame = CreateFrame
-local InCombatLockdown = InCombatLockdown
-local wipe = wipe
-local format = string.format
-local floor = math.floor
-local max = math.max
-local min = math.min
-local date = date
+-- Kept as locals: the clock reads them every second.
+local InCombatLockdown, date = InCombatLockdown, date
+local format, floor, max, min = string.format, math.floor, math.max, math.min
 
-local CONTENT_BASE = K.CONTENT_BASE
-local InstKey = K.InstKey
-local MakeEventFrame = K.MakeEventFrame
-local RegisterInstEvents = K.RegisterInstEvents
-local UnregisterInstEvents = K.UnregisterInstEvents
-local HBudget = K.HBudget
-local VSlotW = K.VSlotW
-local MaybeRelayout = K.MaybeRelayout
-local AttachTextOffset = K.AttachTextOffset
-local BlockColorOf = K.BlockColorOf
+-- Like the minimap clock: 24 hour padded (01:04), 12 hour not (1:04 PM).
+local function ClockText(hour, minute, use24)
+    if use24 then
+        return format("%02d:%02d", hour, minute)
+    end
+    local suffix = hour >= 12 and "PM" or "AM"
+    hour = hour % 12
+    if hour == 0 then
+        hour = 12
+    end
+    return format("%d:%02d %s", hour, minute, suffix)
+end
 
--------------------------------------------------------------------------------
---  CLOCK
--------------------------------------------------------------------------------
+local function RestSize()
+    return floor(K.CONTENT_BASE * 0.5 + 0.5)
+end
+
 mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
-    instance.key = InstKey(barCtx, blockCfg)
-    instance.events = {
+    local inst = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
+    inst.key = K.InstKey(barCtx, blockCfg)
+    inst.events = {
         "PLAYER_UPDATE_RESTING",
         "PLAYER_REGEN_ENABLED",
         "MAIL_INBOX_UPDATE",
         "UPDATE_PENDING_MAIL",
     }
+    local tickKey = "clock:" .. inst.key
 
-    local infoTimer, infoIndex = 0, 1
-    local lastTimeStr
-    local infoItems = {}
-    local needsResize = false
-    local isMouseOver = false
-    local _fitTimeBuf = { "" }
-
-    local function D()
+    local function Settings()
         return blockCfg.settings or {}
     end
-    local function BC()
-        return barCtx.cfg
+
+    -- A fixed size off CONTENT_BASE; the bar's height never scales the text.
+    local function FontSize()
+        return Settings().fontSizeClock or max(12, floor(K.CONTENT_BASE * 0.7333 + 0.5))
     end
 
-    -- Fixed defaults (26 / 16 off CONTENT_BASE); bar Height never scales text.
-    local function FontSizeClock()
-        local d = D()
-        if d.fontSizeClock then
-            return d.fontSizeClock
-        end
-        return max(12, floor(CONTENT_BASE * 0.7333 + 0.5))
-    end
-    local function FontSizeInfo()
-        local d = D()
-        if d.fontSizeInfo then
-            return d.fontSizeInfo
-        end
-        return max(9, floor(CONTENT_BASE * 0.53 + 0.5))
-    end
-
-    -- Untouched toggles follow the game's Time Manager CVars (same source the minimap clock reads) so both clocks agree; explicit toggle overrides.
-    local function ClockUses()
-        local d = D()
-        local useLocal = d.localTime
+    -- Unset toggles follow the game's clock settings, so this clock and the
+    -- minimap's agree.
+    local function Modes()
+        local s = Settings()
+        local useLocal, use24 = s.localTime, s.twentyFour
         if useLocal == nil then
             useLocal = GetCVar("timeMgrUseLocalTime") == "1"
         end
-        local use24 = d.twentyFour
         if use24 == nil then
             use24 = GetCVar("timeMgrUseMilitaryTime") == "1"
         end
         return useLocal, use24
     end
 
-    -- Matches the minimap clock exactly: padded hour in 24-hour mode (01:04), unpadded hour + AM/PM in 12-hour mode (1:04 PM).
-    local function FormatClock(hgt, m, use24)
-        if use24 then
-            return format("%02d:%02d", hgt, m)
-        end
-        local ampm = hgt >= 12 and "PM" or "AM"
-        hgt = hgt % 12
-        if hgt == 0 then
-            hgt = 12
-        end
-        return format("%d:%02d %s", hgt, m, ampm)
-    end
-
-    local function GetTimeString()
-        local useLocal, use24 = ClockUses()
-        local hgt, m
+    local function Now()
+        local useLocal, use24 = Modes()
         if useLocal then
-            hgt = tonumber(date("%H"))
-            m = tonumber(date("%M"))
-        else
-            local gh, gm = GetGameTime()
-            hgt = floor(gh)
-            m = floor(gm)
+            return ClockText(tonumber(date("%H")), tonumber(date("%M")), use24)
         end
-        return FormatClock(hgt, m, use24)
+        local hour, minute = GetGameTime()
+        return ClockText(floor(hour), floor(minute), use24)
     end
 
-    local function RebuildInfoItems()
-        -- Empty by design (mail is an icon); rotation kept for future lines.
-        wipe(infoItems)
-        if infoIndex > #infoItems then
-            infoIndex = 1
-        end
+    local function ShowsRest()
+        return Settings().showResting ~= false and IsResting()
+    end
+    local function ShowsMail()
+        return Settings().showMail ~= false and HasNewMail()
     end
 
-    local clockTextFrame = CreateFrame("Button", nil, contentFrame)
-    clockTextFrame:SetSize(100, 20)
-    clockTextFrame:SetPoint("CENTER")
-    clockTextFrame:EnableMouse(true)
-    clockTextFrame:RegisterForClicks("AnyUp")
+    local button = CreateFrame("Button", nil, contentFrame)
+    button:SetSize(100, 20)
+    button:SetPoint("CENTER")
+    button:EnableMouse(true)
+    button:RegisterForClicks("AnyUp")
 
-    local clockText = clockTextFrame:CreateFontString(nil, "OVERLAY")
-    AttachTextOffset(instance, clockText)
-    clockText:SetPoint("CENTER")
-    clockText:SetTextColor(1, 1, 1, 1)
+    local label = button:CreateFontString(nil, "OVERLAY")
+    K.AttachTextOffset(inst, label)
+    label:SetPoint("CENTER")
+    label:SetTextColor(1, 1, 1, 1)
 
-    local eventText = clockTextFrame:CreateFontString(nil, "OVERLAY")
-    eventText:SetPoint("CENTER", clockText, "TOP", 0, 6)
-    eventText:Hide()
+    -- Resting: the player frame's rest animation, white, drawn 1.5x its
+    -- frame (the art has wide margins), a little high, at 80% of the game's pace.
+    local rest = CreateFrame("Frame", nil, contentFrame)
+    rest:SetSize(16, 21)
+    rest:Hide()
+    local restArt = rest:CreateTexture(nil, "OVERLAY")
+    restArt:SetDrawLayer("OVERLAY", 7)
+    restArt:SetPoint("CENTER", rest, "CENTER", 0, 5)
+    CludesUI.AddRestFlipbook(rest, restArt, 1.875)
+    restArt:SetDesaturated(true)
+    restArt:SetVertexColor(1, 1, 1, 1)
 
-    -- Resting indicator: Blizzard's PlayerFrame rest flipbook (CludesUI.AddRestFlipbook);
-    -- renders 1.5x frame size centered (transparent margins). No OnUpdate --
-    -- animates only while shown.
-    local restFrame = CreateFrame("Frame", nil, contentFrame)
-    restFrame:SetSize(16, 21)
-    restFrame:Hide()
-    local restIcon = restFrame:CreateTexture(nil, "OVERLAY")
-    restIcon:SetDrawLayer("OVERLAY", 7)
-    -- Nudged 5px up from center; desaturated so the gold art reads white.
-    restIcon:SetPoint("CENTER", restFrame, "CENTER", 0, 5)
-    -- 80% of Blizzard's 1.5s pace (user-tuned).
-    CludesUI.AddRestFlipbook(restFrame, restIcon, 1.875)
-    restIcon:SetDesaturated(true)
-    restIcon:SetVertexColor(1, 1, 1, 1)
+    -- Mail: left of the time while mail waits.
+    local mailArt = button:CreateTexture(nil, "OVERLAY")
+    mailArt:SetAtlas("Crosshair_mail_64")
+    mailArt:Hide()
 
-    -- Mail indicator: LEFT of the clock while mail waits, gated by showMail.
-    local mailIcon = clockTextFrame:CreateTexture(nil, "OVERLAY")
-    mailIcon:SetAtlas("Crosshair_mail_64")
-    mailIcon:Hide()
+    local hovered = false
+    local drawnTime -- the time on screen
+    local drawnState -- time, rest and mail as last laid out
+    local owesLayout = false -- something changed in combat
 
-    -- One color authority: text and resting icon move together (accent on hover).
-    local function ApplyClockColor()
+    local function State(timeText)
+        return timeText .. (ShowsRest() and "|r" or "|-") .. (ShowsMail() and "|m" or "|-")
+    end
+
+    -- The text and the rest icon share one colour (the accent on hover).
+    local function Paint()
         local r, g, b
-        if isMouseOver then
+        if hovered then
             r, g, b = mod.GetAccent()
         else
-            r, g, b = BlockColorOf(blockCfg)
+            r, g, b = K.BlockColorOf(blockCfg)
         end
-        clockText:SetTextColor(r, g, b, 1)
-        restIcon:SetVertexColor(r, g, b, 1)
+        label:SetTextColor(r, g, b, 1)
+        restArt:SetVertexColor(r, g, b, 1)
     end
 
-    function instance:Refresh()
+    function inst:Refresh()
+        local timeText = Now()
+        drawnTime = timeText
+        -- In combat: the text, colour and icons only (none of them is
+        -- protected); the layout waits for the end of combat.
         if InCombatLockdown() then
-            -- Combat: text-only refresh (insecure FontStrings, so SetText/color
-            -- /shown are safe); sizing+anchoring wait for PLAYER_REGEN_ENABLED
-            -- via needsResize so the clock keeps ticking.
-            needsResize = true
-            clockText:SetText(GetTimeString())
-            ApplyClockColor()
-            -- Mail can arrive mid-fight; our own texture is combat-legal.
-            local dCombat = D()
-            mailIcon:SetShown(dCombat.showMail ~= false and HasNewMail())
-            RebuildInfoItems()
-            if #infoItems > 0 then
-                eventText:SetText(infoItems[infoIndex] or "")
-                local r, g, b = mod.GetAccent()
-                eventText:SetTextColor(r, g, b, 1)
-                eventText:Show()
-            else
-                eventText:Hide()
-            end
-            local dc = D()
-            if dc.showResting ~= false and IsResting() then
-                restFrame:Show()
-            else
-                restFrame:Hide()
-            end
+            owesLayout = true
+            label:SetText(timeText)
+            Paint()
+            mailArt:SetShown(ShowsMail())
+            rest:SetShown(ShowsRest())
             return
         end
+        owesLayout = false
+        drawnState = State(timeText)
 
-        local isSide = barCtx.IsVertical()
-        local barCfg = BC()
-        local clockSz = FontSizeClock()
-        local infoSz = FontSizeInfo()
-        local timeText = GetTimeString()
+        local fontSize = FontSize()
         local barH = barCtx.GetThickness()
+        mod.SetFont(label, fontSize, barCtx.cfg)
+        label:SetText(timeText)
+        Paint()
+        rest:SetShown(ShowsRest())
+        mailArt:SetShown(ShowsMail())
 
-        -- No fit-to-slot: fixed size (base font x Text Scale x Content Scale).
+        -- The rest frame is square; its art is drawn 1.5x around it.
+        local restSize = RestSize()
+        rest:SetSize(restSize, restSize)
+        restArt:SetSize(floor(restSize * 1.5 + 0.5), floor(restSize * 1.5 + 0.5))
+        rest:ClearAllPoints()
+        local mailSize = restSize + 8
+        mailArt:SetSize(mailSize, mailSize)
+        mailArt:ClearAllPoints()
 
-        mod.SetFont(clockText, clockSz, barCfg)
-        clockText:SetText(timeText)
-        ApplyClockColor()
-
-        mod.SetFont(eventText, infoSz, barCfg)
-        RebuildInfoItems()
-        if #infoItems > 0 then
-            eventText:SetText(infoItems[infoIndex] or "")
-            local r, g, b = mod.GetAccent()
-            eventText:SetTextColor(r, g, b, 1)
-            eventText:Show()
-        else
-            eventText:Hide()
-        end
-
-        local dc = D()
-        if dc.showResting ~= false and IsResting() then
-            restFrame:Show()
-        else
-            restFrame:Hide()
-        end
-        mailIcon:SetShown(dc.showMail ~= false and HasNewMail())
-
-        local barAtTop = barCtx.IsBarAtTop()
-        -- Square frame; texture draws 1.5x centered (art has transparent margins).
-        local restW = floor(CONTENT_BASE * 0.5 + 0.5)
-        local restH = restW
-        restFrame:SetSize(restW, restH)
-        restIcon:SetSize(floor(restW * 1.5 + 0.5), floor(restH * 1.5 + 0.5))
-        restFrame:ClearAllPoints()
-        local mailW = restW + 8
-        mailIcon:SetSize(mailW, mailW)
-        mailIcon:ClearAllPoints()
-
-        if isSide then
-            local slotW = VSlotW(instance)
-            local innerW = max(30, slotW - 8)
-
+        if barCtx.IsVertical() then
+            -- The time at the top of the slot; rest top right, mail top left.
+            local slotW = K.VSlotW(inst)
             contentFrame:SetWidth(slotW)
-            clockTextFrame:SetWidth(slotW)
-            clockTextFrame:ClearAllPoints()
-            clockTextFrame:SetPoint("CENTER", contentFrame, "CENTER", 0, 0)
-
-            mod.SetWrappedText(clockText, innerW, "CENTER")
-            clockText:ClearAllPoints()
-            clockText:SetPoint("TOP", clockTextFrame, "TOP", 0, -4)
-
-            local totalH = 8 + mod.SnapToPixelGrid(clockText:GetStringHeight())
-            if eventText:IsShown() then
-                mod.SetWrappedText(eventText, innerW, "CENTER")
-                eventText:ClearAllPoints()
-                eventText:SetPoint("TOP", clockText, "BOTTOM", 0, -4)
-                totalH = totalH + 4 + mod.SnapToPixelGrid(eventText:GetStringHeight())
+            button:SetWidth(slotW)
+            button:ClearAllPoints()
+            button:SetPoint("CENTER", contentFrame, "CENTER", 0, 0)
+            mod.SetWrappedText(label, max(30, slotW - 8), "CENTER")
+            label:ClearAllPoints()
+            label:SetPoint("TOP", button, "TOP", 0, -4)
+            local height = max(8 + mod.SnapToPixelGrid(label:GetStringHeight()), barH + 8)
+            contentFrame:SetHeight(height)
+            button:SetHeight(height)
+            if rest:IsShown() then
+                rest:SetPoint("TOPRIGHT", contentFrame, "TOPRIGHT", -2, -2)
             end
-
-            totalH = max(totalH, barH + 8)
-            contentFrame:SetHeight(totalH)
-            clockTextFrame:SetHeight(totalH)
-
-            if restFrame:IsShown() then
-                restFrame:SetPoint("TOPRIGHT", contentFrame, "TOPRIGHT", -2, -2)
-            end
-            if mailIcon:IsShown() then
-                mailIcon:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", 2, -2)
+            if mailArt:IsShown() then
+                mailArt:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", 2, -2)
             end
         else
-            local slotW = HBudget(instance, 120)
-            local restExtra = 0
-            if restFrame:IsShown() then
-                restExtra = restW + 4
-            end
-            local mailExtra = 0
-            if mailIcon:IsShown() then
-                mailExtra = mailW + 8
-            end
-            local textBudget = max(30, slotW - restExtra - mailExtra)
-            mod.SetFont(clockText, clockSz, barCfg)
-            clockText:SetText(timeText)
-            if #infoItems > 0 then
-                mod.SetFont(eventText, infoSz, barCfg)
-                eventText:SetText(infoItems[infoIndex] or "")
-            end
-
-            mod.ResetInlineText(clockText, "CENTER")
-            mod.ResetInlineText(eventText, "CENTER")
-
-            local tw = mod.SnapToPixelGrid(clockText:GetStringWidth())
-            local th = mod.SnapToPixelGrid(clockText:GetStringHeight())
-            if th < 1 then
-                th = 1
-            end
-
-            contentFrame:SetSize(min(slotW, max(tw, 1) + restExtra + mailExtra), th)
-            clockTextFrame:SetSize(min(slotW, max(tw, 1) + restExtra + mailExtra), th)
-            clockTextFrame:ClearAllPoints()
-            clockTextFrame:SetPoint("CENTER")
-
-            clockText:ClearAllPoints()
-            clockText:SetPoint("CENTER")
-
-            eventText:ClearAllPoints()
-            if barAtTop then
-                eventText:SetPoint("CENTER", clockText, "BOTTOM", 0, -6)
-            else
-                eventText:SetPoint("CENTER", clockText, "TOP", 0, 6)
-            end
-
-            if restFrame:IsShown() then
-                if barAtTop then
-                    restFrame:SetPoint("TOPLEFT", clockText, "TOPRIGHT", 2, -12)
+            -- Mail, time, rest in a row, as wide as they need (up to the budget).
+            local budget = K.HBudget(inst, 120)
+            local restW = rest:IsShown() and restSize + 4 or 0
+            local mailW = mailArt:IsShown() and mailSize + 8 or 0
+            mod.SetFont(label, fontSize, barCtx.cfg)
+            mod.ResetInlineText(label, "CENTER")
+            local textW = mod.SnapToPixelGrid(label:GetStringWidth())
+            local textH = max(mod.SnapToPixelGrid(label:GetStringHeight()), 1)
+            local width = min(budget, max(textW, 1) + restW + mailW)
+            contentFrame:SetSize(width, textH)
+            button:SetSize(width, textH)
+            button:ClearAllPoints()
+            button:SetPoint("CENTER")
+            label:ClearAllPoints()
+            label:SetPoint("CENTER")
+            -- The rest icon sits towards the screen's middle.
+            if rest:IsShown() then
+                if barCtx.IsBarAtTop() then
+                    rest:SetPoint("TOPLEFT", label, "TOPRIGHT", 2, -12)
                 else
-                    restFrame:SetPoint("BOTTOMLEFT", clockText, "BOTTOMRIGHT", 2, 12)
+                    rest:SetPoint("BOTTOMLEFT", label, "BOTTOMRIGHT", 2, 12)
                 end
             end
-            if mailIcon:IsShown() then
-                mailIcon:SetPoint("RIGHT", clockText, "LEFT", -8, 0)
+            if mailArt:IsShown() then
+                mailArt:SetPoint("RIGHT", label, "LEFT", -8, 0)
             end
         end
-        MaybeRelayout(instance)
+        K.MaybeRelayout(inst)
     end
 
-    -- Heartbeat: full layout pass only when the rendered HH:MM changes.
-    local function ClockTick()
-        infoTimer = infoTimer + 1
-        if #infoItems > 1 and infoTimer >= 5 then
-            infoTimer = 0
-            infoIndex = (infoIndex % #infoItems) + 1
-            local r, g, b = mod.GetAccent()
-            eventText:SetText(infoItems[infoIndex] or "")
-            eventText:SetTextColor(r, g, b, 1)
-        end
-        local t = GetTimeString()
-        if t ~= lastTimeStr then
-            lastTimeStr = t
-            instance:Refresh()
+    -- Every second: a draw only when the minute on screen changes.
+    local function Tick()
+        if Now() ~= drawnTime then
+            inst:Refresh()
         end
     end
 
-    instance.eventFrame = MakeEventFrame(instance, function(self, evt)
-        if evt == "PLAYER_REGEN_ENABLED" then
-            if needsResize then
-                needsResize = false
+    -- Resting and mail: a draw only when what they show changes (the mailbox
+    -- sends MAIL_INBOX_UPDATE over and over while it is open). The end of
+    -- combat draws only if something changed during it.
+    inst.eventFrame = K.MakeEventFrame(inst, function(self, event)
+        if event == "PLAYER_REGEN_ENABLED" then
+            if owesLayout then
                 self:Refresh()
             end
-        else
+        elseif owesLayout or InCombatLockdown() or State(Now()) ~= drawnState then
             self:Refresh()
         end
     end)
 
-    clockTextFrame:SetScript("OnEnter", function()
-        isMouseOver = true
-        ApplyClockColor()
-        -- Tooltips are all-white by design (no accent tinting).
-        local ar, ag, ab = 1, 1, 1
-        mod.Tip_Begin(clockTextFrame)
-        -- date()'s %A/%B come from the C runtime (English in every client), so use the localized calendar globals; FULLDATE carries locale field order.
+    local function ShowTooltip()
+        mod.Tip_Begin(button)
+        -- date()'s day and month names are English in every client, so the
+        -- game's translated names are used, in the order its FULLDATE gives.
         local today = C_DateAndTime.GetCurrentCalendarTime()
         mod.Tip_AddLine(
             format(
@@ -375,11 +261,11 @@ mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
             1,
             1
         )
-        local gh, gm = GetGameTime()
-        local _, tipUse24 = ClockUses()
+        local hour, minute = GetGameTime()
+        local _, use24 = Modes()
         mod.Tip_AddDouble(
             L["SERVER_TIME"],
-            FormatClock(floor(gh), floor(gm), tipUse24),
+            ClockText(floor(hour), floor(minute), use24),
             0.6,
             0.6,
             0.6,
@@ -388,63 +274,61 @@ mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
             1
         )
 
-        local numInstances = 0
-        if GetNumSavedInstances then
-            numInstances = GetNumSavedInstances()
-        end
-        if numInstances > 0 then
+        local saved = GetNumSavedInstances and GetNumSavedInstances() or 0
+        if saved > 0 then
             mod.Tip_AddLine(" ")
             mod.Tip_AddLine(L["SAVED_INSTANCES"], 1, 0.82, 0)
-            for idx = 1, numInstances do
-                local name, _, reset, _, locked, extended = GetSavedInstanceInfo(idx)
+            for i = 1, saved do
+                local name, _, reset, _, locked, extended = GetSavedInstanceInfo(i)
                 if locked or extended then
                     mod.Tip_AddDouble(name, mod.FormatTimeLeft(reset), 1, 1, 1, 0.6, 0.6, 0.6)
                 end
             end
         end
         mod.Tip_AddLine(" ")
-        local dailyReset = 0
-        if GetQuestResetTime then
-            dailyReset = GetQuestResetTime()
+        local daily = GetQuestResetTime and GetQuestResetTime() or 0
+        if daily > 0 then
+            mod.Tip_AddDouble(L["DAILY_RESET"], mod.FormatTimeLeft(daily), 0.6, 0.6, 0.6, 1, 1, 1)
         end
-        if dailyReset > 0 then
-            mod.Tip_AddDouble(L["DAILY_RESET"], mod.FormatTimeLeft(dailyReset), 0.6, 0.6, 0.6, 1, 1, 1)
-        end
-        local weeklyReset = 0
-        if C_DateAndTime and C_DateAndTime.GetSecondsUntilWeeklyReset then
-            weeklyReset = C_DateAndTime.GetSecondsUntilWeeklyReset() or 0
-        end
-        if weeklyReset > 0 then
-            mod.Tip_AddDouble(L["WEEKLY_RESET"], mod.FormatTimeLeft(weeklyReset), 0.6, 0.6, 0.6, 1, 1, 1)
+        local weekly = C_DateAndTime
+                and C_DateAndTime.GetSecondsUntilWeeklyReset
+                and C_DateAndTime.GetSecondsUntilWeeklyReset()
+            or 0
+        if weekly > 0 then
+            mod.Tip_AddDouble(L["WEEKLY_RESET"], mod.FormatTimeLeft(weekly), 0.6, 0.6, 0.6, 1, 1, 1)
         end
         if HasNewMail() then
             mod.Tip_AddLine(" ")
             mod.Tip_AddLine(L["YOU_HAVE_MAIL"], 1, 0.82, 0)
         end
         mod.Tip_AddLine(" ")
-        local r, g, b = 1, 1, 1
-        mod.Tip_AddDouble(L["LEFT_CLICK"], L["TOGGLE_CALENDAR"], 1, 1, 1, r, g, b)
-        mod.Tip_AddDouble(L["RIGHT_CLICK"], L["TOGGLE_CLOCK"], 1, 1, 1, r, g, b)
-        mod.Tip_AddDouble(L["SHIFT_MIDDLE_CLICK"], L["RELOAD_UI"], 1, 1, 1, r, g, b)
+        mod.Tip_AddDouble(L["LEFT_CLICK"], L["TOGGLE_CALENDAR"], 1, 1, 1, 1, 1, 1)
+        mod.Tip_AddDouble(L["RIGHT_CLICK"], L["TOGGLE_CLOCK"], 1, 1, 1, 1, 1, 1)
+        mod.Tip_AddDouble(L["SHIFT_MIDDLE_CLICK"], L["RELOAD_UI"], 1, 1, 1, 1, 1, 1)
         mod.Tip_Show()
+    end
+
+    button:SetScript("OnEnter", function()
+        hovered = true
+        Paint()
+        ShowTooltip()
     end)
-    clockTextFrame:SetScript("OnLeave", function()
-        isMouseOver = false
-        ApplyClockColor()
-        mod.Tip_Hide(clockTextFrame)
+    button:SetScript("OnLeave", function()
+        hovered = false
+        Paint()
+        mod.Tip_Hide(button)
     end)
-    clockTextFrame:SetScript("OnClick", function(_, btnFrame)
-        if btnFrame == "MiddleButton" and IsShiftKeyDown() then
-            -- Never reload mid-combat: it drops the player out of the fight.
-            if InCombatLockdown() then
-                return
+    button:SetScript("OnClick", function(_, mouseButton)
+        if mouseButton == "MiddleButton" and IsShiftKeyDown() then
+            -- Never mid-combat: a reload drops the player out of the fight.
+            if not InCombatLockdown() then
+                CludesUI.RequestReload(CludesUI.L("Reload UI"), CludesUI.L("Reload the UI now?"))
             end
-            CludesUI.RequestReload(CludesUI.L("Reload UI"), CludesUI.L("Reload the UI now?"))
-        elseif btnFrame == "LeftButton" then
+        elseif mouseButton == "LeftButton" then
             if ToggleCalendar then
                 ToggleCalendar()
             end
-        elseif btnFrame == "RightButton" then
+        elseif mouseButton == "RightButton" then
             if ToggleTimeManager then
                 ToggleTimeManager()
             elseif GameTimeFrame then
@@ -453,47 +337,43 @@ mod.BlockFactories.clock = function(blockCfg, slot, contentFrame, barCtx)
         end
     end)
 
-    function instance:Enable()
+    function inst:Enable()
         contentFrame:Show()
-        needsResize = false
-        infoTimer = 0
-        lastTimeStr = nil
-        RegisterInstEvents(self)
-        mod.RegisterHeartbeat("clock:" .. self.key, ClockTick)
+        owesLayout = false
+        drawnTime, drawnState = nil, nil
+        K.RegisterInstEvents(self)
+        mod.RegisterHeartbeat(tickKey, Tick)
     end
 
-    function instance:Disable()
-        mod.UnregisterHeartbeat("clock:" .. self.key)
-        UnregisterInstEvents(self)
-        restFrame:Hide()
+    function inst:Disable()
+        mod.UnregisterHeartbeat(tickKey)
+        K.UnregisterInstEvents(self)
+        rest:Hide()
         contentFrame:Hide()
     end
 
-    function instance:GetAutoLength()
+    function inst:GetAutoLength()
         if barCtx.IsVertical() then
-            local barH = barCtx.GetThickness()
-            local textH = clockText:GetStringHeight() or FontSizeClock()
-            local infoH = 0
-            if eventText:IsShown() then
-                infoH = (eventText:GetStringHeight() or 0) + 4
-            end
-            return max(8 + textH + infoH + 8, barH, 60)
+            local textH = label:GetStringHeight() or FontSize()
+            return max(8 + textH + 8, barCtx.GetThickness(), 60)
         end
-        local wid = clockTextFrame:GetWidth() or 80
-        local dc = D()
-        if dc.showResting ~= false then
-            wid = wid + floor(CONTENT_BASE * 0.5 + 0.5) + 4
+        local width = button:GetWidth() or 80
+        if Settings().showResting ~= false then
+            width = width + RestSize() + 4
         end
-        if dc.showMail ~= false and HasNewMail() then
-            wid = wid + floor(CONTENT_BASE * 0.5 + 0.5) + 8 + 8
+        if ShowsMail() then
+            width = width + RestSize() + 8 + 8
         end
-        return max(wid, 60)
+        return max(width, 60)
     end
 
-    function instance:Destroy()
+    -- Stops ticking and listening, even if it was never disabled first.
+    function inst:Destroy()
         self._dead = true
+        mod.UnregisterHeartbeat(tickKey)
+        K.UnregisterInstEvents(self)
         contentFrame:Hide()
     end
 
-    return instance
+    return inst
 end
