@@ -2246,7 +2246,11 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- A popup that closes on a click outside it (and outside the options
     -- panel and an open dropdown), on entering combat, and with the panel.
-    local function DismissablePopup(width, level)
+    -- opts (optional): update(popup) runs each frame instead of the outside
+    -- check, held() true keeps the click-catcher from closing it, onHide(popup)
+    -- runs as it hides.
+    local function DismissablePopup(width, level, opts)
+        opts = opts or {}
         local popup = CreateFrame("Frame", nil, CludesUI.OverlayParent())
         popup:SetFrameStrata("FULLSCREEN_DIALOG")
         popup:SetFrameLevel(level)
@@ -2265,7 +2269,9 @@ initFrame:SetScript("OnEvent", function(self)
         catcher:SetFrameLevel(popup:GetFrameLevel() - 1)
         catcher:SetAllPoints((CludesUI:GetMainFrame()) or UIParent)
         catcher:SetScript("OnClick", function()
-            popup:Hide()
+            if not (opts.held and opts.held()) then
+                popup:Hide()
+            end
         end)
         catcher:Hide()
         popup:SetScript("OnEvent", function(self, event)
@@ -2276,7 +2282,7 @@ initFrame:SetScript("OnEvent", function(self)
         popup:SetScript("OnShow", function(self)
             catcher:Show()
             self:RegisterEvent("PLAYER_REGEN_DISABLED")
-            self:SetScript("OnUpdate", function(me)
+            self:SetScript("OnUpdate", opts.update or function(me)
                 if not IsMouseButtonDown("LeftButton") then
                     return
                 end
@@ -2294,6 +2300,9 @@ initFrame:SetScript("OnEvent", function(self)
             catcher:Hide()
             self:UnregisterEvent("PLAYER_REGEN_DISABLED")
             self:SetScript("OnUpdate", nil)
+            if opts.onHide then
+                opts.onHide(self)
+            end
         end)
         CludesUI.TrackOverlay(popup)
         CludesUI.PadHint(popup, "nodepass")
@@ -2681,437 +2690,371 @@ initFrame:SetScript("OnEvent", function(self)
         Band.popup:Show()
     end
 
-    -- Colour list editor: a per-threshold-entry list of { spellID, r,g,b,a } stored in
-    -- entry[o.field] (per-spec via the entry's specIDs). List order = priority: the first
-    -- matching spell wins, and rows drag to reorder like BuildCogPopup's 'reorder' row.
-    -- Buff Colors and Spender Colors each build one. o = { field, title, addLabel }
-    -- (title/addLabel already localized). Returns Show(params), params =
-    -- { getBarData, refreshFn, entryIdx, anchor }; the popup is built on first Show.
+    ---------------------------------------------------------------------------
+    --  Colour lists: per threshold entry, a list of { spellID, r, g, b, a } in
+    --  entry[o.field] (per spec through the entry's specIDs). The list order
+    --  is the priority (the first matching spell wins), so rows drag to
+    --  reorder, like BuildCogPopup's 'reorder' row. Buff Colors and Spender
+    --  Colors each make one. o = { field, title, addLabel } (both texts
+    --  localized). Returns Show(params), params = { getBarData, refreshFn,
+    --  entryIdx, anchor }; the popup is built on the first Show.
+    ---------------------------------------------------------------------------
+    local LIST_DEFAULT = { 0.2, 0.6, 1.0, 1 }
+
     local function MakeColorListEditor(o)
         local field = o.field
-        local POPUP_W, ROW_H = 320, 26
+        local WIDTH, ROW_H = 320, 26
         local STEP = ROW_H + 4
-        local dialog, addBtn, insLine
-        local rowList = {}
-        local entryIdx, getBarData, refreshFn
+        local FIRST_Y = -(BAND_PAD + 24) -- the first row, below the title
+        local popup, addButton, insertLine
+        local rows = {}
+        local bound = {} -- entryIdx, getBar, refresh
         local drag = { row = nil, startY = nil, active = false }
-        local Refresh, DragTick -- forward decls
+        local Redraw, DragStep -- set below
 
-        local function CurrentEntry()
-            if not entryIdx or not getBarData then
+        local function Entry()
+            if not (bound.entryIdx and bound.getBar) then
                 return nil
             end
-            local edge = getBarData()
-            if not edge or not edge.thresholdSpecs then
-                return nil
-            end
-            return edge.thresholdSpecs[entryIdx]
+            local bar = bound.getBar()
+            return bar and bar.thresholdSpecs and bar.thresholdSpecs[bound.entryIdx]
         end
-
-        -- The list item a row edits, or nil
-        local function RowItem(row)
-            local ent = CurrentEntry()
-            local list = ent and ent[field]
+        local function List()
+            local entry = Entry()
+            return entry and entry[field]
+        end
+        local function Item(row)
+            local list = List()
             return list and list[row._idx]
         end
-
-        local function OnPopupUpdate(pp)
-            if drag.row then
-                DragTick()
-                return
-            end -- dragging: move/reorder, never dismiss
-            if IsMouseButtonDown("LeftButton") then
-                local mf = CludesUI._mainFrame
-                if not pp:IsMouseOver() and not (mf and mf:IsMouseOver()) then
-                    pp:Hide()
-                end
+        local function Changed()
+            if bound.refresh then
+                bound.refresh()
             end
         end
 
         local function Build()
-            dialog = CreateFrame("Frame", nil, CludesUI.OverlayParent())
-            dialog:SetFrameStrata("FULLSCREEN_DIALOG")
-            dialog:SetFrameLevel(260)
-            dialog:SetClampedToScreen(true)
-            dialog:EnableMouse(true)
-            dialog:SetScale(CludesUI.GetPopupScale())
-            dialog:Hide()
-            Pix.Size(dialog, POPUP_W, 200)
-            local backdrop = dialog:CreateTexture(nil, "BACKGROUND")
-            backdrop:SetAllPoints()
-            backdrop:SetColorTexture(0.062, 0.070, 0.082, 0.97)
-            dialog._brd = CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.18, backdrop)
+            popup = DismissablePopup(WIDTH, 260, {
+                -- While a grip is held: move and reorder, never close.
+                update = function(self)
+                    if drag.row then
+                        DragStep()
+                    elseif IsMouseButtonDown("LeftButton") then
+                        local panel = CludesUI._mainFrame
+                        if not self:IsMouseOver() and not (panel and panel:IsMouseOver()) then
+                            self:Hide()
+                        end
+                    end
+                end,
+                held = function()
+                    return drag.active
+                end,
+                -- Combat or the panel closing can land mid-drag: drop it (Show lays out again).
+                onHide = function()
+                    drag.row, drag.active = nil, false
+                    insertLine:Hide()
+                end,
+            })
 
-            -- Insertion line shown while dragging a row; theme accent, matches the raid "Sort By" reorder line
-            insLine = dialog:CreateTexture(nil, "OVERLAY", nil, 7)
-            insLine:SetHeight(2)
-            local eg = CludesUI.CLUDES_GREEN
-            insLine:SetColorTexture(eg.r, eg.g, eg.b, 0.9)
-            insLine:Hide()
+            -- The insertion line while dragging (accent, as the raid "Sort By" reorder).
+            insertLine = popup:CreateTexture(nil, "OVERLAY", nil, 7)
+            insertLine:SetHeight(2)
+            local accent = CludesUI.CLUDES_GREEN
+            insertLine:SetColorTexture(accent.r, accent.g, accent.b, 0.9)
+            insertLine:Hide()
 
-            local clickCatcher = CreateFrame("Button", nil, dialog)
-            clickCatcher:SetFrameStrata("FULLSCREEN_DIALOG")
-            clickCatcher:SetFrameLevel(dialog:GetFrameLevel() - 1)
-            clickCatcher:SetAllPoints((CludesUI:GetMainFrame()) or UIParent)
-            clickCatcher:SetScript("OnClick", function()
-                if drag.active then
+            local title = CludesUI.MakeFont(popup, 13, nil, 1, 1, 1)
+            title:SetAlpha(0.7)
+            title:SetPoint("TOP", popup, "TOP", 0, -BAND_PAD)
+            title:SetText(o.title)
+            local hint = CludesUI.MakeFont(popup, 10, nil, 1, 1, 1, 0.25)
+            hint:SetPoint("TOPLEFT", popup, "TOPLEFT", 16, -BAND_PAD - 4)
+            hint:SetText(CludesUI.L("Drag to Reorder"))
+
+            addButton = CreateFrame("Button", nil, popup)
+            Pix.Size(addButton, WIDTH - BAND_PAD * 2, 26)
+            addButton:SetFrameLevel(popup:GetFrameLevel() + 3)
+            local bg = CludesUI.SolidTex(addButton, "BACKGROUND", 0.050, 0.058, 0.068, 0.92)
+            bg:SetAllPoints()
+            addButton._border = CludesUI.MakeRoundedBorder(addButton, 1, 1, 1, 0.4, bg)
+            local label = CludesUI.MakeFont(addButton, 12, nil, 1, 1, 1)
+            label:SetAlpha(0.5)
+            label:SetPoint("CENTER")
+            label:SetText(o.addLabel)
+            addButton:SetScript("OnEnter", function()
+                label:SetAlpha(0.7)
+                addButton._border:SetColor(1, 1, 1, 0.6)
+            end)
+            addButton:SetScript("OnLeave", function()
+                label:SetAlpha(0.5)
+                addButton._border:SetColor(1, 1, 1, 0.4)
+            end)
+            addButton:SetScript("OnClick", function()
+                local entry = Entry()
+                if not entry then
                     return
                 end
-                dialog:Hide()
-            end)
-            clickCatcher:Hide()
-            -- Close on entering combat (the event is registered only while shown)
-            dialog:SetScript("OnEvent", function(self)
-                self:Hide()
-            end)
-            dialog:SetScript("OnShow", function(self)
-                clickCatcher:Show()
-                self:RegisterEvent("PLAYER_REGEN_DISABLED")
-                self:SetScript("OnUpdate", OnPopupUpdate)
-            end)
-            dialog:SetScript("OnHide", function(self)
-                clickCatcher:Hide()
-                self:UnregisterEvent("PLAYER_REGEN_DISABLED")
-                self:SetScript("OnUpdate", nil)
-                -- A combat or panel close can land mid-drag: drop it (Show re-lays the rows)
-                drag.row = nil
-                drag.active = false
-                insLine:Hide()
-            end)
-            CludesUI.TrackOverlay(dialog)
-            CludesUI.PadHint(dialog, "nodepass")
-            CludesUI.PadHint(clickCatcher, "nodepass")
-            CludesUI._popupFrames[#CludesUI._popupFrames + 1] = { popup = dialog }
-            CludesUI:RegisterOnHide(function()
-                dialog:Hide()
-            end)
-            CludesUI:RegisterOnCollapse(function(on)
-                if on then
-                    dialog:Hide()
-                end
-            end)
-
-            local titleFS = CludesUI.MakeFont(dialog, 13, nil, 1, 1, 1)
-            titleFS:SetAlpha(0.7)
-            titleFS:SetPoint("TOP", dialog, "TOP", 0, -BAND_PAD)
-            titleFS:SetText(o.title)
-            local hintFS = CludesUI.MakeFont(dialog, 10, nil, 1, 1, 1, 0.25)
-            hintFS:SetPoint("TOPLEFT", dialog, "TOPLEFT", 16, -BAND_PAD - 4)
-            hintFS:SetText(CludesUI.L("Drag to Reorder"))
-
-            addBtn = CreateFrame("Button", nil, dialog)
-            Pix.Size(addBtn, POPUP_W - BAND_PAD * 2, 26)
-            addBtn:SetFrameLevel(dialog:GetFrameLevel() + 3)
-            local abg = CludesUI.SolidTex(addBtn, "BACKGROUND", 0.050, 0.058, 0.068, 0.92)
-            abg:SetAllPoints()
-            addBtn._border = CludesUI.MakeRoundedBorder(addBtn, 1, 1, 1, 0.4, abg)
-            local albl = CludesUI.MakeFont(addBtn, 12, nil, 1, 1, 1)
-            albl:SetAlpha(0.5)
-            albl:SetPoint("CENTER")
-            albl:SetText(o.addLabel)
-            addBtn:SetScript("OnEnter", function()
-                albl:SetAlpha(0.7)
-                addBtn._border:SetColor(1, 1, 1, 0.6)
-            end)
-            addBtn:SetScript("OnLeave", function()
-                albl:SetAlpha(0.5)
-                addBtn._border:SetColor(1, 1, 1, 0.4)
-            end)
-            addBtn:SetScript("OnClick", function()
-                local ent = CurrentEntry()
-                if not ent then
-                    return
-                end
-                if not ent[field] then
-                    ent[field] = {}
-                end
-                ent[field][#ent[field] + 1] = { spellID = nil, r = 0.2, g = 0.6, b = 1.0, a = 1 }
-                if refreshFn then
-                    refreshFn()
-                end
-                Refresh()
+                entry[field] = entry[field] or {}
+                local d = LIST_DEFAULT
+                entry[field][#entry[field] + 1] = { spellID = nil, r = d[1], g = d[2], b = d[3], a = d[4] }
+                Changed()
+                Redraw()
             end)
         end
 
         local function EnsureRow(k)
-            local row = rowList[k]
-            if row then
-                return row
+            if rows[k] then
+                return rows[k]
             end
-            row = {}
-            local rf = CreateFrame("Frame", nil, dialog)
-            rf:SetSize(POPUP_W - BAND_PAD * 2, ROW_H)
-            rf:SetFrameLevel(dialog:GetFrameLevel() + 2)
-            row.frame = rf
+            local row = {}
+            local frame = CreateFrame("Frame", nil, popup)
+            frame:SetSize(WIDTH - BAND_PAD * 2, ROW_H)
+            frame:SetFrameLevel(popup:GetFrameLevel() + 2)
+            row.frame = frame
 
-            local input = CreateFrame("EditBox", nil, rf)
+            local input = CreateFrame("EditBox", nil, frame)
             input:SetSize(58, 22)
-            input:SetPoint("LEFT", rf, "LEFT", 16, 0)
-            input:SetFrameLevel(rf:GetFrameLevel() + 2)
+            input:SetPoint("LEFT", frame, "LEFT", 16, 0)
+            input:SetFrameLevel(frame:GetFrameLevel() + 2)
             input:SetAutoFocus(false)
             input:SetFont(CludesUI.GetFontPath("main") or "Fonts\\FRIZQT__.TTF", 12, "")
             input:SetTextColor(1, 1, 1, 0.75)
             input:SetJustifyH("CENTER")
             input:SetNumeric(true)
             input:SetMaxLetters(7)
-            local inBg = input:CreateTexture(nil, "BACKGROUND")
-            inBg:SetAllPoints()
-            inBg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
-            CludesUI.MakeRoundedBorder(input, 1, 1, 1, 0.08, inBg)
+            local inputBg = input:CreateTexture(nil, "BACKGROUND")
+            inputBg:SetAllPoints()
+            inputBg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
+            CludesUI.MakeRoundedBorder(input, 1, 1, 1, 0.08, inputBg)
             row.input = input
 
-            -- Drag grip: list order = priority, so rows are draggable
-            local grip = CreateFrame("Button", nil, rf)
+            -- The drag grip (order is priority).
+            local grip = CreateFrame("Button", nil, frame)
             grip:SetSize(14, ROW_H)
-            grip:SetPoint("LEFT", rf, "LEFT", 0, 0)
-            grip:SetFrameLevel(rf:GetFrameLevel() + 4)
-            local gripFS = CludesUI.MakeFont(grip, 13, nil, 1, 1, 1, 0.25)
-            gripFS:SetPoint("CENTER")
-            gripFS:SetText("=")
+            grip:SetPoint("LEFT", frame, "LEFT", 0, 0)
+            grip:SetFrameLevel(frame:GetFrameLevel() + 4)
+            local gripText = CludesUI.MakeFont(grip, 13, nil, 1, 1, 1, 0.25)
+            gripText:SetPoint("CENTER")
+            gripText:SetText("=")
             grip:SetScript("OnEnter", function()
-                gripFS:SetTextColor(1, 1, 1, 0.6)
+                gripText:SetTextColor(1, 1, 1, 0.6)
             end)
             grip:SetScript("OnLeave", function()
-                gripFS:SetTextColor(1, 1, 1, 0.25)
+                gripText:SetTextColor(1, 1, 1, 0.25)
             end)
-            grip:SetScript("OnMouseDown", function(self, b)
-                if b ~= "LeftButton" then
-                    return
+            grip:SetScript("OnMouseDown", function(_, button)
+                if button == "LeftButton" then
+                    local _, y = GetCursorPosition()
+                    drag.row, drag.startY, drag.active = row, y, false
                 end
-                local _, cy = GetCursorPosition()
-                drag.row = row
-                drag.startY = cy
-                drag.active = false
             end)
             row.grip = grip
 
-            local nameFS = CludesUI.MakeFont(rf, 11, nil, 1, 1, 1)
-            nameFS:SetAlpha(0.6)
-            nameFS:SetPoint("LEFT", input, "RIGHT", 8, 0)
-            nameFS:SetJustifyH("LEFT")
-            nameFS:SetWidth(150)
-            nameFS:SetWordWrap(false)
-            row.nameFS = nameFS
-
-            local function RefreshName()
-                local e = RowItem(row)
-                local ident = e and e.spellID
-                if ident then
-                    nameFS:SetText(
-                        C_Spell.GetSpellName(ident)
+            local name = CludesUI.MakeFont(frame, 11, nil, 1, 1, 1)
+            name:SetAlpha(0.6)
+            name:SetPoint("LEFT", input, "RIGHT", 8, 0)
+            name:SetJustifyH("LEFT")
+            name:SetWidth(150)
+            name:SetWordWrap(false)
+            row.nameFS = name
+            function row.RefreshName()
+                local item = Item(row)
+                local id = item and item.spellID
+                if id then
+                    name:SetText(
+                        C_Spell.GetSpellName(id)
                             or (CludesUI.COLOR_CODES.BAD .. CludesUI.L("Unknown ID") .. "|r")
                     )
                 else
-                    nameFS:SetText(CludesUI.COLOR_CODES.DIM .. CludesUI.L("(enter Spell ID)") .. "|r")
+                    name:SetText(CludesUI.COLOR_CODES.DIM .. CludesUI.L("(enter Spell ID)") .. "|r")
                 end
             end
-            row.RefreshName = RefreshName
 
-            local function CommitInput(self)
+            -- Commits when the field loses focus; Escape throws the typing away.
+            input:SetScript("OnEditFocusLost", function(self)
                 if self._cancelCommit then
                     self._cancelCommit = nil
                     return
                 end
-                local e = RowItem(row)
-                if not e then
+                local item = Item(row)
+                if not item then
                     return
                 end
-                local val = tonumber(self:GetText())
-                e.spellID = (val and val > 0) and val or nil
-                RefreshName()
-                if refreshFn then
-                    refreshFn()
-                end
-            end
-            input:SetScript("OnEditFocusLost", CommitInput)
+                local v = tonumber(self:GetText())
+                item.spellID = (v and v > 0) and v or nil
+                row.RefreshName()
+                Changed()
+            end)
             input:SetScript("OnEnterPressed", function(self)
                 self:ClearFocus()
             end)
             input:SetScript("OnEscapePressed", function(self)
                 self._cancelCommit = true
                 self:ClearFocus()
-                Refresh()
+                Redraw()
             end)
 
-            local colorSwatch, swatchSnap = CludesUI.BuildColorSwatch(rf, rf:GetFrameLevel() + 3, function()
-                local e = RowItem(row)
-                if not e then
-                    return 0.2, 0.6, 1.0, 1
+            local swatch, snap = CludesUI.BuildColorSwatch(frame, frame:GetFrameLevel() + 3, function()
+                local item = Item(row)
+                local d = LIST_DEFAULT
+                if not item then
+                    return d[1], d[2], d[3], d[4]
                 end
-                return e.r or 0.2, e.g or 0.6, e.b or 1.0, e.a or 1
+                return item.r or d[1], item.g or d[2], item.b or d[3], item.a or d[4]
             end, function(r, g, b, a)
-                local e = RowItem(row)
-                if e then
-                    e.r, e.g, e.b, e.a = r, g, b, a
-                    if refreshFn then
-                        refreshFn()
-                    end
+                local item = Item(row)
+                if item then
+                    item.r, item.g, item.b, item.a = r, g, b, a
+                    Changed()
                 end
             end, true, 19)
-            colorSwatch:SetPoint("RIGHT", rf, "RIGHT", -24, 0)
-            row.swatch = colorSwatch
-            row.swatchSnap = swatchSnap
+            swatch:SetPoint("RIGHT", frame, "RIGHT", -24, 0)
+            row.swatch, row.swatchSnap = swatch, snap
 
-            local delBtn = CreateFrame("Button", nil, rf)
-            delBtn:SetSize(14, 14)
-            delBtn:SetPoint("RIGHT", rf, "RIGHT", -2, 0)
-            delBtn:SetFrameLevel(rf:GetFrameLevel() + 3)
-            local delIcon = delBtn:CreateTexture(nil, "OVERLAY")
-            delIcon:SetAllPoints()
-            delIcon:SetTexture(_bandCloseIcon)
-            delIcon:SetAlpha(0.4)
-            delBtn:SetScript("OnEnter", function()
-                delIcon:SetAlpha(0.9)
+            local remove = CreateFrame("Button", nil, frame)
+            remove:SetSize(14, 14)
+            remove:SetPoint("RIGHT", frame, "RIGHT", -2, 0)
+            remove:SetFrameLevel(frame:GetFrameLevel() + 3)
+            local icon = remove:CreateTexture(nil, "OVERLAY")
+            icon:SetAllPoints()
+            icon:SetTexture(_bandCloseIcon)
+            icon:SetAlpha(0.4)
+            remove:SetScript("OnEnter", function()
+                icon:SetAlpha(0.9)
             end)
-            delBtn:SetScript("OnLeave", function()
-                delIcon:SetAlpha(0.4)
+            remove:SetScript("OnLeave", function()
+                icon:SetAlpha(0.4)
             end)
-            delBtn:SetScript("OnClick", function()
-                local ent = CurrentEntry()
-                if ent and ent[field] and ent[field][row._idx] then
-                    table.remove(ent[field], row._idx)
-                    if refreshFn then
-                        refreshFn()
-                    end
-                    Refresh()
+            remove:SetScript("OnClick", function()
+                local list = List()
+                if list and list[row._idx] then
+                    table.remove(list, row._idx)
+                    Changed()
+                    Redraw()
                 end
             end)
-            row.delBtn = delBtn
+            row.delBtn = remove
 
-            rowList[k] = row
+            rows[k] = row
             return row
         end
 
-        Refresh = function()
-            if not dialog then
+        Redraw = function()
+            if not popup then
                 return
             end
-            local ent = CurrentEntry()
-            if not ent then
-                dialog:Hide()
+            local entry = Entry()
+            if not entry then
+                popup:Hide()
                 return
             end
-            if not ent[field] then
-                ent[field] = {}
-            end
-            local list = ent[field]
-            local curY = -(BAND_PAD + 24)
-            local num = #list
-            for k = 1, num do
+            entry[field] = entry[field] or {}
+            local list = entry[field]
+            local y = FIRST_Y
+            for k = 1, #list do
                 local row = EnsureRow(k)
                 row._idx = k
                 row.frame:ClearAllPoints()
-                Pix.Point(row.frame, "TOPLEFT", dialog, "TOPLEFT", BAND_PAD, curY)
-                row._baseY = curY -- for the drag-reorder hit test
-                row.frame:SetFrameLevel(dialog:GetFrameLevel() + 2) -- reset after a drag raised it
+                Pix.Point(row.frame, "TOPLEFT", popup, "TOPLEFT", BAND_PAD, y)
+                row._baseY = y -- for the drag hit test
+                row.frame:SetFrameLevel(popup:GetFrameLevel() + 2) -- a drag raised it
                 row.frame:SetAlpha(1)
                 row.input:SetText(list[k].spellID and tostring(list[k].spellID) or "")
                 row.RefreshName()
                 row.swatchSnap()
                 row.frame:Show()
-                curY = curY - ROW_H - 4
+                y = y - ROW_H - 4
             end
-            for k = num + 1, #rowList do
-                if rowList[k] then
-                    rowList[k].frame:Hide()
+            for k = #list + 1, #rows do
+                if rows[k] then
+                    rows[k].frame:Hide()
                 end
             end
-            curY = curY - 4
-            addBtn:ClearAllPoints()
-            Pix.Point(addBtn, "TOPLEFT", dialog, "TOPLEFT", BAND_PAD, curY)
-            curY = curY - 26
-            Pix.Size(dialog, POPUP_W, math.abs(curY) + BAND_PAD)
-            dialog._brd:Fit()
+            y = y - 4
+            addButton:ClearAllPoints()
+            Pix.Point(addButton, "TOPLEFT", popup, "TOPLEFT", BAND_PAD, y)
+            y = y - 26
+            Pix.Size(popup, WIDTH, math.abs(y) + BAND_PAD)
+            popup._brd:Fit()
         end
 
-        -- Runs each frame from the popup's OnUpdate while a grip is held: separates click from
-        -- drag, moves the row under the cursor with an insertion line, and on release reorders
-        -- the list (order = priority) and re-renders.
-        DragTick = function()
-            local d = drag
-            local row = d.row
+        -- Each frame while a grip is held: a click until the cursor moves 3px,
+        -- then the row follows the cursor with an insertion line; on release
+        -- the list is reordered (order = priority) and drawn again.
+        DragStep = function()
+            local row = drag.row
             if not row then
                 return
             end
             local down = IsMouseButtonDown("LeftButton")
-            local _, cy = GetCursorPosition()
-            if not d.active then
+            local _, cursorY = GetCursorPosition()
+            if not drag.active then
                 if not down then
-                    d.row = nil
-                    return
-                end -- released before threshold = a click
-                if math.abs(cy - (d.startY or cy)) < 3 then
+                    drag.row = nil -- released before moving: a click
                     return
                 end
-                d.active = true
-                row.frame:SetFrameLevel(dialog:GetFrameLevel() + 20)
+                if math.abs(cursorY - (drag.startY or cursorY)) < 3 then
+                    return
+                end
+                drag.active = true
+                row.frame:SetFrameLevel(popup:GetFrameLevel() + 20)
                 row.frame:SetAlpha(0.85)
             end
-            local ent = CurrentEntry()
-            local list = ent and ent[field]
-            local num = list and #list or 0
-            local sc = dialog:GetEffectiveScale()
-            local cY = cy / sc
-            local mT = dialog:GetTop() or 0
-            -- Insertion index among the STATIC (non-dragged) rows
-            local iI = num
-            for ri = 1, num do
-                local r2 = rowList[ri]
-                if r2 ~= row and r2._baseY then
-                    local rm = mT + r2._baseY - ROW_H / 2
-                    if cY > rm then
-                        iI = ri
+            local list = List()
+            local count = list and #list or 0
+            local y = cursorY / popup:GetEffectiveScale()
+            local top = popup:GetTop() or 0
+            -- Where it would go among the rows that stay put.
+            local at = count
+            for i = 1, count do
+                local other = rows[i]
+                if other ~= row and other._baseY then
+                    if y > top + other._baseY - ROW_H / 2 then
+                        at = i
                         break
                     end
-                    iI = ri + 1
+                    at = i + 1
                 end
             end
-            iI = math.max(1, math.min(iI, num + 1))
+            at = math.max(1, math.min(at, count + 1))
             if down then
-                local firstY = -(BAND_PAD + 24)
-                local lnY = (iI <= 1) and (firstY + 2) or (firstY - (iI - 1) * STEP + 2)
-                insLine:ClearAllPoints()
-                insLine:SetPoint("TOPLEFT", dialog, "TOPLEFT", BAND_PAD, lnY)
-                insLine:SetPoint("TOPRIGHT", dialog, "TOPRIGHT", -BAND_PAD, lnY)
-                insLine:Show()
+                local lineY = (at <= 1) and (FIRST_Y + 2) or (FIRST_Y - (at - 1) * STEP + 2)
+                insertLine:ClearAllPoints()
+                insertLine:SetPoint("TOPLEFT", popup, "TOPLEFT", BAND_PAD, lineY)
+                insertLine:SetPoint("TOPRIGHT", popup, "TOPRIGHT", -BAND_PAD, lineY)
+                insertLine:Show()
                 row.frame:ClearAllPoints()
-                row.frame:SetPoint("TOPLEFT", dialog, "TOPLEFT", BAND_PAD, cY - mT)
-            else
-                -- Dropped: reorder the list + re-render
-                local from = row._idx
-                if from and from < iI then
-                    iI = iI - 1
-                end
-                local to = math.max(1, math.min(iI, num))
-                insLine:Hide()
-                d.row = nil
-                d.active = false
-                if list and from and from ~= to then
-                    local mv = table.remove(list, from)
-                    table.insert(list, to, mv)
-                    if refreshFn then
-                        refreshFn()
-                    end
-                end
-                Refresh()
+                row.frame:SetPoint("TOPLEFT", popup, "TOPLEFT", BAND_PAD, y - top)
+                return
             end
+            -- Dropped.
+            local from = row._idx
+            if from and from < at then
+                at = at - 1
+            end
+            local to = math.max(1, math.min(at, count))
+            insertLine:Hide()
+            drag.row, drag.active = nil, false
+            if list and from and from ~= to then
+                table.insert(list, to, table.remove(list, from))
+                Changed()
+            end
+            Redraw()
         end
 
         return function(params)
-            if not dialog then
+            if not popup then
                 Build()
             end
-            getBarData = params.getBarData
-            refreshFn = params.refreshFn
-            entryIdx = params.entryIdx
-            local ent = CurrentEntry()
-            if ent and not ent[field] then
-                ent[field] = {}
+            bound.getBar, bound.refresh, bound.entryIdx = params.getBarData, params.refreshFn, params.entryIdx
+            local entry = Entry()
+            if entry and not entry[field] then
+                entry[field] = {}
             end
-            Refresh()
-            dialog:ClearAllPoints()
-            dialog:SetPoint("TOP", params.anchor, "BOTTOM", 0, -4)
-            dialog:Show()
+            Redraw()
+            popup:ClearAllPoints()
+            popup:SetPoint("TOP", params.anchor, "BOTTOM", 0, -4)
+            popup:Show()
         end
     end
 
