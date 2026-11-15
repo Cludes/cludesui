@@ -2214,6 +2214,127 @@ initFrame:SetScript("OnEvent", function(self)
         return y, nameRow
     end
 
+    local SHOW_BELOW_TIP = "Show reminders when remaining buff time is below this many minutes.\n"
+        .. "0 = only when fully expired.\n"
+        .. "Ignored in combat and during Mythic+ keys (then only when the buff is gone)."
+    local PRE_KEY_TIP = "Reminder threshold while you are in a dungeon before a Mythic+ key starts "
+        .. "(Mythic 0 / keystone lobby). Set it high enough that you top up buffs and food before "
+        .. "pulling, so you begin the key with enough duration to last it.\n"
+        .. "0 = only when fully expired.\n"
+        .. "Ignored once the key is active or you are in combat (then only when the buff is fully gone)."
+
+    -- The rest of DISPLAY: Icon Spacing (+ layout cog) | Frame Strata, the
+    -- expiry thresholds (retail only: WoW Forever's reminders are absence
+    -- only), Show Tooltips | Opacity, and on WoW Forever the Action Picker.
+    local function BuildLayoutRows(parent, y)
+        local W = CludesUI.Widgets
+        local _
+        local spacingRow, h = W:DualRow(parent, y, {
+            type = "slider",
+            pixel = true,
+            text = "Icon Spacing",
+            min = 0,
+            max = 50,
+            step = 1,
+            getValue = Get("iconSpacing", 8),
+            setValue = Set("iconSpacing", function()
+                RefreshAll()
+                RelayoutPreviewIcons()
+            end),
+        }, {
+            type = "dropdown",
+            text = "Frame Strata",
+            values = _G._CUABR_STRATA_VALUES or { MEDIUM = "Medium" },
+            order = _G._CUABR_STRATA_ORDER or { "MEDIUM" },
+            getValue = Get("frameStrata", "MEDIUM"),
+            setValue = Set("frameStrata", function()
+                if _G._CUABR_ApplyStrata then
+                    _G._CUABR_ApplyStrata()
+                end
+            end),
+        })
+        y = y - h
+        if not CludesUI._prebuilding then
+            CludesUI.BuildInlineCog(spacingRow._leftRegion, {
+                title = "Layout Settings",
+                rows = {
+                    CogSlider("Y Offset", "yOffset", -600, 600, 0, function()
+                        if _G._CUABR_ApplyUnlockPos then
+                            _G._CUABR_ApplyUnlockPos()
+                        end
+                    end),
+                },
+            })
+        end
+
+        if not FOREVER then
+            local timingRow
+            timingRow, h = W:DualRow(parent, y, {
+                type = "slider",
+                text = "Show Below",
+                min = 0,
+                max = 60,
+                step = 1,
+                tooltip = SHOW_BELOW_TIP,
+                getValue = Get("showUnder", 5),
+                setValue = Set("showUnder", RefreshAll),
+            }, {
+                type = "slider",
+                text = "Show Below Pre-Key",
+                min = 0,
+                max = 60,
+                step = 1,
+                tooltip = PRE_KEY_TIP,
+                getValue = Get("showUnderMPlus", 40),
+                setValue = Set("showUnderMPlus", RefreshAll),
+            })
+            y = y - h
+            AddMinSuffix(timingRow, "Show Below", "Show Below Pre-Key")
+        end
+
+        _, h = W:DualRow(parent, y, {
+            type = "toggle",
+            text = "Show Tooltips",
+            tooltip = "Show item or spell tooltips when hovering reminder icons.",
+            getValue = function()
+                local d = DDB()
+                return not d or d.showTooltips ~= false
+            end,
+            setValue = Store("showTooltips"),
+        }, {
+            type = "slider",
+            text = "Opacity",
+            min = 0,
+            max = 1,
+            step = 0.05,
+            getValue = Get("opacity", 1),
+            setValue = Set("opacity"),
+        })
+        y = y - h
+
+        if FOREVER then
+            _, h = W:DualRow(parent, y, {
+                type = "toggle",
+                text = "Action Picker",
+                tooltip = "Right-click a spell group or Class Buffs reminder that has more than one spell to choose the spell its left click casts. Scroll over a spell in the picker to choose its rank.",
+                getValue = function()
+                    local f = FDB()
+                    return f and f.pickerEnabled == true
+                end,
+                setValue = function(v)
+                    local f = FDB()
+                    if f then
+                        f.pickerEnabled = v
+                        RefreshAll()
+                    end
+                end,
+            }, CludesUI.BlankRowCfg())
+            y = y - h
+        end
+        _, h = W:Spacer(parent, y, 20)
+        return y - h
+    end
+
     local function BuildRemindersPage(pageName, parent, yOffset)
         local W = CludesUI.Widgets
         local y = yOffset
@@ -2249,189 +2370,7 @@ initFrame:SetScript("OnEvent", function(self)
         local rowText
         y, rowText = BuildTextRows(parent, y)
 
-        -- Row 4: Icon Spacing (+ directions cog) | Frame Strata
-        local rowSliders
-        rowSliders, h = W:DualRow(parent, y, {
-            type = "slider",
-            pixel = true,
-            text = "Icon Spacing",
-            min = 0,
-            max = 50,
-            step = 1,
-            getValue = function()
-                local d = DDB()
-                return d and d.iconSpacing or 8
-            end,
-            setValue = function(v)
-                local d = DDB()
-                if not d then
-                    return
-                end
-                d.iconSpacing = v
-                RefreshAll()
-                RelayoutPreviewIcons()
-            end,
-        }, {
-            type = "dropdown",
-            text = "Frame Strata",
-            values = _G._CUABR_STRATA_VALUES or { MEDIUM = "Medium" },
-            order = _G._CUABR_STRATA_ORDER or { "MEDIUM" },
-            getValue = function()
-                local d = DDB()
-                return d and d.frameStrata or "MEDIUM"
-            end,
-            setValue = function(v)
-                local d = DDB()
-                if not d then
-                    return
-                end
-                d.frameStrata = v
-                if _G._CUABR_ApplyStrata then
-                    _G._CUABR_ApplyStrata()
-                end
-            end,
-        })
-        y = y - h
-
-        -- Inline DIRECTIONS cog on Icon Spacing (left of row 3) for Y offset
-        if not CludesUI._prebuilding then
-            local rgn = rowSliders._leftRegion
-            CludesUI.BuildInlineCog(rgn, {
-                title = "Layout Settings",
-                rows = {
-                    {
-                        type = "slider",
-                        label = "Y Offset",
-                        min = -600,
-                        max = 600,
-                        step = 1,
-                        get = function()
-                            local d = DDB()
-                            return d and d.yOffset or 0
-                        end,
-                        set = function(v)
-                            local d = DDB()
-                            if not d then
-                                return
-                            end
-                            d.yOffset = v
-                            if _G._CUABR_ApplyUnlockPos then
-                                _G._CUABR_ApplyUnlockPos()
-                            end
-                        end,
-                    },
-                },
-            })
-        end
-
-        -- Row 5: Show Below | Show Below Pre-Key (global timing, minutes)
-        -- No expiry thresholds on WoW Forever (its reminders are absence only): the row is not built there.
-        if not FOREVER then
-            local timingRow
-            timingRow, h = W:DualRow(parent, y, {
-                type = "slider",
-                text = "Show Below",
-                min = 0,
-                max = 60,
-                step = 1,
-                tooltip = "Show reminders when remaining buff time is below this many minutes.\n0 = only when fully expired.\nIgnored in combat and during Mythic+ keys (then only when the buff is gone).",
-                getValue = function()
-                    local d = DDB()
-                    return d and d.showUnder or 5
-                end,
-                setValue = function(v)
-                    local d = DDB()
-                    if not d then
-                        return
-                    end
-                    d.showUnder = v
-                    RefreshAll()
-                end,
-            }, {
-                type = "slider",
-                text = "Show Below Pre-Key",
-                min = 0,
-                max = 60,
-                step = 1,
-                tooltip = "Reminder threshold while you are in a dungeon before a Mythic+ key starts (Mythic 0 / keystone lobby). Set it high enough that you top up buffs and food before pulling, so you begin the key with enough duration to last it.\n0 = only when fully expired.\nIgnored once the key is active or you are in combat (then only when the buff is fully gone).",
-                getValue = function()
-                    local d = DDB()
-                    return d and d.showUnderMPlus or 40
-                end,
-                setValue = function(v)
-                    local d = DDB()
-                    if not d then
-                        return
-                    end
-                    d.showUnderMPlus = v
-                    RefreshAll()
-                end,
-            })
-            y = y - h
-            AddMinSuffix(timingRow, "Show Below", "Show Below Pre-Key")
-        end -- not FOREVER
-
-        -- Row 6: Show Tooltips | Opacity
-        _, h = W:DualRow(parent, y, {
-            type = "toggle",
-            text = "Show Tooltips",
-            tooltip = "Show item or spell tooltips when hovering reminder icons.",
-            getValue = function()
-                local d = DDB()
-                return not d or d.showTooltips ~= false
-            end,
-            setValue = function(v)
-                local d = DDB()
-                if not d then
-                    return
-                end
-                d.showTooltips = v
-            end,
-        }, {
-            type = "slider",
-            text = "Opacity",
-            min = 0,
-            max = 1,
-            step = 0.05,
-            getValue = function()
-                local d = DDB()
-                return d and d.opacity or 1
-            end,
-            setValue = function(v)
-                local d = DDB()
-                if not d then
-                    return
-                end
-                d.opacity = v
-                RefreshAll()
-                UpdatePreviewHeader()
-            end,
-        })
-        y = y - h
-
-        if FOREVER then
-            _, h = W:DualRow(parent, y, {
-                type = "toggle",
-                text = "Action Picker",
-                tooltip = "Right-click a spell group or Class Buffs reminder that has more than one spell to choose the spell its left click casts. Scroll over a spell in the picker to choose its rank.",
-                getValue = function()
-                    local f = FDB()
-                    return f and f.pickerEnabled == true
-                end,
-                setValue = function(v)
-                    local f = FDB()
-                    if not f then
-                        return
-                    end
-                    f.pickerEnabled = v
-                    RefreshAll()
-                end,
-            }, CludesUI.BlankRowCfg())
-            y = y - h
-        end
-
-        _, h = W:Spacer(parent, y, 20)
-        y = y - h
+        y = BuildLayoutRows(parent, y)
 
         -----------------------------------------------------------------------
         --  RAID BUFFS section (WoW Forever: its own locations and its own
