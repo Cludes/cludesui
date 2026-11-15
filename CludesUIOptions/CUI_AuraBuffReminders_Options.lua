@@ -2574,6 +2574,183 @@ initFrame:SetScript("OnEvent", function(self)
         return BuildClassSection(parent, y, SECTION_SHAMAN, "SHAMAN", shaman, true, refs)
     end
 
+    -- A default-on toggle over section().enabled[key]; a change refreshes
+    -- the reminders and rebuilds the preview.
+    local function EnabledToggle(section, key, text, tooltip)
+        return {
+            type = "toggle",
+            text = text,
+            tooltip = tooltip,
+            getValue = function()
+                local t = section()
+                return t and t.enabled and t.enabled[key] ~= false
+            end,
+            setValue = function(v)
+                local t = section()
+                if t and t.enabled then
+                    t.enabled[key] = v
+                    RefreshAll()
+                    RebuildPreviewHeader()
+                end
+            end,
+        }
+    end
+    local PET_CLASSES = " Only applies to pet classes (Hunter, Warlock, Death Knight, Mage)."
+
+    -- PETS: Where to Show | Missing Pet, then Passive Pet.
+    local function BuildPetSection(parent, y)
+        local W = CludesUI.Widgets
+        local _
+        local h
+        _, h = W:SectionHeader(parent, "PETS", y)
+        y = y - h
+        _, h = SectionControlRow(parent, y, {
+            whereStore = CSpecialWhere("PET"),
+            whereTooltip = "Pick which content the Missing Pet and Passive Pet reminders appear in.\nWarlock's Wrong Demon reminder uses the Where to Show in the Warlock section.\nRested areas (cities and inns) always stay hidden.",
+            onChange = RefreshAll,
+            rightCfg = EnabledToggle(
+                CDB,
+                "pet",
+                "Missing Pet",
+                "Show a reminder when you don't have an active pet summoned." .. PET_CLASSES
+            ),
+        })
+        y = y - h
+        _, h = W:DualRow(
+            parent,
+            y,
+            EnabledToggle(
+                CDB,
+                "pet_passive",
+                "Passive Pet",
+                "Show a reminder when your active pet is set to Passive stance." .. PET_CLASSES
+            ),
+            CludesUI.BlankRowCfg()
+        )
+        y = y - h
+        _, h = W:Spacer(parent, y, 10)
+        return y - h
+    end
+
+    -- Allowed Demons' items: each demon, locked (and left out of the
+    -- summary) until its summon spell is known.
+    local function DemonItems()
+        local items = {}
+        for _, pet in ipairs(_G._CUABR_WARLOCK_PETS or {}) do
+            local function Unlearned()
+                return not (_G._CUABR_Known and _G._CUABR_Known(pet.castSpell))
+            end
+            items[#items + 1] = {
+                key = pet.key,
+                label = pet.name,
+                lockedFn = Unlearned,
+                excludeFromSummaryFn = Unlearned,
+                lockedTooltip = function()
+                    local name = _G._CUABR_SpellName and _G._CUABR_SpellName(pet.castSpell, pet.name)
+                        or pet.name
+                    return CludesUI.Lf("You have not learned %1$s.", name)
+                end,
+            }
+        end
+        return items
+    end
+
+    -- WARLOCK: Where to Show | Allowed Demons, then Wrong Demon | Soulstone,
+    -- their labels in the Warlock colour. Returns y, the header and the
+    -- Wrong Demon row (Soulstone's preview click leads there).
+    local function BuildWarlockSection(parent, y)
+        local W = CludesUI.Widgets
+        local _
+        local header, h = W:SectionHeader(parent, SECTION_WARLOCK, y)
+        y = y - h
+        local ctrlRow
+        ctrlRow, h = SectionControlRow(parent, y, {
+            whereStore = CWarlockWhere,
+            whereTooltip = "Pick which content these Warlock reminders appear in.\nMissing Pet and Passive Pet use the Where to Show in the Pets section.\nRested areas (cities and inns) always stay hidden.",
+            onChange = RefreshAll,
+            rightCfg = Placeholder(
+                "Allowed Demons",
+                "Pick which demons count as correct for Wrong Demon. A demon only counts while its summon spell is known; with none picked (or everything picked), the reminder never fires."
+            ),
+        })
+        y = y - h
+        local items = DemonItems()
+        local row
+        row, h = W:DualRow(
+            parent,
+            y,
+            EnabledToggle(
+                CDB,
+                "wrong_pet",
+                "Wrong Demon",
+                "Show a reminder when your Warlock's active pet isn't one of the demons picked in Allowed Demons. A demon only counts while its summon spell is known, so leaving only Felguard picked stays silent for specs/builds that haven't talented Summon Felguard."
+            ),
+            {
+                type = "toggle",
+                text = _G._CUABR_SpellName(20707, "Soulstone"),
+                tooltip = "Show a reminder until your own Soulstone is active on you or another group member.",
+                getValue = function()
+                    local a = ADB()
+                    return a and a.enabled and a.enabled.soulstone ~= false
+                end,
+                setValue = function(v)
+                    local a = ADB()
+                    if a and a.enabled then
+                        a.enabled.soulstone = v
+                    end
+                    GridChanged(true)()
+                end,
+            }
+        )
+        y = y - h
+
+        local wcc = RAID_CLASS_COLORS and RAID_CLASS_COLORS.WARLOCK
+        if wcc then
+            for _, rgn in ipairs({ ctrlRow._rightRegion, row._leftRegion, row._rightRegion }) do
+                if rgn._label then
+                    rgn._label:SetTextColor(wcc.r, wcc.g, wcc.b, 1)
+                end
+            end
+        end
+        if not CludesUI._prebuilding then
+            local rgn = ctrlRow._rightRegion
+            if rgn._control then
+                rgn._control:Hide()
+            end
+            local dd, refresh = CludesUI.BuildVisOptsCBDropdown(
+                rgn,
+                220,
+                rgn:GetFrameLevel() + 2,
+                items,
+                function(k)
+                    local c = CDB()
+                    return c and c.wrongPetAllowed and c.wrongPetAllowed[k]
+                end,
+                function(k, v)
+                    local c = CDB()
+                    if c then
+                        c.wrongPetAllowed = c.wrongPetAllowed or {}
+                        c.wrongPetAllowed[k] = v
+                    end
+                    RefreshAll()
+                    RebuildPreviewHeader()
+                end,
+                nil,
+                nil,
+                nil,
+                nil,
+                nil,
+                { emptyLabel = "All" }
+            )
+            PP.Point(dd, "RIGHT", rgn, "RIGHT", -20, 0)
+            rgn._control = dd
+            rgn._lastInline = nil
+            CludesUI.RegisterWidgetRefresh(refresh)
+        end
+        _, h = W:Spacer(parent, y, 10)
+        return y - h, header, row
+    end
+
     local function BuildRemindersPage(pageName, parent, yOffset)
         local W = CludesUI.Widgets
         local y = yOffset
@@ -3025,198 +3202,9 @@ initFrame:SetScript("OnEvent", function(self)
         y, auraHdr = BuildAuraSection(parent, y, _gridCellRefs)
         y = BuildClassSections(parent, y, _gridCellRefs)
 
-        -----------------------------------------------------------------------
-        --  PETS section
-        -----------------------------------------------------------------------
-        local petHdr
-        petHdr, h = W:SectionHeader(parent, "PETS", y)
-        y = y - h
-
-        local petFirstRow
-        petFirstRow, h = SectionControlRow(parent, y, {
-            whereStore = CSpecialWhere("PET"),
-            whereTooltip = "Pick which content the Missing Pet and Passive Pet reminders appear in.\nWarlock's Wrong Demon reminder uses the Where to Show in the Warlock section.\nRested areas (cities and inns) always stay hidden.",
-            onChange = RefreshAll,
-            rightCfg = {
-                type = "toggle",
-                text = "Missing Pet",
-                tooltip = "Show a reminder when you don't have an active pet summoned. Only applies to pet classes (Hunter, Warlock, Death Knight, Mage).",
-                getValue = function()
-                    local c = CDB()
-                    return c and c.enabled and c.enabled.pet ~= false
-                end,
-                setValue = function(v)
-                    local c = CDB()
-                    if c and c.enabled then
-                        c.enabled.pet = v
-                        RefreshAll()
-                        RebuildPreviewHeader()
-                    end
-                end,
-            },
-        })
-        y = y - h
-
-        _, h = W:DualRow(parent, y, {
-            type = "toggle",
-            text = "Passive Pet",
-            tooltip = "Show a reminder when your active pet is set to Passive stance. Only applies to pet classes (Hunter, Warlock, Death Knight, Mage).",
-            getValue = function()
-                local c = CDB()
-                return c and c.enabled and c.enabled.pet_passive ~= false
-            end,
-            setValue = function(v)
-                local c = CDB()
-                if c and c.enabled then
-                    c.enabled.pet_passive = v
-                    RefreshAll()
-                    RebuildPreviewHeader()
-                end
-            end,
-        }, CludesUI.BlankRowCfg())
-        y = y - h
-
-        _eabrClickMappings.pet = { section = petHdr, target = petFirstRow }
-
-        _, h = W:Spacer(parent, y, 10)
-        y = y - h
-
-        -----------------------------------------------------------------------
-        --  WARLOCK section
-        -----------------------------------------------------------------------
-        local warlockHdr
-        warlockHdr, h = W:SectionHeader(parent, SECTION_WARLOCK, y)
-        y = y - h
-
-        -- Where to Show | Allowed Demons, then Wrong Demon | Soulstone.
-        local warlockCtrlRow
-        warlockCtrlRow, h = SectionControlRow(parent, y, {
-            whereStore = CWarlockWhere,
-            whereTooltip = "Pick which content these Warlock reminders appear in.\nMissing Pet and Passive Pet use the Where to Show in the Pets section.\nRested areas (cities and inns) always stay hidden.",
-            onChange = RefreshAll,
-            rightCfg = {
-                type = "dropdown",
-                text = "Allowed Demons",
-                tooltip = "Pick which demons count as correct for Wrong Demon. A demon only counts while its summon spell is known; with none picked (or everything picked), the reminder never fires.",
-                values = { _placeholder = "..." },
-                order = { "_placeholder" },
-                getValue = function()
-                    return "_placeholder"
-                end,
-                setValue = function() end,
-            },
-        })
-        y = y - h
-
-        local WARLOCK_PET_ITEMS = {}
-        for _, pet in ipairs(_G._CUABR_WARLOCK_PETS or {}) do
-            local unlearned = function()
-                return not (_G._CUABR_Known and _G._CUABR_Known(pet.castSpell))
-            end
-            WARLOCK_PET_ITEMS[#WARLOCK_PET_ITEMS + 1] = {
-                key = pet.key,
-                label = pet.name,
-                lockedFn = unlearned,
-                excludeFromSummaryFn = unlearned,
-                lockedTooltip = function()
-                    local spellName = _G._CUABR_SpellName and _G._CUABR_SpellName(pet.castSpell, pet.name)
-                        or pet.name
-                    return CludesUI.Lf("You have not learned %1$s.", spellName)
-                end,
-            }
-        end
-        local warlockRow
-        warlockRow, h = W:DualRow(parent, y, {
-            type = "toggle",
-            text = "Wrong Demon",
-            tooltip = "Show a reminder when your Warlock's active pet isn't one of the demons picked in Allowed Demons. A demon only counts while its summon spell is known, so leaving only Felguard picked stays silent for specs/builds that haven't talented Summon Felguard.",
-            getValue = function()
-                local c = CDB()
-                return c and c.enabled and c.enabled.wrong_pet ~= false
-            end,
-            setValue = function(v)
-                local c = CDB()
-                if c and c.enabled then
-                    c.enabled.wrong_pet = v
-                    RefreshAll()
-                    RebuildPreviewHeader()
-                end
-            end,
-        }, {
-            type = "toggle",
-            text = _G._CUABR_SpellName(20707, "Soulstone"),
-            tooltip = "Show a reminder until your own Soulstone is active on you or another group member.",
-            getValue = function()
-                local a = ADB()
-                return a and a.enabled and a.enabled.soulstone ~= false
-            end,
-            setValue = function(v)
-                local a = ADB()
-                if a and a.enabled then
-                    a.enabled.soulstone = v
-                end
-                if _G._CUABR_UpdateGroupAuraRegistration then
-                    _G._CUABR_UpdateGroupAuraRegistration()
-                end
-                RefreshAll()
-                RebuildPreviewHeader()
-            end,
-        })
-        y = y - h
-
-        local wcc = RAID_CLASS_COLORS and RAID_CLASS_COLORS.WARLOCK
-        if wcc then
-            if warlockCtrlRow._rightRegion._label then
-                warlockCtrlRow._rightRegion._label:SetTextColor(wcc.r, wcc.g, wcc.b, 1)
-            end
-            if warlockRow._leftRegion._label then
-                warlockRow._leftRegion._label:SetTextColor(wcc.r, wcc.g, wcc.b, 1)
-            end
-            if warlockRow._rightRegion._label then
-                warlockRow._rightRegion._label:SetTextColor(wcc.r, wcc.g, wcc.b, 1)
-            end
-        end
-
-        if not CludesUI._prebuilding then
-            local rrgn = warlockCtrlRow._rightRegion
-            if rrgn._control then
-                rrgn._control:Hide()
-            end
-            local petDD, petDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                rrgn,
-                220,
-                rrgn:GetFrameLevel() + 2,
-                WARLOCK_PET_ITEMS,
-                function(k)
-                    local c = CDB()
-                    return c and c.wrongPetAllowed and c.wrongPetAllowed[k]
-                end,
-                function(k, v)
-                    local c = CDB()
-                    if c then
-                        c.wrongPetAllowed = c.wrongPetAllowed or {}
-                        c.wrongPetAllowed[k] = v
-                    end
-                    RefreshAll()
-                    RebuildPreviewHeader()
-                end,
-                nil,
-                nil,
-                nil,
-                nil,
-                nil,
-                { emptyLabel = "All" }
-            )
-            PP.Point(petDD, "RIGHT", rrgn, "RIGHT", -20, 0)
-            rrgn._control = petDD
-            rrgn._lastInline = nil
-            CludesUI.RegisterWidgetRefresh(petDDRefresh)
-        end
-
-        _eabrClickMappings.warlock_demons = { section = warlockHdr, target = warlockRow }
-
-        _, h = W:Spacer(parent, y, 10)
-        y = y - h
+        y = BuildPetSection(parent, y)
+        local warlockHdr, warlockRow
+        y, warlockHdr, warlockRow = BuildWarlockSection(parent, y)
 
         -----------------------------------------------------------------------
         --  CONSUMABLES section
