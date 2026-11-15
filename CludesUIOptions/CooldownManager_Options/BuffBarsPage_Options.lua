@@ -53,30 +53,30 @@ local function InitBuffBarsPage(
     local _tbbPopout
     local _tbbPopoutBars = {} -- pooled preview wraps (runtime-built)
 
+    -- The popout (made once): dark box, title on top, hint at the foot.
     local function GetTBBPopout()
         if _tbbPopout then
             return _tbbPopout
         end
-        local oc = CreateFrame("Frame", nil, UIParent)
-        oc:SetFrameStrata("FULLSCREEN_DIALOG")
-        oc:SetFrameLevel(10)
-        oc:SetClampedToScreen(true)
-        oc:Hide()
-        local backdrop = oc:CreateTexture(nil, "BACKGROUND")
+        local box = CreateFrame("Frame", nil, UIParent)
+        box:SetFrameStrata("FULLSCREEN_DIALOG")
+        box:SetFrameLevel(10)
+        box:SetClampedToScreen(true)
+        box:Hide()
+        local backdrop = box:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0, 0, 0, 0.9)
-        local title = oc:CreateFontString(nil, "OVERLAY")
-        title:SetFont(FONT_PATH, 13, GetCDMOptOutline())
-        title:SetPoint("TOP", oc, "TOP", 0, -7)
-        title:SetTextColor(1, 1, 1, 0.9)
-        oc._title = title
-        local hint = oc:CreateFontString(nil, "OVERLAY")
-        hint:SetFont(FONT_PATH, 10, GetCDMOptOutline())
-        hint:SetPoint("BOTTOM", oc, "BOTTOM", 0, 7)
-        hint:SetTextColor(1, 1, 1, 0.4)
-        oc._hint = hint
-        _tbbPopout = oc
-        return oc
+        local function Line(size, point, y, alpha)
+            local fs = box:CreateFontString(nil, "OVERLAY")
+            fs:SetFont(FONT_PATH, size, GetCDMOptOutline())
+            fs:SetPoint(point, box, point, 0, y)
+            fs:SetTextColor(1, 1, 1, alpha)
+            return fs
+        end
+        box._title = Line(13, "TOP", -7, 0.9)
+        box._hint = Line(10, "BOTTOM", 7, 0.4)
+        _tbbPopout = box
+        return box
     end
 
     local function HideTBBPopout()
@@ -90,38 +90,49 @@ local function InitBuffBarsPage(
     local function TBBPvNavButton(wrap, key)
         wrap._pvNav = wrap._pvNav or {}
         local button = wrap._pvNav[key]
-        if not button then
-            button = CreateFrame("Button", nil, wrap)
-            local c = CludesUI.CLUDES_GREEN
-            button._brd = Pix.CreateBorder(button, c.r, c.g, c.b, 1, 2, "OVERLAY", 7)
-            button._brd:Hide()
-            button:SetScript("OnEnter", function(self)
-                self._brd:Show()
-                if self._tip then
-                    CludesUI.ShowWidgetTooltip(self, self._tip)
-                end
-            end)
-            button:SetScript("OnLeave", function(self)
-                self._brd:Hide()
-                CludesUI.HideWidgetTooltip()
-            end)
-            button:SetScript("OnMouseDown", function(self)
-                if self._onNav then
-                    self._onNav()
-                end
-            end)
-            wrap._pvNav[key] = button
+        if button then
+            return button
         end
+        button = CreateFrame("Button", nil, wrap)
+        local green = CludesUI.CLUDES_GREEN
+        button._brd = Pix.CreateBorder(button, green.r, green.g, green.b, 1, 2, "OVERLAY", 7)
+        button._brd:Hide()
+        button:SetScript("OnEnter", function(self)
+            self._brd:Show()
+            if self._tip then
+                CludesUI.ShowWidgetTooltip(self, self._tip)
+            end
+        end)
+        button:SetScript("OnLeave", function(self)
+            self._brd:Hide()
+            CludesUI.HideWidgetTooltip()
+        end)
+        button:SetScript("OnMouseDown", function(self)
+            if self._onNav then
+                self._onNav()
+            end
+        end)
+        wrap._pvNav[key] = button
         return button
     end
 
     local function HideTBBPvNav(wrap)
-        if not wrap._pvNav then
-            return
-        end
-        for _, b in pairs(wrap._pvNav) do
+        for _, b in pairs(wrap._pvNav or {}) do
             b:Hide()
         end
+    end
+
+    -- A text overlay hugs where the glyphs draw: the string's own size (at least
+    -- 14 square) anchored by its justification, as a FontString is wider than
+    -- its string, so its CENTER is not where the glyphs are.
+    local TEXT_NAV_SIDE = { RIGHT = { "RIGHT", 2 }, CENTER = { "CENTER", 0 }, LEFT = { "LEFT", -2 } }
+    local function FitToText(button, text)
+        button:SetSize(
+            math.max(14, (text:GetStringWidth() or 0) + 6),
+            math.max(14, (text:GetStringHeight() or 0) + 6)
+        )
+        local side = TEXT_NAV_SIDE[text.GetJustifyH and text:GetJustifyH() or "LEFT"] or TEXT_NAV_SIDE.LEFT
+        button:SetPoint(side[1], text, side[1], side[2], 0)
     end
 
     -- Attach nav overlays for one preview bar. Bar mode: element overlays scroll to and
@@ -142,35 +153,16 @@ local function InitBuffBarsPage(
             button:Show()
             return
         end
-        local scrollBar = wrap._bar
-        local function ElemBtn(key, elem, isText)
-            if not elem or not elem.IsShown or not elem:IsShown() then
-                return
-            end
-            if isText and (elem:GetText() or "") == "" then
+        local function Overlay(key, elem, isText)
+            if
+                not (elem and elem.IsShown and elem:IsShown()) or (isText and (elem:GetText() or "") == "")
+            then
                 return
             end
             local button = TBBPvNavButton(wrap, key)
             button:ClearAllPoints()
             if isText then
-                local tw = (elem:GetStringWidth() or 0) + 6
-                local th = (elem:GetStringHeight() or 0) + 6
-                if tw < 14 then
-                    tw = 14
-                end
-                if th < 14 then
-                    th = 14
-                end
-                button:SetSize(tw, th)
-                -- Anchor by justification: FontString width > string width, so CENTER isn't where glyphs render.
-                local justify = elem.GetJustifyH and elem:GetJustifyH() or "LEFT"
-                if justify == "RIGHT" then
-                    button:SetPoint("RIGHT", elem, "RIGHT", 2, 0)
-                elseif justify == "CENTER" then
-                    button:SetPoint("CENTER", elem, "CENTER", 0, 0)
-                else
-                    button:SetPoint("LEFT", elem, "LEFT", -2, 0)
-                end
+                FitToText(button, elem)
             else
                 button:SetAllPoints(elem)
             end
@@ -183,11 +175,26 @@ local function InitBuffBarsPage(
             end
             button:Show()
         end
-        ElemBtn("barFill", scrollBar, false)
-        ElemBtn("icon", wrap._icon, false)
-        ElemBtn("nameText", wrap._nameText, true)
-        ElemBtn("timerText", wrap._timerText, true)
-        ElemBtn("stacksText", wrap._stacksText, true)
+        Overlay("barFill", wrap._bar, false)
+        Overlay("icon", wrap._icon, false)
+        Overlay("nameText", wrap._nameText, true)
+        Overlay("timerText", wrap._timerText, true)
+        Overlay("stacksText", wrap._stacksText, true)
+    end
+
+    -- A bar's icon: its popular preset's, else its spell's.
+    local function ConfIcon(conf)
+        if conf.popularKey and mod.TBB_POPULAR_BUFFS then
+            for _, entry in ipairs(mod.TBB_POPULAR_BUFFS) do
+                if entry.key == conf.popularKey then
+                    return entry.icon
+                end
+            end
+        end
+        if conf.spellID and conf.spellID > 0 then
+            local info = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(conf.spellID)
+            return info and info.iconID
+        end
     end
 
     -- Preview-only dressing over live skinning: sample fill, sample timer/stacks text,
@@ -199,90 +206,81 @@ local function InitBuffBarsPage(
         if wrap._timerText and wrap._timerText:IsShown() then
             wrap._timerText:SetText("3.2")
         end
-        -- Stacks visibility is tick-driven on live bars; drive it from cfg here
-        if wrap._stacksText then
-            if (conf.stacksPosition or "center") ~= "none" then
-                wrap._stacksText:SetText("3")
-                wrap._stacksText:Show()
-            else
-                wrap._stacksText:Hide()
+        -- Live bars show their stacks from the tick; the preview follows the setting.
+        local stacks = wrap._stacksText
+        if stacks then
+            local on = (conf.stacksPosition or "center") ~= "none"
+            if on then
+                stacks:SetText("3")
             end
+            stacks:SetShown(on)
         end
         local unassigned = (not conf.spellID or conf.spellID == 0) and not conf.glowBased
-        -- Name (same resolution as the live build)
-        if wrap._nameText and wrap._nameText:IsShown() then
-            local displayName = conf.name
-            if
-                (not displayName or displayName == "" or displayName == "New Bar")
-                and conf.spellID
-                and conf.spellID > 0
-            then
+        -- The name as the live build resolves it; a custom name is the player's
+        -- own text, shown as typed and never translated.
+        local nameText = wrap._nameText
+        if nameText and nameText:IsShown() then
+            local name = conf.name
+            if (not name or name == "" or name == "New Bar") and conf.spellID and conf.spellID > 0 then
                 local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(conf.spellID)
-                displayName = (details and details.name) or displayName
+                name = (details and details.name) or name
             end
             if unassigned then
-                displayName = ""
+                name = ""
             end
-            -- A custom name is the player's own text: shown as typed, never translated.
-            wrap._nameText:SetText(mod.TBBCustomName(conf) or CludesUI.L(displayName or ""))
+            nameText:SetText(mod.TBBCustomName(conf) or CludesUI.L(name or ""))
         end
-        -- Icon texture (same resolution as the live build; question mark when no buff assigned yet)
-        if wrap._icon and wrap._icon:IsShown() and wrap._icon._tex then
-            local iconID
-            if conf.popularKey and mod.TBB_POPULAR_BUFFS then
-                for _, pe in ipairs(mod.TBB_POPULAR_BUFFS) do
-                    if pe.key == conf.popularKey then
-                        iconID = pe.icon
-                        break
-                    end
-                end
-            end
-            if not iconID and conf.spellID and conf.spellID > 0 then
-                local spInfo = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(conf.spellID)
-                iconID = spInfo and spInfo.iconID
-            end
-            wrap._icon._tex:SetTexture(iconID or 134400)
+        local icon = wrap._icon
+        if icon and icon:IsShown() and icon._tex then
+            icon._tex:SetTexture(ConfIcon(conf) or 134400) -- the question mark with no buff yet
         end
-        -- Unassigned: dim ALL bar content (fill/texts/icon/border) under a black overlay
-        -- frame with a centered hint, above the bar's own layers so it draws over the fill/gradient stack.
+        -- Unassigned: all the bar's content dims under a black layer with a centred
+        -- hint, above the text overlay (+6) and border (+5), below the click overlays (+30).
         if not wrap._pvDarkFrame then
-            local df = CreateFrame("Frame", nil, wrap)
-            df:SetAllPoints(wrap)
-            local tex = df:CreateTexture(nil, "ARTWORK")
+            local dark = CreateFrame("Frame", nil, wrap)
+            dark:SetAllPoints(wrap)
+            local tex = dark:CreateTexture(nil, "ARTWORK")
             tex:SetAllPoints()
             tex:SetColorTexture(0, 0, 0, 0.6)
-            local hintFS = df:CreateFontString(nil, "OVERLAY")
-            hintFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-            hintFS:SetTextColor(1, 1, 1, 1)
-            hintFS:SetJustifyH("CENTER")
-            hintFS:SetText(CludesUI.L("Choose a buff from the bar menu"))
-            wrap._pvDarkFrame = df
-            wrap._pvHint = hintFS
+            local hint = dark:CreateFontString(nil, "OVERLAY")
+            hint:SetFont(FONT_PATH, 11, GetCDMOptOutline())
+            hint:SetTextColor(1, 1, 1, 1)
+            hint:SetJustifyH("CENTER")
+            hint:SetText(CludesUI.L("Choose a buff from the bar menu"))
+            wrap._pvDarkFrame, wrap._pvHint = dark, hint
         end
-        -- Frame level: above text overlay (+6) and border (+5), below click overlays (+30).
         wrap._pvDarkFrame:SetFrameLevel(wrap:GetFrameLevel() + 20)
         wrap._pvHint:ClearAllPoints()
         wrap._pvHint:SetPoint("CENTER", scrollBar, "CENTER", 0, 0)
         wrap._pvDarkFrame:SetShown(unassigned)
     end
 
-    -- Vertical headroom for texts anchored above/below the bar (outside its bounds).
+    -- A text's position as drawn (prefix name / timer / stacks): the stored one,
+    -- else an older bar's default; name text never draws on a vertical bar.
+    local function ConfTextPos(conf, prefix)
+        if prefix == "name" and conf.verticalOrientation then
+            return "none"
+        end
+        local stored = conf[prefix .. "Position"]
+        if stored then
+            return stored
+        end
+        if prefix == "name" then
+            return (conf.showName ~= false) and "left" or "none"
+        elseif prefix == "timer" then
+            return conf.showTimer and "right" or "none"
+        end
+        return "center"
+    end
+    -- Headroom for the texts anchored above or below the bar (outside its bounds).
     local function TBBPvTextPad(conf, side)
-        local tp = conf.timerPosition or (conf.showTimer and "right" or "none")
-        local sp = conf.stacksPosition or "center"
-        local np = conf.verticalOrientation and "none"
-            or (conf.namePosition or ((conf.showName ~= false) and "left" or "none"))
-        local p = 0
-        if tp == side then
-            p = math.max(p, conf.timerSize or 11)
+        local tallest = 0
+        for _, prefix in ipairs({ "timer", "stacks", "name" }) do
+            if ConfTextPos(conf, prefix) == side then
+                tallest = math.max(tallest, conf[prefix .. "Size"] or 11)
+            end
         end
-        if sp == side then
-            p = math.max(p, conf.stacksSize or 11)
-        end
-        if np == side then
-            p = math.max(p, conf.nameSize or 11)
-        end
-        return p > 0 and (p + 8) or 0
+        return tallest > 0 and (tallest + 8) or 0
     end
 
     -- HARD gate for BOTH Tracking Bars preview systems (popout + unlock-style
@@ -303,193 +301,180 @@ local function InitBuffBarsPage(
         return true
     end
 
-    local function RefreshTBBPopout()
-        if not TBBPreviewAllowed() then
-            HideTBBPopout()
+    -- A preview bar's layers after its strata lift, as the live bars stack them:
+    -- [field] = { offset, from the bar fill (true) or the base level }.
+    local PREVIEW_LAYERS = {
+        { "_gradClip", 1, true },
+        { "_chargeHashFillClip", 1, true },
+        { "_sparkOverlay", 3, true },
+        { "_tickOverlay", 4, true },
+        { "_chargeHashOverlay", 5, true },
+        -- base+6 matches the live-bar reassert: keeps the border above the tick
+        -- overlay (fill+4 = base+5), which wins ties via lazy creation.
+        { "_barBorder", 6, false },
+        { "_pandemicGlowOverlay", 7, false },
+        { "_textOverlay", 7, true },
+    }
+    -- The apply path pins a wrap to the bar's own strata (cfg.strata, MEDIUM
+    -- default): lift it into the popout's after each apply and set its child
+    -- levels again (a parent strata change resets them). Skipped while it is
+    -- already there, level included (else a bar whose own strata is the
+    -- popout's would dodge the lift).
+    local function LiftPreviewBar(wrap, base)
+        if wrap:GetFrameStrata() == "FULLSCREEN_DIALOG" and wrap:GetFrameLevel() == base then
             return
         end
-        local t = mod.GetTrackedBuffBars()
-        local barList = t and t.bars or {}
+        wrap:SetFrameStrata("FULLSCREEN_DIALOG")
+        wrap:SetFrameLevel(base)
+        local fill = wrap._bar
+        if fill then
+            fill:SetFrameLevel(base + 1)
+        end
+        for _, layer in ipairs(PREVIEW_LAYERS) do
+            local frame, fromFill = wrap[layer[1]], layer[3]
+            if frame and (fill or not fromFill) then
+                frame:SetFrameLevel((fromFill and fill:GetFrameLevel() or base) + layer[2])
+            end
+            -- The threshold shades sit between the clips and the spark (fill+2).
+            if layer[1] == "_chargeHashFillClip" and wrap._threshOverlays and fill then
+                for i = 1, #wrap._threshOverlays do
+                    local shade = wrap._threshOverlays[i]
+                    if shade then
+                        shade:SetFrameLevel(fill:GetFrameLevel() + 2)
+                    end
+                end
+            end
+        end
+    end
 
-        -- Configs to render: the selected group's members, or the selected bar
+    -- Width-gated geometry (charge hash lines, threshold ticks) is skipped while a
+    -- bar's fill has no size; live bars redraw it from the timer tick, previews
+    -- have none, so they redraw it when the size resolves.
+    local function DrawSizedParts(wrap, fill, conf, withHash)
+        if withHash and mod.ApplyTBBChargeHashLines then
+            mod.ApplyTBBChargeHashLines(wrap, conf, mod.GetTBBMaxCharges and mod.GetTBBMaxCharges(conf))
+        end
+        if mod.ApplyTBBTickMarks then
+            mod.ApplyTBBTickMarks(fill, conf, wrap._threshTicks, conf.verticalOrientation, wrap._tickOverlay)
+            wrap._ticksDirty = nil
+        end
+    end
+    local function PreviewBar(oc, num)
+        local wrap = _tbbPopoutBars[num]
+        if wrap then
+            return wrap
+        end
+        wrap = mod.CreateTBBBarFrame(oc, "Pv" .. num)
+        _tbbPopoutBars[num] = wrap
+        if wrap._bar then
+            wrap._bar:SetScript("OnSizeChanged", function(fill)
+                if wrap._pvCfg then
+                    DrawSizedParts(wrap, fill, wrap._pvCfg, true)
+                end
+            end)
+        end
+        return wrap
+    end
+
+    -- What the popout shows: the selected group's members, or the selected bar.
+    local function PopoutEntries()
+        local barList = (mod.GetTrackedBuffBars() or {}).bars or {}
         local entries = {}
-        local mode = "bar"
         if _tbbSelectedGroup then
-            mode = "group"
             for i, c in ipairs(barList) do
                 if mod.TBBBarGroupID(c) == _tbbSelectedGroup then
                     entries[#entries + 1] = { idx = i, cfg = c }
                 end
             end
-        else
-            local c = barList[_tbbSelectedBar]
-            if c then
-                entries[1] = { idx = _tbbSelectedBar, cfg = c }
-            end
+            return entries, "group"
         end
+        local c = barList[_tbbSelectedBar]
+        if c then
+            entries[1] = { idx = _tbbSelectedBar, cfg = c }
+        end
+        return entries, "bar"
+    end
+
+    -- Where the first bar sits and how the rest chain on it, as the live bars do.
+    local CHAIN = {
+        UP = { "BOTTOM", "TOP", 0, 1 },
+        RIGHT = { "LEFT", "RIGHT", 1, 0 },
+        LEFT = { "RIGHT", "LEFT", -1, 0 },
+        DOWN = { "TOP", "BOTTOM", 0, -1 },
+    }
+
+    local function RefreshTBBPopout()
+        if not TBBPreviewAllowed() then
+            HideTBBPopout()
+            return
+        end
+        local entries, mode = PopoutEntries()
         if #entries == 0 then
             HideTBBPopout()
             return
         end
-
         local oc = GetTBBPopout()
+        local grouped = mode == "group"
 
-        -- Build/refresh each preview bar with the LIVE bar code
-        for num, e in ipairs(entries) do
-            local wrap = _tbbPopoutBars[num]
-            if not wrap then
-                wrap = mod.CreateTBBBarFrame(oc, "Pv" .. num)
-                _tbbPopoutBars[num] = wrap
-                -- Width-gated geometry (charge hash lines, threshold ticks) silently skips
-                -- while a fresh pool bar's fill size is 0; live bars re-drive from the timer
-                -- tick, previews have none, so re-drive when size resolves.
-                if wrap._bar then
-                    wrap._bar:SetScript("OnSizeChanged", function(sbSelf)
-                        local conf = wrap._pvCfg
-                        if not conf then
-                            return
-                        end
-                        if mod.ApplyTBBChargeHashLines then
-                            local mc = mod.GetTBBMaxCharges and mod.GetTBBMaxCharges(conf)
-                            mod.ApplyTBBChargeHashLines(wrap, conf, mc)
-                        end
-                        if mod.ApplyTBBTickMarks then
-                            mod.ApplyTBBTickMarks(
-                                sbSelf,
-                                conf,
-                                wrap._threshTicks,
-                                conf.verticalOrientation,
-                                wrap._tickOverlay
-                            )
-                            wrap._ticksDirty = nil
-                        end
-                    end)
-                end
-            end
-            wrap._pvCfg = e.cfg
-            mod.ApplyTBBBarSettings(wrap, e.cfg)
-            -- The apply path pins the wrap to the bar's own strata (cfg.strata,
-            -- MEDIUM default); lift into the popout's strata AFTER each apply
-            -- and re-assert the constructor's child levels (a parent strata
-            -- change resets child frame levels). Guarded so refreshes that
-            -- didn't touch strata skip the re-stack; level checked too, else a
-            -- bar whose OWN strata is the popout's would dodge the lift.
-            local base = oc:GetFrameLevel() + 20
-            if wrap:GetFrameStrata() ~= "FULLSCREEN_DIALOG" or wrap:GetFrameLevel() ~= base then
-                wrap:SetFrameStrata("FULLSCREEN_DIALOG")
-                wrap:SetFrameLevel(base)
-                local scrollBar = wrap._bar
-                if scrollBar then
-                    scrollBar:SetFrameLevel(base + 1)
-                end
-                if wrap._gradClip and scrollBar then
-                    wrap._gradClip:SetFrameLevel(scrollBar:GetFrameLevel() + 1)
-                end
-                if wrap._chargeHashFillClip and scrollBar then
-                    wrap._chargeHashFillClip:SetFrameLevel(scrollBar:GetFrameLevel() + 1)
-                end
-                if wrap._threshOverlays and scrollBar then
-                    for i = 1, #wrap._threshOverlays do
-                        local shade = wrap._threshOverlays[i]
-                        if shade then
-                            shade:SetFrameLevel(scrollBar:GetFrameLevel() + 2)
-                        end
-                    end
-                end
-                if wrap._sparkOverlay and scrollBar then
-                    wrap._sparkOverlay:SetFrameLevel(scrollBar:GetFrameLevel() + 3)
-                end
-                -- Tick overlay reassert; matches the live-bar block.
-                if wrap._tickOverlay and scrollBar then
-                    wrap._tickOverlay:SetFrameLevel(scrollBar:GetFrameLevel() + 4)
-                end
-                if wrap._chargeHashOverlay and scrollBar then
-                    wrap._chargeHashOverlay:SetFrameLevel(scrollBar:GetFrameLevel() + 5)
-                end
-                -- base+6 matches the live-bar reassert: keeps the border above
-                -- the tick overlay (sb+4 = base+5), which wins ties via lazy
-                -- creation.
-                if wrap._barBorder then
-                    wrap._barBorder:SetFrameLevel(base + 6)
-                end
-                if wrap._pandemicGlowOverlay then
-                    wrap._pandemicGlowOverlay:SetFrameLevel(base + 7)
-                end
-                if wrap._textOverlay and scrollBar then
-                    wrap._textOverlay:SetFrameLevel(scrollBar:GetFrameLevel() + 7)
-                end
-            end
-            DressTBBPopoutBar(wrap, e.cfg)
-            -- Reused pool bars already have a resolved size, so OnSizeChanged may never
-            -- fire here: consume the deferred tick-mark pass (apply path drew hash lines itself when sized).
-            local psb = wrap._bar
-            if wrap._ticksDirty and psb and psb:GetWidth() > 0 and mod.ApplyTBBTickMarks then
-                mod.ApplyTBBTickMarks(
-                    psb,
-                    e.cfg,
-                    wrap._threshTicks,
-                    e.cfg.verticalOrientation,
-                    wrap._tickOverlay
-                )
-                wrap._ticksDirty = nil
+        -- Each preview bar through the LIVE bar code, then the preview dressing.
+        for num, entry in ipairs(entries) do
+            local wrap = PreviewBar(oc, num)
+            wrap._pvCfg = entry.cfg
+            mod.ApplyTBBBarSettings(wrap, entry.cfg)
+            LiftPreviewBar(wrap, oc:GetFrameLevel() + 20)
+            DressTBBPopoutBar(wrap, entry.cfg)
+            -- A reused pool bar is already sized, so its OnSizeChanged may never
+            -- fire: take the deferred tick pass here (the apply drew hash lines).
+            local fill = wrap._bar
+            if wrap._ticksDirty and fill and fill:GetWidth() > 0 and mod.ApplyTBBTickMarks then
+                DrawSizedParts(wrap, fill, entry.cfg, false)
             end
             wrap:Show()
         end
         for num = #entries + 1, #_tbbPopoutBars do
-            if _tbbPopoutBars[num] then
-                HideTBBPvNav(_tbbPopoutBars[num])
-                _tbbPopoutBars[num]:Hide()
+            local wrap = _tbbPopoutBars[num]
+            if wrap then
+                HideTBBPvNav(wrap)
+                wrap:Hide()
             end
         end
 
-        -- Chain layout: single bar centered; group members chained with the
-        -- group's grow/spacing, exactly like the live BuildTrackedBuffBars
+        -- Size: one bar alone, or the group chained with its grow and spacing.
         local PAD_IN, TITLE_H = 20, 25
         local growDir, spacing = "DOWN", 2
-        if mode == "group" then
+        if grouped then
             growDir = (mod.TBBGroupGrow(_tbbSelectedGroup) or "DOWN"):upper()
             spacing = mod.TBBGroupSpacing(_tbbSelectedGroup) or 2
         end
-        local horizontalChain = mode == "group" and (growDir == "LEFT" or growDir == "RIGHT")
-
+        local across = grouped and (growDir == "LEFT" or growDir == "RIGHT")
         local totalW, totalH = 0, 0
-        for num = 1, #entries do
-            local wrap = _tbbPopoutBars[num]
-            local w2, h2 = wrap:GetWidth(), wrap:GetHeight()
-            if mode ~= "group" then
-                totalW, totalH = w2, h2
-            elseif horizontalChain then
-                totalW = totalW + w2 + (num > 1 and spacing or 0)
-                if h2 > totalH then
-                    totalH = h2
-                end
-            else
-                totalH = totalH + h2 + (num > 1 and spacing or 0)
-                if w2 > totalW then
-                    totalW = w2
-                end
-            end
-        end
         local topPad, botPad = 0, 0
-        for _, e in ipairs(entries) do
-            topPad = math.max(topPad, TBBPvTextPad(e.cfg, "top"))
-            botPad = math.max(botPad, TBBPvTextPad(e.cfg, "bottom"))
+        for num, entry in ipairs(entries) do
+            local wrap = _tbbPopoutBars[num]
+            local w, h = wrap:GetWidth(), wrap:GetHeight()
+            local gap = num > 1 and spacing or 0
+            if not grouped then
+                totalW, totalH = w, h
+            elseif across then
+                totalW, totalH = totalW + w + gap, math.max(totalH, h)
+            else
+                totalW, totalH = math.max(totalW, w), totalH + h + gap
+            end
+            topPad = math.max(topPad, TBBPvTextPad(entry.cfg, "top"))
+            botPad = math.max(botPad, TBBPvTextPad(entry.cfg, "bottom"))
         end
 
-        -- Footer hint
-        local hintH = 0
-        if mode == "bar" then
-            if not (CludesUIDB and CludesUIDB.previewHintDismissed) then
-                oc._hint:SetText(CludesUI.L("Click elements to scroll to and highlight their options"))
-                oc._hint:Show()
-                hintH = 18
-            else
-                oc._hint:Hide()
-            end
-        else
+        -- The foot hint: element clicks in bar mode (until dismissed), bar clicks in a group.
+        local hintH = 18
+        if grouped then
             oc._hint:SetText(CludesUI.L("Click a bar to edit it"))
             oc._hint:Show()
-            hintH = 18
+        elseif not (CludesUIDB and CludesUIDB.previewHintDismissed) then
+            oc._hint:SetText(CludesUI.L("Click elements to scroll to and highlight their options"))
+            oc._hint:Show()
+        else
+            oc._hint:Hide()
+            hintH = 0
         end
 
         -- Whole physical pixels throughout (the bars render at UIParent scale
@@ -503,60 +488,55 @@ local function InitBuffBarsPage(
         oc:SetSize(ocW, Px(totalH + topPad + botPad + PAD_IN * 2 + TITLE_H + hintH))
 
         local firstY = -Px(PAD_IN + TITLE_H + topPad)
+        local chain = CHAIN[growDir] or CHAIN.DOWN
         local prev
         for num = 1, #entries do
             local wrap = _tbbPopoutBars[num]
             wrap:ClearAllPoints()
-            if num == 1 then
-                -- Centred bars sit on a whole-pixel left edge too.
-                local cx = Px((ocW - wrap:GetWidth()) / 2)
-                if mode == "group" and growDir == "UP" then
-                    wrap:SetPoint("BOTTOMLEFT", oc, "BOTTOMLEFT", cx, Px(PAD_IN + botPad + hintH))
-                elseif mode == "group" and growDir == "RIGHT" then
-                    wrap:SetPoint("TOPLEFT", oc, "TOPLEFT", Px(PAD_IN), firstY)
-                elseif mode == "group" and growDir == "LEFT" then
-                    wrap:SetPoint("TOPRIGHT", oc, "TOPRIGHT", -Px(PAD_IN), firstY)
-                else
-                    wrap:SetPoint("TOPLEFT", oc, "TOPLEFT", cx, firstY)
-                end
+            if num > 1 then
+                wrap:SetPoint(chain[1], prev, chain[2], chain[3] * spacing, chain[4] * spacing)
+            elseif grouped and growDir == "UP" then
+                wrap:SetPoint(
+                    "BOTTOMLEFT",
+                    oc,
+                    "BOTTOMLEFT",
+                    Px((ocW - wrap:GetWidth()) / 2),
+                    Px(PAD_IN + botPad + hintH)
+                )
+            elseif grouped and growDir == "RIGHT" then
+                wrap:SetPoint("TOPLEFT", oc, "TOPLEFT", Px(PAD_IN), firstY)
+            elseif grouped and growDir == "LEFT" then
+                wrap:SetPoint("TOPRIGHT", oc, "TOPRIGHT", -Px(PAD_IN), firstY)
             else
-                -- Same relative chain the live bars use
-                if growDir == "UP" then
-                    wrap:SetPoint("BOTTOM", prev, "TOP", 0, spacing)
-                elseif growDir == "RIGHT" then
-                    wrap:SetPoint("LEFT", prev, "RIGHT", spacing, 0)
-                elseif growDir == "LEFT" then
-                    wrap:SetPoint("RIGHT", prev, "LEFT", -spacing, 0)
-                else
-                    wrap:SetPoint("TOP", prev, "BOTTOM", 0, -spacing)
-                end
+                -- Centred bars sit on a whole-pixel left edge too.
+                wrap:SetPoint("TOPLEFT", oc, "TOPLEFT", Px((ocW - wrap:GetWidth()) / 2), firstY)
             end
             prev = wrap
             UpdateTBBPvNav(wrap, mode, entries[num].idx)
         end
 
-        if mode == "group" then
-            local gname = (mod.TBBGroupName and mod.TBBGroupName(_tbbSelectedGroup))
+        local title = CludesUI.L("Preview")
+        if grouped then
+            local name = (mod.TBBGroupName and mod.TBBGroupName(_tbbSelectedGroup))
                 or (CludesUI.L("Group") .. " " .. _tbbSelectedGroup)
-            oc._title:SetText(gname .. " " .. CludesUI.L("Preview"))
-        else
-            oc._title:SetText(CludesUI.L("Preview"))
+            title = name .. " " .. title
         end
+        oc._title:SetText(title)
 
         -- Dock to the left edge of the options panel, vertically centered, its
         -- corner nudged onto a whole pixel (the panel may sit anywhere).
         oc:ClearAllPoints()
         oc:Show()
         local scrollFrame = CludesUI._scrollFrame
-        if scrollFrame then
-            local dy = oc:GetHeight() / 2
-            oc:SetPoint("TOPRIGHT", scrollFrame, "LEFT", 0, dy)
-            local right, topY = oc:GetRight(), oc:GetTop()
-            if right and topY then
-                oc:SetPoint("TOPRIGHT", scrollFrame, "LEFT", Px(right) - right, dy + Px(topY) - topY)
-            end
-        else
+        if not scrollFrame then
             oc:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+            return
+        end
+        local dy = oc:GetHeight() / 2
+        oc:SetPoint("TOPRIGHT", scrollFrame, "LEFT", 0, dy)
+        local right, topY = oc:GetRight(), oc:GetTop()
+        if right and topY then
+            oc:SetPoint("TOPRIGHT", scrollFrame, "LEFT", Px(right) - right, dy + Px(topY) - topY)
         end
     end
 
