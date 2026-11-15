@@ -3441,61 +3441,60 @@ initFrame:SetScript("OnEvent", function(self)
             end
         end
 
-        -- True when an existing entry already claims specID
-        local function IsSpecClaimed(specID)
-            local edge = conf.getBarData()
-            if not edge or not edge.thresholdSpecs then
-                return false
-            end
-            for _, record in ipairs(edge.thresholdSpecs) do
-                if record.specIDs then
-                    for _, spellRef in ipairs(record.specIDs) do
-                        if spellRef == 0 then
-                            return true
-                        end -- All Specs claims everything
-                        if spellRef == specID then
-                            return true
-                        end
+        -- Does any entry claim specID (0 = All Specs; it claims every spec)?
+        -- With onlyAll, only an All Specs entry counts.
+        local function Claimed(specID, onlyAll)
+            local bar = conf.getBarData()
+            for _, entry in ipairs(bar and bar.thresholdSpecs or {}) do
+                for _, id in ipairs(entry.specIDs or {}) do
+                    if id == 0 or (not onlyAll and id == specID) then
+                        return true
                     end
                 end
             end
             return false
         end
+        local function IsSpecClaimed(specID)
+            return Claimed(specID)
+        end
         local function HasAllSpecsEntry()
-            local edge = conf.getBarData()
-            if not edge or not edge.thresholdSpecs then
-                return false
-            end
-            for _, record in ipairs(edge.thresholdSpecs) do
-                if record.specIDs then
-                    for _, spellRef in ipairs(record.specIDs) do
-                        if spellRef == 0 then
-                            return true
-                        end
-                    end
-                end
-            end
-            return false
+            return Claimed(nil, true)
         end
 
         -- The shared spec list (WoW Forever: one row per class, no role
-        -- shortcuts), locked by what the existing entries claim.
+        -- shortcuts), with what the entries already claim locked.
         local function BuildSpecItems()
-            local itemList
-            itemList, _roleSpecs = CludesUI.SpecPickItems({
+            local items
+            items, _roleSpecs = CludesUI.SpecPickItems({
                 roles = conf.roleShortcuts,
                 lockedFn = IsSpecClaimed,
                 allLockedFn = HasAllSpecsEntry,
             })
-            return itemList
+            return items
         end
 
-        -- A fresh entry: hash row empty, threshold on at its defaults
-        local function NewEntry(ids, edge)
-            if conf.newEntry then
-                return conf.newEntry(ids, edge)
+        -- Whether ids covers the spec being played (WoW Forever: a spec of the class).
+        local function CoversPlayer(ids)
+            local index = C_SpecializationInfo.GetSpecialization()
+            local current = index and C_SpecializationInfo.GetSpecializationInfo(index)
+            if not (current or CludesUI.IS_FOREVER) then
+                return false
             end
-            local newEntry = {
+            for _, id in ipairs(ids) do
+                if id == 0 or id == current or (CludesUI.IS_FOREVER and CludesUI.IsPlayerSpec(id)) then
+                    return true
+                end
+            end
+            return false
+        end
+        local SPENDER_POWER = { MANA = true, FOCUS = true, ENERGY = true }
+
+        -- A new entry: threshold on at its defaults, no hash lines.
+        local function NewEntry(ids, bar)
+            if conf.newEntry then
+                return conf.newEntry(ids, bar)
+            end
+            local entry = {
                 specIDs = ids,
                 thresholdEnabled = true,
                 thresholdPct = 30,
@@ -3512,50 +3511,36 @@ initFrame:SetScript("OnEvent", function(self)
                 hashColorB = 1,
                 hashColorA = 0.7,
             }
-            -- Default for the power bar's "Threshold color below value": spenders (mana/energy/focus)
-            -- start ON (warn when low), builders (rage/runic/fury) OFF (warn when high). Only when
-            -- the entry covers the current spec, the one whose power type we can read.
-            if conf.partialDefault then
-                local curIdx = C_SpecializationInfo.GetSpecialization()
-                local curSpecID = curIdx and C_SpecializationInfo.GetSpecializationInfo(curIdx)
-                -- WoW Forever: the entry covers the player when it names a spec of the class.
-                if curSpecID or CludesUI.IS_FOREVER then
-                    for _, spellRef in ipairs(ids) do
-                        if
-                            spellRef == 0
-                            or spellRef == curSpecID
-                            or (CludesUI.IS_FOREVER and CludesUI.IsPlayerSpec(spellRef))
-                        then
-                            local _, token = UnitPowerType("player")
-                            if token == "MANA" or token == "FOCUS" or token == "ENERGY" then
-                                newEntry.thresholdPartialOnly = true
-                            end
-                            break
-                        end
-                    end
+            -- The power bar's "colour below the value": on for a spender power
+            -- (mana, focus, energy: warn when low), off for a builder (warn
+            -- when high). Only for an entry covering the spec being played,
+            -- whose power type can be read.
+            if conf.partialDefault and CoversPlayer(ids) then
+                local _, token = UnitPowerType("player")
+                if SPENDER_POWER[token] then
+                    entry.thresholdPartialOnly = true
                 end
             end
-            return newEntry
+            return entry
         end
 
-        -- Paints one row's bg/accent for the current selection state
+        -- One entry row's background and accent bar for the selection, in
+        -- the current theme accent (a colour kept from creation goes stale).
         local function PaintRow(f)
-            local sel = (f._entryIdx ~= nil) and (_selectedIdx == f._entryIdx)
-            local eg = CludesUI.CLUDES_GREEN
-            f._selected = sel
-            f._accent:SetShown(sel)
-            -- Re-apply the live theme accent each paint; the creation-time color goes stale after a theme change
-            f._accent:SetColorTexture(eg.r, eg.g, eg.b, 1)
-            if sel then
-                f._bg:SetColorTexture(eg.r, eg.g, eg.b, 0.10)
+            local selected = f._entryIdx ~= nil and _selectedIdx == f._entryIdx
+            local accent = CludesUI.CLUDES_GREEN
+            f._selected = selected
+            f._accent:SetShown(selected)
+            f._accent:SetColorTexture(accent.r, accent.g, accent.b, 1)
+            if selected then
+                f._bg:SetColorTexture(accent.r, accent.g, accent.b, 0.10)
             else
                 f._bg:SetColorTexture(1, 1, 1, 0.02)
             end
         end
         local function RepaintRows()
-            for i = 1, #_entryFrames do
-                local f = _entryFrames[i]
-                if f and f:IsShown() then
+            for _, f in ipairs(_entryFrames) do
+                if f:IsShown() then
                     PaintRow(f)
                 end
             end
