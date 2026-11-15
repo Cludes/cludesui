@@ -3594,138 +3594,390 @@ initFrame:SetScript("OnEvent", function(self)
     -- talent popup are made once for the session, on UIParent.
     local _trPopups = {}
 
+    local function TalentRemindersChanged()
+        if _G._CUABR_TR_RequestRefresh then
+            _G._CUABR_TR_RequestRefresh()
+        end
+    end
+
+    -- Whether a reminder covers a zone. One saved with the single zone of
+    -- an older version holds it in zoneName while it has no list.
+    local function ReminderHasZone(r, zn)
+        local list = r.zoneNames
+        if list and #list > 0 then
+            return tContains(list, zn)
+        end
+        return r.zoneName == zn
+    end
+    -- A reminder's zone list for an edit; an older version's single zone
+    -- moves into it on the first edit.
+    local function EditableZoneList(r)
+        r.zoneNames = r.zoneNames or {}
+        local list = r.zoneNames
+        if #list == 0 and r.zoneName then
+            list[1] = r.zoneName
+        end
+        return list
+    end
+
+    -- Every talent of the active loadout's class and spec trees (hero trees
+    -- left out), once per spell, by name, live from C_Traits.
+    local function GetAllTalents()
+        local talents = {}
+        local configID = C_ClassTalents
+            and C_ClassTalents.GetActiveConfigID
+            and C_ClassTalents.GetActiveConfigID()
+        local config = configID and C_Traits and C_Traits.GetConfigInfo and C_Traits.GetConfigInfo(configID)
+        local treeID = config and config.treeIDs and config.treeIDs[1]
+        local nodes = treeID and C_Traits.GetTreeNodes(treeID)
+        if not nodes then
+            return talents
+        end
+        local seen = {}
+        local function Add(entryID)
+            local entry = C_Traits.GetEntryInfo(configID, entryID)
+            local def = entry and entry.definitionID and C_Traits.GetDefinitionInfo(entry.definitionID)
+            local id = def and def.spellID
+            if id and not seen[id] then
+                local name = C_Spell.GetSpellName(id)
+                if name and name ~= "" then
+                    seen[id] = true
+                    talents[#talents + 1] = { spellID = id, name = name }
+                end
+            end
+        end
+        for _, nodeID in ipairs(nodes) do
+            local node = C_Traits.GetNodeInfo(configID, nodeID)
+            if
+                node
+                and node.ID
+                and node.ID > 0
+                and node.entryIDs
+                and #node.entryIDs > 0
+                and not node.subTreeID
+            then
+                for _, entryID in ipairs(node.entryIDs) do
+                    Add(entryID)
+                end
+            end
+        end
+        table.sort(talents, function(a, b)
+            return a.name < b.name
+        end)
+        return talents
+    end
+
+    local TR_DD_BG = { 0.088, 0.098, 0.111, 0.9 }
+    local TR_DD_BG_HOVER = { 0.128, 0.120, 0.113, 1 }
+    local TR_ROW_TEXT = { 0.75, 0.75, 0.78, 1 }
+    local TR_SEARCH_H = 26
+
+    -- A wide dropdown button: dark box, border, a one-line label (dim until
+    -- a pick) before the arrow, lighter while hovered.
+    -- place(button) anchors it before the art is made (the arrow's pixel fit reads where it sits).
+    local function TRDropdownButton(parent, w, h, text, fontPath, arrowSize, place)
+        local button = CreateFrame("Button", nil, parent)
+        PP.Size(button, w, h)
+        place(button)
+        button:SetFrameLevel(parent:GetFrameLevel() + 1)
+        local bg = button:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints()
+        bg:SetColorTexture(unpack(TR_DD_BG))
+        CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.20, bg)
+        local label = button:CreateFontString(nil, "OVERLAY")
+        label:SetFont(fontPath, 13, GetABROptOutline())
+        label:SetTextColor(1, 1, 1, 0.50)
+        label:SetMaxLines(1)
+        label:SetJustifyH("LEFT")
+        label:SetWordWrap(false)
+        label:SetText(CludesUI.L(text))
+        local arrow = CludesUI.MakeDropdownArrow(button, arrowSize, CludesUI.PanelPP)
+        -- The label's inset matches the arrow's size (14 on the zone box, 12 on the talent box).
+        label:SetPoint("LEFT", button, "LEFT", arrowSize, 0)
+        label:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
+        button._bg = bg
+        return button, label
+    end
+    local function TRDropdownHover(button)
+        button:SetScript("OnEnter", function()
+            button._bg:SetColorTexture(unpack(TR_DD_BG_HOVER))
+        end)
+        button:SetScript("OnLeave", function()
+            button._bg:SetColorTexture(unpack(TR_DD_BG))
+        end)
+    end
+
+    -- A kept list popup under button: a search box (placeholder while
+    -- empty, Escape lets go), a smooth-scrolling list child, closed by a
+    -- click outside it or the button, opened and closed by the button and
+    -- closed when the button hides. Returns the popup, its list child, the
+    -- search box, its placeholder and the list's ScrollTo.
+    local function TRSearchPopup(key, button, w, listH, fontPath)
+        local popup = Pool.Kept(_trPopups, key, "Frame", UIParent)
+        popup:SetFrameStrata("FULLSCREEN_DIALOG")
+        popup:SetFrameLevel(200)
+        popup:SetClampedToScreen(true)
+        popup:SetSize(w, listH + TR_SEARCH_H + 10)
+        popup:Hide()
+        local bg = popup:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints()
+        bg:SetColorTexture(0.098, 0.090, 0.082, 0.97)
+        CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.12, bg, nil, true)
+
+        local search = CreateFrame("EditBox", nil, popup)
+        search:SetSize(w - 16, TR_SEARCH_H)
+        search:SetPoint("TOP", popup, "TOP", 0, -6)
+        search:SetFrameLevel(popup:GetFrameLevel() + 3)
+        search:SetFont(fontPath, 11, "")
+        search:SetTextColor(1, 1, 1, 0.9)
+        search:SetJustifyH("LEFT")
+        search:SetAutoFocus(false)
+        search:SetMaxLetters(30)
+        search:SetTextInsets(4, 4, 0, 0)
+        local searchBg = search:CreateTexture(nil, "BACKGROUND")
+        searchBg:SetAllPoints()
+        searchBg:SetColorTexture(0, 0, 0, 0.4)
+        CludesUI.RoundBody(search, searchBg)
+        local placeholder = search:CreateFontString(nil, "OVERLAY")
+        placeholder:SetFont(fontPath, 11, "")
+        placeholder:SetTextColor(0.5, 0.5, 0.5, 0.6)
+        placeholder:SetPoint("LEFT", search, "LEFT", 4, 0)
+        placeholder:SetText(CludesUI.L("Search..."))
+        search:SetScript("OnEscapePressed", function(self)
+            self:ClearFocus()
+        end)
+
+        local scroll = CreateFrame("ScrollFrame", nil, popup)
+        scroll:SetPoint("TOPLEFT", popup, "TOPLEFT", 0, -(TR_SEARCH_H + 10))
+        scroll:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", 0, 4)
+        scroll:SetFrameLevel(popup:GetFrameLevel() + 1)
+        scroll:EnableMouseWheel(true)
+        local child = CreateFrame("Frame", nil, scroll)
+        child:SetWidth(w)
+        scroll:SetScrollChild(child)
+        local _, scrollTo = CludesUI.AttachSmoothScrollbar(scroll, {
+            step = 40,
+            thumbMin = 20,
+            rightInset = 4,
+            child = child,
+        })
+        popup:SetScript("OnMouseWheel", function(_, delta)
+            scroll:GetScript("OnMouseWheel")(scroll, delta)
+        end)
+        popup:SetScript("OnUpdate", function()
+            if not popup:IsMouseOver() and not button:IsMouseOver() and IsMouseButtonDown("LeftButton") then
+                popup:Hide()
+            end
+        end)
+        button:SetScript("OnClick", function()
+            popup:SetShown(not popup:IsShown())
+        end)
+        return popup, child, search, placeholder, scrollTo
+    end
+
+    -- A popup list row at slot i, with its (clear) hover tint.
+    local function TRPopupRow(child, i, h)
+        local row = CreateFrame("Button", nil, child)
+        row:SetHeight(h)
+        row:SetPoint("TOPLEFT", child, "TOPLEFT", 1, -(i - 1) * h)
+        row:SetPoint("TOPRIGHT", child, "TOPRIGHT", -1, -(i - 1) * h)
+        local hl = row:CreateTexture(nil, "ARTWORK")
+        hl:SetAllPoints()
+        hl:SetColorTexture(1, 1, 1, 0)
+        row._hl = hl
+        return row
+    end
+    local function TRRowLabel(row, fontPath, text)
+        local label = row:CreateFontString(nil, "OVERLAY")
+        label:SetFont(fontPath, 11, GetABROptOutline())
+        label:SetTextColor(unpack(TR_ROW_TEXT))
+        label:SetJustifyH("LEFT")
+        label:SetWordWrap(false)
+        label:SetText(text)
+        row:SetScript("OnEnter", function()
+            label:SetTextColor(1, 1, 1, 1)
+            row._hl:SetColorTexture(1, 1, 1, 0.08)
+        end)
+        row:SetScript("OnLeave", function()
+            label:SetTextColor(unpack(TR_ROW_TEXT))
+            row._hl:SetColorTexture(1, 1, 1, 0)
+        end)
+        return label
+    end
+
+    -- Shows the rows whose name (row[field]) holds the search text, packed
+    -- from the top; returns how many show.
+    local function TRFilter(rows, child, h, query, field)
+        local shown = 0
+        for _, row in ipairs(rows) do
+            if query == "" or strfind(strlower(row[field]), query, 1, true) then
+                row:Show()
+                row:ClearAllPoints()
+                row:SetPoint("TOPLEFT", child, "TOPLEFT", 1, -shown * h)
+                row:SetPoint("TOPRIGHT", child, "TOPRIGHT", -1, -shown * h)
+                shown = shown + 1
+            else
+                row:Hide()
+            end
+        end
+        child:SetHeight(math.max(1, shown * h))
+        return shown
+    end
+
+    -- A red border that pulses for a moment on a row that is missing its pick.
+    local function PulseRedBorder(row)
+        if not row then
+            return
+        end
+        if not row._redPulse then
+            local frame = CreateFrame("Frame", nil, row)
+            frame:SetAllPoints()
+            frame:SetFrameLevel(row:GetFrameLevel() + 10)
+            frame._border = CludesUI.MakeBorder(frame, 1, 0.2, 0.2, 1, CludesUI.PanelPP)
+            row._redPulse = frame
+        end
+        local frame = row._redPulse
+        frame:Show()
+        frame:SetAlpha(1)
+        local t = 0
+        frame:SetScript("OnUpdate", function(self, dt)
+            t = t + dt
+            if t < 0.8 then
+                self:SetAlpha(0.5 + 0.5 * math.sin(t * 10))
+            elseif t < 1.5 then
+                self:SetAlpha(math.max(0, 1 - (t - 0.8) / 0.7))
+            else
+                self:SetScript("OnUpdate", nil)
+                self:Hide()
+            end
+        end)
+    end
+
+    -- The page's green call-to-action button (as Done), brightening on hover.
+    local function GreenButton(parent, w, h, text, fontPath)
+        local button = CreateFrame("Button", nil, parent)
+        button:SetSize(w, h)
+        local dark = CludesUI.DARK_BG
+        local bg = CludesUI.SolidTex(button, "BACKGROUND", dark.r, dark.g, dark.b, 0.92)
+        bg:SetAllPoints()
+        local eg = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
+        local border = CludesUI.MakeRoundedBorder(button, eg.r, eg.g, eg.b, 0.7, bg)
+        local label = button:CreateFontString(nil, "OVERLAY")
+        label:SetPoint("CENTER")
+        label:SetFont(fontPath, 13, GetABROptOutline())
+        label:SetTextColor(eg.r, eg.g, eg.b, 0.7)
+        label:SetText(CludesUI.L(text))
+        local lerp = CludesUI.lerp
+        local FADE = 0.1
+        local progress, target = 0, 0
+        local function Step(self, elapsed)
+            local dir = (target == 1) and 1 or -1
+            progress = progress + dir * (elapsed / FADE)
+            if (dir == 1 and progress >= 1) or (dir == -1 and progress <= 0) then
+                progress = target
+                self:SetScript("OnUpdate", nil)
+            end
+            label:SetTextColor(eg.r, eg.g, eg.b, lerp(0.7, 1, progress))
+            border:SetColor(eg.r, eg.g, eg.b, lerp(0.7, 1, progress))
+        end
+        button:SetScript("OnEnter", function(self)
+            target = 1
+            self:SetScript("OnUpdate", Step)
+        end)
+        button:SetScript("OnLeave", function(self)
+            target = 0
+            self:SetScript("OnUpdate", Step)
+        end)
+        return button
+    end
+
+    local NOT_NEEDED_VALUES = {
+        never = "Never",
+        season = "Current Season Instances",
+        all = "All Instances",
+    }
+    local NOT_NEEDED_ORDER = { "never", "season", "all" }
+    local TR_PAD = 45 -- the page's content inset
+    local TR_ROW_H = 50
+    local TR_SIDE_PAD = 20
+    -- Both dropdowns of a reminder row; wide enough for the longest zone name.
+    local TR_ROW_DD_W = 220
+
+    -- A DualRow-styled list row at yOff: alternating background and a centre divider.
+    local function TRListRow(container, yOff, index)
+        local row = CreateFrame("Frame", nil, container)
+        PP.Size(row, container:GetWidth() - TR_PAD * 2, TR_ROW_H)
+        PP.Point(row, "TOPLEFT", container, "TOPLEFT", TR_PAD, yOff)
+        local bg = row:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints()
+        bg:SetColorTexture(0, 0, 0, (index % 2 == 0) and 0.2 or 0.1)
+        local div = row:CreateTexture(nil, "ARTWORK")
+        div:SetColorTexture(1, 1, 1, 0.06)
+        div:SetWidth(1)
+        PP.Point(div, "TOP", row, "TOP", 0, 0)
+        PP.Point(div, "BOTTOM", row, "BOTTOM", 0, 0)
+        return row
+    end
+
+    -- The saved reminders the picker can still reach: at least one of their
+    -- zones is still on this season's list. Rotated-out zones keep their
+    -- reminders (hidden here, never deleted); re-adding a zone revives them.
+    local function VisibleReminders(reminders)
+        local current = {}
+        for _, z in ipairs(_G._CUABR_TALENT_REMINDER_ZONES or {}) do
+            current[z.name] = true
+        end
+        local visible = {}
+        for idx, r in ipairs(reminders) do
+            local list = r.zoneNames
+            local live = false
+            if list and #list > 0 then
+                for _, zn in ipairs(list) do
+                    live = live or current[zn] == true
+                end
+            else
+                live = r.zoneName ~= nil and current[r.zoneName] == true
+            end
+            if live then
+                visible[#visible + 1] = idx
+            end
+        end
+        return visible
+    end
+
     local function BuildTalentRemindersPage(pageName, parent, yOffset)
         local W = CludesUI.Widgets
         local y = yOffset
         local _, h
-        local fontPath = (CludesUI.GetFontPath("auraBuff"))
+        local fontPath = CludesUI.GetFontPath("auraBuff")
             or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
-
         parent._showRowDivider = true
 
-        -- State for the add-reminder form
-        local selectedZoneMap = {} -- [zoneIdx] = true/false
-        local selectedTalentSpellID = nil
-        local selectedTalentName = nil
-        local selectedTalentSource = nil -- "class" or "spec"
+        -- The add form's picks.
+        local pickedZones = {} -- [zone index] = true
+        local pickedSpellID, pickedName
 
-        -- Zone data
         local zones = _G._CUABR_TALENT_REMINDER_ZONES or {}
-
         local zoneByName = {}
         for _, z in ipairs(zones) do
             if z.name then
                 zoneByName[z.name] = z
             end
         end
-
-        local function GetZoneDisplayName(zoneName)
-            if not zoneName or zoneName == "" then
+        local function ZoneName(name)
+            if not name or name == "" then
                 return CludesUI.L("Unknown")
             end
-            local z = zoneByName[zoneName]
-            local name = CludesUI.L(zoneName)
-            if z and z.type == "raid" then
-                return name .. CludesUI.L(" (Raid)")
-            end
-            return name
+            local z = zoneByName[name]
+            local text = CludesUI.L(name)
+            return (z and z.type == "raid") and (text .. CludesUI.L(" (Raid)")) or text
         end
-
-        -- Whether a reminder covers a zone. One saved with the single zone of
-        -- an older version holds it in zoneName while it has no list.
-        local function ReminderHasZone(r, zn)
-            local list = r.zoneNames
-            if list and #list > 0 then
-                for i = 1, #list do
-                    if list[i] == zn then
-                        return true
-                    end
-                end
-                return false
-            end
-            return r.zoneName == zn
-        end
-        -- A reminder's zone list for an edit; an older version's single zone
-        -- moves into it on the first edit.
-        local function EditableZoneList(r)
-            local list = r.zoneNames
-            if not list then
-                list = {}
-                r.zoneNames = list
-            end
-            if #list == 0 and r.zoneName then
-                list[1] = r.zoneName
-            end
-            return list
-        end
-
-        -----------------------------------------------------------------------
-        --  Talent enumeration helpers (live from C_Traits)
-        -----------------------------------------------------------------------
-        local function GetAllTalents()
-            local talents = {}
-            local configID = C_ClassTalents
-                and C_ClassTalents.GetActiveConfigID
-                and C_ClassTalents.GetActiveConfigID()
-            if not configID then
-                return talents
-            end
-            local configInfo = C_Traits and C_Traits.GetConfigInfo and C_Traits.GetConfigInfo(configID)
-            if not configInfo or not configInfo.treeIDs or not configInfo.treeIDs[1] then
-                return talents
-            end
-            local treeID = configInfo.treeIDs[1]
-            local nodes = C_Traits.GetTreeNodes(treeID)
-            if not nodes then
-                return talents
-            end
-
-            local seenSpells = {}
-            for _, nodeID in ipairs(nodes) do
-                local nodeInfo = C_Traits.GetNodeInfo(configID, nodeID)
-                if
-                    nodeInfo
-                    and nodeInfo.ID
-                    and nodeInfo.ID > 0
-                    and nodeInfo.entryIDs
-                    and #nodeInfo.entryIDs > 0
-                    and not nodeInfo.subTreeID
-                then
-                    for _, entryID in ipairs(nodeInfo.entryIDs) do
-                        local entryInfo = C_Traits.GetEntryInfo(configID, entryID)
-                        if entryInfo and entryInfo.definitionID then
-                            local defInfo = C_Traits.GetDefinitionInfo(entryInfo.definitionID)
-                            if defInfo and defInfo.spellID and not seenSpells[defInfo.spellID] then
-                                local spellName = C_Spell.GetSpellName(defInfo.spellID)
-                                if spellName and spellName ~= "" then
-                                    seenSpells[defInfo.spellID] = true
-                                    talents[#talents + 1] = { spellID = defInfo.spellID, name = spellName }
-                                end
-                            end
-                        end
-                    end
-                end
-            end
-
-            table.sort(talents, function(a, b)
-                return a.name < b.name
-            end)
-            return talents
-        end
-
-        -----------------------------------------------------------------------
-        --  SECTION: ADD REMINDER (no header clean layout)
-        -----------------------------------------------------------------------
-
-        -- Helper: build comma-separated zone label from selectedZoneMap
-        local function GetSelectedZoneLabel()
+        -- The zone button's text: the picked zones, sorted, else the prompt.
+        local function PickedZonesText()
             local names = {}
-            for idx in pairs(selectedZoneMap) do
-                if selectedZoneMap[idx] then
-                    local z = zones[idx]
-                    if z then
-                        names[#names + 1] = GetZoneDisplayName(z.name)
-                    end
+            for idx, on in pairs(pickedZones) do
+                if on and zones[idx] then
+                    names[#names + 1] = ZoneName(zones[idx].name)
                 end
             end
             if #names == 0 then
@@ -3735,975 +3987,489 @@ initFrame:SetScript("OnEvent", function(self)
             return table.concat(names, ", ")
         end
 
-        -- Wide centered zone dropdown (no label, multi-select checkbox popup)
-        local CONTENT_PAD = 45
-        local ZONE_DD_W = 350
-        local ZONE_DD_H = 38
-        y = y - 30 -- 30px space above dropdown
-        local ZONE_ROW_H = ZONE_DD_H + 30
+        -- The zone picker: a wide centred dropdown with a checkbox list.
+        local DD_W = 350
+        local ZONE_H = 38
+        y = y - 30
         local zoneRow = CreateFrame("Frame", nil, parent)
-        local zoneRowW = parent:GetWidth() - CONTENT_PAD * 2
-        PP.Size(zoneRow, zoneRowW, ZONE_ROW_H)
-        PP.Point(zoneRow, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, y)
-
-        local zoneDDBtn = CreateFrame("Button", nil, zoneRow)
-        PP.Size(zoneDDBtn, ZONE_DD_W, ZONE_DD_H)
-        PP.Point(zoneDDBtn, "TOP", zoneRow, "TOP", 0, 0)
-        zoneDDBtn:SetFrameLevel(zoneRow:GetFrameLevel() + 1)
-        local zoneDDBg = zoneDDBtn:CreateTexture(nil, "BACKGROUND")
-        zoneDDBg:SetAllPoints()
-        zoneDDBg:SetColorTexture(0.088, 0.098, 0.111, 0.9)
-        CludesUI.MakeRoundedBorder(zoneDDBtn, 1, 1, 1, 0.20, zoneDDBg)
-
-        local zoneDDLbl = zoneDDBtn:CreateFontString(nil, "OVERLAY")
-        zoneDDLbl:SetFont(fontPath, 13, GetABROptOutline())
-        zoneDDLbl:SetTextColor(1, 1, 1, 0.50)
-        zoneDDLbl:SetMaxLines(1)
-        zoneDDLbl:SetJustifyH("LEFT")
-        zoneDDLbl:SetWordWrap(false)
-        zoneDDLbl:SetText(CludesUI.L("Select Dungeon/Raid/PvP Zone"))
-
-        local zoneArrow = CludesUI.MakeDropdownArrow(zoneDDBtn, 14, CludesUI.PanelPP)
-        zoneDDLbl:SetPoint("LEFT", zoneDDBtn, "LEFT", 14, 0)
-        zoneDDLbl:SetPoint("RIGHT", zoneArrow, "LEFT", -5, 0)
-
-        -- Multi-select checkbox popup: one kept frame for the session that
-        -- every build of the page dresses again. The global search's hidden
-        -- pre-build makes none (the popup holds nothing to index).
-        local SEARCH_H = 26
-        local ITEM_H = 28
+        PP.Size(zoneRow, parent:GetWidth() - TR_PAD * 2, ZONE_H + 30)
+        PP.Point(zoneRow, "TOPLEFT", parent, "TOPLEFT", TR_PAD, y)
+        local zoneBtn, zoneLabel = TRDropdownButton(
+            zoneRow,
+            DD_W,
+            ZONE_H,
+            "Select Dungeon/Raid/PvP Zone",
+            fontPath,
+            14,
+            function(button)
+                PP.Point(button, "TOP", zoneRow, "TOP", 0, 0)
+            end
+        )
+        -- Kept for the session and dressed again by every build; the global
+        -- search's hidden pre-build makes none (nothing in it to index).
         if not CludesUI._prebuilding then
-            local zonePopup = Pool.Kept(_trPopups, "zone", "Frame", UIParent)
-            zonePopup:SetFrameStrata("FULLSCREEN_DIALOG")
-            zonePopup:SetFrameLevel(200)
-            zonePopup:SetClampedToScreen(true)
-            local popupH = math.min(#zones * ITEM_H + 8, 300) + SEARCH_H + 10
-            zonePopup:SetSize(ZONE_DD_W, popupH)
-            zonePopup:Hide()
-
-            local popupBg = zonePopup:CreateTexture(nil, "BACKGROUND")
-            popupBg:SetAllPoints()
-            popupBg:SetColorTexture(0.098, 0.090, 0.082, 0.97)
-            CludesUI.MakeRoundedBorder(zonePopup, 1, 1, 1, 0.12, popupBg, nil, true)
-
-            -- Search box at top of zone popup
-            local zoneSearch = CreateFrame("EditBox", nil, zonePopup)
-            zoneSearch:SetSize(ZONE_DD_W - 16, SEARCH_H)
-            zoneSearch:SetPoint("TOP", zonePopup, "TOP", 0, -6)
-            zoneSearch:SetFrameLevel(zonePopup:GetFrameLevel() + 3)
-            zoneSearch:SetFont(fontPath, 11, "")
-            zoneSearch:SetTextColor(1, 1, 1, 0.9)
-            zoneSearch:SetJustifyH("LEFT")
-            zoneSearch:SetAutoFocus(false)
-            zoneSearch:SetMaxLetters(30)
-            zoneSearch:SetTextInsets(4, 4, 0, 0)
-            local zsBg = zoneSearch:CreateTexture(nil, "BACKGROUND")
-            zsBg:SetAllPoints()
-            zsBg:SetColorTexture(0, 0, 0, 0.4)
-            CludesUI.RoundBody(zoneSearch, zsBg)
-            local zsPlaceholder = zoneSearch:CreateFontString(nil, "OVERLAY")
-            zsPlaceholder:SetFont(fontPath, 11, "")
-            zsPlaceholder:SetTextColor(0.5, 0.5, 0.5, 0.6)
-            zsPlaceholder:SetPoint("LEFT", zoneSearch, "LEFT", 4, 0)
-            zsPlaceholder:SetText(CludesUI.L("Search..."))
-            zoneSearch:SetScript("OnTextChanged", function(self)
-                local t = self:GetText()
-                zsPlaceholder:SetShown(t == "")
-            end)
-            zoneSearch:SetScript("OnEscapePressed", function(self)
-                self:ClearFocus()
-            end)
-
-            -- Scroll frame for items with smooth scroll + scrollbar
-            local sf = CreateFrame("ScrollFrame", nil, zonePopup)
-            sf:SetPoint("TOPLEFT", zonePopup, "TOPLEFT", 0, -(SEARCH_H + 10))
-            sf:SetPoint("BOTTOMRIGHT", zonePopup, "BOTTOMRIGHT", 0, 4)
-            sf:SetFrameLevel(zonePopup:GetFrameLevel() + 1)
-            sf:EnableMouseWheel(true)
-            local child = CreateFrame("Frame", nil, sf)
-            child:SetWidth(ZONE_DD_W)
-            sf:SetScrollChild(child)
-
-            local _, zScrollTo = CludesUI.AttachSmoothScrollbar(sf, {
-                step = 40,
-                thumbMin = 20,
-                rightInset = 4,
-                child = child,
-            })
-            zonePopup:SetScript("OnMouseWheel", function(_, delta)
-                sf:GetScript("OnMouseWheel")(sf, delta)
-            end)
-
+            local ITEM_H = 28
+            local popup, child, search, placeholder, scrollTo =
+                TRSearchPopup("zone", zoneBtn, DD_W, math.min(#zones * ITEM_H + 8, 300), fontPath)
             local eg = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
-            local checkItems = {}
+            local rows = {}
             for i, z in ipairs(zones) do
-                local item = CreateFrame("Button", nil, child)
-                item:SetHeight(ITEM_H)
-                item:SetPoint("TOPLEFT", child, "TOPLEFT", 1, -(i - 1) * ITEM_H)
-                item:SetPoint("TOPRIGHT", child, "TOPRIGHT", -1, -(i - 1) * ITEM_H)
-
-                local hl = item:CreateTexture(nil, "ARTWORK")
-                hl:SetAllPoints()
-                hl:SetColorTexture(1, 1, 1, 0)
-
-                -- Checkbox square
-                local cb = CreateFrame("Frame", nil, item)
-                cb:SetSize(14, 14)
-                cb:SetPoint("LEFT", item, "LEFT", 10, 0)
-                local cbBg = cb:CreateTexture(nil, "BACKGROUND")
-                cbBg:SetAllPoints()
-                cbBg:SetColorTexture(0.064, 0.052, 0.041, 1)
-                CludesUI.MakeRoundedBorder(cb, 1, 1, 1, 0.12, cbBg)
-                local cbCheck = cb:CreateTexture(nil, "OVERLAY")
-                cbCheck:SetSize(10, 10)
-                cbCheck:SetPoint("CENTER")
-                cbCheck:SetColorTexture(eg.r, eg.g, eg.b, 1)
-                CludesUI.RoundBody(cb, cbCheck, 2)
-                cbCheck:Hide()
-                item._cbCheck = cbCheck
-
-                local lbl = item:CreateFontString(nil, "OVERLAY")
-                lbl:SetFont(fontPath, 11, GetABROptOutline())
-                lbl:SetTextColor(0.75, 0.75, 0.78, 1)
-                lbl:SetPoint("LEFT", cb, "RIGHT", 8, 0)
-                lbl:SetPoint("RIGHT", item, "RIGHT", -8, 0)
-                lbl:SetJustifyH("LEFT")
-                lbl:SetWordWrap(false)
-                lbl:SetText(GetZoneDisplayName(z.name))
-
-                local function UpdateCheck()
-                    cbCheck:SetShown(selectedZoneMap[i] == true)
-                end
-                UpdateCheck()
-
-                item:SetScript("OnClick", function()
-                    selectedZoneMap[i] = not selectedZoneMap[i]
-                    UpdateCheck()
-                    zoneDDLbl:SetText(GetSelectedZoneLabel())
+                local row = TRPopupRow(child, i, ITEM_H)
+                local box = CreateFrame("Frame", nil, row)
+                box:SetSize(14, 14)
+                box:SetPoint("LEFT", row, "LEFT", 10, 0)
+                local boxBg = box:CreateTexture(nil, "BACKGROUND")
+                boxBg:SetAllPoints()
+                boxBg:SetColorTexture(0.064, 0.052, 0.041, 1)
+                CludesUI.MakeRoundedBorder(box, 1, 1, 1, 0.12, boxBg)
+                local check = box:CreateTexture(nil, "OVERLAY")
+                check:SetSize(10, 10)
+                check:SetPoint("CENTER")
+                check:SetColorTexture(eg.r, eg.g, eg.b, 1)
+                CludesUI.RoundBody(box, check, 2)
+                check:Hide()
+                row._cbCheck = check
+                local label = TRRowLabel(row, fontPath, ZoneName(z.name))
+                label:SetPoint("LEFT", box, "RIGHT", 8, 0)
+                label:SetPoint("RIGHT", row, "RIGHT", -8, 0)
+                check:SetShown(pickedZones[i] == true)
+                row:SetScript("OnClick", function()
+                    pickedZones[i] = not pickedZones[i]
+                    check:SetShown(pickedZones[i] == true)
+                    zoneLabel:SetText(PickedZonesText())
                 end)
-                item:SetScript("OnEnter", function()
-                    lbl:SetTextColor(1, 1, 1, 1)
-                    hl:SetColorTexture(1, 1, 1, 0.08)
-                end)
-                item:SetScript("OnLeave", function()
-                    lbl:SetTextColor(0.75, 0.75, 0.78, 1)
-                    hl:SetColorTexture(1, 1, 1, 0)
-                end)
-                checkItems[i] = item
-                item._zoneName = z.name
+                rows[i] = row
+                row._zoneName = z.name
             end
             child:SetHeight(math.max(1, #zones * ITEM_H))
-
-            -- Wire zone search filtering
-            zoneSearch:SetScript("OnTextChanged", function(self)
-                local t = strlower(strtrim(self:GetText()))
-                zsPlaceholder:SetShown(t == "")
-                local visIdx = 0
-                for idx, item in ipairs(checkItems) do
-                    if t == "" or strfind(strlower(item._zoneName), t, 1, true) then
-                        item:Show()
-                        item:ClearAllPoints()
-                        item:SetPoint("TOPLEFT", child, "TOPLEFT", 1, -visIdx * ITEM_H)
-                        item:SetPoint("TOPRIGHT", child, "TOPRIGHT", -1, -visIdx * ITEM_H)
-                        visIdx = visIdx + 1
-                    else
-                        item:Hide()
-                    end
-                end
-                child:SetHeight(math.max(1, visIdx * ITEM_H))
-                zScrollTo(0)
+            search:SetScript("OnTextChanged", function(self)
+                local query = strlower(strtrim(self:GetText()))
+                placeholder:SetShown(query == "")
+                TRFilter(rows, child, ITEM_H, query, "_zoneName")
+                scrollTo(0)
             end)
-
-            zonePopup:SetScript("OnShow", function()
-                zonePopup:ClearAllPoints()
-                zonePopup:SetPoint("TOPLEFT", zoneDDBtn, "BOTTOMLEFT", 0, -2)
-                zoneSearch:SetText("")
-                zoneSearch:SetFocus()
-                zScrollTo(0)
-                -- Refresh checks
-                for i, item in ipairs(checkItems) do
-                    item._cbCheck:SetShown(selectedZoneMap[i] == true)
+            popup:SetScript("OnShow", function()
+                popup:ClearAllPoints()
+                popup:SetPoint("TOPLEFT", zoneBtn, "BOTTOMLEFT", 0, -2)
+                search:SetText("")
+                search:SetFocus()
+                scrollTo(0)
+                for i, row in ipairs(rows) do
+                    row._cbCheck:SetShown(pickedZones[i] == true)
                 end
             end)
-            -- Close when clicking outside
-            zonePopup:SetScript("OnUpdate", function()
-                if
-                    not zonePopup:IsMouseOver()
-                    and not zoneDDBtn:IsMouseOver()
-                    and IsMouseButtonDown("LeftButton")
-                then
-                    zonePopup:Hide()
-                end
+            -- Closes with its page (rebuild, tab switch, panel close), as the talent list does.
+            zoneBtn:SetScript("OnHide", function()
+                popup:Hide()
             end)
+        end
+        TRDropdownHover(zoneBtn)
+        y = y - (ZONE_H + 30)
 
-            zoneDDBtn:SetScript("OnClick", function()
-                if zonePopup:IsShown() then
-                    zonePopup:Hide()
-                else
-                    zonePopup:Show()
-                end
-            end)
-            -- The zone list closes with its page (rebuild, tab switch, panel
-            -- close), as the talent list does.
-            zoneDDBtn:SetScript("OnHide", function()
-                zonePopup:Hide()
-            end)
-        end -- not prebuilding
-        zoneDDBtn:SetScript("OnEnter", function()
-            zoneDDBg:SetColorTexture(0.128, 0.120, 0.113, 1)
-        end)
-        zoneDDBtn:SetScript("OnLeave", function()
-            zoneDDBg:SetColorTexture(0.088, 0.098, 0.111, 0.9)
-        end)
-
-        y = y - ZONE_ROW_H
-
-        -- Row 2: Single talent dropdown
-        local allTalents = GetAllTalents()
-
-        -- Talent dropdown: single centered
-        local TALENT_DD_W = 350
-        local TALENT_DD_H = 30
-        local TALENT_LABEL_H = 16
-        local TALENT_GAP_Y = 6
-        local TALENT_ROW_H = TALENT_LABEL_H + TALENT_GAP_Y + TALENT_DD_H + 12
+        -- The talent picker: a labelled dropdown, centred, with a searchable list.
+        local talents = GetAllTalents()
+        local LABEL_H, GAP_Y, TALENT_H = 16, 6, 30
+        local TALENT_ROW_H = LABEL_H + GAP_Y + TALENT_H + 12
         local talentRow = CreateFrame("Frame", nil, parent)
-        local talentRowW = parent:GetWidth() - CONTENT_PAD * 2
+        local talentRowW = parent:GetWidth() - TR_PAD * 2
         PP.Size(talentRow, talentRowW, TALENT_ROW_H)
-        PP.Point(talentRow, "TOPLEFT", parent, "TOPLEFT", CONTENT_PAD, y)
-
-        local talentStartX = (talentRowW - TALENT_DD_W) / 2
-
-        -- Helper: build a talent dropdown with search inside the popup
-        local function MakeTalentDropdown(parentRow, xOff, labelText, allTalents)
-            -- Label
-            local lbl = parentRow:CreateFontString(nil, "OVERLAY")
-            lbl:SetFont(fontPath, 11, GetABROptOutline())
-            lbl:SetTextColor(
-                CludesUI.TEXT_SECTION_R or 0.45,
-                CludesUI.TEXT_SECTION_G or 0.50,
-                CludesUI.TEXT_SECTION_B or 0.55,
-                CludesUI.TEXT_SECTION_A or 1
-            )
-            PP.Point(lbl, "TOP", parentRow, "TOPLEFT", xOff + TALENT_DD_W / 2, 0)
-            lbl:SetText(CludesUI.L(labelText))
-
-            -- Button (styled like zone dropdown)
-            local btn = CreateFrame("Button", nil, parentRow)
-            PP.Size(btn, TALENT_DD_W, TALENT_DD_H)
-            PP.Point(btn, "TOPLEFT", parentRow, "TOPLEFT", xOff, -(TALENT_LABEL_H + TALENT_GAP_Y))
-            btn:SetFrameLevel(parentRow:GetFrameLevel() + 1)
-            local btnBg = btn:CreateTexture(nil, "BACKGROUND")
-            btnBg:SetAllPoints()
-            btnBg:SetColorTexture(0.088, 0.098, 0.111, 0.9)
-            CludesUI.MakeRoundedBorder(btn, 1, 1, 1, 0.20, btnBg)
-            local btnLbl = btn:CreateFontString(nil, "OVERLAY")
-            btnLbl:SetFont(fontPath, 13, GetABROptOutline())
-            btnLbl:SetTextColor(1, 1, 1, 0.50)
-            btnLbl:SetMaxLines(1)
-            btnLbl:SetJustifyH("LEFT")
-            btnLbl:SetWordWrap(false)
-            btnLbl:SetText(CludesUI.L("Select a talent..."))
-            local arrow = CludesUI.MakeDropdownArrow(btn, 12, CludesUI.PanelPP)
-            btnLbl:SetPoint("LEFT", btn, "LEFT", 12, 0)
-            btnLbl:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
-            btn:SetScript("OnEnter", function()
-                btnBg:SetColorTexture(0.128, 0.120, 0.113, 1)
-            end)
-            btn:SetScript("OnLeave", function()
-                btnBg:SetColorTexture(0.088, 0.098, 0.111, 0.9)
-            end)
-
-            -- Popup with search: kept like the zone popup above (one per
-            -- dropdown), and likewise not made by the global search's pre-build.
-            if CludesUI._prebuilding then
-                return btn, btnLbl
+        PP.Point(talentRow, "TOPLEFT", parent, "TOPLEFT", TR_PAD, y)
+        local talentX = (talentRowW - DD_W) / 2
+        local caption = talentRow:CreateFontString(nil, "OVERLAY")
+        caption:SetFont(fontPath, 11, GetABROptOutline())
+        caption:SetTextColor(
+            CludesUI.TEXT_SECTION_R or 0.45,
+            CludesUI.TEXT_SECTION_G or 0.50,
+            CludesUI.TEXT_SECTION_B or 0.55,
+            CludesUI.TEXT_SECTION_A or 1
+        )
+        PP.Point(caption, "TOP", talentRow, "TOPLEFT", talentX + DD_W / 2, 0)
+        caption:SetText(CludesUI.L("Select Talent"))
+        local talentBtn, talentLabel = TRDropdownButton(
+            talentRow,
+            DD_W,
+            TALENT_H,
+            "Select a talent...",
+            fontPath,
+            12,
+            function(button)
+                PP.Point(button, "TOPLEFT", talentRow, "TOPLEFT", talentX, -(LABEL_H + GAP_Y))
             end
-            local T_ITEM_H = 26
-            local popupH = math.min(#allTalents * T_ITEM_H + 8, 250) + SEARCH_H + 10
-            local popup = Pool.Kept(_trPopups, "talent:" .. labelText, "Frame", UIParent)
-            popup:SetFrameStrata("FULLSCREEN_DIALOG")
-            popup:SetFrameLevel(200)
-            popup:SetClampedToScreen(true)
-            popup:SetSize(TALENT_DD_W, popupH)
-            popup:Hide()
-            local popBg = popup:CreateTexture(nil, "BACKGROUND")
-            popBg:SetAllPoints()
-            popBg:SetColorTexture(0.098, 0.090, 0.082, 0.97)
-            CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.12, popBg, nil, true)
-
-            -- Search
-            local search = CreateFrame("EditBox", nil, popup)
-            search:SetSize(TALENT_DD_W - 16, SEARCH_H)
-            search:SetPoint("TOP", popup, "TOP", 0, -6)
-            search:SetFrameLevel(popup:GetFrameLevel() + 3)
-            search:SetFont(fontPath, 11, "")
-            search:SetTextColor(1, 1, 1, 0.9)
-            search:SetJustifyH("LEFT")
-            search:SetAutoFocus(false)
-            search:SetMaxLetters(30)
-            search:SetTextInsets(4, 4, 0, 0)
-            local sBg = search:CreateTexture(nil, "BACKGROUND")
-            sBg:SetAllPoints()
-            sBg:SetColorTexture(0, 0, 0, 0.4)
-            CludesUI.RoundBody(search, sBg)
-            local sPh = search:CreateFontString(nil, "OVERLAY")
-            sPh:SetFont(fontPath, 11, "")
-            sPh:SetTextColor(0.5, 0.5, 0.5, 0.6)
-            sPh:SetPoint("LEFT", search, "LEFT", 4, 0)
-            sPh:SetText(CludesUI.L("Search..."))
-            search:SetScript("OnEscapePressed", function(self)
-                self:ClearFocus()
-            end)
-
-            -- Scroll frame
-            local sf = CreateFrame("ScrollFrame", nil, popup)
-            sf:SetPoint("TOPLEFT", popup, "TOPLEFT", 0, -(SEARCH_H + 10))
-            sf:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", 0, 4)
-            sf:SetFrameLevel(popup:GetFrameLevel() + 1)
-            sf:EnableMouseWheel(true)
-            local child = CreateFrame("Frame", nil, sf)
-            child:SetWidth(TALENT_DD_W)
-            sf:SetScrollChild(child)
-
-            -- Items
-            local items = {}
-            for i, t in ipairs(allTalents) do
-                local item = CreateFrame("Button", nil, child)
-                item:SetHeight(T_ITEM_H)
-                item:SetPoint("TOPLEFT", child, "TOPLEFT", 1, -(i - 1) * T_ITEM_H)
-                item:SetPoint("TOPRIGHT", child, "TOPRIGHT", -1, -(i - 1) * T_ITEM_H)
-                local hl = item:CreateTexture(nil, "ARTWORK")
-                hl:SetAllPoints()
-                hl:SetColorTexture(1, 1, 1, 0)
-                local iLbl = item:CreateFontString(nil, "OVERLAY")
-                iLbl:SetFont(fontPath, 11, GetABROptOutline())
-                iLbl:SetTextColor(0.75, 0.75, 0.78, 1)
-                iLbl:SetPoint("LEFT", item, "LEFT", 10, 0)
-                iLbl:SetPoint("RIGHT", item, "RIGHT", -8, 0)
-                iLbl:SetJustifyH("LEFT")
-                iLbl:SetWordWrap(false)
-                iLbl:SetText(t.name)
-                item._lbl = iLbl
-                item._talentName = t.name
-                item._spellID = t.spellID
-                item:SetScript("OnClick", function()
-                    selectedTalentSpellID = t.spellID
-                    selectedTalentName = t.name
-                    selectedTalentSource = nil
-                    btnLbl:SetText(t.name)
-                    btnLbl:SetTextColor(1, 1, 1, 0.9)
+        )
+        TRDropdownHover(talentBtn)
+        if not CludesUI._prebuilding then
+            local ITEM_H = 26
+            local popup, child, search, placeholder, scrollTo = TRSearchPopup(
+                "talent:Select Talent",
+                talentBtn,
+                DD_W,
+                math.min(#talents * ITEM_H + 8, 250),
+                fontPath
+            )
+            local rows = {}
+            for i, t in ipairs(talents) do
+                local row = TRPopupRow(child, i, ITEM_H)
+                local label = TRRowLabel(row, fontPath, t.name)
+                label:SetPoint("LEFT", row, "LEFT", 10, 0)
+                label:SetPoint("RIGHT", row, "RIGHT", -8, 0)
+                row._lbl, row._talentName, row._spellID = label, t.name, t.spellID
+                row:SetScript("OnClick", function()
+                    pickedSpellID, pickedName = t.spellID, t.name
+                    talentLabel:SetText(t.name)
+                    talentLabel:SetTextColor(1, 1, 1, 0.9)
                     popup:Hide()
                 end)
-                item:SetScript("OnEnter", function()
-                    iLbl:SetTextColor(1, 1, 1, 1)
-                    hl:SetColorTexture(1, 1, 1, 0.08)
-                end)
-                item:SetScript("OnLeave", function()
-                    iLbl:SetTextColor(0.75, 0.75, 0.78, 1)
-                    hl:SetColorTexture(1, 1, 1, 0)
-                end)
-                items[i] = item
+                rows[i] = row
             end
-            child:SetHeight(math.max(1, #allTalents * T_ITEM_H))
-
-            -- Search filter (tScrollTo is set by the scrollbar attached below)
-            local tScrollTo
+            child:SetHeight(math.max(1, #talents * ITEM_H))
             search:SetScript("OnTextChanged", function(self)
-                local t = strlower(strtrim(self:GetText()))
-                sPh:SetShown(t == "")
-                local visIdx = 0
-                for _, item in ipairs(items) do
-                    if t == "" or strfind(strlower(item._talentName), t, 1, true) then
-                        item:Show()
-                        item:ClearAllPoints()
-                        item:SetPoint("TOPLEFT", child, "TOPLEFT", 1, -visIdx * T_ITEM_H)
-                        item:SetPoint("TOPRIGHT", child, "TOPRIGHT", -1, -visIdx * T_ITEM_H)
-                        visIdx = visIdx + 1
-                    else
-                        item:Hide()
-                    end
-                end
-                child:SetHeight(math.max(1, visIdx * T_ITEM_H))
-                tScrollTo(0)
+                local query = strlower(strtrim(self:GetText()))
+                placeholder:SetShown(query == "")
+                TRFilter(rows, child, ITEM_H, query, "_talentName")
+                scrollTo(0)
             end)
-
-            -- Scrollbar + smooth scroll
-            local _
-            _, tScrollTo = CludesUI.AttachSmoothScrollbar(sf, {
-                step = 40,
-                thumbMin = 20,
-                rightInset = 4,
-                child = child,
-            })
-            popup:SetScript("OnMouseWheel", function(_, delta)
-                sf:GetScript("OnMouseWheel")(sf, delta)
-            end)
-
-            -- Show/hide. The talent icons are made on the first open, so the
-            -- page build pays nothing for them.
+            -- The talent icons are made on the first open, so the page build
+            -- pays nothing for them.
             local iconsMade = false
             popup:SetScript("OnShow", function()
                 popup:ClearAllPoints()
-                popup:SetPoint("TOPLEFT", btn, "BOTTOMLEFT", 0, -2)
+                popup:SetPoint("TOPLEFT", talentBtn, "BOTTOMLEFT", 0, -2)
                 if not iconsMade then
                     iconsMade = true
-                    for _, item in ipairs(items) do
-                        local ico = item:CreateTexture(nil, "ARTWORK", nil, 1)
-                        ico:SetSize(18, 18)
-                        ico:SetPoint("LEFT", item, "LEFT", 10, 0)
-                        ico:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-                        ico:SetTexture(C_Spell.GetSpellTexture(item._spellID) or 134400)
-                        item._lbl:SetPoint("LEFT", ico, "RIGHT", 6, 0)
+                    for _, row in ipairs(rows) do
+                        local icon = row:CreateTexture(nil, "ARTWORK", nil, 1)
+                        icon:SetSize(18, 18)
+                        icon:SetPoint("LEFT", row, "LEFT", 10, 0)
+                        icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+                        icon:SetTexture(C_Spell.GetSpellTexture(row._spellID) or 134400)
+                        row._lbl:SetPoint("LEFT", icon, "RIGHT", 6, 0)
                     end
                 end
                 search:SetText("")
                 search:SetFocus()
-                tScrollTo(0)
+                scrollTo(0)
             end)
-            popup:SetScript("OnUpdate", function()
-                if not popup:IsMouseOver() and not btn:IsMouseOver() and IsMouseButtonDown("LeftButton") then
-                    popup:Hide()
-                end
-            end)
-            btn:SetScript("OnClick", function()
-                if popup:IsShown() then
-                    popup:Hide()
-                else
-                    popup:Show()
-                end
-            end)
-            btn:HookScript("OnHide", function()
+            talentBtn:HookScript("OnHide", function()
                 popup:Hide()
             end)
-
-            return btn, btnLbl
         end
-
-        -- Single talent dropdown
-        local talentDDBtn, talentDDLbl =
-            MakeTalentDropdown(talentRow, talentStartX, "Select Talent", allTalents)
-
         y = y - TALENT_ROW_H
 
-        -- "Add Reminder" button (styled like Done button)
         _, h = W:Spacer(parent, y, 10)
         y = y - h
-
-        local addBtnFrame = CreateFrame("Frame", nil, parent)
-        PP.Size(addBtnFrame, parent:GetWidth() or 400, 36)
-        PP.Point(addBtnFrame, "TOPLEFT", parent, "TOPLEFT", 0, y)
-
-        local addBtn = CreateFrame("Button", nil, addBtnFrame)
-        addBtn:SetSize(160, 36)
-        addBtn:SetPoint("CENTER", addBtnFrame, "CENTER", 0, 0)
-
-        local DARK_BG = CludesUI.DARK_BG
-        local addBtnBg = CludesUI.SolidTex(addBtn, "BACKGROUND", DARK_BG.r, DARK_BG.g, DARK_BG.b, 0.92)
-        addBtnBg:SetAllPoints()
-
-        local eg = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
-        local addBtnBorder = CludesUI.MakeRoundedBorder(addBtn, eg.r, eg.g, eg.b, 0.7, addBtnBg)
-
-        local addBtnText = addBtn:CreateFontString(nil, "OVERLAY")
-        addBtnText:SetPoint("CENTER")
-        addBtnText:SetFont(fontPath, 13, GetABROptOutline())
-        addBtnText:SetTextColor(eg.r, eg.g, eg.b, 0.7)
-        addBtnText:SetText(CludesUI.L("Add Reminder"))
-
-        do
-            local lerp = CludesUI.lerp
-            local FADE_DUR = 0.1
-            local progress, target = 0, 0
-            local function Apply(t)
-                addBtnText:SetTextColor(eg.r, eg.g, eg.b, lerp(0.7, 1, t))
-                addBtnBorder:SetColor(eg.r, eg.g, eg.b, lerp(0.7, 1, t))
-            end
-            local function OnUpdate(self, elapsed)
-                local dir = (target == 1) and 1 or -1
-                progress = progress + dir * (elapsed / FADE_DUR)
-                if (dir == 1 and progress >= 1) or (dir == -1 and progress <= 0) then
-                    progress = target
-                    self:SetScript("OnUpdate", nil)
-                end
-                Apply(progress)
-            end
-            addBtn:SetScript("OnEnter", function(self)
-                target = 1
-                self:SetScript("OnUpdate", OnUpdate)
-            end)
-            addBtn:SetScript("OnLeave", function(self)
-                target = 0
-                self:SetScript("OnUpdate", OnUpdate)
-            end)
-        end
-
+        local addHost = CreateFrame("Frame", nil, parent)
+        PP.Size(addHost, parent:GetWidth() or 400, 36)
+        PP.Point(addHost, "TOPLEFT", parent, "TOPLEFT", 0, y)
+        local addBtn = GreenButton(addHost, 160, 36, "Add Reminder", fontPath)
+        addBtn:SetPoint("CENTER", addHost, "CENTER", 0, 0)
         y = y - 36
 
-        -----------------------------------------------------------------------
-        --  Red border pulse animation for validation
-        -----------------------------------------------------------------------
-        local pulseTarget = nil
-        local pulseAG = nil
-
-        local function PulseRedBorder(targetRow)
-            if not targetRow then
-                return
-            end
-            -- Create a red border overlay on the row
-            if not targetRow._redPulse then
-                local rf = CreateFrame("Frame", nil, targetRow)
-                rf:SetAllPoints()
-                rf:SetFrameLevel(targetRow:GetFrameLevel() + 10)
-                local border = CludesUI.MakeBorder(rf, 1, 0.2, 0.2, 1, CludesUI.PanelPP)
-                rf._border = border
-                targetRow._redPulse = rf
-            end
-            local rf = targetRow._redPulse
-            rf:Show()
-            rf:SetAlpha(1)
-            -- Fade out after 1.5 seconds
-            local elapsed = 0
-            rf:SetScript("OnUpdate", function(self, dt)
-                elapsed = elapsed + dt
-                if elapsed < 0.8 then
-                    -- Pulse: oscillate alpha
-                    local a = 0.5 + 0.5 * math.sin(elapsed * 10)
-                    self:SetAlpha(a)
-                elseif elapsed < 1.5 then
-                    self:SetAlpha(math.max(0, 1 - (elapsed - 0.8) / 0.7))
-                else
-                    self:SetScript("OnUpdate", nil)
-                    self:Hide()
-                end
-            end)
-        end
-
-        -----------------------------------------------------------------------
-        --  Reminder list (dynamic, rebuilt on add/remove)
-        -----------------------------------------------------------------------
-        local listContainer = CreateFrame("Frame", nil, parent)
-        listContainer:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
-        listContainer:SetSize(parent:GetWidth() or 400, 1) -- height grows dynamically
-
+        -- The saved reminders (rebuilt on add and remove).
+        local list = CreateFrame("Frame", nil, parent)
+        list:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
+        list:SetSize(parent:GetWidth() or 400, 1)
         local listRows = {}
-        local listRowCount = 0 -- manual alternating row counter
-
-        -- Where a reminder's 'Not Needed' reminder shows (notNeededMode).
-        local NOT_NEEDED_VALUES = {
-            never = "Never",
-            season = "Current Season Instances",
-            all = "All Instances",
-        }
-        local NOT_NEEDED_ORDER = { "never", "season", "all" }
-        -- Both dropdowns of a reminder row; wide enough for the longest zone name.
-        local ROW_DD_W = 220
         -- The zone dropdowns' labels, in the picker's order.
         local zoneLabels = {}
         for i = 1, #zones do
-            zoneLabels[i] = GetZoneDisplayName(zones[i].name)
+            zoneLabels[i] = ZoneName(zones[i].name)
         end
 
-        local function RebuildReminderList()
-            -- The global search's pre-build makes no rows: they hold nothing to index.
+        local RebuildList
+        -- One reminder's row: the talent's icon and name | its zones (Delete
+        -- Reminder pinned on top; its last zone stays ticked), then "Show
+        -- 'Not Needed' Reminder" | where that shows.
+        local function ReminderRow(index, idx, reminder, yOff)
+            local row = TRListRow(list, yOff, index)
+            local function Saved()
+                local p = DB()
+                return p and p.talentReminders and p.talentReminders[idx]
+            end
+            local icon = row:CreateTexture(nil, "ARTWORK")
+            icon:SetSize(22, 22)
+            icon:SetPoint("LEFT", row, "LEFT", TR_SIDE_PAD, 0)
+            icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+            icon:SetTexture(Tex(reminder.spellID))
+            local name = row:CreateFontString(nil, "OVERLAY")
+            name:SetFont(fontPath, 14, GetABROptOutline())
+            name:SetTextColor(1, 1, 1, 1)
+            name:SetJustifyH("LEFT")
+            name:SetWordWrap(false)
+            name:SetMaxLines(1)
+            name:SetPoint("LEFT", icon, "RIGHT", 8, 0)
+            name:SetText(reminder.spellName or CludesUI.L("Unknown"))
+
+            local function ZoneCount(r)
+                local n = 0
+                for i = 1, #zones do
+                    if ReminderHasZone(r, zones[i].name) then
+                        n = n + 1
+                    end
+                end
+                return n
+            end
+            local items = {
+                {
+                    isTopAction = true,
+                    label = "Delete Reminder",
+                    onClick = function()
+                        local p = DB()
+                        if p and p.talentReminders and p.talentReminders[idx] then
+                            table.remove(p.talentReminders, idx)
+                            RebuildList()
+                            TalentRemindersChanged()
+                        end
+                    end,
+                },
+            }
+            for i = 1, #zones do
+                local zn = zones[i].name
+                items[#items + 1] = {
+                    key = zn,
+                    label = zoneLabels[i],
+                    lockedFn = function()
+                        local r = Saved()
+                        return (r and ReminderHasZone(r, zn) and ZoneCount(r) <= 1) and true or false
+                    end,
+                    lockedTooltip = "A reminder needs at least one zone.",
+                }
+            end
+            local zoneDD = CludesUI.BuildVisOptsCBDropdown(
+                row,
+                TR_ROW_DD_W,
+                row:GetFrameLevel() + 3,
+                items,
+                function(zn)
+                    local r = Saved()
+                    return r and ReminderHasZone(r, zn) or false
+                end,
+                function(zn, on)
+                    local r = Saved()
+                    if not r then
+                        return
+                    end
+                    local zl = EditableZoneList(r)
+                    if on then
+                        if not ReminderHasZone(r, zn) then
+                            zl[#zl + 1] = zn
+                            table.sort(zl)
+                        end
+                    else
+                        for i = #zl, 1, -1 do
+                            if zl[i] == zn then
+                                table.remove(zl, i)
+                            end
+                        end
+                    end
+                    TalentRemindersChanged()
+                end,
+                nil,
+                10,
+                true,
+                false,
+                nil,
+                { noAllLabel = true, dimLocked = true }
+            )
+            PP.Point(zoneDD, "RIGHT", row, "CENTER", -TR_SIDE_PAD, 0)
+            name:SetPoint("RIGHT", zoneDD, "LEFT", -12, 0)
+
+            local caption2 = row:CreateFontString(nil, "OVERLAY")
+            caption2:SetFont(fontPath, 14, GetABROptOutline())
+            caption2:SetJustifyH("LEFT")
+            caption2:SetWordWrap(false)
+            caption2:SetMaxLines(1)
+            caption2:SetPoint("LEFT", row, "CENTER", TR_SIDE_PAD, 0)
+            caption2:SetText(CludesUI.L("Show 'Not Needed' Reminder"))
+            -- The runtime's own read of the choice: a reminder saved with the
+            -- old checkbox reads on = Current Season Instances, off = Never.
+            local function Mode()
+                local r, read = Saved(), _G._CUABR_TR_NotNeededMode
+                return (r and read) and read(r) or "never"
+            end
+            -- The label dims while the reminder is off, as it did under the checkbox.
+            local function Paint()
+                caption2:SetTextColor(1, 1, 1, (Mode() == "never") and 0.4 or 1)
+            end
+            Paint()
+            local modeDD = CludesUI.BuildDropdownControl(
+                row,
+                TR_ROW_DD_W,
+                row:GetFrameLevel() + 3,
+                NOT_NEEDED_VALUES,
+                NOT_NEEDED_ORDER,
+                Mode,
+                function(v)
+                    local r = Saved()
+                    if not r then
+                        return
+                    end
+                    r.notNeededMode = v
+                    -- The old checkbox key follows, for a profile an older version reads.
+                    r.showNotNeeded = (v ~= "never")
+                    Paint()
+                    TalentRemindersChanged()
+                end
+            )
+            PP.Point(modeDD, "RIGHT", row, "RIGHT", -TR_SIDE_PAD, 0)
+            modeDD._ttText = "Reminds you to remove this talent in instances you did not pick for it."
+            caption2:SetPoint("RIGHT", modeDD, "LEFT", -12, 0)
+            return row
+        end
+
+        -- The list, or the empty notice; returns its height. The global
+        -- search's pre-build makes no rows: they hold nothing to index.
+        RebuildList = function()
             if CludesUI._prebuilding then
                 return 0
             end
-            -- Clear existing rows. On a page pool host the rows go back to the
-            -- container's pool and the list below dresses them again in order.
-            Pool.Begin(listContainer)
+            -- On a page pool host the rows go back to the container's pool
+            -- and are dressed again below, in order.
+            Pool.Begin(list)
             for _, row in ipairs(listRows) do
                 row:Hide()
             end
             wipe(listRows)
-            listRowCount = 0
-
             local p = DB()
             if not p then
                 return 0
             end
             local reminders = p.talentReminders or {}
-
-            -- Current-season filter: only reminders targeting at least one
-            -- zone still on the picker list are shown. Rotated-out zones
-            -- keep their stored reminders (hidden here, never deleted) --
-            -- re-adding a zone to the season list revives them.
-            local zoneSet = {}
-            for _, z in ipairs(_G._CUABR_TALENT_REMINDER_ZONES or {}) do
-                zoneSet[z.name] = true
-            end
-            local visible = {}
-            for idx, reminder in ipairs(reminders) do
-                local cur = false
-                if reminder.zoneNames and #reminder.zoneNames > 0 then
-                    for _, zn in ipairs(reminder.zoneNames) do
-                        if zoneSet[zn] then
-                            cur = true
-                            break
-                        end
-                    end
-                elseif reminder.zoneName and zoneSet[reminder.zoneName] then
-                    cur = true
-                end
-                if cur then
-                    visible[#visible + 1] = idx
-                end
-            end
-
+            local visible = VisibleReminders(reminders)
             if #visible == 0 then
-                listRowCount = listRowCount + 1
-                local ROW_H = 50
-                local CONTENT_PAD = 45
-                local totalW = listContainer:GetWidth() - CONTENT_PAD * 2
-                local emptyRow = CreateFrame("Frame", nil, listContainer)
-                PP.Size(emptyRow, totalW, ROW_H)
-                PP.Point(emptyRow, "TOPLEFT", listContainer, "TOPLEFT", CONTENT_PAD, 0)
-                local alpha = (listRowCount % 2 == 0) and 0.2 or 0.1
-                local bg = emptyRow:CreateTexture(nil, "BACKGROUND")
-                bg:SetAllPoints()
-                bg:SetColorTexture(0, 0, 0, alpha)
-                local div = emptyRow:CreateTexture(nil, "ARTWORK")
-                div:SetColorTexture(1, 1, 1, 0.06)
-                div:SetWidth(1)
-                PP.Point(div, "TOP", emptyRow, "TOP", 0, 0)
-                PP.Point(div, "BOTTOM", emptyRow, "BOTTOM", 0, 0)
-                local emptyFS = emptyRow:CreateFontString(nil, "OVERLAY")
-                emptyFS:SetFont(fontPath, 13, GetABROptOutline())
-                emptyFS:SetTextColor(0.5, 0.5, 0.5, 1)
-                emptyFS:SetPoint("CENTER")
-                emptyFS:SetText(CludesUI.L("No talent reminders configured"))
-                emptyRow:Show()
-                listRows[1] = emptyRow
-                listContainer:SetHeight(ROW_H)
-                return ROW_H
+                local row = TRListRow(list, 0, 1)
+                local text = row:CreateFontString(nil, "OVERLAY")
+                text:SetFont(fontPath, 13, GetABROptOutline())
+                text:SetTextColor(0.5, 0.5, 0.5, 1)
+                text:SetPoint("CENTER")
+                text:SetText(CludesUI.L("No talent reminders configured"))
+                row:Show()
+                listRows[1] = row
+                list:SetHeight(TR_ROW_H)
+                return TR_ROW_H
             end
-
-            local ROW_H = 50
-            local SIDE_PAD = 20
-            local CONTENT_PAD = 45
-            local totalW = listContainer:GetWidth() - CONTENT_PAD * 2
-            local totalH = 0
-
-            -- Helper: create a DualRow-styled frame
-            local function MakeListRow(yOff)
-                listRowCount = listRowCount + 1
-                local row = CreateFrame("Frame", nil, listContainer)
-                PP.Size(row, totalW, ROW_H)
-                PP.Point(row, "TOPLEFT", listContainer, "TOPLEFT", CONTENT_PAD, yOff)
-                -- Alternating row background
-                local alpha = (listRowCount % 2 == 0) and 0.2 or 0.1
-                local bg = row:CreateTexture(nil, "BACKGROUND")
-                bg:SetAllPoints()
-                bg:SetColorTexture(0, 0, 0, alpha)
-                -- Center divider
-                local div = row:CreateTexture(nil, "ARTWORK")
-                div:SetColorTexture(1, 1, 1, 0.06)
-                div:SetWidth(1)
-                PP.Point(div, "TOP", row, "TOP", 0, 0)
-                PP.Point(div, "BOTTOM", row, "BOTTOM", 0, 0)
-                return row
+            local height = 0
+            for n, idx in ipairs(visible) do
+                listRows[#listRows + 1] = ReminderRow(n, idx, reminders[idx], -height)
+                height = height + TR_ROW_H
             end
-
-            -- Data rows (single row per reminder)
-            local Tex = function(id)
-                return _G._CUABR_Tex and _G._CUABR_Tex(id)
-                    or (C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(id))
-                    or 134400
-            end
-            for _, idx in ipairs(visible) do
-                local reminder = reminders[idx]
-                local row = MakeListRow(-totalH)
-                local capturedIdx = idx
-                local function ReminderAt()
-                    local p2 = DB()
-                    return p2 and p2.talentReminders and p2.talentReminders[capturedIdx]
-                end
-
-                -- === LEFT HALF: talent icon + name | its zones dropdown ===
-
-                local spellIcon = row:CreateTexture(nil, "ARTWORK")
-                spellIcon:SetSize(22, 22)
-                spellIcon:SetPoint("LEFT", row, "LEFT", SIDE_PAD, 0)
-                spellIcon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-                spellIcon:SetTexture(Tex(reminder.spellID))
-
-                local spellFS = row:CreateFontString(nil, "OVERLAY")
-                spellFS:SetFont(fontPath, 14, GetABROptOutline())
-                spellFS:SetTextColor(1, 1, 1, 1)
-                spellFS:SetJustifyH("LEFT")
-                spellFS:SetWordWrap(false)
-                spellFS:SetMaxLines(1)
-                spellFS:SetPoint("LEFT", spellIcon, "RIGHT", 8, 0)
-                spellFS:SetText(reminder.spellName or CludesUI.L("Unknown"))
-
-                -- The picker's zones for this reminder, with Delete Reminder
-                -- pinned above them. Its last zone stays checked: a reminder
-                -- always has one, and Delete Reminder removes it.
-                local function ZoneCount(r)
-                    local n = 0
-                    for i = 1, #zones do
-                        if ReminderHasZone(r, zones[i].name) then
-                            n = n + 1
-                        end
-                    end
-                    return n
-                end
-                local zoneItems = {
-                    {
-                        isTopAction = true,
-                        label = "Delete Reminder",
-                        onClick = function()
-                            local p2 = DB()
-                            if not (p2 and p2.talentReminders and p2.talentReminders[capturedIdx]) then
-                                return
-                            end
-                            table.remove(p2.talentReminders, capturedIdx)
-                            RebuildReminderList()
-                            if _G._CUABR_TR_RequestRefresh then
-                                _G._CUABR_TR_RequestRefresh()
-                            end
-                        end,
-                    },
-                }
-                for i = 1, #zones do
-                    local zn = zones[i].name
-                    zoneItems[#zoneItems + 1] = {
-                        key = zn,
-                        label = zoneLabels[i],
-                        lockedFn = function()
-                            local r = ReminderAt()
-                            return (r and ReminderHasZone(r, zn) and ZoneCount(r) <= 1) and true or false
-                        end,
-                        lockedTooltip = "A reminder needs at least one zone.",
-                    }
-                end
-                local zoneDD = CludesUI.BuildVisOptsCBDropdown(
-                    row,
-                    ROW_DD_W,
-                    row:GetFrameLevel() + 3,
-                    zoneItems,
-                    function(zn)
-                        local r = ReminderAt()
-                        return r and ReminderHasZone(r, zn) or false
-                    end,
-                    function(zn, on)
-                        local r = ReminderAt()
-                        if not r then
-                            return
-                        end
-                        local list = EditableZoneList(r)
-                        if on then
-                            if not ReminderHasZone(r, zn) then
-                                list[#list + 1] = zn
-                                table.sort(list)
-                            end
-                        else
-                            for i = #list, 1, -1 do
-                                if list[i] == zn then
-                                    table.remove(list, i)
-                                end
-                            end
-                        end
-                        if _G._CUABR_TR_RequestRefresh then
-                            _G._CUABR_TR_RequestRefresh()
-                        end
-                    end,
-                    nil,
-                    10,
-                    true,
-                    false,
-                    nil,
-                    { noAllLabel = true, dimLocked = true }
-                )
-                PP.Point(zoneDD, "RIGHT", row, "CENTER", -SIDE_PAD, 0)
-                spellFS:SetPoint("RIGHT", zoneDD, "LEFT", -12, 0)
-
-                -- === RIGHT HALF: "Show 'Not Needed' Reminder" label + where-dropdown ===
-
-                local toggleLabel = row:CreateFontString(nil, "OVERLAY")
-                toggleLabel:SetFont(fontPath, 14, GetABROptOutline())
-                toggleLabel:SetJustifyH("LEFT")
-                toggleLabel:SetWordWrap(false)
-                toggleLabel:SetMaxLines(1)
-                toggleLabel:SetPoint("LEFT", row, "CENTER", SIDE_PAD, 0)
-                toggleLabel:SetText(CludesUI.L("Show 'Not Needed' Reminder"))
-
-                -- The runtime's own read of the choice: a reminder saved with the old
-                -- checkbox reads on = Current Season Instances, off = Never.
-                local function NotNeededOf()
-                    local r, read = ReminderAt(), _G._CUABR_TR_NotNeededMode
-                    return (r and read) and read(r) or "never"
-                end
-                -- The label dims while the reminder is off, as it did under the checkbox.
-                local function PaintNotNeededLabel()
-                    toggleLabel:SetTextColor(1, 1, 1, (NotNeededOf() == "never") and 0.4 or 1)
-                end
-                PaintNotNeededLabel()
-
-                local notNeededDD = CludesUI.BuildDropdownControl(
-                    row,
-                    ROW_DD_W,
-                    row:GetFrameLevel() + 3,
-                    NOT_NEEDED_VALUES,
-                    NOT_NEEDED_ORDER,
-                    NotNeededOf,
-                    function(v)
-                        local r = ReminderAt()
-                        if not r then
-                            return
-                        end
-                        r.notNeededMode = v
-                        -- The old checkbox key follows, for a profile an older version reads.
-                        r.showNotNeeded = (v ~= "never")
-                        PaintNotNeededLabel()
-                        if _G._CUABR_TR_RequestRefresh then
-                            _G._CUABR_TR_RequestRefresh()
-                        end
-                    end
-                )
-                PP.Point(notNeededDD, "RIGHT", row, "RIGHT", -SIDE_PAD, 0)
-                notNeededDD._ttText =
-                    "Reminds you to remove this talent in instances you did not pick for it."
-                toggleLabel:SetPoint("RIGHT", notNeededDD, "LEFT", -12, 0)
-
-                listRows[#listRows + 1] = row
-                totalH = totalH + ROW_H
-            end
-
-            listContainer:SetHeight(totalH)
-            return totalH
+            list:SetHeight(height)
+            return height
         end
 
-        -- Add button click handler
+        -- After a save: the form back to empty and the list rebuilt.
+        local function ResetForm()
+            wipe(pickedZones)
+            pickedSpellID, pickedName = nil, nil
+            zoneLabel:SetText(CludesUI.L("Select Dungeon/Raid/PvP Zone"))
+            talentLabel:SetText(CludesUI.L("Select a talent..."))
+            talentLabel:SetTextColor(1, 1, 1, 0.50)
+            RebuildList()
+            TalentRemindersChanged()
+        end
+        -- Add Reminder: needs a zone and a talent (a missing one pulses red);
+        -- a reminder for the same talent gains the new zones instead.
         addBtn:SetScript("OnClick", function()
-            -- Validate: must have at least one zone selected
-            local hasZone = false
-            for idx, sel in pairs(selectedZoneMap) do
-                if sel then
-                    hasZone = true
-                    break
+            local names = {}
+            for idx, on in pairs(pickedZones) do
+                if on and zones[idx] then
+                    names[#names + 1] = zones[idx].name
                 end
             end
-            if not hasZone then
-                PulseRedBorder(zoneDDBtn)
+            local anyPicked = false
+            for _, on in pairs(pickedZones) do
+                anyPicked = anyPicked or on == true
+            end
+            if not anyPicked then
+                PulseRedBorder(zoneBtn)
                 return
             end
-
-            -- Validate: must have a talent selected
-            if not selectedTalentSpellID or selectedTalentSpellID == 0 then
-                PulseRedBorder(talentDDBtn)
+            if not pickedSpellID or pickedSpellID == 0 then
+                PulseRedBorder(talentBtn)
                 return
             end
-
             local p = DB()
             if not p then
                 return
             end
-            if not p.talentReminders then
-                p.talentReminders = {}
-            end
-
-            -- Collect selected zone IDs and names
-            local selZoneNames = {}
-            for idx, sel in pairs(selectedZoneMap) do
-                if sel then
-                    local z = zones[idx]
-                    if z then
-                        selZoneNames[#selZoneNames + 1] = z.name
-                    end
-                end
-            end
-            table.sort(selZoneNames)
-
-            -- Check for existing reminder with same spellID: merge zones
+            p.talentReminders = p.talentReminders or {}
+            table.sort(names)
             for _, r in ipairs(p.talentReminders) do
-                if r.spellID == selectedTalentSpellID then
-                    -- Merge new zones into existing reminder
-                    local list = EditableZoneList(r)
-                    for _, zn in ipairs(selZoneNames) do
+                if r.spellID == pickedSpellID then
+                    local zl = EditableZoneList(r)
+                    for _, zn in ipairs(names) do
                         if not ReminderHasZone(r, zn) then
-                            list[#list + 1] = zn
+                            zl[#zl + 1] = zn
                         end
                     end
-                    table.sort(list)
-                    -- Reset selection
-                    wipe(selectedZoneMap)
-                    selectedTalentSpellID = nil
-                    selectedTalentName = nil
-                    selectedTalentSource = nil
-                    zoneDDLbl:SetText(CludesUI.L("Select Dungeon/Raid/PvP Zone"))
-                    if talentDDLbl then
-                        talentDDLbl:SetText(CludesUI.L("Select a talent..."))
-                        talentDDLbl:SetTextColor(1, 1, 1, 0.50)
-                    end
-                    RebuildReminderList()
-                    if _G._CUABR_TR_RequestRefresh then
-                        _G._CUABR_TR_RequestRefresh()
-                    end
+                    table.sort(zl)
+                    ResetForm()
                     return
                 end
             end
-
-            local _, playerClass = UnitClass("player")
+            local _, class = UnitClass("player")
             p.talentReminders[#p.talentReminders + 1] = {
-                zoneNames = selZoneNames,
-                spellID = selectedTalentSpellID,
-                spellName = selectedTalentName,
+                zoneNames = names,
+                spellID = pickedSpellID,
+                spellName = pickedName,
                 notNeededMode = "never",
                 showNotNeeded = false,
-                class = playerClass,
+                class = class,
             }
-
-            -- Reset selection
-            wipe(selectedZoneMap)
-            selectedTalentSpellID = nil
-            selectedTalentName = nil
-            selectedTalentSource = nil
-            zoneDDLbl:SetText(CludesUI.L("Select Dungeon/Raid/PvP Zone"))
-            if talentDDLbl then
-                talentDDLbl:SetText(CludesUI.L("Select a talent..."))
-                talentDDLbl:SetTextColor(1, 1, 1, 0.50)
-            end
-
-            RebuildReminderList()
-            if _G._CUABR_TR_RequestRefresh then
-                _G._CUABR_TR_RequestRefresh()
-            end
+            ResetForm()
         end)
 
-        -- Spacer before list
         _, h = W:Spacer(parent, y, 15)
         y = y - h
-
-        -- Section header for the list
         _, h = W:SectionHeader(parent, "ACTIVE REMINDERS", y)
         y = y - h
-
-        -- Position the list container
-        listContainer:ClearAllPoints()
-        listContainer:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
-
-        local listH = RebuildReminderList()
-        y = y - listH
-
+        list:ClearAllPoints()
+        list:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
+        y = y - RebuildList()
         _, h = W:Spacer(parent, y, 20)
-        y = y - h
-
-        return math.abs(y)
+        return math.abs(y - h)
     end
 
     ---------------------------------------------------------------------------
     --  Register the module
     ---------------------------------------------------------------------------
+    -- The Reminders page shown again from the cache (retail: it has the
+    -- preview): the icons refreshed, the hint only shown or hidden (never
+    -- made here), and the header sized for it.
+    local function RestoreRemindersPage()
+        UpdatePreviewHeader()
+        local dismissed = IsPreviewHintDismissed()
+        if _previewHintFS then
+            if dismissed then
+                _previewHintFS:Hide()
+            else
+                _previewHintFS:SetAlpha(0.45)
+                _previewHintFS:Show()
+            end
+        end
+        if _eabrHeaderBaseH > 0 then
+            CludesUI:SetContentHeaderHeightSilent(_eabrHeaderBaseH + (dismissed and 0 or 35))
+        end
+    end
+
+    local PAGE_BUILDERS = { [PAGE_REMINDERS] = BuildRemindersPage, [PAGE_TALENTS] = BuildTalentRemindersPage }
+    -- A module hook that calls a reminder global when the module has set it.
+    local function Call(name)
+        return function()
+            local fn = _G[name]
+            if fn then
+                fn()
+            end
+        end
+    end
+
     CludesUI:RegisterModule("CludesUIAuraBuffReminders", {
         title = "Auras, Buffs & Consumables",
         description = "Buff Reminders: Raid Buffs, Auras, and Consumables.",
         pages = FOREVER and { PAGE_REMINDERS } or { PAGE_REMINDERS, PAGE_TALENTS },
         buildPage = function(pageName, parent, yOffset)
-            if pageName == PAGE_REMINDERS then
-                return BuildRemindersPage(pageName, parent, yOffset)
-            elseif pageName == PAGE_TALENTS then
-                return BuildTalentRemindersPage(pageName, parent, yOffset)
+            local build = PAGE_BUILDERS[pageName]
+            if build then
+                return build(pageName, parent, yOffset)
             end
         end,
         getHeaderBuilder = function(pageName)
@@ -4714,55 +4480,23 @@ initFrame:SetScript("OnEvent", function(self)
         end,
         onPageCacheRestore = function(pageName)
             if pageName == PAGE_REMINDERS and not FOREVER then
-                UpdatePreviewHeader()
-                -- Refresh hint visibility never recreate here, just show/hide
-                local dismissed = IsPreviewHintDismissed()
-                if _previewHintFS then
-                    if dismissed then
-                        _previewHintFS:Hide()
-                    else
-                        _previewHintFS:SetAlpha(0.45)
-                        _previewHintFS:Show()
-                    end
-                end
-                -- Set correct header height based on current hint state
-                if _eabrHeaderBaseH > 0 then
-                    CludesUI:SetContentHeaderHeightSilent(_eabrHeaderBaseH + (dismissed and 0 or 35))
-                end
+                RestoreRemindersPage()
             end
         end,
-        onShow = function()
-            if _G._CUABR_HideAllIcons then
-                _G._CUABR_HideAllIcons()
-            end
-        end,
-        onHide = function()
-            if _G._CUABR_RequestRefresh then
-                _G._CUABR_RequestRefresh()
-            end
-        end,
+        onShow = Call("_CUABR_HideAllIcons"),
+        onHide = Call("_CUABR_RequestRefresh"),
         onReset = function()
             if _G._CUABR_AceDB then
                 _G._CUABR_AceDB:ResetProfile()
             end
-            if _G._CUABR_RequestRefresh then
-                _G._CUABR_RequestRefresh()
-            end
+            Call("_CUABR_RequestRefresh")()
         end,
         -- Tears down the Ready Check Mana Warning preview on module switch.
-        onModuleLeave = function()
-            if _G._CUABR_RCWarnHidePreview then
-                _G._CUABR_RCWarnHidePreview()
-            end
-        end,
+        onModuleLeave = Call("_CUABR_RCWarnHidePreview"),
     })
 
-    -- Register unlock elements after a short delay
-    C_Timer.After(0.5, function()
-        if _G._CUABR_RegisterUnlock then
-            _G._CUABR_RegisterUnlock()
-        end
-    end)
+    -- The unlock elements register a moment later.
+    C_Timer.After(0.5, Call("_CUABR_RegisterUnlock"))
 
     ---------------------------------------------------------------------------
     --  Slash commands
