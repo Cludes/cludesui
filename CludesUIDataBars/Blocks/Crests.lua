@@ -3,65 +3,36 @@ if CUI_CLIENT_BLOCKED then
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 if CludesUI.IS_FOREVER then
     return
-end -- no season crests on WoW Forever: no factory, no ns.CrestColorMode (the main file drops the block from BLOCK_TYPES too)
--- Blocks\Crests.lua
--- Crests block factory.
-
-local ADDON_NAME, mod = ...
+end -- no season crests on WoW Forever (the main file drops the block type there too)
+-------------------------------------------------------------------------------
+--  Blocks\Crests.lua - Info Bar block: the season's upgrade crests.
+--
+--  Each ticked crest as icon + amount (or season progress, earned/cap), in
+--  its crest colour, joined by a separator (one per line on a side bar). Hover
+--  lists all five with what is held and the season's progress; a click opens
+--  the currency panel.
+--
+--  The whole readout is ONE FontString, with inline |T icons and |c colours:
+--  the number of crests shown varies (the ticks, Hide Empty) and each has its
+--  own colour, so one measured string beats a texture and text per crest.
+--
+--  Settings (blockCfg.settings): t1..t5 (false = not shown), separator =
+--  "slash" | "line" | "dash" | "space", reverse, showIcons (default on),
+--  showSeasonProgress, hideEmpty.
+-------------------------------------------------------------------------------
+local _, mod = ...
 local L = mod.L
 local K = mod.BlockKit
 
--- Upvalues
-local CreateFrame = CreateFrame
-local wipe = wipe
-local format = string.format
-local tconcat = table.concat
-local floor = math.floor
-local max = math.max
-local min = math.min
+local format, concat = string.format, table.concat
+local floor, max, min = math.floor, math.max, math.min
 
-local CONTENT_BASE = K.CONTENT_BASE
-local CRESTS = K.CRESTS
-local InstKey = K.InstKey
-local MakeEventFrame = K.MakeEventFrame
-local RegisterInstEvents = K.RegisterInstEvents
-local UnregisterInstEvents = K.UnregisterInstEvents
-local HBudget = K.HBudget
-local VSlotW = K.VSlotW
-local MaybeRelayout = K.MaybeRelayout
-local AttachTextOffset = K.AttachTextOffset
-local BlockColorOf = K.BlockColorOf
+local DIM = "|cffaaaaaa"
+local SEPARATORS = { slash = " / ", line = " || ", dash = " - ", space = "   " } -- a pipe is doubled
 
--------------------------------------------------------------------------------
---  CRESTS (season upgrade currencies, one compact readout)
---
---  Renders into ONE FontString using inline |T|t icon and |cff color escapes
---  rather than a texture/fontstring pair per crest: the segment count is
---  variable (the checklist and Hide Empty both drop entries) and crest coloring
---  is per-segment anyway, so a single measured string beats up to fourteen
---  regions. Same reason its icons sit out of the Icon Color row -- see the note
---  by ICON_DEFAULTS in Blocks\Shared.lua.
--------------------------------------------------------------------------------
-
--- Separator glyph. A literal pipe has to be doubled or the text engine reads it
--- as the start of an escape sequence.
--- Dim tone for the tooltip's secondary (season progress) figure. Same value the
--- character stats tooltip uses for its parenthesized ratings, kept local so the
--- two sections stay independent.
-local CREST_DIM = "|cffaaaaaa"
-
-local CREST_SEPARATORS = {
-    slash = " / ",
-    line = " || ",
-    dash = " - ",
-    space = "   ",
-}
-
--- Crest Colors is this block's nothing-stored default, so it resolves the same
--- way the Icon Color row's "Default" swatch does instead of Gold's forced
--- one-shot write: an untouched block is crest colored, and the first Custom
--- click seeds b.color, which takes over. Shared with the options page so the
--- 4th swatch lights on exactly this test.
+-- Crest colours are this block's default: an untouched block is crest
+-- coloured, and the first custom colour (b.color) takes over. The options
+-- page lights its fourth swatch on the same test.
 function mod.CrestColorMode(b)
     if b.useCrestColor then
         return true
@@ -69,217 +40,191 @@ function mod.CrestColorMode(b)
     return not b.useClassColor and not b.useAccentColor and not b.useDynamicColor and b.color == nil
 end
 
+local function Info(id)
+    return C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo and C_CurrencyInfo.GetCurrencyInfo(id)
+end
+
+local function Number(n)
+    return BreakUpLargeNumbers and BreakUpLargeNumbers(n or 0) or tostring(n or 0)
+end
+
+-- What counts towards the season cap: earned (crests), else what is held.
+local function Earned(d)
+    if d.useTotalEarnedForMaxQty then
+        return d.totalEarned or d.quantity or 0
+    end
+    return d.quantity or 0
+end
+
+-- The bar's figure: what can be spent, or the season's earned/cap (a
+-- different number once some are spent, hence "Season Progress", not "Cap").
+local function BarAmount(d, progress)
+    local cap = d.maxQuantity
+    if not progress or not cap or cap <= 0 then
+        return Number(d.quantity or 0)
+    end
+    return Number(Earned(d)) .. "/" .. Number(cap)
+end
+
+-- The tooltip's figure: what is held, then the season's progress dimmed, so
+-- it never seems to contradict the bar.
+local function TipAmount(d)
+    local held = Number(d.quantity or 0)
+    local cap = d.maxQuantity
+    if not cap or cap <= 0 then
+        return held
+    end
+    return held .. " " .. DIM .. "(" .. Number(Earned(d)) .. "/" .. Number(cap) .. ")|r"
+end
+
 mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
-    instance.key = InstKey(barCtx, blockCfg)
-    instance.events = { "CURRENCY_DISPLAY_UPDATE" }
+    local inst = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
+    inst.key = K.InstKey(barCtx, blockCfg)
+    inst.events = { "CURRENCY_DISPLAY_UPDATE" }
 
-    local mouseOver = false
-    -- Reused across refreshes: the string is rebuilt on every currency event,
-    -- so a fresh table per pass would allocate in a hot path.
-    local _segBuf = {}
-
-    local function D()
+    local function Settings()
         return blockCfg.settings or {}
     end
-    local function BC()
-        return barCtx.cfg
+
+    local button = CreateFrame("Button", nil, contentFrame)
+    button:SetAllPoints()
+    button:EnableMouse(true)
+    button:RegisterForClicks("AnyUp")
+    local label = button:CreateFontString(nil, "OVERLAY")
+    K.AttachTextOffset(inst, label)
+
+    local hovered = false
+    local drawn -- the text on screen
+    local parts = {} -- reused: the text is rebuilt on currency events
+
+    local function FontSize()
+        return max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
     end
 
-    local btnFrame = CreateFrame("Button", nil, contentFrame)
-    btnFrame:SetAllPoints()
-    btnFrame:EnableMouse(true)
-    btnFrame:RegisterForClicks("AnyUp")
-
-    local crestText = btnFrame:CreateFontString(nil, "OVERLAY")
-    AttachTextOffset(instance, crestText)
-
-    local function GetInfo(ident)
-        if not (C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo) then
-            return nil
-        end
-        return C_CurrencyInfo.GetCurrencyInfo(ident)
+    -- Crest colours, unless hovered: the accent can only show on plain text.
+    local function Coloured()
+        return mod.CrestColorMode(blockCfg) and not hovered
     end
 
-    local function Num(val)
-        if BreakUpLargeNumbers then
-            return BreakUpLargeNumbers(val or 0)
-        end
-        return tostring(val or 0)
-    end
-
-    -- Bar figure. Off: the spendable amount. On: season progress, which for
-    -- crests means totalEarned/maxQuantity -- a DIFFERENT number, which is why
-    -- the option is labelled Show Season Progress rather than Show Cap.
-    local function AmountText(details, seasonProgress)
-        local qty = details.quantity or 0
-        if not seasonProgress then
-            return Num(qty)
-        end
-        local cap = details.maxQuantity
-        if not cap or cap <= 0 then
-            return Num(qty)
-        end
-        local isShown = qty
-        if details.useTotalEarnedForMaxQty then
-            isShown = details.totalEarned or qty
-        end
-        return Num(isShown) .. "/" .. Num(cap)
-    end
-
-    -- Tooltip figure: the spendable amount first (what the bar shows), then the
-    -- season cap progress dimmed in parentheses. Those two diverge as soon as
-    -- you spend a crest, so showing only one of them is what made the tooltip
-    -- read as contradicting the bar.
-    local function TooltipAmount(details)
-        local owned = Num(details.quantity or 0)
-        local cap = details.maxQuantity
-        if not cap or cap <= 0 then
-            return owned
-        end
-        local earned = details.quantity or 0
-        if details.useTotalEarnedForMaxQty then
-            earned = details.totalEarned or earned
-        end
-        return owned .. " " .. CREST_DIM .. "(" .. Num(earned) .. "/" .. Num(cap) .. ")|r"
-    end
-
-    function instance:Refresh()
-        local s = D()
-        local barCfg = BC()
-        local barH = barCtx.GetThickness()
-        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
-        local isSide = barCtx.IsVertical()
-
-        local showIcons = s.showIcons ~= false
-        local seasonProg = s.showSeasonProgress == true
-        local hideEmpty = s.hideEmpty == true
-        -- Crest tints are baked into the string, so hovering has to fall back
-        -- to plain segments for the accent wash to read (same as Gold).
-        local crestMode = mod.CrestColorMode(blockCfg) and not mouseOver
-        local iconSz = fontSize + 2
-
-        local from, to, step = 1, #CRESTS, 1
+    -- The readout for the current settings and amounts.
+    local function Compose()
+        local s = Settings()
+        local coloured = Coloured()
+        local iconSize = FontSize() + 2
+        local first, last, step = 1, #K.CRESTS, 1
         if s.reverse == true then
-            from, to, step = #CRESTS, 1, -1
+            first, last, step = #K.CRESTS, 1, -1
         end
-
-        wipe(_segBuf)
-        for idx = from, to, step do
-            local c = CRESTS[idx]
-            if s[c.key] ~= false then
-                local details = GetInfo(c.id)
-                local seg
-                if details then
-                    if not (hideEmpty and (details.quantity or 0) <= 0) then
-                        seg = AmountText(details, seasonProg)
-                        if showIcons and details.iconFileID then
-                            seg = format(
-                                "|T%s:%d:%d:0:0:64:64:5:59:5:59|t",
-                                details.iconFileID,
-                                iconSz,
-                                iconSz
-                            ) .. seg
-                        end
-                        if crestMode then
-                            seg = "|cff" .. c.hex .. seg .. "|r"
-                        end
+        wipe(parts)
+        for i = first, last, step do
+            local crest = K.CRESTS[i]
+            if s[crest.key] ~= false then
+                local d = Info(crest.id)
+                if not d then
+                    parts[#parts + 1] = "-"
+                elseif not (s.hideEmpty == true and (d.quantity or 0) <= 0) then
+                    local part = BarAmount(d, s.showSeasonProgress == true)
+                    if s.showIcons ~= false and d.iconFileID then
+                        part = format("|T%s:%d:%d:0:0:64:64:5:59:5:59|t", d.iconFileID, iconSize, iconSize)
+                            .. part
                     end
-                else
-                    seg = "-"
-                end
-                if seg then
-                    _segBuf[#_segBuf + 1] = seg
+                    if coloured then
+                        part = "|cff" .. crest.hex .. part .. "|r"
+                    end
+                    parts[#parts + 1] = part
                 end
             end
         end
-
-        local textValue
-        if #_segBuf == 0 then
-            -- Everything filtered out (Hide Empty on an empty wallet, or the
-            -- whole checklist cleared): a placeholder keeps the block on the
-            -- bar instead of silently collapsing to nothing.
-            textValue = "-"
-        elseif isSide then
-            -- One crest per line on a side bar, like the Gold block's tokens.
-            textValue = tconcat(_segBuf, "\n")
-        else
-            local sep = CREST_SEPARATORS[s.separator or "slash"] or CREST_SEPARATORS.slash
-            if crestMode then
-                sep = "|cff808080" .. sep .. "|r"
-            end
-            textValue = tconcat(_segBuf, sep)
+        -- All filtered out: a placeholder keeps the block on the bar.
+        if #parts == 0 then
+            return "-"
         end
-
-        mod.SetFont(crestText, fontSize, barCfg)
-        if isSide then
-            local slotW = VSlotW(instance)
-            local innerW = max(24, slotW - 8)
-            crestText:SetText(textValue)
-            mod.SetWrappedText(crestText, innerW, "CENTER")
-            crestText:ClearAllPoints()
-            crestText:SetPoint("TOP", btnFrame, "TOP", 0, -4)
-            local totalH = max(8 + mod.SnapToPixelGrid(crestText:GetStringHeight()), barH)
-            contentFrame:SetSize(slotW, totalH)
-            btnFrame:SetSize(slotW, totalH)
-        else
-            local slotW = HBudget(instance, 200)
-            mod.ResetInlineText(crestText, "LEFT")
-            crestText:SetText(textValue)
-            crestText:ClearAllPoints()
-            crestText:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
-            local tw = mod.SnapToPixelGrid(crestText:GetStringWidth())
-            local totalW = min(slotW, tw + 4)
-            contentFrame:SetSize(max(totalW, 10), barH)
-            btnFrame:SetSize(max(totalW, 10), barH)
+        if barCtx.IsVertical() then
+            return concat(parts, "\n")
         end
-
-        if mouseOver then
-            crestText:SetTextColor(mod.GetAccent())
-        elseif crestMode then
-            -- Every segment carries its own escape; a white base keeps the
-            -- separators and any placeholder neutral.
-            crestText:SetTextColor(1, 1, 1, 1)
-        else
-            crestText:SetTextColor(BlockColorOf(blockCfg))
+        local sep = SEPARATORS[s.separator or "slash"] or SEPARATORS.slash
+        if coloured then
+            sep = "|cff808080" .. sep .. "|r"
         end
-        MaybeRelayout(instance)
+        return concat(parts, sep)
     end
 
-    local function ShowCrestTooltip()
-        local ar, ag, ab = mod.GetAccent()
-        mod.Tip_Begin(btnFrame)
-        -- The header row doubles as the column legend: the parenthesized
-        -- figure below is the same one Blizzard's currency tooltip prints
-        -- under "Current season maximum", so naming it here costs no extra row.
+    local function PaintText()
+        if hovered then
+            label:SetTextColor(mod.GetAccent())
+        elseif Coloured() then
+            label:SetTextColor(1, 1, 1, 1) -- each crest carries its own colour
+        else
+            label:SetTextColor(K.BlockColorOf(blockCfg))
+        end
+    end
+
+    function inst:Refresh()
+        local text = Compose()
+        drawn = text
+        local barH = barCtx.GetThickness()
+        mod.SetFont(label, FontSize(), barCtx.cfg)
+        if barCtx.IsVertical() then
+            local slotW = K.VSlotW(self)
+            label:SetText(text)
+            mod.SetWrappedText(label, max(24, slotW - 8), "CENTER")
+            label:ClearAllPoints()
+            label:SetPoint("TOP", button, "TOP", 0, -4)
+            local height = max(8 + mod.SnapToPixelGrid(label:GetStringHeight()), barH)
+            contentFrame:SetSize(slotW, height)
+            button:SetSize(slotW, height)
+        else
+            local budget = K.HBudget(self, 200)
+            mod.ResetInlineText(label, "LEFT")
+            label:SetText(text)
+            label:ClearAllPoints()
+            label:SetPoint("LEFT", button, "LEFT", 0, 0)
+            local width = max(min(budget, mod.SnapToPixelGrid(label:GetStringWidth()) + 4), 10)
+            contentFrame:SetSize(width, barH)
+            button:SetSize(width, barH)
+        end
+        PaintText()
+        K.MaybeRelayout(self)
+    end
+
+    -- Hover swaps crest colours for the accent: colour codes take no width,
+    -- so the text changes and nothing is laid out again.
+    local function Repaint()
+        drawn = Compose()
+        label:SetText(drawn)
+        PaintText()
+    end
+
+    local function ShowTooltip()
+        local r, g, b = mod.GetAccent()
+        mod.Tip_Begin(button)
+        -- The header names the dimmed figure, as the game's own tooltip does.
         mod.Tip_AddDouble(L["CRESTS"], L["SEASON_MAXIMUM"], 1, 1, 1, 0.667, 0.667, 0.667)
         mod.Tip_AddLine(" ")
-        -- All five, whatever the bar shows: the block is the compact view and
-        -- the tooltip is the full one.
-        for idx = 1, #CRESTS do
-            local c = CRESTS[idx]
-            local details = GetInfo(c.id)
-            if details then
-                mod.Tip_AddDouble(details.name or "?", TooltipAmount(details), c.r, c.g, c.b, 1, 1, 1)
+        -- All five, whatever the bar shows.
+        for _, crest in ipairs(K.CRESTS) do
+            local d = Info(crest.id)
+            if d then
+                mod.Tip_AddDouble(d.name or "?", TipAmount(d), crest.r, crest.g, crest.b, 1, 1, 1)
             end
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_CURRENCIES"], 1, 1, 1, ar, ag, ab)
+        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_CURRENCIES"], 1, 1, 1, r, g, b)
         mod.Tip_Show()
     end
 
-    btnFrame:SetScript("OnEnter", function()
-        mouseOver = true
-        instance:Refresh()
-        ShowCrestTooltip()
+    button:SetScript("OnEnter", function()
+        hovered = true
+        Repaint()
+        ShowTooltip()
     end)
-    btnFrame:SetScript("OnLeave", function()
-        mouseOver = false
-        mod.Tip_Hide(btnFrame)
-        instance:Refresh()
+    button:SetScript("OnLeave", function()
+        hovered = false
+        mod.Tip_Hide(button)
+        Repaint()
     end)
-    btnFrame:SetScript("OnClick", function(_, mb)
-        if mb ~= "LeftButton" then
+    button:SetScript("OnClick", function(_, mouseButton)
+        if mouseButton ~= "LeftButton" then
             return
         end
         if C_CurrencyInfo and C_CurrencyInfo.OpenCurrencyPanel then
@@ -289,36 +234,38 @@ mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
         end
     end)
 
-    -- Payload-gated: a single-currency update that is not a crest is skipped;
-    -- a nil currencyType (bulk update) refreshes.
-    instance.eventFrame = MakeEventFrame(instance, function(self, _, currencyType)
-        if currencyType and not mod.CREST_IDS[currencyType] then
+    -- Another currency is ignored; a crest's (or an update of all, which names
+    -- none) redraws only if the readout changed.
+    inst.eventFrame = K.MakeEventFrame(inst, function(self, _, currencyId)
+        if currencyId and not mod.CREST_IDS[currencyId] then
             return
         end
-        self:Refresh()
+        if Compose() ~= drawn then
+            self:Refresh()
+        end
     end)
 
-    function instance:Enable()
+    function inst:Enable()
         contentFrame:Show()
-        RegisterInstEvents(self)
+        K.RegisterInstEvents(self)
     end
 
-    function instance:Disable()
-        UnregisterInstEvents(self)
+    function inst:Disable()
+        K.UnregisterInstEvents(self)
         contentFrame:Hide()
     end
 
-    function instance:GetAutoLength()
+    function inst:GetAutoLength()
         if barCtx.IsVertical() then
             return max(contentFrame:GetHeight() or 40, 30)
         end
         return max(contentFrame:GetWidth() or 120, 24)
     end
 
-    function instance:Destroy()
+    function inst:Destroy()
         self._dead = true
         contentFrame:Hide()
     end
 
-    return instance
+    return inst
 end
