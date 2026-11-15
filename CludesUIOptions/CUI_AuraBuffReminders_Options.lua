@@ -2751,469 +2751,170 @@ initFrame:SetScript("OnEvent", function(self)
         return y - h, header, row
     end
 
-    local function BuildRemindersPage(pageName, parent, yOffset)
+    -- An overlay that swallows the mouse over target and says which toggle
+    -- turns it on. Shown while that toggle is off.
+    local function OffBlocker(target, toggleName)
+        local block = CreateFrame("Frame", nil, target)
+        block:SetAllPoints()
+        block:SetFrameLevel(target:GetFrameLevel() + 10)
+        block:EnableMouse(true)
+        block:SetScript("OnEnter", function()
+            CludesUI.ShowWidgetTooltip(target, CludesUI.DisabledTooltip(toggleName))
+        end)
+        block:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
+        return block
+    end
+
+    -- A consumable reminder's switch (off until ticked).
+    local function ConsumableToggle(key, text, tooltip, after)
+        return {
+            type = "toggle",
+            text = text,
+            tooltip = tooltip,
+            getValue = function()
+                local c = CDB()
+                return c and c.enabled and c.enabled[key]
+            end,
+            setValue = function(v)
+                local c = CDB()
+                if c and c.enabled then
+                    c.enabled[key] = v
+                    RefreshAll()
+                    RebuildPreviewHeader()
+                end
+                if after then
+                    after()
+                end
+            end,
+        }
+    end
+
+    -- A consumable with a pick for what Click to Buff uses: its switch |
+    -- Preferred (Last Used, then each choice). Returns the row and height.
+    local function PreferredRow(parent, y, key, text, choices, prefKey)
+        local values, order = { last_used = "Last Used" }, { "last_used" }
+        for _, choice in ipairs(choices or {}) do
+            values[choice.key] = choice.name
+            order[#order + 1] = choice.key
+        end
+        return CludesUI.Widgets:DualRow(parent, y, ConsumableToggle(key, text), {
+            type = "dropdown",
+            text = "Preferred (Click to Buff)",
+            dropdownWidth = 220,
+            values = values,
+            order = order,
+            getValue = function()
+                local c = CDB()
+                return c and c[prefKey] or "last_used"
+            end,
+            setValue = function(v)
+                local c = CDB()
+                if c then
+                    c[prefKey] = v
+                    RefreshAll()
+                end
+            end,
+        })
+    end
+
+    -- Inky Black Potion's zone list: map IDs, comma separated, the current
+    -- zone one click away.
+    local function ChooseInkyZones()
+        local c = CDB()
+        CludesUI:ShowInputPopup({
+            title = "Inky Black Potion Zone IDs",
+            message = "Enter map zone IDs separated by commas.\nThe potion reminder will only show in these zones.",
+            placeholder = "e.g. 2248, 2339",
+            initialText = c and c.inkyBlackZones or "",
+            maxLetters = 500,
+            confirmText = "Save",
+            extraButton = {
+                text = "Add Current Zone",
+                onClick = function(editBox)
+                    local mapID = C_Map.GetBestMapForUnit("player")
+                    if not mapID then
+                        return
+                    end
+                    local text = editBox:GetText() or ""
+                    editBox:SetText(text == "" and tostring(mapID) or (text .. ", " .. mapID))
+                end,
+            },
+            onConfirm = function(text)
+                local cc = CDB()
+                if cc then
+                    cc.inkyBlackZones = text or ""
+                    RefreshAll()
+                end
+            end,
+        })
+    end
+
+    -- The Choose Zones button on Inky Black's row, with a short hover fade.
+    -- Anchored to the REGION edge, never the slot control: this slot is an
+    -- empty label, and anchoring to it while the deferred label clamp
+    -- anchors the label back to _lastInline forms an anchor family cycle
+    -- (hard client error).
+    local function InkyZonesButton(rgn)
+        local button = CreateFrame("Button", nil, rgn)
+        button:SetSize(110, 24)
+        button:SetPoint("RIGHT", rgn, "RIGHT", -20, 0)
+        button:SetFrameLevel(rgn:GetFrameLevel() + 5)
+        rgn._lastInline = button
+        local dark = CludesUI.DARK_BG
+        local bg = CludesUI.SolidTex(button, "BACKGROUND", dark.r, dark.g, dark.b, 0.92)
+        bg:SetAllPoints()
+        local border = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.3, bg)
+        local label = CludesUI.MakeFont(button, 12, nil, 1, 1, 1)
+        label:SetPoint("CENTER")
+        label:SetText(CludesUI.L("Choose Zones"))
+
+        local FADE = 0.1
+        local lerp = CludesUI.lerp
+        local progress, target = 0, 0
+        local function Step(self, elapsed)
+            local dir = (target == 1) and 1 or -1
+            progress = progress + dir * (elapsed / FADE)
+            if (dir == 1 and progress >= 1) or (dir == -1 and progress <= 0) then
+                progress = target
+                self:SetScript("OnUpdate", nil)
+            end
+            label:SetTextColor(1, 1, 1, lerp(0.5, 0.8, progress))
+            border:SetColor(1, 1, 1, lerp(0.3, 0.5, progress))
+        end
+        button:SetScript("OnEnter", function(self)
+            target = 1
+            self:SetScript("OnUpdate", Step)
+        end)
+        button:SetScript("OnLeave", function(self)
+            target = 0
+            self:SetScript("OnUpdate", Step)
+        end)
+        button:SetScript("OnClick", ChooseInkyZones)
+
+        local block = OffBlocker(button, "Inky Black Potion")
+        local function Dim()
+            local c = CDB()
+            local off = not c or not c.enabled or not c.enabled.inky_black
+            button:SetAlpha(off and 0.3 or 1)
+            block:SetShown(off)
+        end
+        Dim()
+        CludesUI.RegisterWidgetRefresh(Dim)
+    end
+
+    -- CONSUMABLES' reminder rows: Where to Show (+ sound cog), Flask, Food
+    -- and Weapon Enhancement each with their Preferred pick, Augment Rune |
+    -- Healthstone, Inky Black Potion | Choose Zones. Returns y and the rows
+    -- the preview's clicks lead to.
+    local function BuildConsumableRows(parent, y)
         local W = CludesUI.Widgets
-        local y = yOffset
-        local _, h, row
-
-        -- Cell reference table for preview icon specific toggle navigation
-        local _gridCellRefs = {}
-
-        -- The preview header (retail only; WoW Forever has no preview).
-        if not FOREVER then
-            CludesUI:SetContentHeader(_previewHeaderBuilder)
-        end
-        parent._showRowDivider = true
-
-        y = ClickInfoLine(parent, y)
-        if FOREVER then
-            y = ForeverPurposeBanner(parent, y)
-        end
-        local coreSection
-        y, coreSection = BuildCoreSection(parent, y)
-
-        -----------------------------------------------------------------------
-        --  DISPLAY section
-        -----------------------------------------------------------------------
-        local displaySection
-        displaySection, h = W:SectionHeader(parent, SECTION_DISPLAY, y)
+        local _
+        local rows = {}
+        local h
+        rows.header, h = W:SectionHeader(parent, SECTION_CONSUMABLES, y)
         y = y - h
-
-        y = BuildShapeRow(parent, y)
-        local borderRow
-        y, borderRow = BuildBorderRows(parent, y)
-
-        local rowText
-        y, rowText = BuildTextRows(parent, y)
-
-        y = BuildLayoutRows(parent, y)
-
-        local raidBufHdr
-        y, raidBufHdr = BuildRaidBuffSection(parent, y, _gridCellRefs)
-
-        -----------------------------------------------------------------------
-        --  WOW FOREVER section: on that client the rest of the page.
-        --  Camp Benefits | Sleeping Bag, Well Fed | Gathering Tracking,
-        --  Find Treasure | Weapon Buffs, Mage Armors or Class Buffs, then the
-        --  spell-ID entry
-        --  that adds a custom reminder followed by one slot per tracked spell;
-        --  the retail sections below never build.
-        -----------------------------------------------------------------------
-        if FOREVER then
-            _, h = W:SectionHeader(parent, SECTION_FOREVER, y)
-            y = y - h
-
-            -- Where to Show | Reminder Sound
-            _, h = SectionControlRow(parent, y, {
-                whereStore = FWhere,
-                whereItems = FOREVER_SECTION_WHERE_ITEMS,
-                whereTooltip = "Pick which content the WoW Forever reminders appear in.\nRested areas (cities and inns) always stay hidden.",
-                soundSec = FDB,
-                soundField = "sectionSound",
-                onChange = RefreshAll,
-            })
-            y = y - h
-
-            -- Camp Benefits | Sleeping Bag
-            _, h = W:DualRow(parent, y, {
-                type = "toggle",
-                text = "Camp Benefits",
-                tooltip = "Reminds you when the Camp Benefits campfire buff is missing.",
-                getValue = function()
-                    local f = FDB()
-                    return not f or f.camp ~= false
-                end,
-                setValue = function(v)
-                    local f = FDB()
-                    if not f then
-                        return
-                    end
-                    f.camp = v
-                    RefreshAll()
-                end,
-            }, {
-                type = "toggle",
-                text = "Sleeping Bag",
-                tooltip = "Reminds you when your Well-Rested buff is missing or under 3 stacks.\nOnly while a Cozy Sleeping Bag is in your bags and you are below max level.\nClick the icon to use it.",
-                getValue = function()
-                    local f = FDB()
-                    return f and f.sleepingBag == true
-                end,
-                setValue = function(v)
-                    local f = FDB()
-                    if not f then
-                        return
-                    end
-                    f.sleepingBag = v
-                    RefreshAll()
-                end,
-            })
-            y = y - h
-
-            -- Well Fed | Gathering Tracking (+ class tracking cog)
-            local gatherRow
-            gatherRow, h = W:DualRow(
-                parent,
-                y,
-                -- The client's own name for the buff (19705, EABR.WELL_FED), so it reads localized.
-                {
-                    type = "toggle",
-                    text = _G._CUABR_SpellName(19705, "Well Fed"),
-                    tooltip = "Reminds you when you have no Well Fed buff.",
-                    getValue = function()
-                        local f = FDB()
-                        return f and f.wellFed == true
-                    end,
-                    setValue = function(v)
-                        local f = FDB()
-                        if not f then
-                            return
-                        end
-                        f.wellFed = v
-                        RefreshAll()
-                    end,
-                },
-                {
-                    type = "toggle",
-                    text = "Gathering Tracking",
-                    tooltip = "Reminds you when no gathering tracking is on.",
-                    getValue = function()
-                        local f = FDB()
-                        return f and f.gather == true
-                    end,
-                    setValue = function(v)
-                        local f = FDB()
-                        if not f then
-                            return
-                        end
-                        f.gather = v
-                        RefreshAll()
-                        CludesUI:RefreshPage()
-                    end,
-                }
-            )
-            y = y - h
-
-            if not CludesUI._prebuilding then
-                CludesUI.BuildInlineCog(gatherRow._rightRegion, {
-                    title = "Gathering Tracking",
-                    disabled = function()
-                        local f = FDB()
-                        return not (f and f.gather == true)
-                    end,
-                    disabledTooltip = "Gathering Tracking",
-                    rows = {
-                        {
-                            type = "toggle",
-                            label = "Ignore If Class Tracking Is Active",
-                            get = function()
-                                local f = FDB()
-                                return not f or f.gatherClassTrack ~= false
-                            end,
-                            set = function(v)
-                                local f = FDB()
-                                if f then
-                                    f.gatherClassTrack = v
-                                    RefreshAll()
-                                end
-                            end,
-                        },
-                    },
-                })
-            end
-
-            local class = select(2, UnitClass("player"))
-            local classBuffs = not MAGE and _G._CUABR_FvClassBuffs and _G._CUABR_FvClassBuffs()[class]
-            local weaponRow
-            weaponRow, h = W:DualRow(parent, y, {
-                type = "toggle",
-                text = _G._CUABR_SpellName(2481, "Find Treasure"),
-                tooltip = "Reminds Dwarves when Find Treasure is off.",
-                getValue = function()
-                    local f = FDB()
-                    return f and f.treasure == true
-                end,
-                setValue = function(v)
-                    local f = FDB()
-                    if not f then
-                        return
-                    end
-                    f.treasure = v
-                    RefreshAll()
-                end,
-            }, {
-                type = "toggle",
-                text = "Weapon Buffs",
-                tooltip = "Reminds you when a weapon has no poison, imbue, stone or oil.\nClick the icon to apply one from your bags.",
-                getValue = function()
-                    local f = FDB()
-                    return f and f.weapon == true
-                end,
-                setValue = function(v)
-                    local f = FDB()
-                    if not f then
-                        return
-                    end
-                    f.weapon = v
-                    RefreshAll()
-                    CludesUI:RefreshPage()
-                end,
-            })
-            y = y - h
-
-            local classRow
-            if MAGE or classBuffs then
-                classRow, h = W:DualRow(parent, y, MAGE and {
-                    type = "toggle",
-                    text = "Mage Armors",
-                    tooltip = "Reminds you when no Frost Armor, Ice Armor or Mage Armor is up.\nThe icon is the one you last had on; click it to cast it.",
-                    getValue = function()
-                        local f = FDB()
-                        return f and f.mageArmor == true
-                    end,
-                    setValue = function(v)
-                        local f = FDB()
-                        if not f then
-                            return
-                        end
-                        f.mageArmor = v
-                        RefreshAll()
-                    end,
-                } or {
-                    type = "label",
-                    text = "Class Buffs",
-                    tooltip = "Reminds you when one of your class's own buffs is missing.\nClick the icon to cast it.\nA custom spell or spell group for a ticked buff pauses meanwhile.",
-                }, CludesUI.BlankRowCfg())
-                y = y - h
-            end
-
-            -- Class Buffs: one checkbox per buff of the class (ticked: its own
-            -- default until picked, EABR.FvClassBuffOn)
-            if classBuffs and not CludesUI._prebuilding then
-                local items, byKey = {}, {}
-                for _, b in ipairs(classBuffs) do
-                    local text, tip
-                    if b.label then
-                        local names, seen = {}, {}
-                        for _, line in ipairs(b.lines) do
-                            for _, id in ipairs({ line[1], line[#line] }) do
-                                local n = _G._CUABR_SpellName(id)
-                                if n and not seen[n] then
-                                    seen[n] = true
-                                    names[#names + 1] = n
-                                end
-                            end
-                        end
-                        text, tip = b.menu or b.label, table.concat(names, "\n")
-                        if b.own then
-                            tip = tip .. "\n\n" .. CludesUI.L("Only your own counts.")
-                        end
-                    else
-                        local line = b.lines[1]
-                        text = _G._CUABR_SpellName(line[#line], b.key)
-                    end
-                    items[#items + 1] = { key = b.key, label = text, tooltip = tip }
-                    byKey[b.key] = b
-                end
-                local isOn = _G._CUABR_FvClassBuffOn
-                local rgn = classRow._leftRegion
-                local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-                    rgn,
-                    170,
-                    rgn:GetFrameLevel() + 2,
-                    items,
-                    function(key)
-                        local f = FDB()
-                        return isOn(byKey[key], f and f.classBuffPicks)
-                    end,
-                    function(key, v)
-                        local f = FDB()
-                        if not f then
-                            return
-                        end
-                        f.classBuffPicks = f.classBuffPicks or {}
-                        f.classBuffPicks[key] = v and true or false
-                        RefreshAll()
-                    end
-                )
-                CludesUI.PanelPP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
-                rgn._control = cbDD
-                rgn._lastInline = nil
-                CludesUI.RegisterWidgetRefresh(cbDDRefresh)
-            end
-
-            if not CludesUI._prebuilding then
-                local function Choices(isImbue)
-                    local values, order = { auto = "Auto", off = "Off" }, { "auto", "off" }
-                    for _, b in ipairs(_G._CUABR_FV_WEAPON_BUFFS or {}) do
-                        if (b.imbue == true) == isImbue and (not b.class or b.class == class) then
-                            values[b.key] = b.name or _G._CUABR_SpellName(b.spells[#b.spells], b.key)
-                            order[#order + 1] = b.key
-                        end
-                    end
-                    return values, order
-                end
-                local function HandRow(label, field, values, order)
-                    return {
-                        type = "dropdown",
-                        label = label,
-                        values = values,
-                        order = order,
-                        ddWidth = 200,
-                        get = function()
-                            local f = FDB()
-                            local t = f and f.weaponHands and f.weaponHands[class]
-                            return t and t[field] or "auto"
-                        end,
-                        set = function(v)
-                            local f = FDB()
-                            if not f then
-                                return
-                            end
-                            f.weaponHands = f.weaponHands or {}
-                            local t = f.weaponHands[class]
-                            if not t then
-                                t = {}
-                                f.weaponHands[class] = t
-                            end
-                            t[field] = v ~= "auto" and v or nil
-                            RefreshAll()
-                        end,
-                    }
-                end
-                local imbueValues, imbueOrder = Choices(true)
-                local tempValues, tempOrder = Choices(false)
-                local hasImbues = #imbueOrder > 2
-                local rogue = class == "ROGUE"
-                local offHand = not CanDualWield or CanDualWield()
-                local rows = {}
-                if hasImbues then
-                    rows[#rows + 1] = HandRow(
-                        rogue and "Main Hand Poison" or "Main Hand Imbue",
-                        "mhImbue",
-                        imbueValues,
-                        imbueOrder
-                    )
-                end
-                rows[#rows + 1] = HandRow("Main Hand Stone or Oil", "mhTemp", tempValues, tempOrder)
-                if offHand then
-                    if hasImbues then
-                        rows[#rows + 1] = HandRow(
-                            rogue and "Off Hand Poison" or "Off Hand Imbue",
-                            "ohImbue",
-                            imbueValues,
-                            imbueOrder
-                        )
-                    end
-                    rows[#rows + 1] = HandRow("Off Hand Stone or Oil", "ohTemp", tempValues, tempOrder)
-                end
-                rows[#rows + 1] = {
-                    type = "dropdown",
-                    label = "Rank to Use",
-                    ddWidth = 200,
-                    values = { high = "Highest Owned", low = "Lowest Owned" },
-                    order = { "high", "low" },
-                    get = function()
-                        local f = FDB()
-                        return f and f.weaponLowRank and "low" or "high"
-                    end,
-                    set = function(v)
-                        local f = FDB()
-                        if f then
-                            f.weaponLowRank = v == "low"
-                            RefreshAll()
-                        end
-                    end,
-                }
-                rows[#rows + 1] = {
-                    type = "toggle",
-                    label = "Hide When None in Bags",
-                    tooltip = "Hides a reminder when you have none of its item in your bags.\nOff: a chosen item still shows, greyed out. Auto only ever picks items you have.",
-                    get = function()
-                        local f = FDB()
-                        return not f or f.weaponHideNoItem ~= false
-                    end,
-                    set = function(v)
-                        local f = FDB()
-                        if f then
-                            f.weaponHideNoItem = v
-                            RefreshAll()
-                        end
-                    end,
-                }
-                rows[#rows + 1] = {
-                    type = "slider",
-                    label = "Show Below (Minutes)",
-                    min = 0,
-                    max = 10,
-                    step = 1,
-                    tooltip = "Show a reminder before a poison, imbue, stone or oil runs out.\n0 = only once it has run out.\n1-10 = when it has less than this many minutes left.",
-                    get = function()
-                        local f = FDB()
-                        return f and f.weaponShowBelow or 1
-                    end,
-                    set = function(v)
-                        local f = FDB()
-                        if f then
-                            f.weaponShowBelow = v
-                            RefreshAll()
-                        end
-                    end,
-                }
-                CludesUI.BuildInlineCog(weaponRow._rightRegion, {
-                    title = "Weapon Buffs",
-                    disabled = function()
-                        local f = FDB()
-                        return not (f and f.weapon == true)
-                    end,
-                    disabledTooltip = "Weapon Buffs",
-                    minWidth = 320,
-                    rows = rows,
-                })
-            end
-
-            -- Add Custom Spell, paired with the tracked spells
-            y = BuildForeverCustomRows(parent, y, {
-                type = "input",
-                text = "Add Custom Spell",
-                inputStyle = "popup",
-                placeholder = "Spell ID",
-                inputWidth = 110,
-                tooltip = "Type a spell ID and press Enter to be reminded whenever that buff is missing.\nUnknown IDs are ignored.",
-                getValue = function()
-                    return ""
-                end,
-                setValue = function(text)
-                    local f = FDB()
-                    if not f then
-                        return
-                    end
-                    f.customIDs = f.customIDs or {}
-                    AddSpellIDToList(f.customIDs, text)
-                end,
-            })
-            y = BuildForeverGroupSections(parent, y)
-
-            -- No preview header here, so no click-to-scroll mappings to wire.
-            return math.abs(y)
-        end
-
-        local auraHdr
-        y, auraHdr = BuildAuraSection(parent, y, _gridCellRefs)
-        y = BuildClassSections(parent, y, _gridCellRefs)
-
-        y = BuildPetSection(parent, y)
-        local warlockHdr, warlockRow
-        y, warlockHdr, warlockRow = BuildWarlockSection(parent, y)
-
-        -----------------------------------------------------------------------
-        --  CONSUMABLES section
-        -----------------------------------------------------------------------
-        local consumHdr
-        consumHdr, h = W:SectionHeader(parent, SECTION_CONSUMABLES, y)
-        y = y - h
-
-        -- Where to Show (+ reminder sound cog)
         _, h = SectionControlRow(parent, y, {
             whereStore = CWhere,
             whereTooltip = "Pick which content these consumable reminders appear in.\nRested areas (cities and inns) always stay hidden.",
@@ -3222,321 +2923,197 @@ initFrame:SetScript("OnEvent", function(self)
             onChange = RefreshAll,
         })
         y = y - h
-
-        -- Flask toggle | Preferred Click to Buff dropdown
-        local consumFirstRow
-        local flaskRow
-        do
-            local FLASK_ITEMS = _G._CUABR_FLASK_ITEMS or {}
-            local flaskValues = { last_used = "Last Used" }
-            local flaskOrder = { "last_used" }
-            for _, f in ipairs(FLASK_ITEMS) do
-                flaskValues[f.key] = f.name
-                flaskOrder[#flaskOrder + 1] = f.key
-            end
-            flaskRow, h = W:DualRow(parent, y, {
-                type = "toggle",
-                text = "Flask",
-                getValue = function()
-                    local c = CDB()
-                    return c and c.enabled and c.enabled.flask
-                end,
-                setValue = function(v)
-                    local c = CDB()
-                    if c and c.enabled then
-                        c.enabled.flask = v
-                        RefreshAll()
-                        RebuildPreviewHeader()
-                    end
-                end,
-            }, {
-                type = "dropdown",
-                text = "Preferred (Click to Buff)",
-                dropdownWidth = 220,
-                values = flaskValues,
-                order = flaskOrder,
-                getValue = function()
-                    local c = CDB()
-                    return c and c.preferredFlask or "last_used"
-                end,
-                setValue = function(v)
-                    local c = CDB()
-                    if c then
-                        c.preferredFlask = v
-                        RefreshAll()
-                    end
-                end,
-            })
-            y = y - h
-            consumFirstRow = flaskRow
-        end
-
-        -- Food toggle | Preferred Click to Buff dropdown
-        local foodRow
-        do
-            local FOOD_ITEMS = _G._CUABR_FOOD_ITEMS or {}
-            local foodValues = { last_used = "Last Used" }
-            local foodOrder = { "last_used" }
-            for _, f in ipairs(FOOD_ITEMS) do
-                foodValues[f.key] = f.name
-                foodOrder[#foodOrder + 1] = f.key
-            end
-            foodRow, h = W:DualRow(parent, y, {
-                type = "toggle",
-                text = "Food",
-                getValue = function()
-                    local c = CDB()
-                    return c and c.enabled and c.enabled.food
-                end,
-                setValue = function(v)
-                    local c = CDB()
-                    if c and c.enabled then
-                        c.enabled.food = v
-                        RefreshAll()
-                        RebuildPreviewHeader()
-                    end
-                end,
-            }, {
-                type = "dropdown",
-                text = "Preferred (Click to Buff)",
-                dropdownWidth = 220,
-                values = foodValues,
-                order = foodOrder,
-                getValue = function()
-                    local c = CDB()
-                    return c and c.preferredFood or "last_used"
-                end,
-                setValue = function(v)
-                    local c = CDB()
-                    if c then
-                        c.preferredFood = v
-                        RefreshAll()
-                    end
-                end,
-            })
-            y = y - h
-        end
-
-        -- Weapon Enhancement toggle | Preferred Click to Buff dropdown
-        local weaponEnchantRow
-        do
-            local WE_CHOICES = _G._CUABR_WEAPON_ENCHANT_CHOICES or {}
-            local weValues = { last_used = "Last Used" }
-            local weOrder = { "last_used" }
-            for _, we in ipairs(WE_CHOICES) do
-                weValues[we.key] = we.name
-                weOrder[#weOrder + 1] = we.key
-            end
-            weaponEnchantRow, h = W:DualRow(parent, y, {
-                type = "toggle",
-                text = "Weapon Enhancement",
-                getValue = function()
-                    local c = CDB()
-                    return c and c.enabled and c.enabled.weapon_enchant
-                end,
-                setValue = function(v)
-                    local c = CDB()
-                    if c and c.enabled then
-                        c.enabled.weapon_enchant = v
-                        RefreshAll()
-                        RebuildPreviewHeader()
-                    end
-                end,
-            }, {
-                type = "dropdown",
-                text = "Preferred (Click to Buff)",
-                dropdownWidth = 220,
-                values = weValues,
-                order = weOrder,
-                getValue = function()
-                    local c = CDB()
-                    return c and c.preferredWeaponEnchant or "last_used"
-                end,
-                setValue = function(v)
-                    local c = CDB()
-                    if c then
-                        c.preferredWeaponEnchant = v
-                        RefreshAll()
-                    end
-                end,
-            })
-            y = y - h
-        end
-
-        -- Augment Rune | Healthstone (neither has a per-item control)
-        local runeRow
-        runeRow, h = W:DualRow(parent, y, {
-            type = "toggle",
-            text = "Augment Rune",
-            getValue = function()
-                local c = CDB()
-                return c and c.enabled and c.enabled.augment_rune
-            end,
-            setValue = function(v)
-                local c = CDB()
-                if c and c.enabled then
-                    c.enabled.augment_rune = v
-                    RefreshAll()
-                    RebuildPreviewHeader()
-                end
-            end,
-        }, {
-            type = "toggle",
-            text = "Healthstone",
-            tooltip = "Remind you to grab a Healthstone when a Warlock is in your group.",
-            getValue = function()
-                local c = CDB()
-                return c and c.enabled and c.enabled.healthstone ~= false
-            end,
-            setValue = function(v)
-                local c = CDB()
-                if c and c.enabled then
-                    c.enabled.healthstone = v
-                    RefreshAll()
-                    RebuildPreviewHeader()
-                end
-            end,
-        })
+        rows.flask, h = PreferredRow(parent, y, "flask", "Flask", _G._CUABR_FLASK_ITEMS, "preferredFlask")
         y = y - h
-        local healthstoneRow = runeRow
-
-        -- Inky Black Potion | Choose Zones (inline on the right)
-        local inkyRow
-        inkyRow, h = W:DualRow(parent, y, {
-            type = "toggle",
-            text = "Inky Black Potion",
-            getValue = function()
-                local c = CDB()
-                return c and c.enabled and c.enabled.inky_black
-            end,
-            setValue = function(v)
-                local c = CDB()
-                if c and c.enabled then
-                    c.enabled.inky_black = v
-                    RefreshAll()
-                    RebuildPreviewHeader()
-                end
+        rows.food, h = PreferredRow(parent, y, "food", "Food", _G._CUABR_FOOD_ITEMS, "preferredFood")
+        y = y - h
+        rows.weapon, h = PreferredRow(
+            parent,
+            y,
+            "weapon_enchant",
+            "Weapon Enhancement",
+            _G._CUABR_WEAPON_ENCHANT_CHOICES,
+            "preferredWeaponEnchant"
+        )
+        y = y - h
+        -- Neither has a per-item control.
+        rows.rune, h = W:DualRow(
+            parent,
+            y,
+            ConsumableToggle("augment_rune", "Augment Rune"),
+            EnabledToggle(
+                CDB,
+                "healthstone",
+                "Healthstone",
+                "Remind you to grab a Healthstone when a Warlock is in your group."
+            )
+        )
+        y = y - h
+        rows.inky, h = W:DualRow(
+            parent,
+            y,
+            ConsumableToggle("inky_black", "Inky Black Potion", nil, function()
                 CludesUI:RefreshPage()
-            end,
-        }, { type = "label", text = "" })
+            end),
+            { type = "label", text = "" }
+        )
         y = y - h
-        row = inkyRow
-
-        -- Inline "Choose Zones" button on the right region (Inky Black)
         if not CludesUI._prebuilding then
-            local rgn = row._rightRegion
-            local eg = CludesUI.CLUDES_GREEN or { r = 0, g = 0.82, b = 0.62 }
-            local lerp = CludesUI.lerp
-            local DARK_BG = CludesUI.DARK_BG
+            InkyZonesButton(rows.inky._rightRegion)
+        end
+        return y, rows
+    end
 
-            local zoneBtn = CreateFrame("Button", nil, rgn)
-            zoneBtn:SetSize(110, 24)
-            -- Anchored to the REGION edge, never the slot control: this slot
-            -- is an empty label, and anchoring to it while the deferred label
-            -- clamp anchors the label back to _lastInline forms an anchor
-            -- family cycle (hard client error).
-            zoneBtn:SetPoint("RIGHT", rgn, "RIGHT", -20, 0)
-            zoneBtn:SetFrameLevel(rgn:GetFrameLevel() + 5)
-            rgn._lastInline = zoneBtn
+    local MANA_WARN = "Ready Check Mana Warning"
+    -- The mana warning text shown for a moment, as its cog's edits are made.
+    local function ApplyManaWarning()
+        if _G._CUABR_RCWarnApply then
+            _G._CUABR_RCWarnApply()
+        end
+    end
 
-            local zoneBg = CludesUI.SolidTex(zoneBtn, "BACKGROUND", DARK_BG.r, DARK_BG.g, DARK_BG.b, 0.92)
-            zoneBg:SetAllPoints()
-            local zoneBrd = CludesUI.MakeRoundedBorder(zoneBtn, 1, 1, 1, 0.3, zoneBg)
-            local zoneLbl = CludesUI.MakeFont(zoneBtn, 12, nil, 1, 1, 1)
-            zoneLbl:SetPoint("CENTER")
-            zoneLbl:SetText(CludesUI.L("Choose Zones"))
-
-            -- Hover animation
-            do
-                local FADE_DUR = 0.1
-                local progress, target = 0, 0
-                local function Apply(t)
-                    zoneLbl:SetTextColor(1, 1, 1, lerp(0.5, 0.8, t))
-                    zoneBrd:SetColor(1, 1, 1, lerp(0.3, 0.5, t))
-                end
-                local function OnUpdate(self, elapsed)
-                    local dir = (target == 1) and 1 or -1
-                    progress = progress + dir * (elapsed / FADE_DUR)
-                    if (dir == 1 and progress >= 1) or (dir == -1 and progress <= 0) then
-                        progress = target
-                        self:SetScript("OnUpdate", nil)
-                    end
-                    Apply(progress)
-                end
-                zoneBtn:SetScript("OnEnter", function(self)
-                    target = 1
-                    self:SetScript("OnUpdate", OnUpdate)
-                end)
-                zoneBtn:SetScript("OnLeave", function(self)
-                    target = 0
-                    self:SetScript("OnUpdate", OnUpdate)
-                end)
+    -- Ready Check Mana Warning's inlines, right to left: its cog (font,
+    -- size, offsets; font and offset edits switch the live preview on), the
+    -- colour swatch (unset: the brightened mana colour the warning uses)
+    -- and the eye that toggles the live preview. All three dim while the
+    -- warning is off, which also ends the preview.
+    local function ManaWarningInlines(rgn)
+        local function Off()
+            local c = CDB()
+            return c ~= nil and c.rcManaWarn == false
+        end
+        local previewing = false
+        local RefreshEye
+        local function PreviewOn()
+            previewing = true
+            if RefreshEye then
+                RefreshEye()
             end
-
-            zoneBtn:SetScript("OnClick", function()
+            if _G._CUABR_RCWarnPreview then
+                _G._CUABR_RCWarnPreview()
+            end
+        end
+        local function Field(key, default, after)
+            return function()
                 local c = CDB()
-                local current = c and c.inkyBlackZones or ""
-                CludesUI:ShowInputPopup({
-                    title = "Inky Black Potion Zone IDs",
-                    message = "Enter map zone IDs separated by commas.\nThe potion reminder will only show in these zones.",
-                    placeholder = "e.g. 2248, 2339",
-                    initialText = current,
-                    maxLetters = 500,
-                    confirmText = "Save",
-                    extraButton = {
-                        text = "Add Current Zone",
-                        onClick = function(editBox)
-                            local mapID = C_Map.GetBestMapForUnit("player")
-                            if not mapID then
-                                return
-                            end
-                            local txt = editBox:GetText() or ""
-                            local idStr = tostring(mapID)
-                            if txt == "" then
-                                editBox:SetText(idStr)
-                            else
-                                editBox:SetText(txt .. ", " .. idStr)
-                            end
-                        end,
-                    },
-                    onConfirm = function(text)
-                        local cc = CDB()
-                        if cc then
-                            cc.inkyBlackZones = text or ""
-                            RefreshAll()
+                return c and c[key] or default
+            end, function(v)
+                local c = CDB()
+                if c then
+                    c[key] = v
+                    after()
+                end
+            end
+        end
+        local function Slider(label, key, min, max, default, after)
+            local get, set = Field(key, default, after)
+            return { type = "slider", label = label, min = min, max = max, step = 1, get = get, set = set }
+        end
+        rgn._rcwFontValues, rgn._rcwFontOrder = CludesUI.BuildFontDropdownData()
+        CludesUI.BuildInlineCog(rgn, {
+            title = "Mana Warning Settings",
+            disabled = Off,
+            disabledTooltip = MANA_WARN,
+            rows = {
+                {
+                    type = "dropdown",
+                    label = "Mana Warning Font",
+                    values = rgn._rcwFontValues,
+                    order = rgn._rcwFontOrder,
+                    get = function()
+                        local c = CDB()
+                        return (c and c.rcManaWarnFont) or "__global"
+                    end,
+                    set = function(v)
+                        local c = CDB()
+                        if c then
+                            c.rcManaWarnFont = (v ~= "__global") and v or nil
+                            ApplyManaWarning()
+                            PreviewOn()
                         end
                     end,
-                })
-            end)
+                },
+                Slider("Text Size", "rcManaWarnSize", 10, 72, 48, ApplyManaWarning),
+                Slider("X Offset", "rcManaWarnX", -600, 600, 0, PreviewOn),
+                Slider("Y Offset", "rcManaWarnY", -600, 600, 0, PreviewOn),
+            },
+        })
 
-            -- Disabled overlay when Inky Black Potion is off
-            local blockFrame = CreateFrame("Frame", nil, zoneBtn)
-            blockFrame:SetAllPoints()
-            blockFrame:SetFrameLevel(zoneBtn:GetFrameLevel() + 10)
-            blockFrame:EnableMouse(true)
-            blockFrame:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(zoneBtn, CludesUI.DisabledTooltip("Inky Black Potion"))
-            end)
-            blockFrame:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
-            local function UpdateZoneBtnDisabled()
-                local c = CDB()
-                local off = not c or not c.enabled or not c.enabled.inky_black
-                if off then
-                    zoneBtn:SetAlpha(0.3)
-                    blockFrame:Show()
-                else
-                    zoneBtn:SetAlpha(1)
-                    blockFrame:Hide()
-                end
+        local swatch = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+            local c = CDB()
+            local col = c and c.rcManaWarnColor
+            if col then
+                return col.r, col.g, col.b, 1
             end
-            UpdateZoneBtnDisabled()
-            CludesUI.RegisterWidgetRefresh(UpdateZoneBtnDisabled)
-        end
+            local mana = CludesUI.GetPowerColor("MANA")
+            if mana then
+                return math.min(mana.r * 1.5, 1), math.min(mana.g * 1.5, 1), math.min(mana.b * 1.5, 1), 1
+            end
+            return 0, 0.825, 1, 1
+        end, function(r, g, b)
+            local c = CDB()
+            if c then
+                c.rcManaWarnColor = { r = r, g = g, b = b }
+                ApplyManaWarning()
+            end
+        end, false, 20)
+        swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+        rgn._lastInline = swatch
+        local swatchBlock = OffBlocker(swatch, MANA_WARN)
 
-        -- Show Without Item in Bags | Ready Check Mana Warning (eye | swatch | cog inline)
-        row, h = W:DualRow(parent, y, {
+        local eye = CreateFrame("Button", nil, rgn)
+        eye:SetSize(26, 26)
+        eye:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+        rgn._lastInline = eye
+        eye:SetFrameLevel(rgn:GetFrameLevel() + 5)
+        CludesUI.SetGlyphAlpha(eye, 0.4)
+        local eyeTex = eye:CreateTexture(nil, "OVERLAY")
+        eyeTex:SetAllPoints()
+        RefreshEye = function()
+            eyeTex:SetTexture(previewing and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON)
+        end
+        RefreshEye()
+        eye:SetScript("OnEnter", function(self)
+            CludesUI.SetGlyphAlpha(self, 0.7)
+            CludesUI.ShowWidgetTooltip(self, "Preview mana warning")
+        end)
+        eye:SetScript("OnLeave", function(self)
+            CludesUI.HideWidgetTooltip()
+            CludesUI.SetGlyphAlpha(self, 0.4)
+        end)
+        eye:SetScript("OnClick", function()
+            previewing = not previewing
+            RefreshEye()
+            local step
+            if previewing then
+                step = _G._CUABR_RCWarnPreview
+            else
+                step = _G._CUABR_RCWarnHidePreview
+            end
+            if step then
+                step()
+            end
+        end)
+        local eyeBlock = OffBlocker(eye, MANA_WARN)
+
+        local function Dim()
+            local off = Off()
+            if off then
+                previewing = false
+                RefreshEye()
+            end
+            swatch:SetAlpha(off and 0.3 or 1)
+            swatchBlock:SetShown(off)
+            CludesUI.SetGlyphAlpha(eye, off and 0.15 or 0.4)
+            eyeBlock:SetShown(off)
+        end
+        Dim()
+        CludesUI.RegisterWidgetRefresh(Dim)
+    end
+
+    -- Show Without Item in Bags | Ready Check Mana Warning (+ eye, swatch, cog).
+    local function BuildConsumableExtras(parent, y)
+        local row, h = CludesUI.Widgets:DualRow(parent, y, {
             type = "toggle",
             text = "Show Without Item in Bags",
             tooltip = "When on, augment rune/flask/food/weapon reminders still show (dimmed) when you have no matching item in your bags, as a prompt to restock.\nWhen off, they are hidden entirely if you don't carry the item.",
@@ -3553,7 +3130,7 @@ initFrame:SetScript("OnEvent", function(self)
             end,
         }, {
             type = "toggle",
-            text = "Ready Check Mana Warning",
+            text = MANA_WARN,
             tooltip = "Flashes LOW MANA during an out-of-combat raid ready check while you are a healer under 80% mana.",
             getValue = function()
                 local c = CDB()
@@ -3573,259 +3150,440 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI:RefreshPage()
             end,
         })
-        y = y - h
-
-        -- Inline: eyeball | color swatch | cog on the mana warning toggle
         if not CludesUI._prebuilding then
-            local leftRgn = row._rightRegion
-            local function rcwOff()
-                local c = CDB()
-                return c ~= nil and c.rcManaWarn == false
-            end
-            local rcwPreviewShown = false
-            local RefreshRcwEye -- assigned below; cog offset sliders flip the eye on
+            ManaWarningInlines(row._rightRegion)
+        end
+        return y - h
+    end
 
-            -- Cog (rightmost inline, closest to toggle): Text Size + X/Y Offset.
-            -- Offset edits force the preview on (and light the eye) so the
-            -- warning is visible while moving it.
-            local function ShowPreviewFromCog()
-                rcwPreviewShown = true
-                if RefreshRcwEye then
-                    RefreshRcwEye()
+    -- A WoW Forever reminder switch over forever[key]: off until ticked, or
+    -- (defaultOn) on until unticked. rebuild: the page follows it (a cog).
+    local function ForeverToggle(key, text, tooltip, defaultOn, rebuild)
+        return {
+            type = "toggle",
+            text = text,
+            tooltip = tooltip,
+            getValue = function()
+                local f = FDB()
+                if defaultOn then
+                    return not f or f[key] ~= false
                 end
-                if _G._CUABR_RCWarnPreview then
-                    _G._CUABR_RCWarnPreview()
+                return f and f[key] == true
+            end,
+            setValue = function(v)
+                local f = FDB()
+                if not f then
+                    return
+                end
+                f[key] = v
+                RefreshAll()
+                if rebuild then
+                    CludesUI:RefreshPage()
+                end
+            end,
+        }
+    end
+
+    -- A Class Buffs checklist entry: a buff with lines names the first and
+    -- last rank of each line in its tooltip (and says when only your own
+    -- counts); a single buff is named after its top rank.
+    local function ClassBuffItem(buff)
+        if not buff.label then
+            local line = buff.lines[1]
+            return { key = buff.key, label = _G._CUABR_SpellName(line[#line], buff.key) }
+        end
+        local names, seen = {}, {}
+        for _, line in ipairs(buff.lines) do
+            for _, id in ipairs({ line[1], line[#line] }) do
+                local name = _G._CUABR_SpellName(id)
+                if name and not seen[name] then
+                    seen[name] = true
+                    names[#names + 1] = name
                 end
             end
-            leftRgn._rcwFontValues, leftRgn._rcwFontOrder = CludesUI.BuildFontDropdownData()
-            CludesUI.BuildInlineCog(leftRgn, {
-                title = "Mana Warning Settings",
-                disabled = rcwOff,
-                disabledTooltip = "Ready Check Mana Warning",
+        end
+        local tip = table.concat(names, "\n")
+        if buff.own then
+            tip = tip .. "\n\n" .. CludesUI.L("Only your own counts.")
+        end
+        return { key = buff.key, label = buff.menu or buff.label, tooltip = tip }
+    end
+
+    -- Class Buffs: one checkbox per buff of the class (ticked: its own
+    -- default until picked, EABR.FvClassBuffOn).
+    local function ClassBuffList(rgn, classBuffs)
+        local items, byKey = {}, {}
+        for _, buff in ipairs(classBuffs) do
+            items[#items + 1] = ClassBuffItem(buff)
+            byKey[buff.key] = buff
+        end
+        local dd, refresh = CludesUI.BuildVisOptsCBDropdown(
+            rgn,
+            170,
+            rgn:GetFrameLevel() + 2,
+            items,
+            function(key)
+                local f = FDB()
+                return _G._CUABR_FvClassBuffOn(byKey[key], f and f.classBuffPicks)
+            end,
+            function(key, v)
+                local f = FDB()
+                if f then
+                    f.classBuffPicks = f.classBuffPicks or {}
+                    f.classBuffPicks[key] = v and true or false
+                    RefreshAll()
+                end
+            end
+        )
+        PP.Point(dd, "RIGHT", rgn, "RIGHT", -20, 0)
+        rgn._control = dd
+        rgn._lastInline = nil
+        CludesUI.RegisterWidgetRefresh(refresh)
+    end
+
+    -- Weapon Buffs' cog rows for the player's class: what each hand gets
+    -- (imbue or poison where the class has them, then stone or oil; the off
+    -- hand only when it can dual wield), the rank, hide with none in bags,
+    -- and how early to remind.
+    local function WeaponBuffRows(class)
+        local function Choices(isImbue)
+            local values, order = { auto = "Auto", off = "Off" }, { "auto", "off" }
+            for _, b in ipairs(_G._CUABR_FV_WEAPON_BUFFS or {}) do
+                if (b.imbue == true) == isImbue and (not b.class or b.class == class) then
+                    values[b.key] = b.name or _G._CUABR_SpellName(b.spells[#b.spells], b.key)
+                    order[#order + 1] = b.key
+                end
+            end
+            return values, order
+        end
+        local function Hand(label, field, values, order)
+            return {
+                type = "dropdown",
+                label = label,
+                values = values,
+                order = order,
+                ddWidth = 200,
+                get = function()
+                    local f = FDB()
+                    local t = f and f.weaponHands and f.weaponHands[class]
+                    return t and t[field] or "auto"
+                end,
+                set = function(v)
+                    local f = FDB()
+                    if not f then
+                        return
+                    end
+                    f.weaponHands = f.weaponHands or {}
+                    f.weaponHands[class] = f.weaponHands[class] or {}
+                    f.weaponHands[class][field] = v ~= "auto" and v or nil
+                    RefreshAll()
+                end,
+            }
+        end
+        local imbueValues, imbueOrder = Choices(true)
+        local tempValues, tempOrder = Choices(false)
+        local hasImbues = #imbueOrder > 2
+        local imbueWord = class == "ROGUE" and "Poison" or "Imbue"
+        local rows = {}
+        local function Hands(side, prefix)
+            if hasImbues then
+                rows[#rows + 1] = Hand(side .. " " .. imbueWord, prefix .. "Imbue", imbueValues, imbueOrder)
+            end
+            rows[#rows + 1] = Hand(side .. " Stone or Oil", prefix .. "Temp", tempValues, tempOrder)
+        end
+        Hands("Main Hand", "mh")
+        if not CanDualWield or CanDualWield() then
+            Hands("Off Hand", "oh")
+        end
+        rows[#rows + 1] = {
+            type = "dropdown",
+            label = "Rank to Use",
+            ddWidth = 200,
+            values = { high = "Highest Owned", low = "Lowest Owned" },
+            order = { "high", "low" },
+            get = function()
+                local f = FDB()
+                return f and f.weaponLowRank and "low" or "high"
+            end,
+            set = function(v)
+                local f = FDB()
+                if f then
+                    f.weaponLowRank = v == "low"
+                    RefreshAll()
+                end
+            end,
+        }
+        rows[#rows + 1] = {
+            type = "toggle",
+            label = "Hide When None in Bags",
+            tooltip = "Hides a reminder when you have none of its item in your bags.\nOff: a chosen item still shows, greyed out. Auto only ever picks items you have.",
+            get = function()
+                local f = FDB()
+                return not f or f.weaponHideNoItem ~= false
+            end,
+            set = function(v)
+                local f = FDB()
+                if f then
+                    f.weaponHideNoItem = v
+                    RefreshAll()
+                end
+            end,
+        }
+        rows[#rows + 1] = {
+            type = "slider",
+            label = "Show Below (Minutes)",
+            min = 0,
+            max = 10,
+            step = 1,
+            tooltip = "Show a reminder before a poison, imbue, stone or oil runs out.\n0 = only once it has run out.\n1-10 = when it has less than this many minutes left.",
+            get = function()
+                local f = FDB()
+                return f and f.weaponShowBelow or 1
+            end,
+            set = function(v)
+                local f = FDB()
+                if f then
+                    f.weaponShowBelow = v
+                    RefreshAll()
+                end
+            end,
+        }
+        return rows
+    end
+
+    -- WOW FOREVER: on that client the rest of the page. Where to Show |
+    -- Reminder Sound, Camp Benefits | Sleeping Bag, Well Fed | Gathering
+    -- Tracking (+ cog), Find Treasure | Weapon Buffs (+ cog), Mage Armors or
+    -- Class Buffs, then Add Custom Spell with the tracked spells and the
+    -- spell groups. Returns y.
+    local function BuildForeverSection(parent, y)
+        local W = CludesUI.Widgets
+        local _
+        local h
+        local building = not CludesUI._prebuilding
+        _, h = W:SectionHeader(parent, SECTION_FOREVER, y)
+        y = y - h
+        _, h = SectionControlRow(parent, y, {
+            whereStore = FWhere,
+            whereItems = FOREVER_SECTION_WHERE_ITEMS,
+            whereTooltip = "Pick which content the WoW Forever reminders appear in.\nRested areas (cities and inns) always stay hidden.",
+            soundSec = FDB,
+            soundField = "sectionSound",
+            onChange = RefreshAll,
+        })
+        y = y - h
+        _, h = W:DualRow(
+            parent,
+            y,
+            ForeverToggle(
+                "camp",
+                "Camp Benefits",
+                "Reminds you when the Camp Benefits campfire buff is missing.",
+                true
+            ),
+            ForeverToggle(
+                "sleepingBag",
+                "Sleeping Bag",
+                "Reminds you when your Well-Rested buff is missing or under 3 stacks.\nOnly while a Cozy Sleeping Bag is in your bags and you are below max level.\nClick the icon to use it."
+            )
+        )
+        y = y - h
+        -- Well Fed reads the client's own name for the buff (19705, EABR.WELL_FED), so it is localized.
+        local gatherRow
+        gatherRow, h = W:DualRow(
+            parent,
+            y,
+            ForeverToggle(
+                "wellFed",
+                _G._CUABR_SpellName(19705, "Well Fed"),
+                "Reminds you when you have no Well Fed buff."
+            ),
+            ForeverToggle(
+                "gather",
+                "Gathering Tracking",
+                "Reminds you when no gathering tracking is on.",
+                false,
+                true
+            )
+        )
+        y = y - h
+        if building then
+            CludesUI.BuildInlineCog(gatherRow._rightRegion, {
+                title = "Gathering Tracking",
+                disabled = function()
+                    local f = FDB()
+                    return not (f and f.gather == true)
+                end,
+                disabledTooltip = "Gathering Tracking",
                 rows = {
                     {
-                        type = "dropdown",
-                        label = "Mana Warning Font",
-                        values = leftRgn._rcwFontValues,
-                        order = leftRgn._rcwFontOrder,
+                        type = "toggle",
+                        label = "Ignore If Class Tracking Is Active",
                         get = function()
-                            local c = CDB()
-                            return (c and c.rcManaWarnFont) or "__global"
+                            local f = FDB()
+                            return not f or f.gatherClassTrack ~= false
                         end,
                         set = function(v)
-                            local c = CDB()
-                            if not c then
-                                return
+                            local f = FDB()
+                            if f then
+                                f.gatherClassTrack = v
+                                RefreshAll()
                             end
-                            c.rcManaWarnFont = (v ~= "__global") and v or nil
-                            if _G._CUABR_RCWarnApply then
-                                _G._CUABR_RCWarnApply()
-                            end
-                            ShowPreviewFromCog()
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Text Size",
-                        min = 10,
-                        max = 72,
-                        step = 1,
-                        get = function()
-                            local c = CDB()
-                            return c and c.rcManaWarnSize or 48
-                        end,
-                        set = function(v)
-                            local c = CDB()
-                            if not c then
-                                return
-                            end
-                            c.rcManaWarnSize = v
-                            if _G._CUABR_RCWarnApply then
-                                _G._CUABR_RCWarnApply()
-                            end
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "X Offset",
-                        min = -600,
-                        max = 600,
-                        step = 1,
-                        get = function()
-                            local c = CDB()
-                            return c and c.rcManaWarnX or 0
-                        end,
-                        set = function(v)
-                            local c = CDB()
-                            if not c then
-                                return
-                            end
-                            c.rcManaWarnX = v
-                            ShowPreviewFromCog()
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Y Offset",
-                        min = -600,
-                        max = 600,
-                        step = 1,
-                        get = function()
-                            local c = CDB()
-                            return c and c.rcManaWarnY or 0
-                        end,
-                        set = function(v)
-                            local c = CDB()
-                            if not c then
-                                return
-                            end
-                            c.rcManaWarnY = v
-                            ShowPreviewFromCog()
                         end,
                     },
                 },
             })
+        end
 
-            -- Color swatch (left of the cog). Default shows the brightened
-            -- mana color the warning uses when no custom is set.
-            local swatch = CludesUI.BuildColorSwatch(leftRgn, leftRgn:GetFrameLevel() + 5, function()
-                local c = CDB()
-                local col = c and c.rcManaWarnColor
-                if col then
-                    return col.r, col.g, col.b, 1
-                end
-                local mc = CludesUI.GetPowerColor("MANA")
-                if mc then
-                    return math.min(mc.r * 1.5, 1), math.min(mc.g * 1.5, 1), math.min(mc.b * 1.5, 1), 1
-                end
-                return 0, 0.825, 1, 1
-            end, function(r, g, b)
-                local c = CDB()
-                if not c then
-                    return
-                end
-                c.rcManaWarnColor = { r = r, g = g, b = b }
-                if _G._CUABR_RCWarnApply then
-                    _G._CUABR_RCWarnApply()
-                end
-            end, false, 20)
-            swatch:SetPoint("RIGHT", leftRgn._lastInline or leftRgn._control, "LEFT", -8, 0)
-            leftRgn._lastInline = swatch
-
-            local swatchBlock = CreateFrame("Frame", nil, swatch)
-            swatchBlock:SetAllPoints()
-            swatchBlock:SetFrameLevel(swatch:GetFrameLevel() + 10)
-            swatchBlock:EnableMouse(true)
-            swatchBlock:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip("Ready Check Mana Warning"))
-            end)
-            swatchBlock:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
-
-            -- Eye icon toggles a live preview (left of the swatch)
-            local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
-            local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
-            local eyeBtn = CreateFrame("Button", nil, leftRgn)
-            eyeBtn:SetSize(26, 26)
-            eyeBtn:SetPoint("RIGHT", leftRgn._lastInline or leftRgn._control, "LEFT", -8, 0)
-            leftRgn._lastInline = eyeBtn
-            eyeBtn:SetFrameLevel(leftRgn:GetFrameLevel() + 5)
-            CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-            local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
-            eyeTex:SetAllPoints()
-            RefreshRcwEye = function()
-                eyeTex:SetTexture(rcwPreviewShown and EYE_INVISIBLE or EYE_VISIBLE)
+        local class = select(2, UnitClass("player"))
+        local classBuffs = not MAGE and _G._CUABR_FvClassBuffs and _G._CUABR_FvClassBuffs()[class]
+        local weaponRow
+        weaponRow, h = W:DualRow(
+            parent,
+            y,
+            ForeverToggle(
+                "treasure",
+                _G._CUABR_SpellName(2481, "Find Treasure"),
+                "Reminds Dwarves when Find Treasure is off."
+            ),
+            ForeverToggle(
+                "weapon",
+                "Weapon Buffs",
+                "Reminds you when a weapon has no poison, imbue, stone or oil.\nClick the icon to apply one from your bags.",
+                false,
+                true
+            )
+        )
+        y = y - h
+        local classRow
+        if MAGE then
+            classRow, h = W:DualRow(
+                parent,
+                y,
+                ForeverToggle(
+                    "mageArmor",
+                    "Mage Armors",
+                    "Reminds you when no Frost Armor, Ice Armor or Mage Armor is up.\nThe icon is the one you last had on; click it to cast it."
+                ),
+                CludesUI.BlankRowCfg()
+            )
+            y = y - h
+        elseif classBuffs then
+            classRow, h = W:DualRow(parent, y, {
+                type = "label",
+                text = "Class Buffs",
+                tooltip = "Reminds you when one of your class's own buffs is missing.\nClick the icon to cast it.\nA custom spell or spell group for a ticked buff pauses meanwhile.",
+            }, CludesUI.BlankRowCfg())
+            y = y - h
+        end
+        if building then
+            if classBuffs then
+                ClassBuffList(classRow._leftRegion, classBuffs)
             end
-            RefreshRcwEye()
-            eyeBtn:SetScript("OnEnter", function(self)
-                CludesUI.SetGlyphAlpha(self, 0.7)
-                CludesUI.ShowWidgetTooltip(self, "Preview mana warning")
-            end)
-            eyeBtn:SetScript("OnLeave", function(self)
-                CludesUI.HideWidgetTooltip()
-                CludesUI.SetGlyphAlpha(self, 0.4)
-            end)
-            eyeBtn:SetScript("OnClick", function()
-                rcwPreviewShown = not rcwPreviewShown
-                RefreshRcwEye()
-                if rcwPreviewShown then
-                    if _G._CUABR_RCWarnPreview then
-                        _G._CUABR_RCWarnPreview()
-                    end
-                else
-                    if _G._CUABR_RCWarnHidePreview then
-                        _G._CUABR_RCWarnHidePreview()
-                    end
+            CludesUI.BuildInlineCog(weaponRow._rightRegion, {
+                title = "Weapon Buffs",
+                disabled = function()
+                    local f = FDB()
+                    return not (f and f.weapon == true)
+                end,
+                disabledTooltip = "Weapon Buffs",
+                minWidth = 320,
+                rows = WeaponBuffRows(class),
+            })
+        end
+
+        -- Add Custom Spell, paired with the tracked spells, then the groups.
+        y = BuildForeverCustomRows(parent, y, {
+            type = "input",
+            text = "Add Custom Spell",
+            inputStyle = "popup",
+            placeholder = "Spell ID",
+            inputWidth = 110,
+            tooltip = "Type a spell ID and press Enter to be reminded whenever that buff is missing.\nUnknown IDs are ignored.",
+            getValue = function()
+                return ""
+            end,
+            setValue = function(text)
+                local f = FDB()
+                if f then
+                    f.customIDs = f.customIDs or {}
+                    AddSpellIDToList(f.customIDs, text)
                 end
-            end)
+            end,
+        })
+        return BuildForeverGroupSections(parent, y)
+    end
 
-            local eyeBlock = CreateFrame("Frame", nil, eyeBtn)
-            eyeBlock:SetAllPoints()
-            eyeBlock:SetFrameLevel(eyeBtn:GetFrameLevel() + 10)
-            eyeBlock:EnableMouse(true)
-            eyeBlock:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(eyeBtn, CludesUI.DisabledTooltip("Ready Check Mana Warning"))
-            end)
-            eyeBlock:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+    -- DISPLAY: shape, border, name / count / glow and layout rows. Returns
+    -- y, the header and the two rows the preview's clicks lead to.
+    local function BuildDisplaySection(parent, y)
+        local header, h = CludesUI.Widgets:SectionHeader(parent, SECTION_DISPLAY, y)
+        y = BuildShapeRow(parent, y - h)
+        local borderRow, nameRow
+        y, borderRow = BuildBorderRows(parent, y)
+        y, nameRow = BuildTextRows(parent, y)
+        return BuildLayoutRows(parent, y), header, borderRow, nameRow
+    end
 
-            -- Shared disabled-state refresh for all three inlines
-            local function UpdateRcwInlinesDisabled()
-                local off = rcwOff()
-                if off then
-                    rcwPreviewShown = false
-                    RefreshRcwEye()
-                    swatch:SetAlpha(0.3)
-                    swatchBlock:Show()
-                    CludesUI.SetGlyphAlpha(eyeBtn, 0.15)
-                    eyeBlock:Show()
-                else
-                    swatch:SetAlpha(1)
-                    swatchBlock:Hide()
-                    CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-                    eyeBlock:Hide()
-                end
-            end
-            UpdateRcwInlinesDisabled()
-            CludesUI.RegisterWidgetRefresh(UpdateRcwInlinesDisabled)
+    -- Where each preview icon's click leads: its category's section and row,
+    -- each raid buff / aura grid cell, and each consumable's own row.
+    local function MapPreviewClicks(s, cells)
+        local map = _eabrClickMappings
+        wipe(map)
+        local function To(key, section, target)
+            map[key] = { section = section, target = target or section }
         end
+        To("display", s.display, s.border)
+        To("showText", s.display, s.name)
+        To("raidbuff", s.raid)
+        To("aura", s.aura)
+        To("consumable", s.consum.header, s.consum.flask)
+        To("item:soulstone", s.warlock, s.warlockRow)
+        for key, cell in pairs(cells) do
+            To("item:" .. key, cell)
+        end
+        local c = s.consum
+        for key, row in pairs({
+            flask = c.flask,
+            food = c.food,
+            weapon_enchant = c.weapon,
+            augment_rune = c.rune,
+            healthstone = c.rune,
+            inky_black = c.inky,
+        }) do
+            To("item:" .. key, row)
+        end
+    end
 
-        -- Wire up click mappings for preview hit overlays.
-        wipe(_eabrClickMappings)
-        _eabrClickMappings.display = { section = displaySection, target = borderRow }
-        _eabrClickMappings.showText = { section = displaySection, target = rowText }
-        _eabrClickMappings.raidbuff = { section = raidBufHdr, target = raidBufHdr }
-        _eabrClickMappings.aura = { section = auraHdr, target = auraHdr }
-        _eabrClickMappings.consumable = { section = consumHdr, target = consumFirstRow }
-        _eabrClickMappings["item:soulstone"] = { section = warlockHdr, target = warlockRow }
+    local function BuildRemindersPage(pageName, parent, yOffset)
+        local y = yOffset
+        local cells = {} -- [item key] = its grid cell (the preview's item clicks)
+        local s = {} -- the sections and rows the preview's clicks lead to
 
-        -- Per-item mappings: grid cells for individual raid buffs / auras
-        for k, cell in pairs(_gridCellRefs) do
-            _eabrClickMappings["item:" .. k] = { section = cell, target = cell }
+        -- The preview header (retail only; WoW Forever has no preview).
+        if not FOREVER then
+            CludesUI:SetContentHeader(_previewHeaderBuilder)
         end
-        -- Per-item mappings: consumable toggle rows
-        if flaskRow then
-            _eabrClickMappings["item:flask"] = { section = flaskRow, target = flaskRow }
-        end
-        if foodRow then
-            _eabrClickMappings["item:food"] = { section = foodRow, target = foodRow }
-        end
-        if weaponEnchantRow then
-            _eabrClickMappings["item:weapon_enchant"] =
-                { section = weaponEnchantRow, target = weaponEnchantRow }
-        end
-        if runeRow then
-            _eabrClickMappings["item:augment_rune"] = { section = runeRow, target = runeRow }
-        end
-        if healthstoneRow then
-            _eabrClickMappings["item:healthstone"] = { section = healthstoneRow, target = healthstoneRow }
-        end
-        if inkyRow then
-            _eabrClickMappings["item:inky_black"] = { section = inkyRow, target = inkyRow }
-        end
+        parent._showRowDivider = true
 
+        y = ClickInfoLine(parent, y)
+        if FOREVER then
+            y = ForeverPurposeBanner(parent, y)
+        end
+        y = BuildCoreSection(parent, y)
+        y, s.display, s.border, s.name = BuildDisplaySection(parent, y)
+        y, s.raid = BuildRaidBuffSection(parent, y, cells)
+        if FOREVER then
+            -- No preview header here, so no click-to-scroll mappings to wire.
+            return math.abs(BuildForeverSection(parent, y))
+        end
+        y, s.aura = BuildAuraSection(parent, y, cells)
+        y = BuildClassSections(parent, y, cells)
+        y = BuildPetSection(parent, y)
+        y, s.warlock, s.warlockRow = BuildWarlockSection(parent, y)
+        y, s.consum = BuildConsumableRows(parent, y)
+        y = BuildConsumableExtras(parent, y)
+        MapPreviewClicks(s, cells)
         return math.abs(y)
     end
 
