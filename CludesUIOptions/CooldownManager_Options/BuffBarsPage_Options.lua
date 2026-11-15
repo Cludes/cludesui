@@ -3808,6 +3808,20 @@ local function InitBuffBarsPage(
             local groupId = _tbbSelectedGroup
             hostFrame._showRowDivider = true
             hostFrame._tbbClickTargets = nil
+            -- A group layout edit: rebuild the bars, repaint the popout (the soft
+            -- page refresh takes the fast path past it) and refresh the page.
+            local function GroupLayoutChanged()
+                mod.BuildTrackedBuffBars()
+                RefreshTBBPopout()
+                CludesUI:RefreshPage()
+            end
+            local function GlobalKey()
+                return mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(groupId)
+            end
+            local function GlobalEntry()
+                local gk = GlobalKey()
+                return gk and mod.TBBGlobalGroup and mod.TBBGlobalGroup(gk) or nil
+            end
 
             heading, hgt = W:SectionHeader(hostFrame, "GROUP SETTINGS", posY)
             posY = posY - hgt
@@ -3815,16 +3829,15 @@ local function InitBuffBarsPage(
             -- bar's (nil while no member is enabled: the click then does nothing).
             CludesUI.BuildSectionUnlockJump(heading, {
                 key = function()
-                    local gk = mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(groupId)
+                    local gk = GlobalKey()
                     if gk then
                         return "TBBG_" .. gk
                     end
-                    local ai = mod.TBBGroupAnchorIndex(groupId)
-                    return ai and ("TBB_" .. ai) or nil
+                    local anchor = mod.TBBGroupAnchorIndex(groupId)
+                    return anchor and ("TBB_" .. anchor) or nil
                 end,
             })
 
-            -- Grow Direction | Bar Spacing
             _, hgt = W:DualRow(hostFrame, posY, {
                 type = "dropdown",
                 text = "Grow Direction",
@@ -3835,10 +3848,7 @@ local function InitBuffBarsPage(
                 end,
                 setValue = function(v)
                     mod.TBBSetGroupGrow(groupId, v)
-                    mod.BuildTrackedBuffBars()
-                    -- Preview popout: RefreshPage() takes the fast path, repaint it here.
-                    RefreshTBBPopout()
-                    CludesUI:RefreshPage()
+                    GroupLayoutChanged()
                 end,
             }, {
                 type = "slider",
@@ -3852,15 +3862,12 @@ local function InitBuffBarsPage(
                 end,
                 setValue = function(v)
                     mod.TBBSetGroupSpacing(groupId, v)
-                    mod.BuildTrackedBuffBars()
-                    -- Preview popout: RefreshPage() takes the fast path, repaint it here.
-                    RefreshTBBPopout()
-                    CludesUI:RefreshPage()
+                    GroupLayoutChanged()
                 end,
             })
             posY = posY - hgt
 
-            -- Group Name (blank = the default "Group N" label) | Auto-Add
+            -- Group Name (blank = the default "Group N") | Auto-Add
             _, hgt = W:DualRow(hostFrame, posY, {
                 type = "input",
                 text = "Group Name",
@@ -3876,7 +3883,7 @@ local function InitBuffBarsPage(
                         mod.TBBSetGroupName(groupId, textValue)
                     end
                     RefreshTBB()
-                    -- Soft refresh so the "Currently Editing:" dropdown label picks up the new name right away.
+                    -- Soft refresh: the "Currently Editing:" label picks up the new name now.
                     CludesUI:RefreshPage()
                 end,
             }, {
@@ -3900,26 +3907,22 @@ local function InitBuffBarsPage(
             })
             posY = posY - hgt
 
-            -- Global Group | Shift Elements If No Bars
-            local function GlobalEntry()
-                local gk = mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(groupId)
-                return gk and mod.TBBGlobalGroup and mod.TBBGlobalGroup(gk) or nil
-            end
+            -- Global Group | Shift Elements If No Bars (+ Extra Y Offset cog,
+            -- the Resource Bars "Shift Elements if No Resource" twin).
             local shiftRow
             shiftRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Global Group",
                 tooltip = "Share this group's name, layout, and position across all specs.",
                 getValue = function()
-                    return (mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(groupId) ~= nil) or false
+                    return (mod.TBBGroupGlobalKey and GlobalKey() ~= nil) or false
                 end,
                 setValue = function(v)
-                    if not mod.TBBSetGroupGlobal then
-                        return
+                    if mod.TBBSetGroupGlobal then
+                        mod.TBBSetGroupGlobal(groupId, v)
+                        mod.BuildTrackedBuffBars()
+                        CludesUI:RefreshPage(true)
                     end
-                    mod.TBBSetGroupGlobal(groupId, v)
-                    mod.BuildTrackedBuffBars()
-                    CludesUI:RefreshPage(true)
                 end,
             }, {
                 type = "segmented",
@@ -3937,24 +3940,16 @@ local function InitBuffBarsPage(
                 end,
                 setValue = function(v)
                     local e = GlobalEntry()
-                    if not e then
-                        return
+                    if e then
+                        e.shiftNoBar = (v == "Up" or v == "Down") and v or nil
+                        mod.BuildTrackedBuffBars()
+                        CludesUI:RefreshPage()
                     end
-                    if v == "Up" or v == "Down" then
-                        e.shiftNoBar = v
-                    else
-                        e.shiftNoBar = nil
-                    end
-                    mod.BuildTrackedBuffBars()
-                    CludesUI:RefreshPage()
                 end,
             })
             posY = posY - hgt
-            -- Inline reposition cog on the shift dropdown: Extra Y Offset
-            -- (ResourceBars "Shift Elements if No Resource" parity).
             if not CludesUI._prebuilding then
-                local rgn = shiftRow._rightRegion
-                CludesUI.BuildInlineCog(rgn, {
+                CludesUI.BuildInlineCog(shiftRow._rightRegion, {
                     title = "Shift Offset",
                     rows = {
                         {
@@ -3975,11 +3970,11 @@ local function InitBuffBarsPage(
                                 end
                                 e.shiftNoBarExtraY = (v ~= 0) and v or nil
                                 mod.BuildTrackedBuffBars()
-                                -- The build tail's cascade is EDGE-gated on the
-                                -- shift direction, which a magnitude edit never
-                                -- flips -- re-cascade explicitly so the slider
-                                -- applies live (deferred batch coalesces drags).
-                                local gk = mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(groupId)
+                                -- The build tail's cascade fires only when the shift
+                                -- direction flips, which a magnitude edit never does:
+                                -- cascade here so the slider applies live (the
+                                -- deferred batch coalesces a drag).
+                                local gk = GlobalKey()
                                 if gk and CludesUI.PropagateAnchorChain then
                                     CludesUI.PropagateAnchorChain("TBBG_" .. gk)
                                 end
@@ -3989,7 +3984,7 @@ local function InitBuffBarsPage(
                 })
             end
 
-            -- Ensure bar frames exist before showing placeholders
+            -- The bar frames exist before the placeholders show.
             mod.BuildTrackedBuffBars()
             UpdateTBBPlaceholder()
             RefreshTBBPopout()
