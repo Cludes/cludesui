@@ -1,343 +1,364 @@
 if CUI_CLIENT_BLOCKED then
     return
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
--- Blocks\XPRep.lua
--- XP / reputation bar block factory.
+-------------------------------------------------------------------------------
+--  Blocks\XPRep.lua - Info Bar block: an XP or reputation bar.
+--
+--  A label (percent, values or nothing; with or without "to level N" / the
+--  faction's name) over a thin bar: XP in the accent colour with rested XP
+--  behind it, or the watched faction in its standing colour (friendships and
+--  renown use their own rank ranges). Automatic mode shows XP below max level
+--  and reputation at it; right-click switches and remembers the choice.
+--
+--  XP and reputation change constantly (every kill, every rep gain), and the
+--  label only changes at a whole percent, so a gain that leaves the label as
+--  it is just moves the bar.
+--
+--  Settings (blockCfg.settings): mode = "xp" | "rep" | nil (automatic);
+--  textDisplay = "percentage" | "values" | "off"; textFormat = "plain" (no
+--  "to level" / faction name). blockCfg.labelAlign places the label.
+-------------------------------------------------------------------------------
+local _, mod = ...
+local L = mod.L
+local K = mod.BlockKit
 
-local ADDON_NAME, ns = ...
-local L = ns.L
-local K = ns.BlockKit
-
--- Upvalues
-local _G = _G
-local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
-local type = type
-local rawget = rawget
-local floor = math.floor
-local max = math.max
-local min = math.min
+local floor, max, min = math.floor, math.max, math.min
 
-local CONTENT_BASE = K.CONTENT_BASE
-local InstKey = K.InstKey
-local MakeEventFrame = K.MakeEventFrame
-local RegisterInstEvents = K.RegisterInstEvents
-local UnregisterInstEvents = K.UnregisterInstEvents
-local HBudget = K.HBudget
-local VSlotW = K.VSlotW
-local MaybeRelayout = K.MaybeRelayout
-local AttachTextOffset = K.AttachTextOffset
-local BlockColorOf = K.BlockColorOf
-
--------------------------------------------------------------------------------
---  XPREP (XP / Reputation bar)
---  Auto extent here means "reasonable fixed content size" (icon + 120px minimum bar); templates ship this type in pct mode.
--------------------------------------------------------------------------------
-function ns.GetXPRepTextDisplay(settings)
+function mod.GetXPRepTextDisplay(settings)
     return settings.textDisplay or "percentage"
 end
 
-ns.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
+local function Number(n)
+    return BreakUpLargeNumbers and BreakUpLargeNumbers(n) or n
+end
+
+-- The watched faction: the old global where it exists (WoW Forever), else
+-- C_Reputation's table, as name, reaction, min, max, current, faction id.
+local function Watched()
+    local legacy = rawget(_G, "GetWatchedFactionInfo")
+    if legacy then
+        return legacy()
+    end
+    local d = C_Reputation and C_Reputation.GetWatchedFactionData and C_Reputation.GetWatchedFactionData()
+    if d then
+        return d.name,
+            d.reaction,
+            d.currentReactionThreshold,
+            d.nextReactionThreshold,
+            d.currentStanding,
+            d.factionID
+    end
+end
+
+local function Grey(label)
+    return { label = label, minV = 0, maxV = 1, curV = 0, r = 0.5, g = 0.5, b = 0.5, rested = 0 }
+end
+
+mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
     local inst = { cfg = blockCfg, slot = slot, content = content, ctx = barCtx }
-    inst.key = InstKey(barCtx, blockCfg)
+    inst.key = K.InstKey(barCtx, blockCfg)
     inst.events = { "PLAYER_XP_UPDATE", "UPDATE_FACTION", "PLAYER_ENTERING_WORLD" }
 
-    local _dbFitBuf = { "" }
-    local mode = "rep"
-
-    local function D()
+    local function Settings()
         return blockCfg.settings or {}
     end
-    local function BC()
-        return barCtx.cfg
+
+    local function NoXP()
+        return K.AtMaxLevel() or (IsXPUserDisabled and IsXPUserDisabled())
     end
 
-    local XPAtMaxLevel = K.AtMaxLevel
-
-    local function UpdateMode()
-        local d = D()
-        if d.mode == "xp" then
-            mode = "xp"
-            return
-        end
-        if d.mode == "rep" then
-            mode = "rep"
-            return
-        end
-        local atMax = XPAtMaxLevel()
-        local xpOff = IsXPUserDisabled and IsXPUserDisabled()
-        mode = "rep"
-        if not atMax and not xpOff then
-            mode = "xp"
+    -- "xp" or "rep": the setting, or automatic (XP while there is XP to earn).
+    local mode = "rep"
+    local function PickMode()
+        local chosen = Settings().mode
+        if chosen == "xp" or chosen == "rep" then
+            mode = chosen
+        else
+            mode = NoXP() and "rep" or "xp"
         end
     end
 
-    -- Compat: legacy GetWatchedFactionInfo vs C_Reputation.GetWatchedFactionData.
-    local LegacyGetWatchedFactionInfo = rawget(_G, "GetWatchedFactionInfo")
-    local C_Rep = C_Reputation
-    local function GetWatchedFactionInfoCompat()
-        if LegacyGetWatchedFactionInfo then
-            return LegacyGetWatchedFactionInfo()
-        end
-        if C_Rep and C_Rep.GetWatchedFactionData then
-            local d = C_Rep.GetWatchedFactionData()
-            if d then
-                return d.name,
-                    d.reaction,
-                    d.currentReactionThreshold,
-                    d.nextReactionThreshold,
-                    d.currentStanding,
-                    d.factionID
-            end
-        end
-        return nil
-    end
-
-    local function GetProgressValues(cur, minV, maxV)
-        if type(minV) ~= "number" then
-            minV = 0
-        end
-        if type(maxV) ~= "number" then
-            maxV = minV + 1
-        end
-        if type(cur) ~= "number" then
-            cur = minV
-        end
-        local pCur = cur - minV
-        local pMax = maxV - minV
-        if pMax <= 0 then
-            local n = 1
-            if pCur > 0 then
-                n = pCur
-            end
-            return n, n, 100
-        end
-        return pCur, pMax, max(0, min(100, floor((pCur / pMax) * 100)))
-    end
-
-    -- Returns the label and whether the level/faction context applies to it.
-    local function ProgressLabel(cur, total)
-        local d = D()
-        local display = ns.GetXPRepTextDisplay(d)
+    -- The label for cur of total, and whether "to level" / the name goes with it.
+    local function Label(cur, total)
+        local s = Settings()
+        local display = mod.GetXPRepTextDisplay(s)
         if display == "off" then
             return "", false
         end
-        local context = d.textFormat ~= "plain"
+        local context = s.textFormat ~= "plain"
         if display == "values" then
-            local bl = BreakUpLargeNumbers
-            return (bl and bl(cur) or cur) .. " / " .. (bl and bl(total) or total), context, true
+            return Number(cur) .. " / " .. Number(total), context, true
         end
         return floor(cur / max(1, total) * 100) .. "%", context
     end
 
-    local barButton = CreateFrame("Button", nil, content)
-    barButton:SetAllPoints()
-    barButton:EnableMouse(true)
-    barButton:RegisterForClicks("AnyUp")
-    barButton:SetScript("OnClick", function(_, btn)
-        if btn == "RightButton" and not InCombatLockdown() then
-            local d = D()
-            if mode == "xp" then
-                d.mode = "rep"
-            else
-                d.mode = "xp"
-            end
-            inst:Refresh()
-        end
-    end)
-    local nameText = content:CreateFontString(nil, "OVERLAY")
-    AttachTextOffset(inst, nameText)
-    local bar = CreateFrame("StatusBar", nil, content)
-    bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    local barTrack = content:CreateTexture(nil, "BACKGROUND")
-    local restBar = CreateFrame("StatusBar", nil, content)
-    restBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    restBar:SetStatusBarColor(0.3, 0.3, 1, 0.5)
-    restBar:Hide()
-
-    -- Shared value/label computation. Returns nil when nothing to show.
-    local function ComputeState()
-        UpdateMode()
-        if mode == "xp" then
-            -- At the level cap (or with XP gains off) there is no XP. AUTO mode
-            -- collapses (return nil) -- but an EXPLICIT d.mode must always render:
-            -- nil hides `content`, and barButton is a CHILD of content, so a
-            -- collapsed block has no hitbox and the right-click that toggles the
-            -- persisted mode back can never fire again -- the block stayed
-            -- cleared across reloads (field report 2026-08-13). The placeholder
-            -- keeps the block alive and names the way back.
-            local atMax = XPAtMaxLevel()
-            local xpOff = IsXPUserDisabled and IsXPUserDisabled()
-            if atMax or xpOff then
-                if D().mode ~= "xp" then
-                    return nil
-                end
-                return {
-                    label = xpOff and "XP Off (Right-Click: Rep)" or "Max Level (Right-Click: Rep)",
-                    minV = 0,
-                    maxV = 1,
-                    curV = 0,
-                    r = 0.5,
-                    g = 0.5,
-                    b = 0.5,
-                    rested = 0,
-                }
-            end
-            local curXP = UnitXP("player") or 0
-            local maxXP = UnitXPMax("player") or 1
-            if maxXP <= 0 then
-                maxXP = 1
-            end
-            curXP = max(0, min(maxXP, curXP))
-            local level = 0
-            if UnitLevel then
-                level = UnitLevel("player")
-            end
-            local label, context, values = ProgressLabel(curXP, maxXP)
-            if context then
-                label = label .. (values and " XP" or "") .. " to level " .. (level + 1)
-            end
-            local ar, ag, ab = ns.GetAccent()
-            local rested = GetXPExhaustion() or 0
-            return {
-                label = label,
-                tooltipLabel = "Level " .. level .. " XP",
-                minV = 0,
-                maxV = maxXP,
-                curV = curXP,
-                r = ar,
-                g = ag,
-                b = ab,
-                rested = rested,
-                isXP = true,
-            }
-        end
-        local name, reaction, minV, maxV, curV, factionID = GetWatchedFactionInfoCompat()
-        if not name then
-            -- Same trap as the XP branch above: collapse only in AUTO mode. The
-            -- reported repro is exactly this arm -- right-click on the XP bar
-            -- forces d.mode="rep" with no watched faction, and the collapsed
-            -- block ate every later click.
-            if D().mode ~= "rep" then
+    local function XPState()
+        if NoXP() then
+            -- Automatic mode hides the block here. A mode the player chose
+            -- must still show: the block is the only place to right-click back,
+            -- and a hidden block cannot be clicked.
+            if Settings().mode ~= "xp" then
                 return nil
             end
-            return {
-                label = "No Rep Tracked",
-                minV = 0,
-                maxV = 1,
-                curV = 0,
-                r = 0.5,
-                g = 0.5,
-                b = 0.5,
-                rested = 0,
-            }
+            local off = IsXPUserDisabled and IsXPUserDisabled()
+            return Grey(CludesUI.L(off and "XP Off (Right-Click: Rep)" or "Max Level (Right-Click: Rep)"))
         end
-        -- Friendship factions (Captain Tokka, Cursed Angler ranks, etc.): the
-        -- watched-faction payload returns EQUAL reaction thresholds for these,
-        -- which collapsed the range to zero and rendered a permanent 0% with a
-        -- nonsense "8,400 / 8,401" tooltip (field report 2026-08-22). The
-        -- friendship API carries the real rank window -- same handling as the
-        -- Action Bars RepBar. Checked before renown, matching that code path.
-        local isFriendship = false
-        if factionID and C_GossipInfo and C_GossipInfo.GetFriendshipReputation then
-            local fi = C_GossipInfo.GetFriendshipReputation(factionID)
-            if fi and fi.friendshipFactionID and fi.friendshipFactionID > 0 then
-                isFriendship = true
-                minV = fi.reactionThreshold or 0
-                curV = fi.standing or minV
-                if fi.nextThreshold and fi.nextThreshold > minV then
-                    maxV = fi.nextThreshold
-                else
-                    -- Maxed friendship rank: render a full bar.
-                    minV, maxV, curV = 0, 1, 1
-                end
-            end
+        local maxXP = UnitXPMax("player") or 1
+        if maxXP <= 0 then
+            maxXP = 1
         end
-        -- Major Factions (renown progress)
-        if not isFriendship and factionID and C_MajorFactions and C_MajorFactions.GetMajorFactionData then
-            local mfd = C_MajorFactions.GetMajorFactionData(factionID)
-            if mfd and type(mfd.renownLevelThreshold) == "number" and mfd.renownLevelThreshold > 0 then
-                minV = 0
-                maxV = mfd.renownLevelThreshold
-                curV = mfd.renownReputationEarned or 0
-            end
-        end
-        if type(minV) == "number" and type(maxV) == "number" and type(curV) == "number" then
-            local nMax = maxV - minV
-            local nCur = curV - minV
-            if nMax > 0 then
-                minV = 0
-                maxV = nMax
-                curV = nCur
-            end
-        end
-        if type(minV) ~= "number" then
-            minV = 0
-        end
-        if type(maxV) ~= "number" then
-            maxV = 1
-        end
-        if type(curV) ~= "number" then
-            curV = 0
-        end
-        if maxV <= minV then
-            maxV = minV + 1
-        end
-        curV = max(minV, min(maxV, curV))
-        local progress, total = GetProgressValues(curV, minV, maxV)
-        local dname = name
-        if #name > 20 then
-            dname = name:sub(1, 20) .. "..."
-        end
-        local label, context = ProgressLabel(progress, total)
+        local cur = max(0, min(maxXP, UnitXP("player") or 0))
+        local level = UnitLevel and UnitLevel("player") or 0
+        local label, context, values = Label(cur, maxXP)
         if context then
-            label = dname .. " " .. label
+            label = label .. (values and " XP" or "") .. " to level " .. (level + 1)
         end
-        local cr, cg, cb
+        local r, g, b = mod.GetAccent()
+        return {
+            label = label,
+            tooltipLabel = "Level " .. level .. " XP",
+            minV = 0,
+            maxV = maxXP,
+            curV = cur,
+            r = r,
+            g = g,
+            b = b,
+            rested = GetXPExhaustion() or 0,
+            isXP = true,
+        }
+    end
+
+    local function RepState()
+        local name, reaction, low, high, cur, factionID = Watched()
+        if not name then
+            -- As above: hidden in automatic mode only.
+            if Settings().mode ~= "rep" then
+                return nil
+            end
+            return Grey(CludesUI.L("No Rep Tracked"))
+        end
+        -- A friendship's thresholds come back equal (a permanent 0%); its own
+        -- API has the real rank range. Checked before renown.
+        local friend = factionID
+            and C_GossipInfo
+            and C_GossipInfo.GetFriendshipReputation
+            and C_GossipInfo.GetFriendshipReputation(factionID)
+        local isFriend = friend and friend.friendshipFactionID and friend.friendshipFactionID > 0
+        if isFriend then
+            low = friend.reactionThreshold or 0
+            cur = friend.standing or low
+            if friend.nextThreshold and friend.nextThreshold > low then
+                high = friend.nextThreshold
+            else
+                low, high, cur = 0, 1, 1 -- the top rank: a full bar
+            end
+        end
+        -- Renown: progress towards the next renown level.
+        if not isFriend and factionID and C_MajorFactions and C_MajorFactions.GetMajorFactionData then
+            local major = C_MajorFactions.GetMajorFactionData(factionID)
+            if major and type(major.renownLevelThreshold) == "number" and major.renownLevelThreshold > 0 then
+                low, high, cur = 0, major.renownLevelThreshold, major.renownReputationEarned or 0
+            end
+        end
+        -- Counted from the bottom of the current standing.
+        if type(low) == "number" and type(high) == "number" and type(cur) == "number" and high - low > 0 then
+            low, high, cur = 0, high - low, cur - low
+        end
+        low = type(low) == "number" and low or 0
+        high = type(high) == "number" and high or 1
+        cur = type(cur) == "number" and cur or 0
+        if high <= low then
+            high = low + 1
+        end
+        cur = max(low, min(high, cur))
+
+        local label, context = Label(cur - low, high - low)
+        if context then
+            local short = #name > 20 and (name:sub(1, 20) .. "...") or name
+            label = short .. " " .. label
+        end
         local color = FACTION_BAR_COLORS and FACTION_BAR_COLORS[reaction]
+        local r, g, b
         if color then
-            cr, cg, cb = color.r, color.g, color.b
+            r, g, b = color.r, color.g, color.b
         else
-            cr, cg, cb = ns.GetAccent()
+            r, g, b = mod.GetAccent()
         end
         return {
             label = label,
             tooltipLabel = name,
-            minV = minV,
-            maxV = maxV,
-            curV = curV,
-            r = cr,
-            g = cg,
-            b = cb,
+            minV = low,
+            maxV = high,
+            curV = cur,
+            r = r,
+            g = g,
+            b = b,
             rested = 0,
         }
     end
 
-    -- Tooltip parity with every other block (clock/FPS/gold): info + the
-    -- action rows that document the mode toggle -- the toggle was invisible
-    -- without it. Built from the SAME ComputeState the bar renders from, so
-    -- the tip can never disagree with the bar (renown/paragon/placeholder
-    -- labels all inherit). Built on hover only -- zero idle cost. Wired HERE,
-    -- below ComputeState's declaration: at the barButton creation site above
-    -- the name would compile as a nil global inside the closure.
-    barButton:SetScript("OnEnter", function()
-        local state = ComputeState()
+    -- What to show, or nil to hide the block. The tooltip uses the same, so
+    -- it always agrees with the bar.
+    local function State()
+        PickMode()
+        if mode == "xp" then
+            return XPState()
+        end
+        return RepState()
+    end
+
+    local hit = CreateFrame("Button", nil, content)
+    hit:SetAllPoints()
+    hit:EnableMouse(true)
+    hit:RegisterForClicks("AnyUp")
+    local label = content:CreateFontString(nil, "OVERLAY")
+    K.AttachTextOffset(inst, label)
+    local fill = CreateFrame("StatusBar", nil, content)
+    fill:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    local track = content:CreateTexture(nil, "BACKGROUND")
+    local rested = CreateFrame("StatusBar", nil, content)
+    rested:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    rested:SetStatusBarColor(0.3, 0.3, 1, 0.5)
+    rested:Hide()
+
+    local drawnLabel -- the layout on screen; nil = none (hidden, or not drawn yet)
+
+    -- The bar's colour and fill, and rested XP behind it.
+    local function Fill(state)
+        rested:Hide()
+        fill:SetStatusBarColor(state.r, state.g, state.b, 1)
+        fill:SetMinMaxValues(state.minV, state.maxV)
+        fill:SetValue(state.curV)
+        if state.rested > 0 then
+            rested:SetMinMaxValues(state.minV, state.maxV)
+            rested:SetValue(min(state.curV + state.rested, state.maxV))
+            rested:Show()
+        end
+    end
+
+    local function Track(width, height)
+        track:SetSize(width, height)
+        track:SetColorTexture(1, 1, 1, 0.1)
+        fill:ClearAllPoints()
+        rested:ClearAllPoints()
+    end
+
+    function inst:Refresh()
+        local barH = barCtx.GetThickness()
+        local fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
+        local thin = max(2, floor(K.CONTENT_BASE * 0.2 + 0.5) - 1)
+
+        local state = State()
+        if not state then
+            drawnLabel = nil
+            content:Hide()
+            K.MaybeRelayout(self)
+            return
+        end
+        content:Show()
+        local withText = mod.GetXPRepTextDisplay(Settings()) ~= "off"
+        label:SetShown(withText)
+        -- XP's bar runs 40px past the label; GetAutoLength counts it in.
+        self._xpExtend = state.isXP and 40 or 0
+        -- The block colour is the label's; the bar keeps its own colour.
+        local r, g, b = K.BlockColorOf(blockCfg)
+        label:SetTextColor(r, g, b, 1)
+        Fill(state)
+        -- A font first: SetText on a FontString that never had one errors.
+        mod.SetFont(label, fontSize, barCtx.cfg)
+
+        if not withText then
+            -- Just the bar, centred.
+            label:SetText("")
+            self._xpExtend = 0
+            local vertical = barCtx.IsVertical()
+            local width = vertical and max(24, K.VSlotW(self) - 8) or max(20, min(120, K.HBudget(self, 300)))
+            content:SetSize(vertical and K.VSlotW(self) or width, vertical and 40 or barH)
+            track:ClearAllPoints()
+            track:SetPoint("CENTER", content, "CENTER", 0, 0)
+            Track(width, thin)
+            fill:SetAllPoints(track)
+            rested:SetAllPoints(fill)
+        elseif barCtx.IsVertical() then
+            -- The label above the bar, both the bar's width.
+            local slotW = K.VSlotW(self)
+            local inner = max(24, slotW - 8)
+            label:SetText(state.label)
+            mod.SetWrappedText(label, inner, "CENTER")
+            label:ClearAllPoints()
+            label:SetPoint("TOP", content, "TOP", 0, -3)
+            local textH = mod.SnapToPixelGrid(label:GetStringHeight())
+            local top = -(3 + textH + 3)
+            track:ClearAllPoints()
+            track:SetPoint("TOP", content, "TOP", 0, top)
+            Track(inner, 4)
+            fill:SetSize(inner, 4)
+            fill:SetPoint("TOP", content, "TOP", 0, top)
+            rested:SetAllPoints(fill)
+            content:SetSize(slotW, max(3 + textH + 3 + 4 + 3, 40))
+        else
+            -- The label over the bar, the bar as wide as the label (XP: 40px
+            -- more), the pair centred in the bar's height.
+            local budget = max(K.HBudget(self, 300), 60)
+            local align = blockCfg.labelAlign or "LEFT"
+            local anchor = align == "LEFT" and "TOPLEFT" or align == "RIGHT" and "TOPRIGHT" or "TOP"
+            mod.ResetInlineText(label, align)
+            label:SetText(state.label)
+            local most = max(20, budget)
+            local textW = label:GetStringWidth() or 0
+            if textW > most then
+                textW = most
+                label:SetWidth(textW)
+            end
+            textW = mod.SnapToPixelGrid(max(textW, 20))
+            local barW = state.isXP and min(textW + 40, most) or textW
+            local textH = mod.SnapToPixelGrid(label:GetStringHeight() or fontSize)
+            local pad = max(0, floor((barH - (textH + 2 + thin)) / 2 + 0.5))
+            content:SetSize(min(budget, barW), barH)
+            label:ClearAllPoints()
+            label:SetPoint(anchor, content, anchor, 0, -pad)
+            local top = -(pad + textH + 2)
+            track:ClearAllPoints()
+            track:SetPoint("TOPLEFT", content, "TOPLEFT", 0, top)
+            Track(barW, thin)
+            fill:SetSize(barW, thin)
+            fill:SetPoint("TOPLEFT", content, "TOPLEFT", 0, top)
+            rested:SetAllPoints(fill)
+        end
+        drawnLabel = (state.isXP and "xp:" or "rep:") .. state.label
+        K.MaybeRelayout(self)
+    end
+
+    -- A gain: if the label (and so the layout) is the same, only the bar moves.
+    inst.eventFrame = K.MakeEventFrame(inst, function(self)
+        local state = drawnLabel and State()
+        if state and (state.isXP and "xp:" or "rep:") .. state.label == drawnLabel then
+            Fill(state)
+            return
+        end
+        self:Refresh()
+    end)
+
+    hit:SetScript("OnClick", function(_, mouseButton)
+        if mouseButton == "RightButton" and not InCombatLockdown() then
+            Settings().mode = mode == "xp" and "rep" or "xp"
+            inst:Refresh()
+        end
+    end)
+    hit:SetScript("OnEnter", function()
+        local state = State()
         if not state then
             return
         end
-        local ar, ag, ab = ns.GetAccent()
-        ns.Tip_Begin(barButton)
-        -- Text Display Off leaves no label; name the bar instead.
-        local tipLabel = state.label
-        if tipLabel == "" then
-            tipLabel = state.tooltipLabel
-        end
-        ns.Tip_AddLine(tipLabel, 1, 1, 1)
+        local r, g, b = mod.GetAccent()
+        mod.Tip_Begin(hit)
+        -- With the text off there is no label, so the bar is named instead.
+        mod.Tip_AddLine(state.label ~= "" and state.label or state.tooltipLabel, 1, 1, 1)
         if state.maxV and state.maxV > 1 then
-            local bl = BreakUpLargeNumbers
-            ns.Tip_AddDouble(
+            mod.Tip_AddDouble(
                 L["PROGRESS"],
-                (bl and bl(state.curV) or state.curV) .. " / " .. (bl and bl(state.maxV) or state.maxV),
+                Number(state.curV) .. " / " .. Number(state.maxV),
                 0.6,
                 0.6,
                 0.6,
@@ -347,197 +368,48 @@ ns.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
             )
         end
         if state.rested and state.rested > 0 then
-            local bl = BreakUpLargeNumbers
-            ns.Tip_AddDouble(
-                L["RESTED"],
-                (bl and bl(state.rested) or state.rested),
-                0.6,
-                0.6,
-                0.6,
-                0.3,
-                0.3,
-                1
-            )
+            mod.Tip_AddDouble(L["RESTED"], Number(state.rested), 0.6, 0.6, 0.6, 0.3, 0.3, 1)
         end
-        ns.Tip_AddLine(" ")
-        ns.Tip_AddDouble(
-            L["RIGHT_CLICK"],
-            mode == "xp" and L["SWITCH_TO_REP"] or L["SWITCH_TO_XP"],
-            1,
-            1,
-            1,
-            ar,
-            ag,
-            ab
-        )
-        ns.Tip_Show()
+        mod.Tip_AddLine(" ")
+        local switch = mode == "xp" and L["SWITCH_TO_REP"] or L["SWITCH_TO_XP"]
+        mod.Tip_AddDouble(L["RIGHT_CLICK"], switch, 1, 1, 1, r, g, b)
+        mod.Tip_Show()
     end)
-    barButton:SetScript("OnLeave", function()
-        ns.Tip_Hide(barButton)
-    end)
-
-    function inst:Refresh()
-        local barCfg = BC()
-        local barH = barCtx.GetThickness()
-        local isSide = barCtx.IsVertical()
-        local textHeight = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
-
-        local state = ComputeState()
-        if not state then
-            content:Hide()
-            MaybeRelayout(inst)
-            return
-        end
-        content:Show()
-        local showText = ns.GetXPRepTextDisplay(D()) ~= "off"
-        nameText:SetShown(showText)
-        -- Auto-size measure needs the XP-only bar extension (see below).
-        inst._xpExtend = (state.isXP and 40) or 0
-
-        -- Block color applies to the label; the bar keeps its accent/faction color.
-        do
-            local br, bgr, bb = BlockColorOf(blockCfg)
-            nameText:SetTextColor(br, bgr, bb, 1)
-        end
-
-        restBar:Hide()
-        bar:SetStatusBarColor(state.r, state.g, state.b, 1)
-        bar:SetMinMaxValues(state.minV, state.maxV)
-        bar:SetValue(state.curV)
-        if state.rested > 0 then
-            restBar:SetMinMaxValues(state.minV, state.maxV)
-            restBar:SetValue(min(state.curV + state.rested, state.maxV))
-            restBar:Show()
-        end
-
-        if not showText then
-            -- SetText on a never-fonted FontString hard-errors; text Off from load never fonts it.
-            ns.SetFont(nameText, textHeight, barCfg)
-            nameText:SetText("")
-            inst._xpExtend = 0
-            local width = isSide and max(24, VSlotW(inst) - 8) or max(20, min(120, HBudget(inst, 300)))
-            local height = max(2, floor(CONTENT_BASE * 0.2 + 0.5) - 1)
-            content:SetSize(isSide and VSlotW(inst) or width, isSide and 40 or barH)
-            barTrack:ClearAllPoints()
-            barTrack:SetPoint("CENTER", content, "CENTER", 0, 0)
-            barTrack:SetSize(width, height)
-            barTrack:SetColorTexture(1, 1, 1, 0.1)
-            bar:ClearAllPoints()
-            bar:SetAllPoints(barTrack)
-            restBar:ClearAllPoints()
-            restBar:SetAllPoints(bar)
-        elseif isSide then
-            -- Vertical branch: stacked label above the bar.
-            local slotW = VSlotW(inst)
-            local innerW = max(24, slotW - 8)
-            _dbFitBuf[1] = state.label
-            local fitSize = textHeight
-            ns.SetFont(nameText, fitSize, barCfg)
-            nameText:SetText(state.label)
-            ns.SetWrappedText(nameText, innerW, "CENTER")
-            nameText:ClearAllPoints()
-            nameText:SetPoint("TOP", content, "TOP", 0, -3)
-            local textH = ns.SnapToPixelGrid(nameText:GetStringHeight())
-            local bH = 4
-            barTrack:ClearAllPoints()
-            barTrack:SetPoint("TOP", content, "TOP", 0, -(3 + textH + 3))
-            barTrack:SetSize(innerW, bH)
-            barTrack:SetColorTexture(1, 1, 1, 0.1)
-            bar:ClearAllPoints()
-            bar:SetSize(innerW, bH)
-            bar:SetPoint("TOP", content, "TOP", 0, -(3 + textH + 3))
-            restBar:ClearAllPoints()
-            restBar:SetAllPoints(bar)
-            content:SetSize(slotW, max(3 + textH + 3 + bH + 3, 40))
-        else
-            local slotW = HBudget(inst, 300)
-            slotW = max(slotW, 60)
-            local bH = max(2, floor(CONTENT_BASE * 0.2 + 0.5) - 1)
-
-            -- No icon: text on top, bar underneath sharing the left edge, stack centered in the bar height. The bar tracks the TEXT width.
-            _dbFitBuf[1] = state.label
-            local fitSize = textHeight
-            ns.SetFont(nameText, fitSize, barCfg)
-            -- The label's place along the bar (the XP bar runs past it). The Text
-            -- Align dropdown writes labelAlign beside align, so a block keeps its
-            -- left label until an alignment is picked there.
-            local align = blockCfg.labelAlign or "LEFT"
-            local textPoint = align == "LEFT" and "TOPLEFT" or align == "RIGHT" and "TOPRIGHT" or "TOP"
-            ns.ResetInlineText(nameText, align)
-            nameText:SetText(state.label)
-
-            local textW = nameText:GetStringWidth() or 0
-            local maxTextW = max(20, slotW)
-            if textW > maxTextW then
-                textW = maxTextW
-                nameText:SetWidth(textW)
-            end
-            if textW < 20 then
-                textW = 20
-            end
-            if ns.SnapToPixelGrid then
-                textW = ns.SnapToPixelGrid(textW)
-            end
-
-            -- XP mode only: the bar runs 40px past the text's right edge (rep and professions keep bar width = text width).
-            local barW = textW
-            if state.isXP then
-                barW = min(textW + 40, maxTextW)
-            end
-
-            local textH = ns.SnapToPixelGrid(nameText:GetStringHeight() or textHeight)
-            local stackH = textH + 2 + bH
-            local pad = max(0, floor((barH - stackH) / 2 + 0.5))
-            content:SetSize(min(slotW, barW), barH)
-            nameText:ClearAllPoints()
-            nameText:SetPoint(textPoint, content, textPoint, 0, -pad)
-            barTrack:ClearAllPoints()
-            barTrack:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -(pad + textH + 2))
-            barTrack:SetSize(barW, bH)
-            barTrack:SetColorTexture(1, 1, 1, 0.1)
-            bar:ClearAllPoints()
-            bar:SetSize(barW, bH)
-            bar:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -(pad + textH + 2))
-            restBar:ClearAllPoints()
-            restBar:SetAllPoints(bar)
-        end
-        MaybeRelayout(inst)
-    end
-
-    inst.eventFrame = MakeEventFrame(inst, function(self)
-        self:Refresh()
+    hit:SetScript("OnLeave", function()
+        mod.Tip_Hide(hit)
     end)
 
     function inst:Enable()
         content:Show()
-        RegisterInstEvents(self)
+        K.RegisterInstEvents(self)
     end
 
     function inst:Disable()
-        UnregisterInstEvents(self)
+        K.UnregisterInstEvents(self)
         content:Hide()
     end
 
     function inst:GetAutoLength()
-        -- Nothing to render (rep with no watched faction, or below-max with no XP source):
-        -- claim no length so the solver reserves no dead gap; the changed-extent relayout gate restores the width when content returns.
+        -- Hidden (nothing to show): no length, so the bar keeps no empty gap.
         if not content:IsShown() then
             return 0
         end
-        local barH = barCtx.GetThickness()
         if barCtx.IsVertical() then
             return max(content:GetHeight() or 40, 40)
         end
-        -- Auto size tracks the live text width (the bar matches it, plus the XP-only 40px extension). No icon term: text + bar only.
-        local tw = nameText:GetStringWidth() or 0
-        if tw < 20 then
-            tw = 120
+        -- The label's width (the bar matches it), plus XP's 40px.
+        local width = label:GetStringWidth() or 0
+        if width < 20 then
+            width = 120
         end
-        return tw + (self._xpExtend or 0)
+        return width + (self._xpExtend or 0)
     end
 
+    -- A removed block stops listening too (the old one kept redrawing its
+    -- hidden frames on every XP and reputation change until a reload).
     function inst:Destroy()
         self._dead = true
+        K.UnregisterInstEvents(self)
         content:Hide()
     end
 
