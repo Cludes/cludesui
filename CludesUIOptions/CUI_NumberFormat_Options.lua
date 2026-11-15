@@ -1,67 +1,108 @@
 if CUI_CLIENT_BLOCKED then
     return
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
--------------------------------------------------------------------------------
---  CUI_NumberFormat_Options.lua -- Global Settings > Numbers. How large
---  numbers are shortened (CludesUI_NumberFormat.lua): Precision and
---  threshold per value type, picked in the page header, plus the global Unit
---  Style and Letter Case. Every value lives in the active profile's
---  numberFormat table; this page only writes it and calls RefreshNumberFormat.
---  The Global Settings module dispatches the builder, the header and the
---  search variants (one per value type) from here.
+--------------------------------------------------------------------------------
+--  CUI_NumberFormat_Options.lua - Global Settings > Numbers.
+--
+--  How large numbers are shortened (CludesUI_NumberFormat.lua). Each value
+--  type (health, max health, absorb, boss health, meter) has its own
+--  Precision and threshold, set in the page header for the type picked in
+--  its tabs; the page body holds the Unit Style and Letter Case every type
+--  shares.
+--
+--  Everything is saved in the active profile's numberFormat table: the page
+--  writes it and calls CludesUI.RefreshNumberFormat. Global Settings calls
+--  the builders below; the header is never indexed by the search, so the
+--  page registers the header's two settings itself, once per value type.
 --  cui-style: allow comment-budget (file header below the client gate)
--------------------------------------------------------------------------------
+--------------------------------------------------------------------------------
 
--- Options page pool (CludesUI_FramePool.lua): frames made here on a pool
--- host are reset and dressed again by the next build instead of made anew;
--- elsewhere this is CreateFrame.
+-- Frames made on an options page come from the page pool (CludesUI_FramePool.lua).
 local CreateFrame = CludesUI._Pool.CreateFrame
 
-local PREVIEW_VALUES = { 8765, 45320, 1234567, 2345678901 }
 local TYPES = CludesUI.NUMBER_FORMAT_TYPES
 
-local TYPE_LABELS = {
-    health = "Health",
-    maxHealth = "Max Health",
-    absorb = "Absorb",
-    bossHealth = "Boss Health",
-    meter = "Damage Meter",
-}
--- One label per type, so each search hit restores its own type.
-local PRECISION_LABELS = {
-    health = "Health Precision",
-    maxHealth = "Max Health Precision",
-    absorb = "Absorb Precision",
-    bossHealth = "Boss Health Precision",
-    meter = "Damage Meter Precision",
-}
-local PRECISION_TIPS = {
-    health = "Current health values on Unit Frames, Raid Frames, Nameplates and the Resource Bars health bar. Standard keeps the default format. Smart shows three digits (1.23M, 12.3M, 123M).",
-    maxHealth = "Maximum health values on Unit Frames, Raid Frames, Nameplates and the Resource Bars health bar. Standard keeps the default format. Smart shows three digits (1.23M, 12.3M, 123M).",
-    absorb = "Absorb and heal absorb values on Unit Frames, Raid Frames and Nameplates. Standard keeps the default format. Smart shows three digits (1.23M, 12.3M, 123M).",
-    bossHealth = "Current and maximum health on the Unit Frames boss frames. Standard keeps the default format. Smart shows three digits (1.23M, 12.3M, 123M).",
-    -- WoW Forever has no Mythic+ run summary; its threat meter takes this type.
-    meter = CludesUI.IS_FOREVER
-            and "Damage Meters and the threat meter. Standard keeps the Damage Meters' own format. Smart shows three digits (1.23M, 12.3M, 123M)."
-        or "Damage Meters and the Mythic+ run summary. Standard keeps the Damage Meters' own format. Smart shows three digits (1.23M, 12.3M, 123M).",
+-- Per value type: its tab, the name of its Precision setting (each type
+-- its own, so a search hit brings back the right type) and that setting's
+-- tooltip.
+local TYPE_INFO = {
+    health = {
+        tab = "Health",
+        precision = "Health Precision",
+        tip = "Current health values on Unit Frames, Raid Frames, Nameplates and the Resource Bars health bar. Standard keeps the default format. Smart shows three digits (1.23M, 12.3M, 123M).",
+    },
+    maxHealth = {
+        tab = "Max Health",
+        precision = "Max Health Precision",
+        tip = "Maximum health values on Unit Frames, Raid Frames, Nameplates and the Resource Bars health bar. Standard keeps the default format. Smart shows three digits (1.23M, 12.3M, 123M).",
+    },
+    absorb = {
+        tab = "Absorb",
+        precision = "Absorb Precision",
+        tip = "Absorb and heal absorb values on Unit Frames, Raid Frames and Nameplates. Standard keeps the default format. Smart shows three digits (1.23M, 12.3M, 123M).",
+    },
+    bossHealth = {
+        tab = "Boss Health",
+        precision = "Boss Health Precision",
+        tip = "Current and maximum health on the Unit Frames boss frames. Standard keeps the default format. Smart shows three digits (1.23M, 12.3M, 123M).",
+    },
+    meter = {
+        tab = "Damage Meter",
+        precision = "Damage Meter Precision",
+        -- WoW Forever has no Mythic+ run summary; its threat meter uses this type instead.
+        tip = CludesUI.IS_FOREVER
+                and "Damage Meters and the threat meter. Standard keeps the Damage Meters' own format. Smart shows three digits (1.23M, 12.3M, 123M)."
+            or "Damage Meters and the Mythic+ run summary. Standard keeps the Damage Meters' own format. Smart shows three digits (1.23M, 12.3M, 123M).",
+    },
 }
 
--- The type the page shows; also set by a search jump (getPrebuildVariants).
-local selectedType = TYPES[1]
+local PRECISION_CHOICES = {
+    values = {
+        standard = "Standard",
+        smart = "Smart (3 Digits)",
+        [0] = "0 Decimals",
+        [1] = "1 Decimal",
+        [2] = "2 Decimals",
+    },
+    order = { "standard", "smart", 0, 1, 2 },
+}
+local THRESHOLD_CHOICES = {
+    values = { [1000] = "1,000", [10000] = "10,000", [100000] = "100,000" },
+    order = { 1000, 10000, 100000 },
+}
+local THRESHOLD_LABEL = "Start Abbreviating At"
+local THRESHOLD_TIP = "Numbers below this stay whole."
+local THRESHOLD_LOCK = "This option requires a Precision other than Standard"
+
+-- The header preview: these numbers, each above what the shown type makes of it.
+local PREVIEW_VALUES = { 8765, 45320, 1234567, 2345678901 }
+local PREVIEW_COLUMN_W = 130
+
+local INFO_ICON = [[Interface\AddOns\CludesUI\media\icons\cui-info.png]]
+local INFO_ALPHA, INFO_ALPHA_HOVER = 0.45, 0.9
+
+--------------------------------------------------------------------------------
+--  The shown value type
+--------------------------------------------------------------------------------
+-- Picked in the header tabs, or set by a search jump to one type's setting.
+local shownType = TYPES[1]
+
 CludesUI._setNumberFormatType = function(valueType)
-    selectedType = valueType
+    shownType = valueType
 end
+
+-- The search builds the page once per type (its "variants").
 function _G._CUI_NumberFormatVariants()
-    return { setter = CludesUI._setNumberFormatType, keys = TYPES, currentKey = selectedType }
+    return { setter = CludesUI._setNumberFormatType, keys = TYPES, currentKey = shownType }
 end
 
--------------------------------------------------------------------------------
---  Settings access (the active profile's numberFormat; nil before it exists)
--------------------------------------------------------------------------------
-
--- Precision and threshold exactly as the engine applies them.
+--------------------------------------------------------------------------------
+--  Reading and writing the settings
+--------------------------------------------------------------------------------
+-- A type's Precision and threshold as the engine applies them.
 local function Precision(valueType)
-    return (CludesUI.NumberFormatTypeSettings(valueType))
+    local precision = CludesUI.NumberFormatTypeSettings(valueType)
+    return precision
 end
 
 local function Threshold(valueType)
@@ -69,353 +110,351 @@ local function Threshold(valueType)
     return threshold
 end
 
-local function AllStandard()
-    for idx = 1, #TYPES do
-        if Precision(TYPES[idx]) ~= "standard" then
+local function EveryTypeStandard()
+    for _, valueType in ipairs(TYPES) do
+        if Precision(valueType) ~= "standard" then
             return false
         end
     end
     return true
 end
 
--- Repaints the header's preview and markers; set by the header builder.
-local headerRefresh
+-- Repaints the header for the shown type; set once the header is built.
+local RefreshHeader
 
-local function Apply()
+-- After any change: the engine, the header, then the page's rows.
+local function Applied()
     CludesUI.RefreshNumberFormat()
-    if headerRefresh then
-        headerRefresh()
+    if RefreshHeader then
+        RefreshHeader()
     end
     CludesUI:RefreshPage()
 end
 
--- Writes one field of a value type; "standard" is stored as nil.
-local function SetTypeField(valueType, key, val)
-    local nf = CludesUI.GetNumberFormatDB(true)
-    if not nf then
+-- One setting of one value type. Standard Precision is saved as no value.
+local function SetTypeSetting(valueType, key, value)
+    local saved = CludesUI.GetNumberFormatDB(true)
+    if not saved then
         return
     end
-    nf.types = nf.types or {}
-    local t = nf.types[valueType] or {}
-    nf.types[valueType] = t
-    if key == "precision" and val == "standard" then
-        val = nil
+    saved.types = saved.types or {}
+    local forType = saved.types[valueType] or {}
+    saved.types[valueType] = forType
+    if key == "precision" and value == "standard" then
+        value = nil
     end
-    t[key] = val
-    Apply()
+    forType[key] = value
+    Applied()
 end
 
-local function SetGlobalField(key, val)
-    local nf = CludesUI.GetNumberFormatDB(true)
-    if not nf then
+-- One setting shared by every value type.
+local function SetSharedSetting(key, value)
+    local saved = CludesUI.GetNumberFormatDB(true)
+    if not saved then
         return
     end
-    nf[key] = val
-    Apply()
+    saved[key] = value
+    Applied()
 end
 
-local PRECISION_VALUES = {
-    standard = "Standard",
-    smart = "Smart (3 Digits)",
-    [0] = "0 Decimals",
-    [1] = "1 Decimal",
-    [2] = "2 Decimals",
+-- A shared setting as its row shows it: the saved value when it is the
+-- other choice, else the default.
+local function SharedChoice(key, other, default)
+    local saved = CludesUI.GetNumberFormatDB()
+    if saved and saved[key] == other then
+        return other
+    end
+    return default
+end
+
+--------------------------------------------------------------------------------
+--  Module settings that win over this page
+--------------------------------------------------------------------------------
+-- Unit Frames' Show Decimal on Health Text (not in its percent-only form).
+local function UnitFramesDecimalsOn()
+    local mod = CludesUI.ModuleNS("CludesUIUnitFrames")
+    local profile = mod and mod.db and mod.db.profile
+    return profile ~= nil and profile.showDecimalOnText == true and profile.showDecimalPercentOnly ~= true
+end
+
+-- Damage Meters' Force English Units, which only overrides anything while
+-- the Unit Style shows the client's own units.
+local function MetersForceEnglishOn()
+    local db = _G._CUDM_DB
+    local meters = db and db.profile and db.profile.dm
+    return meters ~= nil and meters.forceEnglishUnits == true and CludesUI.NumberFormatUsesGlyphs()
+end
+
+local OVERRIDES = {
+    meter = {
+        active = MetersForceEnglishOn,
+        note = "Damage Meters' Force English Units overrides the Unit Style on Damage Meters",
+        module = "CludesUIDamageMeters",
+        page = "Damage Meters",
+        section = "BAR TEXT",
+        setting = "Force English Units (K/M/B)",
+    },
+    other = {
+        active = UnitFramesDecimalsOn,
+        note = "Unit Frames' Show Decimal on Health Text overrides this on Unit Frames",
+        module = "CludesUIUnitFrames",
+        page = "Main Frames",
+        section = "DISPLAY",
+        setting = "Show Decimal on Health Text",
+    },
 }
-local PRECISION_ORDER = { "standard", "smart", 0, 1, 2 }
-local THRESHOLD_VALUES = { [1000] = "1,000", [10000] = "10,000", [100000] = "100,000" }
-local THRESHOLD_ORDER = { 1000, 10000, 100000 }
-local THRESHOLD_TIP = "Numbers below this stay whole."
-local THRESHOLD_LOCK = "This option requires a Precision other than Standard"
 
--------------------------------------------------------------------------------
---  Module overrides: Unit Frames' Show Decimal on Health Text and Damage
---  Meters' Force English Units win over this page on their own module.
--------------------------------------------------------------------------------
-local function UFDecimalsOn()
-    local uf = CludesUI.ModuleNS("CludesUIUnitFrames")
-    local p = uf and uf.db and uf.db.profile
-    return p ~= nil and p.showDecimalOnText == true and p.showDecimalPercentOnly ~= true
+-- The override for a value type, unpacked as the link row takes it: whether
+-- it is on, its note, then where the setting is (module, page, section, row).
+local function Override(valueType)
+    local o = OVERRIDES[valueType] or OVERRIDES.other
+    return o.active(), o.note, o.module, o.page, o.section, o.setting
 end
 
-local function DMForceEnglishOn()
-    local d = _G._CUDM_DB
-    local dm = d and d.profile and d.profile.dm
-    -- Only an override while the Unit Style shows the client's own units.
-    return dm ~= nil and dm.forceEnglishUnits == true and CludesUI.NumberFormatUsesGlyphs()
-end
-
--- valueType -> active, label, module, page, section, highlight of its note
-local function OverrideNote(valueType)
-    if valueType == "meter" then
-        return DMForceEnglishOn(),
-            "Damage Meters' Force English Units overrides the Unit Style on Damage Meters",
-            "CludesUIDamageMeters",
-            "Damage Meters",
-            "BAR TEXT",
-            "Force English Units (K/M/B)"
-    end
-    return UFDecimalsOn(),
-        "Unit Frames' Show Decimal on Health Text overrides this on Unit Frames",
-        "CludesUIUnitFrames",
-        "Main Frames",
-        "DISPLAY",
-        "Show Decimal on Health Text"
-end
-
--------------------------------------------------------------------------------
---  Header: value type tabs, a live preview, and the type's Precision and
---  threshold
--------------------------------------------------------------------------------
-local INFO_ICON = [[Interface\AddOns\CludesUI\media\icons\cui-info.png]]
-
--- A header label and dropdown with the row tooltip on the label; withInfo puts
--- an (i) after the label that shares the label's tooltip.
-local function HeaderDropdown(
-    heading,
-    textValue,
-    tipText,
-    wid,
-    values,
-    sequence,
-    getValue,
-    setValue,
-    withInfo
-)
-    local L = CludesUI.L
-    local labelFS = CludesUI.MakeFont(heading, 14, nil, 1, 1, 1, 1)
-    labelFS:SetText(L(textValue))
-    local dropdown = CludesUI.BuildDropdownControl(
-        heading,
-        wid,
-        heading:GetFrameLevel() + 5,
-        values,
-        sequence,
-        getValue,
-        setValue
-    )
-    local details
-    if withInfo then
-        details = heading:CreateTexture(nil, "OVERLAY")
-        details:SetTexture(INFO_ICON)
-        details:SetVertexColor(1, 1, 1, 0.45)
-        CludesUI.PanelPP.Size(details, 12, 12)
-        details:SetPoint("LEFT", labelFS, "RIGHT", 5, 0)
-    end
-    local hit = CreateFrame("Frame", nil, heading)
-    hit:SetPoint("TOPLEFT", labelFS, "TOPLEFT", 0, 0)
-    hit:SetPoint("BOTTOMRIGHT", details or labelFS, "BOTTOMRIGHT", 0, 0)
-    hit:SetMouseClickEnabled(false)
-    hit:SetMouseMotionEnabled(true)
-    hit:SetScript("OnEnter", function()
-        if details then
-            details:SetVertexColor(1, 1, 1, 0.9)
-        end
-        CludesUI.ShowWidgetTooltip(labelFS, tipText())
-    end)
-    hit:SetScript("OnLeave", function()
-        if details then
-            details:SetVertexColor(1, 1, 1, 0.45)
-        end
-        CludesUI.HideWidgetTooltip()
-    end)
-    return labelFS, dropdown, details
-end
-
--- Everything here reads the shown type live, so a type pick only refreshes.
-local function HeaderBuilder(heading)
-    local Pix = CludesUI.PanelPP
-    local L = CludesUI.L
-    local accent = CludesUI.CLUDES_GREEN
-    local posY = -16
-
+--------------------------------------------------------------------------------
+--  Header
+--------------------------------------------------------------------------------
+-- The value type tabs. Returns the control, its height and its refresh.
+local function BuildTypeTabs(heading)
     local labels = {}
-    for idx = 1, #TYPES do
-        labels[TYPES[idx]] = TYPE_LABELS[TYPES[idx]]
+    for _, valueType in ipairs(TYPES) do
+        labels[valueType] = TYPE_INFO[valueType].tab
     end
-    local seg, segH, segRefresh = CludesUI.BuildSegmentedControl({
+    return CludesUI.BuildSegmentedControl({
         parent = heading,
         keys = TYPES,
         labels = labels,
         autoWidth = true,
         square = true,
         getChecked = function(key)
-            return key == selectedType
+            return key == shownType
         end,
+        -- The rest of the header and the page read the shown type live, so a
+        -- pick only refreshes them.
         onToggle = function(key)
-            if key == selectedType then
+            if key == shownType then
                 return
             end
-            selectedType = key
-            headerRefresh()
+            shownType = key
+            RefreshHeader()
             CludesUI:RefreshPage()
         end,
     })
-    seg:SetFrameLevel(heading:GetFrameLevel() + 5)
-    Pix.Point(seg, "TOP", heading, "TOP", 0, posY)
-    posY = posY - segH - 20
+end
 
-    -- Preview: one column per value, the raw number small above its result.
-    local COL_W = 130
+-- One column per preview value, centred on the header: the number small,
+-- and the result in the accent under it. Returns the result strings.
+local function BuildPreview(heading, posY)
+    local PP = CludesUI.PanelPP
+    local accent = CludesUI.CLUDES_GREEN
+    local count = #PREVIEW_VALUES
     local results = {}
-    for idx = 1, #PREVIEW_VALUES do
-        local val = PREVIEW_VALUES[idx]
-        local posX = (idx - (#PREVIEW_VALUES + 1) / 2) * COL_W
-        local raw = CludesUI.MakeFont(heading, 11, nil, 1, 1, 1, 0.4)
-        raw:SetText(BreakUpLargeNumbers(val))
-        Pix.Point(raw, "TOP", heading, "TOP", posX, posY)
-        local res = CludesUI.MakeFont(heading, 20, nil, accent.r, accent.g, accent.b, 1)
-        Pix.Point(res, "TOP", heading, "TOP", posX, posY - 16)
-        results[idx] = res
+    for i, value in ipairs(PREVIEW_VALUES) do
+        local posX = (i - (count + 1) / 2) * PREVIEW_COLUMN_W
+        local number = CludesUI.MakeFont(heading, 11, nil, 1, 1, 1, 0.4)
+        number:SetText(BreakUpLargeNumbers(value))
+        PP.Point(number, "TOP", heading, "TOP", posX, posY)
+        local result = CludesUI.MakeFont(heading, 20, nil, accent.r, accent.g, accent.b, 1)
+        PP.Point(result, "TOP", heading, "TOP", posX, posY - 16)
+        results[i] = result
     end
-    posY = posY - 16 - 24 - 18
+    return results
+end
 
-    -- Precision (its (i) names the modules and the cut) and threshold of the
-    -- shown type, either side of the middle.
-    local pLbl, pDD, pInfo = HeaderDropdown(
+-- A header label and its dropdown, the setting's tooltip on the label.
+-- With info set, an (i) follows the label (lowered by info.dy) and lights
+-- up with the tooltip. Placing the label and dropdown is the caller's.
+local function BuildHeaderSetting(heading, spec)
+    local label = CludesUI.MakeFont(heading, 14, nil, 1, 1, 1, 1)
+    label:SetText(CludesUI.L(spec.label))
+    local dropdown = CludesUI.BuildDropdownControl(
         heading,
-        PRECISION_LABELS[selectedType],
-        function()
-            return L(PRECISION_TIPS[selectedType]) .. "\n\n" .. CludesUI.L("Numbers are cut, not rounded.")
-        end,
-        170,
-        PRECISION_VALUES,
-        PRECISION_ORDER,
-        function()
-            return Precision(selectedType)
-        end,
-        function(val)
-            SetTypeField(selectedType, "precision", val)
-        end,
-        true
+        spec.width,
+        heading:GetFrameLevel() + 5,
+        spec.choices.values,
+        spec.choices.order,
+        spec.get,
+        spec.set
     )
-    Pix.Point(pDD, "TOPRIGHT", heading, "TOP", -20, posY)
-    -- The label centers on the dropdown; the (i) sits 3px lower to meet the
-    -- label's optical middle.
-    pLbl:SetPoint("RIGHT", pDD, "LEFT", -(12 + 12 + 5), 0)
-    pInfo:ClearAllPoints()
-    pInfo:SetPoint("LEFT", pLbl, "RIGHT", 5, -3)
-    local tLbl, tDD = HeaderDropdown(
-        heading,
-        "Start Abbreviating At",
-        function()
-            return L(THRESHOLD_TIP)
-        end,
-        110,
-        THRESHOLD_VALUES,
-        THRESHOLD_ORDER,
-        function()
-            return Threshold(selectedType)
-        end,
-        function(val)
-            SetTypeField(selectedType, "threshold", val)
+    local icon
+    if spec.info then
+        icon = heading:CreateTexture(nil, "OVERLAY")
+        icon:SetTexture(INFO_ICON)
+        icon:SetVertexColor(1, 1, 1, INFO_ALPHA)
+        CludesUI.PanelPP.Size(icon, 12, 12)
+        icon:SetPoint("LEFT", label, "RIGHT", 5, spec.info.dy)
+    end
+    local hover = CreateFrame("Frame", nil, heading)
+    hover:SetPoint("TOPLEFT", label, "TOPLEFT", 0, 0)
+    hover:SetPoint("BOTTOMRIGHT", icon or label, "BOTTOMRIGHT", 0, 0)
+    hover:SetMouseClickEnabled(false)
+    hover:SetMouseMotionEnabled(true)
+    hover:SetScript("OnEnter", function()
+        if icon then
+            icon:SetVertexColor(1, 1, 1, INFO_ALPHA_HOVER)
         end
-    )
-    tLbl:SetPoint("TOPLEFT", heading, "TOP", 20, posY - 8)
-    tDD:SetPoint("LEFT", tLbl, "RIGHT", 12, 0)
-    -- Locked while the type is on Standard: greyed, with the row lock tooltip.
-    local tLock = CreateFrame("Frame", nil, heading)
-    tLock:SetPoint("TOPLEFT", tLbl, "TOPLEFT", 0, 0)
-    tLock:SetPoint("BOTTOMRIGHT", tDD, "BOTTOMRIGHT", 0, 0)
-    tLock:SetFrameLevel(tDD:GetFrameLevel() + 10)
-    tLock:EnableMouse(true)
-    tLock:SetScript("OnEnter", function()
-        CludesUI.ShowWidgetTooltip(tDD, CludesUI.DisabledTooltip(THRESHOLD_LOCK))
+        CludesUI.ShowWidgetTooltip(label, spec.tooltip())
     end)
-    tLock:SetScript("OnLeave", function()
+    hover:SetScript("OnLeave", function()
+        if icon then
+            icon:SetVertexColor(1, 1, 1, INFO_ALPHA)
+        end
         CludesUI.HideWidgetTooltip()
     end)
-    posY = posY - 30 - 16
+    return label, dropdown
+end
 
-    headerRefresh = function()
-        local vt = selectedType
-        pLbl:SetText(L(PRECISION_LABELS[vt]))
-        for idx = 1, #PREVIEW_VALUES do
-            results[idx]:SetText(CludesUI.AbbreviateValue(PREVIEW_VALUES[idx], vt))
+-- The cover over the threshold while the shown type is on Standard: it
+-- takes the mouse and shows the row lock tooltip.
+local function BuildThresholdLock(heading, label, dropdown)
+    local lock = CreateFrame("Frame", nil, heading)
+    lock:SetPoint("TOPLEFT", label, "TOPLEFT", 0, 0)
+    lock:SetPoint("BOTTOMRIGHT", dropdown, "BOTTOMRIGHT", 0, 0)
+    lock:SetFrameLevel(dropdown:GetFrameLevel() + 10)
+    lock:EnableMouse(true)
+    lock:SetScript("OnEnter", function()
+        CludesUI.ShowWidgetTooltip(dropdown, CludesUI.DisabledTooltip(THRESHOLD_LOCK))
+    end)
+    lock:SetScript("OnLeave", function()
+        CludesUI.HideWidgetTooltip()
+    end)
+    return lock
+end
+
+-- Tabs, preview, then the shown type's Precision and threshold either side
+-- of the middle. Returns the header's height.
+local function BuildHeader(heading)
+    local PP = CludesUI.PanelPP
+    local L = CludesUI.L
+    local posY = -16
+
+    local tabs, tabsH, refreshTabs = BuildTypeTabs(heading)
+    tabs:SetFrameLevel(heading:GetFrameLevel() + 5)
+    PP.Point(tabs, "TOP", heading, "TOP", 0, posY)
+    posY = posY - tabsH - 20
+
+    local results = BuildPreview(heading, posY)
+    posY = posY - 58
+
+    -- Precision: its (i) names the modules the type covers and how it cuts.
+    -- The label is centred on the dropdown, and the (i) sits 3px lower to
+    -- meet the label's optical middle.
+    local precisionLabel, precisionDropdown = BuildHeaderSetting(heading, {
+        label = TYPE_INFO[shownType].precision,
+        tooltip = function()
+            return L(TYPE_INFO[shownType].tip) .. "\n\n" .. CludesUI.L("Numbers are cut, not rounded.")
+        end,
+        width = 170,
+        choices = PRECISION_CHOICES,
+        get = function()
+            return Precision(shownType)
+        end,
+        set = function(value)
+            SetTypeSetting(shownType, "precision", value)
+        end,
+        info = { dy = -3 },
+    })
+    PP.Point(precisionDropdown, "TOPRIGHT", heading, "TOP", -20, posY)
+    precisionLabel:SetPoint("RIGHT", precisionDropdown, "LEFT", -(12 + 12 + 5), 0)
+
+    local thresholdLabel, thresholdDropdown = BuildHeaderSetting(heading, {
+        label = THRESHOLD_LABEL,
+        tooltip = function()
+            return L(THRESHOLD_TIP)
+        end,
+        width = 110,
+        choices = THRESHOLD_CHOICES,
+        get = function()
+            return Threshold(shownType)
+        end,
+        set = function(value)
+            SetTypeSetting(shownType, "threshold", value)
+        end,
+    })
+    thresholdLabel:SetPoint("TOPLEFT", heading, "TOP", 20, posY - 8)
+    thresholdDropdown:SetPoint("LEFT", thresholdLabel, "RIGHT", 12, 0)
+    local thresholdLock = BuildThresholdLock(heading, thresholdLabel, thresholdDropdown)
+    posY = posY - 46
+
+    RefreshHeader = function()
+        local valueType = shownType
+        precisionLabel:SetText(L(TYPE_INFO[valueType].precision))
+        for i, result in ipairs(results) do
+            result:SetText(CludesUI.AbbreviateValue(PREVIEW_VALUES[i], valueType))
         end
-        local locked = Precision(vt) == "standard"
-        tLbl:SetAlpha(locked and 0.3 or 1)
-        tDD:SetAlpha(locked and 0.3 or 1)
-        tDD:EnableMouse(not locked)
-        tLock:SetShown(locked)
-        pDD._refreshLabel()
-        tDD._refreshLabel()
-        if segRefresh then
-            segRefresh()
+        local locked = Precision(valueType) == "standard"
+        local alpha = locked and 0.3 or 1
+        thresholdLabel:SetAlpha(alpha)
+        thresholdDropdown:SetAlpha(alpha)
+        thresholdDropdown:EnableMouse(not locked)
+        thresholdLock:SetShown(locked)
+        precisionDropdown._refreshLabel()
+        thresholdDropdown._refreshLabel()
+        if refreshTabs then
+            refreshTabs()
         end
     end
-    headerRefresh()
+    RefreshHeader()
 
     return math.abs(posY)
 end
 
 function _G._CUI_NumberFormatHeaderBuilder()
-    return HeaderBuilder
+    return BuildHeader
 end
 
 function _G._CUI_NumberFormatRefreshHeader()
-    if headerRefresh then
-        headerRefresh()
+    if RefreshHeader then
+        RefreshHeader()
     end
 end
 
--------------------------------------------------------------------------------
---  Page builder (dispatched from the Global Settings module registration)
--------------------------------------------------------------------------------
-function _G._CUI_BuildNumberFormatPage(pageName, hostFrame, yOffset)
-    local W = CludesUI.Widgets
-    local posY = yOffset
-    local _, hgt
-    local vt = selectedType
-
-    CludesUI:SetContentHeader(HeaderBuilder)
-    -- The type's Precision and threshold sit in the header, which the search
-    -- never indexes: register them here, per type, with the type as selector
-    -- key. Their section is not on the page, so a jump selects the type and
-    -- stops there. The body rows are global and stay untagged, so a jump to
-    -- them keeps the shown type.
-    local setter = CludesUI._setNumberFormatType
+--------------------------------------------------------------------------------
+--  Page
+--------------------------------------------------------------------------------
+-- The header's two settings for the shown type, as search entries tagged
+-- with the type: a jump picks the type and stops there (their section is
+-- not on the page). The body rows are shared by every type and stay
+-- untagged, so a jump to one keeps the shown type.
+local function RegisterHeaderSearch(valueType)
     local L = CludesUI.L
     local module, page = CludesUI._buildingModule, CludesUI._buildingPage
-    for _, e in ipairs({
-        { PRECISION_LABELS[vt], PRECISION_TIPS[vt] },
-        { "Start Abbreviating At", THRESHOLD_TIP },
-    }) do
-        local loc = L(e[1])
+    local entries = {
+        { TYPE_INFO[valueType].precision, TYPE_INFO[valueType].tip },
+        { THRESHOLD_LABEL, THRESHOLD_TIP },
+    }
+    for _, entry in ipairs(entries) do
+        local label, tip = entry[1], entry[2]
+        local localized = L(label)
         CludesUI._RegisterSearchEntry(
-            e[1],
-            loc ~= e[1] and loc or nil,
-            e[2],
+            label,
+            localized ~= label and localized or nil,
+            tip,
             module,
             page,
             "PRECISION",
-            setter,
-            vt
+            CludesUI._setNumberFormatType,
+            valueType
         )
     end
+end
 
-    hostFrame._showRowDivider = true
-
-    ---------------------------------------------------------------------------
-    --  UNITS (GLOBAL): every type
-    ---------------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "UNITS (GLOBAL)", posY)
-    posY = posY - hgt
-
-    _, hgt = W:DualRow(hostFrame, posY, {
+-- The two shared settings' rows (new tables for every build).
+local function LetterCaseRow()
+    return {
         type = "segmented",
         text = "Letter Case",
         tooltip = "Upper or lower case unit letters, for every value type with a Precision other than Standard.",
         values = { upper = "K M B", lower = "k m b" },
         order = { "upper", "lower" },
         getValue = function()
-            local nf = CludesUI.GetNumberFormatDB()
-            return (nf and nf.case == "lower") and "lower" or "upper"
+            return SharedChoice("case", "lower", "upper")
         end,
-        setValue = function(val)
-            SetGlobalField("case", val ~= "upper" and val or nil)
+        setValue = function(value)
+            SetSharedSetting("case", value ~= "upper" and value or nil)
         end,
         disabled = function()
-            return AllStandard() or CludesUI.NumberFormatUsesGlyphs()
+            return EveryTypeStandard() or CludesUI.NumberFormatUsesGlyphs()
         end,
         disabledTooltip = function()
             if CludesUI.NumberFormatUsesGlyphs() then
@@ -424,44 +463,68 @@ function _G._CUI_BuildNumberFormatPage(pageName, hostFrame, yOffset)
             return "This option requires a value type with a Precision other than Standard"
         end,
         rawTooltip = true,
-    }, {
+    }
+end
+
+local function UnitStyleRow()
+    return {
         type = "dropdown",
         text = "Unit Style",
         tooltip = "Client Language uses your language's own units (ten-thousand groups in Chinese and Korean). Western always uses K, M and B. Applies to every value type.",
         values = { auto = "Client Language", western = "Western (K, M, B)" },
         order = { "auto", "western" },
         getValue = function()
-            local nf = CludesUI.GetNumberFormatDB()
-            return (nf and nf.units == "western") and "western" or "auto"
+            return SharedChoice("units", "western", "auto")
         end,
-        setValue = function(val)
-            SetGlobalField("units", val ~= "auto" and val or nil)
+        setValue = function(value)
+            SetSharedSetting("units", value ~= "auto" and value or nil)
         end,
         disabled = function()
             return not CludesUI.LocaleHasNumberAbbreviation()
         end,
         disabledTooltip = "Only East Asian clients have their own units",
         rawTooltip = true,
-    })
+    }
+end
+
+-- The note naming a module setting that overrides the shown type, with a
+-- jump to it. That setting is on another page, so the row is always built
+-- (last, so hiding it moves nothing) and re-aimed and shown or hidden on
+-- every refresh (a type pick, a cache restore). The inline search leaves
+-- it alone: clearing a search shows every row it collected.
+local function BuildOverrideNote(hostFrame, posY)
+    local active, note, module, page, section, setting = Override(shownType)
+    local row
+    posY, row = CludesUI.BuildLinkRow(hostFrame, posY, note, module, page, section, setting, { warn = true })
+    row._searchIgnore = true
+    row:SetShown(active)
+    CludesUI.RegisterWidgetRefresh(function()
+        local on, text, m, p, s, hl = Override(shownType)
+        row:Relink(text, m, p, s, hl)
+        row:SetShown(on)
+    end)
+    return posY
+end
+
+-- Builds the page into hostFrame from yOffset down; returns its height.
+function _G._CUI_BuildNumberFormatPage(pageName, hostFrame, yOffset)
+    local W = CludesUI.Widgets
+    local posY = yOffset
+    local _, hgt
+
+    CludesUI:SetContentHeader(BuildHeader)
+    RegisterHeaderSearch(shownType)
+
+    hostFrame._showRowDivider = true
+
+    _, hgt = W:SectionHeader(hostFrame, "UNITS (GLOBAL)", posY)
     posY = posY - hgt
 
-    -- A module toggle overriding the shown type, with a jump to it. The toggle
-    -- lives on another page, so the row is always built (last, so hiding it
-    -- shifts nothing) and aimed and shown in place on every refresh (a type
-    -- pick, a cache restore). The inline search leaves it alone: its clear
-    -- shows every row it collected.
-    local enabled, note, nModule, nPage, section, highlight = OverrideNote(vt)
-    local noteRow
-    posY, noteRow =
-        CludesUI.BuildLinkRow(hostFrame, posY, note, nModule, nPage, section, highlight, { warn = true })
-    noteRow._searchIgnore = true
-    noteRow:SetShown(enabled)
-    CludesUI.RegisterWidgetRefresh(function()
-        local isShown, num, m, p, s, hl = OverrideNote(selectedType)
-        noteRow:Relink(num, m, p, s, hl)
-        noteRow:SetShown(isShown)
-    end)
+    _, hgt = W:DualRow(hostFrame, posY, LetterCaseRow(), UnitStyleRow())
+    posY = posY - hgt
 
-    -- Framework contract: return the positive total content height.
+    posY = BuildOverrideNote(hostFrame, posY)
+
+    -- The page framework takes the content height as a positive number.
     return math.abs(posY)
 end
