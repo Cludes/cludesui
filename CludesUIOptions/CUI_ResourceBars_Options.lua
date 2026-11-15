@@ -3941,7 +3941,30 @@ initFrame:SetScript("OnEvent", function(self)
                 return cover
             end
 
-            -- Row: Talent gate (single-spec entries only)
+            -- A value box that commits when it loses focus (Enter clears focus)
+            -- and on Escape puts back saved() and throws the typing away.
+            local function BindBox(box, commit, saved)
+                box:SetScript("OnEditFocusLost", function(self)
+                    if self._cancelCommit then
+                        self._cancelCommit = nil
+                        return
+                    end
+                    local entry = CurEntry()
+                    if entry then
+                        commit(self, entry)
+                    end
+                end)
+                box:SetScript("OnEnterPressed", function(self)
+                    self:ClearFocus()
+                end)
+                box:SetScript("OnEscapePressed", function(self)
+                    self._cancelCommit = true
+                    self:SetText(saved(CurEntry()))
+                    self:ClearFocus()
+                end)
+            end
+
+            -- Talent (single-spec entries only): a gate the entry needs.
             local talentRow = DRow("Talent", ROWH)
             talentRow._talentValues = { _menuOpts = { searchable = true, parent = thrPage } }
             talentRow._talentOrder = {}
@@ -3952,47 +3975,37 @@ initFrame:SetScript("OnEvent", function(self)
                 talentRow._talentValues,
                 talentRow._talentOrder,
                 function()
-                    local ent = CurEntry()
-                    if not ent then
-                        return 0
-                    end
-                    return ent.talentSpellID or 0
+                    local entry = CurEntry()
+                    return entry and entry.talentSpellID or 0
                 end,
                 function(key)
-                    local ent = CurEntry()
-                    if not ent then
+                    local entry = CurEntry()
+                    if not entry then
                         return
                     end
                     if key == 0 then
-                        ent.talentSpellID = nil
-                        ent.talentName = nil
+                        entry.talentSpellID, entry.talentName = nil, nil
                     else
-                        ent.talentSpellID = key
-                        ent.talentName = talentRow._talentValues[key]
+                        entry.talentSpellID, entry.talentName = key, talentRow._talentValues[key]
                     end
                     conf.rebuildFn()
                     if talentRow._talentDD and talentRow._talentDD._refreshLabel then
                         talentRow._talentDD._refreshLabel()
                     end
-                    -- Relabel + re-dim duplicate entries live
-                    RefreshSpecEntries()
+                    RefreshSpecEntries() -- relabels and re-dims duplicates
                 end,
+                -- An option another card for the same spec already uses with
+                -- the same gate is locked.
                 function(key)
-                    local ent = CurEntry()
-                    if not ent then
+                    local entry = CurEntry()
+                    local bar = conf.getBarData()
+                    if not (entry and bar and bar.thresholdSpecs) then
                         return false
                     end
-                    local edge = conf.getBarData()
-                    if not edge or not edge.thresholdSpecs then
-                        return false
-                    end
-                    local wantGate = (key ~= 0) and key or nil
-                    for i, other in ipairs(edge.thresholdSpecs) do
-                        if i ~= _selectedIdx then
-                            local og = other.talentSpellID
-                            local sameGate = (wantGate == nil and og == nil)
-                                or (wantGate ~= nil and og == wantGate)
-                            if sameGate and mod.SpecsConflict(ent.specIDs, other.specIDs) then
+                    local gate = key ~= 0 and key or nil
+                    for i, other in ipairs(bar.thresholdSpecs) do
+                        if i ~= _selectedIdx and other.talentSpellID == gate then
+                            if mod.SpecsConflict(entry.specIDs, other.specIDs) then
                                 return CludesUI.L("Already used by another card for this spec")
                             end
                         end
@@ -4003,17 +4016,16 @@ initFrame:SetScript("OnEvent", function(self)
             talentDD:SetHeight(22)
             talentDD:SetPoint("RIGHT", talentRow, "RIGHT", 0, 0)
             talentRow._talentDD = talentDD
-            -- Keep the menu above the cog popups
+            -- Its menu above the cog popups.
             talentDD:HookScript("OnClick", function()
-                local m = talentDD._ddMenu
-                if m then
-                    m:SetFrameStrata("TOOLTIP")
+                if talentDD._ddMenu then
+                    talentDD._ddMenu:SetFrameStrata("TOOLTIP")
                 end
             end)
             talentDD:HookScript("OnHide", function()
                 talentDD._invalidateMenu()
             end)
-            -- Greys the picker for a spec of a class the player is not playing (its talents are not in the loadout)
+            -- Greyed for a spec of another class (its talents are not in the loadout).
             local talentDis = CreateFrame("Frame", nil, talentRow)
             talentDis:SetPoint("TOPLEFT", talentDD, "TOPLEFT", 0, 0)
             talentDis:SetPoint("BOTTOMRIGHT", talentDD, "BOTTOMRIGHT", 0, 0)
@@ -4034,44 +4046,42 @@ initFrame:SetScript("OnEvent", function(self)
             talentDis:Hide()
             talentRow._dis = talentDis
 
-            -- Row: Hash values ("Hash at X" + hint + input + swatch + style cog)
+            -- Hash lines: "Hash at X", a hint, the positions, colour and a style cog.
             local hashRow = DRow(nil, ROWH)
             local hashLbl = CludesUI.MakeFont(hashRow, 13, nil, 1, 1, 1)
             hashLbl:SetAlpha(0.6)
             hashLbl:SetPoint("LEFT", hashRow, "LEFT", 0, 0)
             hashRow._lbl2 = hashLbl
-            local hashModeRow = {
+            local byPercent = {
                 type = "toggle",
                 label = "Position by percent",
                 get = function()
-                    local ent = CurEntry()
-                    return ((ent and ent.hashMode) or HASH_NIL) == "percent"
+                    local entry = CurEntry()
+                    return ((entry and entry.hashMode) or HASH_NIL) == "percent"
                 end,
                 set = function(v)
-                    local ent = CurEntry()
-                    if not ent then
-                        return
+                    local entry = CurEntry()
+                    if entry then
+                        entry.hashMode = v and "percent" or "value"
+                        conf.rebuildFn()
+                        RedrawDetail()
                     end
-                    ent.hashMode = v and "percent" or "value"
-                    conf.rebuildFn()
-                    RedrawDetail()
                 end,
             }
             if conf.entryRules then
-                -- Pip resources place their lines by stack count
-                hashModeRow.disabled = function()
+                -- Pip resources place their lines by stack count.
+                byPercent.disabled = function()
                     return rules.pips
                 end
-                hashModeRow.disabledTooltip = "Bar-type resources only (pips use stack counts)"
+                byPercent.disabledTooltip = "Bar-type resources only (pips use stack counts)"
             end
-            -- Style cog, pinned inside the row's right edge
             local hashCogBtn = CludesUI.BuildInlineCog(hashRow, {
                 title = "Hash Line Style",
                 bgAlpha = 1,
                 frameStrata = "FULLSCREEN_DIALOG",
                 frameLevel = 500,
                 rows = {
-                    hashModeRow,
+                    byPercent,
                     {
                         type = "slider",
                         label = "Hash Width",
@@ -4079,13 +4089,13 @@ initFrame:SetScript("OnEvent", function(self)
                         max = conf.hashWidthMax or 5,
                         step = 1,
                         get = function()
-                            local ent = CurEntry()
-                            return ent and ent.hashWidth or 1
+                            local entry = CurEntry()
+                            return entry and entry.hashWidth or 1
                         end,
                         set = function(v)
-                            local ent = CurEntry()
-                            if ent then
-                                ent.hashWidth = v
+                            local entry = CurEntry()
+                            if entry then
+                                entry.hashWidth = v
                                 conf.rebuildFn()
                             end
                         end,
@@ -4100,22 +4110,21 @@ initFrame:SetScript("OnEvent", function(self)
                 hashRow,
                 hashRow:GetFrameLevel() + 4,
                 function()
-                    local ent = CurEntry()
-                    if not ent then
+                    local entry = CurEntry()
+                    if not entry then
                         return 1, 1, 1, 0.7
                     end
-                    return ent.hashColorR or 1,
-                        ent.hashColorG or 1,
-                        ent.hashColorB or 1,
-                        ent.hashColorA or 0.7
+                    return entry.hashColorR or 1,
+                        entry.hashColorG or 1,
+                        entry.hashColorB or 1,
+                        entry.hashColorA or 0.7
                 end,
                 function(r, g, b, a)
-                    local ent = CurEntry()
-                    if not ent then
-                        return
+                    local entry = CurEntry()
+                    if entry then
+                        entry.hashColorR, entry.hashColorG, entry.hashColorB, entry.hashColorA = r, g, b, a
+                        conf.rebuildFn()
                     end
-                    ent.hashColorR, ent.hashColorG, ent.hashColorB, ent.hashColorA = r, g, b, a
-                    conf.rebuildFn()
                 end,
                 true,
                 19
@@ -4127,43 +4136,29 @@ initFrame:SetScript("OnEvent", function(self)
             hashHint:SetAlpha(0.35)
             hashHint:SetPoint("RIGHT", hashInput, "LEFT", -8, 0)
             hashRow._hint = hashHint
-            hashInput:SetScript("OnEditFocusLost", function(self)
-                if self._cancelCommit then
-                    self._cancelCommit = nil
-                    return
-                end
-                local ent = CurEntry()
-                if not ent then
-                    return
-                end
-                -- Only the numeric positions are kept, so text that draws no line never counts as configured
-                ent.hashValues = SanitizePositions(self:GetText(), true)
-                self:SetText(ent.hashValues)
+            -- Only the numeric positions are kept, so text that draws no line
+            -- never counts as configured.
+            BindBox(hashInput, function(self, entry)
+                entry.hashValues = SanitizePositions(self:GetText(), true)
+                self:SetText(entry.hashValues)
                 conf.rebuildFn()
                 UpdateNotice()
-            end)
-            hashInput:SetScript("OnEnterPressed", function(self)
-                self:ClearFocus()
-            end)
-            hashInput:SetScript("OnEscapePressed", function(self)
-                self._cancelCommit = true
-                local ent = CurEntry()
-                self:SetText(ent and ent.hashValues or "")
-                self:ClearFocus()
+            end, function(entry)
+                return entry and entry.hashValues or ""
             end)
 
-            -- Row: Threshold (enable toggle + input + swatch [+ cog])
+            -- Threshold: on / off, the value, its colour (and an optional cog).
             local threshRow = DRow(conf.thresholdLabel or "Threshold", ROWH)
             local threshCogBtn
-            local tc = conf.thresholdCog
-            if tc then
+            local cog = conf.thresholdCog
+            if cog then
                 threshCogBtn = CludesUI.BuildInlineCog(threshRow, {
-                    title = tc.title,
+                    title = cog.title,
                     bgAlpha = 1,
                     frameStrata = "FULLSCREEN_DIALOG",
                     frameLevel = 500,
-                    minWidth = tc.minWidth,
-                    rows = tc.rows(CurEntry, RedrawDetail),
+                    minWidth = cog.minWidth,
+                    rows = cog.rows(CurEntry, RedrawDetail),
                     size = 20,
                     anchorTo = threshRow,
                     relPoint = "RIGHT",
@@ -4174,51 +4169,42 @@ initFrame:SetScript("OnEvent", function(self)
                 threshRow,
                 DLVL + 4,
                 function()
-                    local ent = CurEntry()
-                    if not ent then
+                    local entry = CurEntry()
+                    if not entry then
                         return false
                     end
-                    if ent.thresholdEnabled == nil then
-                        return true
-                    end
-                    return ent.thresholdEnabled
+                    return entry.thresholdEnabled ~= false -- on when unset
                 end,
                 function(v)
-                    local ent = CurEntry()
-                    if not ent then
-                        return
+                    local entry = CurEntry()
+                    if entry then
+                        entry.thresholdEnabled = v
+                        conf.refreshFn()
+                        RedrawDetail()
                     end
-                    ent.thresholdEnabled = v
-                    conf.refreshFn()
-                    RedrawDetail()
                 end,
                 { sizeRatio = 0.95 }
             )
-            -- The entry's own color, else the bar-wide one the bar falls back to
+            -- The entry's own colour, else the bar's (which the bar falls back to).
             local threshSwatch, threshSwatchSnap = CludesUI.BuildColorSwatch(
                 threshRow,
                 threshRow:GetFrameLevel() + 4,
                 function()
-                    local ent = CurEntry()
-                    if not ent then
+                    local entry = CurEntry()
+                    if not entry then
                         return defR, defG, defB, defA
                     end
-                    local edge = conf.getBarData()
-                    return ent.thresholdR or edge.thresholdR or defR,
-                        ent.thresholdG or edge.thresholdG or defG,
-                        ent.thresholdB or edge.thresholdB or defB,
-                        ent.thresholdA or edge.thresholdA or defA
+                    local bar = conf.getBarData()
+                    return entry.thresholdR or bar.thresholdR or defR,
+                        entry.thresholdG or bar.thresholdG or defG,
+                        entry.thresholdB or bar.thresholdB or defB,
+                        entry.thresholdA or bar.thresholdA or defA
                 end,
                 function(r, g, b, a)
-                    local ent = CurEntry()
-                    if not ent then
-                        return
-                    end
-                    ent.thresholdR, ent.thresholdG, ent.thresholdB, ent.thresholdA = r, g, b, a
-                    if conf.swatchRefreshFn then
-                        conf.swatchRefreshFn()
-                    else
-                        conf.refreshFn()
+                    local entry = CurEntry()
+                    if entry then
+                        entry.thresholdR, entry.thresholdG, entry.thresholdB, entry.thresholdA = r, g, b, a;
+                        (conf.swatchRefreshFn or conf.refreshFn)()
                     end
                 end,
                 true,
@@ -4232,36 +4218,21 @@ initFrame:SetScript("OnEvent", function(self)
             local threshInput = MakeInput(threshRow, 50, true)
             threshInput:SetPoint("RIGHT", threshSwatch, "LEFT", -8, 0)
             threshEnable:SetPoint("RIGHT", threshInput, "LEFT", -8, 0)
-            -- Bounds and default come from the selected entry's rules
-            threshInput:SetScript("OnEditFocusLost", function(self)
-                if self._cancelCommit then
-                    self._cancelCommit = nil
+            -- Bounds and default come from the entry's rules.
+            BindBox(threshInput, function(self, entry)
+                local v = tonumber(self:GetText())
+                if not v then
+                    self:SetText(tostring(entry[THR_FIELD] or rules.thrDef))
                     return
                 end
-                local ent = CurEntry()
-                if not ent then
-                    return
-                end
-                local val = tonumber(self:GetText())
-                if not val then
-                    self:SetText(tostring(ent[THR_FIELD] or rules.thrDef))
-                    return
-                end
-                val = math.max(rules.thrMin, math.min(rules.thrMax, math.floor(val + 0.5)))
-                self:SetText(tostring(val))
-                ent[THR_FIELD] = val
+                v = math.max(rules.thrMin, math.min(rules.thrMax, math.floor(v + 0.5)))
+                self:SetText(tostring(v))
+                entry[THR_FIELD] = v
                 conf.refreshFn()
+            end, function(entry)
+                return tostring((entry and entry[THR_FIELD]) or rules.thrDef)
             end)
-            threshInput:SetScript("OnEnterPressed", function(self)
-                self:ClearFocus()
-            end)
-            threshInput:SetScript("OnEscapePressed", function(self)
-                self._cancelCommit = true
-                local ent = CurEntry()
-                self:SetText(tostring((ent and ent[THR_FIELD]) or rules.thrDef))
-                self:ClearFocus()
-            end)
-            -- The entry's note on its bounds (rules.thrTip), if any
+            -- The entry's note on its bounds (rules.thrTip), if any.
             threshInput:SetScript("OnEnter", function(self)
                 if self._tip then
                     CludesUI.ShowWidgetTooltip(self, self._tip)
@@ -4272,7 +4243,8 @@ initFrame:SetScript("OnEvent", function(self)
                     CludesUI.HideWidgetTooltip()
                 end
             end)
-            -- Greys the threshold input + swatch (label kept) while the threshold is off or replaced by multi-band
+            -- Greys the value and colour (the label stays) while the threshold
+            -- is off or multi-band replaces it.
             local threshDis = CreateFrame("Frame", nil, threshRow)
             threshDis:SetPoint("TOPLEFT", threshInput, "TOPLEFT", -2, 3)
             threshDis:SetPoint("BOTTOMRIGHT", threshSwatch, "BOTTOMRIGHT", 3, -3)
@@ -4282,9 +4254,9 @@ initFrame:SetScript("OnEvent", function(self)
             threshDisTex:SetAllPoints()
             threshDisTex:SetColorTexture(0.062, 0.070, 0.082, 0.7)
             threshDis:SetScript("OnEnter", function()
-                local tipText = (threshRow._disTip == "MULTI") and BAND_REPLACES_TIP
+                local tip = threshRow._disTip == "MULTI" and BAND_REPLACES_TIP
                     or CludesUI.DisabledTooltip("Threshold Color")
-                CludesUI.ShowWidgetTooltip(threshDis, tipText)
+                CludesUI.ShowWidgetTooltip(threshDis, tip)
             end)
             threshDis:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
