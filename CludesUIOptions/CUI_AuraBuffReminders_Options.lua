@@ -72,44 +72,38 @@ initFrame:SetScript("OnEvent", function(self)
         end
         return db and db.profile
     end
-    local function DDB()
-        local p = DB()
-        return p and p.display
+    -- One profile table's accessor (nil until the profile loads).
+    local function Section(key)
+        return function()
+            local p = DB()
+            return p and p[key]
+        end
     end
+    local DDB = Section("display")
+    local RDB = Section("raidBuffs")
+    local ADB = Section("auras")
+    local CDB = Section("consumables")
+    local FDB = Section("forever") -- the WoW Forever section (nil on retail)
 
+    -- The reminder name font: the display's own pick, else the module font.
     local function GetNameFontPath()
         local d = DDB()
-        local fontName = d and d.nameFont
-        if fontName and fontName ~= "__global" and CludesUI.ResolveFontName then
-            local path = CludesUI.ResolveFontName(fontName)
+        local pick = d and d.nameFont
+        if pick and pick ~= "__global" and CludesUI.ResolveFontName then
+            local path = CludesUI.ResolveFontName(pick)
             if path and path ~= "" then
                 return path
             end
         end
-        return (CludesUI.GetFontPath("auraBuff")) or "Fonts\\ARIALN.TTF"
+        return CludesUI.GetFontPath("auraBuff") or "Fonts\\ARIALN.TTF"
     end
 
+    -- The text's own point and the icon's point it sits on (as live).
     local PREVIEW_TEXT_ANCHORS = _G._CUABR_TEXT_ANCHORS
     local function GetPreviewTextAnchor(d)
-        local m = PREVIEW_TEXT_ANCHORS[(d and d.textAnchor) or "BOTTOM"] or PREVIEW_TEXT_ANCHORS.BOTTOM
-        return m[1], m[2]
+        local pair = PREVIEW_TEXT_ANCHORS[(d and d.textAnchor) or "BOTTOM"] or PREVIEW_TEXT_ANCHORS.BOTTOM
+        return pair[1], pair[2]
     end
-    local function RDB()
-        local p = DB()
-        return p and p.raidBuffs
-    end
-    local function ADB()
-        local p = DB()
-        return p and p.auras
-    end
-    local function CDB()
-        local p = DB()
-        return p and p.consumables
-    end
-    local function FDB()
-        local p = DB()
-        return p and p.forever
-    end -- WoW Forever section (nil on retail)
 
     ---------------------------------------------------------------------------
     --  Refresh
@@ -132,20 +126,21 @@ initFrame:SetScript("OnEvent", function(self)
         return CludesUIDB and CludesUIDB.previewHintDismissed
     end
 
-    local Known = function(id)
+    local function Known(id)
         return id
             and (
                 C_SpellBook.IsSpellKnown(id)
                 or C_SpellBook.IsSpellInSpellBook(id, Enum.SpellBookSpellBank.Player, false)
             )
     end
-    local Tex = function(id)
+    local function Tex(id)
         return _G._CUABR_Tex and _G._CUABR_Tex(id)
             or (C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(id))
             or 134400
     end
 
-    --- Shorten a buff/aura label to its first word, with special overrides.
+    -- A buff's preview label: its first word, a short name for a few, or
+    -- one word for a whole class family (poisons, imbues, shields).
     local LABEL_OVERRIDES = {
         ["Battle Stance"] = "Stance",
         ["Defensive Stance"] = "Stance",
@@ -156,195 +151,152 @@ initFrame:SetScript("OnEvent", function(self)
         ["Battle Shout"] = "Shout",
     }
     local LABEL_CLASS_OVERRIDES = {
-        ROGUE = "Poison", -- all rogue poisons
-        SHAMAN_IMBUE = "Weapon", -- all shaman weapon imbues
-        SHAMAN_SHIELD = "Shield", -- all shaman shields
+        ROGUE = "Poison",
+        SHAMAN_IMBUE = "Weapon",
+        SHAMAN_SHIELD = "Shield",
     }
-    local function ShortLabel(name, classOverride)
-        if classOverride and LABEL_CLASS_OVERRIDES[classOverride] then
-            return CludesUI.L(LABEL_CLASS_OVERRIDES[classOverride])
+    local function ShortLabel(name, family)
+        local word = family and LABEL_CLASS_OVERRIDES[family]
+        if word then
+            return CludesUI.L(word)
         end
-        if LABEL_OVERRIDES[name] then
-            return LABEL_OVERRIDES[name]
-        end
-        return name:match("^(%S+)") or name
+        return LABEL_OVERRIDES[name] or name:match("^(%S+)") or name
     end
 
-    --- Collect all potential preview icons for the player's class/spec
+    -- The class consumable families: only the first enabled, known one
+    -- shows. [class] = { data global, label family }.
+    local CLASS_FAMILIES = {
+        ROGUE = { "_CUABR_ROGUE_POISONS", "ROGUE" },
+        PALADIN = { "_CUABR_PALADIN_RITES" },
+        SHAMAN = { "_CUABR_SHAMAN_IMBUES", "SHAMAN_IMBUE" },
+    }
+    -- The general consumables, in preview order: key, label, icon (called
+    -- only when the row is on). Healthstone is on while unset, as its toggle.
+    local function ItemIcon(id, fallback)
+        return function()
+            return C_Item.GetItemIconByID(id) or fallback
+        end
+    end
+    local GENERAL_CONSUMABLES = {
+        {
+            key = "flask",
+            label = "Flask",
+            icon = function()
+                return 134830
+            end,
+        },
+        {
+            key = "food",
+            label = "Food",
+            icon = function()
+                return 134062
+            end,
+        },
+        { key = "augment_rune", label = "Rune", icon = ItemIcon(259085, 134400) },
+        { key = "healthstone", label = "Stone", icon = ItemIcon(5512, 134400), onWhenUnset = true },
+        { key = "inky_black", label = "Inky", icon = ItemIcon(124640, 136122) },
+    }
+
+    local function ForSpec(specs, specID)
+        if not specs then
+            return true
+        end
+        for _, s in ipairs(specs) do
+            if s == specID then
+                return true
+            end
+        end
+        return false
+    end
+
+    -- Every icon the preview can show for the player's class and spec, in
+    -- order: enabled raid buffs, enabled auras (one Beacon), the class
+    -- consumable (else a weapon oil), then the general consumables. None
+    -- on WoW Forever (no preview, and the spec lookups are retail-only).
     local function CollectPreviewIcons()
         local icons = {}
         if FOREVER then
             return icons
-        end -- no preview on WoW Forever (and the spec lookups below are retail-only globals)
-        local _, playerClass = UnitClass("player")
+        end
+        local function Add(texture, label, cat, key)
+            icons[#icons + 1] = { texture = texture, label = label, cat = cat, itemKey = key }
+        end
+        local function AddSpell(entry, cat, family)
+            Add(
+                Tex(entry.castSpell),
+                ShortLabel(_G._CUABR_SpellName(entry.castSpell, entry.name), family),
+                cat,
+                entry.key
+            )
+        end
+        local _, class = UnitClass("player")
         local specIdx = GetSpecialization()
         local specID = specIdx and GetSpecializationInfo(specIdx) or nil
-        local rb = RDB()
-        local au = ADB()
-        local co = CDB()
+        local rb, au, co = RDB(), ADB(), CDB()
 
-        -- 1) Raid buffs for this class (only enabled ones)
-        local RAID_BUFFS = _G._CUABR_RAID_BUFFS or {}
-        for _, buff in ipairs(RAID_BUFFS) do
-            if buff.class == playerClass and Known(buff.castSpell) then
-                if rb and rb.enabled and rb.enabled[buff.key] then
-                    icons[#icons + 1] = {
-                        texture = Tex(buff.castSpell),
-                        label = ShortLabel(_G._CUABR_SpellName(buff.castSpell, buff.name)),
-                        cat = "raidbuff",
-                        itemKey = buff.key,
-                    }
-                end
+        for _, buff in ipairs(_G._CUABR_RAID_BUFFS or {}) do
+            if
+                buff.class == class
+                and Known(buff.castSpell)
+                and rb
+                and rb.enabled
+                and rb.enabled[buff.key]
+            then
+                AddSpell(buff, "raidbuff")
             end
         end
 
-        -- 2) Auras valid for this class/spec (only enabled ones)
-        local AURAS = _G._CUABR_AURAS or {}
-        local beaconAdded = false
-        for _, aura in ipairs(AURAS) do
-            if aura.class == playerClass and Known(aura.castSpell) then
-                if au and au.enabled and au.enabled[aura.key] then
-                    local specOk = true
-                    if aura.specs then
-                        specOk = false
-                        for _, s in ipairs(aura.specs) do
-                            if s == specID then
-                                specOk = true
-                                break
-                            end
-                        end
-                    end
-                    if specOk then
-                        if aura.key == "bol" or aura.key == "bof" then
-                            if not beaconAdded then
-                                icons[#icons + 1] = {
-                                    texture = Tex(aura.castSpell),
-                                    label = ShortLabel(_G._CUABR_SpellName(aura.castSpell, aura.name)),
-                                    cat = "aura",
-                                    itemKey = aura.key,
-                                }
-                                beaconAdded = true
-                            end
-                        else
-                            icons[#icons + 1] = {
-                                texture = Tex(aura.castSpell),
-                                label = ShortLabel(_G._CUABR_SpellName(aura.castSpell, aura.name)),
-                                cat = "aura",
-                                itemKey = aura.key,
-                            }
-                        end
-                    end
+        local beacon = false
+        for _, aura in ipairs(_G._CUABR_AURAS or {}) do
+            if
+                aura.class == class
+                and Known(aura.castSpell)
+                and au
+                and au.enabled
+                and au.enabled[aura.key]
+                and ForSpec(aura.specs, specID)
+            then
+                local isBeacon = aura.key == "bol" or aura.key == "bof"
+                if not (isBeacon and beacon) then
+                    AddSpell(aura, "aura")
                 end
+                beacon = beacon or isBeacon
             end
         end
 
-        -- 3) Consumables (only show enabled ones, one per type)
-        -- Rogue poisons: show first enabled
-        if playerClass == "ROGUE" then
-            local POISONS = _G._CUABR_ROGUE_POISONS or {}
-            for _, poison in ipairs(POISONS) do
-                if Known(poison.castSpell) and co and co.enabled and co.enabled[poison.key] then
-                    icons[#icons + 1] = {
-                        texture = Tex(poison.castSpell),
-                        label = ShortLabel(_G._CUABR_SpellName(poison.castSpell, poison.name), "ROGUE"),
-                        cat = "consumable",
-                        itemKey = poison.key,
-                    }
+        local on = co and co.enabled
+        local family = CLASS_FAMILIES[class]
+        if family then
+            for _, entry in ipairs(_G[family[1]] or {}) do
+                if Known(entry.castSpell) and on and on[entry.key] then
+                    AddSpell(entry, "consumable", family[2])
                     break
                 end
             end
-        end
-
-        -- Paladin rites: show first enabled
-        if playerClass == "PALADIN" then
-            local RITES = _G._CUABR_PALADIN_RITES or {}
-            for _, rite in ipairs(RITES) do
-                if Known(rite.castSpell) and co and co.enabled and co.enabled[rite.key] then
-                    icons[#icons + 1] = {
-                        texture = Tex(rite.castSpell),
-                        label = ShortLabel(_G._CUABR_SpellName(rite.castSpell, rite.name)),
-                        cat = "consumable",
-                        itemKey = rite.key,
-                    }
-                    break
-                end
+        elseif on and on.weapon_enchant then
+            local oils = _G._CUABR_WEAPON_ENCHANT_ITEMS or {}
+            if #oils > 0 then
+                Add(oils[1].icon or 134400, CludesUI.L("Weapon"), "consumable", "weapon_enchant")
             end
         end
 
-        -- Shaman imbues: show first enabled
-        if playerClass == "SHAMAN" then
-            local IMBUES = _G._CUABR_SHAMAN_IMBUES or {}
-            for _, imbue in ipairs(IMBUES) do
-                if Known(imbue.castSpell) and co and co.enabled and co.enabled[imbue.key] then
-                    icons[#icons + 1] = {
-                        texture = Tex(imbue.castSpell),
-                        label = ShortLabel(_G._CUABR_SpellName(imbue.castSpell, imbue.name), "SHAMAN_IMBUE"),
-                        cat = "consumable",
-                        itemKey = imbue.key,
-                    }
-                    break
-                end
+        for _, item in ipairs(GENERAL_CONSUMABLES) do
+            local v = on and on[item.key]
+            if v or (item.onWhenUnset and on and v == nil) then
+                Add(item.icon(), CludesUI.L(item.label), "consumable", item.key)
             end
         end
-
-        -- Weapon oil (if player doesn't have a class weapon imbue)
-        if playerClass ~= "ROGUE" and playerClass ~= "PALADIN" and playerClass ~= "SHAMAN" then
-            if co and co.enabled and co.enabled.weapon_enchant then
-                local WEI = _G._CUABR_WEAPON_ENCHANT_ITEMS or {}
-                if #WEI > 0 then
-                    icons[#icons + 1] = {
-                        texture = WEI[1].icon or 134400,
-                        label = CludesUI.L("Weapon"),
-                        cat = "consumable",
-                        itemKey = "weapon_enchant",
-                    }
-                end
-            end
-        end
-
-        -- Flask
-        if co and co.enabled and co.enabled.flask then
-            icons[#icons + 1] =
-                { texture = 134830, label = CludesUI.L("Flask"), cat = "consumable", itemKey = "flask" }
-        end
-
-        -- Food
-        if co and co.enabled and co.enabled.food then
-            icons[#icons + 1] =
-                { texture = 134062, label = CludesUI.L("Food"), cat = "consumable", itemKey = "food" }
-        end
-
-        -- Augment Rune
-        if co and co.enabled and co.enabled.augment_rune then
-            icons[#icons + 1] = {
-                texture = C_Item.GetItemIconByID(259085) or 134400,
-                label = CludesUI.L("Rune"),
-                cat = "consumable",
-                itemKey = "augment_rune",
-            }
-        end
-
-        -- Healthstone (default-on: treat nil as enabled, matching the toggle)
-        if co and co.enabled and co.enabled.healthstone ~= false then
-            icons[#icons + 1] = {
-                texture = C_Item.GetItemIconByID(5512) or 134400,
-                label = CludesUI.L("Stone"),
-                cat = "consumable",
-                itemKey = "healthstone",
-            }
-        end
-
-        -- Inky Black Potion
-        if co and co.enabled and co.enabled.inky_black then
-            icons[#icons + 1] = {
-                texture = C_Item.GetItemIconByID(124640) or 136122,
-                label = CludesUI.L("Inky"),
-                cat = "consumable",
-                itemKey = "inky_black",
-            }
-        end
-
         return icons
+    end
+
+    -- The preview icons' size (width, height after the icon shape) and gap.
+    local function IconMetrics(d)
+        local sz = math.floor((_G._CUABR_ICON_SIZE or 40) * ((d and d.scale) or 1.0) + 0.5)
+        local h = sz
+        if d and d.iconShape and d.iconShape ~= "none" then
+            sz, h = ns.IconDimensions(sz, d)
+        end
+        return sz, h, (d and d.iconSpacing) or 8
     end
 
     -- x of the first preview icon's center from the container's TOP, following the live grow
@@ -363,7 +315,59 @@ initFrame:SetScript("OnEvent", function(self)
         return -(totalW / 2) + (sz / 2)
     end
 
+    -- Places the first limit preview icons (default all) along the row,
+    -- skipping a slot with no frame.
+    local function PlaceIcons(d, sz, spacing, limit)
+        local x = PreviewStartX(d, #_previewIcons, sz, spacing, _previewContainer:GetWidth())
+        for i = 1, limit or #_previewIcons do
+            local btn = _previewIcons[i].frame
+            if btn then
+                btn:ClearAllPoints()
+                btn:SetPoint("TOP", btn:GetParent(), "TOP", x + (i - 1) * (sz + spacing), 0)
+            end
+        end
+    end
+
     local _eabrHeaderBaseH = 0
+    local PREVIEW_H = 80
+
+    -- One preview icon dressed as live: size, opacity, border, glow (the
+    -- live renderer's own spec, nil = off) and its text.
+    local function StyleIcon(btn, d, sz, iconH, glowSpec)
+        btn:SetSize(sz, iconH)
+        btn:SetAlpha(d.opacity or 1.0)
+        if _G._CUABR_ApplyIconBorder then
+            _G._CUABR_ApplyIconBorder(btn, false)
+        end
+        if not btn._glowWrapper then
+            local wrap = CreateFrame("Frame", nil, btn)
+            wrap:SetAllPoints(btn)
+            wrap:SetFrameLevel(btn:GetFrameLevel() + 4)
+            btn._glowWrapper = wrap
+        end
+        local wrap = btn._glowWrapper
+        if glowSpec then
+            local extra = btn._eabrShape and ns.IconGlowExtra(btn, true) or CludesUI.Glows.PANEL_EXTRA
+            CludesUI.Glows.StartSpecGlow(wrap, glowSpec, sz, iconH, "icon", extra)
+            wrap:Show()
+        else
+            CludesUI.Glows.StopAllGlows(wrap)
+            wrap:Hide()
+        end
+        local text = btn._text
+        if d.showText then
+            local tc = d.textColor or { r = 1, g = 1, b = 1 }
+            CludesUI.ApplyModuleFont(text, GetNameFontPath(), d.textSize or 11, "auraBuff")
+            text:ClearAllPoints()
+            local own, onIcon = GetPreviewTextAnchor(d)
+            text:SetPoint(own, btn, onIcon, d.textXOffset or 0, d.textYOffset or -2)
+            text:SetTextColor(tc.r, tc.g, tc.b, 1)
+            text:Show()
+        else
+            text:Hide()
+        end
+        btn:Show()
+    end
 
     local function UpdatePreviewHeader()
         if not _previewIcons or #_previewIcons == 0 then
@@ -373,95 +377,31 @@ initFrame:SetScript("OnEvent", function(self)
         if not d then
             return
         end
-        local baseScale = d.scale or 1.0
-        local ICON_SIZE = _G._CUABR_ICON_SIZE or 40
-        local sz = math.floor(ICON_SIZE * baseScale + 0.5)
-        local iconH = sz
-        if d.iconShape and d.iconShape ~= "none" then
-            sz, iconH = ns.IconDimensions(sz, d)
-        end
-        local spacing = d.iconSpacing or 8
-        -- The live renderer's own spec (nil = glow off), so the preview is the live look.
+        local sz, iconH, spacing = IconMetrics(d)
         local glowSpec = _G._CUABR_GlowSpec and _G._CUABR_GlowSpec(d, {})
-        local showText = d.showText
-        local tc = d.textColor or { r = 1, g = 1, b = 1 }
-        local opacity = d.opacity or 1.0
-
-        local startX = PreviewStartX(d, #_previewIcons, sz, spacing, _previewContainer:GetWidth())
-
-        for i, pIcon in ipairs(_previewIcons) do
-            local btn = pIcon.frame
-            if not btn then
-                break
-            end
-            btn:SetSize(sz, iconH)
-            btn:SetAlpha(opacity)
-            btn:ClearAllPoints()
-            btn:SetPoint("TOP", btn:GetParent(), "TOP", startX + (i - 1) * (sz + spacing), 0)
-
-            if _G._CUABR_ApplyIconBorder then
-                _G._CUABR_ApplyIconBorder(btn, false)
-            end
-
-            -- Glow
-            if not btn._glowWrapper then
-                local w = CreateFrame("Frame", nil, btn)
-                w:SetAllPoints(btn)
-                w:SetFrameLevel(btn:GetFrameLevel() + 4)
-                btn._glowWrapper = w
-            end
-            if glowSpec then
-                CludesUI.Glows.StartSpecGlow(
-                    btn._glowWrapper,
-                    glowSpec,
-                    sz,
-                    iconH,
-                    "icon",
-                    btn._eabrShape and ns.IconGlowExtra(btn, true) or CludesUI.Glows.PANEL_EXTRA
-                )
-                btn._glowWrapper:Show()
-            else
-                CludesUI.Glows.StopAllGlows(btn._glowWrapper)
-                btn._glowWrapper:Hide()
-            end
-
-            -- Text
-            if showText then
-                local fontPath = GetNameFontPath()
-                local textSize = d and d.textSize or 11
-                local textXOff = d and d.textXOffset or 0
-                local textYOff = d and d.textYOffset or -2
-                CludesUI.ApplyModuleFont(btn._text, fontPath, textSize, "auraBuff")
-                btn._text:ClearAllPoints()
-                local tp, ip = GetPreviewTextAnchor(d)
-                btn._text:SetPoint(tp, btn, ip, textXOff, textYOff)
-                btn._text:SetTextColor(tc.r, tc.g, tc.b, 1)
-                btn._text:Show()
-            else
-                btn._text:Hide()
-            end
-
-            btn:Show()
+        -- Up to the first slot with no frame.
+        local placed = 0
+        while _previewIcons[placed + 1] and _previewIcons[placed + 1].frame do
+            placed = placed + 1
+        end
+        PlaceIcons(d, sz, spacing, placed)
+        for i = 1, placed do
+            StyleIcon(_previewIcons[i].frame, d, sz, iconH, glowSpec)
         end
 
-        -- Recalculate total preview height: hardcoded 80px
-        do
-            local textYOff2 = d.textYOffset or -2
-            local textSz2 = d.textSize or 11
-            local textOverhang2 = showText and (math.abs(textYOff2) + textSz2) or 0
-            local CONTAINER_H = iconH + textOverhang2
-            if _previewContainer then
-                _previewContainer:SetHeight(CONTAINER_H)
-                _previewContainer:ClearAllPoints()
-                _previewContainer:SetPoint("CENTER", _previewContainer:GetParent(), "CENTER", 0, 0)
-            end
-            local TOTAL_H = 80
-            _eabrHeaderBaseH = TOTAL_H
-            local hintH = (_previewHintFS and _previewHintFS:IsShown()) and 35 or 0
-            -- Use the silent variant so resizing the header never triggers
-            -- scroll compensation (the height rarely changes here).
-            CludesUI:SetContentHeaderHeightSilent(TOTAL_H + hintH)
+        -- The row is centred in the header, as tall as the icons plus any
+        -- text hanging below them; the header itself stays 80 (plus the hint).
+        local overhang = d.showText and (math.abs(d.textYOffset or -2) + (d.textSize or 11)) or 0
+        if _previewContainer then
+            _previewContainer:SetHeight(iconH + overhang)
+            _previewContainer:ClearAllPoints()
+            _previewContainer:SetPoint("CENTER", _previewContainer:GetParent(), "CENTER", 0, 0)
         end
+        _eabrHeaderBaseH = PREVIEW_H
+        local hintH = (_previewHintFS and _previewHintFS:IsShown()) and 35 or 0
+        -- Silent: resizing the header never triggers scroll compensation
+        -- (the height rarely changes here).
+        CludesUI:SetContentHeaderHeightSilent(PREVIEW_H + hintH)
     end
 
     local function RefreshBorders()
@@ -476,38 +416,24 @@ initFrame:SetScript("OnEvent", function(self)
     --  Preview click-to-scroll infrastructure
     ---------------------------------------------------------------------------
 
-    --- Rebuild the preview header with scroll compensation.
-    --- SetContentHeader tears down and rebuilds, which can cause scroll jumps.
-    --- This wrapper saves the scroll position, rebuilds, then compensates.
+    -- Rebuilds the preview header (SetContentHeader tears it down and builds
+    -- it again). No preview header on WoW Forever.
     local function RebuildPreviewHeader()
         if FOREVER then
             return
-        end -- no preview header on WoW Forever
+        end
         CludesUI:SetContentHeader(_previewHeaderBuilder)
     end
 
-    --- Lightweight relayout: reposition existing preview icons without
-    --- tearing down and rebuilding the header (avoids scroll jumps).
+    -- Moves the existing preview icons into place without rebuilding the
+    -- header (no scroll jump).
     local function RelayoutPreviewIcons()
         if not _previewIcons or #_previewIcons == 0 then
             return
         end
         local d = DDB()
-        local baseScale = d and d.scale or 1.0
-        local ICON_SIZE = _G._CUABR_ICON_SIZE or 40
-        local sz = math.floor(ICON_SIZE * baseScale + 0.5)
-        local spacing = d and d.iconSpacing or 8
-        if d and d.iconShape and d.iconShape ~= "none" then
-            sz = ns.IconDimensions(sz, d)
-        end
-        local startX = PreviewStartX(d, #_previewIcons, sz, spacing, _previewContainer:GetWidth())
-        for i, pIcon in ipairs(_previewIcons) do
-            local btn = pIcon.frame
-            if btn then
-                btn:ClearAllPoints()
-                btn:SetPoint("TOP", btn:GetParent(), "TOP", startX + (i - 1) * (sz + spacing), 0)
-            end
-        end
+        local sz, _, spacing = IconMetrics(d)
+        PlaceIcons(d, sz, spacing)
     end
 
     local _eabrGlow -- made on first click: Widgets helpers load with the panel
