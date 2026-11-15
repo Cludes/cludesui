@@ -511,52 +511,227 @@ initFrame:SetScript("OnEvent", function(self)
         return nil
     end
 
-    -- kind: "power" or "health"; c: p.primary or p.health.
+    -- PreviewBar.Style, step by step. kind is "power" or "health"; c is
+    -- p.primary or p.health.
+
+    -- The border: Blizzard's bar chrome under the stock style, else ours
+    -- (Extend Top / Bottom are power bar only, as live).
+    local function StyleBorder(bar, c, isHealth, wid, hgt)
+        local holder = bar._border._frame
+        if mod.ERB_BarsBlizz() then
+            holder:Hide()
+            mod.ERB_ApplyBlizzBarChrome(bar, bar._sb, wid, hgt, false, mod.ERB_BarFrameK(c))
+            return
+        end
+        local level = bar:GetFrameLevel()
+        holder:SetFrameLevel(c.borderBehind and math.max(0, level - 1) or (level + 1))
+        if isHealth then
+            mod.ERB_AnchorBorderHost(holder, bar)
+        else
+            mod.ERB_AnchorBorderHost(holder, bar, mod.ERB_BorderExtents(c))
+        end
+        local size, style = c.borderSize or 0, c.borderTexture or "solid"
+        CludesUI.ApplyBorderStyle(
+            holder,
+            size,
+            c.borderR or 0,
+            c.borderG or 0,
+            c.borderB or 0,
+            c.borderA or 1,
+            style,
+            c.borderTextureOffset,
+            c.borderTextureOffsetY,
+            c.borderTextureShiftX,
+            c.borderTextureShiftY,
+            "resourcebars",
+            size,
+            nil,
+            CludesUI.BorderPx(c.borderSizePx, size, style)
+        )
+        holder:Show()
+    end
+
+    -- The base fill colour: custom, else class colour (health) or the power
+    -- type's colour (power). Also returns that type colour (text uses it).
+    local function BaseFill(c, isHealth, ptype)
+        local typeColour
+        if isHealth then
+            local _, class = UnitClass("player")
+            typeColour = CLASS_COLORS[class]
+        else
+            typeColour = ptype and _G._CURB_PowerColors and _G._CURB_PowerColors[ptype]
+        end
+        if c.customColored then
+            return c.fillR, c.fillG, c.fillB, typeColour
+        elseif typeColour then
+            return typeColour[1], typeColour[2], typeColour[3], typeColour
+        elseif isHealth then
+            return 0.15, 0.75, 0.30, typeColour
+        end
+        return 1, 1, 1, typeColour
+    end
+
+    -- The threshold or band colour in force at pct (nil = the base colour),
+    -- from the per-spec entry the live update resolves, against maxValue.
+    -- Also returns the threshold entry (its Text Instead flag matters).
+    local function AlertColour(c, isHealth, pct, maxValue)
+        local spec = _G._CURB_ResolveThresholdSpecEntry and _G._CURB_ResolveThresholdSpecEntry(c) or nil
+        local bandsOn, bands, bandMode, reversed
+        if _G._CURB_ResolveBandConfig then
+            bandsOn, bands, bandMode, reversed = _G._CURB_ResolveBandConfig(c, spec)
+        end
+        local th = (spec and spec.thresholdEnabled ~= false) and spec or nil
+        if bandsOn and _G._CURB_FindCountBand then
+            local at = bandMode == "value" and (maxValue * pct / 100) or pct
+            local band = _G._CURB_FindCountBand(bands, at, reversed)
+            if band then
+                return spec, th, band.r or 1, band.g or 1, band.b or 1, band.a or 1
+            end
+        elseif th then
+            -- Health colours at or below the threshold; power above it, or
+            -- below it with Partial Only.
+            local below = isHealth
+            if not isHealth then
+                below = th.thresholdPartialOnly
+                if below == nil then
+                    below = c.thresholdPartialOnly
+                end
+            end
+            local limit = th.thresholdPct or c.thresholdPct or 30
+            if (below and pct <= limit) or (not below and pct > limit) then
+                return spec,
+                    th,
+                    th.thresholdR or c.thresholdR or 1,
+                    th.thresholdG or c.thresholdG or 0.2,
+                    th.thresholdB or c.thresholdB or 0.2,
+                    1
+            end
+        end
+        return spec, th
+    end
+
+    -- The background, with the bar texture behind it when "Bar Texture on
+    -- Background" is on (and the fill is opaque).
+    local function StyleBackground(bar, g, c, texKey)
+        local backdrop = bar._bg
+        backdrop:SetColorTexture(c.bgR or 0, c.bgG or 0, c.bgB or 0, c.bgA or 0.75)
+        UnsnapTex(backdrop)
+        if g.barTextureBg or backdrop._erbBgTex then
+            local tex = g.barTextureBg
+                and (c.fillOpacity or 100) >= 100
+                and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, texKey, nil)
+            mod.ERB_BgTexture(backdrop, tex, c.bgR, c.bgG, c.bgB, c.bgA)
+        end
+        return backdrop
+    end
+
+    -- Hash lines: the spec entry's own, else the bar's (ns.ApplyHashLines'
+    -- rule), inside the border, in physical pixels as live.
+    local function StyleHashLines(bar, c, spec, wid, hgt, maxValue)
+        local ticks = bar._ticks
+        for i = 1, #ticks do
+            ticks[i]:Hide()
+        end
+        local src = (spec and spec.hashValues and spec.hashValues ~= "") and spec
+            or (c.hashEnabled and c)
+            or nil
+        if not src then
+            return
+        end
+        local percent = (src.hashMode or "percent") == "percent"
+        local PP = CludesUI.PP
+        local lineW = (src.hashWidth or 1) * PP.mult
+        -- A solid border's exact size is the inset.
+        local inset = c.borderSize or 0
+        local style = c.borderTexture
+        if not style or style == "" or style == "solid" then
+            inset = CludesUI.BorderPx(c.borderSizePx, inset, style) or inset
+        end
+        inset = math.min(inset * PP.mult, math.max(0, (hgt - 1) / 2))
+        local n = 0
+        for part in (src.hashValues or ""):gmatch("[^,]+") do
+            local v = tonumber(part:match("^%s*(.-)%s*$"))
+            local frac = v and v > 0 and v / (percent and 100 or maxValue)
+            if frac and frac <= 1 then
+                n = n + 1
+                local tick = ticks[n]
+                if not tick then
+                    tick = bar._tickHost:CreateTexture(nil, "OVERLAY", nil, 7)
+                    UnsnapTex(tick)
+                    ticks[n] = tick
+                end
+                tick:SetColorTexture(
+                    src.hashColorR or 1,
+                    src.hashColorG or 1,
+                    src.hashColorB or 1,
+                    src.hashColorA or 0.7
+                )
+                tick:ClearAllPoints()
+                tick:SetSize(lineW, hgt - inset * 2)
+                tick:SetPoint(
+                    "TOPLEFT",
+                    bar._sb,
+                    "TOPLEFT",
+                    math.min(PP.Scale(wid * frac), wid - lineW),
+                    -inset
+                )
+                tick:Show()
+            end
+        end
+    end
+
+    -- The bar's text in the live formats, from the made-up values.
+    local HEALTH_TEXT = {
+        both = function(cur, pct)
+            return cur .. " | " .. pct .. "%"
+        end,
+        curhpshort = function(cur)
+            return cur
+        end,
+        curmaxhp = function(cur, _, maxValue)
+            return cur .. " / " .. mod.AbbreviateValue(maxValue, "maxHealth")
+        end,
+        perhpnosign = function(_, pct)
+            return pct
+        end,
+        perhpnum = function(cur, pct)
+            return pct .. "% | " .. cur
+        end,
+    }
+    local function BarText(c, isHealth, fmt, pct, maxValue, ptype)
+        local amount = math.floor(maxValue * pct / 100)
+        if isHealth then
+            local cur, pctText = mod.AbbreviateValue(amount, "health"), tostring(pct)
+            local make = HEALTH_TEXT[fmt]
+            return make and make(cur, pctText, maxValue) or (pctText .. "%")
+        end
+        local pctText = tostring(pct) .. ((c.showPercent == false) and "" or "%")
+        local cur = mod.AbbreviateNumbers(amount)
+        if fmt == "smart" then
+            local asPercent = CludesUI.IsSmartPowerPercent and CludesUI.IsSmartPowerPercent(ptype)
+            return asPercent and pctText or cur
+        elseif fmt == "both" then
+            return cur .. " | " .. pctText
+        elseif fmt == "curmaxpp" then
+            return cur .. " / " .. mod.AbbreviateNumbers(maxValue)
+        elseif fmt == "perpp" then
+            return pctText
+        end
+        return cur -- curpp, and anything else
+    end
+
     function PreviewBar.Style(bar, p, c, kind)
         local g = p.general
         local isHealth = kind == "health"
         local wid = _previewSnap(c.width or 214)
         local hgt = _previewSnap(c.height or (isHealth and 16 or 14))
         bar:SetSize(wid, hgt)
-
-        local bf = bar._border._frame
-        if mod.ERB_BarsBlizz() then
-            bf:Hide()
-            mod.ERB_ApplyBlizzBarChrome(bar, bar._sb, wid, hgt, false, mod.ERB_BarFrameK(c))
-        else
-            bf:SetFrameLevel(
-                c.borderBehind and math.max(0, bar:GetFrameLevel() - 1) or (bar:GetFrameLevel() + 1)
-            )
-            -- Extend Top / Extend Bottom are power bar only, as live.
-            if isHealth then
-                mod.ERB_AnchorBorderHost(bf, bar)
-            else
-                mod.ERB_AnchorBorderHost(bf, bar, mod.ERB_BorderExtents(c))
-            end
-            CludesUI.ApplyBorderStyle(
-                bf,
-                c.borderSize or 0,
-                c.borderR or 0,
-                c.borderG or 0,
-                c.borderB or 0,
-                c.borderA or 1,
-                c.borderTexture or "solid",
-                c.borderTextureOffset,
-                c.borderTextureOffsetY,
-                c.borderTextureShiftX,
-                c.borderTextureShiftY,
-                "resourcebars",
-                c.borderSize or 0,
-                nil,
-                CludesUI.BorderPx(c.borderSizePx, c.borderSize or 0, c.borderTexture or "solid")
-            )
-            bf:Show()
-        end
+        StyleBorder(bar, c, isHealth, wid, hgt)
 
         -- The bar's own texture counts only while splitTex is on, as live.
         local texKey = (p.splitTex == true and c.barTexture) or g.barTexture
-        local scrollBar = bar._sb
-        scrollBar:SetStatusBarTexture(
+        local fill = bar._sb
+        fill:SetStatusBarTexture(
             CludesUI.ResolveTexturePath(
                 _G._CURB_BarTextures,
                 texKey or "none",
@@ -566,221 +741,76 @@ initFrame:SetScript("OnEvent", function(self)
         if bar._blizzBarMask then
             mod.ERB_SeatBlizzMask(bar)
         end
-        local ft = scrollBar:GetStatusBarTexture()
-        UnsnapTex(ft)
+        local fillTex = fill:GetStatusBarTexture()
+        UnsnapTex(fillTex)
 
-        -- Fill colour: custom > class colour (health) or power type colour (power).
         local ptype = (not isHealth) and _G._CURB_GetPrimaryPowerType and _G._CURB_GetPrimaryPowerType()
-        local typeCol
-        if isHealth then
-            local _, castFrame = UnitClass("player")
-            typeCol = CLASS_COLORS[castFrame]
-        else
-            typeCol = ptype and _G._CURB_PowerColors and _G._CURB_PowerColors[ptype]
-        end
-        local fR, fG, fB
-        if c.customColored then
-            fR, fG, fB = c.fillR, c.fillG, c.fillB
-        elseif typeCol then
-            fR, fG, fB = typeCol[1], typeCol[2], typeCol[3]
-        elseif isHealth then
-            fR, fG, fB = 0.15, 0.75, 0.30
-        else
-            fR, fG, fB = 1, 1, 1
-        end
+        local fR, fG, fB, typeColour = BaseFill(c, isHealth, ptype)
 
-        -- Threshold, bands and hash lines from the same per-spec entry the live
-        -- update resolves, against the player's real maximum (value-mode hash
-        -- lines and bands); 500K health / 100 power when it reads secret or 0.
-        local mx = isHealth and UnitHealthMax("player") or (ptype and UnitPowerMax("player", ptype))
-        if not mx or (issecretvalue and issecretvalue(mx)) or mx <= 0 then
-            mx = isHealth and 500000 or 100
+        -- The player's real maximum (value-mode bands and hash lines); 500K
+        -- health / 100 power when it reads secret or 0.
+        local maxValue = isHealth and UnitHealthMax("player") or (ptype and UnitPowerMax("player", ptype))
+        if not maxValue or (issecretvalue and issecretvalue(maxValue)) or maxValue <= 0 then
+            maxValue = isHealth and 500000 or 100
         end
-        local tsEntry = _G._CURB_ResolveThresholdSpecEntry and _G._CURB_ResolveThresholdSpecEntry(c) or nil
-        local bandOn, bands, bandMode, bandRev
-        if _G._CURB_ResolveBandConfig then
-            bandOn, bands, bandMode, bandRev = _G._CURB_ResolveBandConfig(c, tsEntry)
-        end
-        local thEntry = (tsEntry and tsEntry.thresholdEnabled ~= false) and tsEntry or nil
-        -- Health colours at or below the threshold; power above it, or below with Partial Only.
-        local below = isHealth
-        if not isHealth and thEntry then
-            below = thEntry.thresholdPartialOnly
-            if below == nil then
-                below = c.thresholdPartialOnly
-            end
-        end
-        local tPct = thEntry and (thEntry.thresholdPct or c.thresholdPct or 30)
-
-        -- The random fill only: a threshold or band colours it when the value reaches it, as live.
+        -- The made-up fill; a threshold or band colours it when reached, as live.
         local pct = isHealth and (100 - math.floor(_previewBarFillPct / 3)) or _previewBarFillPct
-
-        local aR, aG, aB, aA -- threshold or band colour in force, nil = base colour
-        if bandOn and _G._CURB_FindCountBand then
-            local band =
-                _G._CURB_FindCountBand(bands, (bandMode == "value") and (mx * pct / 100) or pct, bandRev)
-            if band then
-                aR, aG, aB, aA = band.r or 1, band.g or 1, band.b or 1, band.a or 1
-            end
-        elseif thEntry then
-            if (below and pct <= tPct) or (not below and pct > tPct) then
-                aR, aG, aB, aA =
-                    thEntry.thresholdR or c.thresholdR or 1,
-                    thEntry.thresholdG or c.thresholdG or 0.2,
-                    thEntry.thresholdB or c.thresholdB or 0.2,
-                    1
-            end
-        end
+        local spec, th, aR, aG, aB, aA = AlertColour(c, isHealth, pct, maxValue)
         local fmt = c.textFormat or "none"
-        local textInstead = thEntry and thEntry.thresholdTextInstead and fmt ~= "none"
+        local textInstead = th and th.thresholdTextInstead and fmt ~= "none"
 
         -- Plain texture calls, not the live change-gated helpers: their memo
         -- would outlive a pool reset of this texture.
         if aR and not textInstead then
-            ft:SetVertexColor(aR, aG, aB, aA)
+            fillTex:SetVertexColor(aR, aG, aB, aA)
         elseif c.gradientEnabled then
-            ft:SetVertexColor(1, 1, 1, 1)
-            ft:SetGradient(
+            fillTex:SetVertexColor(1, 1, 1, 1)
+            fillTex:SetGradient(
                 c.gradientDir or "HORIZONTAL",
                 CreateColor(fR, fG, fB, 1),
                 CreateColor(c.gradientR or 1, c.gradientG or 1, c.gradientB or 1, c.gradientA or 1)
             )
         else
-            ft:SetVertexColor(fR, fG, fB, 1)
+            fillTex:SetVertexColor(fR, fG, fB, 1)
         end
 
-        local backdrop = bar._bg
-        backdrop:SetColorTexture(c.bgR or 0, c.bgG or 0, c.bgB or 0, c.bgA or 0.75)
-        UnsnapTex(backdrop)
-        if g.barTextureBg or backdrop._erbBgTex then
-            mod.ERB_BgTexture(
-                backdrop,
-                g.barTextureBg
-                    and (c.fillOpacity or 100) >= 100
-                    and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, texKey, nil),
-                c.bgR,
-                c.bgG,
-                c.bgB,
-                c.bgA
-            )
-        end
-
-        scrollBar:SetValue(pct)
-        -- Fill Opacity: translucent fill, background over the empty part only (as the class resource preview).
-        local op = (c.fillOpacity or 100) / 100
-        ft:SetAlpha(op)
+        local backdrop = StyleBackground(bar, g, c, texKey)
+        fill:SetValue(pct)
+        -- Fill Opacity: a see-through fill with the background over the empty
+        -- part only (as the class resource preview).
+        local opacity = (c.fillOpacity or 100) / 100
+        fillTex:SetAlpha(opacity)
         backdrop:ClearAllPoints()
-        if op < 1 then
-            backdrop:SetPoint("TOPLEFT", ft, "TOPRIGHT", 0, 0)
-            backdrop:SetPoint("BOTTOMRIGHT", scrollBar, "BOTTOMRIGHT", 0, 0)
+        if opacity < 1 then
+            backdrop:SetPoint("TOPLEFT", fillTex, "TOPRIGHT", 0, 0)
+            backdrop:SetPoint("BOTTOMRIGHT", fill, "BOTTOMRIGHT", 0, 0)
         else
-            backdrop:SetAllPoints(scrollBar)
+            backdrop:SetAllPoints(fill)
         end
 
-        -- Hash lines: the entry's own, else the bar-wide ones (ns.ApplyHashLines' source rule).
-        do
-            local ticks = bar._ticks
-            for i = 1, #ticks do
-                ticks[i]:Hide()
-            end
-            local hEnt = (tsEntry and tsEntry.hashValues and tsEntry.hashValues ~= "") and tsEntry
-                or (c.hashEnabled and c)
-                or nil
-            local hashStr = hEnt and hEnt.hashValues or ""
-            local isPercent = hEnt and (hEnt.hashMode or "percent") == "percent"
-            local P = CludesUI.PP
-            local pxW = (hEnt and hEnt.hashWidth or 1) * P.mult -- physical pixels, as live
-            -- Inside the border, as live: a solid border's exact size is the inset.
-            local hbs = c.borderSize or 0
-            local htex = c.borderTexture
-            if not htex or htex == "" or htex == "solid" then
-                hbs = CludesUI.BorderPx(c.borderSizePx, hbs, htex) or hbs
-            end
-            local vI = math.min(hbs * P.mult, math.max(0, (hgt - 1) / 2))
-            local num = 0
-            for s in hashStr:gmatch("[^,]+") do
-                local v = tonumber(s:match("^%s*(.-)%s*$"))
-                local frac = v and v > 0 and v / (isPercent and 100 or mx)
-                if frac and frac <= 1 then
-                    num = num + 1
-                    local t = ticks[num]
-                    if not t then
-                        t = bar._tickHost:CreateTexture(nil, "OVERLAY", nil, 7)
-                        UnsnapTex(t)
-                        ticks[num] = t
-                    end
-                    t:SetColorTexture(
-                        hEnt.hashColorR or 1,
-                        hEnt.hashColorG or 1,
-                        hEnt.hashColorB or 1,
-                        hEnt.hashColorA or 0.7
-                    )
-                    t:ClearAllPoints()
-                    t:SetSize(pxW, hgt - vI * 2)
-                    t:SetPoint("TOPLEFT", scrollBar, "TOPLEFT", math.min(P.Scale(wid * frac), wid - pxW), -vI)
-                    t:Show()
-                end
-            end
-        end
-
+        StyleHashLines(bar, c, spec, wid, hgt, maxValue)
         mod.ERB_RoundBar(bar, c)
 
-        -- Text in the live formats, from the made-up values.
-        local textValue = bar._text
+        local label = bar._text
         if fmt == "none" then
-            textValue:Hide()
+            label:Hide()
             return
         end
-        local txt
-        if isHealth then
-            local curStr = mod.AbbreviateValue(math.floor(mx * pct / 100), "health")
-            local pctStr = tostring(pct)
-            if fmt == "both" then
-                txt = curStr .. " | " .. pctStr .. "%"
-            elseif fmt == "curhpshort" then
-                txt = curStr
-            elseif fmt == "curmaxhp" then
-                txt = curStr .. " / " .. mod.AbbreviateValue(mx, "maxHealth")
-            elseif fmt == "perhpnosign" then
-                txt = pctStr
-            elseif fmt == "perhpnum" then
-                txt = pctStr .. "% | " .. curStr
-            else
-                txt = pctStr .. "%"
-            end
-        else
-            local percentText = tostring(pct) .. ((c.showPercent == false) and "" or "%")
-            local curStr = mod.AbbreviateNumbers(math.floor(mx * pct / 100))
-            if fmt == "smart" then
-                local isPercent = CludesUI.IsSmartPowerPercent and CludesUI.IsSmartPowerPercent(ptype)
-                txt = isPercent and percentText or curStr
-            elseif fmt == "both" then
-                txt = curStr .. " | " .. percentText
-            elseif fmt == "curpp" then
-                txt = curStr
-            elseif fmt == "curmaxpp" then
-                txt = curStr .. " / " .. mod.AbbreviateNumbers(mx)
-            elseif fmt == "perpp" then
-                txt = percentText
-            else
-                txt = curStr
-            end
-        end
-        SetPVFont(textValue, FONT_PATH, c.textSize or 11)
-        textValue:ClearAllPoints()
-        local ta = c.textAnchor or "CENTER"
-        textValue:SetPoint(ta, bar, ta, c.textXOffset or 0, c.textYOffset or 0)
+        SetPVFont(label, FONT_PATH, c.textSize or 11)
+        label:ClearAllPoints()
+        local anchor = c.textAnchor or "CENTER"
+        label:SetPoint(anchor, bar, anchor, c.textXOffset or 0, c.textYOffset or 0)
         if aR and textInstead then
-            textValue:SetTextColor(aR, aG, aB, aA)
-        elseif c.textCustomColored == false and typeCol then
-            textValue:SetTextColor(typeCol[1], typeCol[2], typeCol[3], 1)
+            label:SetTextColor(aR, aG, aB, aA)
+        elseif c.textCustomColored == false and typeColour then
+            label:SetTextColor(typeColour[1], typeColour[2], typeColour[3], 1)
         elseif c.textCustomColored == false then
-            textValue:SetTextColor(1, 1, 1, 1)
+            label:SetTextColor(1, 1, 1, 1)
         else
-            textValue:SetTextColor(c.textFillR or 1, c.textFillG or 1, c.textFillB or 1, c.textFillA or 1)
+            label:SetTextColor(c.textFillR or 1, c.textFillG or 1, c.textFillB or 1, c.textFillA or 1)
         end
-        textValue:SetText(txt)
-        textValue:Show()
+        label:SetText(BarText(c, isHealth, fmt, pct, maxValue, ptype))
+        label:Show()
     end
 
     -- Discrete pip count for the current spec: the real resource max (Fury
