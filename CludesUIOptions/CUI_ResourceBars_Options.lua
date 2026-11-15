@@ -2,51 +2,79 @@ if CUI_CLIENT_BLOCKED then
     return
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
---  CUI_ResourceBars_Options.lua
---  Registers the Resource Bars module with CludesUI
---  Pages: Class, Power and Health Bars | Cast Bar | Unlock Mode
+--  CUI_ResourceBars_Options.lua - the Resource Bars module's settings.
+--
+--  Registers the module (pages: Class, Power and Health Bars; Cast Bar; GCD
+--  Bar; Swing Timer on WoW Forever; Totem Bar) and holds what those pages
+--  share: the live preview headers, the threshold band editor, the colour
+--  list editor, the hash-mark cog and the Classic-style border rows. The
+--  pages themselves are built in ResourceBars_Options\*.lua, which reach the
+--  shared pieces through mod._CURB_OptEnv (set up at the end of the init).
 -------------------------------------------------------------------------------
-local ADDON_NAME = "CludesUIResourceBars"
-local mod = CludesUI._ModuleNS[ADDON_NAME] -- module namespace (published by the module at its load)
+local mod = CludesUI._ModuleNS["CludesUIResourceBars"] -- published by the module when it loads
 if not mod then
-    return
-end -- module disabled: no options page
+    return -- the module is disabled: no pages
+end
 local abs = math.abs
 
+-- Page names: also the identity used by nav targets and saved state.
 local PAGE_DISPLAY = "Class, Power and Health Bars"
 local PAGE_CASTBAR = "Cast Bar"
 local PAGE_GCD = "GCD Bar"
 local PAGE_SWING = "Swing Timer" -- WoW Forever only (C_SwingTimer)
 local PAGE_TOTEM = "Totem Bar"
-local PAGE_UNLOCK = "Layout Mode"
 
--- WoW Forever shows the first tab as "Main Resources" and the totem tab as
--- "Totem Bars" (it holds the Call Totem Bar too). Display only: the page
--- identity above stays the same for nav targets, unlock and saved state.
+-- WoW Forever labels two tabs differently ("Totem Bars" holds the Call Totem
+-- Bar too); only the shown label changes.
 if CludesUI.IS_FOREVER then
     CludesUI.TAB_LABEL_OVERRIDES[PAGE_DISPLAY] = "Main Resources"
     CludesUI.TAB_LABEL_OVERRIDES[PAGE_TOTEM] = "Totem Bars"
 end
 
--- Classic WoW UI: each bar's Border Size slot sizes the vanilla frame round
--- the bar (stockBorderScale, a percentage of the frame's full size; nil =
--- the shared default) in place of the gated CUI border size. The border
--- row's colour swatch, offset cog and style sync stand down under it; this
--- sync copies the size. The cast bar row does the same on its own style key.
+-------------------------------------------------------------------------------
+--  Border rows under the stock styles
+-------------------------------------------------------------------------------
+local function StockStyle()
+    return CludesUI.BlizzStyle.Active("resourcebars")
+end
+
+-- Classic WoW UI: a bar's Border Size slot sizes the vanilla frame round it
+-- (stockBorderScale, a percent of the frame's full size; nil = the shared
+-- default) instead of CludesUI's border; the colour swatch, offset cog and
+-- style sync of that row stand down. The cast bar row does the same on its
+-- own style key.
 function mod.ERB_ClassicBorderRow()
-    return CludesUI.BlizzStyle.Active("resourcebars") == "classic"
+    return StockStyle() == "classic"
 end
--- "Border Around All" is offered under either stock style (the classic
--- frame, or the Blizzard Style panel, round the group).
+-- "Border Around All" is offered under either stock style.
 function mod.ERB_BorderAllRow()
-    return CludesUI.BlizzStyle.Active("resourcebars") ~= "cui"
+    return StockStyle() ~= "cui"
 end
+
 local CLASSIC_SYNC_KEYS = { "health", "primary", "secondary" }
 local CLASSIC_MATCH_KEYS = { "ERB_Health", "ERB_Power", "ERB_ClassResource" }
--- matchKey: the bar's unlock element, whose size matches read the frame's
--- reach (getMatchPad) and are re-applied when it changes. While "Border
--- Around All" is on, the three bars share one frame and so one size: every
--- bar's slider writes all three.
+
+local function Profile()
+    local db = _G._CURB_AceDB
+    return db and db.profile
+end
+
+-- Writes one stockBorderScale to all three bars, then re-fits every bar's
+-- Layout Mode size matches (they read the frame's reach).
+local function ClassicScaleToAll(p, v)
+    for _, key in ipairs(CLASSIC_SYNC_KEYS) do
+        p[key].stockBorderScale = v
+    end
+end
+local function RefitAll()
+    for _, key in ipairs(CLASSIC_MATCH_KEYS) do
+        CludesUI.ReapplyMatchPads(key)
+    end
+end
+
+-- The Classic border size slider for one bar. matchKey is the bar's Layout
+-- Mode element. While "Border Around All" is on the three bars share one
+-- frame, so one size: any bar's slider writes all three.
 function mod.ERB_ClassicBorderSizeCfg(cfgFn, offFn, offTip, rebuild, matchKey)
     return CludesUI.BlizzStyle.ClassicBorderSizeCfg(function()
         local c = cfgFn()
@@ -57,71 +85,22 @@ function mod.ERB_ClassicBorderSizeCfg(cfgFn, offFn, offTip, rebuild, matchKey)
             return
         end
         c.stockBorderScale = v
-        local d = _G._CURB_AceDB
-        local p = d and d.profile
-        local all = p and mod.ERB_GroupSettingOn and mod.ERB_GroupSettingOn(p)
-        if all then
-            for i = 1, #CLASSIC_SYNC_KEYS do
-                p[CLASSIC_SYNC_KEYS[i]].stockBorderScale = v
-            end
+        local p = Profile()
+        local together = p and mod.ERB_GroupSettingOn and mod.ERB_GroupSettingOn(p)
+        if together then
+            ClassicScaleToAll(p, v)
         end
         rebuild()
-        if all then
-            for i = 1, #CLASSIC_MATCH_KEYS do
-                CludesUI.ReapplyMatchPads(CLASSIC_MATCH_KEYS[i])
-            end
+        if together then
+            RefitAll()
         else
             CludesUI.ReapplyMatchPads(matchKey)
         end
         CludesUI:RefreshPage()
     end, { disabled = offFn, disabledTooltip = offTip })
 end
--- Exact border size companion (borderSizePx, see CludesUI.BorderPx): the
--- "apply to all" syncs copy it beside borderSize. A value the target held is
--- cleared with false, never nil (nil does not travel through mirror sync).
-function mod.ERB_CopyBorderPx(t, s)
-    local v = s.borderSizePx
-    if v == nil and t.borderSizePx ~= nil then
-        v = false
-    end
-    t.borderSizePx = v
-end
--- Two bars agree when both are unset (nil or false) or hold the same value.
-function mod.ERB_SameBorderPx(a, b)
-    return (a.borderSizePx or false) == (b.borderSizePx or false)
-end
--- Separator Art dropdown values / order (fresh tables, page build only):
--- "match" (the bar's own style, see ns.ERB_SeparatorArt) first, then every
--- built-in border style with a horizontal companion strip, named from the
--- catalogue, so a later style with separator art joins with no change here.
--- withNone puts a "none" entry first for a dropdown whose None turns it off.
-function mod.ERB_SeparatorArtValues(withNone)
-    local values, sequence = {}, {}
-    if withNone then
-        values.none = "None"
-        sequence[1] = "none"
-    end
-    values.match = "Match Border"
-    sequence[#sequence + 1] = "match"
-    for _, record in ipairs(CludesUI._builtinBorderTextures) do
-        if CludesUI.GetBorderCompanion(record.key, "sepH") then
-            values[record.key] = record.name
-            sequence[#sequence + 1] = record.key
-        end
-    end
-    return values, sequence
-end
--- Which of the three bars carry a textured border, as one string. A cross-bar
--- border sync that changes it rebuilds the page (each section's Width Offset |
--- Height Offset row exists only while its style is textured); otherwise the
--- fast refresh keeps the sync icon's flash.
-function mod.ERB_TexturedBars(p)
-    local function one(t)
-        local posX = t and t.borderTexture or "solid"
-        return (posX ~= "solid" and posX ~= "") and "1" or "0"
-    end
-    return one(p.health) .. one(p.primary) .. one(p.secondary)
-end
+
+-- The sync icon on a Classic border row: copies this bar's size to all three.
 function mod.ERB_ClassicBorderSync(regionFrame, dbFn, key, refresh, flashFn)
     CludesUI.BuildSyncIcon({
         region = regionFrame,
@@ -131,14 +110,9 @@ function mod.ERB_ClassicBorderSync(regionFrame, dbFn, key, refresh, flashFn)
             if not p then
                 return
             end
-            local v = p[key].stockBorderScale
-            for i = 1, #CLASSIC_SYNC_KEYS do
-                p[CLASSIC_SYNC_KEYS[i]].stockBorderScale = v
-            end
+            ClassicScaleToAll(p, p[key].stockBorderScale)
             refresh()
-            for i = 1, #CLASSIC_MATCH_KEYS do
-                CludesUI.ReapplyMatchPads(CLASSIC_MATCH_KEYS[i])
-            end
+            RefitAll()
             CludesUI:RefreshPage()
         end,
         isSynced = function()
@@ -147,8 +121,8 @@ function mod.ERB_ClassicBorderSync(regionFrame, dbFn, key, refresh, flashFn)
                 return false
             end
             local v = p[key].stockBorderScale
-            for i = 1, #CLASSIC_SYNC_KEYS do
-                if p[CLASSIC_SYNC_KEYS[i]].stockBorderScale ~= v then
+            for _, other in ipairs(CLASSIC_SYNC_KEYS) do
+                if p[other].stockBorderScale ~= v then
                     return false
                 end
             end
@@ -156,6 +130,57 @@ function mod.ERB_ClassicBorderSync(regionFrame, dbFn, key, refresh, flashFn)
         end,
         flashTargets = flashFn,
     })
+end
+
+-------------------------------------------------------------------------------
+--  Small shared helpers (also used by the page files)
+-------------------------------------------------------------------------------
+-- The exact border size (borderSizePx, see CludesUI.BorderPx) travels with
+-- borderSize in the "apply to all" syncs. A value the target had is cleared
+-- with false, never nil: nil does not carry through the mirror sync.
+function mod.ERB_CopyBorderPx(target, source)
+    local v = source.borderSizePx
+    if v == nil and target.borderSizePx ~= nil then
+        v = false
+    end
+    target.borderSizePx = v
+end
+-- Two bars agree when both are unset (nil or false) or hold the same value.
+function mod.ERB_SameBorderPx(a, b)
+    return (a.borderSizePx or false) == (b.borderSizePx or false)
+end
+
+-- The Separator Art dropdown (fresh tables each page build): "match" (the
+-- bar's own style, see ns.ERB_SeparatorArt) first, then every built-in border
+-- style that has a horizontal companion strip, so a new style with separator
+-- art appears with no change here. withNone puts a "none" entry first.
+function mod.ERB_SeparatorArtValues(withNone)
+    local values, order = {}, {}
+    if withNone then
+        values.none = "None"
+        order[1] = "none"
+    end
+    values.match = "Match Border"
+    order[#order + 1] = "match"
+    for _, style in ipairs(CludesUI._builtinBorderTextures) do
+        if CludesUI.GetBorderCompanion(style.key, "sepH") then
+            values[style.key] = style.name
+            order[#order + 1] = style.key
+        end
+    end
+    return values, order
+end
+
+-- Which of the three bars have a textured border, as "101" style flags. A
+-- cross-bar border sync that changes it rebuilds the page (a section's Width
+-- / Height Offset row exists only for a textured style); otherwise the quick
+-- refresh keeps the sync icon's flash.
+function mod.ERB_TexturedBars(p)
+    local function Flag(bar)
+        local style = bar and bar.borderTexture or "solid"
+        return (style ~= "solid" and style ~= "") and "1" or "0"
+    end
+    return Flag(p.health) .. Flag(p.primary) .. Flag(p.secondary)
 end
 
 local initFrame = CreateFrame("Frame")
