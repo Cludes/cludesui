@@ -3604,39 +3604,39 @@ initFrame:SetScript("OnEvent", function(self)
             local MEDIA = "Interface\\AddOns\\CludesUI\\media\\"
             local eg = CludesUI.CLUDES_GREEN
 
-            -- Back: the styled button (bg / border / label hover), the arrow leading its label
+            -- Colours for CludesUI.MakeStyledButton: background, background
+            -- hovered, border, border hovered, text, text hovered (r, g, b, a each).
+            local function ButtonColours(...)
+                local out = {}
+                for _, colour in ipairs({ ... }) do
+                    for i = 1, 4 do
+                        out[#out + 1] = colour[i]
+                    end
+                end
+                return out
+            end
+
+            -- Back, with an arrow leading its label.
             local backBtn = CreateFrame("Button", nil, thrPage)
             Pix.Size(backBtn, BUTTON_W, BUTTON_H)
             Pix.Point(backBtn, "TOPLEFT", thrPage, "TOPLEFT", SIDE_PAD, -INNERPAD)
             backBtn:SetFrameLevel(thrPage:GetFrameLevel() + 2)
-            local _, _, backLbl = CludesUI.MakeStyledButton(backBtn, "", 12, {
-                0.062,
-                0.070,
-                0.082,
-                0.50,
-                0.100,
-                0.110,
-                0.124,
-                0.50,
-                1,
-                1,
-                1,
-                0.12,
-                1,
-                1,
-                1,
-                0.22,
-                1,
-                1,
-                1,
-                0.55,
-                1,
-                1,
-                1,
-                0.85,
-            }, function()
-                thrPage:Hide()
-            end)
+            local _, _, backLbl = CludesUI.MakeStyledButton(
+                backBtn,
+                "",
+                12,
+                ButtonColours(
+                    { 0.062, 0.070, 0.082, 0.50 },
+                    { 0.100, 0.110, 0.124, 0.50 },
+                    { 1, 1, 1, 0.12 },
+                    { 1, 1, 1, 0.22 },
+                    { 1, 1, 1, 0.55 },
+                    { 1, 1, 1, 0.85 }
+                ),
+                function()
+                    thrPage:Hide()
+                end
+            )
             local backIcon = backBtn:CreateTexture(nil, "ARTWORK")
             backIcon:SetSize(14, 14)
             Pix.Point(backIcon, "LEFT", backBtn, "LEFT", 10, 0)
@@ -3657,7 +3657,7 @@ initFrame:SetScript("OnEvent", function(self)
                 backIcon:SetAlpha(0.6)
             end)
 
-            -- Spec-assignment chrome: the spec dropdown + Add Specs, right of Back
+            -- Right of Back: the spec picker and Add Specs.
             do
                 local ADD_W, GAP_L = 90, 10
                 local DD_W = contentHalfSize - (INNERPAD * 2) - BUTTON_W - ADD_W
@@ -3666,29 +3666,44 @@ initFrame:SetScript("OnEvent", function(self)
                 ddRow:SetPoint("TOPLEFT", backBtn, "TOPRIGHT", 10, 0)
                 ddRow:SetFrameLevel(thrPage:GetFrameLevel() + 2)
 
-                -- Spec dropdown (checkbox multi-select with search)
-                local specItems = BuildSpecItems()
                 local specDDHost = CreateFrame("Frame", nil, ddRow)
                 specDDHost:SetSize(DD_W, BUTTON_H)
                 specDDHost:SetPoint("LEFT", ddRow, "LEFT", 0, 0)
                 specDDHost:SetFrameLevel(ddRow:GetFrameLevel())
 
-                local cbDD, cbDDRefresh -- forward decl for closure access
-                cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
+                -- The specs of a WoW Forever class row, or nil.
+                local function ClassSpecs(key)
+                    return CludesUI.IS_FOREVER and CludesUI.ForeverClassSpecIDs(key)
+                end
+                local picker, pickerRefresh
+                local function Repaint()
+                    if pickerRefresh then
+                        pickerRefresh()
+                    end
+                end
+                -- Selects exactly ids (a role shortcut or All Specs) and closes the list.
+                local function SelectOnly(ids)
+                    wipe(_tempSpecSel)
+                    for _, id in ipairs(ids) do
+                        _tempSpecSel[id] = true
+                    end
+                    picker:Click()
+                    Repaint()
+                end
+                picker, pickerRefresh = CludesUI.BuildVisOptsCBDropdown(
                     specDDHost,
                     DD_W,
                     specDDHost:GetFrameLevel() + 2,
-                    specItems,
+                    BuildSpecItems(),
                     function(key)
-                        -- Role shortcuts never show as "checked"
                         if _roleSpecs[key] then
-                            return false
+                            return false -- a role shortcut never shows as checked
                         end
-                        -- WoW Forever class row: checked while every spec of the class is selected
-                        local fvIDs = CludesUI.IS_FOREVER and CludesUI.ForeverClassSpecIDs(key)
-                        if fvIDs then
-                            for i = 1, #fvIDs do
-                                if not _tempSpecSel[fvIDs[i]] then
+                        local specs = ClassSpecs(key)
+                        if specs then
+                            -- A class row: checked while all its specs are.
+                            for _, id in ipairs(specs) do
+                                if not _tempSpecSel[id] then
                                     return false
                                 end
                             end
@@ -3696,172 +3711,129 @@ initFrame:SetScript("OnEvent", function(self)
                         end
                         return _tempSpecSel[key] or false
                     end,
-                    function(key, val)
-                        -- Role shortcuts + All Specs: select, then close the dropdown
-                        local roleSpecs = _roleSpecs[key]
-                        if roleSpecs then
-                            wipe(_tempSpecSel)
-                            for _, spellRef in ipairs(roleSpecs) do
-                                _tempSpecSel[spellRef] = true
-                            end
-                            cbDD:Click()
-                            if cbDDRefresh then
-                                cbDDRefresh()
-                            end
+                    function(key, on)
+                        if _roleSpecs[key] then
+                            SelectOnly(_roleSpecs[key])
                             return
                         end
                         if key == 0 then
-                            wipe(_tempSpecSel)
-                            _tempSpecSel[0] = true
-                            cbDD:Click()
-                            if cbDDRefresh then
-                                cbDDRefresh()
-                            end
+                            SelectOnly({ 0 })
                             return
                         end
-                        -- WoW Forever class row: selects or clears every spec of the class
-                        local fvIDs = CludesUI.IS_FOREVER and CludesUI.ForeverClassSpecIDs(key)
-                        if fvIDs then
-                            if val then
-                                _tempSpecSel[0] = nil
-                            end
-                            for i = 1, #fvIDs do
-                                _tempSpecSel[fvIDs[i]] = val and true or nil
-                            end
-                            if cbDDRefresh then
-                                cbDDRefresh()
-                            end
-                            return
+                        if on then
+                            _tempSpecSel[0] = nil -- a pick ends All Specs
                         end
-                        if val then
-                            _tempSpecSel[0] = nil
-                            _tempSpecSel[key] = true
+                        local specs = ClassSpecs(key)
+                        if specs then
+                            for _, id in ipairs(specs) do
+                                _tempSpecSel[id] = on and true or nil
+                            end
                         else
-                            _tempSpecSel[key] = nil
+                            _tempSpecSel[key] = on and true or nil
                         end
-                        if cbDDRefresh then
-                            cbDDRefresh()
-                        end
+                        Repaint()
                     end,
                     nil,
                     10,
                     true
                 )
-                Pix.Point(cbDD, "LEFT", specDDHost, "LEFT", 0, 0)
-                -- Dropdown label font 11px instead of the default 13
-                for _, rgn2 in ipairs({ cbDD:GetRegions() }) do
-                    if rgn2.SetFont and rgn2.GetText then
-                        local f, _, fl = rgn2:GetFont()
-                        if f then
-                            rgn2:SetFont(f, 11, fl or "")
+                Pix.Point(picker, "LEFT", specDDHost, "LEFT", 0, 0)
+                -- Its label at 11px instead of 13.
+                for _, region in ipairs({ picker:GetRegions() }) do
+                    if region.SetFont and region.GetText then
+                        local font, _, flags = region:GetFont()
+                        if font then
+                            region:SetFont(font, 11, flags or "")
                         end
                         break
                     end
                 end
-
-                -- Replace "None" with placeholder text on the dropdown label
-                local _origRefresh = cbDDRefresh
-                local function WrappedRefresh()
-                    _origRefresh()
-                    for _, rgn2 in ipairs({ cbDD:GetRegions() }) do
-                        if rgn2.GetText and CludesUI.EnKey(rgn2:GetText()) == "None" then
-                            rgn2:SetText(CludesUI.L("Select a Spec..."))
+                -- "None" reads as a placeholder.
+                local function RefreshPicker()
+                    pickerRefresh()
+                    for _, region in ipairs({ picker:GetRegions() }) do
+                        if region.GetText and CludesUI.EnKey(region:GetText()) == "None" then
+                            region:SetText(CludesUI.L("Select a Spec..."))
                             break
                         end
                     end
                 end
-                _specDDRefresh = WrappedRefresh
-                WrappedRefresh()
+                _specDDRefresh = RefreshPicker
+                RefreshPicker()
 
                 local addBtn = CreateFrame("Button", nil, ddRow)
                 Pix.Size(addBtn, ADD_W, BUTTON_H)
                 addBtn:SetPoint("LEFT", specDDHost, "RIGHT", GAP_L, 0)
                 addBtn:SetFrameLevel(ddRow:GetFrameLevel() + 2)
-                local _, _, addLbl = CludesUI.MakeStyledButton(addBtn, "", 11, {
-                    0.050,
-                    0.058,
-                    0.068,
-                    0.92,
-                    0.050,
-                    0.058,
-                    0.068,
-                    0.92,
-                    1,
-                    1,
-                    1,
-                    0.4,
-                    1,
-                    1,
-                    1,
-                    0.6,
-                    1,
-                    1,
-                    1,
-                    0.5,
-                    1,
-                    1,
-                    1,
-                    0.7,
-                }, function()
-                    local edge = conf.getBarData()
-                    if not edge then
-                        return
-                    end
-                    local ids = {}
-                    if _tempSpecSel[0] then
-                        ids[1] = 0
-                    else
-                        for spellRef in pairs(_tempSpecSel) do
-                            if spellRef ~= 0 then
-                                ids[#ids + 1] = spellRef
+                -- Adds an entry for the picked specs (All Specs alone, or the rest).
+                local _, _, addLbl = CludesUI.MakeStyledButton(
+                    addBtn,
+                    "",
+                    11,
+                    ButtonColours(
+                        { 0.050, 0.058, 0.068, 0.92 },
+                        { 0.050, 0.058, 0.068, 0.92 },
+                        { 1, 1, 1, 0.4 },
+                        { 1, 1, 1, 0.6 },
+                        { 1, 1, 1, 0.5 },
+                        { 1, 1, 1, 0.7 }
+                    ),
+                    function()
+                        local bar = conf.getBarData()
+                        if not bar then
+                            return
+                        end
+                        local ids = {}
+                        if _tempSpecSel[0] then
+                            ids[1] = 0
+                        else
+                            for id in pairs(_tempSpecSel) do
+                                if id ~= 0 then
+                                    ids[#ids + 1] = id
+                                end
                             end
                         end
+                        if #ids == 0 then
+                            return
+                        end
+                        bar.thresholdSpecs = bar.thresholdSpecs or {}
+                        bar.thresholdSpecs[#bar.thresholdSpecs + 1] = NewEntry(ids, bar)
+                        _selectedIdx = #bar.thresholdSpecs
+                        wipe(_tempSpecSel)
+                        RefreshPicker()
+                        RefreshSpecEntries(true)
+                        RedrawDetail()
+                        conf.refreshFn()
                     end
-                    if #ids == 0 then
-                        return
-                    end
-                    if not edge.thresholdSpecs then
-                        edge.thresholdSpecs = {}
-                    end
-                    edge.thresholdSpecs[#edge.thresholdSpecs + 1] = NewEntry(ids, edge)
-                    _selectedIdx = #edge.thresholdSpecs
-                    wipe(_tempSpecSel)
-                    WrappedRefresh()
-                    RefreshSpecEntries(true)
-                    RedrawDetail()
-                    conf.refreshFn()
-                end)
+                )
                 addLbl:SetText(CludesUI.L("Add Specs"))
             end
 
-            -- Scrollable entry container
+            -- The entry list: a scrolling container under the header row.
             local specContainerH = totalH - (INNERPAD * 3) - BUTTON_H
             specContainer = CreateFrame("Frame", nil, backBtn)
             specContainer:SetFrameStrata("DIALOG")
             specContainer:SetFrameLevel(200)
             Pix.Point(specContainer, "TOPLEFT", thrPage, "TOPLEFT", SIDE_PAD, -ROW_H)
             Pix.Size(specContainer, contentHalfSize, specContainerH)
-
-            local backdrop = specContainer:CreateTexture(nil, "BACKGROUND")
-            backdrop:SetAllPoints()
-            backdrop:SetColorTexture(0.062, 0.070, 0.082, 0.95)
-            -- clip: list rows scrolled to an edge keep the round corners.
-            CludesUI.MakeRoundedBorder(specContainer, 1, 1, 1, 0.15, backdrop, nil, true)
+            local listBg = specContainer:CreateTexture(nil, "BACKGROUND")
+            listBg:SetAllPoints()
+            listBg:SetColorTexture(0.062, 0.070, 0.082, 0.95)
+            -- clip: rows scrolled to an edge keep the round corners.
+            CludesUI.MakeRoundedBorder(specContainer, 1, 1, 1, 0.15, listBg, nil, true)
 
             local scrollFrame = CreateFrame("ScrollFrame", nil, specContainer)
             scrollFrame:SetPoint("TOPLEFT", specContainer, "TOPLEFT", 1, -2)
             scrollFrame:SetPoint("TOPRIGHT", specContainer, "TOPRIGHT", -1, -2)
             scrollFrame:SetPoint("BOTTOMRIGHT", specContainer, "BOTTOMRIGHT", -1, 1)
             scrollFrame:SetFrameLevel(specContainer:GetFrameLevel() + 1)
-
             local scrollChild = CreateFrame("Frame", nil, scrollFrame)
             scrollChild:SetWidth(contentHalfSize)
             scrollFrame:SetScrollChild(scrollChild)
             specContainer._scrollChild = scrollChild
             specContainer._scrollFrame = scrollFrame
-
-            -- Thin scrollbar on the container edge, shown on overflow; while the list fits, the wheel
-            -- scrolls the page, and Shift + wheel scales the panel as everywhere in it
+            -- A thin bar on its edge when the list overflows; while it fits the
+            -- wheel scrolls the page (Shift + wheel scales the panel, as everywhere).
             scrollTo = select(
                 2,
                 CludesUI.AttachSmoothScrollbar(scrollFrame, {
@@ -3880,17 +3852,17 @@ initFrame:SetScript("OnEvent", function(self)
                 })
             )
 
-            -- Right detail pane: config for the selected entry
+            -- The detail pane: the selected entry's settings (no header row,
+            -- so it starts at the top).
             local detailC = CreateFrame("Frame", nil, thrPage)
             detailC:SetFrameStrata("DIALOG")
             detailC:SetFrameLevel(200)
-            -- The right side has no header row, so it starts at the top
             Pix.Point(detailC, "TOPRIGHT", thrPage, "TOPRIGHT", -SIDE_PAD, -INNERPAD)
             Pix.Size(detailC, contentHalfSize, specContainerH + (ROW_H - INNERPAD))
-            local dBg = detailC:CreateTexture(nil, "BACKGROUND")
-            dBg:SetAllPoints()
-            dBg:SetColorTexture(0.062, 0.070, 0.082, 0.95)
-            CludesUI.MakeRoundedBorder(detailC, 1, 1, 1, 0.15, dBg)
+            local paneBg = detailC:CreateTexture(nil, "BACKGROUND")
+            paneBg:SetAllPoints()
+            paneBg:SetColorTexture(0.062, 0.070, 0.082, 0.95)
+            CludesUI.MakeRoundedBorder(detailC, 1, 1, 1, 0.15, paneBg)
             detailC:EnableMouse(true)
 
             local DPAD = 16
@@ -3899,77 +3871,74 @@ initFrame:SetScript("OnEvent", function(self)
             local ROWGAP = 12
             local MEDIAF = CludesUI.GetFontPath("main") or "Fonts\\FRIZQT__.TTF"
 
-            -- Shown when nothing is selected
             local dPlaceholder = CludesUI.MakeFont(detailC, 13, nil, 1, 1, 1)
             dPlaceholder:SetAlpha(0.4)
             dPlaceholder:SetPoint("CENTER")
             dPlaceholder:SetText(CludesUI.L("Select or add an entry"))
 
-            -- The live currently-selected entry, or nil
+            -- The selected entry, or nil.
             local function CurEntry()
-                local edge = conf.getBarData()
-                if not edge or not edge.thresholdSpecs then
-                    return nil
-                end
-                return _selectedIdx and edge.thresholdSpecs[_selectedIdx] or nil
+                local bar = conf.getBarData()
+                return bar and bar.thresholdSpecs and _selectedIdx and bar.thresholdSpecs[_selectedIdx] or nil
             end
 
+            -- A pane row (with its label), registered for the layout pass.
             local _allRows = {}
-            -- Labeled row frame, registered for the layout pass
             local function DRow(labelText, hgt)
-                local rf = CreateFrame("Frame", nil, detailC)
-                rf:SetFrameLevel(DLVL)
-                rf._rawH = hgt or ROWH
-                Pix.Height(rf, rf._rawH)
+                local row = CreateFrame("Frame", nil, detailC)
+                row:SetFrameLevel(DLVL)
+                row._rawH = hgt or ROWH
+                Pix.Height(row, row._rawH)
                 if labelText then
-                    local labelFS = CludesUI.MakeFont(rf, 13, nil, 1, 1, 1)
-                    labelFS:SetAlpha(0.6)
-                    labelFS:SetPoint("LEFT", rf, "LEFT", 0, 0)
-                    labelFS:SetText(CludesUI.L(labelText))
-                    rf._lbl = labelFS
+                    local label = CludesUI.MakeFont(row, 13, nil, 1, 1, 1)
+                    label:SetAlpha(0.6)
+                    label:SetPoint("LEFT", row, "LEFT", 0, 0)
+                    label:SetText(CludesUI.L(labelText))
+                    row._lbl = label
                 end
-                _allRows[#_allRows + 1] = rf
-                return rf
+                _allRows[#_allRows + 1] = row
+                return row
             end
 
-            -- Value edit boxes (hash / threshold)
+            -- A value box (hash, threshold); joins the boxes the watcher commits.
             local function MakeInput(rowParent, wid, numeric)
-                local ib = CreateFrame("EditBox", nil, rowParent)
-                paneBoxes[ib] = true
-                Pix.Size(ib, wid, 22)
-                ib:SetFrameLevel(rowParent:GetFrameLevel() + 3)
-                ib:SetAutoFocus(false)
-                ib:SetFont(MEDIAF, 12, "")
-                ib:SetTextColor(1, 1, 1, 0.75)
-                ib:SetJustifyH("CENTER")
+                local box = CreateFrame("EditBox", nil, rowParent)
+                paneBoxes[box] = true
+                Pix.Size(box, wid, 22)
+                box:SetFrameLevel(rowParent:GetFrameLevel() + 3)
+                box:SetAutoFocus(false)
+                box:SetFont(MEDIAF, 12, "")
+                box:SetTextColor(1, 1, 1, 0.75)
+                box:SetJustifyH("CENTER")
                 if numeric then
-                    ib:SetNumeric(true)
+                    box:SetNumeric(true)
                 end
-                local ibg = ib:CreateTexture(nil, "BACKGROUND")
-                ibg:SetAllPoints()
-                ibg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
-                CludesUI.MakeRoundedBorder(ib, 1, 1, 1, 0.08, ibg)
-                return ib
+                local bg = box:CreateTexture(nil, "BACKGROUND")
+                bg:SetAllPoints()
+                bg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
+                CludesUI.MakeRoundedBorder(box, 1, 1, 1, 0.08, bg)
+                return box
             end
 
-            -- Greys a row's controls and explains why (tooltip in blocker._tip), shown by RefreshDetail
+            -- A cover that greys a row's controls and says why (its _tip),
+            -- shown by RefreshDetail.
             local function MakeBlocker(row, fromRgn, toRgn, inset, lvl)
-                local blocker = CreateFrame("Frame", nil, row)
-                blocker:SetPoint("TOPLEFT", fromRgn, "TOPLEFT", -inset, 3)
-                blocker:SetPoint("BOTTOMRIGHT", toRgn, "BOTTOMRIGHT", 3, -3)
-                blocker:SetFrameLevel(row:GetFrameLevel() + lvl)
-                blocker:EnableMouse(true)
-                local tex = blocker:CreateTexture(nil, "OVERLAY")
+                local cover = CreateFrame("Frame", nil, row)
+                cover:SetPoint("TOPLEFT", fromRgn, "TOPLEFT", -inset, 3)
+                cover:SetPoint("BOTTOMRIGHT", toRgn, "BOTTOMRIGHT", 3, -3)
+                cover:SetFrameLevel(row:GetFrameLevel() + lvl)
+                cover:EnableMouse(true)
+                local tex = cover:CreateTexture(nil, "OVERLAY")
                 tex:SetAllPoints()
                 tex:SetColorTexture(0.062, 0.070, 0.082, 0.7)
-                blocker:SetScript("OnEnter", function(self)
+                cover:SetScript("OnEnter", function(self)
                     CludesUI.ShowWidgetTooltip(self, self._tip)
                 end)
-                blocker:SetScript("OnLeave", function()
+                cover:SetScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                blocker:Hide()
-                return blocker
+                cover:Hide()
+                return cover
             end
 
             -- Row: Talent gate (single-spec entries only)
