@@ -31,6 +31,8 @@ if b1 then
     b1.spellID = 774; b1.texture = "flat"; b1.showIcon = true; b1.showTimer = true; b1.showStacks = true
     b1.showSpark = true; b1.width = 260; b1.height = 22; b1.borderTexture = "glow"; b1.borderTextureShiftX = 0
 end
+if b1 then b1.stackThresholdMaxEnabled = true; b1.stackThresholdEnabled = true; b1.stackThresholdTicks = "2,4" end
+if b3 then b3.stackThresholdEnabled = true; b3.stackThresholdMulti = true end
 if b2 then b2.verticalOrientation = true; b2.spellID = 33763; b2.trackType = "cooldown"; b2.fillUp = true end
 if mod.TBBNextGroupID and mod.TBBSetBarGroup and b2 and b3 then
     local gid = mod.TBBNextGroupID()

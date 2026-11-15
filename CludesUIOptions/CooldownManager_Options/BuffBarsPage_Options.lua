@@ -5255,22 +5255,43 @@ local function InitBuffBarsPage(
         _, hgt = W:SectionHeader(hostFrame, "EXTRAS", posY)
         posY = posY - hgt
 
-        -- Row 1: Pandemic Glow (dropdown + swatch + cog + sync) | Stack Based
-        -- Bar (buff bars only; page rebuilds on selection change, so cd/utility
-        -- bars get a blank slot). Stack Based Bar is inert until Max Stacks is
-        -- enabled below.
+        -- An overlay over target (or the span from target to corner) that takes
+        -- the mouse and says why while its controls are off; tip may be a function.
+        local function OffBlock(target, tip, corner)
+            local block = CreateFrame("Frame", nil, target)
+            if corner then
+                block:SetPoint("TOPLEFT", target, "TOPLEFT", -4, 4)
+                block:SetPoint("BOTTOMRIGHT", corner, "BOTTOMRIGHT", 4, -4)
+            else
+                block:SetAllPoints()
+            end
+            block:SetFrameLevel(target:GetFrameLevel() + 10)
+            block:EnableMouse(true)
+            block:SetScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(target, type(tip) == "function" and tip() or tip)
+            end)
+            block:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
+            return block
+        end
+        local MAX_STACKS_TIP = CludesUI.DisabledTooltip("Max Stacks")
+
+        -- Pandemic Glow (shared glow controls + Apply All) | Stack Based Bar. The
+        -- glow reads the bar's pandemic keys through the Glows page's Tracked Buff
+        -- Bar descriptor. Stack Based Bar is for buff bars only (the page rebuilds
+        -- on a selection change, so a cooldown bar gets a blank slot) and does
+        -- nothing until Max Stacks is on below. On WoW Forever the row is the
+        -- Anti-Clip Glow (CUI_CDM_ForeverAntiClip.lua).
         do
-            -- Shared glow controls over the bar's pandemic keys (the Glows page's
-            -- Tracked Buff Bar descriptor, resolving the selected bar).
             local GO = CludesUI.GlowOptions
-            local tbbDesc = mod._CDM_TbbGlowDesc(SelectedTBB, function()
+            local glowDesc = mod._CDM_TbbGlowDesc(SelectedTBB, function()
                 RefreshTBB()
             end)
-
-            local bd0 = SelectedTBB()
-            local rightSlot
-            if bd0 and bd0.trackType ~= "cooldown" then
-                rightSlot = {
+            local sel = SelectedTBB()
+            local stackSlot = { type = "label", text = "" }
+            if sel and sel.trackType ~= "cooldown" then
+                stackSlot = {
                     type = "toggle",
                     text = "Stack Based Bar",
                     tooltip = "Fill this bar from current stacks out of Max Stacks instead of remaining time (requires Enable Max Stacks below).",
@@ -5280,69 +5301,56 @@ local function InitBuffBarsPage(
                     end,
                     setValue = function(v)
                         local bd = SelectedTBB()
-                        if not bd then
-                            return
+                        if bd then
+                            bd.stackBasedBar = v and true or false
+                            RefreshTBB()
                         end
-                        bd.stackBasedBar = v and true or false
-                        RefreshTBB()
                     end,
                 }
-            else
-                rightSlot = { type = "label", text = "" }
             end
-
-            -- WoW Forever: the same row is the Anti-Clip Glow (CUI_CDM_ForeverAntiClip.lua).
             local antiClip = mod.CDM_ANTI_CLIP
-            local tbbPanRow
-            tbbPanRow, hgt = W:DualRow(
+            local glowRow
+            glowRow, hgt = W:DualRow(
                 hostFrame,
                 posY,
                 GO.DropdownSpec(
-                    tbbDesc,
+                    glowDesc,
                     antiClip and "Anti-Clip Glow" or "Pandemic Glow",
                     antiClip
                             and "Show a glow on the bar when casting the spell next, after your current cast or global cooldown, won't clip it"
                         or "Show a glow on the bar when the remaining duration is in the pandemic window (last 30%)"
                 ),
-                rightSlot
+                stackSlot
             )
             posY = posY - hgt
-            GO.AttachInline(tbbPanRow._leftRegion, tbbDesc)
-
-            -- Apply All
+            GO.AttachInline(glowRow._leftRegion, glowDesc)
             if CludesUI.BuildSyncIcon and CludesUI.ApplyPandemicGlowToAll then
+                local function Payload(source)
+                    return CludesUI.PandemicPayloadFromRectBar(source), { skipTbbBar = source }
+                end
                 CludesUI.BuildSyncIcon({
-                    region = tbbPanRow._leftRegion,
+                    region = glowRow._leftRegion,
                     tooltip = antiClip
                             and "Apply this glow's look to the Nameplates Pandemic Glow, all CDM bars, and other tracking bars. A surface that can't show a style uses its closest match."
                         or "Apply this pandemic glow to Nameplates, all CDM bars, and other tracking bars. A surface that can't show a style uses its closest match.",
                     isSynced = function()
                         local source = SelectedTBB()
-                        if not source then
-                            return true
-                        end
-                        return CludesUI.IsPandemicGlowSyncedToAll(
-                            CludesUI.PandemicPayloadFromRectBar(source),
-                            { skipTbbBar = source }
-                        )
+                        return not source or CludesUI.IsPandemicGlowSyncedToAll(Payload(source))
                     end,
                     onClick = function()
                         local source = SelectedTBB()
-                        if not source then
-                            return
+                        if source then
+                            CludesUI.ApplyPandemicGlowToAll(Payload(source))
+                            RefreshTBB()
                         end
-                        CludesUI.ApplyPandemicGlowToAll(
-                            CludesUI.PandemicPayloadFromRectBar(source),
-                            { skipTbbBar = source }
-                        )
-                        RefreshTBB()
                     end,
                 })
             end
         end
 
-        -- Row 2: Enable Max Stacks (toggle + inline slider) | Ticks at Stacks (label + inline input)
-        local function maxStacksOff()
+        -- Enable Max Stacks (+ inline slider) | Ticks at Stacks (+ swatch and
+        -- input); both insets dim while Max Stacks is off.
+        local function MaxStacksOff()
             local bd = SelectedTBB()
             return not bd or not bd.stackThresholdMaxEnabled
         end
@@ -5356,12 +5364,11 @@ local function InitBuffBarsPage(
             end,
             setValue = function(v)
                 local bd = SelectedTBB()
-                if not bd then
-                    return
+                if bd then
+                    bd.stackThresholdMaxEnabled = v
+                    RefreshTBB()
+                    CludesUI:RefreshPage()
                 end
-                bd.stackThresholdMaxEnabled = v
-                RefreshTBB()
-                CludesUI:RefreshPage()
             end,
         }, {
             type = "label",
@@ -5369,12 +5376,10 @@ local function InitBuffBarsPage(
             tooltip = "Comma separated stack counts to put a tick mark at. Type all to mark every stack.",
         })
         posY = posY - hgt
-        -- Inline slider on Enable Max Stacks toggle (same as inline swatch positioning)
         do
             local rgn = maxStacksRow._leftRegion
-            local ctrl = rgn._control
             local SL = CludesUI.SL or {}
-            local trackFrame, valBox, _, slThumb = CludesUI.BuildSliderCore(
+            local track, valueBox, _, thumb = CludesUI.BuildSliderCore(
                 rgn,
                 90,
                 4,
@@ -5399,59 +5404,37 @@ local function InitBuffBarsPage(
                 end,
                 true
             )
-            Pix.Point(valBox, "RIGHT", ctrl, "LEFT", -6, 0)
-            Pix.Point(trackFrame, "RIGHT", valBox, "LEFT", -8, 0)
-            -- Disable block
-            local block = CreateFrame("Frame", nil, trackFrame)
-            block:SetPoint("TOPLEFT", trackFrame, "TOPLEFT", -4, 4)
-            block:SetPoint("BOTTOMRIGHT", valBox, "BOTTOMRIGHT", 4, -4)
-            block:SetFrameLevel(trackFrame:GetFrameLevel() + 10)
-            block:EnableMouse(true)
-            block:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(trackFrame, CludesUI.DisabledTooltip("Max Stacks"))
-            end)
-            block:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
-            local function UpdateMaxSliderState()
-                local off = maxStacksOff()
-                trackFrame:SetAlpha(off and 0.3 or 1)
-                valBox:SetAlpha(off and 0.3 or 1)
-                valBox:EnableMouse(not off)
-                if slThumb then
-                    slThumb._sliderDisabled = off
+            Pix.Point(valueBox, "RIGHT", rgn._control, "LEFT", -6, 0)
+            Pix.Point(track, "RIGHT", valueBox, "LEFT", -8, 0)
+            local block = OffBlock(track, MAX_STACKS_TIP, valueBox)
+            local function Dim()
+                local off = MaxStacksOff()
+                track:SetAlpha(off and 0.3 or 1)
+                valueBox:SetAlpha(off and 0.3 or 1)
+                valueBox:EnableMouse(not off)
+                if thumb then
+                    thumb._sliderDisabled = off
                 end
-                if off then
-                    block:Show()
-                else
-                    block:Hide()
-                end
+                block:SetShown(off)
             end
-            CludesUI.RegisterWidgetRefresh(UpdateMaxSliderState)
-            UpdateMaxSliderState()
+            CludesUI.RegisterWidgetRefresh(Dim)
+            Dim()
         end
-        -- Add "(Ex: 1,5,8)" suffix in smaller, dimmer text
-        do
-            local ticksLabel = maxStacksRow._rightRegion and maxStacksRow._rightRegion._label
-            if ticksLabel then
-                local suffix = maxStacksRow._rightRegion:CreateFontString(nil, "OVERLAY")
-                suffix:SetFont(CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF", 11, "")
-                suffix:SetTextColor(1, 1, 1, 0.35)
-                suffix:SetPoint("LEFT", ticksLabel, "RIGHT", 5, 0)
-                suffix:SetText(CludesUI.L("(Ex: 1,5,8)"))
-            end
-        end
-        -- Inline input on Ticks at Stacks (matches slider value box style)
         do
             local rgn = maxStacksRow._rightRegion
-            local SIDE_PAD = 20
             local FONT = CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
-            local INPUT_W = 70
-            local INPUT_H = 26
-
+            -- "(Ex: 1,5,8)" after the label, smaller and dimmer.
+            if rgn and rgn._label then
+                local example = rgn:CreateFontString(nil, "OVERLAY")
+                example:SetFont(FONT, 11, "")
+                example:SetTextColor(1, 1, 1, 0.35)
+                example:SetPoint("LEFT", rgn._label, "RIGHT", 5, 0)
+                example:SetText(CludesUI.L("(Ex: 1,5,8)"))
+            end
+            -- The tick list input, styled as a slider's value box; Enter saves, Escape puts back.
             local box = CreateFrame("EditBox", nil, rgn)
-            Pix.Size(box, INPUT_W, INPUT_H)
-            Pix.Point(box, "RIGHT", rgn, "RIGHT", -SIDE_PAD, 0)
+            Pix.Size(box, 70, 26)
+            Pix.Point(box, "RIGHT", rgn, "RIGHT", -20, 0)
             box:SetFrameLevel(rgn:GetFrameLevel() + 2)
             box:SetAutoFocus(false)
             box:SetJustifyH("CENTER")
@@ -5462,7 +5445,6 @@ local function InitBuffBarsPage(
                 CludesUI.TEXT_DIM_B or 0.75,
                 CludesUI.TEXT_DIM_A or 1
             )
-            -- Background matching slider input box
             local backdrop = box:CreateTexture(nil, "BACKGROUND")
             backdrop:SetAllPoints()
             backdrop:SetColorTexture(
@@ -5471,7 +5453,6 @@ local function InitBuffBarsPage(
                 CludesUI.SL_INPUT_B or 0.08,
                 (CludesUI.SL_INPUT_A or 0.5) + (CludesUI.MW_INPUT_ALPHA_BOOST or 0.15)
             )
-            -- Border matching slider input box (rounded, as its value box is)
             CludesUI.MakeRoundedBorder(
                 box,
                 CludesUI.BORDER_R,
@@ -5480,7 +5461,10 @@ local function InitBuffBarsPage(
                 CludesUI.SL_INPUT_BRD_A,
                 backdrop
             )
-
+            local function Saved()
+                local bd = SelectedTBB()
+                return bd and bd.stackThresholdTicks or ""
+            end
             box:SetScript("OnEnterPressed", function(self)
                 self:ClearFocus()
                 local bd = SelectedTBB()
@@ -5491,74 +5475,56 @@ local function InitBuffBarsPage(
             end)
             box:SetScript("OnEscapePressed", function(self)
                 self:ClearFocus()
-                local bd = SelectedTBB()
-                self:SetText(bd and bd.stackThresholdTicks or "")
+                self:SetText(Saved())
             end)
 
-            -- Inline swatch for tick mark color (left of the input box)
-            local tickSwatch, updateTickSwatch = CludesUI.BuildColorSwatch(
-                rgn,
-                box:GetFrameLevel() + 1,
-                function()
-                    local bd = SelectedTBB()
-                    if not bd then
-                        return 1, 1, 1, 1
-                    end
-                    local a = bd.stackThresholdTickA
-                    if a == nil then
-                        a = 1
-                    end
-                    return bd.stackThresholdTickR or 1,
-                        bd.stackThresholdTickG or 1,
-                        bd.stackThresholdTickB or 1,
-                        a
-                end,
-                function(r, g, b, a)
-                    local bd = SelectedTBB()
-                    if not bd then
-                        return
-                    end
+            -- The tick mark colour, left of the input.
+            local swatch, updateSwatch = CludesUI.BuildColorSwatch(rgn, box:GetFrameLevel() + 1, function()
+                local bd = SelectedTBB()
+                if not bd then
+                    return 1, 1, 1, 1
+                end
+                local a = bd.stackThresholdTickA
+                return bd.stackThresholdTickR or 1,
+                    bd.stackThresholdTickG or 1,
+                    bd.stackThresholdTickB or 1,
+                    a == nil and 1 or a
+            end, function(r, g, b, a)
+                local bd = SelectedTBB()
+                if bd then
                     bd.stackThresholdTickR, bd.stackThresholdTickG = r, g
                     bd.stackThresholdTickB, bd.stackThresholdTickA = b, a
                     RefreshTBB()
-                end,
-                true,
-                20
-            )
-            Pix.Point(tickSwatch, "RIGHT", box, "LEFT", -8, 0)
-            local tickBlock = CreateFrame("Frame", nil, tickSwatch)
-            tickBlock:SetAllPoints()
-            tickBlock:SetFrameLevel(tickSwatch:GetFrameLevel() + 10)
-            tickBlock:EnableMouse(true)
-            tickBlock:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(tickSwatch, CludesUI.DisabledTooltip("Max Stacks"))
-            end)
-            tickBlock:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
-
-            local function UpdateTicksInput()
-                local bd = SelectedTBB()
-                box:SetText(bd and bd.stackThresholdTicks or "")
-                local off = maxStacksOff()
+                end
+            end, true, 20)
+            Pix.Point(swatch, "RIGHT", box, "LEFT", -8, 0)
+            local block = OffBlock(swatch, MAX_STACKS_TIP)
+            local function Dim()
+                box:SetText(Saved())
+                local off = MaxStacksOff()
                 box:SetAlpha(off and 0.3 or 1)
                 box:EnableMouse(not off)
-                if off then
-                    tickSwatch:SetAlpha(0.3)
-                    tickBlock:Show()
-                else
-                    tickSwatch:SetAlpha(1)
-                    tickBlock:Hide()
-                end
-                if updateTickSwatch then
-                    updateTickSwatch()
+                swatch:SetAlpha(off and 0.3 or 1)
+                block:SetShown(off)
+                if updateSwatch then
+                    updateSwatch()
                 end
             end
-            CludesUI.RegisterWidgetRefresh(UpdateTicksInput)
-            UpdateTicksInput()
+            CludesUI.RegisterWidgetRefresh(Dim)
+            Dim()
         end
 
-        -- Row 3: Enable Stack Threshold (toggle + inline swatch) | Stack Threshold (slider)
+        -- Enable Stack Threshold (+ editor cog and swatch) | Stack Threshold.
+        -- Several thresholds (multi) replace the single one: they mask its
+        -- slider and colour; the cog stays usable, as the only way back out.
+        local function MultiThresholds()
+            local bd = SelectedTBB()
+            return bd and bd.stackThresholdEnabled and bd.stackThresholdMulti and true or false
+        end
+        local function ThresholdOff()
+            local bd = SelectedTBB()
+            return not (bd and bd.stackThresholdEnabled) or MultiThresholds()
+        end
         local threshRow
         threshRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
@@ -5570,12 +5536,11 @@ local function InitBuffBarsPage(
             end,
             setValue = function(v)
                 local bd = SelectedTBB()
-                if not bd then
-                    return
+                if bd then
+                    bd.stackThresholdEnabled = v
+                    RefreshTBB()
+                    CludesUI:RefreshPage()
                 end
-                bd.stackThresholdEnabled = v
-                RefreshTBB()
-                CludesUI:RefreshPage()
             end,
         }, {
             type = "slider",
@@ -5583,19 +5548,10 @@ local function InitBuffBarsPage(
             min = 0,
             max = 100,
             step = 1,
-            disabled = function()
-                local bd = SelectedTBB()
-                if not bd or not bd.stackThresholdEnabled then
-                    return true
-                end
-                return bd.stackThresholdMulti and true or false
-            end,
+            disabled = ThresholdOff,
             disabledTooltip = function()
-                local bd = SelectedTBB()
-                if bd and bd.stackThresholdEnabled and bd.stackThresholdMulti then
-                    return StackThreshReplacesTip()
-                end
-                return CludesUI.DisabledTooltip("Stack Threshold")
+                return MultiThresholds() and StackThreshReplacesTip()
+                    or CludesUI.DisabledTooltip("Stack Threshold")
             end,
             rawTooltip = true,
             getValue = function()
@@ -5604,20 +5560,16 @@ local function InitBuffBarsPage(
             end,
             setValue = function(v)
                 local bd = SelectedTBB()
-                if not bd then
-                    return
+                if bd then
+                    bd.stackThreshold = v
+                    RefreshTBB()
                 end
-                bd.stackThreshold = v
-                RefreshTBB()
             end,
         })
         posY = posY - hgt
-        -- Inline swatch on Enable Stack Threshold toggle
         do
             local rgn = threshRow._leftRegion
             local ctrl = rgn._control
-            -- Cog: opens the multi-threshold editor. Stays usable while multi is
-            -- on, since it is the only way back out of it.
             CludesUI.BuildInlineCog(rgn, {
                 show = function(self)
                     ShowStackThreshEditor({
@@ -5633,8 +5585,7 @@ local function InitBuffBarsPage(
                 end,
                 disabledTooltip = "Stack Threshold",
             })
-
-            local threshSwatch, updateThreshSwatch = CludesUI.BuildColorSwatch(
+            local swatch, updateSwatch = CludesUI.BuildColorSwatch(
                 rgn,
                 threshRow:GetFrameLevel() + 3,
                 function()
@@ -5649,53 +5600,31 @@ local function InitBuffBarsPage(
                 end,
                 function(r, g, b, a)
                     local bd = SelectedTBB()
-                    if not bd then
-                        return
+                    if bd then
+                        bd.stackThresholdR, bd.stackThresholdG, bd.stackThresholdB, bd.stackThresholdA =
+                            r, g, b, a
+                        RefreshTBB()
                     end
-                    bd.stackThresholdR, bd.stackThresholdG, bd.stackThresholdB, bd.stackThresholdA =
-                        r, g, b, a
-                    RefreshTBB()
                 end,
                 true,
                 20
             )
-            Pix.Point(threshSwatch, "RIGHT", rgn._lastInline or ctrl, "LEFT", -8, 0)
-            rgn._lastInline = threshSwatch
-            local threshBlock = CreateFrame("Frame", nil, threshSwatch)
-            threshBlock:SetAllPoints()
-            threshBlock:SetFrameLevel(threshSwatch:GetFrameLevel() + 10)
-            threshBlock:EnableMouse(true)
-            threshBlock:SetScript("OnEnter", function()
-                local bd = SelectedTBB()
-                if bd and bd.stackThresholdEnabled and bd.stackThresholdMulti then
-                    CludesUI.ShowWidgetTooltip(threshSwatch, StackThreshReplacesTip())
-                    return
-                end
-                CludesUI.ShowWidgetTooltip(threshSwatch, CludesUI.DisabledTooltip("Stack Threshold"))
+            Pix.Point(swatch, "RIGHT", rgn._lastInline or ctrl, "LEFT", -8, 0)
+            rgn._lastInline = swatch
+            local block = OffBlock(swatch, function()
+                return MultiThresholds() and StackThreshReplacesTip()
+                    or CludesUI.DisabledTooltip("Stack Threshold")
             end)
-            threshBlock:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
-
-            local function UpdateThreshSwatchState()
-                local bd = SelectedTBB()
-                local enabled = bd and bd.stackThresholdEnabled
-                -- The swatch edits the single threshold color, so multi masks it
-                -- the same way it masks the slider.
-                local off = not enabled or (bd.stackThresholdMulti and true or false)
-                if off then
-                    threshSwatch:SetAlpha(0.3)
-                    threshBlock:Show()
-                else
-                    threshSwatch:SetAlpha(1)
-                    threshBlock:Hide()
-                end
+            local function Dim()
+                local off = ThresholdOff()
+                swatch:SetAlpha(off and 0.3 or 1)
+                block:SetShown(off)
             end
             CludesUI.RegisterWidgetRefresh(function()
-                updateThreshSwatch()
-                UpdateThreshSwatchState()
+                updateSwatch()
+                Dim()
             end)
-            UpdateThreshSwatchState()
+            Dim()
         end
 
         -- Preview click-navigation map: preview element -> section + row.
