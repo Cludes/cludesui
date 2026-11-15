@@ -239,13 +239,18 @@ local VERBS = { "Register", "Unregister", "Play", "Stop", "Pause", "Finish", "Ra
     "Start", "Add", "Remove", "Insert", "Highlight", "Execute", "Wrap", "Unwrap", "Run", "Rotate", "Adjust",
     "Interrupt", "Restart", "Release", "Reset", "Abort", "Copy", "Advance", "Replace", "Force", "Stretch", "Drop", "Desaturate", "Continue" }
 Obj.__index = methods
+-- ScrollFrame:UpdateScrollChildRect (no stand-in covers "Update*").
+function methods.UpdateScrollChildRect() end
+function methods.GetNumMaskTextures() return 0 end
 setmetatable(methods, { __index = function(_, k)
     if type(k) ~= "string" then return nil end
     -- Fields the code set itself are raw; anything else that looks like a
     -- widget method gets a stand-in made from its name.
     if k:find("^Set") or k:find("^Enable") or k:find("^Disable") or k:find("^Clear") then
         local key = k:gsub("^Set", "")
-        local f = function(self, v) self.__v[key] = v end
+        -- Tolerates a call on a table that is not a widget (code that reuses a
+        -- texture's method on a plain table).
+        local f = function(self, v) if self.__v then self.__v[key] = v end end
         methods[k] = f
         return f
     end
@@ -255,6 +260,7 @@ setmetatable(methods, { __index = function(_, k)
         for _, s in ipairs(OBJECT_SUFFIX) do if key:find(s .. "$") then wantsObject = true break end end
         local isColor = key:find("Color$") ~= nil
         local f = function(self)
+            if not self.__v then return nil end -- not a widget (see the setter above)
             local v = self.__v[key]
             if v ~= nil and not (wantsObject and type(v) ~= "table") then return v end
             if wantsObject then
