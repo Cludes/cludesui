@@ -4543,28 +4543,10 @@ local function InitBuffBarsPage(
         AddTBBTextSwatch(nameRow, nameRow._rightRegion, "timer")
         PositionSync(nameRow._rightRegion, "Duration Text", "timer", "showTimer")
 
-        -- Stacks Text (dropdown + resize cog: size, x, y) | Bar Strata
+        -- Stacks Text (dropdown + cog: size and offsets) | Bar Strata (a grouped
+        -- bar's whole group shares one).
         local stacksRow
-        stacksRow, hgt = W:DualRow(hostFrame, posY, {
-            type = "dropdown",
-            text = "Stacks Text",
-            values = TBB_POS_VALUES,
-            order = TBB_POS_ORDER,
-            getValue = function()
-                local bd = SelectedTBB()
-                return bd and bd.stacksPosition or "center"
-            end,
-            setValue = function(v)
-                local bd = SelectedTBB()
-                if not bd then
-                    return
-                end
-                EvictTBBTextConflicts(bd, "stacksPosition", v)
-                bd.stacksPosition = v
-                RefreshTBB()
-                CludesUI:RefreshPage()
-            end,
-        }, {
+        stacksRow, hgt = W:DualRow(hostFrame, posY, PositionDropdown("Stacks Text", "stacks", "center"), {
             type = "dropdown",
             text = "Bar Strata",
             tooltip = "Screen layer the bar renders on; changing a grouped bar changes its whole group.",
@@ -4580,126 +4562,28 @@ local function InitBuffBarsPage(
                     return
                 end
                 bd.strata = v
-                -- Grouped bars share one strata: write the rest of the group too.
-                local groupId = mod.TBBBarGroupID(bd)
-                if groupId ~= 0 then
-                    local t = mod.GetTrackedBuffBars()
-                    for _, b in ipairs(t.bars or {}) do
-                        if b ~= bd and mod.TBBBarGroupID(b) == groupId then
-                            b.strata = v
-                        end
-                    end
-                end
+                EachGroupMate(bd, function(b)
+                    b.strata = v
+                end)
                 RefreshTBB()
             end,
         })
         posY = posY - hgt
-        do
-            local rgn = stacksRow._leftRegion
-            CludesUI.BuildInlineCog(rgn, {
-                title = "Stacks Text Settings",
-                disabled = function()
-                    local bd = SelectedTBB()
-                    return bd and (bd.stacksPosition or "center") == "none"
-                end,
-                disabledTooltip = "This option requires a Stacks Text position other than None",
-                rows = {
-                    {
-                        type = "slider",
-                        label = "Size",
-                        min = 6,
-                        max = 24,
-                        step = 1,
-                        get = function()
-                            local bd = SelectedTBB()
-                            return bd and bd.stacksSize or 11
-                        end,
-                        set = function(v)
-                            local bd = SelectedTBB()
-                            if not bd then
-                                return
-                            end
-                            bd.stacksSize = v
-                            RefreshTBB()
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "X Offset",
-                        min = -250,
-                        max = 250,
-                        step = 1,
-                        get = function()
-                            local bd = SelectedTBB()
-                            return bd and bd.stacksX or 0
-                        end,
-                        set = function(v)
-                            local bd = SelectedTBB()
-                            if not bd then
-                                return
-                            end
-                            bd.stacksX = v
-                            RefreshTBB()
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Y Offset",
-                        min = -250,
-                        max = 250,
-                        step = 1,
-                        get = function()
-                            local bd = SelectedTBB()
-                            return bd and bd.stacksY or 0
-                        end,
-                        set = function(v)
-                            local bd = SelectedTBB()
-                            if not bd then
-                                return
-                            end
-                            bd.stacksY = v
-                            RefreshTBB()
-                        end,
-                    },
-                },
-            })
-        end
+        CludesUI.BuildInlineCog(stacksRow._leftRegion, {
+            title = "Stacks Text Settings",
+            disabled = function()
+                local bd = SelectedTBB()
+                return bd and TextPosition(bd, "stacks") == "none"
+            end,
+            disabledTooltip = "This option requires a Stacks Text position other than None",
+            rows = {
+                BarSlider("Size", "stacksSize", 6, 24, 11),
+                BarSlider("X Offset", "stacksX", -250, 250, 0),
+                BarSlider("Y Offset", "stacksY", -250, 250, 0),
+            },
+        })
         AddTBBTextSwatch(stacksRow, stacksRow._leftRegion, "stacks")
-        -- Sync icon on Stacks Text
-        do
-            local rgn = stacksRow._leftRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Stacks Text to all Bars",
-                isSynced = function()
-                    local bd = SelectedTBB()
-                    if not bd then
-                        return false
-                    end
-                    local place = bd.stacksPosition or "center"
-                    local tbb = mod.GetTrackedBuffBars()
-                    for _, b in ipairs(tbb.bars or {}) do
-                        if (b.stacksPosition or "center") ~= place then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                onClick = function()
-                    local bd = SelectedTBB()
-                    if not bd then
-                        return
-                    end
-                    local place = bd.stacksPosition or "center"
-                    local tbb = mod.GetTrackedBuffBars()
-                    for _, b in ipairs(tbb.bars or {}) do
-                        b.stacksPosition = place
-                    end
-                    RefreshTBB()
-                    CludesUI:RefreshPage()
-                end,
-            })
-        end
+        PositionSync(stacksRow._leftRegion, "Stacks Text", "stacks")
 
         -- Reverse Fill | Fill Up. Deliberately paired on one row: they are the
         -- two options a user reaches for when the bar is not moving the way
