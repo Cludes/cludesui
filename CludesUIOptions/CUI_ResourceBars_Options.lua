@@ -3074,35 +3074,38 @@ initFrame:SetScript("OnEvent", function(self)
     local SPENDER_HELP_TIP = "Recolor the bar while a spell is castable (usable and off cooldown). The first castable spell in the list wins, so order = priority. Overrides threshold coloring while active; an active tracked buff from Buff Colors takes priority.\n"
         .. "For an ability that turns into another spell while active, enter the original spell's ID: its current form is checked."
 
-    -- Skins a small text button of the threshold settings (Bands, Buffs, Spenders):
-    -- a dark fill that lightens on hover, tip on hover. label comes localized.
+    -- A small text button of the threshold settings (Bands, Buffs, Spenders):
+    -- a dark fill that lightens on hover, with its tooltip. label is localized.
+    local CARD_BG, CARD_BG_HOVER = { 0.12, 0.12, 0.12, 0.8 }, { 0.16, 0.16, 0.16, 0.9 }
     local function SkinCardButton(button, label, tipText)
-        local backdrop = button:CreateTexture(nil, "BACKGROUND")
-        backdrop:SetAllPoints()
-        backdrop:SetColorTexture(0.12, 0.12, 0.12, 0.8)
-        button._border = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.08, backdrop)
-        local labelFS = CludesUI.MakeFont(button, 12, nil, 1, 1, 1)
-        labelFS:SetAlpha(0.8)
-        labelFS:SetPoint("CENTER")
-        labelFS:SetText(label)
+        local bg = button:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints()
+        bg:SetColorTexture(unpack(CARD_BG))
+        button._border = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.08, bg)
+        local text = CludesUI.MakeFont(button, 12, nil, 1, 1, 1)
+        text:SetAlpha(0.8)
+        text:SetPoint("CENTER")
+        text:SetText(label)
         button:SetScript("OnEnter", function(self)
-            backdrop:SetColorTexture(0.16, 0.16, 0.16, 0.9)
+            bg:SetColorTexture(unpack(CARD_BG_HOVER))
             CludesUI.ShowWidgetTooltip(self, tipText)
         end)
         button:SetScript("OnLeave", function()
-            backdrop:SetColorTexture(0.12, 0.12, 0.12, 0.8)
+            bg:SetColorTexture(unpack(CARD_BG))
             CludesUI.HideWidgetTooltip()
         end)
     end
 
-    -- Threshold notice badge: an info bubble in the Settings button's top-left corner
-    -- naming every spec that has a threshold configured, so a spec's setup stays visible
-    -- from a page that doesn't list it. The accent while none of them applies to the spec
-    -- being played, orange while one does. Motion-only and click-through (same recipe as the
-    -- Spec Overrides badge) so the button keeps its own hover and click.
-    local THR_NOTE_IDLE = {} -- the accent, filled in place by each Update
+    -- The threshold notice: an info badge in the Settings button's top-left
+    -- naming every spec with a threshold set, so a spec's setup shows from a
+    -- page that does not list it. The accent while none applies to the spec
+    -- being played, orange while one does; the button's border takes the same
+    -- tint. Click-through (as the Spec Overrides badge), so the button keeps
+    -- its hover and click.
+    local THR_NOTE_IDLE = {} -- the accent, filled in place by each update
     local THR_NOTE_ACTIVE = { 1, 0x8c / 255, 0x26 / 255, "ff8c26" }
-    -- getBarData: fn() -> bar table. Returns the updater so callers can re-run it after an edit.
+
+    -- Returns the updater, which callers run again after an edit.
     local function AttachThresholdNotice(anchorBtn, getBarData)
         if not anchorBtn then
             return
@@ -3110,152 +3113,153 @@ initFrame:SetScript("OnEvent", function(self)
         local badge = CreateFrame("Frame", nil, anchorBtn)
         badge:SetSize(14, 14)
         badge:SetPoint("TOPLEFT", anchorBtn, "TOPLEFT", 2, -2)
-        -- Below the button's disabled overlay (level + 5), so a disabled bar dims and
-        -- covers the badge along with everything else on the button.
+        -- Under the button's disabled cover (level + 5), so a disabled bar dims it too.
         badge:SetFrameLevel(anchorBtn:GetFrameLevel() + 3)
         badge:SetMouseClickEnabled(false)
-        local ico = badge:CreateTexture(nil, "OVERLAY")
-        ico:SetAllPoints()
-        if ico.SetSnapToPixelGrid then
-            ico:SetSnapToPixelGrid(false)
-            ico:SetTexelSnappingBias(0)
+        local icon = badge:CreateTexture(nil, "OVERLAY")
+        icon:SetAllPoints()
+        if icon.SetSnapToPixelGrid then
+            icon:SetSnapToPixelGrid(false)
+            icon:SetTexelSnappingBias(0)
         end
-        ico:SetTexture([[Interface\AddOns\CludesUI\media\icons\cui-info.png]])
+        icon:SetTexture([[Interface\AddOns\CludesUI\media\icons\cui-info.png]])
         badge._color = THR_NOTE_IDLE
+        local function Tint(alpha)
+            local c = badge._color
+            icon:SetVertexColor(c[1], c[2], c[3], alpha)
+        end
         badge:SetScript("OnEnter", function(self)
-            local c = self._color
-            ico:SetVertexColor(c[1], c[2], c[3], 1)
+            Tint(1)
             if self._tip and CludesUI.ShowWidgetTooltip then
                 CludesUI.ShowWidgetTooltip(self, self._tip)
             end
         end)
-        badge:SetScript("OnLeave", function(self)
-            local c = self._color
-            ico:SetVertexColor(c[1], c[2], c[3], 0.85)
+        badge:SetScript("OnLeave", function()
+            Tint(0.85)
             CludesUI.HideWidgetTooltip()
         end)
         badge:Hide()
 
-        -- Recolors the button's own border to match (white when nothing is configured); its
-        -- OnEnter/OnLeave read anchorBtn._borderTint instead of hardcoding white, so the tint
-        -- survives hover. Alpha still follows the existing hover/idle levels.
-        local function ApplyBorderTint(rgb)
+        -- The button's own border in the same tint (white when nothing is
+        -- set); its hover handlers read _borderTint, so the tint survives.
+        local function BorderTint(rgb)
             anchorBtn._borderTint = rgb
             if anchorBtn._border and anchorBtn._border.SetColor then
-                local a = anchorBtn:IsMouseOver() and 0.3 or CludesUI.DD_BRD_A
-                anchorBtn._border:SetColor(rgb[1], rgb[2], rgb[3], a)
+                anchorBtn._border:SetColor(
+                    rgb[1],
+                    rgb[2],
+                    rgb[3],
+                    anchorBtn:IsMouseOver() and 0.3 or CludesUI.DD_BRD_A
+                )
             end
         end
 
         local function Update()
-            local ar, ag, ab = CludesUI.GetAccentColor()
-            THR_NOTE_IDLE[1], THR_NOTE_IDLE[2], THR_NOTE_IDLE[3] = ar, ag, ab
-            THR_NOTE_IDLE[4] = CludesUI.HexColor(ar, ag, ab):sub(5)
-            local list, isActive = mod.ThresholdNoticeInfo(getBarData())
+            local r, g, b = CludesUI.GetAccentColor()
+            THR_NOTE_IDLE[1], THR_NOTE_IDLE[2], THR_NOTE_IDLE[3] = r, g, b
+            THR_NOTE_IDLE[4] = CludesUI.HexColor(r, g, b):sub(5)
+            local list, applies = mod.ThresholdNoticeInfo(getBarData())
             if not list then
                 if CludesUI.HideWidgetTooltip and badge:IsMouseOver() then
                     CludesUI.HideWidgetTooltip()
                 end
                 badge:Hide()
-                ApplyBorderTint(THR_BORDER_WHITE)
+                BorderTint(THR_BORDER_WHITE)
                 return
             end
-            local c = isActive and THR_NOTE_ACTIVE or THR_NOTE_IDLE
+            local c = applies and THR_NOTE_ACTIVE or THR_NOTE_IDLE
             badge._color = c
-            ico:SetVertexColor(c[1], c[2], c[3], badge:IsMouseOver() and 1 or 0.85)
-            local tipText = "|cff"
+            Tint(badge:IsMouseOver() and 1 or 0.85)
+            local lead = applies and CludesUI.L("Current Spec is affected by Threshold & Hash Lines.")
+                or CludesUI.L("Current Spec is not affected by Threshold & Hash Lines.")
+            local which = "|cff"
                 .. c[4]
                 .. CludesUI.L("Thresholds or hash lines configured for:")
                 .. "|r "
                 .. list
-            local lead = isActive and CludesUI.L("Current Spec is affected by Threshold & Hash Lines.")
-                or CludesUI.L("Current Spec is not affected by Threshold & Hash Lines.")
-            badge._tip = "|cff" .. c[4] .. lead .. "|r\n\n" .. tipText
+            badge._tip = "|cff" .. c[4] .. lead .. "|r\n\n" .. which
             badge:Show()
-            ApplyBorderTint(c)
+            BorderTint(c)
         end
         anchorBtn:HookScript("OnShow", Update)
         CludesUI.RegisterWidgetRefresh(Update)
-        -- Keyed by the badge: the page pool forgets the entry when it resets it.
-        CludesUI.RegAccent({
-            type = "callback",
-            obj = badge,
-            fn = function()
-                Update()
-            end,
-        })
+        -- Keyed by the badge: the page pool forgets it when it resets the badge.
+        CludesUI.RegAccent({ type = "callback", obj = badge, fn = Update })
         Update()
         return Update
     end
 
-    -- Spec / talent watcher for the Threshold & Hash Lines editors. A spec or talent change
-    -- moves which entry the resolver picks and changes the loadout talents, so every open
-    -- editor refreshes in place and keeps its selection. A spec swap with no editor open
-    -- redraws the Display page instead; with one open, that redraw waits until the last
-    -- editor closes (a redraw would close it); an editor closed by leaving the page or
-    -- closing the panel leaves the rebuild to the page's next visit. One event frame and
-    -- one accent entry per session, made by the first editor build; the talent events are
-    -- registered only while an editor is open.
+    -- Spec and talent watcher for the Threshold & Hash Lines editors. A spec or
+    -- talent change moves which entry the resolver picks, so every open editor
+    -- refreshes in place and keeps its selection. With no editor open a spec
+    -- swap redraws the bars page; with one open the redraw waits for the last
+    -- editor to close (a redraw would close it); an editor closed by leaving
+    -- the page or closing the panel leaves the rebuild to the next visit. One
+    -- event frame and one accent entry per session, made by the first editor
+    -- build; the talent events are listened to only while an editor is open.
     local ThrWatchBuild, ThrEditorShown, ThrEditorHidden
     do
-        local isShown = {} -- [editor page] = { refresh, repaint }, while that page is shown
-        local watch, stale, redraw, refreshQueued
-        local function OnDisplayPage()
+        local open = {} -- [editor page] = { refresh, repaint, gen } while shown
+        local watch, stale, redrawQueued, refreshQueued
+        local function OnBarsPage()
             return CludesUI:IsShown() and CludesUI:GetActivePage() == PAGE_DISPLAY
         end
         local function RedrawNow()
-            if not redraw then
-                return
-            end
-            redraw = nil
-            if OnDisplayPage() then
-                CludesUI:RefreshPage(true)
+            if redrawQueued then
+                redrawQueued = nil
+                if OnBarsPage() then
+                    CludesUI:RefreshPage(true)
+                end
             end
         end
-        -- One redraw per burst (a spec swap fires both spec events); a page build in between cancels it
-        local function RedrawDisplay()
-            if redraw or not OnDisplayPage() then
-                return
+        -- One redraw per burst (a swap sends both spec events); a page build
+        -- in between cancels it.
+        local function QueueRedraw()
+            if not redrawQueued and OnBarsPage() then
+                redrawQueued = true
+                C_Timer.After(0, RedrawNow)
             end
-            redraw = true
-            C_Timer.After(0, RedrawNow)
         end
-        -- One in-place refresh per burst, a frame later, once the bars have seen the change.
-        -- An editor whose page the options page pool dressed again since is over: it
-        -- leaves the watcher instead of painting widgets that now show something else.
-        local function FlushRefresh()
-            refreshQueued = nil
-            for page, ed in pairs(isShown) do
-                if PoolGen(page) == ed.gen then
-                    ed.refresh()
+        -- Calls fn(page, editor) on each open editor still dressed as it was
+        -- (a pooled page dressed again since is over: it leaves the watcher).
+        local function EachOpen(fn)
+            for page, editor in pairs(open) do
+                if PoolGen(page) == editor.gen then
+                    fn(page, editor)
                 else
                     ThrEditorHidden(page)
                 end
             end
         end
-        local function OnEvent(_, evt)
-            local specSwap = evt == "PLAYER_SPECIALIZATION_CHANGED" or evt == "ACTIVE_TALENT_GROUP_CHANGED"
-            if next(isShown) then
-                if specSwap then
+        -- One in-place refresh per burst, a frame later (once the bars saw it).
+        local function FlushRefresh()
+            refreshQueued = nil
+            EachOpen(function(_, editor)
+                editor.refresh()
+            end)
+        end
+        local function OnEvent(_, event)
+            local swap = event == "PLAYER_SPECIALIZATION_CHANGED" or event == "ACTIVE_TALENT_GROUP_CHANGED"
+            if next(open) then
+                if swap then
                     stale = true
                 end
                 if not refreshQueued then
                     refreshQueued = true
                     C_Timer.After(0, FlushRefresh)
                 end
-            elseif specSwap then
-                if OnDisplayPage() then
-                    RedrawDisplay()
+            elseif swap then
+                if OnBarsPage() then
+                    QueueRedraw()
                 else
-                    -- Away from the page (another page or module, or the panel
-                    -- closed): its next visit builds it for the new spec.
+                    -- Away from the page: its next visit builds it for the new spec.
                     CludesUI:InvalidateModulePageCache("CludesUIResourceBars")
                 end
             end
         end
-        -- Every editor build: makes the watcher once; the page being built is current again
+        -- Every editor build: makes the watcher once; the page building is current again.
         ThrWatchBuild = function()
-            stale, redraw = nil, nil
+            stale, redrawQueued = nil, nil
             if watch then
                 return
             end
@@ -3263,48 +3267,46 @@ initFrame:SetScript("OnEvent", function(self)
             watch:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
             watch:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
             watch:SetScript("OnEvent", OnEvent)
-            -- The selection highlight follows the live theme accent
+            -- The selection highlight follows the theme accent.
             CludesUI.RegAccent({
                 type = "callback",
                 fn = function()
-                    for page, ed in pairs(isShown) do
-                        if PoolGen(page) == ed.gen then
-                            ed.repaint()
-                        else
-                            ThrEditorHidden(page)
-                        end
-                    end
+                    EachOpen(function(_, editor)
+                        editor.repaint()
+                    end)
                 end,
             })
         end
-        ThrEditorShown = function(page, ed)
-            if not next(isShown) then
+        ThrEditorShown = function(page, editor)
+            if not next(open) then
                 watch:RegisterEvent("TRAIT_CONFIG_UPDATED")
                 watch:RegisterEvent("PLAYER_TALENT_UPDATE")
             end
-            isShown[page] = ed
+            open[page] = editor
         end
         ThrEditorHidden = function(page)
-            if not isShown[page] then
+            if not open[page] then
                 return
             end
-            isShown[page] = nil
-            if next(isShown) then
+            open[page] = nil
+            if next(open) then
                 return
             end
             watch:UnregisterEvent("TRAIT_CONFIG_UPDATED")
             watch:UnregisterEvent("PLAYER_TALENT_UPDATE")
-            if stale then
-                stale = nil
-                if OnDisplayPage() then
-                    RedrawDisplay()
-                elseif CludesUI:GetActivePage() == PAGE_DISPLAY then
-                    -- Closed with the panel: RefreshPage only flags a hidden panel, so its next open rebuilds the page
-                    CludesUI:RefreshPage(true)
-                else
-                    -- Left for another page or module (the panel is open): drop the page's build so the next visit rebuilds it
-                    CludesUI:InvalidateModulePageCache("CludesUIResourceBars")
-                end
+            if not stale then
+                return
+            end
+            stale = nil
+            if OnBarsPage() then
+                QueueRedraw()
+            elseif CludesUI:GetActivePage() == PAGE_DISPLAY then
+                -- Closed with the panel: RefreshPage only marks a hidden
+                -- panel, so its next open rebuilds the page.
+                CludesUI:RefreshPage(true)
+            else
+                -- Left for another page or module: the next visit rebuilds it.
+                CludesUI:InvalidateModulePageCache("CludesUIResourceBars")
             end
         end
     end
