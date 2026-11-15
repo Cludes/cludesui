@@ -5985,6 +5985,10 @@ initFrame:SetScript("OnEvent", function(self)
         FormToggleRows = FormToggleRows,
         BuildHashCog = BuildHashCog,
         BuildThresholdSettingsButton = BuildThresholdSettingsButton,
+        -- The threshold editor's popups (the headless scenarios open them too).
+        ShowBandEditor = ShowBandEditor,
+        ShowBuffEditor = ShowBuffEditor,
+        ShowSpenderEditor = ShowSpenderEditor,
         RefreshPower = RefreshPower,
         RebuildPower = RebuildPower,
         RefreshClass = RefreshClass,
