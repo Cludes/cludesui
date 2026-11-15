@@ -45,7 +45,9 @@ def run(tree, scenario, flavor, out):
         f.write(body)
         f.write("\nOUT:close()\n")
     env = dict(os.environ, HARNESS_PROBE=probe)
-    r = subprocess.run([LJ, os.path.join(HERE, "harness.lua"), flavor], cwd=tree, env=env,
+    # COMPARE_CLASS=<CLASS> runs the harness as that class (default PALADIN).
+    argv = [LJ, os.path.join(HERE, "harness.lua"), flavor] + ([os.environ["COMPARE_CLASS"]] if os.environ.get("COMPARE_CLASS") else [])
+    r = subprocess.run(argv, cwd=tree, env=env,
                        capture_output=True, text=True, errors="replace")
     tail = [l for l in r.stdout.splitlines() if "pages built" in l or l.startswith("[")]
     return tail

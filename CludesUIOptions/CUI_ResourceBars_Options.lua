@@ -813,955 +813,865 @@ initFrame:SetScript("OnEvent", function(self)
         label:Show()
     end
 
-    -- Discrete pip count for the current spec: the real resource max (Fury
+    -- The pip count for the current spec: the resource's real maximum (Fury
     -- Whirlwind 4, Arms Sweeping Strikes 18, DK runes 6, Maelstrom Weapon
-    -- 5/10, ...) so the preview matches the live bar; 5 when none exists.
+    -- 5/10, ...) so the preview matches the live bar; 5 when there is none.
     local function PreviewPipCount()
-        local gsr = _G._CURB_GetSecondaryResource
-        local details = gsr and gsr()
-        if not details or details.type == "bar" then
+        local get = _G._CURB_GetSecondaryResource
+        local info = get and get()
+        if not info or info.type == "bar" then
             return 5
         end
-        local m = details.max
-        -- Talent-dependent maxes come from the live sources
-        if details.power == "SWEEPING_STRIKES" or details.power == "WHIRLWIND_STACKS" then
-            local realMax = _G._EWC and _G._EWC.MaxApps(details.power)
-            if realMax and realMax > 0 then
-                m = realMax
+        local most = info.max
+        -- Talent-dependent maximums come from their live sources.
+        if info.power == "SWEEPING_STRIKES" or info.power == "WHIRLWIND_STACKS" then
+            local real = _G._EWC and _G._EWC.MaxApps(info.power)
+            if real and real > 0 then
+                most = real
             end
-        elseif details.power == "MAELSTROM_WEAPON" and CludesUI and CludesUI.GetMaelstromWeapon then
-            local _, realMax = CludesUI.GetMaelstromWeapon()
-            if realMax and realMax > 0 then
-                m = realMax
+        elseif info.power == "MAELSTROM_WEAPON" and CludesUI and CludesUI.GetMaelstromWeapon then
+            local _, real = CludesUI.GetMaelstromWeapon()
+            if real and real > 0 then
+                most = real
             end
         end
-        if type(m) == "number" and m >= 2 and m <= 20 then
-            return m
+        if type(most) == "number" and most >= 2 and most <= 20 then
+            return most
         end
         return 5
     end
 
-    local function UpdatePreviewHeader()
+    ---------------------------------------------------------------------------
+    --  The bars preview, step by step (UpdatePreviewHeader puts them together)
+    ---------------------------------------------------------------------------
+    local WHITE = "Interface\\Buttons\\WHITE8x8"
+
+    local UpdatePreviewHeader -- defined at the end of this section (the Arcane Soul retry calls it)
+
+    -- The class resource's fill colour: dark mode, the per-spec resource
+    -- colour (else the class colour), the class colour, or custom.
+    local function ResourceColour(sp, classColour)
+        local function Class()
+            return classColour and classColour[1] or 0.95,
+                classColour and classColour[2] or 0.90,
+                classColour and classColour[3] or 0.60
+        end
+        if sp.darkTheme then
+            return CludesUI.GetDarkModeFill()
+        elseif sp.resourceColored then
+            local get, resolve = _G._CURB_GetSecondaryResource, _G._CURB_ResolveSecondaryResourceColor
+            local info = get and resolve and get()
+            if info and info.power ~= nil then
+                local r, g, b = resolve(info.power)
+                if r then
+                    return r, g, b
+                end
+            end
+            return Class()
+        elseif sp.classColored ~= false then
+            return Class()
+        end
+        return sp.fillR, sp.fillG, sp.fillB -- classColored false: custom
+    end
+
+    -- A resource background colour: dark mode, a darker class tint (dim =
+    -- 0.3 for the bar type, 0.5 for pips), or the custom background.
+    local function ResourceBg(sp, r, g, b, dim)
+        if sp.darkTheme then
+            local dr, dg, db = CludesUI.GetDarkModeBg()
+            return dr, dg, db, 1
+        elseif sp.classColored then
+            return r * dim, g * dim, b * dim, 0.5
+        end
+        return sp.bgR, sp.bgG, sp.bgB, sp.bgA
+    end
+
+    -- The bar texture behind a background (Textured Background), as live.
+    local function TexturedBg(tex, p, sp, allowed, r, g, b, a)
+        if not (p.general.barTextureBg or tex._erbBgTex) then
+            return
+        end
+        local path = p.general.barTextureBg
+            and allowed
+            and (sp.fillOpacity or 100) >= 100
+            and CludesUI.ResolveTexturePath(_G._CURB_BarTextures, p.general.barTexture, nil)
+        mod.ERB_BgTexture(tex, path, r, g, b, a)
+    end
+
+    local function FillPath(p)
+        local textures = _G._CURB_BarTextures or {}
+        return textures[p.general.barTexture or "none"] or WHITE
+    end
+
+    -- The resource's own separators on its bottom edge (and between pips:
+    -- slots), only on a textured style and not under a stock style.
+    local function SeparatorsOn(sp)
+        return sp.edgeSep and mod.ERB_Textured(sp) and not CludesUI.BlizzStyle.Get("resourcebars")
+    end
+
+    -- A bar-type class resource: one fill over one background, with hash lines.
+    local function StyleResourceBar(pc, p, sp, height, r, g, b)
+        local width = p.primary.width or 214
+        pc:SetSize(width, height)
+        local bg = pc._barBg
+        if bg then
+            bg:SetColorTexture(ResourceBg(sp, r, g, b, 0.3))
+            UnsnapTex(bg)
+            TexturedBg(bg, p, sp, true, ResourceBg(sp, r, g, b, 0.3))
+        end
+        local fill = pc._barFill
+        if fill then
+            fill:SetWidth(width * _previewBarFillPct / 100)
+            fill:SetHeight(height)
+            fill:SetTexture(FillPath(p))
+            fill:SetVertexColor(r, g, b, 1)
+            UnsnapTex(fill)
+            fill:Show()
+            -- Fill Opacity: a see-through fill and the background over the
+            -- empty part only, as the live bar.
+            local opacity = (sp.fillOpacity or 100) / 100
+            fill:SetAlpha(opacity)
+            if bg then
+                bg:ClearAllPoints()
+                if opacity < 1 then
+                    bg:SetPoint("TOPLEFT", fill, "TOPRIGHT", 0, 0)
+                    bg:SetPoint("BOTTOMRIGHT", pc, "BOTTOMRIGHT", 0, 0)
+                else
+                    bg:SetAllPoints(pc)
+                end
+            end
+        end
+
+        -- Hash lines: the threshold entry's, else the older tickValues; at
+        -- the resource's real maximum (or percent).
+        pc._previewTicks = pc._previewTicks or {}
+        local ticks = pc._previewTicks
+        for i = 1, #ticks do
+            ticks[i]:Hide()
+        end
+        local entry = _G._CURB_ResolveThresholdSpecEntry and _G._CURB_ResolveThresholdSpecEntry(sp) or nil
+        local list = (entry and entry.hashValues ~= "") and entry.hashValues or (sp.tickValues or "")
+        local values = {}
+        for part in list:gmatch("[^,]+") do
+            local v = tonumber(part:match("^%s*(.-)%s*$"))
+            if v and v > 0 then
+                values[#values + 1] = v
+            end
+        end
+        local get = _G._CURB_GetSecondaryResource
+        local info = get and get()
+        local most = (info and info.max) or 100
+        local percent = entry and entry.hashMode == "percent"
+        local PP = CludesUI and CludesUI.PP
+        local onePx = PP and PP.Scale(1) or 1
+        for i, v in ipairs(values) do
+            local limit = percent and 100 or most
+            if v <= limit then
+                local tick = ticks[i]
+                if not tick then
+                    tick = pc:CreateTexture(nil, "OVERLAY", nil, 7)
+                    tick:SetColorTexture(1, 1, 1, 1)
+                    tick:SetSnapToPixelGrid(false)
+                    tick:SetTexelSnappingBias(0)
+                    ticks[i] = tick
+                end
+                local x = width * v / limit
+                tick:ClearAllPoints()
+                tick:SetSize(onePx, height)
+                tick:SetPoint("TOPLEFT", pc, "TOPLEFT", PP and PP.Scale(x) or x, 0)
+                tick:Show()
+            end
+        end
+
+        -- A bar type has no gaps: only the bottom-edge separator, as live.
+        local sepOn = SeparatorsOn(sp)
+        mod.ERB_Separators(pc, sp, (sepOn and sp.edgeSepH ~= false) and true or false, pc:GetFrameLevel() + 5)
+        -- ... and no pips: hide pips and gap fills from an earlier build.
+        for _, pip in ipairs(_previewFrames.pips) do
+            pip:Hide()
+        end
+        for _, gap in ipairs(pc._gapFills or {}) do
+            gap:Hide()
+        end
+    end
+
+    -- The pips' x and width, pixel-exact like the live bar (CalcPipGeometry,
+    -- or the same arithmetic while that is not loaded yet).
+    local function PipGeometry(pc, sp, count)
+        local scale = pc:GetEffectiveScale()
+        if scale <= 0 then
+            scale = 1
+        end
+        local onePx = CludesUI.PP.perfect / scale -- one physical pixel in this frame's units
+        local function Snap(v)
+            return math.floor(v / onePx + 0.5) * onePx
+        end
+        local width, height = Snap(sp.pipWidth), Snap(sp.pipHeight)
+        local calc = _G._CURB_CalcPipGeometry
+        local slots = calc and calc(width, count, sp.pipSpacing or 1, pc)
+        local xs, ws = {}, {}
+        if slots then
+            for i = 1, count do
+                xs[i], ws[i] = slots[i].x0, slots[i].x1 - slots[i].x0
+            end
+        else
+            local spacing = (sp.pipSpacing > 0) and math.max(onePx, Snap(sp.pipSpacing)) or 0
+            local room = width - (count - 1) * spacing
+            local base = math.floor(room / onePx / count) * onePx
+            local wider = math.floor((room - base * count) / onePx + 0.5)
+            local x = 0
+            for i = 1, count do
+                xs[i] = x
+                ws[i] = base + (i <= wider and onePx or 0)
+                x = x + ws[i] + spacing
+            end
+        end
+        return width, height, xs, ws, slots
+    end
+
+    -- How the made-up fill meets the threshold or bands, as the live pips
+    -- resolve them (Update.lua): "From" (>=) or "Up to" (<=, reverse),
+    -- Partial Only ("From" only), bands, and Recolor Text Instead.
+    local function PipAlert(sp, count)
+        local entry = _G._CURB_ResolveThresholdSpecEntry and _G._CURB_ResolveThresholdSpecEntry(sp) or nil
+        local find = _G._CURB_FindCountBand
+        local bandsOn, bands, reversedBands
+        if _G._CURB_ResolveBandConfig and find then
+            local on, list, _, rev = _G._CURB_ResolveBandConfig(sp, entry)
+            bandsOn, bands, reversedBands = on, list, rev
+        end
+        local enabled = entry and (entry.thresholdEnabled ~= false) or false
+        local at = entry and entry.thresholdCount or sp.thresholdCount or 3
+        -- Enhance Five Bar needs at least 7 (5 pips + overflow), as live.
+        if enabled and sp.enhanceFiveBar and at < 7 then
+            local info = _G._CURB_GetSecondaryResource and _G._CURB_GetSecondaryResource()
+            if info and info.power == "MAELSTROM_WEAPON" then
+                at = 7
+            end
+        end
+        local function Pick(field)
+            local v = entry and entry[field]
+            if v == nil then
+                v = sp[field]
+            end
+            return v
+        end
+        local partial, reverse = Pick("thresholdPartialOnly"), Pick("thresholdReverse")
+        if reverse then
+            partial = false
+        end
+        -- The random fill against a 5-pip preview, rescaled to this count (18
+        -- Sweeping Strikes and so on).
+        local filled = _previewPipCount
+        if count ~= 5 then
+            filled = math.max(1, math.min(count, math.floor(_previewPipCount / 5 * count + 0.5)))
+        end
+        local r = entry and entry.thresholdR or sp.thresholdR
+        local g = entry and entry.thresholdG or sp.thresholdG
+        local b = entry and entry.thresholdB or sp.thresholdB
+        local active = enabled and ((reverse and filled <= at) or (not reverse and filled >= at))
+        if bandsOn then
+            local band = find(bands, filled, reversedBands)
+            active = band ~= nil
+            if band then
+                r, g, b = band.r or 1, band.g or 1, band.b or 1
+            end
+        end
+        -- Recolor Text Instead: the count text takes the colour, pips stay base.
+        local textColour
+        if entry and entry.thresholdTextInstead and sp.showText then
+            if active then
+                textColour = { r, g, b }
+            end
+            active = false
+        end
+        return {
+            filled = filled,
+            active = active,
+            r = r,
+            g = g,
+            b = b,
+            bands = bandsOn,
+            partial = partial,
+            at = at,
+            textColour = textColour,
+        }
+    end
+
+    local RUNE_SECONDS = { 2, 4, 6, 7, 9, 10 } -- made-up rune cooldowns, longer to the right
+
+    -- One pip: place, background, fill, border, colour and (DK) its rune timer.
+    local function StylePip(i, pip, pc, p, sp, geo, alert, r, g, b, pipBg, isDK)
+        pip:SetSize(geo.ws[i], geo.height)
+        pip:ClearAllPoints()
+        pip:SetPoint("LEFT", pc, "LEFT", geo.xs[i], 0)
+
+        if pipBg then
+            pip._bg:SetColorTexture(mod.ERB.PipBgColor(sp, true))
+        else
+            pip._bg:SetColorTexture(ResourceBg(sp, r, g, b, 0.5))
+        end
+        UnsnapTex(pip._bg)
+        TexturedBg(pip._bg, p, sp, not pipBg, ResourceBg(sp, r, g, b, 0.5))
+
+        local fill = pip._fill
+        fill:SetTexture(FillPath(p))
+        if sp.useContinuousTexture and geo.width > 0 then
+            fill:SetTexCoord(geo.xs[i] / geo.width, (geo.xs[i] + geo.ws[i]) / geo.width, 0, 1)
+            pip._continuousPreview = true
+        elseif pip._continuousPreview then
+            fill:SetTexCoord(0, 1, 0, 1)
+            pip._continuousPreview = nil
+        end
+        UnsnapTex(fill)
+
+        if pip._border then
+            pip._border:SetShown(false)
+        end
+        if sp.borderOnPips then
+            if not pip._borderFrame then
+                local holder = CreateFrame("Frame", nil, pip)
+                holder:SetAllPoints(pip)
+                pip._borderFrame = holder
+            end
+            local level = pip:GetFrameLevel()
+            pip._borderFrame:SetFrameLevel(sp.borderBehind and math.max(0, level - 1) or (level + 2))
+            local size, style = sp.borderSize or 1, sp.borderTexture or "solid"
+            CludesUI.ApplyBorderStyle(
+                pip._borderFrame,
+                size,
+                sp.borderR or 0,
+                sp.borderG or 0,
+                sp.borderB or 0,
+                sp.borderA or 1,
+                style,
+                sp.borderTextureOffset,
+                sp.borderTextureOffsetY,
+                sp.borderTextureShiftX,
+                sp.borderTextureShiftY,
+                "resourcebars",
+                size,
+                nil,
+                CludesUI.BorderPx(sp.borderSizePx, size, style)
+            )
+            pip._borderFrame:Show()
+        elseif pip._borderFrame then
+            pip._borderFrame:Hide()
+        end
+
+        local lit = i <= alert.filled
+        if lit then
+            -- Partial Only keeps the pips below the threshold at the base colour.
+            if alert.active and not (not alert.bands and alert.partial and i < alert.at) then
+                fill:SetVertexColor(alert.r, alert.g, alert.b, 1)
+            else
+                fill:SetVertexColor(r, g, b, 1)
+            end
+            fill:Show()
+        else
+            fill:Hide()
+        end
+        -- Fill Opacity: lit pips drop their background so the see-through
+        -- fill shows what is behind (as live).
+        local opacity = (sp.fillOpacity or 100) / 100
+        fill:SetAlpha(opacity)
+        pip._bg:SetAlpha((lit and (opacity < 1 or pipBg)) and 0 or 1)
+
+        if isDK and sp.showText then
+            if not pip._pvCdText then
+                local layer = CreateFrame("Frame", nil, pip)
+                layer:SetAllPoints(pip)
+                layer:SetFrameLevel(pip:GetFrameLevel() + 3)
+                local text = layer:CreateFontString(nil, "OVERLAY")
+                text:SetTextColor(1, 1, 1, 0.9)
+                pip._pvCdText = text
+            end
+            local text = pip._pvCdText
+            SetPVFont(text, FONT_PATH, sp.textSize)
+            text:ClearAllPoints()
+            text:SetPoint("CENTER", pip, "CENTER", sp.textXOffset or 0, sp.textYOffset or 0)
+            if lit then
+                text:SetText("")
+                text:Hide()
+            else
+                text:SetText(tostring(RUNE_SECONDS[i] or ""))
+                text:Show()
+            end
+        elseif pip._pvCdText then
+            pip._pvCdText:Hide()
+        end
+        pip:Show()
+    end
+
+    -- The optional colour in the gaps between pips (as live).
+    local function GapFills(pc, sp, count, xs, ws)
+        pc._gapFills = pc._gapFills or {}
+        local fills = pc._gapFills
+        local n = 0
+        if sp.gapColorEnabled and count > 1 then
+            for i = 1, count - 1 do
+                local x = xs[i] + ws[i]
+                local w = xs[i + 1] - x
+                if w and w > 0 then
+                    n = n + 1
+                    local tex = fills[n]
+                    if not tex then
+                        tex = pc:CreateTexture(nil, "BACKGROUND", nil, 0)
+                        UnsnapTex(tex)
+                        fills[n] = tex
+                    end
+                    tex:SetColorTexture(sp.gapR or 0, sp.gapG or 0, sp.gapB or 0, sp.gapA or 1)
+                    tex:ClearAllPoints()
+                    tex:SetPoint("TOPLEFT", pc, "TOPLEFT", x, 0)
+                    tex:SetPoint("BOTTOMLEFT", pc, "BOTTOMLEFT", x, 0)
+                    tex:SetWidth(w)
+                    tex:Show()
+                end
+            end
+        end
+        for i = n + 1, #fills do
+            fills[i]:Hide()
+        end
+    end
+
+    -- A pip-type class resource (always horizontal in the preview).
+    local function StylePips(pc, p, sp, r, g, b, isDK)
+        local count = PreviewPipCount()
+        local width, height, xs, ws, slots = PipGeometry(pc, sp, count)
+        pc:SetSize(width, height)
+        local alert = PipAlert(sp, count)
+        pc._pvShownCount = alert.filled -- the count text matches the lit pips
+        pc._pvTextCol = alert.textColour
+        local pipBg = mod.ERB_PipBgOn(sp, false) -- Background on individual pips, as live
+
+        -- More pips than built so far (counts run 3-18): bare background and
+        -- fill frames, which StylePip dresses.
+        local pips = _previewFrames.pips
+        for i = #pips + 1, count do
+            local pip = CreateFrame("Frame", nil, pc)
+            pip._bg = pip:CreateTexture(nil, "BACKGROUND")
+            pip._bg:SetAllPoints()
+            pip._fill = pip:CreateTexture(nil, "ARTWORK")
+            pip._fill:SetAllPoints()
+            pips[i] = pip
+        end
+        local geo = { width = width, height = height, xs = xs, ws = ws }
+        for i = 1, math.min(count, #pips) do
+            StylePip(i, pips[i], pc, p, sp, geo, alert, r, g, b, pipBg, isDK)
+        end
+        for i = count + 1, #pips do
+            pips[i]:Hide()
+        end
+        GapFills(pc, sp, count, xs, ws)
+
+        -- The bottom-edge separator and one per gap, as live.
+        local sepOn = SeparatorsOn(sp)
+        mod.ERB_Separators(
+            pc,
+            sp,
+            (sepOn and sp.edgeSepH ~= false) and true or false,
+            pc:GetFrameLevel() + 5,
+            (sepOn and sp.edgeSepV ~= false) and slots or nil,
+            count,
+            false,
+            false
+        )
+        -- Hide a bar type's fill and hash lines from an earlier build.
+        if pc._barFill then
+            pc._barFill:Hide()
+        end
+        for _, tick in ipairs(pc._previewTicks or {}) do
+            tick:Hide()
+        end
+    end
+
+    -- Blizzard Style kit on the preview row: the stock background art, its
+    -- bar-shape mask on fill and background, and the inner bevel (on the
+    -- container for a bar type, on an overlay above the pips otherwise, with
+    -- the pips masked so the end pips round off with the frame).
+    local function BlizzKit(pc, isBar)
+        local art = pc._blizzBarBg
+        if not art then
+            art = pc:CreateTexture(nil, "BACKGROUND", nil, -2)
+            if C_Texture.GetAtlasInfo("UI-HUD-CoolDownManager-Bar-BG") then
+                art:SetAtlas("UI-HUD-CoolDownManager-Bar-BG")
+            end
+            UnsnapTex(art)
+            pc._blizzBarBg = art
+        end
+        art:ClearAllPoints()
+        art:SetPoint("TOPLEFT", pc, "TOPLEFT", -2, 3)
+        art:SetPoint("BOTTOMRIGHT", pc, "BOTTOMRIGHT", 6, -7)
+        art:Show()
+        local mask = pc._blizzBarMask
+        if not mask and C_Texture.GetAtlasInfo("UI-HUD-CoolDownManager-Bar") then
+            mask = pc:CreateMaskTexture()
+            mask:SetAtlas("UI-HUD-CoolDownManager-Bar")
+            mask:SetAllPoints(pc)
+            pc._blizzBarMask = mask
+        end
+        if pc._barFill and pc._blizzMaskedFill ~= pc._barFill then
+            pc._barFill:AddMaskTexture(mask)
+            pc._blizzMaskedFill = pc._barFill
+        end
+        if pc._barBg and pc._blizzMaskedBg ~= pc._barBg then
+            pc._barBg:AddMaskTexture(mask)
+            pc._blizzMaskedBg = pc._barBg
+        end
+        local shade = pc._blizzShadeFrame
+        if isBar then
+            mod.ERB_BlizzBarShadow(pc, mask)
+            if shade then
+                shade:Hide()
+            end
+            return
+        end
+        if pc._blizzShadow then
+            for i = 1, 4 do
+                pc._blizzShadow[i]:Hide()
+            end
+        end
+        if not shade then
+            shade = CreateFrame("Frame", nil, pc)
+            shade:SetAllPoints(pc)
+            pc._blizzShadeFrame = shade
+        end
+        shade:SetFrameLevel(pc:GetFrameLevel() + 8)
+        shade:Show()
+        mod.ERB_BlizzBarShadow(shade, mask)
+        for _, pip in ipairs(_previewFrames.pips or {}) do
+            mod.ERB_MaskTex(pip._bg, mask)
+            mod.ERB_MaskTex(pip._fill, mask)
+        end
+    end
+
+    -- The whole-row border: the stock frame under a stock style, none when
+    -- the border sits on each pip, else ours (with Extend Top / Bottom).
+    local function ResourceChrome(pc, sp, isBar)
+        if not pc._barBorderFrame then
+            local holder = CreateFrame("Frame", nil, pc)
+            holder:SetAllPoints(pc)
+            pc._barBorderFrame = holder
+        end
+        local holder = pc._barBorderFrame
+        local level = pc:GetFrameLevel()
+        holder:SetFrameLevel(sp.borderBehind and math.max(0, level - 1) or (level + 2))
+        if CludesUI.BlizzStyle.Get("resourcebars") then
+            holder:Hide()
+            if mod.ERB_BarsClassic() then
+                -- Classic WoW UI: the vanilla frame round the row; no mask, no bevel.
+                mod.ERB_ApplyClassicBarChrome(pc, nil, nil, nil, nil, mod.ERB_BarFrameK(sp))
+            else
+                BlizzKit(pc, isBar)
+            end
+        elseif sp.borderOnPips and not isBar then
+            holder:Hide()
+        else
+            mod.ERB_AnchorBorderHost(holder, pc, mod.ERB_BorderExtents(sp))
+            local size, style = sp.borderSize or 1, sp.borderTexture or "solid"
+            CludesUI.ApplyBorderStyle(
+                holder,
+                size,
+                sp.borderR or 0,
+                sp.borderG or 0,
+                sp.borderB or 0,
+                sp.borderA or 1,
+                style,
+                sp.borderTextureOffset,
+                sp.borderTextureOffsetY,
+                sp.borderTextureShiftX,
+                sp.borderTextureShiftY,
+                "resourcebars",
+                size,
+                nil,
+                CludesUI.BorderPx(sp.borderSizePx, size, style)
+            )
+            holder:Show()
+        end
+    end
+
+    -- Rounded corners, as the live class resource (ns.ERB_RoundSecondary): on
+    -- the row, or on each pip when the border sits on the pips.
+    local function RoundResource(pc, sp, isBar)
+        local radius = (not mod.ERB_BarsBlizz() and sp.cornerRadius) or 0
+        local style = sp.borderTexture or "solid"
+        local onPips = sp.borderOnPips and not isBar
+        if radius > 0 then
+            CludesUI.RoundCorners(pc, radius, {
+                style = style,
+                border = not onPips and pc._barBorderFrame or nil,
+                corners = sp.cornerMask,
+            })
+        else
+            CludesUI.RoundCorners(pc, 0)
+        end
+        local pipRadius = onPips and radius or 0
+        for _, pip in ipairs(_previewFrames.pips) do
+            if pipRadius > 0 then
+                CludesUI.RoundCorners(
+                    pip,
+                    pipRadius,
+                    { style = style, border = pip._borderFrame, corners = sp.cornerMask }
+                )
+            else
+                CludesUI.RoundCorners(pip, 0)
+            end
+        end
+    end
+
+    -- The full-row background behind pips (a bar type uses its own; Background
+    -- on individual pips drops it, as live).
+    local function PipRowBg(pc, sp, isBar)
+        if isBar or mod.ERB_PipBgOn(sp, false) then
+            if pc._pipBarBg then
+                pc._pipBarBg:Hide()
+            end
+            return
+        end
+        if not pc._pipBarBg then
+            pc._pipBarBg = pc:CreateTexture(nil, "BACKGROUND", nil, -1)
+            UnsnapTex(pc._pipBarBg)
+        end
+        local bg = pc._pipBarBg
+        bg:ClearAllPoints()
+        bg:SetAllPoints(pc)
+        bg:SetColorTexture(sp.barBgR or 0, sp.barBgG or 0, sp.barBgB or 0, sp.barBgA or 0.5)
+        bg:Show()
+        if pc._blizzBarMask then
+            mod.ERB_MaskTex(bg, pc._blizzBarMask) -- Blizzard Style: the row's bar-shape mask
+        end
+    end
+
+    -- The count on the row (a DK shows each rune's time on its pip instead):
+    -- a percent for a bar type, the bare lit count for pips.
+    local function CountText(pc, sp, isBar, isDK)
+        local text = pc._countText
+        if not (sp.showText and text and not isDK) then
+            if text then
+                text:Hide()
+            end
+            return
+        end
+        SetPVFont(text, FONT_PATH, sp.textSize)
+        text:ClearAllPoints()
+        local anchor = sp.textAnchor or "CENTER"
+        text:SetPoint(anchor, pc, anchor, sp.textXOffset or 0, sp.textYOffset or 0)
+        if isBar then
+            text:SetText(tostring(_previewBarFillPct) .. ((sp.showPercent == false) and "" or "%"))
+        else
+            text:SetText(tostring(pc._pvShownCount or _previewPipCount))
+        end
+        local colour = (not isBar) and pc._pvTextCol
+        if colour then
+            text:SetTextColor(colour[1], colour[2], colour[3], 1)
+        else
+            text:SetTextColor(sp.textR or 1, sp.textG or 1, sp.textB or 1, 0.9) -- the live base colour
+        end
+        text:Show()
+    end
+
+    -- The class resource row, whole.
+    local function StyleClassResource(pc, p, pvHidden, holder)
+        local sp = p.secondary
+        local isBar = mod.IsBarTypeSecondary()
+        local _, class = UnitClass("player")
+        local r, g, b = ResourceColour(sp, CLASS_COLORS[class])
+        -- Its place in the stack (_pvY) is set by LayoutStack; scale stays 1.
+        SmoothAnimate(pc, "scale", 1.0, function()
+            pc:SetScale(pc["_anim_scale"] or 1.0)
+            pc:ClearAllPoints()
+            pc:SetPoint("CENTER", holder, "CENTER", 0, pc._pvY or 0)
+        end)
+        local isDK = class == "DEATHKNIGHT"
+        if isBar then
+            StyleResourceBar(pc, p, sp, sp.pipHeight, r, g, b)
+        else
+            StylePips(pc, p, sp, r, g, b, isDK)
+        end
+        ResourceChrome(pc, sp, isBar)
+        RoundResource(pc, sp, isBar)
+        PipRowBg(pc, sp, isBar)
+        CountText(pc, sp, isBar, isDK)
+        pc:SetShown(
+            (not pvHidden.classResource and not PreviewBar.Avail(p, "classResource")) and true or false
+        )
+    end
+
+    -- Arcane Soul sample: sized from its static text when the font changed (a
+    -- font not loaded yet measures 0: the text size stands in, and it measures
+    -- again 0.2s doubling, up to about 6s in all), then back to the replay.
+    local function StyleArcaneSoul(frame, style)
+        local size, changed = style(frame._fs)
+        if changed then
+            frame._asTries = 0
+        end
+        if changed or frame._asEstimated then
+            local w, h = frame._fs:GetStringWidth(), frame._fs:GetStringHeight()
+            frame._asEstimated = not (w > 0 and h > 0) or nil
+            frame:SetSize(math.ceil(w > 0 and w or size * 5), math.ceil(h > 0 and h or size))
+            local tries = frame._asTries or 0
+            if frame._asEstimated and tries < 5 then
+                frame._asTries = tries + 1
+                local gen = PoolGen(frame)
+                C_Timer.After(0.2 * 2 ^ tries, function()
+                    if PoolGen(frame) == gen and frame:IsVisible() then
+                        UpdatePreviewHeader()
+                    end
+                end)
+            end
+        end
+        local tick = _G._CURB_ArcaneSoulDemoTick
+        if tick then
+            tick(frame)
+        end
+    end
+
+    -- Stacks the shown bars top to bottom (Class Resource, Power, Health, the
+    -- live default order; then Arcane Soul below a divider), each under its
+    -- title, centred in the container; then sizes the header.
+    local function LayoutStack(holder, rows, titles, showAS)
+        local snap = _previewSnap or function(v)
+            return v
+        end
+        local scale = (_previewScale and _previewScale > 0) and _previewScale or 1
+        local titleH = (12 + 3) / scale -- a header-scale title line, in the bars' units
+        local gap = snap(8)
+        local total = 0
+        for _, row in ipairs(rows) do
+            total = total + titleH + row:GetHeight()
+        end
+        total = total + gap * math.max(0, #rows - 1)
+        -- A one-pixel divider above Arcane Soul, as wide as the widest bar.
+        local divider = _previewFrames.asDivider
+        local dividerAt = (divider and holder and showAS and #rows > 1) and #rows or nil
+        local dividerH, dividerW = 0, 0
+        if dividerAt then
+            dividerH = 1 / holder:GetEffectiveScale()
+            total = total + dividerH + gap
+            for i = 1, dividerAt - 1 do
+                dividerW = math.max(dividerW, rows[i]:GetWidth())
+            end
+        end
+        if divider then
+            divider:SetShown(dividerAt and true or false)
+        end
+        -- Offsets from the container centre, bar edges on the preview grid.
+        local y = snap(total / 2)
+        for i, row in ipairs(rows) do
+            if i == dividerAt then
+                divider:ClearAllPoints()
+                divider:SetSize(dividerW, dividerH)
+                divider:SetPoint("TOP", holder, "CENTER", 0, y)
+                y = snap(y - dividerH - gap)
+            end
+            local h = row:GetHeight()
+            local top = snap(y - titleH)
+            row._pvY = top - h / 2
+            row:ClearAllPoints()
+            row:SetPoint("CENTER", holder, "CENTER", 0, row._pvY)
+            local title = titles[i]
+            if title then
+                title:ClearAllPoints()
+                title:SetPoint("BOTTOMLEFT", row, "TOPLEFT", 0, 3)
+                title:Show()
+            end
+            y = top - h - gap
+        end
+
+        -- At least 80px; otherwise 20px above and below the stack.
+        local height = #rows > 0 and math.max(80, math.ceil((total + 40) * _previewScale)) or 0
+        _headerBaseH = height
+        if holder then
+            holder:SetHeight(math.max(1, height) / _previewScale)
+        end
+        if _previewHintFS then
+            if height == 0 then
+                _previewHintFS:Hide()
+            elseif
+                not _previewBuilding
+                and not IsPreviewHintDismissed()
+                and not _previewHintFS:IsShown()
+                and _previewHintFS:GetParent()
+                and _previewHintFS:GetParent():GetParent() == _hintHdr[PAGE_DISPLAY]
+            then
+                _previewHintFS:Show()
+            end
+        end
+        if not _previewBuilding then
+            local hintH = (height > 0 and _previewHintFS and _previewHintFS:IsShown()) and 35 or 0
+            CludesUI:UpdateContentHeaderHeight(height + hintH)
+        end
+    end
+
+    function UpdatePreviewHeader()
         local p = DB()
         if not p then
             return
         end
-
-        -- Session-only eye state of the section headers (BarDisplayPage_Options.lua), shown by default.
+        -- The section headers' eyes (session only; BarDisplayPage_Options.lua).
         local pvHidden = mod._erbPvHidden or {}
-        local hasCR = HasClassResource()
-        if not hasCR and _previewFrames.pipContainer then
+        local holder = _previewFrames.container
+        local hasResource = HasClassResource()
+        if not hasResource and _previewFrames.pipContainer then
             _previewFrames.pipContainer:Hide()
         end
-
-        local boxHolder = _previewFrames.container
-        local sp = p.secondary
-        local isBar = mod.IsBarTypeSecondary()
-
-        local pc = hasCR and _previewFrames.pipContainer
+        local pc = hasResource and _previewFrames.pipContainer
         if pc then
-            local pipH = sp.pipHeight
-
-            local _, castFrame = UnitClass("player")
-            local cc = CLASS_COLORS[castFrame]
-            local pr, pg, pb
-            if sp.darkTheme then
-                pr, pg, pb = CludesUI.GetDarkModeFill()
-            elseif sp.resourceColored then
-                -- Per-spec resource/power color, falls back to class color
-                local gsr = _G._CURB_GetSecondaryResource
-                local rslv = _G._CURB_ResolveSecondaryResourceColor
-                local rr, rg, rb
-                if gsr and rslv then
-                    local details = gsr()
-                    if details and details.power ~= nil then
-                        rr, rg, rb = rslv(details.power)
-                    end
-                end
-                if rr then
-                    pr, pg, pb = rr, rg, rb
-                else
-                    pr, pg, pb = cc and cc[1] or 0.95, cc and cc[2] or 0.90, cc and cc[3] or 0.60
-                end
-            elseif sp.classColored ~= false then
-                pr, pg, pb = cc and cc[1] or 0.95, cc and cc[2] or 0.90, cc and cc[3] or 0.60
-            else
-                -- classColored explicitly false: custom fill color
-                pr, pg, pb = sp.fillR, sp.fillG, sp.fillB
-            end
-
-            local pScale = 1.0 -- static center, no y-offset interaction with preview
-            local function ApplyPipTransform()
-                local s = pc["_anim_scale"] or pScale
-                pc:SetScale(s)
-                pc:ClearAllPoints()
-                pc:SetPoint("CENTER", boxHolder, "CENTER", 0, pc._pvY or 0) -- _pvY: its slot in the stack below
-            end
-            SmoothAnimate(pc, "scale", pScale, function()
-                ApplyPipTransform()
-            end)
-
-            if isBar then
-                local totalW = p.primary.width or 214
-                pc:SetSize(totalW, pipH)
-
-                if pc._barBg then
-                    if sp.darkTheme then
-                        local _dbr, _dbg, _dbb = CludesUI.GetDarkModeBg()
-                        pc._barBg:SetColorTexture(_dbr, _dbg, _dbb, 1)
-                    elseif sp.classColored then
-                        pc._barBg:SetColorTexture(pr * 0.3, pg * 0.3, pb * 0.3, 0.5)
-                    else
-                        pc._barBg:SetColorTexture(sp.bgR, sp.bgG, sp.bgB, sp.bgA)
-                    end
-                    UnsnapTex(pc._barBg)
-                    -- Textured Background on the preview's one background, in the colour above.
-                    if p.general.barTextureBg or pc._barBg._erbBgTex then
-                        local br, bgg, bb, ba = sp.bgR, sp.bgG, sp.bgB, sp.bgA
-                        if sp.darkTheme then
-                            br, bgg, bb = CludesUI.GetDarkModeBg()
-                            ba = 1
-                        elseif sp.classColored then
-                            br, bgg, bb, ba = pr * 0.3, pg * 0.3, pb * 0.3, 0.5
-                        end
-                        mod.ERB_BgTexture(
-                            pc._barBg,
-                            p.general.barTextureBg
-                                and (sp.fillOpacity or 100) >= 100
-                                and CludesUI.ResolveTexturePath(
-                                    _G._CURB_BarTextures,
-                                    p.general.barTexture,
-                                    nil
-                                ),
-                            br,
-                            bgg,
-                            bb,
-                            ba
-                        )
-                    end
-                end
-
-                if pc._barFill then
-                    local fillFrac = _previewBarFillPct / 100
-                    pc._barFill:SetWidth(totalW * fillFrac)
-                    pc._barFill:SetHeight(pipH)
-                    local texKey = p.general.barTexture or "none"
-                    local texLookup = _G._CURB_BarTextures or {}
-                    local texPath = texLookup[texKey]
-                    if texPath then
-                        pc._barFill:SetTexture(texPath)
-                    else
-                        pc._barFill:SetTexture("Interface\\Buttons\\WHITE8x8")
-                    end
-                    pc._barFill:SetVertexColor(pr, pg, pb, 1)
-                    UnsnapTex(pc._barFill)
-                    pc._barFill:Show()
-                    -- Fill Opacity: translucent fill + bg over the empty portion only (mirrors the live bar)
-                    local _pvOp = (sp.fillOpacity or 100) / 100
-                    pc._barFill:SetAlpha(_pvOp)
-                    if pc._barBg then
-                        pc._barBg:ClearAllPoints()
-                        if _pvOp < 1 then
-                            pc._barBg:SetPoint("TOPLEFT", pc._barFill, "TOPRIGHT", 0, 0)
-                            pc._barBg:SetPoint("BOTTOMRIGHT", pc, "BOTTOMRIGHT", 0, 0)
-                        else
-                            pc._barBg:SetAllPoints(pc)
-                        end
-                    end
-                end
-
-                -- Tick marks on bar preview
-                if not pc._previewTicks then
-                    pc._previewTicks = {}
-                end
-                do
-                    -- Hash lines come from the thresholdSpecs entry; tickValues is the fallback
-                    local _pvTsEntry = _G._CURB_ResolveThresholdSpecEntry
-                            and _G._CURB_ResolveThresholdSpecEntry(sp)
-                        or nil
-                    local tickStr = (_pvTsEntry and _pvTsEntry.hashValues ~= "") and _pvTsEntry.hashValues
-                        or (sp.tickValues or "")
-                    local ticks = pc._previewTicks
-                    for i = 1, #ticks do
-                        ticks[i]:Hide()
-                    end
-                    local vals = {}
-                    for s in tickStr:gmatch("[^,]+") do
-                        local num = tonumber(s:match("^%s*(.-)%s*$"))
-                        if num and num > 0 then
-                            vals[#vals + 1] = num
-                        end
-                    end
-                    -- Tick positions use the actual resource max
-                    local gsr = _G._CURB_GetSecondaryResource
-                    local secInfo = gsr and gsr()
-                    local previewMax = (secInfo and secInfo.max) or 100
-                    local _pvHashPct = _pvTsEntry and _pvTsEntry.hashMode == "percent"
-                    local Pix = CludesUI and CludesUI.PP
-                    local onePx = Pix and Pix.Scale(1) or 1
-                    for i, v in ipairs(vals) do
-                        local _pvFrac, _pvOk
-                        if _pvHashPct then
-                            _pvOk = (v <= 100)
-                            _pvFrac = v / 100
-                        else
-                            _pvOk = (v <= previewMax)
-                            _pvFrac = v / previewMax
-                        end
-                        if _pvOk then
-                            if not ticks[i] then
-                                local t = pc:CreateTexture(nil, "OVERLAY", nil, 7)
-                                t:SetColorTexture(1, 1, 1, 1)
-                                t:SetSnapToPixelGrid(false)
-                                t:SetTexelSnappingBias(0)
-                                ticks[i] = t
-                            end
-                            local t = ticks[i]
-                            t:ClearAllPoints()
-                            local frac = _pvFrac
-                            local off = Pix and Pix.Scale(totalW * frac) or (totalW * frac)
-                            t:SetSize(onePx, pipH)
-                            t:SetPoint("TOPLEFT", pc, "TOPLEFT", off, 0)
-                            t:Show()
-                        end
-                    end
-                end
-
-                -- Separators: the bottom-edge line (bar types have no gaps), as live.
-                mod.ERB_Separators(
-                    pc,
-                    sp,
-                    (
-                        sp.edgeSep
-                        and sp.edgeSepH ~= false
-                        and mod.ERB_Textured(sp)
-                        and not CludesUI.BlizzStyle.Get("resourcebars")
-                    )
-                            and true
-                        or false,
-                    pc:GetFrameLevel() + 5
-                )
-                -- Bar-type has no pips: hide pips and gap fills from a prior build
-                for _, pip in ipairs(_previewFrames.pips) do
-                    pip:Hide()
-                end
-                if pc._gapFills then
-                    for i = 1, #pc._gapFills do
-                        pc._gapFills[i]:Hide()
-                    end
-                end
-            else
-                -- Pips preview: same pixel-perfect geometry as the live resource bar
-                local CalcPG = _G._CURB_CalcPipGeometry
-                local pcScale = pc:GetEffectiveScale()
-                if pcScale <= 0 then
-                    pcScale = 1
-                end
-                -- One physical pixel in this frame's units, as CalcPipGeometry.
-                local onePx = CludesUI.PP.perfect / pcScale
-                local function PipSnap(val)
-                    return math.floor(val / onePx + 0.5) * onePx
-                end
-                local totalW = PipSnap(sp.pipWidth)
-                local snappedPipH = PipSnap(sp.pipHeight)
-                local numPips = PreviewPipCount()
-                local isVertical = false
-                local isReversed = false
-
-                local slots
-                if CalcPG then
-                    slots = CalcPG(totalW, numPips, sp.pipSpacing or 1, pc)
-                end
-
-                local pipX = {}
-                local pipW = {}
-                if slots then
-                    for i = 1, numPips do
-                        pipX[i] = slots[i].x0
-                        pipW[i] = slots[i].x1 - slots[i].x0
-                    end
-                else
-                    -- Fallback while CalcPipGeometry is not loaded yet
-                    local pipSp = (sp.pipSpacing > 0) and math.max(onePx, PipSnap(sp.pipSpacing)) or 0
-                    local availW = totalW - (numPips - 1) * pipSp
-                    local baseW = math.floor(availW / onePx / numPips) * onePx
-                    local leftover = availW - baseW * numPips
-                    local extraCount = math.floor(leftover / onePx + 0.5)
-                    local x0 = 0
-                    for i = 1, numPips do
-                        pipX[i] = x0
-                        pipW[i] = baseW + (i <= extraCount and onePx or 0)
-                        x0 = x0 + pipW[i] + pipSp
-                    end
-                end
-                if isVertical then
-                    pc:SetSize(snappedPipH, totalW)
-                else
-                    pc:SetSize(totalW, snappedPipH)
-                end
-
-                -- Threshold and bands as the live pips resolve them (Update.lua):
-                -- "From" (>=) or "Up to" (<=, thresholdReverse), Partial Only
-                -- ("From" only), multi-band, and Recolor Text Instead.
-                local _pvTsEntry2 = _G._CURB_ResolveThresholdSpecEntry
-                        and _G._CURB_ResolveThresholdSpecEntry(sp)
-                    or nil
-                local FindCountBand = _G._CURB_FindCountBand
-                local _pvBandOn, _pvBands, _pvBandRev
-                if _G._CURB_ResolveBandConfig and FindCountBand then
-                    local on, bands, _, rev = _G._CURB_ResolveBandConfig(sp, _pvTsEntry2)
-                    _pvBandOn, _pvBands, _pvBandRev = on, bands, rev
-                end
-                local _pvTsEnabled = _pvTsEntry2 and (_pvTsEntry2.thresholdEnabled ~= false) or false
-                local _pvThreshCount = _pvTsEntry2 and _pvTsEntry2.thresholdCount or sp.thresholdCount or 3
-                -- Enhance Five Bar needs at least 7 (5 pips + overflow), as live clamps it.
-                if _pvTsEnabled and sp.enhanceFiveBar and _pvThreshCount < 7 then
-                    local details = _G._CURB_GetSecondaryResource and _G._CURB_GetSecondaryResource()
-                    if details and details.power == "MAELSTROM_WEAPON" then
-                        _pvThreshCount = 7
-                    end
-                end
-                local _pvPartialOnly = _pvTsEntry2 and _pvTsEntry2.thresholdPartialOnly
-                if _pvPartialOnly == nil then
-                    _pvPartialOnly = sp.thresholdPartialOnly
-                end
-                local _pvReverse = _pvTsEntry2 and _pvTsEntry2.thresholdReverse
-                if _pvReverse == nil then
-                    _pvReverse = sp.thresholdReverse
-                end
-                if _pvReverse then
-                    _pvPartialOnly = false
-                end
-                -- The random fill only: a threshold or band colours it when the value reaches it, as live.
-                local filledCount = _previewPipCount
-                -- _previewPipCount is randomized against a generic 5-pip preview; rescale for other counts (e.g. 18 Sweeping Strikes)
-                if numPips ~= 5 then
-                    filledCount =
-                        math.max(1, math.min(numPips, math.floor(_previewPipCount / 5 * numPips + 0.5)))
-                end
-                -- Read by the count-text block so the number matches the lit segments
-                pc._pvShownCount = filledCount
-                local pvPipBg = mod.ERB_PipBgOn(sp, false) -- Background on individual pips, as live
-                -- current spec threshold color if configured
-                local tr = _pvTsEntry2 and _pvTsEntry2.thresholdR or sp.thresholdR
-                local tg = _pvTsEntry2 and _pvTsEntry2.thresholdG or sp.thresholdG
-                local tb = _pvTsEntry2 and _pvTsEntry2.thresholdB or sp.thresholdB
-                local useThresh = _pvTsEnabled
-                    and (
-                        (_pvReverse and filledCount <= _pvThreshCount)
-                        or ((not _pvReverse) and filledCount >= _pvThreshCount)
-                    )
-                if _pvBandOn then
-                    local band = FindCountBand(_pvBands, filledCount, _pvBandRev)
-                    useThresh = band ~= nil
-                    if band then
-                        tr, tg, tb = band.r or 1, band.g or 1, band.b or 1
-                    end
-                end
-                -- Recolor Text Instead: the count text takes the colour, the pips stay at base.
-                pc._pvTextCol = nil
-                if _pvTsEntry2 and _pvTsEntry2.thresholdTextInstead and sp.showText then
-                    if useThresh then
-                        pc._pvTextCol = { tr, tg, tb }
-                    end
-                    useThresh = false
-                end
-
-                -- Top up pip frames when this spec needs more than were built (counts run 3-18); the loop below styles them, so bare bg+fill suffice here.
-                for i = #_previewFrames.pips + 1, numPips do
-                    local pip = CreateFrame("Frame", nil, pc)
-                    local backdrop = pip:CreateTexture(nil, "BACKGROUND")
-                    backdrop:SetAllPoints()
-                    pip._bg = backdrop
-                    local fill = pip:CreateTexture(nil, "ARTWORK")
-                    fill:SetAllPoints()
-                    pip._fill = fill
-                    _previewFrames.pips[i] = pip
-                end
-                for i = 1, math.min(numPips, #_previewFrames.pips) do
-                    local pip = _previewFrames.pips[i]
-                    if isVertical then
-                        pip:SetSize(snappedPipH, pipW[i])
-                        pip:ClearAllPoints()
-                        if isReversed then
-                            pip:SetPoint("BOTTOM", pc, "BOTTOM", 0, pipX[i])
-                        else
-                            pip:SetPoint("TOP", pc, "TOP", 0, -pipX[i])
-                        end
-                    else
-                        pip:SetSize(pipW[i], snappedPipH)
-                        pip:ClearAllPoints()
-                        pip:SetPoint("LEFT", pc, "LEFT", pipX[i], 0)
-                    end
-                    if pvPipBg then
-                        pip._bg:SetColorTexture(mod.ERB.PipBgColor(sp, true))
-                    elseif sp.darkTheme then
-                        local _dbr, _dbg, _dbb = CludesUI.GetDarkModeBg()
-                        pip._bg:SetColorTexture(_dbr, _dbg, _dbb, 1)
-                    elseif sp.classColored then
-                        pip._bg:SetColorTexture(pr * 0.5, pg * 0.5, pb * 0.5, 0.5)
-                    else
-                        pip._bg:SetColorTexture(sp.bgR, sp.bgG, sp.bgB, sp.bgA)
-                    end
-                    UnsnapTex(pip._bg)
-                    -- Textured Background, as live, in the colour above.
-                    if p.general.barTextureBg or pip._bg._erbBgTex then
-                        local br, bgg, bb, ba = sp.bgR, sp.bgG, sp.bgB, sp.bgA
-                        if sp.darkTheme then
-                            br, bgg, bb = CludesUI.GetDarkModeBg()
-                            ba = 1
-                        elseif sp.classColored then
-                            br, bgg, bb, ba = pr * 0.5, pg * 0.5, pb * 0.5, 0.5
-                        end
-                        mod.ERB_BgTexture(
-                            pip._bg,
-                            p.general.barTextureBg
-                                and not pvPipBg
-                                and (sp.fillOpacity or 100) >= 100
-                                and CludesUI.ResolveTexturePath(
-                                    _G._CURB_BarTextures,
-                                    p.general.barTexture,
-                                    nil
-                                ),
-                            br,
-                            bgg,
-                            bb,
-                            ba
-                        )
-                    end
-
-                    local texKey = p.general.barTexture or "none"
-                    local texLookup = _G._CURB_BarTextures or {}
-                    local texPath = texLookup[texKey]
-                    if texPath then
-                        pip._fill:SetTexture(texPath)
-                    else
-                        pip._fill:SetTexture("Interface\\Buttons\\WHITE8x8")
-                    end
-                    if sp.useContinuousTexture and totalW > 0 then
-                        pip._fill:SetTexCoord(pipX[i] / totalW, (pipX[i] + pipW[i]) / totalW, 0, 1)
-                        pip._continuousPreview = true
-                    elseif pip._continuousPreview then
-                        pip._fill:SetTexCoord(0, 1, 0, 1)
-                        pip._continuousPreview = nil
-                    end
-                    UnsnapTex(pip._fill)
-
-                    if pip._border then
-                        pip._border:SetShown(false)
-                    end
-
-                    if sp.borderOnPips then
-                        if not pip._borderFrame then
-                            local bf = CreateFrame("Frame", nil, pip)
-                            bf:SetAllPoints(pip)
-                            pip._borderFrame = bf
-                        end
-                        pip._borderFrame:SetFrameLevel(
-                            sp.borderBehind and math.max(0, pip:GetFrameLevel() - 1)
-                                or (pip:GetFrameLevel() + 2)
-                        )
-                        CludesUI.ApplyBorderStyle(
-                            pip._borderFrame,
-                            sp.borderSize or 1,
-                            sp.borderR or 0,
-                            sp.borderG or 0,
-                            sp.borderB or 0,
-                            sp.borderA or 1,
-                            sp.borderTexture or "solid",
-                            sp.borderTextureOffset,
-                            sp.borderTextureOffsetY,
-                            sp.borderTextureShiftX,
-                            sp.borderTextureShiftY,
-                            "resourcebars",
-                            sp.borderSize or 1,
-                            nil,
-                            CludesUI.BorderPx(
-                                sp.borderSizePx,
-                                sp.borderSize or 1,
-                                sp.borderTexture or "solid"
-                            )
-                        )
-                        pip._borderFrame:Show()
-                    else
-                        if pip._borderFrame then
-                            pip._borderFrame:Hide()
-                        end
-                    end
-                    local isActive = i <= filledCount
-                    if isActive and useThresh then
-                        if not _pvBandOn and _pvPartialOnly and i < _pvThreshCount then
-                            pip._fill:SetVertexColor(pr, pg, pb, 1)
-                        else
-                            pip._fill:SetVertexColor(tr, tg, tb, 1)
-                        end
-                        pip._fill:Show()
-                    elseif isActive then
-                        pip._fill:SetVertexColor(pr, pg, pb, 1)
-                        pip._fill:Show()
-                    else
-                        pip._fill:Hide()
-                    end
-                    -- Fill Opacity: translucent fill; active pips hide their bg so the fill reveals what's behind (mirrors live pips)
-                    local _pvPipOp = (sp.fillOpacity or 100) / 100
-                    pip._fill:SetAlpha(_pvPipOp)
-                    pip._bg:SetAlpha((isActive and (_pvPipOp < 1 or pvPipBg)) and 0 or 1)
-
-                    -- DK rune durations: fake cooldown numbers on unfilled pips
-                    if castFrame == "DEATHKNIGHT" and sp.showText then
-                        if not pip._pvCdText then
-                            local overlayFrame = CreateFrame("Frame", nil, pip)
-                            overlayFrame:SetAllPoints(pip)
-                            overlayFrame:SetFrameLevel(pip:GetFrameLevel() + 3)
-                            local fontStr = overlayFrame:CreateFontString(nil, "OVERLAY")
-                            fontStr:SetTextColor(1, 1, 1, 0.9)
-                            pip._pvCdText = fontStr
-                        end
-                        SetPVFont(pip._pvCdText, FONT_PATH, sp.textSize)
-                        pip._pvCdText:ClearAllPoints()
-                        pip._pvCdText:SetPoint(
-                            "CENTER",
-                            pip,
-                            "CENTER",
-                            sp.textXOffset or 0,
-                            sp.textYOffset or 0
-                        )
-                        if not isActive then
-                            -- Higher fake durations for pips further right
-                            local fakeDurations = { 2, 4, 6, 7, 9, 10 }
-                            pip._pvCdText:SetText(tostring(fakeDurations[i] or ""))
-                            pip._pvCdText:Show()
-                        else
-                            pip._pvCdText:SetText("")
-                            pip._pvCdText:Hide()
-                        end
-                    elseif pip._pvCdText then
-                        pip._pvCdText:Hide()
-                    end
-
-                    pip:Show()
-                end
-                for i = numPips + 1, #_previewFrames.pips do
-                    _previewFrames.pips[i]:Hide()
-                end
-
-                -- Optional gap-color fill layer (mirrors the live bar)
-                if not pc._gapFills then
-                    pc._gapFills = {}
-                end
-                do
-                    local pvFills = pc._gapFills
-                    if sp.gapColorEnabled and numPips > 1 then
-                        local gr, gg, gb, ga = sp.gapR or 0, sp.gapG or 0, sp.gapB or 0, sp.gapA or 1
-                        local gn = 0
-                        for i = 1, numPips - 1 do
-                            local gx = pipX[i] + pipW[i]
-                            local gw = pipX[i + 1] - gx
-                            if gw and gw > 0 then
-                                gn = gn + 1
-                                local tex = pvFills[gn]
-                                if not tex then
-                                    tex = pc:CreateTexture(nil, "BACKGROUND", nil, 0)
-                                    UnsnapTex(tex)
-                                    pvFills[gn] = tex
-                                end
-                                tex:SetColorTexture(gr, gg, gb, ga)
-                                tex:ClearAllPoints()
-                                tex:SetPoint("TOPLEFT", pc, "TOPLEFT", gx, 0)
-                                tex:SetPoint("BOTTOMLEFT", pc, "BOTTOMLEFT", gx, 0)
-                                tex:SetWidth(gw)
-                                tex:Show()
-                            end
-                        end
-                        for i = gn + 1, #pvFills do
-                            pvFills[i]:Hide()
-                        end
-                    else
-                        for i = 1, #pvFills do
-                            pvFills[i]:Hide()
-                        end
-                    end
-                end
-
-                -- Separators: the bottom-edge line and one line per gap, as live.
-                do
-                    local on = sp.edgeSep
-                        and mod.ERB_Textured(sp)
-                        and not CludesUI.BlizzStyle.Get("resourcebars")
-                    mod.ERB_Separators(
-                        pc,
-                        sp,
-                        (on and sp.edgeSepH ~= false) and true or false,
-                        pc:GetFrameLevel() + 5,
-                        (on and sp.edgeSepV ~= false) and slots or nil,
-                        numPips,
-                        false,
-                        false
-                    )
-                end
-
-                -- Hide bar fill / ticks left from a previous build
-                if pc._barFill then
-                    pc._barFill:Hide()
-                end
-                if pc._previewTicks then
-                    for i = 1, #pc._previewTicks do
-                        pc._previewTicks[i]:Hide()
-                    end
-                end
-            end
-
-            -- Full-bar border on container (PP or textured, via ApplyBorderStyle)
-            if not pc._barBorderFrame then
-                local bf = CreateFrame("Frame", nil, pc)
-                bf:SetAllPoints(pc)
-                pc._barBorderFrame = bf
-            end
-            pc._barBorderFrame:SetFrameLevel(
-                sp.borderBehind and math.max(0, pc:GetFrameLevel() - 1) or (pc:GetFrameLevel() + 2)
-            )
-
-            if CludesUI.BlizzStyle.Get("resourcebars") then
-                -- Blizzard Style / Classic WoW UI: the stock bar frame (the
-                -- same art and overhang the live bars use) instead of the
-                -- full-bar border.
-                pc._barBorderFrame:Hide()
-                if mod.ERB_BarsClassic() then
-                    -- Classic WoW UI: the vanilla frame round the row (the
-                    -- live seat on this mock); no mask, no bevel.
-                    mod.ERB_ApplyClassicBarChrome(pc, nil, nil, nil, nil, mod.ERB_BarFrameK(sp))
-                else -- Blizzard Style kit (indentation kept)
-                    local bbg = pc._blizzBarBg
-                    if not bbg then
-                        bbg = pc:CreateTexture(nil, "BACKGROUND", nil, -2)
-                        if C_Texture.GetAtlasInfo("UI-HUD-CoolDownManager-Bar-BG") then
-                            bbg:SetAtlas("UI-HUD-CoolDownManager-Bar-BG")
-                        end
-                        UnsnapTex(bbg)
-                        pc._blizzBarBg = bbg
-                    end
-                    bbg:ClearAllPoints()
-                    bbg:SetPoint("TOPLEFT", pc, "TOPLEFT", -2, 3)
-                    bbg:SetPoint("BOTTOMRIGHT", pc, "BOTTOMRIGHT", 6, -7)
-                    bbg:Show()
-                    -- The stock fill art's footprint masks a bar-type fill and
-                    -- backing inside the frame's rim, as on the live bars.
-                    local bm = pc._blizzBarMask
-                    if not bm and C_Texture.GetAtlasInfo("UI-HUD-CoolDownManager-Bar") then
-                        bm = pc:CreateMaskTexture()
-                        bm:SetAtlas("UI-HUD-CoolDownManager-Bar")
-                        bm:SetAllPoints(pc)
-                        pc._blizzBarMask = bm
-                    end
-                    if pc._barFill and pc._blizzMaskedFill ~= pc._barFill then
-                        pc._barFill:AddMaskTexture(bm)
-                        pc._blizzMaskedFill = pc._barFill
-                    end
-                    if pc._barBg and pc._blizzMaskedBg ~= pc._barBg then
-                        pc._barBg:AddMaskTexture(bm)
-                        pc._blizzMaskedBg = pc._barBg
-                    end
-                    -- The inner bevel the live rows carry: on the container itself
-                    -- for a bar-type (its fill is a texture here), on an overlay
-                    -- above the pips otherwise; pip textures take the mask so the
-                    -- end pips round off with the frame (the preview is horizontal).
-                    local shade = pc._blizzShadeFrame
-                    if isBar then
-                        mod.ERB_BlizzBarShadow(pc, bm)
-                        if shade then
-                            shade:Hide()
-                        end
-                    else
-                        if pc._blizzShadow then
-                            for i = 1, 4 do
-                                pc._blizzShadow[i]:Hide()
-                            end
-                        end
-                        if not shade then
-                            shade = CreateFrame("Frame", nil, pc)
-                            shade:SetAllPoints(pc)
-                            pc._blizzShadeFrame = shade
-                        end
-                        shade:SetFrameLevel(pc:GetFrameLevel() + 8)
-                        shade:Show()
-                        mod.ERB_BlizzBarShadow(shade, bm)
-                        local pvPips = _previewFrames.pips
-                        if pvPips then
-                            for i = 1, #pvPips do
-                                mod.ERB_MaskTex(pvPips[i]._bg, bm)
-                                mod.ERB_MaskTex(pvPips[i]._fill, bm)
-                            end
-                        end
-                    end
-                end -- Blizzard Style kit
-            elseif sp.borderOnPips and not isBar then
-                pc._barBorderFrame:Hide()
-            else
-                -- Extend Top / Extend Bottom, as the live full-bar border draws them.
-                mod.ERB_AnchorBorderHost(pc._barBorderFrame, pc, mod.ERB_BorderExtents(sp))
-                CludesUI.ApplyBorderStyle(
-                    pc._barBorderFrame,
-                    sp.borderSize or 1,
-                    sp.borderR or 0,
-                    sp.borderG or 0,
-                    sp.borderB or 0,
-                    sp.borderA or 1,
-                    sp.borderTexture or "solid",
-                    sp.borderTextureOffset,
-                    sp.borderTextureOffsetY,
-                    sp.borderTextureShiftX,
-                    sp.borderTextureShiftY,
-                    "resourcebars",
-                    sp.borderSize or 1,
-                    nil,
-                    CludesUI.BorderPx(sp.borderSizePx, sp.borderSize or 1, sp.borderTexture or "solid")
-                )
-                pc._barBorderFrame:Show()
-            end
-
-            -- Rounded corners, as on the live class resource (ns.ERB_RoundSecondary).
-            do
-                local radius = (not mod.ERB_BarsBlizz() and sp.cornerRadius) or 0
-                local style = sp.borderTexture or "solid"
-                local onPips = sp.borderOnPips and not isBar
-                if radius > 0 then
-                    CludesUI.RoundCorners(pc, radius, {
-                        style = style,
-                        border = not onPips and pc._barBorderFrame or nil,
-                        corners = sp.cornerMask,
-                    })
-                else
-                    CludesUI.RoundCorners(pc, 0)
-                end
-                local pipRadius = onPips and radius or 0
-                for i = 1, #_previewFrames.pips do
-                    local pip = _previewFrames.pips[i]
-                    if pipRadius > 0 then
-                        CludesUI.RoundCorners(
-                            pip,
-                            pipRadius,
-                            { style = style, border = pip._borderFrame, corners = sp.cornerMask }
-                        )
-                    else
-                        CludesUI.RoundCorners(pip, 0)
-                    end
-                end
-            end
-
-            -- Full-bar background for pips only; bar-type uses _barBg. Background on
-            -- individual pips drops it, as on the live bar.
-            if not isBar and not mod.ERB_PipBgOn(sp, false) then
-                if not pc._pipBarBg then
-                    pc._pipBarBg = pc:CreateTexture(nil, "BACKGROUND", nil, -1)
-                    UnsnapTex(pc._pipBarBg)
-                end
-                pc._pipBarBg:ClearAllPoints()
-                pc._pipBarBg:SetAllPoints(pc)
-                pc._pipBarBg:SetColorTexture(sp.barBgR or 0, sp.barBgG or 0, sp.barBgB or 0, sp.barBgA or 0.5)
-                pc._pipBarBg:Show()
-                -- Blizzard Style: the backdrop takes the row's bar-shape mask.
-                if pc._blizzBarMask then
-                    mod.ERB_MaskTex(pc._pipBarBg, pc._blizzBarMask)
-                end
-            elseif pc._pipBarBg then
-                pc._pipBarBg:Hide()
-            end
-
-            -- Count text (centered on bar); DK uses per-pip durations instead
-            local isDK = castFrame == "DEATHKNIGHT"
-            if sp.showText and pc._countText and not isDK then
-                SetPVFont(pc._countText, FONT_PATH, sp.textSize)
-                pc._countText:ClearAllPoints()
-                local _pvTA = sp.textAnchor or "CENTER"
-                pc._countText:SetPoint(_pvTA, pc, _pvTA, sp.textXOffset or 0, sp.textYOffset or 0)
-                if isBar then
-                    local percentSuffix = (sp.showPercent == false) and "" or "%"
-                    pc._countText:SetText(tostring(_previewBarFillPct) .. percentSuffix)
-                else
-                    -- Mirrors the pip loop's filled count so the number matches the lit segments. Pip resources show the bare count only; "cur / max" is exclusive to bar-type stack bars (Show Max Stacks), previewed by the isBar branch.
-                    local isShown = pc._pvShownCount or _previewPipCount
-                    pc._countText:SetText(tostring(isShown))
-                end
-                local tc = (not isBar) and pc._pvTextCol
-                if tc then
-                    pc._countText:SetTextColor(tc[1], tc[2], tc[3], 1)
-                else
-                    pc._countText:SetTextColor(sp.textR or 1, sp.textG or 1, sp.textB or 1, 0.9) -- live base text colour
-                end
-                pc._countText:Show()
-            elseif pc._countText then
-                pc._countText:Hide()
-            end
-
-            pc:SetShown(
-                (not pvHidden.classResource and not PreviewBar.Avail(p, "classResource")) and true or false
-            )
+            StyleClassResource(pc, p, pvHidden, holder)
         end
 
-        -- The stack, top to bottom: Class Resource, Power, Health (the live
-        -- default order), then Arcane Soul (Mage only, below a divider), each
-        -- shown while its bar is on and its eye is open.
-        do
-            local pb, hb = _previewFrames.powerBar, _previewFrames.healthBar
-            local showPower = pb and not pvHidden.power and not PreviewBar.Avail(p, "power")
-            local showHealth = hb and not pvHidden.health and not PreviewBar.Avail(p, "health")
-            if showPower then
-                PreviewBar.Style(pb, p, p.primary, "power")
-            end
-            if showHealth then
-                PreviewBar.Style(hb, p, p.health, "health")
-            end
-            if pb then
-                pb:SetShown(showPower and true or false)
-            end
-            if hb then
-                hb:SetShown(showHealth and true or false)
-            end
-
-            local asf = _previewFrames.arcaneSoul
-            local styleAS = _G._CURB_StyleArcaneSoulSample
-            local showAS = asf
-                and styleAS
-                and not pvHidden.arcaneSoul
-                and not PreviewBar.Avail(p, "arcaneSoul")
-            if showAS then
-                -- Sized from the static sample when its font changed (a font not
-                -- loaded yet measures 0: the text size stands in, and deferred
-                -- updates measure again, 0.2s doubling up to about 6s in all),
-                -- then straight back to the replay.
-                local size, changed = styleAS(asf._fs)
-                if changed then
-                    asf._asTries = 0
-                end
-                if changed or asf._asEstimated then
-                    local wid, hgt = asf._fs:GetStringWidth(), asf._fs:GetStringHeight()
-                    asf._asEstimated = not (wid > 0 and hgt > 0) or nil
-                    asf:SetSize(math.ceil(wid > 0 and wid or size * 5), math.ceil(hgt > 0 and hgt or size))
-                    local tries = asf._asTries or 0
-                    if asf._asEstimated and tries < 5 then
-                        asf._asTries = tries + 1
-                        local gen = PoolGen(asf)
-                        C_Timer.After(0.2 * 2 ^ tries, function()
-                            if PoolGen(asf) == gen and asf:IsVisible() then
-                                UpdatePreviewHeader()
-                            end
-                        end)
-                    end
-                end
-                local tick = _G._CURB_ArcaneSoulDemoTick
-                if tick then
-                    tick(asf)
-                end
-            end
-            if asf then
-                asf:SetShown(showAS and true or false)
-            end
-
-            local labels = _previewFrames.labels or {}
-            local stack, stackLbl = {}, {}
-            if pc and pc:IsShown() then
-                stack[#stack + 1] = pc
-                stackLbl[#stack] = labels.classResource
-            end
-            if showPower then
-                stack[#stack + 1] = pb
-                stackLbl[#stack] = labels.power
-            end
-            if showHealth then
-                stack[#stack + 1] = hb
-                stackLbl[#stack] = labels.health
-            end
-            if showAS then
-                stack[#stack + 1] = asf
-                stackLbl[#stack] = labels.arcaneSoul
-            end
-            for _, fontStr in pairs(labels) do
-                fontStr:Hide()
-            end
-
-            -- Each element: its title (a header-scale font string, so its
-            -- line and gap convert into the bars' units), then the bar.
-            local snap = _previewSnap or function(v)
-                return v
-            end
-            local scale = (_previewScale and _previewScale > 0) and _previewScale or 1
-            local titleH = (12 + 3) / scale
-            local gap = snap(8)
-            local sum = 0
-            for i = 1, #stack do
-                sum = sum + titleH + stack[i]:GetHeight()
-            end
-            sum = sum + gap * math.max(0, #stack - 1)
-            -- A one-pixel divider between the bars and Arcane Soul, as wide as the widest bar.
-            local div = _previewFrames.asDivider
-            local divAt = (div and boxHolder and showAS and #stack > 1) and #stack or nil
-            local divH, divW = 0, 0
-            if divAt then
-                divH = 1 / boxHolder:GetEffectiveScale()
-                sum = sum + divH + gap
-                for i = 1, divAt - 1 do
-                    divW = math.max(divW, stack[i]:GetWidth())
-                end
-            end
-            if div then
-                div:SetShown(divAt and true or false)
-            end
-            -- Offsets from the container centre, bar edges on the preview's pixel grid.
-            local topY = snap(sum / 2)
-            for i = 1, #stack do
-                if i == divAt then
-                    div:ClearAllPoints()
-                    div:SetSize(divW, divH)
-                    div:SetPoint("TOP", boxHolder, "CENTER", 0, topY)
-                    topY = snap(topY - divH - gap)
-                end
-                local f = stack[i]
-                local fh = f:GetHeight()
-                local barTop = snap(topY - titleH)
-                f._pvY = barTop - fh / 2
-                f:ClearAllPoints()
-                f:SetPoint("CENTER", boxHolder, "CENTER", 0, f._pvY)
-                local fontStr = stackLbl[i]
-                if fontStr then
-                    fontStr:ClearAllPoints()
-                    fontStr:SetPoint("BOTTOMLEFT", f, "TOPLEFT", 0, 3)
-                    fontStr:Show()
-                end
-                topY = barTop - fh - gap
-            end
-
-            -- At least the former fixed 80px; 20px above and below a taller stack.
-            local TOTAL_H = 0
-            if #stack > 0 then
-                TOTAL_H = math.max(80, math.ceil((sum + 40) * _previewScale))
-            end
-            _headerBaseH = TOTAL_H
-            if boxHolder then
-                boxHolder:SetHeight(math.max(1, TOTAL_H) / _previewScale)
-            end
-            if _previewHintFS then
-                if TOTAL_H == 0 then
-                    _previewHintFS:Hide()
-                elseif
-                    not _previewBuilding
-                    and not IsPreviewHintDismissed()
-                    and not _previewHintFS:IsShown()
-                    and _previewHintFS:GetParent()
-                    and _previewHintFS:GetParent():GetParent() == _hintHdr[PAGE_DISPLAY]
-                then
-                    _previewHintFS:Show()
-                end
-            end
-            if not _previewBuilding then
-                local hintH = (TOTAL_H > 0 and _previewHintFS and _previewHintFS:IsShown()) and 35 or 0
-                CludesUI:UpdateContentHeaderHeight(TOTAL_H + hintH)
-            end
+        local pb, hb = _previewFrames.powerBar, _previewFrames.healthBar
+        local showPower = pb and not pvHidden.power and not PreviewBar.Avail(p, "power")
+        local showHealth = hb and not pvHidden.health and not PreviewBar.Avail(p, "health")
+        if showPower then
+            PreviewBar.Style(pb, p, p.primary, "power")
         end
+        if showHealth then
+            PreviewBar.Style(hb, p, p.health, "health")
+        end
+        if pb then
+            pb:SetShown(showPower and true or false)
+        end
+        if hb then
+            hb:SetShown(showHealth and true or false)
+        end
+
+        local as = _previewFrames.arcaneSoul
+        local styleAS = _G._CURB_StyleArcaneSoulSample
+        local showAS = as and styleAS and not pvHidden.arcaneSoul and not PreviewBar.Avail(p, "arcaneSoul")
+        if showAS then
+            StyleArcaneSoul(as, styleAS)
+        end
+        if as then
+            as:SetShown(showAS and true or false)
+        end
+
+        local labels = _previewFrames.labels or {}
+        local rows, titles = {}, {}
+        local function Add(row, title)
+            rows[#rows + 1] = row
+            titles[#rows] = title
+        end
+        if pc and pc:IsShown() then
+            Add(pc, labels.classResource)
+        end
+        if showPower then
+            Add(pb, labels.power)
+        end
+        if showHealth then
+            Add(hb, labels.health)
+        end
+        if showAS then
+            Add(as, labels.arcaneSoul)
+        end
+        for _, title in pairs(labels) do
+            title:Hide()
+        end
+        LayoutStack(holder, rows, titles, showAS)
+
         -- The section eyes follow (BarDisplayPage_Options.lua).
-        if mod._erbPvEyes then
-            for _, refresh in pairs(mod._erbPvEyes) do
-                refresh()
-            end
+        for _, refresh in pairs(mod._erbPvEyes or {}) do
+            refresh()
         end
     end
 
