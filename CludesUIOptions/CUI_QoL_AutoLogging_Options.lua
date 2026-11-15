@@ -2,16 +2,25 @@ if CUI_CLIENT_BLOCKED then
     return
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
---  CUI_QoL_AutoLogging_Options.lua
---  Options page for the Auto Combat Logging feature.
+--  CUI_QoL_AutoLogging_Options.lua - the lower part of Utilities > QoL.
+--
+--  Not a tab of its own: BuildQoLPage (CUI_QoL_Options.lua) chains into it
+--  through _G._CUI_BuildAutoLoggingPage. Sections, top to bottom: the /keys
+--  popup and the LFG reminder (retail only), the /way command, auto combat
+--  logging, then the alert, battle res and bloodlust sections that their own
+--  files build. Like every section builder it lays out from yOffset and
+--  returns the height it used.
+--
+--  Each feature's settings are a table of its own in CludesUIDB. Rows that
+--  only matter while a feature is on are left out while it is off (a
+--  DependentSetValue on the switch rebuilds the page when it flips).
 -------------------------------------------------------------------------------
-
--- Must match TRIGGER_DEFAULTS in the runtime.
 if not CludesUI._ModuleNS["CludesUIQoL"] then
-    return
-end -- module disabled: no options page
+    return -- the module is disabled: no page
+end
 
-local TRIGGER_DEFAULTS = {
+-- The auto-logging defaults; must match TRIGGER_DEFAULTS in the runtime.
+local LOG_DEFAULTS = {
     logMythic = true,
     logHeroic = true,
     logNormal = true,
@@ -24,7 +33,7 @@ local TRIGGER_DEFAULTS = {
     delaystop = true,
 }
 
-local TRIGGER_ITEMS = {
+local TRIGGERS = {
     { key = "logMythic", label = "Mythic Raid" },
     { key = "logHeroic", label = "Heroic Raid" },
     { key = "logNormal", label = "Normal Raid" },
@@ -35,264 +44,223 @@ local TRIGGER_ITEMS = {
     { key = "logRBG", label = "Rated Battlegrounds" },
     { key = "logBlitz", label = "Battleground Blitz" },
 }
--- WoW Forever: every raid instance logs on the Raids trigger (the Normal Raid
--- key and its default) and every dungeon on the Dungeons trigger (a key only
--- that client offers, off until the player turns it on). The retail
--- difficulty, Mythic+, arena, scenario and rated battleground rows have
--- nothing to match there.
+-- WoW Forever: every raid logs on the Raids trigger (the Normal Raid key and
+-- its default) and every dungeon on Dungeons (a key only that client has,
+-- off until turned on); retail's difficulties, Mythic+, arena, scenarios and
+-- rated battlegrounds have nothing to match there.
 if CludesUI.IS_FOREVER then
-    TRIGGER_ITEMS = {
+    TRIGGERS = {
         { key = "logNormal", label = "Raids" },
         { key = "logDungeon", label = "Dungeons" },
     }
 end
 
-local function Cfg()
+-- A feature's settings table in CludesUIDB (made on first use).
+local function Store(name)
     if not CludesUIDB then
         return {}
     end
-    CludesUIDB.autoLogging = CludesUIDB.autoLogging or {}
-    return CludesUIDB.autoLogging
+    CludesUIDB[name] = CludesUIDB[name] or {}
+    return CludesUIDB[name]
+end
+local function Logging()
+    return Store("autoLogging")
+end
+local function Keys()
+    return Store("keystonePopup")
+end
+local function Teleport()
+    return Store("teleportPrompt")
 end
 
-local function Recheck()
-    if _G._CUI_AutoLogging_Check then
-        _G._CUI_AutoLogging_Check()
-    end
+-- /way's table is only made by a change, so viewing the page saves nothing.
+local NONE = {}
+local function Way()
+    return CludesUIDB and CludesUIDB.waypointCmd or NONE
 end
-
-local function KeysCfg()
-    if not CludesUIDB then
-        return {}
-    end
-    CludesUIDB.keystonePopup = CludesUIDB.keystonePopup or {}
-    return CludesUIDB.keystonePopup
-end
-
-local function TeleCfg()
-    if not CludesUIDB then
-        return {}
-    end
-    CludesUIDB.teleportPrompt = CludesUIDB.teleportPrompt or {}
-    return CludesUIDB.teleportPrompt
-end
-
--- Read-only: the /way table appears on the first write, so viewing the page
--- saves nothing.
-local NO_WAY_CFG = {}
-local function WayCfg()
-    return CludesUIDB and CludesUIDB.waypointCmd or NO_WAY_CFG
-end
-
 local function SetWay(key, value)
-    if not CludesUIDB then
-        return
+    if CludesUIDB then
+        CludesUIDB.waypointCmd = CludesUIDB.waypointCmd or {}
+        CludesUIDB.waypointCmd[key] = value
     end
-    CludesUIDB.waypointCmd = CludesUIDB.waypointCmd or {}
-    CludesUIDB.waypointCmd[key] = value
 end
 
--- Built as the tail of the Quality of Life page (chained from BuildQoLPage),
--- not as its own tab. Lays out from yOffset and returns the height used,
--- like every other section builder.
-local function BuildAutoLoggingPage(page, hostFrame, yOffset)
-    local W = CludesUI.Widgets
-    local Pix = CludesUI.PanelPP
-    local posY = yOffset
-    local _, hgt
+local function Call(name)
+    local hook = _G[name]
+    if hook then
+        hook()
+    end
+end
 
-    hostFrame._showRowDivider = true
+local function AskReload(what)
+    CludesUI:ShowConfirmPopup({
+        title = "Reload Required",
+        message = "Changing the " .. what .. " requires a reload to update slash command registration.",
+        confirmText = "Reload",
+        cancelText = "Later",
+        reload = true,
+    })
+end
 
-    ---------------------------------------------------------------------------
-    --  KEYSTONE CHECK POPUP (no keystones on WoW Forever: the section and the
-    --  /keys file behind it do not exist there)
-    ---------------------------------------------------------------------------
-    if not CludesUI.IS_FOREVER then
-        _, hgt = W:SectionHeader(hostFrame, "KEYSTONE CHECK POPUP", posY)
-        posY = posY - hgt
+-- A percent slider over a 0..x scale stored as a fraction (default 1.05).
+local function ScaleRow(store, tooltip, applied, extra)
+    local row = {
+        type = "slider",
+        text = "Window Scale",
+        min = 50,
+        max = 150,
+        step = 5,
+        tooltip = tooltip,
+        getValue = function()
+            return math.floor((store().scale or 1.05) * 100 + 0.5)
+        end,
+        setValue = function(val)
+            store().scale = val / 100
+            applied(val / 100)
+        end,
+    }
+    for k, v in pairs(extra or {}) do
+        row[k] = v
+    end
+    return row
+end
 
-        _, hgt = W:DualRow(hostFrame, posY, {
-            type = "toggle",
-            text = "Enable /keys Popup (or /ckeys)",
-            tooltip = "Shows a popup with party and guild keystones when typing /keys.",
-            -- DependentSetValue: the Window Scale row below is hidden while the
-            -- popup is off; the flip forces the full rebuild.
-            setValue = CludesUI.DependentSetValue(function()
-                return KeysCfg().enabled ~= false
-            end, function(val)
-                KeysCfg().enabled = val
-                CludesUI:RefreshPage()
-                CludesUI:ShowConfirmPopup({
-                    title = "Reload Required",
-                    message = "Changing the /keys popup requires a reload to update slash command registration.",
-                    confirmText = "Reload",
-                    cancelText = "Later",
-                    reload = true,
-                })
-            end),
-            getValue = function()
-                return KeysCfg().enabled ~= false
-            end,
-        }, {
-            type = "slider",
-            text = "Text Size",
-            min = 8,
-            max = 16,
-            step = 1,
-            disabled = function()
-                return KeysCfg().enabled == false
-            end,
-            disabledTooltip = "/keys Popup",
-            tooltip = "Font size for keystone entries in the popup (does not affect the header).",
-            getValue = function()
-                return KeysCfg().textSize or 11
-            end,
-            setValue = function(val)
-                KeysCfg().textSize = val
-                if _G._CUI_RefreshKeystonePopup then
-                    _G._CUI_RefreshKeystonePopup()
+local function Section(W, host, y, title)
+    local _, h = W:SectionHeader(host, title, y)
+    return y - h
+end
+local function Gap(W, host, y)
+    local _, h = W:Spacer(host, y, 20)
+    return y - h
+end
+
+-- KEYSTONE CHECK POPUP (/keys)
+local function KeysSection(W, host, y)
+    y = Section(W, host, y, "KEYSTONE CHECK POPUP")
+    local function On()
+        return Keys().enabled ~= false
+    end
+    local _, h = W:DualRow(host, y, {
+        type = "toggle",
+        text = "Enable /keys Popup (or /ckeys)",
+        tooltip = "Shows a popup with party and guild keystones when typing /keys.",
+        getValue = On,
+        -- Window Scale below shows only while the popup is on.
+        setValue = CludesUI.DependentSetValue(On, function(val)
+            Keys().enabled = val
+            CludesUI:RefreshPage()
+            AskReload("/keys popup")
+        end),
+    }, {
+        type = "slider",
+        text = "Text Size",
+        min = 8,
+        max = 16,
+        step = 1,
+        disabled = function()
+            return not On()
+        end,
+        disabledTooltip = "/keys Popup",
+        tooltip = "Font size for keystone entries in the popup (does not affect the header).",
+        getValue = function()
+            return Keys().textSize or 11
+        end,
+        setValue = function(val)
+            Keys().textSize = val
+            Call("_CUI_RefreshKeystonePopup")
+        end,
+    })
+    y = y - h
+    if On() then
+        _, h = W:DualRow(
+            host,
+            y,
+            ScaleRow(Keys, "Scale of the /keys popup window.", function(scale)
+                local popup = _G.CUIKeysPopup
+                if popup then
+                    popup:SetScale(scale)
                 end
-            end,
-        })
-        posY = posY - hgt
+            end),
+            { type = "label", text = "" }
+        )
+        y = y - h
+    end
+    return Gap(W, host, y)
+end
 
-        -- Window Scale row: HIDDEN entirely while the /keys popup is off.
-        if KeysCfg().enabled ~= false then
-            _, hgt = W:DualRow(hostFrame, posY, {
-                type = "slider",
-                text = "Window Scale",
-                min = 50,
-                max = 150,
-                step = 5,
-                tooltip = "Scale of the /keys popup window.",
-                getValue = function()
-                    return math.floor((KeysCfg().scale or 1.05) * 100 + 0.5)
-                end,
-                setValue = function(val)
-                    KeysCfg().scale = val / 100
-                    local dialog = _G.CUIKeysPopup
-                    if dialog then
-                        dialog:SetScale(val / 100)
-                    end
-                end,
-            }, { type = "label", text = "" })
-            posY = posY - hgt
-        end -- close /keys popup hidden-while-disabled gate
-
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-    end -- not IS_FOREVER
-
-    ---------------------------------------------------------------------------
-    --  LFG REMINDER (no dungeon teleports on WoW Forever: the section and the
-    --  reminder runtime behind it do not exist there)
-    ---------------------------------------------------------------------------
-    if not CludesUI.IS_FOREVER then
-        _, hgt = W:SectionHeader(hostFrame, "LFG REMINDER", posY)
-        posY = posY - hgt
-
-        _, hgt = W:DualRow(hostFrame, posY, {
+-- LFG REMINDER (the dungeon teleport popup)
+local function ReminderSection(W, host, y)
+    y = Section(W, host, y, "LFG REMINDER")
+    local function On()
+        return Teleport().enabled ~= false
+    end
+    local _, h = W:DualRow(
+        host,
+        y,
+        {
             type = "toggle",
             text = "Enable LFG Reminder",
             tooltip = "When you join a Group Finder group for a dungeon that has a teleport, shows a small movable popup with the dungeon name and a one-click teleport button. It hides when you enter the dungeon, leave the group, or enter combat.",
-            getValue = function()
-                return TeleCfg().enabled ~= false
-            end,
-            -- DependentSetValue: the Show 'Disable Feature' Text row below is
-            -- hidden while the reminder is off; the flip forces the rebuild.
-            setValue = CludesUI.DependentSetValue(function()
-                return TeleCfg().enabled ~= false
-            end, function(val)
-                TeleCfg().enabled = val
+            getValue = On,
+            -- The 'Disable Feature' row below shows only while it is on.
+            setValue = CludesUI.DependentSetValue(On, function(val)
+                Teleport().enabled = val
                 CludesUI:RefreshPage()
-                -- Applies live in both directions: enable builds the popup and
-                -- registers events, disable hides and unregisters.
-                if _G._CUI_ApplyTeleportPrompt then
-                    _G._CUI_ApplyTeleportPrompt()
-                end
+                -- Live both ways: on builds the popup, off hides it and stops listening.
+                Call("_CUI_ApplyTeleportPrompt")
             end),
-        }, {
-            type = "slider",
-            text = "Window Scale",
-            min = 50,
-            max = 150,
-            step = 5,
+        },
+        ScaleRow(Teleport, "Scale of the LFG Reminder popup window.", function()
+            Call("_CUI_RefreshTeleportPrompt")
+        end, {
             disabled = function()
-                return TeleCfg().enabled == false
+                return not On()
             end,
             disabledTooltip = "LFG Reminder",
-            tooltip = "Scale of the LFG Reminder popup window.",
+        })
+    )
+    y = y - h
+    if On() then
+        _, h = W:DualRow(host, y, {
+            type = "toggle",
+            text = "Show 'Disable Feature' Text",
+            tooltip = "Shows the 'Disable Feature' text below the teleport button. When off, the text is hidden and the window is 20px shorter.",
             getValue = function()
-                return math.floor((TeleCfg().scale or 1.05) * 100 + 0.5)
+                return Teleport().showDisable ~= false
             end,
             setValue = function(val)
-                TeleCfg().scale = val / 100
-                if _G._CUI_RefreshTeleportPrompt then
-                    _G._CUI_RefreshTeleportPrompt()
-                end
+                Teleport().showDisable = val
+                Call("_CUI_RefreshTeleportPrompt")
             end,
-        })
-        posY = posY - hgt
+        }, { type = "label", text = "" })
+        y = y - h
+    end
+    return Gap(W, host, y)
+end
 
-        -- Show 'Disable Feature' Text row: HIDDEN while the reminder is off.
-        if TeleCfg().enabled ~= false then
-            _, hgt = W:DualRow(hostFrame, posY, {
-                type = "toggle",
-                text = "Show 'Disable Feature' Text",
-                tooltip = "Shows the 'Disable Feature' text below the teleport button. When off, the text is hidden and the window is 20px shorter.",
-                getValue = function()
-                    return TeleCfg().showDisable ~= false
-                end,
-                setValue = function(val)
-                    TeleCfg().showDisable = val
-                    if _G._CUI_RefreshTeleportPrompt then
-                        _G._CUI_RefreshTeleportPrompt()
-                    end
-                end,
-            }, { type = "label", text = "" })
-            posY = posY - hgt
-        end -- close LFG Reminder hidden-while-disabled gate
-
-        _, hgt = W:Spacer(hostFrame, posY, 20)
-        posY = posY - hgt
-    end -- not IS_FOREVER
-
-    ---------------------------------------------------------------------------
-    --  WAYPOINT COMMAND (/way, runtime in CludesUIQoL_Waypoint.lua)
-    ---------------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "WAYPOINT COMMAND", posY)
-    posY = posY - hgt
-
-    local wayRow
-    wayRow, hgt = W:DualRow(hostFrame, posY, {
+-- WAYPOINT COMMAND (/way; runtime in CludesUIQoL_Waypoint.lua). Off by default.
+local function WaySection(W, host, y)
+    y = Section(W, host, y, "WAYPOINT COMMAND")
+    local row, h = W:DualRow(host, y, {
         type = "toggle",
         text = "Enable /way Command",
         tooltip = "Adds /way, which prints a map pin link.",
-        -- Off by default.
         getValue = function()
-            return WayCfg().enabled == true
+            return Way().enabled == true
         end,
         setValue = function(val)
             SetWay("enabled", val or nil)
             CludesUI:RefreshPage()
-            CludesUI:ShowConfirmPopup({
-                title = "Reload Required",
-                message = "Changing the /way command requires a reload to update slash command registration.",
-                confirmText = "Reload",
-                cancelText = "Later",
-                reload = true,
-            })
+            AskReload("/way command")
         end,
     }, CludesUI.BlankRowCfg())
-    posY = posY - hgt
-
-    -- The arrival message for hand-placed pins (off by default). The runtime
-    -- reads it live and listens for arrivals only while it or a /way list
-    -- needs them, so a change re-syncs that listener.
-    CludesUI.BuildInlineCog(wayRow._leftRegion, {
+    y = y - h
+    -- Arrival at hand-placed pins (off by default). The runtime listens for
+    -- arrivals only while this or a /way list needs them, so it re-syncs.
+    CludesUI.BuildInlineCog(row._leftRegion, {
         title = "/way Command",
         disabled = function()
-            return WayCfg().enabled ~= true
+            return Way().enabled ~= true
         end,
         disabledTooltip = "Enable /way Command",
         rows = {
@@ -301,7 +269,7 @@ local function BuildAutoLoggingPage(page, hostFrame, yOffset)
                 label = "Hand-Placed Pin Arrival",
                 tooltip = "Also announces arrival at pins you place.",
                 get = function()
-                    return WayCfg().manualArrival == true
+                    return Way().manualArrival == true
                 end,
                 set = function(val)
                     SetWay("manualArrival", val or nil)
@@ -313,30 +281,65 @@ local function BuildAutoLoggingPage(page, hostFrame, yOffset)
             },
         },
     })
+    return Gap(W, host, y)
+end
 
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
+-- The triggers checklist on the right of the Enable row. DualRow has no
+-- checkbox-dropdown type, so the row is built with a stand-in dropdown and
+-- the checklist takes its place; it greys out while logging is off.
+local function TriggersChecklist(region, Pix)
+    if region._control then
+        region._control:Hide()
+    end
+    local function Get(key)
+        local v = Logging()[key]
+        if v == nil then
+            return LOG_DEFAULTS[key]
+        end
+        return v
+    end
+    local list, refresh = CludesUI.BuildVisOptsCBDropdown(
+        region,
+        210,
+        region:GetFrameLevel() + 2,
+        TRIGGERS,
+        Get,
+        function(key, val)
+            Logging()[key] = val
+            Call("_CUI_AutoLogging_Check")
+        end
+    )
+    Pix.Point(list, "RIGHT", region, "RIGHT", -20, 0)
+    region._control = list
+    region._lastInline = nil
+    CludesUI.RegisterWidgetRefresh(refresh)
+    local function Grey()
+        local off = Logging().enabled ~= true
+        list:SetAlpha(off and 0.3 or 1)
+        list:EnableMouse(not off)
+        if region._label then
+            region._label:SetAlpha(off and 0.3 or 1)
+        end
+    end
+    Grey()
+    CludesUI.RegisterWidgetRefresh(Grey)
+end
 
-    ---------------------------------------------------------------------------
-    --  AUTO COMBAT LOGGING
-    ---------------------------------------------------------------------------
-    _, hgt = W:SectionHeader(hostFrame, "AUTO COMBAT LOGGING", posY)
-    posY = posY - hgt
-
-    local trigRow, trigH = W:DualRow(hostFrame, posY, {
+-- AUTO COMBAT LOGGING
+local function LoggingSection(W, host, y)
+    y = Section(W, host, y, "AUTO COMBAT LOGGING")
+    local function On()
+        return Logging().enabled == true
+    end
+    local row, h = W:DualRow(host, y, {
         type = "toggle",
         text = "Enable Auto Logging",
         tooltip = "Automatically starts and stops combat logging when entering or leaving a loggable instance.",
-        getValue = function()
-            return Cfg().enabled == true
-        end,
-        -- DependentSetValue: the Warcraft Recorder row below is hidden
-        -- while auto logging is off; the flip forces the full rebuild.
-        setValue = CludesUI.DependentSetValue(function()
-            return Cfg().enabled == true
-        end, function(val)
-            Cfg().enabled = val or nil
-            Recheck()
+        getValue = On,
+        -- The Warcraft Recorder row below shows only while logging is on.
+        setValue = CludesUI.DependentSetValue(On, function(val)
+            Logging().enabled = val or nil
+            Call("_CUI_AutoLogging_Check")
             CludesUI:RefreshPage()
         end),
     }, {
@@ -349,112 +352,67 @@ local function BuildAutoLoggingPage(page, hostFrame, yOffset)
         end,
         setValue = function() end,
     })
-    posY = posY - trigH
-
-    -- Replace dummy dropdown with a checkbox dropdown.
-    do
-        local rightRgn = trigRow._rightRegion
-        if rightRgn._control then
-            rightRgn._control:Hide()
-        end
-
-        local cbDD, cbDDRefresh = CludesUI.BuildVisOptsCBDropdown(
-            rightRgn,
-            210,
-            rightRgn:GetFrameLevel() + 2,
-            TRIGGER_ITEMS,
-            function(k)
-                local val = Cfg()[k]
-                if val == nil then
-                    return TRIGGER_DEFAULTS[k]
-                end
-                return val
-            end,
-            function(k, val)
-                Cfg()[k] = val
-                Recheck()
-            end
-        )
-        Pix.Point(cbDD, "RIGHT", rightRgn, "RIGHT", -20, 0)
-        rightRgn._control = cbDD
-        rightRgn._lastInline = nil
-
-        CludesUI.RegisterWidgetRefresh(cbDDRefresh)
-
-        -- Gray + block the triggers dropdown (and its label) while Auto
-        -- Logging is off; the CB dropdown has no native disabled handling.
-        local function UpdateTrigDisabled()
-            local off = Cfg().enabled ~= true
-            cbDD:SetAlpha(off and 0.3 or 1)
-            cbDD:EnableMouse(not off)
-            if rightRgn._label then
-                rightRgn._label:SetAlpha(off and 0.3 or 1)
-            end
-        end
-        UpdateTrigDisabled()
-        CludesUI.RegisterWidgetRefresh(UpdateTrigDisabled)
-    end
-
-    -- Warcraft Recorder row: HIDDEN entirely while Auto Logging is off.
-    if Cfg().enabled == true then
-        _, hgt = W:DualRow(hostFrame, posY, {
+    y = y - h
+    TriggersChecklist(row._rightRegion, CludesUI.PanelPP)
+    if On() then
+        local _
+        _, h = W:DualRow(host, y, {
             type = "toggle",
             text = "Warcraft Recorder Compatibility",
             tooltip = "Delays stopping combat logging by 30 seconds after leaving an instance. Recommended for Warcraft Recorder compatibility.",
             getValue = function()
-                local val = Cfg().delaystop
-                if val == nil then
-                    return TRIGGER_DEFAULTS.delaystop
+                local v = Logging().delaystop
+                if v == nil then
+                    return LOG_DEFAULTS.delaystop
                 end
-                return val
+                return v
             end,
             setValue = function(val)
-                Cfg().delaystop = val
+                Logging().delaystop = val
             end,
         }, {
             type = "toggle",
             text = "Chat Notification",
             tooltip = "Prints a chat message when auto logging starts or stops.",
             getValue = function()
-                return Cfg().notify == true
+                return Logging().notify == true
             end,
             setValue = function(val)
-                Cfg().notify = val or nil
+                Logging().notify = val or nil
             end,
         })
-        posY = posY - hgt
-    end -- close Auto Logging hidden-while-disabled gate
-
-    _, hgt = W:Spacer(hostFrame, posY, 20)
-    posY = posY - hgt
-
-    ---------------------------------------------------------------------------
-    --  ALERTS (Combat Alert, Potion Ready, Unspent Talents; one shared anchor)
-    ---------------------------------------------------------------------------
-    if _G._CUI_BuildAlertsSection then
-        local alertsH = _G._CUI_BuildAlertsSection(hostFrame, posY, W, CludesUI.PP)
-        posY = posY - alertsH
+        y = y - h
     end
-
-    ---------------------------------------------------------------------------
-    --  BATTLE RES (no shared battle res charges on WoW Forever: the indicator
-    --  runtime builds nothing there and the section is not built)
-    ---------------------------------------------------------------------------
-    if _G._CUI_BuildBattleResSection and not CludesUI.IS_FOREVER then
-        local brezH = _G._CUI_BuildBattleResSection(hostFrame, posY, W, CludesUI.PP)
-        posY = posY - brezH
-    end
-
-    ---------------------------------------------------------------------------
-    --  BLOODLUST TRACKER (no raid-wide lust on WoW Forever: the tracker
-    --  runtime returns at load there and the section is not built)
-    ---------------------------------------------------------------------------
-    if _G._CUI_BuildBloodlustSection and not CludesUI.IS_FOREVER then
-        local lustH = _G._CUI_BuildBloodlustSection(hostFrame, posY, W, CludesUI.PP)
-        posY = posY - lustH
-    end
-
-    return math.abs(posY - yOffset)
+    return Gap(W, host, y)
 end
 
-_G._CUI_BuildAutoLoggingPage = BuildAutoLoggingPage
+-- A section another file builds (alerts, battle res, bloodlust), if loaded.
+local function External(name, host, y, W)
+    local build = _G[name]
+    if not build then
+        return y
+    end
+    return y - build(host, y, W, CludesUI.PP)
+end
+
+local function Build(_, host, yOffset)
+    local W = CludesUI.Widgets
+    host._showRowDivider = true
+    local y = yOffset
+    -- No keystones or dungeon teleports on WoW Forever.
+    if not CludesUI.IS_FOREVER then
+        y = KeysSection(W, host, y)
+        y = ReminderSection(W, host, y)
+    end
+    y = WaySection(W, host, y)
+    y = LoggingSection(W, host, y)
+    y = External("_CUI_BuildAlertsSection", host, y, W)
+    -- No shared battle res charges or raid-wide lust on WoW Forever.
+    if not CludesUI.IS_FOREVER then
+        y = External("_CUI_BuildBattleResSection", host, y, W)
+        y = External("_CUI_BuildBloodlustSection", host, y, W)
+    end
+    return math.abs(y - yOffset)
+end
+
+_G._CUI_BuildAutoLoggingPage = Build
