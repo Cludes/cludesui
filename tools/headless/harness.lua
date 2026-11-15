@@ -58,132 +58,136 @@ local Obj = {}
 local methods = {}
 local clock = 1000
 
+-- A widget's own state lives under keys that start with a NUL byte, where a
+-- real widget keeps its [0] userdata: code that walks a widget's string keys
+-- (the frame pool's reuse wipe, its "keys a new object has" list) skips them,
+-- as it skips the engine's, so no reuse can strip or share that state.
 local function New(kind, name, parent)
-    local o = setmetatable({ __kind = kind, __name = name, __parent = parent, __shown = true,
-        __scripts = {}, __v = {}, __points = {}, __children = {}, __regions = {}, __w = 0, __h = 0 }, Obj)
-    if parent and type(parent) == "table" and parent.__children then
+    local o = setmetatable({ ["\0kind"] = kind, ["\0name"] = name, ["\0parent"] = parent, ["\0shown"] = true,
+        ["\0scripts"] = {}, ["\0v"] = {}, ["\0points"] = {}, ["\0children"] = {}, ["\0regions"] = {}, ["\0w"] = 0, ["\0h"] = 0 }, Obj)
+    if parent and type(parent) == "table" and parent["\0children"] then
         if kind == "Texture" or kind == "FontString" or kind == "MaskTexture" or kind == "Line" then
-            parent.__regions[#parent.__regions + 1] = o
+            parent["\0regions"][#parent["\0regions"] + 1] = o
         else
-            parent.__children[#parent.__children + 1] = o
+            parent["\0children"][#parent["\0children"] + 1] = o
         end
     end
     return o
 end
 
 local function Fire(o, script, ...)
-    local fn = o.__scripts[script]
+    local fn = o["\0scripts"][script]
     if fn then Safe(fn, o, ...) end
 end
 
-function methods.GetObjectType(o) return o.__kind end
-function methods.IsObjectType(o, t) return o.__kind == t or t == "Frame" or t == "Region" end
-function methods.GetName(o) return o.__name end
-function methods.GetDebugName(o) return o.__name or o.__kind end
-function methods.GetParent(o) return o.__parent end
-function methods.SetParent(o, p) o.__parent = p end
-function methods.GetChildren(o) return unpack(o.__children) end
-function methods.GetNumChildren(o) return #o.__children end
-function methods.GetRegions(o) return unpack(o.__regions) end
-function methods.GetNumRegions(o) return #o.__regions end
-function methods.IsShown(o) return o.__shown end
+function methods.GetObjectType(o) return o["\0kind"] end
+function methods.IsObjectType(o, t) return o["\0kind"] == t or t == "Frame" or t == "Region" end
+function methods.GetName(o) return o["\0name"] end
+function methods.GetDebugName(o) return o["\0name"] or o["\0kind"] end
+function methods.GetParent(o) return o["\0parent"] end
+function methods.SetParent(o, p) o["\0parent"] = p end
+function methods.GetChildren(o) return unpack(o["\0children"]) end
+function methods.GetNumChildren(o) return #o["\0children"] end
+function methods.GetRegions(o) return unpack(o["\0regions"]) end
+function methods.GetNumRegions(o) return #o["\0regions"] end
+function methods.IsShown(o) return o["\0shown"] end
 function methods.IsVisible(o)
     local p = o
-    while p and type(p) == "table" and p.__kind do
-        if not p.__shown then return false end
-        p = p.__parent
+    while p and type(p) == "table" and p["\0kind"] do
+        if not p["\0shown"] then return false end
+        p = p["\0parent"]
     end
     return true
 end
-function methods.Show(o) if not o.__shown then o.__shown = true; Fire(o, "OnShow") end end
-function methods.Hide(o) if o.__shown then o.__shown = false; Fire(o, "OnHide") end end
+function methods.Show(o) if not o["\0shown"] then o["\0shown"] = true; Fire(o, "OnShow") end end
+function methods.Hide(o) if o["\0shown"] then o["\0shown"] = false; Fire(o, "OnHide") end end
 function methods.SetShown(o, v) if v then methods.Show(o) else methods.Hide(o) end end
-function methods.SetScript(o, s, fn) o.__scripts[s] = fn end
-function methods.GetScript(o, s) return o.__scripts[s] end
+function methods.SetScript(o, s, fn) o["\0scripts"][s] = fn end
+function methods.GetScript(o, s) return o["\0scripts"][s] end
 function methods.HasScript() return true end
 function methods.HookScript(o, s, fn)
-    local old = o.__scripts[s]
-    o.__scripts[s] = old and function(...) old(...); return fn(...) end or fn
+    local old = o["\0scripts"][s]
+    o["\0scripts"][s] = old and function(...) old(...); return fn(...) end or fn
 end
-function methods.SetSize(o, w, h) o.__w, o.__h = tonumber(w) or 0, tonumber(h) or 0 end
-function methods.SetWidth(o, w) o.__w = tonumber(w) or 0 end
-function methods.SetHeight(o, h) o.__h = tonumber(h) or 0 end
-function methods.GetWidth(o) return o.__w end
-function methods.GetHeight(o) return o.__h end
-function methods.GetSize(o) return o.__w, o.__h end
-function methods.SetPoint(o, ...) o.__points[#o.__points + 1] = { ... } end
-function methods.SetAllPoints(o, rel) o.__points = { { "TOPLEFT", rel }, { "BOTTOMRIGHT", rel } } end
-function methods.ClearAllPoints(o) o.__points = {} end
-function methods.GetNumPoints(o) return #o.__points end
+function methods.SetSize(o, w, h) o["\0w"], o["\0h"] = tonumber(w) or 0, tonumber(h) or 0 end
+function methods.SetWidth(o, w) o["\0w"] = tonumber(w) or 0 end
+function methods.SetHeight(o, h) o["\0h"] = tonumber(h) or 0 end
+function methods.GetWidth(o) return o["\0w"] end
+function methods.GetHeight(o) return o["\0h"] end
+function methods.GetSize(o) return o["\0w"], o["\0h"] end
+function methods.SetPoint(o, ...) o["\0points"][#o["\0points"] + 1] = { ... } end
+function methods.SetAllPoints(o, rel) o["\0points"] = { { "TOPLEFT", rel }, { "BOTTOMRIGHT", rel } } end
+function methods.ClearAllPoints(o) o["\0points"] = {} end
+function methods.GetNumPoints(o) return #o["\0points"] end
 function methods.GetPoint(o, i)
-    local p = o.__points[i or 1]
+    local p = o["\0points"][i or 1]
     if not p then return nil end
     local point, a, b, c, d = p[1], p[2], p[3], p[4], p[5]
     -- SetPoint's short forms: (point), (point, x, y), (point, rel), (point, rel, x, y), (point, rel, relPoint, x, y)
-    if type(a) == "number" then return point, o.__parent, point, a, b or 0 end
+    if type(a) == "number" then return point, o["\0parent"], point, a, b or 0 end
     if type(b) == "number" then return point, a, point, b, c or 0 end
-    return point, a or o.__parent, b or point, c or 0, d or 0
+    return point, a or o["\0parent"], b or point, c or 0, d or 0
 end
 function methods.GetLeft() return 100 end
-function methods.GetRight(o) return 100 + o.__w end
+function methods.GetRight(o) return 100 + o["\0w"] end
 function methods.GetTop() return 500 end
-function methods.GetBottom(o) return 500 - o.__h end
-function methods.GetCenter(o) return 100 + o.__w / 2, 500 - o.__h / 2 end
-function methods.GetRect(o) return 100, 500 - o.__h, o.__w, o.__h end
-function methods.GetScaledRect(o) return 100, 500 - o.__h, o.__w, o.__h end
+function methods.GetBottom(o) return 500 - o["\0h"] end
+function methods.GetCenter(o) return 100 + o["\0w"] / 2, 500 - o["\0h"] / 2 end
+function methods.GetRect(o) return 100, 500 - o["\0h"], o["\0w"], o["\0h"] end
+function methods.GetScaledRect(o) return 100, 500 - o["\0h"], o["\0w"], o["\0h"] end
 function methods.GetScale() return 1 end
 function methods.GetEffectiveScale() return 1 end
-function methods.GetAlpha(o) return o.__v.Alpha or 1 end
+function methods.GetAlpha(o) return o["\0v"].Alpha or 1 end
 function methods.GetEffectiveAlpha() return 1 end
-function methods.GetFrameLevel(o) return o.__v.FrameLevel or 1 end
-function methods.GetFrameStrata(o) return o.__v.FrameStrata or "MEDIUM" end
-function methods.GetDrawLayer(o) return o.__v.DrawLayer or "ARTWORK", 0 end
-function methods.GetText(o) return o.__v.Text end
+function methods.GetFrameLevel(o) return o["\0v"].FrameLevel or 1 end
+function methods.GetFrameStrata(o) return o["\0v"].FrameStrata or "MEDIUM" end
+function methods.GetDrawLayer(o) return o["\0v"].DrawLayer or "ARTWORK", 0 end
+function methods.GetText(o) return o["\0v"].Text end
 -- The client refuses text on a FontString that has no font yet.
 local function NeedFont(o, fn)
-    if o.__kind == "FontString" and not o.__v.Font then error("FontString:" .. fn .. "(): Font not set", 3) end
+    if o["\0kind"] == "FontString" and not o["\0v"].Font then error("FontString:" .. fn .. "(): Font not set", 3) end
 end
-function methods.SetText(o, t) NeedFont(o, "SetText"); o.__v.Text = t ~= nil and tostring(t) or nil end
-function methods.SetFormattedText(o, f, ...) NeedFont(o, "SetFormattedText"); o.__v.Text = string.format(f, ...) end
-function methods.SetFontObject(o, f) o.__v.Font = o.__v.Font or { "Fonts/FRIZQT__.TTF", 12, "" } end
-function methods.GetStringWidth(o) return #(o.__v.Text or "") * 7 end
-function methods.GetUnboundedStringWidth(o) return #(o.__v.Text or "") * 7 end
+function methods.SetText(o, t) NeedFont(o, "SetText"); o["\0v"].Text = t ~= nil and tostring(t) or nil end
+function methods.SetFormattedText(o, f, ...) NeedFont(o, "SetFormattedText"); o["\0v"].Text = string.format(f, ...) end
+function methods.SetFontObject(o, f) o["\0v"].Font = o["\0v"].Font or { "Fonts/FRIZQT__.TTF", 12, "" } end
+function methods.GetStringWidth(o) return #(o["\0v"].Text or "") * 7 end
+function methods.GetUnboundedStringWidth(o) return #(o["\0v"].Text or "") * 7 end
 function methods.GetStringHeight() return 12 end
 function methods.GetLineHeight() return 12 end
 function methods.GetNumLines() return 1 end
 function methods.IsTruncated() return false end
-function methods.SetFont(o, path, size, flags) o.__v.Font = { path, size, flags }; return true end
+function methods.SetFont(o, path, size, flags) o["\0v"].Font = { path, size, flags }; return true end
 -- No font yet: nil, as the client answers.
-function methods.GetFont(o) local f = o.__v.Font; if not f then return nil end; return f[1], f[2], f[3] end
+function methods.GetFont(o) local f = o["\0v"].Font; if not f then return nil end; return f[1], f[2], f[3] end
 -- Colours are recorded with all their parts, so a snapshot (tools/headless/snapshot.lua)
 -- can compare what two versions of the code painted.
-function methods.SetTextColor(o, r, g, b, a) o.__v.TextColor = { r, g, b, a or 1 } end
-function methods.GetTextColor(o) local c = o.__v.TextColor or { 1, 1, 1, 1 }; return c[1], c[2], c[3], c[4] end
-function methods.SetVertexColor(o, r, g, b, a) o.__v.VertexColor = { r, g, b, a or 1 } end
-function methods.GetVertexColor(o) local c = o.__v.VertexColor or { 1, 1, 1, 1 }; return c[1], c[2], c[3], c[4] end
-function methods.SetColorTexture(o, r, g, b, a) o.__v.ColorTexture = { r, g, b, a or 1 } end
+function methods.SetTextColor(o, r, g, b, a) o["\0v"].TextColor = { r, g, b, a or 1 } end
+function methods.GetTextColor(o) local c = o["\0v"].TextColor or { 1, 1, 1, 1 }; return c[1], c[2], c[3], c[4] end
+function methods.SetVertexColor(o, r, g, b, a) o["\0v"].VertexColor = { r, g, b, a or 1 } end
+function methods.GetVertexColor(o) local c = o["\0v"].VertexColor or { 1, 1, 1, 1 }; return c[1], c[2], c[3], c[4] end
+function methods.SetColorTexture(o, r, g, b, a) o["\0v"].ColorTexture = { r, g, b, a or 1 } end
 function methods.SetGradient(o, dir, c1, c2)
     local function C(c) return type(c) == "table" and { c.r, c.g, c.b, c.a } or c end
-    o.__v.Gradient = { dir, C(c1), C(c2) }
+    o["\0v"].Gradient = { dir, C(c1), C(c2) }
 end
 function methods.GetShadowColor() return 0, 0, 0, 1 end
 function methods.GetShadowOffset() return 0, 0 end
 function methods.GetTexCoord() return 0, 0, 0, 1, 1, 0, 1, 1 end
-function methods.GetMinMaxValues(o) return o.__v.Min or 0, o.__v.Max or 1 end
-function methods.SetMinMaxValues(o, a, b) o.__v.Min, o.__v.Max = a, b end
-function methods.GetValue(o) return o.__v.Value or 0 end
-function methods.GetVerticalScroll(o) return o.__v.VerticalScroll or 0 end
+function methods.GetMinMaxValues(o) return o["\0v"].Min or 0, o["\0v"].Max or 1 end
+function methods.SetMinMaxValues(o, a, b) o["\0v"].Min, o["\0v"].Max = a, b end
+function methods.GetValue(o) return o["\0v"].Value or 0 end
+function methods.GetVerticalScroll(o) return o["\0v"].VerticalScroll or 0 end
 function methods.GetHorizontalScroll() return 0 end
 function methods.GetVerticalScrollRange() return 0 end
 function methods.GetHorizontalScrollRange() return 0 end
-function methods.GetScrollChild(o) return o.__v.ScrollChild end
-function methods.GetChecked(o) return o.__v.Checked and true or false end
-function methods.GetAttribute(o, k) return o.__attr and o.__attr[k] end
-function methods.SetAttribute(o, k, v) o.__attr = o.__attr or {}; o.__attr[k] = v end
-function methods.GetID(o) return o.__v.ID or 0 end
-function methods.GetNumber(o) return tonumber(o.__v.Text) or 0 end
+function methods.GetScrollChild(o) return o["\0v"].ScrollChild end
+function methods.GetChecked(o) return o["\0v"].Checked and true or false end
+function methods.GetAttribute(o, k) return o["\0attr"] and o["\0attr"][k] end
+function methods.SetAttribute(o, k, v) o["\0attr"] = o["\0attr"] or {}; o["\0attr"][k] = v end
+function methods.GetID(o) return o["\0v"].ID or 0 end
+function methods.GetNumber(o) return tonumber(o["\0v"].Text) or 0 end
 function methods.GetCursorPosition() return 0 end
-function methods.GetNumLetters(o) return #(o.__v.Text or "") end
+function methods.GetNumLetters(o) return #(o["\0v"].Text or "") end
 function methods.GetOwner() return nil end
 function methods.GetUnit() return nil end
 function methods.GetItem() return nil end
@@ -194,32 +198,32 @@ function methods.GetClampRectInsets() return 0, 0, 0, 0 end
 function methods.GetBackdrop() return nil end
 function methods.GetBackdropColor() return 0, 0, 0, 1 end
 function methods.GetBackdropBorderColor() return 1, 1, 1, 1 end
-function methods.GetTexture(o) return o.__v.Texture end
-function methods.GetAtlas(o) return o.__v.Atlas end
+function methods.GetTexture(o) return o["\0v"].Texture end
+function methods.GetAtlas(o) return o["\0v"].Atlas end
 function methods.GetDuration() return 0 end
 function methods.GetProgress() return 0 end
 function methods.GetCooldownTimes() return 0, 0 end
 function methods.GetCooldownDuration() return 0 end
-function methods.IsEnabled(o) return o.__v.Enabled ~= false end
-function methods.IsMouseEnabled(o) return o.__v.MouseEnabled and true or false end
-function methods.EnableMouse(o, v) o.__v.MouseEnabled = v end
-function methods.RegisterEvent(o, e) o.__events = o.__events or {}; o.__events[e] = true; return true end
-function methods.RegisterUnitEvent(o, e) o.__events = o.__events or {}; o.__events[e] = true; return true end
-function methods.UnregisterEvent(o, e) if o.__events then o.__events[e] = nil end end
-function methods.UnregisterAllEvents(o) o.__events = nil end
-function methods.IsEventRegistered(o, e) return o.__events and o.__events[e] or false end
+function methods.IsEnabled(o) return o["\0v"].Enabled ~= false end
+function methods.IsMouseEnabled(o) return o["\0v"].MouseEnabled and true or false end
+function methods.EnableMouse(o, v) o["\0v"].MouseEnabled = v end
+function methods.RegisterEvent(o, e) o["\0events"] = o["\0events"] or {}; o["\0events"][e] = true; return true end
+function methods.RegisterUnitEvent(o, e) o["\0events"] = o["\0events"] or {}; o["\0events"][e] = true; return true end
+function methods.UnregisterEvent(o, e) if o["\0events"] then o["\0events"][e] = nil end end
+function methods.UnregisterAllEvents(o) o["\0events"] = nil end
+function methods.IsEventRegistered(o, e) return o["\0events"] and o["\0events"][e] or false end
 function methods.CreateTexture(o, name) local t = New("Texture", name, o); if name then realG[name] = t end; return t end
 function methods.CreateMaskTexture(o) return New("MaskTexture", nil, o) end
 function methods.CreateLine(o) return New("Line", nil, o) end
 function methods.CreateFontString(o, name, layer, inherits)
     local t = New("FontString", name, o)
-    if inherits then t.__v.Font = { "Fonts/FRIZQT__.TTF", 12, "" } end
+    if inherits then t["\0v"].Font = { "Fonts/FRIZQT__.TTF", 12, "" } end
     if name then realG[name] = t end
     return t
 end
 function methods.CreateAnimationGroup(o) return New("AnimationGroup", nil, o) end
 function methods.CreateAnimation(o, kind) return New(kind or "Animation", nil, o) end
-function methods.GetAnimations(o) return unpack(o.__children) end
+function methods.GetAnimations(o) return unpack(o["\0children"]) end
 function methods.GetAnimationGroups() end
 function methods.GetCountdownFormatter() return New("Frame") end
 function methods.IsPlaying() return false end
@@ -243,14 +247,6 @@ Obj.__index = methods
 -- ScrollFrame:UpdateScrollChildRect (no stand-in covers "Update*").
 function methods.UpdateScrollChildRect() end
 function methods.GetNumMaskTextures() return 0 end
--- The fake client keeps a widget's own state in "__" keys, where a real
--- widget keeps it out of reach. The pool's key wipe on reuse (FramePool
--- WipeKeys) keeps keys that name a method, so naming these here keeps that
--- state through a reuse, as the engine's survives on a real widget.
-for _, k in ipairs({ "__kind", "__name", "__parent", "__scripts", "__v", "__points", "__children", "__regions",
-    "__w", "__h", "__shown", "__events", "__attr" }) do
-    rawset(methods, k, false)
-end
 setmetatable(methods, { __index = function(_, k)
     if type(k) ~= "string" then return nil end
     -- Fields the code set itself are raw; anything else that looks like a
@@ -259,7 +255,7 @@ setmetatable(methods, { __index = function(_, k)
         local key = k:gsub("^Set", "")
         -- Tolerates a call on a table that is not a widget (code that reuses a
         -- texture's method on a plain table).
-        local f = function(self, v) if self.__v then self.__v[key] = v end end
+        local f = function(self, v) if self["\0v"] then self["\0v"][key] = v end end
         methods[k] = f
         return f
     end
@@ -269,12 +265,12 @@ setmetatable(methods, { __index = function(_, k)
         for _, s in ipairs(OBJECT_SUFFIX) do if key:find(s .. "$") then wantsObject = true break end end
         local isColor = key:find("Color$") ~= nil
         local f = function(self)
-            if not self.__v then return nil end -- not a widget (see the setter above)
-            local v = self.__v[key]
+            if not self["\0v"] then return nil end -- not a widget (see the setter above)
+            local v = self["\0v"][key]
             if v ~= nil and not (wantsObject and type(v) ~= "table") then return v end
             if wantsObject then
                 local child = New(key:find("FontString$") and "FontString" or key:find("Texture$") and "Texture" or "Frame", nil, self)
-                self.__v[key] = child
+                self["\0v"][key] = child
                 return child
             end
             if isColor then return 1, 1, 1, 1 end
@@ -331,12 +327,12 @@ end
 local G = {}
 local allFrames = {}
 
-G.UIParent = New("Frame", "UIParent"); G.UIParent.__w, G.UIParent.__h = 1920, 1080
-G.WorldFrame = New("Frame", "WorldFrame"); G.WorldFrame.__w, G.WorldFrame.__h = 1920, 1080
+G.UIParent = New("Frame", "UIParent"); G.UIParent["\0w"], G.UIParent["\0h"] = 1920, 1080
+G.WorldFrame = New("Frame", "WorldFrame"); G.WorldFrame["\0w"], G.WorldFrame["\0h"] = 1920, 1080
 
 function G.CreateFrame(kind, name, parent, template)
     local f = New(kind or "Frame", name, parent)
-    if kind == "ScrollFrame" or kind == "Slider" or kind == "StatusBar" then f.__v.Min, f.__v.Max = 0, 1 end
+    if kind == "ScrollFrame" or kind == "Slider" or kind == "StatusBar" then f["\0v"].Min, f["\0v"].Max = 0, 1 end
     if type(name) == "string" then realG[name] = f end
     allFrames[#allFrames + 1] = f
     return f
@@ -746,10 +742,10 @@ local function HandlerLabel(fn, event)
 end
 local function FireEvent(event, ...)
     local list = {}
-    for _, f in ipairs(allFrames) do if f.__events and f.__events[event] and f.__scripts.OnEvent then list[#list + 1] = f end end
+    for _, f in ipairs(allFrames) do if f["\0events"] and f["\0events"][event] and f["\0scripts"].OnEvent then list[#list + 1] = f end end
     for _, f in ipairs(list) do
-        if f.__events and f.__events[event] then
-            local fn = f.__scripts.OnEvent
+        if f["\0events"] and f["\0events"][event] then
+            local fn = f["\0scripts"].OnEvent
             Timed(PROFILE and HandlerLabel(fn, event) or "", fn, f, event, ...)
         end
     end

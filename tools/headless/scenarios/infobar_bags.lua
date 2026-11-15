@@ -25,9 +25,9 @@ local function Content()
     local stack = { rawget(_G, "CludesUIDataBarsBar" .. bar.id) }
     while #stack > 0 do
         local f = table.remove(stack)
-        if type(f) == "table" and rawget(f, "__children") then
-            if f.__kind == "Button" and f.__scripts.OnClick and f.__scripts.OnEnter and f.__shown then found = f end
-            for _, c in ipairs(f.__children) do stack[#stack + 1] = c end
+        if type(f) == "table" and rawget(f, "\0children") then
+            if f["\0kind"] == "Button" and f["\0scripts"].OnClick and f["\0scripts"].OnEnter and f["\0shown"] then found = f end
+            for _, c in ipairs(f["\0children"]) do stack[#stack + 1] = c end
         end
     end
     return found
@@ -51,10 +51,10 @@ Show("bags with reagent bag")
 
 local btn = Content()
 if btn then
-    btn.__scripts.OnEnter(btn)
+    btn["\0scripts"].OnEnter(btn)
     SNAP("bags hovered", rawget(_G, "CludesUIDataBarsBar" .. bar.id))
     SNAP("bags tooltip", rawget(_G, "CludesUIDataBarsTip"))
-    btn.__scripts.OnLeave(btn)
+    btn["\0scripts"].OnLeave(btn)
     SNAP("bags left", rawget(_G, "CludesUIDataBarsBar" .. bar.id))
 end
 

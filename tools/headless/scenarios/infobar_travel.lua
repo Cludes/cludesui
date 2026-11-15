@@ -31,9 +31,9 @@ SNAP("travel smart later", H.Bar())
 H.Hover("travel hover")
 H.Count("hovered 3 seconds", function()
     local btn = H.Buttons()[1]
-    btn.__scripts.OnEnter(btn)
+    btn["\0scripts"].OnEnter(btn)
     for _ = 1, 3 do HARNESS_ADVANCE(1) end
-    btn.__scripts.OnLeave(btn)
+    btn["\0scripts"].OnLeave(btn)
 end)
 cd = { 0, 0 }
 HARNESS_ADVANCE(1)

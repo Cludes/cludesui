@@ -43,12 +43,12 @@ local function Buttons()
     local stack = { Bar() }
     while #stack > 0 do
         local f = table.remove(stack)
-        if type(f) == "table" and rawget(f, "__children") then
-            if f.__kind == "Button" and f.__scripts.OnEnter and f.__shown then found[#found + 1] = f end
-            for _, c in ipairs(f.__children) do stack[#stack + 1] = c end
+        if type(f) == "table" and rawget(f, "\0children") then
+            if f["\0kind"] == "Button" and f["\0scripts"].OnEnter and f["\0shown"] then found[#found + 1] = f end
+            for _, c in ipairs(f["\0children"]) do stack[#stack + 1] = c end
         end
     end
-    table.sort(found, function(x, y) return (x.__name or "") < (y.__name or "") end)
+    table.sort(found, function(x, y) return (x["\0name"] or "") < (y["\0name"] or "") end)
     return found
 end
 
@@ -65,12 +65,12 @@ b.settings.showIcon = nil
 Show("prof icon back")
 
 local h = Buttons()[1]
-h.__scripts.OnEnter(h)
+h["\0scripts"].OnEnter(h)
 SNAP("prof hovered", Bar())
 SNAP("prof tooltip", rawget(_G, "CludesUIDataBarsTip"))
-h.__scripts.OnLeave(h)
+h["\0scripts"].OnLeave(h)
 SNAP("prof left", Bar())
-if h.__scripts.OnClick then h.__scripts.OnClick(h, "LeftButton") end
+if h["\0scripts"].OnClick then h["\0scripts"].OnClick(h, "LeftButton") end
 OUT:write("== opened: ", table.concat(OPENED, ","), "\n")
 
 -- Events that change nothing, then a skill-up.
@@ -88,9 +88,9 @@ mod.AddBlock(bar.id, "profession2")
 Show("prof with secondary")
 local hs = Buttons()
 local last = hs[#hs]
-last.__scripts.OnEnter(last)
+last["\0scripts"].OnEnter(last)
 SNAP("prof secondary tooltip", rawget(_G, "CludesUIDataBarsTip"))
-last.__scripts.OnLeave(last)
+last["\0scripts"].OnLeave(last)
 
 -- A profession dropped.
 profs[2] = nil

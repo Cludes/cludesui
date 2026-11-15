@@ -35,15 +35,15 @@ local function Find(test)
     local stack = { Bar() }
     while #stack > 0 do
         local f = table.remove(stack)
-        if type(f) == "table" and rawget(f, "__children") then
-            if f.__shown and test(f) then found = f end
-            for _, c in ipairs(f.__children) do stack[#stack + 1] = c end
+        if type(f) == "table" and rawget(f, "\0children") then
+            if f["\0shown"] and test(f) then found = f end
+            for _, c in ipairs(f["\0children"]) do stack[#stack + 1] = c end
         end
     end
     return found
 end
-local function Main() return Find(function(f) return f.__kind == "Button" and f.__scripts.OnMouseWheel end) end
-local function Hit() return Find(function(f) return f.__kind == "Button" and f.__scripts.OnMouseDown end) end
+local function Main() return Find(function(f) return f["\0kind"] == "Button" and f["\0scripts"].OnMouseWheel end) end
+local function Hit() return Find(function(f) return f["\0kind"] == "Button" and f["\0scripts"].OnMouseDown end) end
 
 Show("audio master")
 for _, ch in ipairs({ "sfx", "music", "ambience", "dialog", "master" }) do
@@ -56,48 +56,48 @@ b.settings.showIcon = true
 Show("audio icon back")
 
 local main = Main()
-main.__scripts.OnEnter(main)
+main["\0scripts"].OnEnter(main)
 SNAP("audio hovered", Bar())
 SNAP("audio tooltip", rawget(_G, "CludesUIDataBarsTip"))
-main.__scripts.OnLeave(main)
+main["\0scripts"].OnLeave(main)
 SNAP("audio left", Bar())
 
 -- Wheel: up 1%, Shift up 10%, down past 0.
-main.__scripts.OnMouseWheel(main, 1)
+main["\0scripts"].OnMouseWheel(main, 1)
 SNAP("audio wheel up", Bar())
 shift = true
-main.__scripts.OnMouseWheel(main, 1)
+main["\0scripts"].OnMouseWheel(main, 1)
 shift = false
 SNAP("audio shift wheel up", Bar())
 cvars.Sound_MasterVolume = "0"
 mod.ApplyBar(bar.id)
 local before = WRITES
-main.__scripts.OnMouseWheel(main, -1)
+main["\0scripts"].OnMouseWheel(main, -1)
 OUT:write("== wheel down at 0%: volume ", cvars.Sound_MasterVolume, "\n")
 SNAP("audio wheel at zero", Bar())
 
 -- Drag: press on the bar, hold for a few frames without moving, release.
 local hit = Hit()
-hit.__scripts.OnMouseDown(hit, "LeftButton")
+hit["\0scripts"].OnMouseDown(hit, "LeftButton")
 for _ = 1, 5 do
-    local up = hit.__scripts.OnUpdate
+    local up = hit["\0scripts"].OnUpdate
     if up then up(hit, 0.02) end
 end
-hit.__scripts.OnMouseUp(hit, "LeftButton")
+hit["\0scripts"].OnMouseUp(hit, "LeftButton")
 OUT:write("== drag: volume ", cvars.Sound_MasterVolume, "\n")
 SNAP("audio after drag", Bar())
 
 -- Mute the channel (click), then master off with another channel selected.
-main.__scripts.OnClick(main, "LeftButton")
+main["\0scripts"].OnClick(main, "LeftButton")
 SNAP("audio muted", Bar())
-main.__scripts.OnClick(main, "LeftButton")
+main["\0scripts"].OnClick(main, "LeftButton")
 b.settings.channel = "music"
 cvars.Sound_EnableAllSound = "0"
 Show("audio master off")
 main = Main()
-main.__scripts.OnEnter(main)
+main["\0scripts"].OnEnter(main)
 SNAP("audio master off tooltip", rawget(_G, "CludesUIDataBarsTip"))
-main.__scripts.OnLeave(main)
+main["\0scripts"].OnLeave(main)
 cvars.Sound_EnableAllSound = "1"
 
 bar.orientation = "V"

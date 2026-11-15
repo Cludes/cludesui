@@ -26,9 +26,9 @@ function H.Buttons()
     local stack = { H.Bar() }
     while #stack > 0 do
         local f = table.remove(stack)
-        if type(f) == "table" and rawget(f, "__children") then
-            if f.__kind == "Button" and f.__scripts.OnEnter and f.__shown then found[#found + 1] = f end
-            for _, c in ipairs(f.__children) do stack[#stack + 1] = c end
+        if type(f) == "table" and rawget(f, "\0children") then
+            if f["\0kind"] == "Button" and f["\0scripts"].OnEnter and f["\0shown"] then found[#found + 1] = f end
+            for _, c in ipairs(f["\0children"]) do stack[#stack + 1] = c end
         end
     end
     return found
@@ -37,10 +37,10 @@ function H.Hover(label, index)
     local list = H.Buttons()
     local h = list[index or #list]
     if not h then H.OUT:write("== " .. label .. ": nothing to hover\n") return end
-    h.__scripts.OnEnter(h)
+    h["\0scripts"].OnEnter(h)
     SNAP(label, H.Bar())
     SNAP(label .. " tooltip", rawget(_G, "CludesUIDataBarsTip"))
-    h.__scripts.OnLeave(h)
+    h["\0scripts"].OnLeave(h)
     SNAP(label .. " left", H.Bar())
 end
 function H.Count(label, fn)

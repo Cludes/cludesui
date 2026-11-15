@@ -62,7 +62,7 @@ local function Fire(...)
 end
 local function Snap(label)
     SNAP(label, anchor)
-    for _, c in ipairs(anchor.__regions or {}) do
+    for _, c in ipairs(anchor["\0regions"] or {}) do
         local g = rawget(c, "__group")
         if g and g.playing then
             local parts = {}

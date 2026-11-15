@@ -55,11 +55,11 @@ P("== kick spell", tostring(CUI.GetActiveKickSpell()))
 ns.TFB_OnEnable(db)
 -- The bars: UIParent children holding a status bar with the cast spark.
 local bars = {}
-for _, c in ipairs(UIParent.__children) do
+for _, c in ipairs(UIParent["\0children"]) do
     local found = false
-    for _, sb in ipairs(rawget(c, "__children") or {}) do
-        for _, r in ipairs(rawget(sb, "__regions") or {}) do
-            local tex = r.__v and r.__v.Texture
+    for _, sb in ipairs(rawget(c, "\0children") or {}) do
+        for _, r in ipairs(rawget(sb, "\0regions") or {}) do
+            local tex = r["\0v"] and r["\0v"].Texture
             if type(tex) == "string" and tex:find("cast_spark", 1, true) then found = true end
         end
     end

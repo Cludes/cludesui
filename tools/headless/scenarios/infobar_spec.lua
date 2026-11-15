@@ -39,8 +39,8 @@ local function SnapPopups(label)
 end
 local function Rows(p)
     local out = {}
-    for _, c in ipairs(p.__children) do
-        if c.__kind == "Button" and c.__shown and c.__scripts.OnClick then out[#out + 1] = c end
+    for _, c in ipairs(p["\0children"]) do
+        if c["\0kind"] == "Button" and c["\0shown"] and c["\0scripts"].OnClick then out[#out + 1] = c end
     end
     return out
 end
@@ -62,34 +62,34 @@ b.settings.showIcon = nil
 loot = 64
 H.Show("spec loot differs")
 local btn = H.Buttons()[1]
-btn.__scripts.OnEnter(btn)
+btn["\0scripts"].OnEnter(btn)
 SNAP("spec hovered", H.Bar())
 SnapPopups("spec hover")
 -- Hover the active spec row: the loadout flyout.
 local rows = popups[1] and Rows(popups[1]) or {}
-for _, r in ipairs(rows) do if r.__scripts.OnEnter then r.__scripts.OnEnter(r) end end
+for _, r in ipairs(rows) do if r["\0scripts"].OnEnter then r["\0scripts"].OnEnter(r) end end
 SnapPopups("spec flyout")
-btn.__scripts.OnLeave(btn)
+btn["\0scripts"].OnLeave(btn)
 for _, p in ipairs(popups) do if p:IsShown() then p:Hide() end end
 -- Right-click: loot popup, pick "current spec".
-btn.__scripts.OnClick(btn, "RightButton")
+btn["\0scripts"].OnClick(btn, "RightButton")
 SnapPopups("spec loot")
 for _, p in ipairs(popups) do
     if p:IsShown() then
         local r = Rows(p)[1]
-        if r then r.__scripts.OnClick(r, "LeftButton") end
+        if r then r["\0scripts"].OnClick(r, "LeftButton") end
     end
 end
 OUT:write("== loot now ", loot, "\n")
 -- Ctrl-click: loadouts, swap to the second.
 IsControlKeyDown = function() return true end
-btn.__scripts.OnClick(btn, "LeftButton")
+btn["\0scripts"].OnClick(btn, "LeftButton")
 IsControlKeyDown = function() return false end
 SnapPopups("spec loadouts")
 for _, p in ipairs(popups) do
     if p:IsShown() then
         local r = Rows(p)[2]
-        if r then r.__scripts.OnClick(r, "LeftButton") end
+        if r then r["\0scripts"].OnClick(r, "LeftButton") end
     end
 end
 OUT:write("== loaded ", table.concat(LOADED, ","), " selected ", selected, "\n")

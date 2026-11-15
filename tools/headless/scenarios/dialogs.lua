@@ -34,7 +34,7 @@ SNAP("info long", rawget(_G, "CUIInfoPopup"))
 CUI:ShowInputPopup({ title = "New Profile", message = "Name the new profile.", onConfirm = function() end })
 local input
 for _, f in ipairs({ UIParent:GetChildren() }) do
-    if f.__name and f.__name:find("Input") then input = f end
+    if f["\0name"] and f["\0name"]:find("Input") then input = f end
 end
 SNAP("input", input)
 
@@ -62,7 +62,7 @@ OUT:write("== behaviour ran=", ran, " stale-handle-left-open=", tostring(still),
 -- Input dialog options.
 local function Input()
     for _, f in ipairs({ UIParent:GetChildren() }) do
-        if f.__name and f.__name:find("Input") and f:IsShown() then return f end
+        if f["\0name"] and f["\0name"]:find("Input") and f:IsShown() then return f end
     end
 end
 CUI:ShowInputPopup({ title = "Zone", message = "Name a zone.", extraButton = { text = "Add Current Zone" }, warning = "Names are case sensitive.", onConfirm = function() end })

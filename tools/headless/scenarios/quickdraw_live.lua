@@ -17,7 +17,7 @@ local frame = rawget(_G, "CUIQuickdrawFrame")
 local function Frames(n)
     for _ = 1, n do
         HARNESS_ADVANCE(0.05)
-        local up = frame.__scripts.OnUpdate
+        local up = frame["\0scripts"].OnUpdate
         if up then up(frame, 0.05) end
     end
 end
@@ -45,7 +45,7 @@ p.layout = "ARC"
 mod.Open(1)
 for _ = 1, 40 do
     HARNESS_ADVANCE(1)
-    local up = frame.__scripts.OnUpdate
+    local up = frame["\0scripts"].OnUpdate
     if up then up(frame, 1) end
 end
 SNAP("timed out", frame)

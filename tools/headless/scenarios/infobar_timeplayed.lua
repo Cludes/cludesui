@@ -44,9 +44,9 @@ local function Hoverable()
     local stack = { Bar() }
     while #stack > 0 do
         local f = table.remove(stack)
-        if type(f) == "table" and rawget(f, "__children") then
-            if f.__kind == "Button" and f.__scripts.OnEnter and f.__shown then found = f end
-            for _, c in ipairs(f.__children) do stack[#stack + 1] = c end
+        if type(f) == "table" and rawget(f, "\0children") then
+            if f["\0kind"] == "Button" and f["\0scripts"].OnEnter and f["\0shown"] then found = f end
+            for _, c in ipairs(f["\0children"]) do stack[#stack + 1] = c end
         end
     end
     return found
@@ -59,10 +59,10 @@ b.settings.alwaysTotal = false
 Show("played level again")
 
 local h = Hoverable()
-h.__scripts.OnEnter(h)
+h["\0scripts"].OnEnter(h)
 SNAP("played hovered", Bar())
 SNAP("played tooltip", rawget(_G, "CludesUIDataBarsTip"))
-h.__scripts.OnLeave(h)
+h["\0scripts"].OnLeave(h)
 SNAP("played left", Bar())
 
 -- The heartbeat: minutes roll over (under a day, the text changes)...

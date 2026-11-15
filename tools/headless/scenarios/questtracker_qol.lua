@@ -131,9 +131,9 @@ EQT.ApplyQuestItemHotkey()
 -- The splash frame's replacement OnHide.
 local splash = _G.SplashFrame
 C_TalkingHead_SetConversationsDeferred = function(v) Put("talking head deferred", v) end
-if splash and splash.__scripts and splash.__scripts.OnHide then
+if splash and splash["\0scripts"] and splash["\0scripts"].OnHide then
     splash.screenInfo = { gameMenuRequest = true }
-    splash.__scripts.OnHide(splash)
+    splash["\0scripts"].OnHide(splash)
     Put("splash", splash.screenInfo, splash.showingQuestDialog)
 else
     Put("no splash frame")

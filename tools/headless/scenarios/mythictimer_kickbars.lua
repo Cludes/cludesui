@@ -38,8 +38,8 @@ end
 ns.KTB_OnEnable(db)
 -- The bars' container: the UIParent child whose children are rows (sb + dur).
 local container
-for _, c in ipairs(UIParent.__children) do
-    for _, r in ipairs(rawget(c, "__children") or {}) do
+for _, c in ipairs(UIParent["\0children"]) do
+    for _, r in ipairs(rawget(c, "\0children") or {}) do
         if rawget(r, "sb") and rawget(r, "dur") then container = c end
     end
 end

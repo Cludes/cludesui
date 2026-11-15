@@ -15,28 +15,28 @@ CUI:SelectModule("CludesUIResourceBars")
 CUI:SelectPage("Class, Power and Health Bars")
 local function Find(root, test, out)
     out = out or {}
-    if type(root) == "table" and rawget(root, "__children") then
+    if type(root) == "table" and rawget(root, "\0children") then
         if test(root) then out[#out + 1] = root end
-        for _, c in ipairs(root.__children) do Find(c, test, out) end
-        for _, r in ipairs(root.__regions or {}) do Find(r, test, out) end
+        for _, c in ipairs(root["\0children"]) do Find(c, test, out) end
+        for _, r in ipairs(root["\0regions"] or {}) do Find(r, test, out) end
     end
     return out
 end
 local function HasText(f, text)
-    for _, r in ipairs(f.__regions or {}) do
-        if r.__kind == "FontString" and r.__v and r.__v.Text == text then return true end
+    for _, r in ipairs(f["\0regions"] or {}) do
+        if r["\0kind"] == "FontString" and r["\0v"] and r["\0v"].Text == text then return true end
     end
     return false
 end
 local buttons = Find(CUI._scrollFrame, function(f)
-    return f.__kind == "Button" and f.__scripts.OnClick and HasText(f, "Settings")
+    return f["\0kind"] == "Button" and f["\0scripts"].OnClick and HasText(f, "Settings")
 end)
 OUT:write("== settings buttons: ", #buttons, "\n")
 for i, b in ipairs(buttons) do
-    b.__scripts.OnClick(b, "LeftButton")
+    b["\0scripts"].OnClick(b, "LeftButton")
     SNAP("thr editor " .. i, CUI._scrollFrame)
     local closes = Find(CUI._scrollFrame, function(f)
-        return f.__kind == "Button" and f.__scripts.OnClick and f.__shown and HasText(f, "Done")
+        return f["\0kind"] == "Button" and f["\0scripts"].OnClick and f["\0shown"] and HasText(f, "Done")
     end)
-    if closes[1] then closes[1].__scripts.OnClick(closes[1], "LeftButton") end
+    if closes[1] then closes[1]["\0scripts"].OnClick(closes[1], "LeftButton") end
 end

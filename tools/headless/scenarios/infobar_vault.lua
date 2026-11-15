@@ -39,8 +39,8 @@ end
 H.Hover("vault hover")
 H.Count("hover and leave", function()
     local h = H.Buttons()[1]
-    h.__scripts.OnEnter(h)
-    h.__scripts.OnLeave(h)
+    h["\0scripts"].OnEnter(h)
+    h["\0scripts"].OnLeave(h)
 end)
 group[2] = nil
 HARNESS_FIRE_EVENT("GROUP_ROSTER_UPDATE")
