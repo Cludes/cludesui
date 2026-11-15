@@ -2599,24 +2599,79 @@ local function InitBuffBarsPage(
                             end
                         end
                     end
-                    if b.spellID and b.spellID > 0 then
-                        local tex = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(b.spellID)
-                        if tex then
-                            return tex
-                        end
+                    local tex = b.spellID
+                        and b.spellID > 0
+                        and C_Spell
+                        and C_Spell.GetSpellTexture
+                        and C_Spell.GetSpellTexture(b.spellID)
+                    return tex or 134400
+                end
+                -- A bar's menu name: its spell's (unless a popular preset), else its
+                -- own name, else "Bar N"; an unassigned bar says so.
+                local function BarDisplayName(b, idx, unassigned)
+                    local name = (b.name and CludesUI.L(b.name)) or CludesUI.Lf("Bar %d", idx)
+                    if not b.popularKey and b.spellID and b.spellID > 0 then
+                        local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(b.spellID)
+                        name = (details and details.name) or name
                     end
-                    return 134400
+                    if unassigned then
+                        name = name .. "  (" .. CludesUI.L("no buff assigned") .. ")"
+                    end
+                    return name
                 end
 
-                local function AddHeaderRow(textValue)
+                -- A full-width menu row at the running height mH.
+                local function MenuRow(height)
+                    local item = CreateFrame("Button", nil, inner)
+                    item:SetHeight(height)
+                    item:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
+                    item:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
+                    item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+                    return item
+                end
+                local function MenuFont(parent, size)
+                    local fs = parent:CreateFontString(nil, "OVERLAY")
+                    fs:SetFont(FONT_PATH, size, GetCDMOptOutline())
+                    return fs
+                end
+                -- The row's white highlight, shown at alpha.
+                local function RowHighlight(item, alpha)
+                    local highlight = item:CreateTexture(nil, "ARTWORK")
+                    highlight:SetAllPoints()
+                    highlight:SetColorTexture(1, 1, 1, 1)
+                    highlight:SetAlpha(alpha)
+                    return highlight
+                end
+                -- A small X button at the row's right edge.
+                local function CloseButton(item, alpha)
+                    local button = CreateFrame("Button", nil, item)
+                    button:SetSize(ICON_SZ, ICON_SZ)
+                    button:SetPoint("RIGHT", item, "RIGHT", -8, 0)
+                    button:SetFrameLevel(item:GetFrameLevel() + 2)
+                    local icon = button:CreateTexture(nil, "OVERLAY")
+                    icon:SetSize(ICON_SZ, ICON_SZ)
+                    icon:SetPoint("CENTER")
+                    if icon.SetSnapToPixelGrid then
+                        icon:SetSnapToPixelGrid(false)
+                        icon:SetTexelSnappingBias(0)
+                    end
+                    icon:SetTexture(MEDIA .. "icons\\cui-close.png")
+                    button:SetAlpha(alpha)
+                    return button
+                end
+                -- Sections after the first start 4 lower.
+                local function SectionGap()
                     if mH > 4 then
                         mH = mH + 4
                     end
-                    local hLbl = inner:CreateFontString(nil, "OVERLAY")
-                    hLbl:SetFont(FONT_PATH, 10, GetCDMOptOutline())
-                    hLbl:SetTextColor(1, 1, 1, 0.9)
-                    hLbl:SetPoint("TOPLEFT", inner, "TOPLEFT", 10, -mH - 5)
-                    hLbl:SetText(textValue)
+                end
+
+                local function AddHeaderRow(textValue)
+                    SectionGap()
+                    local label = MenuFont(inner, 10)
+                    label:SetTextColor(1, 1, 1, 0.9)
+                    label:SetPoint("TOPLEFT", inner, "TOPLEFT", 10, -mH - 5)
+                    label:SetText(textValue)
                     mH = mH + 20
                 end
 
@@ -2624,65 +2679,43 @@ local function InitBuffBarsPage(
                 -- settings replace per-bar sections). gkey (optional) = group's globalKey,
                 -- adds the GLOBAL tag + a delete button that removes it for every spec (with confirmation).
                 local function AddGroupHeaderRow(groupId, gkey)
-                    if mH > 4 then
-                        mH = mH + 4
-                    end
-                    local item = CreateFrame("Button", nil, inner)
-                    item:SetHeight(22)
-                    item:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-                    item:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-                    item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                    local hLbl = item:CreateFontString(nil, "OVERLAY")
-                    hLbl:SetFont(FONT_PATH, 10, GetCDMOptOutline())
-                    hLbl:SetTextColor(1, 1, 1, 0.9)
-                    hLbl:SetPoint("LEFT", item, "LEFT", 10, 0)
-                    local groupDisplayName = (mod.TBBGroupName and mod.TBBGroupName(groupId))
+                    SectionGap()
+                    local item = MenuRow(22)
+                    local label = MenuFont(item, 10)
+                    label:SetTextColor(1, 1, 1, 0.9)
+                    label:SetPoint("LEFT", item, "LEFT", 10, 0)
+                    local name = (mod.TBBGroupName and mod.TBBGroupName(groupId))
                         or (CludesUI.L("GROUP") .. " " .. groupId)
-                    hLbl:SetText(groupDisplayName)
+                    label:SetText(name)
                     if gkey then
-                        local gTag = item:CreateFontString(nil, "OVERLAY")
-                        gTag:SetFont(FONT_PATH, 9, GetCDMOptOutline())
-                        gTag:SetTextColor(ar, ag, ab, 0.9)
-                        gTag:SetPoint("LEFT", hLbl, "RIGHT", 6, 0)
-                        gTag:SetText(CludesUI.L("GLOBAL"))
+                        local tag = MenuFont(item, 9)
+                        tag:SetTextColor(ar, ag, ab, 0.9)
+                        tag:SetPoint("LEFT", label, "RIGHT", 6, 0)
+                        tag:SetText(CludesUI.L("GLOBAL"))
                     end
-                    local eLbl = item:CreateFontString(nil, "OVERLAY")
-                    eLbl:SetFont(FONT_PATH, 10, GetCDMOptOutline())
-                    eLbl:SetTextColor(ar, ag, ab, 0.85)
-                    eLbl:SetText(CludesUI.L("Edit Group"))
-                    local delBtn
+                    local edit = MenuFont(item, 10)
+                    edit:SetTextColor(ar, ag, ab, 0.85)
+                    edit:SetText(CludesUI.L("Edit Group"))
                     if gkey then
-                        delBtn = CreateFrame("Button", nil, item)
-                        delBtn:SetSize(ICON_SZ, ICON_SZ)
-                        delBtn:SetPoint("RIGHT", item, "RIGHT", -8, 0)
-                        delBtn:SetFrameLevel(item:GetFrameLevel() + 2)
-                        local delIcon = delBtn:CreateTexture(nil, "OVERLAY")
-                        delIcon:SetSize(ICON_SZ, ICON_SZ)
-                        delIcon:SetPoint("CENTER")
-                        if delIcon.SetSnapToPixelGrid then
-                            delIcon:SetSnapToPixelGrid(false)
-                            delIcon:SetTexelSnappingBias(0)
-                        end
-                        delIcon:SetTexture(MEDIA .. "icons\\cui-close.png")
-                        delBtn:SetAlpha(0.6)
-                        delBtn:SetScript("OnEnter", function()
-                            delBtn:SetAlpha(1)
+                        local del = CloseButton(item, 0.6)
+                        del:SetScript("OnEnter", function()
+                            del:SetAlpha(1)
                             CludesUI.ShowWidgetTooltip(
-                                delBtn,
+                                del,
                                 CludesUI.L("Delete this global group for all specs")
                             )
                         end)
-                        delBtn:SetScript("OnLeave", function()
-                            delBtn:SetAlpha(0.6)
+                        del:SetScript("OnLeave", function()
+                            del:SetAlpha(0.6)
                             CludesUI.HideWidgetTooltip()
                         end)
-                        delBtn:SetScript("OnClick", function()
+                        del:SetScript("OnClick", function()
                             dropMenu:Hide()
                             CludesUI:ShowConfirmPopup({
                                 title = "Delete Global Group",
                                 message = CludesUI.Lf(
                                     'Delete "%1$s" for ALL specs? Bars keep their current positions.',
-                                    groupDisplayName
+                                    name
                                 ),
                                 confirmText = "Delete",
                                 cancelText = "Cancel",
@@ -2698,24 +2731,21 @@ local function InitBuffBarsPage(
                                 end,
                             })
                         end)
-                        eLbl:SetPoint("RIGHT", delBtn, "LEFT", -8, 0)
+                        edit:SetPoint("RIGHT", del, "LEFT", -8, 0)
                     else
-                        eLbl:SetPoint("RIGHT", item, "RIGHT", -10, 0)
+                        edit:SetPoint("RIGHT", item, "RIGHT", -10, 0)
                     end
-                    local highlight = item:CreateTexture(nil, "ARTWORK")
-                    highlight:SetAllPoints()
-                    highlight:SetColorTexture(1, 1, 1, 1)
-                    local isSel = _tbbSelectedGroup == groupId
-                    highlight:SetAlpha(isSel and selA or 0)
+                    local rest = (_tbbSelectedGroup == groupId) and selA or 0
+                    local highlight = RowHighlight(item, rest)
                     item:SetScript("OnEnter", function()
-                        hLbl:SetTextColor(1, 1, 1, 1)
-                        eLbl:SetTextColor(1, 1, 1, 0.9)
+                        label:SetTextColor(1, 1, 1, 1)
+                        edit:SetTextColor(1, 1, 1, 0.9)
                         highlight:SetAlpha(hlA)
                     end)
                     item:SetScript("OnLeave", function()
-                        hLbl:SetTextColor(1, 1, 1, 0.9)
-                        eLbl:SetTextColor(ar, ag, ab, 0.85)
-                        highlight:SetAlpha(isSel and selA or 0)
+                        label:SetTextColor(1, 1, 1, 0.9)
+                        edit:SetTextColor(ar, ag, ab, 0.85)
+                        highlight:SetAlpha(rest)
                     end)
                     item:SetScript("OnClick", function()
                         dropMenu:Hide()
@@ -2726,88 +2756,70 @@ local function InitBuffBarsPage(
                     return item
                 end
 
+                -- A bar row: its icon (click: change the buff), name, the speaker
+                -- (bars that can cue a sound) and delete. Click selects it (no buff
+                -- yet: opens the picker), right-click its sound menu, drag moves it.
                 local function AddBarItem(idx, b, indent)
-                    local item = CreateFrame("Button", nil, inner)
-                    item:SetHeight(ITEM_H)
-                    item:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-                    item:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-                    item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-
-                    local spIco = item:CreateTexture(nil, "OVERLAY")
-                    spIco:SetSize(ITEM_H - 8, ITEM_H - 8)
-                    spIco:SetPoint("LEFT", item, "LEFT", 10 + (indent or 0), 0)
-                    spIco:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                    local item = MenuRow(ITEM_H)
                     local unassigned = (not b.spellID or b.spellID == 0) and not b.glowBased
-                    spIco:SetTexture(BarIconID(b))
+                    local icon = item:CreateTexture(nil, "OVERLAY")
+                    icon:SetSize(ITEM_H - 8, ITEM_H - 8)
+                    icon:SetPoint("LEFT", item, "LEFT", 10 + (indent or 0), 0)
+                    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+                    icon:SetTexture(BarIconID(b))
                     if unassigned then
-                        spIco:SetDesaturated(true)
-                        spIco:SetAlpha(0.35)
+                        icon:SetDesaturated(true)
+                        icon:SetAlpha(0.35)
                     end
 
-                    -- Icon = change this bar's buff (green border affordance)
-                    local icoBtn = CreateFrame("Button", nil, item)
-                    icoBtn:SetAllPoints(spIco)
-                    icoBtn:SetFrameLevel(item:GetFrameLevel() + 3)
-                    local egc = CludesUI.CLUDES_GREEN
-                    local icoBrd = Pix.CreateBorder(icoBtn, egc.r, egc.g, egc.b, 1, 1, "OVERLAY", 7)
-                    if icoBrd then
-                        icoBrd:Hide()
+                    -- The icon changes this bar's buff (a green border shows it).
+                    local iconBtn = CreateFrame("Button", nil, item)
+                    iconBtn:SetAllPoints(icon)
+                    iconBtn:SetFrameLevel(item:GetFrameLevel() + 3)
+                    local green = CludesUI.CLUDES_GREEN
+                    local ring = Pix.CreateBorder(iconBtn, green.r, green.g, green.b, 1, 1, "OVERLAY", 7)
+                    if ring then
+                        ring:Hide()
                     end
-                    icoBtn:SetScript("OnEnter", function()
-                        if icoBrd then
-                            icoBrd:Show()
+                    iconBtn:SetScript("OnEnter", function()
+                        if ring then
+                            ring:Show()
                         end
-                        CludesUI.ShowWidgetTooltip(icoBtn, CludesUI.L("Change buff"))
+                        CludesUI.ShowWidgetTooltip(iconBtn, CludesUI.L("Change buff"))
                     end)
-                    icoBtn:SetScript("OnLeave", function()
-                        if icoBrd then
-                            icoBrd:Hide()
+                    iconBtn:SetScript("OnLeave", function()
+                        if ring then
+                            ring:Hide()
                         end
                         CludesUI.HideWidgetTooltip()
                     end)
-                    icoBtn:SetScript("OnClick", function()
+                    iconBtn:SetScript("OnClick", function()
                         dropMenu:Hide()
                         OpenBuffPickerForBar(idx)
                     end)
 
-                    local iLbl = item:CreateFontString(nil, "OVERLAY")
-                    iLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                    iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                    iLbl:SetJustifyH("LEFT")
-                    iLbl:SetWordWrap(false)
-                    iLbl:SetMaxLines(1)
-                    iLbl:SetPoint("LEFT", spIco, "RIGHT", 6, 0)
-                    local displayName = (b.name and CludesUI.L(b.name)) or CludesUI.Lf("Bar %d", idx)
-                    if not b.popularKey and b.spellID and b.spellID > 0 then
-                        local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(b.spellID)
-                        if details and details.name then
-                            displayName = details.name
-                        end
+                    local label = MenuFont(item, 11)
+                    label:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+                    label:SetJustifyH("LEFT")
+                    label:SetWordWrap(false)
+                    label:SetMaxLines(1)
+                    label:SetPoint("LEFT", icon, "RIGHT", 6, 0)
+                    local name = BarDisplayName(b, idx, unassigned)
+                    label:SetText(name)
+                    local function RestHighlight()
+                        return idx == _tbbSelectedBar and selA or 0
                     end
-                    if unassigned then
-                        displayName = displayName .. "  (" .. CludesUI.L("no buff assigned") .. ")"
+                    local highlight = RowHighlight(item, RestHighlight())
+                    local del = CloseButton(item, 0.75)
+                    label:SetPoint("RIGHT", del, "LEFT", -4, 0)
+                    local function Lit()
+                        label:SetTextColor(1, 1, 1, 1)
+                        highlight:SetAlpha(hlA)
                     end
-                    iLbl:SetText(displayName)
-
-                    local iHl = item:CreateTexture(nil, "ARTWORK")
-                    iHl:SetAllPoints()
-                    iHl:SetColorTexture(1, 1, 1, 1)
-                    iHl:SetAlpha(idx == _tbbSelectedBar and selA or 0)
-
-                    local delBtn = CreateFrame("Button", nil, item)
-                    delBtn:SetSize(ICON_SZ, ICON_SZ)
-                    delBtn:SetPoint("RIGHT", item, "RIGHT", -8, 0)
-                    delBtn:SetFrameLevel(item:GetFrameLevel() + 2)
-                    local delIcon = delBtn:CreateTexture(nil, "OVERLAY")
-                    delIcon:SetSize(ICON_SZ, ICON_SZ)
-                    delIcon:SetPoint("CENTER")
-                    if delIcon.SetSnapToPixelGrid then
-                        delIcon:SetSnapToPixelGrid(false)
-                        delIcon:SetTexelSnappingBias(0)
+                    local function Rest()
+                        label:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+                        highlight:SetAlpha(RestHighlight())
                     end
-                    delIcon:SetTexture(MEDIA .. "icons\\cui-close.png")
-                    delBtn:SetAlpha(0.75)
-                    iLbl:SetPoint("RIGHT", delBtn, "LEFT", -4, 0)
 
                     -- Only a bar that can cue gets the sound menu: on a row right-click and
                     -- on the speaker button, dimmed ("Add Audio Effect") while the bar has
@@ -2815,70 +2827,65 @@ local function InitBuffBarsPage(
                     -- it has one. The sound menu repaints it through item._sndPaint.
                     local soundable = BarTakesSound(b)
                     if soundable then
-                        local sndBtn = CreateFrame("Button", nil, item)
-                        sndBtn:SetSize(ICON_SZ, ICON_SZ)
-                        sndBtn:SetPoint("RIGHT", delBtn, "LEFT", -6, 0)
-                        sndBtn:SetFrameLevel(item:GetFrameLevel() + 2)
-                        local sndIcon = sndBtn:CreateTexture(nil, "OVERLAY")
-                        sndIcon:SetAllPoints()
-                        sndIcon:SetAtlas(CludesUI.SOUND_ICON_ATLAS)
+                        local speaker = CreateFrame("Button", nil, item)
+                        speaker:SetSize(ICON_SZ, ICON_SZ)
+                        speaker:SetPoint("RIGHT", del, "LEFT", -6, 0)
+                        speaker:SetFrameLevel(item:GetFrameLevel() + 2)
+                        local glyph = speaker:CreateTexture(nil, "OVERLAY")
+                        glyph:SetAllPoints()
+                        glyph:SetAtlas(CludesUI.SOUND_ICON_ATLAS)
                         local function HasSound()
-                            local g, l = b.buffActiveSoundKey, b.buffLostSoundKey
-                            return (g and g ~= "none") or (l and l ~= "none")
+                            local gain, loss = b.buffActiveSoundKey, b.buffLostSoundKey
+                            return (gain and gain ~= "none") or (loss and loss ~= "none")
                         end
                         local function RestAlpha()
                             return HasSound() and 0.8 or 0.3
                         end
                         item._sndPaint = function()
-                            if not sndBtn:IsMouseOver() then
-                                sndBtn:SetAlpha(RestAlpha())
+                            if not speaker:IsMouseOver() then
+                                speaker:SetAlpha(RestAlpha())
                             end
                         end
-                        sndBtn:SetAlpha(RestAlpha())
-                        sndBtn:SetScript("OnEnter", function(self)
+                        speaker:SetAlpha(RestAlpha())
+                        speaker:SetScript("OnEnter", function(self)
                             self:SetAlpha(1)
-                            iLbl:SetTextColor(1, 1, 1, 1)
-                            iHl:SetAlpha(hlA)
+                            Lit()
                             CludesUI.ShowWidgetTooltip(
                                 self,
                                 HasSound() and CludesUI.L("Edit Audio Effect")
                                     or CludesUI.L("Add Audio Effect")
                             )
                         end)
-                        sndBtn:SetScript("OnLeave", function(self)
+                        speaker:SetScript("OnLeave", function(self)
                             CludesUI.HideWidgetTooltip()
                             self:SetAlpha(RestAlpha())
-                            if item:IsMouseOver() then
-                                return
+                            if not item:IsMouseOver() then
+                                Rest()
                             end
-                            iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                            iHl:SetAlpha(idx == _tbbSelectedBar and selA or 0)
                         end)
                         -- The bar menu stays open underneath, as with the row right-click.
-                        sndBtn:SetScript("OnClick", function()
+                        speaker:SetScript("OnClick", function()
                             OpenBarSoundMenu(idx, item)
                         end)
-                        iLbl:SetPoint("RIGHT", sndBtn, "LEFT", -4, 0)
+                        label:SetPoint("RIGHT", speaker, "LEFT", -4, 0)
                     end
 
-                    delBtn:SetScript("OnEnter", function()
-                        delBtn:SetAlpha(1)
-                        iLbl:SetTextColor(1, 1, 1, 1)
-                        iHl:SetAlpha(hlA)
+                    del:SetScript("OnEnter", function()
+                        del:SetAlpha(1)
+                        Lit()
                     end)
-                    delBtn:SetScript("OnLeave", function()
+                    del:SetScript("OnLeave", function()
                         if item:IsMouseOver() then
                             return
                         end
-                        delBtn:SetAlpha(0.75)
-                        iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                        iHl:SetAlpha(idx == _tbbSelectedBar and selA or 0)
+                        del:SetAlpha(0.75)
+                        Rest()
                     end)
-                    delBtn:SetScript("OnClick", function()
+                    del:SetScript("OnClick", function()
                         dropMenu:Hide()
                         CludesUI:ShowConfirmPopup({
                             title = "Delete Bar",
-                            message = CludesUI.Lf('Delete "%1$s"?', displayName),
+                            message = CludesUI.Lf('Delete "%1$s"?', name),
                             confirmText = "Delete",
                             cancelText = "Cancel",
                             onConfirm = function()
@@ -2887,31 +2894,26 @@ local function InitBuffBarsPage(
                             end,
                         })
                     end)
-
                     item:SetScript("OnEnter", function()
-                        iLbl:SetTextColor(1, 1, 1, 1)
-                        iHl:SetAlpha(hlA)
-                        delBtn:SetAlpha(1)
+                        Lit()
+                        del:SetAlpha(1)
                     end)
                     item:SetScript("OnLeave", function()
-                        iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                        iHl:SetAlpha(idx == _tbbSelectedBar and selA or 0)
-                        delBtn:SetAlpha(0.75)
+                        Rest()
+                        del:SetAlpha(0.75)
                     end)
                     item:RegisterForClicks("LeftButtonUp", "RightButtonUp")
                     item:SetScript("OnClick", function(_, mouseButton)
                         if mouseButton == "RightButton" then
-                            if not soundable then
-                                return
-                            end
                             -- The bar menu stays open underneath, like the CDM icon menu.
-                            OpenBarSoundMenu(idx, item)
+                            if soundable then
+                                OpenBarSoundMenu(idx, item)
+                            end
                             return
                         end
                         dropMenu:Hide()
                         if unassigned then
-                            -- No buff yet: go straight to the buff picker.
-                            OpenBuffPickerForBar(idx)
+                            OpenBuffPickerForBar(idx) -- no buff yet: straight to the picker
                         else
                             _tbbSelectedBar = idx
                             _tbbSelectedGroup = nil
@@ -2919,28 +2921,28 @@ local function InitBuffBarsPage(
                         end
                     end)
 
-                    -- Drag to move between groups or reorder within one (drop handled by zone under the cursor at release).
+                    -- Drag to move between groups or reorder within one (the zone under
+                    -- the cursor at release takes the drop).
                     item:RegisterForDrag("LeftButton")
                     item:SetScript("OnDragStart", function()
                         dropMenu._dragActive = true
-                        dragState.idx = idx
-                        dragState.name = displayName
-                        local g = EnsureGhost()
-                        g._lbl:SetText(displayName)
-                        g._lbl:SetTextColor(1, 1, 1, 0.8)
-                        g:Show()
-                        g:SetScript("OnUpdate", GhostUpdate)
+                        dragState.idx, dragState.name = idx, name
+                        local ghost = EnsureGhost()
+                        ghost._lbl:SetText(name)
+                        ghost._lbl:SetTextColor(1, 1, 1, 0.8)
+                        ghost:Show()
+                        ghost:SetScript("OnUpdate", GhostUpdate)
                     end)
                     item:SetScript("OnDragStop", function()
                         local moveIdx = dragState.idx
-                        local z, f = HoveredZone()
-                        local place = ReorderTarget(z, f)
+                        local zone, over = HoveredZone()
+                        local place = ReorderTarget(zone, over)
                         StopDrag()
                         if moveIdx and place then
                             dropMenu:Hide()
                             ReorderBarInGroup(moveIdx, place)
-                        elseif moveIdx and z then
-                            MoveBarToGroup(moveIdx, z.gid)
+                        elseif moveIdx and zone then
+                            MoveBarToGroup(moveIdx, zone.gid)
                         end
                     end)
                     mH = mH + ITEM_H
@@ -2948,27 +2950,19 @@ local function InitBuffBarsPage(
                 end
 
                 local function AddActionItem(textValue, indent, onClick)
-                    local item = CreateFrame("Button", nil, inner)
-                    item:SetHeight(ITEM_H)
-                    item:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-                    item:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-                    item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                    local labelFS = item:CreateFontString(nil, "OVERLAY")
-                    labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                    labelFS:SetPoint("LEFT", item, "LEFT", 10 + (indent or 0), 0)
-                    labelFS:SetJustifyH("LEFT")
-                    labelFS:SetText(textValue)
-                    labelFS:SetTextColor(ar, ag, ab, 0.85)
-                    local highlight = item:CreateTexture(nil, "ARTWORK")
-                    highlight:SetAllPoints()
-                    highlight:SetColorTexture(1, 1, 1, 1)
-                    highlight:SetAlpha(0)
+                    local item = MenuRow(ITEM_H)
+                    local label = MenuFont(item, 11)
+                    label:SetPoint("LEFT", item, "LEFT", 10 + (indent or 0), 0)
+                    label:SetJustifyH("LEFT")
+                    label:SetText(textValue)
+                    label:SetTextColor(ar, ag, ab, 0.85)
+                    local highlight = RowHighlight(item, 0)
                     item:SetScript("OnEnter", function()
-                        labelFS:SetTextColor(1, 1, 1, 1)
+                        label:SetTextColor(1, 1, 1, 1)
                         highlight:SetAlpha(hlA)
                     end)
                     item:SetScript("OnLeave", function()
-                        labelFS:SetTextColor(ar, ag, ab, 0.85)
+                        label:SetTextColor(ar, ag, ab, 0.85)
                         highlight:SetAlpha(0)
                     end)
                     item:SetScript("OnClick", onClick)
@@ -2981,25 +2975,33 @@ local function InitBuffBarsPage(
                     dropMenu:Hide()
                     OpenBuffPickerForBar(newIdx)
                 end
+                local function AddToGroupItem(gid)
+                    return AddActionItem(CludesUI.L("+ Add Bar to Group"), 8, function()
+                        SelectNewBar(mod.AddTrackedBuffBar(gid))
+                    end)
+                end
+                local function GroupZone(gid)
+                    local zone = {
+                        gid = gid,
+                        label = (mod.TBBGroupName and mod.TBBGroupName(gid))
+                            or (CludesUI.L("Group") .. " " .. gid),
+                        frames = {},
+                    }
+                    dropZones[#dropZones + 1] = zone
+                    return zone
+                end
 
                 -- Grouped bars, one section per group (each section doubles as a drop zone for bar drags).
-                local gids = mod.TBBGroupIDsInUse and mod.TBBGroupIDsInUse() or {}
                 local renderedGlobal = {}
-                for _, groupId in ipairs(gids) do
+                for _, groupId in ipairs(mod.TBBGroupIDsInUse and mod.TBBGroupIDsInUse() or {}) do
                     local gkey = mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(groupId) or nil
                     if gkey then
                         renderedGlobal[gkey] = true
                     end
-                    local zone = {
-                        gid = groupId,
-                        label = (mod.TBBGroupName and mod.TBBGroupName(groupId))
-                            or (CludesUI.L("Group") .. " " .. groupId),
-                        frames = {},
-                        rows = {},
-                    }
-                    dropZones[#dropZones + 1] = zone
+                    local zone = GroupZone(groupId)
+                    zone.rows = {}
                     zone.head = AddGroupHeaderRow(groupId, gkey)
-                    zone.frames[#zone.frames + 1] = zone.head
+                    zone.frames[1] = zone.head
                     for idx, b in ipairs(t.bars) do
                         if mod.TBBBarGroupID(b) == groupId then
                             local row = AddBarItem(idx, b, 8)
@@ -3007,55 +3009,35 @@ local function InitBuffBarsPage(
                             zone.rows[#zone.rows + 1] = { frame = row, idx = idx }
                         end
                     end
-                    zone.tail = AddActionItem(CludesUI.L("+ Add Bar to Group"), 8, function()
-                        SelectNewBar(mod.AddTrackedBuffBar(groupId))
-                    end)
+                    zone.tail = AddToGroupItem(groupId)
                     zone.frames[#zone.frames + 1] = zone.tail
                 end
 
                 -- Global groups with no bars on this spec are always listed so any spec can
                 -- assign/drag bars into them; selecting one edits its shared settings (a normal drop zone).
-                if mod.TBBGlobalGroupKeys then
-                    for _, gkey in ipairs(mod.TBBGlobalGroupKeys()) do
-                        if not renderedGlobal[gkey] then
-                            local lgid = mod.TBBEnsureLocalGroupForGlobal(gkey)
-                            if lgid then
-                                local zone = {
-                                    gid = lgid,
-                                    label = (mod.TBBGroupName and mod.TBBGroupName(lgid))
-                                        or (CludesUI.L("Group") .. " " .. lgid),
-                                    frames = {},
-                                }
-                                dropZones[#dropZones + 1] = zone
-                                zone.frames[#zone.frames + 1] = AddGroupHeaderRow(lgid, gkey)
-                                zone.frames[#zone.frames + 1] = AddActionItem(
-                                    CludesUI.L("+ Add Bar to Group"),
-                                    8,
-                                    function()
-                                        SelectNewBar(mod.AddTrackedBuffBar(lgid))
-                                    end
-                                )
-                            end
-                        end
+                for _, gkey in ipairs(mod.TBBGlobalGroupKeys and mod.TBBGlobalGroupKeys() or {}) do
+                    local lgid = not renderedGlobal[gkey] and mod.TBBEnsureLocalGroupForGlobal(gkey)
+                    if lgid then
+                        local zone = GroupZone(lgid)
+                        zone.frames[1] = AddGroupHeaderRow(lgid, gkey)
+                        zone.frames[2] = AddToGroupItem(lgid)
                     end
                 end
 
-                -- Independent bars (the section is the "make independent" zone)
+                -- Independent bars (the section is the "make independent" zone).
                 local indepZone = { gid = 0, label = CludesUI.L("Independent"), frames = {} }
                 dropZones[#dropZones + 1] = indepZone
-                local anyIndependent = false
-                for _, b in ipairs(t.bars) do
+                local independent, anySoundable = {}, false
+                for idx, b in ipairs(t.bars) do
                     if mod.TBBBarGroupID(b) == 0 then
-                        anyIndependent = true
-                        break
+                        independent[#independent + 1] = idx
                     end
+                    anySoundable = anySoundable or BarTakesSound(b)
                 end
-                if anyIndependent then
+                if #independent > 0 then
                     AddHeaderRow(CludesUI.L("INDEPENDENT BARS"))
-                    for idx, b in ipairs(t.bars) do
-                        if mod.TBBBarGroupID(b) == 0 then
-                            indepZone.frames[#indepZone.frames + 1] = AddBarItem(idx, b, 8)
-                        end
+                    for _, idx in ipairs(independent) do
+                        indepZone.frames[#indepZone.frames + 1] = AddBarItem(idx, t.bars[idx], 8)
                     end
                 end
 
@@ -3066,7 +3048,6 @@ local function InitBuffBarsPage(
                 div:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
                 div:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
                 mH = mH + 9
-
                 AddActionItem(CludesUI.L("+ Add New Group"), 0, function()
                     local groupId = mod.TBBNextGroupID()
                     if mod.TBBResetGroupSettings then
@@ -3082,30 +3063,20 @@ local function InitBuffBarsPage(
                     end
                 )
 
-                if #t.bars > 1 then
-                    local dragHint = inner:CreateFontString(nil, "OVERLAY")
-                    dragHint:SetFont(FONT_PATH, 10, GetCDMOptOutline())
-                    dragHint:SetTextColor(1, 1, 1, 0.35)
-                    dragHint:SetPoint("TOP", inner, "TOP", 0, -mH - 4)
-                    dragHint:SetText(CludesUI.L("Drag a bar to reorder it or move it into another group"))
+                -- Hints: dragging (with more than one bar) and, while any bar can
+                -- take a sound, the row right-click (Audio on Buff Gain / Loss).
+                local function Hint(text)
+                    local fs = MenuFont(inner, 10)
+                    fs:SetTextColor(1, 1, 1, 0.35)
+                    fs:SetPoint("TOP", inner, "TOP", 0, -mH - 4)
+                    fs:SetText(CludesUI.L(text))
                     mH = mH + 20
                 end
-                -- Discoverability for the row right-click (Audio on Buff Gain/Loss): shown
-                -- while any bar can take a sound.
-                local anySoundable = false
-                for _, b in ipairs(t.bars) do
-                    if BarTakesSound(b) then
-                        anySoundable = true
-                        break
-                    end
+                if #t.bars > 1 then
+                    Hint("Drag a bar to reorder it or move it into another group")
                 end
                 if anySoundable then
-                    local soundHint = inner:CreateFontString(nil, "OVERLAY")
-                    soundHint:SetFont(FONT_PATH, 10, GetCDMOptOutline())
-                    soundHint:SetTextColor(1, 1, 1, 0.35)
-                    soundHint:SetPoint("TOP", inner, "TOP", 0, -mH - 4)
-                    soundHint:SetText(CludesUI.L("Right-click a bar to set its sounds"))
-                    mH = mH + 20
+                    Hint("Right-click a bar to set its sounds")
                 end
 
                 local totalH = mH + 4

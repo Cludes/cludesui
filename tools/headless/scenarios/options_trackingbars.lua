@@ -43,3 +43,47 @@ for i = #bars - 2, #bars do
     Rebuild()
     Snap("bar " .. i)
 end
+
+-- The Currently Editing menu: find the 350x34 dropdown button on the page or
+-- its header, click it, and snapshot every popup it opens on UIParent.
+local function Find(root, test)
+    local stack, hits = { root }, {}
+    while #stack > 0 do
+        local f = table.remove(stack)
+        if type(f) == "table" and rawget(f, "\0children") then
+            if test(f) then hits[#hits + 1] = f end
+            for _, c in ipairs(f["\0children"]) do stack[#stack + 1] = c end
+        end
+    end
+    return hits
+end
+local function Popups(label)
+    -- The bar menu and its kin sit at levels 300 and up, on UIParent or the overlay layer.
+    local n = 0
+    local hosts = { UIParent }
+    if CUI.OverlayParent and CUI.OverlayParent() ~= UIParent then hosts[2] = CUI.OverlayParent() end
+    for _, host in ipairs(hosts) do
+        for _, c in ipairs({ host:GetChildren() }) do
+            if c:IsShown() and c.GetFrameStrata and c:GetFrameStrata() == "FULLSCREEN_DIALOG" and c:GetFrameLevel() >= 300 then
+                n = n + 1
+                SNAP(label .. " popup " .. n, c)
+            end
+        end
+    end
+    OUT:write("== " .. label .. ": " .. n .. " popups\n")
+end
+if mod._TBBSelectBar then mod._TBBSelectBar(#bars - 2) end
+Rebuild()
+local roots = { CUI._scrollFrame, CUI._contentHeader or CUI._headerFrame }
+local menuBtn
+for _, root in ipairs(roots) do
+    for _, b in ipairs(Find(root, function(f)
+        return f["\0kind"] == "Button" and f["\0shown"] and math.floor((f["\0w"] or 0) + 0.5) == 350
+            and math.floor((f["\0h"] or 0) + 0.5) == 34 and f["\0scripts"].OnClick
+    end)) do menuBtn = menuBtn or b end
+end
+OUT:write("== menu button " .. tostring(menuBtn ~= nil) .. "\n")
+if menuBtn then
+    menuBtn["\0scripts"].OnClick(menuBtn, "LeftButton")
+    Popups("menu open")
+end
