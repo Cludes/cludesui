@@ -1253,6 +1253,41 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
         end
     end
     local layoutKey = "edbtravellayout:" .. instance.key
+    -- What the bar shows (text, cooling parts, dimmed icon) as last laid out,
+    -- and a counting timer's shape (digits as 0s) whose width is reserved.
+    local drawnState, drawnZeros
+
+    -- Bags, spells and the ticker call this often: nothing if the bar would
+    -- show the same; at a held timer width just the new digits; else a pass.
+    local function Update()
+        if not built then
+            return
+        end
+        SyncHouseWatch()
+        if D().altHearths == true then
+            TravelSaveMyHearth()
+        end
+        local location, barTimer, coolMask, iconDim = TravelBarText(D(), GetBindLocation() or "?", mouseOver)
+        local state = location .. "|" .. coolMask .. "|" .. tostring(iconDim)
+        if state == drawnState then
+            TravelSyncTicker(mouseOver or coolMask ~= 0 or barTimer)
+            return
+        end
+        if
+            barTimer
+            and drawnZeros
+            and not InCombatLockdown()
+            and not barCtx.IsVertical()
+            and location:gsub("%d", "0") == drawnZeros
+        then
+            hearthText:SetText(location)
+            instance._barTimer, instance._lastCoolMask = barTimer, coolMask
+            drawnState = state
+            TravelSyncTicker(true)
+            return
+        end
+        instance:Refresh()
+    end
 
     function instance:Refresh()
         SyncHouseWatch()
@@ -1271,6 +1306,8 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
         local location, barTimer, coolMask, iconDim = TravelBarText(D(), GetBindLocation() or "?", mouseOver)
         instance._barTimer = barTimer
         instance._lastCoolMask = coolMask
+        drawnState = location .. "|" .. coolMask .. "|" .. tostring(iconDim)
+        drawnZeros = nil
 
         mod.SetFont(hearthText, fontSize, barCfg)
 
@@ -1339,13 +1376,16 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
             if instance._barTimer then
                 local zeroW = 0
                 local mfs = mod.MeasureFS()
+                local zeros = location:gsub("%d", "0")
                 if mfs then
                     mod.SetFont(mfs, fontSize, barCfg)
-                    mfs:SetText((location:gsub("%d", "0")))
+                    mfs:SetText(zeros)
                     zeroW = mod.SnapToPixelGrid(mfs:GetStringWidth())
                 end
                 tw = max(tw, zeroW, instance._trvPeakW or 0)
                 instance._trvPeakW = tw
+                -- The width holds while the timer keeps this shape (see Update).
+                drawnZeros = zeros
             else
                 instance._trvPeakW = nil
             end
@@ -1368,16 +1408,14 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
     -- any part's state changes, and each second while a timer shows on the bar.
     local function TravelTick()
         if built and mouseOver and mod.Tip_IsOwned(hearthButton) then
-            instance:Refresh()
+            Update()
             RefreshTravelTooltip()
             return
         end
         -- Unknown (secret) cooldowns count as cooling: the probe keeps ticking through combat and self-corrects on the first clean read.
         local coolMask = TravelCoolingMask(D())
-        if coolMask ~= instance._lastCoolMask then
-            instance:Refresh()
-        elseif instance._barTimer then
-            instance:Refresh()
+        if coolMask ~= instance._lastCoolMask or instance._barTimer then
+            Update()
         elseif coolMask == 0 and not mouseOver then
             -- Settled ready with no edge to paint: nothing left to watch.
             TravelSyncTicker(false)
@@ -1416,7 +1454,7 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
             return
         end
         mod.TravelInvalidateHearthCache()
-        self:Refresh()
+        Update()
     end)
 
     function instance:Enable()
