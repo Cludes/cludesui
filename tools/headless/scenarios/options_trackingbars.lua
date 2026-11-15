@@ -165,3 +165,62 @@ if menuBtn then
         Snap("group mode")
     end
 end
+
+-- The buff picker: the unassigned third bar's row in the bar menu opens it.
+-- Its lists come from the module, stubbed here so every kind of row shows:
+-- a tracked buff (selected on no bar), one used on another bar, one not
+-- talented, and two cooldowns (one used elsewhere).
+mod.GetTrackedBarSpells = function()
+    return {
+        { spellID = 774, name = "Rejuvenation", icon = 136081 },
+        { spellID = 33763, name = "Lifebloom", icon = 134206 },
+        { spellID = 8936, name = "Regrowth", icon = 136085, isKnown = false },
+    }
+end
+mod.GetCDMSpellsForBar = function()
+    return { { spellID = 18562, name = "Swiftmend", icon = 134914 }, { spellID = 740, name = "Tranquility", icon = 136107 } }
+end
+mod.SpellUsedOnAnyOtherTBB = function(id)
+    if id == 33763 or id == 740 then return "Bar 2" end
+end
+local function RowWithText(root, text)
+    for _, r in ipairs(root and Find(root, function(f)
+        if f["\0kind"] ~= "Button" then return false end
+        for _, reg in ipairs(f["\0regions"] or {}) do
+            local t = reg["\0v"] and reg["\0v"].Text
+            if t and t:find(text, 1, true) then return true end
+        end
+        return false
+    end) or {}) do return r end
+end
+Rebuild()
+for _, root in ipairs(roots) do
+    for _, b in ipairs(Find(root, function(f)
+        return f["\0kind"] == "Button" and f:IsVisible() and math.floor((f["\0w"] or 0) + 0.5) == 350
+            and math.floor((f["\0h"] or 0) + 0.5) == 34 and f["\0scripts"].OnClick
+    end)) do menuBtn = b end
+end
+if menuBtn then
+    menuBtn["\0scripts"].OnClick(menuBtn, "LeftButton")
+    local row = RowWithText(MenuHost(), "no buff assigned")
+    OUT:write("== unassigned row " .. tostring(row ~= nil) .. "\n")
+    if row then
+        row["\0scripts"].OnClick(row, "LeftButton")
+        HARNESS_ADVANCE(0.1)
+        Popups("buff picker")
+    end
+end
+-- From the picker, Custom Buff ID opens its popup.
+do
+    local picker
+    for _, c in ipairs({ UIParent:GetChildren() }) do
+        if c:IsShown() and c.GetFrameStrata and c:GetFrameStrata() == "FULLSCREEN_DIALOG" and c:GetFrameLevel() == 300 then picker = c end
+    end
+    local custom = RowWithText(picker, "Custom Buff ID")
+    OUT:write("== custom row " .. tostring(custom ~= nil) .. "\n")
+    if custom then
+        custom["\0scripts"].OnClick(custom, "LeftButton")
+        local popup = rawget(_G, "CUI_TBB_CustomBuffPopup")
+        if popup then SNAP("custom buff popup", popup) end
+    end
+end

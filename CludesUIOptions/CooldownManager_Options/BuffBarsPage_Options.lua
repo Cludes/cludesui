@@ -698,177 +698,146 @@ local function InitBuffBarsPage(
         end
     end)
 
-    -- Show the "Custom Buff ID" popup with Spell ID + Duration fields
-    local function ShowCustomBuffIDPopup(anchor, barCfg, onChanged)
-        local popupName = "CUI_TBB_CustomBuffPopup"
-        local dialog = _G[popupName]
-        if not dialog then
-            local POPUP_W, POPUP_H = 320, 210
-            local dimmer = CreateFrame("Frame", popupName .. "Dimmer", UIParent)
-            dimmer:SetFrameStrata("FULLSCREEN_DIALOG")
-            dimmer:SetAllPoints(UIParent)
-            dimmer:EnableMouse(true)
-            dimmer:Hide()
-            local dimTex = dimmer:CreateTexture(nil, "BACKGROUND")
-            dimTex:SetAllPoints()
-            dimTex:SetColorTexture(0, 0, 0, 0.25)
+    -- A popup line of text in the CDM options font.
+    local function PopupText(parent, size, r, g, b, a, text, layer)
+        local fs = parent:CreateFontString(nil, layer or "OVERLAY")
+        fs:SetFont(FONT_PATH, size, GetCDMOptOutline())
+        fs:SetTextColor(r, g, b, a)
+        fs:SetText(text)
+        return fs
+    end
+    -- A labelled number box (digits only, a grey example while empty) under anchor.
+    local function NumberField(dialog, label, example, maxLetters, anchor, relPoint, x, y)
+        local caption = PopupText(dialog, 11, 0.7, 0.7, 0.7, 1, CludesUI.L(label))
+        caption:SetPoint("TOPLEFT", anchor, relPoint, x, y)
+        local box = CreateFrame("EditBox", nil, dialog)
+        box:SetSize(180, 28)
+        box:SetPoint("TOPLEFT", caption, "BOTTOMLEFT", 0, -4)
+        box:SetAutoFocus(false)
+        box:SetNumeric(true)
+        box:SetMaxLetters(maxLetters)
+        box:SetFont(FONT_PATH, 13, GetCDMOptOutline())
+        box:SetTextColor(1, 1, 1, 0.9)
+        box:SetJustifyH("LEFT")
+        local bg = box:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints()
+        bg:SetColorTexture(0.060, 0.049, 0.037, 1)
+        CludesUI.MakeRoundedBorder(box, 1, 1, 1, 0.12, bg)
+        local hint = PopupText(box, 12, 0.5, 0.5, 0.5, 0.5, CludesUI.L(example), "ARTWORK")
+        hint:SetPoint("LEFT", box, "LEFT", 4, 0)
+        box:SetScript("OnTextChanged", function(self)
+            hint:SetShown(self:GetText() == "")
+        end)
+        return box
+    end
+    -- A small popup button (Add, Cancel): its fill and border, its label lighting on hover.
+    local function PopupButton(dialog, text, point, x, fill, border, labelColour)
+        local button = CreateFrame("Button", nil, dialog)
+        button:SetSize(80, 28)
+        button:SetPoint(point, dialog, "BOTTOM", x, 16)
+        local bg = button:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints()
+        bg:SetColorTexture(unpack(fill))
+        CludesUI.MakeRoundedBorder(button, border[1], border[2], border[3], border[4], bg)
+        local label = PopupText(
+            button,
+            12,
+            labelColour[1],
+            labelColour[2],
+            labelColour[3],
+            labelColour[4],
+            CludesUI.L(text)
+        )
+        label:SetPoint("CENTER")
+        button:SetScript("OnEnter", function()
+            label:SetTextColor(1, 1, 1, 1)
+        end)
+        button:SetScript("OnLeave", function()
+            label:SetTextColor(unpack(labelColour))
+        end)
+        return button
+    end
 
-            dialog = CreateFrame("Frame", popupName, dimmer)
-            dialog:SetSize(POPUP_W, POPUP_H)
-            dialog:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
-            dialog:SetFrameStrata("FULLSCREEN_DIALOG")
-            dialog:SetFrameLevel(dimmer:GetFrameLevel() + 10)
-            dialog:EnableMouse(true)
-            local popBg = dialog:CreateTexture(nil, "BACKGROUND")
-            popBg:SetAllPoints()
-            popBg:SetColorTexture(0.062, 0.070, 0.082, 1)
-            CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, popBg)
-
-            local title = dialog:CreateFontString(nil, "OVERLAY")
-            title:SetFont(FONT_PATH, 14, GetCDMOptOutline())
-            title:SetPoint("TOP", dialog, "TOP", 0, -18)
-            title:SetTextColor(1, 1, 1, 1)
-            title:SetText(CludesUI.L("Custom Buff ID"))
-
-            local sidLbl = dialog:CreateFontString(nil, "OVERLAY")
-            sidLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-            sidLbl:SetPoint("TOPLEFT", dialog, "TOPLEFT", 24, -52)
-            sidLbl:SetTextColor(0.7, 0.7, 0.7, 1)
-            sidLbl:SetText(CludesUI.L("Spell ID"))
-
-            local sidBox = CreateFrame("EditBox", nil, dialog)
-            sidBox:SetSize(180, 28)
-            sidBox:SetPoint("TOPLEFT", sidLbl, "BOTTOMLEFT", 0, -4)
-            sidBox:SetAutoFocus(false)
-            sidBox:SetNumeric(true)
-            sidBox:SetMaxLetters(7)
-            sidBox:SetFont(FONT_PATH, 13, GetCDMOptOutline())
-            sidBox:SetTextColor(1, 1, 1, 0.9)
-            sidBox:SetJustifyH("LEFT")
-            local sidBg = sidBox:CreateTexture(nil, "BACKGROUND")
-            sidBg:SetAllPoints()
-            sidBg:SetColorTexture(0.060, 0.049, 0.037, 1)
-            CludesUI.MakeRoundedBorder(sidBox, 1, 1, 1, 0.12, sidBg)
-            local sidPh = sidBox:CreateFontString(nil, "ARTWORK")
-            sidPh:SetFont(FONT_PATH, 12, GetCDMOptOutline())
-            sidPh:SetPoint("LEFT", sidBox, "LEFT", 4, 0)
-            sidPh:SetTextColor(0.5, 0.5, 0.5, 0.5)
-            sidPh:SetText(CludesUI.L("e.g. 12345"))
-            sidBox:SetScript("OnTextChanged", function(self)
-                if self:GetText() == "" then
-                    sidPh:Show()
-                else
-                    sidPh:Hide()
-                end
-            end)
-            dialog._sidBox = sidBox
-
-            local durLbl = dialog:CreateFontString(nil, "OVERLAY")
-            durLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-            durLbl:SetPoint("TOPLEFT", sidBox, "BOTTOMLEFT", 0, -12)
-            durLbl:SetTextColor(0.7, 0.7, 0.7, 1)
-            durLbl:SetText(CludesUI.L("Duration (seconds)"))
-
-            local durBox = CreateFrame("EditBox", nil, dialog)
-            durBox:SetSize(180, 28)
-            durBox:SetPoint("TOPLEFT", durLbl, "BOTTOMLEFT", 0, -4)
-            durBox:SetAutoFocus(false)
-            durBox:SetNumeric(true)
-            durBox:SetMaxLetters(5)
-            durBox:SetFont(FONT_PATH, 13, GetCDMOptOutline())
-            durBox:SetTextColor(1, 1, 1, 0.9)
-            durBox:SetJustifyH("LEFT")
-            local durBg = durBox:CreateTexture(nil, "BACKGROUND")
-            durBg:SetAllPoints()
-            durBg:SetColorTexture(0.060, 0.049, 0.037, 1)
-            CludesUI.MakeRoundedBorder(durBox, 1, 1, 1, 0.12, durBg)
-            local durPh = durBox:CreateFontString(nil, "ARTWORK")
-            durPh:SetFont(FONT_PATH, 12, GetCDMOptOutline())
-            durPh:SetPoint("LEFT", durBox, "LEFT", 4, 0)
-            durPh:SetTextColor(0.5, 0.5, 0.5, 0.5)
-            durPh:SetText(CludesUI.L("e.g. 30"))
-            durBox:SetScript("OnTextChanged", function(self)
-                if self:GetText() == "" then
-                    durPh:Show()
-                else
-                    durPh:Hide()
-                end
-            end)
-            dialog._durBox = durBox
-
-            local status = dialog:CreateFontString(nil, "OVERLAY")
-            status:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-            status:SetPoint("TOP", durBox, "BOTTOM", 0, -6)
-            status:SetTextColor(1, 0.3, 0.3, 1)
-            status:SetText("")
-            dialog._status = status
-            dialog._statusTimer = nil
-
-            local ar, ag, ab = CludesUI.GetAccentColor()
-            local addBtn = CreateFrame("Button", nil, dialog)
-            addBtn:SetSize(80, 28)
-            addBtn:SetPoint("BOTTOMRIGHT", dialog, "BOTTOM", -4, 16)
-            local addBg = addBtn:CreateTexture(nil, "BACKGROUND")
-            addBg:SetAllPoints()
-            addBg:SetColorTexture(ar, ag, ab, 0.15)
-            CludesUI.MakeRoundedBorder(addBtn, ar, ag, ab, 0.3, addBg)
-            local addLbl = addBtn:CreateFontString(nil, "OVERLAY")
-            addLbl:SetFont(FONT_PATH, 12, GetCDMOptOutline())
-            addLbl:SetPoint("CENTER")
-            addLbl:SetText(CludesUI.L("Add"))
-            addLbl:SetTextColor(ar, ag, ab, 0.9)
-            addBtn:SetScript("OnEnter", function()
-                addLbl:SetTextColor(1, 1, 1, 1)
-            end)
-            addBtn:SetScript("OnLeave", function()
-                addLbl:SetTextColor(ar, ag, ab, 0.9)
-            end)
-            dialog._addBtn = addBtn
-
-            local cancelBtn = CreateFrame("Button", nil, dialog)
-            cancelBtn:SetSize(80, 28)
-            cancelBtn:SetPoint("BOTTOMLEFT", dialog, "BOTTOM", 4, 16)
-            local cBg = cancelBtn:CreateTexture(nil, "BACKGROUND")
-            cBg:SetAllPoints()
-            cBg:SetColorTexture(0.12, 0.12, 0.12, 0.5)
-            CludesUI.MakeRoundedBorder(cancelBtn, 1, 1, 1, 0.10, cBg)
-            local cLbl = cancelBtn:CreateFontString(nil, "OVERLAY")
-            cLbl:SetFont(FONT_PATH, 12, GetCDMOptOutline())
-            cLbl:SetPoint("CENTER")
-            cLbl:SetText(CludesUI.L("Cancel"))
-            cLbl:SetTextColor(0.7, 0.7, 0.7, 0.8)
-            cancelBtn:SetScript("OnEnter", function()
-                cLbl:SetTextColor(1, 1, 1, 1)
-            end)
-            cancelBtn:SetScript("OnLeave", function()
-                cLbl:SetTextColor(0.7, 0.7, 0.7, 0.8)
-            end)
-            cancelBtn:SetScript("OnClick", function()
-                dimmer:Hide()
-            end)
-            dialog._cancelBtn = cancelBtn
-
-            sidBox:SetScript("OnEscapePressed", function()
-                dimmer:Hide()
-            end)
-            durBox:SetScript("OnEscapePressed", function()
-                dimmer:Hide()
-            end)
-
-            dialog._dimmer = dimmer
-            _G[popupName] = dialog
+    -- The "Custom Buff ID" popup (made once): a dimmed screen, Spell ID and
+    -- Duration boxes, a status line, Add and Cancel; Escape closes it.
+    local CUSTOM_POPUP = "CUI_TBB_CustomBuffPopup"
+    local function CustomBuffPopup()
+        local dialog = _G[CUSTOM_POPUP]
+        if dialog then
+            return dialog
         end
+        local dimmer = CreateFrame("Frame", CUSTOM_POPUP .. "Dimmer", UIParent)
+        dimmer:SetFrameStrata("FULLSCREEN_DIALOG")
+        dimmer:SetAllPoints(UIParent)
+        dimmer:EnableMouse(true)
+        dimmer:Hide()
+        local shade = dimmer:CreateTexture(nil, "BACKGROUND")
+        shade:SetAllPoints()
+        shade:SetColorTexture(0, 0, 0, 0.25)
 
-        local curSID = (barCfg.spellID and barCfg.spellID > 0 and not barCfg.popularKey) and barCfg.spellID
+        dialog = CreateFrame("Frame", CUSTOM_POPUP, dimmer)
+        dialog:SetSize(320, 210)
+        dialog:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
+        dialog:SetFrameStrata("FULLSCREEN_DIALOG")
+        dialog:SetFrameLevel(dimmer:GetFrameLevel() + 10)
+        dialog:EnableMouse(true)
+        local bg = dialog:CreateTexture(nil, "BACKGROUND")
+        bg:SetAllPoints()
+        bg:SetColorTexture(0.062, 0.070, 0.082, 1)
+        CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, bg)
+        PopupText(dialog, 14, 1, 1, 1, 1, CludesUI.L("Custom Buff ID")):SetPoint("TOP", dialog, "TOP", 0, -18)
+
+        dialog._sidBox = NumberField(dialog, "Spell ID", "e.g. 12345", 7, dialog, "TOPLEFT", 24, -52)
+        dialog._durBox =
+            NumberField(dialog, "Duration (seconds)", "e.g. 30", 5, dialog._sidBox, "BOTTOMLEFT", 0, -12)
+        local status = PopupText(dialog, 11, 1, 0.3, 0.3, 1, "")
+        status:SetPoint("TOP", dialog._durBox, "BOTTOM", 0, -6)
+        dialog._status = status
+
+        local ar, ag, ab = CludesUI.GetAccentColor()
+        dialog._addBtn = PopupButton(
+            dialog,
+            "Add",
+            "BOTTOMRIGHT",
+            -4,
+            { ar, ag, ab, 0.15 },
+            { ar, ag, ab, 0.3 },
+            { ar, ag, ab, 0.9 }
+        )
+        local cancel = PopupButton(
+            dialog,
+            "Cancel",
+            "BOTTOMLEFT",
+            4,
+            { 0.12, 0.12, 0.12, 0.5 },
+            { 1, 1, 1, 0.10 },
+            { 0.7, 0.7, 0.7, 0.8 }
+        )
+        local function Close()
+            dimmer:Hide()
+        end
+        cancel:SetScript("OnClick", Close)
+        dialog._cancelBtn = cancel
+        dialog._sidBox:SetScript("OnEscapePressed", Close)
+        dialog._durBox:SetScript("OnEscapePressed", Close)
+        dialog._dimmer = dimmer
+        _G[CUSTOM_POPUP] = dialog
+        return dialog
+    end
+
+    -- Show the "Custom Buff ID" popup with Spell ID + Duration fields: Add
+    -- needs a known spell and a duration (a short-lived note says what is wrong).
+    local function ShowCustomBuffIDPopup(anchor, barCfg, onChanged)
+        local dialog = CustomBuffPopup()
+        local currentID = (barCfg.spellID and barCfg.spellID > 0 and not barCfg.popularKey) and barCfg.spellID
             or nil
-        local curDur = barCfg.customDuration or nil
-        dialog._sidBox:SetText(curSID and tostring(curSID) or "")
-        dialog._durBox:SetText(curDur and tostring(curDur) or "")
+        dialog._sidBox:SetText(currentID and tostring(currentID) or "")
+        dialog._durBox:SetText(barCfg.customDuration and tostring(barCfg.customDuration) or "")
         dialog._status:SetText("")
 
-        local function SetStatus(textValue, r, g, b)
+        local function SetStatus(textValue)
             dialog._status:SetText(CludesUI.L(textValue))
-            dialog._status:SetTextColor(r or 1, g or 0.3, b or 0.3, 1)
+            dialog._status:SetTextColor(1, 0.3, 0.3, 1)
             if dialog._statusTimer then
                 dialog._statusTimer:Cancel()
             end
@@ -883,28 +852,21 @@ local function InitBuffBarsPage(
             local spellRef = tonumber(dialog._sidBox:GetText())
             local dur = tonumber(dialog._durBox:GetText())
             if not spellRef or spellRef <= 0 then
-                SetStatus("Enter a valid spell ID")
-                return
+                return SetStatus("Enter a valid spell ID")
             end
             spellRef = math.floor(spellRef)
             if not C_Spell.GetSpellName(spellRef) then
-                SetStatus("Unknown spell ID")
-                return
+                return SetStatus("Unknown spell ID")
             end
             if not dur or dur <= 0 then
-                SetStatus("Enter a duration in seconds")
-                return
+                return SetStatus("Enter a duration in seconds")
             end
-            dur = math.floor(dur)
             dialog._dimmer:Hide()
             barCfg.spellID = spellRef
-            barCfg.spellIDs = nil
-            barCfg.popularKey = nil
-            barCfg.glowBased = nil
-            barCfg.trackType = nil
-            barCfg.customDuration = dur
-            -- Manually-entered id has no live frame to read the base from: clear stale
-            -- base; MatchFrameToConfig self-heals it once talented.
+            barCfg.spellIDs, barCfg.popularKey, barCfg.glowBased, barCfg.trackType = nil, nil, nil, nil
+            barCfg.customDuration = math.floor(dur)
+            -- A typed id has no live frame to read its base from: the stale base
+            -- goes, and MatchFrameToConfig heals it once the spell is talented.
             barCfg.baseSpellID = nil
             barCfg.name = C_Spell.GetSpellName(spellRef)
             barCfg.customName = nil
