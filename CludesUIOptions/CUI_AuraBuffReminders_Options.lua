@@ -1550,157 +1550,157 @@ initFrame:SetScript("OnEvent", function(self)
         end
     end
 
-    local function BuildRemindersPage(pageName, parent, yOffset)
-        local W = CludesUI.Widgets
-        local y = yOffset
-        local _, h, row
-
-        -- Cell reference table for preview icon specific toggle navigation
-        local _gridCellRefs = {}
-
-        -- Set up the preview header (retail only; WoW Forever has no preview)
-        if not FOREVER then
-            CludesUI:SetContentHeader(_previewHeaderBuilder)
+    -- Display field binders for the page's rows: Get(key, default) reads
+    -- display[key] (default when unset or false), Set(key, after) writes it
+    -- and runs after (default: refresh the reminders and the preview).
+    local function Live()
+        RefreshAll()
+        UpdatePreviewHeader()
+    end
+    local function Get(key, default)
+        return function()
+            local d = DDB()
+            return d and d[key] or default
         end
-
-        parent._showRowDivider = true
-
-        -- Click-action info label at the top of the page (below the preview area)
-        do
-            local fontPath = (CludesUI.GetFontPath("auraBuff")) or "Fonts\\FRIZQT__.TTF"
-            local infoFrame = CreateFrame("Frame", nil, parent)
-            infoFrame:SetSize(parent:GetWidth(), 20)
-            infoFrame:SetPoint("TOP", parent, "TOP", 0, y - 15)
-            infoFrame._isSpacer = true
-            local line1 = infoFrame:CreateFontString(nil, "OVERLAY")
-            line1:SetFont(fontPath, 15, "")
-            line1:SetTextColor(1, 1, 1, 0.75)
-            line1:SetPoint("TOP", infoFrame, "TOP", 0, 0)
-            line1:SetJustifyH("CENTER")
-            line1:SetText(
-                CludesUI.L(
-                    "Left Click to apply buffs (out of combat), Middle Click to hide until next load screen"
-                )
-            )
-            y = y - 32
-        end
-
-        -- WoW Forever: what this module is for, in the red of the suite's
-        -- warning banners, right above CORE. "CDM module" (the template's %s)
-        -- is its own button, and opens
-        -- the Cooldown Manager's Buffs bar while that module is loaded. Not
-        -- built in the search prebuild (nothing to index); y moves the same.
-        if FOREVER then
-            local GAP, WARN_H = 6, 44
-            if not CludesUI._prebuilding then
-                local PAD = CludesUI.CONTENT_PAD
-                local w = parent:GetWidth() - PAD * 2
-                local R, G, B = 1, 0.25, 0.25
-                local host = CreateFrame("Frame", nil, parent)
-                PP.Point(host, "TOPLEFT", parent, "TOPLEFT", PAD, y - GAP)
-                local line1 = CludesUI.MakeFont(host, 16, nil, R, G, B, 1)
-                line1:SetPoint("TOP", host, "TOP", 0, 0)
-                line1:SetWidth(w)
-                line1:SetWordWrap(true)
-                line1:SetJustifyH("CENTER")
-                line1:SetText(
-                    CludesUI.L("This module is for OUT OF COMBAT non-rotational buff/consumable reminders,")
-                )
-                local tmpl = CludesUI.L("for in combat aura/rotational reminders please use the %s") or ""
-                local pre, post = tmpl:match("^(.-)%%s(.*)$")
-                if not pre then
-                    pre, post = tmpl, ""
-                end
-                local line2 = CreateFrame("Frame", nil, host)
-                local preFs = CludesUI.MakeFont(line2, 16, nil, R, G, B, 1)
-                preFs:SetPoint("LEFT", line2, "LEFT", 0, 0)
-                preFs:SetText(pre)
-                local link = CreateFrame("Button", nil, line2)
-                local linkFs = CludesUI.MakeFont(link, 16, nil, R, G, B, 1)
-                linkFs:SetPoint("LEFT", link, "LEFT", 0, 0)
-                linkFs:SetText(CludesUI.L("CDM module"))
-                link:SetSize(math.ceil(linkFs:GetStringWidth() or 80) + 1, 20)
-                link:SetPoint("LEFT", preFs, "RIGHT", 0, 0)
-                local postFs = CludesUI.MakeFont(line2, 16, nil, R, G, B, 1)
-                postFs:SetPoint("LEFT", link, "RIGHT", 0, 0)
-                postFs:SetText(post)
-                if CludesUI._ModuleNS["CludesUICooldownManager"] then
-                    local EG = CludesUI.CLUDES_GREEN
-                    linkFs:SetTextColor(EG.r, EG.g, EG.b, 1)
-                    linkFs:SetAlpha(0.85)
-                    link:SetScript("OnEnter", function(self)
-                        linkFs:SetAlpha(1)
-                        CludesUI.ShowWidgetTooltip(self, CludesUI.L("Open the Cooldown Manager's Buffs bar"))
-                    end)
-                    link:SetScript("OnLeave", function()
-                        linkFs:SetAlpha(0.85)
-                        CludesUI.HideWidgetTooltip()
-                    end)
-                    link:SetScript("OnClick", function()
-                        CludesUI.HideWidgetTooltip()
-                        CludesUI:NavigateToElementSettings(
-                            "CludesUICooldownManager",
-                            "CDM Bars",
-                            nil,
-                            function()
-                                if CludesUI._setCDMBar then
-                                    CludesUI._setCDMBar("buffs")
-                                end
-                            end
-                        )
-                    end)
-                else
-                    link:EnableMouse(false)
-                end
-                local w2 = (preFs:GetStringWidth() or 0) + link:GetWidth() + (postFs:GetStringWidth() or 0)
-                PP.Size(line2, math.ceil(w2), 20)
-                line2:SetPoint("TOP", line1, "BOTTOM", 0, -4)
-                -- A translation long enough to wrap the first line pushes CORE down.
-                WARN_H = math.max(WARN_H, math.ceil(line1:GetStringHeight() or 0) + 24)
-                PP.Size(host, w, WARN_H)
+    end
+    local function Set(key, after)
+        return function(v)
+            local d = DDB()
+            if not d then
+                return
             end
-            y = y - (GAP + WARN_H + 14)
+            d[key] = v;
+            (after or Live)(v)
         end
+    end
 
-        -----------------------------------------------------------------------
-        --  CORE section
-        -----------------------------------------------------------------------
-        local coreSection
-        -- The module's master switch sits in the card header (the box at its right).
-        coreSection, h = W:SectionHeader(parent, SECTION_CORE, y, nil, {
+    -- The page's opening line: what the reminder icons' clicks do.
+    local function ClickInfoLine(parent, y)
+        local info = CreateFrame("Frame", nil, parent)
+        info:SetSize(parent:GetWidth(), 20)
+        info:SetPoint("TOP", parent, "TOP", 0, y - 15)
+        info._isSpacer = true
+        local text = info:CreateFontString(nil, "OVERLAY")
+        text:SetFont(CludesUI.GetFontPath("auraBuff") or "Fonts\\FRIZQT__.TTF", 15, "")
+        text:SetTextColor(1, 1, 1, 0.75)
+        text:SetPoint("TOP", info, "TOP", 0, 0)
+        text:SetJustifyH("CENTER")
+        text:SetText(
+            CludesUI.L(
+                "Left Click to apply buffs (out of combat), Middle Click to hide until next load screen"
+            )
+        )
+        return y - 32
+    end
+
+    -- WoW Forever: what this module is for, in the red of the suite's
+    -- warning banners, right above CORE. "CDM module" (the template's %s)
+    -- is its own button, and opens
+    -- the Cooldown Manager's Buffs bar while that module is loaded. Not
+    -- built in the search prebuild (nothing to index); y moves the same.
+    local FOREVER_RED = { 1, 0.25, 0.25 }
+    local function ForeverPurposeBanner(parent, y)
+        local GAP, height = 6, 44
+        if CludesUI._prebuilding then
+            return y - (GAP + height + 14)
+        end
+        local R, G, B = FOREVER_RED[1], FOREVER_RED[2], FOREVER_RED[3]
+        local function Red(host)
+            return CludesUI.MakeFont(host, 16, nil, R, G, B, 1)
+        end
+        local PAD = CludesUI.CONTENT_PAD
+        local w = parent:GetWidth() - PAD * 2
+        local host = CreateFrame("Frame", nil, parent)
+        PP.Point(host, "TOPLEFT", parent, "TOPLEFT", PAD, y - GAP)
+        local first = Red(host)
+        first:SetPoint("TOP", host, "TOP", 0, 0)
+        first:SetWidth(w)
+        first:SetWordWrap(true)
+        first:SetJustifyH("CENTER")
+        first:SetText(
+            CludesUI.L("This module is for OUT OF COMBAT non-rotational buff/consumable reminders,")
+        )
+
+        -- The second line: the text either side of the link.
+        local template = CludesUI.L("for in combat aura/rotational reminders please use the %s") or ""
+        local before, after = template:match("^(.-)%%s(.*)$")
+        if not before then
+            before, after = template, ""
+        end
+        local second = CreateFrame("Frame", nil, host)
+        local beforeFs = Red(second)
+        beforeFs:SetPoint("LEFT", second, "LEFT", 0, 0)
+        beforeFs:SetText(before)
+        local link = CreateFrame("Button", nil, second)
+        local linkFs = Red(link)
+        linkFs:SetPoint("LEFT", link, "LEFT", 0, 0)
+        linkFs:SetText(CludesUI.L("CDM module"))
+        link:SetSize(math.ceil(linkFs:GetStringWidth() or 80) + 1, 20)
+        link:SetPoint("LEFT", beforeFs, "RIGHT", 0, 0)
+        local afterFs = Red(second)
+        afterFs:SetPoint("LEFT", link, "RIGHT", 0, 0)
+        afterFs:SetText(after)
+        if CludesUI._ModuleNS["CludesUICooldownManager"] then
+            local EG = CludesUI.CLUDES_GREEN
+            linkFs:SetTextColor(EG.r, EG.g, EG.b, 1)
+            linkFs:SetAlpha(0.85)
+            link:SetScript("OnEnter", function(self)
+                linkFs:SetAlpha(1)
+                CludesUI.ShowWidgetTooltip(self, CludesUI.L("Open the Cooldown Manager's Buffs bar"))
+            end)
+            link:SetScript("OnLeave", function()
+                linkFs:SetAlpha(0.85)
+                CludesUI.HideWidgetTooltip()
+            end)
+            link:SetScript("OnClick", function()
+                CludesUI.HideWidgetTooltip()
+                CludesUI:NavigateToElementSettings("CludesUICooldownManager", "CDM Bars", nil, function()
+                    if CludesUI._setCDMBar then
+                        CludesUI._setCDMBar("buffs")
+                    end
+                end)
+            end)
+        else
+            link:EnableMouse(false)
+        end
+        local lineW = (beforeFs:GetStringWidth() or 0) + link:GetWidth() + (afterFs:GetStringWidth() or 0)
+        PP.Size(second, math.ceil(lineW), 20)
+        second:SetPoint("TOP", first, "BOTTOM", 0, -4)
+        -- A translation long enough to wrap the first line pushes CORE down.
+        height = math.max(height, math.ceil(first:GetStringHeight() or 0) + 24)
+        PP.Size(host, w, height)
+        return y - (GAP + height + 14)
+    end
+
+    -- CORE: the master switch in the card header (the box at its right),
+    -- Grow Direction and Scale, and for a retail Holy Paladin Beacon M+.
+    local function BuildCoreSection(parent, y)
+        local W = CludesUI.Widgets
+        local _
+        local header, h = W:SectionHeader(parent, SECTION_CORE, y, nil, {
             tooltip = "Master toggle for all aura, buff, and consumable reminders. Talent reminders are not affected.",
             getValue = function()
                 local d = DDB()
                 return d and d.remindersEnabled ~= false
             end,
-            setValue = function(v)
-                local d = DDB()
-                if not d then
-                    return
-                end
-                d.remindersEnabled = v
+            setValue = Set("remindersEnabled", function()
                 if _G._CUABR_UpdateGroupAuraRegistration then
                     _G._CUABR_UpdateGroupAuraRegistration()
                 end
                 RefreshAll()
                 CludesUI:RefreshPage()
-            end,
+            end),
         })
         y = y - h
-        CludesUI.BuildSectionUnlockJump(coreSection, { key = "EABR_Reminders" })
+        CludesUI.BuildSectionUnlockJump(header, { key = "EABR_Reminders" })
 
-        -- Row 1: Grow Direction | Scale
-        local row1
-        row1, h = W:DualRow(parent, y, {
+        _, h = W:DualRow(parent, y, {
             type = "dropdown",
             text = "Grow Direction",
             values = GROW_DIR_VALUES,
             order = GROW_DIR_ORDER,
             tooltip = "Which part of the row stays in place as reminders appear and disappear.",
-            getValue = function()
-                local d = DDB()
-                return d and d.growDirection or "CENTER"
-            end,
+            getValue = Get("growDirection", "CENTER"),
             setValue = function(v)
                 CludesUI.SetAuraBuffGrowDir(v)
                 RefreshAll()
@@ -1712,23 +1712,11 @@ initFrame:SetScript("OnEvent", function(self)
             min = 0.5,
             max = 3.0,
             step = 0.05,
-            getValue = function()
-                local d = DDB()
-                return d and d.scale or 1.0
-            end,
-            setValue = function(v)
-                local d = DDB()
-                if not d then
-                    return
-                end
-                d.scale = v
-                RefreshAll()
-                UpdatePreviewHeader()
-            end,
+            getValue = Get("scale", 1.0),
+            setValue = Set("scale"),
         })
         y = y - h
 
-        -- Row 2: Beacon M+ Reminders (retail Holy Paladins only)
         if BeaconRowShown(parent) then
             _, h = W:DualRow(parent, y, {
                 type = "toggle",
@@ -1744,15 +1732,37 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
                 setValue = function(v)
                     local d = DDB()
-                    if not d then
-                        return
+                    if d then
+                        d.beaconMPlus = v or nil
+                        RefreshAll()
                     end
-                    d.beaconMPlus = v or nil
-                    RefreshAll()
                 end,
             }, CludesUI.BlankRowCfg())
             y = y - h
         end
+        return y, header
+    end
+
+    local function BuildRemindersPage(pageName, parent, yOffset)
+        local W = CludesUI.Widgets
+        local y = yOffset
+        local _, h, row
+
+        -- Cell reference table for preview icon specific toggle navigation
+        local _gridCellRefs = {}
+
+        -- The preview header (retail only; WoW Forever has no preview).
+        if not FOREVER then
+            CludesUI:SetContentHeader(_previewHeaderBuilder)
+        end
+        parent._showRowDivider = true
+
+        y = ClickInfoLine(parent, y)
+        if FOREVER then
+            y = ForeverPurposeBanner(parent, y)
+        end
+        local coreSection
+        y, coreSection = BuildCoreSection(parent, y)
 
         -----------------------------------------------------------------------
         --  DISPLAY section
