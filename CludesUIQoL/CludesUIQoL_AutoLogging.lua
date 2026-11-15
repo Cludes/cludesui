@@ -2,19 +2,27 @@ if CUI_CLIENT_BLOCKED then
     return
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 -------------------------------------------------------------------------------
---  CludesUIQoL_AutoLogging.lua
---  Toggles combat logging on zone transitions based on instance type/difficulty.
---  Also forces Advanced Combat Logging on whenever logging starts.
+--  CludesUIQoL_AutoLogging.lua - combat logging that follows the content.
+--
+--  On entering an instance the log is switched on if its kind is ticked
+--  (raid difficulties, LFR, Mythic and Mythic+ dungeons, arenas, group
+--  scenarios, rated and Blitz battlegrounds), with Advanced Combat Logging
+--  forced on. Leaving stops a log this started, after 30s by default (so a
+--  quick zone-out and back keeps one log). A log the player started by hand
+--  is left alone. WoW Forever has its own two kinds: raids and dungeons.
+--
+--  Settings: CludesUIDB.autoLogging (enabled, notify, the log* triggers,
+--  delaystop).
 -------------------------------------------------------------------------------
 
--- Retail content thresholds -- maps below these are excluded unless in LEGACY_DUNGEON_IDS.
-local RETAIL_RAID_THRESHOLD = 2657
-local RETAIL_DUNGEON_THRESHOLD = 959
+-- Retail instance map IDs below these are older content (and not logged),
+-- except the ones listed below.
+local NEW_RAID_FROM = 2657
+local NEW_DUNGEON_FROM = 959
 
--- SEASON UPDATE: older dungeons still used as M+ maps (a returning dungeon
--- whose instance ID is below RETAIL_DUNGEON_THRESHOLD goes here).
-local LEGACY_DUNGEON_IDS = {
-    [1594] = true, -- MOTHERLODE!!
+-- SEASON UPDATE: older dungeons back in the Mythic+ rotation.
+local OLD_DUNGEONS_IN_SEASON = {
+    [1594] = true, -- The MOTHERLODE!!
     [1208] = true, -- Grimrail Depot
     [1195] = true, -- Iron Docks
     [1651] = true, -- Return to Karazhan
@@ -24,28 +32,19 @@ local LEGACY_DUNGEON_IDS = {
     [658] = true, -- Pit of Saron
 }
 
--- SEASON UPDATE: current-tier raids whose instance ID falls BELOW the retail threshold.
--- Instance map IDs are NOT chronological: some current raids reuse a low ID
--- (e.g. Sporefall is 1592, lower than legacy raids), so the threshold alone
--- would wrongly exclude them. Whitelist those explicitly.
-local CURRENT_RAID_IDS = {
+-- SEASON UPDATE: current raids with a low map ID (IDs are not in release
+-- order; Sporefall's 1592 is below older raids').
+local NEW_RAIDS_WITH_OLD_IDS = {
     [1592] = true, -- Sporefall
 }
 
--- LFR difficulty IDs (regular + timewalking).
-local LFR_DIFFICULTIES = { [7] = true, [17] = true }
+local LFR = { [7] = true, [17] = true } -- regular and Timewalking
+-- Raid difficulty -> its trigger. 233 is flexible Mythic, beside the old 20-player 16.
+local RAID_TRIGGER = { [16] = "logMythic", [233] = "logMythic", [15] = "logHeroic", [14] = "logNormal" }
+local KEYSTONE, MYTHIC_DUNGEON = 23, 8
 
--- Raid difficulty -> trigger key. 233 = Mythic (Flexible Raiding), the newer
--- flexible Mythic difficulty used by current raids alongside the fixed-20 id 16.
-local RAID_DIFF_KEYS = {
-    [16] = "logMythic",
-    [233] = "logMythic",
-    [15] = "logHeroic",
-    [14] = "logNormal",
-}
-
--- Defaults: everything on except Scenarios and the rated battleground rows.
-local TRIGGER_DEFAULTS = {
+-- Everything on except scenarios and the rated battlegrounds.
+local DEFAULTS = {
     logMythic = true,
     logHeroic = true,
     logNormal = true,
@@ -58,15 +57,9 @@ local TRIGGER_DEFAULTS = {
     delaystop = true,
 }
 
-local function GetTrigger(c, key)
-    local val = c[key]
-    if val == nil then
-        return TRIGGER_DEFAULTS[key]
-    end
-    return val
-end
+local STOP_AFTER = 30 -- seconds
 
-local function Cfg()
+local function Settings()
     if not CludesUIDB then
         return {}
     end
@@ -74,189 +67,173 @@ local function Cfg()
     return CludesUIDB.autoLogging
 end
 
--- Silently sets advancedCombatLogging if it isn't already on.
-local function EnsureAdvancedLogging()
-    if GetCVar and GetCVar("advancedCombatLogging") ~= "1" then
-        CludesUI.SetCVar("advancedCombatLogging", 1, "CludesUIQoL")
+local function On(s, key)
+    local value = s[key]
+    if value == nil then
+        return DEFAULTS[key]
     end
+    return value
 end
 
-local function ZoneShouldBeLogged()
-    local c = Cfg()
-    if not c.enabled then
+-- Whether the current place should be logged.
+local function WantLog()
+    local s = Settings()
+    if not s.enabled then
         return false
     end
+    local _, kind, rawDifficulty, _, maxPlayers, _, _, rawMap = GetInstanceInfo()
 
-    local _, zoneType, rawDiff, _, playerCap, _, _, rawMapID = GetInstanceInfo()
-
-    -- WoW Forever: every raid instance logs on the Raids trigger (the Normal
-    -- Raid key and its default) and every dungeon on the Dungeons trigger (a
-    -- key only that client offers, off until the player turns it on). Retail
-    -- map thresholds, difficulties, Mythic+, arenas and scenarios do not
-    -- apply there.
+    -- WoW Forever: raids on the Raids trigger (the Normal raid key), dungeons
+    -- on its own Dungeons trigger (off until ticked); nothing else applies.
     if CludesUI.IS_FOREVER then
-        if zoneType == "raid" then
-            return GetTrigger(c, "logNormal")
+        if kind == "raid" then
+            return On(s, "logNormal")
         end
-        if zoneType == "party" then
-            return c.logDungeon == true
-        end
-        return false
+        return kind == "party" and s.logDungeon == true
     end
 
-    -- Rated battlegrounds: Blitz (rated solo BG) is checked first so it never
-    -- falls through to the RBG row. Unrated battlegrounds do not log.
-    if zoneType == "pvp" and C_PvP then
+    -- Battlegrounds: Blitz first (it is also rated); unrated ones never log.
+    if kind == "pvp" and C_PvP then
         if C_PvP.IsRatedSoloRBG and C_PvP.IsRatedSoloRBG() then
-            return GetTrigger(c, "logBlitz")
+            return On(s, "logBlitz")
         end
         if C_PvP.IsRatedBattleground and C_PvP.IsRatedBattleground() then
-            return GetTrigger(c, "logRBG")
+            return On(s, "logRBG")
         end
         return false
     end
 
-    local diff = tonumber(rawDiff)
-    local mapID = tonumber(rawMapID)
-    if not diff or not mapID then
+    local difficulty, map = tonumber(rawDifficulty), tonumber(rawMap)
+    if not difficulty or not map then
         return false
     end
-
-    if LFR_DIFFICULTIES[diff] then
-        return GetTrigger(c, "logLFR")
+    if LFR[difficulty] then
+        return On(s, "logLFR")
     end
-
-    if zoneType == "raid" and (mapID >= RETAIL_RAID_THRESHOLD or CURRENT_RAID_IDS[mapID]) then
-        local key = RAID_DIFF_KEYS[diff]
-        if key then
-            return GetTrigger(c, key)
+    if kind == "raid" and (map >= NEW_RAID_FROM or NEW_RAIDS_WITH_OLD_IDS[map]) then
+        local trigger = RAID_TRIGGER[difficulty]
+        if trigger then
+            return On(s, trigger)
         end
-        return true -- timewalking and other unrecognised raid difficulties
+        return true -- Timewalking and other difficulties
     end
-
-    if GetTrigger(c, "log5pp") then
-        local isMythicDungeon = (diff == 23 or diff == 8) -- 23=Keystone, 8=Mythic
-        local isRetailDungeon = mapID >= RETAIL_DUNGEON_THRESHOLD or LEGACY_DUNGEON_IDS[mapID]
-        if isMythicDungeon and isRetailDungeon then
+    if On(s, "log5pp") then
+        local mythic = difficulty == KEYSTONE or difficulty == MYTHIC_DUNGEON
+        if mythic and (map >= NEW_DUNGEON_FROM or OLD_DUNGEONS_IN_SEASON[map]) then
             return true
         end
     end
-
     if
-        GetTrigger(c, "logScenario")
-        and zoneType == "scenario"
-        and (tonumber(playerCap) or 0) > 1
-        and mapID >= RETAIL_DUNGEON_THRESHOLD
+        On(s, "logScenario")
+        and kind == "scenario"
+        and (tonumber(maxPlayers) or 0) > 1
+        and map >= NEW_DUNGEON_FROM
     then
         return true
     end
-
-    if GetTrigger(c, "logArena") and (zoneType == "arena" or zoneType == "ratedarena") then
+    if On(s, "logArena") and (kind == "arena" or kind == "ratedarena") then
         return true
     end
-
     return false
 end
 
-local STOP_DELAY_SECONDS = 30
-
-local wasLogging = false
-local _stopTimer = nil
-
-local function CancelStopTimer()
-    if _stopTimer then
-        _stopTimer:Cancel()
-        _stopTimer = nil
-    end
-end
-
--- Optional chat line when auto logging starts or stops (off by default).
-local function Notify(started)
-    if Cfg().notify ~= true then
+-- A chat line when logging starts or stops (off by default).
+local function Say(started)
+    if Settings().notify ~= true then
         return
     end
-    local msg = started and CludesUI.L("AutoLog Started") or CludesUI.L("AutoLog Stopped")
-    CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. msg)
+    local text = CludesUI.L(started and "AutoLog Started" or "AutoLog Stopped")
+    CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. text)
 end
 
-local function ApplyLoggingState()
-    local shouldLog = ZoneShouldBeLogged()
-    if shouldLog then
-        CancelStopTimer()
-        EnsureAdvancedLogging()
+local function Stop()
+    if LoggingCombat() then
+        LoggingCombat(false)
+        Say(false)
+    end
+end
+
+local ours = false -- the place we were in wanted a log (so the log is ours to stop)
+local stopTimer
+
+local function CancelStop()
+    if stopTimer then
+        stopTimer:Cancel()
+        stopTimer = nil
+    end
+end
+
+local function Apply()
+    local want = WantLog()
+    if want then
+        CancelStop()
+        if GetCVar and GetCVar("advancedCombatLogging") ~= "1" then
+            CludesUI.SetCVar("advancedCombatLogging", 1, "CludesUIQoL")
+        end
         local already = LoggingCombat()
         LoggingCombat(true)
         if not already then
-            Notify(true)
+            Say(true)
         end
-    elseif wasLogging and LoggingCombat() then
-        local c = Cfg()
-        local delay = GetTrigger(c, "delaystop")
-        if delay and not _stopTimer then
-            _stopTimer = C_Timer.NewTimer(STOP_DELAY_SECONDS, function()
-                _stopTimer = nil
-                if LoggingCombat() then
-                    LoggingCombat(false)
-                    Notify(false)
-                end
+    elseif ours and LoggingCombat() then
+        if not On(Settings(), "delaystop") then
+            Stop()
+        elseif not stopTimer then
+            stopTimer = C_Timer.NewTimer(STOP_AFTER, function()
+                stopTimer = nil
+                Stop()
             end)
-        elseif not delay then
-            LoggingCombat(false)
-            Notify(false)
         end
     end
-    wasLogging = shouldLog
+    ours = want
 end
 
-local events = {
+-- The zone has settled a moment after these; a battleground going live can
+-- set its rated flags after the zone-in check.
+local EVENTS = {
     ZONE_CHANGED_NEW_AREA = function()
-        C_Timer.After(2, ApplyLoggingState)
+        C_Timer.After(2, Apply)
     end,
     CHALLENGE_MODE_START = function()
-        C_Timer.After(1, ApplyLoggingState)
+        C_Timer.After(1, Apply)
     end,
 }
--- Retail: re-check when a battleground match goes live, in case the rated /
--- Blitz flags were not yet set when the zone-in check ran.
 if not CludesUI.IS_FOREVER then
-    events.PVP_MATCH_ACTIVE = function()
-        ApplyLoggingState()
-    end
+    EVENTS.PVP_MATCH_ACTIVE = Apply
 end
 
--- Zone events are registered only while the feature is enabled, so a disabled
--- feature costs nothing on zone changes. The options toggle calls
--- _CUI_AutoLogging_Check, which re-syncs registration AND applies the logging
--- state immediately (disabling mid-instance still stops an active log).
-local logFrame = CreateFrame("Frame")
-local _eventsRegistered = false
-local function SyncEventRegistration()
-    local wanted = Cfg().enabled and true or false
-    if wanted == _eventsRegistered then
+-- The zone events are registered only while the feature is on.
+local listener = CreateFrame("Frame")
+local listening = false
+local function Listen()
+    local want = Settings().enabled and true or false
+    if want == listening then
         return
     end
-    _eventsRegistered = wanted
-    for ev in pairs(events) do
-        if wanted then
-            logFrame:RegisterEvent(ev)
+    listening = want
+    for event in pairs(EVENTS) do
+        if want then
+            listener:RegisterEvent(event)
         else
-            logFrame:UnregisterEvent(ev)
+            listener:UnregisterEvent(event)
         end
     end
 end
 
+-- The options call this on a change: it also applies at once, so switching
+-- off inside an instance still stops the log.
 _G._CUI_AutoLogging_Check = function()
-    SyncEventRegistration()
-    ApplyLoggingState()
+    Listen()
+    Apply()
 end
 
-logFrame:RegisterEvent("PLAYER_LOGIN")
-logFrame:SetScript("OnEvent", function(self, evt)
-    if evt == "PLAYER_LOGIN" then
+listener:RegisterEvent("PLAYER_LOGIN")
+listener:SetScript("OnEvent", function(self, event)
+    if event == "PLAYER_LOGIN" then
         self:UnregisterEvent("PLAYER_LOGIN")
-        SyncEventRegistration()
-        C_Timer.After(2, ApplyLoggingState)
-    elseif events[evt] then
-        events[evt]()
+        Listen()
+        C_Timer.After(2, Apply)
+    elseif EVENTS[event] then
+        EVENTS[event]()
     end
 end)
