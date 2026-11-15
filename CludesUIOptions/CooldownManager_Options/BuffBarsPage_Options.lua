@@ -3999,24 +3999,20 @@ local function InitBuffBarsPage(
             return math.abs(posY)
         end
 
-        -- Append SharedMedia textures to runtime ns tables (for bar rendering)
+        -- SharedMedia textures join the runtime tables (for bar rendering), then
+        -- the texture dropdown reads them, each row drawn in its texture.
         CludesUI.AppendSharedMediaTextures(
             mod.TBB_TEXTURE_NAMES or {},
             mod.TBB_TEXTURE_ORDER or {},
             nil,
             mod.TBB_TEXTURES
         )
-
-        -- Texture dropdown values (built from ns tables, now including SM entries)
-        local texValues = {}
-        local texOrder = {}
+        local texValues, texOrder = {}, {}
         do
-            local nameList = mod.TBB_TEXTURE_NAMES or {}
-            local sequence = mod.TBB_TEXTURE_ORDER or {}
-            local lookup = mod.TBB_TEXTURES or {}
-            for _, key in ipairs(sequence) do
+            local names, lookup = mod.TBB_TEXTURE_NAMES or {}, mod.TBB_TEXTURES or {}
+            for _, key in ipairs(mod.TBB_TEXTURE_ORDER or {}) do
                 if key ~= "---" then
-                    texValues[key] = nameList[key] or key
+                    texValues[key] = names[key] or key
                 end
                 texOrder[#texOrder + 1] = key
             end
@@ -4027,8 +4023,39 @@ local function InitBuffBarsPage(
                 end,
             }
         end
-
         hostFrame._showRowDivider = true
+
+        -- The bar's group id (0 = independent) and each other member of it.
+        local function GroupOf(bd)
+            return bd and mod.TBBBarGroupID(bd) or 0
+        end
+        local function EachGroupMate(bd, fn)
+            local groupId = GroupOf(bd)
+            if groupId == 0 then
+                return
+            end
+            for _, b in ipairs(mod.GetTrackedBuffBars().bars or {}) do
+                if b ~= bd and mod.TBBBarGroupID(b) == groupId then
+                    fn(b)
+                end
+            end
+        end
+        -- The mover and match-lock owner: a grouped bar's group (a global group's
+        -- TBBG_ element, else the group anchor's), since only the anchor keeps one.
+        local function MoverKey(bd)
+            local groupId = GroupOf(bd)
+            if groupId ~= 0 then
+                local gk = mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(groupId)
+                if gk then
+                    return "TBBG_" .. gk
+                end
+                local anchor = mod.TBBGroupAnchorIndex(groupId)
+                if anchor then
+                    return "TBB_" .. anchor
+                end
+            end
+            return "TBB_" .. _tbbSelectedBar
+        end
 
         -------------------------------------------------------------------
         --  BAR LAYOUT
@@ -4036,202 +4063,138 @@ local function InitBuffBarsPage(
         local layoutHeader
         layoutHeader, hgt = W:SectionHeader(hostFrame, "BAR LAYOUT", posY)
         posY = posY - hgt
-        -- The selected bar's mover; a grouped bar's is its group's (a global
-        -- group's TBBG_ element, else the group anchor's), since only the anchor
-        -- keeps a mover.
         CludesUI.BuildSectionUnlockJump(layoutHeader, {
             key = function()
-                local bd = SelectedTBB()
-                local groupId = bd and mod.TBBBarGroupID(bd) or 0
-                if groupId ~= 0 then
-                    local gk = mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(groupId)
-                    if gk then
-                        return "TBBG_" .. gk
-                    end
-                    local ai = mod.TBBGroupAnchorIndex(groupId)
-                    if ai then
-                        return "TBB_" .. ai
-                    end
-                end
-                return "TBB_" .. _tbbSelectedBar
+                return MoverKey(SelectedTBB())
             end,
         })
 
-        -- Height | Width. The whole group shares one width/height, so a grouped member
-        -- inherits the group ANCHOR's match-lock: if size-matched, every member's slider
-        -- is disabled (match wins) instead of silently fighting it.
-        local tbbKey = "TBB_" .. _tbbSelectedBar
+        -- Height | Width. The whole group shares one size, so a grouped member takes
+        -- the group ANCHOR's match-lock: size-matched, every member's slider is
+        -- disabled (the match wins) instead of silently fighting it.
+        local lockKey = "TBB_" .. _tbbSelectedBar
         do
-            local selBd = SelectedTBB()
-            local selGid = selBd and mod.TBBBarGroupID(selBd) or 0
-            if selGid ~= 0 then
-                local ai = mod.TBBGroupAnchorIndex(selGid)
-                if ai then
-                    tbbKey = "TBB_" .. ai
-                end
+            local groupId = GroupOf(SelectedTBB())
+            local anchor = groupId ~= 0 and mod.TBBGroupAnchorIndex(groupId)
+            if anchor then
+                lockKey = "TBB_" .. anchor
             end
         end
-        local thDis, thTip, thRaw = CludesUI.MatchGuard(tbbKey, "Height")
-        local twDis, twTip, twRaw = CludesUI.MatchGuard(tbbKey, "Width")
-        -- Width is the THICKNESS of a vertical bar (toggle swaps stored dimensions), so its
-        -- floor drops to 1 there -- a 50px floor would clamp a slim vertical bar the moment the slider is touched.
-        local selIsVert
-        do
-            local sb0 = SelectedTBB()
-            selIsVert = sb0 and sb0.verticalOrientation and true or false
+        -- A size slider; grouped bars share the size, so it writes the group.
+        -- The popout is repainted here: RefreshPage() takes the fast widget path,
+        -- which never re-runs the page tail that repaints it.
+        local function SizeSlider(text, key, default)
+            local dis, tip, raw = CludesUI.MatchGuard(lockKey, text)
+            return {
+                type = "slider",
+                text = text,
+                min = 1,
+                max = 800,
+                step = 1,
+                disabled = dis,
+                disabledTooltip = tip,
+                rawTooltip = raw,
+                getValue = function()
+                    local bd = SelectedTBB()
+                    return bd and bd[key] or default
+                end,
+                setValue = function(v)
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
+                    bd[key] = v
+                    EachGroupMate(bd, function(b)
+                        b[key] = v
+                    end)
+                    mod.BuildTrackedBuffBars()
+                    RefreshTBBPopout()
+                    CludesUI:RefreshPage()
+                end,
+            }
         end
-        local hwRow
-        hwRow, hgt = W:DualRow(hostFrame, posY, {
-            type = "slider",
-            text = "Height",
-            min = 1,
-            max = 800,
-            step = 1,
-            disabled = thDis,
-            disabledTooltip = thTip,
-            rawTooltip = thRaw,
-            getValue = function()
-                local bd = SelectedTBB()
-                return bd and bd.height or 24
-            end,
-            setValue = function(v)
-                local bd = SelectedTBB()
-                if not bd then
-                    return
-                end
-                bd.height = v
-                -- Grouped bars share height: write the rest of the group too.
-                local groupId = mod.TBBBarGroupID(bd)
-                if groupId ~= 0 then
-                    local t = mod.GetTrackedBuffBars()
-                    for _, b in ipairs(t.bars or {}) do
-                        if b ~= bd and mod.TBBBarGroupID(b) == groupId then
-                            b.height = v
-                        end
-                    end
-                end
-                mod.BuildTrackedBuffBars()
-                -- BuildTrackedBuffBars() only rebuilds the LIVE bar pool; the
-                -- preview wraps in the popout are separate frames. RefreshPage()
-                -- takes the fast widget-refresh path here, so the page builder
-                -- tail that repaints the popout never re-runs. Repaint it
-                -- directly or the preview keeps the old geometry.
-                RefreshTBBPopout()
-                CludesUI:RefreshPage()
-            end,
-        }, {
-            type = "slider",
-            text = "Width",
-            min = 1,
-            max = 800,
-            step = 1,
-            disabled = twDis,
-            disabledTooltip = twTip,
-            rawTooltip = twRaw,
-            getValue = function()
-                local bd = SelectedTBB()
-                return bd and bd.width or 270
-            end,
-            setValue = function(v)
-                local bd = SelectedTBB()
-                if not bd then
-                    return
-                end
-                bd.width = v
-                -- Grouped bars share width: write the rest of the group too.
-                local groupId = mod.TBBBarGroupID(bd)
-                if groupId ~= 0 then
-                    local t = mod.GetTrackedBuffBars()
-                    for _, b in ipairs(t.bars or {}) do
-                        if b ~= bd and mod.TBBBarGroupID(b) == groupId then
-                            b.width = v
-                        end
-                    end
-                end
-                mod.BuildTrackedBuffBars()
-                -- Preview popout: RefreshPage() takes the fast path, repaint it here.
-                RefreshTBBPopout()
-                CludesUI:RefreshPage()
-            end,
-        })
+        local sizeRow
+        sizeRow, hgt =
+            W:DualRow(hostFrame, posY, SizeSlider("Height", "height", 24), SizeSlider("Width", "width", 270))
         posY = posY - hgt
 
-        -- Sync icons: Apply Height/Width to all bars of the SAME orientation -- "height" is
-        -- the short side of a horizontal bar but the LONG side of a vertical one, so cross-orientation copies would be nonsense.
+        -- Sync icons: Apply Height / Width to every bar of the SAME orientation
+        -- ("height" is the short side of a horizontal bar but the long side of a
+        -- vertical one, so a copy across orientations would be nonsense).
         if CludesUI.BuildSyncIcon then
-            local function SameOrientation(a, b)
+            local sel = SelectedTBB()
+            local orientWord = (sel and sel.verticalOrientation) and "Vertical" or "Horizontal"
+            local function Alike(a, b)
                 return (a.verticalOrientation and true or false) == (b.verticalOrientation and true or false)
             end
-            local orientWord = selIsVert and "Vertical" or "Horizontal"
-            CludesUI.BuildSyncIcon({
-                region = hwRow._leftRegion,
-                tooltip = "Apply Height to all " .. orientWord .. " Bars",
-                isSynced = function()
-                    local bd = SelectedTBB()
-                    if not bd then
-                        return false
-                    end
-                    local val = bd.height or 24
-                    local t = mod.GetTrackedBuffBars()
-                    for _, b in ipairs(t.bars or {}) do
-                        if SameOrientation(bd, b) and (b.height or 24) ~= val then
+            local function SizeSync(region, text, key, default)
+                CludesUI.BuildSyncIcon({
+                    region = region,
+                    tooltip = "Apply " .. text .. " to all " .. orientWord .. " Bars",
+                    isSynced = function()
+                        local bd = SelectedTBB()
+                        if not bd then
                             return false
                         end
-                    end
-                    return true
-                end,
-                onClick = function()
-                    local bd = SelectedTBB()
-                    if not bd then
-                        return
-                    end
-                    local val = bd.height or 24
-                    local t = mod.GetTrackedBuffBars()
-                    for _, b in ipairs(t.bars or {}) do
-                        if SameOrientation(bd, b) then
-                            b.height = val
+                        local val = bd[key] or default
+                        for _, b in ipairs(mod.GetTrackedBuffBars().bars or {}) do
+                            if Alike(bd, b) and (b[key] or default) ~= val then
+                                return false
+                            end
                         end
-                    end
-                    RefreshTBB()
-                    CludesUI:RefreshPage()
-                end,
-            })
-            CludesUI.BuildSyncIcon({
-                region = hwRow._rightRegion,
-                tooltip = "Apply Width to all " .. orientWord .. " Bars",
-                isSynced = function()
-                    local bd = SelectedTBB()
-                    if not bd then
-                        return false
-                    end
-                    local val = bd.width or 270
-                    local t = mod.GetTrackedBuffBars()
-                    for _, b in ipairs(t.bars or {}) do
-                        if SameOrientation(bd, b) and (b.width or 270) ~= val then
-                            return false
+                        return true
+                    end,
+                    onClick = function()
+                        local bd = SelectedTBB()
+                        if not bd then
+                            return
                         end
-                    end
-                    return true
-                end,
-                onClick = function()
-                    local bd = SelectedTBB()
-                    if not bd then
-                        return
-                    end
-                    local val = bd.width or 270
-                    local t = mod.GetTrackedBuffBars()
-                    for _, b in ipairs(t.bars or {}) do
-                        if SameOrientation(bd, b) then
-                            b.width = val
+                        local val = bd[key] or default
+                        for _, b in ipairs(mod.GetTrackedBuffBars().bars or {}) do
+                            if Alike(bd, b) then
+                                b[key] = val
+                            end
                         end
-                    end
-                    RefreshTBB()
-                    CludesUI:RefreshPage()
-                end,
-            })
+                        RefreshTBB()
+                        CludesUI:RefreshPage()
+                    end,
+                })
+            end
+            SizeSync(sizeRow._leftRegion, "Height", "height", 24)
+            SizeSync(sizeRow._rightRegion, "Width", "width", 270)
         end
 
-        -- Vertical Orientation | Bar Texture
+        -- Vertical Orientation | Bar Texture. A flip swaps the stored width and
+        -- height (they stay the drawn size) and flips the whole group, which stays
+        -- orientation-uniform (its shared size reads one way), turning its grow
+        -- direction with it so side by side stays side by side (DOWN<->RIGHT, UP<->LEFT).
+        local function FlipOrientation(v)
+            local bd = SelectedTBB()
+            if not bd then
+                return
+            end
+            local function Flip(c)
+                c.width, c.height = (c.height or 24), (c.width or 270)
+                c.verticalOrientation = v
+            end
+            Flip(bd)
+            local groupId = GroupOf(bd)
+            if groupId ~= 0 then
+                EachGroupMate(bd, function(b)
+                    if (b.verticalOrientation and true or false) ~= (v and true or false) then
+                        Flip(b)
+                    end
+                end)
+                local turn = v and { DOWN = "RIGHT", UP = "LEFT" } or { RIGHT = "DOWN", LEFT = "UP" }
+                local grow = turn[mod.TBBGroupGrow(groupId)]
+                if grow then
+                    mod.TBBSetGroupGrow(groupId, grow)
+                end
+            end
+            RefreshTBB()
+            -- Full rebuild: the sync tooltips follow the orientation.
+            CludesUI:RefreshPage(true)
+        end
         _, hgt = W:DualRow(
             hostFrame,
             posY,
@@ -4243,42 +4206,7 @@ local function InitBuffBarsPage(
                     local bd = SelectedTBB()
                     return bd and bd.verticalOrientation
                 end,
-                setValue = function(v)
-                    local bd = SelectedTBB()
-                    if not bd then
-                        return
-                    end
-                    -- Swap width/height so visual dimensions stay correct
-                    local function flip(c)
-                        c.width, c.height = (c.height or 24), (c.width or 270)
-                        c.verticalOrientation = v
-                    end
-                    flip(bd)
-                    -- Groups stay orientation-uniform: shared width/height only makes sense
-                    -- when every member reads dimensions the same way, so the whole group flips together.
-                    local groupId = mod.TBBBarGroupID(bd)
-                    if groupId ~= 0 then
-                        local t = mod.GetTrackedBuffBars()
-                        for _, b in ipairs(t.bars or {}) do
-                            if
-                                b ~= bd
-                                and mod.TBBBarGroupID(b) == groupId
-                                and (b.verticalOrientation and true or false) ~= (v and true or false)
-                            then
-                                flip(b)
-                            end
-                        end
-                        -- Rotate the grow direction so side-by-side stays side-by-side across the flip (DOWN<->RIGHT, UP<->LEFT).
-                        local rot = v and { DOWN = "RIGHT", UP = "LEFT" } or { RIGHT = "DOWN", LEFT = "UP" }
-                        local grow = mod.TBBGroupGrow(groupId)
-                        if rot[grow] then
-                            mod.TBBSetGroupGrow(groupId, rot[grow])
-                        end
-                    end
-                    RefreshTBB()
-                    -- Full rebuild: the Width slider's floor and sync tooltips are orientation-dependent.
-                    CludesUI:RefreshPage(true)
-                end,
+                setValue = FlipOrientation,
             },
             GateBlizzardOnly("cdmbars", {
                 type = "dropdown",
@@ -4291,11 +4219,10 @@ local function InitBuffBarsPage(
                 end,
                 setValue = function(v)
                     local bd = SelectedTBB()
-                    if not bd then
-                        return
+                    if bd then
+                        bd.texture = v
+                        RefreshTBB()
                     end
-                    bd.texture = v
-                    RefreshTBB()
                 end,
             })
         )
