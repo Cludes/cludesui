@@ -4387,320 +4387,161 @@ local function InitBuffBarsPage(
         )
         posY = posY - hgt
 
-        -- Cog on Name Text: custom name, text size, wrap + x/y
-        do
-            local rgn = nameRow._leftRegion
-            CludesUI.BuildInlineCog(rgn, {
-                title = "Name Text Settings",
-                disabled = function()
+        -- Cog rows over the selected bar: a slider (default when unset) and a
+        -- toggle stored as true or nil. extra: more fields for the row.
+        local function BarSlider(label, key, min, max, default, extra)
+            local row = {
+                type = "slider",
+                label = label,
+                min = min,
+                max = max,
+                step = 1,
+                get = function()
                     local bd = SelectedTBB()
-                    if bd and bd.verticalOrientation then
-                        return true
-                    end
-                    local place = bd and bd.namePosition
-                    if not place then
-                        place = (bd and bd.showName ~= false) and "left" or "none"
-                    end
-                    return place == "none"
+                    return bd and bd[key] or default
                 end,
-                disabledTooltip = function()
+                set = function(v)
                     local bd = SelectedTBB()
-                    if bd and bd.verticalOrientation then
-                        return "Horizontal Orientation (name text is not shown on vertical bars)"
+                    if bd then
+                        bd[key] = v
+                        RefreshTBB()
                     end
-                    return "This option requires a Name Text position other than None"
                 end,
-                rows = {
-                    {
-                        type = "input",
-                        label = "Custom Name",
-                        inputWidth = 120,
-                        commitOnBlur = true,
-                        tooltip = "Leave empty to show the spell's name.",
-                        get = function()
-                            local bd = SelectedTBB()
-                            return bd and bd.customName or ""
-                        end,
-                        set = function(textValue)
-                            local bd = SelectedTBB()
-                            if not bd then
-                                return
-                            end
+            }
+            for k, v in pairs(extra or {}) do
+                row[k] = v
+            end
+            return row
+        end
+        local function BarToggle(label, key, tooltip)
+            return {
+                type = "toggle",
+                label = label,
+                tooltip = tooltip,
+                get = function()
+                    local bd = SelectedTBB()
+                    return bd and bd[key] == true
+                end,
+                set = function(v)
+                    local bd = SelectedTBB()
+                    if bd then
+                        bd[key] = v or nil
+                        RefreshTBB()
+                    end
+                end,
+            }
+        end
+        -- A text is off (its cog dims) while it draws nowhere.
+        local function TextOff(prefix)
+            local bd = SelectedTBB()
+            return not bd or DrawnPosition(bd, prefix) == "none"
+        end
+        -- Apply this bar's text position to every bar (the older show flag follows).
+        local function PositionSync(region, text, prefix, showKey)
+            CludesUI.BuildSyncIcon({
+                region = region,
+                tooltip = "Apply " .. text .. " to all Bars",
+                isSynced = function()
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return false
+                    end
+                    local place = TextPosition(bd, prefix)
+                    for _, b in ipairs(mod.GetTrackedBuffBars().bars or {}) do
+                        if TextPosition(b, prefix) ~= place then
+                            return false
+                        end
+                    end
+                    return true
+                end,
+                onClick = function()
+                    local bd = SelectedTBB()
+                    if not bd then
+                        return
+                    end
+                    local place = TextPosition(bd, prefix)
+                    for _, b in ipairs(mod.GetTrackedBuffBars().bars or {}) do
+                        b[prefix .. "Position"] = place
+                        if showKey then
+                            b[showKey] = (place ~= "none")
+                        end
+                    end
+                    RefreshTBB()
+                    CludesUI:RefreshPage()
+                end,
+            })
+        end
+
+        -- Name Text's cog: custom name, size, wrap and offsets; then its swatch and sync.
+        CludesUI.BuildInlineCog(nameRow._leftRegion, {
+            title = "Name Text Settings",
+            disabled = function()
+                return TextOff("name")
+            end,
+            disabledTooltip = function()
+                local bd = SelectedTBB()
+                if bd and bd.verticalOrientation then
+                    return VERTICAL_NAME_TIP
+                end
+                return "This option requires a Name Text position other than None"
+            end,
+            rows = {
+                {
+                    type = "input",
+                    label = "Custom Name",
+                    inputWidth = 120,
+                    commitOnBlur = true,
+                    tooltip = "Leave empty to show the spell's name.",
+                    get = function()
+                        local bd = SelectedTBB()
+                        return bd and bd.customName or ""
+                    end,
+                    set = function(textValue)
+                        local bd = SelectedTBB()
+                        if bd then
                             textValue = strtrim(textValue or "")
                             bd.customName = textValue ~= "" and textValue or nil
                             RefreshTBB()
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Text Size",
-                        min = 8,
-                        max = 24,
-                        step = 1,
-                        get = function()
-                            local bd = SelectedTBB()
-                            return bd and bd.nameSize or 11
-                        end,
-                        set = function(v)
-                            local bd = SelectedTBB()
-                            if not bd then
-                                return
-                            end
-                            bd.nameSize = v
-                            RefreshTBB()
-                        end,
-                    },
-                    {
-                        type = "toggle",
-                        label = "Text Wrap",
-                        get = function()
-                            local bd = SelectedTBB()
-                            return bd and bd.nameWrap == true
-                        end,
-                        set = function(v)
-                            local bd = SelectedTBB()
-                            if not bd then
-                                return
-                            end
-                            bd.nameWrap = v or nil
-                            RefreshTBB()
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "X Offset",
-                        min = -100,
-                        max = 100,
-                        step = 1,
-                        get = function()
-                            local bd = SelectedTBB()
-                            return bd and bd.nameX or 0
-                        end,
-                        set = function(v)
-                            local bd = SelectedTBB()
-                            if not bd then
-                                return
-                            end
-                            bd.nameX = v
-                            RefreshTBB()
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Y Offset",
-                        min = -100,
-                        max = 100,
-                        step = 1,
-                        get = function()
-                            local bd = SelectedTBB()
-                            return bd and bd.nameY or 0
-                        end,
-                        set = function(v)
-                            local bd = SelectedTBB()
-                            if not bd then
-                                return
-                            end
-                            bd.nameY = v
-                            RefreshTBB()
-                        end,
-                    },
+                        end
+                    end,
                 },
-            })
-        end
+                BarSlider("Text Size", "nameSize", 8, 24, 11),
+                BarToggle("Text Wrap", "nameWrap"),
+                BarSlider("X Offset", "nameX", -100, 100, 0),
+                BarSlider("Y Offset", "nameY", -100, 100, 0),
+            },
+        })
         AddTBBTextSwatch(nameRow, nameRow._leftRegion, "name")
-        -- Sync icon on Name Text
-        do
-            local rgn = nameRow._leftRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Name Text to all Bars",
-                isSynced = function()
-                    local bd = SelectedTBB()
-                    if not bd then
-                        return false
-                    end
-                    local place = bd.namePosition or ((bd.showName ~= false) and "left" or "none")
-                    local tbb = mod.GetTrackedBuffBars()
-                    for _, b in ipairs(tbb.bars or {}) do
-                        local bp = b.namePosition or ((b.showName ~= false) and "left" or "none")
-                        if bp ~= place then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                onClick = function()
-                    local bd = SelectedTBB()
-                    if not bd then
-                        return
-                    end
-                    local place = bd.namePosition or ((bd.showName ~= false) and "left" or "none")
-                    local tbb = mod.GetTrackedBuffBars()
-                    for _, b in ipairs(tbb.bars or {}) do
-                        b.namePosition = place
-                        b.showName = (place ~= "none")
-                    end
-                    RefreshTBB()
-                    CludesUI:RefreshPage()
-                end,
-            })
-        end
-        -- Cog on Duration Text: timer size + x/y
-        do
-            local rgn = nameRow._rightRegion
-            local durationRows = {
-                {
-                    type = "slider",
-                    label = "Timer Size",
-                    min = 8,
-                    max = 24,
-                    step = 1,
-                    get = function()
+        PositionSync(nameRow._leftRegion, "Name Text", "name", "showName")
+
+        -- Duration Text's cog: size, decimals below a threshold (the engine draws
+        -- the tenths, see CludesUICdmTbbDecimals.lua) and offsets; swatch and sync.
+        CludesUI.BuildInlineCog(nameRow._rightRegion, {
+            title = "Duration Text Settings",
+            rows = {
+                BarSlider("Timer Size", "timerSize", 8, 24, 11),
+                BarToggle(
+                    "Decimals",
+                    "timerDecimals",
+                    "Cannot work for pet/totem summon bars (Call Dreadstalkers, etc.) -- they expose no readable timer."
+                ),
+                BarSlider("Decimal Threshold", "timerDecimalThreshold", 1, 120, 5, {
+                    disabled = function()
                         local bd = SelectedTBB()
-                        return bd and bd.timerSize or 11
+                        return not (bd and bd.timerDecimals)
                     end,
-                    set = function(v)
-                        local bd = SelectedTBB()
-                        if not bd then
-                            return
-                        end
-                        bd.timerSize = v
-                        RefreshTBB()
-                    end,
-                },
-                {
-                    type = "slider",
-                    label = "X Offset",
-                    min = -100,
-                    max = 100,
-                    step = 1,
-                    get = function()
-                        local bd = SelectedTBB()
-                        return bd and bd.timerX or 0
-                    end,
-                    set = function(v)
-                        local bd = SelectedTBB()
-                        if not bd then
-                            return
-                        end
-                        bd.timerX = v
-                        RefreshTBB()
-                    end,
-                },
-                {
-                    type = "slider",
-                    label = "Y Offset",
-                    min = -100,
-                    max = 100,
-                    step = 1,
-                    get = function()
-                        local bd = SelectedTBB()
-                        return bd and bd.timerY or 0
-                    end,
-                    set = function(v)
-                        local bd = SelectedTBB()
-                        if not bd then
-                            return
-                        end
-                        bd.timerY = v
-                        RefreshTBB()
-                    end,
-                },
-            }
-            -- Engine-rendered tenths below the threshold (see CludesUICdmTbbDecimals.lua).
-            table.insert(durationRows, 2, {
-                type = "toggle",
-                label = "Decimals",
-                tooltip = "Cannot work for pet/totem summon bars (Call Dreadstalkers, etc.) -- they expose no readable timer.",
-                get = function()
-                    local bd = SelectedTBB()
-                    return bd and bd.timerDecimals == true
-                end,
-                set = function(v)
-                    local bd = SelectedTBB()
-                    if not bd then
-                        return
-                    end
-                    bd.timerDecimals = v or nil
-                    RefreshTBB()
-                end,
-            })
-            table.insert(durationRows, 3, {
-                type = "slider",
-                label = "Decimal Threshold",
-                min = 1,
-                max = 120,
-                step = 1,
-                disabled = function()
-                    local bd = SelectedTBB()
-                    return not (bd and bd.timerDecimals)
-                end,
-                disabledTooltip = "Decimals enabled",
-                get = function()
-                    local bd = SelectedTBB()
-                    return bd and bd.timerDecimalThreshold or 5
-                end,
-                set = function(v)
-                    local bd = SelectedTBB()
-                    if not bd then
-                        return
-                    end
-                    bd.timerDecimalThreshold = v
-                    RefreshTBB()
-                end,
-            })
-            CludesUI.BuildInlineCog(rgn, {
-                title = "Duration Text Settings",
-                rows = durationRows,
-                disabled = function()
-                    local bd = SelectedTBB()
-                    local place = bd and bd.timerPosition
-                    if not place then
-                        place = (bd and bd.showTimer) and "right" or "none"
-                    end
-                    return place == "none"
-                end,
-                disabledTooltip = "This option requires a Duration Text position other than None",
-            })
-        end
+                    disabledTooltip = "Decimals enabled",
+                }),
+                BarSlider("X Offset", "timerX", -100, 100, 0),
+                BarSlider("Y Offset", "timerY", -100, 100, 0),
+            },
+            disabled = function()
+                return TextOff("timer")
+            end,
+            disabledTooltip = "This option requires a Duration Text position other than None",
+        })
         AddTBBTextSwatch(nameRow, nameRow._rightRegion, "timer")
-        -- Sync icon on Duration Text
-        do
-            local rgn = nameRow._rightRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Duration Text to all Bars",
-                isSynced = function()
-                    local bd = SelectedTBB()
-                    if not bd then
-                        return false
-                    end
-                    local place = bd.timerPosition or (bd.showTimer and "right" or "none")
-                    local tbb = mod.GetTrackedBuffBars()
-                    for _, b in ipairs(tbb.bars or {}) do
-                        local bp = b.timerPosition or (b.showTimer and "right" or "none")
-                        if bp ~= place then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                onClick = function()
-                    local bd = SelectedTBB()
-                    if not bd then
-                        return
-                    end
-                    local place = bd.timerPosition or (bd.showTimer and "right" or "none")
-                    local tbb = mod.GetTrackedBuffBars()
-                    for _, b in ipairs(tbb.bars or {}) do
-                        b.timerPosition = place
-                        b.showTimer = (place ~= "none")
-                    end
-                    RefreshTBB()
-                    CludesUI:RefreshPage()
-                end,
-            })
-        end
+        PositionSync(nameRow._rightRegion, "Duration Text", "timer", "showTimer")
 
         -- Stacks Text (dropdown + resize cog: size, x, y) | Bar Strata
         local stacksRow
