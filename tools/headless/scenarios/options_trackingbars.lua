@@ -78,7 +78,7 @@ local roots = { CUI._scrollFrame, CUI._contentHeader or CUI._headerFrame }
 local menuBtn
 for _, root in ipairs(roots) do
     for _, b in ipairs(Find(root, function(f)
-        return f["\0kind"] == "Button" and f["\0shown"] and math.floor((f["\0w"] or 0) + 0.5) == 350
+        return f["\0kind"] == "Button" and f:IsVisible() and math.floor((f["\0w"] or 0) + 0.5) == 350
             and math.floor((f["\0h"] or 0) + 0.5) == 34 and f["\0scripts"].OnClick
     end)) do menuBtn = menuBtn or b end
 end
@@ -121,4 +121,39 @@ if mod.SaveTBBStylePreset and b1 then
     mod.SaveTBBStylePreset("Bright", b2 or b1)
     Rebuild()
     OpenPresetMenu("presets saved")
+end
+
+-- Group mode: open the bar menu and click the "Pair" group's header row.
+local function MenuHost()
+    local hosts = { UIParent }
+    if CUI.OverlayParent then hosts[2] = CUI.OverlayParent() end
+    for _, host in ipairs(hosts) do
+        for _, c in ipairs({ host:GetChildren() }) do
+            if c:IsShown() and c.GetFrameStrata and c:GetFrameStrata() == "FULLSCREEN_DIALOG" and c:GetFrameLevel() >= 300 then return c end
+        end
+    end
+end
+Rebuild()
+if menuBtn then
+    for _, root in ipairs(roots) do
+        for _, b in ipairs(Find(root, function(f)
+            return f["\0kind"] == "Button" and f:IsVisible() and math.floor((f["\0w"] or 0) + 0.5) == 350
+                and math.floor((f["\0h"] or 0) + 0.5) == 34 and f["\0scripts"].OnClick
+        end)) do menuBtn = b end
+    end
+    menuBtn["\0scripts"].OnClick(menuBtn, "LeftButton")
+    local menu = MenuHost()
+    local header
+    for _, r in ipairs(menu and Find(menu, function(f)
+        if f["\0kind"] ~= "Button" then return false end
+        for _, reg in ipairs(f["\0regions"] or {}) do
+            if reg["\0v"] and reg["\0v"].Text == "Pair" then return true end
+        end
+        return false
+    end) or {}) do header = header or r end
+    OUT:write("== group header " .. tostring(header ~= nil) .. " menu " .. tostring(menu ~= nil) .. "\n")
+    if header then
+        header["\0scripts"].OnClick(header, "LeftButton")
+        Snap("group mode")
+    end
 end
