@@ -4290,165 +4290,119 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI.HideWidgetTooltip()
             end)
 
-            -- Row: Multi-band (toggle + Bands editor button)
-            local multiRow = DRow("Multi-band Coloring", ROWH)
-            local bandsBtn = CreateFrame("Button", nil, multiRow)
-            Pix.Size(bandsBtn, 60, 22)
-            bandsBtn:SetPoint("RIGHT", multiRow, "RIGHT", 0, 0)
-            bandsBtn:SetFrameLevel(multiRow:GetFrameLevel() + 4)
-            SkinCardButton(bandsBtn, CludesUI.L("Bands"), BAND_HELP_TIP)
-            bandsBtn:SetScript("OnClick", function(self)
-                if not CurEntry() then
-                    return
-                end
-                ShowBandEditor({
+            -- The entry's own toggle for field (off when unset), and after() once written.
+            local function EntryToggle(row, field, after)
+                return CludesUI.BuildToggleControl(row, DLVL + 4, function()
+                    local entry = CurEntry()
+                    return entry and entry[field] or false
+                end, function(v)
+                    local entry = CurEntry()
+                    if entry then
+                        entry[field] = v
+                        conf.refreshFn()
+                        if after then
+                            after()
+                        end
+                    end
+                end, { sizeRatio = 0.95 })
+            end
+            local function HoverTip(widget, tip)
+                widget:HookScript("OnEnter", function(self)
+                    CludesUI.ShowWidgetTooltip(self, tip)
+                end)
+                widget:HookScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
+            end
+
+            -- A row of a toggle and a small editor button (Bands, Buffs,
+            -- Spenders). open(button) opens that editor on the selected entry.
+            local function CardToggleRow(label, buttonText, buttonTip, toggleTip, field, open, after)
+                local row = DRow(label, ROWH)
+                local button = CreateFrame("Button", nil, row)
+                Pix.Size(button, 60, 22)
+                button:SetPoint("RIGHT", row, "RIGHT", 0, 0)
+                button:SetFrameLevel(row:GetFrameLevel() + 4)
+                SkinCardButton(button, CludesUI.L(buttonText), buttonTip)
+                button:SetScript("OnClick", function(self)
+                    if CurEntry() then
+                        open(self)
+                    end
+                end)
+                local toggle, _, snap = EntryToggle(row, field, after)
+                toggle:SetPoint("RIGHT", button, "LEFT", -10, 0)
+                HoverTip(toggle, toggleTip)
+                return row, toggle, snap, button
+            end
+            -- What every list editor opens on.
+            local function EditorParams(anchor)
+                return {
                     getBarData = conf.getBarData,
                     refreshFn = conf.refreshFn,
                     entryIdx = _selectedIdx,
-                    anchor = self,
-                    countBased = rules.pips,
-                    lockPercent = rules.bandPctCap ~= nil,
-                    percentMax = rules.bandPctCap,
-                    defR = defR,
-                    defG = defG,
-                    defB = defB,
-                    defA = defA,
-                })
-            end)
-            local multiToggle, _, multiSnap = CludesUI.BuildToggleControl(multiRow, DLVL + 4, function()
-                local ent = CurEntry()
-                return ent and ent.multiBandEnabled or false
-            end, function(v)
-                local ent = CurEntry()
-                if not ent then
-                    return
-                end
-                ent.multiBandEnabled = v
-                conf.refreshFn()
-                RedrawDetail()
-            end, { sizeRatio = 0.95 })
-            multiToggle:SetPoint("RIGHT", bandsBtn, "LEFT", -10, 0)
-            multiToggle:HookScript("OnEnter", function(self)
-                CludesUI.ShowWidgetTooltip(self, BAND_HELP_TIP)
-            end)
-            multiToggle:HookScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
-            -- Covers the toggle + Bands button when multi-band cannot apply (rules.multiBlock)
+                    anchor = anchor,
+                }
+            end
+
+            -- Multi-band colouring.
+            local multiRow, multiToggle, multiSnap, bandsBtn = CardToggleRow(
+                "Multi-band Coloring",
+                "Bands",
+                BAND_HELP_TIP,
+                BAND_HELP_TIP,
+                "multiBandEnabled",
+                function(anchor)
+                    local params = EditorParams(anchor)
+                    params.countBased = rules.pips
+                    params.lockPercent = rules.bandPctCap ~= nil
+                    params.percentMax = rules.bandPctCap
+                    params.defR, params.defG, params.defB, params.defA = defR, defG, defB, defA
+                    ShowBandEditor(params)
+                end,
+                RedrawDetail
+            )
+            -- Covers the toggle and Bands when multi-band cannot apply (rules.multiBlock).
             local multiDis = MakeBlocker(multiRow, multiToggle, bandsBtn, 3, 8)
 
-            -- Row: Buff colors (toggle + Buffs editor button). First active buff wins and overrides threshold coloring.
+            -- Buff colours: the first active buff wins, over the threshold colour.
             local buffRow, buffSnap
             if conf.showBuffs then
-                buffRow = DRow("Buff Colors", ROWH)
-                local buffsBtn = CreateFrame("Button", nil, buffRow)
-                Pix.Size(buffsBtn, 60, 22)
-                buffsBtn:SetPoint("RIGHT", buffRow, "RIGHT", 0, 0)
-                buffsBtn:SetFrameLevel(buffRow:GetFrameLevel() + 4)
-                SkinCardButton(buffsBtn, CludesUI.L("Buffs"), BUFF_HELP_TIP)
-                buffsBtn:SetScript("OnClick", function(self)
-                    if not CurEntry() then
-                        return
+                buffRow, _, buffSnap = CardToggleRow(
+                    "Buff Colors",
+                    "Buffs",
+                    BUFF_HELP_TIP,
+                    BUFF_HELP_TIP,
+                    "buffColorEnabled",
+                    function(anchor)
+                        ShowBuffEditor(EditorParams(anchor))
                     end
-                    ShowBuffEditor({
-                        getBarData = conf.getBarData,
-                        refreshFn = conf.refreshFn,
-                        entryIdx = _selectedIdx,
-                        anchor = self,
-                    })
-                end)
-                local buffToggle
-                buffToggle, _, buffSnap = CludesUI.BuildToggleControl(buffRow, DLVL + 4, function()
-                    local ent = CurEntry()
-                    return ent and ent.buffColorEnabled or false
-                end, function(v)
-                    local ent = CurEntry()
-                    if not ent then
-                        return
-                    end
-                    ent.buffColorEnabled = v
-                    conf.refreshFn()
-                end, { sizeRatio = 0.95 })
-                buffToggle:SetPoint("RIGHT", buffsBtn, "LEFT", -10, 0)
-                buffToggle:HookScript("OnEnter", function(self)
-                    CludesUI.ShowWidgetTooltip(self, BUFF_HELP_TIP)
-                end)
-                buffToggle:HookScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                )
             end
 
-            -- Row: Spender colors (toggle + Spenders editor button). First castable spell wins.
+            -- Spender colours: the first castable spell wins.
             local spenderRow, spenderSnap
             if conf.showSpenders then
-                local spTip = conf.spenderTip or SPENDER_HELP_TIP
-                local spToggleTip = conf.spenderToggleTip or spTip
-                spenderRow = DRow("Spender Colors", ROWH)
-                local spBtn = CreateFrame("Button", nil, spenderRow)
-                Pix.Size(spBtn, 60, 22)
-                spBtn:SetPoint("RIGHT", spenderRow, "RIGHT", 0, 0)
-                spBtn:SetFrameLevel(spenderRow:GetFrameLevel() + 4)
-                SkinCardButton(spBtn, CludesUI.L("Spenders"), spTip)
-                spBtn:SetScript("OnClick", function(self)
-                    if not CurEntry() then
-                        return
+                local tip = conf.spenderTip or SPENDER_HELP_TIP
+                spenderRow, _, spenderSnap = CardToggleRow(
+                    "Spender Colors",
+                    "Spenders",
+                    tip,
+                    conf.spenderToggleTip or tip,
+                    "spenderColorEnabled",
+                    function(anchor)
+                        ShowSpenderEditor(EditorParams(anchor))
                     end
-                    ShowSpenderEditor({
-                        getBarData = conf.getBarData,
-                        refreshFn = conf.refreshFn,
-                        entryIdx = _selectedIdx,
-                        anchor = self,
-                    })
-                end)
-                local spToggle
-                spToggle, _, spenderSnap = CludesUI.BuildToggleControl(spenderRow, DLVL + 4, function()
-                    local ent = CurEntry()
-                    return ent and ent.spenderColorEnabled or false
-                end, function(v)
-                    local ent = CurEntry()
-                    if not ent then
-                        return
-                    end
-                    ent.spenderColorEnabled = v
-                    conf.refreshFn()
-                end, { sizeRatio = 0.95 })
-                spToggle:SetPoint("RIGHT", spBtn, "LEFT", -10, 0)
-                spToggle:HookScript("OnEnter", function(self)
-                    CludesUI.ShowWidgetTooltip(self, spToggleTip)
-                end)
-                spToggle:HookScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                )
             end
 
-            -- Row: Recolor text instead of bar (per entry)
+            -- Recolor the text instead of the bar (per entry).
             local textInsteadRow = DRow("Recolor Text Instead Of Bar", ROWH)
-            local textInsteadToggle, _, textInsteadSnap = CludesUI.BuildToggleControl(
-                textInsteadRow,
-                DLVL + 4,
-                function()
-                    local ent = CurEntry()
-                    return ent and ent.thresholdTextInstead or false
-                end,
-                function(v)
-                    local ent = CurEntry()
-                    if ent then
-                        ent.thresholdTextInstead = v
-                        conf.refreshFn()
-                    end
-                end,
-                { sizeRatio = 0.95 }
-            )
+            local textInsteadToggle, _, textInsteadSnap = EntryToggle(textInsteadRow, "thresholdTextInstead")
             textInsteadToggle:SetPoint("RIGHT", textInsteadRow, "RIGHT", 0, 0)
             if conf.textInsteadTip then
-                textInsteadToggle:HookScript("OnEnter", function(self)
-                    CludesUI.ShowWidgetTooltip(self, conf.textInsteadTip)
-                end)
-                textInsteadToggle:HookScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                HoverTip(textInsteadToggle, conf.textInsteadTip)
             end
-            -- Covers the row when recoloring the text can have no effect (rules.textBlock)
+            -- Covers the row when recolouring the text can have no effect (rules.textBlock).
             local textInsteadDis = MakeBlocker(textInsteadRow, textInsteadRow, textInsteadToggle, 2, 6)
 
             -- Row: a bar-wide number (cfg.barInput), placed only for the entries whose rules ask for it
