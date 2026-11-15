@@ -1743,6 +1743,287 @@ initFrame:SetScript("OnEvent", function(self)
         return y, header
     end
 
+    -- A display field as read (nil when unset) and a write with no follow-up.
+    local function Raw(key)
+        return function()
+            local d = DDB()
+            return d and d[key]
+        end
+    end
+    local function Store(key)
+        return function(v)
+            local d = DDB()
+            if d then
+                d[key] = v
+            end
+        end
+    end
+    local function BorderTex()
+        local d = DDB()
+        return (d and d.borderTexture) or "solid"
+    end
+    local function BorderStep()
+        local d = DDB()
+        return (d and d.borderSize) or 1
+    end
+    -- A shape change re-masks the reminder icons and the preview.
+    local function Reshape()
+        ns.RefreshIconShapes()
+        UpdatePreviewHeader()
+    end
+
+    -- Icon Shape (+ crop cog) | Icon Zoom.
+    local function BuildShapeRow(parent, y)
+        local values, order = ns.IconShapeValues()
+        local row, h = CludesUI.Widgets:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Icon Shape",
+            values = values,
+            order = order,
+            itemDisabled = function(v)
+                local d = DDB()
+                return v ~= "none" and v ~= "cropped" and d and (d.borderTexture or "solid") ~= "solid"
+            end,
+            itemDisabledTooltip = "This option requires Border Style to be set to Solid",
+            getValue = Get("iconShape", "none"),
+            setValue = Set("iconShape", function()
+                Reshape()
+                CludesUI:RefreshPage(true)
+            end),
+        }, {
+            type = "slider",
+            text = "Icon Zoom",
+            min = 0,
+            max = 15,
+            step = 0.5,
+            getValue = function()
+                local d = DDB()
+                return ((d and d.iconZoom) or 0.07) * 100
+            end,
+            setValue = function(v)
+                local d = DDB()
+                if d then
+                    d.iconZoom = v / 100
+                    Reshape()
+                end
+            end,
+        })
+        CludesUI.BuildInlineCog(row._leftRegion, {
+            title = "Icon Shape",
+            disabled = function()
+                local d = DDB()
+                return not d or d.iconShape ~= "cropped"
+            end,
+            disabledTooltip = "This option requires Icon Shape to be set to Cropped",
+            rows = {
+                {
+                    type = "slider",
+                    label = "Adjust Crop",
+                    min = 5,
+                    max = 25,
+                    step = 1,
+                    tooltip = "How much is trimmed from the icon's top and bottom, per side (10% is the classic cropped look).",
+                    get = function()
+                        return ns.CropPercent(DDB())
+                    end,
+                    set = Set("iconCropPercent", Reshape),
+                },
+            },
+        })
+        return y - h
+    end
+
+    -- A new border style starts from that style's own colour, layering and
+    -- size, with no leftover offsets, shifts or exact pixels.
+    local function PickBorderStyle(v)
+        local d = DDB()
+        if not d then
+            return
+        end
+        d.borderTexture = v
+        d.borderTextureOffset, d.borderTextureOffsetY = nil, nil
+        d.borderTextureShiftX, d.borderTextureShiftY = nil, nil
+        local color, behind = CludesUI.GetBorderStyleSelectDefaults(v)
+        d.borderR, d.borderG, d.borderB, d.borderA = color.r, color.g, color.b, 1
+        d.borderBehind = behind
+        d.borderSize = CludesUI.GetBorderDefaultSize("aurabuffreminders", v) or d.borderSize
+        if d.borderSizePx then
+            d.borderSizePx = false
+        end
+        RefreshBorders()
+        -- Rebuild: the Width | Height Offset row follows the Solid / textured pick.
+        CludesUI:RefreshPage(true)
+    end
+
+    -- Border Size: a masked shape draws a ring at any size above 0, so it is
+    -- None / Strong there (a pick keeps the square border's own size for the
+    -- way back); otherwise exact pixels over borderSize and its borderSizePx
+    -- companion (CludesUI.BorderPx).
+    local function BorderSizeCfg()
+        if ns.IconShapeMasked(DDB()) then
+            return {
+                type = "segmented",
+                text = "Border Size",
+                values = { none = "None", strong = "Strong" },
+                order = { "none", "strong" },
+                getValue = function()
+                    local d = DDB()
+                    return d and (d.borderSize or 1) > 0 and "strong" or "none"
+                end,
+                setValue = function(v)
+                    local d = DDB()
+                    if not d then
+                        return
+                    end
+                    if v ~= "strong" then
+                        d.borderSize = 0
+                    elseif (d.borderSize or 1) <= 0 then
+                        d.borderSize = 1
+                    end
+                    RefreshBorders()
+                end,
+            }
+        end
+        return CludesUI.BorderPxSliderCfg({
+            text = "Border Size",
+            getStep = BorderStep,
+            setStep = Store("borderSize"),
+            getTex = BorderTex,
+            getPx = Raw("borderSizePx"),
+            setPx = Store("borderSizePx"),
+            apply = RefreshBorders,
+        })
+    end
+
+    -- A Shift slider of the border cog: the stored shift, else the style's
+    -- default (which = the GetBorderDefaults return it reads); 0 stores nothing.
+    local function ShiftRow(label, key, which)
+        return {
+            type = "slider",
+            label = label,
+            min = -10,
+            max = 10,
+            step = 1,
+            get = function()
+                local d = DDB()
+                if not d then
+                    return 0
+                end
+                if d[key] ~= nil then
+                    return d[key]
+                end
+                return (
+                    select(
+                        which,
+                        CludesUI.GetBorderDefaults(
+                            "aurabuffreminders",
+                            d.borderTexture or "solid",
+                            d.borderSize or 1
+                        )
+                    )
+                )
+            end,
+            set = function(v)
+                local d = DDB()
+                if d then
+                    d[key] = (v ~= 0) and v or nil
+                    RefreshBorders()
+                end
+            end,
+        }
+    end
+
+    -- Border Style (+ options cog, textured styles only) | Border Size (+
+    -- colour swatch), then for a textured style its Width | Height Offset
+    -- row (each slider shows what is drawn, the override else the registry
+    -- default for the step, and stores nothing while it follows the default).
+    local function BuildBorderRows(parent, y)
+        local W = CludesUI.Widgets
+        local values, order = CludesUI.GetBorderTextureDropdown()
+        local row, h = W:DualRow(parent, y, {
+            type = "dropdown",
+            text = "Border Style",
+            disabled = function()
+                return ns.IconShapeMasked(DDB())
+            end,
+            disabledTooltip = "This option requires Icon Shape to be set to None or Cropped",
+            values = values,
+            order = order,
+            getValue = Get("borderTexture", "solid"),
+            setValue = PickBorderStyle,
+        }, BorderSizeCfg())
+        y = y - h
+
+        local tex = BorderTex()
+        if tex ~= "" and tex ~= "solid" then
+            local left, right = CludesUI.BorderOffsetRowCfgs({
+                addonKey = "aurabuffreminders",
+                getTex = BorderTex,
+                getStep = BorderStep,
+                getSizeKey = BorderStep,
+                getPx = Raw("borderSizePx"),
+                getX = Raw("borderTextureOffset"),
+                setX = Store("borderTextureOffset"),
+                getY = Raw("borderTextureOffsetY"),
+                setY = Store("borderTextureOffsetY"),
+                apply = RefreshBorders,
+            })
+            local _, offsetH = W:DualRow(parent, y, left, right)
+            y = y - offsetH
+        end
+        if CludesUI._prebuilding then
+            return y, row
+        end
+
+        local cog = CludesUI.BuildInlineCog(row._leftRegion, {
+            title = "Border Options",
+            rows = {
+                ShiftRow("Shift X", "borderTextureShiftX", 3),
+                ShiftRow("Shift Y", "borderTextureShiftY", 4),
+                {
+                    type = "toggle",
+                    label = "Show Behind",
+                    get = function()
+                        local d = DDB()
+                        return d and d.borderBehind == true
+                    end,
+                    set = function(v)
+                        local d = DDB()
+                        if d then
+                            d.borderBehind = v
+                            RefreshBorders()
+                        end
+                    end,
+                },
+            },
+        })
+        local function CogShown()
+            local d = DDB()
+            cog:SetShown(d and (d.borderTexture or "solid") ~= "solid")
+        end
+        CogShown()
+        CludesUI.RegisterWidgetRefresh(CogShown)
+
+        local rgn = row._rightRegion
+        local swatch, refresh = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+            local d = DDB()
+            return (d and d.borderR) or 0,
+                (d and d.borderG) or 0,
+                (d and d.borderB) or 0,
+                (d and d.borderA) or 1
+        end, function(r, g, b, a)
+            local d = DDB()
+            if d then
+                d.borderR, d.borderG, d.borderB, d.borderA = r, g, b, a or 1
+                RefreshBorders()
+            end
+        end, true, 20)
+        swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -12, 0)
+        rgn._lastInline = swatch
+        CludesUI.RegisterWidgetRefresh(refresh)
+        return y, row
+    end
+
     local function BuildRemindersPage(pageName, parent, yOffset)
         local W = CludesUI.Widgets
         local y = yOffset
@@ -1771,361 +2052,9 @@ initFrame:SetScript("OnEvent", function(self)
         displaySection, h = W:SectionHeader(parent, SECTION_DISPLAY, y)
         y = y - h
 
-        do
-            local values, order = ns.IconShapeValues()
-            local shapeRow
-            shapeRow, h = W:DualRow(parent, y, {
-                type = "dropdown",
-                text = "Icon Shape",
-                values = values,
-                order = order,
-                itemDisabled = function(v)
-                    local d = DDB()
-                    return v ~= "none" and v ~= "cropped" and d and (d.borderTexture or "solid") ~= "solid"
-                end,
-                itemDisabledTooltip = "This option requires Border Style to be set to Solid",
-                getValue = function()
-                    local d = DDB()
-                    return (d and d.iconShape) or "none"
-                end,
-                setValue = function(v)
-                    local d = DDB()
-                    if not d then
-                        return
-                    end
-                    d.iconShape = v
-                    ns.RefreshIconShapes()
-                    UpdatePreviewHeader()
-                    CludesUI:RefreshPage(true)
-                end,
-            }, {
-                type = "slider",
-                text = "Icon Zoom",
-                min = 0,
-                max = 15,
-                step = 0.5,
-                getValue = function()
-                    local d = DDB()
-                    return ((d and d.iconZoom) or 0.07) * 100
-                end,
-                setValue = function(v)
-                    local d = DDB()
-                    if not d then
-                        return
-                    end
-                    d.iconZoom = v / 100
-                    ns.RefreshIconShapes()
-                    UpdatePreviewHeader()
-                end,
-            })
-            y = y - h
-            CludesUI.BuildInlineCog(shapeRow._leftRegion, {
-                title = "Icon Shape",
-                disabled = function()
-                    local d = DDB()
-                    return not d or d.iconShape ~= "cropped"
-                end,
-                disabledTooltip = "This option requires Icon Shape to be set to Cropped",
-                rows = {
-                    {
-                        type = "slider",
-                        label = "Adjust Crop",
-                        min = 5,
-                        max = 25,
-                        step = 1,
-                        tooltip = "How much is trimmed from the icon's top and bottom, per side (10% is the classic cropped look).",
-                        get = function()
-                            return ns.CropPercent(DDB())
-                        end,
-                        set = function(v)
-                            local d = DDB()
-                            if not d then
-                                return
-                            end
-                            d.iconCropPercent = v
-                            ns.RefreshIconShapes()
-                            UpdatePreviewHeader()
-                        end,
-                    },
-                },
-            })
-        end
-
-        -- Row 1: Border Style (+ options cog) | Border Size (+ color swatch)
-        local borderTextureValues, borderTextureOrder = CludesUI.GetBorderTextureDropdown()
+        y = BuildShapeRow(parent, y)
         local borderRow
-        borderRow, h = W:DualRow(
-            parent,
-            y,
-            {
-                type = "dropdown",
-                text = "Border Style",
-                disabled = function()
-                    return ns.IconShapeMasked(DDB())
-                end,
-                disabledTooltip = "This option requires Icon Shape to be set to None or Cropped",
-                values = borderTextureValues,
-                order = borderTextureOrder,
-                getValue = function()
-                    local d = DDB()
-                    return d and d.borderTexture or "solid"
-                end,
-                setValue = function(v)
-                    local d = DDB()
-                    if not d then
-                        return
-                    end
-                    d.borderTexture = v
-                    d.borderTextureOffset = nil
-                    d.borderTextureOffsetY = nil
-                    d.borderTextureShiftX = nil
-                    d.borderTextureShiftY = nil
-                    local color, behind = CludesUI.GetBorderStyleSelectDefaults(v)
-                    d.borderR, d.borderG, d.borderB, d.borderA = color.r, color.g, color.b, 1
-                    d.borderBehind = behind
-                    local defaultSize = CludesUI.GetBorderDefaultSize("aurabuffreminders", v)
-                    if defaultSize then
-                        d.borderSize = defaultSize
-                    end
-                    if d.borderSizePx then
-                        d.borderSizePx = false
-                    end
-                    RefreshBorders()
-                    -- Rebuild: the Width | Height Offset row follows the Solid / textured pick.
-                    CludesUI:RefreshPage(true)
-                end,
-            },
-            -- Exact pixels over borderSize (the number the icons render with) and its
-            -- borderSizePx companion (CludesUI.BorderPx).
-            (
-                ns.IconShapeMasked(DDB())
-                    and {
-                        type = "segmented",
-                        text = "Border Size",
-                        values = { none = "None", strong = "Strong" },
-                        order = { "none", "strong" },
-                        -- The ring shows at any size above 0, so a pick keeps the square
-                        -- border's own size for the way back to None or Cropped.
-                        getValue = function()
-                            local d = DDB()
-                            return d and (d.borderSize or 1) > 0 and "strong" or "none"
-                        end,
-                        setValue = function(v)
-                            local d = DDB()
-                            if not d then
-                                return
-                            end
-                            if v ~= "strong" then
-                                d.borderSize = 0
-                            elseif (d.borderSize or 1) <= 0 then
-                                d.borderSize = 1
-                            end
-                            RefreshBorders()
-                        end,
-                    }
-                or CludesUI.BorderPxSliderCfg({
-                    text = "Border Size",
-                    getStep = function()
-                        local d = DDB()
-                        return (d and d.borderSize) or 1
-                    end,
-                    setStep = function(v)
-                        local d = DDB()
-                        if d then
-                            d.borderSize = v
-                        end
-                    end,
-                    getTex = function()
-                        local d = DDB()
-                        return (d and d.borderTexture) or "solid"
-                    end,
-                    getPx = function()
-                        local d = DDB()
-                        return d and d.borderSizePx
-                    end,
-                    setPx = function(v)
-                        local d = DDB()
-                        if d then
-                            d.borderSizePx = v
-                        end
-                    end,
-                    apply = RefreshBorders,
-                })
-            )
-        )
-        y = y - h
-
-        -- Row 1b: Width Offset | Height Offset. The textured border's outward offsets
-        -- as their own row, present only while a textured style is selected (the style
-        -- setter rebuilds the page). Each slider shows what is drawn (override, else the
-        -- "aurabuffreminders" registry default for the step) and stores nothing while
-        -- the value follows the default.
-        do
-            local d = DDB()
-            local tex = (d and d.borderTexture) or "solid"
-            if tex ~= "" and tex ~= "solid" then
-                local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
-                    addonKey = "aurabuffreminders",
-                    getTex = function()
-                        local d = DDB()
-                        return (d and d.borderTexture) or "solid"
-                    end,
-                    getStep = function()
-                        local d = DDB()
-                        return (d and d.borderSize) or 1
-                    end,
-                    getSizeKey = function()
-                        local d = DDB()
-                        return (d and d.borderSize) or 1
-                    end,
-                    getPx = function()
-                        local d = DDB()
-                        return d and d.borderSizePx
-                    end,
-                    getX = function()
-                        local d = DDB()
-                        return d and d.borderTextureOffset
-                    end,
-                    setX = function(v)
-                        local d = DDB()
-                        if d then
-                            d.borderTextureOffset = v
-                        end
-                    end,
-                    getY = function()
-                        local d = DDB()
-                        return d and d.borderTextureOffsetY
-                    end,
-                    setY = function(v)
-                        local d = DDB()
-                        if d then
-                            d.borderTextureOffsetY = v
-                        end
-                    end,
-                    apply = RefreshBorders,
-                })
-                _, h = W:DualRow(parent, y, ocfgL, ocfgR)
-                y = y - h
-            end
-        end
-
-        if not CludesUI._prebuilding then
-            do
-                local rgn = borderRow._leftRegion
-                local cogBtn = CludesUI.BuildInlineCog(rgn, {
-                    title = "Border Options",
-                    rows = {
-                        {
-                            type = "slider",
-                            label = "Shift X",
-                            min = -10,
-                            max = 10,
-                            step = 1,
-                            get = function()
-                                local d = DDB()
-                                if not d then
-                                    return 0
-                                end
-                                if d.borderTextureShiftX ~= nil then
-                                    return d.borderTextureShiftX
-                                end
-                                local _, _, value = CludesUI.GetBorderDefaults(
-                                    "aurabuffreminders",
-                                    d.borderTexture or "solid",
-                                    d.borderSize or 1
-                                )
-                                return value
-                            end,
-                            set = function(v)
-                                local d = DDB()
-                                if d then
-                                    d.borderTextureShiftX = (v ~= 0) and v or nil
-                                    RefreshBorders()
-                                end
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Shift Y",
-                            min = -10,
-                            max = 10,
-                            step = 1,
-                            get = function()
-                                local d = DDB()
-                                if not d then
-                                    return 0
-                                end
-                                if d.borderTextureShiftY ~= nil then
-                                    return d.borderTextureShiftY
-                                end
-                                local _, _, _, value = CludesUI.GetBorderDefaults(
-                                    "aurabuffreminders",
-                                    d.borderTexture or "solid",
-                                    d.borderSize or 1
-                                )
-                                return value
-                            end,
-                            set = function(v)
-                                local d = DDB()
-                                if d then
-                                    d.borderTextureShiftY = (v ~= 0) and v or nil
-                                    RefreshBorders()
-                                end
-                            end,
-                        },
-                        {
-                            type = "toggle",
-                            label = "Show Behind",
-                            get = function()
-                                local d = DDB()
-                                return d and d.borderBehind == true
-                            end,
-                            set = function(v)
-                                local d = DDB()
-                                if d then
-                                    d.borderBehind = v
-                                    RefreshBorders()
-                                end
-                            end,
-                        },
-                    },
-                })
-                local function UpdateBorderCogVisibility()
-                    local d = DDB()
-                    cogBtn:SetShown(d and (d.borderTexture or "solid") ~= "solid")
-                end
-                UpdateBorderCogVisibility()
-                CludesUI.RegisterWidgetRefresh(UpdateBorderCogVisibility)
-            end
-
-            do
-                local rgn = borderRow._rightRegion
-                local swatch, updateSwatch = CludesUI.BuildColorSwatch(
-                    rgn,
-                    rgn:GetFrameLevel() + 5,
-                    function()
-                        local d = DDB()
-                        return (d and d.borderR) or 0,
-                            (d and d.borderG) or 0,
-                            (d and d.borderB) or 0,
-                            (d and d.borderA) or 1
-                    end,
-                    function(r, g, b, a)
-                        local d = DDB()
-                        if not d then
-                            return
-                        end
-                        d.borderR, d.borderG, d.borderB, d.borderA = r, g, b, a or 1
-                        RefreshBorders()
-                    end,
-                    true,
-                    20
-                )
-                swatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -12, 0)
-                rgn._lastInline = swatch
-                CludesUI.RegisterWidgetRefresh(updateSwatch)
-            end
-        end
+        y, borderRow = BuildBorderRows(parent, y)
 
         -- Row 2: Show Name (+ inline cog + swatch) | Show Item Count (+ cog)
         local rowText

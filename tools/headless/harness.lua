@@ -153,7 +153,8 @@ function methods.GetLineHeight() return 12 end
 function methods.GetNumLines() return 1 end
 function methods.IsTruncated() return false end
 function methods.SetFont(o, path, size, flags) o.__v.Font = { path, size, flags }; return true end
-function methods.GetFont(o) local f = o.__v.Font or { "Fonts/FRIZQT__.TTF", 12, "" }; return f[1], f[2], f[3] end
+-- No font yet: nil, as the client answers.
+function methods.GetFont(o) local f = o.__v.Font; if not f then return nil end; return f[1], f[2], f[3] end
 -- Colours are recorded with all their parts, so a snapshot (tools/headless/snapshot.lua)
 -- can compare what two versions of the code painted.
 function methods.SetTextColor(o, r, g, b, a) o.__v.TextColor = { r, g, b, a or 1 } end
@@ -242,6 +243,14 @@ Obj.__index = methods
 -- ScrollFrame:UpdateScrollChildRect (no stand-in covers "Update*").
 function methods.UpdateScrollChildRect() end
 function methods.GetNumMaskTextures() return 0 end
+-- The fake client keeps a widget's own state in "__" keys, where a real
+-- widget keeps it out of reach. The pool's key wipe on reuse (FramePool
+-- WipeKeys) keeps keys that name a method, so naming these here keeps that
+-- state through a reuse, as the engine's survives on a real widget.
+for _, k in ipairs({ "__kind", "__name", "__parent", "__scripts", "__v", "__points", "__children", "__regions",
+    "__w", "__h", "__shown", "__events", "__attr" }) do
+    rawset(methods, k, false)
+end
 setmetatable(methods, { __index = function(_, k)
     if type(k) ~= "string" then return nil end
     -- Fields the code set itself are raw; anything else that looks like a
@@ -498,6 +507,9 @@ G.UnitPower = function() return 100 end
 G.UnitPowerMax = function() return 100 end
 G.UnitPowerType = function() return 0, "MANA" end
 G.GetSpecialization = function() return 1 end
+-- Chat: CludesUI.Print writes here; each line goes to the run's output.
+G.DEFAULT_CHAT_FRAME = New("Frame")
+rawset(G.DEFAULT_CHAT_FRAME, "AddMessage", function(_, msg) io.write("[chat] ", tostring(msg), "\n") end)
 G.GetNumSpecializations = function() return 3 end
 G.GetSpecializationInfo = function(i) return 65 + (i or 1), "Spec" .. (i or 1), "", 0, "DAMAGER" end
 G.GetNumClasses = function() return 13 end
