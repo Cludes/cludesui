@@ -2,33 +2,34 @@ if CUI_CLIENT_BLOCKED then
     return
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --------------------------------------------------------------------------------
---  CUI_MythicTimer_Where.lua
---  Where to Show (Mythic+ Tools): the content bucket and combat state that
---  every Mythic+ Tools feature with a Where to Show filter reads, and the one
---  location/combat watcher those features share (ns.MTWhere).
+--  CUI_MythicTimer_Where.lua - Where to Show, for every Mythic+ Tools feature.
 --
---  Zero cost while unused: the watcher frame is built on the first feature's
---  subscribe and registers nothing before it, and unregisters everything once
---  the last one leaves. Each feature walks its own key set, so a bucket its filter does not
---  offer never hides it.
+--  What kind of content the player is in (a "bucket": open world, Mythic
+--  dungeon, heroic raid, delve...), whether they are in combat, and one shared
+--  watcher that tells each subscribed feature when either may have changed
+--  (mod.MTWhere).
+--
+--  Costs nothing while unused: the watcher frame is made by the first
+--  subscriber and registers nothing before it, and unregisters everything when
+--  the last one leaves. Each feature offers its own set of buckets, and a
+--  bucket its filter does not offer never hides it.
 --------------------------------------------------------------------------------
-local ADDON_NAME, mod = ...
+local _, mod = ...
 
 local MTWhere = {}
 mod.MTWhere = MTWhere
 
--- The nameplate unit tokens, as the ordered list and the set, for every
--- feature that walks or recognizes plates (this file loads first).
+-- The nameplate unit tokens, as a list and as a set, for every feature that
+-- walks or recognises plates (this file loads first).
 local NAMEPLATE_TOKENS, NAMEPLATE_UNITS = {}, {}
-for idx = 1, 40 do
-    local token = "nameplate" .. idx
-    NAMEPLATE_TOKENS[idx] = token
-    NAMEPLATE_UNITS[token] = true
+for i = 1, 40 do
+    local unit = "nameplate" .. i
+    NAMEPLATE_TOKENS[i] = unit
+    NAMEPLATE_UNITS[unit] = true
 end
 mod.NAMEPLATE_TOKENS, mod.NAMEPLATE_UNITS = NAMEPLATE_TOKENS, NAMEPLATE_UNITS
 
--- Every location bucket Bucket() can answer. A feature's filter offers all of
--- them or a subset (NewKeySet).
+-- Every bucket Bucket() can answer; a feature's filter offers all or some.
 MTWhere.LOCATION_KEYS = {
     "open_world",
     "raid_mythic",
@@ -44,19 +45,47 @@ MTWhere.LOCATION_KEYS = {
     "battleground",
 }
 
--- A feature's location keys: the list its filter walks plus a lookup set.
--- Built once per feature at file load.
-function MTWhere.NewKeySet(entries)
+-- A feature's buckets: the list its filter walks, and a set to look one up.
+-- Made once per feature when its file loads.
+function MTWhere.NewKeySet(keys)
     local set = {}
-    for idx = 1, #entries do
-        set[entries[idx]] = true
+    for _, key in ipairs(keys) do
+        set[key] = true
     end
-    return { list = entries, set = set }
+    return { list = keys, set = set }
 end
 
 --------------------------------------------------------------------------------
---  Content bucket
+--  The content bucket
 --------------------------------------------------------------------------------
+-- Difficulty id -> bucket, by instance type (ids the tables do not name fall
+-- through to the open-world test at the end).
+local BY_DIFFICULTY = {
+    party = {
+        [23] = "dungeon_mythic", -- Mythic
+        [8] = "dungeon_mythic", -- Mythic Keystone
+        [1] = "dungeon_nonmythic", -- Normal
+        [2] = "dungeon_nonmythic", -- Heroic
+        [205] = "dungeon_nonmythic", -- Follower
+        [24] = "timewalking",
+    },
+    raid = {
+        [16] = "raid_mythic",
+        [233] = "raid_mythic",
+        [15] = "raid_heroic",
+        [6] = "raid_heroic", -- legacy 25 heroic
+        [14] = "raid_normal_lfr",
+        [17] = "raid_normal_lfr", -- LFR
+        [3] = "raid_normal_lfr", -- legacy 10 / 25 / 10 heroic / LFR
+        [4] = "raid_normal_lfr",
+        [5] = "raid_normal_lfr",
+        [7] = "raid_normal_lfr",
+        [33] = "timewalking",
+    },
+}
+-- Instance types that are one bucket whatever the difficulty.
+local BY_TYPE = { arena = "arena", pvp = "battleground" }
+
 local function Bucket()
     if
         C_ChallengeMode
@@ -65,83 +94,59 @@ local function Bucket()
     then
         return "dungeon_mythic"
     end
-    -- Housing plots report as "scenario"; they belong to the open world.
+    -- Housing plots report as a scenario; they belong to the open world.
     if C_Housing and C_Housing.IsInsideHouseOrPlot and C_Housing.IsInsideHouseOrPlot() then
         return "open_world"
     end
-    local _, iType, diffID, _, _, _, _, _, _, _, hasWorldTier = GetInstanceInfo()
-    diffID = tonumber(diffID) or 0
-    -- Lairs carry the World Tier flag instead of a difficulty id the branches
-    -- below know; the instance gate keeps the flag from ever reclassifying
-    -- the open world, whatever else it may be set on.
-    if hasWorldTier == true and iType ~= "none" then
+    local _, kind, difficulty, _, _, _, _, _, _, _, worldTier = GetInstanceInfo()
+    difficulty = tonumber(difficulty) or 0
+    -- Lairs carry the World Tier flag instead of a known difficulty; only
+    -- inside an instance, so the flag never reclassifies the open world.
+    if worldTier == true and kind ~= "none" then
         return "lair"
     end
-    if iType == "party" then
-        if diffID == 23 or diffID == 8 then
-            return "dungeon_mythic"
+    local byDifficulty = BY_DIFFICULTY[kind]
+    if byDifficulty then
+        local bucket = byDifficulty[difficulty]
+        if bucket then
+            return bucket
         end
-        if diffID == 2 or diffID == 1 or diffID == 205 then
-            return "dungeon_nonmythic"
-        end
-        if diffID == 24 then
-            return "timewalking"
-        end
-    elseif iType == "raid" then
-        if diffID == 16 or diffID == 233 then
-            return "raid_mythic"
-        end
-        if diffID == 15 or diffID == 6 then
-            return "raid_heroic"
-        end
-        if diffID == 14 or diffID == 3 or diffID == 4 or diffID == 5 or diffID == 17 or diffID == 7 then
-            return "raid_normal_lfr"
-        end
-        if diffID == 33 then
-            return "timewalking"
-        end
-    elseif iType == "scenario" then
-        if diffID == 208 then
-            return "delve"
-        end
-        return "scenario"
-    elseif iType == "arena" then
-        return "arena"
-    elseif iType == "pvp" then
-        return "battleground"
+    elseif kind == "scenario" then
+        return difficulty == 208 and "delve" or "scenario"
+    elseif BY_TYPE[kind] then
+        return BY_TYPE[kind]
     end
     if IsInInstance and not IsInInstance() then
         return "open_world"
     end
-    return nil -- unmapped content -- always shows, matching AuraBuffReminders
+    return nil -- content not mapped: it always shows, as in AuraBuffReminders
 end
 MTWhere.Bucket = Bucket
 
 --------------------------------------------------------------------------------
---  Combat state is TRACKED from PLAYER_REGEN_DISABLED / _ENABLED instead of
---  sampled inside the gate: a live lockdown read is the one input here that
---  can answer differently (or as a secret) inside restricted instanced combat,
---  and a wrong answer at that moment leaves a feature switched off for the
---  whole fight. The edges are exact everywhere, so the seed only has to cover
---  login/zoning and the moment the watcher arms.
+--  Combat: followed from PLAYER_REGEN_DISABLED / _ENABLED rather than read at
+--  each check. A live lockdown read is the one input that can answer
+--  differently (or as a secret) inside restricted instanced combat, and a
+--  wrong answer there switches a feature off for the whole fight. The edges
+--  are exact, so a read is only needed at login, zoning and arming.
 --------------------------------------------------------------------------------
 local inCombat = false
 
-local function ReadCombatFlag()
+local function ReadCombat()
     if not InCombatLockdown then
         return false
     end
-    local success, val = pcall(InCombatLockdown)
-    if not success then
+    local ok, value = pcall(InCombatLockdown)
+    if not ok then
         return false
     end
     if issecretvalue then
-        local sok, secret = pcall(issecretvalue, val)
-        if sok and secret then
+        local checked, secret = pcall(issecretvalue, value)
+        if checked and secret then
             return false
         end
     end
-    return val and true or false
+    return value and true or false
 end
 
 function MTWhere.InCombat()
@@ -149,46 +154,42 @@ function MTWhere.InCombat()
 end
 
 --------------------------------------------------------------------------------
---  Positive filter: nothing selected = no filter (shows everywhere). Selected
---  location buckets limit WHERE, the two combat entries limit WHEN, and the
---  two groups AND together. Unmapped content, and a bucket the caller's key
---  set does not offer, never hide.
+--  The filter: nothing ticked shows everywhere. Ticked buckets limit WHERE,
+--  the two combat ticks limit WHEN, and both must pass. Content not mapped,
+--  and a bucket the feature does not offer, never hide.
 --------------------------------------------------------------------------------
-function MTWhere.Shows(whereToShow, keySet)
-    if not whereToShow or not next(whereToShow) then
+function MTWhere.Shows(filter, keySet)
+    if not filter or not next(filter) then
         return true
     end
-    local wantIn = whereToShow.in_combat == true
-    local wantOut = whereToShow.out_of_combat == true
-    if wantIn ~= wantOut then
-        if inCombat ~= wantIn then
-            return false
-        end
+    local inTicked, outTicked = filter.in_combat == true, filter.out_of_combat == true
+    -- Exactly one ticked: it must match (both or neither = either state).
+    if inTicked ~= outTicked and inCombat ~= inTicked then
+        return false
     end
-    local keyList = keySet.list
-    local anyLoc = false
-    for idx = 1, #keyList do
-        if whereToShow[keyList[idx]] == true then
-            anyLoc = true
+    local anyPlace = false
+    for _, key in ipairs(keySet.list) do
+        if filter[key] == true then
+            anyPlace = true
             break
         end
     end
-    if not anyLoc then
+    if not anyPlace then
         return true
     end
     local bucket = Bucket()
     if not bucket or not keySet.set[bucket] then
         return true
     end
-    return whereToShow[bucket] == true
+    return filter[bucket] == true
 end
 
 --------------------------------------------------------------------------------
---  Shared watcher: one frame for every subscribed feature, registered only
---  while at least one subscriber exists. Each zone/combat edge updates the
---  combat flag first, then calls every subscriber with the event name.
+--  The shared watcher: one frame for every subscriber, registered only while
+--  there is one. Each zone or combat change updates the combat flag first,
+--  then calls every subscriber with the event's name.
 --------------------------------------------------------------------------------
-local WHERE_EVENTS = {
+local EVENTS = {
     "PLAYER_ENTERING_WORLD",
     "CHALLENGE_MODE_START",
     "CHALLENGE_MODE_COMPLETED",
@@ -199,94 +200,88 @@ local WHERE_EVENTS = {
     "PLAYER_REGEN_ENABLED",
 }
 
-local subFns = {} -- [i] = subscriber fn
-local subKeys = {} -- [i] = key of subFns[i]
-local subIndex = {} -- key -> i
+local callbacks, keys, slotOf = {}, {}, {} -- [i] = fn; [i] = its key; key -> i
 
--- Backward walk: a subscriber that unsubscribes itself from inside its
--- callback swaps the last entry, already called, into its own slot. Each
--- call goes through securecallfunction, so an error in one feature is
--- reported and the others still see the edge.
+-- Walked backwards: a subscriber that leaves from inside its own call moves
+-- the last one (already called) into its place. Each call is protected, so
+-- one feature's error is reported and the rest still hear the event.
 local securecallfunction = securecallfunction
-local function Dispatch(evt)
-    for idx = #subFns, 1, -1 do
-        local func = subFns[idx]
-        if func then
-            securecallfunction(func, evt)
+local function Tell(event)
+    for i = #callbacks, 1, -1 do
+        local fn = callbacks[i]
+        if fn then
+            securecallfunction(fn, event)
         end
     end
 end
 
--- GetInstanceInfo() can still report the PREVIOUS zone on the first frame
--- after a loading screen, which resolves the wrong content bucket and leaves
--- a feature deactivated in a zone its filter actually allows (same read
--- hazard AuraBuffReminders defers 0.5s for). Re-check once the client has
--- settled: every subscriber is called once more with "RECHECK", and its sync
--- only flips the feature when the answer actually changed.
-local recheckPending = false
+-- On the first frame after a loading screen GetInstanceInfo() can still
+-- describe the PREVIOUS zone, which would leave a feature off in a zone its
+-- filter allows (AuraBuffReminders waits 0.5s for the same reason). So
+-- everyone is told once more ("RECHECK") when the client has settled; a
+-- feature changes only if its answer did.
+local recheckQueued = false
 local function Recheck()
-    recheckPending = false
-    Dispatch("RECHECK")
+    recheckQueued = false
+    Tell("RECHECK")
 end
 
-local whereEvt -- the watcher frame; built on the first subscribe
+local watcher -- made by the first subscriber
 
-local function OnWhereEvent(_, evt)
-    if evt == "PLAYER_REGEN_DISABLED" then
+local function OnEvent(_, event)
+    if event == "PLAYER_REGEN_DISABLED" then
         inCombat = true
-    elseif evt == "PLAYER_REGEN_ENABLED" then
+    elseif event == "PLAYER_REGEN_ENABLED" then
         inCombat = false
-    elseif evt == "PLAYER_ENTERING_WORLD" then
-        inCombat = ReadCombatFlag()
+    elseif event == "PLAYER_ENTERING_WORLD" then
+        inCombat = ReadCombat()
     end
-    Dispatch(evt)
-    if evt == "PLAYER_ENTERING_WORLD" and not recheckPending then
-        recheckPending = true
+    Tell(event)
+    if event == "PLAYER_ENTERING_WORLD" and not recheckQueued then
+        recheckQueued = true
         C_Timer.After(0.5, Recheck)
     end
 end
 
--- Subscribing an existing key replaces its fn. The first subscriber builds
--- the watcher if needed, arms it and seeds the combat flag; the regen edges
--- keep it exact from there.
-function MTWhere.Subscribe(key, func)
-    if not func then
+-- Subscribing again under the same key replaces the function. The first
+-- subscriber arms the watcher and reads the combat state; the combat events
+-- keep it right from there.
+function MTWhere.Subscribe(key, fn)
+    if not fn then
         MTWhere.Unsubscribe(key)
         return
     end
-    local idx = subIndex[key]
-    if idx then
-        subFns[idx] = func
+    local slot = slotOf[key]
+    if slot then
+        callbacks[slot] = fn
         return
     end
-    idx = #subFns + 1
-    subFns[idx] = func
-    subKeys[idx] = key
-    subIndex[key] = idx
-    if idx == 1 then
-        if not whereEvt then
-            whereEvt = CreateFrame("Frame")
-            whereEvt:SetScript("OnEvent", OnWhereEvent)
+    slot = #callbacks + 1
+    callbacks[slot], keys[slot], slotOf[key] = fn, key, slot
+    if slot == 1 then
+        if not watcher then
+            watcher = CreateFrame("Frame")
+            watcher:SetScript("OnEvent", OnEvent)
         end
-        inCombat = ReadCombatFlag()
-        for jdx = 1, #WHERE_EVENTS do
-            whereEvt:RegisterEvent(WHERE_EVENTS[jdx])
+        inCombat = ReadCombat()
+        for _, event in ipairs(EVENTS) do
+            watcher:RegisterEvent(event)
         end
     end
 end
 
--- The last subscriber leaving unregisters the watcher.
+-- The last subscriber leaving disarms the watcher.
 function MTWhere.Unsubscribe(key)
-    local idx = subIndex[key]
-    if not idx then
+    local slot = slotOf[key]
+    if not slot then
         return
     end
-    local num = #subFns
-    subFns[idx], subKeys[idx] = subFns[num], subKeys[num]
-    subIndex[subKeys[idx]] = idx
-    subFns[num], subKeys[num] = nil, nil
-    subIndex[key] = nil
-    if num == 1 then
-        whereEvt:UnregisterAllEvents()
+    local last = #callbacks
+    callbacks[slot], keys[slot] = callbacks[last], keys[last]
+    slotOf[keys[slot]] = slot
+    callbacks[last], keys[last] = nil, nil
+    slotOf[key] = nil
+    if last == 1 then
+        watcher:UnregisterAllEvents()
     end
 end
