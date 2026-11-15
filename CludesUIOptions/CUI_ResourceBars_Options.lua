@@ -200,18 +200,13 @@ initFrame:SetScript("OnEvent", function(self)
     local Pix = CludesUI.PanelPP
     local THR_BORDER_WHITE = { 1, 1, 1 } -- Threshold & Hash Lines buttons: default (unconfigured) border tint
 
-    local saved
-    C_Timer.After(0, function()
-        saved = _G._CURB_AceDB
-    end)
-
+    -- The module's saved profile (its database exists by the time a page builds).
     local function DB()
-        if not saved then
-            saved = _G._CURB_AceDB
-        end
-        return saved and saved.profile
+        local db = _G._CURB_AceDB
+        return db and db.profile
     end
 
+    -- Re-applies every bar from the saved settings.
     local function Refresh()
         if _G._CURB_Apply then
             _G._CURB_Apply()
@@ -219,125 +214,119 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     ---------------------------------------------------------------------------
-    --  Lerps current -> target, calling applyFn(v) each frame; key cancels a
-    --  prior anim on the same property.
+    --  Eased value change: applyFn(v) each frame from the last value to the
+    --  new one over ANIM_DURATION (ease-out). A new target for the same frame
+    --  and key replaces the running one.
     ---------------------------------------------------------------------------
     local _animTimers = {} -- [frame][key] = ticker
     local ANIM_DURATION = 0.18
+    local STEP = 0.016
 
     local function SmoothAnimate(widget, key, targetVal, applyFn)
         if not widget then
             return
         end
-        if not _animTimers[widget] then
-            _animTimers[widget] = {}
+        local running = _animTimers[widget] or {}
+        _animTimers[widget] = running
+        if running[key] then
+            running[key]:Cancel()
+            running[key] = nil
         end
-        if _animTimers[widget][key] then
-            _animTimers[widget][key]:Cancel()
-            _animTimers[widget][key] = nil
-        end
-        local startVal = widget["_anim_" .. key] or targetVal
-        widget["_anim_" .. key] = targetVal
-        if math.abs(startVal - targetVal) < 0.001 then
+        local field = "_anim_" .. key
+        local from = widget[field] or targetVal
+        widget[field] = targetVal
+        if math.abs(from - targetVal) < 0.001 then
             applyFn(targetVal)
             return
         end
-        local elapsed = 0
-        local ticker
-        -- A frame of the options page pool dressed again mid-animation belongs
-        -- to its new build: the animation stops and leaves it alone.
+        local elapsed, ticker = 0, nil
+        local function Stop()
+            ticker:Cancel()
+            if running[key] == ticker then
+                running[key] = nil
+            end
+        end
+        -- A pooled frame dressed again mid-animation belongs to its new build:
+        -- the animation stops and leaves it alone.
         local gen = PoolGen(widget)
-        ticker = C_Timer.NewTicker(0.016, function()
+        ticker = C_Timer.NewTicker(STEP, function()
             if PoolGen(widget) ~= gen then
-                ticker:Cancel()
-                local slots = _animTimers[widget]
-                if slots and slots[key] == ticker then
-                    slots[key] = nil
-                end
+                Stop()
                 return
             end
-            elapsed = elapsed + 0.016
+            elapsed = elapsed + STEP
             local t = math.min(elapsed / ANIM_DURATION, 1)
-            t = 1 - (1 - t) * (1 - t) -- ease-out quad
-            local v = startVal + (targetVal - startVal) * t
-            applyFn(v)
+            t = 1 - (1 - t) * (1 - t)
+            applyFn(from + (targetVal - from) * t)
             if t >= 1 then
-                ticker:Cancel()
-                if _animTimers[widget] then
-                    _animTimers[widget][key] = nil
-                end
+                Stop()
             end
         end)
-        _animTimers[widget][key] = ticker
+        running[key] = ticker
     end
 
-    -- Preview Header
+    -- Preview header state
     local _previewHeaderBuilder
     local _previewFrames = {}
     local _previewHintFS
     local _previewScale = 1
-    local _previewBuilding = false -- true while _previewHeaderBuilder is executing
-    local HasClassResource -- forward decl
+    local _previewBuilding = false -- true while _previewHeaderBuilder runs
 
-    HasClassResource = function()
-        local gsr = _G._CURB_GetSecondaryResource
-        return gsr and gsr() ~= nil
+    local function HasClassResource()
+        local get = _G._CURB_GetSecondaryResource
+        return get and get() ~= nil
     end
-
-    local HasPrimaryPower = function()
-        local gpp = _G._CURB_GetPrimaryPowerType
-        return gpp and gpp() ~= nil
+    local function HasPrimaryPower()
+        local get = _G._CURB_GetPrimaryPowerType
+        return get and get() ~= nil
     end
 
     local function IsPreviewHintDismissed()
         return CludesUIDB and CludesUIDB.previewHintDismissed
     end
 
-    -- The preview hint is one font string the Class, Power and Health Bars and
-    -- Cast Bar headers share, each build moving it onto its own header. Under
-    -- page reuse each page keeps a header frame of its own (a frame of the
-    -- options page pool): a build starts with the hint off its own header, as
-    -- the shared header's clear dropped it, and a header shown again from the
-    -- cache takes the hint back from the other page's header (with one shared
-    -- header frame its cache restore already did).
-    local _hintHdr = {} -- [page] = the header frame that page's preview last built on
-    local _classHdrEmpty -- the Class, Power and Health Bars header last built into its kept frame with nothing to show
+    -- The preview hint is one font string shared by the bars and cast bar
+    -- headers; each build moves it onto its own header. With page reuse each
+    -- page keeps its own (pooled) header frame: a build starts with the hint
+    -- off its header (the shared clear dropped it), and a header shown again
+    -- from the cache takes the hint back from the other page's header.
+    local _hintHdr = {} -- [page] = the header its preview last built on
+    local _classHdrEmpty -- the bars header last built with nothing to show
     local function HintBuildStart(page, heading)
         _hintHdr[page] = heading
-        local host = PoolGen(heading) and _previewHintFS and _previewHintFS:GetParent()
-        if host and host:GetParent() == heading then
-            host:Hide()
+        local holder = PoolGen(heading) and _previewHintFS and _previewHintFS:GetParent()
+        if holder and holder:GetParent() == heading then
+            holder:Hide()
         end
     end
     local function RehomeHint(page)
-        local host = _previewHintFS and _previewHintFS:GetParent()
+        local holder = _previewHintFS and _previewHintFS:GetParent()
         local heading = _hintHdr[page]
-        if not (host and heading) then
+        if not (holder and heading) then
             return
         end
-        -- The hint may sit on any other preview page's header.
-        local current, away = host:GetParent(), nil
-        for other, oh in pairs(_hintHdr) do
+        -- Find whether another page's header holds the hint now.
+        local onHeader, elsewhere = holder:GetParent(), nil
+        for other, otherHeading in pairs(_hintHdr) do
             if other ~= page then
-                if oh == heading then
-                    return
+                if otherHeading == heading then
+                    return -- the pages share one header: nothing to move
                 end
-                if oh == current then
-                    away = oh
+                if otherHeading == onHeader then
+                    elsewhere = otherHeading
                 end
             end
         end
-        if not away and current ~= heading then
-            return
-        end
-        if away then
-            host:SetParent(heading)
-            host:SetFrameLevel(heading:GetFrameLevel() + 1)
+        if elsewhere then
+            holder:SetParent(heading)
+            holder:SetFrameLevel(heading:GetFrameLevel() + 1)
             _previewHintFS:ClearAllPoints()
             _previewHintFS:SetPoint("BOTTOM", heading, "BOTTOM", 0, 20)
+        elseif onHeader ~= heading then
+            return
         end
-        if host:GetParent() == heading then
-            host:Show()
+        if holder:GetParent() == heading then
+            holder:Show()
         end
     end
 
