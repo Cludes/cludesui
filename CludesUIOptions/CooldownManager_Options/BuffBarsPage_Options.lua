@@ -4809,68 +4809,64 @@ local function InitBuffBarsPage(
         posY = posY - hgt
         posY = CludesUI.BlizzStyle.Note(hostFrame, posY, "cdmbars")
 
+        -- A bar field write that refreshes the bars.
+        local function SetBar(key)
+            return function(v)
+                local bd = SelectedTBB()
+                if bd then
+                    bd[key] = v
+                    RefreshTBB()
+                end
+            end
+        end
+
         -- Visibility: one control, the shared axis list plus the TBB-only Hide When
         -- Inactive row (single-lane, so it rides in as an extraItem). No mouseover for
-        -- CDM-family bars; "Only In Combat" is the In Combat axis.
-        local _, tbbVisH = CludesUI.BuildVisibilityRow(
-            W,
-            hostFrame,
-            posY,
-            {
-                getStore = SelectedTBB,
-                legacyKey = "barVisibility",
-                caps = { partyIncludesRaid = false, noMouseover = true, luaDragonriding = true },
-                onChanged = function()
-                    RefreshTBB()
-                end,
-                onOptionChanged = function()
-                    RefreshTBB()
-                end,
-                extraItems = {
-                    {
-                        key = "hideWhenInactive",
-                        label = "Hide When Inactive",
-                        tooltip = "Only show this bar while the tracked buff/cooldown is active. Unchecked keeps an empty bar on screen at all times.",
-                        -- nil means ON everywhere this is read, so it cannot go through a
-                        -- plain truthiness path.
-                        get = function()
-                            local bd = SelectedTBB()
-                            return bd and bd.hideWhenInactive ~= false
-                        end,
-                        -- No refresh here: the row fires onOptionChanged after every write.
-                        set = function(v)
-                            local bd = SelectedTBB()
-                            if not bd then
-                                return
-                            end
+        -- CDM-family bars; "Only In Combat" is the In Combat axis. Show Icon sits in
+        -- the slot the Visibility Options dropdown left.
+        local _, tbbVisH = CludesUI.BuildVisibilityRow(W, hostFrame, posY, {
+            getStore = SelectedTBB,
+            legacyKey = "barVisibility",
+            caps = { partyIncludesRaid = false, noMouseover = true, luaDragonriding = true },
+            onChanged = function()
+                RefreshTBB()
+            end,
+            onOptionChanged = function()
+                RefreshTBB()
+            end,
+            extraItems = {
+                {
+                    key = "hideWhenInactive",
+                    label = "Hide When Inactive",
+                    tooltip = "Only show this bar while the tracked buff/cooldown is active. Unchecked keeps an empty bar on screen at all times.",
+                    -- nil means ON everywhere this is read, so no plain truthiness test.
+                    get = function()
+                        local bd = SelectedTBB()
+                        return bd and bd.hideWhenInactive ~= false
+                    end,
+                    -- No refresh here: the row fires onOptionChanged after every write.
+                    set = function(v)
+                        local bd = SelectedTBB()
+                        if bd then
                             bd.hideWhenInactive = v
-                        end,
-                    },
+                        end
+                    end,
                 },
             },
-            -- Show Icon moved up into the slot the Visibility Options dropdown left behind.
-            {
-                type = "dropdown",
-                text = "Show Icon",
-                values = { none = "None", left = "Left (Top)", right = "Right (Bottom)" },
-                order = { "none", "left", "right" },
-                getValue = function()
-                    local bd = SelectedTBB()
-                    return bd and bd.iconDisplay or "none"
-                end,
-                setValue = function(v)
-                    local bd = SelectedTBB()
-                    if not bd then
-                        return
-                    end
-                    bd.iconDisplay = v
-                    RefreshTBB()
-                end,
-            }
-        )
+        }, {
+            type = "dropdown",
+            text = "Show Icon",
+            values = { none = "None", left = "Left (Top)", right = "Right (Bottom)" },
+            order = { "none", "left", "right" },
+            getValue = function()
+                local bd = SelectedTBB()
+                return bd and bd.iconDisplay or "none"
+            end,
+            setValue = SetBar("iconDisplay"),
+        })
         posY = posY - tbbVisH
 
-        -- Opacity | Background Color (moved up from its old trailing half-row below)
+        -- Opacity | Background Color
         local iconRow
         iconRow, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
@@ -4884,11 +4880,10 @@ local function InitBuffBarsPage(
             end,
             setValue = function(v)
                 local bd = SelectedTBB()
-                if not bd then
-                    return
+                if bd then
+                    bd.opacity = v / 100
+                    RefreshTBB()
                 end
-                bd.opacity = v / 100
-                RefreshTBB()
             end,
         }, {
             type = "multiSwatch",
@@ -4906,18 +4901,18 @@ local function InitBuffBarsPage(
                     end,
                     setValue = function(r, g, b, a)
                         local bd = SelectedTBB()
-                        if not bd then
-                            return
+                        if bd then
+                            bd.bgR, bd.bgG, bd.bgB, bd.bgA = r, g, b, a
+                            RefreshTBB()
                         end
-                        bd.bgR, bd.bgG, bd.bgB, bd.bgA = r, g, b, a
-                        RefreshTBB()
                     end,
                 }),
             },
         })
         posY = posY - hgt
 
-        -- Fill Color (dropdown: auto/custom + gradient mode + 2 inline swatches) | Show Spark
+        -- Fill Color (Custom Color or a gradient direction, + fill and gradient end
+        -- swatches) | Show Spark. A legacy "auto" reads as Custom (no migration).
         local fillRow
         fillRow, hgt = W:DualRow(
             hostFrame,
@@ -4933,11 +4928,7 @@ local function InitBuffBarsPage(
                 order = { "none", "HORIZONTAL", "VERTICAL" },
                 getValue = function()
                     local bd = SelectedTBB()
-                    if not bd then
-                        return "none"
-                    end
-                    -- Treat legacy "auto" as "custom" (no migration needed)
-                    if not bd.gradientEnabled then
+                    if not (bd and bd.gradientEnabled) then
                         return "none"
                     end
                     return bd.gradientDir or "HORIZONTAL"
@@ -4948,10 +4939,8 @@ local function InitBuffBarsPage(
                         return
                     end
                     bd.fillColorMode = "custom"
-                    if v == "none" then
-                        bd.gradientEnabled = false
-                    else
-                        bd.gradientEnabled = true
+                    bd.gradientEnabled = v ~= "none"
+                    if v ~= "none" then
                         bd.gradientDir = v
                     end
                     RefreshTBB()
@@ -4965,51 +4954,40 @@ local function InitBuffBarsPage(
                     local bd = SelectedTBB()
                     return bd and bd.showSpark
                 end,
-                setValue = function(v)
-                    local bd = SelectedTBB()
-                    if not bd then
-                        return
-                    end
-                    bd.showSpark = v
-                    RefreshTBB()
-                end,
+                setValue = SetBar("showSpark"),
             }
         )
         posY = posY - hgt
-        -- Inline swatches on Fill Color dropdown: fill color + gradient end color
         do
             local rgn = fillRow._leftRegion
-            local ctrl = rgn._control
-
-            -- Swatch 1 (rightmost, closer to dropdown): Fill Color
-            local fillSwatch, updateFillSwatch = CludesUI.BuildColorSwatch(
+            -- Right, by the dropdown: the fill colour (no bar: the class colour).
+            local fillSwatch, updateFill = CludesUI.BuildColorSwatch(
                 rgn,
                 fillRow:GetFrameLevel() + 3,
                 function()
                     local bd = SelectedTBB()
                     if not bd then
-                        local _, castFrame = UnitClass("player")
-                        local cc = RAID_CLASS_COLORS[castFrame]
+                        local _, class = UnitClass("player")
+                        local cc = RAID_CLASS_COLORS[class]
                         return cc and cc.r or 1, cc and cc.g or 0.70, cc and cc.b or 0, 1
                     end
                     return bd.fillR, bd.fillG, bd.fillB, bd.fillA
                 end,
                 function(r, g, b, a)
                     local bd = SelectedTBB()
-                    if not bd then
-                        return
+                    if bd then
+                        bd.fillColorMode = "custom"
+                        bd.fillR, bd.fillG, bd.fillB, bd.fillA = r, g, b, a
+                        RefreshTBB()
                     end
-                    bd.fillColorMode = "custom"
-                    bd.fillR, bd.fillG, bd.fillB, bd.fillA = r, g, b, a
-                    RefreshTBB()
                 end,
                 true,
                 20
             )
-            Pix.Point(fillSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
-
-            -- Swatch 2 (left of swatch 1): Gradient End Color
-            local gradSwatch, updateGradSwatch = CludesUI.BuildColorSwatch(
+            Pix.Point(fillSwatch, "RIGHT", rgn._control, "LEFT", -8, 0)
+            -- Left of it: the gradient end colour, dimmed while there is no gradient
+            -- (or under Blizzard Style, which keeps the flat atlas fill).
+            local gradSwatch, updateGrad = CludesUI.BuildColorSwatch(
                 rgn,
                 fillRow:GetFrameLevel() + 3,
                 function()
@@ -5021,76 +4999,40 @@ local function InitBuffBarsPage(
                 end,
                 function(r, g, b, a)
                     local bd = SelectedTBB()
-                    if not bd then
-                        return
+                    if bd then
+                        bd.gradientR, bd.gradientG, bd.gradientB, bd.gradientA = r, g, b, a
+                        RefreshTBB()
                     end
-                    bd.gradientR, bd.gradientG, bd.gradientB, bd.gradientA = r, g, b, a
-                    RefreshTBB()
                 end,
                 true,
                 20
             )
             Pix.Point(gradSwatch, "RIGHT", fillSwatch, "LEFT", -4, 0)
-
-            -- Disable block on fill swatch when Auto mode
-            local fillBlock = CreateFrame("Frame", nil, fillSwatch)
-            fillBlock:SetAllPoints()
-            fillBlock:SetFrameLevel(fillSwatch:GetFrameLevel() + 10)
-            fillBlock:EnableMouse(true)
-            fillBlock:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(
-                    fillSwatch,
-                    CludesUI.DisabledTooltip("This option requires Fill Color to be set to Custom")
-                )
-            end)
-            fillBlock:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
-
-            -- Disable block on gradient swatch when gradient is off or auto mode
             local gradBlock = CreateFrame("Frame", nil, gradSwatch)
             gradBlock:SetAllPoints()
             gradBlock:SetFrameLevel(gradSwatch:GetFrameLevel() + 10)
             gradBlock:EnableMouse(true)
             gradBlock:SetScript("OnEnter", function()
-                local bd = SelectedTBB()
-                local isAuto = false
-                local msg = isAuto and "Set Fill Color to a Custom option"
-                    or "This option requires a gradient to be set"
-                CludesUI.ShowWidgetTooltip(gradSwatch, CludesUI.DisabledTooltip(msg))
+                CludesUI.ShowWidgetTooltip(
+                    gradSwatch,
+                    CludesUI.DisabledTooltip("This option requires a gradient to be set")
+                )
             end)
             gradBlock:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-
-            local function UpdateSwatchStates()
+            local function Dim()
                 local bd = SelectedTBB()
-                local isAuto = false
-                -- Blizzard Style keeps the flat atlas fill, so the gradient end colour is inert there.
-                local noGrad = not bd or not bd.gradientEnabled or CludesUI.BlizzStyle.Get("cdmbars")
-                -- Fill swatch: disabled in auto mode
-                if isAuto then
-                    fillSwatch:SetAlpha(0.3)
-                    fillBlock:Show()
-                else
-                    fillSwatch:SetAlpha(1)
-                    fillBlock:Hide()
-                end
-                -- Grad swatch: disabled in auto mode OR when no gradient
-                if isAuto or noGrad then
-                    gradSwatch:SetAlpha(0.3)
-                    gradBlock:Show()
-                else
-                    gradSwatch:SetAlpha(1)
-                    gradBlock:Hide()
-                end
+                local off = not bd or not bd.gradientEnabled or CludesUI.BlizzStyle.Get("cdmbars")
+                gradSwatch:SetAlpha(off and 0.3 or 1)
+                gradBlock:SetShown(off and true or false)
             end
             CludesUI.RegisterWidgetRefresh(function()
-                updateFillSwatch()
-                updateGradSwatch()
-                UpdateSwatchStates()
+                updateFill()
+                updateGrad()
+                Dim()
             end)
-            UpdateSwatchStates()
+            Dim()
         end
 
         -- Border Texture dropdown (+ inline offset cog) | empty
