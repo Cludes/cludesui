@@ -4638,38 +4638,172 @@ initFrame:SetScript("OnEvent", function(self)
             thrPage:Hide()
         end -- BuildFrame
 
-        -- BuildFrame runs lazily on the first ToggleFrame open, not here
+        -- BuildFrame runs on the first open (ToggleFrame), not here.
 
-        -- Build/Refresh dynamic entry frames
+        -- The class of an entry's first spec (All Specs: the player's), for its colour.
+        local function EntryClass(entry)
+            local first = entry.specIDs and entry.specIDs[1]
+            if first == 0 then
+                return _playerClassFile
+            elseif first and GetSpecializationInfoByID then
+                local _, _, _, _, _, class = GetSpecializationInfoByID(first)
+                return class
+            elseif first and CludesUI.IS_FOREVER then
+                return CludesUI.SpecClassOf(first)
+            end
+        end
+
+        -- A small dark button with a hover tint (Add Variant).
+        -- level is set first: the rounded border takes its level from the button.
+        local function SmallButton(parent, w, h, level, text, tip)
+            local button = CreateFrame("Button", nil, parent)
+            Pix.Size(button, w, h)
+            button:SetFrameLevel(level)
+            local bg = button:CreateTexture(nil, "BACKGROUND")
+            bg:SetAllPoints()
+            bg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
+            button._border = CludesUI.MakeRoundedBorder(button, 1, 1, 1, 0.08, bg)
+            local label = CludesUI.MakeFont(button, 11, nil, 1, 1, 1)
+            label:SetText(text)
+            label:SetAlpha(0.65)
+            label:SetPoint("CENTER")
+            button:SetScript("OnEnter", function(self)
+                bg:SetColorTexture(0.16, 0.16, 0.16, 0.9)
+                label:SetAlpha(0.9)
+                CludesUI.ShowWidgetTooltip(self, tip)
+            end)
+            button:SetScript("OnLeave", function()
+                bg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
+                label:SetAlpha(0.65)
+                CludesUI.HideWidgetTooltip()
+            end)
+            return button
+        end
+
+        -- One entry row of the list (made once, reused): select on click, a
+        -- delete X, Add Variant (a talent-gated copy for the same spec) and
+        -- its spec / talent label.
+        local function MakeEntryFrame(parent)
+            local row = CreateFrame("Button", nil, parent)
+            row:SetFrameLevel(thrPage:GetFrameLevel() + 2)
+            row:RegisterForClicks("LeftButtonUp")
+            local bg = row:CreateTexture(nil, "BACKGROUND")
+            bg:SetAllPoints()
+            bg:SetColorTexture(1, 1, 1, 0.02)
+            row._bg = bg
+            -- The selection's accent bar on the left.
+            local accent = row:CreateTexture(nil, "ARTWORK")
+            accent:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+            accent:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 0, 0)
+            accent:SetWidth(3)
+            accent:Hide()
+            row._accent = accent
+
+            local remove = CreateFrame("Button", nil, row)
+            remove:SetSize(14, 14)
+            remove:SetPoint("RIGHT", row, "RIGHT", -8, 0)
+            remove:SetFrameLevel(row:GetFrameLevel() + 3)
+            local icon = remove:CreateTexture(nil, "OVERLAY")
+            icon:SetAllPoints()
+            icon:SetTexture(_bandCloseIcon)
+            icon:SetAlpha(0.4)
+            remove:SetScript("OnEnter", function()
+                icon:SetAlpha(0.9)
+            end)
+            remove:SetScript("OnLeave", function()
+                icon:SetAlpha(0.4)
+            end)
+            remove:SetScript("OnClick", function()
+                local bar = conf.getBarData()
+                if not (bar and row._entryIdx) then
+                    return
+                end
+                table.remove(bar.thresholdSpecs, row._entryIdx)
+                local count = #bar.thresholdSpecs
+                if count == 0 then
+                    _selectedIdx = nil
+                elseif _selectedIdx and _selectedIdx > count then
+                    _selectedIdx = count
+                end
+                _specDDRefresh()
+                RefreshSpecEntries()
+                RedrawDetail()
+                conf.refreshFn()
+            end)
+            row._delBtn = remove
+
+            local variant = SmallButton(
+                row,
+                84,
+                20,
+                row:GetFrameLevel() + 3,
+                CludesUI.L("Add Variant"),
+                CludesUI.L("Add a talent variant of this entry")
+            )
+            variant:SetPoint("RIGHT", remove, "LEFT", -10, 0)
+            variant:SetScript("OnClick", function()
+                local bar = row._entryIdx and conf.getBarData()
+                local specs = bar and bar.thresholdSpecs
+                local source = specs and specs[row._entryIdx]
+                if not source then
+                    return
+                end
+                local copy = CludesUI.Lite.DeepCopy(source)
+                copy.talentSpellID, copy.talentName = nil, nil
+                table.insert(specs, row._entryIdx + 1, copy)
+                _selectedIdx = row._entryIdx + 1
+                RefreshSpecEntries()
+                RedrawDetail()
+                conf.rebuildFn()
+            end)
+            row._varBtn = variant
+
+            local label = CludesUI.MakeFont(row, 14, nil, 1, 1, 1)
+            label:SetAlpha(0.85)
+            label:SetPoint("LEFT", row, "LEFT", 12, 0)
+            label:SetPoint("RIGHT", variant, "LEFT", -8, 0)
+            label:SetJustifyH("LEFT")
+            label:SetWordWrap(false)
+            row._specLbl = label
+
+            -- Selecting repaints and redraws the pane, not the list, so the scroll stays.
+            row:SetScript("OnClick", function(self)
+                if self._entryIdx then
+                    _selectedIdx = self._entryIdx
+                    RepaintRows()
+                    RedrawDetail()
+                end
+            end)
+            row:SetScript("OnEnter", function(self)
+                if not self._selected then
+                    self._bg:SetColorTexture(1, 1, 1, 0.06)
+                end
+            end)
+            row:SetScript("OnLeave", function(self)
+                if not self._selected then
+                    self._bg:SetColorTexture(1, 1, 1, 0.02)
+                end
+            end)
+            return row
+        end
+
+        -- Lays the list out. scrollToSel: scroll to the selected row (open,
+        -- add); otherwise the offset stays, pulled back in when a shorter
+        -- list leaves it past the end.
         RefreshSpecEntries = function(scrollToSel)
             UpdateNotice()
             if not specContainer then
                 return
             end
-            local edge = conf.getBarData()
-            if not edge then
+            local bar = conf.getBarData()
+            if not bar then
                 return
             end
-            if not edge.thresholdSpecs then
-                edge.thresholdSpecs = {}
-            end
-            local entries = edge.thresholdSpecs
+            bar.thresholdSpecs = bar.thresholdSpecs or {}
+            local entries = bar.thresholdSpecs
 
-            -- The entry the resolver actually picks in-game right now; seeds the default selection so it opens pre-selected
-            local activeIdx
-            do
-                local resolved = _G._CURB_ResolveThresholdSpecEntry(edge)
-                if resolved then
-                    for i = 1, #entries do
-                        if entries[i] == resolved then
-                            activeIdx = i
-                            break
-                        end
-                    end
-                end
-            end
-
-            -- Resolve/clamp the selection: active entry, else the first
+            -- Selection: kept in range; else the entry the resolver picks in
+            -- game now (so it opens selected), else the first.
             if #entries == 0 then
                 _selectedIdx = nil
             else
@@ -4677,199 +4811,60 @@ initFrame:SetScript("OnEvent", function(self)
                     _selectedIdx = #entries
                 end
                 if not _selectedIdx or _selectedIdx < 1 then
-                    _selectedIdx = activeIdx or 1
+                    local live = _G._CURB_ResolveThresholdSpecEntry(bar)
+                    local liveIdx
+                    for i, entry in ipairs(entries) do
+                        if live and entry == live then
+                            liveIdx = i
+                            break
+                        end
+                    end
+                    _selectedIdx = liveIdx or 1
                 end
             end
 
-            local scrollChild = specContainer._scrollChild
-            local curY = 0
-            local ENTRY_W = contentHalfSize - 6
-            local ENTRY_H = 32
-
-            for i = 1, #_entryFrames do
-                if _entryFrames[i] then
-                    _entryFrames[i]:Hide()
-                end
+            local list = specContainer._scrollChild
+            local ENTRY_W, ENTRY_H = contentHalfSize - 6, 32
+            for _, f in ipairs(_entryFrames) do
+                f:Hide()
             end
+            local y = 0
+            for position, entry in ipairs(entries) do
+                local row = _entryFrames[position] or MakeEntryFrame(list)
+                _entryFrames[position] = row
+                row._entryIdx = position
+                row:SetSize(ENTRY_W, ENTRY_H)
+                row:ClearAllPoints()
+                row:SetPoint("TOPLEFT", list, "TOPLEFT", 0, y)
+                row._yOffset = -y
 
-            for position, record in ipairs(entries) do
-                local ef = _entryFrames[position]
-                if not ef then
-                    ef = CreateFrame("Button", nil, scrollChild)
-                    ef:SetFrameLevel(thrPage:GetFrameLevel() + 2)
-                    ef:RegisterForClicks("LeftButtonUp")
-                    _entryFrames[position] = ef
-
-                    local entBg = ef:CreateTexture(nil, "BACKGROUND")
-                    entBg:SetAllPoints()
-                    entBg:SetColorTexture(1, 1, 1, 0.02)
-                    ef._bg = entBg
-
-                    -- Selection accent: left theme-accent bar
-                    local accent = ef:CreateTexture(nil, "ARTWORK")
-                    accent:SetPoint("TOPLEFT", ef, "TOPLEFT", 0, 0)
-                    accent:SetPoint("BOTTOMLEFT", ef, "BOTTOMLEFT", 0, 0)
-                    accent:SetWidth(3)
-                    accent:Hide()
-                    ef._accent = accent
-
-                    local delBtn = CreateFrame("Button", nil, ef)
-                    delBtn:SetSize(14, 14)
-                    delBtn:SetPoint("RIGHT", ef, "RIGHT", -8, 0)
-                    delBtn:SetFrameLevel(ef:GetFrameLevel() + 3)
-                    local delIcon = delBtn:CreateTexture(nil, "OVERLAY")
-                    delIcon:SetAllPoints()
-                    delIcon:SetTexture(_bandCloseIcon)
-                    delIcon:SetAlpha(0.4)
-                    delBtn:SetScript("OnEnter", function()
-                        delIcon:SetAlpha(0.9)
-                    end)
-                    delBtn:SetScript("OnLeave", function()
-                        delIcon:SetAlpha(0.4)
-                    end)
-                    delBtn:SetScript("OnClick", function()
-                        local bd2 = conf.getBarData()
-                        if not (bd2 and ef._entryIdx) then
-                            return
-                        end
-                        table.remove(bd2.thresholdSpecs, ef._entryIdx)
-                        local num = #bd2.thresholdSpecs
-                        if num == 0 then
-                            _selectedIdx = nil
-                        elseif _selectedIdx and _selectedIdx > num then
-                            _selectedIdx = num
-                        end
-                        _specDDRefresh()
-                        RefreshSpecEntries()
-                        RedrawDetail()
-                        conf.refreshFn()
-                    end)
-                    ef._delBtn = delBtn
-
-                    -- Add-variant duplicates this entry as a talent-gated sibling for the same spec; sits left of the delete X
-                    local varBtn = CreateFrame("Button", nil, ef)
-                    Pix.Size(varBtn, 84, 20)
-                    varBtn:SetPoint("RIGHT", delBtn, "LEFT", -10, 0)
-                    varBtn:SetFrameLevel(ef:GetFrameLevel() + 3)
-                    local varBg = varBtn:CreateTexture(nil, "BACKGROUND")
-                    varBg:SetAllPoints()
-                    varBg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
-                    varBtn._border = CludesUI.MakeRoundedBorder(varBtn, 1, 1, 1, 0.08, varBg)
-                    local varLbl = CludesUI.MakeFont(varBtn, 11, nil, 1, 1, 1)
-                    varLbl:SetText(CludesUI.L("Add Variant"))
-                    varLbl:SetAlpha(0.65)
-                    varLbl:SetPoint("CENTER")
-                    varBtn:SetScript("OnEnter", function(self)
-                        varBg:SetColorTexture(0.16, 0.16, 0.16, 0.9)
-                        varLbl:SetAlpha(0.9)
-                        CludesUI.ShowWidgetTooltip(self, CludesUI.L("Add a talent variant of this entry"))
-                    end)
-                    varBtn:SetScript("OnLeave", function()
-                        varBg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
-                        varLbl:SetAlpha(0.65)
-                        CludesUI.HideWidgetTooltip()
-                    end)
-                    varBtn:SetScript("OnClick", function()
-                        if not ef._entryIdx then
-                            return
-                        end
-                        local bd2 = conf.getBarData()
-                        if not bd2 then
-                            return
-                        end
-                        local specs = bd2.thresholdSpecs
-                        local source = specs and specs[ef._entryIdx]
-                        if not source then
-                            return
-                        end
-                        local copy = CludesUI.Lite.DeepCopy(source)
-                        copy.talentSpellID = nil
-                        copy.talentName = nil
-                        table.insert(specs, ef._entryIdx + 1, copy)
-                        _selectedIdx = ef._entryIdx + 1
-                        RefreshSpecEntries()
-                        RedrawDetail()
-                        conf.rebuildFn()
-                    end)
-                    ef._varBtn = varBtn
-
-                    -- Spec/talent group label (class-colored)
-                    local specLbl = CludesUI.MakeFont(ef, 14, nil, 1, 1, 1)
-                    specLbl:SetAlpha(0.85)
-                    specLbl:SetPoint("LEFT", ef, "LEFT", 12, 0)
-                    specLbl:SetPoint("RIGHT", varBtn, "LEFT", -8, 0)
-                    specLbl:SetJustifyH("LEFT")
-                    specLbl:SetWordWrap(false)
-                    ef._specLbl = specLbl
-
-                    -- Whole row selects this entry: repaint + refresh the detail pane with no list rebuild, so the scroll never jumps
-                    ef:SetScript("OnClick", function(self)
-                        if not self._entryIdx then
-                            return
-                        end
-                        _selectedIdx = self._entryIdx
-                        RepaintRows()
-                        RedrawDetail()
-                    end)
-                    ef:SetScript("OnEnter", function(self)
-                        if not self._selected then
-                            self._bg:SetColorTexture(1, 1, 1, 0.06)
-                        end
-                    end)
-                    ef:SetScript("OnLeave", function(self)
-                        if not self._selected then
-                            self._bg:SetColorTexture(1, 1, 1, 0.02)
-                        end
-                    end)
-                end -- end entry frame creation
-
-                ef._entryIdx = position
-                ef:SetSize(ENTRY_W, ENTRY_H)
-                ef:ClearAllPoints()
-                ef:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, curY)
-                ef._yOffset = -curY
-
-                -- Class-color the label from the first specID (entries with no specIDs read "Unknown", in white)
-                ef._specLbl:SetText(mod.EntryLabel(record))
-                local class
-                local firstSID = record.specIDs and record.specIDs[1]
-                if firstSID == 0 then
-                    class = _playerClassFile
-                elseif firstSID and GetSpecializationInfoByID then
-                    local _, _, _, _, _, castFrame = GetSpecializationInfoByID(firstSID)
-                    class = castFrame
-                elseif firstSID and CludesUI.IS_FOREVER then
-                    class = CludesUI.SpecClassOf(firstSID)
-                end
-                local cc = class and CLASS_COLORS[class]
-                if cc then
-                    ef._specLbl:SetTextColor(cc[1], cc[2], cc[3], 1)
+                -- The label in its first spec's class colour (no specs: "Unknown", white).
+                row._specLbl:SetText(mod.EntryLabel(entry))
+                local colour = CLASS_COLORS[EntryClass(entry) or ""]
+                if colour then
+                    row._specLbl:SetTextColor(colour[1], colour[2], colour[3], 1)
                 else
-                    ef._specLbl:SetTextColor(1, 1, 1, 1)
+                    row._specLbl:SetTextColor(1, 1, 1, 1)
                 end
 
-                -- Talent variants are single-spec only: "All Specs"/multi-spec entries span specs, so a talent gate is meaningless. Hide "Add Variant" there and strip any stale gate.
-                local ids = record.specIDs
-                local allowTalent = (ids and #ids == 1 and ids[1] ~= 0) and true or false
-                ef._varBtn:SetShown(allowTalent)
-                if not allowTalent and record.talentSpellID then
-                    record.talentSpellID = nil
-                    record.talentName = nil
+                -- Talent variants are single-spec only (a gate across specs
+                -- means nothing): no Add Variant there, and a stale gate goes.
+                local ids = entry.specIDs
+                local single = (ids and #ids == 1 and ids[1] ~= 0) and true or false
+                row._varBtn:SetShown(single)
+                if not single and entry.talentSpellID then
+                    entry.talentSpellID, entry.talentName = nil, nil
                     conf.rebuildFn()
                 end
 
-                -- Selection highlight; duplicates the resolver can never reach are shadow-dimmed
-                PaintRow(ef)
-                ef:SetAlpha(mod._CURB_IsThresholdCardShadowed(entries, position) and 0.45 or 1)
-
-                ef:Show()
-                curY = curY - ENTRY_H - ROW_GAP
+                -- Duplicates the resolver can never reach are dimmed.
+                PaintRow(row)
+                row:SetAlpha(mod._CURB_IsThresholdCardShadowed(entries, position) and 0.45 or 1)
+                row:Show()
+                y = y - ENTRY_H - ROW_GAP
             end
+            list:SetSize(contentHalfSize, math.max(1, math.abs(y) + SIDE_PAD))
 
-            local contentH = math.abs(curY) + SIDE_PAD
-            scrollChild:SetSize(contentHalfSize, math.max(1, contentH))
-
-            -- Scroll the list to the selected row (on open / add); else keep the offset, pulled back in when a shorter list leaves it past the end (the thumb follows)
             if scrollToSel and _selectedIdx and _entryFrames[_selectedIdx] then
                 scrollTo((_entryFrames[_selectedIdx]._yOffset or 0) - 8)
             else
@@ -4877,6 +4872,8 @@ initFrame:SetScript("OnEvent", function(self)
             end
         end
 
+        -- Opens the editor (built on first use) with the resolver's live entry
+        -- selected, or closes it.
         local function ToggleFrame()
             if not conf.getBarData() then
                 return
@@ -4885,16 +4882,15 @@ initFrame:SetScript("OnEvent", function(self)
                 BuildFrame()
             end
             if thrPage:IsShown() then
-                -- Unlock cycle: forces a correct redraw
-                if thrPage:GetLeft() ~= nil then
-                    thrPage:Hide()
+                local placed = thrPage:GetLeft() ~= nil
+                thrPage:Hide()
+                -- An unplaced page (after a Layout Mode cycle) opens again, redrawn.
+                if placed then
                     return
                 end
-                thrPage:Hide()
             end
             wipe(_tempSpecSel)
             _specDDRefresh()
-            -- Re-pick the resolver's active entry each open, then scroll to it
             _selectedIdx = nil
             RefreshSpecEntries(true)
             RefreshDetail()
@@ -4902,13 +4898,10 @@ initFrame:SetScript("OnEvent", function(self)
             thrPage:Show()
         end
 
-        settingsBtn:SetScript("OnClick", function()
-            ToggleFrame()
-        end)
-        -- Close on page switch or main panel close. Hidden inside its page's own
+        settingsBtn:SetScript("OnClick", ToggleFrame)
+        -- Closes with a page switch or the panel. Hidden inside its page's own
         -- hide, the editor may get no OnHide of its own (the engine's cascade
-        -- order decides), so it also leaves the spec / talent watcher here (a
-        -- second call does nothing).
+        -- order decides), so it also leaves the watcher here (twice is harmless).
         settingsBtn:HookScript("OnHide", function()
             if thrPage and thrPage:IsShown() then
                 thrPage:Hide()
