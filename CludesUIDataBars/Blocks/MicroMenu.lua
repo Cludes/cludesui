@@ -1101,10 +1101,19 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
 
     -- Counters sit on their button (the Text Position offsets move them; new
     -- blocks seed them 8px above the icon) in both icon styles.
+    -- The counters on the guild and social buttons. The roster events repeat
+    -- every few seconds, so an unchanged count (at an unchanged size) only
+    -- has its colour checked.
+    local counterShown = {}
     local function SetCounterText(key, value)
         local fontStr = textFS[key]
-        mod.SetFont(fontStr, SocialFontSize(), BC())
-        fontStr:SetText(value)
+        local size = SocialFontSize()
+        local shown = counterShown[key]
+        if not (shown and shown.value == value and shown.size == size and fontStr:IsShown()) then
+            mod.SetFont(fontStr, size, BC())
+            fontStr:SetText(value)
+            counterShown[key] = { value = value, size = size }
+        end
         if not fontStr:IsShown() then
             fontStr:Show()
             if icons[key] then
@@ -1323,7 +1332,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
             return nil
         end
         local widget
-        local gname = "EWB_MM_" .. instance.key .. "_" .. key
+        local gname = "CUIInfoBar_MM_" .. instance.key .. "_" .. key
         if microRef then
             -- Taint-safe: pass clicks through to the Blizzard MicroButton.
             widget = CreateFrame(
@@ -1433,6 +1442,7 @@ mod.BlockFactories.micromenu = function(blockCfg, slot, contentFrame, barCtx)
         end
 
         local mm = D()
+        wipe(counterShown) -- a full pass sets the counters' font again (it may have changed)
         -- Materialise any buttons enabled after creation (options toggle).
         CreateFramesInner()
         SyncStyleEvents()
