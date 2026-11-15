@@ -6219,83 +6219,112 @@ initFrame:SetScript("OnEvent", function(self)
         end
     end
 
-    -- Register the module
+    -- The bars page shown again from the cache.
+    local function RestoreDisplayPage()
+        -- A kept header that built with nothing to show (no class resource)
+        -- is built again on every visit, as an empty header is never cached
+        -- without page reuse (its spec rows included; the build draws its
+        -- own preview values).
+        if _classHdrEmpty then
+            CludesUI:RefreshPage(true)
+            return
+        end
+        -- Fresh made-up values on every visit: 50 to 75% of five pips, a
+        -- 30 to 80% fill.
+        _previewPipCount = math.random(math.floor(5 * 0.50 + 0.5), math.floor(5 * 0.75 + 0.5))
+        _previewBarFillPct = math.random(30, 80)
+        UpdatePreviewHeader()
+        -- The hint is only shown or hidden here, never made.
+        local dismissed = IsPreviewHintDismissed()
+        if _previewHintFS then
+            if dismissed then
+                _previewHintFS:Hide()
+            else
+                RehomeHint(PAGE_DISPLAY)
+                _previewHintFS:SetAlpha(0.45)
+                _previewHintFS:Show()
+                local host = _previewHintFS:GetParent()
+                if host then
+                    host:Show()
+                end
+            end
+        end
+        if _headerBaseH > 0 then
+            CludesUI:SetContentHeaderHeightSilent(_headerBaseH + (dismissed and 0 or 35))
+        end
+    end
+
+    -- The Cast Bar page shown again: a fresh made-up fill each visit.
+    local function RestoreCastPage()
+        _castBarPreviewFill = math.random(30, 85) / 100
+        -- Before the preview update, which sizes the header for the hint.
+        if not IsPreviewHintDismissed() then
+            RehomeHint(PAGE_CASTBAR)
+        end
+        UpdateCastBarPreview()
+    end
+
+    -- Each page: its builder on mod (from the page files), and its header
+    -- builder and cache-restore step where it has a preview. The GCD and
+    -- Totem ones live on the env (set by their blocks above), read at call
+    -- time.
+    local env = mod._CURB_OptEnv
+    local PAGES = {
+        [PAGE_DISPLAY] = {
+            build = "ERB_BuildBarDisplayPage",
+            header = function()
+                return _previewHeaderBuilder
+            end,
+            restore = RestoreDisplayPage,
+        },
+        [PAGE_CASTBAR] = {
+            build = "ERB_BuildCastBarPage",
+            header = function()
+                return _castBarPreviewBuilder
+            end,
+            restore = RestoreCastPage,
+        },
+        [PAGE_GCD] = {
+            build = "ERB_BuildGCDBarPage",
+            header = function()
+                return env._gcdPreviewBuilder
+            end,
+            restore = function()
+                env.RestoreGCDPreview()
+            end,
+        },
+        [PAGE_SWING] = { build = "ERB_BuildSwingTimerPage" },
+        [PAGE_TOTEM] = {
+            build = "ERB_BuildTotemBarPage",
+            header = function()
+                return env._totemPreviewBuilder
+            end,
+            restore = function()
+                env.RestoreTotemPreview()
+            end,
+        },
+    }
+
     CludesUI:RegisterModule("CludesUIResourceBars", {
         title = "Resource Bars",
         description = "Custom class resource, health, and mana bar display.",
+        -- Swing Timer only where the client has one (WoW Forever).
         pages = C_SwingTimer and { PAGE_DISPLAY, PAGE_CASTBAR, PAGE_GCD, PAGE_SWING, PAGE_TOTEM }
             or { PAGE_DISPLAY, PAGE_CASTBAR, PAGE_GCD, PAGE_TOTEM },
         buildPage = function(pageName, hostFrame, yOffset)
-            if pageName == PAGE_DISPLAY then
-                return mod.ERB_BuildBarDisplayPage(pageName, hostFrame, yOffset)
-            elseif pageName == PAGE_CASTBAR then
-                return mod.ERB_BuildCastBarPage(pageName, hostFrame, yOffset)
-            elseif pageName == PAGE_GCD then
-                return mod.ERB_BuildGCDBarPage(pageName, hostFrame, yOffset)
-            elseif pageName == PAGE_SWING then
-                return mod.ERB_BuildSwingTimerPage(pageName, hostFrame, yOffset)
-            elseif pageName == PAGE_TOTEM then
-                return mod.ERB_BuildTotemBarPage(pageName, hostFrame, yOffset)
+            local page = PAGES[pageName]
+            if page then
+                return mod[page.build](pageName, hostFrame, yOffset)
             end
         end,
         getHeaderBuilder = function(pageName)
-            if pageName == PAGE_DISPLAY then
-                return _previewHeaderBuilder
-            elseif pageName == PAGE_CASTBAR then
-                return _castBarPreviewBuilder
-            elseif pageName == PAGE_GCD then
-                return mod._CURB_OptEnv._gcdPreviewBuilder
-            elseif pageName == PAGE_TOTEM then
-                return mod._CURB_OptEnv._totemPreviewBuilder
-            end
-            return nil
+            local page = PAGES[pageName]
+            return page and page.header and page.header() or nil
         end,
         onPageCacheRestore = function(pageName)
-            if pageName == PAGE_DISPLAY then
-                -- A kept header that built with nothing to show (no class
-                -- resource) is built again on every visit, as an empty header
-                -- is never cached without page reuse (its spec rows included;
-                -- the build draws its own preview values).
-                if _classHdrEmpty then
-                    CludesUI:RefreshPage(true)
-                    return
-                end
-                -- Randomize preview values when switching TO this tab
-                local minPips = math.floor(5 * 0.50 + 0.5)
-                local maxPips = math.floor(5 * 0.75 + 0.5)
-                _previewPipCount = math.random(minPips, maxPips)
-                _previewBarFillPct = math.random(30, 80)
-                UpdatePreviewHeader()
-                -- Refresh hint visibility never recreate here, just show/hide
-                local dismissed = IsPreviewHintDismissed()
-                if _previewHintFS then
-                    if dismissed then
-                        _previewHintFS:Hide()
-                    else
-                        RehomeHint(PAGE_DISPLAY)
-                        _previewHintFS:SetAlpha(0.45)
-                        _previewHintFS:Show()
-                        if _previewHintFS:GetParent() then
-                            _previewHintFS:GetParent():Show()
-                        end
-                    end
-                end
-                -- Set correct header height based on current hint state
-                if _headerBaseH > 0 then
-                    CludesUI:SetContentHeaderHeightSilent(_headerBaseH + (dismissed and 0 or 35))
-                end
-            elseif pageName == PAGE_CASTBAR then
-                -- Randomize cast bar preview fill each time the tab is opened
-                _castBarPreviewFill = math.random(30, 85) / 100
-                -- Before the preview update: it sizes the header for the hint.
-                if not IsPreviewHintDismissed() then
-                    RehomeHint(PAGE_CASTBAR)
-                end
-                UpdateCastBarPreview()
-            elseif pageName == PAGE_GCD then
-                mod._CURB_OptEnv.RestoreGCDPreview()
-            elseif pageName == PAGE_TOTEM then
-                mod._CURB_OptEnv.RestoreTotemPreview()
+            local page = PAGES[pageName]
+            if page and page.restore then
+                page.restore()
             end
         end,
         onReset = function()

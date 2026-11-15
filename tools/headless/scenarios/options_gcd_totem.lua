@@ -16,3 +16,12 @@ for _, on in ipairs({ true, false }) do
     CUI:SelectPage("Cast Bar")
     SNAP("cast header " .. tostring(on), CUI._contentHeader or CUI._headerFrame)
 end
+-- Swing Timer (WoW Forever only), then the cached GCD and Cast pages again.
+if rawget(_G, "C_SwingTimer") then
+    CUI:SelectPage("Swing Timer")
+    SNAP("swing page", CUI._contentHeader or CUI._headerFrame)
+end
+CUI:SelectPage("GCD Bar")
+SNAP("gcd again", CUI._contentHeader or CUI._headerFrame)
+CUI:SelectPage("Cast Bar")
+SNAP("cast again", CUI._contentHeader or CUI._headerFrame)
