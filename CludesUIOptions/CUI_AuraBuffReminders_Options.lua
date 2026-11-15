@@ -502,207 +502,156 @@ initFrame:SetScript("OnEvent", function(self)
         return btn
     end
 
+    -- One preview icon: the spell texture, the live border (the reminder
+    -- icons' own helper, so the header matches them exactly) and its text
+    -- on an overlay above the icon.
+    local function MakePreviewIcon(container, data, d, sz, iconH, x)
+        local btn = CreateFrame("Button", nil, container)
+        btn:SetSize(sz, iconH)
+        btn:EnableMouse(true)
+        btn:SetPoint("TOP", container, "TOP", x, 0)
+        btn:SetAlpha((d and d.opacity) or 1.0)
+
+        local icon = btn:CreateTexture(nil, "ARTWORK")
+        icon:SetAllPoints()
+        icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+        icon:SetTexture(data.texture or 134400)
+        if icon.SetSnapToPixelGrid then
+            icon:SetSnapToPixelGrid(false)
+            icon:SetTexelSnappingBias(0)
+        end
+        btn._icon = icon
+        _G._CUABR_ApplyIconBorder(btn, false)
+
+        local layer = CreateFrame("Frame", nil, btn)
+        layer:SetAllPoints()
+        layer:SetFrameLevel(btn:GetFrameLevel() + 5)
+        local text = layer:CreateFontString(nil, "OVERLAY")
+        local own, onIcon = GetPreviewTextAnchor(d)
+        text:SetPoint(own, btn, onIcon, (d and d.textXOffset) or 0, (d and d.textYOffset) or -2)
+        CludesUI.ApplyModuleFont(text, GetNameFontPath(), (d and d.textSize) or 11, "auraBuff")
+        local tc = (d and d.textColor) or { r = 1, g = 1, b = 1 }
+        text:SetTextColor(tc.r, tc.g, tc.b, 1)
+        text:SetText(data.label or "")
+        if not (d and d.showText) then
+            text:Hide()
+        end
+        btn._text = text
+        return btn
+    end
+
+    -- The hint under the icons, kept across builds (out of the container's
+    -- pool). Returns the height it adds.
+    local function PlacePreviewHint(hdr, container)
+        if _previewHintFS and not _previewHintFS:GetParent() then
+            _previewHintFS = nil
+        end
+        if IsPreviewHintDismissed() then
+            if _previewHintFS then
+                _previewHintFS:Hide()
+            end
+            return 0
+        end
+        if not _previewHintFS then
+            _previewHintFS = Pool.Keep(CludesUI.MakeFont(container, 11, nil, 1, 1, 1))
+            _previewHintFS:SetAlpha(0.45)
+            _previewHintFS:SetText(CludesUI.L("Click elements to scroll to and highlight their options"))
+        end
+        _previewHintFS:SetParent(container)
+        _previewHintFS:ClearAllPoints()
+        _previewHintFS:SetPoint("BOTTOM", hdr, "BOTTOM", 0, 15)
+        _previewHintFS:Show()
+        return 35
+    end
+
+    -- The header: one icon per reminder the player could see, click to
+    -- scroll to its setting. The container and icons are kept across
+    -- builds, and a build with the same number of icons only re-dresses
+    -- them (a tab switch then costs no frame churn).
     _previewHeaderBuilder = function(hdr, hdrW)
         local icons = CollectPreviewIcons()
         local d = DDB()
-        local baseScale = d and d.scale or 1.0
-        local ICON_SIZE = _G._CUABR_ICON_SIZE or 40
-        local sz = math.floor(ICON_SIZE * baseScale + 0.5)
-        local iconH = sz
-        if d and d.iconShape and d.iconShape ~= "none" then
-            sz, iconH = ns.IconDimensions(sz, d)
-        end
-        local spacing = d and d.iconSpacing or 8
-        local showText = d and d.showText
-        local tc = d and d.textColor or { r = 1, g = 1, b = 1 }
-        local opacity = d and d.opacity or 1.0
 
-        -- Reuse existing container + icons if count matches (avoids
-        -- full frame teardown/rebuild on tab switch which causes FPS dip)
+        -- The levels the first build gave the container and its icons (a
+        -- kept header root's own dress can raise what it holds).
         if _previewContainer and #_previewIcons == #icons then
-            -- Re-parent and re-show (may have been orphaned by ClearContentHeader)
-            _previewContainer:SetParent(hdr)
-            -- The levels the first build gave the container and its icons (a
-            -- kept header root's own dress can raise what it holds)
-            _previewContainer:SetFrameLevel(hdr:GetFrameLevel() + 1)
-            _previewContainer:ClearAllPoints()
-            _previewContainer:SetPoint("CENTER", hdr, "CENTER", 0, 0)
-            _previewContainer:SetSize(hdrW, _previewContainer:GetHeight())
-            _previewContainer:Show()
-            -- Update textures/labels in case the icon set changed content
-            for i, pIcon in ipairs(_previewIcons) do
-                if pIcon.frame then
-                    pIcon.frame:SetFrameLevel(_previewContainer:GetFrameLevel() + 1)
-                end
-                if pIcon.frame and icons[i] then
-                    if pIcon.frame._icon then
-                        pIcon.frame._icon:SetTexture(icons[i].texture or 134400)
+            local box = _previewContainer
+            box:SetParent(hdr) -- may have been orphaned by ClearContentHeader
+            box:SetFrameLevel(hdr:GetFrameLevel() + 1)
+            box:ClearAllPoints()
+            box:SetPoint("CENTER", hdr, "CENTER", 0, 0)
+            box:SetSize(hdrW, box:GetHeight())
+            box:Show()
+            for i, entry in ipairs(_previewIcons) do
+                local btn, data = entry.frame, icons[i]
+                if btn then
+                    btn:SetFrameLevel(box:GetFrameLevel() + 1)
+                    if data then
+                        if btn._icon then
+                            btn._icon:SetTexture(data.texture or 134400)
+                        end
+                        if btn._text then
+                            btn._text:SetText(data.label or "")
+                        end
+                        entry.data = data
                     end
-                    if pIcon.frame._text then
-                        pIcon.frame._text:SetText(icons[i].label or "")
-                    end
-                    pIcon.data = icons[i]
                 end
             end
             UpdatePreviewHeader()
-            -- Must return the header height. A bare `return` (nil) made
-            -- SetContentHeader collapse the content header to 0px, so the whole
-            -- preview vanished whenever a toggle left the icon count unchanged
-            -- (inky/healthstone, augment rune, pet, or a raid buff/aura not for
-            -- this class). Match the full-build height (base 80 + hint row).
-            return 80 + ((not IsPreviewHintDismissed()) and 35 or 0)
+            -- The full build's height (never nil, which would collapse the header).
+            return PREVIEW_H + ((not IsPreviewHintDismissed()) and 35 or 0)
         end
 
-        -- Container for icons (centered within hardcoded 80px header)
-        local textYOff = d and d.textYOffset or -2
-        local textSz = d and d.textSize or 11
-        local textOverhang = showText and (math.abs(textYOff) + textSz) or 0
-
-        -- Recycle or create container (kept across header builds: Pool.Keep
-        -- takes it out of its host's pool, so a later build never hands it out
-        -- as another frame)
+        local sz, iconH, spacing = IconMetrics(d)
+        local showText = d and d.showText
+        local overhang = showText and (math.abs((d and d.textYOffset) or -2) + ((d and d.textSize) or 11))
+            or 0
         if _previewContainer then
             _previewContainer:SetParent(hdr)
             _previewContainer:ClearAllPoints()
         else
+            -- Pool.Keep: out of its host's pool, so no later build hands it out as another frame.
             _previewContainer = Pool.Keep(CreateFrame("Frame", nil, hdr))
         end
-        -- (the level a new container gets: see the reuse branch above)
-        _previewContainer:SetFrameLevel(hdr:GetFrameLevel() + 1)
-        _previewContainer:SetSize(hdrW, iconH + textOverhang)
-        _previewContainer:SetPoint("CENTER", hdr, "CENTER", 0, 0)
-        _previewContainer:Show()
         local container = _previewContainer
+        container:SetFrameLevel(hdr:GetFrameLevel() + 1)
+        container:SetSize(hdrW, iconH + overhang)
+        container:SetPoint("CENTER", hdr, "CENTER", 0, 0)
+        container:Show()
 
-        -- The previous icon set goes before the new one is made: on a pool host
-        -- the icons below are handed back in order and dressed again.
+        -- The old set goes before the new one is made: on a pool host the
+        -- icons are handed back in order and dressed again.
         Pool.Begin(container)
-
-        -- Hide old icon frames before rebuilding
-        for _, pIcon in ipairs(_previewIcons) do
-            if pIcon.frame then
-                pIcon.frame:Hide()
+        for _, entry in ipairs(_previewIcons) do
+            if entry.frame then
+                entry.frame:Hide()
             end
         end
         wipe(_previewIcons)
-        local startX = PreviewStartX(d, #icons, sz, spacing, hdrW)
-
-        for i, iconData in ipairs(icons) do
-            local btn = CreateFrame("Button", nil, container)
-            btn:SetSize(sz, iconH)
-            btn:EnableMouse(true)
-            btn:SetPoint("TOP", container, "TOP", startX + (i - 1) * (sz + spacing), 0)
-            btn:SetAlpha(opacity)
-
-            local icon = btn:CreateTexture(nil, "ARTWORK")
-            icon:SetAllPoints()
-            icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-            icon:SetTexture(iconData.texture or 134400)
-            if icon.SetSnapToPixelGrid then
-                icon:SetSnapToPixelGrid(false)
-                icon:SetTexelSnappingBias(0)
-            end
-            btn._icon = icon
-
-            -- The live border helper owns the preview border too, keeping the
-            -- header byte-for-byte aligned with reminder icons.
-            if _G._CUABR_ApplyIconBorder then
-                _G._CUABR_ApplyIconBorder(btn, false)
-            else
-                local border = CreateFrame("Frame", nil, btn)
-                border:SetAllPoints()
-                border:EnableMouse(false)
-                btn._eabrBorderFrame = border
-                local pd = DDB()
-                local borderSize = (pd and pd.borderSize) or 1
-                local borderTex = (pd and pd.borderTexture) or "solid"
-                CludesUI.ApplyBorderStyle(
-                    border,
-                    borderSize,
-                    (pd and pd.borderR) or 0,
-                    (pd and pd.borderG) or 0,
-                    (pd and pd.borderB) or 0,
-                    (pd and pd.borderA) or 1,
-                    borderTex,
-                    pd and pd.borderTextureOffset,
-                    pd and pd.borderTextureOffsetY,
-                    pd and pd.borderTextureShiftX,
-                    pd and pd.borderTextureShiftY,
-                    "aurabuffreminders",
-                    borderSize,
-                    nil,
-                    CludesUI.BorderPx(pd and pd.borderSizePx, borderSize, borderTex)
-                )
-            end
-
-            -- Text label below icon
-            local fontPath = GetNameFontPath()
-            local textSize = d and d.textSize or 11
-            local textXOff = d and d.textXOffset or 0
-            local textYOff = d and d.textYOffset or -2
-            local textOverlay = CreateFrame("Frame", nil, btn)
-            textOverlay:SetAllPoints()
-            textOverlay:SetFrameLevel(btn:GetFrameLevel() + 5)
-            local text = textOverlay:CreateFontString(nil, "OVERLAY")
-            do
-                local tp, ip = GetPreviewTextAnchor(d)
-                text:SetPoint(tp, btn, ip, textXOff, textYOff)
-            end
-            CludesUI.ApplyModuleFont(text, fontPath, textSize, "auraBuff")
-            text:SetTextColor(tc.r, tc.g, tc.b, 1)
-            text:SetText(iconData.label or "")
-            if not showText then
-                text:Hide()
-            end
-            btn._text = text
-
-            _previewIcons[i] = { frame = btn, data = iconData }
+        local x = PreviewStartX(d, #icons, sz, spacing, hdrW)
+        for i, data in ipairs(icons) do
+            local btn = MakePreviewIcon(container, data, d, sz, iconH, x + (i - 1) * (sz + spacing))
+            _previewIcons[i] = { frame = btn, data = data }
         end
+        UpdatePreviewHeader() -- glows
 
-        -- Apply glows
-        UpdatePreviewHeader()
-
-        -- Create hit overlays on each preview icon
+        -- Each icon leads to its own row (else its category); a shown text to Show Name.
         wipe(_eabrHitOverlays)
-        local overlayLevel = container:GetFrameLevel() + 20
-        for i, pIcon in ipairs(_previewIcons) do
-            if pIcon.frame and pIcon.data then
-                -- Use per-item key if available, fall back to category
-                local mappingKey = pIcon.data.itemKey and ("item:" .. pIcon.data.itemKey)
-                    or (pIcon.data.cat or "display")
-                EABRCreateHitOverlay(pIcon.frame, mappingKey, overlayLevel)
-                -- Hit overlay on text label scrolls to the Show Name setting
-                if pIcon.frame._text and showText then
-                    EABRCreateHitOverlay(pIcon.frame._text, "showText", overlayLevel)
-                end
+        local level = container:GetFrameLevel() + 20
+        for _, entry in ipairs(_previewIcons) do
+            local data = entry.data
+            EABRCreateHitOverlay(
+                entry.frame,
+                data.itemKey and ("item:" .. data.itemKey) or data.cat or "display",
+                level
+            )
+            if showText then
+                EABRCreateHitOverlay(entry.frame._text, "showText", level)
             end
         end
 
-        -- Hint text
-        if _previewHintFS and not _previewHintFS:GetParent() then
-            _previewHintFS = nil
-        end
-        local hintShown = not IsPreviewHintDismissed()
-        local TOTAL_H = 80
-        _eabrHeaderBaseH = TOTAL_H
-
-        if hintShown then
-            if not _previewHintFS then
-                -- Kept across builds too (out of the container's pool).
-                _previewHintFS = Pool.Keep(CludesUI.MakeFont(container, 11, nil, 1, 1, 1))
-                _previewHintFS:SetAlpha(0.45)
-                _previewHintFS:SetText(CludesUI.L("Click elements to scroll to and highlight their options"))
-            end
-            _previewHintFS:SetParent(container)
-            _previewHintFS:ClearAllPoints()
-            _previewHintFS:SetPoint("BOTTOM", hdr, "BOTTOM", 0, 15)
-            _previewHintFS:Show()
-            TOTAL_H = TOTAL_H + 35
-        elseif _previewHintFS then
-            _previewHintFS:Hide()
-        end
-
-        return TOTAL_H
+        _eabrHeaderBaseH = PREVIEW_H
+        return PREVIEW_H + PlacePreviewHint(hdr, container)
     end
 
     ---------------------------------------------------------------------------
@@ -788,31 +737,21 @@ initFrame:SetScript("OnEvent", function(self)
         end
     end
 
-    -- Per-section "Where to Show" accessors (created on demand).
-    local function RWhere()
-        local r = RDB()
-        if not r then
-            return nil
+    -- A section's own sub-table accessor (the table is made on first use).
+    local function SubTable(section, field)
+        return function()
+            local t = section()
+            if not t then
+                return nil
+            end
+            t[field] = t[field] or {}
+            return t[field]
         end
-        r.whereToShow = r.whereToShow or {}
-        return r.whereToShow
     end
-    local function AWhere()
-        local a = ADB()
-        if not a then
-            return nil
-        end
-        a.whereToShow = a.whereToShow or {}
-        return a.whereToShow
-    end
-    local function CWhere()
-        local c = CDB()
-        if not c then
-            return nil
-        end
-        c.whereToShow = c.whereToShow or {}
-        return c.whereToShow
-    end
+    -- Per-section "Where to Show" stores.
+    local RWhere = SubTable(RDB, "whereToShow")
+    local AWhere = SubTable(ADB, "whereToShow")
+    local CWhere = SubTable(CDB, "whereToShow")
     -- Per-section sets, see EABR.SPECIALS. The first write stores a copy of
     -- the old shared specials set.
     local function CSpecialWhere(cls)
@@ -829,30 +768,9 @@ initFrame:SetScript("OnEvent", function(self)
             return _G._CUABR_SpecialsWhere(c, field)
         end
     end
-    local function CWarlockWhere()
-        local c = CDB()
-        if not c then
-            return nil
-        end
-        c.warlockWhereToShow = c.warlockWhereToShow or {}
-        return c.warlockWhereToShow
-    end
-    local function FWhere()
-        local f = FDB()
-        if not f then
-            return nil
-        end
-        f.whereToShow = f.whereToShow or {}
-        return f.whereToShow
-    end
-    local function RShowWhen()
-        local r = RDB()
-        if not r then
-            return nil
-        end
-        r.showWhen = r.showWhen or {}
-        return r.showWhen
-    end
+    local CWarlockWhere = SubTable(CDB, "warlockWhereToShow")
+    local FWhere = SubTable(FDB, "whereToShow")
+    local RShowWhen = SubTable(RDB, "showWhen")
 
     -- Shared reminder-sound catalogue (built + LSM-populated by the QoL
     -- module and exposed on CludesUI). Falls back to just "None".
@@ -861,17 +779,26 @@ initFrame:SetScript("OnEvent", function(self)
         local order = CludesUI._groupDeathSoundOrder or { "none" }
         return names, order
     end
+    local SOUND_TIP = "Play a sound once when a reminder in this section newly appears."
+    -- Plays a picked sound once, so the choice is heard.
+    local function PreviewSound(key)
+        local paths = CludesUI._groupDeathSoundPaths
+        local path = paths and paths[key]
+        if path then
+            PlaySoundFile(path, "Master")
+        end
+    end
 
     -- Inline cog holding a single "Sound" dropdown bound to getSec()[field]
-    -- ("none"/nil = silent). One reminder sound applies to the whole
-    -- section; selecting a sound previews it once.
+    -- ("none"/nil = silent), plus any extraRows. One reminder sound applies
+    -- to the whole section.
     local function AddSectionSoundCog(rgn, getSec, field, extraRows, title)
         local names, order = SoundNamesOrder()
         local rows = {
             {
                 type = "dropdown",
                 label = "Sound",
-                tooltip = "Play a sound once when a reminder in this section newly appears.",
+                tooltip = SOUND_TIP,
                 values = names,
                 order = order,
                 get = function()
@@ -883,28 +810,96 @@ initFrame:SetScript("OnEvent", function(self)
                     if not t then
                         return
                     end
-                    if v == "none" then
-                        t[field] = nil
-                    else
-                        t[field] = v
-                    end
-                    local paths = CludesUI._groupDeathSoundPaths
-                    local p = paths and paths[v]
-                    if p then
-                        PlaySoundFile(p, "Master")
-                    end
+                    t[field] = v ~= "none" and v or nil
+                    PreviewSound(v)
                 end,
             },
         }
-        if extraRows then
-            for i = 1, #extraRows do
-                rows[#rows + 1] = extraRows[i]
-            end
+        for _, extra in ipairs(extraRows or {}) do
+            rows[#rows + 1] = extra
         end
         return CludesUI.BuildInlineCog(
             rgn,
             { title = title or "Reminder Sound", rows = rows, minWidth = extraRows and 320 or 220 }
         )
+    end
+
+    -- A stand-in dropdown the DualRow lays out; the checklist below takes
+    -- its place once the row is built.
+    local function Placeholder(text, tooltip)
+        return {
+            type = "dropdown",
+            text = text,
+            tooltip = tooltip,
+            values = { _placeholder = "..." },
+            order = { "_placeholder" },
+            getValue = function()
+                return "_placeholder"
+            end,
+            setValue = function() end,
+        }
+    end
+
+    -- The full "Reminder Sound" dropdown for a section's right slot. A
+    -- class-special section looks its field up per call (the map is
+    -- exported in ABR's OnEnable, see EABR.SPECIALS) and stores "none"
+    -- rather than clearing it (see EABR.SpecialsSound).
+    local function SoundDropdownCfg(cfg)
+        local names, order = SoundNamesOrder()
+        local sec, special = cfg.soundSec, cfg.specialClass
+        local own = cfg.soundField or "sectionSound"
+        local function Field()
+            if not special then
+                return own
+            end
+            local S = _G._CUABR_SPECIALS
+            return S and S[special].sound
+        end
+        return {
+            type = "dropdown",
+            text = "Reminder Sound",
+            dropdownWidth = 220,
+            tooltip = SOUND_TIP,
+            values = names,
+            order = order,
+            getValue = function()
+                local t = sec()
+                local f = t and Field()
+                if not f then
+                    return "none"
+                end
+                if special and _G._CUABR_SpecialsSound then
+                    return _G._CUABR_SpecialsSound(t, f) or "none"
+                end
+                return t[f] or "none"
+            end,
+            setValue = function(v)
+                local t = sec()
+                local f = t and Field()
+                if not f then
+                    return
+                end
+                if v == "none" and not special then
+                    t[f] = nil
+                else
+                    t[f] = v
+                end
+                PreviewSound(v)
+            end,
+        }
+    end
+
+    -- Puts a checkbox dropdown in a DualRow region in place of its control.
+    local function CheckList(rgn, items, get, set)
+        if rgn._control then
+            rgn._control:Hide()
+        end
+        local dd, refresh =
+            CludesUI.BuildVisOptsCBDropdown(rgn, 220, rgn:GetFrameLevel() + 2, items, get, set)
+        PP.Point(dd, "RIGHT", rgn, "RIGHT", -20, 0)
+        rgn._control = dd
+        rgn._lastInline = nil
+        CludesUI.RegisterWidgetRefresh(refresh)
     end
 
     -- Per-section control dual-row: a "Where to Show" checkbox dropdown on
@@ -913,118 +908,33 @@ initFrame:SetScript("OnEvent", function(self)
     -- a full "Reminder Sound" dropdown fills the slot instead of a cog; else
     -- the section's own cfg.rightCfg (the caller dresses row._rightRegion).
     local function SectionControlRow(parent, y, cfg)
-        local W = CludesUI.Widgets
         local rightCfg = cfg.rightCfg
         if cfg.showWhenStore then
-            rightCfg = {
-                type = "dropdown",
-                text = "Show When",
-                tooltip = cfg.showWhenTooltip,
-                values = { _placeholder = "..." },
-                order = { "_placeholder" },
-                getValue = function()
-                    return "_placeholder"
-                end,
-                setValue = function() end,
-            }
+            rightCfg = Placeholder("Show When", cfg.showWhenTooltip)
         elseif cfg.soundSec then
-            local names, order = SoundNamesOrder()
-            local sec, field = cfg.soundSec, cfg.soundField or "sectionSound"
-            -- Class-special sections look their field up per call (the map is
-            -- exported in ABR's OnEnable), see EABR.SPECIALS.
-            local special = cfg.specialClass
-            local function Field()
-                if not special then
-                    return field
-                end
-                local S = _G._CUABR_SPECIALS
-                return S and S[special].sound
-            end
-            rightCfg = {
-                type = "dropdown",
-                text = "Reminder Sound",
-                dropdownWidth = 220,
-                tooltip = "Play a sound once when a reminder in this section newly appears.",
-                values = names,
-                order = order,
-                getValue = function()
-                    local t = sec()
-                    if not t then
-                        return "none"
-                    end
-                    local f, read = Field(), special and _G._CUABR_SpecialsSound
-                    if not f then
-                        return "none"
-                    end
-                    if read then
-                        return read(t, f) or "none"
-                    end
-                    return t[f] or "none"
-                end,
-                setValue = function(v)
-                    local t = sec()
-                    if not t then
-                        return
-                    end
-                    -- A special section stores "none" (see EABR.SpecialsSound).
-                    local f = Field()
-                    if not f then
-                        return
-                    end
-                    if v == "none" and not special then
-                        t[f] = nil
-                    else
-                        t[f] = v
-                    end
-                    local paths = CludesUI._groupDeathSoundPaths
-                    local sp = paths and paths[v]
-                    if sp then
-                        PlaySoundFile(sp, "Master")
-                    end
-                end,
-            }
+            rightCfg = SoundDropdownCfg(cfg)
         end
-        local row, h = W:DualRow(parent, y, {
-            type = "dropdown",
-            text = "Where to Show",
-            tooltip = cfg.whereTooltip,
-            values = { _placeholder = "..." },
-            order = { "_placeholder" },
-            getValue = function()
-                return "_placeholder"
-            end,
-            setValue = function() end,
-        }, rightCfg or { type = "label", text = "" })
+        local row, h = CludesUI.Widgets:DualRow(
+            parent,
+            y,
+            Placeholder("Where to Show", cfg.whereTooltip),
+            rightCfg or { type = "label", text = "" }
+        )
         if CludesUI._prebuilding then
             return row, h
         end
 
-        local lrgn = row._leftRegion
-        if lrgn._control then
-            lrgn._control:Hide()
-        end
-        local whereDD, whereRefresh = CludesUI.BuildVisOptsCBDropdown(
-            lrgn,
-            220,
-            lrgn:GetFrameLevel() + 2,
+        local where = cfg.whereStore
+        CheckList(
+            row._leftRegion,
             cfg.whereItems or WHERE_ITEMS,
-            WhereGet(cfg.whereStore),
-            WhereSet(cfg.whereStore, cfg.onChange)
+            WhereGet(where),
+            WhereSet(where, cfg.onChange)
         )
-        PP.Point(whereDD, "RIGHT", lrgn, "RIGHT", -20, 0)
-        lrgn._control = whereDD
-        lrgn._lastInline = nil
-        CludesUI.RegisterWidgetRefresh(whereRefresh)
-
         if cfg.showWhenStore then
             local rrgn = row._rightRegion
-            if rrgn._control then
-                rrgn._control:Hide()
-            end
-            local whenDD, whenRefresh = CludesUI.BuildVisOptsCBDropdown(
+            CheckList(
                 rrgn,
-                220,
-                rrgn:GetFrameLevel() + 2,
                 SHOWWHEN_ITEMS,
                 WhenGet(cfg.showWhenStore),
                 WhenSet(cfg.showWhenStore, function()
@@ -1036,10 +946,6 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                 end)
             )
-            PP.Point(whenDD, "RIGHT", rrgn, "RIGHT", -20, 0)
-            rrgn._control = whenDD
-            rrgn._lastInline = nil
-            CludesUI.RegisterWidgetRefresh(whenRefresh)
             if cfg.soundSec then
                 AddSectionSoundCog(
                     rrgn,
@@ -1053,33 +959,28 @@ initFrame:SetScript("OnEvent", function(self)
         return row, h
     end
 
-    -- "(min)" suffix in smaller, dimmer text after a slider's label.
+    -- "(min)" in smaller, dimmer text after each slider label of a dual row.
     local function AddMinSuffix(threshRow, leftLabel, rightLabel)
         if CludesUI._prebuilding then
             return
         end
-        for _, rgn in ipairs({ threshRow._leftRegion, threshRow._rightRegion }) do
-            local labelText = rgn == threshRow._leftRegion and leftLabel or rightLabel
+        local function LabelOf(rgn, text)
+            for _, reg in ipairs({ rgn:GetRegions() }) do
+                -- (an idle pooled region still holds the text of an earlier dress)
+                if reg.GetText and not Pool.IsIdle(reg) and CludesUI.EnKey(reg:GetText()) == text then
+                    return reg
+                end
+            end
+        end
+        local sides = { { threshRow._leftRegion, leftLabel }, { threshRow._rightRegion, rightLabel } }
+        for _, side in ipairs(sides) do
+            local rgn, text = side[1], side[2]
             local suffix = rgn:CreateFontString(nil, "OVERLAY")
             suffix:SetFont(CludesUI.EXPRESSWAY, 11, "")
             suffix:SetTextColor(1, 1, 1, 0.35)
-            local found
-            local regions = { rgn:GetRegions() }
-            for i = 1, #regions do
-                local reg = regions[i]
-                -- (an idle pooled region still holds the text of an earlier dress)
-                if
-                    reg
-                    and reg.GetText
-                    and not Pool.IsIdle(reg)
-                    and CludesUI.EnKey(reg:GetText()) == labelText
-                then
-                    found = reg
-                    break
-                end
-            end
-            if found then
-                suffix:SetPoint("LEFT", found, "RIGHT", 5, -1)
+            local label = LabelOf(rgn, text)
+            if label then
+                suffix:SetPoint("LEFT", label, "RIGHT", 5, -1)
             end
             suffix:SetText(CludesUI.L("(min)"))
         end
@@ -1087,162 +988,141 @@ initFrame:SetScript("OnEvent", function(self)
 
     ---------------------------------------------------------------------------
     --  4-column checkbox grid (DualRow-style rows with RowBg + dividers)
-    --  items = { { label, classToken, getVal, setVal, tooltip? }, ... }
+    --  items = { { label, classToken, getVal, setVal, tooltip?, key?,
+    --  cogRows?, cogTitle? }, ... }
     ---------------------------------------------------------------------------
     local GRID_COLS = 4
     local GRID_ROW_H = 50
     local GRID_BOX_SZ = 18
     local GRID_PAD = CludesUI.CONTENT_PAD or 16
     local GRID_SIDE_PAD = 20
+    local BOX_BORDER = { 0.224, 0.215, 0.207, 0.6 }
 
+    local function NoSnap(tex)
+        if tex.SetSnapToPixelGrid then
+            tex:SetSnapToPixelGrid(false)
+            tex:SetTexelSnappingBias(0)
+        end
+        return tex
+    end
+
+    -- One cell: the label (in its class colour) on the left, the checkbox
+    -- on the right, the whole cell clickable, and an optional cog just left
+    -- of the box (no item sets cogRows yet; the hook is for per-item
+    -- condition sets). Returns the cell.
+    local function GridCell(rowFrame, item, x, w, refreshFn, accent)
+        local cell = CreateFrame("Frame", nil, rowFrame)
+        cell:SetSize(w, GRID_ROW_H)
+        cell:SetPoint("TOPLEFT", rowFrame, "TOPLEFT", x, 0)
+
+        local cc = item.classToken and RAID_CLASS_COLORS and RAID_CLASS_COLORS[item.classToken]
+        local label = CludesUI.MakeFont(cell, 13, nil, cc and cc.r or 1, cc and cc.g or 1, cc and cc.b or 1)
+        label:SetPoint("LEFT", cell, "LEFT", GRID_SIDE_PAD, 0)
+        label:SetText(item.label)
+
+        local box = CreateFrame("Frame", nil, cell)
+        box:SetSize(GRID_BOX_SZ, GRID_BOX_SZ)
+        box:SetPoint("RIGHT", cell, "RIGHT", -GRID_SIDE_PAD, 0)
+        local boxBg = box:CreateTexture(nil, "BACKGROUND")
+        boxBg:SetAllPoints()
+        boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
+        NoSnap(boxBg)
+        local border =
+            CludesUI.MakeRoundedBorder(box, BOX_BORDER[1], BOX_BORDER[2], BOX_BORDER[3], BOX_BORDER[4], boxBg)
+        local check = box:CreateTexture(nil, "ARTWORK")
+        check:SetPoint("TOPLEFT", box, "TOPLEFT", 3, -3)
+        check:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -3, 3)
+        check:SetColorTexture(accent.r, accent.g, accent.b, 1)
+        CludesUI.RoundBody(box, check, 1)
+        NoSnap(check)
+
+        local click = CreateFrame("Button", nil, cell)
+        click:SetAllPoints(cell)
+        click:SetFrameLevel(cell:GetFrameLevel() + 2)
+
+        local function Paint()
+            local on = item.getVal() and true or false
+            check:SetShown(on)
+            label:SetAlpha(on and 1 or 0.5)
+            if on then
+                border:SetColor(accent.r, accent.g, accent.b, 0.15)
+            else
+                border:SetColor(BOX_BORDER[1], BOX_BORDER[2], BOX_BORDER[3], BOX_BORDER[4])
+            end
+        end
+        Paint()
+        click:SetScript("OnClick", function()
+            item.setVal(not item.getVal())
+            Paint()
+            if refreshFn then
+                refreshFn()
+            end
+        end)
+        click:SetScript("OnEnter", function()
+            if not item.getVal() then
+                label:SetAlpha(0.8)
+            end
+            if item.tooltip then
+                CludesUI.ShowWidgetTooltip(cell, item.tooltip)
+            end
+        end)
+        click:SetScript("OnLeave", function()
+            if not item.getVal() then
+                label:SetAlpha(0.5)
+            end
+            if item.tooltip then
+                CludesUI.HideWidgetTooltip()
+            end
+        end)
+
+        if item.cogRows then
+            CludesUI.BuildInlineCog(cell, {
+                title = item.cogTitle or "Reminder Conditions",
+                rows = item.cogRows,
+                minWidth = 220,
+                anchorTo = box,
+                chain = false,
+                size = 16,
+                gap = 10,
+            })
+        end
+        CludesUI.RegisterWidgetRefresh(Paint)
+        return cell
+    end
+
+    -- The grid, row by row: a full-width row frame (as a DualRow) with 1px
+    -- column dividers, then its cells. cellRefTable[item.key] gets each
+    -- keyed cell (preview click navigation). Returns the height.
     local function BuildCheckboxGrid(parent, y, items, refreshFn, cellRefTable)
-        local totalRows = math.ceil(#items / GRID_COLS)
+        local rows = math.ceil(#items / GRID_COLS)
         local totalW = parent:GetWidth() - GRID_PAD * 2
         local colW = math.floor(totalW / GRID_COLS)
-        local eg = CludesUI.CLUDES_GREEN or { r = 0, g = 0.82, b = 0.62 }
-
-        for row = 0, totalRows - 1 do
-            -- Create one full-width row frame per grid row (like DualRow)
+        local accent = CludesUI.CLUDES_GREEN or { r = 0, g = 0.82, b = 0.62 }
+        for row = 0, rows - 1 do
             local rowFrame = CreateFrame("Frame", nil, parent)
             PP.Size(rowFrame, totalW, GRID_ROW_H)
             PP.Point(rowFrame, "TOPLEFT", parent, "TOPLEFT", GRID_PAD, y - row * GRID_ROW_H)
             rowFrame._skipRowDivider = true
             CludesUI.RowBg(rowFrame, parent)
-
-            -- 1px dividers at column boundaries (full height, matching _showRowDivider style)
-            for d = 1, GRID_COLS - 1 do
-                local div = rowFrame:CreateTexture(nil, "ARTWORK")
+            for col = 1, GRID_COLS - 1 do
+                local div = NoSnap(rowFrame:CreateTexture(nil, "ARTWORK"))
                 div:SetColorTexture(1, 1, 1, 0.06)
-                if div.SetSnapToPixelGrid then
-                    div:SetSnapToPixelGrid(false)
-                    div:SetTexelSnappingBias(0)
-                end
                 div:SetWidth(1)
-                local xPos = d * colW
-                PP.Point(div, "TOP", rowFrame, "TOPLEFT", xPos, 0)
-                PP.Point(div, "BOTTOM", rowFrame, "BOTTOMLEFT", xPos, 0)
+                PP.Point(div, "TOP", rowFrame, "TOPLEFT", col * colW, 0)
+                PP.Point(div, "BOTTOM", rowFrame, "BOTTOMLEFT", col * colW, 0)
             end
-
-            -- Build each cell in this row
             for col = 0, GRID_COLS - 1 do
-                local idx = row * GRID_COLS + col + 1
-                local item = items[idx]
+                local item = items[row * GRID_COLS + col + 1]
                 if not item then
                     break
                 end
-
-                local cell = CreateFrame("Frame", nil, rowFrame)
-                cell:SetSize(colW, GRID_ROW_H)
-                cell:SetPoint("TOPLEFT", rowFrame, "TOPLEFT", col * colW, 0)
-
-                -- Class color for label
-                local cr, cg, cb = 1, 1, 1
-                if item.classToken then
-                    local cc = RAID_CLASS_COLORS and RAID_CLASS_COLORS[item.classToken]
-                    if cc then
-                        cr, cg, cb = cc.r, cc.g, cc.b
-                    end
-                end
-
-                -- Label (left)
-                local label = CludesUI.MakeFont(cell, 13, nil, cr, cg, cb)
-                label:SetPoint("LEFT", cell, "LEFT", GRID_SIDE_PAD, 0)
-                label:SetText(item.label)
-
-                -- Checkbox box (right)
-                local box = CreateFrame("Frame", nil, cell)
-                box:SetSize(GRID_BOX_SZ, GRID_BOX_SZ)
-                box:SetPoint("RIGHT", cell, "RIGHT", -GRID_SIDE_PAD, 0)
-
-                local boxBg = box:CreateTexture(nil, "BACKGROUND")
-                boxBg:SetAllPoints()
-                boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-                if boxBg.SetSnapToPixelGrid then
-                    boxBg:SetSnapToPixelGrid(false)
-                    boxBg:SetTexelSnappingBias(0)
-                end
-
-                local boxBrd = CludesUI.MakeRoundedBorder(box, 0.224, 0.215, 0.207, 0.6, boxBg)
-
-                local check = box:CreateTexture(nil, "ARTWORK")
-                check:SetPoint("TOPLEFT", box, "TOPLEFT", 3, -3)
-                check:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -3, 3)
-                check:SetColorTexture(eg.r, eg.g, eg.b, 1)
-                CludesUI.RoundBody(box, check, 1)
-                if check.SetSnapToPixelGrid then
-                    check:SetSnapToPixelGrid(false)
-                    check:SetTexelSnappingBias(0)
-                end
-
-                -- Click area covers the whole cell
-                local btn = CreateFrame("Button", nil, cell)
-                btn:SetAllPoints(cell)
-                btn:SetFrameLevel(cell:GetFrameLevel() + 2)
-
-                local function ApplyVisual()
-                    local on = item.getVal()
-                    if on then
-                        check:Show()
-                        label:SetAlpha(1)
-                        boxBrd:SetColor(eg.r, eg.g, eg.b, 0.15)
-                    else
-                        check:Hide()
-                        label:SetAlpha(0.5)
-                        boxBrd:SetColor(0.224, 0.215, 0.207, 0.6)
-                    end
-                end
-                ApplyVisual()
-
-                btn:SetScript("OnClick", function()
-                    item.setVal(not item.getVal())
-                    ApplyVisual()
-                    if refreshFn then
-                        refreshFn()
-                    end
-                end)
-                btn:SetScript("OnEnter", function()
-                    if not item.getVal() then
-                        label:SetAlpha(0.8)
-                    end
-                    if item.tooltip then
-                        CludesUI.ShowWidgetTooltip(cell, item.tooltip)
-                    end
-                end)
-                btn:SetScript("OnLeave", function()
-                    if not item.getVal() then
-                        label:SetAlpha(0.5)
-                    end
-                    if item.tooltip then
-                        CludesUI.HideWidgetTooltip()
-                    end
-                end)
-
-                -- Optional per-item cog (e.g. per-item conditions) just left
-                -- of the checkbox, floating above the cell click area. No
-                -- current item populates cogRows; the hook exists for
-                -- per-item condition sets.
-                if item.cogRows then
-                    CludesUI.BuildInlineCog(cell, {
-                        title = item.cogTitle or "Reminder Conditions",
-                        rows = item.cogRows,
-                        minWidth = 220,
-                        anchorTo = box,
-                        chain = false,
-                        size = 16,
-                        gap = 10,
-                    })
-                end
-
-                CludesUI.RegisterWidgetRefresh(ApplyVisual)
-
-                -- Store cell reference for preview click navigation
+                local cell = GridCell(rowFrame, item, col * colW, colW, refreshFn, accent)
                 if cellRefTable and item.key then
                     cellRefTable[item.key] = cell
                 end
             end
         end
-
-        return totalRows * GRID_ROW_H
+        return rows * GRID_ROW_H
     end
 
     ---------------------------------------------------------------------------
