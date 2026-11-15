@@ -1128,6 +1128,24 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     --  Auras, Buffs & Consumables page
     ---------------------------------------------------------------------------
+    -- After a list edit: refresh the reminders and rebuild the page, now or
+    -- (soon) a frame later, once an edit box has finished its commit.
+    local function Rebuild()
+        RefreshAll()
+        CludesUI:RefreshPage(true)
+    end
+    local function RebuildSoon()
+        RefreshAll()
+        C_Timer.After(0, function()
+            CludesUI:RefreshPage(true)
+        end)
+    end
+
+    -- A spell's row text: its name, then its ID dimmed.
+    local function SpellText(id)
+        return _G._CUABR_SpellName(id, tostring(id)) .. " " .. CludesUI.COLOR_CODES.DIM .. id .. "|r"
+    end
+
     -- Adds the spell ID typed into an Add ... Spell input to list: digits only,
     -- a spell the client knows, no duplicates.
     local function AddSpellIDToList(list, text)
@@ -1135,20 +1153,14 @@ initFrame:SetScript("OnEvent", function(self)
         if not (spellID and C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(spellID)) then
             return
         end
-        for _, existingSpellID in ipairs(list) do
-            if existingSpellID == spellID then
-                return
-            end
+        if tContains(list, spellID) then
+            return
         end
         list[#list + 1] = spellID
-        RefreshAll()
-        -- Rebuilds the page once the edit box has finished its commit.
-        C_Timer.After(0, function()
-            CludesUI:RefreshPage(true)
-        end)
+        RebuildSoon()
     end
 
-    -- Names a new spell group (group nil) or renames group.
+    -- Names a new spell group (set nil) or renames set.
     local function PromptSpellGroupName(set)
         CludesUI:ShowInputPopup({
             title = set and "Rename Spell Group" or "New Spell Group",
@@ -1167,21 +1179,61 @@ initFrame:SetScript("OnEvent", function(self)
                 else
                     f.customGroups[#f.customGroups + 1] = { name = name, ids = {} }
                 end
-                RefreshAll()
-                C_Timer.After(0, function()
-                    CludesUI:RefreshPage(true)
-                end)
+                RebuildSoon()
             end,
         })
+    end
+
+    -- A labelled button slot (Rename, Remove, Create).
+    local function ButtonSlot(text, buttonText, tooltip, onClick)
+        return {
+            type = "labeledButton",
+            text = text,
+            buttonText = buttonText,
+            width = 90,
+            tooltip = tooltip,
+            onClick = onClick,
+        }
+    end
+
+    -- Lays slots out two to a row (a blank in an odd last one); returns y.
+    local function SlotRows(parent, y, slots, dress)
+        for k = 1, #slots, 2 do
+            local row, h =
+                CludesUI.Widgets:DualRow(parent, y, slots[k], slots[k + 1] or CludesUI.BlankRowCfg())
+            if dress then
+                dress(row, k)
+            end
+            y = y - h
+        end
+        return y
     end
 
     ---------------------------------------------------------------------------
     --  WoW Forever spell groups: one section per group. Slots, left to right:
     --  Add Spell ID, Rename, one per spell, Remove Group last.
     ---------------------------------------------------------------------------
+    local GROUP_ADD_TIP = "Type a spell ID and press Enter to add it to this group. Unknown IDs are ignored.\n"
+        .. "The reminder shows the icon of the first spell in the list that you know, "
+        .. "or of the spell you picked with the Action Picker."
+
+    -- Takes a spell out of a group, with its picked icon and rank pins.
+    local function RemoveGroupSpell(set, index, spellID)
+        table.remove(set.ids, index)
+        if set.castSpellID == spellID then
+            set.castSpellID = nil
+        end
+        if set.castRanks then
+            set.castRanks[spellID] = nil
+            if not next(set.castRanks) then
+                set.castRanks = nil
+            end
+        end
+        Rebuild()
+    end
+
     local function BuildForeverGroupSections(parent, y)
         local f = FDB()
-        local W = CludesUI.Widgets
         for groupIndex, set in ipairs(f.customGroups) do
             local slots = {
                 {
@@ -1190,7 +1242,7 @@ initFrame:SetScript("OnEvent", function(self)
                     inputStyle = "popup",
                     placeholder = "Spell ID",
                     inputWidth = 110,
-                    tooltip = "Type a spell ID and press Enter to add it to this group. Unknown IDs are ignored.\nThe reminder shows the icon of the first spell in the list that you know, or of the spell you picked with the Action Picker.",
+                    tooltip = GROUP_ADD_TIP,
                     getValue = function()
                         return ""
                     end,
@@ -1198,63 +1250,32 @@ initFrame:SetScript("OnEvent", function(self)
                         AddSpellIDToList(set.ids, text)
                     end,
                 },
-                {
-                    type = "labeledButton",
-                    text = "Rename Group",
-                    buttonText = "Rename",
-                    width = 90,
-                    tooltip = "Change this group's name.",
-                    onClick = function()
-                        PromptSpellGroupName(set)
-                    end,
-                },
+                ButtonSlot("Rename Group", "Rename", "Change this group's name.", function()
+                    PromptSpellGroupName(set)
+                end),
             }
             for spellIndex, spellID in ipairs(set.ids) do
-                slots[#slots + 1] = {
-                    type = "labeledButton",
-                    buttonText = "Remove",
-                    width = 90,
-                    text = _G._CUABR_SpellName(spellID, tostring(spellID))
-                        .. " "
-                        .. CludesUI.COLOR_CODES.DIM
-                        .. spellID
-                        .. "|r",
-                    tooltip = "Remove this spell from the group.",
-                    onClick = function()
-                        table.remove(set.ids, spellIndex)
-                        if set.castSpellID == spellID then
-                            set.castSpellID = nil
-                        end
-                        if set.castRanks then
-                            set.castRanks[spellID] = nil
-                            if not next(set.castRanks) then
-                                set.castRanks = nil
-                            end
-                        end
-                        RefreshAll()
-                        CludesUI:RefreshPage(true)
-                    end,
-                }
+                slots[#slots + 1] = ButtonSlot(
+                    SpellText(spellID),
+                    "Remove",
+                    "Remove this spell from the group.",
+                    function()
+                        RemoveGroupSpell(set, spellIndex, spellID)
+                    end
+                )
             end
-            slots[#slots + 1] = {
-                type = "labeledButton",
-                text = "Remove Group",
-                buttonText = "Remove",
-                width = 90,
-                tooltip = "Deletes this group and its spells.",
-                onClick = function()
+            slots[#slots + 1] = ButtonSlot(
+                "Remove Group",
+                "Remove",
+                "Deletes this group and its spells.",
+                function()
                     table.remove(f.customGroups, groupIndex)
-                    RefreshAll()
-                    CludesUI:RefreshPage(true)
-                end,
-            }
-            local _, headerHeight = W:SectionHeader(parent, CludesUI.Lf("SPELL GROUP: %1$s", set.name), y)
-            y = y - headerHeight
-            for slot = 1, #slots, 2 do
-                local _, rowHeight =
-                    W:DualRow(parent, y, slots[slot], slots[slot + 1] or CludesUI.BlankRowCfg())
-                y = y - rowHeight
-            end
+                    Rebuild()
+                end
+            )
+            local _, headerH =
+                CludesUI.Widgets:SectionHeader(parent, CludesUI.Lf("SPELL GROUP: %1$s", set.name), y)
+            y = SlotRows(parent, y - headerH, slots)
         end
         return y
     end
@@ -1268,142 +1289,136 @@ initFrame:SetScript("OnEvent", function(self)
     --  slot. The page rebuilds on add and remove, so the slots never need
     --  in-place updates.
     ---------------------------------------------------------------------------
+    local function RemoveCustomSpell(id)
+        local f = FDB()
+        local list = f and f.customIDs
+        if not list then
+            return
+        end
+        for j = #list, 1, -1 do
+            if list[j] == id then
+                table.remove(list, j)
+            end
+        end
+        if f.customClasses then
+            f.customClasses[id] = nil
+        end
+        Rebuild()
+    end
+
+    -- Whether spell id reminds class token (on unless unticked).
+    local function CustomClassOn(id, token)
+        local f = FDB()
+        local off = f and f.customClasses and f.customClasses[id]
+        return not (off and off[token] == false)
+    end
+    -- Ticks or unticks class token for spell id; only unticked classes are
+    -- stored, and an entry with none left goes.
+    local function SetCustomClass(id, token, on)
+        local f = FDB()
+        if not f then
+            return
+        end
+        f.customClasses = f.customClasses or {}
+        local all = f.customClasses
+        local off = all[id]
+        if on then
+            if off then
+                off[token] = nil
+                if not next(off) then
+                    all[id] = nil
+                end
+            end
+        else
+            off = off or {}
+            all[id] = off
+            off[token] = false
+        end
+        RefreshAll()
+    end
+
+    -- The class checklist's items: Remove at the top, then each class in its colour.
+    local function CustomClassItems(id)
+        local items = {
+            {
+                key = "_remove",
+                label = "Remove",
+                isTopAction = true,
+                onClick = function()
+                    RemoveCustomSpell(id)
+                end,
+            },
+        }
+        for _, token in ipairs(CludesUI.ForeverClasses()) do
+            local c = RAID_CLASS_COLORS and RAID_CLASS_COLORS[token]
+            local name = CludesUI.ForeverClassName(token)
+            items[#items + 1] =
+                { key = token, label = c and c.colorStr and ("|c" .. c.colorStr .. name .. "|r") or name }
+        end
+        return items
+    end
+
+    -- A tracked spell's slot: its icon before the name, and its classes
+    -- (Remove at the top) on the right.
+    local function DressCustomSlot(rgn, id)
+        if not id then
+            return
+        end
+        local label = rgn._label
+        if label then
+            local icon = rgn:CreateTexture(nil, "ARTWORK")
+            icon:SetSize(22, 22)
+            icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            icon:SetTexture(Tex(id))
+            PP.Point(icon, "LEFT", rgn, "LEFT", 20, 0)
+            label:ClearAllPoints()
+            PP.Point(label, "LEFT", icon, "RIGHT", 8, 0)
+        end
+        local dd, refresh = CludesUI.BuildVisOptsCBDropdown(
+            rgn,
+            170,
+            rgn:GetFrameLevel() + 2,
+            CustomClassItems(id),
+            function(token)
+                return CustomClassOn(id, token)
+            end,
+            function(token, on)
+                SetCustomClass(id, token, on)
+            end
+        )
+        PP.Point(dd, "RIGHT", rgn, "RIGHT", -20, 0)
+        rgn._control = dd
+        rgn._lastInline = nil
+        CludesUI.RegisterWidgetRefresh(refresh)
+    end
+
     local function BuildForeverCustomRows(parent, y, lead)
         local f = FDB()
         local ids = f and f.customIDs
-        local newGroupSlot = {
-            type = "labeledButton",
-            text = "New Spell Group",
-            buttonText = "Create",
-            width = 90,
-            tooltip = "Creates a group of spells. A reminder shows if none of the auras from the group are active.",
-            onClick = function()
-                PromptSpellGroupName()
-            end,
+        local slots = {
+            lead,
+            ButtonSlot(
+                "New Spell Group",
+                "Create",
+                "Creates a group of spells. A reminder shows if none of the auras from the group are active.",
+                function()
+                    PromptSpellGroupName()
+                end
+            ),
         }
-        local n = 2 + (ids and #ids or 0)
-        local W = CludesUI.Widgets
-        local PPx = CludesUI.PanelPP
-        local function Slot(id)
-            return {
+        for _, id in ipairs(ids or {}) do
+            slots[#slots + 1] = {
                 type = "label",
-                text = _G._CUABR_SpellName(id, tostring(id)) .. " " .. CludesUI.COLOR_CODES.DIM .. id .. "|r",
+                text = SpellText(id),
                 tooltip = "Reminds you whenever this buff is missing, on the classes ticked here.",
             }
         end
-        local function SlotAt(k)
-            if k == 1 then
-                return lead
-            end
-            if k == 2 then
-                return newGroupSlot
-            end
-            local id = ids and ids[k - 2]
-            return id and Slot(id) or CludesUI.BlankRowCfg()
-        end
-        local function Remove(id)
-            local fo = FDB()
-            local list = fo and fo.customIDs
-            if not list then
-                return
-            end
-            for j = #list, 1, -1 do
-                if list[j] == id then
-                    table.remove(list, j)
-                end
-            end
-            if fo.customClasses then
-                fo.customClasses[id] = nil
-            end
-            RefreshAll()
-            CludesUI:RefreshPage(true)
-        end
-        -- A tracked spell's slot: its icon before the name, and its classes
-        -- (Remove at the top) on the right.
-        local function DressSlot(rgn, id)
-            if not id then
-                return
-            end
-            local lbl = rgn._label
-            if lbl then
-                local ico = rgn:CreateTexture(nil, "ARTWORK")
-                ico:SetSize(22, 22)
-                ico:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-                ico:SetTexture(Tex(id))
-                PPx.Point(ico, "LEFT", rgn, "LEFT", 20, 0)
-                lbl:ClearAllPoints()
-                PPx.Point(lbl, "LEFT", ico, "RIGHT", 8, 0)
-            end
-            local items = {
-                {
-                    key = "_remove",
-                    label = "Remove",
-                    isTopAction = true,
-                    onClick = function()
-                        Remove(id)
-                    end,
-                },
-            }
-            local classes = CludesUI.ForeverClasses()
-            for i = 1, #classes do
-                local token = classes[i]
-                local c = RAID_CLASS_COLORS and RAID_CLASS_COLORS[token]
-                local name = CludesUI.ForeverClassName(token)
-                items[#items + 1] =
-                    { key = token, label = c and c.colorStr and ("|c" .. c.colorStr .. name .. "|r") or name }
-            end
-            local dd, ddRefresh = CludesUI.BuildVisOptsCBDropdown(
-                rgn,
-                170,
-                rgn:GetFrameLevel() + 2,
-                items,
-                function(token)
-                    local fo = FDB()
-                    local off = fo and fo.customClasses and fo.customClasses[id]
-                    return not (off and off[token] == false)
-                end,
-                function(token, v)
-                    local fo = FDB()
-                    if not fo then
-                        return
-                    end
-                    local cc = fo.customClasses
-                    if not cc then
-                        cc = {}
-                        fo.customClasses = cc
-                    end
-                    local off = cc[id]
-                    if v then
-                        if off then
-                            off[token] = nil
-                            if not next(off) then
-                                cc[id] = nil
-                            end
-                        end
-                    else
-                        if not off then
-                            off = {}
-                            cc[id] = off
-                        end
-                        off[token] = false
-                    end
-                    RefreshAll()
-                end
-            )
-            PPx.Point(dd, "RIGHT", rgn, "RIGHT", -20, 0)
-            rgn._control = dd
-            rgn._lastInline = nil
-            CludesUI.RegisterWidgetRefresh(ddRefresh)
-        end
-        for k = 1, n, 2 do
-            local row, h = W:DualRow(parent, y, SlotAt(k), SlotAt(k + 1))
+        return SlotRows(parent, y, slots, function(row, k)
             if ids and not CludesUI._prebuilding then
-                DressSlot(row._leftRegion, ids[k - 2])
-                DressSlot(row._rightRegion, ids[k - 1])
+                DressCustomSlot(row._leftRegion, ids[k - 2])
+                DressCustomSlot(row._rightRegion, ids[k - 1])
             end
-            y = y - h
-        end
-        return y
+        end)
     end
 
     ---------------------------------------------------------------------------
