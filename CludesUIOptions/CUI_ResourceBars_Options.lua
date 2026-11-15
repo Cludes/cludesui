@@ -3346,94 +3346,79 @@ initFrame:SetScript("OnEvent", function(self)
         local THR_FIELD = conf.thresholdField or "thresholdPct"
         local HASH_NIL = conf.hashModeDefault or "percent"
         local ROW_GAP = 6
-
-        local defR = conf.defaultR or 1
-        local defG = conf.defaultG or 0.2
-        local defB = conf.defaultB or 0.2
-        local defA = conf.defaultA or 1
+        local defR, defG, defB, defA =
+            conf.defaultR or 1, conf.defaultG or 0.2, conf.defaultB or 0.2, conf.defaultA or 1
         local _playerClassFile = select(2, UnitClass("player"))
 
+        -- The Settings button, styled like the dropdowns; its border takes the
+        -- notice badge's tint (_borderTint) through hover.
         local BTN_W, BTN_H = 140, 30
         local settingsBtn = CreateFrame("Button", nil, parentRgn)
         Pix.Size(settingsBtn, BTN_W, BTN_H)
         Pix.Point(settingsBtn, "RIGHT", parentRgn, "RIGHT", -20, 0)
         settingsBtn:SetFrameLevel(parentRgn:GetFrameLevel() + 2)
-        local btnBg = CludesUI.SolidTex(
-            settingsBtn,
-            "BACKGROUND",
-            CludesUI.DD_BG_R,
-            CludesUI.DD_BG_G,
-            CludesUI.DD_BG_B,
-            CludesUI.DD_BG_A
-        )
+        local U = CludesUI
+        local btnBg = U.SolidTex(settingsBtn, "BACKGROUND", U.DD_BG_R, U.DD_BG_G, U.DD_BG_B, U.DD_BG_A)
         btnBg:SetAllPoints()
-        settingsBtn._border = CludesUI.MakeRoundedBorder(settingsBtn, 1, 1, 1, CludesUI.DD_BRD_A, btnBg)
-        local btnLbl = CludesUI.MakeFont(settingsBtn, 13, nil, 1, 1, 1)
-        btnLbl:SetAlpha(CludesUI.DD_TXT_A)
+        settingsBtn._border = U.MakeRoundedBorder(settingsBtn, 1, 1, 1, U.DD_BRD_A, btnBg)
+        local btnLbl = U.MakeFont(settingsBtn, 13, nil, 1, 1, 1)
+        btnLbl:SetAlpha(U.DD_TXT_A)
         btnLbl:SetPoint("CENTER")
-        btnLbl:SetText(CludesUI.L("Settings"))
-        settingsBtn:SetScript("OnEnter", function(self)
-            btnBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_HA)
+        btnLbl:SetText(U.L("Settings"))
+        local function Hover(self, bgAlpha, borderAlpha)
+            btnBg:SetColorTexture(U.DD_BG_R, U.DD_BG_G, U.DD_BG_B, bgAlpha)
             if self._border and self._border.SetColor then
                 local t = self._borderTint or THR_BORDER_WHITE
-                self._border:SetColor(t[1], t[2], t[3], 0.3)
+                self._border:SetColor(t[1], t[2], t[3], borderAlpha)
             end
+        end
+        settingsBtn:SetScript("OnEnter", function(self)
+            Hover(self, U.DD_BG_HA, 0.3)
         end)
         settingsBtn:SetScript("OnLeave", function(self)
-            btnBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_A)
-            if self._border and self._border.SetColor then
-                local t = self._borderTint or THR_BORDER_WHITE
-                self._border:SetColor(t[1], t[2], t[3], CludesUI.DD_BRD_A)
-            end
+            Hover(self, U.DD_BG_A, U.DD_BRD_A)
         end)
-        -- disabled overlay
+
+        -- While the bar is off: a cover over the button (with why), the
+        -- button and its label dimmed.
         local btnDis = CreateFrame("Frame", nil, parentRgn)
         btnDis:SetAllPoints(settingsBtn)
         btnDis:SetFrameLevel(settingsBtn:GetFrameLevel() + 5)
         btnDis:EnableMouse(true)
         btnDis:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(settingsBtn, CludesUI.DisabledTooltip(conf.disabledTip or "this bar"))
+            U.ShowWidgetTooltip(settingsBtn, U.DisabledTooltip(conf.disabledTip or "this bar"))
         end)
         btnDis:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
+            U.HideWidgetTooltip()
         end)
         local function UpdateBtnDis()
             local off = conf.disabledFn and conf.disabledFn()
-            if off then
-                btnDis:Show()
-                settingsBtn:SetAlpha(0.3)
-                if parentRgn._label then
-                    parentRgn._label:SetAlpha(0.3)
-                end
-            else
-                btnDis:Hide()
-                settingsBtn:SetAlpha(1)
-                if parentRgn._label then
-                    parentRgn._label:SetAlpha(1)
-                end
+            btnDis:SetShown(off and true or false)
+            settingsBtn:SetAlpha(off and 0.3 or 1)
+            if parentRgn._label then
+                parentRgn._label:SetAlpha(off and 0.3 or 1)
             end
         end
         settingsBtn:HookScript("OnShow", UpdateBtnDis)
-        CludesUI.RegisterWidgetRefresh(UpdateBtnDis)
+        U.RegisterWidgetRefresh(UpdateBtnDis)
         UpdateBtnDis()
 
-        -- Threshold notice badge; re-run by both refreshers below (every entry edit, add,
-        -- delete and spec change) and after a hash commit
+        -- The notice badge; both refreshers below run it again (every edit,
+        -- add, delete and spec change), as does a hash commit.
         local UpdateNotice = AttachThresholdNotice(settingsBtn, conf.getBarData)
-
         ThrWatchBuild()
 
-        -- Editor page (lazy)
+        -- The editor page (built on first open) and its state.
         local thrPage
         local specContainer
         local contentHalfSize
         local scrollTo -- the entry list's ScrollTo (AttachSmoothScrollbar)
         local _entryFrames = {}
-        local _tempSpecSel = {} -- transient dropdown selection
+        local _tempSpecSel = {} -- what the spec picker has ticked
         local _specDDRefresh
-        local _selectedIdx -- selected entry; drives the right pane
+        local _selectedIdx -- the selected entry; drives the right pane
         local _roleSpecs -- [role shortcut key] = its spec IDs
-        local rules = {} -- the selected entry's rules, filled by RefreshDetail
+        local rules = {} -- the selected entry's rules (RefreshDetail fills them)
         local RefreshDetail, RefreshSpecEntries
         local function RedrawDetail()
             if RefreshDetail then
