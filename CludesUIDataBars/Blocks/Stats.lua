@@ -1,657 +1,613 @@
 if CUI_CLIENT_BLOCKED then
     return
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
--- Blocks\Stats.lua
--- FPS, latency, durability and combat block factories.
-
-local ADDON_NAME, mod = ...
+-------------------------------------------------------------------------------
+--  Blocks\Stats.lua - Info Bar blocks: FPS, latency, durability, combat.
+--
+--  FPS and durability share one "single value" block: an optional icon and a
+--  number with its unit. Its width comes from a template ("888fps"), not the
+--  live number, so neighbours never shift; it changes only when the number
+--  gains or loses a digit. So a new value with the same number of digits just
+--  sets the text. FPS samples on the shared one-second ticker (every third
+--  tick); durability only on the game's durability events.
+--
+--  Latency shows home, world or both, each with its own icon; it reads the
+--  game's cached net stats every second and draws only when they change.
+--  Combat shows "In Combat" / "Out of Combat" at the width of the wider one,
+--  optionally only while in combat.
+--
+--  Hovering any of them only recolours: nothing is measured again.
+-------------------------------------------------------------------------------
+local _, mod = ...
 local L = mod.L
 local K = mod.BlockKit
 
--- Upvalues
-local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
-local C_Timer = C_Timer
-local GetTime = GetTime
-local format = string.format
-local tsort = table.sort
-local floor = math.floor
-local max = math.max
-local min = math.min
+local format, floor, max, min = string.format, math.floor, math.max, math.min
 
-local ICON_GAP = K.ICON_GAP
-local CONTENT_BASE = K.CONTENT_BASE
-local InstKey = K.InstKey
-local MakeEventFrame = K.MakeEventFrame
-local RegisterInstEvents = K.RegisterInstEvents
-local UnregisterInstEvents = K.UnregisterInstEvents
-local VSlotW = K.VSlotW
-local MaybeRelayout = K.MaybeRelayout
-local AttachTextOffset = K.AttachTextOffset
-local BlockColorOf = K.BlockColorOf
-local IconColorOf = K.IconColorOf
-
--------------------------------------------------------------------------------
---  FPS + MS (separate block types built on one single-line stat renderer)
--------------------------------------------------------------------------------
--- Game-wide addon memory scan cache (fps tooltip; shared by design).
-local sysMemTable = {}
-local function sysMemSort(a, b)
-    return a.mem > b.mem
-end
-local sysLastMemScanTime = 0
-
-local FPS_THRESHOLD = 60
-local function GetFPSColor(fps)
-    local lb = FPS_THRESHOLD * 0.5
-    local perc = 1
-    if fps < FPS_THRESHOLD then
-        perc = (fps - lb) / lb
-    end
-    return mod.SlowColorGradient(perc)
+local function TextSize()
+    return max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
 end
 
--- Latency quality in three bands (green/yellow/red = good/fair/poor); colors are the client's own font-color globals so they match the UI (plain fallbacks if absent). Thresholds in ms.
+-------------------------------------------------------------------------------
+--  Colours
+-------------------------------------------------------------------------------
+local FPS_GOOD = 60
+local function FPSColour(fps)
+    local half = FPS_GOOD * 0.5
+    return mod.SlowColorGradient(fps < FPS_GOOD and (fps - half) / half or 1)
+end
+
+-- Latency in three bands (ms), in the client's own green / yellow / red.
 local LAT_GOOD, LAT_FAIR = 100, 250
-local function BandColor(fontColor, dr, dg, saved)
-    if fontColor and fontColor.GetRGB then
-        return fontColor:GetRGB()
+local function FontColour(color, r, g, b)
+    if color and color.GetRGB then
+        return color:GetRGB()
     end
-    return dr, dg, saved
+    return r, g, b
 end
-local function GetLatColor(lat)
-    if lat <= LAT_GOOD then
-        return BandColor(GREEN_FONT_COLOR, 0.1, 1.0, 0.1)
+local function LatencyColour(ms)
+    if ms <= LAT_GOOD then
+        return FontColour(GREEN_FONT_COLOR, 0.1, 1.0, 0.1)
+    elseif ms <= LAT_FAIR then
+        return FontColour(YELLOW_FONT_COLOR, 1.0, 0.82, 0.0)
     end
-    if lat <= LAT_FAIR then
-        return BandColor(YELLOW_FONT_COLOR, 1.0, 0.82, 0.0)
-    end
-    return BandColor(RED_FONT_COLOR, 1.0, 0.1, 0.1)
+    return FontColour(RED_FONT_COLOR, 1.0, 0.1, 0.1)
 end
 
--- Shared single-line stat block (icon + value text). opts:
---   hbPrefix   heartbeat key prefix
---   texture    icon file
---   interval   heartbeat SECONDS between samples (1 = every tick)
---   sample()   -> current value (number)
---   suffix()   -> display suffix string
---   tooltip(inst, skipScan)  owned-tooltip builder
---   click(inst, isOverFn)    optional OnClick factory
-local function MakeStatBlock(blockCfg, slot, contentFrame, barCtx, options)
-    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
-    instance.key = InstKey(barCtx, blockCfg)
-
-    local function D()
-        return blockCfg.settings or {}
+local function Memory(kb)
+    if kb > 1024 then
+        return format("%.2f MB", kb / 1024)
     end
-    local function BC()
-        return barCtx.cfg
-    end
+    return format("%.0f KB", kb)
+end
 
-    local mouseOver = false
-    local lastVal = -1
-    local tickCount = 0
-    local _fitBuf = { "" }
+-------------------------------------------------------------------------------
+--  The single-value block (FPS, durability). spec:
+--    tickKey, interval (heartbeat seconds per sample), or events (sampled
+--    only on those, with retryDelay for a second look);
+--    sample() -> number; suffix() -> unit; tooltip(inst, fromTick);
+--    click(inst, isHovered) -> OnClick; hasIcon, iconExtra.
+-------------------------------------------------------------------------------
+local function SingleValueBlock(blockCfg, slot, contentFrame, barCtx, spec)
+    local inst = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
+    inst.key = K.InstKey(barCtx, blockCfg)
+    local tickKey = spec.tickKey .. ":" .. inst.key
+
+    local hovered = false
+    local value = -1 -- the last sample; -1 = none yet
+    local ticks = 0
+    local digitsDrawn -- the template's digit count when last laid out
 
     local widget = CreateFrame("Button", nil, contentFrame)
     widget:SetSize(60, 20)
     widget:EnableMouse(true)
     widget:RegisterForClicks("AnyUp")
-    -- Icon is optional: blocks without opts.hasIcon are text-only.
     local icon
-    if options.hasIcon then
+    if spec.hasIcon then
         icon = widget:CreateTexture(nil, "OVERLAY")
         icon:SetPoint("LEFT")
     end
-    local textValue = widget:CreateFontString(nil, "OVERLAY")
-    AttachTextOffset(instance, textValue)
-    textValue:SetPoint("LEFT")
-    -- Hidden ruler: the block's width is reserved from a stable TEMPLATE, never the live string, so value changes cannot shift neighbors.
-    local measureFS = widget:CreateFontString(nil, "OVERLAY")
-    measureFS:Hide()
+    local label = widget:CreateFontString(nil, "OVERLAY")
+    K.AttachTextOffset(inst, label)
+    label:SetPoint("LEFT")
+    -- Measures the template, never shown.
+    local ruler = widget:CreateFontString(nil, "OVERLAY")
+    ruler:Hide()
 
-    -- Hover feedback is COLOR ONLY: never re-samples or re-renders the value.
-    local function ApplyColors()
+    local function Paint()
         local r, g, b
-        if mouseOver then
+        if hovered then
             r, g, b = mod.GetAccent()
         else
-            r, g, b = BlockColorOf(blockCfg)
+            r, g, b = K.BlockColorOf(blockCfg)
         end
-        textValue:SetTextColor(r, g, b, 1)
+        label:SetTextColor(r, g, b, 1)
         if icon then
-            if mouseOver then
-                icon:SetVertexColor(r, g, b, 1)
-            else
-                local ir, ig, ib = IconColorOf(blockCfg)
-                icon:SetVertexColor(ir, ig, ib, 1)
+            if not hovered then
+                r, g, b = K.IconColorOf(blockCfg)
             end
+            icon:SetVertexColor(r, g, b, 1)
         end
     end
 
-    function instance:Refresh()
-        local barCfg = BC()
-        local barH = barCtx.GetThickness()
-        -- 0.4333 = 13px at the 30 base (1px under the standard 0.46 block text).
-        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
-        local d = D()
-        local gap = ICON_GAP
-        local isSide = barCtx.IsVertical()
-        if lastVal < 0 then
-            lastVal = options.sample()
-        end
-        local str = lastVal .. options.suffix()
+    -- The template's digits: at least three, so 60 -> 100 fps keeps its width.
+    local function Digits()
+        return max(3, #tostring(value))
+    end
 
-        local iconSz = 0
+    function inst:Refresh()
+        local s = blockCfg.settings or {}
+        local fontSize = TextSize()
+        local barH = barCtx.GetThickness()
+        if value < 0 then
+            value = spec.sample()
+        end
+        local iconSize = 0
         if icon then
             K.SetBlockIcon(icon, blockCfg)
+            if s.showIcon ~= false then
+                iconSize = fontSize + (spec.iconExtra or 0)
+            end
         end
-        if icon and d.showIcon ~= false then
-            iconSz = fontSize + (options.iconExtra or 0)
-        end
-
-        -- No fit-to-slot: fixed size (base font x Text Scale x Content Scale).
-
-        mod.SetFont(textValue, fontSize, barCfg)
-        textValue:SetText(str)
-        ApplyColors()
-
-        if iconSz > 0 then
-            icon:SetSize(iconSz, iconSz)
+        mod.SetFont(label, fontSize, barCtx.cfg)
+        label:SetText(value .. spec.suffix())
+        Paint()
+        if iconSize > 0 then
+            icon:SetSize(iconSize, iconSize)
             icon:Show()
         elseif icon then
             icon:Hide()
         end
-
+        -- In combat the layout waits (the next full pass places it).
         if InCombatLockdown() then
+            digitsDrawn = nil
             return
         end
-
-        local lineH = max(fontSize + 4, iconSz)
-        if isSide then
-            local slotW = VSlotW(instance)
-            local innerW = max(36, slotW - 8)
-            widget:SetSize(innerW, lineH)
+        local lineH = max(fontSize + 4, iconSize)
+        if barCtx.IsVertical() then
+            local slotW = K.VSlotW(self)
+            local inner = max(36, slotW - 8)
+            widget:SetSize(inner, lineH)
             widget:ClearAllPoints()
             widget:SetPoint("CENTER", contentFrame, "CENTER", 0, 0)
-            if iconSz > 0 then
+            label:ClearAllPoints()
+            if iconSize > 0 then
                 icon:ClearAllPoints()
                 icon:SetPoint("LEFT", widget, "LEFT", 0, 0)
-                textValue:ClearAllPoints()
-                textValue:SetPoint("LEFT", icon, "RIGHT", gap, 0)
-                mod.SetWrappedText(textValue, max(16, innerW - iconSz - gap - 2), "LEFT")
+                label:SetPoint("LEFT", icon, "RIGHT", K.ICON_GAP, 0)
+                mod.SetWrappedText(label, max(16, inner - iconSize - K.ICON_GAP - 2), "LEFT")
             else
-                textValue:ClearAllPoints()
-                textValue:SetPoint("CENTER", widget, "CENTER", 0, 0)
-                mod.SetWrappedText(textValue, innerW, "CENTER")
+                label:SetPoint("CENTER", widget, "CENTER", 0, 0)
+                mod.SetWrappedText(label, inner, "CENTER")
             end
             contentFrame:SetSize(slotW, max(lineH + 8, barH))
+            digitsDrawn = nil -- wrapped text can change height with any value
         else
-            mod.ResetInlineText(textValue, "LEFT")
-            local iconPad = 0
-            if iconSz > 0 then
-                iconPad = iconSz + gap
+            mod.ResetInlineText(label, "LEFT")
+            local lead = 0
+            if iconSize > 0 then
+                lead = iconSize + K.ICON_GAP
                 icon:ClearAllPoints()
                 icon:SetPoint("LEFT", widget, "LEFT", 0, 0)
             end
-            textValue:ClearAllPoints()
-            textValue:SetPoint("LEFT", widget, "LEFT", iconPad, 0)
-            -- Template width: digits become "8" padded to >=3, so width only
-            -- moves on a digit-count crossing (999ms->1000ms), never on ordinary
-            -- changes. Icon/number stay LEFT-anchored; slack sits on the right.
-            local digits = #tostring(lastVal)
-            if digits < 3 then
-                digits = 3
-            end
-            mod.SetFont(measureFS, fontSize, barCfg)
-            measureFS:SetText(string.rep("8", digits) .. options.suffix())
-            local wid = iconPad + mod.SnapToPixelGrid(measureFS:GetStringWidth() or 30) + 2
-            if wid < 30 then
-                wid = 30
-            end
-            widget:SetSize(wid, barH)
+            label:ClearAllPoints()
+            label:SetPoint("LEFT", widget, "LEFT", lead, 0)
+            -- The width of "8" x digits + unit; the number sits left, slack right.
+            mod.SetFont(ruler, fontSize, barCtx.cfg)
+            ruler:SetText(string.rep("8", Digits()) .. spec.suffix())
+            local width = max(lead + mod.SnapToPixelGrid(ruler:GetStringWidth() or 30) + 2, 30)
+            widget:SetSize(width, barH)
             widget:ClearAllPoints()
             widget:SetPoint("CENTER", contentFrame, "CENTER", 0, 0)
-            contentFrame:SetSize(wid, barH)
+            contentFrame:SetSize(width, barH)
+            digitsDrawn = Digits()
         end
-        MaybeRelayout(instance)
+        K.MaybeRelayout(self)
+    end
+
+    -- A new value: just the text while the template's width holds, a full
+    -- pass when it would change (or on a side bar, where text wraps).
+    local function Take(v)
+        if v == value then
+            return
+        end
+        value = v
+        if digitsDrawn and Digits() == digitsDrawn and not barCtx.IsVertical() then
+            label:SetText(value .. spec.suffix())
+            Paint() -- a dynamic colour (durability's icon tint) follows the value
+        else
+            inst:Refresh()
+        end
+        if hovered then
+            spec.tooltip(inst, true)
+        end
     end
 
     local function Tick()
-        tickCount = tickCount + 1
-        if tickCount < (options.interval or 1) then
+        ticks = ticks + 1
+        if ticks < (spec.interval or 1) then
             return
         end
-        tickCount = 0
-        local val = options.sample()
-        if val == lastVal then
-            return
-        end
-        lastVal = val
-        instance:Refresh()
-        if mouseOver then
-            options.tooltip(instance, true)
-        end
+        ticks = 0
+        Take(spec.sample())
     end
-
-    widget:SetScript("OnEnter", function()
-        mouseOver = true
-        ApplyColors()
-        options.tooltip(instance, false)
-    end)
-    widget:SetScript("OnLeave", function()
-        mouseOver = false
-        mod.Tip_Hide(contentFrame)
-        ApplyColors()
-    end)
-    if options.click then
-        widget:SetScript(
-            "OnClick",
-            options.click(instance, function()
-                return mouseOver
-            end)
-        )
-    end
-
-    -- Evented stat blocks (opts.events) never touch the heartbeat: the game
-    -- names the exact edges their value changes on, so the block samples only
-    -- there and costs nothing between them. Time-driven blocks (fps/ms) keep
-    -- the shared 1s ticker.
-    local function ForceTick()
-        tickCount = (options.interval or 1) - 1
+    local function SampleNow()
+        ticks = (spec.interval or 1) - 1
         Tick()
     end
-
-    -- Lets a tooltip resync the bar text with what it just sampled.
-    function instance:ForceSample()
-        ForceTick()
+    -- The tooltip resyncs the bar with what it just read.
+    function inst:ForceSample()
+        SampleNow()
     end
 
-    -- A sample taken right when an event fires can catch the source before
-    -- it's populated. Resample once more after a short delay to catch that.
-    -- One outstanding retry at a time: event bursts (durability drops hit
-    -- many items per damage wave) would otherwise queue a timer closure each.
-    local retryPending = false
-    local function ForceTickChecked()
-        ForceTick()
-        if options.retryDelay and not retryPending then
-            retryPending = true
-            C_Timer.After(options.retryDelay, function()
-                retryPending = false
-                if not instance._dead then
-                    ForceTick()
+    -- An event can fire before its data is in: one more look a moment later
+    -- (one at a time, as damage arrives in bursts).
+    local retrying = false
+    local function SampleAndRetry()
+        SampleNow()
+        if spec.retryDelay and not retrying then
+            retrying = true
+            C_Timer.After(spec.retryDelay, function()
+                retrying = false
+                if not inst._dead then
+                    SampleNow()
                 end
             end)
         end
     end
-
-    -- Same-frame event bursts (a damage wave fires the durability AND alert
-    -- events per slot) collapse to ONE sample after the frame settles.
-    local flushPending = false
-    local function FlushEventSample()
-        flushPending = false
-        if not instance._dead then
-            ForceTickChecked()
-        end
-    end
-    local function OnEventSample()
-        if flushPending then
+    -- A burst of events in one frame (durability and alerts per slot) is one sample.
+    local queued = false
+    local function OnEvent()
+        if queued then
             return
         end
-        flushPending = true
-        C_Timer.After(0, FlushEventSample)
+        queued = true
+        C_Timer.After(0, function()
+            queued = false
+            if not inst._dead then
+                SampleAndRetry()
+            end
+        end)
     end
 
-    function instance:Enable()
+    widget:SetScript("OnEnter", function()
+        hovered = true
+        Paint()
+        spec.tooltip(inst, false)
+    end)
+    widget:SetScript("OnLeave", function()
+        hovered = false
+        mod.Tip_Hide(contentFrame)
+        Paint()
+    end)
+    if spec.click then
+        widget:SetScript(
+            "OnClick",
+            spec.click(inst, function()
+                return hovered
+            end)
+        )
+    end
+
+    function inst:Enable()
         contentFrame:Show()
-        lastVal = -1
-        -- Sample on the very first tick regardless of interval.
-        tickCount = (options.interval or 1) - 1
-        if options.events then
+        value = -1
+        digitsDrawn = nil
+        ticks = (spec.interval or 1) - 1 -- the first tick samples
+        if spec.events then
             if not self.eventFrame then
-                self.events = options.events
-                self.eventFrame = MakeEventFrame(self, OnEventSample)
+                self.events = spec.events
+                self.eventFrame = K.MakeEventFrame(self, OnEvent)
             end
-            RegisterInstEvents(self)
-            ForceTickChecked()
+            K.RegisterInstEvents(self)
+            SampleAndRetry()
         else
-            mod.RegisterHeartbeat(options.hbPrefix .. ":" .. self.key, Tick)
+            mod.RegisterHeartbeat(tickKey, Tick)
         end
     end
 
-    function instance:Disable()
-        UnregisterInstEvents(self)
-        mod.UnregisterHeartbeat(options.hbPrefix .. ":" .. self.key)
+    function inst:Disable()
+        K.UnregisterInstEvents(self)
+        mod.UnregisterHeartbeat(tickKey)
         contentFrame:Hide()
     end
 
-    function instance:GetAutoLength()
+    function inst:GetAutoLength()
         if barCtx.IsVertical() then
             return max(contentFrame:GetHeight() or 40, 40)
         end
         return max(contentFrame:GetWidth() or 70, 40)
     end
 
-    function instance:Destroy()
+    function inst:Destroy()
         self._dead = true
-        UnregisterInstEvents(self)
+        K.UnregisterInstEvents(self)
         contentFrame:Hide()
     end
 
-    return instance
+    return inst
+end
+
+-------------------------------------------------------------------------------
+--  FPS
+-------------------------------------------------------------------------------
+-- Addon memory, shared by every FPS block; rescanned at most every 30s.
+local memory = {}
+local lastMemoryScan = 0
+local function MostMemory(a, b)
+    return a.mem > b.mem
+end
+
+-- UpdateAddOnMemoryUsage walks every addon and is a visible spike: never in
+-- combat (on a busy pull it can trip the "script ran too long" check), and
+-- the list may be up to 30s old anyway.
+local function ScanMemory()
+    local now = GetTime()
+    if InCombatLockdown() or now - lastMemoryScan < 30 then
+        return
+    end
+    lastMemoryScan = now
+    UpdateAddOnMemoryUsage()
+    local n = 0
+    for i = 1, C_AddOns.GetNumAddOns() do
+        local _, name = C_AddOns.GetAddOnInfo(i)
+        local mem = GetAddOnMemoryUsage(i)
+        if mem > 0 then
+            n = n + 1
+            local entry = memory[n] or {}
+            memory[n] = entry
+            entry.name, entry.mem = name, mem
+        end
+    end
+    for i = n + 1, #memory do
+        memory[i] = nil
+    end
+    table.sort(memory, MostMemory)
 end
 
 mod.BlockFactories.fps = function(blockCfg, slot, contentFrame, barCtx)
-    local function FpsTooltip(instance, skipMemoryScan)
-        local ar, ag, ab = 1, 1, 1
+    local function Tooltip(_, fromTick)
         mod.Tip_Begin(contentFrame)
         local fps = floor(GetFramerate())
-        local fr2, fg2, fb2 = GetFPSColor(fps)
-        mod.Tip_AddDouble(L["FPS"], fps .. mod.GetFPSSuffix(), 0.6, 0.6, 0.6, fr2, fg2, fb2)
-
-        local nowTime = GetTime()
-        -- UpdateAddOnMemoryUsage() iterates every loaded addon and is a noticeable spike; amortise the rescan to once per 30s.
-        -- Skipped entirely in combat: on a busy pull that spike can push the
-        -- hovered tooltip's whole script past the "script ran too long" watchdog
-        -- (field report: Murder Row, adds casting Felfire Orb). The data is
-        -- already tolerated at up to 30s stale, so holding it longer is not a
-        -- new behaviour; the next out-of-combat hover rescans normally.
-        if not skipMemoryScan and not InCombatLockdown() and (nowTime - sysLastMemScanTime) >= 30 then
-            sysLastMemScanTime = nowTime
-            UpdateAddOnMemoryUsage()
-            local total = 0
-            for idx = 1, C_AddOns.GetNumAddOns() do
-                local _, name = C_AddOns.GetAddOnInfo(idx)
-                local mem = GetAddOnMemoryUsage(idx)
-                if mem > 0 then
-                    total = total + 1
-                    if not sysMemTable[total] then
-                        sysMemTable[total] = {}
-                    end
-                    sysMemTable[total].name = name
-                    sysMemTable[total].mem = mem
-                end
-            end
-            for idx = total + 1, #sysMemTable do
-                sysMemTable[idx] = nil
-            end
-            tsort(sysMemTable, sysMemSort)
+        local r, g, b = FPSColour(fps)
+        mod.Tip_AddDouble(L["FPS"], fps .. mod.GetFPSSuffix(), 0.6, 0.6, 0.6, r, g, b)
+        if not fromTick then
+            ScanMemory()
         end
-
-        if #sysMemTable > 0 then
+        if #memory > 0 then
             mod.Tip_AddLine(" ")
-            mod.Tip_AddLine(L["MEMORY_USAGE"], ar, ag, ab)
+            mod.Tip_AddLine(L["MEMORY_USAGE"], 1, 1, 1)
             mod.Tip_AddLine(" ")
-            for idx = 1, min(10, #sysMemTable) do
-                local ms
-                if sysMemTable[idx].mem > 1024 then
-                    ms = format("%.2f MB", sysMemTable[idx].mem / 1024)
-                else
-                    ms = format("%.0f KB", sysMemTable[idx].mem)
-                end
-                mod.Tip_AddDouble(sysMemTable[idx].name, ms, 1, 1, 1, ar, ag, ab)
+            for i = 1, min(10, #memory) do
+                mod.Tip_AddDouble(memory[i].name, Memory(memory[i].mem), 1, 1, 1, 1, 1, 1)
             end
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["SHIFT_LEFT_CLICK"], L["FORCE_GC"], 1, 1, 1, ar, ag, ab)
+        mod.Tip_AddDouble(L["SHIFT_LEFT_CLICK"], L["FORCE_GC"], 1, 1, 1, 1, 1, 1)
         mod.Tip_Show()
     end
 
-    return MakeStatBlock(blockCfg, slot, contentFrame, barCtx, {
-        hbPrefix = "fps",
+    return SingleValueBlock(blockCfg, slot, contentFrame, barCtx, {
+        tickKey = "fps",
         interval = 3,
         sample = function()
             return floor(GetFramerate())
         end,
-        suffix = function()
-            return mod.GetFPSSuffix()
-        end,
-        tooltip = FpsTooltip,
-        click = function(instance, isOver)
-            return function(_, btnFrame)
-                if btnFrame ~= "LeftButton" then
+        suffix = mod.GetFPSSuffix,
+        tooltip = Tooltip,
+        click = function(inst, isHovered)
+            return function(_, mouseButton)
+                if mouseButton ~= "LeftButton" then
                     return
                 end
-                -- A full GC cycle stalls a frame; only force it when Shift is held so a casual click just prints the snapshot.
+                -- A full collection stalls a frame: only with Shift; a plain
+                -- click just prints the figure.
                 if IsShiftKeyDown() then
                     collectgarbage("collect")
                 end
-                local memKb = collectgarbage("count")
-                local msg
-                if memKb > 1024 then
-                    msg = format("%.2f MB", memKb / 1024)
-                else
-                    msg = format("%.0f KB", memKb)
-                end
-                print("|cff4cc9f0Info Bar|r: Memory usage snapshot |cffffff00" .. msg .. "|r")
-                if isOver() then
-                    FpsTooltip(instance, false)
+                print(
+                    "|cff4cc9f0Info Bar|r: Memory usage snapshot |cffffff00"
+                        .. Memory(collectgarbage("count"))
+                        .. "|r"
+                )
+                if isHovered() then
+                    Tooltip(inst, false)
                 end
             end
         end,
     })
 end
 
--- LATENCY. Own factory, not MakeStatBlock: shows one OR two links (home/world/both), each
--- with its own house/globe icon, which the single-icon stat helper cannot do. Bar keeps the
--- block color; green/yellow/red criticality is tooltip-only (GetLatColor).
-
--- home | world | both. Falls back to the useWorldLatency boolean. Shared by the block and its options row, which must agree on what "selected" means.
+-------------------------------------------------------------------------------
+--  Latency
+-------------------------------------------------------------------------------
+-- home | world | both (the old useWorldLatency flag reads as world). Shared
+-- with the options row, which must agree on what is selected.
 function mod.LatencyMode(s)
     if s.latencyMode then
         return s.latencyMode
     end
-    if s.useWorldLatency then
-        return "world"
-    end
-    return "home"
+    return s.useWorldLatency and "world" or "home"
 end
 
+local LINKS = { home = { "home" }, world = { "world" }, both = { "home", "world" } }
+
 mod.BlockFactories.ms = function(blockCfg, slot, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
-    instance.key = InstKey(barCtx, blockCfg)
+    local inst = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
+    inst.key = K.InstKey(barCtx, blockCfg)
+    local tickKey = "ms:" .. inst.key
 
-    local mouseOver = false
-    local lastSig -- skip the relayout when nothing changed
-
-    local function D()
+    local function Settings()
         return blockCfg.settings or {}
     end
-    local function BC()
-        return barCtx.cfg
+
+    local hovered = false
+    local drawn -- mode, icon and both values as last drawn
+
+    local button = CreateFrame("Button", nil, contentFrame)
+    button:EnableMouse(true)
+    button:RegisterForClicks("AnyUp")
+    -- Two parts (icon and value); the second shows only in "both".
+    local parts = {}
+    for i = 1, 2 do
+        parts[i] =
+            { icon = button:CreateTexture(nil, "OVERLAY"), text = button:CreateFontString(nil, "OVERLAY") }
+        K.AttachTextOffset(inst, parts[i].text)
     end
 
-    local btnFrame = CreateFrame("Button", nil, contentFrame)
-    btnFrame:EnableMouse(true)
-    btnFrame:RegisterForClicks("AnyUp")
-
-    -- Two reusable segments (icon + value); the second stays hidden unless the block is in "both" mode.
-    local seg = {}
-    for idx = 1, 2 do
-        local s = {
-            icon = btnFrame:CreateTexture(nil, "OVERLAY"),
-            text = btnFrame:CreateFontString(nil, "OVERLAY"),
-        }
-        AttachTextOffset(instance, s.text)
-        seg[idx] = s
+    local function Paint()
+        local r, g, b, ir, ig, ib
+        if hovered then
+            r, g, b = mod.GetAccent()
+            ir, ig, ib = r, g, b
+        else
+            r, g, b = K.BlockColorOf(blockCfg)
+            ir, ig, ib = K.IconColorOf(blockCfg)
+        end
+        for i = 1, 2 do
+            parts[i].text:SetTextColor(r, g, b, 1)
+            parts[i].icon:SetVertexColor(ir, ig, ib, 1)
+        end
     end
 
-    local function MsTooltip()
+    -- The full read: the bar's values in their quality colours, and bandwidth.
+    local function Tooltip()
         mod.Tip_Begin(contentFrame)
-        local inKB, outKB, home, world = GetNetStats()
-        home = floor(home)
-        world = floor(world)
-        -- The tooltip is the full quality read: the colours the bar does not carry, plus bandwidth that is on no bar at all.
-        local hr, hg, hb = GetLatColor(home)
-        local wr, wg, wb = GetLatColor(world)
-        local ms = mod.GetMSSuffix()
-        mod.Tip_AddDouble(L["HOME"], home .. ms, 0.6, 0.6, 0.6, hr, hg, hb)
-        mod.Tip_AddDouble(L["WORLD"], world .. ms, 0.6, 0.6, 0.6, wr, wg, wb)
-        local kb = " " .. L["KB_PER_SEC"]
-        mod.Tip_AddDouble(L["DOWNLOAD"], format("%.1f", inKB or 0) .. kb, 0.6, 0.6, 0.6, 1, 1, 1)
-        mod.Tip_AddDouble(L["UPLOAD"], format("%.1f", outKB or 0) .. kb, 0.6, 0.6, 0.6, 1, 1, 1)
+        local down, up, home, world = GetNetStats()
+        home, world = floor(home), floor(world)
+        local unit = mod.GetMSSuffix()
+        local hr, hg, hb = LatencyColour(home)
+        local wr, wg, wb = LatencyColour(world)
+        mod.Tip_AddDouble(L["HOME"], home .. unit, 0.6, 0.6, 0.6, hr, hg, hb)
+        mod.Tip_AddDouble(L["WORLD"], world .. unit, 0.6, 0.6, 0.6, wr, wg, wb)
+        local rate = " " .. L["KB_PER_SEC"]
+        mod.Tip_AddDouble(L["DOWNLOAD"], format("%.1f", down or 0) .. rate, 0.6, 0.6, 0.6, 1, 1, 1)
+        mod.Tip_AddDouble(L["UPLOAD"], format("%.1f", up or 0) .. rate, 0.6, 0.6, 0.6, 1, 1, 1)
         mod.Tip_Show()
     end
 
-    function instance:Refresh()
-        local barCfg = BC()
-        local barH = barCtx.GetThickness()
-        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
-        local isSide = barCtx.IsVertical()
-        local showIcon = D().showIcon == true
-        local m = mod.LatencyMode(D())
-        local links
-        if m == "both" then
-            links = { "home", "world" }
-        elseif m == "world" then
-            links = { "world" }
-        else
-            links = { "home" }
-        end
-        local num = #links
-        local iconSz = showIcon and (fontSize + 2) or 0
-
+    local function State()
         local _, _, home, world = GetNetStats()
-        local vals = { home = floor(home), world = floor(world) }
-        local suffix = mod.GetMSSuffix()
+        local s = Settings()
+        return mod.LatencyMode(s) .. (s.showIcon and "I" or "") .. floor(home) .. "/" .. floor(world)
+    end
 
-        local tr, tg, tb, ir, ig, ib
-        if mouseOver then
-            tr, tg, tb = mod.GetAccent()
-            ir, ig, ib = tr, tg, tb
-        else
-            tr, tg, tb = BlockColorOf(blockCfg)
-            ir, ig, ib = IconColorOf(blockCfg)
-        end
-
-        -- Fill each segment; every value carries the unit ("45ms  92ms"), so a lone number never reads as unitless in "both" mode.
-        for idx = 1, 2 do
-            local s, itemLink = seg[idx], links[idx]
-            if itemLink then
-                mod.SetFont(s.text, fontSize, barCfg)
-                mod.ResetInlineText(s.text, "LEFT")
-                s.text:SetText(vals[itemLink] .. suffix)
-                s.text:SetTextColor(tr, tg, tb, 1)
-                s.text:Show()
-                if showIcon then
-                    K.SetBlockIcon(s.icon, blockCfg, itemLink)
-                    s.icon:SetVertexColor(ir, ig, ib, 1)
-                    s.icon:SetSize(iconSz, iconSz)
-                    s.icon:Show()
+    function inst:Refresh()
+        local fontSize = TextSize()
+        local barH = barCtx.GetThickness()
+        local withIcon = Settings().showIcon == true
+        local links = LINKS[mod.LatencyMode(Settings())] or LINKS.home
+        local iconSize = withIcon and fontSize + 2 or 0
+        local _, _, home, world = GetNetStats()
+        local values = { home = floor(home), world = floor(world) }
+        local unit = mod.GetMSSuffix()
+        -- Each value carries its unit, so "both" never shows a bare number.
+        for i = 1, 2 do
+            local part, link = parts[i], links[i]
+            if link then
+                mod.SetFont(part.text, fontSize, barCtx.cfg)
+                mod.ResetInlineText(part.text, "LEFT")
+                part.text:SetText(values[link] .. unit)
+                part.text:Show()
+                if withIcon then
+                    K.SetBlockIcon(part.icon, blockCfg, link)
+                    part.icon:SetSize(iconSize, iconSize)
+                    part.icon:Show()
                 else
-                    s.icon:Hide()
+                    part.icon:Hide()
                 end
             else
-                s.text:Hide()
-                s.icon:Hide()
+                part.text:Hide()
+                part.icon:Hide()
             end
         end
+        Paint()
 
-        local lineH = max(fontSize + 4, iconSz)
-        if isSide then
-            -- Stack the links, each a centred "icon value" line.
-            local slotW = VSlotW(instance)
-            local innerW = max(24, slotW - 8)
-            local posY = -4
-            for idx = 1, num do
-                local s = seg[idx]
-                local tw = mod.SnapToPixelGrid(s.text:GetStringWidth())
-                local grpW = (showIcon and (iconSz + ICON_GAP) or 0) + tw
-                local x0 = max(0, floor((innerW - grpW) / 2))
-                s.icon:ClearAllPoints()
-                s.text:ClearAllPoints()
-                if showIcon then
-                    s.icon:SetPoint("TOPLEFT", btnFrame, "TOPLEFT", x0, posY - floor((lineH - iconSz) / 2))
-                    s.text:SetPoint("LEFT", s.icon, "RIGHT", ICON_GAP, 0)
+        local lineH = max(fontSize + 4, iconSize)
+        if barCtx.IsVertical() then
+            -- One centred "icon value" line per link.
+            local slotW = K.VSlotW(self)
+            local inner = max(24, slotW - 8)
+            local y = -4
+            for i = 1, #links do
+                local part = parts[i]
+                local groupW = (withIcon and (iconSize + K.ICON_GAP) or 0)
+                    + mod.SnapToPixelGrid(part.text:GetStringWidth())
+                local x = max(0, floor((inner - groupW) / 2))
+                part.icon:ClearAllPoints()
+                part.text:ClearAllPoints()
+                if withIcon then
+                    part.icon:SetPoint("TOPLEFT", button, "TOPLEFT", x, y - floor((lineH - iconSize) / 2))
+                    part.text:SetPoint("LEFT", part.icon, "RIGHT", K.ICON_GAP, 0)
                 else
-                    s.text:SetPoint("TOPLEFT", btnFrame, "TOPLEFT", x0, posY)
+                    part.text:SetPoint("TOPLEFT", button, "TOPLEFT", x, y)
                 end
-                posY = posY - lineH - 2
+                y = y - lineH - 2
             end
-            local totalH = max(-posY + 2, barH)
-            contentFrame:SetSize(slotW, totalH)
-            btnFrame:SetSize(slotW, totalH)
+            local height = max(-y + 2, barH)
+            contentFrame:SetSize(slotW, height)
+            button:SetSize(slotW, height)
         else
-            local posX, segGap = 0, 8
-            for idx = 1, num do
-                local s = seg[idx]
-                s.icon:ClearAllPoints()
-                s.text:ClearAllPoints()
-                if showIcon then
-                    s.icon:SetPoint("LEFT", btnFrame, "LEFT", posX, 0)
-                    posX = posX + iconSz + ICON_GAP
+            -- In a row, 8px between the two.
+            local x = 0
+            for i = 1, #links do
+                local part = parts[i]
+                part.icon:ClearAllPoints()
+                part.text:ClearAllPoints()
+                if withIcon then
+                    part.icon:SetPoint("LEFT", button, "LEFT", x, 0)
+                    x = x + iconSize + K.ICON_GAP
                 end
-                s.text:SetPoint("LEFT", btnFrame, "LEFT", posX, 0)
-                posX = posX + mod.SnapToPixelGrid(s.text:GetStringWidth())
-                if idx < num then
-                    posX = posX + segGap
+                part.text:SetPoint("LEFT", button, "LEFT", x, 0)
+                x = x + mod.SnapToPixelGrid(part.text:GetStringWidth())
+                if i < #links then
+                    x = x + 8
                 end
             end
-            local totalW = max(posX + 4, 10)
-            contentFrame:SetSize(totalW, barH)
-            btnFrame:SetSize(totalW, barH)
+            local width = max(x + 4, 10)
+            contentFrame:SetSize(width, barH)
+            button:SetSize(width, barH)
         end
-        btnFrame:ClearAllPoints()
-        btnFrame:SetPoint("CENTER", contentFrame, "CENTER", 0, 0)
-        MaybeRelayout(instance)
+        button:ClearAllPoints()
+        button:SetPoint("CENTER", contentFrame, "CENTER", 0, 0)
+        K.MaybeRelayout(self)
     end
 
-    -- Latency only moves every ~30s (GetNetStats is cached), so re-lay-out only when the shown value, mode or icon state actually changes.
+    -- The game updates latency about every 30s: a draw only when what is shown changes.
     local function Tick()
-        local _, _, home, world = GetNetStats()
-        local sig = mod.LatencyMode(D()) .. (D().showIcon and "I" or "") .. floor(home) .. "/" .. floor(world)
-        if sig == lastSig then
-            return
+        local state = State()
+        if state ~= drawn then
+            drawn = state
+            inst:Refresh()
         end
-        lastSig = sig
-        instance:Refresh()
     end
 
-    btnFrame:SetScript("OnEnter", function()
-        mouseOver = true
-        instance:Refresh()
-        MsTooltip()
+    button:SetScript("OnEnter", function()
+        hovered = true
+        Paint()
+        Tooltip()
     end)
-    btnFrame:SetScript("OnLeave", function()
-        mouseOver = false
+    button:SetScript("OnLeave", function()
+        hovered = false
         mod.Tip_Hide(contentFrame)
-        instance:Refresh()
+        Paint()
     end)
 
-    function instance:Enable()
+    function inst:Enable()
         contentFrame:Show()
-        lastSig = nil
-        mod.RegisterHeartbeat("ms:" .. self.key, Tick)
+        drawn = nil
+        mod.RegisterHeartbeat(tickKey, Tick)
     end
-    function instance:Disable()
-        mod.UnregisterHeartbeat("ms:" .. self.key)
+    function inst:Disable()
+        mod.UnregisterHeartbeat(tickKey)
         contentFrame:Hide()
     end
-    function instance:GetAutoLength()
+    function inst:GetAutoLength()
         if barCtx.IsVertical() then
             return max(contentFrame:GetHeight() or 40, 30)
         end
         return max(contentFrame:GetWidth() or 60, 24)
     end
-    function instance:Destroy()
+    function inst:Destroy()
         self._dead = true
         contentFrame:Hide()
     end
 
-    return instance
+    return inst
 end
 
+-------------------------------------------------------------------------------
+--  Durability
+-------------------------------------------------------------------------------
 mod.BlockFactories.durability = function(blockCfg, slot, contentFrame, barCtx)
-    -- Same reading as the Chat sidebar's durability icon: the LOWEST percent across equipped slots 1-18.
-    local function SampleDurability()
+    -- The lowest percent across equipped slots 1-18 (as the chat sidebar's icon).
+    local function Lowest()
         local lowest = 100
-        for slotId = 1, 18 do
-            local current, mx = GetInventoryItemDurability(slotId)
-            if current and mx and mx > 0 then
-                local pct = current / mx * 100
-                if pct < lowest then
-                    lowest = pct
-                end
+        for s = 1, 18 do
+            local current, most = GetInventoryItemDurability(s)
+            if current and most and most > 0 then
+                lowest = min(lowest, current / most * 100)
             end
         end
         local pct = floor(lowest)
@@ -659,135 +615,115 @@ mod.BlockFactories.durability = function(blockCfg, slot, contentFrame, barCtx)
         return pct
     end
 
-    local function DurabilityTooltip(instance)
-        -- Resync the bar text whenever the tooltip opens.
-        if instance then
-            instance:ForceSample()
+    local function Tooltip(inst)
+        if inst then
+            inst:ForceSample() -- the bar matches what the tooltip reads
         end
-        local ar, ag, ab = 1, 1, 1
         mod.Tip_Begin(contentFrame)
-        mod.Tip_AddDouble("Durability", SampleDurability() .. "%", 1, 1, 1, ar, ag, ab)
+        mod.Tip_AddDouble("Durability", Lowest() .. "%", 1, 1, 1, 1, 1, 1)
         mod.Tip_Show()
     end
 
-    return MakeStatBlock(blockCfg, slot, contentFrame, barCtx, {
-        hbPrefix = "durability",
+    return SingleValueBlock(blockCfg, slot, contentFrame, barCtx, {
+        tickKey = "durability",
         hasIcon = true,
         iconExtra = 7,
-        -- Durability only moves on damage/repair edges the game announces, so
-        -- the block samples on those events alone -- no heartbeat, and with no
-        -- other time-driven block enabled the 1s ticker never runs at all.
-        -- Self-repair items recalculate alerts without the durability event.
+        -- Durability changes only on the events the game sends, so no ticker.
+        -- Self-repairing items update the alerts without the durability event.
         events = { "UPDATE_INVENTORY_DURABILITY", "UPDATE_INVENTORY_ALERTS", "PLAYER_ENTERING_WORLD" },
-        -- Retry each sample once, a moment later.
         retryDelay = 2,
-        sample = SampleDurability,
+        sample = Lowest,
         suffix = function()
             return "%"
         end,
-        tooltip = DurabilityTooltip,
+        tooltip = Tooltip,
     })
 end
 
+-------------------------------------------------------------------------------
+--  Combat
+-------------------------------------------------------------------------------
 mod.BlockFactories.combat = function(blockCfg, slot, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
-    instance.key = InstKey(barCtx, blockCfg)
-    instance.events = { "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "PLAYER_ENTERING_WORLD" }
+    local inst = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
+    inst.key = K.InstKey(barCtx, blockCfg)
+    inst.events = { "PLAYER_REGEN_DISABLED", "PLAYER_REGEN_ENABLED", "PLAYER_ENTERING_WORLD" }
 
-    local function IsInCombat()
+    local function Fighting()
         return UnitAffectingCombat("player") and 1 or 0
     end
-
-    local function CombatLabel(value)
-        return value == 1 and L["IN_COMBAT"] or L["OUT_OF_COMBAT"]
+    local function Words(v)
+        return v == 1 and L["IN_COMBAT"] or L["OUT_OF_COMBAT"]
+    end
+    local function OnlyInCombat()
+        return (blockCfg.settings or {}).onlyInCombat == true
     end
 
-    local function CombatTooltip()
+    local function Tooltip()
         mod.Tip_Begin(contentFrame)
-        mod.Tip_AddDouble(L["COMBAT_STATUS"], CombatLabel(IsInCombat()), 1, 1, 1, 1, 1, 1)
+        mod.Tip_AddDouble(L["COMBAT_STATUS"], Words(Fighting()), 1, 1, 1, 1, 1, 1)
         mod.Tip_Show()
     end
 
-    local mouseOver = false
-    local lastValue = -1
-    local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
-
-    local function D()
-        return blockCfg.settings or {}
-    end
-    local function BC()
-        return barCtx.cfg
-    end
+    local hovered = false
+    local state = -1
+    local fontSize = TextSize()
 
     local widget = CreateFrame("Button", nil, contentFrame)
     widget:SetSize(60, 20)
     widget:EnableMouse(true)
     widget:RegisterForClicks("AnyUp")
+    local label = widget:CreateFontString(nil, "OVERLAY")
+    K.AttachTextOffset(inst, label)
+    label:SetPoint("LEFT")
+    local ruler = widget:CreateFontString(nil, "OVERLAY")
+    ruler:Hide()
 
-    local textValue = widget:CreateFontString(nil, "OVERLAY")
-    AttachTextOffset(instance, textValue)
-    textValue:SetPoint("LEFT")
-
-    local measureFS = widget:CreateFontString(nil, "OVERLAY")
-    measureFS:Hide()
-
-    local function ApplyColors()
-        local r, g, b
-        if mouseOver then
-            r, g, b = mod.GetAccent()
+    local function Paint()
+        if hovered then
+            label:SetTextColor(mod.GetAccent())
         else
-            r, g, b = BlockColorOf(blockCfg)
+            label:SetTextColor(K.BlockColorOf(blockCfg))
         end
-        textValue:SetTextColor(r, g, b, 1)
     end
 
-    function instance:Refresh()
-        local barCfg = BC()
+    function inst:Refresh()
         local barH = barCtx.GetThickness()
-        local isSide = barCtx.IsVertical()
-        local value = lastValue
-        if value < 0 then
-            value = IsInCombat()
-            lastValue = value
+        if state < 0 then
+            state = Fighting()
         end
-        local collapsed = D().onlyInCombat == true and value ~= 1
-
+        local collapsed = OnlyInCombat() and state ~= 1
         if not collapsed and not contentFrame:IsShown() then
             contentFrame:Show()
         end
-
-        mod.SetFont(textValue, fontSize, barCfg)
-        textValue:SetText(CludesUI.L(CombatLabel(value)))
-        ApplyColors()
-
+        mod.SetFont(label, fontSize, barCtx.cfg)
+        label:SetText(CludesUI.L(Words(state)))
+        Paint()
         if InCombatLockdown() then
-            MaybeRelayout(instance)
+            K.MaybeRelayout(self)
             return
         end
-
-        if isSide then
-            local slotW = VSlotW(instance)
-            local innerW = max(36, slotW - 8)
-            widget:SetSize(innerW, fontSize + 4)
+        if barCtx.IsVertical() then
+            local slotW = K.VSlotW(self)
+            local inner = max(36, slotW - 8)
+            widget:SetSize(inner, fontSize + 4)
             widget:ClearAllPoints()
             widget:SetPoint("CENTER", contentFrame, "CENTER", 0, 0)
-            textValue:ClearAllPoints()
-            textValue:SetPoint("CENTER", widget, "CENTER", 0, 0)
-            mod.SetWrappedText(textValue, innerW, "CENTER")
+            label:ClearAllPoints()
+            label:SetPoint("CENTER", widget, "CENTER", 0, 0)
+            mod.SetWrappedText(label, inner, "CENTER")
             contentFrame:SetSize(slotW, max(fontSize + 12, barH))
         else
-            local align = blockCfg.align or "CENTER"
-            mod.ResetInlineText(textValue, align)
-            textValue:ClearAllPoints()
-            textValue:SetPoint("LEFT", widget, "LEFT", 0, 0)
-            mod.SetFont(measureFS, fontSize, barCfg)
-            -- Fixed width from the wider label so the block never resizes on
-            -- combat edges; either label can be the wide one per locale.
-            measureFS:SetText(CludesUI.L(CombatLabel(0)))
-            local wOut = measureFS:GetStringWidth() or 30
-            measureFS:SetText(CludesUI.L(CombatLabel(1)))
-            local width = max(30, mod.SnapToPixelGrid(max(wOut, measureFS:GetStringWidth() or 30)) + 2)
-            textValue:SetWidth(width)
+            mod.ResetInlineText(label, blockCfg.align or "CENTER")
+            label:ClearAllPoints()
+            label:SetPoint("LEFT", widget, "LEFT", 0, 0)
+            -- The wider of the two labels (which one depends on the language),
+            -- so combat starting or ending never resizes the block.
+            mod.SetFont(ruler, fontSize, barCtx.cfg)
+            ruler:SetText(CludesUI.L(Words(0)))
+            local outW = ruler:GetStringWidth() or 30
+            ruler:SetText(CludesUI.L(Words(1)))
+            local width = max(30, mod.SnapToPixelGrid(max(outW, ruler:GetStringWidth() or 30)) + 2)
+            label:SetWidth(width)
             widget:SetSize(width, barH)
             widget:ClearAllPoints()
             widget:SetPoint("CENTER", contentFrame, "CENTER", 0, 0)
@@ -797,52 +733,49 @@ mod.BlockFactories.combat = function(blockCfg, slot, contentFrame, barCtx)
             contentFrame:Hide()
             mod.Tip_Hide(contentFrame)
         end
-        MaybeRelayout(instance)
+        K.MaybeRelayout(self)
     end
 
-    local function RefreshFromEvent()
-        local value = IsInCombat()
-        if value == lastValue then
+    local function OnEvent()
+        local now = Fighting()
+        if now == state then
             return
         end
-        lastValue = value
-        instance:Refresh()
-        if mouseOver then
-            CombatTooltip()
+        state = now
+        inst:Refresh()
+        if hovered then
+            Tooltip()
         end
     end
 
     widget:SetScript("OnEnter", function()
-        mouseOver = true
-        ApplyColors()
-        CombatTooltip()
+        hovered = true
+        Paint()
+        Tooltip()
     end)
     widget:SetScript("OnLeave", function()
-        mouseOver = false
+        hovered = false
         mod.Tip_Hide(contentFrame)
-        ApplyColors()
+        Paint()
     end)
 
-    function instance:Enable()
+    function inst:Enable()
         contentFrame:Show()
-        lastValue = -1
+        state = -1
         if not self.eventFrame then
-            self.eventFrame = MakeEventFrame(self, RefreshFromEvent)
+            self.eventFrame = K.MakeEventFrame(self, OnEvent)
         end
-        RegisterInstEvents(self)
-        RefreshFromEvent()
+        K.RegisterInstEvents(self)
+        OnEvent()
     end
 
-    function instance:Disable()
-        UnregisterInstEvents(self)
+    function inst:Disable()
+        K.UnregisterInstEvents(self)
         contentFrame:Hide()
     end
 
-    function instance:GetAutoLength()
-        if D().onlyInCombat == true and lastValue ~= 1 then
-            return 0
-        end
-        if not contentFrame:IsShown() then
+    function inst:GetAutoLength()
+        if (OnlyInCombat() and state ~= 1) or not contentFrame:IsShown() then
             return 0
         end
         if barCtx.IsVertical() then
@@ -851,11 +784,11 @@ mod.BlockFactories.combat = function(blockCfg, slot, contentFrame, barCtx)
         return max(contentFrame:GetWidth() or 70, 40)
     end
 
-    function instance:Destroy()
+    function inst:Destroy()
         self._dead = true
-        UnregisterInstEvents(self)
+        K.UnregisterInstEvents(self)
         contentFrame:Hide()
     end
 
-    return instance
+    return inst
 end
