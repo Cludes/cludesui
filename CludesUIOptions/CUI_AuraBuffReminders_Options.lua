@@ -2335,6 +2335,245 @@ initFrame:SetScript("OnEvent", function(self)
         return y - h
     end
 
+    -- A checkbox grid item that ticks entry.key in section().enabled.
+    local function EnabledItem(section, entry, label, class, tooltip)
+        return {
+            label = label,
+            classToken = class,
+            key = entry.key,
+            tooltip = tooltip,
+            getVal = function()
+                local t = section()
+                return t and t.enabled and t.enabled[entry.key]
+            end,
+            setVal = function(v)
+                local t = section()
+                if t and t.enabled then
+                    t.enabled[entry.key] = v
+                end
+            end,
+        }
+    end
+    local function SpellLabel(entry)
+        return _G._CUABR_SpellName(entry.castSpell, entry.name)
+    end
+    -- After a grid tick: refresh, rebuild the preview, and first (groupAuras)
+    -- re-register group aura tracking where an item turns it on or off.
+    local function GridChanged(groupAuras)
+        return function()
+            if groupAuras and _G._CUABR_UpdateGroupAuraRegistration then
+                _G._CUABR_UpdateGroupAuraRegistration()
+            end
+            RefreshAll()
+            RebuildPreviewHeader()
+        end
+    end
+
+    -- Raid Buffs' cog: click a reminder to ask for the buff, optionally with
+    -- your own text ([spell] marks the buff's name; the untouched example
+    -- stays unsaved, so it follows the client language).
+    local function RequestRows()
+        local function RequestOn()
+            local r = RDB()
+            return r and r.requestOnClick
+        end
+        return {
+            {
+                type = "toggle",
+                label = "Click to Request Buff",
+                tooltip = "Click a buff or Healthstone to ask for it.",
+                get = function()
+                    local r = RDB()
+                    return r and r.requestOnClick == true
+                end,
+                set = function(v)
+                    local r = RDB()
+                    if r then
+                        r.requestOnClick = v
+                        RefreshAll()
+                    end
+                end,
+            },
+            {
+                type = "toggle",
+                label = "Custom Request Text",
+                tooltip = "Send your own text instead of the default.",
+                disabled = function()
+                    return not RequestOn()
+                end,
+                disabledTooltip = "Click to Request Buff",
+                get = function()
+                    local r = RDB()
+                    return r and r.requestCustom == true
+                end,
+                set = function(v)
+                    local r = RDB()
+                    if r then
+                        r.requestCustom = v
+                    end
+                end,
+            },
+            {
+                type = "input",
+                label = "Request Text",
+                inputWidth = 170,
+                inputJustify = "LEFT",
+                tooltip = "Type [spell] where the buff's name goes.",
+                disabled = function()
+                    local r = RDB()
+                    return not (r and r.requestOnClick and r.requestCustom)
+                end,
+                disabledTooltip = "Custom Request Text",
+                get = function()
+                    local r = RDB()
+                    if not r then
+                        return ""
+                    end
+                    return r.requestText or _G._CUABR_RequestExample()
+                end,
+                set = function(v)
+                    local r = RDB()
+                    if not r then
+                        return
+                    end
+                    local clean = _G._CUABR_CleanRequestText(v)
+                    if clean == _G._CUABR_RequestExample() then
+                        clean = nil
+                    end
+                    r.requestText = clean
+                    if clean and not _G._CUABR_HasRequestToken(clean) then
+                        local msg = CludesUI.Lf("Request text must include %1$s", _G._CUABR_REQUEST_TOKEN)
+                        UIErrorsFrame:AddMessage(msg, 1.0, 0.3, 0.3, 1.0)
+                    end
+                end,
+            },
+        }
+    end
+
+    -- RAID BUFFS (WoW Forever: its own locations and its own buffs, which
+    -- the module exports as the raid buff list there): Where to Show | Show
+    -- When (+ sound cog, retail: the request options), then the buff grid.
+    -- Returns y and the header.
+    local function BuildRaidBuffSection(parent, y, refs)
+        local W = CludesUI.Widgets
+        local _
+        local header, h = W:SectionHeader(parent, SECTION_RAID_BUFFS, y)
+        y = y - h
+        _, h = SectionControlRow(parent, y, {
+            whereStore = RWhere,
+            whereItems = FOREVER and FOREVER_WHERE_ITEMS or nil,
+            whereTooltip = "Pick which content this section's reminders appear in.\nRested areas (cities and inns) always stay hidden.",
+            showWhenStore = RShowWhen,
+            showWhenTooltip = "Others are missing my buff: remind when a groupmate is missing a buff you can cast.\nI am missing others' buffs: remind when you are missing a buff a groupmate could give you (only shown when someone who can cast it is present). Off by default.",
+            soundSec = RDB,
+            soundField = "sectionSound",
+            cogTitle = (not FOREVER) and "Raid Buff Options" or nil,
+            cogRows = (not FOREVER) and RequestRows() or nil,
+            onChange = RefreshAll,
+            onShowWhenChange = function()
+                if _G._CUABR_UpdateGroupAuraRegistration then
+                    _G._CUABR_UpdateGroupAuraRegistration()
+                end
+            end,
+        })
+        y = y - h
+        local items = {}
+        for _, buff in ipairs(_G._CUABR_RAID_BUFFS or {}) do
+            items[#items + 1] = EnabledItem(RDB, buff, SpellLabel(buff), buff.class)
+        end
+        y = y - BuildCheckboxGrid(parent, y, items, GridChanged(false), refs)
+        _, h = W:Spacer(parent, y, 20)
+        return y - h, header
+    end
+
+    local STANCE_TIP = "Shows in combat only, while you are out of this form."
+    local EARTH_SHIELD_ALLY_TIP =
+        "Out of combat, reminds you when no groupmate has your Earth Shield (Elemental Orbit)."
+
+    -- AURAS: Where to Show (+ sound cog) and the aura grid (Soulstone is
+    -- the Warlock section's). Returns y and the header.
+    local function BuildAuraSection(parent, y, refs)
+        local W = CludesUI.Widgets
+        local _
+        local header, h = W:SectionHeader(parent, SECTION_AURAS, y)
+        y = y - h
+        _, h = SectionControlRow(parent, y, {
+            whereStore = AWhere,
+            whereTooltip = "Pick which content these aura reminders appear in.\nRested areas (cities and inns) always stay hidden.",
+            soundSec = ADB,
+            soundField = "sectionSound",
+            onChange = RefreshAll,
+        })
+        y = y - h
+        local items = {}
+        for _, aura in ipairs(_G._CUABR_AURAS or {}) do
+            if aura.key ~= "soulstone" then
+                local tip = (aura.combatOnly and aura.isStance) and STANCE_TIP or nil
+                items[#items + 1] = EnabledItem(ADB, aura, SpellLabel(aura), aura.class, tip)
+            end
+        end
+        y = y - BuildCheckboxGrid(parent, y, items, GridChanged(true), refs)
+        _, h = W:Spacer(parent, y, 20)
+        return y - h, header
+    end
+
+    -- A class consumable section (Rogue Poisons, Paladin Rites, Shaman
+    -- Imbues & Shields): its own Where to Show and sound, then its grid.
+    local function BuildClassSection(parent, y, title, class, items, groupAuras, refs)
+        local W = CludesUI.Widgets
+        local _
+        local h
+        _, h = W:SectionHeader(parent, title, y)
+        y = y - h
+        _, h = SectionControlRow(parent, y, {
+            whereStore = CSpecialWhere(class),
+            whereTooltip = SPECIAL_WHERE_TIP,
+            soundSec = CDB,
+            specialClass = class,
+            onChange = RefreshAll,
+        })
+        y = y - h
+        y = y - BuildCheckboxGrid(parent, y, items, GridChanged(groupAuras), refs)
+        _, h = W:Spacer(parent, y, 10)
+        return y - h
+    end
+
+    -- The class consumable sections, in page order.
+    local function BuildClassSections(parent, y, refs)
+        local function Items(list, class)
+            local items = {}
+            for _, entry in ipairs(list or {}) do
+                items[#items + 1] = EnabledItem(CDB, entry, SpellLabel(entry), class)
+            end
+            return items
+        end
+        y = BuildClassSection(
+            parent,
+            y,
+            SECTION_ROGUE,
+            "ROGUE",
+            Items(_G._CUABR_ROGUE_POISONS, "ROGUE"),
+            false,
+            refs
+        )
+        y = BuildClassSection(
+            parent,
+            y,
+            SECTION_PALADIN,
+            "PALADIN",
+            Items(_G._CUABR_PALADIN_RITES, "PALADIN"),
+            false,
+            refs
+        )
+        local shaman = Items(_G._CUABR_SHAMAN_IMBUES, "SHAMAN")
+        for _, shield in ipairs(_G._CUABR_SHAMAN_SHIELDS or {}) do
+            local tip = shield.key == "es_ally" and EARTH_SHIELD_ALLY_TIP or nil
+            shaman[#shaman + 1] = EnabledItem(CDB, shield, CludesUI.L(shield.name), "SHAMAN", tip)
+        end
+        -- Earth Shield (Ally) turns group tracking on or off.
+        return BuildClassSection(parent, y, SECTION_SHAMAN, "SHAMAN", shaman, true, refs)
+    end
+
     local function BuildRemindersPage(pageName, parent, yOffset)
         local W = CludesUI.Widgets
         local y = yOffset
@@ -2372,143 +2611,8 @@ initFrame:SetScript("OnEvent", function(self)
 
         y = BuildLayoutRows(parent, y)
 
-        -----------------------------------------------------------------------
-        --  RAID BUFFS section (WoW Forever: its own locations and its own
-        --  buffs, which the module exports as the raid buff list there)
-        -----------------------------------------------------------------------
         local raidBufHdr
-        raidBufHdr, h = W:SectionHeader(parent, SECTION_RAID_BUFFS, y)
-        y = y - h
-
-        -- Where to Show | Show When (+ reminder sound cog)
-        _, h = SectionControlRow(parent, y, {
-            whereStore = RWhere,
-            whereItems = FOREVER and FOREVER_WHERE_ITEMS or nil,
-            whereTooltip = "Pick which content this section's reminders appear in.\nRested areas (cities and inns) always stay hidden.",
-            showWhenStore = RShowWhen,
-            showWhenTooltip = "Others are missing my buff: remind when a groupmate is missing a buff you can cast.\nI am missing others' buffs: remind when you are missing a buff a groupmate could give you (only shown when someone who can cast it is present). Off by default.",
-            soundSec = RDB,
-            soundField = "sectionSound",
-            cogTitle = (not FOREVER) and "Raid Buff Options" or nil,
-            cogRows = not FOREVER
-                    and {
-                        {
-                            type = "toggle",
-                            label = "Click to Request Buff",
-                            tooltip = "Click a buff or Healthstone to ask for it.",
-                            get = function()
-                                local r = RDB()
-                                return r and r.requestOnClick == true
-                            end,
-                            set = function(v)
-                                local r = RDB()
-                                if r then
-                                    r.requestOnClick = v
-                                    RefreshAll()
-                                end
-                            end,
-                        },
-                        {
-                            type = "toggle",
-                            label = "Custom Request Text",
-                            tooltip = "Send your own text instead of the default.",
-                            disabled = function()
-                                local r = RDB()
-                                return not (r and r.requestOnClick)
-                            end,
-                            disabledTooltip = "Click to Request Buff",
-                            get = function()
-                                local r = RDB()
-                                return r and r.requestCustom == true
-                            end,
-                            set = function(v)
-                                local r = RDB()
-                                if r then
-                                    r.requestCustom = v
-                                end
-                            end,
-                        },
-                        {
-                            type = "input",
-                            label = "Request Text",
-                            inputWidth = 170,
-                            inputJustify = "LEFT",
-                            tooltip = "Type [spell] where the buff's name goes.",
-                            disabled = function()
-                                local r = RDB()
-                                return not (r and r.requestOnClick and r.requestCustom)
-                            end,
-                            disabledTooltip = "Custom Request Text",
-                            get = function()
-                                local r = RDB()
-                                if not r then
-                                    return ""
-                                end
-                                return r.requestText or _G._CUABR_RequestExample()
-                            end,
-                            set = function(v)
-                                local r = RDB()
-                                if not r then
-                                    return
-                                end
-                                local clean = _G._CUABR_CleanRequestText(v)
-                                -- The untouched example stays unsaved, so it follows the client language.
-                                if clean == _G._CUABR_RequestExample() then
-                                    clean = nil
-                                end
-                                r.requestText = clean
-                                if clean and not _G._CUABR_HasRequestToken(clean) then
-                                    UIErrorsFrame:AddMessage(
-                                        CludesUI.Lf("Request text must include %1$s", _G._CUABR_REQUEST_TOKEN),
-                                        1.0,
-                                        0.3,
-                                        0.3,
-                                        1.0
-                                    )
-                                end
-                            end,
-                        },
-                    }
-                or nil,
-            onChange = RefreshAll,
-            onShowWhenChange = function()
-                if _G._CUABR_UpdateGroupAuraRegistration then
-                    _G._CUABR_UpdateGroupAuraRegistration()
-                end
-            end,
-        })
-        y = y - h
-
-        -- 4-column checkbox grid for individual raid buffs
-        do
-            local RAID_BUFFS = _G._CUABR_RAID_BUFFS or {}
-            local gridItems = {}
-            for _, buff in ipairs(RAID_BUFFS) do
-                gridItems[#gridItems + 1] = {
-                    label = _G._CUABR_SpellName(buff.castSpell, buff.name),
-                    classToken = buff.class,
-                    key = buff.key,
-                    getVal = function()
-                        local r = RDB()
-                        return r and r.enabled and r.enabled[buff.key]
-                    end,
-                    setVal = function(v)
-                        local r = RDB()
-                        if r and r.enabled then
-                            r.enabled[buff.key] = v
-                        end
-                    end,
-                }
-            end
-            h = BuildCheckboxGrid(parent, y, gridItems, function()
-                RefreshAll()
-                RebuildPreviewHeader()
-            end, _gridCellRefs)
-            y = y - h
-        end
-
-        _, h = W:Spacer(parent, y, 20)
-        y = y - h
+        y, raidBufHdr = BuildRaidBuffSection(parent, y, _gridCellRefs)
 
         -----------------------------------------------------------------------
         --  WOW FOREVER section: on that client the rest of the page.
@@ -2917,220 +3021,9 @@ initFrame:SetScript("OnEvent", function(self)
             return math.abs(y)
         end
 
-        -----------------------------------------------------------------------
-        --  AURAS section
-        -----------------------------------------------------------------------
         local auraHdr
-        auraHdr, h = W:SectionHeader(parent, SECTION_AURAS, y)
-        y = y - h
-
-        -- Where to Show (+ reminder sound cog)
-        _, h = SectionControlRow(parent, y, {
-            whereStore = AWhere,
-            whereTooltip = "Pick which content these aura reminders appear in.\nRested areas (cities and inns) always stay hidden.",
-            soundSec = ADB,
-            soundField = "sectionSound",
-            onChange = RefreshAll,
-        })
-        y = y - h
-
-        -- 4-column checkbox grid for individual auras
-        do
-            local AURAS = _G._CUABR_AURAS or {}
-            local gridItems = {}
-            for _, aura in ipairs(AURAS) do
-                -- Soulstone is a Warlock-specific group utility reminder and
-                -- is configured in the Warlock section below.
-                if aura.key ~= "soulstone" then
-                    gridItems[#gridItems + 1] = {
-                        label = _G._CUABR_SpellName(aura.castSpell, aura.name),
-                        classToken = aura.class,
-                        key = aura.key,
-                        tooltip = (aura.combatOnly and aura.isStance)
-                                and "Shows in combat only, while you are out of this form."
-                            or nil,
-                        getVal = function()
-                            local a = ADB()
-                            return a and a.enabled and a.enabled[aura.key]
-                        end,
-                        setVal = function(v)
-                            local a = ADB()
-                            if a and a.enabled then
-                                a.enabled[aura.key] = v
-                            end
-                        end,
-                    }
-                end
-            end
-            h = BuildCheckboxGrid(parent, y, gridItems, function()
-                if _G._CUABR_UpdateGroupAuraRegistration then
-                    _G._CUABR_UpdateGroupAuraRegistration()
-                end
-                RefreshAll()
-                RebuildPreviewHeader()
-            end, _gridCellRefs)
-            y = y - h
-        end
-
-        _, h = W:Spacer(parent, y, 20)
-        y = y - h
-
-        -----------------------------------------------------------------------
-        --  ROGUE POISONS sub-section
-        -----------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, SECTION_ROGUE, y)
-        y = y - h
-        _, h = SectionControlRow(parent, y, {
-            whereStore = CSpecialWhere("ROGUE"),
-            whereTooltip = SPECIAL_WHERE_TIP,
-            soundSec = CDB,
-            specialClass = "ROGUE",
-            onChange = RefreshAll,
-        })
-        y = y - h
-
-        do
-            local POISONS = _G._CUABR_ROGUE_POISONS or {}
-            local gridItems = {}
-            for _, poison in ipairs(POISONS) do
-                gridItems[#gridItems + 1] = {
-                    label = _G._CUABR_SpellName(poison.castSpell, poison.name),
-                    classToken = "ROGUE",
-                    key = poison.key,
-                    getVal = function()
-                        local c = CDB()
-                        return c and c.enabled and c.enabled[poison.key]
-                    end,
-                    setVal = function(v)
-                        local c = CDB()
-                        if c and c.enabled then
-                            c.enabled[poison.key] = v
-                        end
-                    end,
-                }
-            end
-            h = BuildCheckboxGrid(parent, y, gridItems, function()
-                RefreshAll()
-                RebuildPreviewHeader()
-            end, _gridCellRefs)
-            y = y - h
-        end
-
-        _, h = W:Spacer(parent, y, 10)
-        y = y - h
-
-        -----------------------------------------------------------------------
-        --  PALADIN RITES sub-section
-        -----------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, SECTION_PALADIN, y)
-        y = y - h
-        _, h = SectionControlRow(parent, y, {
-            whereStore = CSpecialWhere("PALADIN"),
-            whereTooltip = SPECIAL_WHERE_TIP,
-            soundSec = CDB,
-            specialClass = "PALADIN",
-            onChange = RefreshAll,
-        })
-        y = y - h
-
-        do
-            local RITES = _G._CUABR_PALADIN_RITES or {}
-            local gridItems = {}
-            for _, rite in ipairs(RITES) do
-                gridItems[#gridItems + 1] = {
-                    label = _G._CUABR_SpellName(rite.castSpell, rite.name),
-                    classToken = "PALADIN",
-                    key = rite.key,
-                    getVal = function()
-                        local c = CDB()
-                        return c and c.enabled and c.enabled[rite.key]
-                    end,
-                    setVal = function(v)
-                        local c = CDB()
-                        if c and c.enabled then
-                            c.enabled[rite.key] = v
-                        end
-                    end,
-                }
-            end
-            h = BuildCheckboxGrid(parent, y, gridItems, function()
-                RefreshAll()
-                RebuildPreviewHeader()
-            end, _gridCellRefs)
-            y = y - h
-        end
-
-        _, h = W:Spacer(parent, y, 10)
-        y = y - h
-
-        -----------------------------------------------------------------------
-        --  SHAMAN IMBUES & SHIELDS sub-section
-        -----------------------------------------------------------------------
-        _, h = W:SectionHeader(parent, SECTION_SHAMAN, y)
-        y = y - h
-        _, h = SectionControlRow(parent, y, {
-            whereStore = CSpecialWhere("SHAMAN"),
-            whereTooltip = SPECIAL_WHERE_TIP,
-            soundSec = CDB,
-            specialClass = "SHAMAN",
-            onChange = RefreshAll,
-        })
-        y = y - h
-
-        do
-            local gridItems = {}
-            local IMBUES = _G._CUABR_SHAMAN_IMBUES or {}
-            for _, imbue in ipairs(IMBUES) do
-                gridItems[#gridItems + 1] = {
-                    label = _G._CUABR_SpellName(imbue.castSpell, imbue.name),
-                    classToken = "SHAMAN",
-                    key = imbue.key,
-                    getVal = function()
-                        local c = CDB()
-                        return c and c.enabled and c.enabled[imbue.key]
-                    end,
-                    setVal = function(v)
-                        local c = CDB()
-                        if c and c.enabled then
-                            c.enabled[imbue.key] = v
-                        end
-                    end,
-                }
-            end
-            local SHIELDS = _G._CUABR_SHAMAN_SHIELDS or {}
-            for _, shield in ipairs(SHIELDS) do
-                gridItems[#gridItems + 1] = {
-                    label = CludesUI.L(shield.name),
-                    classToken = "SHAMAN",
-                    key = shield.key,
-                    tooltip = shield.key == "es_ally"
-                            and "Out of combat, reminds you when no groupmate has your Earth Shield (Elemental Orbit)."
-                        or nil,
-                    getVal = function()
-                        local c = CDB()
-                        return c and c.enabled and c.enabled[shield.key]
-                    end,
-                    setVal = function(v)
-                        local c = CDB()
-                        if c and c.enabled then
-                            c.enabled[shield.key] = v
-                        end
-                    end,
-                }
-            end
-            -- Earth Shield (Ally) turns group tracking on or off.
-            h = BuildCheckboxGrid(parent, y, gridItems, function()
-                if _G._CUABR_UpdateGroupAuraRegistration then
-                    _G._CUABR_UpdateGroupAuraRegistration()
-                end
-                RefreshAll()
-                RebuildPreviewHeader()
-            end, _gridCellRefs)
-            y = y - h
-        end
-
-        _, h = W:Spacer(parent, y, 10)
-        y = y - h
+        y, auraHdr = BuildAuraSection(parent, y, _gridCellRefs)
+        y = BuildClassSections(parent, y, _gridCellRefs)
 
         -----------------------------------------------------------------------
         --  PETS section
