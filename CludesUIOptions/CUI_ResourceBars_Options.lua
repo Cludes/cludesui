@@ -1675,11 +1675,189 @@ initFrame:SetScript("OnEvent", function(self)
         end
     end
 
-    -- Forward decls for preview click-to-scroll
+    -- Click-to-scroll overlays on the preview (CreateHitOverlay is set below).
     local CreateHitOverlay
     local _hitOverlays = {}
 
-    -- Preview Header Builder
+    -- The class resource row's frames: a bar type's background and fill, or
+    -- one frame per pip (pipWidth is the whole row, split evenly; leftover
+    -- pixels widen pips, never the spacing). UpdatePreviewHeader dresses them.
+    local function BuildResourceRow(row, p, sp, class)
+        local height = sp.pipHeight
+        if mod.IsBarTypeSecondary() then
+            -- Bar type (Devourer, Elemental Shaman): a texture clipped by width.
+            row:SetSize(p.primary.width or 214, height)
+            local bg = row:CreateTexture(nil, "BACKGROUND")
+            bg:SetAllPoints()
+            UnsnapTex(bg)
+            row._barBg = bg
+            local fill = row:CreateTexture(nil, "ARTWORK")
+            fill:SetPoint("LEFT")
+            fill:SetHeight(height)
+            fill:SetTexture(FillPath(p))
+            UnsnapTex(fill)
+            row._barFill = fill
+            return
+        end
+        local count = PreviewPipCount()
+        local width, spacing = sp.pipWidth, sp.pipSpacing
+        local base = math.floor((width - (count - 1) * spacing) / count)
+        local extra = width - (count - 1) * spacing - base * count
+        row:SetSize(width, height)
+        local classColour = CLASS_COLORS[class]
+        local x = 0
+        for i = 1, count do
+            local w = base + (i <= extra and 1 or 0)
+            local pip = CreateFrame("Frame", nil, row)
+            pip:SetSize(w, height)
+            pip:SetPoint("LEFT", row, "LEFT", x, 0)
+            x = x + w + spacing
+            local bg = pip:CreateTexture(nil, "BACKGROUND")
+            bg:SetAllPoints()
+            if sp.darkTheme then
+                local r, g, b = CludesUI.GetDarkModeBg()
+                bg:SetColorTexture(r, g, b, 1)
+            elseif sp.classColored then
+                local r = classColour and classColour[1] or 0.95
+                local g = classColour and classColour[2] or 0.90
+                local b = classColour and classColour[3] or 0.60
+                bg:SetColorTexture(r * 0.5, g * 0.5, b * 0.5, 0.5)
+            else
+                bg:SetColorTexture(sp.bgR, sp.bgG, sp.bgB, sp.bgA)
+            end
+            UnsnapTex(bg)
+            pip._bg = bg
+            local fill = pip:CreateTexture(nil, "ARTWORK")
+            fill:SetAllPoints()
+            fill:SetTexture(FillPath(p))
+            fill:SetVertexColor(1, 1, 1, 1)
+            UnsnapTex(fill)
+            pip._fill = fill
+            pip._border = MakePreviewBorder(pip, 0, 0, 0, 0, 0)
+            pip._border:SetShown(false)
+            _previewFrames.pips[i] = pip
+        end
+    end
+
+    -- The count text over the class resource row.
+    local function BuildCountText(row, sp)
+        local layer = CreateFrame("Frame", nil, row)
+        layer:SetAllPoints(row)
+        layer:SetFrameLevel(row:GetFrameLevel() + 10)
+        local text = layer:CreateFontString(nil, "OVERLAY")
+        SetPVFont(text, FONT_PATH, sp.textSize)
+        text:SetTextColor(1, 1, 1, 0.9)
+        local anchor = sp.textAnchor or "CENTER"
+        text:SetPoint(anchor, row, anchor, sp.textXOffset or 0, sp.textYOffset or 0)
+        row._countText = text
+    end
+
+    -- Arcane Soul (retail Mages only, as its section): a sample that replays
+    -- the live sequence, a divider above it, and a watcher that keeps the
+    -- on-screen sample running while this header shows.
+    local function BuildArcaneSoul(holder)
+        local sample = CreateFrame("Frame", nil, holder)
+        sample._fs = sample:CreateFontString(nil, "OVERLAY")
+        sample._fs:SetPoint("CENTER", sample, "CENTER", 0, 0)
+        sample._fs._asStamp = nil -- a reused font string is reset: style it again
+        sample:SetSize(1, 1)
+        if _G._CURB_ArcaneSoulDemoOnUpdate then
+            sample:SetScript("OnUpdate", _G._CURB_ArcaneSoulDemoOnUpdate)
+        end
+        _previewFrames.arcaneSoul = sample
+
+        local divider = holder:CreateTexture(nil, "ARTWORK")
+        divider:SetColorTexture(1, 1, 1, 0.10)
+        UnsnapTex(divider)
+        divider:Hide()
+        _previewFrames.asDivider = divider
+
+        local demo = _G._CURB_ArcaneSoulScreenDemo
+        if demo then
+            local watch = CreateFrame("Frame", nil, holder)
+            watch:SetSize(1, 1)
+            watch:SetPoint("CENTER")
+            watch:SetScript("OnShow", function(self)
+                demo(self, true)
+            end)
+            watch:SetScript("OnHide", function(self)
+                demo(self, false)
+            end)
+            if watch:IsVisible() then
+                demo(watch, true)
+            end
+        end
+    end
+
+    -- Element titles at header scale (the hint's size), on a child frame so
+    -- the header cache keeps them with the rest.
+    local function BuildTitles(heading, holder)
+        local layer = CreateFrame("Frame", nil, heading)
+        layer:SetAllPoints(heading)
+        layer:SetFrameLevel(holder:GetFrameLevel() + 1)
+        local function Title(text)
+            local fs = CludesUI.MakeFont(layer, 11, nil, 1, 1, 1)
+            fs:SetAlpha(0.6)
+            fs:SetText(text)
+            fs:Hide()
+            return fs
+        end
+        _previewFrames.labels = {
+            classResource = Title(CludesUI.L("Class Resource")),
+            power = Title(CludesUI.L("Power Bar")),
+            health = Title(CludesUI.L("Health Bar")),
+            arcaneSoul = _previewFrames.arcaneSoul and Title(CludesUI.L("Arcane Soul")) or nil,
+        }
+    end
+
+    -- Click-to-scroll overlays on each element (and a padded one on the count text).
+    local function BuildHitOverlays(holder, row)
+        wipe(_hitOverlays)
+        local level = holder:GetFrameLevel() + 20
+        if row then
+            CreateHitOverlay(row, "classResource", level)
+        end
+        CreateHitOverlay(_previewFrames.powerBar, "power", level)
+        CreateHitOverlay(_previewFrames.healthBar, "health", level)
+        if _previewFrames.arcaneSoul then
+            CreateHitOverlay(_previewFrames.arcaneSoul, "arcaneSoul", level)
+        end
+        if row and row._countText then
+            local pad = CreateFrame("Frame", nil, row)
+            pad:SetPoint("TOPLEFT", row._countText, "TOPLEFT", -2, 2)
+            pad:SetPoint("BOTTOMRIGHT", row._countText, "BOTTOMRIGHT", 2, -2)
+            CreateHitOverlay(pad, "countText", level + 5)
+        end
+    end
+
+    -- The "click elements" hint under the preview (kept across builds and
+    -- pages: out of its header's pool). Returns the height it adds.
+    local function PlaceHint(heading, height)
+        if height <= 0 or IsPreviewHintDismissed() then
+            if _previewHintFS then
+                _previewHintFS:Hide()
+            end
+            return 0
+        end
+        if not _previewHintFS then
+            local layer = PoolKeep(CreateFrame("Frame", nil, heading))
+            layer:SetAllPoints(heading)
+            _previewHintFS = CludesUI.MakeFont(layer, 11, nil, 1, 1, 1)
+            _previewHintFS:SetAlpha(0.45)
+            _previewHintFS:SetText(CludesUI.L("Click elements to scroll to and highlight their options"))
+        end
+        local layer = _previewHintFS:GetParent()
+        layer:SetParent(heading)
+        layer:SetFrameLevel(heading:GetFrameLevel() + 1) -- as a new one sits
+        layer:Show()
+        _previewHintFS:ClearAllPoints()
+        _previewHintFS:SetPoint("BOTTOM", heading, "BOTTOM", 0, 20)
+        _previewHintFS:Show()
+        return 35
+    end
+
+    -- The bars page's header: builds the preview's frames, lets
+    -- UpdatePreviewHeader dress and stack them, and returns the height.
     _previewHeaderBuilder = function(heading, hdrW)
         HintBuildStart(PAGE_DISPLAY, heading)
         _classHdrEmpty = PoolGen(heading) ~= nil
@@ -1690,239 +1868,50 @@ initFrame:SetScript("OnEvent", function(self)
         _previewBuilding = true
         local _, class = UnitClass("player")
 
-        local boxHolder = CreateFrame("Frame", nil, heading)
-        boxHolder:SetSize(hdrW, 100)
-        boxHolder:SetPoint("CENTER", heading, "CENTER", 0, 0)
-        _previewFrames.container = boxHolder
-
-        -- Scale the preview so pixel sizes match real bars on screen: compensate the panel's effective scale against UIParent's.
-        local previewScale = UIParent:GetEffectiveScale() / heading:GetEffectiveScale()
-        _previewScale = previewScale
-        boxHolder:SetScale(previewScale)
-
-        _previewSnap = function(val)
-            local s = boxHolder:GetEffectiveScale()
-            return math.floor(val * s + 0.5) / s
+        local holder = CreateFrame("Frame", nil, heading)
+        holder:SetSize(hdrW, 100)
+        holder:SetPoint("CENTER", heading, "CENTER", 0, 0)
+        _previewFrames.container = holder
+        -- Scaled so pixel sizes match the real bars: the panel's effective
+        -- scale against UIParent's.
+        _previewScale = UIParent:GetEffectiveScale() / heading:GetEffectiveScale()
+        holder:SetScale(_previewScale)
+        _previewSnap = function(v)
+            local s = holder:GetEffectiveScale()
+            return math.floor(v * s + 0.5) / s
         end
 
         local sp = p.secondary
-        local pipH = sp.pipHeight
-        local isBar = mod.IsBarTypeSecondary()
-
-        local pipC = CreateFrame("Frame", nil, boxHolder) -- hosts either pips or the bar preview
-        _previewFrames.pipContainer = pipC
+        local row = CreateFrame("Frame", nil, holder) -- the pips or the bar type
+        row:SetPoint("CENTER", holder, "CENTER", 0, 0)
+        _previewFrames.pipContainer = row
         _previewFrames.pips = {}
-
-        if isBar then
-            -- Bar-type preview (Devourer, Elemental Shaman)
-            local totalW = p.primary.width or 214
-            pipC:SetSize(totalW, pipH)
-            pipC:SetPoint("CENTER", boxHolder, "CENTER", 0, 0)
-
-            local backdrop = pipC:CreateTexture(nil, "BACKGROUND")
-            backdrop:SetAllPoints()
-            UnsnapTex(backdrop)
-            pipC._barBg = backdrop
-
-            -- Fill: status-bar style via texture + width clipping
-            local fill = pipC:CreateTexture(nil, "ARTWORK")
-            fill:SetPoint("LEFT")
-            fill:SetHeight(pipH)
-            local texKey = p.general.barTexture or "none"
-            local texLookup = _G._CURB_BarTextures or {}
-            local texPath = texLookup[texKey]
-            if texPath then
-                fill:SetTexture(texPath)
-            else
-                fill:SetTexture("Interface\\Buttons\\WHITE8x8")
-            end
-            UnsnapTex(fill)
-            pipC._barFill = fill
-        else
-            -- pipWidth is the TOTAL bar width, divided evenly across pips; remainder pixels go into pip widths, never spacing.
-            local numPips = PreviewPipCount()
-            local totalW = sp.pipWidth
-            local pipSp = sp.pipSpacing
-            local baseW = math.floor((totalW - (numPips - 1) * pipSp) / numPips)
-            local remainder = totalW - (numPips - 1) * pipSp - baseW * numPips
-
-            local pipX = {}
-            local cursor = 0
-            for i = 1, numPips do
-                pipX[i] = cursor
-                cursor = cursor + baseW + (i <= remainder and 1 or 0) + pipSp
-            end
-            pipC:SetSize(totalW, pipH)
-            pipC:SetPoint("CENTER", boxHolder, "CENTER", 0, 0)
-
-            for i = 1, numPips do
-                local pip = CreateFrame("Frame", nil, pipC)
-                local thisPipW = baseW + (i <= remainder and 1 or 0)
-                pip:SetSize(thisPipW, pipH)
-                pip:SetPoint("LEFT", pipC, "LEFT", pipX[i], 0)
-                local backdrop = pip:CreateTexture(nil, "BACKGROUND")
-                backdrop:SetAllPoints()
-                if sp.darkTheme then
-                    local _dbr, _dbg, _dbb = CludesUI.GetDarkModeBg()
-                    backdrop:SetColorTexture(_dbr, _dbg, _dbb, 1)
-                elseif sp.classColored then
-                    local cc = CLASS_COLORS[class]
-                    local cr, cg, cb = cc and cc[1] or 0.95, cc and cc[2] or 0.90, cc and cc[3] or 0.60
-                    backdrop:SetColorTexture(cr * 0.5, cg * 0.5, cb * 0.5, 0.5)
-                else
-                    backdrop:SetColorTexture(sp.bgR, sp.bgG, sp.bgB, sp.bgA)
-                end
-                UnsnapTex(backdrop)
-                pip._bg = backdrop
-                local fill = pip:CreateTexture(nil, "ARTWORK")
-                fill:SetAllPoints()
-                local texKey = p.general.barTexture or "none"
-                local texLookup = _G._CURB_BarTextures or {}
-                local texPath = texLookup[texKey]
-                if texPath then
-                    fill:SetTexture(texPath)
-                else
-                    fill:SetTexture("Interface\\Buttons\\WHITE8x8")
-                end
-                fill:SetVertexColor(1, 1, 1, 1)
-                UnsnapTex(fill)
-                pip._fill = fill
-                pip._border = MakePreviewBorder(pip, 0, 0, 0, 0, 0)
-                pip._border:SetShown(false)
-                _previewFrames.pips[i] = pip
-            end
-        end
-
-        local countTextOverlay = CreateFrame("Frame", nil, pipC)
-        countTextOverlay:SetAllPoints(pipC)
-        countTextOverlay:SetFrameLevel(pipC:GetFrameLevel() + 10)
-        local countText = countTextOverlay:CreateFontString(nil, "OVERLAY")
-        SetPVFont(countText, FONT_PATH, sp.textSize)
-        countText:SetTextColor(1, 1, 1, 0.9)
-        do
-            local _pvTA = sp.textAnchor or "CENTER"
-            countText:SetPoint(_pvTA, pipC, _pvTA, sp.textXOffset or 0, sp.textYOffset or 0)
-        end
-        pipC._countText = countText
+        BuildResourceRow(row, p, sp, class)
+        BuildCountText(row, sp)
 
         -- Built for every spec (cheap, pooled); UpdatePreviewHeader shows what applies.
-        _previewFrames.powerBar = PreviewBar.Build(boxHolder)
-        _previewFrames.healthBar = PreviewBar.Build(boxHolder)
-        -- Arcane Soul: its section exists for retail Mages only, so does its
-        -- element. The element replays the live sequence (the eye hides only
-        -- it); the watcher keeps the on-screen sample running while this
-        -- header shows.
+        _previewFrames.powerBar = PreviewBar.Build(holder)
+        _previewFrames.healthBar = PreviewBar.Build(holder)
         _previewFrames.arcaneSoul, _previewFrames.asDivider = nil, nil
         if class == "MAGE" and not CludesUI.IS_FOREVER then
-            local asf = CreateFrame("Frame", nil, boxHolder)
-            asf._fs = asf:CreateFontString(nil, "OVERLAY")
-            asf._fs:SetPoint("CENTER", asf, "CENTER", 0, 0)
-            asf._fs._asStamp = nil -- a reused font string is reset: style it again
-            asf:SetSize(1, 1)
-            if _G._CURB_ArcaneSoulDemoOnUpdate then
-                asf:SetScript("OnUpdate", _G._CURB_ArcaneSoulDemoOnUpdate)
-            end
-            _previewFrames.arcaneSoul = asf
-
-            local div = boxHolder:CreateTexture(nil, "ARTWORK")
-            div:SetColorTexture(1, 1, 1, 0.10)
-            UnsnapTex(div)
-            div:Hide()
-            _previewFrames.asDivider = div
-
-            local screenDemo = _G._CURB_ArcaneSoulScreenDemo
-            if screenDemo then
-                local watch = CreateFrame("Frame", nil, boxHolder)
-                watch:SetSize(1, 1)
-                watch:SetPoint("CENTER")
-                watch:SetScript("OnShow", function(self)
-                    screenDemo(self, true)
-                end)
-                watch:SetScript("OnHide", function(self)
-                    screenDemo(self, false)
-                end)
-                if watch:IsVisible() then
-                    screenDemo(watch, true)
-                end
-            end
+            BuildArcaneSoul(holder)
         end
-        -- Element titles at header scale (the hint's size), on a child frame so
-        -- the header cache stashes them with the rest.
-        do
-            local lblHost = CreateFrame("Frame", nil, heading)
-            lblHost:SetAllPoints(heading)
-            lblHost:SetFrameLevel(boxHolder:GetFrameLevel() + 1)
-            local function Title(textValue)
-                local fontStr = CludesUI.MakeFont(lblHost, 11, nil, 1, 1, 1)
-                fontStr:SetAlpha(0.6)
-                fontStr:SetText(textValue)
-                fontStr:Hide()
-                return fontStr
-            end
-            _previewFrames.labels = {
-                classResource = Title(CludesUI.L("Class Resource")),
-                power = Title(CludesUI.L("Power Bar")),
-                health = Title(CludesUI.L("Health Bar")),
-                arcaneSoul = _previewFrames.arcaneSoul and Title(CludesUI.L("Arcane Soul")) or nil,
-            }
-        end
+        BuildTitles(heading, holder)
 
         UpdatePreviewHeader()
-
-        -- Hit overlays for preview click-to-scroll
-        wipe(_hitOverlays)
-        local overlayLevel = boxHolder:GetFrameLevel() + 20
-        if pipC then
-            CreateHitOverlay(pipC, "classResource", overlayLevel)
-        end
-        CreateHitOverlay(_previewFrames.powerBar, "power", overlayLevel)
-        CreateHitOverlay(_previewFrames.healthBar, "health", overlayLevel)
-        if _previewFrames.arcaneSoul then
-            CreateHitOverlay(_previewFrames.arcaneSoul, "arcaneSoul", overlayLevel)
-        end
-        if pipC and pipC._countText then
-            -- Padded frame around the text for easier clicking
-            local ctHit = CreateFrame("Frame", nil, pipC)
-            ctHit:SetPoint("TOPLEFT", pipC._countText, "TOPLEFT", -2, 2)
-            ctHit:SetPoint("BOTTOMRIGHT", pipC._countText, "BOTTOMRIGHT", 2, -2)
-            CreateHitOverlay(ctHit, "countText", overlayLevel + 5)
-        end
+        BuildHitOverlays(holder, row)
 
         if _previewHintFS and not _previewHintFS:GetParent() then
             _previewHintFS = nil
         end
-
-        -- Preview area height from the stack UpdatePreviewHeader laid out (0: nothing to show)
-        local TOTAL_H = _headerBaseH
-        local hintShown = TOTAL_H > 0 and not IsPreviewHintDismissed()
-        -- Built with nothing to show, or without a class resource (its row was
+        -- The height UpdatePreviewHeader laid out (0: nothing to show).
+        local height = _headerBaseH
+        -- Built with nothing to show, or with no class resource (its row was
         -- built for none, so a later spec or form with one needs a new build).
-        _classHdrEmpty = ((TOTAL_H == 0 or not HasClassResource()) and PoolGen(heading) ~= nil) or nil
-        if hintShown then
-            if not _previewHintFS then
-                -- Thin non-clipping child frame so the cache system stashes/restores it properly on page switch.
-                -- Held across builds and pages (module state): out of its header's pool.
-                local hintHost = PoolKeep(CreateFrame("Frame", nil, heading))
-                hintHost:SetAllPoints(heading)
-                _previewHintFS = CludesUI.MakeFont(hintHost, 11, nil, 1, 1, 1)
-                _previewHintFS:SetAlpha(0.45)
-                _previewHintFS:SetText(CludesUI.L("Click elements to scroll to and highlight their options"))
-            end
-            -- The host is kept across builds: one level above the header, as a new one sits.
-            local host = _previewHintFS:GetParent()
-            host:SetParent(heading)
-            host:SetFrameLevel(heading:GetFrameLevel() + 1)
-            host:Show()
-            _previewHintFS:ClearAllPoints()
-            _previewHintFS:SetPoint("BOTTOM", heading, "BOTTOM", 0, 20)
-            _previewHintFS:Show()
-            TOTAL_H = TOTAL_H + 35
-        elseif _previewHintFS then
-            _previewHintFS:Hide()
-        end
-
+        _classHdrEmpty = ((height == 0 or not HasClassResource()) and PoolGen(heading) ~= nil) or nil
+        height = height + PlaceHint(heading, height)
         _previewBuilding = false
-        return TOTAL_H
+        return height
     end
 
     local _refreshTimer
