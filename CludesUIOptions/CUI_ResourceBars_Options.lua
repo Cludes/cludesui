@@ -1914,6 +1914,7 @@ initFrame:SetScript("OnEvent", function(self)
         return height
     end
 
+    -- Re-applies the bars once a burst of changes settles (50ms).
     local _refreshTimer
     local function DebouncedRefresh()
         if _refreshTimer then
@@ -1925,34 +1926,29 @@ initFrame:SetScript("OnEvent", function(self)
         end)
     end
 
-    -- Preview click-to-scroll infrastructure
-    local PlaySettingGlow -- made on first click: Widgets helpers load with the panel
-    local _clickMappings = {} -- populated in BuildBarDisplayPage
+    -- Click-to-scroll: a click on a preview element scrolls to its section
+    -- and glows the row that sets it (_clickMappings: key -> { section,
+    -- target, slotSide }, filled by the bars page).
+    local PlaySettingGlow -- made on first use: the widget helpers load with the panel
+    local _clickMappings = {}
 
     local function NavigateToSetting(key)
         local m = _clickMappings[key]
-        if not m or not m.section or not m.target then
+        if not (m and m.section and m.target) then
             return
         end
-
         CludesUI.DismissPreviewHint(_previewHintFS, _headerBaseH, 35, 5)
-
-        local sf = CludesUI._scrollFrame
-        if not sf then
+        if not CludesUI._scrollFrame then
             return
         end
-        local _, _, _, _, headerY = m.section:GetPoint(1)
-        if not headerY then
+        local _, _, _, _, sectionY = m.section:GetPoint(1)
+        if not sectionY then
             return
         end
-        local scrollPos = math.max(0, math.abs(headerY) - 40)
-        CludesUI.SmoothScrollTo(scrollPos)
-        local glowTarget = m.target
-        if m.slotSide and m.target then
-            local regionFrame = (m.slotSide == "left") and m.target._leftRegion or m.target._rightRegion
-            if regionFrame then
-                glowTarget = regionFrame
-            end
+        CludesUI.SmoothScrollTo(math.max(0, math.abs(sectionY) - 40))
+        local target = m.target
+        if m.slotSide then
+            target = (m.slotSide == "left" and m.target._leftRegion or m.target._rightRegion) or target
         end
         PlaySettingGlow = PlaySettingGlow
             or CludesUI.MakeSettingGlow({
@@ -1962,191 +1958,139 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
                 noSnap = true,
             })
-        -- A row the page dressed again meanwhile (a rebuild) shows another setting now: no glow.
-        local gen = PoolGen(glowTarget)
+        -- A row the page dressed again meanwhile shows another setting: no glow.
+        local gen = PoolGen(target)
         C_Timer.After(0.15, function()
-            if PoolGen(glowTarget) ~= gen then
-                return
+            if PoolGen(target) == gen then
+                PlaySettingGlow(target)
             end
-            PlaySettingGlow(glowTarget)
         end)
     end
 
     CreateHitOverlay = function(element, mappingKey, frameLevelOverride)
-        local button = CludesUI.CreatePreviewHitOverlay(
+        local overlay = CludesUI.CreatePreviewHitOverlay(
             element,
             NavigateToSetting,
             mappingKey,
             false,
             frameLevelOverride
         )
-        _hitOverlays[#_hitOverlays + 1] = button
-        return button
+        _hitOverlays[#_hitOverlays + 1] = overlay
+        return overlay
     end
 
-    -- Non-debounced: smooth animation of scale/offset changes
+    -- At once (scale and offset changes animate).
     local function SmoothRefresh()
         Refresh()
         UpdatePreviewHeader()
     end
+    -- After a change: the bars a moment later, the preview at once. The six
+    -- names are what the page files call.
+    local function RefreshAndPreview()
+        DebouncedRefresh()
+        UpdatePreviewHeader()
+    end
+    local RefreshClass, RefreshHealth, RefreshPower = RefreshAndPreview, RefreshAndPreview, RefreshAndPreview
+    local RebuildClass, RebuildHealth, RebuildPower = RefreshAndPreview, RefreshAndPreview, RefreshAndPreview
 
-    local function RefreshClass()
-        DebouncedRefresh()
-        UpdatePreviewHeader()
-    end
-    local function RefreshHealth()
-        DebouncedRefresh()
-        UpdatePreviewHeader()
-    end
-    local function RefreshPower()
-        DebouncedRefresh()
-        UpdatePreviewHeader()
-    end
-    local function RebuildClass()
-        DebouncedRefresh()
-        UpdatePreviewHeader()
-    end
-    local function RebuildHealth()
-        DebouncedRefresh()
-        UpdatePreviewHeader()
-    end
-    local function RebuildPower()
-        DebouncedRefresh()
-        UpdatePreviewHeader()
-    end
-
-    -- Hash line positions as typed: keeps the numeric tokens (0 and up), comma-joined. Shared by
-    -- the bar-wide hash cog and the Threshold & Hash Lines editor's entry field. exact: each token
-    -- is read trimmed, as the bar parses it ("25 50" is no position), instead of with its spaces
-    -- dropped ("50 000" = 50000).
+    -- Hash line positions as typed: the numbers (0 and up), comma-joined.
+    -- Shared by the bar hash cog and the Threshold & Hash Lines editor.
+    -- exact: each token is read trimmed, as the bar parses it ("25 50" is
+    -- not a position), instead of with its spaces dropped ("50 000" = 50000).
     local function SanitizePositions(str, exact)
         if not str or str == "" then
             return ""
         end
-        local result = {}
+        local kept = {}
         for token in tostring(str):gmatch("[^,]+") do
-            local num = tonumber(exact and token:match("^%s*(.-)%s*$") or (token:gsub("%s", "")))
-            if num and num >= 0 then
-                result[#result + 1] = tostring(num)
+            local v = tonumber(exact and token:match("^%s*(.-)%s*$") or (token:gsub("%s", "")))
+            if v and v >= 0 then
+                kept[#kept + 1] = tostring(v)
             end
         end
-        return table.concat(result, ", ")
+        return table.concat(kept, ", ")
     end
 
-    -- Cog + popup for simple per-bar hash lines (Health/Power). cfg = { parentRgn, getBarData, refreshFn, popupTitle, anchorTo }; returns cogBtn.
+    -- The cog and popup for a bar's own hash lines (Health, Power). conf:
+    -- parentRgn, getBarData, refreshFn, popupTitle, anchorTo. Returns the cog.
     local function BuildHashCog(conf)
-        local getBarData = conf.getBarData
-        local refreshFn = conf.refreshFn or function() end
-
-        local function HashOff()
-            local c = getBarData()
+        local Bar = conf.getBarData
+        local after = conf.refreshFn or function() end
+        local function Off()
+            local c = Bar()
             return not (c and c.hashEnabled)
         end
-
-        local DIS_TIP = CludesUI.L("Enable hash lines first")
-        local rowList = {
-            {
-                type = "toggle",
-                label = CludesUI.L("Show Hash Lines"),
-                tooltip = CludesUI.L("Draw tick lines across the bar at positions you choose."),
-                get = function()
-                    local c = getBarData()
-                    return c and c.hashEnabled or false
-                end,
-                set = function(v)
-                    local c = getBarData()
-                    if not c then
-                        return
-                    end
-                    c.hashEnabled = v and true or false
-                    refreshFn()
-                end,
-            },
-            {
-                type = "input",
-                label = CludesUI.L("Positions"),
-                inputWidth = 130,
-                commitOnBlur = true,
-                disabled = HashOff,
-                disabledTooltip = DIS_TIP,
-                get = function()
-                    local c = getBarData()
-                    return c and c.hashValues or ""
-                end,
-                set = function(v)
-                    local c = getBarData()
-                    if not c then
-                        return
-                    end
-                    c.hashValues = SanitizePositions(v)
-                    refreshFn()
-                end,
-            },
-            {
+        -- A row's get / set over one field of the bar's settings.
+        local function Field(row, key, default, write)
+            row.get = function()
+                local c = Bar()
+                return (c and c[key]) or default
+            end
+            row.set = function(v)
+                local c = Bar()
+                if c then
+                    c[key] = write and write(v) or v
+                    after()
+                end
+            end
+            if key ~= "hashEnabled" then
+                row.disabled = Off
+                row.disabledTooltip = CludesUI.L("Enable hash lines first")
+            end
+            return row
+        end
+        local rows = {
+            Field(
+                {
+                    type = "toggle",
+                    label = CludesUI.L("Show Hash Lines"),
+                    tooltip = CludesUI.L("Draw tick lines across the bar at positions you choose."),
+                },
+                "hashEnabled",
+                false,
+                function(v)
+                    return v and true or false
+                end
+            ),
+            Field(
+                { type = "input", label = CludesUI.L("Positions"), inputWidth = 130, commitOnBlur = true },
+                "hashValues",
+                "",
+                SanitizePositions
+            ),
+            Field({
                 type = "segmented",
                 label = CludesUI.L("Mode"),
-                disabled = HashOff,
-                disabledTooltip = DIS_TIP,
                 keys = { "percent", "value" },
                 labels = { percent = "%", value = "Value" },
-                get = function()
-                    local c = getBarData()
-                    return (c and c.hashMode) or "percent"
-                end,
-                set = function(k)
-                    local c = getBarData()
-                    if not c then
-                        return
-                    end
-                    c.hashMode = k
-                    refreshFn()
-                end,
-            },
-            {
-                type = "slider",
-                label = CludesUI.L("Thickness"),
-                min = 1,
-                max = 5,
-                step = 1,
-                disabled = HashOff,
-                disabledTooltip = DIS_TIP,
-                get = function()
-                    local c = getBarData()
-                    return c and c.hashWidth or 1
-                end,
-                set = function(v)
-                    local c = getBarData()
-                    if not c then
-                        return
-                    end
-                    c.hashWidth = v
-                    refreshFn()
-                end,
-            },
+            }, "hashMode", "percent"),
+            Field(
+                { type = "slider", label = CludesUI.L("Thickness"), min = 1, max = 5, step = 1 },
+                "hashWidth",
+                1
+            ),
             {
                 type = "colorpicker",
                 label = CludesUI.L("Color"),
                 hasAlpha = true,
-                disabled = HashOff,
-                disabledTooltip = DIS_TIP,
+                disabled = Off,
+                disabledTooltip = CludesUI.L("Enable hash lines first"),
                 get = function()
-                    local c = getBarData()
+                    local c = Bar()
                     if not c then
                         return 1, 1, 1, 0.7
                     end
                     return c.hashColorR or 1, c.hashColorG or 1, c.hashColorB or 1, c.hashColorA or 0.7
                 end,
                 set = function(r, g, b, a)
-                    local c = getBarData()
-                    if not c then
-                        return
+                    local c = Bar()
+                    if c then
+                        c.hashColorR, c.hashColorG, c.hashColorB, c.hashColorA = r, g, b, a
+                        after()
                     end
-                    c.hashColorR, c.hashColorG, c.hashColorB, c.hashColorA = r, g, b, a
-                    refreshFn()
                 end,
             },
         }
-
         return CludesUI.BuildInlineCog(conf.parentRgn, {
             anchorTo = conf.anchorTo,
             tip = CludesUI.L("Hash Lines"),
@@ -2154,41 +2098,41 @@ initFrame:SetScript("OnEvent", function(self)
             bgAlpha = 1,
             frameStrata = "FULLSCREEN_DIALOG",
             frameLevel = 500,
-            rows = rowList,
+            rows = rows,
         })
     end
 
-    -- Druid-only per-form toggles, as cog rows (nil for any other class): a row
-    -- is on while that form shows; `field` is the map of the forms switched off,
-    -- "textDisabledForms" (text rows) or "barDisabledForms" (whole bars, and the
-    -- WoW Forever swing timer), read by _CURB_TextHiddenByForm / _CURB_BarHiddenByForm.
+    -- Druid only: one cog row per form, on while that form shows. field is the
+    -- map of the forms switched off: "textDisabledForms" (text rows) or
+    -- "barDisabledForms" (whole bars, and the WoW Forever swing timer), read
+    -- by _CURB_TextHiddenByForm / _CURB_BarHiddenByForm. nil for any other class.
+    local DRUID_FORMS = {
+        { key = "mana", label = "Caster" },
+        { key = "rage", label = "Bear" },
+        { key = "energy", label = "Cat" },
+        { key = "moonkin", label = "Moonkin" },
+    }
     local function FormToggleRows(cfgFn, refreshFn, field)
         local _, class = UnitClass("player")
         if class ~= "DRUID" then
             return nil
         end
-        local FORMS = {
-            { key = "mana", label = "Caster" },
-            { key = "rage", label = "Bear" },
-            { key = "energy", label = "Cat" },
-            { key = "moonkin", label = "Moonkin" },
-        }
-        local rowList = {}
-        for _, f in ipairs(FORMS) do
-            local key = f.key
-            rowList[#rowList + 1] = {
+        local rows = {}
+        for _, form in ipairs(DRUID_FORMS) do
+            local key = form.key
+            rows[#rows + 1] = {
                 type = "toggle",
-                label = f.label,
+                label = form.label,
                 get = function()
                     local c = cfgFn()
                     return not (c and c[field] and c[field][key])
                 end,
-                set = function(v)
+                set = function(on)
                     local c = cfgFn()
                     if not c then
                         return
                     end
-                    if v then
+                    if on then
                         if c[field] then
                             c[field][key] = nil
                         end
@@ -2200,30 +2144,28 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
             }
         end
-        return rowList
+        return rows
     end
 
-    -- Druid-only per-form popup button. `field` picks the map the toggles write: "textDisabledForms" (text rows) or "barDisabledForms" (whole-bar rows).
+    -- The druid per-form cog on a row.
     local function AddFormDisableBtn(rgn, leftOf, cfgFn, refreshFn, field, title, tooltip)
-        field = field or "textDisabledForms"
-        local rowList = FormToggleRows(cfgFn, refreshFn, field)
-        if not rowList then
+        local rows = FormToggleRows(cfgFn, refreshFn, field or "textDisabledForms")
+        if not rows then
             return
         end
         title = title or "Enable/Disable per Form"
-        tooltip = tooltip or CludesUI.L(title)
-        local button = CludesUI.BuildInlineCog(rgn, {
+        return CludesUI.BuildInlineCog(rgn, {
             anchorTo = leftOf,
-            tip = tooltip,
+            tip = tooltip or CludesUI.L(title),
             title = title,
             bgAlpha = 1,
             frameStrata = "FULLSCREEN_DIALOG",
             frameLevel = 500,
-            rows = rowList,
+            rows = rows,
         })
-        return button
     end
-    -- The L() literals keep both popup titles in the static locale key list: .tools/extract-locale-keys.sh only sees literal string arguments.
+    -- The CludesUI.L literals keep both titles in the static locale key list
+    -- (tools/extract-locale-keys.sh sees literal string arguments only).
     local function AddFormTextBtn(rgn, leftOf, cfgFn, refreshFn)
         return AddFormDisableBtn(
             rgn,
