@@ -1,63 +1,42 @@
 if CUI_CLIENT_BLOCKED then
     return
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
--- Blocks\LDB.lua
--- LibDataBroker plugin block factory.
-
-local ADDON_NAME, mod = ...
+-------------------------------------------------------------------------------
+--  Blocks\LDB.lua - Info Bar block: any LibDataBroker plugin.
+--
+--  Shows the picked plugin's icon and text (or value and suffix), optionally
+--  with its label. Until one is picked it says so and a click opens the block's
+--  settings. A plugin picked once but not loaded now collapses the block to
+--  nothing rather than leave a dead slot, and fills it the moment it loads.
+--
+--  The content belongs to someone else's code, so:
+--    - the block only READS the data object, never writes to it;
+--    - every call into the plugin (OnEnter, OnLeave, OnClick, OnTooltipShow,
+--      OnMouseWheel) is wrapped in pcall, so a plugin's error cannot break
+--      the bar;
+--    - the width is measured live, as the text has no predictable shape;
+--      Max Width fixes it so a busy plugin cannot push its neighbours about.
+--
+--  Hover goes to the plugin's own OnEnter tooltip when it has one, else to
+--  OnTooltipShow (the broker contract's GameTooltip, which the plugin writes
+--  into itself), else to name and text in our tooltip.
+--
+--  Plugins update often (an FPS text every second), so an update redraws
+--  only what changed: nothing if what is shown is the same, just the text at
+--  a fixed Max Width, the layout otherwise.
+--
+--  Settings (blockCfg.settings): source (the plugin's name), showText,
+--  showLabel, showIcon (default on), stripColors (default on), maxWidth.
+-------------------------------------------------------------------------------
+local _, mod = ...
 local L = mod.L
 local K = mod.BlockKit
 
--- Upvalues
-local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
-local type = type
-local pcall = pcall
-local floor = math.floor
-local max = math.max
+local floor, max = math.floor, math.max
 
-local ICON_GAP = K.ICON_GAP
-local CONTENT_BASE = K.CONTENT_BASE
-local InstKey = K.InstKey
-local MakeEventFrame = K.MakeEventFrame
-local RegisterInstEvents = K.RegisterInstEvents
-local UnregisterInstEvents = K.UnregisterInstEvents
-local VSlotW = K.VSlotW
-local MaybeRelayout = K.MaybeRelayout
-local AttachTextOffset = K.AttachTextOffset
-local BlockColorOf = K.BlockColorOf
-local IconColorOf = K.IconColorOf
-
--------------------------------------------------------------------------------
---  BROKER PLUGIN (LibDataBroker) -- one block type for every data source
--------------------------------------------------------------------------------
--- The only block whose content is written by code we do not own, and three
--- rules follow from that:
---   1. Never write to the data object. A display READS; the plugin owns its own
---      text, and a stray write would fight whoever set it.
---   2. Every call into the plugin (OnEnter/OnLeave/OnClick/OnTooltipShow/
---      OnMouseWheel) goes through pcall. A plugin that errors inside our hover
---      or refresh path would otherwise take the bar's layout down with it.
---   3. Width is never assumed stable. The other text blocks reserve width from
---      a stable template so neighbours never shift; broker text has no shape we
---      can predict, so this one measures live and offers a Max Width clamp.
---
--- Tooltips route three ways, in the plugin's own order of preference:
---   OnEnter        the plugin draws its own tooltip (LibQTip, usually) into the
---                  frame we hand it, and OnLeave takes it away. The owned
---                  tooltip stays out of it -- two tooltips for one block, and
---                  the plugin's is the one carrying the data.
---   OnTooltipShow  the broker contract's GameTooltip path, and the one place in
---                  this addon that still uses GameTooltip: the plugin writes
---                  into it directly, which we cannot re-render.
---   neither        name + text in the owned tooltip, so hover is never dead.
-
--- Attributes worth a repaint. The library fires a per-NAME event carrying the
--- changed key, so one registration covers the whole plugin and this set decides
--- what is worth redrawing: a bar full of broker blocks never wakes for each
--- other's updates, and a plugin parking its own state on the data object does
--- not drag us through a re-measure for a key we never render.
-local LDB_WATCH = {
+-- The data object's keys this block shows; a change to any other is ignored.
+local SHOWN_KEYS = {
     text = true,
     value = true,
     suffix = true,
@@ -69,121 +48,101 @@ local LDB_WATCH = {
     iconCoords = true,
 }
 
--- Broker text arrives full of the plugin's own color codes, which silently beat
--- this block's Text Color and its accent hover. Stripping them (default on)
--- hands the color back to the block; leaving them keeps the plugin's palette.
-local function LDBStripColors(str)
-    if not str then
-        return str
+-- Plugins colour their text, which would beat the block's colour and its
+-- hover accent; stripping (the default) gives the colour back to the block.
+local function StripColours(text)
+    if not text then
+        return text
     end
-    str = str:gsub("|c%x%x%x%x%x%x%x%x", "")
-    str = str:gsub("|cn[%a%d_]+:", "") -- named-color form (|cnGREEN_FONT_COLOR:)
-    str = str:gsub("|r", "")
-    return str
+    text = text:gsub("|c%x%x%x%x%x%x%x%x", "")
+    text = text:gsub("|cn[%a%d_]+:", "") -- the named form, |cnGREEN_FONT_COLOR:
+    return (text:gsub("|r", ""))
 end
 
--- text is the display string; value+suffix is the fallback pair for plugins
--- that publish the number and its unit separately.
-local function LDBDisplayText(object)
+-- The plugin's text, or its value and suffix for plugins that publish those.
+local function PluginText(object)
     if not object then
         return nil
     end
-    local t = object.text
-    if type(t) == "string" and t ~= "" then
-        return t
+    local text = object.text
+    if type(text) == "string" and text ~= "" then
+        return text
     end
-    local val = object.value
-    if val ~= nil then
-        local str = tostring(val)
-        local suf = object.suffix
-        if type(suf) == "string" and suf ~= "" then
-            str = str .. " " .. suf
+    if object.value ~= nil then
+        local out = tostring(object.value)
+        local suffix = object.suffix
+        if type(suffix) == "string" and suffix ~= "" then
+            out = out .. " " .. suffix
         end
-        return str
+        return out
     end
     return nil
 end
 
 mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
-    local instance = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
-    instance.key = InstKey(barCtx, blockCfg)
+    local inst = { cfg = blockCfg, slot = slot, content = contentFrame, ctx = barCtx }
+    inst.key = K.InstKey(barCtx, blockCfg)
+    -- Collapsing is a Show/Hide that combat can refuse; it is done when combat ends.
+    inst.events = { "PLAYER_REGEN_ENABLED" }
 
-    local mouseOver = false
-    local bound -- source name we currently hold attribute callbacks for
-    local tipMode -- "own" | "gametip" | nil; picked at hover, read at leave
-
-    -- The collapse flip below is a Show/Hide, which lockdown can refuse. A block
-    -- built or re-sourced mid-combat therefore settles here rather than waiting
-    -- for a plugin update that may never come.
-    instance.events = { "PLAYER_REGEN_ENABLED" }
-
-    local function D()
+    local function Settings()
         return blockCfg.settings or {}
     end
-    local function BC()
-        return barCtx.cfg
+
+    local button = CreateFrame("Button", nil, contentFrame)
+    button:EnableMouse(true)
+    button:RegisterForClicks("AnyUp")
+    local icon = button:CreateTexture(nil, "OVERLAY")
+    local label = button:CreateFontString(nil, "OVERLAY")
+    K.AttachTextOffset(inst, label)
+
+    local hovered = false
+    local listening -- the plugin name we hold an update callback for
+    local tipRoute -- "plugin" | "gametip" | nil (ours), chosen on hover, undone on leave
+    local owesShow = false -- a collapse or uncollapse combat refused
+    local drawnText, drawnArt -- what is on screen, to skip updates that change nothing
+
+    -- The picked plugin's data object, or nil while its addon has not made it.
+    local function Plugin()
+        local name = Settings().source
+        local lib = name and mod.GetLDB()
+        return lib and lib:GetDataObjectByName(name) or nil
     end
 
-    local btnFrame = CreateFrame("Button", nil, contentFrame)
-    btnFrame:EnableMouse(true)
-    btnFrame:RegisterForClicks("AnyUp")
-
-    local icon = btnFrame:CreateTexture(nil, "OVERLAY")
-    local textValue = btnFrame:CreateFontString(nil, "OVERLAY")
-    AttachTextOffset(instance, textValue)
-
-    -- The chosen source, or nil while its addon has not registered it yet.
-    local function Obj()
-        local name = D().source
-        if not name then
-            return nil
+    local function StopListening()
+        local lib = mod.GetLDB()
+        if lib and listening then
+            pcall(lib.UnregisterCallback, inst, "LibDataBroker_AttributeChanged_" .. listening)
         end
-        local LDB = mod.GetLDB()
-        if not LDB then
-            return nil
-        end
-        return LDB:GetDataObjectByName(name)
+        listening = nil
     end
 
-    local function Unbind()
-        local LDB = mod.GetLDB()
-        if LDB and bound then
-            pcall(LDB.UnregisterCallback, instance, "LibDataBroker_AttributeChanged_" .. bound)
+    -- The text to show and whether it is the "pick a plugin" placeholder.
+    local function Compose(object)
+        local s = Settings()
+        if not s.source then
+            -- Bar text is set directly, not through the tooltip helpers that
+            -- translate, so it is translated here.
+            return CludesUI.L(L["SELECT_PLUGIN"]), true
         end
-        bound = nil
+        local body = s.showText ~= false and PluginText(object) or nil
+        local name = object.label
+        local text = body
+        if s.showLabel and type(name) == "string" and name ~= "" then
+            text = body and (name .. ": " .. body) or name
+        end
+        if s.stripColors ~= false then
+            text = StripColours(text)
+        end
+        return text or "", false
     end
 
-    -- Idempotent: re-binds only when the chosen source actually changed.
-    local function Bind()
-        local name = D().source
-        if bound == name then
-            return
-        end
-        Unbind()
-        if not name then
-            return
-        end
-        local LDB = mod.GetLDB()
-        if not LDB then
-            return
-        end
-        -- Args are (event, sourceName, key, value, obj); only the key matters.
-        local function OnAttr(_, _, key)
-            if LDB_WATCH[key] and not instance._dead then
-                instance:Refresh()
-            end
-        end
-        pcall(LDB.RegisterCallback, instance, "LibDataBroker_AttributeChanged_" .. name, OnAttr)
-        bound = name
-    end
-
-    -- Untouched Icon Color leaves the plugin's artwork alone, honouring the
-    -- iconR/G/B tint if it declares one; any explicit choice in the options wins,
-    -- exactly as on every other icon-bearing block.
+    -- With Icon Color untouched the plugin's own tint (iconR/G/B) is used;
+    -- a choice in the options wins, as on every other block.
     local function IconTint(object)
-        local b = blockCfg
-        if b.iconColor or b.useIconClassColor or b.useIconAccentColor or b.useIconDefaultColor then
-            return IconColorOf(b)
+        local c = blockCfg
+        if c.iconColor or c.useIconClassColor or c.useIconAccentColor or c.useIconDefaultColor then
+            return K.IconColorOf(c)
         end
         if object and type(object.iconR) == "number" then
             return object.iconR, object.iconG or 1, object.iconB or 1
@@ -191,69 +150,60 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
         return 1, 1, 1
     end
 
-    function instance:Refresh()
-        local s = D()
-        local barCfg = BC()
+    -- Everything about the icon that is drawn, as one string.
+    local function Art(object)
+        local texture = Settings().showIcon ~= false and object and object.icon
+        if not texture then
+            return "-"
+        end
+        local c = object.iconCoords
+        local coords = (type(c) == "table" and #c == 4) and table.concat(c, ",") or "full"
+        local r, g, b = IconTint(object)
+        return table.concat({ tostring(texture), coords, r, g, b }, "|")
+    end
+
+    local function PaintText(placeholder)
+        if placeholder then
+            label:SetTextColor(0.55, 0.55, 0.55, 1)
+        elseif hovered then
+            local r, g, b = mod.GetAccent()
+            label:SetTextColor(r, g, b, 1)
+        else
+            local r, g, b = K.BlockColorOf(blockCfg)
+            label:SetTextColor(r, g, b, 1)
+        end
+    end
+
+    function inst:Refresh()
+        local s = Settings()
+        local fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
         local barH = barCtx.GetThickness()
-        local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
-        local isSide = barCtx.IsVertical()
-        local gap = ICON_GAP
-        Bind()
+        self:Listen()
+        local object = Plugin()
 
-        local object = Obj()
-
-        -- A source picked on a session where its addon WAS loaded, opened on one
-        -- where it is not: collapse rather than show a dead slot. GetAutoLength
-        -- reports 0 and the solver drops the block and its gaps entirely.
-        local collapsed = (s.source ~= nil) and (object == nil)
-        -- Show/Hide can be protected (another block on this bar may hold a
-        -- secure child): flip only on a real state change, never in lockdown.
-        if contentFrame:IsShown() == collapsed and not InCombatLockdown() then
-            if collapsed then
-                contentFrame:Hide()
+        -- Picked, but its addon is not loaded: collapse (the bar then drops
+        -- the block and its gaps). Show/Hide only on a real change, and not in
+        -- combat, where it can be protected.
+        local collapsed = s.source ~= nil and object == nil
+        if contentFrame:IsShown() == collapsed then
+            if InCombatLockdown() then
+                owesShow = true
             else
-                contentFrame:Show()
+                owesShow = false
+                contentFrame:SetShown(not collapsed)
             end
         end
+        drawnText, drawnArt = nil, nil
         if collapsed then
-            MaybeRelayout(instance)
+            K.MaybeRelayout(self)
             return
         end
 
-        local str
-        local placeholder = false
-        if not s.source then
-            -- Bar text goes straight through SetText, which does not route
-            -- through the locale like the Tip_* helpers do, so translate by hand.
-            str = CludesUI.L(L["SELECT_PLUGIN"])
-            placeholder = true
-        else
-            local body = LDBDisplayText(object)
-            if s.showText == false then
-                body = nil
-            end
-            local labelFS = object.label
-            if s.showLabel and type(labelFS) == "string" and labelFS ~= "" then
-                if body then
-                    str = labelFS .. ": " .. body
-                else
-                    str = labelFS
-                end
-            else
-                str = body
-            end
-            if s.stripColors ~= false then
-                str = LDBStripColors(str)
-            end
-            if not str then
-                str = ""
-            end
-        end
-
-        local iconSz = 0
+        local text, placeholder = Compose(object)
         local texture = object and object.icon
+        local iconSize = 0
         if s.showIcon ~= false and texture then
-            iconSz = fontSize + 2
+            iconSize = fontSize + 2
             icon:SetTexture(texture)
             local c = object.iconCoords
             if type(c) == "table" and #c == 4 then
@@ -261,232 +211,261 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
             else
                 icon:SetTexCoord(0, 1, 0, 1)
             end
-            icon:SetSize(iconSz, iconSz)
-            local ir, ig, ib = IconTint(object)
-            icon:SetVertexColor(ir, ig, ib, 1)
+            icon:SetSize(iconSize, iconSize)
+            local r, g, b = IconTint(object)
+            icon:SetVertexColor(r, g, b, 1)
             icon:Show()
         else
             icon:Hide()
         end
+        -- The wheel is taken only for a plugin that uses it.
+        button:EnableMouseWheel((object and object.OnMouseWheel) ~= nil)
+        PaintText(placeholder)
+        mod.SetFont(label, fontSize, barCtx.cfg)
 
-        -- Only steal the wheel for a plugin that asked for it.
-        btnFrame:EnableMouseWheel((object and object.OnMouseWheel) ~= nil)
-
-        if placeholder then
-            textValue:SetTextColor(0.55, 0.55, 0.55, 1)
-        elseif mouseOver then
-            local ar, ag, ab = mod.GetAccent()
-            textValue:SetTextColor(ar, ag, ab, 1)
-        else
-            local tr, tg, tb = BlockColorOf(blockCfg)
-            textValue:SetTextColor(tr, tg, tb, 1)
-        end
-
-        mod.SetFont(textValue, fontSize, barCfg)
-
-        if isSide then
-            local slotW = VSlotW(instance)
-            local innerW = max(24, slotW - 8)
-            local totalH = 8
-            if iconSz > 0 then
+        if barCtx.IsVertical() then
+            -- Icon above the text, both centred in the bar's width.
+            local slotW = K.VSlotW(self)
+            local height = 8
+            if iconSize > 0 then
                 icon:ClearAllPoints()
-                icon:SetPoint("TOP", btnFrame, "TOP", 0, -4)
-                totalH = totalH + iconSz + 2
+                icon:SetPoint("TOP", button, "TOP", 0, -4)
+                height = height + iconSize + 2
             end
-            mod.SetWrappedText(textValue, innerW, "CENTER")
-            textValue:SetText(str)
-            textValue:ClearAllPoints()
-            if iconSz > 0 then
-                textValue:SetPoint("TOP", icon, "BOTTOM", 0, -2)
+            mod.SetWrappedText(label, max(24, slotW - 8), "CENTER")
+            label:SetText(text)
+            label:ClearAllPoints()
+            if iconSize > 0 then
+                label:SetPoint("TOP", icon, "BOTTOM", 0, -2)
             else
-                textValue:SetPoint("TOP", btnFrame, "TOP", 0, -4)
+                label:SetPoint("TOP", button, "TOP", 0, -4)
             end
-            totalH = totalH + mod.SnapToPixelGrid(textValue:GetStringHeight() or fontSize) + 4
-            totalH = max(totalH, barH)
-            contentFrame:SetSize(slotW, totalH)
-            btnFrame:SetSize(slotW, totalH)
+            height = max(height + mod.SnapToPixelGrid(label:GetStringHeight() or fontSize) + 4, barH)
+            contentFrame:SetSize(slotW, height)
+            button:SetSize(slotW, height)
         else
-            mod.ResetInlineText(textValue, "LEFT")
-            textValue:SetText(str)
-            local iconPad = 0
-            if iconSz > 0 then
-                iconPad = iconSz + gap
+            -- Icon then text; as wide as the text, or exactly Max Width
+            -- (longer text is cut off).
+            mod.ResetInlineText(label, "LEFT")
+            label:SetText(text)
+            local lead = 0
+            if iconSize > 0 then
+                lead = iconSize + K.ICON_GAP
                 icon:ClearAllPoints()
-                icon:SetPoint("LEFT", btnFrame, "LEFT", 0, 0)
+                icon:SetPoint("LEFT", button, "LEFT", 0, 0)
             end
-            textValue:ClearAllPoints()
-            textValue:SetPoint("LEFT", btnFrame, "LEFT", iconPad, 0)
-            local wid = s.maxWidth
-            if wid then
-                -- Max Width: the block holds this width whatever the plugin
-                -- publishes, and longer strings clip. The setting that stops a
-                -- chatty broker from shoving its neighbours on every update.
-                textValue:SetWidth(max(20, wid - iconPad - 2))
-                textValue:SetWordWrap(false)
+            label:ClearAllPoints()
+            label:SetPoint("LEFT", button, "LEFT", lead, 0)
+            local width = s.maxWidth
+            if width then
+                label:SetWidth(max(20, width - lead - 2))
+                label:SetWordWrap(false)
             else
-                wid = iconPad + mod.SnapToPixelGrid(textValue:GetStringWidth() or 40) + 2
+                width = lead + mod.SnapToPixelGrid(label:GetStringWidth() or 40) + 2
             end
-            if wid < 24 then
-                wid = 24
-            end
-            contentFrame:SetSize(wid, barH)
-            btnFrame:SetSize(wid, barH)
+            width = max(width, 24)
+            contentFrame:SetSize(width, barH)
+            button:SetSize(width, barH)
         end
+        button:ClearAllPoints()
+        button:SetPoint("CENTER", contentFrame, "CENTER", 0, 0)
+        drawnText, drawnArt = text, Art(object)
+        K.MaybeRelayout(self)
+    end
 
-        btnFrame:ClearAllPoints()
-        btnFrame:SetPoint("CENTER", contentFrame, "CENTER", 0, 0)
-        MaybeRelayout(instance)
+    -- A plugin update: nothing if what is shown is the same; at a fixed Max
+    -- Width on a horizontal bar a new text is just set (the width cannot
+    -- change); anything else lays the block out again.
+    local function Update()
+        if inst._dead then
+            return
+        end
+        local object = Plugin()
+        if not object or drawnText == nil then
+            inst:Refresh()
+            return
+        end
+        local text = Compose(object)
+        if Art(object) ~= drawnArt then
+            inst:Refresh()
+        elseif text ~= drawnText then
+            if Settings().maxWidth and not barCtx.IsVertical() then
+                label:SetText(text)
+                drawnText = text
+            else
+                inst:Refresh()
+            end
+        end
+    end
+
+    -- Listens to the picked plugin's updates; does nothing if already listening to it.
+    function inst:Listen()
+        local name = Settings().source
+        if listening == name then
+            return
+        end
+        StopListening()
+        local lib = name and mod.GetLDB()
+        if not lib then
+            return
+        end
+        -- Called with (event, name, key, value, object); only the key matters.
+        pcall(lib.RegisterCallback, inst, "LibDataBroker_AttributeChanged_" .. name, function(_, _, key)
+            if SHOWN_KEYS[key] then
+                Update()
+            end
+        end)
+        listening = name
     end
 
     local function HideTip()
-        if tipMode == "own" then
-            local object = Obj()
+        if tipRoute == "plugin" then
+            local object = Plugin()
             if object and object.OnLeave then
-                pcall(object.OnLeave, btnFrame)
+                pcall(object.OnLeave, button)
             end
-        elseif tipMode == "gametip" then
-            if GameTooltip:IsOwned(btnFrame) then
+        elseif tipRoute == "gametip" then
+            if GameTooltip:IsOwned(button) then
                 GameTooltip:Hide()
             end
         else
-            mod.Tip_Hide(btnFrame)
+            mod.Tip_Hide(button)
         end
-        tipMode = nil
+        tipRoute = nil
     end
 
     local function ShowTip()
-        local s = D()
-        local ar, ag, ab = mod.GetAccent()
-        -- Cleared up front so every early return below leaves the LAST hover's
-        -- route behind: HideTip reads this to decide whose tooltip to take away.
-        tipMode = nil
-        -- Unconfigured: the placeholder is the whole block, so the tooltip has
-        -- to say where a plugin is actually picked.
+        local s = Settings()
+        -- Cleared first, so a return below never leaves the last hover's route.
+        tipRoute = nil
         if not s.source then
-            mod.Tip_Begin(btnFrame)
+            -- The placeholder is the whole block, so say where a plugin is picked.
+            local r, g, b = mod.GetAccent()
+            mod.Tip_Begin(button)
             mod.Tip_AddLine(L["SELECT_PLUGIN"], 1, 1, 1)
             mod.Tip_AddLine(" ")
-            mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_SETTINGS"], 1, 1, 1, ar, ag, ab)
+            mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_SETTINGS"], 1, 1, 1, r, g, b)
             mod.Tip_Show()
             return
         end
-        local object = Obj()
+        local object = Plugin()
         if not object then
             return
         end
         if object.OnEnter then
-            tipMode = "own"
-            pcall(object.OnEnter, btnFrame)
+            tipRoute = "plugin"
+            pcall(object.OnEnter, button)
             return
         end
         if object.OnTooltipShow then
-            tipMode = "gametip"
-            GameTooltip:SetOwner(btnFrame, "ANCHOR_NONE")
+            tipRoute = "gametip"
+            GameTooltip:SetOwner(button, "ANCHOR_NONE")
             GameTooltip:ClearAllPoints()
-            -- Same flip the owned tooltip does: a top bar drops its tooltip
-            -- below itself, a bottom bar lifts it above.
+            -- Below a bar at the top of the screen, above one at the bottom.
             if barCtx.IsBarAtTop() then
-                GameTooltip:SetPoint("TOPLEFT", btnFrame, "BOTTOMLEFT", 0, -6)
+                GameTooltip:SetPoint("TOPLEFT", button, "BOTTOMLEFT", 0, -6)
             else
-                GameTooltip:SetPoint("BOTTOMLEFT", btnFrame, "TOPLEFT", 0, 6)
+                GameTooltip:SetPoint("BOTTOMLEFT", button, "TOPLEFT", 0, 6)
             end
             GameTooltip:ClearLines()
             if pcall(object.OnTooltipShow, GameTooltip) then
                 GameTooltip:Show()
             else
                 GameTooltip:Hide()
-                tipMode = nil
+                tipRoute = nil
             end
             return
         end
-        mod.Tip_Begin(btnFrame)
+        mod.Tip_Begin(button)
         mod.Tip_AddLine(mod.LDBLabel(s.source, object), 1, 1, 1)
-        local body = LDBDisplayText(object)
+        local body = PluginText(object)
         if body then
             mod.Tip_AddLine(" ")
-            mod.Tip_AddLine(LDBStripColors(body), 0.8, 0.8, 0.8)
+            mod.Tip_AddLine(StripColours(body), 0.8, 0.8, 0.8)
         end
         mod.Tip_Show()
     end
 
-    btnFrame:SetScript("OnEnter", function()
-        mouseOver = true
-        instance:Refresh()
+    -- Hovering only recolours the text; nothing moves, so nothing is laid out again.
+    button:SetScript("OnEnter", function()
+        hovered = true
+        PaintText(not Settings().source)
         ShowTip()
     end)
-    btnFrame:SetScript("OnLeave", function()
-        mouseOver = false
+    button:SetScript("OnLeave", function()
+        hovered = false
         HideTip()
-        instance:Refresh()
+        PaintText(not Settings().source)
     end)
-    btnFrame:SetScript("OnClick", function(_, mb)
-        -- No plugin picked yet: nothing to forward the click to, so send the
-        -- player to the picker instead of dead-ending there.
-        if not D().source then
-            -- The options never open in combat.
+    button:SetScript("OnClick", function(_, mouseButton)
+        if not Settings().source then
+            -- Nothing to pass the click to: open the block's settings to pick one.
             if InCombatLockdown() then
                 CludesUI.PrintError("Cannot open options during combat.")
                 return
             end
-            -- Options surface is LoadOnDemand; load it so OpenBlockSettings exists.
             if not mod.OpenBlockSettings then
-                CludesUI:EnsureLoaded()
+                CludesUI:EnsureLoaded() -- the settings load on demand
             end
             if mod.OpenBlockSettings then
                 mod.OpenBlockSettings(barCtx.id, blockCfg.id, "ldb")
             end
             return
         end
-        local object = Obj()
+        local object = Plugin()
         if object and object.OnClick then
-            pcall(object.OnClick, btnFrame, mb)
+            pcall(object.OnClick, button, mouseButton)
         end
     end)
-    btnFrame:SetScript("OnMouseWheel", function(_, delta)
-        local object = Obj()
+    button:SetScript("OnMouseWheel", function(_, delta)
+        local object = Plugin()
         if object and object.OnMouseWheel then
-            pcall(object.OnMouseWheel, btnFrame, delta)
+            pcall(object.OnMouseWheel, button, delta)
         end
     end)
 
-    -- A source whose plugin registers later -- its addon loads after us, or on
-    -- demand -- binds the moment it appears; without this the block would sit
-    -- collapsed until something else happened to force a Refresh.
+    -- A plugin made after us (its addon loads later, or on demand) fills the
+    -- block as soon as it exists.
     local function OnCreated(_, name)
-        if name == D().source and not instance._dead then
-            Bind()
-            instance:Refresh()
+        if name == Settings().source and not inst._dead then
+            inst:Listen()
+            inst:Refresh()
         end
     end
 
-    function instance:Enable()
+    local function StopAll()
+        K.UnregisterInstEvents(inst)
+        local lib = mod.GetLDB()
+        if lib then
+            pcall(lib.UnregisterCallback, inst, "LibDataBroker_DataObjectCreated")
+        end
+        StopListening()
+    end
+
+    function inst:Enable()
         contentFrame:Show()
         if not self.eventFrame then
-            self.eventFrame = MakeEventFrame(self, function(me)
-                if not me._dead then
+            -- PLAYER_REGEN_ENABLED: only a Show/Hide that combat refused.
+            self.eventFrame = K.MakeEventFrame(self, function(me)
+                if owesShow and not me._dead then
                     me:Refresh()
                 end
             end)
         end
-        RegisterInstEvents(self)
-        local LDB = mod.GetLDB()
-        if LDB then
-            pcall(LDB.RegisterCallback, instance, "LibDataBroker_DataObjectCreated", OnCreated)
+        K.RegisterInstEvents(self)
+        local lib = mod.GetLDB()
+        if lib then
+            pcall(lib.RegisterCallback, inst, "LibDataBroker_DataObjectCreated", OnCreated)
         end
-        Bind()
+        self:Listen()
     end
 
-    function instance:Disable()
-        UnregisterInstEvents(self)
-        local LDB = mod.GetLDB()
-        if LDB then
-            pcall(LDB.UnregisterCallback, instance, "LibDataBroker_DataObjectCreated")
-        end
-        Unbind()
+    function inst:Disable()
+        StopAll()
         contentFrame:Hide()
     end
 
-    function instance:GetAutoLength()
+    function inst:GetAutoLength()
         if not contentFrame:IsShown() then
             return 0
         end
@@ -496,17 +475,12 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
         return max(contentFrame:GetWidth() or 60, 24)
     end
 
-    function instance:Destroy()
+    function inst:Destroy()
         self._dead = true
-        UnregisterInstEvents(self)
-        local LDB = mod.GetLDB()
-        if LDB then
-            pcall(LDB.UnregisterCallback, instance, "LibDataBroker_DataObjectCreated")
-        end
-        Unbind()
+        StopAll()
         HideTip()
         contentFrame:Hide()
     end
 
-    return instance
+    return inst
 end
