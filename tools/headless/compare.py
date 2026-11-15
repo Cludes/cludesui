@@ -32,8 +32,13 @@ end
 SETTLE = SNAP_LIB.Settle
 '''
 
+# COMPARE_TAG=<name> keeps this run's worktree, probe and snapshots apart
+# (snap_old_<name>.txt, snap_new_<name>.txt), so several runs can go at once.
+TAG = os.environ.get("COMPARE_TAG", "")
+SUFFIX = ("_" + TAG) if TAG else ""
+
 def run(tree, scenario, flavor, out):
-    probe = os.path.join(tempfile.gettempdir(), "compare_probe.lua")
+    probe = os.path.join(tempfile.gettempdir(), "compare_probe%s.lua" % SUFFIX)
     body = open(scenario, encoding="utf-8").read()
     with open(probe, "w", encoding="utf-8") as f:
         f.write(PRELUDE % (os.path.join(HERE, "snapshot.lua").replace("\\", "/"), out.replace("\\", "/")))
@@ -48,12 +53,12 @@ def run(tree, scenario, flavor, out):
 def main():
     old, scenario = sys.argv[1], os.path.abspath(sys.argv[2])
     flavor = sys.argv[3] if len(sys.argv) > 3 and not sys.argv[3].startswith("--") else "retail"
-    wt = os.path.join(tempfile.gettempdir(), "cui_compare_old")
+    wt = os.path.join(tempfile.gettempdir(), "cui_compare_old" + SUFFIX)
     subprocess.run(["git", "-C", REPO, "worktree", "remove", "--force", wt], capture_output=True)
     subprocess.run(["git", "-C", REPO, "worktree", "add", "--detach", wt, old], capture_output=True, check=True)
     try:
-        a_out = os.path.join(tempfile.gettempdir(), "snap_old.txt")
-        b_out = os.path.join(tempfile.gettempdir(), "snap_new.txt")
+        a_out = os.path.join(tempfile.gettempdir(), "snap_old%s.txt" % SUFFIX)
+        b_out = os.path.join(tempfile.gettempdir(), "snap_new%s.txt" % SUFFIX)
         print("old:", " | ".join(run(wt, scenario, flavor, a_out)))
         print("new:", " | ".join(run(REPO, scenario, flavor, b_out)))
         a = open(a_out, encoding="utf-8").read().splitlines()

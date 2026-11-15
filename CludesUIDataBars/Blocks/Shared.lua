@@ -56,144 +56,142 @@ mod.barTextureNames = barTextureNames
 -- Seed SharedMedia statusbar textures once at load so a saved LSM key resolves at login; the parent helper also registers for late LSM packs.
 CludesUI.AppendSharedMediaTextures(barTextureNames, barTextureOrder, nil, barTextures)
 
--- Upvalues
-local CreateFrame = CreateFrame
 local InCombatLockdown = InCombatLockdown
-local type = type
-local pcall = pcall
-local abs = math.abs
 
 -------------------------------------------------------------------------------
---  Shared per-instance scaffolding
+--  What every block uses
 -------------------------------------------------------------------------------
+-- A block's key, unique per bar and block (frame names, deferred work).
 local function InstKey(barCtx, blockCfg)
     return "EDB" .. barCtx.id .. "_" .. blockCfg.id
 end
 
-local function MakeEventFrame(instance, handler)
-    local f = CreateFrame("Frame")
-    f:SetScript("OnEvent", function(_, evt, ...)
-        handler(instance, evt, ...)
+-- An event frame that calls handler(block, event, ...).
+local function MakeEventFrame(block, handler)
+    local frame = CreateFrame("Frame")
+    frame:SetScript("OnEvent", function(_, event, ...)
+        handler(block, event, ...)
     end)
-    return f
+    return frame
 end
 
-local function RegisterInstEvents(instance)
-    if not (instance.eventFrame and instance.events) then
+-- block.events onto block.eventFrame; an event the client lacks is skipped.
+local function RegisterInstEvents(block)
+    local frame, events = block.eventFrame, block.events
+    if not (frame and events) then
         return
     end
-    for idx = 1, #instance.events do
-        pcall(instance.eventFrame.RegisterEvent, instance.eventFrame, instance.events[idx])
+    for _, event in ipairs(events) do
+        pcall(frame.RegisterEvent, frame, event)
     end
 end
 
-local function UnregisterInstEvents(instance)
-    if instance.eventFrame then
-        instance.eventFrame:UnregisterAllEvents()
+local function UnregisterInstEvents(block)
+    if block.eventFrame then
+        block.eventFrame:UnregisterAllEvents()
     end
 end
 
--- Content sizing baseline: fonts/icons derive from this CONSTANT, never the
--- live bar thickness (Height resizes the BAR only; size comes from Text
--- Scale / Content Scale / per-block fonts). 30 = the thickness they were tuned at.
+-- Fonts and icons size from this constant, never the live bar height: the
+-- Height setting resizes the bar only (Text Scale, Content Scale and the
+-- per-block fonts size the content). 30 is the height they were tuned at.
 local CONTENT_BASE = 30
 
--- Content scale of a block: content frames are SetScale'd as a group, so fit budgets must convert slot pixels into content space (slot / scale).
-local function ContentScaleOf(instance)
-    local s = ((instance.cfg and instance.cfg.scale) or 100) / 100
-    if s <= 0 then
-        return 1
-    end
-    return s
+-- A block's content scale (its content is scaled as a group, so a slot's
+-- pixels are divided by it to get content pixels).
+local function ScaleOf(block)
+    local scale = ((block.cfg and block.cfg.scale) or 100) / 100
+    return scale > 0 and scale or 1
 end
 
--- Horizontal text budget: every block fits into its solver-assigned slot width (sizing is share-based for auto and fixed blocks alike).
-local function HBudget(instance, fallback)
-    local wid = instance.slot and instance.slot:GetWidth()
-    if wid and wid > 8 then
-        return wid / ContentScaleOf(instance)
+-- The width a horizontal block may use: its slot's, once the bar has laid out.
+local function HBudget(block, fallback)
+    local width = block.slot and block.slot:GetWidth()
+    if width and width > 8 then
+        return width / ScaleOf(block)
     end
     return fallback
 end
 
--- Vertical cross-axis width (bar thickness; falls back before slot layout).
-local function VSlotW(instance)
-    local wid = instance.slot and instance.slot:GetWidth()
-    if wid and wid > 2 then
-        return wid / ContentScaleOf(instance)
+-- A vertical block's width: its slot's, or the bar's thickness before layout.
+local function VSlotW(block)
+    local width = block.slot and block.slot:GetWidth()
+    if width and width > 2 then
+        return width / ScaleOf(block)
     end
-    return instance.ctx.GetThickness()
+    return block.ctx.GetThickness()
 end
 
--- Re-layout only when the measured auto extent actually changed (breaks the
--- Refresh -> layout -> Refresh loop). Only auto-mode bars size from content --
--- the fill block's px is the remainder, so its content never drives layout.
-local function MaybeRelayout(instance)
-    local b = instance.cfg
-    local barCfg = instance.ctx and instance.ctx.cfg
+-- Asks the bar to lay out again, but only when this block's own length
+-- changed (which also stops Refresh -> layout -> Refresh loops). Only bars
+-- in automatic sizing size from content, and never from the fill block,
+-- which takes what is left.
+local function MaybeRelayout(block)
+    local barCfg = block.ctx and block.ctx.cfg
     if not barCfg then
         return
     end
-    local wid = 0
-    if instance.GetAutoLength then
-        wid = instance:GetAutoLength() or 0
-    end
+    local length = block.GetAutoLength and block:GetAutoLength() or 0
+    local last = block._lastAuto
     if mod.BarSizingMode(barCfg) ~= "auto" then
-        -- Even mode ignores widths, but flipping to/from collapsed (extent 0)
-        -- changes the SHARE COUNT -- re-solve so the freed share redistributes.
-        local was = instance._lastAuto
-        instance._lastAuto = wid
-        if was ~= nil and ((was <= 0) ~= (wid <= 0)) then
-            instance.ctx.RequestLayout()
+        -- Even sizing ignores lengths, but a block appearing or leaving
+        -- (length 0) changes how many shares there are.
+        block._lastAuto = length
+        if last ~= nil and (last <= 0) ~= (length <= 0) then
+            block.ctx.RequestLayout()
         end
         return
     end
-    if barCfg.fillBlockId == b.id then
+    if barCfg.fillBlockId == block.cfg.id then
         return
     end
-    if instance._lastAuto == nil or abs(wid - instance._lastAuto) > 0.5 then
-        instance._lastAuto = wid
-        instance.ctx.RequestLayout()
+    if last == nil or math.abs(length - last) > 0.5 then
+        block._lastAuto = length
+        block.ctx.RequestLayout()
     end
 end
 
--- Text-only X/Y offset (b.textXOff/b.textYOff): wraps a PRIMARY text FontString's
--- SetPoint so every anchor carries the live cfg offset. Wrap ONLY texts anchored to
--- non-text targets -- chained texts (bagText->goldText, eventText->clockText,
--- infoText->specText) inherit the shift and would double-shift. Safe to shadow (our own FontStrings); re-renders via ns.ReflowBlocks.
-local function AttachTextOffset(instance, fontStr)
-    if not fontStr or fontStr._edbTxo then
+-- The block's Text X/Y offset (textXOff/textYOff): every anchor of this
+-- FontString carries it. Only for a block's main text: texts anchored to it
+-- (Gold's slot count, Spec's loot spec) move with it already and would be
+-- shifted twice.
+local function AttachTextOffset(block, text)
+    if not text or text._cuiOffset then
         return
     end
-    fontStr._edbTxo = true
-    local orig = fontStr.SetPoint
-    fontStr.SetPoint = function(self, anchorPoint, a2, a3, a4, a5)
-        local c = instance.cfg
-        local dx = (c and c.textXOff) or 0
-        local dy = (c and c.textYOff) or 0
+    text._cuiOffset = true
+    local SetPoint = text.SetPoint
+    text.SetPoint = function(self, point, a2, a3, a4, a5)
+        local c = block.cfg
+        local dx, dy = (c and c.textXOff) or 0, (c and c.textYOff) or 0
         if a2 == nil then
-            return orig(self, anchorPoint, dx, dy)
+            return SetPoint(self, point, dx, dy)
+        elseif type(a2) == "number" then
+            return SetPoint(self, point, a2 + dx, (a3 or 0) + dy)
         end
-        if type(a2) == "number" then
-            return orig(self, anchorPoint, a2 + dx, (a3 or 0) + dy)
-        end
-        return orig(self, anchorPoint, a2, a3 or anchorPoint, (a4 or 0) + dx, (a5 or 0) + dy)
+        return SetPoint(self, point, a2, a3 or point, (a4 or 0) + dx, (a5 or 0) + dy)
     end
 end
 
--- Per-block content color (options Color row: Custom/Class/Accent; default
--- white). Colors TEXT and vertex-tints ICONS, not status-bar fills;
--- state-driven colors (hover accent, travel red) win at their call site.
+local function ClassColour()
+    local _, class = UnitClass("player")
+    local c = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
+    if c then
+        return c.r, c.g, c.b
+    end
+end
+
+-- A block's text colour (the Text Color row: Custom, Class, Accent or
+-- Dynamic; white by default). Hover and other state colours are applied
+-- where they happen.
 local function BlockColorOf(b)
     if b.useDynamicColor then
-        -- Opt-in state-driven text mode (the Text Color row's 4th swatch).
         return mod.BlockTextDynamic(b.type)
     end
     if b.useClassColor then
-        local _, class = UnitClass("player")
-        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-        if cc then
-            return cc.r, cc.g, cc.b
+        local r, g, bl = ClassColour()
+        if r then
+            return r, g, bl
         end
     elseif b.useAccentColor then
         return mod.GetAccent()
@@ -324,10 +322,10 @@ function K.SetBlockIcon(icon, blockCfg, key)
     local s = blockCfg.settings
     local texture = art.wow and s and s.iconStyle == "wow" and art.wow
     local wanted = texture or art.custom
-    if icon._edbIconTex == wanted then
+    if icon._cuiIconArt == wanted then
         return
     end
-    icon._edbIconTex = wanted
+    icon._cuiIconArt = wanted
     if texture then
         icon:SetTexture(texture)
         local crop = type(texture) == "number" or texture:find("^Interface\\Icons\\")
@@ -411,17 +409,17 @@ function mod.BlockTextDynamic(bType)
     return mod.BlockIconDefault(bType)
 end
 
--- Per-block ICON color (Icon Color row: Custom/Class/Accent/Default). Nothing stored = the themed default above; state-driven colors win at their sites.
+-- A block's icon colour (the Icon Color row: Custom, Class, Accent or
+-- Default). Nothing chosen = the block type's default above.
 local function IconColorOf(b)
     if b.useIconDefaultColor then
-        -- Explicit Default mode: the stored custom color stays stashed.
+        -- Default chosen explicitly: a stored custom colour is kept, unused.
         return mod.BlockIconDefault(b.type, b.settings)
     end
     if b.useIconClassColor then
-        local _, class = UnitClass("player")
-        local cc = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-        if cc then
-            return cc.r, cc.g, cc.b
+        local r, g, bl = ClassColour()
+        if r then
+            return r, g, bl
         end
     elseif b.useIconAccentColor then
         return mod.GetAccent()
@@ -433,20 +431,21 @@ local function IconColorOf(b)
     return mod.BlockIconDefault(b.type, b.settings)
 end
 
--- Retire a secure frame: hide + reparent to the engine park frame, deferred to OOC when needed (alpha-hidden immediately in combat).
-local function ParkSecureFrame(f, key)
-    if not f then
+-- Retires a secure frame: hidden and moved to the bar engine's park frame.
+-- In combat it is made invisible now and moved when combat ends.
+local function ParkSecureFrame(frame, key)
+    if not frame then
         return
     end
+    local function Park()
+        frame:Hide()
+        frame:SetParent(mod._park)
+    end
     if InCombatLockdown() then
-        f:SetAlpha(0)
-        mod.DeferUntilOOC("edbkill:" .. key, function()
-            f:Hide()
-            f:SetParent(mod._park)
-        end)
+        frame:SetAlpha(0)
+        mod.DeferUntilOOC("edbkill:" .. key, Park)
     else
-        f:Hide()
-        f:SetParent(mod._park)
+        Park()
     end
 end
 
