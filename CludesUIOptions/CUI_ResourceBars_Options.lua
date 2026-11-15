@@ -4445,123 +4445,85 @@ initFrame:SetScript("OnEvent", function(self)
                 end)
             end
 
-            -- RefreshDetail: repaint the pane for the selected entry
-            RefreshDetail = function()
-                UpdateNotice()
-                local ent = CurEntry()
-                if not ent then
-                    for _, rf in ipairs(_allRows) do
-                        rf:Hide()
-                    end
-                    dPlaceholder:Show()
-                    return
-                end
-                dPlaceholder:Hide()
-
-                -- The entry's rules: the bar's defaults, then cfg.entryRules adjusts them per entry.
-                --   thrMin / thrMax / thrDef -- threshold bounds and the default value
-                --   thrLabel / thrTip -- threshold row label (nil keeps the static one) and input note
-                --   pips       -- entry counts stacks: hash lines by stack, band boundaries as counts
-                --   hideHash   -- no hash row for this entry
-                --   bandPctCap -- the band editor is percent only, up to this value
-                --   multiBlock / textBlock -- why multi-band / text recoloring cannot apply (nil = it can)
-                --   barInput   -- show the cfg.barInput row
+            -- The selected entry's rules: the bar's defaults, then
+            -- conf.entryRules adjusts them per entry.
+            --   thrMin / thrMax / thrDef  threshold bounds and default value
+            --   thrLabel / thrTip         threshold label (nil keeps the static one) and input note
+            --   pips                      counts stacks: hash lines by stack, band boundaries as counts
+            --   hideHash                  no hash row for this entry
+            --   bandPctCap                the band editor is percent only, up to this value
+            --   multiBlock / textBlock    why multi-band / text recolouring cannot apply (nil = it can)
+            --   barInput                  show the conf.barInput row
+            local function FillRules(entry)
                 local r = rules
                 r.thrMin, r.thrMax, r.thrDef = conf.threshMin or 1, conf.threshMax or 99, 30
                 r.thrLabel, r.thrTip, r.pips, r.hideHash = nil, nil, false, false
                 r.bandPctCap, r.multiBlock, r.textBlock, r.barInput = nil, nil, nil, false
                 if conf.entryRules then
-                    conf.entryRules(ent, r, conf.getBarData())
+                    conf.entryRules(entry, r, conf.getBarData())
                 end
+                return r
+            end
 
-                -- Talent gate is single-spec only
-                local ids = ent.specIDs
-                local allowTalent = (ids and #ids == 1 and ids[1] ~= 0) and true or false
-
-                -- Refill talent options from the active loadout plus the entry's saved gate, even if off-spec/off-loadout
-                if allowTalent then
-                    local loadoutTalents = (mod.GetLoadoutTalents()) or {}
-                    local vals, ord = talentRow._talentValues, talentRow._talentOrder
-                    wipe(ord)
-                    for k in pairs(vals) do
-                        if k ~= "_menuOpts" then
-                            vals[k] = nil
-                        end
+            -- The talent picker's options: the active loadout plus the entry's
+            -- saved gate (even off-spec or off-loadout). Greyed for another
+            -- class's spec (the talents come from the player's own loadout).
+            local function FillTalents(entry, specID)
+                local values, order = talentRow._talentValues, talentRow._talentOrder
+                wipe(order)
+                for k in pairs(values) do
+                    if k ~= "_menuOpts" then
+                        values[k] = nil
                     end
-                    vals[0] = CludesUI.L("No talent")
-                    ord[#ord + 1] = 0
-                    for _, t in ipairs(loadoutTalents) do
-                        if vals[t.spellID] == nil then
-                            ord[#ord + 1] = t.spellID
-                        end
-                        vals[t.spellID] = t.name
-                    end
-                    if ent.talentSpellID and vals[ent.talentSpellID] == nil then
-                        vals[ent.talentSpellID] = ent.talentName
-                            or C_Spell.GetSpellName(ent.talentSpellID)
-                            or ("Spell " .. ent.talentSpellID)
-                        ord[#ord + 1] = ent.talentSpellID
-                    end
-                    if talentDD._invalidateMenu then
-                        talentDD._invalidateMenu()
-                    end
-                    if talentDD._refreshLabel then
-                        talentDD._refreshLabel()
-                    end
-
-                    -- Talents come from the player's own loadout, so block the picker for other classes' specs
-                    local talentClassOK = true
-                    if GetSpecializationInfoByID then
-                        local _, _, _, _, _, class = GetSpecializationInfoByID(ids[1])
-                        talentClassOK = (class == _playerClassFile)
-                    elseif CludesUI.IS_FOREVER then
-                        talentClassOK = (CludesUI.SpecClassOf(ids[1]) == _playerClassFile)
-                    end
-                    talentRow._dis:SetShown(not talentClassOK)
                 end
+                values[0] = CludesUI.L("No talent")
+                order[1] = 0
+                for _, talent in ipairs((mod.GetLoadoutTalents()) or {}) do
+                    if values[talent.spellID] == nil then
+                        order[#order + 1] = talent.spellID
+                    end
+                    values[talent.spellID] = talent.name
+                end
+                local gate = entry.talentSpellID
+                if gate and values[gate] == nil then
+                    values[gate] = entry.talentName or C_Spell.GetSpellName(gate) or ("Spell " .. gate)
+                    order[#order + 1] = gate
+                end
+                if talentDD._invalidateMenu then
+                    talentDD._invalidateMenu()
+                end
+                if talentDD._refreshLabel then
+                    talentDD._refreshLabel()
+                end
+                local ownClass = true
+                if GetSpecializationInfoByID then
+                    local _, _, _, _, _, class = GetSpecializationInfoByID(specID)
+                    ownClass = class == _playerClassFile
+                elseif CludesUI.IS_FOREVER then
+                    ownClass = CludesUI.SpecClassOf(specID) == _playerClassFile
+                end
+                talentRow._dis:SetShown(not ownClass)
+            end
 
-                -- Hash row text: pip resources place lines by stack count
-                local hashWord, hintText
+            -- The hash row's words: by stack for pip resources, else percent or value.
+            local function HashWords(entry, r)
                 if r.pips then
-                    hashWord, hintText = CludesUI.L("Stack"), CludesUI.L("(Ex: 2,4)")
-                else
-                    local isPct = (ent.hashMode or HASH_NIL) == "percent"
-                    hashWord = isPct and CludesUI.L("Percent") or CludesUI.L("Value")
-                    hintText = isPct and CludesUI.L("(Ex: 25,50,75)")
-                        or conf.hashValueHint
-                        or CludesUI.L("(Ex: 50000)")
+                    return CludesUI.L("Stack"), CludesUI.L("(Ex: 2,4)")
                 end
-                hashRow._lbl2:SetText(CludesUI.Lf("Hash at %1$s", hashWord))
-                hashRow._hint:SetText(hintText)
-                hashInput:SetText(ent.hashValues or "")
+                if (entry.hashMode or HASH_NIL) == "percent" then
+                    return CludesUI.L("Percent"), CludesUI.L("(Ex: 25,50,75)")
+                end
+                return CludesUI.L("Value"), conf.hashValueHint or CludesUI.L("(Ex: 50000)")
+            end
 
-                threshInput:SetText(tostring(ent[THR_FIELD] or r.thrDef))
-                threshInput._tip = r.thrTip
-                if r.thrLabel then
-                    threshRow._lbl:SetText(r.thrLabel)
+            -- Single threshold and multi-band are separate toggles; multi-band
+            -- wins when both are on. A blocked multi-band greys its row.
+            local function CoverRows(entry, r)
+                local thresholdOn = entry.thresholdEnabled
+                if thresholdOn == nil then
+                    thresholdOn = true
                 end
-
-                hashSwatchSnap()
-                threshEnableSnap()
-                threshSwatchSnap()
-                multiSnap()
-                textInsteadSnap()
-                if buffSnap then
-                    buffSnap()
-                end
-                if spenderSnap then
-                    spenderSnap()
-                end
-                if barSnap then
-                    barSnap()
-                end
-
-                -- Single threshold and multi-band are independent toggles; multi wins over single when both are on.
-                local entEnabled = ent.thresholdEnabled
-                if entEnabled == nil then
-                    entEnabled = true
-                end
-                local multiOn = (ent.multiBandEnabled and not r.multiBlock) and true or false
+                local multiOn = (entry.multiBandEnabled and not r.multiBlock) and true or false
                 if r.multiBlock then
                     multiToggle:SetAlpha(0.35)
                     multiToggle:SetEnabled(false)
@@ -4581,7 +4543,7 @@ initFrame:SetScript("OnEvent", function(self)
                 if multiOn then
                     threshRow._disTip = "MULTI"
                     threshDis:Show()
-                elseif not entEnabled then
+                elseif not thresholdOn then
                     threshRow._disTip = nil
                     threshDis:Show()
                 else
@@ -4590,37 +4552,88 @@ initFrame:SetScript("OnEvent", function(self)
                 textInsteadDis._tip = r.textBlock
                 textInsteadDis:SetShown(r.textBlock ~= nil)
                 textInsteadRow._lbl:SetAlpha(r.textBlock and 0.3 or 0.6)
+            end
 
-                -- Layout pass: place visible rows top-to-bottom
-                for _, rf in ipairs(_allRows) do
-                    rf:Hide()
+            -- Places the rows that apply, top to bottom.
+            local function LayoutRows(r, withTalent)
+                for _, row in ipairs(_allRows) do
+                    row:Hide()
                 end
-                local yy = -DPAD
-                local function place(rf)
-                    rf:ClearAllPoints()
-                    Pix.Point(rf, "TOPLEFT", detailC, "TOPLEFT", DPAD, yy)
-                    Pix.Point(rf, "TOPRIGHT", detailC, "TOPRIGHT", -DPAD, yy)
-                    rf:Show()
-                    yy = yy - (rf._rawH or ROWH) - ROWGAP
+                local y = -DPAD
+                local function Place(row)
+                    row:ClearAllPoints()
+                    Pix.Point(row, "TOPLEFT", detailC, "TOPLEFT", DPAD, y)
+                    Pix.Point(row, "TOPRIGHT", detailC, "TOPRIGHT", -DPAD, y)
+                    row:Show()
+                    y = y - (row._rawH or ROWH) - ROWGAP
                 end
-                if allowTalent then
-                    place(talentRow)
+                if withTalent then
+                    Place(talentRow)
                 end
                 if not r.hideHash then
-                    place(hashRow)
+                    Place(hashRow)
                 end
-                place(threshRow)
-                place(multiRow)
+                Place(threshRow)
+                Place(multiRow)
                 if buffRow then
-                    place(buffRow)
+                    Place(buffRow)
                 end
                 if spenderRow then
-                    place(spenderRow)
+                    Place(spenderRow)
                 end
-                place(textInsteadRow)
+                Place(textInsteadRow)
                 if barRow and r.barInput then
-                    place(barRow)
+                    Place(barRow)
                 end
+            end
+
+            -- Draws the pane for the selected entry.
+            RefreshDetail = function()
+                UpdateNotice()
+                local entry = CurEntry()
+                if not entry then
+                    for _, row in ipairs(_allRows) do
+                        row:Hide()
+                    end
+                    dPlaceholder:Show()
+                    return
+                end
+                dPlaceholder:Hide()
+                local r = FillRules(entry)
+
+                -- The talent gate is for single-spec entries only.
+                local ids = entry.specIDs
+                local withTalent = (ids and #ids == 1 and ids[1] ~= 0) and true or false
+                if withTalent then
+                    FillTalents(entry, ids[1])
+                end
+
+                local word, hint = HashWords(entry, r)
+                hashRow._lbl2:SetText(CludesUI.Lf("Hash at %1$s", word))
+                hashRow._hint:SetText(hint)
+                hashInput:SetText(entry.hashValues or "")
+                threshInput:SetText(tostring(entry[THR_FIELD] or r.thrDef))
+                threshInput._tip = r.thrTip
+                if r.thrLabel then
+                    threshRow._lbl:SetText(r.thrLabel)
+                end
+
+                for _, snap in ipairs({
+                    hashSwatchSnap,
+                    threshEnableSnap,
+                    threshSwatchSnap,
+                    multiSnap,
+                    textInsteadSnap,
+                }) do
+                    snap()
+                end
+                for _, snap in ipairs({ buffSnap or false, spenderSnap or false, barSnap or false }) do
+                    if snap then
+                        snap()
+                    end
+                end
+                CoverRows(entry, r)
+                LayoutRows(r, withTalent)
             end
             thrPage:Hide()
         end -- BuildFrame
