@@ -12,6 +12,12 @@ end
 local function Snap(label)
     SNAP(label, CUI._scrollFrame)
     SNAP(label .. " header", CUI._contentHeader or CUI._headerFrame)
+    -- The preview popout docked to the panel (FULLSCREEN_DIALOG, level 10, on UIParent).
+    for _, c in ipairs({ UIParent:GetChildren() }) do
+        if c:IsShown() and c.GetFrameStrata and c:GetFrameStrata() == "FULLSCREEN_DIALOG" and c:GetFrameLevel() == 10 and rawget(c, "_title") then
+            SNAP(label .. " popout", c)
+        end
+    end
 end
 CUI:SelectModule("CludesUICooldownManager")
 CUI:SelectPage("Tracking Bars")
