@@ -85,6 +85,55 @@ local function SetFlyoutItemLocked(si, locked, tipText)
     end
 end
 
+-- A plain menu row at y on inner (made at menu level + 2): its label in the dim
+-- text colour and a clear highlight. Hovering lights both, closes the menu's open
+-- flyout and shows opts.tip; leaving puts them back. opts.fit keeps the label to
+-- one line inside the row. Kept outside ShowSpellPicker, which sits near Lua's
+-- cap on live locals. Returns the row.
+local function PlainMenuRow(menu, inner, y, height, text, font, dim, hlA, onClick, opts)
+    local row = CreateFrame("Button", nil, inner)
+    row:SetHeight(height)
+    row:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -y)
+    row:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -y)
+    row:SetFrameLevel(menu:GetFrameLevel() + 2)
+    local label = row:CreateFontString(nil, "OVERLAY")
+    label:SetFont(font[1], font[2], font[3])
+    label:SetPoint("LEFT", 10, 0)
+    if opts and opts.fit then
+        label:SetPoint("RIGHT", -10, 0)
+        label:SetWordWrap(false)
+        label:SetMaxLines(1)
+    end
+    label:SetJustifyH("LEFT")
+    label:SetText(text)
+    label:SetTextColor(dim[1], dim[2], dim[3], dim[4])
+    local highlight = row:CreateTexture(nil, "ARTWORK")
+    highlight:SetAllPoints()
+    highlight:SetColorTexture(1, 1, 1, 0)
+    highlight:SetAlpha(0)
+    local tip = opts and opts.tip
+    row:SetScript("OnEnter", function()
+        label:SetTextColor(1, 1, 1, 1)
+        highlight:SetColorTexture(1, 1, 1, hlA)
+        highlight:SetAlpha(1)
+        if menu._openSub and menu._openSub:IsShown() then
+            menu._openSub:Hide()
+        end
+        if tip then
+            CludesUI.ShowWidgetTooltip(row, tip)
+        end
+    end)
+    row:SetScript("OnLeave", function()
+        label:SetTextColor(dim[1], dim[2], dim[3], dim[4])
+        highlight:SetAlpha(0)
+        if tip then
+            CludesUI.HideWidgetTooltip()
+        end
+    end)
+    row:SetScript("OnClick", onClick)
+    return row
+end
+
 local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, removeOnly)
     local environ = mod._CDMO_OptEnv
     local FONT_PATH, FitMenuWidth, GetCDMOptOutline, RefreshCDPreview =
@@ -286,177 +335,113 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             or false
     end
     if slotIndex and (barId ~= "buffs" or rmIsInjected) then
-        local rmItem = CreateFrame("Button", nil, inner)
-        rmItem:SetHeight(ITEM_H)
-        rmItem:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-        rmItem:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-        rmItem:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-
-        local rmLbl = rmItem:CreateFontString(nil, "OVERLAY")
-        rmLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        rmLbl:SetPoint("LEFT", 10, 0)
-        rmLbl:SetJustifyH("LEFT")
-        rmLbl:SetText(CludesUI.L("Remove Spell"))
-        rmLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-
-        local rmHl = rmItem:CreateTexture(nil, "ARTWORK")
-        rmHl:SetAllPoints()
-        rmHl:SetColorTexture(1, 1, 1, 0)
-        rmHl:SetAlpha(0)
-
-        rmItem:SetScript("OnEnter", function()
-            rmLbl:SetTextColor(1, 1, 1, 1)
-            rmHl:SetColorTexture(1, 1, 1, hlA)
-            rmHl:SetAlpha(1)
-            if dropMenu._openSub and dropMenu._openSub:IsShown() then
-                dropMenu._openSub:Hide()
-            end
-        end)
-        rmItem:SetScript("OnLeave", function()
-            rmLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-            rmHl:SetAlpha(0)
-        end)
-        rmItem:SetScript("OnClick", function()
-            dropMenu:Hide()
-            if barId == "buffs" then
-                -- Main buffs bar: slotIndex maps to the mixed preview list (Blizzard
-                -- buffs + customs), not assignedSpells, so remove the injected custom by spellID and clean its metadata.
-                if rmSpellID then
-                    mod.RemoveSpellFromBar(barId, rmSpellID)
-                    local sdR = mod.GetBarSpellData(barId)
-                    if sdR and sdR.spellDurations then
-                        sdR.spellDurations[rmSpellID] = nil
-                    end
-                    if mod.RebuildSpellRouteMap then
-                        mod.RebuildSpellRouteMap()
-                    end
-                    if mod.QueueReanchor then
-                        mod.QueueReanchor()
-                    end
-                end
-            else
-                -- A legacy-duplicate buff slot covers >1 assignedSpells entry
-                -- (anchorFrame._dataGroup): remove them all, highest index first. Normal
-                -- slots (including cd-claim marker slots for collided buffs, which carry a real single-entry index) have one entry (or no group) -> plain remove.
-                local grp = anchor and anchor._dataGroup
-                if grp and #grp > 1 then
-                    local sequence = {}
-                    for _, v in ipairs(grp) do
-                        sequence[#sequence + 1] = v
-                    end
-                    table.sort(sequence, function(a, b)
-                        return a > b
-                    end)
-                    for _, gi in ipairs(sequence) do
-                        mod.RemoveTrackedSpell(barId, gi)
+        allItems[#allItems + 1] = PlainMenuRow(
+            dropMenu,
+            inner,
+            mH,
+            ITEM_H,
+            CludesUI.L("Remove Spell"),
+            { FONT_PATH, 11, GetCDMOptOutline() },
+            { tDimR, tDimG, tDimB, tDimA },
+            hlA,
+            function()
+                dropMenu:Hide()
+                if barId == "buffs" then
+                    -- Main buffs bar: slotIndex maps to the mixed preview list (Blizzard
+                    -- buffs + customs), not assignedSpells, so remove the injected custom
+                    -- by spellID and clean its metadata.
+                    if rmSpellID then
+                        mod.RemoveSpellFromBar(barId, rmSpellID)
+                        local sdR = mod.GetBarSpellData(barId)
+                        if sdR and sdR.spellDurations then
+                            sdR.spellDurations[rmSpellID] = nil
+                        end
+                        if mod.RebuildSpellRouteMap then
+                            mod.RebuildSpellRouteMap()
+                        end
+                        if mod.QueueReanchor then
+                            mod.QueueReanchor()
+                        end
                     end
                 else
-                    mod.RemoveTrackedSpell(barId, slotIndex)
+                    -- A legacy-duplicate buff slot covers >1 assignedSpells entry
+                    -- (anchorFrame._dataGroup): remove them all, highest index first.
+                    -- Normal slots (cd-claim marker slots for collided buffs included,
+                    -- which carry a real single-entry index) have one entry or no group.
+                    local grp = anchor and anchor._dataGroup
+                    if grp and #grp > 1 then
+                        local sequence = {}
+                        for _, v in ipairs(grp) do
+                            sequence[#sequence + 1] = v
+                        end
+                        table.sort(sequence, function(a, b)
+                            return a > b
+                        end)
+                        for _, gi in ipairs(sequence) do
+                            mod.RemoveTrackedSpell(barId, gi)
+                        end
+                    else
+                        mod.RemoveTrackedSpell(barId, slotIndex)
+                    end
                 end
+                RefreshCDPreview()
             end
-            RefreshCDPreview()
-        end)
-
-        allItems[#allItems + 1] = rmItem
+        )
         mH = mH + ITEM_H
     end
 
     -- Main buffs bar, Blizzard-tracked buff (not injected custom): can't be removed in
     -- CUI (Blizzard owns tracking), so offer a "Delete Spell" row that opens Blizzard's CDM (closes CUI options), matching the page's link behavior.
     if slotIndex and barId == "buffs" and not rmIsInjected and rmSpellID then
-        local dsItem = CreateFrame("Button", nil, inner)
-        dsItem:SetHeight(ITEM_H)
-        dsItem:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-        dsItem:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-        dsItem:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-
-        local dsHl = dsItem:CreateTexture(nil, "ARTWORK")
-        dsHl:SetAllPoints()
-        dsHl:SetColorTexture(1, 1, 1, 0)
-        dsHl:SetAlpha(0)
-
-        local dsLbl = dsItem:CreateFontString(nil, "OVERLAY")
-        dsLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        dsLbl:SetPoint("LEFT", 10, 0)
-        dsLbl:SetJustifyH("LEFT")
-        dsLbl:SetText(CludesUI.L("Delete Spell"))
-        dsLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-
-        dsItem:SetScript("OnEnter", function()
-            dsLbl:SetTextColor(1, 1, 1, 1)
-            dsHl:SetColorTexture(1, 1, 1, hlA)
-            dsHl:SetAlpha(1)
-            if dropMenu._openSub and dropMenu._openSub:IsShown() then
-                dropMenu._openSub:Hide()
+        allItems[#allItems + 1] = PlainMenuRow(
+            dropMenu,
+            inner,
+            mH,
+            ITEM_H,
+            CludesUI.L("Delete Spell"),
+            { FONT_PATH, 11, GetCDMOptOutline() },
+            { tDimR, tDimG, tDimB, tDimA },
+            hlA,
+            function()
+                dropMenu:Hide()
+                if mod.OpenBlizzardCDMTab then
+                    mod.OpenBlizzardCDMTab(true)
+                end
             end
-        end)
-        dsItem:SetScript("OnLeave", function()
-            dsLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-            dsHl:SetAlpha(0)
-        end)
-        dsItem:SetScript("OnClick", function()
-            dropMenu:Hide()
-            if mod.OpenBlizzardCDMTab then
-                mod.OpenBlizzardCDMTab(true)
-            end
-        end)
-
-        allItems[#allItems + 1] = dsItem
+        )
         mH = mH + ITEM_H
     end
 
+    -- "Talent Conditions: N" (opens the talent conditions popup for the spell).
     local function AddTalentConditionsRow(spellId, ss, ensureSettings)
         local tcConds = rawget(ss, "talentConditions")
         local tcCount = type(tcConds) == "table" and #tcConds or 0
-        local tcRow = CreateFrame("Button", nil, inner)
-        tcRow:SetHeight(ITEM_H)
-        tcRow:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-        tcRow:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-        tcRow:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-        local tcLbl = tcRow:CreateFontString(nil, "OVERLAY")
-        tcLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        tcLbl:SetPoint("LEFT", 10, 0)
-        tcLbl:SetPoint("RIGHT", -10, 0)
-        tcLbl:SetJustifyH("LEFT")
-        tcLbl:SetWordWrap(false)
-        tcLbl:SetMaxLines(1)
-        tcLbl:SetText(
-            CludesUI.Lf("Talent Conditions: %1$s", tcCount > 0 and tostring(tcCount) or CludesUI.L("None"))
+        PlainMenuRow(
+            dropMenu,
+            inner,
+            mH,
+            ITEM_H,
+            CludesUI.Lf("Talent Conditions: %1$s", tcCount > 0 and tostring(tcCount) or CludesUI.L("None")),
+            { FONT_PATH, 11, GetCDMOptOutline() },
+            { tDimR, tDimG, tDimB, tDimA },
+            hlA,
+            function()
+                CludesUI.HideWidgetTooltip()
+                dropMenu:Hide()
+                mod.ShowCDMTalentConditionsPopup(spellId, tcConds, function(newConds)
+                    ensureSettings()
+                    ss.talentConditions = newConds
+                    if newConds then
+                        mod._cdmAnyTalentCond = true
+                    end
+                    RefreshCDPreview()
+                end)
+            end,
+            {
+                fit = true,
+                tip = CludesUI.L("Show this icon only while the talents you pick are taken, or not taken."),
+            }
         )
-        tcLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-        local tcHl = tcRow:CreateTexture(nil, "ARTWORK")
-        tcHl:SetAllPoints()
-        tcHl:SetColorTexture(1, 1, 1, 0)
-        tcHl:SetAlpha(0)
-        tcRow:SetScript("OnEnter", function()
-            tcLbl:SetTextColor(1, 1, 1, 1)
-            tcHl:SetColorTexture(1, 1, 1, hlA)
-            tcHl:SetAlpha(1)
-            if dropMenu._openSub and dropMenu._openSub:IsShown() then
-                dropMenu._openSub:Hide()
-            end
-            CludesUI.ShowWidgetTooltip(
-                tcRow,
-                CludesUI.L("Show this icon only while the talents you pick are taken, or not taken.")
-            )
-        end)
-        tcRow:SetScript("OnLeave", function()
-            tcLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-            tcHl:SetAlpha(0)
-            CludesUI.HideWidgetTooltip()
-        end)
-        tcRow:SetScript("OnClick", function()
-            CludesUI.HideWidgetTooltip()
-            dropMenu:Hide()
-            mod.ShowCDMTalentConditionsPopup(spellId, tcConds, function(newConds)
-                ensureSettings()
-                ss.talentConditions = newConds
-                if newConds then
-                    mod._cdmAnyTalentCond = true
-                end
-                RefreshCDPreview()
-            end)
-        end)
         mH = mH + ITEM_H
     end
 
@@ -943,8 +928,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             or (mod._myRacialsSet and mod._myRacialsSet[sid2])
                             or (bsX.customSpellIDs and bsX.customSpellIDs[sid2])
                         )
-                            -- Hosted-buff markers are reparented Blizzard buff frames,
-                            -- not preset icons -- never mint cas entries for them.
+                            -- Hosted-buff markers are reparented Blizzard buff frames,
+                            -- not preset icons -- never mint cas entries for them.
                             and not (mod.HostedBuffMarkerToSpell and mod.HostedBuffMarkerToSpell(sid2))
                         if isInj then
                             if mod.SlotIDFromKey(sid2) then
