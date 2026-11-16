@@ -28,64 +28,69 @@ end
 --  Profiles page
 ---------------------------------------------------------------------------
 
--- Red warning string from a decoded payload's meta vs the current client; nil when nothing mismatches. skipScale = user already accepted
--- the scale-match popup, so omit the UI-scale line (resolution line still shows).
-local function BuildScaleWarning(payload, skipScale)
-    if not payload or not payload.meta then
-        return nil
-    end
-    local m = payload.meta
-    local warnings = {}
-    local myScale = CludesUIDB and CludesUIDB.ppUIScale or (UIParent and UIParent:GetScale()) or 1
-    local expScale = m.cuiScale or m.uiScale
-    if not skipScale and expScale and math.abs(myScale - expScale) > 0.02 then
-        local expPct = math.floor(expScale * 100 + 0.5)
-        local myPct = math.floor(myScale * 100 + 0.5)
-        warnings[#warnings + 1] =
-            CludesUI.Lf("UI Scale Issue: Profile was made at %1$d%%, yours is %2$d%%", expPct, myPct)
-    end
-    local sw, sh = GetPhysicalScreenSize()
-    local mySW = sw and math.floor(sw) or 0
-    local mySH = sh and math.floor(sh) or 0
-    local expSW = m.screenW or 0
-    local expSH = m.screenH or 0
-    if expSW > 0 and expSH > 0 and (mySW ~= expSW or mySH ~= expSH) then
-        warnings[#warnings + 1] = CludesUI.Lf(
-            "Resolution Issue: Profile was made at %1$dx%2$d, yours is %3$dx%4$d",
-            expSW,
-            expSH,
-            mySW,
-            mySH
-        )
-    end
-    if #warnings == 0 then
-        return nil
-    end
-    return CludesUI.L("WARNING: Frame positions may be off.") .. "\n" .. table.concat(warnings, "\n")
+-- The UI scale an imported string is measured against: the player's pixel
+-- perfect scale when they set one, else the game's. Two scales count as the
+-- same within 2%.
+local function MyScale()
+    return CludesUIDB and CludesUIDB.ppUIScale or (UIParent and UIParent:GetScale()) or 1
+end
+local function Pct(scale)
+    return math.floor(scale * 100 + 0.5)
+end
+local function ScalesDiffer(a, b)
+    return math.abs(a - b) > 0.02
 end
 
--- Between the string/preset page and the import options page: if the string carries a different UI scale, ask ONCE whether to adopt it.
--- cont(applyScale) ALWAYS runs -- true = apply the imported scale (options page then omits its UI-scale warning), false = keep the user's
--- own. ShowConfirmPopup routes ESC/click-outside to onCancel, so the page transition can never strand.
+-- The red warning for a decoded string made on a different UI scale or
+-- resolution (nil when both match). skipScale: the player already took the
+-- string's scale, so only the resolution can still be off.
+local function BuildScaleWarning(payload, skipScale)
+    local meta = payload and payload.meta
+    if not meta then
+        return nil
+    end
+    local lines = {}
+    local mine, theirs = MyScale(), meta.cuiScale or meta.uiScale
+    if not skipScale and theirs and ScalesDiffer(mine, theirs) then
+        lines[#lines + 1] =
+            CludesUI.Lf("UI Scale Issue: Profile was made at %1$d%%, yours is %2$d%%", Pct(theirs), Pct(mine))
+    end
+    local w, h = GetPhysicalScreenSize()
+    w, h = w and math.floor(w) or 0, h and math.floor(h) or 0
+    local madeW, madeH = meta.screenW or 0, meta.screenH or 0
+    if madeW > 0 and madeH > 0 and (w ~= madeW or h ~= madeH) then
+        lines[#lines + 1] = CludesUI.Lf(
+            "Resolution Issue: Profile was made at %1$dx%2$d, yours is %3$dx%4$d",
+            madeW,
+            madeH,
+            w,
+            h
+        )
+    end
+    if #lines == 0 then
+        return nil
+    end
+    return CludesUI.L("WARNING: Frame positions may be off.") .. "\n" .. table.concat(lines, "\n")
+end
+
+-- Between choosing a string or preset and the import options: a string that
+-- carries another UI scale asks once whether to take it. cont(takeScale)
+-- always runs (Escape and a click outside count as Keep Mine), so the page
+-- change can never stall; with true the options page drops its scale line.
 local function MaybeConfirmUIScale(payload, cont)
-    local expScale = payload
-            and payload.data
-            and type(payload.data.uiScale) == "number"
-            and payload.data.uiScale
-        or nil
-    local myScale = CludesUIDB and CludesUIDB.ppUIScale or (UIParent and UIParent:GetScale()) or 1
-    if not expScale or math.abs(myScale - expScale) <= 0.02 then
+    local data = payload and payload.data
+    local theirs = data and type(data.uiScale) == "number" and data.uiScale or nil
+    local mine = MyScale()
+    if not theirs or not ScalesDiffer(mine, theirs) then
         cont(false)
         return
     end
-    local expPct = math.floor(expScale * 100 + 0.5)
-    local myPct = math.floor(myScale * 100 + 0.5)
     CludesUI:ShowConfirmPopup({
         title = CludesUI.L("UI Scale Mismatch"),
         message = CludesUI.Lf(
             "This profile was made at %1$d%% UI scale; yours is %2$d%%. Change your UI scale to match the imported profile? This will show all profiles at this scale as UI Scale is not a per-profile setting, but can be changed at any time back to your original value.",
-            expPct,
-            myPct
+            Pct(theirs),
+            Pct(mine)
         ),
         confirmText = CludesUI.L("Match Scale"),
         cancelText = CludesUI.L("Keep Mine"),
@@ -102,21 +107,35 @@ end
 local SIDE_PAD, ROW_H_A, CHK_SZ, STATUS_W = 26, 48, 18, 70
 local INCLUDE_CENTER_X = -(SIDE_PAD + STATUS_W + 30 + CHK_SZ / 2)
 
+-- A texture drawn at its exact size (no snapping to the pixel grid).
+local function Unsnapped(tex)
+    if tex.SetSnapToPixelGrid then
+        tex:SetSnapToPixelGrid(false)
+        tex:SetTexelSnappingBias(0)
+    end
+end
+
+-- A module list row's look per state: name and description alpha, the tick,
+-- the box's alpha. Included rows also tint the box's border green.
+local ROW_LOOK = {
+    blocked = { name = 0.30, desc = 0.15, tick = false, box = 0.3 },
+    included = { name = 0.9, desc = 0.30, tick = true, box = 1 },
+    skipped = { name = 0.50, desc = 0.20, tick = false, box = 1 },
+}
+
 -- One module-list checkbox row. o: active (clickable), inactiveText +
 -- inactiveColor {r,g,b,a}, visuals (repaint list), onToggle(apply) after
 -- the value flips, linked() -> members, own key, display map, linkedTip(list),
 -- blockedTip (hover text on inactive rows; nil = silent).
 local function BuildAddonListRow(scrollChild, i, item, totalW, o)
     local EG = CludesUI.CLUDES_GREEN
-    local READY_R, READY_G, READY_B = 0.196, 0.737, 0.325
     local rowFrame = CreateFrame("Frame", nil, scrollChild)
     rowFrame:SetSize(totalW, ROW_H_A)
     rowFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -(i - 1) * ROW_H_A)
-
-    local rowAlpha = (i % 2 == 0) and 0.12 or 0.06
+    -- Alternate rows a shade darker.
     local rowBg = rowFrame:CreateTexture(nil, "BACKGROUND")
     rowBg:SetAllPoints()
-    rowBg:SetColorTexture(0, 0, 0, rowAlpha)
+    rowBg:SetColorTexture(0, 0, 0, (i % 2 == 0) and 0.12 or 0.06)
 
     local nameFs = CludesUI.MakeFont(rowFrame, 13, nil, 1, 1, 1, 0.9)
     nameFs:SetPoint("TOPLEFT", rowFrame, "TOPLEFT", SIDE_PAD, -10)
@@ -136,55 +155,39 @@ local function BuildAddonListRow(scrollChild, i, item, totalW, o)
     statusFs:SetPoint("RIGHT", rowFrame, "RIGHT", -SIDE_PAD, 0)
     statusFs:SetJustifyH("RIGHT")
 
-    -- Checkbox (centered under the Include column header)
-    local chkFrame = CreateFrame("Frame", nil, rowFrame)
-    chkFrame:SetSize(CHK_SZ, CHK_SZ)
-    chkFrame:SetPoint("CENTER", rowFrame, "RIGHT", INCLUDE_CENTER_X, 0)
-
-    local chkBg = chkFrame:CreateTexture(nil, "BACKGROUND")
-    chkBg:SetAllPoints()
-    chkBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-    if chkBg.SetSnapToPixelGrid then
-        chkBg:SetSnapToPixelGrid(false)
-        chkBg:SetTexelSnappingBias(0)
-    end
-
-    local chkBrd = CludesUI.MakeRoundedBorder(chkFrame, 0.224, 0.215, 0.207, 0.6, chkBg)
-
-    local chkMark = chkFrame:CreateTexture(nil, "ARTWORK")
-    chkMark:SetPoint("TOPLEFT", chkFrame, "TOPLEFT", 3, -3)
-    chkMark:SetPoint("BOTTOMRIGHT", chkFrame, "BOTTOMRIGHT", -3, 3)
-    chkMark:SetColorTexture(EG.r, EG.g, EG.b, 1)
-    CludesUI.RoundBody(chkFrame, chkMark, 1)
-    if chkMark.SetSnapToPixelGrid then
-        chkMark:SetSnapToPixelGrid(false)
-        chkMark:SetTexelSnappingBias(0)
-    end
+    -- The box sits under the Include column header.
+    local box = CreateFrame("Frame", nil, rowFrame)
+    box:SetSize(CHK_SZ, CHK_SZ)
+    box:SetPoint("CENTER", rowFrame, "RIGHT", INCLUDE_CENTER_X, 0)
+    local boxBg = box:CreateTexture(nil, "BACKGROUND")
+    boxBg:SetAllPoints()
+    boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
+    Unsnapped(boxBg)
+    local boxBorder = CludesUI.MakeRoundedBorder(box, 0.224, 0.215, 0.207, 0.6, boxBg)
+    local tick = box:CreateTexture(nil, "ARTWORK")
+    tick:SetPoint("TOPLEFT", box, "TOPLEFT", 3, -3)
+    tick:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -3, 3)
+    tick:SetColorTexture(EG.r, EG.g, EG.b, 1)
+    CludesUI.RoundBody(box, tick, 1)
+    Unsnapped(tick)
 
     local function ApplyRowVisual()
-        local on = item.getVal()
-        if not o.active then
-            nameFs:SetAlpha(0.30)
-            descFs:SetAlpha(0.15)
-            chkMark:Hide()
-            chkBg:SetAlpha(0.3)
+        local state = not o.active and "blocked" or (item.getVal() and "included" or "skipped")
+        local look = ROW_LOOK[state]
+        nameFs:SetAlpha(look.name)
+        descFs:SetAlpha(look.desc)
+        tick:SetShown(look.tick)
+        boxBg:SetAlpha(look.box)
+        if state == "blocked" then
             local c = o.inactiveColor
             statusFs:SetText(o.inactiveText)
             statusFs:SetTextColor(c[1], c[2], c[3], c[4])
-        elseif on then
-            nameFs:SetAlpha(0.9)
-            descFs:SetAlpha(0.30)
-            chkMark:Show()
-            chkBg:SetAlpha(1)
-            chkBrd:SetColor(EG.r, EG.g, EG.b, 0.15)
+        elseif state == "included" then
+            boxBorder:SetColor(EG.r, EG.g, EG.b, 0.15)
             statusFs:SetText(CludesUI.L("Ready"))
-            statusFs:SetTextColor(READY_R, READY_G, READY_B, 1)
+            statusFs:SetTextColor(0.196, 0.737, 0.325, 1)
         else
-            nameFs:SetAlpha(0.50)
-            descFs:SetAlpha(0.20)
-            chkMark:Hide()
-            chkBg:SetAlpha(1)
-            chkBrd:SetColor(0.224, 0.215, 0.207, 0.6)
+            boxBorder:SetColor(0.224, 0.215, 0.207, 0.6)
             statusFs:SetText(CludesUI.L("Skipped"))
             statusFs:SetTextColor(1, 1, 1, 0.35)
         end
@@ -197,96 +200,98 @@ local function BuildAddonListRow(scrollChild, i, item, totalW, o)
     hoverTex:SetColorTexture(1, 1, 1, 0.05)
     hoverTex:Hide()
 
-    if o.active then
-        local clickBtn = CreateFrame("Button", nil, rowFrame)
-        clickBtn:SetAllPoints(rowFrame)
-        clickBtn:SetFrameLevel(rowFrame:GetFrameLevel() + 2)
-        clickBtn:SetScript("OnClick", function()
-            item.setVal(not item.getVal())
-            o.onToggle(ApplyRowVisual)
-        end)
-        clickBtn:SetScript("OnEnter", function()
-            hoverTex:Show()
-            if not item.getVal() then
-                nameFs:SetAlpha(0.75)
-            end
-            -- Linked-modules tooltip; suppressed while layout is off, since nothing couples then.
-            local members, own, display = o.linked()
-            if members then
-                local names = {}
-                for f in pairs(members) do
-                    if f ~= own then
-                        names[#names + 1] = CludesUI.L(display[f] or f)
-                    end
-                end
-                if #names > 0 then
-                    table.sort(names)
-                    CludesUI.ShowWidgetTooltip(rowFrame, o.linkedTip(table.concat(names, ", ")))
-                end
-            end
-        end)
-        clickBtn:SetScript("OnLeave", function()
-            hoverTex:Hide()
-            if not item.getVal() then
-                nameFs:SetAlpha(0.50)
-            end
-            CludesUI.HideWidgetTooltip()
-        end)
-    else
+    if not o.active then
+        -- Inactive: the row swallows the mouse, and explains itself if it can.
         local blockFrame = CreateFrame("Frame", nil, rowFrame)
         blockFrame:SetAllPoints()
         blockFrame:SetFrameLevel(rowFrame:GetFrameLevel() + 5)
         blockFrame:EnableMouse(true)
-        if o.blockedTip then
-            blockFrame:SetScript("OnEnter", function()
+        local tip = o.blockedTip
+        blockFrame:SetScript("OnEnter", function()
+            if tip then
                 hoverTex:Show()
-                CludesUI.ShowWidgetTooltip(rowFrame, o.blockedTip)
-            end)
-            blockFrame:SetScript("OnLeave", function()
+                CludesUI.ShowWidgetTooltip(rowFrame, tip)
+            end
+        end)
+        blockFrame:SetScript("OnLeave", function()
+            if tip then
                 hoverTex:Hide()
                 CludesUI.HideWidgetTooltip()
-            end)
-        else
-            blockFrame:SetScript("OnEnter", function() end)
-            blockFrame:SetScript("OnLeave", function() end)
-        end
+            end
+        end)
+        return
     end
+    local clickBtn = CreateFrame("Button", nil, rowFrame)
+    clickBtn:SetAllPoints(rowFrame)
+    clickBtn:SetFrameLevel(rowFrame:GetFrameLevel() + 2)
+    clickBtn:SetScript("OnClick", function()
+        item.setVal(not item.getVal())
+        o.onToggle(ApplyRowVisual)
+    end)
+    clickBtn:SetScript("OnEnter", function()
+        hoverTex:Show()
+        if not item.getVal() then
+            nameFs:SetAlpha(0.75)
+        end
+        -- The modules this one carries along (nothing couples while layout is off).
+        local members, own, display = o.linked()
+        if not members then
+            return
+        end
+        local names = {}
+        for folder in pairs(members) do
+            if folder ~= own then
+                names[#names + 1] = CludesUI.L(display[folder] or folder)
+            end
+        end
+        if #names > 0 then
+            table.sort(names)
+            CludesUI.ShowWidgetTooltip(rowFrame, o.linkedTip(table.concat(names, ", ")))
+        end
+    end)
+    clickBtn:SetScript("OnLeave", function()
+        hoverTex:Hide()
+        if not item.getVal() then
+            nameFs:SetAlpha(0.50)
+        end
+        CludesUI.HideWidgetTooltip()
+    end)
 end
 
 -- Done-style button hover: label and border alpha fade 0.7 -> 1 over 0.1s.
--- Returns reset(), which snaps the fade state back to idle.
+-- Returns reset(), which snaps the fade back to idle.
 local function MakeAccentFade(btn, lbl, brd)
     local EG = CludesUI.CLUDES_GREEN
     local lerp = CludesUI.lerp
-    local progress, target = 0, 0
     local FADE = 0.1
-    local function Apply(t)
-        lbl:SetTextColor(EG.r, EG.g, EG.b, lerp(0.7, 1, t))
-        brd:SetColor(EG.r, EG.g, EG.b, lerp(0.7, 1, t))
+    local t, goal = 0, 0
+    local function Paint(at)
+        local a = lerp(0.7, 1, at)
+        lbl:SetTextColor(EG.r, EG.g, EG.b, a)
+        brd:SetColor(EG.r, EG.g, EG.b, a)
     end
-    local function OnUpdate(self, elapsed)
-        local dir = (target == 1) and 1 or -1
-        progress = progress + dir * (elapsed / FADE)
-        if (dir == 1 and progress >= 1) or (dir == -1 and progress <= 0) then
-            progress = target
+    local function Step(self, elapsed)
+        local rising = goal == 1
+        t = t + (rising and 1 or -1) * (elapsed / FADE)
+        if (rising and t >= 1) or (not rising and t <= 0) then
+            t = goal
             self:SetScript("OnUpdate", nil)
         end
-        Apply(progress)
+        Paint(t)
     end
-    btn:SetScript("OnEnter", function(self)
-        target = 1
-        self:SetScript("OnUpdate", OnUpdate)
-    end)
-    btn:SetScript("OnLeave", function(self)
-        target = 0
-        self:SetScript("OnUpdate", OnUpdate)
-    end)
+    local function Toward(g)
+        return function(self)
+            goal = g
+            self:SetScript("OnUpdate", Step)
+        end
+    end
+    btn:SetScript("OnEnter", Toward(1))
+    btn:SetScript("OnLeave", Toward(0))
     return function()
-        progress, target = 0, 0
-        Apply(0)
+        t, goal = 0, 0
+        Paint(0)
     end
 end
-
 -- A profile's keybind popup: built on its first open and kept across page
 -- builds; each open points it at that profile (ShowProfileKeybindPopup).
 local profileKeybindPopup
