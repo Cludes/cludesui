@@ -64,6 +64,26 @@ initFrame:SetScript("OnEvent", function(self)
         return cover
     end
 
+    -- The shell of the header's kept menus (bar, add block, segment): a
+    -- hidden, screen-clamped panel over the options window, in the
+    -- dropdown's background and border.
+    local function MenuShell(width)
+        local DDS = CludesUI.DD_STYLE
+        local menu = CreateFrame("Frame", nil, UIParent)
+        menu:SetFrameStrata("FULLSCREEN_DIALOG")
+        menu:SetFrameLevel(300)
+        menu:SetClampedToScreen(true)
+        if width then
+            menu:SetWidth(width)
+        end
+        menu:Hide()
+        local backdrop = menu:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(DDS.BG_R, DDS.BG_G, DDS.BG_B, DDS.BG_HA)
+        CludesUI.MakeRoundedBorder(menu, 1, 1, 1, DDS.BRD_A, backdrop, nil, true)
+        return menu
+    end
+
     -- The live form: dimmed and covered while isOn() is false, at liveAlpha()
     -- (default full) while it is true, re-read on every widget refresh.
     local function GatedSwatch(swatch, updateSwatch, gateName, level, isOn, liveAlpha)
@@ -548,15 +568,7 @@ initFrame:SetScript("OnEvent", function(self)
                     dropMenu:Hide()
                 end
             else
-                dropMenu = CreateFrame("Frame", nil, UIParent)
-                dropMenu:SetFrameStrata("FULLSCREEN_DIALOG")
-                dropMenu:SetFrameLevel(300)
-                dropMenu:SetClampedToScreen(true)
-                dropMenu:Hide()
-                local backdrop = dropMenu:CreateTexture(nil, "BACKGROUND")
-                backdrop:SetAllPoints()
-                backdrop:SetColorTexture(DDS.BG_R, DDS.BG_G, DDS.BG_B, DDS.BG_HA)
-                CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, DDS.BRD_A, backdrop, nil, true)
+                dropMenu = MenuShell()
                 dropMenu._rows = {}
 
                 -- One bar row; its bar and selected state are set per open
@@ -1600,16 +1612,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             else
                 local ROW_H2 = 24
-                dropMenu = CreateFrame("Frame", nil, UIParent)
-                dropMenu:SetFrameStrata("FULLSCREEN_DIALOG")
-                dropMenu:SetFrameLevel(300)
-                dropMenu:SetClampedToScreen(true)
-                dropMenu:SetWidth(150)
-                dropMenu:Hide()
-                local backdrop = dropMenu:CreateTexture(nil, "BACKGROUND")
-                backdrop:SetAllPoints()
-                backdrop:SetColorTexture(DDS.BG_R, DDS.BG_G, DDS.BG_B, DDS.BG_HA)
-                CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, DDS.BRD_A, backdrop, nil, true)
+                dropMenu = MenuShell(150)
                 local rowY = -3
                 local function AddRow(textValue, onClick)
                     local row = CreateFrame("Button", nil, dropMenu)
@@ -1766,16 +1769,7 @@ initFrame:SetScript("OnEvent", function(self)
             local ITEM_H = 24
             local hlA = DDS.ITEM_HL_A
             if not dropMenu then
-                dropMenu = CreateFrame("Frame", nil, UIParent)
-                dropMenu:SetFrameStrata("FULLSCREEN_DIALOG")
-                dropMenu:SetFrameLevel(300)
-                dropMenu:SetClampedToScreen(true)
-                dropMenu:SetWidth(190)
-                dropMenu:Hide()
-                local backdrop = dropMenu:CreateTexture(nil, "BACKGROUND")
-                backdrop:SetAllPoints()
-                backdrop:SetColorTexture(DDS.BG_R, DDS.BG_G, DDS.BG_B, DDS.BG_HA)
-                CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, DDS.BRD_A, backdrop, nil, true)
+                dropMenu = MenuShell(190)
                 dropMenu._rows = {}
                 local mH = 4
                 for _, t in ipairs(mod.OfferedBlockTypes()) do
