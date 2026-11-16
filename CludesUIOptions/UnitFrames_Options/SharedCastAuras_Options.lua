@@ -501,58 +501,15 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
     -- Sync icon: Cast Bar Height (right region)
     if not CludesUI._prebuilding then
         local rgn = sharedCastRow1._rightRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Cast Bar Height to all Frames",
-            onClick = function()
-                local v = GetCastbarHeight()
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if key == "player" then
-                        UNIT_DB_MAP[key]().playerCastbarHeight = v
-                    else
-                        UNIT_DB_MAP[key]().castbarHeight = v
-                    end
-                end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
+        mod.UFO_UnitSync(rgn, "Cast Bar Height", {
+            self = true,
+            copy = function(t, _, unit)
+                t[unit == "player" and "playerCastbarHeight" or "castbarHeight"] = GetCastbarHeight()
             end,
-            isSynced = function()
-                local v = GetCastbarHeight()
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    local kv
-                    if key == "player" then
-                        kv = UNIT_DB_MAP[key]().playerCastbarHeight or 20
-                    else
-                        kv = UNIT_DB_MAP[key]().castbarHeight or 20
-                    end
-                    if kv ~= v then
-                        return false
-                    end
-                end
-                return true
+            same = function(t, _, unit)
+                return (t[unit == "player" and "playerCastbarHeight" or "castbarHeight"] or 20)
+                    == GetCastbarHeight()
             end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    local v = GetCastbarHeight()
-                    for _, key in ipairs(checkedKeys) do
-                        if key == "player" then
-                            UNIT_DB_MAP[key]().playerCastbarHeight = v
-                        else
-                            UNIT_DB_MAP[key]().castbarHeight = v
-                        end
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-            },
         })
     end
 
@@ -612,64 +569,18 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         -- Sync icon: Show Icon (left)
         if not CludesUI._prebuilding then
             local rgn = castRow2._leftRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Show Icon to all Frames",
-                onClick = function()
-                    local v = GetShowIcon()
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if key == "player" then
-                            UNIT_DB_MAP[key]().showPlayerCastIcon = v
-                        else
-                            UNIT_DB_MAP[key]().showCastIcon = v
-                        end
+            mod.UFO_UnitSync(rgn, "Show Icon", {
+                self = true,
+                copy = function(t, _, unit)
+                    t[unit == "player" and "showPlayerCastIcon" or "showCastIcon"] = GetShowIcon()
+                end,
+                same = function(t, _, unit)
+                    local v = t[unit == "player" and "showPlayerCastIcon" or "showCastIcon"]
+                    if v == nil then
+                        v = true
                     end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
+                    return v == GetShowIcon()
                 end,
-                isSynced = function()
-                    local v = GetShowIcon()
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        local kv
-                        if key == "player" then
-                            kv = UNIT_DB_MAP[key]().showPlayerCastIcon
-                            if kv == nil then
-                                kv = true
-                            end
-                        else
-                            kv = UNIT_DB_MAP[key]().showCastIcon
-                            if kv == nil then
-                                kv = true
-                            end
-                        end
-                        if kv ~= v then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local v = GetShowIcon()
-                        for _, key in ipairs(checkedKeys) do
-                            if key == "player" then
-                                UNIT_DB_MAP[key]().showPlayerCastIcon = v
-                            else
-                                UNIT_DB_MAP[key]().showCastIcon = v
-                            end
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
             })
         end
         -- Inline cog on Show Icon: "Icon Border", "Make Icon Part of the Bar",

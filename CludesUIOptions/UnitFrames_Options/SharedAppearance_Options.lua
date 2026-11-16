@@ -34,7 +34,9 @@ end
 -- copies the selected unit's setting to every main frame, or to the frames
 -- ticked in its menu, and reads as synced while they all agree.
 -- opts.copy(t, from) writes the setting from the selected unit's table into
--- another unit's t; opts.same(t, from) says whether t already agrees. A
+-- another unit's t; opts.same(t, from) says whether t already agrees (both
+-- get t's unit token third, for a setting stored under another key on one
+-- frame). A
 -- single value needs neither: opts.key, unset reading as opts.default (a
 -- function for a default that is looked up). opts.self also writes the
 -- selected unit itself (pinning its default). opts.units narrows the frames
@@ -74,7 +76,7 @@ function mod.UFO_UnitSync(rgn, label, opts)
             local from = unitDB[self]()
             for _, unit in ipairs(list) do
                 if includeSelf or unit ~= self then
-                    copy(unitDB[unit](), from)
+                    copy(unitDB[unit](), from, unit)
                 end
             end
             if opts.after then
@@ -93,7 +95,7 @@ function mod.UFO_UnitSync(rgn, label, opts)
         isSynced = opts.isSynced or function()
             local from = unitDB[state.selectedUnit]()
             for _, unit in ipairs(units) do
-                if not same(unitDB[unit](), from) then
+                if not same(unitDB[unit](), from, unit) then
                     return false
                 end
             end
