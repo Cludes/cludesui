@@ -224,3 +224,44 @@ do
         if popup then SNAP("custom buff popup", popup) end
     end
 end
+
+-- The stack threshold editor: the first bar's Enable Stack Threshold cog
+-- (found by its tooltip), opened, and with several thresholds on.
+local function OpenThresholdEditor(label)
+    if mod._TBBSelectBar then mod._TBBSelectBar(#bars - 2) end
+    Rebuild()
+    -- The panel's tooltip frame (TOOLTIP strata, level 200, on UIParent) holds the shown text.
+    local function TipText()
+        for _, c in ipairs({ UIParent:GetChildren() }) do
+            local text = rawget(c, "text")
+            if c.GetFrameStrata and c:GetFrameStrata() == "TOOLTIP" and c:GetFrameLevel() == 200 and text then
+                return text["\0v"] and text["\0v"].Text
+            end
+        end
+    end
+    local tipShown
+    local cog
+    for _, b in ipairs(Find(CUI._scrollFrame, function(f)
+        return f["\0kind"] == "Button" and f:IsVisible() and f["\0scripts"].OnEnter and f["\0scripts"].OnClick
+    end)) do
+        tipShown = nil
+        pcall(b["\0scripts"].OnEnter, b)
+        tipShown = TipText()
+        if type(tipShown) == "string" and tipShown:find("several stack counts", 1, true) then cog = cog or b end
+        if b["\0scripts"].OnLeave then pcall(b["\0scripts"].OnLeave, b) end
+    end
+    OUT:write("== threshold cog " .. tostring(cog ~= nil) .. "\n")
+    if not cog then return end
+    cog["\0scripts"].OnClick(cog, "LeftButton")
+    for _, c in ipairs({ UIParent:GetChildren() }) do
+        if c:IsShown() and c.GetFrameStrata and c:GetFrameStrata() == "FULLSCREEN_DIALOG" and c:GetFrameLevel() == 260 then
+            SNAP(label, c)
+        end
+    end
+end
+OpenThresholdEditor("threshold editor")
+if b1 then
+    b1.stackThresholdMulti = true
+    b1.stackThresholds = { { value = 2, r = 1, g = 0.5, b = 0, a = 1 }, { value = 4, r = 0, g = 1, b = 0, a = 1 } }
+    OpenThresholdEditor("threshold editor multi")
+end

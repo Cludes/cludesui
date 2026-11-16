@@ -1334,15 +1334,146 @@ local function InitBuffBarsPage(
     end
 
     local function CurrentStackThreshCfg()
-        if not _stGetCfg then
-            return nil
+        return _stGetCfg and _stGetCfg() or nil
+    end
+    -- The bar being edited, its threshold list and entry idx of it (each nil when absent).
+    local function ThresholdEntry(idx)
+        local conf = CurrentStackThreshCfg()
+        local entries = conf and conf.stackThresholds
+        return conf, entries, entries and entries[idx]
+    end
+    -- An edit reaches the bar through the caller's refresh.
+    local function ThresholdsChanged()
+        if _stRefreshFn then
+            _stRefreshFn()
         end
-        return _stGetCfg()
     end
 
     local function SortStackThresholds(entries)
         table.sort(entries, function(a, b)
             return (a.value or 0) < (b.value or 0)
+        end)
+    end
+
+    -- The editor while shown: a screen-wide catcher under it takes a click
+    -- outside (as does any press off it, the panel and an open dropdown list),
+    -- and entering combat closes it.
+    local function WireDismiss(clickCatcher)
+        stPopup:SetScript("OnEvent", function(self, evt)
+            if evt == "PLAYER_REGEN_DISABLED" then
+                self:Hide()
+            end
+        end)
+        stPopup:SetScript("OnShow", function(self)
+            clickCatcher:Show()
+            self:RegisterEvent("PLAYER_REGEN_DISABLED")
+            self:SetScript("OnUpdate", function(p)
+                if not IsMouseButtonDown("LeftButton") then
+                    return
+                end
+                local panel, list = CludesUI._mainFrame, CludesUI._openDropdownMenu
+                if
+                    not p:IsMouseOver()
+                    and not (panel and panel:IsMouseOver())
+                    and not (list and list:IsShown() and list:IsMouseOver())
+                then
+                    p:Hide()
+                end
+            end)
+        end)
+        stPopup:SetScript("OnHide", function(self)
+            clickCatcher:Hide()
+            self:UnregisterEvent("PLAYER_REGEN_DISABLED")
+            self:SetScript("OnUpdate", nil)
+        end)
+    end
+
+    -- "Use Multiple Thresholds" (label left, toggle right), as the band editor has it.
+    local function BuildMultiRow()
+        _stMultiRow = CreateFrame("Frame", nil, stPopup)
+        _stMultiRow:SetFrameLevel(stPopup:GetFrameLevel() + 3)
+        Pix.Height(_stMultiRow, ST_ROW_H)
+        local label = CludesUI.MakeFont(_stMultiRow, 12, nil, 1, 1, 1)
+        label:SetAlpha(0.6)
+        label:SetPoint("LEFT", _stMultiRow, "LEFT", 0, 0)
+        label:SetText(CludesUI.L("Use Multiple Thresholds"))
+        local toggle, _
+        toggle, _, _stMultiSnap = CludesUI.BuildToggleControl(
+            _stMultiRow,
+            _stMultiRow:GetFrameLevel() + 3,
+            function()
+                local conf = CurrentStackThreshCfg()
+                return conf and conf.stackThresholdMulti
+            end,
+            function(v)
+                local conf = CurrentStackThreshCfg()
+                if conf then
+                    conf.stackThresholdMulti = v and true or false
+                    ThresholdsChanged()
+                    RefreshStackThreshEditor()
+                    CludesUI:RefreshPage()
+                end
+            end,
+            { sizeRatio = 0.95 }
+        )
+        toggle:SetPoint("RIGHT", _stMultiRow, "RIGHT", 0, 0)
+        local hover = CreateFrame("Frame", nil, _stMultiRow)
+        hover:SetAllPoints(label)
+        hover:EnableMouse(true)
+        hover:SetScript("OnEnter", function(self)
+            CludesUI.ShowWidgetTooltip(self, StackThreshHelpTip())
+        end)
+        hover:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
+    end
+
+    -- "+ Add Threshold": a new stop one above the last (5 for the first), up to the cap.
+    local function BuildAddButton()
+        _stAddBtn = CreateFrame("Button", nil, stPopup)
+        Pix.Size(_stAddBtn, ST_POPUP_W - ST_PAD * 2, 26)
+        _stAddBtn:SetFrameLevel(stPopup:GetFrameLevel() + 3)
+        local bg = CludesUI.SolidTex(_stAddBtn, "BACKGROUND", 0.050, 0.058, 0.068, 0.92)
+        bg:SetAllPoints()
+        _stAddBtn._border = CludesUI.MakeRoundedBorder(_stAddBtn, 1, 1, 1, 0.4, bg)
+        _stAddLbl = CludesUI.MakeFont(_stAddBtn, 12, nil, 1, 1, 1)
+        _stAddLbl:SetAlpha(0.5)
+        _stAddLbl:SetPoint("CENTER")
+        _stAddLbl:SetText(CludesUI.L("+ Add Threshold"))
+        local function Lit(self, on)
+            _stAddLbl:SetAlpha(on and 0.7 or 0.5)
+            if self._border and self._border.SetColor then
+                self._border:SetColor(1, 1, 1, on and 0.6 or 0.4)
+            end
+        end
+        _stAddBtn:SetScript("OnEnter", function(self)
+            local _, entries = ThresholdEntry()
+            if entries and #entries >= STACK_THRESH_MAX then
+                CludesUI.ShowWidgetTooltip(self, StackThreshAtCapTip())
+                return
+            end
+            Lit(self, true)
+        end)
+        _stAddBtn:SetScript("OnLeave", function(self)
+            CludesUI.HideWidgetTooltip()
+            Lit(self, false)
+        end)
+        _stAddBtn:SetScript("OnClick", function()
+            local conf = CurrentStackThreshCfg()
+            if not conf then
+                return
+            end
+            conf.stackThresholds = conf.stackThresholds or {}
+            local entries = conf.stackThresholds
+            if #entries >= STACK_THRESH_MAX then
+                return
+            end
+            local last = entries[#entries]
+            local value = last and math.min(100, (last.value or 0) + 1) or 5
+            entries[#entries + 1] = { value = value, r = ST_DEF_R, g = ST_DEF_G, b = ST_DEF_B, a = ST_DEF_A }
+            SortStackThresholds(entries)
+            ThresholdsChanged()
+            RefreshStackThreshEditor()
         end)
     end
 
@@ -1355,7 +1486,6 @@ local function InitBuffBarsPage(
         stPopup:SetScale(0.9)
         stPopup:Hide()
         Pix.Size(stPopup, ST_POPUP_W, 200)
-
         local backdrop = stPopup:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0.062, 0.070, 0.082, 0.97)
@@ -1369,195 +1499,66 @@ local function InitBuffBarsPage(
             stPopup:Hide()
         end)
         clickCatcher:Hide()
-        -- Close on entering combat
-        stPopup:SetScript("OnEvent", function(self, evt)
-            if evt == "PLAYER_REGEN_DISABLED" then
-                self:Hide()
-            end
-        end)
-        stPopup:SetScript("OnShow", function(self)
-            clickCatcher:Show()
-            self:RegisterEvent("PLAYER_REGEN_DISABLED")
-            self:SetScript("OnUpdate", function(p)
-                if IsMouseButtonDown("LeftButton") then
-                    local mf = CludesUI._mainFrame
-                    local dm = CludesUI._openDropdownMenu
-                    if
-                        not p:IsMouseOver()
-                        and not (mf and mf:IsMouseOver())
-                        and not (dm and dm:IsShown() and dm:IsMouseOver())
-                    then
-                        p:Hide()
-                    end
-                end
-            end)
-        end)
-        stPopup:SetScript("OnHide", function(self)
-            clickCatcher:Hide()
-            self:UnregisterEvent("PLAYER_REGEN_DISABLED")
-            self:SetScript("OnUpdate", nil)
-        end)
+        WireDismiss(clickCatcher)
 
-        local titleFS = CludesUI.MakeFont(stPopup, 13, nil, 1, 1, 1)
-        titleFS:SetAlpha(0.6)
-        titleFS:SetPoint("TOP", stPopup, "TOP", 0, -ST_PAD)
-        titleFS:SetText(CludesUI.L("Stack Thresholds"))
-
-        -- Row: multi opt-in (label left, toggle right) -- matches the band editor.
-        _stMultiRow = CreateFrame("Frame", nil, stPopup)
-        _stMultiRow:SetFrameLevel(stPopup:GetFrameLevel() + 3)
-        Pix.Height(_stMultiRow, ST_ROW_H)
-        local mlbl = CludesUI.MakeFont(_stMultiRow, 12, nil, 1, 1, 1)
-        mlbl:SetAlpha(0.6)
-        mlbl:SetPoint("LEFT", _stMultiRow, "LEFT", 0, 0)
-        mlbl:SetText(CludesUI.L("Use Multiple Thresholds"))
-        local multiToggle, _
-        multiToggle, _, _stMultiSnap = CludesUI.BuildToggleControl(
-            _stMultiRow,
-            _stMultiRow:GetFrameLevel() + 3,
-            function()
-                local conf = CurrentStackThreshCfg()
-                return conf and conf.stackThresholdMulti
-            end,
-            function(v)
-                local conf = CurrentStackThreshCfg()
-                if not conf then
-                    return
-                end
-                conf.stackThresholdMulti = v and true or false
-                if _stRefreshFn then
-                    _stRefreshFn()
-                end
-                RefreshStackThreshEditor()
-                CludesUI:RefreshPage()
-            end,
-            { sizeRatio = 0.95 }
-        )
-        multiToggle:SetPoint("RIGHT", _stMultiRow, "RIGHT", 0, 0)
-        local multiHit = CreateFrame("Frame", nil, _stMultiRow)
-        multiHit:SetAllPoints(mlbl)
-        multiHit:EnableMouse(true)
-        multiHit:SetScript("OnEnter", function(self)
-            CludesUI.ShowWidgetTooltip(self, StackThreshHelpTip())
-        end)
-        multiHit:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
-
-        -- Add Threshold button
-        _stAddBtn = CreateFrame("Button", nil, stPopup)
-        Pix.Size(_stAddBtn, ST_POPUP_W - ST_PAD * 2, 26)
-        _stAddBtn:SetFrameLevel(stPopup:GetFrameLevel() + 3)
-        local abg = CludesUI.SolidTex(_stAddBtn, "BACKGROUND", 0.050, 0.058, 0.068, 0.92)
-        abg:SetAllPoints()
-        _stAddBtn._border = CludesUI.MakeRoundedBorder(_stAddBtn, 1, 1, 1, 0.4, abg)
-        _stAddLbl = CludesUI.MakeFont(_stAddBtn, 12, nil, 1, 1, 1)
-        _stAddLbl:SetAlpha(0.5)
-        _stAddLbl:SetPoint("CENTER")
-        _stAddLbl:SetText(CludesUI.L("+ Add Threshold"))
-        _stAddBtn:SetScript("OnEnter", function(self)
-            local conf = CurrentStackThreshCfg()
-            local entries = conf and conf.stackThresholds
-            if entries and #entries >= STACK_THRESH_MAX then
-                CludesUI.ShowWidgetTooltip(self, StackThreshAtCapTip())
-                return
-            end
-            _stAddLbl:SetAlpha(0.7)
-            if self._border and self._border.SetColor then
-                self._border:SetColor(1, 1, 1, 0.6)
-            end
-        end)
-        _stAddBtn:SetScript("OnLeave", function(self)
-            CludesUI.HideWidgetTooltip()
-            _stAddLbl:SetAlpha(0.5)
-            if self._border and self._border.SetColor then
-                self._border:SetColor(1, 1, 1, 0.4)
-            end
-        end)
-        _stAddBtn:SetScript("OnClick", function()
-            local conf = CurrentStackThreshCfg()
-            if not conf then
-                return
-            end
-            if not conf.stackThresholds then
-                conf.stackThresholds = {}
-            end
-            local entries = conf.stackThresholds
-            if #entries >= STACK_THRESH_MAX then
-                return
-            end
-            local last = entries[#entries]
-            local nextVal = last and math.min(100, (last.value or 0) + 1) or 5
-            entries[#entries + 1] =
-                { value = nextVal, r = ST_DEF_R, g = ST_DEF_G, b = ST_DEF_B, a = ST_DEF_A }
-            SortStackThresholds(entries)
-            if _stRefreshFn then
-                _stRefreshFn()
-            end
-            RefreshStackThreshEditor()
-        end)
+        local title = CludesUI.MakeFont(stPopup, 13, nil, 1, 1, 1)
+        title:SetAlpha(0.6)
+        title:SetPoint("TOP", stPopup, "TOP", 0, -ST_PAD)
+        title:SetText(CludesUI.L("Stack Thresholds"))
+        BuildMultiRow()
+        BuildAddButton()
     end
 
-    -- Lazily create the widgets for threshold row k; returns the row table.
+    -- Threshold row k, made on first use: "At" <count> <colour> and delete. A
+    -- count commits on focus loss (Enter clears focus; Escape throws the typing
+    -- away), clamped as the single-threshold slider is (0-100), and re-sorts.
     local function EnsureStackThreshRow(k)
-        local row = _stRows[k]
-        if row then
-            return row
+        if _stRows[k] then
+            return _stRows[k]
         end
-        row = {}
+        local row = {}
         local rf = CreateFrame("Frame", nil, stPopup)
         rf:SetSize(ST_POPUP_W - ST_PAD * 2, ST_ROW_H)
         rf:SetFrameLevel(stPopup:GetFrameLevel() + 2)
         row.frame = rf
-
-        local labelFS = CludesUI.MakeFont(rf, 12, nil, 1, 1, 1)
-        labelFS:SetAlpha(0.6)
-        labelFS:SetPoint("LEFT", rf, "LEFT", 2, 0)
-        labelFS:SetText(CludesUI.L("At"))
-        row.lbl = labelFS
+        local label = CludesUI.MakeFont(rf, 12, nil, 1, 1, 1)
+        label:SetAlpha(0.6)
+        label:SetPoint("LEFT", rf, "LEFT", 2, 0)
+        label:SetText(CludesUI.L("At"))
+        row.lbl = label
 
         local input = CreateFrame("EditBox", nil, rf)
         input:SetSize(54, 22)
-        input:SetPoint("LEFT", labelFS, "RIGHT", 6, 0)
+        input:SetPoint("LEFT", label, "RIGHT", 6, 0)
         input:SetFrameLevel(rf:GetFrameLevel() + 2)
         input:SetAutoFocus(false)
         input:SetFontObject(GameFontHighlightSmall)
-        local inFont = CludesUI.GetFontPath("main") or "Fonts\\FRIZQT__.TTF"
-        input:SetFont(inFont, 12, "")
+        input:SetFont(CludesUI.GetFontPath("main") or "Fonts\\FRIZQT__.TTF", 12, "")
         input:SetTextColor(1, 1, 1, 0.75)
         input:SetJustifyH("CENTER")
         input:SetNumeric(true)
-        local inBg = input:CreateTexture(nil, "BACKGROUND")
-        inBg:SetAllPoints()
-        inBg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
-        CludesUI.MakeRoundedBorder(input, 1, 1, 1, 0.08, inBg)
+        local inputBg = input:CreateTexture(nil, "BACKGROUND")
+        inputBg:SetAllPoints()
+        inputBg:SetColorTexture(0.12, 0.12, 0.12, 0.8)
+        CludesUI.MakeRoundedBorder(input, 1, 1, 1, 0.08, inputBg)
         row.input = input
-
-        -- Commit on focus loss (Enter clears focus -> triggers this; Escape sets
-        -- _cancelCommit to discard the typed text).
-        local function CommitInput(self)
+        input:SetScript("OnEditFocusLost", function(self)
             if self._cancelCommit then
                 self._cancelCommit = nil
                 return
             end
-            local conf = CurrentStackThreshCfg()
-            local entries = conf and conf.stackThresholds
-            local ent = entries and entries[row._idx]
+            local _, entries, ent = ThresholdEntry(row._idx)
             if not ent then
                 return
             end
-            local val = tonumber(self:GetText())
-            if val then
-                -- Same range as the single-threshold slider on the Extras row.
-                ent.value = math.max(0, math.min(100, math.floor(val + 0.5)))
+            local value = tonumber(self:GetText())
+            if value then
+                ent.value = math.max(0, math.min(100, math.floor(value + 0.5)))
                 SortStackThresholds(entries)
-                if _stRefreshFn then
-                    _stRefreshFn()
-                end
+                ThresholdsChanged()
             end
             RefreshStackThreshEditor()
-        end
-        input:SetScript("OnEditFocusLost", CommitInput)
+        end)
         input:SetScript("OnEnterPressed", function(self)
             self:ClearFocus()
         end)
@@ -1567,66 +1568,58 @@ local function InitBuffBarsPage(
             RefreshStackThreshEditor()
         end)
 
-        local colorSwatch, swatchSnap = CludesUI.BuildColorSwatch(rf, rf:GetFrameLevel() + 3, function()
-            local conf = CurrentStackThreshCfg()
-            local entries = conf and conf.stackThresholds
-            local ent = entries and entries[row._idx]
+        local swatch, swatchSnap = CludesUI.BuildColorSwatch(rf, rf:GetFrameLevel() + 3, function()
+            local _, _, ent = ThresholdEntry(row._idx)
             if not ent then
                 return ST_DEF_R, ST_DEF_G, ST_DEF_B, ST_DEF_A
             end
             return ent.r or ST_DEF_R, ent.g or ST_DEF_G, ent.b or ST_DEF_B, ent.a or ST_DEF_A
         end, function(r, g, b, a)
-            local conf = CurrentStackThreshCfg()
-            local entries = conf and conf.stackThresholds
-            local ent = entries and entries[row._idx]
+            local _, _, ent = ThresholdEntry(row._idx)
             if ent then
                 ent.r, ent.g, ent.b, ent.a = r, g, b, a
-                if _stRefreshFn then
-                    _stRefreshFn()
-                end
+                ThresholdsChanged()
             end
         end, true, 19)
-        colorSwatch:SetPoint("LEFT", input, "RIGHT", 10, 0)
-        row.swatch = colorSwatch
-        row.swatchSnap = swatchSnap
+        swatch:SetPoint("LEFT", input, "RIGHT", 10, 0)
+        row.swatch, row.swatchSnap = swatch, swatchSnap
 
-        local delBtn = CreateFrame("Button", nil, rf)
-        delBtn:SetSize(14, 14)
-        delBtn:SetPoint("RIGHT", rf, "RIGHT", -2, 0)
-        delBtn:SetFrameLevel(rf:GetFrameLevel() + 3)
-        local delIcon = delBtn:CreateTexture(nil, "OVERLAY")
-        delIcon:SetAllPoints()
-        delIcon:SetTexture(_stCloseIcon)
-        delIcon:SetAlpha(0.4)
-        delBtn:SetScript("OnEnter", function()
-            delIcon:SetAlpha(0.9)
+        -- Delete. Emptying the list also turns multi off: an empty list would
+        -- quietly fall back to the single threshold while the toggle still read on.
+        local del = CreateFrame("Button", nil, rf)
+        del:SetSize(14, 14)
+        del:SetPoint("RIGHT", rf, "RIGHT", -2, 0)
+        del:SetFrameLevel(rf:GetFrameLevel() + 3)
+        local icon = del:CreateTexture(nil, "OVERLAY")
+        icon:SetAllPoints()
+        icon:SetTexture(_stCloseIcon)
+        icon:SetAlpha(0.4)
+        del:SetScript("OnEnter", function()
+            icon:SetAlpha(0.9)
         end)
-        delBtn:SetScript("OnLeave", function()
-            delIcon:SetAlpha(0.4)
+        del:SetScript("OnLeave", function()
+            icon:SetAlpha(0.4)
         end)
-        delBtn:SetScript("OnClick", function()
-            local conf = CurrentStackThreshCfg()
-            local entries = conf and conf.stackThresholds
-            if entries and entries[row._idx] then
-                table.remove(entries, row._idx)
-                -- An empty list would silently fall back to the single threshold while the
-                -- toggle still reads "on"; turn it off so the popup matches the bar.
-                if #entries == 0 and conf.stackThresholdMulti then
-                    conf.stackThresholdMulti = false
-                    CludesUI:RefreshPage()
-                end
-                if _stRefreshFn then
-                    _stRefreshFn()
-                end
-                RefreshStackThreshEditor()
+        del:SetScript("OnClick", function()
+            local conf, entries, ent = ThresholdEntry(row._idx)
+            if not ent then
+                return
             end
+            table.remove(entries, row._idx)
+            if #entries == 0 and conf.stackThresholdMulti then
+                conf.stackThresholdMulti = false
+                CludesUI:RefreshPage()
+            end
+            ThresholdsChanged()
+            RefreshStackThreshEditor()
         end)
-        row.delBtn = delBtn
-
+        row.delBtn = del
         _stRows[k] = row
         return row
     end
 
+    -- Lays the editor out: the multi row under the title, one row per stop,
+    -- then Add (dimmed at the cap); the popup fits its height.
     RefreshStackThreshEditor = function()
         if not stPopup then
             return
@@ -1636,68 +1629,56 @@ local function InitBuffBarsPage(
             stPopup:Hide()
             return
         end
-        if not conf.stackThresholds then
-            conf.stackThresholds = {}
-        end
+        conf.stackThresholds = conf.stackThresholds or {}
         local entries = conf.stackThresholds
-
-        local curY = -(ST_PAD + 24) -- below the title
-
+        local y = -(ST_PAD + 24)
         _stMultiRow:ClearAllPoints()
-        Pix.Point(_stMultiRow, "TOPLEFT", stPopup, "TOPLEFT", ST_PAD, curY)
-        Pix.Point(_stMultiRow, "TOPRIGHT", stPopup, "TOPRIGHT", -ST_PAD, curY)
+        Pix.Point(_stMultiRow, "TOPLEFT", stPopup, "TOPLEFT", ST_PAD, y)
+        Pix.Point(_stMultiRow, "TOPRIGHT", stPopup, "TOPRIGHT", -ST_PAD, y)
         _stMultiRow:Show()
         if _stMultiSnap then
             _stMultiSnap()
         end
-        curY = curY - ST_ROW_H - ST_GAP
-
-        local num = #entries
-        for k = 1, num do
+        y = y - ST_ROW_H - ST_GAP
+        for k, entry in ipairs(entries) do
             local row = EnsureStackThreshRow(k)
             row._idx = k
             row.frame:ClearAllPoints()
-            Pix.Point(row.frame, "TOPLEFT", stPopup, "TOPLEFT", ST_PAD, curY)
-            row.input:SetText(tostring(entries[k].value or 5))
+            Pix.Point(row.frame, "TOPLEFT", stPopup, "TOPLEFT", ST_PAD, y)
+            row.input:SetText(tostring(entry.value or 5))
             if row.swatchSnap then
                 row.swatchSnap()
             end
             row.frame:Show()
-            curY = curY - ST_ROW_H - 4
+            y = y - ST_ROW_H - 4
         end
-        for k = num + 1, #_stRows do
+        for k = #entries + 1, #_stRows do
             if _stRows[k] then
                 _stRows[k].frame:Hide()
             end
         end
-
-        curY = curY - 4
+        y = y - 4
         _stAddBtn:ClearAllPoints()
-        Pix.Point(_stAddBtn, "TOPLEFT", stPopup, "TOPLEFT", ST_PAD, curY)
-        local atCap = (num >= STACK_THRESH_MAX)
+        Pix.Point(_stAddBtn, "TOPLEFT", stPopup, "TOPLEFT", ST_PAD, y)
+        local atCap = #entries >= STACK_THRESH_MAX
         _stAddBtn:SetEnabled(not atCap)
         _stAddBtn:SetAlpha(atCap and 0.35 or 1)
-        curY = curY - 26
-
-        local totalH = math.abs(curY) + ST_PAD
-        Pix.Size(stPopup, ST_POPUP_W, totalH)
+        y = y - 26
+        Pix.Size(stPopup, ST_POPUP_W, math.abs(y) + ST_PAD)
         stPopup._brd:Fit()
     end
 
-    -- params = { getCfg, refreshFn, anchor }
+    -- params = { getCfg, refreshFn, anchor }. The first open seeds the list
+    -- from the single threshold; that is inert until multi is on, so opening and
+    -- closing the editor changes nothing on the bar.
     local function ShowStackThreshEditor(params)
         if not stPopup then
             BuildStackThreshPopup()
         end
-        _stGetCfg = params.getCfg
-        _stRefreshFn = params.refreshFn
+        _stGetCfg, _stRefreshFn = params.getCfg, params.refreshFn
         local conf = CurrentStackThreshCfg()
         if conf then
-            if not conf.stackThresholds then
-                conf.stackThresholds = {}
-            end
-            -- Seed the first entry from the single threshold the first time; inert until
-            -- stackThresholdMulti is on, so opening/closing this popup changes nothing on the bar.
+            conf.stackThresholds = conf.stackThresholds or {}
             if #conf.stackThresholds == 0 then
                 conf.stackThresholds[1] = {
                     value = conf.stackThreshold or 5,
