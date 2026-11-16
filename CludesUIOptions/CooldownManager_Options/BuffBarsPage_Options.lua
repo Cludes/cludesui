@@ -3039,41 +3039,22 @@ local function InitBuffBarsPage(
             -- Preset Style panel (styled like Profiles & Presets "Active Profile"): pick a
             -- saved style preset and apply it to the selected bar/group, or save the current
             -- style as one. Presets are profile-wide; new bars resolve one by association at creation.
-            local _wc = CludesUI.WB_COLOURS
-            local PROF_BTN_COLOURS = {
-                _wc[1],
-                _wc[2],
-                _wc[3],
-                _wc[4],
-                _wc[5],
-                _wc[6],
-                _wc[7],
-                _wc[8],
-                1,
-                1,
-                1,
-                CludesUI.DD_BRD_A,
-                1,
-                1,
-                1,
-                CludesUI.DD_BRD_HA or 0.30,
-                _wc[17],
-                _wc[18],
-                _wc[19],
-                _wc[20],
-                _wc[21],
-                _wc[22],
-                _wc[23],
-                _wc[24],
-            }
-            local LABEL_H = 16
-            local CTRL_H = 30
-            local PAD_X = 24
-            local PAD_Y = 20
-            local GAP_DD = 30
-            local GAP_BTN = 14
+            -- Its buttons: the wide-button look with the dropdown's white border (and hovered).
+            local PROF_BTN_COLOURS = {}
+            do
+                local wc = CludesUI.WB_COLOURS
+                for i = 1, 24 do
+                    PROF_BTN_COLOURS[i] = wc[i]
+                end
+                PROF_BTN_COLOURS[9], PROF_BTN_COLOURS[10], PROF_BTN_COLOURS[11] = 1, 1, 1
+                PROF_BTN_COLOURS[12] = CludesUI.DD_BRD_A
+                PROF_BTN_COLOURS[13], PROF_BTN_COLOURS[14], PROF_BTN_COLOURS[15] = 1, 1, 1
+                PROF_BTN_COLOURS[16] = CludesUI.DD_BRD_HA or 0.30
+            end
+            local LABEL_H, CTRL_H = 16, 30
+            local PAD_X, PAD_Y = 24, 20
+            local GAP_DD, GAP_BTN = 30, 14
             local PR_ROW_H = PAD_Y + LABEL_H + 4 + CTRL_H + PAD_Y
-
             local innerW = cardTotalW - PAD_X * 2
             local DD_W = math.floor(innerW * 0.30)
             local BTN_W = math.floor((innerW - DD_W - GAP_DD - GAP_BTN * 2) / 3)
@@ -3081,16 +3062,16 @@ local function InitBuffBarsPage(
             local prRow = CreateFrame("Frame", nil, hostFrame)
             Pix.Size(prRow, cardTotalW, PR_ROW_H)
             Pix.Point(prRow, "TOPLEFT", hostFrame, "TOPLEFT", PADc, posY)
-
-            local prBg = CludesUI.MakeRoundedCard(prRow, 0.10, 0.50).bg
-
-            -- "Preset Style" label (accent, matching "Active Profile")
+            CludesUI.MakeRoundedCard(prRow, 0.10, 0.50)
+            -- "Preset Style" in the accent, as "Active Profile" is.
             local prLbl = CludesUI.MakeFont(prRow, 12, nil, EGc.r, EGc.g, EGc.b, 0.7)
             Pix.Point(prLbl, "TOPLEFT", prRow, "TOPLEFT", PAD_X, -PAD_Y)
             prLbl:SetText(CludesUI.L("Preset Style"))
             prLbl:SetJustifyH("LEFT")
 
-            -- Live reads: label/menu/apply buttons all pull from the current preset list so saves/renames/deletes never go stale.
+            -- Live reads: the label, menu and apply buttons all pull from the current
+            -- list, so saves, renames and deletes never go stale. The saved pick, else
+            -- the first preset.
             local function SelectedPresetName()
                 local p = DB()
                 local sel = p and p.tbbSelectedStylePreset
@@ -3101,15 +3082,12 @@ local function InitBuffBarsPage(
                 return presets and presets[1] and presets[1].name or nil
             end
             local function SelectedPreset()
-                local nm = SelectedPresetName()
-                if not nm then
-                    return nil
-                end
-                return mod.FindTBBStylePreset and mod.FindTBBStylePreset(nm)
+                local name = SelectedPresetName()
+                return name and mod.FindTBBStylePreset and mod.FindTBBStylePreset(name) or nil
             end
 
-            -- Preset dropdown: bespoke button + menu (same look as the standard control) so
-            -- each row carries inline rename/delete buttons, matching the "Active Profile" dropdown.
+            -- The preset dropdown: its own button and menu (the standard look) so each
+            -- row can carry rename and delete, as the "Active Profile" dropdown does.
             local aS = CludesUI.RD_DD_COLOURS
             local prDD = CreateFrame("Button", nil, prRow)
             Pix.Size(prDD, DD_W, CTRL_H)
@@ -3118,8 +3096,8 @@ local function InitBuffBarsPage(
             prDDBg:SetAllPoints()
             prDDBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_A)
             local prDDBrd = CludesUI.MakeRoundedBorder(prDD, 1, 1, 1, CludesUI.DD_BRD_A, prDDBg)
-            -- Resting alpha on the text colour, the channel PrApplyNormal /
-            -- PrApplyHover write, so a hover and leave land back on it.
+            -- The resting alpha rides the text colour, the channel the hover paint
+            -- writes, so a hover and leave land back on it.
             local prDDLbl = CludesUI.MakeFont(prDD, 13, nil, 1, 1, 1, CludesUI.DD_TXT_A)
             prDDLbl:SetJustifyH("LEFT")
             prDDLbl:SetWordWrap(false)
@@ -3133,8 +3111,9 @@ local function InitBuffBarsPage(
             end
             UpdatePrDDLabel()
 
-            -- One preset menu frame for the session, dressed again by every
-            -- page build (its rows are pooled under it).
+            -- One preset menu frame for the session, dressed again by every page build
+            -- (its rows pooled under it), at the button's scale; a press off it and
+            -- the button closes it.
             local prMenu = PoolKept(mod, "tbbPresetMenu", "Frame", UIParent)
             prMenu:SetFrameStrata("FULLSCREEN_DIALOG")
             prMenu:SetFrameLevel(200)
@@ -3147,13 +3126,11 @@ local function InitBuffBarsPage(
             prMenuBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, 0.98)
             CludesUI.MakeRoundedBorder(prMenu, 1, 1, 1, CludesUI.DD_BRD_A, prMenuBg, nil, true)
             prMenu:SetScript("OnShow", function(self)
-                local sc = prDD:GetEffectiveScale() / UIParent:GetEffectiveScale()
-                self:SetScale(sc)
+                self:SetScale(prDD:GetEffectiveScale() / UIParent:GetEffectiveScale())
                 self:SetScript("OnUpdate", function(m)
-                    if not prDD:IsMouseOver() and not m:IsMouseOver() then
-                        if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") then
-                            m:Hide()
-                        end
+                    local pressed = IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton")
+                    if pressed and not prDD:IsMouseOver() and not m:IsMouseOver() then
+                        m:Hide()
                     end
                 end)
             end)
