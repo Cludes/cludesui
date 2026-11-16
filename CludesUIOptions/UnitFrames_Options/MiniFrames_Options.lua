@@ -616,169 +616,53 @@ local function BuildMiniTextAndSize(
             -- region); both toggle healthClassColored, the inactive one dims to 0.3.
             if not CludesUI._prebuilding then
                 local region = colorRow._leftRegion
-                local fClassGet = function()
-                    local _, ct = UnitClass("player")
-                    local cc = ct and RAID_CLASS_COLORS[ct]
-                    if cc then
-                        return cc.r, cc.g, cc.b
-                    end
-                    return 1, 1, 1
-                end
-                local fClassSw, fClassUpdate = CludesUI.BuildColorSwatch(
-                    region,
-                    region:GetFrameLevel() + 5,
-                    fClassGet,
-                    function() end,
-                    false,
-                    20
-                )
-                fClassSw._eabOrigClick = fClassSw:GetScript("OnClick")
-                fClassSw:SetScript("OnClick", function()
-                    settingsTable.healthClassColored = true
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end)
-                fClassSw:HookScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(fClassSw, "Class Colored Fill")
-                end)
-                fClassSw:HookScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                Pix.Point(fClassSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-                region._lastInline = fClassSw
-                RegisterWidgetRefresh(function()
-                    fClassUpdate()
-                    fClassSw:SetAlpha(MVal("healthClassColored", false) and 1 or 0.3)
-                end)
-                fClassSw:SetAlpha(MVal("healthClassColored", false) and 1 or 0.3)
-
-                local fCustomGet = function()
-                    local c = MGet("customFillColor")
-                    if c then
-                        return c.r, c.g, c.b
-                    end
-                    return 37 / 255, 193 / 255, 29 / 255
-                end
-                local fCustomSet = function(r, g, b)
-                    settingsTable.customFillColor = { r = r, g = g, b = b }
-                    ReloadAndUpdate()
-                end
-                local fCustomSw, fCustomUpdate = CludesUI.BuildColorSwatch(
-                    region,
-                    region:GetFrameLevel() + 5,
-                    fCustomGet,
-                    fCustomSet,
-                    false,
-                    20
-                )
-                fCustomSw._eabOrigClick = fCustomSw:GetScript("OnClick")
-                fCustomSw:SetScript("OnClick", function(self)
-                    if MVal("healthClassColored", false) then
-                        if MGet("customFillColor") == nil then
-                            settingsTable.customFillColor = { r = 37 / 255, g = 193 / 255, b = 29 / 255 }
+                mod.UFO_SwatchPair(region, {
+                    store = function()
+                        return settingsTable
+                    end,
+                    flag = "healthClassColored",
+                    flagDefault = false,
+                    autoGet = function()
+                        local _, ct = UnitClass("player")
+                        local cc = ct and RAID_CLASS_COLORS[ct]
+                        if cc then
+                            return cc.r, cc.g, cc.b
                         end
-                        settingsTable.healthClassColored = false
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                        return
-                    end
-                    if self._eabOrigClick then
-                        self._eabOrigClick(self)
-                    end
-                end)
-                fCustomSw:HookScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(fCustomSw, "Custom Colored Fill")
-                end)
-                fCustomSw:HookScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                Pix.Point(fCustomSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-                region._lastInline = fCustomSw
-                RegisterWidgetRefresh(function()
-                    fCustomUpdate()
-                    fCustomSw:SetAlpha(MVal("healthClassColored", false) and 0.3 or 1)
-                end)
-                fCustomSw:SetAlpha(MVal("healthClassColored", false) and 0.3 or 1)
+                        return 1, 1, 1
+                    end,
+                    autoTip = "Class Colored Fill",
+                    colorKey = "customFillColor",
+                    colorDefault = { r = 37 / 255, g = 193 / 255, b = 29 / 255 },
+                    customTip = "Custom Colored Fill",
+                    seed = true,
+                    apply = ReloadAndUpdate,
+                })
             end
 
             -- Inline Custom + Class background swatches on the Bar Background
             -- slider (right region); both toggle bgClassColored, inactive dims to 0.3.
             if not CludesUI._prebuilding then
                 local region = colorRow._rightRegion
-                local bgClassGet = function()
-                    local _, ct = UnitClass("player")
-                    local cc = ct and RAID_CLASS_COLORS[ct]
-                    if cc then
-                        return cc.r, cc.g, cc.b
-                    end
-                    return 1, 1, 1
-                end
-                local bgClassSw, bgClassUpdate = CludesUI.BuildColorSwatch(
-                    region,
-                    region:GetFrameLevel() + 5,
-                    bgClassGet,
-                    function() end,
-                    false,
-                    20
-                )
-                bgClassSw._eabOrigClick = bgClassSw:GetScript("OnClick")
-                bgClassSw:SetScript("OnClick", function()
-                    settingsTable.bgClassColored = true
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end)
-                bgClassSw:HookScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(bgClassSw, "Class Colored Background")
-                end)
-                bgClassSw:HookScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                Pix.Point(bgClassSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-                region._lastInline = bgClassSw
-                RegisterWidgetRefresh(function()
-                    bgClassUpdate()
-                    bgClassSw:SetAlpha(MVal("bgClassColored", false) and 1 or 0.3)
-                end)
-                bgClassSw:SetAlpha(MVal("bgClassColored", false) and 1 or 0.3)
-
-                local bgSwGet = function()
-                    local c = MGet("customBgColor")
-                    if c then
-                        return c.r, c.g, c.b
-                    end
-                    return 17 / 255, 17 / 255, 17 / 255
-                end
-                local bgSwSet = function(r, g, b)
-                    settingsTable.customBgColor = { r = r, g = g, b = b }
-                    ReloadAndUpdate()
-                end
-                local bgSw, bgSwUpdate =
-                    CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, bgSwGet, bgSwSet, false, 20)
-                bgSw._eabOrigClick = bgSw:GetScript("OnClick")
-                bgSw:SetScript("OnClick", function(self)
-                    if MVal("bgClassColored", false) then
-                        settingsTable.bgClassColored = false
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                        return
-                    end
-                    if self._eabOrigClick then
-                        self._eabOrigClick(self)
-                    end
-                end)
-                bgSw:HookScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(bgSw, "Custom Background Color")
-                end)
-                bgSw:HookScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                Pix.Point(bgSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-                region._lastInline = bgSw
-                RegisterWidgetRefresh(function()
-                    bgSwUpdate()
-                    bgSw:SetAlpha(MVal("bgClassColored", false) and 0.3 or 1)
-                end)
-                bgSw:SetAlpha(MVal("bgClassColored", false) and 0.3 or 1)
+                mod.UFO_SwatchPair(region, {
+                    store = function()
+                        return settingsTable
+                    end,
+                    flag = "bgClassColored",
+                    flagDefault = false,
+                    autoGet = function()
+                        local _, ct = UnitClass("player")
+                        local cc = ct and RAID_CLASS_COLORS[ct]
+                        if cc then
+                            return cc.r, cc.g, cc.b
+                        end
+                        return 1, 1, 1
+                    end,
+                    autoTip = "Class Colored Background",
+                    colorKey = "customBgColor",
+                    colorDefault = { r = 17 / 255, g = 17 / 255, b = 17 / 255 },
+                    customTip = "Custom Background Color",
+                    apply = ReloadAndUpdate,
+                })
             end
         end
 
@@ -2170,81 +2054,24 @@ local function BuildMiniTextAndSize(
         -- dims to 0.3 (mirrors the Main Frames power Bar Background).
         if not CludesUI._prebuilding then
             local region = pwrRow2._leftRegion
-            local bgPwrGet = function()
-                local _, pToken = UnitPowerType("player")
-                local details = CludesUI.GetPowerColor(pToken or "MANA")
-                local f = CludesUI.GetPowerBgDarkenFactor()
-                return details.r * f, details.g * f, details.b * f
-            end
-            local bgPwrSw, bgPwrUpdate = CludesUI.BuildColorSwatch(
-                region,
-                region:GetFrameLevel() + 5,
-                bgPwrGet,
-                function() end,
-                false,
-                20
-            )
-            bgPwrSw._eabOrigClick = bgPwrSw:GetScript("OnClick")
-            bgPwrSw:SetScript("OnClick", function()
-                settingsTable.powerBgPowerColored = true
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
-            end)
-            bgPwrSw:HookScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(
-                    bgPwrSw,
-                    "Power Colored Background. Power colors can be adjusted in Global Settings -> Colors."
-                )
-            end)
-            bgPwrSw:HookScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
-            Pix.Point(bgPwrSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-            region._lastInline = bgPwrSw
-            RegisterWidgetRefresh(function()
-                bgPwrUpdate()
-                bgPwrSw:SetAlpha(MVal("powerBgPowerColored", false) and 1 or 0.3)
-            end)
-            bgPwrSw:SetAlpha(MVal("powerBgPowerColored", false) and 1 or 0.3)
-
-            local bgGet = function()
-                local c = MGet("customPowerBgColor")
-                if c then
-                    return c.r, c.g, c.b
-                end
-                return 17 / 255, 17 / 255, 17 / 255
-            end
-            local bgSet = function(r, g, b)
-                settingsTable.customPowerBgColor = { r = r, g = g, b = b }
-                ReloadAndUpdate()
-            end
-            local bgSw, bgSwUp =
-                CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, bgGet, bgSet, false, 20)
-            bgSw._eabOrigClick = bgSw:GetScript("OnClick")
-            bgSw:SetScript("OnClick", function(self)
-                if MVal("powerBgPowerColored", false) then
-                    settingsTable.powerBgPowerColored = false
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                    return
-                end
-                if self._eabOrigClick then
-                    self._eabOrigClick(self)
-                end
-            end)
-            bgSw:HookScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(bgSw, "Custom Background Color")
-            end)
-            bgSw:HookScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
-            Pix.Point(bgSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-            region._lastInline = bgSw
-            RegisterWidgetRefresh(function()
-                bgSwUp()
-                bgSw:SetAlpha(MVal("powerBgPowerColored", false) and 0.3 or 1)
-            end)
-            bgSw:SetAlpha(MVal("powerBgPowerColored", false) and 0.3 or 1)
+            mod.UFO_SwatchPair(region, {
+                store = function()
+                    return settingsTable
+                end,
+                flag = "powerBgPowerColored",
+                flagDefault = false,
+                autoGet = function()
+                    local _, pToken = UnitPowerType("player")
+                    local details = CludesUI.GetPowerColor(pToken or "MANA")
+                    local f = CludesUI.GetPowerBgDarkenFactor()
+                    return details.r * f, details.g * f, details.b * f
+                end,
+                autoTip = "Power Colored Background. Power colors can be adjusted in Global Settings -> Colors.",
+                colorKey = "customPowerBgColor",
+                colorDefault = { r = 17 / 255, g = 17 / 255, b = 17 / 255 },
+                customTip = "Custom Background Color",
+                apply = ReloadAndUpdate,
+            })
         end
         -- Inline Power Colored + Custom fill swatches on Fill Color (right
         -- region); both toggle powerPercentPowerColor (default on = power

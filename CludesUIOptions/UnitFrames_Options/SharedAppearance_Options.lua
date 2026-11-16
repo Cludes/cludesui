@@ -118,6 +118,79 @@ function mod.UFO_UnitSync(rgn, label, opts)
     })
 end
 
+-- The automatic / custom swatch pair left of a colour row's control. The
+-- automatic swatch shows the class or power colour and picks it; the custom
+-- swatch picks its own colour, opening its picker once it is the one in use.
+-- The one not in use dims. opts: store() the settings table; flag (true = the
+-- automatic colour, unset reads as flagDefault); autoGet() and autoTip;
+-- colorKey, colorDefault ({ r, g, b }) and customTip; seed stores
+-- colorDefault on the first switch to custom (unset, the bar would keep the
+-- automatic colour); apply() runs after any write (a flag write also repaints
+-- the page). Shared by every Unit Frames options file.
+function mod.UFO_SwatchPair(rgn, opts)
+    local env = mod._UFO_OptEnv
+    local store, flag, apply = opts.store, opts.flag, opts.apply
+    local function Auto()
+        local v = store()[flag]
+        if v == nil then
+            return opts.flagDefault
+        end
+        return v
+    end
+    local function SetAuto(on)
+        store()[flag] = on
+        apply()
+        CludesUI:RefreshPage()
+    end
+    local function Add(get, set, tip, onClick, isAuto)
+        local sw, update = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, get, set, false, 20)
+        sw._eabOrigClick = sw:GetScript("OnClick")
+        sw:SetScript("OnClick", onClick)
+        sw:HookScript("OnEnter", function()
+            CludesUI.ShowWidgetTooltip(sw, tip)
+        end)
+        sw:HookScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
+        env.PP.Point(sw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+        rgn._lastInline = sw
+        local function Dim()
+            sw:SetAlpha(((Auto() and true or false) == isAuto) and 1 or 0.3)
+        end
+        env.RegisterWidgetRefresh(function()
+            update()
+            Dim()
+        end)
+        Dim()
+    end
+    Add(opts.autoGet, function() end, opts.autoTip, function()
+        SetAuto(true)
+    end, true)
+    local def = opts.colorDefault
+    Add(
+        function()
+            local c = store()[opts.colorKey] or def
+            return c.r, c.g, c.b
+        end,
+        function(r, g, b)
+            store()[opts.colorKey] = { r = r, g = g, b = b }
+            apply()
+        end,
+        opts.customTip,
+        function(self)
+            if Auto() then
+                if opts.seed and store()[opts.colorKey] == nil then
+                    store()[opts.colorKey] = { r = def.r, g = def.g, b = def.b }
+                end
+                SetAuto(false)
+            elseif self._eabOrigClick then
+                self._eabOrigClick(self)
+            end
+        end,
+        false
+    )
+end
+
 -- The sync icon of a text choice (a Text Bar slot, Power Text): the choice
 -- (default when unset), with its own format when the choice is Custom (any
 -- other choice leaves the format alone).
