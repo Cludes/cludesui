@@ -156,3 +156,48 @@ if all then
         end
     end
 end
+
+-- Every colour swatch on the every-block page clicked in turn (the ones that
+-- keep their stock click as _eabOrigClick), on a fresh build each time, with
+-- each block's colour choice written out after the click.
+local function Swatches()
+    local out, stack = {}, { CUI._scrollFrame }
+    while #stack > 0 do
+        local f = table.remove(stack, 1)
+        if type(f) == "table" and rawget(f, "\0children") then
+            if rawget(f, "_eabOrigClick") ~= nil and f:IsVisible() and f["\0scripts"].OnClick then out[#out + 1] = f end
+            for _, ch in ipairs(f["\0children"]) do stack[#stack + 1] = ch end
+        end
+    end
+    return out
+end
+local COLOUR_KEYS = { "useClassColor", "useAccentColor", "useCoinColor", "useCrestColor", "useDynamicColor" }
+local function Colours(bar)
+    for _, b in ipairs(bar.blocks) do
+        local bits = { b.type }
+        for _, k in ipairs(COLOUR_KEYS) do
+            if b[k] ~= nil then bits[#bits + 1] = k .. "=" .. tostring(b[k]) end
+        end
+        if b.color then bits[#bits + 1] = string.format("color=%.3f,%.3f,%.3f", b.color.r or -1, b.color.g or -1, b.color.b or -1) end
+        OUT:write("   " .. table.concat(bits, " ") .. "\n")
+    end
+end
+if all then
+    Rebuild(all.id)
+    local n = #Swatches()
+    OUT:write("== swatches " .. n .. "\n")
+    for i = 1, n do
+        Rebuild(all.id)
+        local sw = Swatches()[i]
+        if sw then
+            local ok, err = pcall(sw["\0scripts"].OnClick, sw, "LeftButton")
+            OUT:write("== swatch " .. i .. (ok and "" or (" ERR " .. tostring(err))) .. "\n")
+            for _, c in ipairs({ UIParent:GetChildren() }) do
+                if c:IsShown() and c.GetFrameStrata and c:GetFrameStrata() == "FULLSCREEN_DIALOG" then c:Hide() end
+            end
+            Colours(all)
+        end
+    end
+    Rebuild(all.id)
+    SNAP("page after swatches", CUI._scrollFrame)
+end

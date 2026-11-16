@@ -2727,169 +2727,113 @@ initFrame:SetScript("OnEvent", function(self)
                     },
                 },
             }
-            -- Gold block: 4th "Coin Colored" swatch on Text Color -- white
-            -- numbers, coin-tinted g/s/c letters; the forced default (see
-            -- the factory's coinForced one-shot). Picking any of the three
-            -- standard swatches clears the flag.
-            if b.type == "gold" then
+            -- A 4th Text Color swatch for a block-specific colour mode stored
+            -- as b[flag]: picking it clears Class/Accent, picking Class or
+            -- Accent clears it, and Custom takes the selection back from it.
+            -- opts.off() says when Custom is NOT selected because of the mode
+            -- (default: the flag is set); opts.toCustom() runs as Custom takes
+            -- the selection back; opts.on() lights the 4th swatch (default:
+            -- the flag is set).
+            local function ModeSwatch(flag, tip, getValue, opts)
+                opts = opts or {}
+                local function Flag()
+                    return b[flag]
+                end
+                local off, on = opts.off or Flag, opts.on or Flag
                 local sw = colorCfg.swatches
-                local origCustomClick = sw[1].onClick
+                local customClick, customAlpha = sw[1].onClick, sw[1].refreshAlpha
                 sw[1].onClick = function(self)
-                    if b.useCoinColor then
-                        b.useCoinColor = nil
-                        ApplyBlockColor()
-                        CludesUI:RefreshPage()
-                        return
-                    end
-                    origCustomClick(self)
-                end
-                local origCustomAlpha = sw[1].refreshAlpha
-                sw[1].refreshAlpha = function()
-                    if b.useCoinColor then
-                        return 0.3
-                    end
-                    return origCustomAlpha()
-                end
-                for i = 2, 3 do
-                    local origClick = sw[i].onClick
-                    sw[i].onClick = function(...)
-                        b.useCoinColor = nil
-                        return origClick(...)
-                    end
-                end
-                sw[4] = {
-                    tooltip = "Coin Colored",
-                    hasAlpha = false,
-                    -- E2AC7A -- matches DENOMINATIONS' gold letter (user-set).
-                    getValue = function()
-                        return 0.886, 0.675, 0.478
-                    end,
-                    setValue = function() end,
-                    onClick = function()
-                        b.useCoinColor = true
-                        b.useClassColor = nil
-                        b.useAccentColor = nil
-                        ApplyBlockColor()
-                        CludesUI:RefreshPage()
-                    end,
-                    refreshAlpha = function()
-                        return b.useCoinColor and 1 or 0.3
-                    end,
-                }
-            end
-            -- Crests block: 4th "Crest Colors" swatch on Text Color -- each
-            -- amount tinted with its own tier color. Unlike Gold's coin mode
-            -- this is the nothing-stored DEFAULT, resolved by ns.CrestColorMode
-            -- rather than a forced write, so Custom has to SEED b.color on its
-            -- first click to take the selection (same shape as the Icon Color
-            -- row's Custom/Default pair below).
-            if b.type == "crests" then
-                local sw = colorCfg.swatches
-                local origCustomClick = sw[1].onClick
-                sw[1].onClick = function(self)
-                    if mod.CrestColorMode(b) or b.useClassColor or b.useAccentColor then
-                        b.useCrestColor = nil
-                        b.useClassColor = nil
-                        b.useAccentColor = nil
-                        if b.color == nil then
-                            b.color = { r = 1, g = 1, b = 1 }
+                    if off() then
+                        b[flag] = nil
+                        if opts.toCustom then
+                            opts.toCustom()
                         end
                         ApplyBlockColor()
                         CludesUI:RefreshPage()
                         return
                     end
-                    origCustomClick(self)
+                    customClick(self)
                 end
                 sw[1].refreshAlpha = function()
-                    if mod.CrestColorMode(b) or b.useClassColor or b.useAccentColor then
+                    if off() then
                         return 0.3
                     end
-                    return 1
+                    return customAlpha()
                 end
                 for i = 2, 3 do
-                    local origClick = sw[i].onClick
+                    local click = sw[i].onClick
                     sw[i].onClick = function(...)
-                        b.useCrestColor = nil
-                        return origClick(...)
+                        b[flag] = nil
+                        return click(...)
                     end
                 end
                 sw[4] = {
-                    tooltip = "Crest Colors",
+                    tooltip = tip,
                     hasAlpha = false,
-                    -- Myth gold: the top crest, and the most recognizable of
-                    -- the five as a single preview swatch.
-                    getValue = function()
-                        return 1, 0.82, 0
-                    end,
+                    getValue = getValue,
                     setValue = function() end,
                     onClick = function()
-                        b.useCrestColor = true
+                        b[flag] = true
                         b.useClassColor = nil
                         b.useAccentColor = nil
                         ApplyBlockColor()
                         CludesUI:RefreshPage()
                     end,
                     refreshAlpha = function()
-                        return mod.CrestColorMode(b) and 1 or 0.3
+                        return on() and 1 or 0.3
                     end,
                 }
             end
-            -- Optional 4th state-driven swatch on Text Color. Durability gets
-            -- the same red->green gradient its icon's Dynamic mode uses; the
-            -- location blocks get the zone's PvP ruleset color. NOT the
-            -- default in any case: nothing-stored stays custom/white.
+            -- Gold: "Coin Colored" -- white numbers, coin-tinted g/s/c
+            -- letters; the forced default (see the factory's coinForced
+            -- one-shot).
+            if b.type == "gold" then
+                -- E2AC7A -- matches DENOMINATIONS' gold letter (user-set).
+                ModeSwatch("useCoinColor", "Coin Colored", function()
+                    return 0.886, 0.675, 0.478
+                end)
+            end
+            -- Crests: "Crest Colors" -- each amount tinted with its own tier
+            -- colour. Unlike Gold's coin mode this is the nothing-stored
+            -- DEFAULT, resolved by ns.CrestColorMode rather than a forced
+            -- write, so Custom has to SEED b.color to take the selection
+            -- (same shape as the Icon Color row's Custom/Default pair below).
+            if b.type == "crests" then
+                -- Myth gold: the top crest, and the most recognizable of the
+                -- five as a single preview swatch.
+                ModeSwatch("useCrestColor", "Crest Colors", function()
+                    return 1, 0.82, 0
+                end, {
+                    off = function()
+                        return mod.CrestColorMode(b) or b.useClassColor or b.useAccentColor
+                    end,
+                    toCustom = function()
+                        b.useClassColor = nil
+                        b.useAccentColor = nil
+                        if b.color == nil then
+                            b.color = { r = 1, g = 1, b = 1 }
+                        end
+                    end,
+                    on = function()
+                        return mod.CrestColorMode(b)
+                    end,
+                })
+            end
+            -- State-driven: Durability gets the red->green gradient its
+            -- icon's Dynamic mode uses; the location blocks the zone's PvP
+            -- ruleset colour; Item Level the crest colour of the upgrade
+            -- track the gear sits in (Adventurer green through Myth gold).
+            -- Never the default: nothing stored stays custom/white.
             local DYNAMIC_TEXT_BLOCKS = {
                 durability = "Dynamic",
                 location = "Reactive",
                 coords = "Reactive",
-                -- Item level: the crest color of the upgrade track the gear
-                -- sits in (Adventurer green through Myth gold).
                 ilvl = "Band",
             }
             if DYNAMIC_TEXT_BLOCKS[b.type] then
-                local sw = colorCfg.swatches
-                local origCustomClick = sw[1].onClick
-                sw[1].onClick = function(self)
-                    if b.useDynamicColor then
-                        b.useDynamicColor = nil
-                        ApplyBlockColor()
-                        CludesUI:RefreshPage()
-                        return
-                    end
-                    origCustomClick(self)
-                end
-                local origCustomAlpha = sw[1].refreshAlpha
-                sw[1].refreshAlpha = function()
-                    if b.useDynamicColor then
-                        return 0.3
-                    end
-                    return origCustomAlpha()
-                end
-                for i = 2, 3 do
-                    local origClick = sw[i].onClick
-                    sw[i].onClick = function(...)
-                        b.useDynamicColor = nil
-                        return origClick(...)
-                    end
-                end
-                sw[4] = {
-                    tooltip = DYNAMIC_TEXT_BLOCKS[b.type],
-                    hasAlpha = false,
-                    getValue = function()
-                        return mod.BlockTextDynamic(b.type)
-                    end,
-                    setValue = function() end,
-                    onClick = function()
-                        b.useDynamicColor = true
-                        b.useClassColor = nil
-                        b.useAccentColor = nil
-                        ApplyBlockColor()
-                        CludesUI:RefreshPage()
-                    end,
-                    refreshAlpha = function()
-                        return b.useDynamicColor and 1 or 0.3
-                    end,
-                }
+                ModeSwatch("useDynamicColor", DYNAMIC_TEXT_BLOCKS[b.type], function()
+                    return mod.BlockTextDynamic(b.type)
+                end)
             end
             local bgRow
             local bgRightCfg
