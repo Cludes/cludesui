@@ -47,7 +47,7 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         Tog(
             "enabled",
             "Detect Enemy Players",
-            "Lists enemy players around you, from their nameplates, your target, focus and mouseover. Turn enemy nameplates on (Ctrl+V) to see the most. Off in dungeons, raids and sanctuaries."
+            "Lists enemy players around you, from their nameplates, your target, focus and mouseover. Turn enemy nameplates on (Ctrl+V) to see the most; while this is on they reach 60 yards. Off in dungeons, raids and sanctuaries."
         ),
         Tog(
             "autoShow",

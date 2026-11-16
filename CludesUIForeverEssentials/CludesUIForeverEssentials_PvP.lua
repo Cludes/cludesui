@@ -1557,6 +1557,47 @@ local EVENTS = {
     "ADDON_LOADED",
 }
 
+-- Nameplates reach PLATE_RANGE yards while PvP is on, so an enemy shows in
+-- Nearby long before they are close (the game's own range is far shorter).
+-- Held, not set: the player's range comes back when PvP is turned off, and
+-- plateRangeWas (CludesUIDB.pvp) keeps it across reloads. Never lowers a
+-- range that already reaches that far (CludesUI Nameplates holds 60), never
+-- hands back over CludesUI Nameplates' own value, and waits out combat.
+local PLATE_RANGE = 60
+local PLATE_OWNER = "CludesUIForeverEssentials"
+local rangeWaiter
+local function HoldPlateRange(on)
+    if InCombatLockdown() then
+        if not rangeWaiter then
+            rangeWaiter = CreateFrame("Frame")
+            rangeWaiter:SetScript("OnEvent", function(self)
+                self:UnregisterAllEvents()
+                HoldPlateRange(Enabled())
+            end)
+        end
+        rangeWaiter:RegisterEvent("PLAYER_REGEN_ENABLED")
+        return
+    end
+    local conf = F.Read()
+    local current = C_CVar.GetCVar("nameplateMaxDistance")
+    if on then
+        if (tonumber(current) or 0) < PLATE_RANGE then
+            conf = F.Cfg()
+            if conf.plateRangeWas == nil then
+                conf.plateRangeWas = current
+            end
+            CludesUI.HoldCVar("nameplateMaxDistance", PLATE_RANGE, PLATE_OWNER)
+        end
+    elseif conf.plateRangeWas ~= nil then
+        local was = conf.plateRangeWas
+        conf.plateRangeWas = nil
+        local platesOwnIt = C_AddOns.IsAddOnLoaded("CludesUINameplates")
+        if was and current ~= was then
+            CludesUI.ReleaseCVar("nameplateMaxDistance", not platesOwnIt and was or nil, PLATE_OWNER)
+        end
+    end
+end
+
 local tipHooked
 local function Apply()
     if Enabled() then
@@ -1596,6 +1637,7 @@ local function Apply()
     end
     KoSButtonUpdate()
     MapApply()
+    HoldPlateRange(Enabled())
 end
 
 CludesUI._PvP = {
