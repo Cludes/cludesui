@@ -1784,22 +1784,25 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                 -- include toggles, or store merging). Typed confirmation: it overwrites account-wide settings.
                 if CludesUI.IsFullAccountPayload(payload) then
                     pastePage:Hide()
+                    local message = CludesUI.L(
+                        "This string is a FULL ACCOUNT export. It replaces your account-wide settings with the sender's, including Utilities, Frame Bindings, Cooldown Manager spell setups, unlock anchors, UI scale, and spec assignments -- not just a profile. Your other profiles keep their own settings, but a profile with the same name is replaced."
+                    )
+                    -- Spell setups from the other client are skipped on import: say so.
+                    local data = payload.data
+                    if
+                        CludesUI.PayloadFromOtherClient(payload)
+                        and type(data) == "table"
+                        and data.spellAssignments ~= nil
+                    then
+                        message = message
+                            .. "\n\n"
+                            .. CludesUI.L(
+                                "Its Cooldown Manager spells come from the other game client and will not be imported."
+                            )
+                    end
                     CludesUI:ShowConfirmPopup({
                         title = CludesUI.L("Import Full Account Data"),
-                        message = CludesUI.L(
-                            "This string is a FULL ACCOUNT export. It replaces your account-wide settings with the sender's, including Utilities, Frame Bindings, Cooldown Manager spell setups, unlock anchors, UI scale, and spec assignments -- not just a profile. Your other profiles keep their own settings, but a profile with the same name is replaced."
-                        )
-                            .. (
-                                (
-                                        CludesUI.PayloadFromOtherClient(payload)
-                                        and type(payload.data) == "table"
-                                        and payload.data.spellAssignments ~= nil
-                                    )
-                                    and ("\n\n" .. CludesUI.L(
-                                        "Its Cooldown Manager spells come from the other game client and will not be imported."
-                                    ))
-                                or ""
-                            ),
+                        message = message,
                         disclaimer = CludesUI.L(
                             "This cannot be undone. Export your own profile as a backup first."
                         ),
