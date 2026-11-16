@@ -3320,15 +3320,13 @@ local function InitBuffBarsPage(
                 prMenu:SetHeight(mH + 4)
             end
 
-            local function PrApplyNormal()
-                prDDLbl:SetTextColor(aS[17], aS[18], aS[19], aS[20])
-                prDDBrd:SetColor(aS[9], aS[10], aS[11], aS[12])
-                prDDBg:SetColorTexture(aS[1], aS[2], aS[3], aS[4])
-            end
-            local function PrApplyHover()
-                prDDLbl:SetTextColor(aS[21], aS[22], aS[23], aS[24])
-                prDDBrd:SetColor(aS[13], aS[14], aS[15], aS[16])
-                prDDBg:SetColorTexture(aS[5], aS[6], aS[7], aS[8])
+            -- The dropdown's paint from the shared colour set: resting, or hovered
+            -- (also while its menu is open).
+            local function PrPaint(hovered)
+                local o = hovered and 4 or 0
+                prDDLbl:SetTextColor(aS[17 + o], aS[18 + o], aS[19 + o], aS[20 + o])
+                prDDBrd:SetColor(aS[9 + o], aS[10 + o], aS[11 + o], aS[12 + o])
+                prDDBg:SetColorTexture(aS[1 + o], aS[2 + o], aS[3 + o], aS[4 + o])
             end
             prDD:SetScript("OnClick", function()
                 if prMenu:IsShown() then
@@ -3339,75 +3337,71 @@ local function InitBuffBarsPage(
                 end
             end)
             prDD:SetScript("OnEnter", function()
-                PrApplyHover()
+                PrPaint(true)
             end)
             prDD:SetScript("OnLeave", function()
                 if not prMenu:IsShown() then
-                    PrApplyNormal()
+                    PrPaint(false)
                 end
             end)
             prDD:HookScript("OnHide", function()
                 prMenu:Hide()
             end)
             prMenu:HookScript("OnShow", function()
-                PrApplyHover()
+                PrPaint(true)
             end)
             prMenu:SetScript("OnHide", function(self)
                 self:SetScript("OnUpdate", nil)
-                if prDD:IsMouseOver() then
-                    PrApplyHover()
-                else
-                    PrApplyNormal()
-                end
+                PrPaint(prDD:IsMouseOver() and true or false)
             end)
 
-            -- Buttons with dim labels above, matching the profile row's "Assign to Spec" / "New Profile" columns.
-            local function PresetBtn(labelText, btnText, xOff, tooltip, onClick)
-                local lab = CludesUI.MakeFont(prRow, 12, nil, 1, 1, 1, 0.45)
-                Pix.Point(lab, "LEFT", prLbl, "LEFT", xOff, 0)
-                lab:SetText(CludesUI.L(labelText))
-                lab:SetJustifyH("LEFT")
-                local b = CreateFrame("Button", nil, prRow)
-                Pix.Size(b, BTN_W, CTRL_H)
-                Pix.Point(b, "TOPLEFT", lab, "BOTTOMLEFT", 0, -6)
-                b:SetFrameLevel(prRow:GetFrameLevel() + 2)
-                CludesUI.MakeStyledButton(b, btnText, 11, PROF_BTN_COLOURS, onClick)
-                b:HookScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(b, tooltip)
+            -- A button with a dim label above, as the profile row's "Assign to Spec" /
+            -- "New Profile" columns; slot 0-2 right of the dropdown.
+            local function PresetBtn(text, slot, buttonText, tooltip, onClick)
+                local label = CludesUI.MakeFont(prRow, 12, nil, 1, 1, 1, 0.45)
+                Pix.Point(label, "LEFT", prLbl, "LEFT", DD_W + GAP_DD + (BTN_W + GAP_BTN) * slot, 0)
+                label:SetText(CludesUI.L(text))
+                label:SetJustifyH("LEFT")
+                local button = CreateFrame("Button", nil, prRow)
+                Pix.Size(button, BTN_W, CTRL_H)
+                Pix.Point(button, "TOPLEFT", label, "BOTTOMLEFT", 0, -6)
+                button:SetFrameLevel(prRow:GetFrameLevel() + 2)
+                CludesUI.MakeStyledButton(button, buttonText, 11, PROF_BTN_COLOURS, onClick)
+                button:HookScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(button, tooltip)
                 end)
-                b:HookScript("OnLeave", function()
+                button:HookScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                return b
+                return button
             end
-            local bx = DD_W + GAP_DD
+            local function Applied()
+                RefreshTBB()
+                CludesUI:RefreshPage()
+            end
             PresetBtn(
                 "Apply to Bar",
+                0,
                 "Apply to Bar",
-                bx,
                 "Apply the selected preset's style to this bar.",
                 function()
-                    local pr = SelectedPreset()
-                    if not pr then
-                        return
+                    local preset = SelectedPreset()
+                    local sel = preset and not _tbbSelectedGroup and SelectedTBB()
+                    if sel then
+                        mod.ApplyTBBStylePresetToCfg(preset, sel)
+                        Applied()
                     end
-                    local sel = (not _tbbSelectedGroup) and SelectedTBB() or nil
-                    if not sel then
-                        return
-                    end
-                    mod.ApplyTBBStylePresetToCfg(pr, sel)
-                    RefreshTBB()
-                    CludesUI:RefreshPage()
                 end
             )
+            -- The selected group, or the selected bar's (nothing for an independent bar).
             PresetBtn(
                 "Apply to Group",
+                1,
                 "Apply to Group",
-                bx + BTN_W + GAP_BTN,
                 "Apply the selected preset's style to every bar in this group.",
                 function()
-                    local pr = SelectedPreset()
-                    if not pr then
+                    local preset = SelectedPreset()
+                    if not preset then
                         return
                     end
                     local groupId = _tbbSelectedGroup
@@ -3418,20 +3412,20 @@ local function InitBuffBarsPage(
                     if not groupId or groupId == 0 then
                         return
                     end
-                    local t = mod.GetTrackedBuffBars()
-                    for _, c in ipairs(t.bars or {}) do
+                    for _, c in ipairs(mod.GetTrackedBuffBars().bars or {}) do
                         if mod.TBBBarGroupID(c) == groupId then
-                            mod.ApplyTBBStylePresetToCfg(pr, c)
+                            mod.ApplyTBBStylePresetToCfg(preset, c)
                         end
                     end
-                    RefreshTBB()
-                    CludesUI:RefreshPage()
+                    Applied()
                 end
             )
+            -- Save New Preset: the edited style under a name (blank: the next free
+            -- "Preset N"), which becomes the selected preset.
             PresetBtn(
                 "New Preset",
+                2,
                 "Save New Preset",
-                bx + (BTN_W + GAP_BTN) * 2,
                 "Save this bar's current style as a new preset.",
                 function()
                     local source = PreviewCfg()
@@ -3444,14 +3438,14 @@ local function InitBuffBarsPage(
                         placeholder = UniqueTBBPresetName(),
                         confirmText = CludesUI.L("Save"),
                         cancelText = CludesUI.L("Cancel"),
-                        onConfirm = function(nm)
-                            if not nm or nm == "" then
-                                nm = UniqueTBBPresetName()
+                        onConfirm = function(name)
+                            if not name or name == "" then
+                                name = UniqueTBBPresetName()
                             end
-                            if mod.SaveTBBStylePreset and mod.SaveTBBStylePreset(nm, source) then
+                            if mod.SaveTBBStylePreset and mod.SaveTBBStylePreset(name, source) then
                                 local p = DB()
                                 if p then
-                                    p.tbbSelectedStylePreset = nm
+                                    p.tbbSelectedStylePreset = name
                                 end
                             end
                             CludesUI:RefreshPage(true)
