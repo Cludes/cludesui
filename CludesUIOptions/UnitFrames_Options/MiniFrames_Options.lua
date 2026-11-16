@@ -2470,6 +2470,28 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
     local buffAnchorOrder, buffAnchorValues, buffGrowthOrder, buffGrowthValues =
         environ.buffAnchorOrder, environ.buffAnchorValues, environ.buffGrowthOrder, environ.buffGrowthValues
     local saved = environ.db
+
+    -- A cog row on one boss setting: get reads it (default when unset or
+    -- false), set writes it and redraws the frames, and the preview's auras
+    -- too when refreshAuras is set.
+    local function BossGet(key, default)
+        return function()
+            local v = saved.profile.boss[key]
+            if default == nil then
+                return v
+            end
+            return v or default
+        end
+    end
+    local function BossSet(key, refreshAuras)
+        return function(v)
+            saved.profile.boss[key] = v
+            ReloadAndUpdate()
+            if refreshAuras and mod.RefreshBossPreviewDebuffs then
+                mod.RefreshBossPreviewDebuffs()
+            end
+        end
+    end
     local _, hgt
 
     -- Activate/Deactivate Boss Preview button (matches Party Mode's activate
@@ -2760,16 +2782,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         max = 20,
                         step = 1,
                         tooltip = mod.UFO_MAX_COUNT_TOOLTIP,
-                        get = function()
-                            return saved.profile.boss.maxBuffs or 4
-                        end,
-                        set = function(v)
-                            saved.profile.boss.maxBuffs = v
-                            ReloadAndUpdate()
-                            if mod.RefreshBossPreviewDebuffs then
-                                mod.RefreshBossPreviewDebuffs()
-                            end
-                        end,
+                        get = BossGet("maxBuffs", 4),
+                        set = BossSet("maxBuffs", true),
                     },
                     -- Shares the boss buffMaxPerRow key with Buffs Location
                     -- (mutually exclusive modes), like Max Count above.
@@ -2834,16 +2848,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         min = -1,
                         max = 10,
                         step = 1,
-                        get = function()
-                            return saved.profile.boss.simpleBuffSpacing or 1
-                        end,
-                        set = function(v)
-                            saved.profile.boss.simpleBuffSpacing = v
-                            ReloadAndUpdate()
-                            if mod.RefreshBossPreviewDebuffs then
-                                mod.RefreshBossPreviewDebuffs()
-                            end
-                        end,
+                        get = BossGet("simpleBuffSpacing", 1),
+                        set = BossSet("simpleBuffSpacing", true),
                     },
                 },
             })
@@ -2880,13 +2886,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return saved.profile.boss.simpleBuffCooldownTextOffsetX or 0
-                        end,
-                        set = function(v)
-                            saved.profile.boss.simpleBuffCooldownTextOffsetX = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("simpleBuffCooldownTextOffsetX", 0),
+                        set = BossSet("simpleBuffCooldownTextOffsetX"),
                     },
                     {
                         type = "slider",
@@ -2894,13 +2895,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return saved.profile.boss.simpleBuffCooldownTextOffsetY or 0
-                        end,
-                        set = function(v)
-                            saved.profile.boss.simpleBuffCooldownTextOffsetY = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("simpleBuffCooldownTextOffsetY", 0),
+                        set = BossSet("simpleBuffCooldownTextOffsetY"),
                     },
                     {
                         type = "slider",
@@ -2908,13 +2904,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         min = 6,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return saved.profile.boss.buffStackTextSize or 14
-                        end,
-                        set = function(v)
-                            saved.profile.boss.buffStackTextSize = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("buffStackTextSize", 14),
+                        set = BossSet("buffStackTextSize"),
                     },
                     {
                         type = "dropdown",
@@ -2927,13 +2918,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             center = "Center",
                         },
                         order = { "bottomright", "bottomleft", "topright", "topleft", "center" },
-                        get = function()
-                            return saved.profile.boss.buffStackTextPosition or "bottomright"
-                        end,
-                        set = function(v)
-                            saved.profile.boss.buffStackTextPosition = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("buffStackTextPosition", "bottomright"),
+                        set = BossSet("buffStackTextPosition"),
                     },
                     {
                         type = "slider",
@@ -2941,13 +2927,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return saved.profile.boss.buffStackTextOffsetX or 0
-                        end,
-                        set = function(v)
-                            saved.profile.boss.buffStackTextOffsetX = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("buffStackTextOffsetX", 0),
+                        set = BossSet("buffStackTextOffsetX"),
                     },
                     {
                         type = "slider",
@@ -2955,13 +2936,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return saved.profile.boss.buffStackTextOffsetY or 0
-                        end,
-                        set = function(v)
-                            saved.profile.boss.buffStackTextOffsetY = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("buffStackTextOffsetY", 0),
+                        set = BossSet("buffStackTextOffsetY"),
                     },
                 },
             })
@@ -3114,16 +3090,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         max = 20,
                         step = 1,
                         tooltip = mod.UFO_MAX_COUNT_TOOLTIP,
-                        get = function()
-                            return saved.profile.boss.maxDebuffs or 10
-                        end,
-                        set = function(v)
-                            saved.profile.boss.maxDebuffs = v
-                            ReloadAndUpdate()
-                            if mod.RefreshBossPreviewDebuffs then
-                                mod.RefreshBossPreviewDebuffs()
-                            end
-                        end,
+                        get = BossGet("maxDebuffs", 10),
+                        set = BossSet("maxDebuffs", true),
                     },
                     mod.UFO_MaxImportantRow(function()
                         return saved.profile.boss
@@ -3191,16 +3159,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         min = -1,
                         max = 10,
                         step = 1,
-                        get = function()
-                            return saved.profile.boss.simpleDebuffSpacing or 1
-                        end,
-                        set = function(v)
-                            saved.profile.boss.simpleDebuffSpacing = v
-                            ReloadAndUpdate()
-                            if mod.RefreshBossPreviewDebuffs then
-                                mod.RefreshBossPreviewDebuffs()
-                            end
-                        end,
+                        get = BossGet("simpleDebuffSpacing", 1),
+                        set = BossSet("simpleDebuffSpacing", true),
                     },
                 },
             })
@@ -3238,13 +3198,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return saved.profile.boss.simpleDebuffCooldownTextOffsetX or 0
-                        end,
-                        set = function(v)
-                            saved.profile.boss.simpleDebuffCooldownTextOffsetX = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("simpleDebuffCooldownTextOffsetX", 0),
+                        set = BossSet("simpleDebuffCooldownTextOffsetX"),
                     },
                     {
                         type = "slider",
@@ -3252,13 +3207,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return saved.profile.boss.simpleDebuffCooldownTextOffsetY or 0
-                        end,
-                        set = function(v)
-                            saved.profile.boss.simpleDebuffCooldownTextOffsetY = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("simpleDebuffCooldownTextOffsetY", 0),
+                        set = BossSet("simpleDebuffCooldownTextOffsetY"),
                     },
                     {
                         type = "slider",
@@ -3266,13 +3216,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         min = 6,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return saved.profile.boss.debuffStackTextSize or 14
-                        end,
-                        set = function(v)
-                            saved.profile.boss.debuffStackTextSize = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("debuffStackTextSize", 14),
+                        set = BossSet("debuffStackTextSize"),
                     },
                     {
                         type = "dropdown",
@@ -3285,13 +3230,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             center = "Center",
                         },
                         order = { "bottomright", "bottomleft", "topright", "topleft", "center" },
-                        get = function()
-                            return saved.profile.boss.debuffStackTextPosition or "bottomright"
-                        end,
-                        set = function(v)
-                            saved.profile.boss.debuffStackTextPosition = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("debuffStackTextPosition", "bottomright"),
+                        set = BossSet("debuffStackTextPosition"),
                     },
                     {
                         type = "slider",
@@ -3299,13 +3239,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return saved.profile.boss.debuffStackTextOffsetX or 0
-                        end,
-                        set = function(v)
-                            saved.profile.boss.debuffStackTextOffsetX = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("debuffStackTextOffsetX", 0),
+                        set = BossSet("debuffStackTextOffsetX"),
                     },
                     {
                         type = "slider",
@@ -3313,13 +3248,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return saved.profile.boss.debuffStackTextOffsetY or 0
-                        end,
-                        set = function(v)
-                            saved.profile.boss.debuffStackTextOffsetY = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("debuffStackTextOffsetY", 0),
+                        set = BossSet("debuffStackTextOffsetY"),
                     },
                 },
             })
@@ -3538,16 +3468,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             min = -200,
                             max = 200,
                             step = 1,
-                            get = function()
-                                return saved.profile.boss.buffOffsetX or 0
-                            end,
-                            set = function(v)
-                                saved.profile.boss.buffOffsetX = v
-                                ReloadAndUpdate()
-                                if mod.RefreshBossPreviewDebuffs then
-                                    mod.RefreshBossPreviewDebuffs()
-                                end
-                            end,
+                            get = BossGet("buffOffsetX", 0),
+                            set = BossSet("buffOffsetX", true),
                         },
                         {
                             type = "slider",
@@ -3555,16 +3477,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             min = -200,
                             max = 200,
                             step = 1,
-                            get = function()
-                                return saved.profile.boss.buffOffsetY or 0
-                            end,
-                            set = function(v)
-                                saved.profile.boss.buffOffsetY = v
-                                ReloadAndUpdate()
-                                if mod.RefreshBossPreviewDebuffs then
-                                    mod.RefreshBossPreviewDebuffs()
-                                end
-                            end,
+                            get = BossGet("buffOffsetY", 0),
+                            set = BossSet("buffOffsetY", true),
                         },
                         -- Physical-pixel-perfect gap between the boss buff icons.
                         {
@@ -3574,16 +3488,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             min = -1,
                             max = 10,
                             step = 1,
-                            get = function()
-                                return saved.profile.boss.buffSpacing or 1
-                            end,
-                            set = function(v)
-                                saved.profile.boss.buffSpacing = v
-                                ReloadAndUpdate()
-                                if mod.RefreshBossPreviewDebuffs then
-                                    mod.RefreshBossPreviewDebuffs()
-                                end
-                            end,
+                            get = BossGet("buffSpacing", 1),
+                            set = BossSet("buffSpacing", true),
                         },
                     },
                 })
@@ -3604,16 +3510,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             min = 0,
                             max = 0.20,
                             step = 0.01,
-                            get = function()
-                                return saved.profile.boss.buffIconZoom or 0.07
-                            end,
-                            set = function(v)
-                                saved.profile.boss.buffIconZoom = v
-                                ReloadAndUpdate()
-                                if mod.RefreshBossPreviewDebuffs then
-                                    mod.RefreshBossPreviewDebuffs()
-                                end
-                            end,
+                            get = BossGet("buffIconZoom", 0.07),
+                            set = BossSet("buffIconZoom", true),
                         },
                     },
                 })
@@ -3650,13 +3548,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             min = -100,
                             max = 100,
                             step = 1,
-                            get = function()
-                                return saved.profile.boss.buffCooldownTextOffsetX or 0
-                            end,
-                            set = function(v)
-                                saved.profile.boss.buffCooldownTextOffsetX = v
-                                ReloadAndUpdate()
-                            end,
+                            get = BossGet("buffCooldownTextOffsetX", 0),
+                            set = BossSet("buffCooldownTextOffsetX"),
                         },
                         {
                             type = "slider",
@@ -3664,13 +3557,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             min = -100,
                             max = 100,
                             step = 1,
-                            get = function()
-                                return saved.profile.boss.buffCooldownTextOffsetY or 0
-                            end,
-                            set = function(v)
-                                saved.profile.boss.buffCooldownTextOffsetY = v
-                                ReloadAndUpdate()
-                            end,
+                            get = BossGet("buffCooldownTextOffsetY", 0),
+                            set = BossSet("buffCooldownTextOffsetY"),
                         },
                         {
                             type = "slider",
@@ -3678,13 +3566,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             min = 6,
                             max = 100,
                             step = 1,
-                            get = function()
-                                return saved.profile.boss.buffStackTextSize or 14
-                            end,
-                            set = function(v)
-                                saved.profile.boss.buffStackTextSize = v
-                                ReloadAndUpdate()
-                            end,
+                            get = BossGet("buffStackTextSize", 14),
+                            set = BossSet("buffStackTextSize"),
                         },
                         {
                             type = "dropdown",
@@ -3697,13 +3580,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                                 center = "Center",
                             },
                             order = { "bottomright", "bottomleft", "topright", "topleft", "center" },
-                            get = function()
-                                return saved.profile.boss.buffStackTextPosition or "bottomright"
-                            end,
-                            set = function(v)
-                                saved.profile.boss.buffStackTextPosition = v
-                                ReloadAndUpdate()
-                            end,
+                            get = BossGet("buffStackTextPosition", "bottomright"),
+                            set = BossSet("buffStackTextPosition"),
                         },
                         {
                             type = "slider",
@@ -3711,13 +3589,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             min = -100,
                             max = 100,
                             step = 1,
-                            get = function()
-                                return saved.profile.boss.buffStackTextOffsetX or 0
-                            end,
-                            set = function(v)
-                                saved.profile.boss.buffStackTextOffsetX = v
-                                ReloadAndUpdate()
-                            end,
+                            get = BossGet("buffStackTextOffsetX", 0),
+                            set = BossSet("buffStackTextOffsetX"),
                         },
                         {
                             type = "slider",
@@ -3725,13 +3598,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             min = -100,
                             max = 100,
                             step = 1,
-                            get = function()
-                                return saved.profile.boss.buffStackTextOffsetY or 0
-                            end,
-                            set = function(v)
-                                saved.profile.boss.buffStackTextOffsetY = v
-                                ReloadAndUpdate()
-                            end,
+                            get = BossGet("buffStackTextOffsetY", 0),
+                            set = BossSet("buffStackTextOffsetY"),
                         },
                     },
                 })
@@ -3913,16 +3781,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                                 min = -200,
                                 max = 200,
                                 step = 1,
-                                get = function()
-                                    return saved.profile.boss.debuffOffsetX or 0
-                                end,
-                                set = function(v)
-                                    saved.profile.boss.debuffOffsetX = v
-                                    ReloadAndUpdate()
-                                    if mod.RefreshBossPreviewDebuffs then
-                                        mod.RefreshBossPreviewDebuffs()
-                                    end
-                                end,
+                                get = BossGet("debuffOffsetX", 0),
+                                set = BossSet("debuffOffsetX", true),
                             },
                             {
                                 type = "slider",
@@ -3930,16 +3790,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                                 min = -200,
                                 max = 200,
                                 step = 1,
-                                get = function()
-                                    return saved.profile.boss.debuffOffsetY or 0
-                                end,
-                                set = function(v)
-                                    saved.profile.boss.debuffOffsetY = v
-                                    ReloadAndUpdate()
-                                    if mod.RefreshBossPreviewDebuffs then
-                                        mod.RefreshBossPreviewDebuffs()
-                                    end
-                                end,
+                                get = BossGet("debuffOffsetY", 0),
+                                set = BossSet("debuffOffsetY", true),
                             },
                             -- Physical-pixel-perfect gap between the boss debuff icons.
                             {
@@ -3949,16 +3801,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                                 min = -1,
                                 max = 10,
                                 step = 1,
-                                get = function()
-                                    return saved.profile.boss.debuffSpacing or 1
-                                end,
-                                set = function(v)
-                                    saved.profile.boss.debuffSpacing = v
-                                    ReloadAndUpdate()
-                                    if mod.RefreshBossPreviewDebuffs then
-                                        mod.RefreshBossPreviewDebuffs()
-                                    end
-                                end,
+                                get = BossGet("debuffSpacing", 1),
+                                set = BossSet("debuffSpacing", true),
                             },
                         },
                     })
@@ -3978,16 +3822,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                                 min = 0,
                                 max = 0.20,
                                 step = 0.01,
-                                get = function()
-                                    return saved.profile.boss.debuffIconZoom or 0.07
-                                end,
-                                set = function(v)
-                                    saved.profile.boss.debuffIconZoom = v
-                                    ReloadAndUpdate()
-                                    if mod.RefreshBossPreviewDebuffs then
-                                        mod.RefreshBossPreviewDebuffs()
-                                    end
-                                end,
+                                get = BossGet("debuffIconZoom", 0.07),
+                                set = BossSet("debuffIconZoom", true),
                             },
                         },
                     })
@@ -4025,13 +3861,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                                 min = -100,
                                 max = 100,
                                 step = 1,
-                                get = function()
-                                    return saved.profile.boss.debuffCooldownTextOffsetX or 0
-                                end,
-                                set = function(v)
-                                    saved.profile.boss.debuffCooldownTextOffsetX = v
-                                    ReloadAndUpdate()
-                                end,
+                                get = BossGet("debuffCooldownTextOffsetX", 0),
+                                set = BossSet("debuffCooldownTextOffsetX"),
                             },
                             {
                                 type = "slider",
@@ -4039,13 +3870,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                                 min = -100,
                                 max = 100,
                                 step = 1,
-                                get = function()
-                                    return saved.profile.boss.debuffCooldownTextOffsetY or 0
-                                end,
-                                set = function(v)
-                                    saved.profile.boss.debuffCooldownTextOffsetY = v
-                                    ReloadAndUpdate()
-                                end,
+                                get = BossGet("debuffCooldownTextOffsetY", 0),
+                                set = BossSet("debuffCooldownTextOffsetY"),
                             },
                             {
                                 type = "slider",
@@ -4053,13 +3879,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                                 min = 6,
                                 max = 100,
                                 step = 1,
-                                get = function()
-                                    return saved.profile.boss.debuffStackTextSize or 14
-                                end,
-                                set = function(v)
-                                    saved.profile.boss.debuffStackTextSize = v
-                                    ReloadAndUpdate()
-                                end,
+                                get = BossGet("debuffStackTextSize", 14),
+                                set = BossSet("debuffStackTextSize"),
                             },
                             {
                                 type = "dropdown",
@@ -4072,13 +3893,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                                     center = "Center",
                                 },
                                 order = { "bottomright", "bottomleft", "topright", "topleft", "center" },
-                                get = function()
-                                    return saved.profile.boss.debuffStackTextPosition or "bottomright"
-                                end,
-                                set = function(v)
-                                    saved.profile.boss.debuffStackTextPosition = v
-                                    ReloadAndUpdate()
-                                end,
+                                get = BossGet("debuffStackTextPosition", "bottomright"),
+                                set = BossSet("debuffStackTextPosition"),
                             },
                             {
                                 type = "slider",
@@ -4086,13 +3902,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                                 min = -100,
                                 max = 100,
                                 step = 1,
-                                get = function()
-                                    return saved.profile.boss.debuffStackTextOffsetX or 0
-                                end,
-                                set = function(v)
-                                    saved.profile.boss.debuffStackTextOffsetX = v
-                                    ReloadAndUpdate()
-                                end,
+                                get = BossGet("debuffStackTextOffsetX", 0),
+                                set = BossSet("debuffStackTextOffsetX"),
                             },
                             {
                                 type = "slider",
@@ -4100,13 +3911,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                                 min = -100,
                                 max = 100,
                                 step = 1,
-                                get = function()
-                                    return saved.profile.boss.debuffStackTextOffsetY or 0
-                                end,
-                                set = function(v)
-                                    saved.profile.boss.debuffStackTextOffsetY = v
-                                    ReloadAndUpdate()
-                                end,
+                                get = BossGet("debuffStackTextOffsetY", 0),
+                                set = BossSet("debuffStackTextOffsetY"),
                             },
                         },
                     })
@@ -4595,13 +4401,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         label = "Growth Direction",
                         values = buffGrowthValues,
                         order = buffGrowthOrder,
-                        get = function()
-                            return saved.profile.boss.buffGrowth or "auto"
-                        end,
-                        set = function(v)
-                            saved.profile.boss.buffGrowth = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("buffGrowth", "auto"),
+                        set = BossSet("buffGrowth"),
                     },
                     {
                         type = "slider",
@@ -4610,13 +4411,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         max = 20,
                         step = 1,
                         tooltip = mod.UFO_MAX_COUNT_TOOLTIP,
-                        get = function()
-                            return saved.profile.boss.maxBuffs or 4
-                        end,
-                        set = function(v)
-                            saved.profile.boss.maxBuffs = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("maxBuffs", 4),
+                        set = BossSet("maxBuffs"),
                     },
                     {
                         type = "slider",
@@ -4669,13 +4465,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         label = "Growth Direction",
                         values = buffGrowthValues,
                         order = buffGrowthOrder,
-                        get = function()
-                            return saved.profile.boss.debuffGrowth or "auto"
-                        end,
-                        set = function(v)
-                            saved.profile.boss.debuffGrowth = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("debuffGrowth", "auto"),
+                        set = BossSet("debuffGrowth"),
                     },
                     {
                         type = "slider",
@@ -4684,13 +4475,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         max = 20,
                         step = 1,
                         tooltip = mod.UFO_MAX_COUNT_TOOLTIP,
-                        get = function()
-                            return saved.profile.boss.maxDebuffs or 10
-                        end,
-                        set = function(v)
-                            saved.profile.boss.maxDebuffs = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("maxDebuffs", 10),
+                        set = BossSet("maxDebuffs"),
                     },
                     mod.UFO_MaxImportantRow(function()
                         return saved.profile.boss
@@ -4771,13 +4557,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         min = -300,
                         max = 300,
                         step = 1,
-                        get = function()
-                            return saved.profile.boss.castSpellTargetX or 0
-                        end,
-                        set = function(v)
-                            saved.profile.boss.castSpellTargetX = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("castSpellTargetX", 0),
+                        set = BossSet("castSpellTargetX"),
                     },
                     {
                         type = "slider",
@@ -4785,13 +4566,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         min = -300,
                         max = 300,
                         step = 1,
-                        get = function()
-                            return saved.profile.boss.castSpellTargetY or 0
-                        end,
-                        set = function(v)
-                            saved.profile.boss.castSpellTargetY = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("castSpellTargetY", 0),
+                        set = BossSet("castSpellTargetY"),
                     },
                 },
             })
@@ -4841,13 +4617,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return saved.profile.boss.raidMarkerX or 0
-                        end,
-                        set = function(v)
-                            saved.profile.boss.raidMarkerX = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("raidMarkerX", 0),
+                        set = BossSet("raidMarkerX"),
                     },
                     {
                         type = "slider",
@@ -4855,26 +4626,16 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return saved.profile.boss.raidMarkerY or 0
-                        end,
-                        set = function(v)
-                            saved.profile.boss.raidMarkerY = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("raidMarkerY", 0),
+                        set = BossSet("raidMarkerY"),
                     },
                     {
                         type = "dropdown",
                         label = "Alignment",
                         values = { left = "Left", center = "Center", right = "Right" },
                         order = { "left", "center", "right" },
-                        get = function()
-                            return saved.profile.boss.raidMarkerAlign or "left"
-                        end,
-                        set = function(v)
-                            saved.profile.boss.raidMarkerAlign = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BossGet("raidMarkerAlign", "left"),
+                        set = BossSet("raidMarkerAlign"),
                     },
                 },
             })
