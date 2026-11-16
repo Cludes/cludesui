@@ -587,87 +587,58 @@ initFrame:SetScript("OnEvent", function(self)
                     iHl:SetAllPoints()
                     iHl:SetColorTexture(1, 1, 1, 1)
 
-                    -- Inline delete + rename (every DataBar is user-created)
-                    local delBtn = CreateFrame("Button", nil, item)
-                    delBtn:SetSize(ICON_SZ, ICON_SZ)
-                    delBtn:SetPoint("RIGHT", item, "RIGHT", -8, 0)
-                    delBtn:SetFrameLevel(item:GetFrameLevel() + 2)
-                    local delIcon = delBtn:CreateTexture(nil, "OVERLAY")
-                    delIcon:SetSize(ICON_SZ, ICON_SZ)
-                    delIcon:SetPoint("CENTER", delBtn, "CENTER", 0, 0)
-                    if delIcon.SetSnapToPixelGrid then
-                        delIcon:SetSnapToPixelGrid(false)
-                        delIcon:SetTexelSnappingBias(0)
-                    end
-                    delIcon:SetTexture(MEDIA_ICONS .. "cui-close.png")
-
-                    local editBtn = CreateFrame("Button", nil, item)
-                    editBtn:SetSize(ICON_SZ, ICON_SZ)
-                    editBtn:SetPoint("RIGHT", delBtn, "LEFT", -4, 0)
-                    editBtn:SetFrameLevel(item:GetFrameLevel() + 2)
-                    local edIcon = editBtn:CreateTexture(nil, "OVERLAY")
-                    edIcon:SetSize(ICON_SZ, ICON_SZ)
-                    edIcon:SetPoint("CENTER", editBtn, "CENTER", 0, 0)
-                    if edIcon.SetSnapToPixelGrid then
-                        edIcon:SetSnapToPixelGrid(false)
-                        edIcon:SetTexelSnappingBias(0)
-                    end
-                    edIcon:SetTexture(MEDIA_ICONS .. "cui-edit.png")
-
-                    iLbl:SetPoint("RIGHT", editBtn, "LEFT", -4, 0)
-
+                    -- Rename and Delete inline at the right edge (every bar is
+                    -- user-made): dim at rest, lit with the row on hover.
+                    local delBtn, editBtn
                     local function Rest()
                         delBtn:SetAlpha(0.75)
                         editBtn:SetAlpha(0.75)
                         iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                        if item._isSel then
-                            iHl:SetAlpha(selA)
-                        else
-                            iHl:SetAlpha(0)
-                        end
+                        iHl:SetAlpha(item._isSel and selA or 0)
                     end
                     item._rest = Rest
                     item._lbl = iLbl
-
-                    local function InlineBtnEnter(btnSelf)
-                        btnSelf:SetAlpha(1)
-                        iLbl:SetTextColor(1, 1, 1, 1)
-                        iHl:SetAlpha(hlA)
-                        delBtn:SetAlpha(0.85)
-                        editBtn:SetAlpha(0.85)
+                    local function OverAny()
+                        return item:IsMouseOver() or delBtn:IsMouseOver() or editBtn:IsMouseOver()
                     end
-                    local function InlineBtnLeave(btnSelf)
-                        if item:IsMouseOver() or delBtn:IsMouseOver() or editBtn:IsMouseOver() then
-                            btnSelf:SetAlpha(0.85)
-                            return
+                    local function InlineIcon(anchor, relPoint, x, file, tip, act)
+                        local btn = CreateFrame("Button", nil, item)
+                        btn:SetSize(ICON_SZ, ICON_SZ)
+                        btn:SetPoint("RIGHT", anchor, relPoint, x, 0)
+                        btn:SetFrameLevel(item:GetFrameLevel() + 2)
+                        local icon = btn:CreateTexture(nil, "OVERLAY")
+                        icon:SetSize(ICON_SZ, ICON_SZ)
+                        icon:SetPoint("CENTER", btn, "CENTER", 0, 0)
+                        if icon.SetSnapToPixelGrid then
+                            icon:SetSnapToPixelGrid(false)
+                            icon:SetTexelSnappingBias(0)
                         end
-                        Rest()
+                        icon:SetTexture(MEDIA_ICONS .. file)
+                        btn:SetScript("OnEnter", function(self)
+                            self:SetAlpha(1)
+                            iLbl:SetTextColor(1, 1, 1, 1)
+                            iHl:SetAlpha(hlA)
+                            delBtn:SetAlpha(0.85)
+                            editBtn:SetAlpha(0.85)
+                            CludesUI.ShowWidgetTooltip(self, CludesUI.L(tip))
+                        end)
+                        btn:SetScript("OnLeave", function(self)
+                            if OverAny() then
+                                self:SetAlpha(0.85)
+                            else
+                                Rest()
+                            end
+                            CludesUI.HideWidgetTooltip()
+                        end)
+                        btn:SetScript("OnClick", function()
+                            dropMenu:Hide()
+                            act(item._bar)
+                        end)
+                        return btn
                     end
-
-                    delBtn:SetScript("OnEnter", function(btnSelf)
-                        InlineBtnEnter(btnSelf)
-                        CludesUI.ShowWidgetTooltip(btnSelf, CludesUI.L("Delete"))
-                    end)
-                    delBtn:SetScript("OnLeave", function(btnSelf)
-                        InlineBtnLeave(btnSelf)
-                        CludesUI.HideWidgetTooltip()
-                    end)
-                    editBtn:SetScript("OnEnter", function(btnSelf)
-                        InlineBtnEnter(btnSelf)
-                        CludesUI.ShowWidgetTooltip(btnSelf, CludesUI.L("Rename"))
-                    end)
-                    editBtn:SetScript("OnLeave", function(btnSelf)
-                        InlineBtnLeave(btnSelf)
-                        CludesUI.HideWidgetTooltip()
-                    end)
-                    delBtn:SetScript("OnClick", function()
-                        dropMenu:Hide()
-                        PromptDeleteBar(item._bar)
-                    end)
-                    editBtn:SetScript("OnClick", function()
-                        dropMenu:Hide()
-                        PromptRenameBar(item._bar)
-                    end)
+                    delBtn = InlineIcon(item, "RIGHT", -8, "cui-close.png", "Delete", PromptDeleteBar)
+                    editBtn = InlineIcon(delBtn, "LEFT", -4, "cui-edit.png", "Rename", PromptRenameBar)
+                    iLbl:SetPoint("RIGHT", editBtn, "LEFT", -4, 0)
 
                     item:SetScript("OnEnter", function()
                         iLbl:SetTextColor(1, 1, 1, 1)
@@ -676,13 +647,9 @@ initFrame:SetScript("OnEvent", function(self)
                         editBtn:SetAlpha(1)
                     end)
                     item:SetScript("OnLeave", function()
-                        if delBtn:IsMouseOver() then
-                            return
+                        if not (delBtn:IsMouseOver() or editBtn:IsMouseOver()) then
+                            Rest()
                         end
-                        if editBtn:IsMouseOver() then
-                            return
-                        end
-                        Rest()
                     end)
                     item:SetScript("OnClick", function()
                         dropMenu:Hide()
@@ -763,11 +730,7 @@ initFrame:SetScript("OnEvent", function(self)
                 item:ClearAllPoints()
                 item:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -mH)
                 item:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -mH)
-                local nm = b.name
-                if nm == nil then
-                    nm = ""
-                end
-                item._lbl:SetText(nm)
+                item._lbl:SetText(b.name or "")
                 item._rest()
                 item:Show()
                 mH = mH + ITEM_H
