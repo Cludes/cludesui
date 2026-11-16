@@ -542,6 +542,39 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- Build a dropdown popup menu + item buttons; returns { menu, menuItems, refresh }. ddBtn = button the menu hangs off; menuW = menu pixel width; order = key array; values = { key = displayName } (displayName: string or { text=..., note=... }); ddLbl = label FontString updated on selection; style = "wide"/"regular" (WD_ vs RD_ colours).
     local DD_MAX_HEIGHT = 200
 
+    -- A menu row's background (_menuOpts.background): the texture at 0.45, over
+    -- an optional solid base layer, tiled on request, tinted by the look's
+    -- tint (its alpha riding the colour write: one alpha channel per texture)
+    -- or else by the menu's backgroundVertexColor. look = { base = {r,g,b},
+    -- tint = {r,g,b}, tile = true }, so a row can mirror a compound fill.
+    local function MenuRowBackground(item, path, look, vertexColor)
+        if look and look.base then
+            local b = look.base
+            local baseTex = item:CreateTexture(nil, "BACKGROUND", nil, 0)
+            baseTex:SetAllPoints()
+            baseTex:SetColorTexture(b[1], b[2], b[3], 1)
+            baseTex:SetAlpha(0.45)
+        end
+        local tile = look and look.tile and "REPEAT" or nil
+        local tex = item:CreateTexture(nil, "BACKGROUND", nil, 1)
+        tex:SetAllPoints()
+        tex:SetTexture(path, tile, tile)
+        if tile then
+            tex:SetHorizTile(true)
+            tex:SetVertTile(true)
+        end
+        tex:SetAlpha(0.45)
+        if look and look.tint then
+            local t = look.tint
+            tex:SetVertexColor(t[1], t[2], t[3], 0.45)
+        elseif vertexColor then
+            local vr, vg, vb = vertexColor()
+            if vr then
+                tex:SetVertexColor(vr, vg, vb, 1)
+            end
+        end
+    end
+
     -- After a pick, once the menu has fully closed, every widget re-reads its
     -- value: the setter may have changed another dropdown (e.g. moved a text
     -- off the slot this one took).
@@ -713,6 +746,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         local menuItems = {}
         local mH = 4
+        -- A row at the list's current depth (mH), inset 1 from each side.
+        local function MenuRow(height)
+            local item = CreateFrame("Button", nil, innerContainer)
+            item:SetHeight(height)
+            item:SetPoint("TOPLEFT", innerContainer, "TOPLEFT", 1, -mH)
+            item:SetPoint("TOPRIGHT", innerContainer, "TOPRIGHT", -1, -mH)
+            item:SetFrameLevel(menu:GetFrameLevel() + 2)
+            return item
+        end
         for _, key in ipairs(sequence) do
             -- Keys beginning with "---" insert a thin separator line
             if IsDividerKey(key) then
@@ -729,11 +771,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     if type(dn) == "table" and dn.subnav then
                         local sn = dn.subnav
                         local parentText = dn.text or tostring(key)
-                        local item = CreateFrame("Button", nil, innerContainer)
-                        item:SetHeight(26)
-                        item:SetPoint("TOPLEFT", innerContainer, "TOPLEFT", 1, -mH)
-                        item:SetPoint("TOPRIGHT", innerContainer, "TOPRIGHT", -1, -mH)
-                        item:SetFrameLevel(menu:GetFrameLevel() + 2)
+                        local item = MenuRow(26)
                         local iLbl = MakeFont(item, 13, nil, TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
                         iLbl:SetAlpha(1)
                         iLbl:SetPoint("LEFT", item, "LEFT", isWide and 12 or 10, 0)
@@ -929,52 +967,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         -- Annotated labels: dn = string or { text=..., note=..., font=..., action=fn }.
                         -- An action row runs its callback and closes the menu WITHOUT selecting a
                         -- value (the "Edit ..." entry pinned above a "---" divider); accent-colored.
-                        local mainText, noteText, itemFont, dnAction
+                        local mainText, noteText, itemFont, dnAction = dn, nil, nil, nil
                         if type(dn) == "table" then
-                            mainText = dn.text
-                            noteText = dn.note
-                            itemFont = dn.font
-                            dnAction = dn.action
-                        else
-                            mainText = dn
+                            mainText, noteText, itemFont, dnAction = dn.text, dn.note, dn.font, dn.action
                         end
-                        local item = CreateFrame("Button", nil, innerContainer)
-                        item:SetHeight(_moItemH)
-                        item:SetPoint("TOPLEFT", innerContainer, "TOPLEFT", 1, -mH)
-                        item:SetPoint("TOPRIGHT", innerContainer, "TOPRIGHT", -1, -mH)
-                        item:SetFrameLevel(menu:GetFrameLevel() + 2)
+                        local item = MenuRow(_moItemH)
                         if _moBackground then
-                            -- Optional second return: a look table for layered swatches,
-                            -- { base = {r,g,b} solid layer under the texture, tint = {r,g,b},
-                            --   tile = true } so a row can mirror a compound fill.
                             local bgPath, bgLook = _moBackground(key)
                             if bgPath then
-                                if bgLook and bgLook.base then
-                                    local b = bgLook.base
-                                    local baseTex = item:CreateTexture(nil, "BACKGROUND", nil, 0)
-                                    baseTex:SetAllPoints()
-                                    baseTex:SetColorTexture(b[1], b[2], b[3], 1)
-                                    baseTex:SetAlpha(0.45)
-                                end
-                                local tile = bgLook and bgLook.tile and "REPEAT" or nil
-                                local bgTex = item:CreateTexture(nil, "BACKGROUND", nil, 1)
-                                bgTex:SetAllPoints()
-                                bgTex:SetTexture(bgPath, tile, tile)
-                                if tile then
-                                    bgTex:SetHorizTile(true)
-                                    bgTex:SetVertTile(true)
-                                end
-                                bgTex:SetAlpha(0.45)
-                                if bgLook and bgLook.tint then
-                                    -- Alpha rides the colour write (one alpha channel per texture).
-                                    local t = bgLook.tint
-                                    bgTex:SetVertexColor(t[1], t[2], t[3], 0.45)
-                                elseif _moBgVertexColor then
-                                    local vr, vg, vb = _moBgVertexColor()
-                                    if vr then
-                                        bgTex:SetVertexColor(vr, vg, vb, 1)
-                                    end
-                                end
+                                MenuRowBackground(item, bgPath, bgLook, _moBgVertexColor)
                             end
                         end
                         local iLbl = MakeFont(item, 13, nil, TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
