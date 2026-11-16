@@ -605,6 +605,68 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         end
     end
 
+    -- A subpage starting over: what it held goes (pooled frames reset to be
+    -- dressed again; on a page that is no pool host, children dropped).
+    local function ClearPage(page)
+        if PoolManaged(page) then
+            PoolBegin(page)
+            return
+        end
+        for _, child in ipairs({ page:GetChildren() }) do
+            child:Hide()
+            child:SetParent(nil)
+        end
+    end
+
+    -- A subpage's header: the Back button at its top left (back to the
+    -- profiles list) and its centred title. Returns the button's height.
+    local function SubpageHeader(page, pad, top, title)
+        local BACK_W, BACK_H = 80, 32
+        local backBtn = CreateFrame("Button", nil, page)
+        PP.Size(backBtn, BACK_W, BACK_H)
+        PP.Point(backBtn, "TOPLEFT", page, "TOPLEFT", pad, top)
+        backBtn:SetFrameLevel(page:GetFrameLevel() + 2)
+        local backBg = backBtn:CreateTexture(nil, "BACKGROUND")
+        backBg:SetAllPoints()
+        backBg:SetColorTexture(0.062, 0.070, 0.082, 0.50)
+        local backBrd = CludesUI.MakeRoundedBorder(backBtn, 1, 1, 1, 0.12, backBg)
+        local backIcon = backBtn:CreateTexture(nil, "ARTWORK")
+        backIcon:SetSize(14, 14)
+        PP.Point(backIcon, "LEFT", backBtn, "LEFT", 10, 0)
+        backIcon:SetTexture(MEDIA .. "icons\\cui-arrow-left.png")
+        backIcon:SetVertexColor(EG.r, EG.g, EG.b)
+        backIcon:SetAlpha(0.6)
+        Unsnapped(backIcon)
+        local backLbl = CludesUI.MakeFont(backBtn, 12, nil, 1, 1, 1, 0.55)
+        PP.Point(backLbl, "LEFT", backIcon, "RIGHT", 6, 0)
+        backLbl:SetText(CludesUI.L("Back"))
+        local function Paint(hot)
+            if hot then
+                backBg:SetColorTexture(0.100, 0.110, 0.124, 0.50)
+            else
+                backBg:SetColorTexture(0.062, 0.070, 0.082, 0.50)
+            end
+            backBrd:SetColor(1, 1, 1, hot and 0.22 or 0.12)
+            backIcon:SetAlpha(hot and 0.85 or 0.6)
+            backLbl:SetAlpha(hot and 0.85 or 0.55)
+        end
+        backBtn:SetScript("OnEnter", function()
+            Paint(true)
+        end)
+        backBtn:SetScript("OnLeave", function()
+            Paint(false)
+        end)
+        backBtn:SetScript("OnClick", function()
+            page:Hide()
+            mainPage:Show()
+        end)
+        local titleFs = CludesUI.MakeFont(page, 16, nil, 1, 1, 1, 0.95)
+        PP.Point(titleFs, "TOP", page, "TOP", 0, top - BACK_H / 2 + 8)
+        titleFs:SetText(title)
+        titleFs:SetJustifyH("CENTER")
+        return BACK_H
+    end
+
     -------------------------------------------------------------------
     --  IMPORT PAGE BUILDER (shared by presets + import profile)
     -------------------------------------------------------------------
@@ -616,17 +678,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         editModeLayoutName,
         applyImportedScale
     )
-        -- The previous import page goes: its frames and texts are reset and
-        -- dressed again below (options page pool), or dropped where the page
-        -- is no pool host.
-        if PoolManaged(importPage) then
-            PoolBegin(importPage)
-        else
-            for _, child in ipairs({ importPage:GetChildren() }) do
-                child:Hide()
-                child:SetParent(nil)
-            end
-        end
+        ClearPage(importPage)
 
         -- Optional Blizzard Edit Mode layout to apply alongside this import (preset path only; the manual paste path leaves these nil).
         importPage._editModeString = editModeString
@@ -683,53 +735,12 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         local iy = -30
 
-        local BACK_W, BACK_H = 80, 32
-        local backBtn = CreateFrame("Button", nil, importPage)
-        PP.Size(backBtn, BACK_W, BACK_H)
-        PP.Point(backBtn, "TOPLEFT", importPage, "TOPLEFT", PAD, iy)
-        backBtn:SetFrameLevel(importPage:GetFrameLevel() + 2)
-
-        local backBg = backBtn:CreateTexture(nil, "BACKGROUND")
-        backBg:SetAllPoints()
-        backBg:SetColorTexture(0.062, 0.070, 0.082, 0.50)
-        local backBrd = CludesUI.MakeRoundedBorder(backBtn, 1, 1, 1, 0.12, backBg)
-
-        local backIcon = backBtn:CreateTexture(nil, "ARTWORK")
-        backIcon:SetSize(14, 14)
-        PP.Point(backIcon, "LEFT", backBtn, "LEFT", 10, 0)
-        backIcon:SetTexture(MEDIA .. "icons\\cui-arrow-left.png")
-        backIcon:SetVertexColor(EG.r, EG.g, EG.b)
-        backIcon:SetAlpha(0.6)
-        if backIcon.SetSnapToPixelGrid then
-            backIcon:SetSnapToPixelGrid(false)
-            backIcon:SetTexelSnappingBias(0)
-        end
-
-        local backLbl = CludesUI.MakeFont(backBtn, 12, nil, 1, 1, 1, 0.55)
-        PP.Point(backLbl, "LEFT", backIcon, "RIGHT", 6, 0)
-        backLbl:SetText(CludesUI.L("Back"))
-
-        backBtn:SetScript("OnEnter", function()
-            backBg:SetColorTexture(0.100, 0.110, 0.124, 0.50)
-            backBrd:SetColor(1, 1, 1, 0.22)
-            backIcon:SetAlpha(0.85)
-            backLbl:SetAlpha(0.85)
-        end)
-        backBtn:SetScript("OnLeave", function()
-            backBg:SetColorTexture(0.062, 0.070, 0.082, 0.50)
-            backBrd:SetColor(1, 1, 1, 0.12)
-            backIcon:SetAlpha(0.6)
-            backLbl:SetAlpha(0.55)
-        end)
-        backBtn:SetScript("OnClick", function()
-            importPage:Hide()
-            mainPage:Show()
-        end)
-
-        local titleFs = CludesUI.MakeFont(importPage, 16, nil, 1, 1, 1, 0.95)
-        PP.Point(titleFs, "TOP", importPage, "TOP", 0, iy - BACK_H / 2 + 8)
-        titleFs:SetText(CludesUI.Lf("Importing %1$s", (defaultName or CludesUI.L("Profile"))))
-        titleFs:SetJustifyH("CENTER")
+        local BACK_H = SubpageHeader(
+            importPage,
+            PAD,
+            iy,
+            CludesUI.Lf("Importing %1$s", (defaultName or CludesUI.L("Profile")))
+        )
 
         iy = iy - BACK_H - 8
 
@@ -1643,67 +1654,13 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     --  PASTE PAGE (Import Profile step 1: paste string)
     -------------------------------------------------------------------
     local function ShowPastePage()
-        -- The previous paste page goes (as the import page's, above).
-        if PoolManaged(pastePage) then
-            PoolBegin(pastePage)
-        else
-            for _, child in ipairs({ pastePage:GetChildren() }) do
-                child:Hide()
-                child:SetParent(nil)
-            end
-        end
+        ClearPage(pastePage)
 
         local PAD = CludesUI.CONTENT_PAD
         local totalW = pastePage:GetWidth() - PAD * 2
         local py = -30
 
-        local BACK_W, BACK_H = 80, 32
-        local backBtn = CreateFrame("Button", nil, pastePage)
-        PP.Size(backBtn, BACK_W, BACK_H)
-        PP.Point(backBtn, "TOPLEFT", pastePage, "TOPLEFT", PAD, py)
-        backBtn:SetFrameLevel(pastePage:GetFrameLevel() + 2)
-
-        local backBg = backBtn:CreateTexture(nil, "BACKGROUND")
-        backBg:SetAllPoints()
-        backBg:SetColorTexture(0.062, 0.070, 0.082, 0.50)
-        local backBrd = CludesUI.MakeRoundedBorder(backBtn, 1, 1, 1, 0.12, backBg)
-
-        local backIcon = backBtn:CreateTexture(nil, "ARTWORK")
-        backIcon:SetSize(14, 14)
-        PP.Point(backIcon, "LEFT", backBtn, "LEFT", 10, 0)
-        backIcon:SetTexture(MEDIA .. "icons\\cui-arrow-left.png")
-        backIcon:SetVertexColor(EG.r, EG.g, EG.b)
-        backIcon:SetAlpha(0.6)
-        if backIcon.SetSnapToPixelGrid then
-            backIcon:SetSnapToPixelGrid(false)
-            backIcon:SetTexelSnappingBias(0)
-        end
-
-        local backLbl = CludesUI.MakeFont(backBtn, 12, nil, 1, 1, 1, 0.55)
-        PP.Point(backLbl, "LEFT", backIcon, "RIGHT", 6, 0)
-        backLbl:SetText(CludesUI.L("Back"))
-
-        backBtn:SetScript("OnEnter", function()
-            backBg:SetColorTexture(0.100, 0.110, 0.124, 0.50)
-            backBrd:SetColor(1, 1, 1, 0.22)
-            backIcon:SetAlpha(0.85)
-            backLbl:SetAlpha(0.85)
-        end)
-        backBtn:SetScript("OnLeave", function()
-            backBg:SetColorTexture(0.062, 0.070, 0.082, 0.50)
-            backBrd:SetColor(1, 1, 1, 0.12)
-            backIcon:SetAlpha(0.6)
-            backLbl:SetAlpha(0.55)
-        end)
-        backBtn:SetScript("OnClick", function()
-            pastePage:Hide()
-            mainPage:Show()
-        end)
-
-        local titleFs = CludesUI.MakeFont(pastePage, 16, nil, 1, 1, 1, 0.95)
-        PP.Point(titleFs, "TOP", pastePage, "TOP", 0, py - BACK_H / 2 + 8)
-        titleFs:SetText(CludesUI.L("Import Profile"))
-        titleFs:SetJustifyH("CENTER")
+        local BACK_H = SubpageHeader(pastePage, PAD, py, CludesUI.L("Import Profile"))
 
         py = py - BACK_H - 20
 

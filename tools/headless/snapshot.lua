@@ -53,6 +53,11 @@ function Snapshot.Take(root, label)
         end
         for _, k in ipairs(FIELDS) do
             local v = o["\0v"][k]
+            -- A profile string's encoding (and compressed length) follows
+            -- table order, which differs from run to run: only its presence counts.
+            if k == "Text" and type(v) == "string" and v:sub(1, 5) == "!CUI_" then
+                v = "!CUI_<profile string>"
+            end
             if v ~= nil then bits[#bits + 1] = k .. "=" .. Value(v, paths) end
         end
         local scripts = {}

@@ -390,10 +390,15 @@ G.Lerp = function(a, b, t) return a + (b - a) * t end
 G.Saturate = function(v) return G.Clamp(v, 0, 1) end
 G.Round = function(v) return math.floor(v + 0.5) end
 G.tostringall = function(...) local o = {}; for i = 1, select("#", ...) do o[i] = tostring((select(i, ...))) end return unpack(o) end
-G.date, G.time, G.difftime = os.date, os.time, os.difftime
+-- The wall clock is fixed (17 Nov 2026 00:00 UTC) and moves only with the fake
+-- clock, so anything stamped with a time is the same on every run.
+local EPOCH = 1794873600
+G.time = function(t) if t then return os.time(t) end return EPOCH + math.floor(clock) end
+G.date = function(fmt, t) return os.date(fmt, t or G.time()) end
+G.difftime = os.difftime
 G.GetTime = function() return clock end
 G.GetTimePreciseSec = function() return clock end
-G.GetServerTime = function() return os.time() end
+G.GetServerTime = function() return G.time() end
 G.debugprofilestop = function() return clock * 1000 end
 -- debugstack(start, top, bottom) in the client's shape: the suite reads the
 -- calling addon's folder out of it ("AddOns/<folder>/").
