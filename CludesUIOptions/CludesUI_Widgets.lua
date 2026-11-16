@@ -1337,34 +1337,48 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 ddThumb:SetPoint("TOP", ddTrack, "TOP", 0, -(scrollRatio * maxTravel))
             end
 
-            -- Lets the search filter snap back to the top after the list changes.
-            searchResetScroll = function()
-                ddScrollTarget = 0
-                sf:SetVerticalScroll(0)
+            -- A scroll position held inside the list's range.
+            local function Clamp(pos)
+                return math.max(0, math.min(CludesUI.SafeScrollRange(sf), pos))
+            end
+            -- Straight to pos, no easing (the target follows so a later wheel
+            -- starts from there).
+            local function JumpTo(pos)
+                ddScrollTarget = pos
+                sf:SetVerticalScroll(pos)
                 UpdateDDThumb()
             end
+            local function StopSmooth()
+                ddSmoothing = false
+                ddSmoothFrame:Hide()
+            end
+            -- Where a new step starts: the easing's target while one runs.
+            local function StepBase()
+                return ddSmoothing and ddScrollTarget or sf:GetVerticalScroll()
+            end
 
+            -- Lets the search filter snap back to the top after the list changes.
+            searchResetScroll = function()
+                JumpTo(0)
+            end
+
+            -- The easing: each frame closes part of the gap to the target, and
+            -- lands on it once under a third of a unit away.
             ddSmoothFrame:SetScript("OnUpdate", function(_, elapsed)
                 local current = sf:GetVerticalScroll()
-                local maxScroll = CludesUI.SafeScrollRange(sf)
-                ddScrollTarget = math.max(0, math.min(maxScroll, ddScrollTarget))
+                ddScrollTarget = Clamp(ddScrollTarget)
                 local diff = ddScrollTarget - current
                 if math.abs(diff) < 0.3 then
-                    sf:SetVerticalScroll(ddScrollTarget)
-                    UpdateDDThumb()
-                    ddSmoothing = false
-                    ddSmoothFrame:Hide()
+                    JumpTo(ddScrollTarget)
+                    StopSmooth()
                     return
                 end
-                local newScroll = current + diff * math.min(1, SMOOTH_SPEED * elapsed)
-                newScroll = math.max(0, math.min(maxScroll, newScroll))
-                sf:SetVerticalScroll(newScroll)
+                sf:SetVerticalScroll(Clamp(current + diff * math.min(1, SMOOTH_SPEED * elapsed)))
                 UpdateDDThumb()
             end)
 
             local function DDSmoothScrollTo(target)
-                local maxScroll = CludesUI.SafeScrollRange(sf)
-                ddScrollTarget = math.max(0, math.min(maxScroll, target))
+                ddScrollTarget = Clamp(target)
                 if not ddSmoothing then
                     ddSmoothing = true
                     ddSmoothFrame:Show()
@@ -1372,12 +1386,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
 
             sf:SetScript("OnMouseWheel", function(self, delta)
-                local maxScroll = CludesUI.SafeScrollRange(self)
-                if maxScroll <= 0 then
+                if CludesUI.SafeScrollRange(self) <= 0 then
                     return
                 end
-                local base = ddSmoothing and ddScrollTarget or self:GetVerticalScroll()
-                DDSmoothScrollTo(base - delta * SCROLL_STEP)
+                DDSmoothScrollTo(StepBase() - delta * SCROLL_STEP)
             end)
             sf:SetScript("OnScrollRangeChanged", UpdateDDThumb)
 
@@ -1392,8 +1404,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 local PAD_STEP_H = 16
                 local padUp, padDown
                 local function PadStepClick(self)
-                    local base = ddSmoothing and ddScrollTarget or sf:GetVerticalScroll()
-                    DDSmoothScrollTo(base + self._dir * SCROLL_STEP)
+                    DDSmoothScrollTo(StepBase() + self._dir * SCROLL_STEP)
                 end
                 local function MakePadStep(dir, edge, posY)
                     local b = CreateFrame("Button", nil, menu)
@@ -1446,64 +1457,55 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     if not (topY and itTop) then
                         return false
                     end
-                    local maxScroll = CludesUI.SafeScrollRange(sf)
-                    local posY = (topY - itTop) - (sf:GetHeight() - it:GetHeight()) / 2
-                    posY = math.max(0, math.min(maxScroll, posY))
-                    ddSmoothing = false
-                    ddSmoothFrame:Hide()
-                    ddScrollTarget = posY
-                    sf:SetVerticalScroll(posY)
-                    UpdateDDThumb()
+                    StopSmooth()
+                    JumpTo(Clamp((topY - itTop) - (sf:GetHeight() - it:GetHeight()) / 2))
                     local sTop, sBot, iTop, iBot = sf:GetTop(), sf:GetBottom(), it:GetTop(), it:GetBottom()
                     return (sTop and sBot and iTop and iBot and iBot < sTop and iTop > sBot) and true or false
                 end
             end
 
-            -- Thumb drag
+            -- Thumb drag: the scroll moves by the cursor's travel as a share of
+            -- the thumb's free travel. While it runs the menu ignores clicks
+            -- outside it (menu._ddThumbDragging), so a drag past its edge does
+            -- not close it.
             local ddDragging = false
             local ddDragStartY, ddDragStartScroll
+            local function EndThumbDrag(thumb)
+                ddDragging = false
+                menu._ddThumbDragging = false
+                thumb:SetScript("OnUpdate", nil)
+            end
 
             ddThumb:SetScript("OnMouseDown", function(self, btnFrame)
                 if btnFrame ~= "LeftButton" then
                     return
                 end
                 ddDragging = true
-                menu._ddThumbDragging = true -- suppress click-away dismiss while dragging the scrollbar
-                ddSmoothing = false
-                ddSmoothFrame:Hide()
+                menu._ddThumbDragging = true
+                StopSmooth()
                 local _, cursorY = GetCursorPosition()
                 ddDragStartY = cursorY / self:GetEffectiveScale()
                 ddDragStartScroll = sf:GetVerticalScroll()
                 self:SetScript("OnUpdate", function(self2)
                     if not IsMouseButtonDown("LeftButton") then
-                        ddDragging = false
-                        menu._ddThumbDragging = false
-                        self2:SetScript("OnUpdate", nil)
+                        EndThumbDrag(self2)
                         return
                     end
                     local _, cy = GetCursorPosition()
-                    cy = cy / self2:GetEffectiveScale()
-                    local deltaY = ddDragStartY - cy
-                    local trackH = ddTrack:GetHeight()
-                    local maxTravel = trackH - self2:GetHeight()
+                    local deltaY = ddDragStartY - cy / self2:GetEffectiveScale()
+                    local maxTravel = ddTrack:GetHeight() - self2:GetHeight()
                     if maxTravel <= 0 then
                         return
                     end
                     local maxScroll = CludesUI.SafeScrollRange(sf)
-                    local newScroll =
-                        math.max(0, math.min(maxScroll, ddDragStartScroll + (deltaY / maxTravel) * maxScroll))
-                    ddScrollTarget = newScroll
-                    sf:SetVerticalScroll(newScroll)
-                    UpdateDDThumb()
+                    JumpTo(Clamp(ddDragStartScroll + (deltaY / maxTravel) * maxScroll))
                 end)
             end)
             ddThumb:SetScript("OnMouseUp", function(self, btnFrame)
                 if btnFrame ~= "LeftButton" then
                     return
                 end
-                ddDragging = false
-                menu._ddThumbDragging = false
-                self:SetScript("OnUpdate", nil)
+                EndThumbDrag(self)
             end)
 
             menu:HookScript("OnHide", function()
