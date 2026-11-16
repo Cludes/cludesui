@@ -87,9 +87,9 @@ end
 
 -- A plain menu row at y on inner (made at menu level + 2): its label in the dim
 -- text colour and a clear highlight. Hovering lights both, closes the menu's open
--- flyout and shows opts.tip; leaving puts them back. opts.fit keeps the label to
--- one line inside the row. Kept outside ShowSpellPicker, which sits near Lua's
--- cap on live locals. Returns the row.
+-- flyout (unless opts.keepSub) and shows opts.tip; leaving puts them back.
+-- opts.fit keeps the label to one line inside the row. Kept outside
+-- ShowSpellPicker, which sits near Lua's cap on live locals. Returns the row.
 local function PlainMenuRow(menu, inner, y, height, text, font, dim, hlA, onClick, opts)
     local row = CreateFrame("Button", nil, inner)
     row:SetHeight(height)
@@ -116,7 +116,7 @@ local function PlainMenuRow(menu, inner, y, height, text, font, dim, hlA, onClic
         label:SetTextColor(1, 1, 1, 1)
         highlight:SetColorTexture(1, 1, 1, hlA)
         highlight:SetAlpha(1)
-        if menu._openSub and menu._openSub:IsShown() then
+        if not (opts and opts.keepSub) and menu._openSub and menu._openSub:IsShown() then
             menu._openSub:Hide()
         end
         if tip then
@@ -928,8 +928,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             or (mod._myRacialsSet and mod._myRacialsSet[sid2])
                             or (bsX.customSpellIDs and bsX.customSpellIDs[sid2])
                         )
-                            -- Hosted-buff markers are reparented Blizzard buff frames,
-                            -- not preset icons -- never mint cas entries for them.
+                            -- Hosted-buff markers are reparented Blizzard buff frames,
+                            -- not preset icons -- never mint cas entries for them.
                             and not (mod.HostedBuffMarkerToSpell and mod.HostedBuffMarkerToSpell(sid2))
                         if isInj then
                             if mod.SlotIDFromKey(sid2) then
@@ -6866,38 +6866,31 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
         mH = mH + 9
     end
 
-    -- "Custom Spell ID" option: shown for CD/utility and custom_buff bars. Regular buff bars only show Blizzard CDM spells (no custom entry).
+    -- The picker's own entries (hovering one leaves an open flyout alone).
+    local function PickerRow(text, onClick)
+        local row = PlainMenuRow(
+            dropMenu,
+            inner,
+            mH,
+            ITEM_H,
+            CludesUI.L(text),
+            { FONT_PATH, 11, GetCDMOptOutline() },
+            { tDimR, tDimG, tDimB, tDimA },
+            hlA,
+            function()
+                dropMenu:Hide()
+                onClick()
+            end,
+            { keepSub = true }
+        )
+        allItems[#allItems + 1] = row
+        mH = mH + ITEM_H
+    end
+
+    -- "Custom Spell ID": CD/utility and custom_buff bars (regular buff bars list
+    -- only Blizzard CDM spells). Only this caller offers Show Charges (CD/utility).
     if not isBuffBar then
-        local csItem = CreateFrame("Button", nil, inner)
-        csItem:SetHeight(ITEM_H)
-        csItem:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-        csItem:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-        csItem:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-
-        local csHl = csItem:CreateTexture(nil, "ARTWORK")
-        csHl:SetAllPoints()
-        csHl:SetColorTexture(1, 1, 1, 0)
-        csHl:SetAlpha(0)
-
-        local csLbl = csItem:CreateFontString(nil, "OVERLAY")
-        csLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        csLbl:SetPoint("LEFT", 10, 0)
-        csLbl:SetJustifyH("LEFT")
-        csLbl:SetText(CludesUI.L("Custom Spell ID"))
-        csLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-
-        csItem:SetScript("OnEnter", function()
-            csLbl:SetTextColor(1, 1, 1, 1)
-            csHl:SetColorTexture(1, 1, 1, hlA)
-            csHl:SetAlpha(1)
-        end)
-        csItem:SetScript("OnLeave", function()
-            csLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-            csHl:SetAlpha(0)
-        end)
-        csItem:SetScript("OnClick", function()
-            dropMenu:Hide()
-            -- Only this caller offers Show Charges (CD/utility bars).
+        PickerRow("Custom Spell ID", function()
             mod.CDMO_ShowCustomSpellIDPopup(edge and edge.key, function(spellRef)
                 if mod.UpdateCustomBuffAuraTracking then
                     mod.UpdateCustomBuffAuraTracking()
@@ -6907,524 +6900,35 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 end
             end, not isCustomBuff)
         end)
-
-        allItems[#allItems + 1] = csItem
-        mH = mH + ITEM_H
     end
 
-    -- "Custom Item ID" option -- CD/utility bars only (custom aura bars are cast-timer
-    -- driven and don't render item-cooldown frames). Adds an arbitrary item by item ID, stored as a negative marker (-itemID).
+    -- CD/utility bars only (custom aura bars are cast-timer driven and draw no
+    -- item cooldowns): "Custom Item ID" (an item by ID, stored as -itemID),
+    -- "Equipment Slot" (whatever is equipped there, stored as -slotID, the
+    -- trinket-slot encoding: covers enchant / tinker use effects such as Nitro
+    -- Boosts on any belt) and "Empty Slot" (a placeholder holding a grid spot; each
+    -- add mints a fresh marker, so several can sit on one bar, moved and removed
+    -- like any entry).
     if not isBuffBar and not isCustomBuff then
-        local ciItem = CreateFrame("Button", nil, inner)
-        ciItem:SetHeight(ITEM_H)
-        ciItem:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-        ciItem:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-        ciItem:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-
-        local ciHl = ciItem:CreateTexture(nil, "ARTWORK")
-        ciHl:SetAllPoints()
-        ciHl:SetColorTexture(1, 1, 1, 0)
-        ciHl:SetAlpha(0)
-
-        local ciLbl = ciItem:CreateFontString(nil, "OVERLAY")
-        ciLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        ciLbl:SetPoint("LEFT", 10, 0)
-        ciLbl:SetJustifyH("LEFT")
-        ciLbl:SetText(CludesUI.L("Custom Item ID"))
-        ciLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-
-        ciItem:SetScript("OnEnter", function()
-            ciLbl:SetTextColor(1, 1, 1, 1)
-            ciHl:SetColorTexture(1, 1, 1, hlA)
-            ciHl:SetAlpha(1)
-        end)
-        ciItem:SetScript("OnLeave", function()
-            ciLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-            ciHl:SetAlpha(0)
-        end)
-        ciItem:SetScript("OnClick", function()
-            dropMenu:Hide()
+        local function Added(marker)
+            if onSelect then
+                onSelect(marker, true)
+            end
+        end
+        PickerRow("Custom Item ID", function()
             ShowCustomItemIDPopup(edge and edge.key, function(marker)
                 mod._cdmAnyCustomItem = true
-                if onSelect then
-                    onSelect(marker, true)
-                end
+                Added(marker)
             end)
         end)
-
-        allItems[#allItems + 1] = ciItem
-        mH = mH + ITEM_H
-
-        -- "Equipment Slot" option -- tracks whatever item is equipped in a slot the user
-        -- picks by inventory slot ID (stored as -slotID, the trinket-slot encoding). Covers enchant/tinker use effects (e.g. Nitro Boosts on any belt) without re-adding per item.
-        local esItem = CreateFrame("Button", nil, inner)
-        esItem:SetHeight(ITEM_H)
-        esItem:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-        esItem:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-        esItem:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-
-        local esHl = esItem:CreateTexture(nil, "ARTWORK")
-        esHl:SetAllPoints()
-        esHl:SetColorTexture(1, 1, 1, 0)
-        esHl:SetAlpha(0)
-
-        local esLbl = esItem:CreateFontString(nil, "OVERLAY")
-        esLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        esLbl:SetPoint("LEFT", 10, 0)
-        esLbl:SetJustifyH("LEFT")
-        esLbl:SetText(CludesUI.L("Equipment Slot"))
-        esLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-
-        esItem:SetScript("OnEnter", function()
-            esLbl:SetTextColor(1, 1, 1, 1)
-            esHl:SetColorTexture(1, 1, 1, hlA)
-            esHl:SetAlpha(1)
+        PickerRow("Equipment Slot", function()
+            ShowEquipmentSlotPopup(edge and edge.key, Added)
         end)
-        esItem:SetScript("OnLeave", function()
-            esLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-            esHl:SetAlpha(0)
-        end)
-        esItem:SetScript("OnClick", function()
-            dropMenu:Hide()
-            ShowEquipmentSlotPopup(edge and edge.key, function(marker)
-                if onSelect then
-                    onSelect(marker, true)
-                end
-            end)
-        end)
-
-        allItems[#allItems + 1] = esItem
-        mH = mH + ITEM_H
-
-        -- "Empty Slot" option -- adds a purely decorative placeholder that reserves a
-        -- grid position (no spell/item behind it). Reorders/moves and removes exactly
-        -- like any other tracked entry; each Add mints a fresh unique marker so several can sit on one bar.
-        local eoItem = CreateFrame("Button", nil, inner)
-        eoItem:SetHeight(ITEM_H)
-        eoItem:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-        eoItem:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-        eoItem:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-
-        local eoHl = eoItem:CreateTexture(nil, "ARTWORK")
-        eoHl:SetAllPoints()
-        eoHl:SetColorTexture(1, 1, 1, 0)
-        eoHl:SetAlpha(0)
-
-        local eoLbl = eoItem:CreateFontString(nil, "OVERLAY")
-        eoLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        eoLbl:SetPoint("LEFT", 10, 0)
-        eoLbl:SetJustifyH("LEFT")
-        eoLbl:SetText(CludesUI.L("Empty Slot"))
-        eoLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-
-        eoItem:SetScript("OnEnter", function()
-            eoLbl:SetTextColor(1, 1, 1, 1)
-            eoHl:SetColorTexture(1, 1, 1, hlA)
-            eoHl:SetAlpha(1)
-        end)
-        eoItem:SetScript("OnLeave", function()
-            eoLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-            eoHl:SetAlpha(0)
-        end)
-        eoItem:SetScript("OnClick", function()
-            dropMenu:Hide()
+        PickerRow("Empty Slot", function()
             EnsureAssignedSpells(barId)
             mod.AddTrackedSpell(barId, mod.NewEmptySlotMarker())
             RefreshCDPreview()
         end)
-
-        allItems[#allItems + 1] = eoItem
-        mH = mH + ITEM_H
-    end
-
-    if false then -- misc bar custom item menu removed
-        -- Bag scan + Custom Item button (moved from bottom to top)
-        local BAG_ITEM_BLACKLIST = {
-            [234389] = true,
-            [234390] = true,
-            [249699] = true,
-        }
-        local MIN_CD_SEC = 30
-        local MAX_CD_SEC = 660
-        local ITEM_PRIORITY_NAMES = {
-            "Trinket Slot 1",
-            "Trinket Slot 2",
-            "Light's Potential",
-            "Potion of Recklessness",
-            "Silvermoon Health Potion",
-            "Lightfused Mana Potion",
-            "Healthstone",
-        }
-        local ITEM_PRIORITY = {}
-        for idx, n in ipairs(ITEM_PRIORITY_NAMES) do
-            ITEM_PRIORITY[n:lower()] = idx
-        end
-
-        local _candidateItems = {}
-        do
-            local seen = {}
-            for slotIdx = 13, 14 do
-                local trinketID = GetInventoryItemID("player", slotIdx)
-                if trinketID and not seen[trinketID] and not BAG_ITEM_BLACKLIST[trinketID] then
-                    seen[trinketID] = true
-                    local spellName, spellId = C_Item.GetItemSpell(trinketID)
-                    if spellName and spellId then
-                        _candidateItems[#_candidateItems + 1] = {
-                            itemID = trinketID,
-                            spellName = spellName,
-                            spellID = spellId,
-                            isTrinket = slotIdx,
-                        }
-                        C_Item.RequestLoadItemDataByID(trinketID)
-                    end
-                end
-            end
-            for bag = 0, 4 do
-                local numSlots = C_Container.GetContainerNumSlots(bag)
-                for slot = 1, numSlots do
-                    local details = C_Container.GetContainerItemInfo(bag, slot)
-                    if
-                        details
-                        and details.itemID
-                        and not seen[details.itemID]
-                        and not BAG_ITEM_BLACKLIST[details.itemID]
-                    then
-                        seen[details.itemID] = true
-                        local invType = C_Item.GetItemInventoryTypeByID(details.itemID)
-                        local isTrinket = invType and invType == Enum.InventoryType.IndexTrinketType
-                        if not isTrinket then
-                            local spellName, spellId = C_Item.GetItemSpell(details.itemID)
-                            if spellName and spellId then
-                                _candidateItems[#_candidateItems + 1] = {
-                                    itemID = details.itemID,
-                                    spellName = spellName,
-                                    spellID = spellId,
-                                }
-                                C_Item.RequestLoadItemDataByID(details.itemID)
-                            end
-                        end
-                    end
-                end
-            end
-        end
-
-        local function ResolveBagItems()
-            local results = {}
-            local allResolved = true
-            local _isEnglish = (GetLocale() == "enUS" or GetLocale() == "enGB")
-            for _, cand in ipairs(_candidateItems) do
-                local passFilter = false
-                if cand.isTrinket then
-                    passFilter = true
-                elseif _isEnglish then
-                    -- English: parse tooltip for cooldown duration
-                    local tipData = C_TooltipInfo.GetItemByID(cand.itemID)
-                    if tipData and tipData.lines then
-                        for _, line in ipairs(tipData.lines) do
-                            local textValue = line.leftText
-                            if textValue and textValue:find("Cooldown%)") then
-                                local cdStr = textValue:match(".*%((.+Cooldown)%)")
-                                if cdStr then
-                                    local totalSec = 0
-                                    for num, unitToken in cdStr:gmatch("(%d+)%s*(%a+)") do
-                                        local n = tonumber(num)
-                                        if n then
-                                            local u = unitToken:lower()
-                                            if u == "min" then
-                                                totalSec = totalSec + n * 60
-                                            elseif u == "sec" then
-                                                totalSec = totalSec + n
-                                            elseif u == "hr" or u == "hour" then
-                                                totalSec = totalSec + n * 3600
-                                            end
-                                        end
-                                    end
-                                    if totalSec >= MIN_CD_SEC and totalSec <= MAX_CD_SEC then
-                                        passFilter = true
-                                    end
-                                    break
-                                end
-                            end
-                        end
-                    else
-                        allResolved = false
-                    end
-                elseif cand.spellID and cand.spellID > 0 then
-                    -- Non-English: any item with a spell effect passes
-                    passFilter = true
-                end
-                do
-                    if passFilter then
-                        local texture = C_Item.GetItemIconByID(cand.itemID)
-                        local itemName = C_Item.GetItemNameByID(cand.itemID)
-                        local displayName
-                        if cand.isTrinket then
-                            displayName = (itemName or cand.spellName)
-                                .. " (Trinket "
-                                .. (cand.isTrinket - 12)
-                                .. ")"
-                        else
-                            displayName = itemName or cand.spellName
-                        end
-                        results[#results + 1] = {
-                            itemID = cand.itemID,
-                            name = displayName,
-                            icon = texture,
-                            spellID = cand.spellID,
-                            isTrinket = cand.isTrinket,
-                        }
-                    end
-                end
-            end
-            local PRIORITY_COUNT = #ITEM_PRIORITY_NAMES
-            table.sort(results, function(a, b)
-                local aKey = a.isTrinket and ("trinket slot " .. (a.isTrinket - 12)) or a.name:lower()
-                local bKey = b.isTrinket and ("trinket slot " .. (b.isTrinket - 12)) or b.name:lower()
-                local aPri = ITEM_PRIORITY[aKey] or (PRIORITY_COUNT + 1)
-                local bPri = ITEM_PRIORITY[bKey] or (PRIORITY_COUNT + 1)
-                if aPri ~= bPri then
-                    return aPri < bPri
-                end
-                return a.name < b.name
-            end)
-            optionState._cachedBagItems = results
-            optionState._bagScanComplete = allResolved
-            return allResolved
-        end
-        ResolveBagItems()
-        if not optionState._bagScanComplete then
-            local attempts = 0
-            local ticker
-            ticker = C_Timer.NewTicker(0.2, function()
-                attempts = attempts + 1
-                local done = ResolveBagItems()
-                if done or attempts >= 25 then
-                    if ticker then
-                        ticker:Cancel()
-                    end
-                    optionState._bagScanComplete = true
-                    if optionState._customTrackingSub and optionState._customTrackingSub:IsShown() then
-                        optionState._customTrackingSub._needsRebuild = true
-                    end
-                elseif optionState._customTrackingSub and optionState._customTrackingSub:IsShown() then
-                    optionState._customTrackingSub._needsRebuild = true
-                end
-            end)
-            dropMenu:HookScript("OnHide", function()
-                if ticker then
-                    ticker:Cancel()
-                    ticker = nil
-                end
-            end)
-        end
-
-        local ctItem = CreateFrame("Button", nil, inner)
-        ctItem:SetHeight(ITEM_H)
-        ctItem:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-        ctItem:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-        ctItem:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-        local ctHl = ctItem:CreateTexture(nil, "ARTWORK")
-        ctHl:SetAllPoints()
-        ctHl:SetColorTexture(1, 1, 1, 0)
-        ctHl:SetAlpha(0)
-        local ctLbl = ctItem:CreateFontString(nil, "OVERLAY")
-        ctLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        ctLbl:SetPoint("LEFT", 10, 0)
-        ctLbl:SetJustifyH("LEFT")
-        ctLbl:SetText(CludesUI.L("Custom Item"))
-        ctLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-        local ctArrow = ctItem:CreateTexture(nil, "ARTWORK")
-        ctArrow:SetSize(10, 10)
-        ctArrow:SetPoint("RIGHT", ctItem, "RIGHT", -8, 0)
-        ctArrow:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\right-arrow.png")
-        ctArrow:SetAlpha(0.7)
-
-        local function ShowCustomTrackingSub()
-            local itemList = optionState._cachedBagItems or {}
-            local alreadyTracked = {}
-            local sdCT = edge and mod.GetBarSpellData(edge.key)
-            if sdCT and sdCT.assignedSpells then
-                for _, spellRef in ipairs(sdCT.assignedSpells) do
-                    if spellRef <= -100 then
-                        alreadyTracked[-spellRef] = true
-                    end
-                end
-            end
-            local filtered = {}
-            for _, it in ipairs(itemList) do
-                if not alreadyTracked[it.itemID] then
-                    filtered[#filtered + 1] = it
-                end
-            end
-            local prevCount = optionState._customTrackingSub and optionState._customTrackingSub._itemCount
-                or -1
-            if not optionState._customTrackingSub then
-                optionState._customTrackingSub = CreateFrame("Frame", nil, UIParent)
-                optionState._customTrackingSub:SetFrameStrata("FULLSCREEN_DIALOG")
-                optionState._customTrackingSub:SetFrameLevel(dropMenu:GetFrameLevel() + 5)
-                optionState._customTrackingSub:SetClampedToScreen(true)
-                optionState._customTrackingSub:EnableMouse(true)
-            elseif
-                optionState._customTrackingSub:IsShown()
-                and #filtered == prevCount
-                and not optionState._customTrackingSub._needsRebuild
-            then
-                return
-            else
-                for _, childFrame in ipairs({ optionState._customTrackingSub:GetChildren() }) do
-                    childFrame:Hide()
-                    childFrame:SetParent(nil)
-                end
-                for _, region in ipairs({ optionState._customTrackingSub:GetRegions() }) do
-                    if region.Hide then
-                        region:Hide()
-                    end
-                end
-            end
-            optionState._customTrackingSub._itemCount = #filtered
-            optionState._customTrackingSub._needsRebuild = false
-            local subW = 220
-            local SUB_ITEM_H = 26
-            local SUB_MAX_H = 260
-            -- Item captions collected as the rows are built, so the frame can be
-            -- widened to the longest bag-item name instead of ellipsising it.
-            local subLabels = {}
-            optionState._customTrackingSub:SetSize(subW, 10)
-            optionState._customTrackingSub:ClearAllPoints()
-            optionState._customTrackingSub:SetPoint("TOPLEFT", ctItem, "TOPRIGHT", 2, 0)
-            local subBg = optionState._customTrackingSub:CreateTexture(nil, "BACKGROUND")
-            subBg:SetAllPoints()
-            subBg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
-            CludesUI.MakeRoundedBorder(optionState._customTrackingSub, 1, 1, 1, mBrdA, subBg, nil, true)
-            local subInner = CreateFrame("Frame", nil, optionState._customTrackingSub)
-            subInner:SetWidth(subW)
-            subInner:SetPoint("TOPLEFT")
-            local subH = 4
-            if #filtered == 0 then
-                local loadingText = (not optionState._bagScanComplete) and "Loading items..."
-                    or "No on-use items in bags"
-                local emptyLbl = subInner:CreateFontString(nil, "OVERLAY")
-                emptyLbl:SetFont(FONT_PATH, 10, GetCDMOptOutline())
-                emptyLbl:SetPoint("TOPLEFT", subInner, "TOPLEFT", 10, -subH - 4)
-                emptyLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.6)
-                emptyLbl:SetText(loadingText)
-                subH = subH + SUB_ITEM_H
-            else
-                for _, it in ipairs(filtered) do
-                    local si = CreateFrame("Button", nil, subInner)
-                    si:SetHeight(SUB_ITEM_H)
-                    si:SetPoint("TOPLEFT", subInner, "TOPLEFT", 1, -subH)
-                    si:SetPoint("TOPRIGHT", subInner, "TOPRIGHT", -1, -subH)
-                    si:SetFrameLevel(optionState._customTrackingSub:GetFrameLevel() + 2)
-                    si:RegisterForClicks("AnyUp")
-                    local sIco = si:CreateTexture(nil, "ARTWORK")
-                    local icoSz = SUB_ITEM_H - 2
-                    sIco:SetSize(icoSz, icoSz)
-                    sIco:SetPoint("RIGHT", si, "RIGHT", -6, 0)
-                    if it.icon then
-                        sIco:SetTexture(it.icon)
-                    end
-                    sIco:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-                    local sLbl = si:CreateFontString(nil, "OVERLAY")
-                    sLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                    sLbl:SetPoint("LEFT", si, "LEFT", 10, 0)
-                    sLbl:SetPoint("RIGHT", sIco, "LEFT", -5, 0)
-                    sLbl:SetJustifyH("LEFT")
-                    sLbl:SetWordWrap(false)
-                    sLbl:SetMaxLines(1)
-                    sLbl:SetText(CludesUI.L(it.name))
-                    sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                    subLabels[#subLabels + 1] = sLbl
-                    local sHl = si:CreateTexture(nil, "ARTWORK")
-                    sHl:SetAllPoints()
-                    sHl:SetColorTexture(1, 1, 1, 0)
-                    sHl:SetAlpha(0)
-                    si:SetScript("OnEnter", function()
-                        sLbl:SetTextColor(1, 1, 1, 1)
-                        sHl:SetColorTexture(1, 1, 1, hlA)
-                        sHl:SetAlpha(1)
-                    end)
-                    si:SetScript("OnLeave", function()
-                        sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                        sHl:SetAlpha(0)
-                    end)
-                    si:SetScript("OnClick", function()
-                        optionState._customTrackingSub:Hide()
-                        dropMenu:Hide()
-                        if onSelect then
-                            onSelect(-it.itemID, true)
-                        end
-                    end)
-                    subH = subH + SUB_ITEM_H
-                end
-            end
-            -- Widen to the longest item name (pad leaves room for the text inset
-            -- and the row's right-hand item icon).
-            subW = FitMenuWidth(subLabels, subW, 48)
-            optionState._customTrackingSub:SetWidth(subW)
-            subInner:SetWidth(subW)
-            local totalSubH = subH + 4
-            subInner:SetHeight(totalSubH)
-            if totalSubH > SUB_MAX_H then
-                optionState._customTrackingSub:SetHeight(SUB_MAX_H)
-                local scrollFrame = CreateFrame("ScrollFrame", nil, optionState._customTrackingSub)
-                scrollFrame:SetPoint("TOPLEFT", 0, -1)
-                scrollFrame:SetPoint("BOTTOMRIGHT", 0, 1)
-                scrollFrame:SetFrameLevel(optionState._customTrackingSub:GetFrameLevel() + 1)
-                scrollFrame:EnableMouseWheel(true)
-                scrollFrame:SetScrollChild(subInner)
-                subInner:SetWidth(subW)
-                CludesUI.AttachSmoothScrollbar(scrollFrame, { step = 40, thumb = false })
-            else
-                optionState._customTrackingSub:SetHeight(totalSubH)
-                subInner:SetParent(optionState._customTrackingSub)
-                subInner:SetPoint("TOPLEFT")
-            end
-            optionState._customTrackingSub:SetScript("OnLeave", function(self)
-                C_Timer.After(0.1, function()
-                    if self:IsShown() and not self:IsMouseOver() and not ctItem:IsMouseOver() then
-                        self:Hide()
-                    end
-                end)
-            end)
-            if not optionState._bagScanComplete then
-                optionState._customTrackingSub:SetScript("OnUpdate", function(self)
-                    if self._needsRebuild then
-                        ShowCustomTrackingSub()
-                    end
-                    if optionState._bagScanComplete then
-                        self:SetScript("OnUpdate", nil)
-                    end
-                end)
-            else
-                optionState._customTrackingSub:SetScript("OnUpdate", nil)
-            end
-            optionState._customTrackingSub:Show()
-        end
-
-        ctItem:SetScript("OnEnter", function()
-            ctLbl:SetTextColor(1, 1, 1, 1)
-            ctHl:SetColorTexture(1, 1, 1, hlA)
-            ctHl:SetAlpha(1)
-            ShowCustomTrackingSub()
-        end)
-        ctItem:SetScript("OnLeave", function()
-            ctLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-            ctHl:SetAlpha(0)
-            C_Timer.After(0.15, function()
-                if
-                    optionState._customTrackingSub
-                    and optionState._customTrackingSub:IsShown()
-                    and not optionState._customTrackingSub:IsMouseOver()
-                    and not ctItem:IsMouseOver()
-                then
-                    optionState._customTrackingSub:Hide()
-                end
-            end)
-        end)
-
-        allItems[#allItems + 1] = ctItem
-        mH = mH + ITEM_H
     end
 
     if not isBuffBar and not isCustomBuff then
