@@ -134,6 +134,60 @@ local function PlainMenuRow(menu, inner, y, height, text, font, dim, hlA, onClic
     return row
 end
 
+-- A preset entry of the picker (a trinket slot, the racial, Seals): its label,
+-- its icon on the right when it has one, and a clear highlight. While it is on
+-- this bar it is greyed (icon too) and says "Already on <onBar>"; otherwise
+-- hovering lights it and a click runs onPick. Returns the row.
+local function PresetMenuRow(menu, inner, y, height, text, texture, onBar, font, dim, hlA, onPick)
+    local row = CreateFrame("Button", nil, inner)
+    row:SetHeight(height)
+    row:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -y)
+    row:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -y)
+    row:SetFrameLevel(menu:GetFrameLevel() + 2)
+    local label = row:CreateFontString(nil, "OVERLAY")
+    label:SetFont(font[1], font[2], font[3])
+    label:SetPoint("LEFT", 10, 0)
+    label:SetJustifyH("LEFT")
+    label:SetText(text)
+    if texture then
+        local icon = row:CreateTexture(nil, "ARTWORK")
+        icon:SetSize(height - 2, height - 2)
+        icon:SetPoint("RIGHT", row, "RIGHT", -6, 0)
+        icon:SetTexture(texture)
+        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        if onBar then
+            icon:SetDesaturated(true)
+            icon:SetAlpha(0.4)
+        end
+    end
+    local highlight = row:CreateTexture(nil, "ARTWORK")
+    highlight:SetAllPoints()
+    highlight:SetColorTexture(1, 1, 1, 0)
+    highlight:SetAlpha(0)
+    if onBar then
+        label:SetTextColor(dim[1], dim[2], dim[3], dim[4] * 0.4)
+        row:SetScript("OnEnter", function()
+            CludesUI.ShowWidgetTooltip(row, CludesUI.Lf("Already on %s", CludesUI.L(onBar)))
+        end)
+        row:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
+        return row
+    end
+    label:SetTextColor(dim[1], dim[2], dim[3], dim[4])
+    row:SetScript("OnEnter", function()
+        label:SetTextColor(1, 1, 1, 1)
+        highlight:SetColorTexture(1, 1, 1, hlA)
+        highlight:SetAlpha(1)
+    end)
+    row:SetScript("OnLeave", function()
+        label:SetTextColor(dim[1], dim[2], dim[3], dim[4])
+        highlight:SetAlpha(0)
+    end)
+    row:SetScript("OnClick", onPick)
+    return row
+end
+
 local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, removeOnly)
     local environ = mod._CDMO_OptEnv
     local FONT_PATH, FitMenuWidth, GetCDMOptOutline, RefreshCDPreview =
@@ -928,8 +982,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             or (mod._myRacialsSet and mod._myRacialsSet[sid2])
                             or (bsX.customSpellIDs and bsX.customSpellIDs[sid2])
                         )
-                            -- Hosted-buff markers are reparented Blizzard buff frames,
-                            -- not preset icons -- never mint cas entries for them.
+                            -- Hosted-buff markers are reparented Blizzard buff frames,
+                            -- not preset icons -- never mint cas entries for them.
                             and not (mod.HostedBuffMarkerToSpell and mod.HostedBuffMarkerToSpell(sid2))
                         if isInj then
                             if mod.SlotIDFromKey(sid2) then
@@ -6972,206 +7026,53 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             end
         end
 
-        -- Trinket Slot 1 & 2
+        -- The presets: greyed only while on THIS bar; one on another bar stays
+        -- claimable (AddTrackedSpell moves it, as it does a regular spell).
+        local thisBar = edge and (edge.name or edge.key) or barId
+        local function Preset(text, texture, id)
+            allItems[#allItems + 1] = PresetMenuRow(
+                dropMenu,
+                inner,
+                mH,
+                ITEM_H,
+                text,
+                texture,
+                alreadyOnBar[id] and thisBar or nil,
+                { FONT_PATH, 11, GetCDMOptOutline() },
+                { tDimR, tDimG, tDimB, tDimA },
+                hlA,
+                function()
+                    dropMenu:Hide()
+                    EnsureAssignedSpells(barId)
+                    mod.AddTrackedSpell(barId, id)
+                    RefreshCDPreview()
+                end
+            )
+            mH = mH + ITEM_H
+        end
+        -- Trinket Slot 1 & 2 (stored as -slot).
         for _, slot in ipairs({ 13, 14 }) do
-            local negSlot = -slot
             local itemId = GetInventoryItemID("player", slot)
-            local labelText = CludesUI.L((slot == 13) and "Trinket Slot 1" or "Trinket Slot 2")
-            local texture = itemId and C_Item.GetItemIconByID(itemId)
-            local isAdded = alreadyOnBar[negSlot]
-            -- Only gray out if it's already on THIS bar. Presets on OTHER bars stay claimable -- AddTrackedSpell auto-moves them, exactly like regular spells.
-            local otherBarName = not isAdded and usedOnOtherBar[negSlot]
-            local isDisabled = isAdded
-
-            local ti = CreateFrame("Button", nil, inner)
-            ti:SetHeight(ITEM_H)
-            ti:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-            ti:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-            ti:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-
-            local tiLbl = ti:CreateFontString(nil, "OVERLAY")
-            tiLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-            tiLbl:SetPoint("LEFT", 10, 0)
-            tiLbl:SetJustifyH("LEFT")
-            tiLbl:SetText(labelText)
-
-            if texture then
-                local tiIco = ti:CreateTexture(nil, "ARTWORK")
-                tiIco:SetSize(ITEM_H - 2, ITEM_H - 2)
-                tiIco:SetPoint("RIGHT", ti, "RIGHT", -6, 0)
-                tiIco:SetTexture(texture)
-                tiIco:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-                if isDisabled then
-                    tiIco:SetDesaturated(true)
-                    tiIco:SetAlpha(0.4)
-                end
-            end
-
-            local tiHl = ti:CreateTexture(nil, "ARTWORK")
-            tiHl:SetAllPoints()
-            tiHl:SetColorTexture(1, 1, 1, 0)
-            tiHl:SetAlpha(0)
-
-            if isDisabled then
-                tiLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
-                local tooltipName = isAdded and (edge and (edge.name or edge.key) or barId) or otherBarName
-                ti:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(ti, CludesUI.Lf("Already on %s", CludesUI.L(tooltipName)))
-                end)
-                ti:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-            else
-                tiLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                ti:SetScript("OnEnter", function()
-                    tiLbl:SetTextColor(1, 1, 1, 1)
-                    tiHl:SetColorTexture(1, 1, 1, hlA)
-                    tiHl:SetAlpha(1)
-                end)
-                ti:SetScript("OnLeave", function()
-                    tiLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                    tiHl:SetAlpha(0)
-                end)
-                ti:SetScript("OnClick", function()
-                    dropMenu:Hide()
-                    EnsureAssignedSpells(barId)
-                    mod.AddTrackedSpell(barId, negSlot)
-                    RefreshCDPreview()
-                end)
-            end
-            allItems[#allItems + 1] = ti
-            mH = mH + ITEM_H
+            Preset(
+                CludesUI.L((slot == 13) and "Trinket Slot 1" or "Trinket Slot 2"),
+                itemId and C_Item.GetItemIconByID(itemId),
+                -slot
+            )
         end
-
-        -- Racial ability: one generic "Racial" entry that follows the character's race.
-        -- Adds this character's active racial spell ID; ns.NormalizeRacialAssignments rewrites it on every other race so a shared profile only needs the racial added once.
-        local rSid = mod._activeRacialSpellID
-        if rSid then
-            local rTex = C_Spell.GetSpellTexture(rSid)
-            local isAdded = alreadyOnBar[rSid]
-            local rOtherBar = not isAdded and usedOnOtherBar[rSid]
-            local rIsDisabled = isAdded -- other bars stay claimable (auto-move)
-            local ri = CreateFrame("Button", nil, inner)
-            ri:SetHeight(ITEM_H)
-            ri:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-            ri:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-            ri:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-            local riLbl = ri:CreateFontString(nil, "OVERLAY")
-            riLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-            riLbl:SetPoint("LEFT", 10, 0)
-            riLbl:SetJustifyH("LEFT")
-            riLbl:SetText(CludesUI.L("Racial"))
-            if rTex then
-                local riIco = ri:CreateTexture(nil, "ARTWORK")
-                riIco:SetSize(ITEM_H - 2, ITEM_H - 2)
-                riIco:SetPoint("RIGHT", ri, "RIGHT", -6, 0)
-                riIco:SetTexture(rTex)
-                riIco:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-                if rIsDisabled then
-                    riIco:SetDesaturated(true)
-                    riIco:SetAlpha(0.4)
-                end
-            end
-            local riHl = ri:CreateTexture(nil, "ARTWORK")
-            riHl:SetAllPoints()
-            riHl:SetColorTexture(1, 1, 1, 0)
-            riHl:SetAlpha(0)
-            if rIsDisabled then
-                riLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
-                local rTooltipName = isAdded and (edge and (edge.name or edge.key) or barId) or rOtherBar
-                ri:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(ri, CludesUI.Lf("Already on %s", CludesUI.L(rTooltipName)))
-                end)
-                ri:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-            else
-                riLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                ri:SetScript("OnEnter", function()
-                    riLbl:SetTextColor(1, 1, 1, 1)
-                    riHl:SetColorTexture(1, 1, 1, hlA)
-                    riHl:SetAlpha(1)
-                end)
-                ri:SetScript("OnLeave", function()
-                    riLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                    riHl:SetAlpha(0)
-                end)
-                ri:SetScript("OnClick", function()
-                    dropMenu:Hide()
-                    EnsureAssignedSpells(barId)
-                    mod.AddTrackedSpell(barId, rSid)
-                    RefreshCDPreview()
-                end)
-            end
-            allItems[#allItems + 1] = ri
-            mH = mH + ITEM_H
+        -- Racial: one generic entry following the character's race. It adds this
+        -- character's active racial; ns.NormalizeRacialAssignments rewrites it on
+        -- every other race, so a shared profile needs the racial added only once.
+        local racial = mod._activeRacialSpellID
+        if racial then
+            Preset(CludesUI.L("Racial"), C_Spell.GetSpellTexture(racial), racial)
         end
-
         -- WoW Forever Paladins: Seals, the stand-in for Blizzard's Seals entry
         -- (CUI_CDM_ForeverSeals.lua), named by the client's own spell name.
-        do
-            local sSid = mod.CDM_SEALS_SPELL
-            local sName = sSid and C_Spell.GetSpellName(sSid)
-            if sName then
-                local sTex = C_Spell.GetSpellTexture(sSid)
-                local isAdded = alreadyOnBar[sSid]
-                local si = CreateFrame("Button", nil, inner)
-                si:SetHeight(ITEM_H)
-                si:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-                si:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-                si:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                local siLbl = si:CreateFontString(nil, "OVERLAY")
-                siLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                siLbl:SetPoint("LEFT", 10, 0)
-                siLbl:SetJustifyH("LEFT")
-                siLbl:SetText(sName)
-                if sTex then
-                    local siIco = si:CreateTexture(nil, "ARTWORK")
-                    siIco:SetSize(ITEM_H - 2, ITEM_H - 2)
-                    siIco:SetPoint("RIGHT", si, "RIGHT", -6, 0)
-                    siIco:SetTexture(sTex)
-                    siIco:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-                    if isAdded then
-                        siIco:SetDesaturated(true)
-                        siIco:SetAlpha(0.4)
-                    end
-                end
-                local siHl = si:CreateTexture(nil, "ARTWORK")
-                siHl:SetAllPoints()
-                siHl:SetColorTexture(1, 1, 1, 0)
-                siHl:SetAlpha(0)
-                if isAdded then
-                    siLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
-                    local sTooltipName = edge and (edge.name or edge.key) or barId
-                    si:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(si, CludesUI.Lf("Already on %s", CludesUI.L(sTooltipName)))
-                    end)
-                    si:SetScript("OnLeave", function()
-                        CludesUI.HideWidgetTooltip()
-                    end)
-                else
-                    siLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                    si:SetScript("OnEnter", function()
-                        siLbl:SetTextColor(1, 1, 1, 1)
-                        siHl:SetColorTexture(1, 1, 1, hlA)
-                        siHl:SetAlpha(1)
-                    end)
-                    si:SetScript("OnLeave", function()
-                        siLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                        siHl:SetAlpha(0)
-                    end)
-                    -- Other bars stay claimable (AddTrackedSpell auto-moves it).
-                    si:SetScript("OnClick", function()
-                        dropMenu:Hide()
-                        EnsureAssignedSpells(barId)
-                        mod.AddTrackedSpell(barId, sSid)
-                        RefreshCDPreview()
-                    end)
-                end
-                allItems[#allItems + 1] = si
-                mH = mH + ITEM_H
-            end
-        end -- Seals
+        local seals = mod.CDM_SEALS_SPELL
+        local sealsName = seals and C_Spell.GetSpellName(seals)
+        if sealsName then
+            Preset(sealsName, C_Spell.GetSpellTexture(seals), seals)
+        end
 
         -- "Potions & Healthstone" flyout subnav
         local _potionsSub
