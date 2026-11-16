@@ -350,7 +350,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         parent._showRowDivider = false
     end
 
-    -- Bypass scroll child: parent everything to scrollFrame directly
+    -- Built on the scroll frame itself, not its scroll child.
     local scrollFrame = CludesUI._scrollFrame
     if not scrollFrame then
         return 0
@@ -363,86 +363,45 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     root:SetFrameLevel(scrollFrame:GetFrameLevel() + 5)
     CludesUI._profilesRoot = root
 
-    -- Page containers: main profiles page vs import flow
-    local mainPage = CreateFrame("Frame", nil, root)
-    mainPage:SetAllPoints(root)
-    mainPage:SetFrameLevel(root:GetFrameLevel())
-
-    local importPage = CreateFrame("Frame", nil, root)
-    importPage:SetAllPoints(root)
-    importPage:SetFrameLevel(root:GetFrameLevel())
-    importPage:Hide()
-
-    local pastePage = CreateFrame("Frame", nil, root)
-    pastePage:SetAllPoints(root)
-    pastePage:SetFrameLevel(root:GetFrameLevel())
-    pastePage:Hide()
-
-    -- Use mainPage for all main content
+    -- Three pages over the root, one shown at a time: the profiles list, the
+    -- import options and the paste box.
+    local function Page(shown)
+        local page = CreateFrame("Frame", nil, root)
+        page:SetAllPoints(root)
+        page:SetFrameLevel(root:GetFrameLevel())
+        if not shown then
+            page:Hide()
+        end
+        return page
+    end
+    local mainPage, importPage, pastePage = Page(true), Page(false), Page(false)
     parent = mainPage
     y = -10
 
-    -- Button colours matching dropdown border style
-    local _c = CludesUI.WB_COLOURS
-    local PROF_BTN_COLOURS = {
-        _c[1],
-        _c[2],
-        _c[3],
-        _c[4],
-        _c[5],
-        _c[6],
-        _c[7],
-        _c[8],
-        1,
-        1,
-        1,
-        CludesUI.DD_BRD_A,
-        1,
-        1,
-        1,
-        CludesUI.DD_BRD_HA,
-        _c[17],
-        _c[18],
-        _c[19],
-        _c[20],
-        _c[21],
-        _c[22],
-        _c[23],
-        _c[24],
-    }
-
-    -- Accent button colours (green-tinted)
-    local ACCENT_BTN_COLOURS = {
-        EG.r * 0.15,
-        EG.g * 0.15,
-        EG.b * 0.15,
-        0.85,
-        EG.r * 0.22,
-        EG.g * 0.22,
-        EG.b * 0.22,
-        0.95,
-        EG.r,
-        EG.g,
-        EG.b,
-        0.35,
-        EG.r,
-        EG.g,
-        EG.b,
-        0.65,
-        EG.r,
-        EG.g,
-        EG.b,
-        0.90,
-        1,
-        1,
-        1,
-        1,
-    }
+    -- Plain buttons: the wide button's colours with the dropdowns' white
+    -- border (rest and hover alpha).
+    local PROF_BTN_COLOURS = { unpack(CludesUI.WB_COLOURS, 1, 24) }
+    for i, v in ipairs({ 1, 1, 1, CludesUI.DD_BRD_A, 1, 1, 1, CludesUI.DD_BRD_HA }) do
+        PROF_BTN_COLOURS[8 + i] = v
+    end
+    -- Accent buttons: background, hover background, border, hover border and
+    -- text, each the accent at a strength and alpha; white hover text.
+    local ACCENT_BTN_COLOURS = {}
+    for _, step in ipairs({ { 0.15, 0.85 }, { 0.22, 0.95 }, { 1, 0.35 }, { 1, 0.65 }, { 1, 0.90 } }) do
+        local m = step[1]
+        for _, v in ipairs({ EG.r * m, EG.g * m, EG.b * m, step[2] }) do
+            ACCENT_BTN_COLOURS[#ACCENT_BTN_COLOURS + 1] = v
+        end
+    end
+    for _ = 1, 4 do
+        ACCENT_BTN_COLOURS[#ACCENT_BTN_COLOURS + 1] = 1
+    end
 
     _, h = W:Spacer(parent, y, 10)
     y = y - h
 
-    -- Shared dropdown builder (reused for profile dd and spec dd)
+    -- A dropdown button (the profile and spec pickers): label clipped to one
+    -- line left of the arrow; hover paints it with the dropdown colours.
     local function MakeDropdown(parentFrame, w, ddH, getLabel)
         local btn = CreateFrame("Button", nil, parentFrame)
         PP.Size(btn, w, ddH)
@@ -452,7 +411,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         bg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_A)
         local brd = CludesUI.MakeRoundedBorder(btn, 1, 1, 1, CludesUI.DD_BRD_A, bg)
         -- The resting alpha is the text colour's, the channel the hover
-        -- colours below write, so a hover and leave land back on it.
+        -- colours write, so a hover and leave land back on it.
         local lbl = CludesUI.MakeFont(btn, 13, nil, 1, 1, 1, CludesUI.DD_TXT_A)
         lbl:SetJustifyH("LEFT")
         lbl:SetWordWrap(false)
@@ -461,50 +420,54 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         local arrow = CludesUI.MakeDropdownArrow(btn, 12, PP)
         lbl:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
         lbl:SetText(getLabel())
+        -- RD_DD_COLOURS: background, hover background, border, hover border,
+        -- text, hover text (four values each).
         local s = CludesUI.RD_DD_COLOURS
+        local function Paint(hot)
+            local o = hot and 4 or 0
+            lbl:SetTextColor(s[17 + o], s[18 + o], s[19 + o], s[20 + o])
+            brd:SetColor(s[9 + o], s[10 + o], s[11 + o], s[12 + o])
+            bg:SetColorTexture(s[1 + o], s[2 + o], s[3 + o], s[4 + o])
+        end
         btn:SetScript("OnEnter", function()
-            lbl:SetTextColor(s[21], s[22], s[23], s[24])
-            brd:SetColor(s[13], s[14], s[15], s[16])
-            bg:SetColorTexture(s[5], s[6], s[7], s[8])
+            Paint(true)
         end)
         btn:SetScript("OnLeave", function()
-            lbl:SetTextColor(s[17], s[18], s[19], s[20])
-            brd:SetColor(s[9], s[10], s[11], s[12])
-            bg:SetColorTexture(s[1], s[2], s[3], s[4])
+            Paint(false)
         end)
         btn._getLabel = getLabel
         return btn, lbl, bg, brd
     end
 
     -- One menu per dropdown button, kept with the button: a build that dresses
-    -- the button again dresses its menu again too.
+    -- the button again dresses its menu again too. A press outside both closes it.
     local function MakeDropdownMenu(anchor, w)
-        local menuFrame = PoolKept(anchor, "profilesMenu", "Frame", UIParent)
-        menuFrame:SetFrameStrata("FULLSCREEN_DIALOG")
-        menuFrame:SetFrameLevel(200)
-        menuFrame:SetClampedToScreen(true)
-        menuFrame:SetSize(w, 4)
-        menuFrame:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -2)
-        menuFrame:Hide()
-        local bg = menuFrame:CreateTexture(nil, "BACKGROUND")
+        local menu = PoolKept(anchor, "profilesMenu", "Frame", UIParent)
+        menu:SetFrameStrata("FULLSCREEN_DIALOG")
+        menu:SetFrameLevel(200)
+        menu:SetClampedToScreen(true)
+        menu:SetSize(w, 4)
+        menu:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -2)
+        menu:Hide()
+        local bg = menu:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
         bg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, 0.98)
-        CludesUI.MakeRoundedBorder(menuFrame, 1, 1, 1, CludesUI.DD_BRD_A, bg, nil, true)
-        menuFrame:SetScript("OnShow", function(self)
-            local s = anchor:GetEffectiveScale() / UIParent:GetEffectiveScale()
-            self:SetScale(s)
-            self:SetScript("OnUpdate", function(m)
-                if not anchor:IsMouseOver() and not m:IsMouseOver() then
-                    if IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton") then
-                        m:Hide()
-                    end
-                end
-            end)
+        CludesUI.MakeRoundedBorder(menu, 1, 1, 1, CludesUI.DD_BRD_A, bg, nil, true)
+        local function WatchOutside(m)
+            local away = not anchor:IsMouseOver() and not m:IsMouseOver()
+            if away and (IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton")) then
+                m:Hide()
+            end
+        end
+        menu:SetScript("OnShow", function(self)
+            -- On UIParent, drawn at the panel's scale.
+            self:SetScale(anchor:GetEffectiveScale() / UIParent:GetEffectiveScale())
+            self:SetScript("OnUpdate", WatchOutside)
         end)
-        menuFrame:SetScript("OnHide", function(self)
+        menu:SetScript("OnHide", function(self)
             self:SetScript("OnUpdate", nil)
         end)
-        return menuFrame
+        return menu
     end
 
     -- Hoisted so the import callback can update it
@@ -516,105 +479,99 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
     local ShowImportPage -- forward declaration (defined after import page builder)
 
-    local function ShowProfileKeybindPopup(profileName)
-        local popup = profileKeybindPopup
-        if popup then
-            -- Still open: closed first, cancelling a capture in progress.
-            if popup._dimmer:IsShown() then
+    -- The keybind popup (made on first use, then kept): a screen dimmer that
+    -- closes it on a click outside, the profile's keybind button, a hint line.
+    local function BuildKeybindPopup()
+        local dimmer = CreateFrame("Frame", nil, UIParent)
+        dimmer:SetFrameStrata("FULLSCREEN_DIALOG")
+        dimmer:SetFrameLevel(100)
+        dimmer:SetAllPoints(UIParent)
+        dimmer:EnableMouse(true)
+        dimmer:EnableMouseWheel(true)
+        dimmer:SetScript("OnMouseWheel", function() end)
+        dimmer:Hide()
+        local dimTex = dimmer:CreateTexture(nil, "BACKGROUND")
+        dimTex:SetAllPoints()
+        dimTex:SetColorTexture(0, 0, 0, 0.25)
+
+        local popup = CreateFrame("Frame", nil, dimmer)
+        popup:SetFrameStrata("FULLSCREEN_DIALOG")
+        popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
+        popup:SetSize(320, 130)
+        popup:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
+        popup:EnableMouse(true)
+        popup:SetClampedToScreen(true)
+        popup._dimmer = dimmer
+        dimmer:SetScript("OnMouseDown", function()
+            if not popup:IsMouseOver() then
+                dimmer:Hide()
+            end
+        end)
+
+        local popBg = popup:CreateTexture(nil, "BACKGROUND")
+        popBg:SetAllPoints()
+        popBg:SetColorTexture(0.062, 0.070, 0.082, 0.97)
+        CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.20, popBg)
+        local title = CludesUI.MakeFont(popup, 14, nil, 1, 1, 1)
+        title:SetPoint("TOP", popup, "TOP", 0, -14)
+        popup._title = title
+
+        -- Reads and writes the profile the popup was last opened for.
+        local kbBtn, kbRefresh = CludesUI.BuildKeybindButton(popup, {
+            w = 160,
+            h = 30,
+            font = 13,
+            get = function()
+                return CludesUI.GetProfileKeybind(popup._profileName)
+            end,
+            set = function(v)
+                CludesUI.SetProfileKeybind(popup._profileName, v)
+            end,
+        })
+        kbBtn:SetPoint("CENTER", popup, "CENTER", 0, -2)
+        popup._kbRefresh = kbRefresh
+        local hint = CludesUI.MakeFont(popup, 10, nil, 1, 1, 1, 0.35)
+        hint:SetPoint("BOTTOM", popup, "BOTTOM", 0, 12)
+        hint:SetText(CludesUI.L("Left-click to set  |  Right-click to unbind  |  Esc to close"))
+
+        -- kbBtn's own OnHide cancels a capture in progress.
+        popup:SetScript("OnHide", function()
+            if popup._dimmer then
                 popup._dimmer:Hide()
             end
-        else
-            local POPUP_W, POPUP_H = 320, 130
+        end)
+        -- It sits on UIParent, so it closes with the panel, which closes as
+        -- combat starts: a screen-wide dimmer and an armed key capture never
+        -- stay up into combat.
+        CludesUI:RegisterOnHide(function()
+            if dimmer:IsShown() then
+                dimmer:Hide()
+            end
+        end)
+        CludesUI.PopupTakeKeys(popup, dimmer)
+        -- Escape closes it, unless the button is capturing (it then owns the keys).
+        popup:SetScript("OnKeyDown", function(self, key)
+            if InCombatLockdown() then
+                return
+            end
+            local close = key == "ESCAPE" and not kbBtn:IsKeyboardEnabled()
+            self:SetPropagateKeyboardInput(not close)
+            if close then
+                dimmer:Hide()
+            end
+        end)
+        return popup
+    end
 
-            local dimmer = CreateFrame("Frame", nil, UIParent)
-            dimmer:SetFrameStrata("FULLSCREEN_DIALOG")
-            dimmer:SetFrameLevel(100)
-            dimmer:SetAllPoints(UIParent)
-            dimmer:EnableMouse(true)
-            dimmer:EnableMouseWheel(true)
-            dimmer:SetScript("OnMouseWheel", function() end)
-            dimmer:Hide()
-
-            local dimTex = dimmer:CreateTexture(nil, "BACKGROUND")
-            dimTex:SetAllPoints()
-            dimTex:SetColorTexture(0, 0, 0, 0.25)
-
-            popup = CreateFrame("Frame", nil, dimmer)
-            popup:SetFrameStrata("FULLSCREEN_DIALOG")
-            popup:SetFrameLevel(dimmer:GetFrameLevel() + 10)
-            popup:SetSize(POPUP_W, POPUP_H)
-            popup:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
-            popup:EnableMouse(true)
-            popup:SetClampedToScreen(true)
-            popup._dimmer = dimmer
-            popup._profileName = profileName
-
-            dimmer:SetScript("OnMouseDown", function()
-                if not popup:IsMouseOver() then
-                    dimmer:Hide()
-                end
-            end)
-
-            local popBg = popup:CreateTexture(nil, "BACKGROUND")
-            popBg:SetAllPoints()
-            popBg:SetColorTexture(0.062, 0.070, 0.082, 0.97)
-            CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.20, popBg)
-
-            local title = CludesUI.MakeFont(popup, 14, nil, 1, 1, 1)
-            title:SetPoint("TOP", popup, "TOP", 0, -14)
-            popup._title = title
-
-            -- Reads and writes the profile the popup was last opened for.
-            local kbBtn, kbRefresh = CludesUI.BuildKeybindButton(popup, {
-                w = 160,
-                h = 30,
-                font = 13,
-                get = function()
-                    return CludesUI.GetProfileKeybind(popup._profileName)
-                end,
-                set = function(v)
-                    CludesUI.SetProfileKeybind(popup._profileName, v)
-                end,
-            })
-            kbBtn:SetPoint("CENTER", popup, "CENTER", 0, -2)
-            popup._kbRefresh = kbRefresh
-
-            local hint = CludesUI.MakeFont(popup, 10, nil, 1, 1, 1, 0.35)
-            hint:SetPoint("BOTTOM", popup, "BOTTOM", 0, 12)
-            hint:SetText(CludesUI.L("Left-click to set  |  Right-click to unbind  |  Esc to close"))
-
-            -- kbBtn's own OnHide cancels a capture in progress.
-            popup:SetScript("OnHide", function()
-                if popup._dimmer then
-                    popup._dimmer:Hide()
-                end
-            end)
-            -- It sits on UIParent, so it closes with the panel, which closes as
-            -- combat starts: a screen-wide dimmer and an armed key capture never
-            -- stay up into combat.
-            CludesUI:RegisterOnHide(function()
-                if dimmer:IsShown() then
-                    dimmer:Hide()
-                end
-            end)
-
-            CludesUI.PopupTakeKeys(popup, dimmer)
-            popup:SetScript("OnKeyDown", function(self, kkey)
-                if InCombatLockdown() then
-                    return
-                end
-                -- kbBtn takes the keyboard only while it is capturing.
-                if kkey == "ESCAPE" and not kbBtn:IsKeyboardEnabled() then
-                    self:SetPropagateKeyboardInput(false)
-                    dimmer:Hide()
-                else
-                    self:SetPropagateKeyboardInput(true)
-                end
-            end)
-
+    local function ShowProfileKeybindPopup(profileName)
+        local popup = profileKeybindPopup
+        if not popup then
+            popup = BuildKeybindPopup()
             profileKeybindPopup = popup
+        elseif popup._dimmer:IsShown() then
+            -- Still open: closed first, cancelling a capture in progress.
+            popup._dimmer:Hide()
         end
-
         popup._profileName = profileName
         popup._title:SetText(CludesUI.Lf("Keybind: %1$s", profileName))
         popup._kbRefresh()
@@ -622,25 +579,28 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         popup._dimmer:Show()
     end
 
+    -- A button's border flashes red, fading back to its resting white over 0.7s.
     local function BuildErrorFlash(btn, brd)
         local flashFrame = CreateFrame("Frame", nil, btn)
         flashFrame:Hide()
-        local elapsed = 0
-        local FLASH_DUR = 0.7
         local lerp = CludesUI.lerp
+        local DUR = 0.7
+        local elapsed = 0
+        local function Paint(t)
+            brd:SetColor(lerp(0.9, 1, t), lerp(0.15, 1, t), lerp(0.15, 1, t), lerp(0.7, CludesUI.DD_BRD_A, t))
+        end
         flashFrame:SetScript("OnUpdate", function(self, dt)
             elapsed = elapsed + dt
-            if elapsed >= FLASH_DUR then
+            if elapsed >= DUR then
                 self:Hide()
                 brd:SetColor(1, 1, 1, CludesUI.DD_BRD_A)
                 return
             end
-            local t = elapsed / FLASH_DUR
-            brd:SetColor(lerp(0.9, 1, t), lerp(0.15, 1, t), lerp(0.15, 1, t), lerp(0.7, CludesUI.DD_BRD_A, t))
+            Paint(elapsed / DUR)
         end)
         return function()
             elapsed = 0
-            brd:SetColor(0.9, 0.15, 0.15, 0.7)
+            Paint(0)
             flashFrame:Show()
         end
     end
