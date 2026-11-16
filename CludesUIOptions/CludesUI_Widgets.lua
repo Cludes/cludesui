@@ -3325,15 +3325,21 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         return tipText
     end
 
+    -- An option row: the content width at yOffset, height tall, with the row
+    -- background and the search tag for its label and tooltip.
+    local function OptionRow(hostFrame, yOffset, height, textValue, tooltip)
+        local widget = CreateFrame("Frame", nil, hostFrame)
+        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, height)
+        Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
+        RowBg(widget, hostFrame)
+        TagOptionRow(widget, hostFrame, textValue, tooltip)
+        return widget
+    end
+
     -- Toggle switch  (pill-shaped, teal when ON, dark when OFF, animated)
     function WidgetFactory:Toggle(hostFrame, textValue, yOffset, getValue, setValue, tooltip)
         local ROW_H = 50
-        local widget = CreateFrame("Frame", nil, hostFrame)
-        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_H)
-        Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
-
-        RowBg(widget, hostFrame)
-        TagOptionRow(widget, hostFrame, textValue, tooltip)
+        local widget = OptionRow(hostFrame, yOffset, ROW_H, textValue, tooltip)
         local label = MakeFont(widget, 14, nil, TEXT_WHITE.r, TEXT_WHITE.g, TEXT_WHITE.b)
         label:SetPoint("LEFT", widget, "LEFT", 20, 0)
         label:SetText(CludesUI.L(textValue))
@@ -3365,11 +3371,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         pixel
     )
         local ROW_H = 50
-        local widget = CreateFrame("Frame", nil, hostFrame)
-        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_H)
-        Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
-        RowBg(widget, hostFrame)
-        TagOptionRow(widget, hostFrame, textValue, tooltip)
+        local widget = OptionRow(hostFrame, yOffset, ROW_H, textValue, tooltip)
         local label = MakeFont(widget, 14, nil, TEXT_WHITE_R, TEXT_WHITE_G, TEXT_WHITE_B)
         Pix.Point(label, "LEFT", widget, "LEFT", 20, 0)
         label:SetText(CludesUI.L(textValue))
@@ -3424,11 +3426,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         tooltip
     )
         local ROW_H = 50
-        local widget = CreateFrame("Frame", nil, hostFrame)
-        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_H)
-        Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
-        RowBg(widget, hostFrame)
-        TagOptionRow(widget, hostFrame, textValue, tooltip)
+        local widget = OptionRow(hostFrame, yOffset, ROW_H, textValue, tooltip)
         local label = MakeFont(widget, 14, nil, TEXT_WHITE_R, TEXT_WHITE_G, TEXT_WHITE_B)
         label:SetAlpha(1)
         Pix.Point(label, "LEFT", widget, "LEFT", 20, 0)
@@ -3475,12 +3473,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
         end
         local ROW_H = 36
-        local widget = CreateFrame("Frame", nil, hostFrame)
-        Pix.Size(widget, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_H)
-        Pix.Point(widget, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yOffset)
-
-        RowBg(widget, hostFrame)
-        TagOptionRow(widget, hostFrame, textValue, tooltip)
+        local widget = OptionRow(hostFrame, yOffset, ROW_H, textValue, tooltip)
 
         local btn = CreateFrame("Button", nil, widget)
         Pix.Size(btn, hostFrame:GetWidth() - CONTENT_PAD * 2, ROW_H)
