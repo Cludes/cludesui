@@ -23,6 +23,9 @@ if not mod then
     OUT:write("== no info bar module\n")
     return
 end
+local cursorY, buttonDown = 0, false
+GetCursorPosition = function() return 0, cursorY end
+IsMouseButtonDown = function() return buttonDown end
 local bar = mod.CreateBar("empty")
 for _, t in ipairs(mod.BLOCK_TYPES) do
     mod.AddBlock(bar.id, t.key)
@@ -113,6 +116,35 @@ local function Page(label, rebuild, pickAll)
                 HARNESS_ADVANCE(0.3)
             end
             SNAP(label .. " menu " .. i .. " after hover", menu)
+            -- A scrolling menu: the fake client reports no scroll range, so
+            -- give its scroll frame one (and the frames fixed heights), wheel
+            -- down twice and let the smooth scroll settle, then drag the thumb.
+            local sf = Find(menu, function(f) return f["\0kind"] == "ScrollFrame" end)[1]
+            if sf then
+                sf.GetVerticalScrollRange = function() return 300 end
+                sf.GetHeight = function() return 200 end
+                local track = Find(sf, function(f)
+                    return f["\0kind"] == "Frame" and rawget(f, "\0w") == 4
+                end)[1]
+                if track then track.GetHeight = function() return 192 end end
+                Call(sf, "OnMouseWheel", -1)
+                Call(sf, "OnMouseWheel", -1)
+                HARNESS_TICK(0.02, 40)
+                OUT:write("   scroll " .. string.format("%.2f", sf:GetVerticalScroll()) .. "\n")
+                SNAP(label .. " menu " .. i .. " wheeled", menu)
+                local thumb = track and Find(track, function(f) return f["\0kind"] == "Button" end)[1]
+                if thumb then
+                    thumb.GetHeight = function() return 80 end
+                    cursorY, buttonDown = 500, true
+                    Call(thumb, "OnMouseDown", "LeftButton")
+                    cursorY = 440
+                    HARNESS_TICK(0.02, 2)
+                    buttonDown = false
+                    Call(thumb, "OnMouseUp", "LeftButton")
+                    OUT:write("   dragged " .. string.format("%.2f", sf:GetVerticalScroll()) .. "\n")
+                    SNAP(label .. " menu " .. i .. " thumb dragged", menu)
+                end
+            end
             menu:Hide()
         end
     end
