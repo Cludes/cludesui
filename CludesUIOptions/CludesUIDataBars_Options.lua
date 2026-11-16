@@ -908,23 +908,16 @@ initFrame:SetScript("OnEvent", function(self)
             stripThick = STRIP_H_THICK
         end
 
+        -- Vertical: the popout's kept strip, the popout sized around it, its
+        -- title and hint and the add tile below (the extra tail room is for
+        -- the bottom hint, which wraps inside the narrow popout) and docked
+        -- left of the options window. Horizontal: a strip under the header.
         local strip
         if vertical then
-            strip = Pool.Kept(_edbKeep, "popStrip", "Frame", stripParent)
-        else
-            strip = CreateFrame("Frame", nil, stripParent)
-        end
-        if vertical then
-            Pix.Size(strip, stripThick, stripLen)
-        else
-            Pix.Size(strip, stripLen, stripThick)
-        end
-        if vertical then
             local oc = stripParent
+            strip = Pool.Kept(_edbKeep, "popStrip", "Frame", oc)
+            Pix.Size(strip, stripThick, stripLen)
             oc._strip = strip
-            -- Sized around strip + title/hint chrome + the add tile below.
-            -- The extra tail room is for the bottom hint, which wraps to
-            -- multiple lines inside the narrow popout.
             Pix.Size(oc, math.max(stripThick + 90, 150), stripLen + stripThick + 92)
             strip:ClearAllPoints()
             strip:SetPoint("TOP", oc, "TOP", 0, -28)
@@ -938,6 +931,8 @@ initFrame:SetScript("OnEvent", function(self)
             end
             oc:Show()
         else
+            strip = CreateFrame("Frame", nil, stripParent)
+            Pix.Size(strip, stripLen, stripThick)
             Pix.Point(strip, "TOPLEFT", heading, "TOPLEFT", PAD, fy)
             strip:SetFrameLevel(heading:GetFrameLevel() + 3)
         end
@@ -1007,24 +1002,19 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             end)
 
-            local typeLabel = TYPE_LABEL[b.type]
-            if not typeLabel then
-                typeLabel = b.type
+            -- Two centred one-line labels: the block's type above, its
+            -- share of the bar (set by LayoutStrip) below.
+            local function Label(size, alpha, y)
+                local fs = CludesUI.MakeFont(button, size, nil, 1, 1, 1, alpha)
+                fs:SetPoint("LEFT", button, "LEFT", 2, y)
+                fs:SetPoint("RIGHT", button, "RIGHT", -2, y)
+                fs:SetJustifyH("CENTER")
+                fs:SetWordWrap(false)
+                fs:SetMaxLines(1)
+                return fs
             end
-            local nameFS = CludesUI.MakeFont(button, 10, nil, 1, 1, 1, 0.85)
-            nameFS:SetPoint("LEFT", button, "LEFT", 2, 6)
-            nameFS:SetPoint("RIGHT", button, "RIGHT", -2, 6)
-            nameFS:SetJustifyH("CENTER")
-            nameFS:SetWordWrap(false)
-            nameFS:SetMaxLines(1)
-            nameFS:SetText(L(typeLabel))
-
-            local shareFS = CludesUI.MakeFont(button, 9, nil, 1, 1, 1, 0.5)
-            shareFS:SetPoint("LEFT", button, "LEFT", 2, -7)
-            shareFS:SetPoint("RIGHT", button, "RIGHT", -2, -7)
-            shareFS:SetJustifyH("CENTER")
-            shareFS:SetWordWrap(false)
-            shareFS:SetMaxLines(1)
+            Label(10, 0.85, 6):SetText(L(TYPE_LABEL[b.type] or b.type))
+            local shareFS = Label(9, 0.5, -7)
 
             -- Settings-section hover wash (driven by the body watcher).
             local ehl = button:CreateTexture(nil, "OVERLAY", nil, 5)
