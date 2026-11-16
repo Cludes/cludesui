@@ -115,25 +115,28 @@ function mod.UFO_UnitSync(rgn, label, opts)
     })
 end
 
--- A Text Bar slot's sync icon: the slot's content, with its own format when
--- that content is Custom (any other content leaves the format alone).
-local function TextSlotSync(rgn, label, slot)
-    local content, format = "btb" .. slot .. "Content", "btb" .. slot .. "CustomFormat"
+-- The sync icon of a text choice (a Text Bar slot, Power Text): the choice
+-- (default when unset), with its own format when the choice is Custom (any
+-- other choice leaves the format alone).
+function mod.UFO_FormatSync(rgn, label, content, format, default)
     mod.UFO_UnitSync(rgn, label, {
         self = true,
         copy = function(t, from)
-            local v = from[content] or "none"
+            local v = from[content] or default
             t[content] = v
             if v == "custom" then
                 t[format] = from[format]
             end
         end,
         same = function(t, from)
-            local v = from[content] or "none"
-            return (t[content] or "none") == v
+            local v = from[content] or default
+            return (t[content] or default) == v
                 and (v ~= "custom" or (t[format] or "") == (from[format] or ""))
         end,
     })
+end
+local function TextSlotSync(rgn, label, slot)
+    mod.UFO_FormatSync(rgn, label, "btb" .. slot .. "Content", "btb" .. slot .. "CustomFormat", "none")
 end
 
 function mod.UFO_BuildDisplaySection(hostFrame, posY, context)

@@ -27,8 +27,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
     local environ = mod._UFO_OptEnv
     local AddDarkModeBlock, GROUP_UNIT_ORDER, Pix, RegisterWidgetRefresh =
         environ.AddDarkModeBlock, environ.GROUP_UNIT_ORDER, environ.PP, environ.RegisterWidgetRefresh
-    local ReloadAndUpdate, SHORT_LABELS, UNIT_DB_MAP, UpdatePreview =
-        environ.ReloadAndUpdate, environ.SHORT_LABELS, environ.UNIT_DB_MAP, environ.UpdatePreview
+    local ReloadAndUpdate, UNIT_DB_MAP, UpdatePreview =
+        environ.ReloadAndUpdate, environ.UNIT_DB_MAP, environ.UpdatePreview
     local saved, healthTextOrder, healthTextOrderPlayer, healthTextOrderTargetFocus =
         environ.db, environ.healthTextOrder, environ.healthTextOrderPlayer, environ.healthTextOrderTargetFocus
     local healthTextValues, optionState = environ.healthTextValues, environ.optState
@@ -2372,8 +2372,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
     local environ = mod._UFO_OptEnv
     local GROUP_UNIT_ORDER, Pix, RegisterWidgetRefresh, ReloadAndUpdate =
         environ.GROUP_UNIT_ORDER, environ.PP, environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
-    local SHORT_LABELS, UNIT_DB_MAP, UpdatePreview, optionState =
-        environ.SHORT_LABELS, environ.UNIT_DB_MAP, environ.UpdatePreview, environ.optState
+    local UNIT_DB_MAP, UpdatePreview, optionState =
+        environ.UNIT_DB_MAP, environ.UpdatePreview, environ.optState
     local W, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
     local SSetSupported, SVal, SValSupported = context.SSetSupported, context.SVal, context.SValSupported
     local _, hgt
@@ -2688,61 +2688,13 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
     end
     -- Sync icon: Power Text Format (left of row 2)
     if not CludesUI._prebuilding then
-        local rgn = sharedPowerRow2._leftRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Power Text Format to all Frames",
-            onClick = function()
-                local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                local val, fmt = source.powerTextFormat or "perpp", source.powerTextCustomFormat
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    local d = UNIT_DB_MAP[key]()
-                    d.powerTextFormat = val
-                    if val == "custom" then
-                        d.powerTextCustomFormat = fmt
-                    end
-                end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                local val, fmt = source.powerTextFormat or "perpp", source.powerTextCustomFormat or ""
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    local d = UNIT_DB_MAP[key]()
-                    if (d.powerTextFormat or "perpp") ~= val then
-                        return false
-                    end
-                    if val == "custom" and (d.powerTextCustomFormat or "") ~= fmt then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                    local val, fmt = source.powerTextFormat or "perpp", source.powerTextCustomFormat
-                    for _, key in ipairs(checkedKeys) do
-                        local d = UNIT_DB_MAP[key]()
-                        d.powerTextFormat = val
-                        if val == "custom" then
-                            d.powerTextCustomFormat = fmt
-                        end
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-            },
-        })
+        mod.UFO_FormatSync(
+            sharedPowerRow2._leftRegion,
+            "Power Text Format",
+            "powerTextFormat",
+            "powerTextCustomFormat",
+            "perpp"
+        )
     end
     -- Fill Opacity sync (right of row 2)
     if not CludesUI._prebuilding then
@@ -3262,61 +3214,18 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
     end
     -- Sync icon: Text Color (right of row 4)
     if not CludesUI._prebuilding then
-        local rgn = sharedPowerRow4._rightRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Text Color to all Frames",
-            onClick = function()
-                local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                local val = source.powerPercentTextPowerColor or false
-                local tc = source.powerTextColor
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    local d = UNIT_DB_MAP[key]()
-                    d.powerPercentTextPowerColor = val
-                    if tc then
-                        d.powerTextColor = { r = tc.r, g = tc.g, b = tc.b }
-                    else
-                        d.powerTextColor = nil
-                    end
-                end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
+        -- Power colour on/off travels with the custom colour (or its absence);
+        -- only the on/off decides whether the frames agree.
+        mod.UFO_UnitSync(sharedPowerRow4._rightRegion, "Text Color", {
+            self = true,
+            copy = function(t, from)
+                local c = from.powerTextColor
+                t.powerPercentTextPowerColor = from.powerPercentTextPowerColor or false
+                t.powerTextColor = c and { r = c.r, g = c.g, b = c.b } or nil
             end,
-            isSynced = function()
-                local val = UNIT_DB_MAP[optionState.selectedUnit]().powerPercentTextPowerColor or false
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().powerPercentTextPowerColor or false) ~= val then
-                        return false
-                    end
-                end
-                return true
+            same = function(t, from)
+                return (t.powerPercentTextPowerColor or false) == (from.powerPercentTextPowerColor or false)
             end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                    local val = source.powerPercentTextPowerColor or false
-                    local tc = source.powerTextColor
-                    for _, key in ipairs(checkedKeys) do
-                        local d = UNIT_DB_MAP[key]()
-                        d.powerPercentTextPowerColor = val
-                        if tc then
-                            d.powerTextColor = { r = tc.r, g = tc.g, b = tc.b }
-                        else
-                            d.powerTextColor = nil
-                        end
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-            },
         })
     end
 
@@ -4079,8 +3988,7 @@ end
 
 function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
     local environ = mod._UFO_OptEnv
-    local GROUP_UNIT_ORDER, RegisterWidgetRefresh, ReloadAndUpdate, SHORT_LABELS =
-        environ.GROUP_UNIT_ORDER, environ.RegisterWidgetRefresh, environ.ReloadAndUpdate, environ.SHORT_LABELS
+    local RegisterWidgetRefresh, ReloadAndUpdate = environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
     local UNIT_DB_MAP, UpdatePreview, classPowerPosOrder, classPowerPosValues =
         environ.UNIT_DB_MAP, environ.UpdatePreview, environ.classPowerPosOrder, environ.classPowerPosValues
     local classPowerStyleOrder, classPowerStyleValues, optionState =
@@ -4306,102 +4214,23 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
         end
         -- Sync icons: Enable Class Resource (left) and Class Colors (right)
         if not CludesUI._prebuilding then
-            local rgn = sharedClassResRow._leftRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Class Resource Style to all Frames",
-                onClick = function()
-                    local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerStyle or "none"
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        UNIT_DB_MAP[key]().classPowerStyle = val
-                        UNIT_DB_MAP[key]().showClassPowerBar = (val ~= "none")
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
+            -- A style of None also hides the bar.
+            mod.UFO_UnitSync(sharedClassResRow._leftRegion, "Class Resource Style", {
+                self = true,
+                copy = function(t, from)
+                    local style = from.classPowerStyle or "none"
+                    t.classPowerStyle = style
+                    t.showClassPowerBar = style ~= "none"
                 end,
-                isSynced = function()
-                    local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerStyle or "none"
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if (UNIT_DB_MAP[key]().classPowerStyle or "none") ~= val then
-                            return false
-                        end
-                    end
-                    return true
+                same = function(t, from)
+                    return (t.classPowerStyle or "none") == (from.classPowerStyle or "none")
                 end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerStyle or "none"
-                        for _, key in ipairs(checkedKeys) do
-                            UNIT_DB_MAP[key]().classPowerStyle = val
-                            UNIT_DB_MAP[key]().showClassPowerBar = (val ~= "none")
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
             })
-        end
-        if not CludesUI._prebuilding then
-            local rgn = sharedClassResRow._rightRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Class Colors to all Frames",
-                onClick = function()
-                    local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerClassColor
-                    if val == nil then
-                        val = true
-                    end
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        UNIT_DB_MAP[key]().classPowerClassColor = val
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerClassColor
-                    if val == nil then
-                        val = true
-                    end
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        local shade = UNIT_DB_MAP[key]().classPowerClassColor
-                        if shade == nil then
-                            shade = true
-                        end
-                        if shade ~= val then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerClassColor
-                        if val == nil then
-                            val = true
-                        end
-                        for _, key in ipairs(checkedKeys) do
-                            UNIT_DB_MAP[key]().classPowerClassColor = val
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
+            mod.UFO_UnitSync(sharedClassResRow._rightRegion, "Class Colors", {
+                key = "classPowerClassColor",
+                default = true,
+                unsetOnly = true,
+                self = true,
             })
         end
 
@@ -4584,64 +4413,21 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
                 })
             end
             if not CludesUI._prebuilding then
-                local rgn = sharedClassResRow3._rightRegion
-                CludesUI.BuildSyncIcon({
-                    region = rgn,
-                    tooltip = "Apply Class Resource Background Color to all Frames",
-                    onClick = function()
-                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerBgColor
-                        for _, key in ipairs(GROUP_UNIT_ORDER) do
-                            if val then
-                                UNIT_DB_MAP[key]().classPowerBgColor =
-                                    { r = val.r, g = val.g, b = val.b, a = val.a }
-                            else
-                                UNIT_DB_MAP[key]().classPowerBgColor = nil
-                            end
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
+                -- Unset draws black at half alpha, so it equals that colour set.
+                local function Bg(c)
+                    return c and c.r or 0, c and c.g or 0, c and c.b or 0, c and c.a or 0.5
+                end
+                mod.UFO_UnitSync(sharedClassResRow3._rightRegion, "Class Resource Background Color", {
+                    self = true,
+                    copy = function(t, from)
+                        local c = from.classPowerBgColor
+                        t.classPowerBgColor = c and { r = c.r, g = c.g, b = c.b, a = c.a } or nil
                     end,
-                    isSynced = function()
-                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerBgColor
-                        local vr = val and val.r or 0
-                        local vg = val and val.g or 0
-                        local vb = val and val.b or 0
-                        local va = val and val.a or 0.5
-                        for _, key in ipairs(GROUP_UNIT_ORDER) do
-                            local shade = UNIT_DB_MAP[key]().classPowerBgColor
-                            local or_ = shade and shade.r or 0
-                            local og = shade and shade.g or 0
-                            local ob = shade and shade.b or 0
-                            local oa = shade and shade.a or 0.5
-                            if or_ ~= vr or og ~= vg or ob ~= vb or oa ~= va then
-                                return false
-                            end
-                        end
-                        return true
+                    same = function(t, from)
+                        local r1, g1, b1, a1 = Bg(t.classPowerBgColor)
+                        local r2, g2, b2, a2 = Bg(from.classPowerBgColor)
+                        return r1 == r2 and g1 == g2 and b1 == b2 and a1 == a2
                     end,
-                    flashTargets = function()
-                        return { rgn }
-                    end,
-                    multiApply = {
-                        elementKeys = GROUP_UNIT_ORDER,
-                        elementLabels = SHORT_LABELS,
-                        getCurrentKey = function()
-                            return optionState.selectedUnit
-                        end,
-                        onApply = function(checkedKeys)
-                            local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerBgColor
-                            for _, key in ipairs(checkedKeys) do
-                                if val then
-                                    UNIT_DB_MAP[key]().classPowerBgColor =
-                                        { r = val.r, g = val.g, b = val.b, a = val.a }
-                                else
-                                    UNIT_DB_MAP[key]().classPowerBgColor = nil
-                                end
-                            end
-                            ReloadAndUpdate()
-                            CludesUI:RefreshPage()
-                        end,
-                    },
                 })
             end
 
@@ -4698,8 +4484,7 @@ end
 
 function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
     local environ = mod._UFO_OptEnv
-    local GROUP_UNIT_ORDER, RegisterWidgetRefresh, ReloadAndUpdate, SHORT_LABELS =
-        environ.GROUP_UNIT_ORDER, environ.RegisterWidgetRefresh, environ.ReloadAndUpdate, environ.SHORT_LABELS
+    local RegisterWidgetRefresh, ReloadAndUpdate = environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
     local UNIT_DB_MAP, UpdatePreview, saved, optionState =
         environ.UNIT_DB_MAP, environ.UpdatePreview, environ.db, environ.optState
     local W, SApplySupport, SGetSupported, SSetSupported =
@@ -4830,42 +4615,35 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
             end
             return a == b
         end
-        local function CopyAbsorbSync(defs, srcUnit, dstUnit)
-            if srcUnit == dstUnit then
-                return
-            end
-            local source, dst = UNIT_DB_MAP[srcUnit](), UNIT_DB_MAP[dstUnit]()
-            for _, e in ipairs(defs) do
-                local val = source[e.k]
-                if val == nil then
-                    val = e.d
+        -- The sync of an absorb setting group: each key of defs, unset reading
+        -- as its default, colours copied as tables of their own.
+        local function AbsorbSync(defs)
+            local function Val(t, e)
+                local v = t[e.k]
+                if v == nil then
+                    return e.d
                 end
-                if type(val) == "table" then
-                    dst[e.k] = { r = val.r, g = val.g, b = val.b, a = val.a }
-                else
-                    dst[e.k] = val
-                end
+                return v
             end
-        end
-        local function AbsorbSyncMatches(defs, srcUnit, units)
-            local source = UNIT_DB_MAP[srcUnit]()
-            for _, unitToken in ipairs(units) do
-                local dst = UNIT_DB_MAP[unitToken]()
-                for _, e in ipairs(defs) do
-                    local a = source[e.k]
-                    if a == nil then
-                        a = e.d
+            return {
+                copy = function(t, from)
+                    for _, e in ipairs(defs) do
+                        local v = Val(from, e)
+                        if type(v) == "table" then
+                            v = { r = v.r, g = v.g, b = v.b, a = v.a }
+                        end
+                        t[e.k] = v
                     end
-                    local b = dst[e.k]
-                    if b == nil then
-                        b = e.d
+                end,
+                same = function(t, from)
+                    for _, e in ipairs(defs) do
+                        if not _AbsSyncValEq(Val(from, e), Val(t, e)) then
+                            return false
+                        end
                     end
-                    if not _AbsSyncValEq(a, b) then
-                        return false
-                    end
-                end
-            end
-            return true
+                    return true
+                end,
+            }
         end
 
         -- Row 1: Absorb Style (+ placement cog + color swatch) | Absorb Opacity
@@ -5106,37 +4884,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
         -- Sync icon: Absorb Style + color swatch + cog settings across all frames
         if not CludesUI._prebuilding then
             local rgn = absorbRow._leftRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Absorb Style, color and rendering to all Frames",
-                onClick = function()
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        CopyAbsorbSync(ABSORB_SYNC_DEFS, optionState.selectedUnit, key)
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    return AbsorbSyncMatches(ABSORB_SYNC_DEFS, optionState.selectedUnit, GROUP_UNIT_ORDER)
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        for _, key in ipairs(checkedKeys) do
-                            CopyAbsorbSync(ABSORB_SYNC_DEFS, optionState.selectedUnit, key)
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
-            })
+            mod.UFO_UnitSync(rgn, "Absorb Style, color and rendering", AbsorbSync(ABSORB_SYNC_DEFS))
         end
 
         -- Row 2: Heal Absorb Style (+ placement cog + color swatch) | Heal Absorb Opacity
@@ -5324,41 +5072,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
         -- Sync icon: Heal Absorb Style + color swatch + cog settings across all frames
         if not CludesUI._prebuilding then
             local rgn = healAbsorbRow._leftRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Heal Absorb Style, color and rendering to all Frames",
-                onClick = function()
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        CopyAbsorbSync(HEAL_ABSORB_SYNC_DEFS, optionState.selectedUnit, key)
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    return AbsorbSyncMatches(
-                        HEAL_ABSORB_SYNC_DEFS,
-                        optionState.selectedUnit,
-                        GROUP_UNIT_ORDER
-                    )
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        for _, key in ipairs(checkedKeys) do
-                            CopyAbsorbSync(HEAL_ABSORB_SYNC_DEFS, optionState.selectedUnit, key)
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
-            })
+            mod.UFO_UnitSync(rgn, "Heal Absorb Style, color and rendering", AbsorbSync(HEAL_ABSORB_SYNC_DEFS))
         end
 
         -- Row 3: Absorb Bar (position dropdown) | Bar Height (+ alpha swatch)
