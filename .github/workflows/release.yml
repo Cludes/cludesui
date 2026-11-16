@@ -1,7 +1,9 @@
 name: Release
 
-# Push a tag such as v1.0.1 to build CludesUI-v1.0.1.zip and attach it to a
-# GitHub release. The tag must match "## Version" in CludesUI/CludesUI.toc.
+# Every vX.Y.Z tag becomes a GitHub release: CludesUI-vX.Y.Z.zip (every addon
+# folder, with that version stamped into each .toc and CludesUI.VERSION) and
+# notes listing each change since the previous tag. tools/release.sh makes the
+# tag; an older commit can be tagged too, and its release is dated by it.
 
 on:
   push:
@@ -15,19 +17,46 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: Tag matches the addon version
-        run: |
-          version=$(grep '^## Version:' CludesUI/CludesUI.toc | tr -d '\r' | sed 's/## Version: *//')
-          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
-            echo "::error::Tag $GITHUB_REF_NAME does not match addon version $version"
-            exit 1
-          fi
+        with:
+          fetch-depth: 0
 
       - name: Build zip
-        run: zip -r -q "CludesUI-$GITHUB_REF_NAME.zip" CludesUI*/
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          mkdir out
+          cp -r CludesUI*/ out/
+          # Line endings kept: only the number changes.
+          sed -i "s/^\(## Version: *\)[0-9][0-9.]*/\1$version/" out/*/*.toc
+          sed -i "s/^\(CludesUI\.VERSION = \"\)[0-9.]*\"/\1$version\"/" out/CludesUI/CludesUI.lua
+          (cd out && zip -r -q "../CludesUI-$GITHUB_REF_NAME.zip" .)
 
-      - name: Create release
+      - name: Release notes
+        run: |
+          prev=$(git describe --tags --abbrev=0 "$GITHUB_REF_NAME^" 2>/dev/null || true)
+          day=$(git log -1 --format=%cd --date=format:'%-d %B %Y' "$GITHUB_REF_NAME")
+          {
+            echo "Released $day."
+            echo
+            echo "## Changes"
+            echo
+            git log --no-merges --reverse --format='- %s' ${prev:+$prev..}"$GITHUB_REF_NAME" | grep -v '^- Release v' || true
+            echo
+            echo "## Install"
+            echo
+            echo "Unzip, then copy every \`CludesUI...\` folder into your game's \`Interface\\AddOns\` folder (Retail: \`World of Warcraft\\_retail_\\Interface\\AddOns\`) and restart the game."
+            if [ -n "$prev" ]; then
+              echo
+              echo "Full list of changes: https://github.com/$GITHUB_REPOSITORY/compare/$prev...$GITHUB_REF_NAME"
+            fi
+          } > notes.md
+
+      - name: Publish
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh release create "$GITHUB_REF_NAME" "CludesUI-$GITHUB_REF_NAME.zip" --title "CludesUI $GITHUB_REF_NAME" --generate-notes
+        run: |
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" "CludesUI-$GITHUB_REF_NAME.zip" --clobber
+            gh release edit "$GITHUB_REF_NAME" --title "CludesUI $GITHUB_REF_NAME" --notes-file notes.md
+          else
+            gh release create "$GITHUB_REF_NAME" "CludesUI-$GITHUB_REF_NAME.zip" --title "CludesUI $GITHUB_REF_NAME" --notes-file notes.md
+          fi

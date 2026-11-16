@@ -1,11 +1,11 @@
 # CludesUI
 
-A World of Warcraft interface suite for Retail (12.x, Midnight). It is a set of addons that share one settings panel: action bars, unit frames, raid and party frames, nameplates, cooldown manager, resource bars, bags, chat, minimap, damage meters, quest tracker, Mythic+ tools and more.
+A World of Warcraft interface suite for Retail (12.x, Midnight) and WoW Forever. It is a set of addons that share one settings panel: action bars, unit frames, raid and party frames, nameplates, cooldown manager, resource bars, bags, chat, minimap, damage meters, quest tracker, Mythic+ tools and more.
 
 ## Install
 
-1. Download the latest zip from [Releases](https://github.com/Cludes/cludesui/releases), or download this repository as a zip.
-2. Copy every `CludesUI...` folder into `World of Warcraft\_retail_\Interface\AddOns`. The folders must sit directly in `AddOns`, so `AddOns\CludesUI\CludesUI.toc` exists. If you downloaded the repository zip, open the `cludesui-master` folder inside it and copy the folders from there.
+1. Download the latest `CludesUI-vX.Y.Z.zip` from [Releases](https://github.com/Cludes/cludesui/releases).
+2. Copy every `CludesUI...` folder into `World of Warcraft\_retail_\Interface\AddOns` (on WoW Forever, that client's own `Interface\AddOns`). The folders must sit directly in `AddOns`, so `AddOns\CludesUI\CludesUI.toc` exists.
 3. Restart the game and enable the CludesUI addons.
 
 Do not run CludesUI together with another full interface suite. They change the same parts of the interface.
@@ -38,47 +38,83 @@ Each addon has a shortcut to its own settings page:
 
 ## Title Line
 
-Title Line shows your Mythic+ rating against the 0.1% and 1% title lines, with a season graph and a projected date. Its settings are in the CludesUI panel under Title Line, which also opens the graph; `/titleline` opens the graph directly. Its cutoff numbers come from Raider.IO and are refreshed in this repository once a day, so update CludesUI to get newer ones. If you also run the standalone TitleLine addon, that one takes over and this module stays off.
+Your Mythic+ rating against the 0.1% and 1% title lines, with a season graph and a projected date. Its settings are in the panel under Title Line, which also opens the graph; `/titleline` opens the graph directly. The cutoffs come from Raider.IO and are refreshed in this repository once a day, so update CludesUI to get newer ones. If the standalone TitleLine addon is also installed, that one takes over and this module stays off.
 
 ## Tank Kit
 
-Tank Kit is for tanks. It shows your co-tank's health, debuffs and defensives in a small frame, alerts you when to taunt, and shows a row of the external defensives other players put on you. Move both frames in Layout Mode (`/unlock`). Its settings are in the CludesUI panel under Tank Kit; `/ctank` opens them, and so does right-clicking the frame. If you also run the standalone CoTankAuras addon, that one takes over and this module stays off.
+For tanks: your co-tank's health, debuffs and defensives in a small frame, taunt alerts, and a row of the external defensives other players put on you. Move both frames in Layout Mode (`/unlock`). Settings are under Tank Kit; `/ctank` or right-clicking the frame opens them. If the standalone CoTankAuras addon is also installed, that one takes over and this module stays off.
 
 ## Raid Lead
 
-Raid Lead is for raid leaders and assistants. Its buttons are in the CludesUI panel under Raid Lead (`/raidlead` opens it), or use the commands, out of combat:
+For raid leaders and assistants. Its buttons are in the panel under Raid Lead (`/raidlead` opens it), or use these commands out of combat:
 
-- `/raidlead roles` sorts the raid into tanks, melee, ranged and healers, filling group 1 upward.
-- `/raidlead split` makes two balanced halves for split runs.
-- `/raidlead undo` puts everyone back where they were.
-- `/raidlead stop` stops a sort that is under way.
+| Command | What it does |
+|---|---|
+| `/raidlead roles` | Sorts the raid into tanks, melee, ranged and healers, filling group 1 upward. |
+| `/raidlead split` | Makes two balanced halves for split runs. |
+| `/raidlead undo` | Puts everyone back where they were. |
+| `/raidlead stop` | Stops a sort that is under way. |
+| `/raidlead break 5` | Starts a 5 minute break bar for every CludesUI user in the group; `break 0` ends it. |
+
+It also has:
+
 - **Kick rotation.** Put an `intstart` / `intend` block in a boss note, one line of names per rotation, or type a Kick Order under Setup. A box shows whose interrupt is next, yellow when you are next and red with a sound when it is your turn. Each cast of your focus (or boss 1) moves it on.
-- `/raidlead break 5` starts a 5 minute break bar for every CludesUI user in the group; `/raidlead break 0` ends it.
-
-Raid Lead also has:
-
-- **Encounter reminders.** Under Raid Lead > Reminders, add a boss and paste its note from wowutils, wowaudit or a Method Raid Tools note. When the boss is pulled, the lines meant for you show a few seconds before their time with a countdown, and can be spoken and play a sound. A line with player names on it is for those players; `{tank}`, `{healer}`, `{dps}` and `{everyone}` work too. The leader or an assistant can send a note to every CludesUI user in the group. Phase timers (`{time:1:30,p2}`) are skipped, because the game gives addons no phase events. Move the reminders in Layout Mode.
+- **Encounter reminders.** Under Raid Lead > Reminders, add a boss and paste its note from wowutils, wowaudit or a Method Raid Tools note. When the boss is pulled, the lines meant for you show a few seconds before their time with a countdown, and can be spoken and play a sound. A line with player names is for those players; `{tank}`, `{healer}`, `{dps}` and `{everyone}` work too. The leader or an assistant can send a note to every CludesUI user in the group. Phase timers (`{time:1:30,p2}`) are skipped, because the game gives addons no phase events.
 - **Invites and assistants.** Save a roster and invite it in one click; promote a list of assistants, or have them promoted as they join.
-- **Version check.** See who in the group runs CludesUI and which version.
-- **Ready check gear and cooldowns.** On a ready check, every CludesUI user reports their lowest durability, item level, missing enchants (head, shoulders, chest, feet, rings, weapons), raid cooldowns that are not ready, and a missing flask, food, augment rune or healthstone. The leader and assistants get a list, with anyone who did not answer.
+- **Version check.** Who in the group runs CludesUI, and which version.
+- **Ready check gear and cooldowns.** On a ready check, every CludesUI user reports their lowest durability, item level, missing enchants, raid cooldowns that are not ready, and a missing flask, food, augment rune or healthstone. The leader and assistants get a list, with anyone who did not answer.
 - **Immunities on You.** Icons for Divine Shield, Blessing of Protection, Blessing of Spellwarding, Ice Block, Aspect of the Turtle and Cloak of Shadows while they are on you; add more by spell ID.
 - **Aura Glows.** Add buffs or debuffs by spell ID; while one is on you, its icon shows with a glowing border and its time. Works in boss fights.
+- **Aura Sounds.** Pick a spell ID and a sound plays when that aura is applied to you, gains a stack or falls off. The game plays it, so it works in boss fights and keys.
 - **Group helpers.** A chat line when a CludesUI user drops a feast, cauldron, Soulwell or repair bot; "Gateway usable" when you can click a Demonic Gateway; and a crit / haste / mastery / versatility panel. Under Raid Lead > Tracking.
-- **Boss Pace.** Set a target kill time per boss. A bar shows the boss's health against where it should be by now: green ahead, red behind. The pace is a straight line, so phases and intermissions throw it off.
-- **Boss Timelines.** Every Midnight raid boss's abilities by difficulty, coloured by kind of mechanic. `/cbt` shows a boss's timeline before the pull; during the fight, bars count down to the next abilities (all of them, or only your role's), and encounter alerts call Soak, Spread or Defensives on the reminder display a few seconds ahead, spoken if you like. Phase changes are read from the boss's own timeline, so each phase's bars and calls run from when it really began; bosses without a phase rule run from the pull.
-- **Nicknames.** Set your nickname once; CludesUI sends it to your guild and group, and shows everyone's on raid frames (and unit frames, with their Show Nicknames setting on). You can also paste `Character=Nickname` lines.
-
-Aura Sounds: pick a spell ID and it plays a sound when that aura is applied to you, gains a stack or falls off. The game plays the sound itself, so it works in boss fights and keys.
+- **Boss Pace.** A target kill time per boss, and a bar of the boss's health against where it should be by now: green ahead, red behind. The pace is a straight line, so phases and intermissions throw it off.
+- **Boss Timelines.** Every Midnight raid boss's abilities by difficulty, coloured by kind of mechanic. `/cbt` shows a boss's timeline before the pull; during the fight, bars count down to the next abilities (all of them, or only your role's), and alerts call Soak, Spread or Defensives a few seconds ahead. Phase changes are read from the boss's own timeline.
+- **Nicknames.** Set yours once; CludesUI sends it to your guild and group and shows everyone's on raid frames (and unit frames, with Show Nicknames on). You can also paste `Character=Nickname` lines.
 
 Damage dealers are counted as melee or ranged by class, which is a guess for Druids, Shamans and Hunters.
 
-## WoW Forever: Training Planner
+## WoW Forever: Forever Tools
 
-On WoW Forever, Forever Tools has a Training page in the CludesUI panel. It lists the spells your trainer has for you right now with their total price, then what each of the next levels brings and costs. Spells that wait on a talent or a quest are listed apart, with the spell they need. When you level up, a chat line says what is new; turn it off on the same page. Prices are the trainer's base prices, so a reputation discount makes the real bill a little lower.
+On WoW Forever, Forever Tools adds pages to the panel.
 
-Forever Tools > General also has a **Tracking Reminder**: a row of icons for tracking you know but have not turned on (Find Treasure, hunter tracks, Track Humanoids in Cat Form, Sense Undead, Sense Demons, and optionally Find Herbs and Find Minerals). Click one to turn it on. The row hides in combat; move it in Layout Mode. The same page has a **Swing Timer**: a bar per weapon (main hand, off hand, ranged) filling to your next auto attack, using the swing length the game sends. A **Mana Bar** shows a druid's mana while in a form (or always, for any mana user), with a line counting down the five-second rule after you spend mana. A **Consumable Bar** puts the potions, elixirs, food, bandages, scrolls, stones and oils in your bags on a clickable bar with counts and cooldowns. **Raid Debuffs** shows the debuffs you pick (Sunder Armor, Faerie Fire, the curses and more) on your target, bright while up and dim while missing. **Gear Sets** puts your equipment sets on a bar to swap with a click, and can swap to a set while mounted or resting and put your gear back afterwards. The **Instance Tracker** counts new dungeons and raids against the hourly cap (10 per account on Forever), times your runs and prints a summary when you leave. **Group Inspect** (`/cinspect`) lists everyone in your group with level, item level and unenchanted slots. **Combat extras**: a combat timer, a + Combat / - Combat alert, and a stealth reminder for rogues and cat druids. **Bag Space** shows your free slots and, on hover, the cheapest items you carry. **Quest Automation** accepts and turns in quests (hold Shift to do it yourself) and can post objective progress to your party. **Action Bar Profiles** (`/cbars`) save your bars, and optionally keybinds, under a name to load on any character of the same class. **Loot Sparkles** keeps the sparkle on lootable quest items after graphics presets turn it off. **Best in Slot** (`/cbis`): Alt+Shift-click any item to make it your pick for its slot; the window shows which you have, tooltips mark BiS items, and Drop Alert warns when one drops. **Stat Weights** puts "+9% upgrade" on gear that beats what you wear for your spec, and each BiS pick's gain in the BiS window. The **Dungeon Journal** (`/cjournal`) lists every dungeon and raid with bosses in kill order, loot and drop chances, a tip per boss and the quests, plus a Reputation section: each faction's quartermaster, turn-ins, the dungeons that give it, and its rewards by standing. Each dungeon page also shows its map, floor by floor, with a numbered pin per boss and the entrance. **Healer Mana** lists your group's healers by mana, lowest first, and the **Pet Tracker** warns a hunter or warlock whose pet is missing, passive or low. **Mana Efficiency** adds healing or damage per mana and per second to mana spell tooltips. The **Restock Reminder** lists what you are short on (reagents, ammo, food, drink, junk, bag space) when you reach a city or inn, and can buy reagents and ammo for you; lockbox tooltips show the Lockpicking needed, an icon reminds you to swap gear with a drawback, and text shows unspent talent points. **XP per Hour** shows your rate, time to level and level times (`/cxp`), and **Group XP** shows a bar per group member running CludesUI or Naowh Forever. The **Layer Tracker** shows which layer you are on, with a countdown when the game is about to move you, and **Auto-Accept Layer Swap** confirms the swap prompt when you join a group. **Mail and Alts** adds alt item counts to tooltips, an Alts button and Quick Attach to the mailbox, and a warning when an alt's mail is about to expire. **Boat and Zeppelin Timers** put departure and arrival countdowns on minimap pins at each dock and on a zone list, timed by riding, clicking a pin, or sharing with your group and guild (and ForeverTransport and NauticusClassic users). **Player History** (`/chistory`) remembers the players you group with, and Player Note on the right-click menu lets you tag them and write a note that shows on their tooltip. The **Town Map** puts your faction's service NPCs (your class trainers, profession trainers, innkeepers, bank and auction house, repairs, supplies and vendors) and every mailbox and spirit healer on the world map, with mailboxes and spirit healers near you on the minimap. The **Blessing Bar** gives a paladin a button per class that blesses whoever needs it next (missing first, then running out, skipping anyone dead or out of range), plus their aura, seal, Righteous Fury and an Auto Buff button, with Next Blessing key bindings; `/cbless` shows every paladin's assignments with Auto-Assign, a saved preset and a report to chat, shared with Naowh Forever users and reading PallyPower users' plans. **Discovery** (`/cdiscovery`) lists every library book for your faction with where it lies and the road to the Friend of the Library rewards, the Cozy Sleeping Bag's hidden chain step by step, and a Field Journal of every fish, herb and dish with where to find it and how many you caught, picked or cooked; a tracker, map pins and a nearby alert point you at what is left. Its **Quest List** tab has every quest of every zone for your character (done per zone, each chain's current step, and why a quest is not open yet), and its **Rares** tab every rare and which you killed, with their drops; quest giver and rare pins go on the world map, and **Rare Alerts** show a card when a rare is near (left-click it to target the rare). **Professions** (`/cprof`) shows each profession's next rank and where to get it, the recipes you know that still give skill in the game's colours, and a Recipe Finder of every recipe you have not learned with the skill it needs and where it comes from (trainer and cost, vendors, drops and odds, quests); a chat line tells you once when a profession is ready for its next rank.
+### Training
 
-Forever Tools also has a **PvP** page (`/cpvp`): enemy players around you with alerts and stealth warnings, Kill on Sight with reasons and a guild warning, the last hour, an ignore list, statistics with your wins and losses, sharing with your group and guild (compatible with Spy), announcing to chat, a Kill on Sight button on the target frame, enemy details on the minimap tooltip, a watch list for players of your own faction, a combat map of your wins and losses, Local Defense announcements (put in your chat box for you to send), and zones to stay off in.
+The spells your trainer has for you right now with their total price, then what each of the next levels brings and costs. Spells that wait on a talent or a quest are listed apart, with the spell they need. A chat line says what is new when you level up. Prices are the trainer's base prices, so a reputation discount makes the real bill a little lower.
+
+### General
+
+- **Tracking Reminder.** Icons for tracking you know but have not turned on; click one to turn it on.
+- **Swing Timer.** A bar per weapon filling to your next auto attack.
+- **Mana Bar.** A druid's mana while in a form (or any mana user's), with the five-second rule.
+- **Consumable Bar.** Your potions, elixirs, food, bandages, scrolls, stones and oils on a clickable bar.
+- **Raid Debuffs.** The debuffs you pick on your target, bright while up and dim while missing.
+- **Gear Sets.** Your equipment sets on a bar, with optional swaps while mounted or resting.
+- **Instance Tracker.** New dungeons and raids against the hourly cap, run times and a summary when you leave.
+- **Group Inspect** (`/cinspect`). Everyone in your group with level, item level and unenchanted slots.
+- **Combat extras.** A combat timer, combat alerts and a stealth reminder for rogues and cat druids.
+- **Bag Space.** Free slots, and the cheapest items you carry on hover.
+- **Quest Automation.** Accepts and turns in quests (hold Shift to do it yourself) and can post progress to your party.
+- **Action Bar Profiles** (`/cbars`). Save your bars, and optionally keybinds, to load on any character of the same class.
+- **Loot Sparkles.** Keeps the sparkle on lootable quest items.
+- **Best in Slot** (`/cbis`). Alt+Shift-click an item to make it your pick for its slot; tooltips mark BiS items and Drop Alert warns when one drops.
+- **Stat Weights.** "+9% upgrade" on gear that beats what you wear for your spec.
+- **Dungeon Journal** (`/cjournal`). Every dungeon and raid with bosses in kill order, loot and drop chances, a tip per boss, the quests, maps floor by floor, and a Reputation section.
+- **Healer Mana** and **Pet Tracker.** Your group's healers by mana; a warning when a pet is missing, passive or low.
+- **Mana Efficiency.** Healing or damage per mana and per second on spell tooltips.
+- **Restock Reminder.** What you are short on when you reach a city or inn, with reagent and ammo buying.
+- **XP per Hour** (`/cxp`) and **Group XP.** Your rate and time to level; a bar per group member.
+- **Layer Tracker** and **Auto-Accept Layer Swap.** Which layer you are on, and the swap prompt confirmed when you join a group.
+- **Mail and Alts.** Alt item counts on tooltips, an Alts button and Quick Attach at the mailbox, and expiry warnings.
+- **Boat and Zeppelin Timers.** Departure and arrival countdowns on dock pins and a zone list.
+- **Player History** (`/chistory`). The players you group with, with notes that show on their tooltip.
+- **Town Map.** Your faction's service NPCs, mailboxes and spirit healers on the world map and minimap.
+- **Blessing Bar** (`/cbless`). A button per class that blesses whoever needs it next, plus aura, seal and Righteous Fury, with assignments for every paladin.
+- **Discovery** (`/cdiscovery`). Library books, the Cozy Sleeping Bag chain, a Field Journal, every quest of every zone, rares and Rare Alerts.
+- **Professions** (`/cprof`). Each profession's next rank, recipes that still give skill, and a Recipe Finder.
+
+### PvP
+
+`/cpvp`: enemy players around you with alerts and stealth warnings, Kill on Sight with reasons, the last hour, an ignore list, statistics with your wins and losses, sharing with your group and guild, a Kill on Sight button on the target frame, a watch list, a combat map, Local Defense announcements and zones to stay off in. While it is on, enemy nameplates reach 60 yards so players show up sooner.
 
 ## Profiles
 
@@ -90,9 +126,7 @@ Other addons can add a settings page to the CludesUI panel. See [PLUGINS_API.md]
 
 ## Releasing
 
-1. Set the same version in `## Version` of every `.toc` file and in `CludesUI.VERSION` in `CludesUI/CludesUI.lua`.
-2. Commit, then push a tag that matches, for example `v1.0.1`.
-3. GitHub builds `CludesUI-v1.0.1.zip` and attaches it to a new release.
+Run `sh tools/release.sh` (or `minor`, `major`, or an exact `X.Y.Z`). It puts the new version in every `.toc` and in `CludesUI.VERSION`, commits, tags and pushes. The tag builds `CludesUI-vX.Y.Z.zip` and publishes a release listing every change since the last one.
 
 Every push to `master` runs a Lua syntax check and confirms that each file a `.toc` lists exists.
 
