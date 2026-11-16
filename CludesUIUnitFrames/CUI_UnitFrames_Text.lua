@@ -674,7 +674,8 @@ TagFns.level = function(u)
         return l
     end
     if not l or l <= 0 then
-        return "??"
+        -- Forever: a hidden player level the PvP feature knows.
+        return CludesUI.KnownHiddenLevel and CludesUI.KnownHiddenLevel(u) or "??"
     end
     return l
 end

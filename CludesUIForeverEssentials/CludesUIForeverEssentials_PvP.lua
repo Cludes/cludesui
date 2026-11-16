@@ -52,6 +52,7 @@ local F = module.Feature("pvp", {
     rows = 10,
     kosButton = true,
     minimapTip = true,
+    knownLevels = true,
     watchWarn = true,
     watchGroupWarn = true,
     combatMap = true,
@@ -315,6 +316,28 @@ local function Detected(name, acted, fromShare)
     if Refresh then
         Refresh()
     end
+end
+
+-- The level the game hides on a player 10 or more levels above you (UnitLevel
+-- -1, shown "??"), from what this feature has seen or been sent. nil when the
+-- level is not hidden, not known, only a guess, stale (below the "you plus 10"
+-- the game's -1 already proves), or the option or feature is off. Unit frames,
+-- nameplates and the tooltip ask it before showing "??".
+function CludesUI.KnownHiddenLevel(unit)
+    if not (Enabled() and Get("knownLevels")) then
+        return nil
+    end
+    if tonumber(R(UnitLevel(unit))) ~= SKULL then
+        return nil
+    end
+    local name = PlayerName(unit)
+    local p = name and Store().players[name]
+    local level = p and not p.guess and p.level
+    local mine = tonumber(R(UnitLevel("player")))
+    if type(level) ~= "number" or not mine or level < mine + 10 then
+        return nil
+    end
+    return level
 end
 
 local function ScanUnit(unit)

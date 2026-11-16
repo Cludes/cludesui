@@ -196,6 +196,18 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         )
     )
     posY = posY - hgt
+    _, hgt = W:DualRow(
+        hostFrame,
+        posY,
+        Tog(
+            "knownLevels",
+            "Known Levels Instead of ??",
+            "The game hides the level of a player 10 or more levels above you. Shows it on unit frames, nameplates and tooltips when you have seen it or someone shared it. Mobs and unknown players stay ??.",
+            Off
+        ),
+        { type = "label", text = "" }
+    )
+    posY = posY - hgt
 
     _, hgt = W:SectionHeader(hostFrame, "WATCH LIST, COMBAT MAP AND ZONES", posY)
     posY = posY - hgt

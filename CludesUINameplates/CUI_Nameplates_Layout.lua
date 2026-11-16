@@ -841,6 +841,10 @@ do
         if type(lvl) ~= "number" or (issecretvalue and issecretvalue(lvl)) then
             return "??"
         end
+        -- Forever: a hidden player level the PvP feature knows.
+        if lvl < 0 and CludesUI.KnownHiddenLevel then
+            lvl = CludesUI.KnownHiddenLevel(unitToken) or lvl
+        end
         local txt = lvl < 0 and "??" or tostring(lvl)
         if color == "diff" or color == "diffAll" then
             return CludesUI.ColorText(txt, LevelRGB(unitToken, lvl, color == "diffAll"))

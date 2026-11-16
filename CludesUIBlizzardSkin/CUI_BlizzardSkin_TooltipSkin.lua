@@ -16,10 +16,9 @@ if not Inner or Inner.last ~= "main" then
     return
 end
 
-local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  Restyles GameTooltip et al in CUI dark style; visual-only (alpha, backdrop color,
---  font). NEVER Hide/Show/SetParent Blizzard frames; hooks are hooksecurefunc post-hooks only.
+local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  font). NEVER Hide/Show/SetParent Blizzard frames; hooks are hooksecurefunc post-hooks only.
 -------------------------------------------------------------------------------
-; ------------------------------------------------------------------------------- --  Tooltip / Context Menu / Static Popup Skinning
+; ------------------------------------------------------------------------------- --  Tooltip / Context Menu / Static Popup Skinning --  Restyles GameTooltip et al in CUI dark style; visual-only (alpha, backdrop color,
 (function()
     local _ttSkinned = {}
     local _isSecret = issecretvalue
@@ -971,13 +970,18 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  Restyles GameTooltip et al in CUI
         -- Difficulty color on every unit, friendly included; battle pet levels aren't
         -- comparable to the player's, so pets keep Blizzard's line.
         local hex, compact
+        -- Forever: a hidden player level the PvP feature knows replaces the "??".
+        local known = levelIdx
+            and unitToken
+            and CludesUI.KnownHiddenLevel
+            and CludesUI.KnownHiddenLevel(unitToken)
         if
             levelIdx
             and unitToken
             and (saved.tooltipLevelColor or saved.tooltipCompactLevel)
             and not (UnitIsWildBattlePet(unitToken) or UnitIsBattlePetCompanion(unitToken))
         then
-            local lvl = UnitEffectiveLevel(unitToken)
+            local lvl = known or UnitEffectiveLevel(unitToken)
             local r, g, b
             if saved.tooltipLevelColor then
                 r, g, b = CludesUI.GetLevelColor(unitToken, lvl, true)
@@ -1016,7 +1020,7 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  Restyles GameTooltip et al in CUI
             and saved.tooltipGuildmateColor
             and UnitIsInMyGuild(unitToken)
             and ChatTypeInfo.GUILD
-        if not (hex or compact or doClass or guildColor or saved.tooltipFactionColor) then
+        if not (hex or compact or known or doClass or guildColor or saved.tooltipFactionColor) then
             return
         end
         for i = 2, nLines do
@@ -1028,12 +1032,23 @@ local FFD, GetFFD = Inner.FFD, Inner.GetFFD--  Restyles GameTooltip et al in CUI
                     -- another addon already colored.
                     if compact then
                         line:SetText(compact)
-                    elseif hex and not string.find(textValue, "|c", 1, true) then
-                        local newText, num = textValue:gsub("%d+", hex, 1)
-                        if num == 0 then
-                            newText, num = textValue:gsub("%?%?", hex, 1)
+                    else
+                        local newText, changed = textValue, false
+                        if known then
+                            local n
+                            newText, n = newText:gsub("%?%?", tostring(known), 1)
+                            changed = n > 0
                         end
-                        if num > 0 then
+                        if hex and not string.find(newText, "|c", 1, true) then
+                            local coloured, num = newText:gsub("%d+", hex, 1)
+                            if num == 0 then
+                                coloured, num = newText:gsub("%?%?", hex, 1)
+                            end
+                            if num > 0 then
+                                newText, changed = coloured, true
+                            end
+                        end
+                        if changed then
                             line:SetText(newText)
                         end
                     end
