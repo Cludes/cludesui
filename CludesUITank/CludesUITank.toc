@@ -5,7 +5,7 @@
 ## Group: CludesUI
 ## Notes: For tanks: your co-tank's health, debuffs and defensives, and TAUNT alerts.
 ## Author: Cludes
-## Version: 1.1.0
+## Version: 1.1.3
 ## Dependencies: CludesUI
 ## SavedVariables: CludesUITankDB
 ## IconTexture: Interface\AddOns\CludesUITank\Media\HappyBufo

@@ -4,7 +4,7 @@
 ## Group: CludesUI
 ## Notes: A CDM replacement focused on performance, customizations and alerts.
 ## Author: Cludes
-## Version: 1.1.0
+## Version: 1.1.3
 ## Dependencies: CludesUI
 ## SavedVariables: CludesUICooldownManagerDB
 ## IconTexture: Interface\AddOns\CludesUI\media\eg-logo.tga

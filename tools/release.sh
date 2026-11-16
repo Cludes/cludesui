@@ -30,12 +30,12 @@ fi
 # Every addon's ## Version line, line endings kept.
 for toc in CludesUI*/*.toc; do
     if grep -q '^## Version:' "$toc"; then
-        sed -i "s/^## Version: [0-9][0-9.]*/## Version: $new/" "$toc"
+        sed -b -i "s/^## Version: [0-9][0-9.]*/## Version: $new/" "$toc"
         git add "$toc"
     fi
 done
 # The version the suite reports in game (version check, patch notes).
-sed -i "s/^CludesUI\.VERSION = \"[0-9.]*\"/CludesUI.VERSION = \"$new\"/" CludesUI/CludesUI.lua
+sed -b -i "s/^CludesUI\.VERSION = \"[0-9.]*\"/CludesUI.VERSION = \"$new\"/" CludesUI/CludesUI.lua
 git add CludesUI/CludesUI.lua
 if [ "$cur" != "$new" ]; then
     git commit -q -m "Release v$new"

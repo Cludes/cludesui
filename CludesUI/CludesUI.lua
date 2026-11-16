@@ -4264,7 +4264,7 @@ end
 -------------------------------------------------------------------------------
 --  Slash commands
 -------------------------------------------------------------------------------
-CludesUI.VERSION = "1.1.0"
+CludesUI.VERSION = "1.1.3"
 
 -- Register this addon's version into a shared global table (taint-free at load time)
 if not _G._CUI_AddonVersions then
