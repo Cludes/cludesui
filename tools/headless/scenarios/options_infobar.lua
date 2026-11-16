@@ -201,3 +201,48 @@ if all then
     Rebuild(all.id)
     SNAP("page after swatches", CUI._scrollFrame)
 end
+
+-- Drag-to-reorder on the every-block bar's preview: press a segment, move the
+-- cursor past the 3px threshold to a strip position (the fake client puts
+-- every frame's left edge at 100), tick so the drag starts and follows, snap
+-- the header mid-drag, release, tick, and write out the block order.
+if all then
+    local cursorX, buttonDown = 0, false
+    GetCursorPosition = function() return cursorX, 0 end
+    IsMouseButtonDown = function() return buttonDown end
+    local function Segments()
+        local out, stack = {}, { CUI._contentHeader or CUI._headerFrame }
+        while #stack > 0 do
+            local f = table.remove(stack, 1)
+            if type(f) == "table" and rawget(f, "\0children") then
+                if f["\0kind"] == "Button" and rawget(f, "_brd") and rawget(f, "_editHL") and f:IsVisible() then out[#out + 1] = f end
+                for _, ch in ipairs(f["\0children"]) do stack[#stack + 1] = ch end
+            end
+        end
+        return out
+    end
+    local function Order()
+        local t = {}
+        for _, b in ipairs(all.blocks) do t[#t + 1] = b.type end
+        OUT:write("   order " .. table.concat(t, ",") .. "\n")
+    end
+    -- { segment, strip position to drop at }
+    for n, drag in ipairs({ { 1, 600 }, { 6, 10 }, { 3, 0 }, { 2, 2 }, { 10, 300 } }) do
+        Rebuild(all.id)
+        local seg = Segments()[drag[1]]
+        OUT:write("== drag " .. n .. " seg " .. tostring(seg ~= nil) .. "\n")
+        if seg then
+            cursorX, buttonDown = 100, true
+            local ok, err = pcall(seg["\0scripts"].OnMouseDown, seg, "LeftButton")
+            if not ok then OUT:write("   ERR " .. tostring(err) .. "\n") end
+            cursorX = 100 + drag[2]
+            HARNESS_TICK(0.02, 3)
+            SNAP("drag " .. n .. " mid", CUI._contentHeader or CUI._headerFrame)
+            buttonDown = false
+            HARNESS_TICK(0.02, 3)
+            HARNESS_ADVANCE(0.5)
+            Order()
+        end
+    end
+    GetCursorPosition = function() return 0, 0 end
+end
