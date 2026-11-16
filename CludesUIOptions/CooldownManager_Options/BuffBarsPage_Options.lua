@@ -1900,28 +1900,18 @@ local function InitBuffBarsPage(
         --  button; caller positions it.
         -------------------------------------------------------------------
         local function BuildManagementDropdown(parentFrame)
-            local DD_H = 34
-            local ddW = 350
-
+            local DD_H, ddW = 34, 350
+            -- The shared dropdown look: fill (and hovered), border (and hovered),
+            -- label alpha (and hovered), item highlight and selected tints.
             local DDS = CludesUI.DD_STYLE
-            local mBgR = DDS.BG_R
-            local mBgG = DDS.BG_G
-            local mBgB = DDS.BG_B
-            local mBgA = DDS.BG_A
-            local mBgHA = DDS.BG_HA
-            local mBrdA = DDS.BRD_A
-            local mBrdHA = DDS.BRD_HA or 0.30
-            local mTxtA = DDS.TXT_A
-            local mTxtHA = DDS.TXT_HA or 1
-            local hlA = DDS.ITEM_HL_A
-            local selA = DDS.ITEM_SEL_A
-            local tDimR = CludesUI.TEXT_DIM_R or 0.7
-            local tDimG = CludesUI.TEXT_DIM_G or 0.7
-            local tDimB = CludesUI.TEXT_DIM_B or 0.7
-            local tDimA = CludesUI.TEXT_DIM_A or 0.85
-            local ITEM_H = 26
+            local mBgR, mBgG, mBgB, mBgA, mBgHA = DDS.BG_R, DDS.BG_G, DDS.BG_B, DDS.BG_A, DDS.BG_HA
+            local mBrdA, mBrdHA = DDS.BRD_A, DDS.BRD_HA or 0.30
+            local mTxtA, mTxtHA = DDS.TXT_A, DDS.TXT_HA or 1
+            local hlA, selA = DDS.ITEM_HL_A, DDS.ITEM_SEL_A
+            local tDimR, tDimG = CludesUI.TEXT_DIM_R or 0.7, CludesUI.TEXT_DIM_G or 0.7
+            local tDimB, tDimA = CludesUI.TEXT_DIM_B or 0.7, CludesUI.TEXT_DIM_A or 0.85
+            local ITEM_H, ICON_SZ = 26, 14
             local MEDIA = "Interface\\AddOns\\CludesUI\\media\\"
-            local ICON_SZ = 14
 
             local ddBtn = CreateFrame("Button", nil, parentFrame)
             Pix.Size(ddBtn, ddW, DD_H)
@@ -1940,43 +1930,37 @@ local function InitBuffBarsPage(
             local arrow = CludesUI.MakeDropdownArrow(ddBtn, 12, CludesUI.PanelPP)
             ddLbl:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
 
-            local function UpdateDDLabel()
+            -- What is being edited: the group and its bar count, else the bar (its
+            -- spell's name unless a preset, with its group), else a prompt. The bar
+            -- count is read live: this header is reused across SetContentHeader
+            -- refreshes (a spec change) without a page rebuild.
+            local function EditingLabel()
                 if _tbbSelectedGroup then
                     local num = mod.TBBGroupedCount(_tbbSelectedGroup)
-                    ddLbl:SetText(
-                        GroupLabel(_tbbSelectedGroup)
-                            .. "  -  "
-                            .. num
-                            .. " "
-                            .. CludesUI.L(num == 1 and "Bar" or "Bars")
-                    )
-                    return
+                    return GroupLabel(_tbbSelectedGroup)
+                        .. "  -  "
+                        .. num
+                        .. " "
+                        .. CludesUI.L(num == 1 and "Bar" or "Bars")
                 end
                 local bd = SelectedTBB()
-                if bd then
-                    local label = (bd.name and CludesUI.L(bd.name)) or "Bar"
-                    if not bd.popularKey and bd.spellID and bd.spellID > 0 then
-                        local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(bd.spellID)
-                        if details and details.name then
-                            label = details.name
-                        end
-                    end
-                    local groupId = mod.TBBBarGroupID and mod.TBBBarGroupID(bd) or 0
-                    if groupId ~= 0 then
-                        label = label .. "  (" .. GroupLabel(groupId) .. ")"
-                    end
-                    ddLbl:SetText(label)
-                else
-                    -- Re-fetch the live (per-spec) bar count instead of the build-time `bars`
-                    -- upvalue: this header builder is reused across SetContentHeader refreshes
-                    -- (e.g. spec change) without a page rebuild, so captured `bars` can be stale.
-                    local liveBars = mod.GetTrackedBuffBars().bars
-                    if not liveBars or #liveBars == 0 then
-                        ddLbl:SetText(CludesUI.L("No Bars - Click to Add"))
-                    else
-                        ddLbl:SetText(CludesUI.L("Select a bar"))
-                    end
+                if not bd then
+                    local live = mod.GetTrackedBuffBars().bars
+                    return CludesUI.L((not live or #live == 0) and "No Bars - Click to Add" or "Select a bar")
                 end
+                local label = (bd.name and CludesUI.L(bd.name)) or "Bar"
+                if not bd.popularKey and bd.spellID and bd.spellID > 0 then
+                    local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(bd.spellID)
+                    label = (details and details.name) or label
+                end
+                local groupId = mod.TBBBarGroupID and mod.TBBBarGroupID(bd) or 0
+                if groupId ~= 0 then
+                    label = label .. "  (" .. GroupLabel(groupId) .. ")"
+                end
+                return label
+            end
+            local function UpdateDDLabel()
+                ddLbl:SetText(EditingLabel())
             end
             UpdateDDLabel()
 
