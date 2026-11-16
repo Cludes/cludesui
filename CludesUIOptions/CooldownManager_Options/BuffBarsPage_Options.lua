@@ -1742,11 +1742,8 @@ local function InitBuffBarsPage(
         end
 
         local function SelectedTBB()
-            local t = mod.GetTrackedBuffBars()
-            if _tbbSelectedBar < 1 or _tbbSelectedBar > #t.bars then
-                return nil
-            end
-            return t.bars[_tbbSelectedBar]
+            local bars = mod.GetTrackedBuffBars().bars
+            return (_tbbSelectedBar >= 1 and _tbbSelectedBar <= #bars) and bars[_tbbSelectedBar] or nil
         end
 
         local function SelectedTBBSupportsChargeHash()
@@ -1754,30 +1751,21 @@ local function InitBuffBarsPage(
             return bd and mod.GetTBBMaxCharges and mod.GetTBBMaxCharges(bd) ~= nil
         end
 
-        -- Validate the group selection against the live group list (groups dissolve when
-        -- their last bar is deleted). Bar-less GLOBAL groups are legal selections: the
-        -- Currently Editing menu lists them on every spec precisely so their shared
-        -- settings stay editable, and their local gid persists through its globalKey
-        -- link with no member bars (every GROUP MODE section is group-keyed and the
-        -- previews hide/guard on an empty member list).
+        -- The group selection must still exist (a group dissolves with its last bar).
+        -- A bar-less GLOBAL group stays selectable: the Currently Editing menu lists
+        -- it on every spec so its shared settings stay editable, and its local id
+        -- lives on through its globalKey link (every GROUP MODE section is keyed by
+        -- group, and the previews guard an empty member list).
         if _tbbSelectedGroup then
-            local success = false
-            for _, g in ipairs(mod.TBBGroupIDsInUse()) do
-                if g == _tbbSelectedGroup then
-                    success = true
-                    break
-                end
-            end
-            if not success and mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(_tbbSelectedGroup) then
-                success = true
-            end
-            if not success then
+            local live = tContains(mod.TBBGroupIDsInUse(), _tbbSelectedGroup)
+                or (mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(_tbbSelectedGroup))
+            if not live then
                 _tbbSelectedGroup = nil
             end
         end
 
-        -- The preview mirrors whatever is being edited: the selected bar, or the selected
-        -- group's style source (its anchor bar).
+        -- What the preview mirrors and a new preset copies: the selected bar, or the
+        -- selected group's style source (its anchor bar).
         local function PreviewCfg()
             if _tbbSelectedGroup then
                 return mod.TBBGroupStyleSource(_tbbSelectedGroup)
@@ -1790,19 +1778,18 @@ local function InitBuffBarsPage(
         end
 
         -------------------------------------------------------------------
-        --  CLICK NAVIGATION (preview elements -> option rows). Map lives on
-        --  parent._tbbClickTargets (populated by the bar-mode section build below);
-        --  overlays resolve it at click time so a header rebuild never holds stale refs.
+        --  CLICK NAVIGATION (preview elements -> option rows). The map lives on
+        --  hostFrame._tbbClickTargets (filled by the bar-mode build below) and is
+        --  read at click time, so a header rebuild never holds stale rows.
         -------------------------------------------------------------------
         local PlaySettingGlow = CludesUI.MakeSettingGlow({ color = CludesUI.CLUDES_GREEN })
 
+        -- Scrolls to the row (a click also dismisses the preview hint for good)
+        -- and glows it, or its slot's region, a moment later, unless a rebuild has
+        -- dressed that row again for another setting by then.
         local function NavigateToSetting(key)
-            local targets = hostFrame._tbbClickTargets
-            if not targets then
-                return
-            end
-            local m = targets[key]
-            if not m or not m.section or not m.target then
+            local m = hostFrame._tbbClickTargets and hostFrame._tbbClickTargets[key]
+            if not (m and m.section and m.target) then
                 return
             end
             CludesUIDB = CludesUIDB or {}
@@ -1817,22 +1804,19 @@ local function InitBuffBarsPage(
             CludesUI.SmoothScrollTo(math.max(0, math.abs(headerY) - 40))
             local glowTarget = m.target
             if m.slotSide then
-                local regionFrame = (m.slotSide == "left") and m.target._leftRegion or m.target._rightRegion
-                if regionFrame then
-                    glowTarget = regionFrame
-                end
+                glowTarget = (m.slotSide == "left" and m.target._leftRegion or m.target._rightRegion)
+                    or glowTarget
             end
-            -- Not on a row a rebuild has meanwhile dressed again for another setting.
-            local targetGen = PoolGen(glowTarget)
+            local gen = PoolGen(glowTarget)
             C_Timer.After(0.15, function()
-                if PoolGen(glowTarget) == targetGen then
+                if PoolGen(glowTarget) == gen then
                     PlaySettingGlow(glowTarget)
                 end
             end)
         end
 
+        -- An edit's refresh, coalesced over 50ms: settings, live bars, preview, placeholders.
         local _tbbRefreshTimer
-
         local function RefreshTBB()
             if _tbbRefreshTimer then
                 _tbbRefreshTimer:Cancel()
@@ -1845,30 +1829,24 @@ local function InitBuffBarsPage(
                 UpdateTBBPlaceholder()
             end)
         end
-        -- Expose this build's RefreshTBB to the outer spec-change watcher so a spec swap
-        -- while this page is open rebuilds the dropdown/preview.
+        -- The spec-change watcher outside uses this build's refresh, so a spec swap
+        -- with the page open rebuilds the dropdown and preview.
         _tbbRefreshFn = RefreshTBB
 
-        -- Drag-and-drop move: put a bar into another group (or make it independent).
-        -- Joining a group adopts its current look, same as a freshly added bar; selects the moved bar.
+        -- Drag-and-drop move into another group (or out to independent). Joining a
+        -- group takes its current look, as a freshly added bar does; the moved bar
+        -- is selected.
         local function MoveBarToGroup(idx, groupId)
-            local t = mod.GetTrackedBuffBars()
-            local conf = t.bars and t.bars[idx]
-            if not conf then
-                return
-            end
-            if mod.TBBBarGroupID(conf) == groupId then
+            local conf = mod.GetTrackedBuffBars().bars[idx]
+            if not conf or mod.TBBBarGroupID(conf) == groupId then
                 return
             end
             mod.TBBSetBarGroup(conf, groupId)
-            if groupId ~= 0 then
-                local source = mod.TBBGroupStyleSource(groupId)
-                if source and source ~= conf then
-                    mod.CopyTBBStyle(source, conf)
-                end
+            local source = groupId ~= 0 and mod.TBBGroupStyleSource(groupId)
+            if source and source ~= conf then
+                mod.CopyTBBStyle(source, conf)
             end
-            _tbbSelectedBar = idx
-            _tbbSelectedGroup = nil
+            _tbbSelectedBar, _tbbSelectedGroup = idx, nil
             mod.BuildTrackedBuffBars()
             CludesUI:RefreshPage(true)
         end
@@ -1877,10 +1855,10 @@ local function InitBuffBarsPage(
         -- editing context stays (a selected bar follows its config to its new
         -- index) and the menu opens again on the fresh button for the next move.
         local function ReorderBarInGroup(idx, place)
-            local t = mod.GetTrackedBuffBars()
-            local sel = not _tbbSelectedGroup and t.bars[_tbbSelectedBar] or nil
+            local bars = mod.GetTrackedBuffBars().bars
+            local sel = not _tbbSelectedGroup and bars[_tbbSelectedBar] or nil
             mod.MoveTrackedBuffBarInGroup(idx, place)
-            for jdx, c in ipairs(t.bars) do
+            for jdx, c in ipairs(bars) do
                 if c == sel then
                     _tbbSelectedBar = jdx
                     break
