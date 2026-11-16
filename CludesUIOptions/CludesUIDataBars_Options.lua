@@ -12,8 +12,7 @@ end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
 --    * Body: Bar Settings (topped by the Auto Sized / Even Split mode
 --      toggle), then one section per block (in bar order); adding blocks =
 --      the preview strip's "+" tile. Zero bars renders a template-card
---      empty state instead. (The old per-block % divider-drag machinery in
---      the strip is dormant: IsPctBlock returns false for every boundary.)
+--      empty state instead.
 --
 --  Everything here talks to the runtime exclusively through the ns.* API
 --  listed at the top of CludesUIDataBars.lua.
@@ -135,7 +134,6 @@ initFrame:SetScript("OnEvent", function(self)
     -- strip and add tile in the docked popout, and the drag ghost.
     local _edbKeep = {}
     local _cardsExpanded = false -- template card strip open/closed
-    local _dividerDragging = false
 
     ---------------------------------------------------------------------------
     --  Block-type registry views
@@ -1052,65 +1050,17 @@ initFrame:SetScript("OnEvent", function(self)
             end
         end
 
-        -- Boundary visuals: a draggable 8px hit strip between adjacent %
-        -- segments (accent line on hover), a static 1px line otherwise.
-        local function IsPctBlock(bc)
-            -- Per-block % sizing is GONE (bar-level Auto Sized / Even Split
-            -- modes own all widths now): no boundary is drag-resizable, so
-            -- the divider machinery below stays dormant (static lines only).
-            return false
-        end
-        local dividers, lines = {}, {}
+        -- A 1px seam line at each boundary, shown where the two segments touch.
+        local lines = {}
         for i = 1, nBlocks - 1 do
-            if IsPctBlock(blocks[i]) and IsPctBlock(blocks[i + 1]) then
-                local div = CreateFrame("Button", nil, strip)
-                div:SetFrameLevel(strip:GetFrameLevel() + 8)
-                if vertical then
-                    div:SetSize(stripThick, 8)
-                else
-                    div:SetSize(8, stripThick)
-                end
-                local line = div:CreateTexture(nil, "OVERLAY", nil, 2)
-                line:SetColorTexture(1, 1, 1, 0.15)
-                local ar, ag, ab2 = mod.GetAccent()
-                local accent = div:CreateTexture(nil, "OVERLAY", nil, 3)
-                accent:SetColorTexture(ar, ag, ab2, 0.9)
-                accent:Hide()
-                if vertical then
-                    line:SetPoint("LEFT", div, "LEFT", 0, 0)
-                    line:SetPoint("RIGHT", div, "RIGHT", 0, 0)
-                    line:SetHeight(1)
-                    accent:SetPoint("LEFT", div, "LEFT", 0, 0)
-                    accent:SetPoint("RIGHT", div, "RIGHT", 0, 0)
-                    accent:SetHeight(2)
-                else
-                    line:SetPoint("TOP", div, "TOP", 0, 0)
-                    line:SetPoint("BOTTOM", div, "BOTTOM", 0, 0)
-                    line:SetWidth(1)
-                    accent:SetPoint("TOP", div, "TOP", 0, 0)
-                    accent:SetPoint("BOTTOM", div, "BOTTOM", 0, 0)
-                    accent:SetWidth(2)
-                end
-                div._accent = accent
-                div:SetScript("OnEnter", function(s2)
-                    s2._accent:Show()
-                end)
-                div:SetScript("OnLeave", function(s2)
-                    if not _dividerDragging then
-                        s2._accent:Hide()
-                    end
-                end)
-                dividers[i] = div
+            local line = strip:CreateTexture(nil, "OVERLAY", nil, 2)
+            line:SetColorTexture(1, 1, 1, 0.12)
+            if vertical then
+                line:SetHeight(1)
             else
-                local line = strip:CreateTexture(nil, "OVERLAY", nil, 2)
-                line:SetColorTexture(1, 1, 1, 0.12)
-                if vertical then
-                    line:SetHeight(1)
-                else
-                    line:SetWidth(1)
-                end
-                lines[i] = line
+                line:SetWidth(1)
             end
+            lines[i] = line
         end
 
         -- Solve + position everything. Also called by the body's Width %
@@ -1192,15 +1142,6 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                 end
                 cursor = cursor + px
-                local div = dividers[i]
-                if div then
-                    div:ClearAllPoints()
-                    if vertical then
-                        div:SetPoint("TOP", strip, "TOP", 0, -(cursor - 4))
-                    else
-                        div:SetPoint("LEFT", strip, "LEFT", cursor - 4, 0)
-                    end
-                end
                 local lineTex = lines[i]
                 if lineTex then
                     lineTex:SetShown(seg._touch and true or false)
@@ -1218,140 +1159,6 @@ initFrame:SetScript("OnEvent", function(self)
         _edbStripRelayout = LayoutStrip
         _edbStripBarId = conf.id
         LayoutStrip()
-
-        -- Divider drag: zero-sum weight transfer between the two neighbors.
-        -- All geometry is FROZEN at drag start (BeginDrag freeze technique);
-        -- only the two segment frames and their readouts update per tick.
-        for boundaryIdx, div in pairs(dividers) do
-            local position = boundaryIdx
-            div:SetScript("OnMouseDown", function(divSelf)
-                if _dividerDragging then
-                    return
-                end
-                if not lastSegs then
-                    return
-                end
-                local segA = lastSegs[position]
-                local segB = lastSegs[position + 1]
-                if not segA or not segB then
-                    return
-                end
-                if segA.isAuto or segB.isAuto then
-                    return
-                end
-                local blkA, blkB = segA.block, segB.block
-
-                local drag = {}
-                drag.scale = strip:GetEffectiveScale()
-                if not drag.scale or drag.scale == 0 then
-                    drag.scale = 1
-                end
-                local cx, cy = GetCursorPosition()
-                if vertical then
-                    drag.start = cy
-                else
-                    drag.start = cx
-                end
-                drag.wA = blkA.widthPct or 10
-                drag.wB = blkB.widthPct or 10
-                drag.budget = drag.wA + drag.wB
-                -- Shares are absolute % of the total bar, so one percentage
-                -- point is exactly 1% of the strip's usable length.
-                drag.pxPerW = stripUsable / 100
-                drag.aPos = segA.pos
-                drag.liveA = drag.wA
-
-                _dividerDragging = true
-                divSelf._accent:Show()
-                local btnA, btnB = segBtns[position], segBtns[position + 1]
-                local fsA, fsB = shareFSs[position], shareFSs[position + 1]
-
-                local function ApplyLive(aW)
-                    local pxA = aW * drag.pxPerW
-                    local pxB = (drag.budget - aW) * drag.pxPerW
-                    if pxA < 1 then
-                        pxA = 1
-                    end
-                    if pxB < 1 then
-                        pxB = 1
-                    end
-                    btnA:ClearAllPoints()
-                    btnB:ClearAllPoints()
-                    divSelf:ClearAllPoints()
-                    if vertical then
-                        btnA:SetSize(stripThick, pxA)
-                        btnA:SetPoint("TOP", strip, "TOP", 0, -drag.aPos)
-                        btnB:SetSize(stripThick, pxB)
-                        btnB:SetPoint("TOP", strip, "TOP", 0, -(drag.aPos + pxA))
-                        divSelf:SetPoint("TOP", strip, "TOP", 0, -(drag.aPos + pxA - 4))
-                    else
-                        btnA:SetSize(pxA, stripThick)
-                        btnA:SetPoint("LEFT", strip, "LEFT", drag.aPos, 0)
-                        btnB:SetSize(pxB, stripThick)
-                        btnB:SetPoint("LEFT", strip, "LEFT", drag.aPos + pxA, 0)
-                        divSelf:SetPoint("LEFT", strip, "LEFT", drag.aPos + pxA - 4, 0)
-                    end
-                    fsA:SetText(format("%.1f%%", aW))
-                    fsB:SetText(format("%.1f%%", drag.budget - aW))
-                end
-
-                local function Commit()
-                    divSelf:SetScript("OnUpdate", nil)
-                    _dividerDragging = false
-                    if not divSelf:IsMouseOver() then
-                        divSelf._accent:Hide()
-                    end
-                    -- Snap to 0.5 steps; B = budget - A keeps the pair exact.
-                    local a = drag.liveA
-                    a = floor(a / 0.5 + 0.5) * 0.5
-                    local minW = 0.5
-                    if a < minW then
-                        a = minW
-                    end
-                    if a > drag.budget - minW then
-                        a = drag.budget - minW
-                    end
-                    if a < 0 then
-                        a = 0
-                    end
-                    mod.TransferPct(conf.id, blkA.id, blkB.id, a)
-                    LayoutStrip()
-                    CludesUI:RefreshPage()
-                end
-
-                divSelf:SetScript("OnUpdate", function()
-                    if not IsMouseButtonDown("LeftButton") then
-                        Commit()
-                        return
-                    end
-                    local posX, posY = GetCursorPosition()
-                    local d
-                    if vertical then
-                        d = posY - drag.start
-                    else
-                        d = posX - drag.start
-                    end
-                    d = d / drag.scale
-                    -- Dragging DOWN grows the top segment on vertical bars.
-                    if vertical then
-                        d = -d
-                    end
-                    local dW = d / drag.pxPerW
-                    local minW = 0.5
-                    local a = drag.wA + dW
-                    if a < minW then
-                        a = minW
-                    end
-                    if a > drag.budget - minW then
-                        a = drag.budget - minW
-                    end
-                    if a ~= drag.liveA then
-                        drag.liveA = a
-                        ApplyLive(a)
-                    end
-                end)
-            end)
-        end
 
         -----------------------------------------------------------------------
         -- Drag-to-reorder segments (CDM preview pattern): while dragging, the other
@@ -1699,7 +1506,7 @@ initFrame:SetScript("OnEvent", function(self)
                 if mbtn ~= "LeftButton" then
                     return
                 end
-                if _dividerDragging or dragIdx then
+                if dragIdx then
                     return
                 end
                 local cx, cy = GetCursorPosition()
