@@ -19,6 +19,37 @@ end -- module disabled: no options page
 -- plain CreateFrame.
 local CreateFrame = CludesUI._Pool.CreateFrame
 
+-- A cast text's sync icon: its size (default when unset), its colour when the
+-- selected frame has one of its own, and fitKey's toggle when given. Frames
+-- agree when sizes and toggles match and both colours match or both are unset.
+local function CastTextSync(rgn, label, sizeKey, sizeDefault, colorKey, fitKey)
+    mod.UFO_UnitSync(rgn, label, {
+        self = true,
+        copy = function(t, from)
+            t[sizeKey] = from[sizeKey] or sizeDefault
+            if fitKey then
+                t[fitKey] = from[fitKey] == true or nil
+            end
+            local c = from[colorKey]
+            if c then
+                t[colorKey] = { r = c.r, g = c.g, b = c.b }
+            end
+        end,
+        same = function(t, from)
+            local a, b = t[colorKey], from[colorKey]
+            if a and b then
+                if a.r ~= b.r or a.g ~= b.g or a.b ~= b.b then
+                    return false
+                end
+            elseif a ~= b then
+                return false
+            end
+            return (t[sizeKey] or sizeDefault) == (from[sizeKey] or sizeDefault)
+                and (not fitKey or (t[fitKey] == true) == (from[fitKey] == true))
+        end,
+    })
+end
+
 function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
     local environ = mod._UFO_OptEnv
     local GROUP_UNIT_ORDER, Pix, RegisterWidgetRefresh, ReloadAndUpdate =
@@ -1189,129 +1220,18 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         -- Sync icons: Spell Name Size + Color (left) and Duration Size + Color (right)
         if not CludesUI._prebuilding then
             local rgn = castTextRow._leftRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Spell Name Size, Color and Show Full Spell Name to all Frames",
-                onClick = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().castSpellNameSize or 11
-                    local c = UNIT_DB_MAP[optionState.selectedUnit]().castSpellNameColor
-                    local fit = UNIT_DB_MAP[optionState.selectedUnit]().castFitSpellName == true
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        UNIT_DB_MAP[key]().castSpellNameSize = v
-                        UNIT_DB_MAP[key]().castFitSpellName = fit or nil
-                        if c then
-                            UNIT_DB_MAP[key]().castSpellNameColor = { r = c.r, g = c.g, b = c.b }
-                        end
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().castSpellNameSize or 11
-                    local c = UNIT_DB_MAP[optionState.selectedUnit]().castSpellNameColor
-                    local fit = UNIT_DB_MAP[optionState.selectedUnit]().castFitSpellName == true
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if (UNIT_DB_MAP[key]().castSpellNameSize or 11) ~= v then
-                            return false
-                        end
-                        if (UNIT_DB_MAP[key]().castFitSpellName == true) ~= fit then
-                            return false
-                        end
-                        local kc = UNIT_DB_MAP[key]().castSpellNameColor
-                        if c and kc then
-                            if kc.r ~= c.r or kc.g ~= c.g or kc.b ~= c.b then
-                                return false
-                            end
-                        elseif c ~= kc then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optionState.selectedUnit]().castSpellNameSize or 11
-                        local c = UNIT_DB_MAP[optionState.selectedUnit]().castSpellNameColor
-                        local fit = UNIT_DB_MAP[optionState.selectedUnit]().castFitSpellName == true
-                        for _, key in ipairs(checkedKeys) do
-                            UNIT_DB_MAP[key]().castSpellNameSize = v
-                            UNIT_DB_MAP[key]().castFitSpellName = fit or nil
-                            if c then
-                                UNIT_DB_MAP[key]().castSpellNameColor = { r = c.r, g = c.g, b = c.b }
-                            end
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
-            })
+            CastTextSync(
+                rgn,
+                "Spell Name Size, Color and Show Full Spell Name",
+                "castSpellNameSize",
+                11,
+                "castSpellNameColor",
+                "castFitSpellName"
+            )
         end
         if not CludesUI._prebuilding then
             local rgn = castTextRow._rightRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Duration Size and Color to all Frames",
-                onClick = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().castDurationSize or 10
-                    local c = UNIT_DB_MAP[optionState.selectedUnit]().castDurationColor
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        UNIT_DB_MAP[key]().castDurationSize = v
-                        if c then
-                            UNIT_DB_MAP[key]().castDurationColor = { r = c.r, g = c.g, b = c.b }
-                        end
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().castDurationSize or 10
-                    local c = UNIT_DB_MAP[optionState.selectedUnit]().castDurationColor
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if (UNIT_DB_MAP[key]().castDurationSize or 10) ~= v then
-                            return false
-                        end
-                        local kc = UNIT_DB_MAP[key]().castDurationColor
-                        if c and kc then
-                            if kc.r ~= c.r or kc.g ~= c.g or kc.b ~= c.b then
-                                return false
-                            end
-                        elseif c ~= kc then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optionState.selectedUnit]().castDurationSize or 10
-                        local c = UNIT_DB_MAP[optionState.selectedUnit]().castDurationColor
-                        for _, key in ipairs(checkedKeys) do
-                            UNIT_DB_MAP[key]().castDurationSize = v
-                            if c then
-                                UNIT_DB_MAP[key]().castDurationColor = { r = c.r, g = c.g, b = c.b }
-                            end
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
-            })
+            CastTextSync(rgn, "Duration Size and Color", "castDurationSize", 10, "castDurationColor")
         end
 
         -- Row 4: Spell Target (position dropdown + cog + swatch) | Reverse Fill
@@ -1438,62 +1358,13 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         -- Sync icons: Spell Target Size + Color (left)
         if not CludesUI._prebuilding then
             local rgn = castTargetRow._leftRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Spell Target Size and Color to all Frames",
-                onClick = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().castSpellTargetSize or 11
-                    local c = UNIT_DB_MAP[optionState.selectedUnit]().castSpellTargetColor
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        UNIT_DB_MAP[key]().castSpellTargetSize = v
-                        if c then
-                            UNIT_DB_MAP[key]().castSpellTargetColor = { r = c.r, g = c.g, b = c.b }
-                        end
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().castSpellTargetSize or 11
-                    local c = UNIT_DB_MAP[optionState.selectedUnit]().castSpellTargetColor
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if (UNIT_DB_MAP[key]().castSpellTargetSize or 11) ~= v then
-                            return false
-                        end
-                        local kc = UNIT_DB_MAP[key]().castSpellTargetColor
-                        if c and kc then
-                            if kc.r ~= c.r or kc.g ~= c.g or kc.b ~= c.b then
-                                return false
-                            end
-                        elseif c ~= kc then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optionState.selectedUnit]().castSpellTargetSize or 11
-                        local c = UNIT_DB_MAP[optionState.selectedUnit]().castSpellTargetColor
-                        for _, key in ipairs(checkedKeys) do
-                            UNIT_DB_MAP[key]().castSpellTargetSize = v
-                            if c then
-                                UNIT_DB_MAP[key]().castSpellTargetColor = { r = c.r, g = c.g, b = c.b }
-                            end
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
-            })
+            CastTextSync(
+                rgn,
+                "Spell Target Size and Color",
+                "castSpellTargetSize",
+                11,
+                "castSpellTargetColor"
+            )
         end
         -- Custom Border Style rows (the Cast Bar cog's opt-in), inside the Show
         -- Cast Bar gate and ahead of the Classic-only Border Size row.
@@ -1610,45 +1481,30 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     end
                     return a == b
                 end
-                CludesUI.BuildSyncIcon({
-                    region = rgn,
-                    tooltip = "Apply Important Cast Glow to Target and Focus",
-                    onClick = function()
-                        local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                        for _, key in ipairs({ "target", "focus" }) do
-                            if key ~= optionState.selectedUnit then
-                                local d = UNIT_DB_MAP[key]()
-                                for _, k in ipairs(GLOW_KEYS) do
-                                    d[k] = source[k]
-                                end
-                                for _, k in ipairs(GLOW_COLOR_KEYS) do
-                                    local c = source[k]
-                                    d[k] = c and { r = c.r, g = c.g, b = c.b } or nil
-                                end
+                mod.UFO_UnitSync(rgn, "Important Cast Glow", {
+                    units = { "target", "focus" },
+                    noMenu = true,
+                    copy = function(t, from)
+                        for _, k in ipairs(GLOW_KEYS) do
+                            t[k] = from[k]
+                        end
+                        for _, k in ipairs(GLOW_COLOR_KEYS) do
+                            local c = from[k]
+                            t[k] = c and { r = c.r, g = c.g, b = c.b } or nil
+                        end
+                    end,
+                    same = function(t, from)
+                        for _, k in ipairs(GLOW_KEYS) do
+                            if t[k] ~= from[k] then
+                                return false
                             end
                         end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                    isSynced = function()
-                        local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                        for _, key in ipairs({ "target", "focus" }) do
-                            local d = UNIT_DB_MAP[key]()
-                            for _, k in ipairs(GLOW_KEYS) do
-                                if d[k] ~= source[k] then
-                                    return false
-                                end
-                            end
-                            for _, k in ipairs(GLOW_COLOR_KEYS) do
-                                if not colEq(d[k], source[k]) then
-                                    return false
-                                end
+                        for _, k in ipairs(GLOW_COLOR_KEYS) do
+                            if not colEq(t[k], from[k]) then
+                                return false
                             end
                         end
                         return true
-                    end,
-                    flashTargets = function()
-                        return { rgn }
                     end,
                 })
             end
@@ -1824,10 +1680,10 @@ end
 
 function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
     local environ = mod._UFO_OptEnv
-    local AttachDebuffModeWarn, DebuffModeDropdownCfg, GROUP_UNIT_ORDER, Pix =
-        environ.AttachDebuffModeWarn, environ.DebuffModeDropdownCfg, environ.GROUP_UNIT_ORDER, environ.PP
-    local RegisterWidgetRefresh, ReloadAndUpdate, SHORT_LABELS, SwapAuraSlot =
-        environ.RegisterWidgetRefresh, environ.ReloadAndUpdate, environ.SHORT_LABELS, environ.SwapAuraSlot
+    local AttachDebuffModeWarn, DebuffModeDropdownCfg, Pix =
+        environ.AttachDebuffModeWarn, environ.DebuffModeDropdownCfg, environ.PP
+    local RegisterWidgetRefresh, ReloadAndUpdate, SwapAuraSlot =
+        environ.RegisterWidgetRefresh, environ.ReloadAndUpdate, environ.SwapAuraSlot
     local UF_PurgeGlowDesc, UNIT_DB_MAP, UNIT_LABELS_SUP, UpdatePreview =
         environ.UF_PurgeGlowDesc, environ.UNIT_DB_MAP, environ.UNIT_LABELS_SUP, environ.UpdatePreview
     local HideExhaustionRow = environ.HideExhaustionRow
@@ -1961,74 +1817,28 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
     SApplySupport(sharedAddRow2._leftRegion, "showBuffs")
     -- Sync icon: Buffs Location (left)
     if not CludesUI._prebuilding then
-        local rgn = sharedAddRow2._leftRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Buffs Location to all Frames",
-            onClick = function()
-                local s = UNIT_DB_MAP[optionState.selectedUnit]()
-                local showV = s.showBuffs
-                if showV == nil then
-                    showV = true
-                end
-                local anchorV = s.buffAnchor or "topleft"
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    UNIT_DB_MAP[key]().showBuffs = showV
-                    if showV then
-                        UNIT_DB_MAP[key]().buffAnchor = anchorV
-                    end
-                end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local s = UNIT_DB_MAP[optionState.selectedUnit]()
-                local showV = s.showBuffs
-                if showV == nil then
-                    showV = true
-                end
-                local anchorV = s.buffAnchor or "topleft"
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    local os = UNIT_DB_MAP[key]()
-                    local shade = os.showBuffs
-                    if shade == nil then
-                        shade = true
-                    end
-                    if shade ~= showV then
-                        return false
-                    end
-                    if showV and (os.buffAnchor or "topleft") ~= anchorV then
-                        return false
-                    end
-                end
+        -- Shown (on when unset) travels with the place it shows at; hidden buffs
+        -- keep each frame's own place.
+        local function Shown(t)
+            if t.showBuffs == nil then
                 return true
+            end
+            return t.showBuffs
+        end
+        mod.UFO_UnitSync(sharedAddRow2._leftRegion, "Buffs Location", {
+            self = true,
+            copy = function(t, from)
+                local show = Shown(from)
+                t.showBuffs = show
+                if show then
+                    t.buffAnchor = from.buffAnchor or "topleft"
+                end
             end,
-            flashTargets = function()
-                return { rgn }
+            same = function(t, from)
+                local show = Shown(from)
+                return Shown(t) == show
+                    and not (show and (t.buffAnchor or "topleft") ~= (from.buffAnchor or "topleft"))
             end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    local s = UNIT_DB_MAP[optionState.selectedUnit]()
-                    local showV = s.showBuffs
-                    if showV == nil then
-                        showV = true
-                    end
-                    local anchorV = s.buffAnchor or "topleft"
-                    for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().showBuffs = showV
-                        if showV then
-                            UNIT_DB_MAP[key]().buffAnchor = anchorV
-                        end
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-            },
         })
     end
     -- Cog on Buffs Location: the shared settings rows, then Icon Zoom and

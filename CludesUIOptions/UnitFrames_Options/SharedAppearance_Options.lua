@@ -102,7 +102,8 @@ function mod.UFO_UnitSync(rgn, label, opts)
         flashTargets = function()
             return { rgn }
         end,
-        multiApply = {
+        -- opts.noMenu: the All link only (no Multiple menu).
+        multiApply = not opts.noMenu and {
             elementKeys = units,
             elementLabels = env.SHORT_LABELS,
             getCurrentKey = function()
@@ -111,7 +112,7 @@ function mod.UFO_UnitSync(rgn, label, opts)
             onApply = function(checked)
                 Copy(checked, true)
             end,
-        },
+        } or nil,
     })
 end
 
