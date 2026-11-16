@@ -16,6 +16,14 @@ end -- module disabled: no options page
 -- frames back reset to new; on any other parent it is the plain CreateFrame.
 local CreateFrame = CludesUI._Pool.CreateFrame
 
+-- The account-wide settings table, made if it is not there yet, for a write.
+local function Account()
+    if not CludesUIDB then
+        CludesUIDB = {}
+    end
+    return CludesUIDB
+end
+
 local function PrettifyName(name)
     local pretty = name:gsub("Frame$", "")
     pretty = pretty:gsub("(%l)(%u)", "%1 %2"):gsub("(%u)(%u%l)", "%1 %2")
@@ -117,10 +125,7 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
             return CludesUIDB and CludesUIDB.shifterEnabled or false
         end,
         setValue = function(val)
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
-            CludesUIDB.shifterEnabled = val
+            Account().shifterEnabled = val
             if val and CludesUI._InitShifter then
                 CludesUI._InitShifter()
             elseif not val and CludesUI._ShutdownShifter then
@@ -171,10 +176,7 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
             return CludesUIDB and CludesUIDB.shifterNoShift or false
         end,
         setValue = function(val)
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
-            CludesUIDB.shifterNoShift = val
+            Account().shifterNoShift = val
         end,
     }, { type = "label", text = "" })
     posY = posY - hgt
@@ -203,10 +205,7 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
             return CludesUIDB and CludesUIDB.shifterLootUnlock or false
         end,
         setValue = function(val)
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
-            CludesUIDB.shifterLootUnlock = val
+            Account().shifterLootUnlock = val
             if val then
                 if CludesUI._InitShifterLootWindows then
                     CludesUI._InitShifterLootWindows()
@@ -228,10 +227,7 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
             return CludesUIDB and CludesUIDB.shifterLootHideOverlays or false
         end,
         setValue = function(val)
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
-            CludesUIDB.shifterLootHideOverlays = val
+            Account().shifterLootHideOverlays = val
         end,
     })
     posY = posY - hgt
@@ -259,10 +255,7 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
             return CludesUIDB and CludesUIDB.shifterTopBarUnlock or false
         end,
         setValue = function(val)
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
-            CludesUIDB.shifterTopBarUnlock = val
+            Account().shifterTopBarUnlock = val
             if val then
                 if CludesUI._InitShifterTopBar then
                     CludesUI._InitShifterTopBar()
@@ -284,10 +277,7 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
             return CludesUIDB and CludesUIDB.shifterTopBarHideOverlay or false
         end,
         setValue = function(val)
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
-            CludesUIDB.shifterTopBarHideOverlay = val
+            Account().shifterTopBarHideOverlay = val
         end,
     })
     posY = posY - hgt
@@ -316,10 +306,7 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
             return CludesUIDB and CludesUIDB.shifterBattlegroundUnlock or false
         end,
         setValue = function(val)
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
-            CludesUIDB.shifterBattlegroundUnlock = val
+            Account().shifterBattlegroundUnlock = val
             if CludesUI._InitShifterLootWindows then
                 CludesUI._InitShifterLootWindows()
             end
@@ -338,10 +325,7 @@ _G._CUI_BuildShifterPage = function(page, hostFrame, yOffset)
             return CludesUIDB and CludesUIDB.shifterBattlegroundHideOverlays or false
         end,
         setValue = function(val)
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
-            CludesUIDB.shifterBattlegroundHideOverlays = val
+            Account().shifterBattlegroundHideOverlays = val
         end,
     })
     posY = posY - hgt

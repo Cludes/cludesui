@@ -16,6 +16,14 @@ local ADDON_NAME = ...
 -- elsewhere this is CreateFrame.
 local CreateFrame = CludesUI._Pool.CreateFrame
 
+-- The account-wide settings table, made if it is not there yet, for a write.
+local function Account()
+    if not CludesUIDB then
+        CludesUIDB = {}
+    end
+    return CludesUIDB
+end
+
 -------------------------------------------------------------------------------
 --  Page / section names
 -------------------------------------------------------------------------------
@@ -997,10 +1005,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUI.GetAccentColor()
             end
             local tcSet = function(r, g, b)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.accentColor = { r = r, g = g, b = b }
+                Account().accentColor = { r = r, g = g, b = b }
                 -- Only update the window background, not the accent color
                 if CludesUI._applyBgTint then
                     CludesUI._applyBgTint(r, g, b)
@@ -1217,10 +1222,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.hideSyncIcons or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.hideSyncIcons = val
+                Account().hideSyncIcons = val
                 if CludesUI._refreshAllSyncIcons then
                     CludesUI._refreshAllSyncIcons()
                 end
@@ -1284,10 +1286,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return CludesUIDB and CludesUIDB.hideSyncIconsOnlyFull or false
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.hideSyncIconsOnlyFull = val
+                            Account().hideSyncIconsOnlyFull = val
                             if CludesUI._refreshAllSyncIcons then
                                 CludesUI._refreshAllSyncIcons()
                             end
@@ -1703,10 +1702,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return not CludesUIDB or CludesUIDB.brightenSwiftmend ~= false
                 end,
                 setValue = function(val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB.brightenSwiftmend = val
+                    Account().brightenSwiftmend = val
                     if val then
                         if _G._CUAB_ScanSwiftmend then
                             _G._CUAB_ScanSwiftmend()
@@ -1730,10 +1726,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.timerSecondsDown == true or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.timerSecondsDown = val or nil
+                Account().timerSecondsDown = val or nil
                 CludesUI:ShowConfirmPopup({
                     title = "Reload Required",
                     message = "Changing how timers round requires a UI reload.",
@@ -1829,10 +1822,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return not (CludesUIDB and CludesUIDB.suppressErrors == false)
                 end,
                 setValue = function(val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB.suppressErrors = val
+                    Account().suppressErrors = val
                     SetCVarSafe("scriptErrors", val and "0" or "1")
                 end,
             }, {
@@ -1843,10 +1833,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return CludesUI.SpellIDOn()
                 end,
                 setValue = function(val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB.showSpellID = val
+                    Account().showSpellID = val
                     -- Engine-side combat aura-ID CVar rides this setting.
                     if CludesUI.SyncAuraSpellIDCVar then
                         CludesUI.SyncAuraSpellIDCVar()

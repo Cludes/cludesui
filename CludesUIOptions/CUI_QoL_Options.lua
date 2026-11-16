@@ -20,6 +20,14 @@ end -- module disabled: no options page
 -- frames back reset to new; on any other parent it is the plain CreateFrame.
 local CreateFrame = CludesUI._Pool.CreateFrame
 
+-- The account-wide settings table, made if it is not there yet, for a write.
+local function Account()
+    if not CludesUIDB then
+        CludesUIDB = {}
+    end
+    return CludesUIDB
+end
+
 local PAGE_QOL = "QoL"
 local PAGE_CURSOR = "Cursor"
 local PAGE_UPGCALC = "Upgrader"
@@ -264,10 +272,7 @@ local function ShowTransformsPopup()
             applyBrd:SetColor(ACC.r, ACC.g, ACC.b, 0.9)
         end)
         applyBtn:SetScript("OnClick", function()
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
-            CludesUIDB.hideTransformItems = CludesUIDB.hideTransformItems or {}
+            Account().hideTransformItems = CludesUIDB.hideTransformItems or {}
             local t = CludesUIDB.hideTransformItems
             for _, item in ipairs(payload.items) do
                 local staged = transformsStaged[item.key] and true or false
@@ -897,10 +902,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return CludesUIDB and CludesUIDB.skipCinematics or false
                     end,
                     setValue = function(val)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB.skipCinematics = val
+                        Account().skipCinematics = val
                         CludesUI:RefreshPage()
                     end,
                 }
@@ -994,10 +996,7 @@ initFrame:SetScript("OnEvent", function(self)
                                 return CludesUIDB and CludesUIDB.skipCinematicsAuto or false
                             end,
                             set = function(val)
-                                if not CludesUIDB then
-                                    CludesUIDB = {}
-                                end
-                                CludesUIDB.skipCinematicsAuto = val
+                                Account().skipCinematicsAuto = val
                             end,
                         },
                     },
@@ -1017,10 +1016,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.quickLoot or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.quickLoot = val
+                Account().quickLoot = val
                 if CludesUI._applyQuickLoot then
                     CludesUI._applyQuickLoot()
                 end
@@ -1033,10 +1029,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.autoFillDelete or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.autoFillDelete = val
+                Account().autoFillDelete = val
                 CludesUI:RefreshPage()
             end,
         })
@@ -1055,10 +1048,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB.autoRepair ~= false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.autoRepair = val
+                Account().autoRepair = val
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -1072,10 +1062,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB.autoSellJunk ~= false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.autoSellJunk = val
+                Account().autoSellJunk = val
             end,
         })
         posY = posY - hgt
@@ -1100,10 +1087,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return CludesUIDB.autoRepairGuild ~= false
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.autoRepairGuild = val
+                            Account().autoRepairGuild = val
                         end,
                     },
                     -- Off (default) = short text "12o 34a"; on = coin icons.
@@ -1114,10 +1098,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return CludesUIDB and CludesUIDB.repairCoinIcons == true
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.repairCoinIcons = val
+                            Account().repairCoinIcons = val
                         end,
                     },
                 },
@@ -1137,10 +1118,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.hideTransforms or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.hideTransforms = val
+                Account().hideTransforms = val
                 if CludesUI._applyHideTransforms then
                     CludesUI._applyHideTransforms()
                 end
@@ -1154,10 +1132,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.autoGossip or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.autoGossip = val
+                Account().autoGossip = val
                 if CludesUI._applyAutoGossip then
                     CludesUI._applyAutoGossip()
                 end
@@ -1205,10 +1180,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return CludesUIDB.autoGossipShiftSkip ~= false
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.autoGossipShiftSkip = val
+                            Account().autoGossipShiftSkip = val
                         end,
                     },
                     {
@@ -1221,10 +1193,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return CludesUIDB.autoGossipDisableInstance ~= false
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.autoGossipDisableInstance = val
+                            Account().autoGossipDisableInstance = val
                         end,
                     },
                     {
@@ -1234,10 +1203,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return CludesUIDB and CludesUIDB.autoGossipIgnoreTrivial or false
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.autoGossipIgnoreTrivial = val
+                            Account().autoGossipIgnoreTrivial = val
                         end,
                     },
                 },
@@ -1266,10 +1232,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return CludesUIDB and CludesUIDB.blizzCDMSlash == true
                 end,
                 setValue = function(val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB.blizzCDMSlash = val and true or nil
+                    Account().blizzCDMSlash = val and true or nil
                     CludesUI:ShowConfirmPopup({
                         title = "Reload Required",
                         message = "The /cd change applies after a UI reload.",
@@ -1288,10 +1251,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return CludesUIDB and CludesUIDB.ahCurrentExpansion or false
                     end,
                     setValue = function(val)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB.ahCurrentExpansion = val
+                        Account().ahCurrentExpansion = val
                     end,
                 }
         )
@@ -1619,10 +1579,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.repairWarning ~= false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.repairWarning = val
+                Account().repairWarning = val
                 if CludesUI._syncDurWarnEvents then
                     CludesUI._syncDurWarnEvents()
                 end
@@ -1712,10 +1669,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return (CludesUIDB and CludesUIDB.durWarnTextSize) or 30
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.durWarnTextSize = val
+                            Account().durWarnTextSize = val
                             if CludesUI._durWarnApplySettings then
                                 CludesUI._durWarnApplySettings()
                             end
@@ -1731,10 +1685,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return CludesUIDB and CludesUIDB.durWarnYOffset or 250
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.durWarnYOffset = val
+                            Account().durWarnYOffset = val
                             CludesUIDB.durWarnPos = nil -- clear custom pos so slider always takes effect
                             if CludesUI._durWarnPreview then
                                 CludesUI._durWarnPreview()
@@ -1751,10 +1702,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return CludesUIDB and CludesUIDB.durWarnThreshold or 40
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.durWarnThreshold = val
+                            Account().durWarnThreshold = val
                         end,
                     },
                     CludesUI.IS_FOREVER and {
@@ -1765,10 +1713,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return CludesUIDB and CludesUIDB.durWarnIgnoreThrown ~= false
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.durWarnIgnoreThrown = val
+                            Account().durWarnIgnoreThrown = val
                             if CludesUI._syncDurWarnEvents then
                                 CludesUI._syncDurWarnEvents()
                             end
@@ -1789,10 +1734,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return 1, 0.27, 0.27
             end
             local durSwSet = function(r, g, b)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.durWarnColor = { r = r, g = g, b = b }
+                Account().durWarnColor = { r = r, g = g, b = b }
                 if CludesUI._applyDurWarn then
                     CludesUI._applyDurWarn()
                 end
@@ -1940,10 +1882,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.guildChatPrivacy or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.guildChatPrivacy = val
+                Account().guildChatPrivacy = val
                 if CludesUI._applyGuildChatPrivacy then
                     CludesUI._applyGuildChatPrivacy()
                 end
@@ -2429,10 +2368,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.targetDistanceEnabled or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.targetDistanceEnabled = val
+                Account().targetDistanceEnabled = val
                 if CludesUI._applyTargetDistance then
                     CludesUI._applyTargetDistance()
                 end
@@ -2481,10 +2417,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return "range"
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.targetDistanceFormat = val
+                            Account().targetDistanceFormat = val
                             if CludesUI._applyTargetDistanceFrame then
                                 CludesUI._applyTargetDistanceFrame()
                             end
@@ -2503,10 +2436,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return "CENTER"
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.targetDistanceAlign = val
+                            Account().targetDistanceAlign = val
                             if CludesUI._applyTargetDistanceFrame then
                                 CludesUI._applyTargetDistanceFrame()
                             end
@@ -2522,10 +2452,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return (CludesUIDB and CludesUIDB.targetDistanceTextSize) or 18
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.targetDistanceTextSize = val
+                            Account().targetDistanceTextSize = val
                             if CludesUI._applyTargetDistanceFrame then
                                 CludesUI._applyTargetDistanceFrame()
                             end
@@ -2541,10 +2468,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return (CludesUIDB and CludesUIDB.targetDistanceStrata) or "HIGH"
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.targetDistanceStrata = val
+                            Account().targetDistanceStrata = val
                             if CludesUI._applyTargetDistanceFrame then
                                 CludesUI._applyTargetDistanceFrame()
                             end
@@ -2568,10 +2492,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.mapCoords or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.mapCoords = val
+                Account().mapCoords = val
                 if CludesUI._applyMapCoords then
                     CludesUI._applyMapCoords()
                 end
@@ -2597,10 +2518,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return (CludesUIDB and CludesUIDB.mapCoordsTextSize) or 12
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.mapCoordsTextSize = val
+                            Account().mapCoordsTextSize = val
                             if CludesUI._applyMapCoords then
                                 CludesUI._applyMapCoords()
                             end
@@ -2648,10 +2566,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.autoAcceptRes or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.autoAcceptRes = val
+                Account().autoAcceptRes = val
                 if CludesUI._applyAutoAcceptRes then
                     CludesUI._applyAutoAcceptRes()
                 end
@@ -2672,10 +2587,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return CludesUIDB and CludesUIDB.autoAcceptResCombat or false
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.autoAcceptResCombat = val
+                            Account().autoAcceptResCombat = val
                         end,
                     },
                 },
@@ -2699,10 +2611,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return CludesUIDB and CludesUIDB.mapSidebarsClear or false
                 end,
                 setValue = function(val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB.mapSidebarsClear = val
+                    Account().mapSidebarsClear = val
                     if CludesUI._applyMapSidebars then
                         CludesUI._applyMapSidebars()
                     end
@@ -2729,10 +2638,7 @@ initFrame:SetScript("OnEvent", function(self)
                                 return (CludesUIDB and CludesUIDB.mapSidebarsOpacity) or 0
                             end,
                             set = function(val)
-                                if not CludesUIDB then
-                                    CludesUIDB = {}
-                                end
-                                CludesUIDB.mapSidebarsOpacity = val
+                                Account().mapSidebarsOpacity = val
                                 if CludesUI._applyMapSidebars then
                                     CludesUI._applyMapSidebars()
                                 end
@@ -3342,10 +3248,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB.autoInsertKeystone ~= false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.autoInsertKeystone = val
+                Account().autoInsertKeystone = val
             end,
         }
         local announceCfg = {
@@ -3356,10 +3259,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.instanceResetAnnounce or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.instanceResetAnnounce = val
+                Account().instanceResetAnnounce = val
                 if CludesUI._applyInstanceResetAnnounce then
                     CludesUI._applyInstanceResetAnnounce()
                 end
@@ -3373,10 +3273,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.quickSignup or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.quickSignup = val
+                Account().quickSignup = val
                 CludesUI._applyQuickSignup()
             end,
         }
@@ -3388,10 +3285,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.persistSignupNote or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.persistSignupNote = val
+                Account().persistSignupNote = val
                 CludesUI._applyPersistSignupNote()
                 CludesUI:RefreshPage()
             end,
@@ -3458,10 +3352,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB.hideScreenshotStatus ~= false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.hideScreenshotStatus = val
+                Account().hideScreenshotStatus = val
                 if CludesUI._applyScreenshotStatus then
                     CludesUI._applyScreenshotStatus()
                 end
@@ -3474,10 +3365,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.trainAllButton or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.trainAllButton = val
+                Account().trainAllButton = val
                 if CludesUI._applyTrainAllButton then
                     CludesUI._applyTrainAllButton()
                 end
@@ -3495,10 +3383,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.autoUnwrapCollections or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.autoUnwrapCollections = val
+                Account().autoUnwrapCollections = val
                 if CludesUI._applyAutoUnwrap then
                     CludesUI._applyAutoUnwrap()
                 end
@@ -3514,10 +3399,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB.autoOpenContainers == true
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.autoOpenContainers = val
+                Account().autoOpenContainers = val
                 if CludesUI._applyAutoOpenContainers then
                     CludesUI._applyAutoOpenContainers()
                 end
@@ -3546,10 +3428,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return CludesUIDB.autoOpenContainersExcludeWarbound ~= false
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.autoOpenContainersExcludeWarbound = val
+                            Account().autoOpenContainersExcludeWarbound = val
                         end,
                     },
                     {
@@ -3561,10 +3440,7 @@ initFrame:SetScript("OnEvent", function(self)
                                 and CludesUIDB.autoOpenContainersHoldCappedArtisanPayouts == true
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.autoOpenContainersHoldCappedArtisanPayouts = val
+                            Account().autoOpenContainersHoldCappedArtisanPayouts = val
                             if CludesUI._applyAutoOpenContainers then
                                 CludesUI._applyAutoOpenContainers()
                             end
@@ -3599,10 +3475,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return CludesUIDB and CludesUIDB.bonusRollConfirmation == true
                 end,
                 setValue = function(val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB.bonusRollConfirmation = val
+                    Account().bonusRollConfirmation = val
                     if CludesUI._applyBonusRollConfirmation then
                         CludesUI._applyBonusRollConfirmation()
                     end
@@ -3624,10 +3497,7 @@ initFrame:SetScript("OnEvent", function(self)
                                 return not CludesUIDB or CludesUIDB.bonusRollOnly ~= false
                             end,
                             set = function(val)
-                                if not CludesUIDB then
-                                    CludesUIDB = {}
-                                end
-                                CludesUIDB.bonusRollOnly = val
+                                Account().bonusRollOnly = val
                                 if CludesUI._applyBonusRollConfirmation then
                                     CludesUI._applyBonusRollConfirmation()
                                 end

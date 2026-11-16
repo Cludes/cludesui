@@ -1,6 +1,14 @@
 if CUI_CLIENT_BLOCKED then
     return
 end -- pre-12.1 client failsafe (CludesUI_ClientGate.lua)
+
+-- The account-wide settings table, made if it is not there yet, for a write.
+local function Account()
+    if not CludesUIDB then
+        CludesUIDB = {}
+    end
+    return CludesUIDB
+end
 -------------------------------------------------------------------------------
 --  CUI_QoL_Alerts_Options.lua
 --  ALERTS section: Combat Alert, Potion Ready Alert, Unspent Talents Alert and
@@ -23,10 +31,7 @@ local function AlertCogRows(prefixText, applyFrame, preview)
         return CludesUIDB and CludesUIDB[prefixText .. k]
     end
     local function put(k, val)
-        if not CludesUIDB then
-            CludesUIDB = {}
-        end
-        CludesUIDB[prefixText .. k] = val
+        Account()[prefixText .. k] = val
     end
     return {
         {
@@ -116,10 +121,7 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
             return CludesUIDB and CludesUIDB.combatAlertEnabled or false
         end,
         setValue = function(val)
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
-            CludesUIDB.combatAlertEnabled = val
+            Account().combatAlertEnabled = val
             if CludesUI._applyCombatAlert then
                 CludesUI._applyCombatAlert()
             end
@@ -133,10 +135,7 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
             return CludesUIDB and CludesUIDB.potionAlertEnabled or false
         end,
         setValue = function(val)
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
-            CludesUIDB.potionAlertEnabled = val
+            Account().potionAlertEnabled = val
             if CludesUI._applyPotionAlert then
                 CludesUI._applyPotionAlert()
             end
@@ -154,10 +153,7 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
             return CludesUIDB and CludesUIDB.talentAlertEnabled or false
         end,
         setValue = function(val)
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
-            CludesUIDB.talentAlertEnabled = val
+            Account().talentAlertEnabled = val
             if CludesUI._applyTalentAlert then
                 CludesUI._applyTalentAlert()
             end
@@ -171,10 +167,7 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
             return CludesUIDB and CludesUIDB.announceGroupDeaths or false
         end,
         setValue = function(val)
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
-            CludesUIDB.announceGroupDeaths = val
+            Account().announceGroupDeaths = val
             if CludesUI._applyAnnounceGroupDeaths then
                 CludesUI._applyAnnounceGroupDeaths()
             end
@@ -216,10 +209,7 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
                         return (CludesUIDB and CludesUIDB.combatAlertMode) or "both"
                     end,
                     set = function(val)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB.combatAlertMode = val
+                        Account().combatAlertMode = val
                     end,
                 },
                 {
@@ -232,10 +222,7 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
                         return (CludesUIDB and CludesUIDB.combatAlertTextSize) or 22
                     end,
                     set = function(val)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB.combatAlertTextSize = val
+                        Account().combatAlertTextSize = val
                         if CludesUI._applyCombatAlertFrame then
                             CludesUI._applyCombatAlertFrame()
                         end
@@ -252,10 +239,7 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
                         return (CludesUIDB and CludesUIDB.combatAlertEnterText) or "+Combat"
                     end,
                     set = function(val)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB.combatAlertEnterText = val
+                        Account().combatAlertEnterText = val
                         if CludesUI._combatAlertPreview then
                             CludesUI._combatAlertPreview("enter")
                         end
@@ -273,10 +257,7 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
                         return c.r, c.g, c.b
                     end,
                     set = function(r, g, b)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB.combatAlertEnterColor = { r = r, g = g, b = b }
+                        Account().combatAlertEnterColor = { r = r, g = g, b = b }
                         if CludesUI._combatAlertPreview then
                             CludesUI._combatAlertPreview("enter")
                         end
@@ -289,10 +270,7 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
                         return enterClassOn()
                     end,
                     set = function(val)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB.combatAlertEnterUseClassColor = val
+                        Account().combatAlertEnterUseClassColor = val
                         if CludesUI._combatAlertPreview then
                             CludesUI._combatAlertPreview("enter")
                         end
@@ -306,10 +284,7 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
                         return (CludesUIDB and CludesUIDB.combatAlertLeaveText) or "-Combat"
                     end,
                     set = function(val)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB.combatAlertLeaveText = val
+                        Account().combatAlertLeaveText = val
                         if CludesUI._combatAlertPreview then
                             CludesUI._combatAlertPreview("leave")
                         end
@@ -327,10 +302,7 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
                         return c.r, c.g, c.b
                     end,
                     set = function(r, g, b)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB.combatAlertLeaveColor = { r = r, g = g, b = b }
+                        Account().combatAlertLeaveColor = { r = r, g = g, b = b }
                         if CludesUI._combatAlertPreview then
                             CludesUI._combatAlertPreview("leave")
                         end
@@ -343,10 +315,7 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
                         return leaveClassOn()
                     end,
                     set = function(val)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB.combatAlertLeaveUseClassColor = val
+                        Account().combatAlertLeaveUseClassColor = val
                         if CludesUI._combatAlertPreview then
                             CludesUI._combatAlertPreview("leave")
                         end
@@ -406,10 +375,7 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
                         return (CludesUIDB and CludesUIDB.groupDeathTextSize) or 34
                     end,
                     set = function(val)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB.groupDeathTextSize = val
+                        Account().groupDeathTextSize = val
                         if CludesUI._applyGroupDeathAlert then
                             CludesUI._applyGroupDeathAlert()
                         end
@@ -427,10 +393,7 @@ _G._CUI_BuildAlertsSection = function(hostFrame, yOffset, W, Pix)
                         return (CludesUIDB and CludesUIDB.groupDeathSoundKey) or "none"
                     end,
                     set = function(val)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB.groupDeathSoundKey = val
+                        Account().groupDeathSoundKey = val
                         if val ~= "none" and CludesUI._groupDeathPlaySound then
                             CludesUI._groupDeathPlaySound()
                         end
