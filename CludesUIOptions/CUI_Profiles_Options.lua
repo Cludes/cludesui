@@ -2156,114 +2156,110 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             end
         end)
 
-        -- "Assign to Spec" label ("Assign to Class" on WoW Forever, which has no
-        -- specs: the popup lists one row per class there)
-        local specLabel = CludesUI.MakeFont(rowFrame, 12, nil, 1, 1, 1, 0.45)
-        PP.Point(specLabel, "LEFT", profLabel, "LEFT", DD_W + GAP, 0)
-        specLabel:SetText(
-            CludesUI.IS_FOREVER and CludesUI.L("Assign to Class") or CludesUI.L("Assign to Spec")
-        )
-        specLabel:SetJustifyH("LEFT")
+        -- The other two columns: a caption, then a plain button under it.
+        local function Caption(text, anchor, x)
+            local fs = CludesUI.MakeFont(rowFrame, 12, nil, 1, 1, 1, 0.45)
+            PP.Point(fs, "LEFT", anchor, "LEFT", x, 0)
+            fs:SetText(text)
+            fs:SetJustifyH("LEFT")
+            return fs
+        end
+        local function ColumnButton(caption, text, onClick)
+            local btn = CreateFrame("Button", nil, rowFrame)
+            PP.Size(btn, BTN_W, CTRL_H)
+            PP.Point(btn, "TOPLEFT", caption, "BOTTOMLEFT", 0, -6)
+            btn:SetFrameLevel(rowFrame:GetFrameLevel() + 2)
+            CludesUI.MakeStyledButton(btn, text, 11, PROF_BTN_COLOURS, onClick)
+            return btn
+        end
 
-        -- Assign to Spec (Class) button
-        local assignBtn = CreateFrame("Button", nil, rowFrame)
-        PP.Size(assignBtn, BTN_W, CTRL_H)
-        PP.Point(assignBtn, "TOPLEFT", specLabel, "BOTTOMLEFT", 0, -6)
-        assignBtn:SetFrameLevel(rowFrame:GetFrameLevel() + 2)
-        CludesUI.MakeStyledButton(
-            assignBtn,
-            CludesUI.IS_FOREVER and "Assign to Class" or "Assign to Spec",
-            11,
-            PROF_BTN_COLOURS,
-            function()
-                local db = CludesUIDB or {}
-                if not db.specProfiles then
-                    db.specProfiles = {}
-                end
-                local tempDB = { _profileSpecs = {} }
-                local order, profiles = CludesUI.GetProfileList()
-                for _, pName in ipairs(order) do
-                    tempDB._profileSpecs[pName] = {}
-                end
-                for specID, pName in pairs(db.specProfiles) do
-                    if tempDB._profileSpecs[pName] then
-                        tempDB._profileSpecs[pName][specID] = true
-                    end
-                end
-                local curActiveName = CludesUI.GetActiveProfileName()
-                CludesUI:ShowSpecAssignPopup({
-                    db = tempDB,
-                    dbKey = "_profileSpecs",
-                    presetKey = curActiveName,
-                    allPresetKeys = function()
-                        local list = {}
-                        for _, n in ipairs(order) do
-                            if profiles[n] then
-                                list[#list + 1] = { key = n, name = n }
-                            end
-                        end
-                        return list
-                    end,
-                    onDone = function()
-                        db.specProfiles = {}
-                        for pName, specSet in pairs(tempDB._profileSpecs) do
-                            for specID in pairs(specSet) do
-                                db.specProfiles[specID] = pName
-                            end
-                        end
-                        CludesUI:RefreshPage()
-                    end,
-                })
+        -- Assign to Spec (Assign to Class on WoW Forever, which has no specs:
+        -- the popup lists one row per class there). The popup edits each
+        -- profile's set of specs; the account keeps spec -> profile.
+        local function OpenSpecAssign()
+            local db = CludesUIDB or {}
+            db.specProfiles = db.specProfiles or {}
+            local order, profiles = CludesUI.GetProfileList()
+            local specsOf = {}
+            for _, name in ipairs(order) do
+                specsOf[name] = {}
             end
+            for specID, name in pairs(db.specProfiles) do
+                if specsOf[name] then
+                    specsOf[name][specID] = true
+                end
+            end
+            local tempDB = { _profileSpecs = specsOf }
+            CludesUI:ShowSpecAssignPopup({
+                db = tempDB,
+                dbKey = "_profileSpecs",
+                presetKey = CludesUI.GetActiveProfileName(),
+                allPresetKeys = function()
+                    local list = {}
+                    for _, name in ipairs(order) do
+                        if profiles[name] then
+                            list[#list + 1] = { key = name, name = name }
+                        end
+                    end
+                    return list
+                end,
+                onDone = function()
+                    db.specProfiles = {}
+                    for name, specSet in pairs(tempDB._profileSpecs) do
+                        for specID in pairs(specSet) do
+                            db.specProfiles[specID] = name
+                        end
+                    end
+                    CludesUI:RefreshPage()
+                end,
+            })
+        end
+        local forever = CludesUI.IS_FOREVER
+        local specLabel = Caption(
+            forever and CludesUI.L("Assign to Class") or CludesUI.L("Assign to Spec"),
+            profLabel,
+            DD_W + GAP
         )
+        ColumnButton(specLabel, forever and "Assign to Class" or "Assign to Spec", OpenSpecAssign)
 
-        -- "New Profile" label
-        local newLabel = CludesUI.MakeFont(rowFrame, 12, nil, 1, 1, 1, 0.45)
-        PP.Point(newLabel, "LEFT", specLabel, "LEFT", BTN_W + GAP, 0)
-        newLabel:SetText(CludesUI.L("New Profile"))
-        newLabel:SetJustifyH("LEFT")
-
-        -- "Create New (Copy)" button
-        local copyBtn = CreateFrame("Button", nil, rowFrame)
-        PP.Size(copyBtn, BTN_W, CTRL_H)
-        PP.Point(copyBtn, "TOPLEFT", newLabel, "BOTTOMLEFT", 0, -6)
-        copyBtn:SetFrameLevel(rowFrame:GetFrameLevel() + 2)
-        CludesUI.MakeStyledButton(copyBtn, "Create New (Copy)", 11, PROF_BTN_COLOURS, function()
+        -- New Profile: a copy of the current one under a new name, then a
+        -- reload that switches to it (the copy is the reload's pre-work).
+        local function CopyProfile(name)
+            name = name and strtrim(name) or ""
+            if name == "" then
+                return
+            end
+            local _, profiles = CludesUI.GetProfileList()
+            if profiles and profiles[name] then
+                CludesUI:ShowConfirmPopup({
+                    title = CludesUI.L("Name Taken"),
+                    message = CludesUI.Lf(
+                        'A profile named "%1$s" already exists. Please choose a different name.',
+                        name
+                    ),
+                    confirmText = CludesUI.L("OK"),
+                    hideCancel = true,
+                    onConfirm = function() end,
+                })
+                return
+            end
+            CludesUI.RequestReload(
+                CludesUI.L("Copy Profile"),
+                CludesUI.L("Reload to finish switching to the new profile."),
+                function()
+                    CludesUI.SaveCurrentAsProfile(name)
+                end
+            )
+        end
+        local newLabel = Caption(CludesUI.L("New Profile"), specLabel, BTN_W + GAP)
+        ColumnButton(newLabel, "Create New (Copy)", function()
             CludesUI:ShowInputPopup({
                 title = CludesUI.L("Copy Profile"),
                 message = CludesUI.L("Enter a name for the new profile:"),
                 placeholder = CludesUI.L("My Profile"),
                 confirmText = CludesUI.L("Save"),
                 cancelText = CludesUI.L("Cancel"),
-                onConfirm = function(name)
-                    name = name and strtrim(name) or ""
-                    if name == "" then
-                        return
-                    end
-                    local _, profiles = CludesUI.GetProfileList()
-                    if profiles and profiles[name] then
-                        CludesUI:ShowConfirmPopup({
-                            title = CludesUI.L("Name Taken"),
-                            message = CludesUI.Lf(
-                                'A profile named "%1$s" already exists. Please choose a different name.',
-                                name
-                            ),
-                            confirmText = CludesUI.L("OK"),
-                            hideCancel = true,
-                            onConfirm = function() end,
-                        })
-                        return
-                    end
-                    -- The reload first, then the copy and the switch to it
-                    -- as its pre-reload work.
-                    CludesUI.RequestReload(
-                        CludesUI.L("Copy Profile"),
-                        CludesUI.L("Reload to finish switching to the new profile."),
-                        function()
-                            CludesUI.SaveCurrentAsProfile(name)
-                        end
-                    )
-                end,
+                onConfirm = CopyProfile,
             })
         end)
 
