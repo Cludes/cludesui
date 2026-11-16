@@ -114,7 +114,7 @@ The spells your trainer has for you right now with their total price, then what 
 
 ### PvP
 
-`/cpvp`: enemy players around you with alerts and stealth warnings, Kill on Sight with reasons, the last hour, an ignore list, statistics with your wins and losses, sharing with your group and guild, a Kill on Sight button on the target frame, a watch list, a combat map, Local Defense announcements and zones to stay off in. While it is on, enemy nameplates reach 60 yards so players show up sooner.
+`/cpvp`: enemy players around you with alerts and stealth warnings, Kill on Sight with reasons, the last hour, an ignore list, statistics with your wins and losses, sharing with your group and guild, a Kill on Sight button on the target frame, a watch list, a combat map, Local Defense announcements and zones to stay off in. While it is on, enemy nameplates reach 60 yards so players show up sooner. An enemy player whose level the game hides as ?? shows the level PvP has seen or been sent, on unit frames, nameplates and tooltips (Known Levels Instead of ??).
 
 ## Profiles
 
