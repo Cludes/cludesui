@@ -1054,8 +1054,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             or (mod._myRacialsSet and mod._myRacialsSet[sid2])
                             or (bsX.customSpellIDs and bsX.customSpellIDs[sid2])
                         )
-                            -- Hosted-buff markers are reparented Blizzard buff frames,
-                            -- not preset icons -- never mint cas entries for them.
+                            -- Hosted-buff markers are reparented Blizzard buff frames,
+                            -- not preset icons -- never mint cas entries for them.
                             and not (mod.HostedBuffMarkerToSpell and mod.HostedBuffMarkerToSpell(sid2))
                         if isInj then
                             if mod.SlotIDFromKey(sid2) then
@@ -6701,48 +6701,32 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 then
                     local repSID = rawget(ss, "replaceBuffID")
                     local repName = repSID and C_Spell.GetSpellName(repSID)
-                    local rbRow = CreateFrame("Button", nil, inner)
-                    rbRow:SetHeight(ITEM_H)
-                    rbRow:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-                    rbRow:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-                    rbRow:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                    local rbLbl = rbRow:CreateFontString(nil, "OVERLAY")
-                    rbLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                    rbLbl:SetPoint("LEFT", 10, 0)
-                    rbLbl:SetPoint("RIGHT", -10, 0)
-                    rbLbl:SetJustifyH("LEFT")
-                    rbLbl:SetWordWrap(false)
-                    rbLbl:SetMaxLines(1)
-                    rbLbl:SetText(CludesUI.L("Replace with Buff") .. ": " .. (repName or CludesUI.L("None")))
-                    rbLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                    local rbHl = rbRow:CreateTexture(nil, "ARTWORK")
-                    rbHl:SetAllPoints()
-                    rbHl:SetColorTexture(1, 1, 1, 0)
-                    rbHl:SetAlpha(0)
-                    rbRow:SetScript("OnEnter", function()
-                        rbLbl:SetTextColor(1, 1, 1, 1)
-                        rbHl:SetColorTexture(1, 1, 1, hlA)
-                        rbHl:SetAlpha(1)
-                        CludesUI.ShowWidgetTooltip(
-                            rbRow,
-                            CludesUI.L("Show a tracked buff in this slot while it is active.")
-                        )
-                    end)
-                    rbRow:SetScript("OnLeave", function()
-                        rbLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                        rbHl:SetAlpha(0)
-                        CludesUI.HideWidgetTooltip()
-                    end)
-                    rbRow:SetScript("OnClick", function()
-                        CludesUI.HideWidgetTooltip()
-                        dropMenu:Hide()
-                        ShowBuffToCDPicker(rbRow, barId, nil, function(buffSID, buffCdID)
-                            if mod.SetCooldownBuffReplacement then
-                                mod.SetCooldownBuffReplacement(barId, spellId, buffSID, buffCdID)
-                            end
-                            RefreshCDPreview()
-                        end)
-                    end)
+                    local rbRow
+                    rbRow = PlainMenuRow(
+                        dropMenu,
+                        inner,
+                        mH,
+                        ITEM_H,
+                        CludesUI.L("Replace with Buff") .. ": " .. (repName or CludesUI.L("None")),
+                        { FONT_PATH, 11, GetCDMOptOutline() },
+                        { tDimR, tDimG, tDimB, tDimA },
+                        hlA,
+                        function()
+                            CludesUI.HideWidgetTooltip()
+                            dropMenu:Hide()
+                            ShowBuffToCDPicker(rbRow, barId, nil, function(buffSID, buffCdID)
+                                if mod.SetCooldownBuffReplacement then
+                                    mod.SetCooldownBuffReplacement(barId, spellId, buffSID, buffCdID)
+                                end
+                                RefreshCDPreview()
+                            end)
+                        end,
+                        {
+                            keepSub = true,
+                            fit = true,
+                            tip = CludesUI.L("Show a tracked buff in this slot while it is active."),
+                        }
+                    )
                     mH = mH + ITEM_H
                 end
 
@@ -6773,144 +6757,110 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 -- (both families); skipped for preset/item entries (negative ids -- their settings live in customActiveStates, which nothing reads customIcon from). Popup flow closes the menu, matching Lower Alpha.
                 if not (type(spellId) == "number" and spellId < 0) then
                     local hasCI = type(rawget(ss, "customIcon")) == "number"
-                    local ciRow = CreateFrame("Button", nil, inner)
-                    ciRow:SetHeight(ITEM_H)
-                    ciRow:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-                    ciRow:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-                    ciRow:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                    local ciLbl = ciRow:CreateFontString(nil, "OVERLAY")
-                    ciLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                    ciLbl:SetPoint("LEFT", 10, 0)
-                    ciLbl:SetJustifyH("LEFT")
-                    ciLbl:SetText(CludesUI.L(hasCI and "Edit Custom Icon" or "Add Custom Icon"))
-                    ciLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                    local ciHl = ciRow:CreateTexture(nil, "ARTWORK")
-                    ciHl:SetAllPoints()
-                    ciHl:SetColorTexture(1, 1, 1, 0)
-                    ciHl:SetAlpha(0)
-                    ciRow:SetScript("OnEnter", function()
-                        ciLbl:SetTextColor(1, 1, 1, 1)
-                        ciHl:SetColorTexture(1, 1, 1, hlA)
-                        ciHl:SetAlpha(1)
-                        if dropMenu._openSub and dropMenu._openSub:IsShown() then
-                            dropMenu._openSub:Hide()
+                    PlainMenuRow(
+                        dropMenu,
+                        inner,
+                        mH,
+                        ITEM_H,
+                        CludesUI.L(hasCI and "Edit Custom Icon" or "Add Custom Icon"),
+                        { FONT_PATH, 11, GetCDMOptOutline() },
+                        { tDimR, tDimG, tDimB, tDimA },
+                        hlA,
+                        function()
+                            -- Close the per-spell dropdown so only the popup shows.
+                            dropMenu:Hide()
+                            mod.ShowCDMCustomIconPopup(rawget(ss, "customIcon"), function(ident)
+                                EnsureSS()
+                                ss.customIcon = ident
+                                if ident then
+                                    -- Live-arm the session gate (monotonic; the login rescan covers already-saved settings).
+                                    mod._cdmAnyCustomIcon = true
+                                end
+                                -- Stamp/restore on every claimed frame now: DecorateFrame runs from
+                                -- the reanchor pass (the only re-style path for the default Essential/Utility bars).
+                                if mod.QueueReanchor then
+                                    mod.QueueReanchor()
+                                end
+                                -- Aura-tracked custom buffs render in an engine container the
+                                -- reanchor never reaches; their sync pass rebuilds it when the
+                                -- icon changes (a signature no-op for every other bar).
+                                if mod.UpdateCustomBuffAuraTracking then
+                                    mod.UpdateCustomBuffAuraTracking()
+                                end
+                            end)
                         end
-                    end)
-                    ciRow:SetScript("OnLeave", function()
-                        ciLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                        ciHl:SetAlpha(0)
-                    end)
-                    ciRow:SetScript("OnClick", function()
-                        -- Close the per-spell dropdown so only the popup shows.
-                        dropMenu:Hide()
-                        mod.ShowCDMCustomIconPopup(rawget(ss, "customIcon"), function(ident)
-                            EnsureSS()
-                            ss.customIcon = ident
-                            if ident then
-                                -- Live-arm the session gate (monotonic; the login rescan covers already-saved settings).
-                                mod._cdmAnyCustomIcon = true
-                            end
-                            -- Stamp/restore on every claimed frame now: DecorateFrame runs from
-                            -- the reanchor pass (the only re-style path for the default Essential/Utility bars).
-                            if mod.QueueReanchor then
-                                mod.QueueReanchor()
-                            end
-                            -- Aura-tracked custom buffs render in an engine container the
-                            -- reanchor never reaches; their sync pass rebuilds it when the
-                            -- icon changes (a signature no-op for every other bar).
-                            if mod.UpdateCustomBuffAuraTracking then
-                                mod.UpdateCustomBuffAuraTracking()
-                            end
-                        end)
-                    end)
+                    )
                     mH = mH + ITEM_H
                 end
 
                 -- Copy to Other Specs (user Custom Spell/Buff IDs only, gated on the
                 -- customSpellIDs tag -- racials/trinkets/presets never show it). At the
                 -- COMMON rejoin point so it appears for custom IDs on any bar type. One-time
-                -- copy of the spell + its per-spell settings onto the SAME bar in the picked specs; specs that already have it anywhere are skipped. Self-contained row (MakeActionRow helpers are out of scope).
+                -- copy of the spell + its per-spell settings onto the SAME bar in the picked specs; specs that already have it anywhere are skipped.
                 if sd.customSpellIDs and sd.customSpellIDs[spellId] then
                     -- Label flips to Remove once the spell lives on other specs.
                     local otherSpecs = (mod.SpecsWithCustomSpell and mod.SpecsWithCustomSpell(spellId)) or {}
                     local isRemove = next(otherSpecs) ~= nil
-                    local copyRow = CreateFrame("Button", nil, inner)
-                    copyRow:SetHeight(ITEM_H)
-                    copyRow:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-                    copyRow:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-                    copyRow:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                    local crLbl = copyRow:CreateFontString(nil, "OVERLAY")
-                    crLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                    crLbl:SetPoint("LEFT", 10, 0)
-                    crLbl:SetJustifyH("LEFT")
-                    crLbl:SetText(CludesUI.L(isRemove and "Remove from Other Specs" or "Copy to Other Specs"))
-                    crLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                    local crHl = copyRow:CreateTexture(nil, "ARTWORK")
-                    crHl:SetAllPoints()
-                    crHl:SetColorTexture(1, 1, 1, 0)
-                    crHl:SetAlpha(0)
-                    copyRow:SetScript("OnEnter", function()
-                        crLbl:SetTextColor(1, 1, 1, 1)
-                        crHl:SetColorTexture(1, 1, 1, hlA)
-                        crHl:SetAlpha(1)
-                        if dropMenu._openSub and dropMenu._openSub:IsShown() then
-                            dropMenu._openSub:Hide()
-                        end
-                    end)
-                    copyRow:SetScript("OnLeave", function()
-                        crLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                        crHl:SetAlpha(0)
-                    end)
-                    copyRow:SetScript("OnClick", function()
-                        dropMenu:Hide()
-                        local specs = (mod.GetCDMSpecInfo and mod.GetCDMSpecInfo()) or {}
-                        local curKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
-                        if isRemove then
-                            -- Remove picker: only specs that HAVE the spell are pre-checked +
-                            -- selectable; the rest (and current) are disabled. Confirm removes from the checked specs.
-                            local disabled = {}
-                            for _, s in ipairs(specs) do
-                                s.checked = otherSpecs[s.key] and true or false
-                                if s.key == curKey then
-                                    disabled[s.key] = "You're on this spec."
-                                elseif not otherSpecs[s.key] then
-                                    disabled[s.key] = "This spec doesn't have this spell."
+                    PlainMenuRow(
+                        dropMenu,
+                        inner,
+                        mH,
+                        ITEM_H,
+                        CludesUI.L(isRemove and "Remove from Other Specs" or "Copy to Other Specs"),
+                        { FONT_PATH, 11, GetCDMOptOutline() },
+                        { tDimR, tDimG, tDimB, tDimA },
+                        hlA,
+                        function()
+                            dropMenu:Hide()
+                            local specs = (mod.GetCDMSpecInfo and mod.GetCDMSpecInfo()) or {}
+                            local curKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
+                            if isRemove then
+                                -- Remove picker: only specs that HAVE the spell are pre-checked +
+                                -- selectable; the rest (and current) are disabled. Confirm removes from the checked specs.
+                                local disabled = {}
+                                for _, s in ipairs(specs) do
+                                    s.checked = otherSpecs[s.key] and true or false
+                                    if s.key == curKey then
+                                        disabled[s.key] = "You're on this spec."
+                                    elseif not otherSpecs[s.key] then
+                                        disabled[s.key] = "This spec doesn't have this spell."
+                                    end
                                 end
+                                CludesUI:ShowCDMSpecPickerPopup({
+                                    title = "Remove from Other Specs",
+                                    subtitle = "Uncheck a spec to keep it. Confirm removes this custom spell and its settings from the checked specs.",
+                                    confirmText = "Remove",
+                                    specs = specs,
+                                    disabledSpecs = disabled,
+                                    foreverAllKeys = true,
+                                    foreverActiveKey = curKey,
+                                    onConfirm = function(selectedSpecs)
+                                        if mod.RemoveCustomSpellFromSpecs then
+                                            mod.RemoveCustomSpellFromSpecs(spellId, selectedSpecs)
+                                        end
+                                    end,
+                                })
+                            else
+                                local disabled
+                                if curKey then
+                                    disabled = { [curKey] = "You're on this spec." }
+                                end
+                                CludesUI:ShowCDMSpecPickerPopup({
+                                    title = "Copy to Other Specs",
+                                    subtitle = "Copies this custom spell and its settings to the same bar on the specs you pick. Specs that already have it are skipped.",
+                                    confirmText = "Copy",
+                                    specs = specs,
+                                    disabledSpecs = disabled,
+                                    foreverActiveKey = curKey,
+                                    onConfirm = function(selectedSpecs)
+                                        if mod.CopyCustomSpellToSpecs then
+                                            mod.CopyCustomSpellToSpecs(barId, spellId, selectedSpecs)
+                                        end
+                                    end,
+                                })
                             end
-                            CludesUI:ShowCDMSpecPickerPopup({
-                                title = "Remove from Other Specs",
-                                subtitle = "Uncheck a spec to keep it. Confirm removes this custom spell and its settings from the checked specs.",
-                                confirmText = "Remove",
-                                specs = specs,
-                                disabledSpecs = disabled,
-                                foreverAllKeys = true,
-                                foreverActiveKey = curKey,
-                                onConfirm = function(selectedSpecs)
-                                    if mod.RemoveCustomSpellFromSpecs then
-                                        mod.RemoveCustomSpellFromSpecs(spellId, selectedSpecs)
-                                    end
-                                end,
-                            })
-                        else
-                            local disabled
-                            if curKey then
-                                disabled = { [curKey] = "You're on this spec." }
-                            end
-                            CludesUI:ShowCDMSpecPickerPopup({
-                                title = "Copy to Other Specs",
-                                subtitle = "Copies this custom spell and its settings to the same bar on the specs you pick. Specs that already have it are skipped.",
-                                confirmText = "Copy",
-                                specs = specs,
-                                disabledSpecs = disabled,
-                                foreverActiveKey = curKey,
-                                onConfirm = function(selectedSpecs)
-                                    if mod.CopyCustomSpellToSpecs then
-                                        mod.CopyCustomSpellToSpecs(barId, spellId, selectedSpecs)
-                                    end
-                                end,
-                            })
                         end
-                    end)
+                    )
                     mH = mH + ITEM_H
                 end
             end
