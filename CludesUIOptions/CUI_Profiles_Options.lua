@@ -107,6 +107,29 @@ end
 local SIDE_PAD, ROW_H_A, CHK_SZ, STATUS_W = 26, 48, 18, 70
 local INCLUDE_CENTER_X = -(SIDE_PAD + STATUS_W + 30 + CHK_SZ / 2)
 
+-- The one-line description under each module's name in the Import and
+-- Export lists.
+local ADDON_DESCS = {
+    CludesUIActionBars = "Modern action bars built for performance and clarity.",
+    CludesUINameplates = "Clean, lightweight nameplates with endless customization.",
+    CludesUIUnitFrames = "Simple unit frames with a modern visual style.",
+    CludesUICooldownManager = "A CDM replacement focused on performance, customizations and alerts.",
+    CludesUIResourceBars = "Custom Resource Bars with thresholds, hash lines and more.",
+    CludesUIRaidFrames = "Incredibly light performance, modern raid and party frames with endless flexibility.",
+    CludesUIAuraBuffReminders = "Simple raid buff, auras, consumables and talent reminders.",
+    CludesUIQoL = "Lightweight quality of life tools and enhancements.",
+    CludesUIDragonRiding = "Skyriding HUD with speed, vigor and second wind tracking.",
+    CludesUIBlizzardSkin = "Clean and beautiful visual refreshes for Blizzard UI elements.",
+    CludesUIFriends = "A modern friends list with built-in organization tools.",
+    CludesUIMythicTimer = "Mythic+ timer, targeted spell bars, and standalone cast bars.",
+    CludesUIQuestTracker = "A clean, updated reskin of Blizzard's Quest Tracker.",
+    CludesUIMinimap = "A new age minimap with clean styling and square layout options.",
+    CludesUIDamageMeters = "Lightweight damage meters with simple but powerful customization.",
+    CludesUIChat = "Modern chat enhancements with useful utilities.",
+    CludesUIBags = "A beautiful visual refresh of Blizzard Bags with intuitive organization.",
+    CludesUIQuickdraw = "Hold a key to open a menu of actions; point or scroll to choose, release to fire.",
+}
+
 -- A texture drawn at its exact size (no snapping to the pixel grid).
 local function Unsnapped(tex)
     if tex.SetSnapToPixelGrid then
@@ -667,6 +690,164 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         return BACK_H
     end
 
+    -- The module list card of the Import and Export sections: a rounded card
+    -- the height of the whole section (its footer included), a header with
+    -- the title, the description and Select All / Deselect All, the column
+    -- titles, and the module rows scrolling under them. cfg: title, desc,
+    -- items, footerH, pickable(item) (what Select All picks), refreshAll()
+    -- (every row and the count), visuals, row(item) -> that row's
+    -- BuildAddonListRow options. Returns the y below the list.
+    local function ModuleListCard(host, pad, top, totalW, cfg)
+        local HDR_H, COL_HDR_H, SCROLL_MAX_H = 72, 28, 285
+        local items = cfg.items
+        local contentH = #items * ROW_H_A
+        local scrollH = math.min(contentH, SCROLL_MAX_H)
+        local y = top
+
+        local card = CreateFrame("Frame", nil, host)
+        card:SetFrameLevel(host:GetFrameLevel())
+        PP.Size(card, totalW, HDR_H + COL_HDR_H + scrollH + 8 + cfg.footerH)
+        PP.Point(card, "TOPLEFT", host, "TOPLEFT", pad, y)
+        card:EnableMouse(false)
+        CludesUI.MakeRoundedCard(card, 0.10, 0.50)
+
+        local hdrFrame = CreateFrame("Frame", nil, host)
+        PP.Size(hdrFrame, totalW, HDR_H)
+        PP.Point(hdrFrame, "TOPLEFT", host, "TOPLEFT", pad, y)
+        local hdrTitle = CludesUI.MakeFont(hdrFrame, 14, nil, 1, 1, 1, 0.9)
+        PP.Point(hdrTitle, "TOPLEFT", hdrFrame, "TOPLEFT", SIDE_PAD, -20)
+        hdrTitle:SetText(CludesUI.L(cfg.title))
+        hdrTitle:SetJustifyH("LEFT")
+        local hdrDesc = CludesUI.MakeFont(hdrFrame, 11, nil, 1, 1, 1, 0.35)
+        PP.Point(hdrDesc, "TOPLEFT", hdrTitle, "BOTTOMLEFT", 0, -9)
+        PP.Point(hdrDesc, "RIGHT", hdrFrame, "RIGHT", -(160 + SIDE_PAD), 0)
+        hdrDesc:SetText(CludesUI.L(cfg.desc))
+        hdrDesc:SetJustifyH("LEFT")
+        hdrDesc:SetWordWrap(true)
+        local hdrDiv = hdrFrame:CreateTexture(nil, "ARTWORK")
+        hdrDiv:SetColorTexture(1, 1, 1, 0.10)
+        hdrDiv:SetHeight(1)
+        PP.Point(hdrDiv, "BOTTOMLEFT", hdrFrame, "BOTTOMLEFT", SIDE_PAD, 0)
+        PP.Point(hdrDiv, "BOTTOMRIGHT", hdrFrame, "BOTTOMRIGHT", -SIDE_PAD, 0)
+        Unsnapped(hdrDiv)
+
+        -- Select All (accent while everything pickable is in) | Deselect All.
+        local LINK_GAP = 12
+        local function Link(text)
+            local btn = CreateFrame("Button", nil, hdrFrame)
+            btn:SetFrameLevel(hdrFrame:GetFrameLevel() + 2)
+            local lbl = btn:CreateFontString(nil, "OVERLAY")
+            lbl:SetFont(FONT, 12, CludesUI.GetFontOutlineFlag())
+            lbl:SetText(CludesUI.L(text))
+            lbl:SetTextColor(1, 1, 1, 0.40)
+            lbl:SetPoint("CENTER")
+            btn:SetSize(lbl:GetStringWidth() + 4, 18)
+            return btn, lbl
+        end
+        local selAllBtn, selAllLbl = Link("Select All")
+        selAllBtn:SetPoint("RIGHT", hdrFrame, "RIGHT", -(STATUS_W + LINK_GAP + SIDE_PAD), 0)
+        selAllBtn:SetPoint("TOP", hdrDesc, "TOP", 0, 0)
+        local function AllIn()
+            for _, item in ipairs(items) do
+                if cfg.pickable(item) and not item.getVal() then
+                    return false
+                end
+            end
+            return true
+        end
+        local function PaintSelectAll(hot)
+            if AllIn() then
+                selAllLbl:SetTextColor(EG.r, EG.g, EG.b, hot and 1 or 0.7)
+            else
+                selAllLbl:SetTextColor(1, 1, 1, hot and 0.80 or 0.40)
+            end
+        end
+        local function Refresh()
+            cfg.refreshAll()
+            PaintSelectAll(false)
+        end
+        selAllBtn:SetScript("OnEnter", function()
+            PaintSelectAll(true)
+        end)
+        selAllBtn:SetScript("OnLeave", function()
+            PaintSelectAll(false)
+        end)
+        selAllBtn:SetScript("OnClick", function()
+            for _, item in ipairs(items) do
+                if cfg.pickable(item) then
+                    item.setVal(true)
+                end
+            end
+            Refresh()
+        end)
+        PaintSelectAll(false)
+        local linkDiv = hdrFrame:CreateTexture(nil, "OVERLAY", nil, 7)
+        linkDiv:SetColorTexture(1, 1, 1, 0.15)
+        Unsnapped(linkDiv)
+        PP.Point(linkDiv, "LEFT", selAllBtn, "RIGHT", LINK_GAP / 2, 0)
+        linkDiv:SetWidth(1)
+        linkDiv:SetHeight(10)
+        local deselBtn, deselLbl = Link("Deselect All")
+        PP.Point(deselBtn, "LEFT", selAllBtn, "RIGHT", LINK_GAP, 0)
+        deselBtn:SetScript("OnEnter", function()
+            deselLbl:SetTextColor(1, 1, 1, 0.80)
+        end)
+        deselBtn:SetScript("OnLeave", function()
+            deselLbl:SetTextColor(1, 1, 1, 0.40)
+        end)
+        deselBtn:SetScript("OnClick", function()
+            for _, item in ipairs(items) do
+                item.setVal(false)
+            end
+            Refresh()
+        end)
+        y = y - HDR_H
+
+        -- Column titles over the name, the Include box and the status.
+        local colHdrFrame = CreateFrame("Frame", nil, host)
+        PP.Size(colHdrFrame, totalW, COL_HDR_H)
+        PP.Point(colHdrFrame, "TOPLEFT", host, "TOPLEFT", pad, y)
+        for _, col in ipairs({
+            { "Addon", "LEFT", "LEFT", SIDE_PAD },
+            { "Status", "RIGHT", "RIGHT", -SIDE_PAD },
+            { "Include", "CENTER", "RIGHT", INCLUDE_CENTER_X },
+        }) do
+            local fs = CludesUI.MakeFont(colHdrFrame, 11, nil, 1, 1, 1, 0.40)
+            PP.Point(fs, col[2], colHdrFrame, col[3], col[4], 0)
+            fs:SetText(CludesUI.L(col[1]))
+            fs:SetJustifyH(col[2])
+        end
+        y = y - COL_HDR_H
+
+        -- The rows, clipped to SCROLL_MAX_H and wheel-scrolled a row at a time.
+        local scrollClip = CreateFrame("Frame", nil, host)
+        PP.Size(scrollClip, totalW, scrollH)
+        PP.Point(scrollClip, "TOPLEFT", host, "TOPLEFT", pad, y)
+        scrollClip:SetClipsChildren(true)
+        local scroller = CreateFrame("ScrollFrame", nil, scrollClip)
+        scroller:SetAllPoints()
+        local scrollChild = CreateFrame("Frame", nil, scroller)
+        scrollChild:SetSize(totalW, contentH)
+        scroller:SetScrollChild(scrollChild)
+        local offset = 0
+        scrollClip:EnableMouseWheel(true)
+        scrollClip:SetScript("OnMouseWheel", function(_, delta)
+            if CludesUI._ShiftWheelScale(delta) then
+                return
+            end
+            offset = math.max(0, math.min(math.max(0, contentH - scrollH), offset - delta * ROW_H_A))
+            scroller:SetVerticalScroll(offset)
+        end)
+        for i, item in ipairs(items) do
+            local o = cfg.row(item)
+            o.visuals = cfg.visuals
+            -- Linked modules toggle together, so every row repaints.
+            o.onToggle = Refresh
+            BuildAddonListRow(scrollChild, i, item, totalW, o)
+        end
+        return y - scrollH
+    end
+
     -------------------------------------------------------------------
     --  IMPORT PAGE BUILDER (shared by presets + import profile)
     -------------------------------------------------------------------
@@ -706,32 +887,9 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         local ADDON_DB_MAP_LOCAL = CludesUI.VisibleProfileAddons(CludesUI._ADDON_DB_MAP)
         local PAD = CludesUI.CONTENT_PAD
         local totalW = importPage:GetWidth() - PAD * 2
-        local HDR_H = 72
-        local COL_HDR_H = 28
         -- The optional Auto Assign toggle stacks below the count row.
         local nFooterStack = (hasSpecAssign and 1 or 0)
         local FOOTER_H = 50 + nFooterStack * 24
-
-        local ADDON_DESCS = {
-            CludesUIActionBars = "Modern action bars built for performance and clarity.",
-            CludesUINameplates = "Clean, lightweight nameplates with endless customization.",
-            CludesUIUnitFrames = "Simple unit frames with a modern visual style.",
-            CludesUICooldownManager = "A CDM replacement focused on performance, customizations and alerts.",
-            CludesUIResourceBars = "Custom Resource Bars with thresholds, hash lines and more.",
-            CludesUIRaidFrames = "Incredibly light performance, modern raid and party frames with endless flexibility.",
-            CludesUIAuraBuffReminders = "Simple raid buff, auras, consumables and talent reminders.",
-            CludesUIQoL = "Lightweight quality of life tools and enhancements.",
-            CludesUIDragonRiding = "Skyriding HUD with speed, vigor and second wind tracking.",
-            CludesUIBlizzardSkin = "Clean and beautiful visual refreshes for Blizzard UI elements.",
-            CludesUIFriends = "A modern friends list with built-in organization tools.",
-            CludesUIMythicTimer = "Mythic+ timer, targeted spell bars, and standalone cast bars.",
-            CludesUIQuestTracker = "A clean, updated reskin of Blizzard's Quest Tracker.",
-            CludesUIMinimap = "A new age minimap with clean styling and square layout options.",
-            CludesUIDamageMeters = "Lightweight damage meters with simple but powerful customization.",
-            CludesUIChat = "Modern chat enhancements with useful utilities.",
-            CludesUIBags = "A beautiful visual refresh of Blizzard Bags with intuitive organization.",
-            CludesUIQuickdraw = "Hold a key to open a menu of actions; point or scroll to choose, release to fire.",
-        }
 
         local iy = -30
 
@@ -938,209 +1096,36 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             RefreshImportCount()
         end
 
-        local SCROLL_MAX_H = 285
-        local contentH = #addonItems * ROW_H_A
-        local scrollH = math.min(contentH, SCROLL_MAX_H)
-        local SECTION_H = HDR_H + COL_HDR_H + scrollH + 8 + FOOTER_H
-
-        local sectionBg = CreateFrame("Frame", nil, importPage)
-        sectionBg:SetFrameLevel(importPage:GetFrameLevel())
-        PP.Size(sectionBg, totalW, SECTION_H)
-        PP.Point(sectionBg, "TOPLEFT", importPage, "TOPLEFT", PAD, iy)
-        sectionBg:EnableMouse(false)
-        local sBgTex = CludesUI.MakeRoundedCard(sectionBg, 0.10, 0.50).bg
-
-        local hdrFrame = CreateFrame("Frame", nil, importPage)
-        PP.Size(hdrFrame, totalW, HDR_H)
-        PP.Point(hdrFrame, "TOPLEFT", importPage, "TOPLEFT", PAD, iy)
-
-        local hdrTitle = CludesUI.MakeFont(hdrFrame, 14, nil, 1, 1, 1, 0.9)
-        PP.Point(hdrTitle, "TOPLEFT", hdrFrame, "TOPLEFT", SIDE_PAD, -20)
-        hdrTitle:SetText(CludesUI.L("Import Addons"))
-        hdrTitle:SetJustifyH("LEFT")
-
-        local hdrDesc = CludesUI.MakeFont(hdrFrame, 11, nil, 1, 1, 1, 0.35)
-        PP.Point(hdrDesc, "TOPLEFT", hdrTitle, "BOTTOMLEFT", 0, -9)
-        PP.Point(hdrDesc, "RIGHT", hdrFrame, "RIGHT", -(160 + SIDE_PAD), 0)
-        hdrDesc:SetText(
-            CludesUI.L(
-                "Choose which addons to import. Any addons not included will use your active profile's settings in the new profile."
-            )
-        )
-        hdrDesc:SetJustifyH("LEFT")
-        hdrDesc:SetWordWrap(true)
-
-        local hdrDiv = hdrFrame:CreateTexture(nil, "ARTWORK")
-        hdrDiv:SetColorTexture(1, 1, 1, 0.10)
-        hdrDiv:SetHeight(1)
-        PP.Point(hdrDiv, "BOTTOMLEFT", hdrFrame, "BOTTOMLEFT", SIDE_PAD, 0)
-        PP.Point(hdrDiv, "BOTTOMRIGHT", hdrFrame, "BOTTOMRIGHT", -SIDE_PAD, 0)
-        if hdrDiv.SetSnapToPixelGrid then
-            hdrDiv:SetSnapToPixelGrid(false)
-            hdrDiv:SetTexelSnappingBias(0)
-        end
-
-        do
-            local LINK_GAP = 12
-            local selAllBtn = CreateFrame("Button", nil, hdrFrame)
-            selAllBtn:SetFrameLevel(hdrFrame:GetFrameLevel() + 2)
-            local selAllLbl = selAllBtn:CreateFontString(nil, "OVERLAY")
-            selAllLbl:SetFont(FONT, 12, CludesUI.GetFontOutlineFlag())
-            selAllLbl:SetText(CludesUI.L("Select All"))
-            selAllLbl:SetTextColor(1, 1, 1, 0.40)
-            selAllLbl:SetPoint("CENTER")
-            selAllBtn:SetSize(selAllLbl:GetStringWidth() + 4, 18)
-            selAllBtn:SetPoint("RIGHT", hdrFrame, "RIGHT", -(STATUS_W + LINK_GAP + SIDE_PAD), 0)
-            selAllBtn:SetPoint("TOP", hdrDesc, "TOP", 0, 0)
-
-            local function IAllSelected()
-                for _, item in ipairs(addonItems) do
-                    if item.canImport and not item.getVal() then
-                        return false
-                    end
-                end
-                return true
-            end
-            local function RefreshISelColor()
-                if IAllSelected() then
-                    selAllLbl:SetTextColor(EG.r, EG.g, EG.b, 0.7)
-                else
-                    selAllLbl:SetTextColor(1, 1, 1, 0.40)
-                end
-            end
-
-            local origRefresh = RefreshAllImportVisuals
-            RefreshAllImportVisuals = function()
-                origRefresh()
-                RefreshISelColor()
-            end
-
-            selAllBtn:SetScript("OnEnter", function()
-                if IAllSelected() then
-                    selAllLbl:SetTextColor(EG.r, EG.g, EG.b, 1)
-                else
-                    selAllLbl:SetTextColor(1, 1, 1, 0.80)
-                end
-            end)
-            selAllBtn:SetScript("OnLeave", function()
-                RefreshISelColor()
-            end)
-            selAllBtn:SetScript("OnClick", function()
-                for _, item in ipairs(addonItems) do
-                    if item.canImport then
-                        item.setVal(true)
-                    end
-                end
-                RefreshAllImportVisuals()
-            end)
-            RefreshISelColor()
-
-            local linkDiv = hdrFrame:CreateTexture(nil, "OVERLAY", nil, 7)
-            linkDiv:SetColorTexture(1, 1, 1, 0.15)
-            if linkDiv.SetSnapToPixelGrid then
-                linkDiv:SetSnapToPixelGrid(false)
-                linkDiv:SetTexelSnappingBias(0)
-            end
-            PP.Point(linkDiv, "LEFT", selAllBtn, "RIGHT", LINK_GAP / 2, 0)
-            linkDiv:SetWidth(1)
-            linkDiv:SetHeight(10)
-
-            local deselBtn = CreateFrame("Button", nil, hdrFrame)
-            deselBtn:SetFrameLevel(hdrFrame:GetFrameLevel() + 2)
-            local deselLbl = deselBtn:CreateFontString(nil, "OVERLAY")
-            deselLbl:SetFont(FONT, 12, CludesUI.GetFontOutlineFlag())
-            deselLbl:SetText(CludesUI.L("Deselect All"))
-            deselLbl:SetTextColor(1, 1, 1, 0.40)
-            deselLbl:SetPoint("CENTER")
-            deselBtn:SetSize(deselLbl:GetStringWidth() + 4, 18)
-            PP.Point(deselBtn, "LEFT", selAllBtn, "RIGHT", LINK_GAP, 0)
-            deselBtn:SetScript("OnEnter", function()
-                deselLbl:SetTextColor(1, 1, 1, 0.80)
-            end)
-            deselBtn:SetScript("OnLeave", function()
-                deselLbl:SetTextColor(1, 1, 1, 0.40)
-            end)
-            deselBtn:SetScript("OnClick", function()
-                for _, item in ipairs(addonItems) do
-                    item.setVal(false)
-                end
-                RefreshAllImportVisuals()
-            end)
-        end
-
-        iy = iy - HDR_H
-
-        local colHdrFrame = CreateFrame("Frame", nil, importPage)
-        PP.Size(colHdrFrame, totalW, COL_HDR_H)
-        PP.Point(colHdrFrame, "TOPLEFT", importPage, "TOPLEFT", PAD, iy)
-
-        local colAddon = CludesUI.MakeFont(colHdrFrame, 11, nil, 1, 1, 1, 0.40)
-        PP.Point(colAddon, "LEFT", colHdrFrame, "LEFT", SIDE_PAD, 0)
-        colAddon:SetText(CludesUI.L("Addon"))
-        colAddon:SetJustifyH("LEFT")
-
-        local colStatus = CludesUI.MakeFont(colHdrFrame, 11, nil, 1, 1, 1, 0.40)
-        PP.Point(colStatus, "RIGHT", colHdrFrame, "RIGHT", -SIDE_PAD, 0)
-        colStatus:SetText(CludesUI.L("Status"))
-        colStatus:SetJustifyH("RIGHT")
-
-        local colInclude = CludesUI.MakeFont(colHdrFrame, 11, nil, 1, 1, 1, 0.40)
-        PP.Point(colInclude, "CENTER", colHdrFrame, "RIGHT", INCLUDE_CENTER_X, 0)
-        colInclude:SetText(CludesUI.L("Include"))
-        colInclude:SetJustifyH("CENTER")
-
-        iy = iy - COL_HDR_H
-
-        -- Scrollable addon list
-        local scrollClip = CreateFrame("Frame", nil, importPage)
-        PP.Size(scrollClip, totalW, scrollH)
-        PP.Point(scrollClip, "TOPLEFT", importPage, "TOPLEFT", PAD, iy)
-        scrollClip:SetClipsChildren(true)
-
-        local scrollFr = CreateFrame("ScrollFrame", nil, scrollClip)
-        scrollFr:SetAllPoints()
-
-        local scrollChild = CreateFrame("Frame", nil, scrollFr)
-        scrollChild:SetSize(totalW, contentH)
-        scrollFr:SetScrollChild(scrollChild)
-
-        local scrollOffset = 0
-        scrollClip:EnableMouseWheel(true)
-        scrollClip:SetScript("OnMouseWheel", function(_, delta)
-            if CludesUI._ShiftWheelScale(delta) then
-                return
-            end
-            local maxScroll = math.max(0, contentH - scrollH)
-            scrollOffset = math.max(0, math.min(maxScroll, scrollOffset - delta * ROW_H_A))
-            scrollFr:SetVerticalScroll(scrollOffset)
-        end)
-
-        -- Addon rows
-        for i, item in ipairs(addonItems) do
-            BuildAddonListRow(scrollChild, i, item, totalW, {
-                active = item.canImport,
-                inactiveText = item.inPayload and CludesUI.L("Not Loaded") or CludesUI.L("Not Included"),
-                inactiveColor = item.inPayload and { 1, 1, 1, 0.25 } or { 0.9, 0.2, 0.2, 0.7 },
-                visuals = importVisuals,
-                onToggle = function(apply)
-                    apply()
-                    RefreshAllImportVisuals()
-                end,
-                linked = function()
-                    return includeLayoutImport and importComponents and importComponents[item.canon],
-                        item.canon,
-                        CANON_DISPLAY
-                end,
-                linkedTip = function(list)
-                    return CludesUI.Lf(
-                        "Linked by Anchor/Width/Height Matching to: %1$s. These import together.",
-                        list
-                    )
-                end,
-            })
-        end
-
-        iy = iy - scrollH
+        iy = ModuleListCard(importPage, PAD, iy, totalW, {
+            title = "Import Addons",
+            desc = "Choose which addons to import. Any addons not included will use your active profile's settings in the new profile.",
+            items = addonItems,
+            footerH = FOOTER_H,
+            pickable = function(item)
+                return item.canImport
+            end,
+            refreshAll = RefreshAllImportVisuals,
+            visuals = importVisuals,
+            -- Not in the string (red) or not loaded here (dim).
+            row = function(item)
+                return {
+                    active = item.canImport,
+                    inactiveText = item.inPayload and CludesUI.L("Not Loaded") or CludesUI.L("Not Included"),
+                    inactiveColor = item.inPayload and { 1, 1, 1, 0.25 } or { 0.9, 0.2, 0.2, 0.7 },
+                    linked = function()
+                        return includeLayoutImport and importComponents and importComponents[item.canon],
+                            item.canon,
+                            CANON_DISPLAY
+                    end,
+                    linkedTip = function(list)
+                        return CludesUI.Lf(
+                            "Linked by Anchor/Width/Height Matching to: %1$s. These import together.",
+                            list
+                        )
+                    end,
+                }
+            end,
+        })
 
         -- Footer
         iy = iy - 8
@@ -2392,75 +2377,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         local ADDON_DB_MAP_LOCAL = CludesUI.VisibleProfileAddons(CludesUI._ADDON_DB_MAP)
         local PAD = CludesUI.CONTENT_PAD
         local totalW = parent:GetWidth() - PAD * 2
-        local HDR_H = 72
-        local COL_HDR_H = 28
         -- Single footer row: count + "Include layout" + "Include Global Settings" side by side, Export button on the right.
         local FOOTER_H = 50
-
-        -- Short descriptions per addon folder
-        local ADDON_DESCS = {
-            CludesUIActionBars = "Modern action bars built for performance and clarity.",
-            CludesUINameplates = "Clean, lightweight nameplates with endless customization.",
-            CludesUIUnitFrames = "Simple unit frames with a modern visual style.",
-            CludesUICooldownManager = "A CDM replacement focused on performance, customizations and alerts.",
-            CludesUIResourceBars = "Custom Resource Bars with thresholds, hash lines and more.",
-            CludesUIRaidFrames = "Incredibly light performance, modern raid and party frames with endless flexibility.",
-            CludesUIAuraBuffReminders = "Simple raid buff, auras, consumables and talent reminders.",
-            CludesUIQoL = "Lightweight quality of life tools and enhancements.",
-            CludesUIDragonRiding = "Skyriding HUD with speed, vigor and second wind tracking.",
-            CludesUIBlizzardSkin = "Clean and beautiful visual refreshes for Blizzard UI elements.",
-            CludesUIFriends = "A modern friends list with built-in organization tools.",
-            CludesUIMythicTimer = "Mythic+ timer, targeted spell bars, and standalone cast bars.",
-            CludesUIQuestTracker = "A clean, updated reskin of Blizzard's Quest Tracker.",
-            CludesUIMinimap = "A new age minimap with clean styling and square layout options.",
-            CludesUIDamageMeters = "Lightweight damage meters with simple but powerful customization.",
-            CludesUIChat = "Modern chat enhancements with useful utilities.",
-            CludesUIBags = "A beautiful visual refresh of Blizzard Bags with intuitive organization.",
-            CludesUIQuickdraw = "Hold a key to open a menu of actions; point or scroll to choose, release to fire.",
-        }
-
-        local SCROLL_MAX_H = 285
-        local contentH = #ADDON_DB_MAP_LOCAL * ROW_H_A
-        local scrollH = math.min(contentH, SCROLL_MAX_H)
-        local SECTION_H = HDR_H + COL_HDR_H + scrollH + 8 + FOOTER_H
-
-        -- Non-interactive panel behind the whole section.
-        local sectionBg = CreateFrame("Frame", nil, parent)
-        sectionBg:SetFrameLevel(parent:GetFrameLevel())
-        PP.Size(sectionBg, totalW, SECTION_H)
-        PP.Point(sectionBg, "TOPLEFT", parent, "TOPLEFT", PAD, y)
-        sectionBg:EnableMouse(false)
-        local sBg = CludesUI.MakeRoundedCard(sectionBg, 0.10, 0.50).bg
-
-        local hdrFrame = CreateFrame("Frame", nil, parent)
-        PP.Size(hdrFrame, totalW, HDR_H)
-        PP.Point(hdrFrame, "TOPLEFT", parent, "TOPLEFT", PAD, y)
-
-        local hdrTitle = CludesUI.MakeFont(hdrFrame, 14, nil, 1, 1, 1, 0.9)
-        PP.Point(hdrTitle, "TOPLEFT", hdrFrame, "TOPLEFT", SIDE_PAD, -20)
-        hdrTitle:SetText(CludesUI.L("Export Profile"))
-        hdrTitle:SetJustifyH("LEFT")
-
-        local hdrDesc = CludesUI.MakeFont(hdrFrame, 11, nil, 1, 1, 1, 0.35)
-        PP.Point(hdrDesc, "TOPLEFT", hdrTitle, "BOTTOMLEFT", 0, -9)
-        PP.Point(hdrDesc, "RIGHT", hdrFrame, "RIGHT", -(160 + SIDE_PAD), 0)
-        hdrDesc:SetText(
-            CludesUI.L(
-                "Choose which addons to include in your exported profile. Check everything for a full profile export."
-            )
-        )
-        hdrDesc:SetJustifyH("LEFT")
-        hdrDesc:SetWordWrap(true)
-
-        local hdrDiv = hdrFrame:CreateTexture(nil, "ARTWORK")
-        hdrDiv:SetColorTexture(1, 1, 1, 0.10)
-        hdrDiv:SetHeight(1)
-        PP.Point(hdrDiv, "BOTTOMLEFT", hdrFrame, "BOTTOMLEFT", SIDE_PAD, 0)
-        PP.Point(hdrDiv, "BOTTOMRIGHT", hdrFrame, "BOTTOMRIGHT", -SIDE_PAD, 0)
-        if hdrDiv.SetSnapToPixelGrid then
-            hdrDiv:SetSnapToPixelGrid(false)
-            hdrDiv:SetTexelSnappingBias(0)
-        end
 
         -- Build addon item list
         local selectedAddons = {}
@@ -2529,177 +2447,43 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             footerCountFs:SetText(CludesUI.Lf("Export will include %1$s of %2$s addons.", count, #addonItems))
         end
 
-        local _refreshSelAllColor
         local function RefreshAllAddonVisuals()
             for _, fn in ipairs(addonVisuals) do
                 fn()
             end
             RefreshFooterCount()
-            if _refreshSelAllColor then
-                _refreshSelAllColor()
-            end
         end
 
-        do
-            local LINK_GAP = 12
-            local selAllBtn = CreateFrame("Button", nil, hdrFrame)
-            selAllBtn:SetFrameLevel(hdrFrame:GetFrameLevel() + 2)
-            local selAllLbl = selAllBtn:CreateFontString(nil, "OVERLAY")
-            selAllLbl:SetFont(FONT, 12, CludesUI.GetFontOutlineFlag())
-            selAllLbl:SetText(CludesUI.L("Select All"))
-            selAllLbl:SetTextColor(1, 1, 1, 0.40)
-            selAllLbl:SetPoint("CENTER")
-            selAllBtn:SetSize(selAllLbl:GetStringWidth() + 4, 18)
-            selAllBtn:SetPoint("RIGHT", hdrFrame, "RIGHT", -(STATUS_W + LINK_GAP + SIDE_PAD), 0)
-            selAllBtn:SetPoint("TOP", hdrDesc, "TOP", 0, 0)
-
-            local function AllSelected()
-                for _, item in ipairs(addonItems) do
-                    if item.loaded and not item.getVal() then
-                        return false
-                    end
-                end
-                return true
-            end
-
-            local function RefreshSelAllColor()
-                if AllSelected() then
-                    selAllLbl:SetTextColor(EG.r, EG.g, EG.b, 0.7)
-                else
-                    selAllLbl:SetTextColor(1, 1, 1, 0.40)
-                end
-            end
-
-            _refreshSelAllColor = RefreshSelAllColor
-            RefreshSelAllColor()
-
-            selAllBtn:SetScript("OnEnter", function()
-                if AllSelected() then
-                    selAllLbl:SetTextColor(EG.r, EG.g, EG.b, 1)
-                else
-                    selAllLbl:SetTextColor(1, 1, 1, 0.80)
-                end
-            end)
-            selAllBtn:SetScript("OnLeave", function()
-                RefreshSelAllColor()
-            end)
-            selAllBtn:SetScript("OnClick", function()
-                for _, item in ipairs(addonItems) do
-                    if item.loaded then
-                        item.setVal(true)
-                    end
-                end
-                RefreshAllAddonVisuals()
-            end)
-
-            local linkDiv = hdrFrame:CreateTexture(nil, "OVERLAY", nil, 7)
-            linkDiv:SetColorTexture(1, 1, 1, 0.15)
-            if linkDiv.SetSnapToPixelGrid then
-                linkDiv:SetSnapToPixelGrid(false)
-                linkDiv:SetTexelSnappingBias(0)
-            end
-            PP.Point(linkDiv, "LEFT", selAllBtn, "RIGHT", LINK_GAP / 2, 0)
-            linkDiv:SetWidth(1)
-            linkDiv:SetHeight(10)
-
-            local deselBtn = CreateFrame("Button", nil, hdrFrame)
-            deselBtn:SetFrameLevel(hdrFrame:GetFrameLevel() + 2)
-            local deselLbl = deselBtn:CreateFontString(nil, "OVERLAY")
-            deselLbl:SetFont(FONT, 12, CludesUI.GetFontOutlineFlag())
-            deselLbl:SetText(CludesUI.L("Deselect All"))
-            deselLbl:SetTextColor(1, 1, 1, 0.40)
-            deselLbl:SetPoint("CENTER")
-            deselBtn:SetSize(deselLbl:GetStringWidth() + 4, 18)
-            PP.Point(deselBtn, "LEFT", selAllBtn, "RIGHT", LINK_GAP, 0)
-            deselBtn:SetScript("OnEnter", function()
-                deselLbl:SetTextColor(1, 1, 1, 0.80)
-            end)
-            deselBtn:SetScript("OnLeave", function()
-                deselLbl:SetTextColor(1, 1, 1, 0.40)
-            end)
-            deselBtn:SetScript("OnClick", function()
-                for _, item in ipairs(addonItems) do
-                    item.setVal(false)
-                end
-                RefreshAllAddonVisuals()
-            end)
-        end
-
-        y = y - HDR_H
-
-        local colHdrFrame = CreateFrame("Frame", nil, parent)
-        PP.Size(colHdrFrame, totalW, COL_HDR_H)
-        PP.Point(colHdrFrame, "TOPLEFT", parent, "TOPLEFT", PAD, y)
-
-        local colAddon = CludesUI.MakeFont(colHdrFrame, 11, nil, 1, 1, 1, 0.40)
-        PP.Point(colAddon, "LEFT", colHdrFrame, "LEFT", SIDE_PAD, 0)
-        colAddon:SetText(CludesUI.L("Addon"))
-        colAddon:SetJustifyH("LEFT")
-
-        local colStatus = CludesUI.MakeFont(colHdrFrame, 11, nil, 1, 1, 1, 0.40)
-        PP.Point(colStatus, "RIGHT", colHdrFrame, "RIGHT", -SIDE_PAD, 0)
-        colStatus:SetText(CludesUI.L("Status"))
-        colStatus:SetJustifyH("RIGHT")
-
-        local colInclude = CludesUI.MakeFont(colHdrFrame, 11, nil, 1, 1, 1, 0.40)
-        PP.Point(colInclude, "CENTER", colHdrFrame, "RIGHT", INCLUDE_CENTER_X, 0)
-        colInclude:SetText(CludesUI.L("Include"))
-        colInclude:SetJustifyH("CENTER")
-
-        y = y - COL_HDR_H
-
-        -- Scrollable addon list (max 300px)
-        local scrollClip = CreateFrame("Frame", nil, parent)
-        PP.Size(scrollClip, totalW, scrollH)
-        PP.Point(scrollClip, "TOPLEFT", parent, "TOPLEFT", PAD, y)
-        scrollClip:SetClipsChildren(true)
-
-        local scrollFrame = CreateFrame("ScrollFrame", nil, scrollClip)
-        scrollFrame:SetAllPoints()
-
-        local scrollChild = CreateFrame("Frame", nil, scrollFrame)
-        scrollChild:SetSize(totalW, contentH)
-        scrollFrame:SetScrollChild(scrollChild)
-
-        -- Mouse wheel scrolling
-        local scrollOffset = 0
-        scrollClip:EnableMouseWheel(true)
-        scrollClip:SetScript("OnMouseWheel", function(_, delta)
-            if CludesUI._ShiftWheelScale(delta) then
-                return
-            end
-            local maxScroll = math.max(0, contentH - scrollH)
-            scrollOffset = math.max(0, math.min(maxScroll, scrollOffset - delta * ROW_H_A))
-            scrollFrame:SetVerticalScroll(scrollOffset)
-        end)
-
-        -- Addon rows (parented to scrollChild)
-        for i, item in ipairs(addonItems) do
-            BuildAddonListRow(scrollChild, i, item, totalW, {
-                active = item.loaded,
-                inactiveText = CludesUI.L("Not Loaded"),
-                inactiveColor = { 1, 1, 1, 0.25 },
-                visuals = addonVisuals,
-                -- Hard-couple co-toggles a whole component, so repaint EVERY row -- siblings lighting up is the "linked" affordance.
-                onToggle = function()
-                    RefreshAllAddonVisuals()
-                end,
-                linked = function()
-                    return includeLayoutExport and exportComponents and exportComponents[item.folder],
-                        item.folder,
-                        FOLDER_DISPLAY
-                end,
-                linkedTip = function(list)
-                    return CludesUI.Lf(
-                        "Linked by Anchor/Width/Height Matching to: %1$s. These export together.",
-                        list
-                    )
-                end,
-                blockedTip = CludesUI.L("Addon not loaded"),
-            })
-        end
-
-        y = y - scrollH
+        y = ModuleListCard(parent, PAD, y, totalW, {
+            title = "Export Profile",
+            desc = "Choose which addons to include in your exported profile. Check everything for a full profile export.",
+            items = addonItems,
+            footerH = FOOTER_H,
+            pickable = function(item)
+                return item.loaded
+            end,
+            refreshAll = RefreshAllAddonVisuals,
+            visuals = addonVisuals,
+            row = function(item)
+                return {
+                    active = item.loaded,
+                    inactiveText = CludesUI.L("Not Loaded"),
+                    inactiveColor = { 1, 1, 1, 0.25 },
+                    linked = function()
+                        return includeLayoutExport and exportComponents and exportComponents[item.folder],
+                            item.folder,
+                            FOLDER_DISPLAY
+                    end,
+                    linkedTip = function(list)
+                        return CludesUI.Lf(
+                            "Linked by Anchor/Width/Height Matching to: %1$s. These export together.",
+                            list
+                        )
+                    end,
+                    blockedTip = CludesUI.L("Addon not loaded"),
+                }
+            end,
+        })
 
         -- Footer (inside the background panel)
         y = y - 8
