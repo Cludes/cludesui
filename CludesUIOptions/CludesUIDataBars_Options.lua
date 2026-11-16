@@ -47,6 +47,43 @@ initFrame:SetScript("OnEvent", function(self)
     local Pool = CludesUI._Pool
     local CreateFrame = Pool.CreateFrame
 
+    -- A colour swatch that only means something while another setting is on
+    -- gets a cover over it, `level` above, that takes the mouse and names
+    -- that setting in its tooltip.
+    local function SwatchCover(swatch, gateName, level)
+        local cover = CreateFrame("Frame", nil, swatch)
+        cover:SetAllPoints()
+        cover:SetFrameLevel(swatch:GetFrameLevel() + level)
+        cover:EnableMouse(true)
+        cover:SetScript("OnEnter", function()
+            CludesUI.ShowWidgetTooltip(swatch, CludesUI.DisabledTooltip(gateName))
+        end)
+        cover:SetScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
+        return cover
+    end
+
+    -- The live form: dimmed and covered while isOn() is false, at liveAlpha()
+    -- (default full) while it is true, re-read on every widget refresh.
+    local function GatedSwatch(swatch, updateSwatch, gateName, level, isOn, liveAlpha)
+        local cover = SwatchCover(swatch, gateName, level)
+        local function Paint()
+            if isOn() then
+                swatch:SetAlpha(liveAlpha and liveAlpha() or 1)
+                cover:Hide()
+            else
+                swatch:SetAlpha(0.3)
+                cover:Show()
+            end
+        end
+        CludesUI.RegisterWidgetRefresh(function()
+            updateSwatch()
+            Paint()
+        end)
+        Paint()
+    end
+
     ---------------------------------------------------------------------------
     --  Module upvalues (survive page rebuilds; closures re-target each build)
     ---------------------------------------------------------------------------
@@ -2419,19 +2456,7 @@ initFrame:SetScript("OnEvent", function(self)
             Pix.Point(colorSwatch, "RIGHT", rgn._control, "LEFT", -8, 0)
             if theme.style ~= "modern" then
                 colorSwatch:SetAlpha(0.3)
-                local blk = CreateFrame("Frame", nil, colorSwatch)
-                blk:SetAllPoints()
-                blk:SetFrameLevel(colorSwatch:GetFrameLevel() + 5)
-                blk:EnableMouse(true)
-                blk:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(
-                        colorSwatch,
-                        CludesUI.DisabledTooltip("the Modern background style")
-                    )
-                end)
-                blk:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                SwatchCover(colorSwatch, "the Modern background style", 5)
             end
         end
 
@@ -3176,33 +3201,9 @@ initFrame:SetScript("OnEvent", function(self)
                     20
                 )
                 Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
-                local block = CreateFrame("Frame", nil, colorSwatch)
-                block:SetAllPoints()
-                block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-                block:EnableMouse(true)
-                block:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(
-                        colorSwatch,
-                        CludesUI.DisabledTooltip("Enable Block Background")
-                    )
+                GatedSwatch(colorSwatch, updateSwatch, "Enable Block Background", 10, function()
+                    return b.bg
                 end)
-                block:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                local function UpdateState()
-                    if b.bg then
-                        colorSwatch:SetAlpha(1)
-                        block:Hide()
-                    else
-                        colorSwatch:SetAlpha(0.3)
-                        block:Show()
-                    end
-                end
-                CludesUI.RegisterWidgetRefresh(function()
-                    updateSwatch()
-                    UpdateState()
-                end)
-                UpdateState()
             end
 
             -- Toggle row for a setting whose default is ON: nil has to read as
@@ -4713,31 +4714,9 @@ initFrame:SetScript("OnEvent", function(self)
 
                     -- Blocking overlay while Show Icon is off: the icons are
                     -- not drawn, so their color is not editable.
-                    local block = CreateFrame("Frame", nil, colorSwatch)
-                    block:SetAllPoints()
-                    block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-                    block:EnableMouse(true)
-                    block:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip("Show Icon"))
+                    GatedSwatch(colorSwatch, updateSwatch, "Show Icon", 10, IconOn, function()
+                        return sp.on() and 1 or 0.3
                     end)
-                    block:SetScript("OnLeave", function()
-                        CludesUI.HideWidgetTooltip()
-                    end)
-
-                    local function UpdateState()
-                        if not IconOn() then
-                            colorSwatch:SetAlpha(0.3)
-                            block:Show()
-                        else
-                            colorSwatch:SetAlpha(sp.on() and 1 or 0.3)
-                            block:Hide()
-                        end
-                    end
-                    CludesUI.RegisterWidgetRefresh(function()
-                        updateSwatch()
-                        UpdateState()
-                    end)
-                    UpdateState()
                 end
                 rgn._lastInline = anchor
             end
@@ -4765,30 +4744,9 @@ initFrame:SetScript("OnEvent", function(self)
                     20
                 )
                 Pix.Point(colorSwatch, "RIGHT", rgn._control, "LEFT", -8, 0)
-                local blk = CreateFrame("Frame", nil, colorSwatch)
-                blk:SetAllPoints()
-                blk:SetFrameLevel(colorSwatch:GetFrameLevel() + 5)
-                blk:EnableMouse(true)
-                blk:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip("Low Space Warning"))
+                GatedSwatch(colorSwatch, updateSwatch, "Low Space Warning", 5, function()
+                    return (s.lowThreshold or 0) > 0
                 end)
-                blk:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                local function UpdateState()
-                    if (s.lowThreshold or 0) > 0 then
-                        colorSwatch:SetAlpha(1)
-                        blk:Hide()
-                    else
-                        colorSwatch:SetAlpha(0.3)
-                        blk:Show()
-                    end
-                end
-                CludesUI.RegisterWidgetRefresh(function()
-                    updateSwatch()
-                    UpdateState()
-                end)
-                UpdateState()
                 rgn._lastInline = colorSwatch
             end
 
@@ -5015,30 +4973,9 @@ initFrame:SetScript("OnEvent", function(self)
                     )
                     Pix.Point(colorSwatch, "RIGHT", rgn._control, "LEFT", -8, 0)
                     rgn._lastInline = colorSwatch
-                    local block = CreateFrame("Frame", nil, colorSwatch)
-                    block:SetAllPoints()
-                    block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-                    block:EnableMouse(true)
-                    block:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip("Show Guild Notes"))
+                    GatedSwatch(colorSwatch, updateSwatch, "Show Guild Notes", 10, function()
+                        return s.showGuildNotes == true
                     end)
-                    block:SetScript("OnLeave", function()
-                        CludesUI.HideWidgetTooltip()
-                    end)
-                    local function UpdateState()
-                        if s.showGuildNotes == true then
-                            colorSwatch:SetAlpha(1)
-                            block:Hide()
-                        else
-                            colorSwatch:SetAlpha(0.3)
-                            block:Show()
-                        end
-                    end
-                    CludesUI.RegisterWidgetRefresh(function()
-                        updateSwatch()
-                        UpdateState()
-                    end)
-                    UpdateState()
                 end
             end
 
