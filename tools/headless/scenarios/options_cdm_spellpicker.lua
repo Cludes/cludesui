@@ -68,6 +68,21 @@ local function HoverRows(label)
     end
 end
 
+-- The spell list, stubbed so every kind of row and group shows: primary and
+-- secondary (unassigned and assigned), not tracked, an untalented one, an
+-- extra, one of the wrong group, and one already on the bar (excludeSet).
+mod.GetCDMSpellsForBar = function()
+    return {
+        { spellID = 1001, cdID = 1, name = "Zeta Strike", icon = 136081, cdmCat = 0 },
+        { spellID = 1002, cdID = 2, name = "Alpha Ward", icon = 134206, cdmCat = 0, onCUIBar = true },
+        { spellID = 1003, cdID = 3, name = "Utility Jump", icon = 136085, cdmCat = 1, isKnown = false },
+        { spellID = 1004, cdID = 4, name = "Utility Rope", icon = 134914, cdmCat = 1, onCUIBar = true },
+        { spellID = 1005, cdID = 5, name = "Old Spell", icon = 136107, cdmCat = 2 },
+        { spellID = 1006, cdID = 6, name = "Buff Thing", icon = 136107, cdmCat = 0, cdmCatGroup = "buff" },
+        { spellID = 1007, cdID = 7, name = "Extra Thing", icon = 136107, isExtra = true },
+    }
+end
+
 local anchor = CreateFrame("Button", nil, UIParent)
 anchor:SetSize(36, 36)
 anchor:SetPoint("CENTER")
@@ -78,7 +93,7 @@ for _, key in ipairs({ bars[1].key, "buffs" }) do
         pcall(mod.AddTrackedSpell, key, 33763)
     end
     anchor._previewSpellID = 774
-    mod.CDMO_ShowSpellPicker(anchor, key, nil, {}, function() end)
+    mod.CDMO_ShowSpellPicker(anchor, key, nil, { [1001] = true }, function() end)
     Popups("picker " .. tostring(key))
     HoverRows("picker " .. tostring(key))
     mod.CDMO_ShowSpellPicker(anchor, key, nil, {}, function() end) -- toggles closed

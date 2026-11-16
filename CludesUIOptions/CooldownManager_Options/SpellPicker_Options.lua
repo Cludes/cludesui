@@ -244,7 +244,7 @@ local function IconMenuRow(
                 CludesUI.HideWidgetTooltip()
             end)
         end
-        return row, label
+        return row, label, icon, highlight
     end
     label:SetTextColor(dim[1], dim[2], dim[3], dim[4])
     row:SetScript("OnEnter", function()
@@ -257,7 +257,7 @@ local function IconMenuRow(
         highlight:SetAlpha(0)
     end)
     row:SetScript("OnClick", onPick)
-    return row, label
+    return row, label, icon, highlight
 end
 
 local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, removeOnly)
@@ -1054,8 +1054,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             or (mod._myRacialsSet and mod._myRacialsSet[sid2])
                             or (bsX.customSpellIDs and bsX.customSpellIDs[sid2])
                         )
-                            -- Hosted-buff markers are reparented Blizzard buff frames,
-                            -- not preset icons -- never mint cas entries for them.
+                            -- Hosted-buff markers are reparented Blizzard buff frames,
+                            -- not preset icons -- never mint cas entries for them.
                             and not (mod.HostedBuffMarkerToSpell and mod.HostedBuffMarkerToSpell(sid2))
                         if isInj then
                             if mod.SlotIDFromKey(sid2) then
@@ -7380,65 +7380,47 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
         end
     end
 
+    -- A spell of the list: its icon on the right and the label clipped before it.
+    -- Greyed when disabled; greyed with a tip when already on THIS bar (another
+    -- bar's spell is claimable: AddTrackedSpell moves it). An untalented spell
+    -- stays pickable, desaturated with a hint, so a layout can be arranged without
+    -- swapping talents. A pick keeps the picker open (several can go in a row) and
+    -- greys its row in place; a spell of the wrong group for this bar type (a
+    -- cooldown on a buff bar, or the reverse) says so instead.
     local function MakeItem(sp, isDisabled)
-        -- Check if this spell belongs to the wrong category group for this bar type.
-        local wrongCatGroup = false
-        if not isDisabled and sp.cdmCatGroup then
-            if isBuffBar and sp.cdmCatGroup == "cooldown" then
-                wrongCatGroup = true
-            elseif not isBuffBar and sp.cdmCatGroup == "buff" then
-                wrongCatGroup = true
-            end
+        local wrongGroup = not isDisabled
+            and sp.cdmCatGroup
+            and ((isBuffBar and sp.cdmCatGroup == "cooldown") or (not isBuffBar and sp.cdmCatGroup == "buff"))
+        local item, label, ico, highlight = IconMenuRow(
+            inner,
+            dropMenu,
+            mH,
+            ITEM_H,
+            CludesUI.L(sp.name),
+            sp.icon,
+            isDisabled,
+            nil,
+            { FONT_PATH, 11, GetCDMOptOutline() },
+            { tDimR, tDimG, tDimB, tDimA },
+            hlA
+        )
+        mH = mH + ITEM_H
+        allItems[#allItems + 1] = item
+        if isDisabled then
+            return
         end
-        local item = CreateFrame("Button", nil, inner)
-        item:SetHeight(ITEM_H)
-        item:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-        item:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-        item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-
-        local ico = item:CreateTexture(nil, "ARTWORK")
-        local icoSz = ITEM_H - 2
-        ico:SetSize(icoSz, icoSz)
-        ico:SetPoint("RIGHT", item, "RIGHT", -6, 0)
-        if sp.icon then
-            ico:SetTexture(sp.icon)
-        end
-        local zoom = 0.08
-        ico:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
-
-        local labelFS = item:CreateFontString(nil, "OVERLAY")
-        labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        labelFS:SetPoint("LEFT", 10, 0)
-        labelFS:SetPoint("RIGHT", ico, "LEFT", -5, 0)
-        labelFS:SetJustifyH("LEFT")
-        labelFS:SetWordWrap(false)
-        labelFS:SetMaxLines(1)
-        labelFS:SetText(CludesUI.L(sp.name))
-
-        local highlight = item:CreateTexture(nil, "ARTWORK")
-        highlight:SetAllPoints()
-        highlight:SetColorTexture(1, 1, 1, 0)
-        highlight:SetAlpha(0)
-
-        -- Check if this spell is already on THIS bar (only gray-out we
-        -- still do for CD/util/buff custom bars). Spells on OTHER bars
-        -- are always claimable -- AddTrackedSpell auto-moves them.
-        local onThisBar = not isDisabled and excludeSet and (excludeSet[sp.cdID] or excludeSet[sp.spellID])
-
-        -- Apply the grayed "already on this bar" appearance and swap the row
-        -- to its non-interactive state. Used both for spells already present
-        -- when the picker opens AND for spells the user just clicked to add
-        -- (the picker stays open so several can be added in a row).
-        local barName = edge and (edge.name or edge.key) or barId
         local function MarkOnThisBar()
-            labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
+            label:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
             ico:SetDesaturated(true)
             ico:SetAlpha(0.4)
             item:SetScript("OnClick", nil)
             item:SetScript("OnEnter", function()
                 CludesUI.ShowWidgetTooltip(
                     item,
-                    CludesUI.Lf("This spell is already being used on %s", CludesUI.L(barName))
+                    CludesUI.Lf(
+                        "This spell is already being used on %s",
+                        CludesUI.L(edge and (edge.name or edge.key) or barId)
+                    )
                 )
                 highlight:SetColorTexture(1, 1, 1, hlA * 0.3)
                 highlight:SetAlpha(1)
@@ -7448,60 +7430,44 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 highlight:SetAlpha(0)
             end)
         end
-
-        if isDisabled then
-            labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
-            ico:SetDesaturated(true)
-            ico:SetAlpha(0.4)
-        elseif onThisBar then
-            -- Already on this bar: grayed out with tooltip
-            MarkOnThisBar()
-        else
-            labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-            -- Tracked-but-untalented spells stay fully clickable but
-            -- render desaturated with a hint, so whole layouts can be
-            -- arranged without swapping talents.
-            local notLearned = (sp.isKnown == false)
-            if notLearned then
-                ico:SetDesaturated(true)
-                ico:SetAlpha(0.5)
-            end
-            item:SetScript("OnEnter", function()
-                labelFS:SetTextColor(1, 1, 1, 1)
-                highlight:SetColorTexture(1, 1, 1, hlA)
-                highlight:SetAlpha(1)
-                if notLearned then
-                    CludesUI.ShowWidgetTooltip(item, CludesUI.L("Not currently talented"))
-                end
-            end)
-            item:SetScript("OnLeave", function()
-                labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                highlight:SetAlpha(0)
-                if notLearned then
-                    CludesUI.HideWidgetTooltip()
-                end
-            end)
-            item:SetScript("OnClick", function()
-                if wrongCatGroup then
-                    dropMenu:Hide()
-                    ShowWrongBarTypePopup(sp.name, sp.cdmCatGroup == "buff")
-                    return
-                end
-                -- Always pass spellID (assignedSpells stores spellIDs)
-                if onSelect then
-                    onSelect(sp.spellID, sp.isExtra)
-                end
-                -- Keep the picker open so multiple spells can be added in a
-                -- row; gray this row in place to reflect that it was added.
-                if notLearned then
-                    CludesUI.HideWidgetTooltip()
-                end
-                MarkOnThisBar()
-            end)
+        if excludeSet and (excludeSet[sp.cdID] or excludeSet[sp.spellID]) then
+            return MarkOnThisBar()
         end
-
-        allItems[#allItems + 1] = item
-        mH = mH + ITEM_H
+        local notLearned = sp.isKnown == false
+        if notLearned then
+            ico:SetDesaturated(true)
+            ico:SetAlpha(0.5)
+        end
+        item:SetScript("OnEnter", function()
+            label:SetTextColor(1, 1, 1, 1)
+            highlight:SetColorTexture(1, 1, 1, hlA)
+            highlight:SetAlpha(1)
+            if notLearned then
+                CludesUI.ShowWidgetTooltip(item, CludesUI.L("Not currently talented"))
+            end
+        end)
+        item:SetScript("OnLeave", function()
+            label:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+            highlight:SetAlpha(0)
+            if notLearned then
+                CludesUI.HideWidgetTooltip()
+            end
+        end)
+        item:SetScript("OnClick", function()
+            if wrongGroup then
+                dropMenu:Hide()
+                ShowWrongBarTypePopup(sp.name, sp.cdmCatGroup == "buff")
+                return
+            end
+            -- assignedSpells stores spell ids.
+            if onSelect then
+                onSelect(sp.spellID, sp.isExtra)
+            end
+            if notLearned then
+                CludesUI.HideWidgetTooltip()
+            end
+            MarkOnThisBar()
+        end)
     end
 
     local function MakeDivider()
@@ -7513,139 +7479,113 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
         mH = mH + 9
     end
 
-    -- Custom buff bars only show Custom Spell ID entry -- no CDM spell list
+    -- The spell list. Custom buff bars have none (their Custom Spell ID entry is
+    -- above). CD / utility bars: the primary group, then the secondary (each
+    -- unassigned first, then assigned), then the not tracked ones (unlearned or
+    -- removed from Blizzard's CDM) by name, a divider between groups. Other bars:
+    -- their spells, then the extras.
     if isCustomBuff then
-        -- Nothing to render -- Custom Spell ID option is already above
+        -- Nothing: the Custom Spell ID entry above is the list.
     elseif isCDorUtil then
-        -- Layout: Primary (unassigned first, then assigned)
-        -- -> Secondary (unassigned first, then assigned)
-        -- -> Not Tracked (unlearned or removed from Blizzard CDM)
-        local hasPri = #priUnassigned > 0 or #priAssigned > 0
-        local hasSec = #secUnassigned > 0 or #secAssigned > 0
-        local hasNotTracked = #notTracked > 0
-        local needDiv = false
-
-        if hasPri then
-            for _, sp in ipairs(priUnassigned) do
-                MakeItem(sp, false)
+        local groups = {
+            { priUnassigned, priAssigned },
+            { secUnassigned, secAssigned },
+            { notTracked },
+        }
+        table.sort(notTracked, function(a, b)
+            return (a.name or "") < (b.name or "")
+        end)
+        local started = false
+        for _, group in ipairs(groups) do
+            local any = false
+            for _, list in ipairs(group) do
+                any = any or #list > 0
             end
-            for _, sp in ipairs(priAssigned) do
-                MakeItem(sp, false)
-            end
-            needDiv = true
-        end
-
-        if hasSec then
-            if needDiv then
-                MakeDivider()
-            end
-            for _, sp in ipairs(secUnassigned) do
-                MakeItem(sp, false)
-            end
-            for _, sp in ipairs(secAssigned) do
-                MakeItem(sp, false)
-            end
-            needDiv = true
-        end
-
-        if hasNotTracked then
-            if needDiv then
-                MakeDivider()
-            end
-            table.sort(notTracked, function(a, b)
-                return (a.name or "") < (b.name or "")
-            end)
-            for _, sp in ipairs(notTracked) do
-                MakeItem(sp, false)
+            if any then
+                if started then
+                    MakeDivider()
+                end
+                for _, list in ipairs(group) do
+                    for _, sp in ipairs(list) do
+                        MakeItem(sp, false)
+                    end
+                end
+                started = true
             end
         end
     else
-        -- Original layout for buff/trinket/other bars
         for _, sp in ipairs(itemsDisplayed) do
             MakeItem(sp, false)
         end
-
         if #itemsDisplayed > 0 and #itemsExtra > 0 then
             MakeDivider()
         end
-
         for _, sp in ipairs(itemsExtra) do
             MakeItem(sp, false)
         end
     end
 
-    -- "Missing Spells?" footer: centered accent prompt that opens Blizzard's
-    -- CDM and closes CUI options (same action as the link under the buff bar
-    -- preview). Shown for bars that list Blizzard CDM spells (CD/utility and
-    -- buff); skipped for custom-buff bars (Custom Spell ID only, no CDM list).
+    -- "Missing Spells?": a centred accent prompt that opens Blizzard's CDM and
+    -- closes the options (as the link under the buff bar preview does), for the
+    -- bars that list Blizzard CDM spells.
     if not isCustomBuff then
         MakeDivider()
         local FOOTER_H = 38
-        local mbItem = CreateFrame("Button", nil, inner)
-        mbItem:SetHeight(FOOTER_H)
-        mbItem:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-        mbItem:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-        mbItem:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-
-        local mbFS = mbItem:CreateFontString(nil, "OVERLAY")
-        mbFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        mbFS:SetAllPoints()
-        mbFS:SetJustifyH("CENTER")
-        mbFS:SetJustifyV("MIDDLE")
-        local ar, ag, ab = CludesUI.GetAccentColor()
-        mbFS:SetTextColor(ar, ag, ab, 1)
-        mbFS:SetText(CludesUI.L("Missing Spells?") .. "\n" .. CludesUI.L("Add in Blizzard CDM"))
-
-        mbItem:SetScript("OnEnter", function()
-            mbFS:SetTextColor(1, 1, 1, 1)
-        end)
-        mbItem:SetScript("OnLeave", function()
+        local footer = CreateFrame("Button", nil, inner)
+        footer:SetHeight(FOOTER_H)
+        footer:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
+        footer:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
+        footer:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+        local text = footer:CreateFontString(nil, "OVERLAY")
+        text:SetFont(FONT_PATH, 11, GetCDMOptOutline())
+        text:SetAllPoints()
+        text:SetJustifyH("CENTER")
+        text:SetJustifyV("MIDDLE")
+        local function Accented()
             local r, g, b = CludesUI.GetAccentColor()
-            mbFS:SetTextColor(r, g, b, 1)
+            text:SetTextColor(r, g, b, 1)
+        end
+        Accented()
+        text:SetText(CludesUI.L("Missing Spells?") .. "\n" .. CludesUI.L("Add in Blizzard CDM"))
+        footer:SetScript("OnEnter", function()
+            text:SetTextColor(1, 1, 1, 1)
         end)
-        mbItem:SetScript("OnClick", function()
+        footer:SetScript("OnLeave", Accented)
+        footer:SetScript("OnClick", function()
             dropMenu:Hide()
             if mod.OpenBlizzardCDMTab then
                 mod.OpenBlizzardCDMTab(true)
             end
         end)
-
-        allItems[#allItems + 1] = mbItem
+        allItems[#allItems + 1] = footer
         mH = mH + FOOTER_H
     end
 
+    -- A tall list scrolls (smooth, no thumb) within MAX_H.
     local totalH = mH + 4
     inner:SetHeight(totalH)
-
-    -- Scrollable if needed
     if totalH > MAX_H then
         dropMenu:SetHeight(MAX_H)
-        local scrollFrame = CreateFrame("ScrollFrame", nil, dropMenu)
-        scrollFrame:SetPoint("TOPLEFT", 0, -1)
-        scrollFrame:SetPoint("BOTTOMRIGHT", 0, 1)
-        scrollFrame:SetFrameLevel(dropMenu:GetFrameLevel() + 1)
-        scrollFrame:EnableMouseWheel(true)
-        scrollFrame:SetScrollChild(inner)
+        local scroll = CreateFrame("ScrollFrame", nil, dropMenu)
+        scroll:SetPoint("TOPLEFT", 0, -1)
+        scroll:SetPoint("BOTTOMRIGHT", 0, 1)
+        scroll:SetFrameLevel(dropMenu:GetFrameLevel() + 1)
+        scroll:EnableMouseWheel(true)
+        scroll:SetScrollChild(inner)
         inner:SetWidth(menuW)
-        CludesUI.AttachSmoothScrollbar(scrollFrame, { step = 40, thumb = false })
+        CludesUI.AttachSmoothScrollbar(scroll, { step = 40, thumb = false })
     else
         dropMenu:SetHeight(totalH)
         inner:SetParent(dropMenu)
         inner:SetPoint("TOPLEFT")
     end
 
-    -- Position near anchor
+    -- Under the anchor; a left press outside it, the anchor and the potions
+    -- flyout closes it (without blocking the world underneath).
     dropMenu:ClearAllPoints()
     dropMenu:SetPoint("TOP", anchor, "BOTTOM", 0, -2)
-
-    -- Close on left-click outside (non-blocking, preserves world interactions)
     dropMenu:SetScript("OnUpdate", function(m)
-        local overSub = (
-            optionState._customTrackingSub
-            and optionState._customTrackingSub:IsShown()
-            and optionState._customTrackingSub:IsMouseOver()
-        )
-            or (m._potionsSub and m._potionsSub:IsShown() and m._potionsSub:IsMouseOver())
+        local overSub = m._potionsSub and m._potionsSub:IsShown() and m._potionsSub:IsMouseOver()
         if
             not m:IsMouseOver()
             and not anchor:IsMouseOver()
@@ -7655,13 +7595,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
             m:Hide()
         end
     end)
+    -- Per-icon cog settings for racials, potions and trinkets are edited here;
+    -- closing propagates them to synced specs.
     dropMenu:HookScript("OnHide", function(m)
         m:SetScript("OnUpdate", nil)
-        if optionState._customTrackingSub then
-            optionState._customTrackingSub:Hide()
-        end
-        -- Per-icon cog settings for racials/pots/trinkets are edited in this
-        -- menu; propagate them to synced specs when it closes.
         if mod.MaybePropagateRPT then
             mod.MaybePropagateRPT()
         end
