@@ -2115,6 +2115,46 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             return math.max(2, (trackW / (range / step)) * 0.7)
         end
 
+        -- The value under a cursor this far along the track, pulled onto a
+        -- declared snap point within its threshold.
+        local function ValueAt(cursorX)
+            local ratio = math.max(0, math.min(1, cursorX / trackW))
+            local v = math.max(minVal, math.min(maxVal, minVal + ratio * (maxVal - minVal)))
+            if snapPoints then
+                for _, sp in ipairs(snapPoints) do
+                    local pt, threshold = sp[1], sp[2] or (step * 5)
+                    if math.abs(v - pt) <= threshold then
+                        return pt
+                    end
+                end
+            end
+            return v
+        end
+
+        -- A drag holds the slider-drag count up (refreshes and drift checks
+        -- wait for it to drop), the track's hide and the pool's reset end it,
+        -- and the track's OnUpdate follows the cursor.
+        local EndDragOnRecycle, EndDragOnHide
+        local function StartDrag()
+            isDragging = true
+            CludesUI._sliderDragging = (CludesUI._sliderDragging or 0) + 1
+            trackFrame._cuiOnRecycle = EndDragOnRecycle
+            trackFrame:SetScript("OnHide", EndDragOnHide)
+        end
+        local function StopDrag()
+            isDragging = false
+            trackFrame:SetScript("OnUpdate", nil)
+            trackFrame:SetScript("OnHide", nil)
+            trackFrame._cuiOnRecycle = nil
+            dragScale = nil
+            dragTrackLeft = nil
+            lastCommitX = nil
+            CludesUI._sliderDragging = math.max(0, (CludesUI._sliderDragging or 1) - 1)
+            if CludesUI._sliderDragging == 0 then
+                CludesUI._sliderDragging = nil
+            end
+        end
+
         -- Every write below may run a setter that rebuilds the page and dresses this slider
         -- again for another use (the options page pool): what follows the write stands down
         -- then, as the rebuild already painted the slider.
@@ -2138,21 +2178,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- hide owes that write, see EndDragOnHide). _cuiOnRecycle (run by the pool's
         -- reset) and, through EndDragOnHide, the track's OnHide point here only while a
         -- drag runs; the drift checks the drag held back run on the next frame.
-        local function EndDragOnRecycle()
+        function EndDragOnRecycle()
             if not isDragging then
                 return
             end
-            isDragging = false
-            trackFrame:SetScript("OnUpdate", nil)
-            trackFrame:SetScript("OnHide", nil)
-            trackFrame._cuiOnRecycle = nil
-            dragScale = nil
-            dragTrackLeft = nil
-            lastCommitX = nil
-            CludesUI._sliderDragging = math.max(0, (CludesUI._sliderDragging or 1) - 1)
-            if CludesUI._sliderDragging == 0 then
-                CludesUI._sliderDragging = nil
-            end
+            StopDrag()
             if not CludesUI._sliderDragging and CludesUI._deferredDriftChecks then
                 QueueDriftDrain()
             end
@@ -2171,7 +2201,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
             CommitSnap()
         end
-        local function EndDragOnHide()
+        function EndDragOnHide()
             if not isDragging then
                 return
             end
@@ -2183,17 +2213,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local function SliderOnUpdate(self)
             -- Safety: stop the drag if the button released while a modifier key stole the event
             if not IsMouseButtonDown("LeftButton") then
-                isDragging = false
-                self._cuiOnRecycle = nil
-                self:SetScript("OnHide", nil)
-                self:SetScript("OnUpdate", nil)
-                dragScale = nil
-                dragTrackLeft = nil
-                lastCommitX = nil
-                CludesUI._sliderDragging = math.max(0, (CludesUI._sliderDragging or 1) - 1)
-                if CludesUI._sliderDragging == 0 then
-                    CludesUI._sliderDragging = nil
-                end
+                StopDrag()
                 CommitSnap()
                 return
             end
@@ -2204,18 +2224,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 return
             end
             local cursorX = posX - leftX
-            local ratio = math.max(0, math.min(1, cursorX / trackW))
-            rawDragVal = math.max(minVal, math.min(maxVal, minVal + ratio * (maxVal - minVal)))
-            -- Snap to declared snap points within their threshold
-            if snapPoints then
-                for _, sp in ipairs(snapPoints) do
-                    local pt, threshold = sp[1], sp[2] or (step * 5)
-                    if math.abs(rawDragVal - pt) <= threshold then
-                        rawDragVal = pt
-                        break
-                    end
-                end
-            end
+            rawDragVal = ValueAt(cursorX)
             local snapped = SnapStep(rawDragVal)
             local halfPx = HalfStepPx()
             local shouldCommit = snapped ~= lastSnapped
@@ -2238,27 +2247,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
 
         local function BeginDrag()
-            isDragging = true
-            CludesUI._sliderDragging = (CludesUI._sliderDragging or 0) + 1
-            trackFrame._cuiOnRecycle = EndDragOnRecycle
-            trackFrame:SetScript("OnHide", EndDragOnHide)
+            StartDrag()
             dragScale = trackFrame:GetEffectiveScale()
             dragTrackLeft = trackDark:GetLeft()
             local posX = select(1, GetCursorPosition()) / dragScale
             local leftX = dragTrackLeft
             if leftX then
                 local cursorX = posX - leftX
-                local ratio = math.max(0, math.min(1, cursorX / trackW))
-                rawDragVal = math.max(minVal, math.min(maxVal, minVal + ratio * (maxVal - minVal)))
-                if snapPoints then
-                    for _, sp in ipairs(snapPoints) do
-                        local pt, threshold = sp[1], sp[2] or (step * 5)
-                        if math.abs(rawDragVal - pt) <= threshold then
-                            rawDragVal = pt
-                            break
-                        end
-                    end
-                end
+                rawDragVal = ValueAt(cursorX)
                 local snapped = SnapStep(rawDragVal)
                 UpdateSliderVisual(stepped and snapped or rawDragVal)
                 local g = PoolGen(trackFrame)
@@ -2274,17 +2270,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
 
         local function EndDrag()
-            isDragging = false
-            trackFrame:SetScript("OnUpdate", nil)
-            trackFrame:SetScript("OnHide", nil)
-            trackFrame._cuiOnRecycle = nil
-            dragScale = nil
-            dragTrackLeft = nil
-            lastCommitX = nil
-            CludesUI._sliderDragging = math.max(0, (CludesUI._sliderDragging or 1) - 1)
-            if CludesUI._sliderDragging == 0 then
-                CludesUI._sliderDragging = nil
-            end
+            StopDrag()
             CommitSnap() -- final setValue runs with _sliderDragging cleared Snap() rounds
             if not CludesUI._sliderDragging then
                 -- Deferred drift checks fire once every slider has finished dragging
@@ -2440,10 +2426,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 return
             end
             if btnFrame == "LeftButton" then
-                isDragging = true
-                CludesUI._sliderDragging = (CludesUI._sliderDragging or 0) + 1
-                trackFrame._cuiOnRecycle = EndDragOnRecycle
-                trackFrame:SetScript("OnHide", EndDragOnHide)
+                StartDrag()
                 rawDragVal = currentVal
                 trackFrame:SetScript("OnUpdate", SliderOnUpdate)
             end
