@@ -116,3 +116,43 @@ if fill then
     mod.ApplyBar(fill.id)
     Page("fill", fill.id)
 end
+
+-- The header of the every-block bar: each of its buttons clicked (left, then
+-- right: a segment's right-click opens its block menu), each popup snapped,
+-- the page rebuilt between clicks so one click's result does not feed the next.
+local function HeaderButtons()
+    local out, stack = {}, { CUI._contentHeader or CUI._headerFrame }
+    while #stack > 0 do
+        local f = table.remove(stack, 1)
+        if type(f) == "table" and rawget(f, "\0children") then
+            if f["\0kind"] == "Button" and f:IsVisible() and f["\0scripts"].OnClick then out[#out + 1] = f end
+            for _, ch in ipairs(f["\0children"]) do stack[#stack + 1] = ch end
+        end
+    end
+    return out
+end
+if all then
+    for _, which in ipairs({ "LeftButton", "RightButton" }) do
+        Rebuild(all.id)
+        local count = #HeaderButtons()
+        OUT:write("== header buttons " .. which .. " " .. count .. "\n")
+        for i = 1, count do
+            Rebuild(all.id)
+            local btn = HeaderButtons()[i]
+            local before = ShownTops()
+            local ok, err = pcall(btn["\0scripts"].OnClick, btn, which)
+            if not ok then OUT:write("== hdr " .. which .. " " .. i .. " ERR " .. tostring(err) .. "\n") end
+            local n = 0
+            for _, host in ipairs(Hosts()) do
+                for _, c in ipairs({ host:GetChildren() }) do
+                    if c:IsShown() and not before[c] then
+                        n = n + 1
+                        SNAP("hdr " .. which .. " " .. i .. " popup " .. n, c)
+                        c:Hide()
+                    end
+                end
+            end
+            OUT:write("== hdr " .. which .. " " .. i .. ": " .. n .. " bars " .. #mod.BarsInOrder() .. "\n")
+        end
+    end
+end
