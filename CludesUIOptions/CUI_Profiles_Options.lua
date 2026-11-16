@@ -138,6 +138,31 @@ local function Unsnapped(tex)
     end
 end
 
+-- A checkbox: the dark rounded box, its border and the accent tick (shown
+-- while on). exact draws box and tick off the pixel grid (the module rows).
+-- Returns box, tick, border, background.
+local function CheckBox(parent, exact)
+    local EG = CludesUI.CLUDES_GREEN
+    local box = CreateFrame("Frame", nil, parent)
+    box:SetSize(CHK_SZ, CHK_SZ)
+    local bg = box:CreateTexture(nil, "BACKGROUND")
+    bg:SetAllPoints()
+    bg:SetColorTexture(0.114, 0.106, 0.099, 1)
+    if exact then
+        Unsnapped(bg)
+    end
+    local border = CludesUI.MakeRoundedBorder(box, 0.224, 0.215, 0.207, 0.6, bg)
+    local tick = box:CreateTexture(nil, "ARTWORK")
+    tick:SetPoint("TOPLEFT", box, "TOPLEFT", 3, -3)
+    tick:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -3, 3)
+    tick:SetColorTexture(EG.r, EG.g, EG.b, 1)
+    CludesUI.RoundBody(box, tick, 1)
+    if exact then
+        Unsnapped(tick)
+    end
+    return box, tick, border, bg
+end
+
 -- A module list row's look per state: name and description alpha, the tick,
 -- the box's alpha. Included rows also tint the box's border green.
 local ROW_LOOK = {
@@ -179,20 +204,8 @@ local function BuildAddonListRow(scrollChild, i, item, totalW, o)
     statusFs:SetJustifyH("RIGHT")
 
     -- The box sits under the Include column header.
-    local box = CreateFrame("Frame", nil, rowFrame)
-    box:SetSize(CHK_SZ, CHK_SZ)
+    local box, tick, boxBorder, boxBg = CheckBox(rowFrame, true)
     box:SetPoint("CENTER", rowFrame, "RIGHT", INCLUDE_CENTER_X, 0)
-    local boxBg = box:CreateTexture(nil, "BACKGROUND")
-    boxBg:SetAllPoints()
-    boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-    Unsnapped(boxBg)
-    local boxBorder = CludesUI.MakeRoundedBorder(box, 0.224, 0.215, 0.207, 0.6, boxBg)
-    local tick = box:CreateTexture(nil, "ARTWORK")
-    tick:SetPoint("TOPLEFT", box, "TOPLEFT", 3, -3)
-    tick:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -3, 3)
-    tick:SetColorTexture(EG.r, EG.g, EG.b, 1)
-    CludesUI.RoundBody(box, tick, 1)
-    Unsnapped(tick)
 
     local function ApplyRowVisual()
         local state = not o.active and "blocked" or (item.getVal() and "included" or "skipped")
@@ -937,18 +950,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             hl:SetAllPoints()
             hl:SetColorTexture(1, 1, 1, 1)
             hl:SetAlpha(0)
-            local box = CreateFrame("Frame", nil, row)
-            box:SetSize(CHK_SZ, CHK_SZ)
+            local box, tick = CheckBox(row)
             box:SetPoint("LEFT", row, "LEFT", 6, 0)
-            local boxBg = box:CreateTexture(nil, "BACKGROUND")
-            boxBg:SetAllPoints()
-            boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-            CludesUI.MakeRoundedBorder(box, 0.224, 0.215, 0.207, 0.6, boxBg)
-            local tick = box:CreateTexture(nil, "ARTWORK")
-            tick:SetPoint("TOPLEFT", box, "TOPLEFT", 3, -3)
-            tick:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -3, 3)
-            tick:SetColorTexture(EG.r, EG.g, EG.b, 1)
-            CludesUI.RoundBody(box, tick, 1)
             marks[i] = tick
             local lbl = CludesUI.MakeFont(row, 12, nil, 1, 1, 1, 0.7)
             lbl:SetPoint("LEFT", box, "RIGHT", 8, 0)
@@ -1293,18 +1296,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             local aaBtn = CreateFrame("Button", nil, footerFrame)
             aaBtn:SetSize(180, 24)
             PP.Point(aaBtn, "TOPLEFT", importCountFs, "BOTTOMLEFT", 0, -8)
-            local box = CreateFrame("Frame", nil, aaBtn)
-            box:SetSize(CHK_SZ, CHK_SZ)
+            local box, mark = CheckBox(aaBtn)
             box:SetPoint("LEFT", aaBtn, "LEFT", 0, 0)
-            local bg = box:CreateTexture(nil, "BACKGROUND")
-            bg:SetAllPoints()
-            bg:SetColorTexture(0.114, 0.106, 0.099, 1)
-            CludesUI.MakeRoundedBorder(box, 0.224, 0.215, 0.207, 0.6, bg)
-            local mark = box:CreateTexture(nil, "ARTWORK")
-            mark:SetPoint("TOPLEFT", box, "TOPLEFT", 3, -3)
-            mark:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -3, 3)
-            mark:SetColorTexture(EG.r, EG.g, EG.b, 1)
-            CludesUI.RoundBody(box, mark, 1)
             local lbl = CludesUI.MakeFont(aaBtn, 12, nil, 1, 1, 1, 0.6)
             lbl:SetPoint("LEFT", box, "RIGHT", 6, 0)
             lbl:SetText(CludesUI.L("Auto Assign to Specs"))
@@ -1730,20 +1723,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         py = py - PANEL_H - 16
 
         -- Continue button (Done-style)
-        local CONT_W, CONT_H = 160, 34
-        local contBtn = CreateFrame("Button", nil, pastePage)
-        PP.Size(contBtn, CONT_W, CONT_H)
+        local contBtn, contLbl, contBrd = AccentButton(pastePage, 160, 34, "Continue", 13)
         PP.Point(contBtn, "TOPRIGHT", pastePage, "TOPRIGHT", -PAD, py)
-        contBtn:SetFrameLevel(pastePage:GetFrameLevel() + 2)
-
-        local cDB = CludesUI.DARK_BG
-        local contBg = CludesUI.SolidTex(contBtn, "BACKGROUND", cDB.r, cDB.g, cDB.b, 0.92)
-        contBg:SetAllPoints()
-        local contBrd = CludesUI.MakeRoundedBorder(contBtn, EG.r, EG.g, EG.b, 0.7, contBg)
-        local contLbl = CludesUI.MakeFont(contBtn, 13, nil, EG.r, EG.g, EG.b)
-        contLbl:SetAlpha(0.7)
-        contLbl:SetPoint("CENTER")
-        contLbl:SetText(CludesUI.L("Continue"))
 
         local contReset = MakeAccentFade(contBtn, contLbl, contBrd)
         local decodeRun
