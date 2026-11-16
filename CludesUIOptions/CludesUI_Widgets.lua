@@ -1987,19 +1987,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         snapPoints,
         valueSnap
     )
-        -- Spec Overrides auto-capture: see BuildToggleControl (slot read before the setter runs).
+        -- Every write: Spec Overrides auto-capture (see BuildToggleControl: the
+        -- slot is read before the setter runs), then the settings-changed mark.
         do
-            local _s = setValue
+            local write = setValue
             setValue = function(...)
                 local snap = CludesUI._SOAttribution(hostFrame)
-                _s(...)
+                write(...)
                 CludesUI._NotifySettingWrite(hostFrame, snap)
-            end
-        end
-        do
-            local _r = setValue
-            setValue = function(...)
-                _r(...)
                 CludesUI._settingsChanged = true
             end
         end
@@ -2165,12 +2160,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         -- Every write below may run a setter that rebuilds the page and dresses this slider
         -- again for another use (the options page pool): what follows the write stands down
-        -- then, as the rebuild already painted the slider.
+        -- then, as the rebuild already painted the slider. Write answers whether the
+        -- slider still has the dress it wrote from.
+        local function Write(v)
+            local g = PoolGen(trackFrame)
+            setValue(v)
+            return PoolGen(trackFrame) == g
+        end
         local function CommitSnap()
             local snapped = SnapStep(rawDragVal)
-            local g = PoolGen(trackFrame)
-            setValue(snapped)
-            if PoolGen(trackFrame) ~= g then
+            if not Write(snapped) then
                 return
             end
             currentVal = snapped
@@ -2238,10 +2237,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local shouldCommit = snapped ~= lastSnapped
                 and (lastCommitX == nil or math.abs(cursorX - lastCommitX) >= halfPx)
             if shouldCommit then
-                local g = PoolGen(self)
-                setValue(snapped)
                 -- (not dragging: the write rebuilt the page and its hide ended the drag)
-                if PoolGen(self) ~= g or not isDragging then
+                if not Write(snapped) or not isDragging then
                     return
                 end
                 currentVal = snapped
@@ -2265,9 +2262,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 rawDragVal = ValueAt(cursorX)
                 local snapped = SnapStep(rawDragVal)
                 UpdateSliderVisual(stepped and snapped or rawDragVal)
-                local g = PoolGen(trackFrame)
-                setValue(snapped)
-                if PoolGen(trackFrame) ~= g or not isDragging then
+                if not Write(snapped) or not isDragging then
                     return
                 end
                 currentVal = snapped
@@ -2308,9 +2303,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 raw = math.max(minVal, math.min(maxVal, raw))
                 local snapped = SnapStep(raw)
                 changed = snapped ~= currentVal
-                local g = PoolGen(trackFrame)
-                setValue(snapped)
-                if PoolGen(trackFrame) ~= g then
+                if not Write(snapped) then
                     -- Dressed again by a rebuild the setter ran: its box lost focus there.
                     committingInput = false
                     return
@@ -2389,9 +2382,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
                 end
                 if v ~= currentVal then
-                    local g = PoolGen(trackFrame)
-                    setValue(v)
-                    if PoolGen(trackFrame) ~= g then
+                    if not Write(v) then
                         return
                     end
                     currentVal = v
