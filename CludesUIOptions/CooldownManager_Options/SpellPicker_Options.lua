@@ -85,6 +85,44 @@ local function SetFlyoutItemLocked(si, locked, tipText)
     end
 end
 
+-- True when keys hold a colour (some xR, xG and xB together): an apply then
+-- carries that colour, which the item's own value does not describe.
+local function HasColourTriple(keys)
+    if not keys then
+        return false
+    end
+    local held = {}
+    for _, k in ipairs(keys) do
+        held[k] = true
+    end
+    for k in pairs(held) do
+        local base = k:match("^(.+)R$")
+        if base and held[base .. "G"] and held[base .. "B"] then
+            return true
+        end
+    end
+    return false
+end
+
+-- The session gate a charge-style toggle arms when turned on (false: none, as
+-- Hide Until Spent is read only by the CD Ready evaluator, which already runs
+-- just for icons with that effect). Any other charge key arms the style gate.
+local CHARGE_GATES = {
+    chargeHideCdText = "_cdmAnyChargeHideCdText",
+    hideChargeText = "_cdmAnyHideChargeText",
+    suppressGCD = "_cdmAnySuppressGcd",
+    chargeHideUntilSpent = false,
+}
+local function ArmChargeGate(mod, key)
+    local gate = CHARGE_GATES[key]
+    if gate == nil then
+        gate = "_cdmAnyChargeStyle"
+    end
+    if gate then
+        mod[gate] = true
+    end
+end
+
 -- A plain menu row at y on inner (made at menu level + 2): its label in the dim
 -- text colour and a clear highlight. Hovering lights both, closes the menu's open
 -- flyout (unless opts.keepSub) and shows opts.tip; leaving puts them back.
@@ -1054,8 +1092,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             or (mod._myRacialsSet and mod._myRacialsSet[sid2])
                             or (bsX.customSpellIDs and bsX.customSpellIDs[sid2])
                         )
-                            -- Hosted-buff markers are reparented Blizzard buff frames,
-                            -- not preset icons -- never mint cas entries for them.
+                            -- Hosted-buff markers are reparented Blizzard buff frames,
+                            -- not preset icons -- never mint cas entries for them.
                             and not (mod.HostedBuffMarkerToSpell and mod.HostedBuffMarkerToSpell(sid2))
                         if isInj then
                             if mod.SlotIDFromKey(sid2) then
@@ -2607,6 +2645,27 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         end
                     end
                     UpdateLabelColor()
+                    -- The apply strip, when open, re-reads which scope holds the value.
+                    local function PokeStrip()
+                        local strip = dropMenu._applyStrip
+                        if strip and strip:IsShown() and strip._updateActive then
+                            strip._updateActive()
+                        end
+                    end
+                    -- After a pick: the row's own cue, the icons when the value
+                    -- reaches them, then the strip.
+                    local function Repaint(icons)
+                        UpdateLabelColor()
+                        if icons then
+                            if mod.RefreshCDMIconAppearance then
+                                mod.RefreshCDMIconAppearance(barId)
+                            end
+                            if mod.QueueReanchor then
+                                mod.QueueReanchor()
+                            end
+                        end
+                        PokeStrip()
+                    end
 
                     local arrow = row:CreateTexture(nil, "ARTWORK")
                     arrow:SetSize(10, 10)
@@ -2660,91 +2719,49 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         subInner:SetPoint("TOPLEFT")
 
                         local subH = 4
-                        local curVal = getVal()
-                        -- "None"/default is stored as a blocking false; treat it as
-                        -- nil so its item reads as selected (false ~= nil otherwise).
-                        if curVal == false then
-                            curVal = nil
-                        end
                         local flyoutEntries = {}
                         -- opts.itemState(si, item, sub): an item look that depends on
                         -- another setting (a lock), applied at build and on every open.
                         local itemState = options and options.itemState
-                        -- Widen the flyout to its longest caption (FitMenuWidth).
-                        -- Run once after the items are built -- before the
-                        -- height/scroll branches below, which all size from subW --
-                        -- and again whenever a dynamic label is recomposed in place
-                        -- (e.g. "Lower Alpha (On CD)" gaining its "50% " prefix), so
-                        -- a caption that grows while the flyout is open still fits.
+                        -- Widens the flyout to its longest caption. Runs once the items
+                        -- exist (the sizing below reads subW) and again after a caption
+                        -- is recomposed in place, since a dynamic label can grow while
+                        -- the flyout is open ("Lower Alpha (On CD)" gaining "50% ").
                         local function RefitSub()
                             local labels = {}
                             for _, e in ipairs(flyoutEntries) do
-                                if e.label then
-                                    labels[#labels + 1] = e.label
-                                end
+                                labels[#labels + 1] = e.label
                             end
                             local fitW = FitMenuWidth(labels, subW)
-                            if fitW == subW then
-                                return
+                            if fitW ~= subW then
+                                subW = fitW
+                                sub:SetWidth(subW)
+                                subInner:SetWidth(subW)
                             end
-                            subW = fitW
-                            sub:SetWidth(subW)
-                            subInner:SetWidth(subW)
                         end
-                        -- Re-highlight the selection in place after a value click. The flyout
-                        -- stays OPEN (no rebuild -- that would reset scroll/search state and kill the apply strip's owner).
+                        -- After a pick or a bar apply the flyout stays open and repaints
+                        -- in place (a rebuild would lose the scroll, the search and the
+                        -- apply strip's owner): each item's live selection (a bar apply
+                        -- included), its caption, its arrow and its lock, then the width.
                         local function RefreshFlyoutSelection()
                             for _, e in ipairs(flyoutEntries) do
-                                -- computeSelected re-derives the live selected state per item
-                                -- (single-select value match OR independent toggle key) so a bar
-                                -- "Apply" re-highlights the applied item exactly like a direct click -- a value-only path would leave toggles (e.g. Hide Recharge Edge) un-highlighted.
-                                if e.setSelected and e.computeSelected then
+                                if not e.isDivider then
                                     e.setSelected(e.computeSelected())
-                                end
-                                if e.refreshLabel then
                                     e.refreshLabel()
-                                end
-                                -- Applying / un-applying to the bar changes which value
-                                -- is the unclickable arrow row -- refresh it in place.
-                                if e.updateArrow then
                                     e.updateArrow()
-                                end
-                                -- A pick can lock or unlock another item (the Cooldown
-                                -- State Effect pairs): re-run the item's lock.
-                                if itemState and e.item then
-                                    itemState(e.frame, e.item, sub)
+                                    if itemState then
+                                        itemState(e.frame, e.item, sub)
+                                    end
                                 end
                             end
-                            -- A recomposed dynamic label may be wider than the
-                            -- flyout was built for.
                             RefitSub()
                         end
-                        -- Reachable from onItemCreated closures (color swatches),
-                        -- which live outside this scope but capture `sub`.
+                        -- onItemCreated swatches live outside this scope and reach it through sub.
                         sub._refreshSelection = RefreshFlyoutSelection
-                        -- True when apply keys contain an R/G/B triple, i.e. the item carries a
-                        -- per-spell colour the flyout val doesn't capture. Structural on purpose:
-                        -- keying off val == "custom" missed payload toggles that use a different discriminator (Threshold Color, + Border Color), silently reintroducing the reset bug.
-                        local function hasColourPayload(ks)
-                            if not ks then
-                                return false
-                            end
-                            local set = {}
-                            for _, k in ipairs(ks) do
-                                set[k] = true
-                            end
-                            for _, k in ipairs(ks) do
-                                local base = k:match("^(.+)R$")
-                                if base and set[base .. "G"] and set[base .. "B"] then
-                                    return true
-                                end
-                            end
-                            return false
-                        end
                         for _, item in ipairs(itemList) do
                             if item.divider then
-                                -- Thin separator line (e.g. between built-in sounds
-                                -- and appended LibSharedMedia sounds). Never selectable.
+                                -- A thin separator (built-in sounds above, LibSharedMedia
+                                -- ones below); never selectable.
                                 local div = subInner:CreateTexture(nil, "ARTWORK")
                                 div:SetHeight(1)
                                 div:SetColorTexture(1, 1, 1, 0.10)
@@ -2763,113 +2780,120 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 sLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
                                 sLbl:SetPoint("LEFT", 10, 0)
                                 sLbl:SetJustifyH("LEFT")
-                                -- item.dynamicLabel (optional) returns a fully-composed,
-                                -- already-localized caption computed at render time (e.g.
-                                -- "50% Lower Alpha (On CD)"); plain items localize item.label.
+                                -- item.dynamicLabel returns a caption composed (and
+                                -- localized) at render time, "50% Lower Alpha (On CD)".
+                                local function Recaption()
+                                    if item.dynamicLabel then
+                                        sLbl:SetText(item.dynamicLabel())
+                                    end
+                                end
                                 if item.dynamicLabel then
-                                    sLbl:SetText(item.dynamicLabel())
+                                    Recaption()
                                 else
                                     sLbl:SetText(CludesUI.L(item.label))
                                 end
 
-                                -- Highlight selected item. Charge entries are
-                                -- independent toggles (item.charge names the ss
-                                -- boolean key); item.toggleGet/toggleSet entries
-                                -- are independent toggles over ANY store (the row
-                                -- supplies the accessors, so the same items work
-                                -- in the ss, buff and customActiveStates branches);
-                                -- item.choiceGet/choiceSet entries are a pick-one group
-                                -- of their own beside the row's value (choiceGet is
-                                -- the group's value, item.val this choice's), shown
-                                -- like the toggles; all other items are single-select
-                                -- on item.val.
-                                local isChargeToggle = item.charge ~= nil
-                                local isActiveBorder = item.activeBorder == true
+                                -- What the item is. A toggle flips one boolean of its own:
+                                -- ssKey names it in the spell's settings (item.charge, or
+                                -- Border Color's activeBorderEnabled), item.toggleGet /
+                                -- toggleSet reach any store (so one item list serves the
+                                -- spell, buff and customActiveStates rows). A choice
+                                -- (item.choiceGet / choiceSet) is a pick-one group of its
+                                -- own beside the row's value. Anything else is one value
+                                -- of the row (item.val).
+                                local ssKey = item.charge
+                                    or (item.activeBorder == true and "activeBorderEnabled")
+                                    or nil
                                 local isFnToggle = item.toggleGet ~= nil
                                 local isChoice = item.choiceGet ~= nil
-                                -- The "+" look: accent text when on, never the persistent overlay.
-                                local plusLook = isChargeToggle or isActiveBorder or isFnToggle or isChoice
-                                local isSelected
-                                if isChargeToggle then
-                                    isSelected = (ss[item.charge] == true)
-                                elseif isActiveBorder then
-                                    isSelected = (ss.activeBorderEnabled == true)
-                                elseif isFnToggle then
-                                    isSelected = item.toggleGet() and true or false
-                                elseif isChoice then
-                                    isSelected = (item.choiceGet() == item.val)
-                                else
-                                    isSelected = (curVal == item.val) or (curVal == nil and item.val == nil)
-                                end
-                                if isSelected then
-                                    local acR, acG, acB = CludesUI.GetAccentColor()
-                                    sLbl:SetTextColor(acR, acG, acB, 1)
-                                else
-                                    sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+                                local isToggle = ssKey ~= nil or isFnToggle
+                                -- Toggles and choices show "on" as accent text only; a
+                                -- chosen value also keeps the white overlay lit.
+                                local plusLook = isToggle or isChoice
+                                -- The live selection, from effective (chained) values, so
+                                -- a bar tier's apply shows as well as the spell's own.
+                                local function SelectedNow()
+                                    if ssKey then
+                                        return ss[ssKey] == true
+                                    elseif isFnToggle then
+                                        return item.toggleGet() and true or false
+                                    elseif isChoice then
+                                        return item.choiceGet() == item.val
+                                    end
+                                    -- None/default is stored as a blocking false.
+                                    local cv = getVal()
+                                    if cv == false then
+                                        cv = nil
+                                    end
+                                    return cv == item.val
                                 end
 
                                 local sHl = si:CreateTexture(nil, "ARTWORK")
-                                -- Colour fixed to the hover white; alpha toggles it. The
-                                -- SELECTED single-select item keeps this overlay on (a
-                                -- persistent "hovered" look) so the active choice reads
-                                -- clearly; the "+" items (toggles, choices, Border Color) never do.
                                 sHl:SetAllPoints()
                                 sHl:SetColorTexture(1, 1, 1, hlA)
                                 sHl:SetAlpha(0)
-                                if not plusLook and isSelected then
-                                    sHl:SetAlpha(1)
+                                local isSelected
+                                -- The unhovered look of a selection state.
+                                local function ShowState(sel)
+                                    isSelected = sel
+                                    if sel then
+                                        local r, g, b = CludesUI.GetAccentColor()
+                                        sLbl:SetTextColor(r, g, b, 1)
+                                    else
+                                        sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+                                    end
+                                    if not plusLook then
+                                        sHl:SetAlpha(sel and 1 or 0)
+                                    end
                                 end
+                                ShowState(SelectedNow())
 
-                                -- "Apply to Bar" hover strip context. EVERY value item and
-                                -- independent toggle exposes bar-scope apply (the only settings without a strip are the action rows, e.g. Add Active State, which have no flyout items).
+                                -- Apply to Bar: every value and toggle offers it (only the
+                                -- action rows, which have no flyout, do not). The keys and
+                                -- write come from the item or else the row; view(t) reads
+                                -- the value a bar tier applies in item.val form, writeOwn(v)
+                                -- is the strip's write into the spell's own entry. An item
+                                -- with keys of its own never borrows the row's views.
                                 local rowApply = options and options.apply
                                 local applyKeys = item.applyKeys or (rowApply and rowApply.keys)
                                 local applyWrite = item.applyWrite or (rowApply and rowApply.write)
-                                -- Optional views over the keys: view(t) reads the value a bar tier
-                                -- applies as this item's val (for keys whose saved forms differ
-                                -- from the menu's), writeOwn(v) is the strip's own-entry write.
-                                -- An item with its own apply keys never takes the row's.
-                                local itemOwnApply = item.applyKeys ~= nil
-                                local applyView = item.applyView
-                                    or ((not itemOwnApply) and rowApply and rowApply.view)
-                                    or nil
+                                local borrow = item.applyKeys == nil and rowApply
+                                local applyView = item.applyView or (borrow and rowApply.view) or nil
                                 local applyWriteOwn = item.applyWriteOwn
-                                    or ((not itemOwnApply) and rowApply and rowApply.writeOwn)
+                                    or (borrow and rowApply.writeOwn)
                                     or nil
-                                -- Hosted buffs are excluded from Apply-to-Bar entirely.
+                                -- A hosted buff never takes part in Apply to Bar.
                                 local canApply = applyWrite ~= nil and not hostedBuffNoApply
-                                -- When a bar apply drives this setting, the value the BAR applies acts
-                                -- like a submenu row: it shows a right-arrow and is unclickable -- you
-                                -- manage it through the scope flyout that opens on hover (Exclude/Include/Apply to Bar), never by re-selecting the value. A bar-applied "+ " toggle counts too.
+                                -- True when a bar apply drives this setting with THIS item's
+                                -- value (a bar-applied toggle counts): that item then carries
+                                -- an arrow and is managed through the strip, not clicked.
                                 local function itemIsBarApplied()
-                                    -- A hosted buff never chains to the bar tiers (its
-                                    -- effective read passes nil for the bar/spec tiers,
-                                    -- and the runtime resolver strips them too), so a
-                                    -- bar-wide apply can never drive it. Reporting
-                                    -- "bar applied" here would dead-lock its toggle
-                                    -- rows: the OnClick bails on bar-applied items and
-                                    -- hosted rows have no Apply strip to escape through.
-                                    if hostedBuffNoApply then
+                                    -- A hosted buff never chains to the bar tiers, and it has
+                                    -- no strip to escape through, so it is never bar applied
+                                    -- (else its toggles would lock).
+                                    if
+                                        hostedBuffNoApply or not (applyKeys and AB.KeysBarApplied(applyKeys))
+                                    then
                                         return false
                                     end
-                                    if not (applyKeys and AB.KeysBarApplied(applyKeys)) then
-                                        return false
-                                    end
-                                    if isChargeToggle or isActiveBorder or isFnToggle then
+                                    if isToggle then
                                         return true
                                     end
                                     local barTier = mod.GetBarTierSettings
                                         and mod.GetBarTierSettings(sd, barId)
-                                    if applyView then
-                                        return barTier ~= nil and applyView(barTier) == item.val
-                                    end
-                                    local pk = applyKeys[1]
-                                    if not (barTier and pk) then
+                                    if not barTier then
                                         return false
                                     end
-                                    local temp = {}
-                                    applyWrite(temp, item.val)
-                                    return AB.ScopeVal(barTier, pk) == temp[pk]
+                                    if applyView then
+                                        return applyView(barTier) == item.val
+                                    end
+                                    local pk = applyKeys[1]
+                                    if not pk then
+                                        return false
+                                    end
+                                    local probe = {}
+                                    applyWrite(probe, item.val)
+                                    return AB.ScopeVal(barTier, pk) == probe[pk]
                                 end
                                 local sArrow = si:CreateTexture(nil, "ARTWORK")
                                 sArrow:SetSize(10, 10)
@@ -2878,278 +2902,174 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     "Interface\\AddOns\\CludesUI\\media\\icons\\right-arrow.png"
                                 )
                                 sArrow:SetAlpha(0.7)
-                                sArrow:Hide()
                                 local function updateArrow()
-                                    if canApply and itemIsBarApplied() then
-                                        sArrow:Show()
-                                    else
-                                        sArrow:Hide()
-                                    end
+                                    sArrow:SetShown(canApply and itemIsBarApplied())
                                 end
                                 updateArrow()
                                 si:SetScript("OnEnter", function()
                                     if not isSelected then
                                         sLbl:SetTextColor(1, 1, 1, 1)
                                     end
-                                    sHl:SetColorTexture(1, 1, 1, hlA)
                                     sHl:SetAlpha(1)
-                                    -- Optional hover tooltip (item.tooltip): shows the
-                                    -- full text for labels wider than the flyout.
+                                    -- item.tooltip: the full text of a caption the flyout clips.
                                     if item.tooltip then
                                         CludesUI.ShowWidgetTooltip(si, item.tooltip)
                                     end
-                                    -- Whenever a bar apply drives this setting, only the value the BAR
-                                    -- applies keeps the Apply-to flyout (it's the arrow row); OR-siblings
-                                    -- hide theirs and stay normal clickable values. Holds on both a
-                                    -- following spell and an excluded one (the flyout tracks the bar's
-                                    -- value, never the spell's override). Settings with no bar apply show
-                                    -- it on everything; "+ " toggles are never OR, so they keep it. A
-                                    -- scalar popup value (Threshold Seconds) has only one item, so "the
-                                    -- bar's value differs from this item" is meaningless -- never suppress it, or Apply-to-Bar vanishes the moment the entered number differs from the bar's.
-                                    local suppressStrip = canApply
-                                        and not item.scalarApply
-                                        and not (isChargeToggle or isActiveBorder or isFnToggle)
+                                    if not canApply then
+                                        return
+                                    end
+                                    -- While a bar apply drives a value setting, only the item
+                                    -- holding the bar's value keeps the strip (the arrow row);
+                                    -- the others are plain values, whatever the spell itself
+                                    -- holds. Toggles always keep theirs, and so does a scalar
+                                    -- popup value (Threshold Seconds is a single item: a number
+                                    -- unlike the bar's must not hide Apply to Bar).
+                                    if
+                                        not (item.scalarApply or isToggle)
                                         and AB.KeysBarApplied(applyKeys)
                                         and not itemIsBarApplied()
-                                    if suppressStrip then
+                                    then
                                         if dropMenu._applyStrip then
                                             dropMenu._applyStrip:Hide()
                                         end
-                                    elseif canApply then
-                                        AB.ShowApplyStripFor(si, {
-                                            keys = applyKeys,
-                                            write = applyWrite,
-                                            writeOwn = applyWriteOwn,
-                                            scalarApply = item.scalarApply,
-                                            -- A choice applies its value like any value item, but
-                                            -- Exclude This Spell turns the group off (false).
-                                            isToggle = isChargeToggle or isActiveBorder or isFnToggle,
-                                            excludeOff = isChoice,
-                                            -- Item whose val is only a discriminator while the real value
-                                            -- carries a per-spell colour payload (an R/G/B triple in applyKeys),
-                                            -- or an item the row flags as carrying another payload (apply.payload(item): the Blackout opacity).
-                                            -- For those, equality must be judged by valuesMatch, not the identifier, or the rejoin/toggle-off shortcuts discard the payload (see the two branches in the apply handler above).
-                                            -- A scalar item (Threshold Seconds, Also Show Below) is a payload too:
-                                            -- a different number is pushed, the same one toggles off.
-                                            payloadValue = hasColourPayload(applyKeys)
-                                                or (rowApply and rowApply.payload and rowApply.payload(item))
-                                                or item.scalarApply
-                                                or false,
-                                            -- Toggles: "Apply to Bar" ENABLES the feature (apply true);
-                                            -- disabling is the toggle-off press (ctx.isToggle un-applies when
-                                            -- the scope already holds the value). Never key this off isSelected: that flips an already-ON toggle OFF when switching scopes (e.g. All Specs -> Apply to Bar). Value items apply their value.
-                                            valueOf = function()
-                                                if isChargeToggle or isActiveBorder or isFnToggle then
-                                                    return true
-                                                end
-                                                return item.val
-                                            end,
-                                            confirmRA = rowApply
-                                                and rowApply.confirmRA
-                                                and (
-                                                    item.val == "pixelGlowReadyUsable"
-                                                    or item.val == "buttonGlowReadyUsable"
-                                                ),
-                                            -- No flyout rebuild here: rebuilding would destroy the strip's
-                                            -- owner item and hide the strip mid-interaction (e.g. between "Apply
-                                            -- to Bar" and "(All Specs)"). Flyout re-renders fresh on its next open; only the row's accent cue updates now.
-                                            refresh = function()
-                                                -- Re-highlight the applied flyout item in place (single-select
-                                                -- mutual exclusion AND toggles), then the collapsed row label.
-                                                RefreshFlyoutSelection()
-                                                UpdateLabelColor()
-                                            end,
-                                        })
+                                        return
                                     end
+                                    AB.ShowApplyStripFor(si, {
+                                        keys = applyKeys,
+                                        write = applyWrite,
+                                        writeOwn = applyWriteOwn,
+                                        scalarApply = item.scalarApply,
+                                        isToggle = isToggle,
+                                        -- A choice applies its value like a value item, but
+                                        -- Exclude This Spell turns its group off (false).
+                                        excludeOff = isChoice,
+                                        -- The item's val alone does not say what it holds when
+                                        -- its keys carry a colour (an R/G/B triple), the row
+                                        -- flags another payload (apply.payload: the Blackout
+                                        -- opacity) or it is a scalar (Threshold Seconds, Also
+                                        -- Show Below): equality is then judged on the values,
+                                        -- so the rejoin and toggle-off shortcuts keep them.
+                                        payloadValue = HasColourTriple(applyKeys)
+                                            or (rowApply and rowApply.payload and rowApply.payload(item))
+                                            or item.scalarApply
+                                            or false,
+                                        -- A toggle's apply turns the feature ON (pressing it again
+                                        -- where it is held un-applies); never read the selection
+                                        -- here, or changing scope would flip an on toggle off.
+                                        valueOf = function()
+                                            if isToggle then
+                                                return true
+                                            end
+                                            return item.val
+                                        end,
+                                        confirmRA = rowApply
+                                            and rowApply.confirmRA
+                                            and (
+                                                item.val == "pixelGlowReadyUsable"
+                                                or item.val == "buttonGlowReadyUsable"
+                                            ),
+                                        -- Repaint in place, never rebuild: a rebuild would take
+                                        -- the strip's owner item away mid-use.
+                                        refresh = function()
+                                            RefreshFlyoutSelection()
+                                            UpdateLabelColor()
+                                        end,
+                                    })
                                 end)
                                 si:SetScript("OnLeave", function()
                                     if not isSelected then
                                         sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                                     end
-                                    -- Keep the overlay on for a selected single-select
-                                    -- (persistent highlight); clear it for everything else.
                                     sHl:SetAlpha((not plusLook and isSelected) and 1 or 0)
                                     if item.tooltip then
                                         CludesUI.HideWidgetTooltip()
                                     end
                                 end)
+                                -- A pick writes into the spell's OWN entry and keeps both the
+                                -- menu and the flyout open.
+                                local function doWrite()
+                                    -- A choice picks itself, or clears the group when it is
+                                    -- the one shown; its setter persists and refreshes.
+                                    if isChoice then
+                                        if item.choiceGet() ~= item.val then
+                                            item.choiceSet(item.val)
+                                        else
+                                            item.choiceSet(nil)
+                                        end
+                                        RefreshFlyoutSelection()
+                                        Repaint(false)
+                                        return
+                                    end
+                                    -- A store toggle: its setter persists, arms and refreshes.
+                                    if isFnToggle and item.toggleSet then
+                                        item.toggleSet(not item.toggleGet())
+                                        ShowState(item.toggleGet() and true or false)
+                                        Repaint(false)
+                                        return
+                                    end
+                                    -- A settings toggle (charge styles, Border Color). It never
+                                    -- touches the row's own value.
+                                    if ssKey then
+                                        EnsureSS()
+                                        if ss[ssKey] == true then
+                                            SetOwn(ssKey, nil)
+                                        else
+                                            ss[ssKey] = true
+                                        end
+                                        local on = ss[ssKey] == true
+                                        if on and item.charge then
+                                            ArmChargeGate(mod, item.charge)
+                                        elseif on and not ss.activeBorderR then
+                                            -- Border Color starts from the accent gold; the
+                                            -- inline swatch picks another.
+                                            ss.activeBorderR = 1
+                                            ss.activeBorderG = 0.776
+                                            ss.activeBorderB = 0.376
+                                            ss.activeBorderA = 1
+                                        end
+                                        ShowState(on)
+                                        Repaint(true)
+                                        return
+                                    end
+                                    setVal(item.val)
+                                    RefreshFlyoutSelection()
+                                    Repaint(true)
+                                end
                                 si:SetScript("OnClick", function()
-                                    -- The value the bar applies is unclickable -- it's the submenu/arrow
-                                    -- row. Manage it through the scope flyout (Exclude/Include/Apply to Bar), not by re-selecting.
+                                    -- The bar's own value is the arrow row: it is managed
+                                    -- through the strip (Exclude / Include / Apply to Bar).
                                     if itemIsBarApplied() then
                                         return
                                     end
-                                    -- The write this click performs, always into the spell's OWN entry
-                                    -- (charge toggle / active border / single-select value). Wrapped so the bar-override confirm below can defer it to the popup callback.
-                                    local function doWrite()
-                                        -- Choice (item.choiceGet/item.choiceSet): picks this choice, or
-                                        -- clears the group when it is the one shown; the row's value is
-                                        -- untouched. The setter owns the persist and the icon refresh;
-                                        -- the flyout stays open and re-derives selections and locks.
-                                        if isChoice then
-                                            if item.choiceGet() ~= item.val then
-                                                item.choiceSet(item.val)
-                                            else
-                                                item.choiceSet(nil)
-                                            end
-                                            RefreshFlyoutSelection()
-                                            UpdateLabelColor()
-                                            local strip = dropMenu._applyStrip
-                                            if strip and strip:IsShown() and strip._updateActive then
-                                                strip._updateActive()
-                                            end
-                                            return
-                                        end
-                                        -- Generic independent toggle (item.toggleGet/item.toggleSet): flips
-                                        -- its own boolean through the row's store accessors (the setter owns
-                                        -- the persist + gate flip + refresh calls) and keeps the flyout open, exactly like the charge toggles.
-                                        if isFnToggle and item.toggleSet then
-                                            item.toggleSet(not item.toggleGet())
-                                            isSelected = item.toggleGet() and true or false
-                                            if isSelected then
-                                                local acR, acG, acB = CludesUI.GetAccentColor()
-                                                sLbl:SetTextColor(acR, acG, acB, 1)
-                                            else
-                                                sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                                            end
-                                            UpdateLabelColor()
-                                            local strip = dropMenu._applyStrip
-                                            if strip and strip:IsShown() and strip._updateActive then
-                                                strip._updateActive()
-                                            end
-                                            return
-                                        end
-                                        -- Charge toggles flip an independent boolean and keep the flyout
-                                        -- open (so both can be set in one pass); they never touch the single-select cdStateEffect.
-                                        if isChargeToggle then
-                                            EnsureSS()
-                                            if ss[item.charge] == true then
-                                                SetOwn(item.charge, nil)
-                                            else
-                                                ss[item.charge] = true
-                                            end
-                                            isSelected = (ss[item.charge] == true)
-                                            if isSelected then
-                                                local acR, acG, acB = CludesUI.GetAccentColor()
-                                                sLbl:SetTextColor(acR, acG, acB, 1)
-                                                if item.charge == "chargeHideCdText" then
-                                                    mod._cdmAnyChargeHideCdText = true
-                                                elseif item.charge == "hideChargeText" then
-                                                    mod._cdmAnyHideChargeText = true
-                                                elseif item.charge == "suppressGCD" then
-                                                    mod._cdmAnySuppressGcd = true
-                                                elseif item.charge ~= "chargeHideUntilSpent" then
-                                                    -- chargeHideUntilSpent needs no session gate: it is read
-                                                    -- inside the cd-state evaluator, which only runs for icons that have a Hidden (CD Ready) effect.
-                                                    mod._cdmAnyChargeStyle = true
-                                                end
-                                            else
-                                                sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                                            end
-                                            -- Live-update the collapsed row's accent, like
-                                            -- the single-select path does.
-                                            UpdateLabelColor()
-                                            if mod.RefreshCDMIconAppearance then
-                                                mod.RefreshCDMIconAppearance(barId)
-                                            end
-                                            if mod.QueueReanchor then
-                                                mod.QueueReanchor()
-                                            end
-                                            local strip = dropMenu._applyStrip
-                                            if strip and strip:IsShown() and strip._updateActive then
-                                                strip._updateActive()
-                                            end
-                                            return
-                                        end
-                                        -- Border Color: independent toggle (keeps flyout open). The inline
-                                        -- swatch picks the color; the row toggles it on/off. Recolors the icon border during active state only.
-                                        if isActiveBorder then
-                                            EnsureSS()
-                                            if ss.activeBorderEnabled == true then
-                                                SetOwn("activeBorderEnabled", nil)
-                                            else
-                                                ss.activeBorderEnabled = true
-                                            end
-                                            isSelected = (ss.activeBorderEnabled == true)
-                                            if isSelected then
-                                                if not ss.activeBorderR then
-                                                    ss.activeBorderR = 1
-                                                    ss.activeBorderG = 0.776
-                                                    ss.activeBorderB = 0.376
-                                                    ss.activeBorderA = 1
-                                                end
-                                                local acR, acG, acB = CludesUI.GetAccentColor()
-                                                sLbl:SetTextColor(acR, acG, acB, 1)
-                                            else
-                                                sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                                            end
-                                            UpdateLabelColor()
-                                            if mod.RefreshCDMIconAppearance then
-                                                mod.RefreshCDMIconAppearance(barId)
-                                            end
-                                            if mod.QueueReanchor then
-                                                mod.QueueReanchor()
-                                            end
-                                            local strip = dropMenu._applyStrip
-                                            if strip and strip:IsShown() and strip._updateActive then
-                                                strip._updateActive()
-                                            end
-                                            return
-                                        end
-                                        setVal(item.val)
-                                        -- Keep the flyout open (same as the toggle items): selecting a value
-                                        -- should close neither the menu nor the subnav. Re-highlight in place.
-                                        RefreshFlyoutSelection()
-                                        UpdateLabelColor()
-                                        if mod.RefreshCDMIconAppearance then
-                                            mod.RefreshCDMIconAppearance(barId)
-                                        end
-                                        if mod.QueueReanchor then
-                                            mod.QueueReanchor()
-                                        end
-                                        local strip = dropMenu._applyStrip
-                                        if strip and strip:IsShown() and strip._updateActive then
-                                            strip._updateActive()
-                                        end
-                                    end
-                                    -- When the BAR drives this setting and the spell has no own value yet: clicking the
-                                    -- value the bar already applies changes nothing -> flash the scope holding it (no-op
-                                    -- cue); clicking a different value (or a "+" toggle or choice) breaks THIS spell+spec
-                                    -- out into its own value, no popup, the bar apply stays for every other spell (doWrite
-                                    -- flips a toggle OFF, the break-out for a bar-applied-ON toggle, and picks or clears a
-                                    -- choice: the bar's own choice is the arrow row, returned above, so a choice shown
-                                    -- here is the entry's own). Once the spell owns a value it reports editable and
-                                    -- writes straight through (the excluded state).
-                                    -- canApply: hosted-buff rows (and rows with no apply write) skip the break-out flow,
-                                    -- which flashes an Apply strip those rows suppress; they just write their value below.
+                                    -- While the bar drives this setting and the spell holds
+                                    -- nothing of its own, picking the value the bar already
+                                    -- applies changes nothing, so the strip flashes the scope
+                                    -- that holds it. Anything else (another value, a toggle,
+                                    -- a choice) breaks this spell out with a value of its own
+                                    -- and leaves the bar apply for the rest. Rows without a
+                                    -- strip (hosted buffs) just write.
                                     if
                                         canApply
+                                        and not plusLook
                                         and AB.KeysBarApplied(applyKeys)
                                         and not AB.SpellHasOwn(applyKeys)
                                     then
-                                        if not plusLook then
-                                            local cv = getVal()
-                                            if (cv == item.val) or (cv == nil and item.val == nil) then
-                                                local strip = dropMenu._applyStrip
-                                                if strip and strip._flashScopeFor then
-                                                    strip._flashScopeFor()
-                                                end
-                                                return
+                                        local cv = getVal()
+                                        if cv == item.val then
+                                            local strip = dropMenu._applyStrip
+                                            if strip and strip._flashScopeFor then
+                                                strip._flashScopeFor()
                                             end
+                                            return
                                         end
-                                        doWrite()
-                                        return
                                     end
                                     doWrite()
                                 end)
 
                                 if onItemCreated then
                                     onItemCreated(si, item, sub)
-                                    -- The hook may attach a dynamic caption (the Blackout
-                                    -- percent): show it from the first open.
-                                    if item.dynamicLabel then
-                                        sLbl:SetText(item.dynamicLabel())
-                                    end
+                                    -- The hook may attach a dynamic caption (the Blackout percent).
+                                    Recaption()
                                 end
                                 if itemState then
                                     itemState(si, item, sub)
@@ -3158,83 +3078,48 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     frame = si,
                                     label = sLbl,
                                     name = item.label,
-                                    itemVal = item.val,
                                     item = item,
-                                    -- Unhovered look for a selection state, exactly as built.
+                                    computeSelected = SelectedNow,
+                                    setSelected = ShowState,
+                                    -- A fresh open: no hover overlay left on a "+" item.
                                     resetShown = function(sel)
-                                        isSelected = sel
-                                        if sel then
-                                            local acR3, acG3, acB3 = CludesUI.GetAccentColor()
-                                            sLbl:SetTextColor(acR3, acG3, acB3, 1)
-                                        else
-                                            sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                                        end
-                                        sHl:SetColorTexture(1, 1, 1, hlA)
-                                        sHl:SetAlpha((not plusLook and sel) and 1 or 0)
+                                        sHl:SetAlpha(0)
+                                        ShowState(sel)
                                     end,
-                                    isToggle = isChargeToggle or isActiveBorder or isFnToggle,
-                                    -- Live selected-state predicate, mirroring the render-time isSelected
-                                    -- assignment above. Reads effective (chained) values, so it reflects a bar-tier apply, not just the spell's own entry.
-                                    computeSelected = function()
-                                        if isChargeToggle then
-                                            return ss[item.charge] == true
-                                        end
-                                        if isActiveBorder then
-                                            return ss.activeBorderEnabled == true
-                                        end
-                                        if isFnToggle then
-                                            return item.toggleGet() and true or false
-                                        end
-                                        if isChoice then
-                                            return item.choiceGet() == item.val
-                                        end
-                                        local cv = getVal()
-                                        if cv == false then
-                                            cv = nil
-                                        end -- None/default blocks with false
-                                        return (cv == item.val) or (cv == nil and item.val == nil)
-                                    end,
-                                    -- In-place selection update for the keep-open click path (also keeps the item's OnLeave and the strip's toggle state in sync).
-                                    setSelected = function(sel)
-                                        isSelected = sel
-                                        if sel then
-                                            local acR2, acG2, acB2 = CludesUI.GetAccentColor()
-                                            sLbl:SetTextColor(acR2, acG2, acB2, 1)
-                                        else
-                                            sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                                        end
-                                        -- Selected single-select keeps the white overlay (the "+" items never get the persistent look).
-                                        if not plusLook then
-                                            sHl:SetAlpha(sel and 1 or 0)
-                                        end
-                                    end,
-                                    refreshLabel = function()
-                                        if item.dynamicLabel then
-                                            sLbl:SetText(item.dynamicLabel())
-                                        end
-                                    end,
-                                    -- Live-update the arrow/unclickable state after an apply or un-apply (the flyout doesn't rebuild in place).
+                                    refreshLabel = Recaption,
                                     updateArrow = updateArrow,
                                 }
                                 subH = subH + ITEM_H
-                            end -- item.divider / else
+                            end
                         end
 
-                        -- Fit the width to the longest caption before anything below sizes from subW.
                         RefitSub()
 
-                        -- Cap height + scroll for long lists (e.g. the Audio Effect sound list),
-                        -- matching the Focus Cast Sound dropdown and Custom Tracking subnav. Mouse-wheel + smooth scroll; short subnavs fall through to the unchanged fixed-height path.
+                        -- A long list (the Audio Effect sounds) caps at the dropdowns'
+                        -- 200px and scrolls smoothly under the wheel; a short one sizes
+                        -- to fit. Returns the scroll's jump-to function.
                         local totalSubH = subH + 4
                         subInner:SetHeight(totalSubH)
-                        -- 200 == the dropdown's DD_MAX_HEIGHT (Focus Cast Sound).
                         local FLYOUT_MAX_H = 200
-                        -- Kept for reshowSub: the search box and its filter, or the scroll reset.
+                        local function ScrollFrom(top)
+                            subInner:ClearAllPoints()
+                            local scrollFrame = CreateFrame("ScrollFrame", nil, sub)
+                            scrollFrame:SetPoint("TOPLEFT", 0, -top)
+                            scrollFrame:SetPoint("BOTTOMRIGHT", 0, 1)
+                            scrollFrame:SetFrameLevel(sub:GetFrameLevel() + 1)
+                            scrollFrame:EnableMouseWheel(true)
+                            scrollFrame:SetScrollChild(subInner)
+                            subInner:SetWidth(subW)
+                            local _, jump =
+                                CludesUI.AttachSmoothScrollbar(scrollFrame, { step = 40, thumb = false })
+                            return jump
+                        end
+                        -- Kept for reshowSub: the search box and its filter, or the scroll's jump.
                         local searchEdit, filterList, scrollTop
                         if options and options.searchable then
-                            -- Searchable flyout: a filter box pinned to the top with the list
-                            -- scrolling below it. Items are uniform height (ITEM_H), so filtering just
-                            -- repositions the survivors and hides separators while a query is active. Scroll range is recomputed live from the scroll child height.
+                            -- A filter box on top, the list scrolling under it. Rows are all
+                            -- ITEM_H tall, so a query just restacks the matches (separators
+                            -- show only for the full list).
                             local SEARCH_H = 24
                             local searchPad = SEARCH_H + 8
                             sub:SetSize(subW, FLYOUT_MAX_H + searchPad)
@@ -3258,75 +3143,48 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             sePh:SetTextColor(0.5, 0.5, 0.5, 0.6)
                             sePh:SetPoint("LEFT", searchEdit, "LEFT", 4, 0)
                             sePh:SetText(CludesUI.L("Search..."))
-                            searchEdit:SetScript("OnEscapePressed", function(self)
+                            local function Unfocus(self)
                                 self:ClearFocus()
-                            end)
-                            searchEdit:SetScript("OnHide", function(self)
-                                self:ClearFocus()
-                            end)
+                            end
+                            searchEdit:SetScript("OnEscapePressed", Unfocus)
+                            searchEdit:SetScript("OnHide", Unfocus)
 
-                            subInner:ClearAllPoints()
-                            local scrollFrame = CreateFrame("ScrollFrame", nil, sub)
-                            scrollFrame:SetPoint("TOPLEFT", 0, -searchPad)
-                            scrollFrame:SetPoint("BOTTOMRIGHT", 0, 1)
-                            scrollFrame:SetFrameLevel(sub:GetFrameLevel() + 1)
-                            scrollFrame:EnableMouseWheel(true)
-                            scrollFrame:SetScrollChild(subInner)
-                            subInner:SetWidth(subW)
-
-                            local _, scrollTo =
-                                CludesUI.AttachSmoothScrollbar(scrollFrame, { step = 40, thumb = false })
-
-                            local function ApplyFlyoutFilter(raw)
+                            local scrollTo = ScrollFrom(searchPad)
+                            filterList = function(raw)
                                 local q = strlower(strtrim(raw or ""))
                                 sePh:SetShown(q == "")
                                 local yy = 4
                                 for _, e in ipairs(flyoutEntries) do
+                                    local shown
                                     if e.isDivider then
-                                        -- Separators only make sense in the full list.
-                                        if q == "" then
-                                            e.frame:Show()
-                                            e.frame:ClearAllPoints()
-                                            e.frame:SetPoint("TOPLEFT", subInner, "TOPLEFT", 6, -yy - 4)
-                                            e.frame:SetPoint("TOPRIGHT", subInner, "TOPRIGHT", -6, -yy - 4)
-                                            yy = yy + 9
-                                        else
-                                            e.frame:Hide()
-                                        end
+                                        shown = q == ""
                                     else
                                         local nm = e.name or (e.label and e.label:GetText()) or ""
-                                        if q == "" or strfind(strlower(tostring(nm)), q, 1, true) then
-                                            e.frame:Show()
-                                            e.frame:ClearAllPoints()
-                                            e.frame:SetPoint("TOPLEFT", subInner, "TOPLEFT", 1, -yy)
-                                            e.frame:SetPoint("TOPRIGHT", subInner, "TOPRIGHT", -1, -yy)
-                                            yy = yy + ITEM_H
-                                        else
-                                            e.frame:Hide()
+                                        shown = q == "" or strfind(strlower(tostring(nm)), q, 1, true) ~= nil
+                                    end
+                                    e.frame:SetShown(shown)
+                                    if shown then
+                                        -- A separator sits 4px into its 9px slot, inset 6.
+                                        local inset, dy = 1, 0
+                                        if e.isDivider then
+                                            inset, dy = 6, 4
                                         end
+                                        e.frame:ClearAllPoints()
+                                        e.frame:SetPoint("TOPLEFT", subInner, "TOPLEFT", inset, -yy - dy)
+                                        e.frame:SetPoint("TOPRIGHT", subInner, "TOPRIGHT", -inset, -yy - dy)
+                                        yy = yy + (e.isDivider and 9 or ITEM_H)
                                     end
                                 end
                                 subInner:SetHeight(math.max(1, yy + 4))
                                 scrollTo(0)
                             end
-                            filterList = ApplyFlyoutFilter
                             searchEdit:SetScript("OnTextChanged", function(self)
-                                ApplyFlyoutFilter(self:GetText())
+                                filterList(self:GetText())
                             end)
-                            ApplyFlyoutFilter("")
+                            filterList("")
                         elseif totalSubH > FLYOUT_MAX_H then
                             sub:SetSize(subW, FLYOUT_MAX_H)
-                            subInner:ClearAllPoints()
-                            local scrollFrame = CreateFrame("ScrollFrame", nil, sub)
-                            scrollFrame:SetPoint("TOPLEFT", 0, -1)
-                            scrollFrame:SetPoint("BOTTOMRIGHT", 0, 1)
-                            scrollFrame:SetFrameLevel(sub:GetFrameLevel() + 1)
-                            scrollFrame:EnableMouseWheel(true)
-                            scrollFrame:SetScrollChild(subInner)
-                            subInner:SetWidth(subW)
-                            local _, toTop =
-                                CludesUI.AttachSmoothScrollbar(scrollFrame, { step = 40, thumb = false })
-                            scrollTop = toTop
+                            scrollTop = ScrollFrom(1)
                         else
                             sub:SetSize(subW, totalSubH)
                         end

@@ -102,3 +102,82 @@ for _, key in ipairs({ bars[1].key, "buffs" }) do
     HoverRows("icon menu " .. tostring(key))
     mod.CDMO_ShowSpellPicker(anchor, key, 1, {}, function() end, true)
 end
+
+-- Then every flyout item of each bar's icon menu clicked in turn (the menu
+-- reopened whenever a pick closed it), writing out the spell's saved settings
+-- after each click: the pick paths, not just the look.
+local function FindMenu()
+    for _, c in ipairs({ UIParent:GetChildren() }) do
+        if c:IsShown() and c.GetFrameStrata and c:GetFrameStrata() == "FULLSCREEN_DIALOG" and c:GetFrameLevel() == 300 then
+            return c
+        end
+    end
+end
+local function Buttons(root, pred)
+    local out, stack = {}, { root }
+    while #stack > 0 do
+        local f = table.remove(stack, 1)
+        if type(f) == "table" and rawget(f, "\0children") then
+            if f["\0kind"] == "Button" and pred(f) then out[#out + 1] = f end
+            for _, ch in ipairs(f["\0children"]) do stack[#stack + 1] = ch end
+        end
+    end
+    return out
+end
+local function Dump(t, depth)
+    if type(t) ~= "table" then return tostring(t) end
+    if depth > 3 then return "{...}" end
+    local keys = {}
+    for k in pairs(t) do keys[#keys + 1] = k end
+    table.sort(keys, function(a, b) return tostring(a) < tostring(b) end)
+    local parts = {}
+    for _, k in ipairs(keys) do parts[#parts + 1] = tostring(k) .. "=" .. Dump(t[k], depth + 1) end
+    return "{" .. table.concat(parts, ",") .. "}"
+end
+local function HidePopups()
+    local hosts = { UIParent }
+    if CUI.OverlayParent and CUI.OverlayParent() ~= UIParent then hosts[2] = CUI.OverlayParent() end
+    for _, host in ipairs(hosts) do
+        for _, c in ipairs({ host:GetChildren() }) do
+            if c:IsShown() and c.GetFrameStrata and c:GetFrameStrata() == "FULLSCREEN_DIALOG" and c:GetFrameLevel() >= 100 and c:GetFrameLevel() ~= 300 then
+                c:Hide()
+            end
+        end
+    end
+end
+for _, key in ipairs({ bars[1].key, "buffs" }) do
+    local function Open()
+        if FindMenu() then mod.CDMO_ShowSpellPicker(anchor, key, 1, {}, function() end, true) end
+        HidePopups()
+        mod.CDMO_ShowSpellPicker(anchor, key, 1, {}, function() end, true)
+        return FindMenu()
+    end
+    local function RowsOf(menu)
+        return Buttons(menu, function(f) return f["\0scripts"].OnEnter ~= nil and f:IsVisible() end)
+    end
+    local function ItemsOf(menu, row)
+        pcall(row["\0scripts"].OnEnter, row)
+        local sub = rawget(menu, "_openSub")
+        if not (sub and sub:IsShown()) then return {} end
+        return Buttons(sub, function(f) return f["\0scripts"].OnClick ~= nil and f:IsVisible() end)
+    end
+    local menu = Open()
+    local nRows = menu and #RowsOf(menu) or 0
+    for i = 1, nRows do
+        menu = FindMenu() or Open()
+        local row = RowsOf(menu)[i]
+        local nItems = row and #ItemsOf(menu, row) or 0
+        for j = 1, nItems do
+            menu = FindMenu() or Open()
+            row = RowsOf(menu)[i]
+            local item = row and ItemsOf(menu, row)[j]
+            if item then
+                local ok, err = pcall(item["\0scripts"].OnClick, item, "LeftButton")
+                local store = mod.GetSpellSettingsStore and mod.GetSpellSettingsStore(key == "buffs" and "buffs" or key)
+                OUT:write("== click " .. key .. " " .. i .. "." .. j .. (ok and "" or (" ERR " .. tostring(err))) .. " " .. Dump(store and store[774], 0) .. "\n")
+            end
+        end
+    end
+    if FindMenu() then mod.CDMO_ShowSpellPicker(anchor, key, 1, {}, function() end, true) end
+    HidePopups()
+end
