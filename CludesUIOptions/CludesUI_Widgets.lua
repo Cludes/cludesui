@@ -542,6 +542,20 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- Build a dropdown popup menu + item buttons; returns { menu, menuItems, refresh }. ddBtn = button the menu hangs off; menuW = menu pixel width; order = key array; values = { key = displayName } (displayName: string or { text=..., note=... }); ddLbl = label FontString updated on selection; style = "wide"/"regular" (WD_ vs RD_ colours).
     local DD_MAX_HEIGHT = 200
 
+    -- After a pick, once the menu has fully closed, every widget re-reads its
+    -- value: the setter may have changed another dropdown (e.g. moved a text
+    -- off the slot this one took).
+    local function RefreshWidgetsNextFrame()
+        C_Timer.After(0, function()
+            local rl = CludesUI._widgetRefreshList
+            if rl then
+                for ri = 1, #rl do
+                    rl[ri]()
+                end
+            end
+        end)
+    end
+
     local function BuildDropdownMenu(
         ddBtn,
         menuW,
@@ -860,14 +874,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                                     end
                                     flyout:Hide()
                                     menu:Hide()
-                                    C_Timer.After(0, function()
-                                        local rl = CludesUI._widgetRefreshList
-                                        if rl then
-                                            for ri = 1, #rl do
-                                                rl[ri]()
-                                            end
-                                        end
-                                    end)
+                                    RefreshWidgetsNextFrame()
                                 end)
                                 fH = fH + (sn.itemHeight or 26)
                             end
@@ -1161,6 +1168,42 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         -- Full display name for the dropdown button label
                         item._displayName = noteText and (mainText .. " " .. noteText) or mainText
                         menuItems[#menuItems + 1] = item
+                        -- Lit: the label (its own hue, if any) and note in full white
+                        -- and the icon's tint at full alpha, over the hover wash. At
+                        -- rest: the accent for an action row, else the label's own
+                        -- colour or the dim text, the selection wash on the current pick.
+                        local function Paint(hot)
+                            local lc, ic = item._lblColor, item._icoColor
+                            if hot then
+                                if lc then
+                                    iLbl:SetTextColor(lc[1], lc[2], lc[3], 1)
+                                else
+                                    iLbl:SetTextColor(1, 1, 1, 1)
+                                end
+                            elseif dnAction then
+                                local ACC = CludesUI.CLUDES_GREEN
+                                iLbl:SetTextColor(ACC.r, ACC.g, ACC.b, 0.8)
+                            elseif lc then
+                                iLbl:SetTextColor(lc[1], lc[2], lc[3], lc[4])
+                            else
+                                iLbl:SetTextColor(TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
+                            end
+                            if ic and item._icoTex then
+                                item._icoTex:SetVertexColor(ic[1], ic[2], ic[3], hot and 1 or ic[4])
+                            end
+                            if iNote then
+                                if hot then
+                                    iNote:SetTextColor(1, 1, 1, 1)
+                                else
+                                    iNote:SetTextColor(TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
+                                end
+                            end
+                            if hot then
+                                iHl:SetAlpha(DD_ITEM_HL_A)
+                            else
+                                iHl:SetAlpha((item._key == getValue()) and DD_ITEM_SEL_A or 0)
+                            end
+                        end
                         item:SetScript("OnEnter", function()
                             if disabledValuesFn then
                                 local dv = disabledValuesFn(key)
@@ -1172,20 +1215,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                                     return
                                 end
                             end
-                            local lc = item._lblColor
-                            if lc then
-                                iLbl:SetTextColor(lc[1], lc[2], lc[3], 1)
-                            else
-                                iLbl:SetTextColor(1, 1, 1, 1)
-                            end
-                            local ic = item._icoColor
-                            if ic and item._icoTex then
-                                item._icoTex:SetVertexColor(ic[1], ic[2], ic[3], 1)
-                            end
-                            if iNote then
-                                iNote:SetTextColor(1, 1, 1, 1)
-                            end
-                            iHl:SetAlpha(DD_ITEM_HL_A)
+                            Paint(true)
                             -- Second arg (item frame) is additive: (key)-only handlers ignore it; others use it to anchor tooltips.
                             if _moOnItemHover then
                                 _moOnItemHover(key, item)
@@ -1196,23 +1226,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                                 HideWidgetTooltip()
                                 return
                             end
-                            if dnAction then
-                                local ACC = CludesUI.CLUDES_GREEN
-                                iLbl:SetTextColor(ACC.r, ACC.g, ACC.b, 0.8)
-                            elseif item._lblColor then
-                                local lc = item._lblColor
-                                iLbl:SetTextColor(lc[1], lc[2], lc[3], lc[4])
-                            else
-                                iLbl:SetTextColor(TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
-                            end
-                            local ic = item._icoColor
-                            if ic and item._icoTex then
-                                item._icoTex:SetVertexColor(ic[1], ic[2], ic[3], ic[4])
-                            end
-                            if iNote then
-                                iNote:SetTextColor(TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
-                            end
-                            iHl:SetAlpha((item._key == getValue()) and DD_ITEM_SEL_A or 0)
+                            Paint(false)
                             if _moOnItemLeave then
                                 _moOnItemLeave(key, item)
                             end
@@ -1234,15 +1248,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                                 ddLbl:SetText(TR(mainText))
                             end
                             menu:Hide()
-                            -- Deferred refresh: setValue may have mutually-excluded another dropdown (e.g. left/right text); the zero-delay timer updates its label after the menu fully closes.
-                            C_Timer.After(0, function()
-                                local rl = CludesUI._widgetRefreshList
-                                if rl then
-                                    for ri = 1, #rl do
-                                        rl[ri]()
-                                    end
-                                end
-                            end)
+                            RefreshWidgetsNextFrame()
                         end)
                         mH = mH + _moItemH
                     end -- subnav if/else
