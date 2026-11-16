@@ -83,6 +83,20 @@ initFrame:SetScript("OnEvent", function(self)
         return menu
     end
 
+    -- A menu opened from a button (menu._anchor) closes on a left click
+    -- outside both: each open runs menu._closeOutside as its OnUpdate, and
+    -- hiding clears it.
+    local function CloseOnOutsideClick(menu)
+        menu._closeOutside = function(m)
+            if not m:IsMouseOver() and not m._anchor:IsMouseOver() and IsMouseButtonDown("LeftButton") then
+                m:Hide()
+            end
+        end
+        menu:HookScript("OnHide", function(m)
+            m:SetScript("OnUpdate", nil)
+        end)
+    end
+
     -- The live form: dimmed and covered while isOn() is false, at liveAlpha()
     -- (default full) while it is true, re-read on every widget refresh.
     local function GatedSwatch(swatch, updateSwatch, gateName, level, isOn, liveAlpha)
@@ -694,19 +708,7 @@ initFrame:SetScript("OnEvent", function(self)
                 addItem._lbl, addItem._hl = addLbl, addHl
                 dropMenu._addItem = addItem
 
-                -- Close on left-click outside (non-blocking)
-                dropMenu._closeOutside = function(m)
-                    if
-                        not m:IsMouseOver()
-                        and not m._anchor:IsMouseOver()
-                        and IsMouseButtonDown("LeftButton")
-                    then
-                        m:Hide()
-                    end
-                end
-                dropMenu:HookScript("OnHide", function(m)
-                    m:SetScript("OnUpdate", nil)
-                end)
+                CloseOnOutsideClick(dropMenu)
                 _edbMenus.bar = dropMenu
             end
 
@@ -1486,17 +1488,15 @@ initFrame:SetScript("OnEvent", function(self)
         -- "+" add-block tile (CDM preview add-button look): bar-height
         -- square, 4px off the strip, dark fill, colored "+" glyph that
         -- lights up with an accent border on hover.
+        -- Vertical: kept in the popout with the strip, under it.
         local addBtn
         if vertical then
-            -- Kept in the popout with the strip (see the vertical branch above).
             addBtn = Pool.Kept(_edbKeep, "popAddBtn", "Button", stripParent)
-        else
-            addBtn = CreateFrame("Button", nil, stripParent)
-        end
-        Pix.Size(addBtn, stripThick, stripThick)
-        if vertical then
+            Pix.Size(addBtn, stripThick, stripThick)
             Pix.Point(addBtn, "TOP", strip, "BOTTOM", 0, -4)
         else
+            addBtn = CreateFrame("Button", nil, stripParent)
+            Pix.Size(addBtn, stripThick, stripThick)
             Pix.Point(addBtn, "LEFT", strip, "RIGHT", 4, 0)
         end
         addBtn:SetFrameLevel(strip:GetFrameLevel() + 2)
@@ -1560,16 +1560,13 @@ initFrame:SetScript("OnEvent", function(self)
                         local nb = mod.AddBlock(dropMenu._barId, typeKey)
                         HardRefresh()
                         if nb then
+                            -- A Currency or broker block lands unusable until its
+                            -- currency or plugin is picked, so aim at that picker: it
+                            -- pulses until filled in, instead of the one-shot
+                            -- section glow.
                             local navKey = "block:" .. nb.id
-                            -- A currency block lands unusable until one is picked,
-                            -- so aim at the picker itself: that target pulses until
-                            -- it is filled in, instead of the one-shot section glow.
-                            if typeKey == "currency" then
-                                navKey = navKey .. ":currency"
-                            end
-                            -- Same for a broker block: unusable until a plugin is picked.
-                            if typeKey == "ldb" then
-                                navKey = navKey .. ":ldb"
+                            if typeKey == "currency" or typeKey == "ldb" then
+                                navKey = navKey .. ":" .. typeKey
                             end
                             C_Timer.After(0.05, function()
                                 if _edbNavigateFn then
@@ -1583,18 +1580,7 @@ initFrame:SetScript("OnEvent", function(self)
                     mH = mH + ITEM_H
                 end
                 dropMenu:SetHeight(mH + 4)
-                dropMenu._closeOutside = function(m)
-                    if
-                        not m:IsMouseOver()
-                        and not m._anchor:IsMouseOver()
-                        and IsMouseButtonDown("LeftButton")
-                    then
-                        m:Hide()
-                    end
-                end
-                dropMenu:HookScript("OnHide", function(m)
-                    m:SetScript("OnUpdate", nil)
-                end)
+                CloseOnOutsideClick(dropMenu)
                 _edbMenus.add = dropMenu
             end
             local rowList = dropMenu._rows
