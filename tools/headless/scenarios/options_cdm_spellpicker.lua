@@ -1,6 +1,7 @@
 -- Cooldown Manager > CDM Bars: the per-bar spell picker (add mode) and the
 -- per-icon settings menu (a slot's right-click: its settings + Remove), on the
--- first bar with two tracked spells; then on the Buffs bar.
+-- first bar with two tracked spells; then on the Buffs bar. Every row of both
+-- is hovered, so each flyout (and the Potions & Healthstone list) shows too.
 local CUI = rawget(_G, "CludesUI")
 local mod = CUI._ModuleNS and CUI._ModuleNS["CludesUICooldownManager"]
 if not (mod and mod.CDMO_ShowSpellPicker) then
@@ -37,22 +38,9 @@ local function Popups(label)
     OUT:write("== " .. label .. ": " .. n .. " popups\n")
 end
 
-local anchor = CreateFrame("Button", nil, UIParent)
-anchor:SetSize(36, 36)
-anchor:SetPoint("CENTER")
-
-for _, key in ipairs({ bars[1].key, "buffs" }) do
-    if mod.AddTrackedSpell then
-        pcall(mod.AddTrackedSpell, key, 774)
-        pcall(mod.AddTrackedSpell, key, 33763)
-    end
-    anchor._previewSpellID = 774
-    mod.CDMO_ShowSpellPicker(anchor, key, nil, {}, function() end)
-    Popups("picker " .. tostring(key))
-    mod.CDMO_ShowSpellPicker(anchor, key, nil, {}, function() end) -- toggles closed
-    mod.CDMO_ShowSpellPicker(anchor, key, 1, {}, function() end, true)
-    Popups("icon menu " .. tostring(key))
-    -- Each row hovered in turn: the rows with a flyout open it.
+-- The open menu (level 300 on UIParent), each of its rows hovered in turn: a
+-- row with a flyout opens it, and the flyout is snapshotted.
+local function HoverRows(label)
     local menu
     for _, c in ipairs({ UIParent:GetChildren() }) do
         if c:IsShown() and c.GetFrameStrata and c:GetFrameStrata() == "FULLSCREEN_DIALOG" and c:GetFrameLevel() == 300 then
@@ -67,14 +55,35 @@ for _, key in ipairs({ bars[1].key, "buffs" }) do
             for _, ch in ipairs(f["\0children"]) do stack[#stack + 1] = ch end
         end
     end
-    OUT:write("== rows " .. #rows .. "\n")
+    OUT:write("== " .. label .. " rows " .. #rows .. "\n")
     for i, row in ipairs(rows) do
         pcall(row["\0scripts"].OnEnter, row)
-        local sub = menu and rawget(menu, "_openSub")
-        if sub and sub:IsShown() then
-            SNAP("flyout " .. tostring(key) .. " " .. i, sub)
+        for _, key in ipairs({ "_openSub", "_potionsSub" }) do
+            local sub = menu and rawget(menu, key)
+            if sub and sub:IsShown() then
+                SNAP(label .. " flyout " .. i .. key, sub)
+            end
         end
         if row["\0scripts"].OnLeave then pcall(row["\0scripts"].OnLeave, row) end
     end
+end
+
+local anchor = CreateFrame("Button", nil, UIParent)
+anchor:SetSize(36, 36)
+anchor:SetPoint("CENTER")
+
+for _, key in ipairs({ bars[1].key, "buffs" }) do
+    if mod.AddTrackedSpell then
+        pcall(mod.AddTrackedSpell, key, 774)
+        pcall(mod.AddTrackedSpell, key, 33763)
+    end
+    anchor._previewSpellID = 774
+    mod.CDMO_ShowSpellPicker(anchor, key, nil, {}, function() end)
+    Popups("picker " .. tostring(key))
+    HoverRows("picker " .. tostring(key))
+    mod.CDMO_ShowSpellPicker(anchor, key, nil, {}, function() end) -- toggles closed
+    mod.CDMO_ShowSpellPicker(anchor, key, 1, {}, function() end, true)
+    Popups("icon menu " .. tostring(key))
+    HoverRows("icon menu " .. tostring(key))
     mod.CDMO_ShowSpellPicker(anchor, key, 1, {}, function() end, true)
 end

@@ -188,6 +188,78 @@ local function PresetMenuRow(menu, inner, y, height, text, texture, onBar, font,
     return row
 end
 
+-- A list entry with its icon on the right and the label clipped to one line
+-- before it, at y on parent (made at owner level + 2). Greyed (label and icon)
+-- while already added: then tipBar, when given, names where ("Already on X").
+-- Otherwise hovering lights it and a click runs onPick. Returns the row and label.
+local function IconMenuRow(
+    parent,
+    owner,
+    y,
+    height,
+    text,
+    texture,
+    greyed,
+    tipBar,
+    font,
+    dim,
+    hlA,
+    onPick,
+    anyUp
+)
+    local row = CreateFrame("Button", nil, parent)
+    row:SetHeight(height)
+    row:SetPoint("TOPLEFT", parent, "TOPLEFT", 1, -y)
+    row:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -1, -y)
+    row:SetFrameLevel(owner:GetFrameLevel() + 2)
+    if anyUp then
+        row:RegisterForClicks("AnyUp")
+    end
+    local icon = row:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(height - 2, height - 2)
+    icon:SetPoint("RIGHT", row, "RIGHT", -6, 0)
+    icon:SetTexture(texture)
+    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    local label = row:CreateFontString(nil, "OVERLAY")
+    label:SetFont(font[1], font[2], font[3])
+    label:SetPoint("LEFT", row, "LEFT", 10, 0)
+    label:SetPoint("RIGHT", icon, "LEFT", -5, 0)
+    label:SetJustifyH("LEFT")
+    label:SetWordWrap(false)
+    label:SetMaxLines(1)
+    label:SetText(text)
+    local highlight = row:CreateTexture(nil, "ARTWORK")
+    highlight:SetAllPoints()
+    highlight:SetColorTexture(1, 1, 1, 0)
+    highlight:SetAlpha(0)
+    if greyed then
+        label:SetTextColor(dim[1], dim[2], dim[3], dim[4] * 0.4)
+        icon:SetDesaturated(true)
+        icon:SetAlpha(0.4)
+        if tipBar then
+            row:SetScript("OnEnter", function()
+                CludesUI.ShowWidgetTooltip(row, CludesUI.Lf("Already on %s", CludesUI.L(tipBar)))
+            end)
+            row:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
+        end
+        return row, label
+    end
+    label:SetTextColor(dim[1], dim[2], dim[3], dim[4])
+    row:SetScript("OnEnter", function()
+        label:SetTextColor(1, 1, 1, 1)
+        highlight:SetColorTexture(1, 1, 1, hlA)
+        highlight:SetAlpha(1)
+    end)
+    row:SetScript("OnLeave", function()
+        label:SetTextColor(dim[1], dim[2], dim[3], dim[4])
+        highlight:SetAlpha(0)
+    end)
+    row:SetScript("OnClick", onPick)
+    return row, label
+end
+
 local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, removeOnly)
     local environ = mod._CDMO_OptEnv
     local FONT_PATH, FitMenuWidth, GetCDMOptOutline, RefreshCDPreview =
@@ -982,8 +1054,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             or (mod._myRacialsSet and mod._myRacialsSet[sid2])
                             or (bsX.customSpellIDs and bsX.customSpellIDs[sid2])
                         )
-                            -- Hosted-buff markers are reparented Blizzard buff frames,
-                            -- not preset icons -- never mint cas entries for them.
+                            -- Hosted-buff markers are reparented Blizzard buff frames,
+                            -- not preset icons -- never mint cas entries for them.
                             and not (mod.HostedBuffMarkerToSpell and mod.HostedBuffMarkerToSpell(sid2))
                         if isInj then
                             if mod.SlotIDFromKey(sid2) then
@@ -7172,69 +7244,22 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         else
                             isAdded = alreadyOnBar[pID] and not (nativeOnly and nativeOnly[pID]) or false
                         end
-                        local pOtherBar = not isAdded and usedOnOtherBar[pID]
-                        local pIsDisabled = isAdded -- other bars stay claimable (auto-move)
-
-                        local si = CreateFrame("Button", nil, subInner)
-                        si:SetHeight(SUB_ITEM_H)
-                        si:SetPoint("TOPLEFT", subInner, "TOPLEFT", 1, -subH)
-                        si:SetPoint("TOPRIGHT", subInner, "TOPRIGHT", -1, -subH)
-                        si:SetFrameLevel(_potionsSub:GetFrameLevel() + 2)
-                        si:RegisterForClicks("AnyUp")
-
-                        local sIco = si:CreateTexture(nil, "ARTWORK")
-                        local icoSz = SUB_ITEM_H - 2
-                        sIco:SetSize(icoSz, icoSz)
-                        sIco:SetPoint("RIGHT", si, "RIGHT", -6, 0)
-                        sIco:SetTexture(
+                        -- Greyed only while on THIS bar (another bar's stays claimable).
+                        local _, label = IconMenuRow(
+                            subInner,
+                            _potionsSub,
+                            subH,
+                            SUB_ITEM_H,
+                            CludesUI.L(preset.name),
                             CludesUI.ClientIcon(
                                 preset.icon or (preset.itemID and C_Item.GetItemIconByID(preset.itemID))
-                            )
-                        )
-                        sIco:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-
-                        local sLbl = si:CreateFontString(nil, "OVERLAY")
-                        sLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                        sLbl:SetPoint("LEFT", si, "LEFT", 10, 0)
-                        sLbl:SetPoint("RIGHT", sIco, "LEFT", -5, 0)
-                        sLbl:SetJustifyH("LEFT")
-                        sLbl:SetWordWrap(false)
-                        sLbl:SetMaxLines(1)
-                        sLbl:SetText(CludesUI.L(preset.name))
-                        subLabels[#subLabels + 1] = sLbl
-
-                        local sHl = si:CreateTexture(nil, "ARTWORK")
-                        sHl:SetAllPoints()
-                        sHl:SetColorTexture(1, 1, 1, 0)
-                        sHl:SetAlpha(0)
-
-                        if pIsDisabled then
-                            sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
-                            sIco:SetDesaturated(true)
-                            sIco:SetAlpha(0.4)
-                            local pTooltipName = isAdded and (edge and (edge.name or edge.key) or barId)
-                                or pOtherBar
-                            si:SetScript("OnEnter", function()
-                                CludesUI.ShowWidgetTooltip(
-                                    si,
-                                    CludesUI.Lf("Already on %s", CludesUI.L(pTooltipName))
-                                )
-                            end)
-                            si:SetScript("OnLeave", function()
-                                CludesUI.HideWidgetTooltip()
-                            end)
-                        else
-                            sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                            si:SetScript("OnEnter", function()
-                                sLbl:SetTextColor(1, 1, 1, 1)
-                                sHl:SetColorTexture(1, 1, 1, hlA)
-                                sHl:SetAlpha(1)
-                            end)
-                            si:SetScript("OnLeave", function()
-                                sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                                sHl:SetAlpha(0)
-                            end)
-                            si:SetScript("OnClick", function()
+                            ),
+                            isAdded,
+                            edge and (edge.name or edge.key) or barId,
+                            { FONT_PATH, 11, GetCDMOptOutline() },
+                            { tDimR, tDimG, tDimB, tDimA },
+                            hlA,
+                            function()
                                 _potionsSub:Hide()
                                 dropMenu:Hide()
                                 EnsureAssignedSpells(barId)
@@ -7244,8 +7269,10 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     mod.AdoptNativeItemEntry(barId, pID)
                                 end
                                 RefreshCDPreview()
-                            end)
-                        end
+                            end,
+                            true
+                        )
+                        subLabels[#subLabels + 1] = label
                         subH = subH + SUB_ITEM_H
                     end -- not preset.legacy
                 end
@@ -7323,64 +7350,31 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 (not preset.class or preset.class == _pClass)
                 and (not preset.tbbOnly or preset.customAuraToo)
             then
-                local isAdded = mod.IsPresetOnBar(barId, preset)
-
-                local si = CreateFrame("Button", nil, inner)
-                si:SetHeight(ITEM_H)
-                si:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-                si:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-                si:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-
-                local sIco = si:CreateTexture(nil, "ARTWORK")
-                local icoSz = ITEM_H - 2
-                sIco:SetSize(icoSz, icoSz)
-                sIco:SetPoint("RIGHT", si, "RIGHT", -6, 0)
-                sIco:SetTexture(CludesUI.ClientIcon(preset.icon))
-                sIco:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-
-                local sLbl = si:CreateFontString(nil, "OVERLAY")
-                sLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                sLbl:SetPoint("LEFT", si, "LEFT", 10, 0)
-                sLbl:SetPoint("RIGHT", sIco, "LEFT", -5, 0)
-                sLbl:SetJustifyH("LEFT")
-                sLbl:SetWordWrap(false)
-                sLbl:SetMaxLines(1)
-                sLbl:SetText(CludesUI.L(preset.name))
-
-                local sHl = si:CreateTexture(nil, "ARTWORK")
-                sHl:SetAllPoints()
-                sHl:SetColorTexture(1, 1, 1, 0)
-                sHl:SetAlpha(0)
-
-                if isAdded then
-                    sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
-                    sIco:SetDesaturated(true)
-                    sIco:SetAlpha(0.4)
-                else
-                    sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                    si:SetScript("OnEnter", function()
-                        sLbl:SetTextColor(1, 1, 1, 1)
-                        sHl:SetColorTexture(1, 1, 1, hlA)
-                        sHl:SetAlpha(1)
-                    end)
-                    si:SetScript("OnLeave", function()
-                        sLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                        sHl:SetAlpha(0)
-                    end)
-                    si:SetScript("OnClick", function()
+                -- Greyed with no tip while already on the bar.
+                allItems[#allItems + 1] = IconMenuRow(
+                    inner,
+                    dropMenu,
+                    mH,
+                    ITEM_H,
+                    CludesUI.L(preset.name),
+                    CludesUI.ClientIcon(preset.icon),
+                    mod.IsPresetOnBar(barId, preset),
+                    nil,
+                    { FONT_PATH, 11, GetCDMOptOutline() },
+                    { tDimR, tDimG, tDimB, tDimA },
+                    hlA,
+                    function()
                         dropMenu:Hide()
                         EnsureAssignedSpells(barId)
                         mod.AddPresetToBar(barId, preset)
-                        -- Arm the shared Sated listener now (debuff-driven
-                        -- presets like Bloodlust); no-op for cooldown presets.
+                        -- Arm the shared Sated listener now (debuff-driven presets
+                        -- like Bloodlust); no-op for cooldown presets.
                         if mod.UpdateLustListener then
                             mod.UpdateLustListener()
                         end
                         RefreshCDPreview()
-                    end)
-                end
-
-                allItems[#allItems + 1] = si
+                    end
+                )
                 mH = mH + ITEM_H
             end
         end
