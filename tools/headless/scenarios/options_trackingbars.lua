@@ -265,3 +265,28 @@ if b1 then
     b1.stackThresholds = { { value = 2, r = 1, g = 0.5, b = 0, a = 1 }, { value = 4, r = 0, g = 1, b = 0, a = 1 } }
     OpenThresholdEditor("threshold editor multi")
 end
+
+-- The bar sound menu: with bars able to cue a sound, right-click a bar row.
+mod.TBB_BarCanCue = function() return true end
+if b1 then b1.buffActiveSoundKey = "none" end
+Rebuild()
+for _, root in ipairs(roots) do
+    for _, b in ipairs(Find(root, function(f)
+        return f["\0kind"] == "Button" and f:IsVisible() and math.floor((f["\0w"] or 0) + 0.5) == 350
+            and math.floor((f["\0h"] or 0) + 0.5) == 34 and f["\0scripts"].OnClick
+    end)) do menuBtn = b end
+end
+if menuBtn then
+    menuBtn["\0scripts"].OnClick(menuBtn, "LeftButton")
+    Popups("menu with sounds")
+    local row = RowWithText(MenuHost(), "Bar 1")
+    OUT:write("== sound row " .. tostring(row ~= nil) .. "\n")
+    if row then
+        row["\0scripts"].OnClick(row, "RightButton")
+        for _, c in ipairs({ UIParent:GetChildren() }) do
+            if c:IsShown() and c.GetFrameStrata and c:GetFrameStrata() == "FULLSCREEN_DIALOG" and c:GetFrameLevel() == 320 then
+                SNAP("sound menu", c)
+            end
+        end
+    end
+end

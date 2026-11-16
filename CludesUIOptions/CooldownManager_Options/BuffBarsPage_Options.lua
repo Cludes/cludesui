@@ -1993,27 +1993,50 @@ local function InitBuffBarsPage(
                 if ddBtn._tbbSndMenu then
                     ddBtn._tbbSndMenu:Hide()
                 end
-                local W = 240
-                -- One sound menu frame for the session, dressed again on every open.
+                -- One sound menu frame for the session, dressed again on every open,
+                -- above the bar menu it opens from (300), which stays open underneath.
                 local sm = PoolKept(mod, "tbbSoundMenu", "Frame", UIParent)
                 sm:SetFrameStrata("FULLSCREEN_DIALOG")
-                -- Above the bar menu it opens from (300), which stays open underneath.
                 sm:SetFrameLevel(320)
                 sm:SetClampedToScreen(true)
                 sm:EnableMouse(true)
-                sm:SetSize(W, 8 + ITEM_H * 2)
+                sm:SetSize(240, 8 + ITEM_H * 2)
                 local smBg = sm:CreateTexture(nil, "BACKGROUND")
                 smBg:SetAllPoints()
                 smBg:SetColorTexture(mBgR, mBgG, mBgB, mBgHA)
                 CludesUI.MakeRoundedBorder(sm, 1, 1, 1, mBrdA, smBg, nil, true)
-                -- A fixed spot, as the CDM icon menu sits under its icon: beside the clicked
-                -- row, just outside the bar menu, so it covers no other bar.
+                -- A fixed spot, as the CDM icon menu sits under its icon: beside the
+                -- clicked row, just outside the bar menu, so it covers no other bar.
                 sm:SetPoint("TOPLEFT", anchorRow, "TOPRIGHT", 4, 0)
                 local ar, ag, ab = CludesUI.GetAccentColor()
                 local nameList = mod.FOCUSKICK_SOUND_NAMES or {}
                 local flyouts = {}
 
-                local function MakeSoundRow(i, label, field)
+                -- The sound list flying out of a row (search, scroll, preview
+                -- speaker), as the CDM icon menu's flyouts: the CDM options font at
+                -- 11, the speaker atlas in its own colour, above both menus.
+                local function Flyout(row, get, set, val)
+                    local values, sequence = CludesUI.BuildSoundDropdownValues(
+                        mod.FOCUSKICK_SOUND_PATHS,
+                        nameList,
+                        mod.FOCUSKICK_SOUND_ORDER
+                    )
+                    values._menuOpts.anchor = "RIGHT"
+                    values._menuOpts.labelFont = { FONT_PATH, 11, GetCDMOptOutline() }
+                    values._menuOpts.iconNativeColor = true
+                    local fly, _, refresh =
+                        CludesUI.BuildDropdownMenu(row, 200, sequence, values, get, set, val, "regular")
+                    -- BuildDropdownMenu makes it at FULLSCREEN_DIALOG 200, under both menus.
+                    fly:SetFrameStrata(sm:GetFrameStrata())
+                    fly:SetFrameLevel(sm:GetFrameLevel() + 30)
+                    fly._refresh = refresh
+                    return fly
+                end
+
+                -- One audio row (Audio on Buff Gain / Loss): its label (accent while
+                -- a sound is set), the sound's name and an arrow; hovering or
+                -- clicking opens its list and closes the other.
+                local function SoundRow(i, label, field)
                     local row = CreateFrame("Button", nil, sm)
                     row:SetHeight(ITEM_H)
                     row:SetPoint("TOPLEFT", sm, "TOPLEFT", 1, -4 - (i - 1) * ITEM_H)
@@ -2023,15 +2046,15 @@ local function InitBuffBarsPage(
                     labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
                     labelFS:SetPoint("LEFT", row, "LEFT", 10, 0)
                     labelFS:SetText(CludesUI.L(label))
-                    local arrow = row:CreateTexture(nil, "ARTWORK")
-                    arrow:SetSize(10, 10)
-                    arrow:SetPoint("RIGHT", row, "RIGHT", -8, 0)
-                    arrow:SetTexture(MEDIA .. "icons\\right-arrow.png")
-                    arrow:SetAlpha(0.7)
+                    local pointer = row:CreateTexture(nil, "ARTWORK")
+                    pointer:SetSize(10, 10)
+                    pointer:SetPoint("RIGHT", row, "RIGHT", -8, 0)
+                    pointer:SetTexture(MEDIA .. "icons\\right-arrow.png")
+                    pointer:SetAlpha(0.7)
                     local val = row:CreateFontString(nil, "OVERLAY")
                     val:SetFont(FONT_PATH, 10, GetCDMOptOutline())
                     val:SetPoint("LEFT", labelFS, "RIGHT", 8, 0)
-                    val:SetPoint("RIGHT", arrow, "LEFT", -6, 0)
+                    val:SetPoint("RIGHT", pointer, "LEFT", -6, 0)
                     val:SetJustifyH("RIGHT")
                     val:SetWordWrap(false)
                     val:SetMaxLines(1)
@@ -2044,10 +2067,9 @@ local function InitBuffBarsPage(
                     local function Get()
                         return conf[field] or "none"
                     end
-                    -- Accent label while a sound is chosen, like the icon menu's rows.
                     local function Paint()
-                        local k = conf[field]
-                        if k and k ~= "none" then
+                        local key = conf[field]
+                        if key and key ~= "none" then
                             labelFS:SetTextColor(ar, ag, ab, 1)
                         else
                             labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA)
@@ -2055,58 +2077,31 @@ local function InitBuffBarsPage(
                         val:SetText(nameList[Get()] or Get())
                     end
                     Paint()
+                    -- A sound set flips the 0-cost gate live and hooks the bar frames
+                    -- already out of the pool, so the next edge plays without a
+                    -- reload; the bar row's speaker follows (dimmed with no sound).
                     local function Set(v)
                         conf[field] = (v ~= "none" and v) or nil
                         if conf[field] then
-                            -- Flip the 0-cost gate live and hook the bar frames already
-                            -- out of the pool, so the next edge plays without a reload.
                             mod._cdmAnyBuffSound = true
                             if mod.EnsureTBBSoundHooks then
                                 mod.EnsureTBBSoundHooks()
                             end
                         end
                         Paint()
-                        -- The bar row's speaker button follows (dimmed with no sound).
                         if anchorRow._sndPaint then
                             anchorRow._sndPaint()
                         end
                     end
                     local function ShowFlyout()
                         highlight:SetAlpha(hlA)
-                        for f, fly in pairs(flyouts) do
-                            if f ~= field then
+                        for key, fly in pairs(flyouts) do
+                            if key ~= field then
                                 fly:Hide()
                             end
                         end
+                        flyouts[field] = flyouts[field] or Flyout(row, Get, Set, val)
                         local fly = flyouts[field]
-                        if not fly then
-                            local values, sequence = CludesUI.BuildSoundDropdownValues(
-                                mod.FOCUSKICK_SOUND_PATHS,
-                                nameList,
-                                mod.FOCUSKICK_SOUND_ORDER
-                            )
-                            values._menuOpts.anchor = "RIGHT"
-                            -- Match the CDM icon menu's flyouts: the CDM options font at 11 and
-                            -- the speaker atlas in its own colour.
-                            values._menuOpts.labelFont = { FONT_PATH, 11, GetCDMOptOutline() }
-                            values._menuOpts.iconNativeColor = true
-                            local refresh
-                            fly, _, refresh = CludesUI.BuildDropdownMenu(
-                                row,
-                                200,
-                                sequence,
-                                values,
-                                Get,
-                                Set,
-                                val,
-                                "regular"
-                            )
-                            -- BuildDropdownMenu creates it at FULLSCREEN_DIALOG 200, under both menus.
-                            fly:SetFrameStrata(sm:GetFrameStrata())
-                            fly:SetFrameLevel(sm:GetFrameLevel() + 30)
-                            fly._refresh = refresh
-                            flyouts[field] = fly
-                        end
                         if not fly:IsShown() then
                             if fly._refresh then
                                 fly._refresh()
@@ -2120,9 +2115,11 @@ local function InitBuffBarsPage(
                         highlight:SetAlpha(0)
                     end)
                 end
-                MakeSoundRow(1, "Audio on Buff Gain", "buffActiveSoundKey")
-                MakeSoundRow(2, "Audio on Buff Loss", "buffLostSoundKey")
+                SoundRow(1, "Audio on Buff Gain", "buffActiveSoundKey")
+                SoundRow(2, "Audio on Buff Loss", "buffLostSoundKey")
 
+                -- Closes on a press off it and its lists; the bar menu underneath
+                -- asks OverAny before dismissing itself on a click.
                 local function OverAny()
                     if sm:IsMouseOver() then
                         return true
@@ -2148,7 +2145,6 @@ local function InitBuffBarsPage(
                         fly:Hide()
                     end
                 end)
-                -- The bar menu underneath asks this before dismissing itself on a click.
                 sm._overAny = OverAny
                 ddBtn._tbbSndMenu = sm
                 sm:Show()
