@@ -882,31 +882,61 @@ local function InitBuffBarsPage(
         dialog._sidBox:SetFocus()
     end
 
+    -- A picked buff or cooldown keeps tracking after a hero-talent override is
+    -- dropped: the BASE spell id of its cooldown entry is stored when it differs.
+    -- Roll the Bones: one tracked slot cycles through exclusive outcome buffs,
+    -- listed only in the raw linkedSpellIDs; the row reads as whichever outcome
+    -- was up at pick time, so the whole family becomes the want-set, keyed on
+    -- the stable base (buff picks only).
+    local RTB_BASE_SPELL_ID = 1214909
+    local function TakeBaseSpell(barCfg, sp, allowFamily)
+        barCfg.baseSpellID = nil
+        if not (sp.cdID and C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo) then
+            return
+        end
+        local details = C_CooldownViewer.GetCooldownViewerCooldownInfo(sp.cdID)
+        local isSec = issecretvalue
+        local base = details and details.spellID
+        if base and allowFamily and isSec and isSec(base) then
+            base = nil
+        end
+        if base and base > 0 and base ~= sp.spellID then
+            barCfg.baseSpellID = base
+        end
+        if not (allowFamily and base == RTB_BASE_SPELL_ID and type(details.linkedSpellIDs) == "table") then
+            return
+        end
+        local ids = {}
+        for _, id in ipairs(details.linkedSpellIDs) do
+            if type(id) == "number" and not (isSec and isSec(id)) and id > 0 then
+                ids[#ids + 1] = id
+            end
+        end
+        if #ids >= 2 then
+            barCfg.spellIDs, barCfg.spellID, barCfg.baseSpellID = ids, base, nil
+            local name = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(base)
+            if name and name ~= "" then
+                barCfg.name = name
+            end
+        end
+    end
+
     local function ShowTBBSpellPicker(anchor, barCfg, onChanged)
         if _tbbSpellPickerMenu then
             _tbbSpellPickerMenu:Hide()
         end
-
+        -- No early bail on empty lists: the picker still shows the presets and Custom Buff ID.
         local trackedBars = mod.GetTrackedBarSpells and mod.GetTrackedBarSpells(true) or {}
         local popular = mod.TBB_POPULAR_BUFFS or {}
-
-        -- No early bail on empty trackedBars -- the picker still shows popular presets and the custom spell ID input.
-
-        local mBgR = CludesUI.DD_BG_R or 0.075
-        local mBgG = CludesUI.DD_BG_G or 0.113
-        local mBgB = CludesUI.DD_BG_B or 0.141
-        local mBgA = CludesUI.DD_BG_HA or 0.98
-        local mBrdA = CludesUI.DD_BRD_A or 0.20
         local hlA = CludesUI.DD_ITEM_HL_A or 0.08
-        local tDimR = CludesUI.TEXT_DIM_R or 0.7
-        local tDimG = CludesUI.TEXT_DIM_G or 0.7
-        local tDimB = CludesUI.TEXT_DIM_B or 0.7
-        local tDimA = CludesUI.TEXT_DIM_A or 0.85
-        local ACCENT = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
-
-        local menuW = 240
-        local ITEM_H = 26
-        local MAX_H = 340
+        local DIM = {
+            CludesUI.TEXT_DIM_R or 0.7,
+            CludesUI.TEXT_DIM_G or 0.7,
+            CludesUI.TEXT_DIM_B or 0.7,
+            CludesUI.TEXT_DIM_A or 0.85,
+        }
+        local BRIGHT = { 1, 1, 1, 1 }
+        local menuW, ITEM_H, MAX_H = 240, 26, 340
 
         -- One picker frame for the session, dressed again on every open.
         local dropMenu = PoolKept(mod, "tbbSpellPicker", "Frame", UIParent)
@@ -914,224 +944,119 @@ local function InitBuffBarsPage(
         dropMenu:SetFrameLevel(300)
         dropMenu:SetClampedToScreen(true)
         dropMenu:SetSize(menuW, 10)
-
-        local mbg = dropMenu:CreateTexture(nil, "BACKGROUND")
-        mbg:SetAllPoints()
-        mbg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
-        CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, mBrdA, mbg, nil, true)
-
+        local backdrop = dropMenu:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(
+            CludesUI.DD_BG_R or 0.075,
+            CludesUI.DD_BG_G or 0.113,
+            CludesUI.DD_BG_B or 0.141,
+            CludesUI.DD_BG_HA or 0.98
+        )
+        CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, CludesUI.DD_BRD_A or 0.20, backdrop, nil, true)
         local inner = CreateFrame("Frame", nil, dropMenu)
         inner:SetWidth(menuW)
         inner:SetPoint("TOPLEFT")
-
         local mH = 4
 
-        -- "Custom Buff ID" entry at the top
-        local isCustomSelected = barCfg.spellID
-            and barCfg.spellID > 0
-            and not barCfg.popularKey
-            and not barCfg.spellIDs
-            and barCfg.trackType ~= "cooldown"
-        local csItem = CreateFrame("Button", nil, inner)
-        csItem:SetHeight(ITEM_H)
-        csItem:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-        csItem:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-        csItem:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-        local csHl = csItem:CreateTexture(nil, "ARTWORK", nil, -1)
-        csHl:SetAllPoints()
-        csHl:SetColorTexture(1, 1, 1, 0)
-        local csLbl = csItem:CreateFontString(nil, "OVERLAY")
-        csLbl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        csLbl:SetPoint("LEFT", 10, 0)
-        csLbl:SetJustifyH("LEFT")
-        csLbl:SetText(CludesUI.L("Custom Buff ID"))
-        csLbl:SetTextColor(
-            isCustomSelected and 1 or tDimR,
-            isCustomSelected and 1 or tDimG,
-            isCustomSelected and 1 or tDimB,
-            isCustomSelected and 1 or tDimA
-        )
-        csItem:SetScript("OnEnter", function()
-            csLbl:SetTextColor(1, 1, 1, 1)
-            csHl:SetColorTexture(1, 1, 1, hlA)
-        end)
-        csItem:SetScript("OnLeave", function()
-            csLbl:SetTextColor(
-                isCustomSelected and 1 or tDimR,
-                isCustomSelected and 1 or tDimG,
-                isCustomSelected and 1 or tDimB,
-                isCustomSelected and 1 or tDimA
-            )
-            csHl:SetColorTexture(1, 1, 1, 0)
-        end)
-        csItem:SetScript("OnClick", function()
-            dropMenu:Hide()
-            ShowCustomBuffIDPopup(anchor, barCfg, onChanged)
-        end)
-        mH = mH + ITEM_H
-
-        local div1 = inner:CreateTexture(nil, "ARTWORK")
-        div1:SetHeight(1)
-        div1:SetColorTexture(1, 1, 1, 0.10)
-        div1:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
-        div1:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
-        mH = mH + 9
-
-        -- Popular buff entries
-        local function MakePopularItem(record)
-            local isSelected = barCfg.popularKey == record.key
+        local function Row(height)
             local item = CreateFrame("Button", nil, inner)
-            item:SetHeight(ITEM_H)
+            item:SetHeight(height)
             item:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
             item:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
             item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-
-            local ico = item:CreateTexture(nil, "ARTWORK")
-            local icoSz = ITEM_H - 4
-            ico:SetSize(icoSz, icoSz)
-            ico:SetPoint("RIGHT", item, "RIGHT", -6, 0)
-            ico:SetTexture(record.icon)
-            ico:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-
-            local baseR = isSelected and 1 or tDimR
-            local baseG = isSelected and 1 or tDimG
-            local baseB = isSelected and 1 or tDimB
-            local baseA = isSelected and 1 or tDimA
-
-            local labelFS = item:CreateFontString(nil, "OVERLAY")
-            labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-            labelFS:SetPoint("LEFT", 8, 0)
-            labelFS:SetPoint("RIGHT", ico, "LEFT", -4, 0)
-            labelFS:SetJustifyH("LEFT")
-            labelFS:SetWordWrap(false)
-            labelFS:SetMaxLines(1)
-            labelFS:SetText(CludesUI.L(record.name))
-            labelFS:SetTextColor(baseR, baseG, baseB, baseA)
-
-            local highlight = item:CreateTexture(nil, "ARTWORK", nil, -1)
-            highlight:SetAllPoints()
-            highlight:SetColorTexture(1, 1, 1, isSelected and 0.12 or 0)
-
-            item:SetScript("OnEnter", function()
-                labelFS:SetTextColor(1, 1, 1, 1)
-                highlight:SetColorTexture(1, 1, 1, hlA)
-            end)
-            item:SetScript("OnLeave", function()
-                labelFS:SetTextColor(baseR, baseG, baseB, baseA)
-                highlight:SetColorTexture(1, 1, 1, isSelected and 0.12 or 0)
-            end)
-            item:SetScript("OnClick", function()
+            mH = mH + height
+            return item
+        end
+        local function Divider()
+            local div = inner:CreateTexture(nil, "ARTWORK")
+            div:SetHeight(1)
+            div:SetColorTexture(1, 1, 1, 0.10)
+            div:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
+            div:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
+            mH = mH + 9
+        end
+        local function Heading(text)
+            local fs = inner:CreateFontString(nil, "OVERLAY")
+            fs:SetFont(FONT_PATH, 10, GetCDMOptOutline())
+            fs:SetTextColor(1, 1, 1, 0.5)
+            fs:SetPoint("TOPLEFT", inner, "TOPLEFT", 10, -mH - 5)
+            fs:SetText(CludesUI.L(text))
+            mH = mH + 20
+        end
+        -- A pick: the bar takes it, the bars rebuild, the page follows.
+        local function Picked(apply)
+            return function()
                 dropMenu:Hide()
-                barCfg.popularKey = record.key
-                barCfg.spellIDs = record.spellIDs
-                barCfg.glowBased = record.glowBased or nil
-                barCfg.customDuration = record.customDuration
-                barCfg.spellID = record.spellIDs and record.spellIDs[1] or 0
-                barCfg.baseSpellID = nil
-                barCfg.trackType = nil
-                barCfg.name = record.name
-                barCfg.customName = nil
+                apply()
                 Refresh()
                 mod.BuildTrackedBuffBars()
                 if onChanged then
                     onChanged()
                 end
-            end)
-            mH = mH + ITEM_H
-        end
-
-        local _, _tbbPClass = UnitClass("player")
-        local nPopular = 0
-        for _, record in ipairs(popular) do
-            -- tbbOnly presets (e.g. debuff-driven Bloodlust) carry a sentinel class to hide
-            -- from the cooldown/utility item picker; the TBB picker overrides that and always shows them.
-            if record.tbbOnly or not record.class or record.class == _tbbPClass then
-                MakePopularItem(record)
-                nPopular = nPopular + 1
             end
         end
 
-        -- "Buffs" section always renders (even with no tracked bars) so the Missing Spells prompt below stays visible.
-        -- Its divider closes the preset rows, so it is skipped when none were built
-        -- (WoW Forever has no presets): the one above already separates Custom Buff ID.
+        -- "Custom Buff ID" at the top.
         do
-            if nPopular > 0 then
-                local div2 = inner:CreateTexture(nil, "ARTWORK")
-                div2:SetHeight(1)
-                div2:SetColorTexture(1, 1, 1, 0.10)
-                div2:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
-                div2:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
-                mH = mH + 9
-            end
-
-            local buffHdr = inner:CreateFontString(nil, "OVERLAY")
-            buffHdr:SetFont(FONT_PATH, 10, GetCDMOptOutline())
-            buffHdr:SetTextColor(1, 1, 1, 0.5)
-            buffHdr:SetPoint("TOPLEFT", inner, "TOPLEFT", 10, -mH - 5)
-            buffHdr:SetText(CludesUI.L("Buffs"))
-            mH = mH + 20
-        end
-
-        local function MakeSpellItem(sp)
-            -- Every spell here came from BuffBarCooldownViewer enumeration, so it's by definition tracked -- no popup needed.
-            local usedOnBar = mod.SpellUsedOnAnyOtherTBB and mod.SpellUsedOnAnyOtherTBB(sp.spellID, nil)
-            -- A family bar (Roll the Bones) is selected by its base id OR any member,
-            -- since the row resolves to the active outcome while one is up.
-            local isSelected = not barCfg.popularKey
-                and barCfg.trackType ~= "cooldown"
-                and barCfg.spellID
+            local selected = barCfg.spellID
                 and barCfg.spellID > 0
-                and barCfg.spellID == sp.spellID
-            if
-                not isSelected
-                and barCfg.spellIDs
                 and not barCfg.popularKey
+                and not barCfg.spellIDs
                 and barCfg.trackType ~= "cooldown"
-            then
-                for _, spellRef in ipairs(barCfg.spellIDs) do
-                    if spellRef == sp.spellID then
-                        isSelected = true
-                        break
-                    end
-                end
-            end
-            local item = CreateFrame("Button", nil, inner)
-            item:SetHeight(ITEM_H)
-            item:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-            item:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-            item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-
-            local ico = item:CreateTexture(nil, "ARTWORK")
-            local icoSz = ITEM_H - 4
-            ico:SetSize(icoSz, icoSz)
-            ico:SetPoint("RIGHT", item, "RIGHT", -6, 0)
-            if sp.icon then
-                ico:SetTexture(sp.icon)
-            end
-            ico:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-
-            local baseR = isSelected and 1 or tDimR
-            local baseG = isSelected and 1 or tDimG
-            local baseB = isSelected and 1 or tDimB
-            local baseA = isSelected and 1 or tDimA
-
-            local labelFS = item:CreateFontString(nil, "OVERLAY")
-            labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-            labelFS:SetPoint("LEFT", 8, 0)
-            labelFS:SetPoint("RIGHT", ico, "LEFT", -4, 0)
-            labelFS:SetJustifyH("LEFT")
-            labelFS:SetWordWrap(false)
-            labelFS:SetMaxLines(1)
-            labelFS:SetText(CludesUI.L(sp.name))
-            labelFS:SetTextColor(baseR, baseG, baseB, baseA)
-
+            local rest = selected and BRIGHT or DIM
+            local item = Row(ITEM_H)
             local highlight = item:CreateTexture(nil, "ARTWORK", nil, -1)
             highlight:SetAllPoints()
-            highlight:SetColorTexture(1, 1, 1, isSelected and 0.12 or 0)
+            highlight:SetColorTexture(1, 1, 1, 0)
+            local label = item:CreateFontString(nil, "OVERLAY")
+            label:SetFont(FONT_PATH, 11, GetCDMOptOutline())
+            label:SetPoint("LEFT", 10, 0)
+            label:SetJustifyH("LEFT")
+            label:SetText(CludesUI.L("Custom Buff ID"))
+            label:SetTextColor(unpack(rest))
+            item:SetScript("OnEnter", function()
+                label:SetTextColor(1, 1, 1, 1)
+                highlight:SetColorTexture(1, 1, 1, hlA)
+            end)
+            item:SetScript("OnLeave", function()
+                label:SetTextColor(unpack(rest))
+                highlight:SetColorTexture(1, 1, 1, 0)
+            end)
+            item:SetScript("OnClick", function()
+                dropMenu:Hide()
+                ShowCustomBuffIDPopup(anchor, barCfg, onChanged)
+            end)
+        end
+        Divider()
 
-            -- Gray out if already used on another bar
-            if usedOnBar and not isSelected then
-                labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
+        -- A choice row: name and icon (right). Selected rows are lit; one already
+        -- on another bar is greyed with a tip and cannot be picked; an untalented
+        -- one stays pickable, desaturated, with a hint.
+        local function ChoiceRow(text, icon, selected, usedOnBar, notLearned, onPick)
+            local item = Row(ITEM_H)
+            local ico = item:CreateTexture(nil, "ARTWORK")
+            ico:SetSize(ITEM_H - 4, ITEM_H - 4)
+            ico:SetPoint("RIGHT", item, "RIGHT", -6, 0)
+            if icon then
+                ico:SetTexture(icon)
+            end
+            ico:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            local rest = selected and BRIGHT or DIM
+            local label = item:CreateFontString(nil, "OVERLAY")
+            label:SetFont(FONT_PATH, 11, GetCDMOptOutline())
+            label:SetPoint("LEFT", 8, 0)
+            label:SetPoint("RIGHT", ico, "LEFT", -4, 0)
+            label:SetJustifyH("LEFT")
+            label:SetWordWrap(false)
+            label:SetMaxLines(1)
+            label:SetText(CludesUI.L(text))
+            label:SetTextColor(unpack(rest))
+            local restHl = selected and 0.12 or 0
+            local highlight = item:CreateTexture(nil, "ARTWORK", nil, -1)
+            highlight:SetAllPoints()
+            highlight:SetColorTexture(1, 1, 1, restHl)
+            if usedOnBar and not selected then
+                label:SetTextColor(DIM[1], DIM[2], DIM[3], DIM[4] * 0.4)
                 ico:SetDesaturated(true)
                 ico:SetAlpha(0.4)
                 item:SetScript("OnEnter", function()
@@ -1146,27 +1071,22 @@ local function InitBuffBarsPage(
                     CludesUI.HideWidgetTooltip()
                     highlight:SetAlpha(0)
                 end)
-                mH = mH + ITEM_H
                 return
             end
-
-            -- Tracked-but-untalented bar spells (no live BuffBar frame) stay clickable but
-            -- render desaturated with a hint (matches CD/utility pickers), so bars can be set without swapping talents.
-            local notLearned = (sp.isKnown == false)
             if notLearned then
                 ico:SetDesaturated(true)
                 ico:SetAlpha(0.5)
             end
             item:SetScript("OnEnter", function()
-                labelFS:SetTextColor(1, 1, 1, 1)
+                label:SetTextColor(1, 1, 1, 1)
                 highlight:SetColorTexture(1, 1, 1, hlA)
                 if notLearned then
                     CludesUI.ShowWidgetTooltip(item, CludesUI.L("Not currently talented"))
                 end
             end)
             item:SetScript("OnLeave", function()
-                labelFS:SetTextColor(baseR, baseG, baseB, baseA)
-                highlight:SetColorTexture(1, 1, 1, isSelected and 0.12 or 0)
+                label:SetTextColor(unpack(rest))
+                highlight:SetColorTexture(1, 1, 1, restHl)
                 if notLearned then
                     CludesUI.HideWidgetTooltip()
                 end
@@ -1175,263 +1095,154 @@ local function InitBuffBarsPage(
                 if notLearned then
                     CludesUI.HideWidgetTooltip()
                 end
-                dropMenu:Hide()
-                barCfg.spellID = sp.spellID
-                barCfg.spellIDs = nil
-                barCfg.popularKey = nil
-                barCfg.glowBased = nil
-                barCfg.customDuration = nil
-                barCfg.trackType = nil
-                barCfg.name = sp.name
-                barCfg.customName = nil
-                -- Capture the BASE spell id for hero-talent override spells so the bar keeps
-                -- tracking after the talent is removed (active override's cooldownInfo
-                -- reports base in info.spellID); store only when it differs from the picked id.
-                barCfg.baseSpellID = nil
-                if sp.cdID and C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
-                    local details = C_CooldownViewer.GetCooldownViewerCooldownInfo(sp.cdID)
-                    local RTB_BASE_SPELL_ID = 1214909
-                    local isSec = issecretvalue
-                    local baseSID = details and details.spellID
-                    if baseSID and (isSec and isSec(baseSID)) then
-                        baseSID = nil
-                    end
-                    if baseSID and baseSID > 0 and baseSID ~= sp.spellID then
-                        barCfg.baseSpellID = baseSID
-                    end
-                    -- Roll the Bones: ONE tracked-bar slot cycles through mutually
-                    -- exclusive outcome buffs, listed only in the raw linkedSpellIDs.
-                    -- The row resolves to whichever outcome is up at pick time, so a
-                    -- single id matches nothing else after a re-roll: store the whole
-                    -- family as the want-set and key the config on the stable base.
-                    if baseSID == RTB_BASE_SPELL_ID and type(details.linkedSpellIDs) == "table" then
-                        local ids = {}
-                        for i = 1, #details.linkedSpellIDs do
-                            local lid = details.linkedSpellIDs[i]
-                            if type(lid) == "number" and not (isSec and isSec(lid)) and lid > 0 then
-                                ids[#ids + 1] = lid
-                            end
-                        end
-                        if #ids >= 2 then
-                            barCfg.spellIDs = ids
-                            barCfg.spellID = baseSID
-                            barCfg.baseSpellID = nil
-                            local nm = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(baseSID)
-                            if nm and nm ~= "" then
-                                barCfg.name = nm
-                            end
-                        end
-                    end
-                end
-                Refresh()
-                mod.BuildTrackedBuffBars()
-                if onChanged then
-                    onChanged()
-                end
+                onPick()
             end)
-            mH = mH + ITEM_H
         end
 
+        -- Popular presets for the class. tbbOnly presets (e.g. debuff-driven
+        -- Bloodlust) carry a sentinel class that hides them from the cooldown and
+        -- utility item picker; here they always show.
+        local _, class = UnitClass("player")
+        local presets = 0
+        for _, record in ipairs(popular) do
+            if record.tbbOnly or not record.class or record.class == class then
+                presets = presets + 1
+                ChoiceRow(
+                    record.name,
+                    record.icon,
+                    barCfg.popularKey == record.key,
+                    nil,
+                    false,
+                    Picked(function()
+                        barCfg.popularKey = record.key
+                        barCfg.spellIDs = record.spellIDs
+                        barCfg.glowBased = record.glowBased or nil
+                        barCfg.customDuration = record.customDuration
+                        barCfg.spellID = record.spellIDs and record.spellIDs[1] or 0
+                        barCfg.baseSpellID, barCfg.trackType = nil, nil
+                        barCfg.name = record.name
+                        barCfg.customName = nil
+                    end)
+                )
+            end
+        end
+
+        -- Buffs: always shown (even with nothing tracked) so the Missing Spells
+        -- prompt stays reachable. Its divider closes the preset rows, so with none
+        -- (WoW Forever has no presets) the one above already separates Custom Buff ID.
+        if presets > 0 then
+            Divider()
+        end
+        Heading("Buffs")
+        -- Every spell here came from the BuffBarCooldownViewer, so it is tracked by
+        -- definition. A family bar (Roll the Bones) is selected by its base id or
+        -- any member, since the row reads as the active outcome while one is up.
+        local asBuff = not barCfg.popularKey and barCfg.trackType ~= "cooldown"
         for _, sp in ipairs(trackedBars) do
-            MakeSpellItem(sp)
+            local selected = asBuff and barCfg.spellID and barCfg.spellID > 0 and barCfg.spellID == sp.spellID
+            if not selected and asBuff and barCfg.spellIDs then
+                selected = tContains(barCfg.spellIDs, sp.spellID)
+            end
+            local used = mod.SpellUsedOnAnyOtherTBB and mod.SpellUsedOnAnyOtherTBB(sp.spellID, nil)
+            ChoiceRow(
+                sp.name,
+                sp.icon,
+                selected,
+                used,
+                sp.isKnown == false,
+                Picked(function()
+                    barCfg.spellID = sp.spellID
+                    barCfg.spellIDs, barCfg.popularKey, barCfg.glowBased, barCfg.customDuration =
+                        nil, nil, nil, nil
+                    barCfg.trackType = nil
+                    barCfg.name = sp.name
+                    barCfg.customName = nil
+                    TakeBaseSpell(barCfg, sp, true)
+                end)
+            )
         end
 
-        -- "Missing Spells?" prompt (centered, accent-colored) closes CUI options and opens
-        -- Blizzard's CDM; sits at the end of Buffs so it reads as the way to add more.
+        -- "Missing Spells?" (centred, accent): closes the options and opens
+        -- Blizzard's CDM, at the end of Buffs as the way to add more.
         do
-            local FOOTER_H = 38
-            local mbItem = CreateFrame("Button", nil, inner)
-            mbItem:SetHeight(FOOTER_H)
-            mbItem:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-            mbItem:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-            mbItem:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-
-            local mbFS = mbItem:CreateFontString(nil, "OVERLAY")
-            mbFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-            mbFS:SetAllPoints()
-            mbFS:SetJustifyH("CENTER")
-            mbFS:SetJustifyV("MIDDLE")
-            local ar, ag, ab = CludesUI.GetAccentColor()
-            mbFS:SetTextColor(ar, ag, ab, 1)
-            mbFS:SetText(
+            local item = Row(38)
+            local text = item:CreateFontString(nil, "OVERLAY")
+            text:SetFont(FONT_PATH, 11, GetCDMOptOutline())
+            text:SetAllPoints()
+            text:SetJustifyH("CENTER")
+            text:SetJustifyV("MIDDLE")
+            local function Accented()
+                local r, g, b = CludesUI.GetAccentColor()
+                text:SetTextColor(r, g, b, 1)
+            end
+            Accented()
+            text:SetText(
                 CludesUI.L("Missing Spells? Add as") .. "\n" .. CludesUI.L("Tracking Bar in Blizz CDM")
             )
-
-            mbItem:SetScript("OnEnter", function()
-                mbFS:SetTextColor(1, 1, 1, 1)
+            item:SetScript("OnEnter", function()
+                text:SetTextColor(1, 1, 1, 1)
             end)
-            mbItem:SetScript("OnLeave", function()
-                local r, g, b = CludesUI.GetAccentColor()
-                mbFS:SetTextColor(r, g, b, 1)
-            end)
-            mbItem:SetScript("OnClick", function()
+            item:SetScript("OnLeave", Accented)
+            item:SetScript("OnClick", function()
                 dropMenu:Hide()
                 if mod.OpenBlizzardCDMTab then
                     mod.OpenBlizzardCDMTab(true)
                 end
             end)
-            mH = mH + FOOTER_H
         end
 
-        -- "Cooldowns" section: pick a spell COOLDOWN to track instead of a buff
-        -- (cfg.trackType="cooldown"), sourced from Essential+Utility pools + settings catalog; skipped when empty.
+        -- Cooldowns: a spell COOLDOWN to track instead of a buff (trackType
+        -- "cooldown"), from the Essential + Utility pools and the settings catalog;
+        -- only when there are any. Greyed only for another COOLDOWN bar: a buff
+        -- bar for the same spell never blocks it.
         local cdSpells = mod.GetCDMSpellsForBar and mod.GetCDMSpellsForBar("cooldowns") or {}
         if #cdSpells > 0 then
-            local cdDiv = inner:CreateTexture(nil, "ARTWORK")
-            cdDiv:SetHeight(1)
-            cdDiv:SetColorTexture(1, 1, 1, 0.10)
-            cdDiv:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
-            cdDiv:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
-            mH = mH + 9
-
-            local cdHdr = inner:CreateFontString(nil, "OVERLAY")
-            cdHdr:SetFont(FONT_PATH, 10, GetCDMOptOutline())
-            cdHdr:SetTextColor(1, 1, 1, 0.5)
-            cdHdr:SetPoint("TOPLEFT", inner, "TOPLEFT", 10, -mH - 5)
-            cdHdr:SetText(CludesUI.L("Cooldowns"))
-            mH = mH + 20
-
-            local function MakeCooldownItem(sp)
-                -- Gray-out check is scoped to OTHER cooldown-tracking bars -- a buff bar for the same spell never blocks this pick.
-                local usedOnBar = mod.SpellUsedOnAnyOtherTBB
-                    and mod.SpellUsedOnAnyOtherTBB(sp.spellID, nil, "cooldown")
-                local isSelected = barCfg.trackType == "cooldown"
+            Divider()
+            Heading("Cooldowns")
+            for _, sp in ipairs(cdSpells) do
+                local selected = barCfg.trackType == "cooldown"
                     and not barCfg.popularKey
                     and not barCfg.spellIDs
                     and barCfg.spellID
                     and barCfg.spellID > 0
                     and barCfg.spellID == sp.spellID
-                local item = CreateFrame("Button", nil, inner)
-                item:SetHeight(ITEM_H)
-                item:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-                item:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-                item:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-
-                local ico = item:CreateTexture(nil, "ARTWORK")
-                local icoSz = ITEM_H - 4
-                ico:SetSize(icoSz, icoSz)
-                ico:SetPoint("RIGHT", item, "RIGHT", -6, 0)
-                if sp.icon then
-                    ico:SetTexture(sp.icon)
-                end
-                ico:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-
-                local baseR = isSelected and 1 or tDimR
-                local baseG = isSelected and 1 or tDimG
-                local baseB = isSelected and 1 or tDimB
-                local baseA = isSelected and 1 or tDimA
-
-                local labelFS = item:CreateFontString(nil, "OVERLAY")
-                labelFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                labelFS:SetPoint("LEFT", 8, 0)
-                labelFS:SetPoint("RIGHT", ico, "LEFT", -4, 0)
-                labelFS:SetJustifyH("LEFT")
-                labelFS:SetWordWrap(false)
-                labelFS:SetMaxLines(1)
-                labelFS:SetText(CludesUI.L(sp.name))
-                labelFS:SetTextColor(baseR, baseG, baseB, baseA)
-
-                local highlight = item:CreateTexture(nil, "ARTWORK", nil, -1)
-                highlight:SetAllPoints()
-                highlight:SetColorTexture(1, 1, 1, isSelected and 0.12 or 0)
-
-                -- Gray out if already used on another cooldown-tracking bar
-                if usedOnBar and not isSelected then
-                    labelFS:SetTextColor(tDimR, tDimG, tDimB, tDimA * 0.4)
-                    ico:SetDesaturated(true)
-                    ico:SetAlpha(0.4)
-                    item:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(
-                            item,
-                            CludesUI.Lf("Already assigned to %s", CludesUI.L(usedOnBar))
-                        )
-                        highlight:SetColorTexture(1, 1, 1, hlA * 0.3)
-                        highlight:SetAlpha(1)
+                local used = mod.SpellUsedOnAnyOtherTBB
+                    and mod.SpellUsedOnAnyOtherTBB(sp.spellID, nil, "cooldown")
+                ChoiceRow(
+                    sp.name,
+                    sp.icon,
+                    selected,
+                    used,
+                    sp.isKnown == false,
+                    Picked(function()
+                        barCfg.spellID = sp.spellID
+                        barCfg.spellIDs, barCfg.popularKey, barCfg.glowBased, barCfg.customDuration =
+                            nil, nil, nil, nil
+                        barCfg.trackType = "cooldown"
+                        barCfg.name = sp.name
+                        barCfg.customName = nil
+                        TakeBaseSpell(barCfg, sp, false)
                     end)
-                    item:SetScript("OnLeave", function()
-                        CludesUI.HideWidgetTooltip()
-                        highlight:SetAlpha(0)
-                    end)
-                    mH = mH + ITEM_H
-                    return
-                end
-
-                -- Untalented catalog spells stay clickable but render desaturated with a hint, matching the buff rows above.
-                local notLearned = (sp.isKnown == false)
-                if notLearned then
-                    ico:SetDesaturated(true)
-                    ico:SetAlpha(0.5)
-                end
-                item:SetScript("OnEnter", function()
-                    labelFS:SetTextColor(1, 1, 1, 1)
-                    highlight:SetColorTexture(1, 1, 1, hlA)
-                    if notLearned then
-                        CludesUI.ShowWidgetTooltip(item, CludesUI.L("Not currently talented"))
-                    end
-                end)
-                item:SetScript("OnLeave", function()
-                    labelFS:SetTextColor(baseR, baseG, baseB, baseA)
-                    highlight:SetColorTexture(1, 1, 1, isSelected and 0.12 or 0)
-                    if notLearned then
-                        CludesUI.HideWidgetTooltip()
-                    end
-                end)
-                item:SetScript("OnClick", function()
-                    if notLearned then
-                        CludesUI.HideWidgetTooltip()
-                    end
-                    dropMenu:Hide()
-                    barCfg.spellID = sp.spellID
-                    barCfg.spellIDs = nil
-                    barCfg.popularKey = nil
-                    barCfg.glowBased = nil
-                    barCfg.customDuration = nil
-                    barCfg.trackType = "cooldown"
-                    barCfg.name = sp.name
-                    barCfg.customName = nil
-                    -- Capture the BASE spell id for hero-talent override spells so the bar keeps tracking after the talent is removed.
-                    barCfg.baseSpellID = nil
-                    if sp.cdID and C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
-                        local details = C_CooldownViewer.GetCooldownViewerCooldownInfo(sp.cdID)
-                        if
-                            details
-                            and details.spellID
-                            and details.spellID > 0
-                            and details.spellID ~= sp.spellID
-                        then
-                            barCfg.baseSpellID = details.spellID
-                        end
-                    end
-                    Refresh()
-                    mod.BuildTrackedBuffBars()
-                    if onChanged then
-                        onChanged()
-                    end
-                end)
-                mH = mH + ITEM_H
-            end
-
-            for _, sp in ipairs(cdSpells) do
-                MakeCooldownItem(sp)
+                )
             end
         end
 
+        -- Tall lists scroll (wheel, 30 a notch).
         local totalH = mH + 4
         inner:SetHeight(totalH)
         if totalH > MAX_H then
             dropMenu:SetHeight(MAX_H)
-            local scrollFrame = CreateFrame("ScrollFrame", nil, dropMenu)
-            scrollFrame:SetPoint("TOPLEFT", 0, -1)
-            scrollFrame:SetPoint("BOTTOMRIGHT", 0, 1)
-            scrollFrame:SetFrameLevel(dropMenu:GetFrameLevel() + 1)
-            scrollFrame:EnableMouseWheel(true)
-            scrollFrame:SetScrollChild(inner)
+            local scroll = CreateFrame("ScrollFrame", nil, dropMenu)
+            scroll:SetPoint("TOPLEFT", 0, -1)
+            scroll:SetPoint("BOTTOMRIGHT", 0, 1)
+            scroll:SetFrameLevel(dropMenu:GetFrameLevel() + 1)
+            scroll:EnableMouseWheel(true)
+            scroll:SetScrollChild(inner)
             inner:SetWidth(menuW)
-            local scrollPos = 0
-            local maxScroll = totalH - MAX_H
-            scrollFrame:SetScript("OnMouseWheel", function(_, delta)
-                scrollPos = math.max(0, math.min(maxScroll, scrollPos - delta * 30))
-                scrollFrame:SetVerticalScroll(scrollPos)
+            local pos, maxScroll = 0, totalH - MAX_H
+            scroll:SetScript("OnMouseWheel", function(_, delta)
+                pos = math.max(0, math.min(maxScroll, pos - delta * 30))
+                scroll:SetVerticalScroll(pos)
             end)
         else
             dropMenu:SetHeight(totalH)
