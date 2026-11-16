@@ -891,1053 +891,294 @@ local function BuildMiniTextAndSize(
         end
     end
 
-    -- Active text slots share the Main Frames list workflow.
-    local textSlots = {}
-    textSlots[1] = {
-        key = "leftText",
-        position = "Left Text",
-        default = "name",
-        cfg = {
-            type = "dropdown",
-            text = "Left Text",
-            values = healthTextValues,
-            order = (unitKey == "boss") and healthTextOrderBoss or healthTextOrder,
-            getValue = function()
-                return MVal("leftTextContent", "name")
+    -- Active text slots share the Main Frames list workflow. One slot: its
+    -- content dropdown, and (once it shows something) a settings cog and the
+    -- Custom / Class colour swatch pair. o: key, name, shown (the dropdown's
+    -- caption, default name), default, order, clears (slots a unique content
+    -- leaves), align (the boss Extra Text's Alignment row), reach (the offset
+    -- sliders' range, default 100 x 60).
+    local function TextSlot(o)
+        local key, default = o.key, o.default
+        local contentKey = key .. "Content"
+        local classKey = key .. "ClassColor"
+        local function Content()
+            return MVal(contentKey, default)
+        end
+        local function Off()
+            return Content() == "none"
+        end
+        local function Slider(label, suffix, lo, hi, step, def)
+            return {
+                type = "slider",
+                label = label,
+                min = lo,
+                max = hi,
+                step = step,
+                get = function()
+                    return MVal(key .. suffix, type(def) == "function" and def() or def)
+                end,
+                set = function(v)
+                    MSet(key .. suffix, v)
+                end,
+            }
+        end
+        -- Separator and Prefix: pipes and outer spaces stripped.
+        local function Clean(v)
+            return (tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", ""))
+        end
+        local xReach = o.reach or 100
+        local yReach = o.reach or 60
+        local rows = {}
+        if o.align then
+            rows[#rows + 1] = {
+                type = "dropdown",
+                label = "Alignment",
+                values = { ["left"] = "Left", ["right"] = "Right", ["center"] = "Center" },
+                order = { "left", "right", "center" },
+                get = function()
+                    return MVal(key .. "Align", "left")
+                end,
+                set = function(v)
+                    MSet(key .. "Align", v)
+                end,
+            }
+        end
+        rows[#rows + 1] = Slider("Size", "Size", 8, 100, 1, function()
+            return settingsTable.textSize or 12
+        end)
+        rows[#rows + 1] = Slider("X Offset", "X", -xReach, xReach, 1, 0)
+        rows[#rows + 1] = Slider("Y Offset", "Y", -yReach, yReach, 1, 0)
+        rows[#rows + 1] = Slider("Width %", "WidthPct", 20, 200, 5, 100)
+        -- The colour of the Name > Target / Target indicator: custom or class.
+        local sepKey, sepClassKey = key .. "TargetSepColor", key .. "TargetSepClassColor"
+        rows[#rows + 1] = {
+            type = "multiswatch",
+            label = "Indicator Color",
+            disabled = function()
+                local c = Content()
+                return c ~= "nametotarget" and c ~= "targetname"
             end,
-            setValue = function(v)
-                settingsTable.leftTextContent = v
-                if mod.UF_IsUniqueContent(v) then
-                    if settingsTable.rightTextContent == v then
-                        settingsTable.rightTextContent = "none"
-                    end
-                    if settingsTable.centerTextContent == v then
-                        settingsTable.centerTextContent = "none"
-                    end
-                end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage(true)
-            end,
-        },
-        decorate = function(region)
-            -- Inline cog + color swatches on Left Text: Custom + Class (CDM Border Size pattern)
-            if not CludesUI._prebuilding then
-                CludesUI.BuildInlineCog(region, {
-                    disabled = function()
-                        return MVal("leftTextContent", "name") == "none"
+            disabledTooltip = "This option only applies when Name > Target or Target is selected.",
+            swatches = {
+                {
+                    tooltip = "Custom Colored",
+                    hasAlpha = false,
+                    getValue = function()
+                        local c = MVal(sepKey, nil)
+                        if type(c) == "table" then
+                            return c.r or 1, c.g or 1, c.b or 1
+                        end
+                        return 1, 1, 1
                     end,
-                    disabledTooltip = "This option requires a text selection other than none.",
-                    title = "Left Text Settings",
-                    rows = mod.UF_CoreTextRows("leftText", "name", MVal, MSet, {
-                        {
-                            type = "slider",
-                            label = "Size",
-                            min = 8,
-                            max = 100,
-                            step = 1,
-                            get = function()
-                                return MVal("leftTextSize", settingsTable.textSize or 12)
-                            end,
-                            set = function(v)
-                                MSet("leftTextSize", v)
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "X Offset",
-                            min = -100,
-                            max = 100,
-                            step = 1,
-                            get = function()
-                                return MVal("leftTextX", 0)
-                            end,
-                            set = function(v)
-                                MSet("leftTextX", v)
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Y Offset",
-                            min = -60,
-                            max = 60,
-                            step = 1,
-                            get = function()
-                                return MVal("leftTextY", 0)
-                            end,
-                            set = function(v)
-                                MSet("leftTextY", v)
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Width %",
-                            min = 20,
-                            max = 200,
-                            step = 5,
-                            get = function()
-                                return MVal("leftTextWidthPct", 100)
-                            end,
-                            set = function(v)
-                                MSet("leftTextWidthPct", v)
-                            end,
-                        },
-                        {
-                            type = "multiswatch",
-                            label = "Indicator Color",
-                            disabled = function()
-                                local c = MVal("leftTextContent", "name")
-                                return c ~= "nametotarget" and c ~= "targetname"
-                            end,
-                            disabledTooltip = "This option only applies when Name > Target or Target is selected.",
-                            swatches = {
-                                {
-                                    tooltip = "Custom Colored",
-                                    hasAlpha = false,
-                                    getValue = function()
-                                        local c = MVal("leftTextTargetSepColor", nil)
-                                        if type(c) == "table" then
-                                            return c.r or 1, c.g or 1, c.b or 1
-                                        end
-                                        return 1, 1, 1
-                                    end,
-                                    setValue = function(r, g, b)
-                                        MSet("leftTextTargetSepColor", { r = r, g = g, b = b })
-                                    end,
-                                    onClick = function(self)
-                                        if MVal("leftTextTargetSepClassColor", false) then
-                                            MSet("leftTextTargetSepClassColor", false)
-                                            return
-                                        end
-                                        if self._eabOrigClick then
-                                            self._eabOrigClick(self)
-                                        end
-                                    end,
-                                    refreshAlpha = function()
-                                        return MVal("leftTextTargetSepClassColor", false) and 0.3 or 1
-                                    end,
-                                },
-                                {
-                                    tooltip = "Class Colored",
-                                    hasAlpha = false,
-                                    getValue = function()
-                                        local _, ct = UnitClass("player")
-                                        local cc = ct and CludesUI.GetClassColor(ct)
-                                        if cc then
-                                            return cc.r, cc.g, cc.b
-                                        end
-                                        return 1, 1, 1
-                                    end,
-                                    setValue = function() end,
-                                    onClick = function()
-                                        MSet("leftTextTargetSepClassColor", true)
-                                    end,
-                                    refreshAlpha = function()
-                                        return MVal("leftTextTargetSepClassColor", false) and 1 or 0.3
-                                    end,
-                                },
-                            },
-                        },
-                        {
-                            type = "input",
-                            label = "Separator",
-                            inputWidth = 60,
-                            get = function()
-                                return MVal("leftTextTargetSep", ">")
-                            end,
-                            set = function(v)
-                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                if v == "" then
-                                    v = ">"
-                                end
-                                MSet("leftTextTargetSep", v)
-                            end,
-                            disabled = function()
-                                return MVal("leftTextContent", "name") ~= "nametotarget"
-                            end,
-                            disabledTooltip = "This option only applies when Name > Target is selected.",
-                        },
-                        {
-                            type = "input",
-                            label = "Prefix",
-                            inputWidth = 60,
-                            tooltip = "Text shown before the target's name.",
-                            get = function()
-                                return MVal("leftTextTargetPrefix", "T:")
-                            end,
-                            set = function(v)
-                                -- Unlike Separator, empty is kept: no prefix.
-                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                MSet("leftTextTargetPrefix", v)
-                            end,
-                            disabled = function()
-                                return MVal("leftTextContent", "name") ~= "targetname"
-                            end,
-                            disabledTooltip = "This option only applies when Target is selected.",
-                        },
-                    }),
-                })
-
-                local classSw, classSwUp = CludesUI.BuildColorSwatch(
-                    region,
-                    region:GetFrameLevel() + 5,
-                    function()
-                        local _, class = UnitClass("player")
-                        local cc = class and CludesUI.GetClassColor(class)
+                    setValue = function(r, g, b)
+                        MSet(sepKey, { r = r, g = g, b = b })
+                    end,
+                    onClick = function(self)
+                        if MVal(sepClassKey, false) then
+                            MSet(sepClassKey, false)
+                            return
+                        end
+                        if self._eabOrigClick then
+                            self._eabOrigClick(self)
+                        end
+                    end,
+                    refreshAlpha = function()
+                        return MVal(sepClassKey, false) and 0.3 or 1
+                    end,
+                },
+                {
+                    tooltip = "Class Colored",
+                    hasAlpha = false,
+                    getValue = function()
+                        local _, ct = UnitClass("player")
+                        local cc = ct and CludesUI.GetClassColor(ct)
                         if cc then
                             return cc.r, cc.g, cc.b
                         end
                         return 1, 1, 1
                     end,
-                    function() end,
-                    nil,
-                    20
-                )
-                Pix.Point(classSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-                classSw:SetScript("OnClick", function()
-                    if MVal("leftTextContent", "name") == "none" then
-                        return
-                    end
-                    MSet("leftTextClassColor", true)
-                    CludesUI:RefreshPage()
-                end)
-                classSw:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(classSw, "Class Colored")
-                end)
-                classSw:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                local swGet = function()
-                    return MVal("leftTextColorR", 1), MVal("leftTextColorG", 1), MVal("leftTextColorB", 1)
-                end
-                local swSet = function(r, g, b)
-                    settingsTable.leftTextColorR = r
-                    settingsTable.leftTextColorG = g
-                    settingsTable.leftTextColorB = b
-                    ReloadAndUpdate()
-                end
-                local sw, swUp =
-                    CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, swGet, swSet, nil, 20)
-                Pix.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
-                region._lastInline = sw
-                local origClick = sw:GetScript("OnClick")
-                sw:SetScript("OnClick", function(self, ...)
-                    if MVal("leftTextContent", "name") == "none" then
-                        return
-                    end
-                    if MVal("leftTextClassColor", false) then
-                        MSet("leftTextClassColor", false)
-                        CludesUI:RefreshPage()
-                        return
-                    end
-                    if origClick then
-                        origClick(self, ...)
-                    end
-                end)
-                sw:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(sw, "Custom Colored")
-                end)
-                sw:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                local function UpdSwatches()
-                    local isNone = MVal("leftTextContent", "name") == "none"
-                    local isClass = MVal("leftTextClassColor", false)
-                    sw:SetAlpha((isClass or isNone) and 0.3 or 1)
-                    classSw:SetAlpha((isClass and not isNone) and 1 or 0.3)
-                end
-                RegisterWidgetRefresh(function()
-                    swUp()
-                    classSwUp()
-                    UpdSwatches()
-                end)
-                UpdSwatches()
-            end
-        end,
-    }
-    textSlots[2] = {
-        key = "rightText",
-        position = "Right Text",
-        default = "none",
-        cfg = {
-            type = "dropdown",
-            text = "Right Text",
-            values = healthTextValues,
-            order = (unitKey == "boss") and healthTextOrderBoss or healthTextOrder,
-            getValue = function()
-                return MVal("rightTextContent", "none")
-            end,
-            setValue = function(v)
-                settingsTable.rightTextContent = v
-                if mod.UF_IsUniqueContent(v) then
-                    if settingsTable.leftTextContent == v then
-                        settingsTable.leftTextContent = "none"
-                    end
-                    if settingsTable.centerTextContent == v then
-                        settingsTable.centerTextContent = "none"
-                    end
-                end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage(true)
-            end,
-        },
-        decorate = function(region)
-            -- Inline cog + color swatches on Right Text: Custom + Class (CDM Border Size pattern)
-            if not CludesUI._prebuilding then
-                CludesUI.BuildInlineCog(region, {
-                    disabled = function()
-                        return MVal("rightTextContent", "none") == "none"
+                    setValue = function() end,
+                    onClick = function()
+                        MSet(sepClassKey, true)
                     end,
-                    disabledTooltip = "This option requires a text selection other than none.",
-                    title = "Right Text Settings",
-                    rows = mod.UF_CoreTextRows("rightText", "none", MVal, MSet, {
-                        {
-                            type = "slider",
-                            label = "Size",
-                            min = 8,
-                            max = 100,
-                            step = 1,
-                            get = function()
-                                return MVal("rightTextSize", settingsTable.textSize or 12)
-                            end,
-                            set = function(v)
-                                MSet("rightTextSize", v)
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "X Offset",
-                            min = -100,
-                            max = 100,
-                            step = 1,
-                            get = function()
-                                return MVal("rightTextX", 0)
-                            end,
-                            set = function(v)
-                                MSet("rightTextX", v)
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Y Offset",
-                            min = -60,
-                            max = 60,
-                            step = 1,
-                            get = function()
-                                return MVal("rightTextY", 0)
-                            end,
-                            set = function(v)
-                                MSet("rightTextY", v)
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Width %",
-                            min = 20,
-                            max = 200,
-                            step = 5,
-                            get = function()
-                                return MVal("rightTextWidthPct", 100)
-                            end,
-                            set = function(v)
-                                MSet("rightTextWidthPct", v)
-                            end,
-                        },
-                        {
-                            type = "multiswatch",
-                            label = "Indicator Color",
-                            disabled = function()
-                                local c = MVal("rightTextContent", "none")
-                                return c ~= "nametotarget" and c ~= "targetname"
-                            end,
-                            disabledTooltip = "This option only applies when Name > Target or Target is selected.",
-                            swatches = {
-                                {
-                                    tooltip = "Custom Colored",
-                                    hasAlpha = false,
-                                    getValue = function()
-                                        local c = MVal("rightTextTargetSepColor", nil)
-                                        if type(c) == "table" then
-                                            return c.r or 1, c.g or 1, c.b or 1
-                                        end
-                                        return 1, 1, 1
-                                    end,
-                                    setValue = function(r, g, b)
-                                        MSet("rightTextTargetSepColor", { r = r, g = g, b = b })
-                                    end,
-                                    onClick = function(self)
-                                        if MVal("rightTextTargetSepClassColor", false) then
-                                            MSet("rightTextTargetSepClassColor", false)
-                                            return
-                                        end
-                                        if self._eabOrigClick then
-                                            self._eabOrigClick(self)
-                                        end
-                                    end,
-                                    refreshAlpha = function()
-                                        return MVal("rightTextTargetSepClassColor", false) and 0.3 or 1
-                                    end,
-                                },
-                                {
-                                    tooltip = "Class Colored",
-                                    hasAlpha = false,
-                                    getValue = function()
-                                        local _, ct = UnitClass("player")
-                                        local cc = ct and CludesUI.GetClassColor(ct)
-                                        if cc then
-                                            return cc.r, cc.g, cc.b
-                                        end
-                                        return 1, 1, 1
-                                    end,
-                                    setValue = function() end,
-                                    onClick = function()
-                                        MSet("rightTextTargetSepClassColor", true)
-                                    end,
-                                    refreshAlpha = function()
-                                        return MVal("rightTextTargetSepClassColor", false) and 1 or 0.3
-                                    end,
-                                },
-                            },
-                        },
-                        {
-                            type = "input",
-                            label = "Separator",
-                            inputWidth = 60,
-                            get = function()
-                                return MVal("rightTextTargetSep", ">")
-                            end,
-                            set = function(v)
-                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                if v == "" then
-                                    v = ">"
-                                end
-                                MSet("rightTextTargetSep", v)
-                            end,
-                            disabled = function()
-                                return MVal("rightTextContent", "none") ~= "nametotarget"
-                            end,
-                            disabledTooltip = "This option only applies when Name > Target is selected.",
-                        },
-                        {
-                            type = "input",
-                            label = "Prefix",
-                            inputWidth = 60,
-                            tooltip = "Text shown before the target's name.",
-                            get = function()
-                                return MVal("rightTextTargetPrefix", "T:")
-                            end,
-                            set = function(v)
-                                -- Unlike Separator, empty is kept: no prefix.
-                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                MSet("rightTextTargetPrefix", v)
-                            end,
-                            disabled = function()
-                                return MVal("rightTextContent", "none") ~= "targetname"
-                            end,
-                            disabledTooltip = "This option only applies when Target is selected.",
-                        },
-                    }),
-                })
-
-                local classSw, classSwUp = CludesUI.BuildColorSwatch(
-                    region,
-                    region:GetFrameLevel() + 5,
-                    function()
-                        local _, class = UnitClass("player")
-                        local cc = class and CludesUI.GetClassColor(class)
-                        if cc then
-                            return cc.r, cc.g, cc.b
-                        end
-                        return 1, 1, 1
+                    refreshAlpha = function()
+                        return MVal(sepClassKey, false) and 1 or 0.3
                     end,
-                    function() end,
-                    nil,
-                    20
-                )
-                Pix.Point(classSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-                classSw:SetScript("OnClick", function()
-                    if MVal("rightTextContent", "none") == "none" then
-                        return
-                    end
-                    MSet("rightTextClassColor", true)
-                    CludesUI:RefreshPage()
-                end)
-                classSw:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(classSw, "Class Colored")
-                end)
-                classSw:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                local swGet = function()
-                    return MVal("rightTextColorR", 1), MVal("rightTextColorG", 1), MVal("rightTextColorB", 1)
-                end
-                local swSet = function(r, g, b)
-                    settingsTable.rightTextColorR = r
-                    settingsTable.rightTextColorG = g
-                    settingsTable.rightTextColorB = b
-                    ReloadAndUpdate()
-                end
-                local sw, swUp =
-                    CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, swGet, swSet, nil, 20)
-                Pix.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
-                region._lastInline = sw
-                local origClick = sw:GetScript("OnClick")
-                sw:SetScript("OnClick", function(self, ...)
-                    if MVal("rightTextContent", "none") == "none" then
-                        return
-                    end
-                    if MVal("rightTextClassColor", false) then
-                        MSet("rightTextClassColor", false)
-                        CludesUI:RefreshPage()
-                        return
-                    end
-                    if origClick then
-                        origClick(self, ...)
-                    end
-                end)
-                sw:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(sw, "Custom Colored")
-                end)
-                sw:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                local function UpdSwatches()
-                    local isNone = MVal("rightTextContent", "none") == "none"
-                    local isClass = MVal("rightTextClassColor", false)
-                    sw:SetAlpha((isClass or isNone) and 0.3 or 1)
-                    classSw:SetAlpha((isClass and not isNone) and 1 or 0.3)
-                end
-                RegisterWidgetRefresh(function()
-                    swUp()
-                    classSwUp()
-                    UpdSwatches()
-                end)
-                UpdSwatches()
-            end
-        end,
-    }
-    textSlots[3] = {
-        key = "centerText",
-        position = "Center Text",
-        default = "none",
-        cfg = {
-            type = "dropdown",
-            text = "Center Text",
-            values = healthTextValues,
-            order = (unitKey == "boss") and healthTextOrderBoss or healthTextOrder,
-            getValue = function()
-                return MVal("centerTextContent", "none")
+                },
+            },
+        }
+        rows[#rows + 1] = {
+            type = "input",
+            label = "Separator",
+            inputWidth = 60,
+            get = function()
+                return MVal(key .. "TargetSep", ">")
             end,
-            setValue = function(v)
-                settingsTable.centerTextContent = v
-                ReloadAndUpdate()
-                CludesUI:RefreshPage(true)
+            set = function(v)
+                v = Clean(v)
+                MSet(key .. "TargetSep", v ~= "" and v or ">")
             end,
-        },
-        decorate = function(region)
-            -- Inline cog + color swatches on Center Text: Custom + Class (CDM Border Size pattern)
-            if not CludesUI._prebuilding then
-                CludesUI.BuildInlineCog(region, {
-                    disabled = function()
-                        return MVal("centerTextContent", "none") == "none"
-                    end,
-                    disabledTooltip = "This option requires a text selection other than none.",
-                    title = "Center Text Settings",
-                    rows = mod.UF_CoreTextRows("centerText", "none", MVal, MSet, {
-                        {
-                            type = "slider",
-                            label = "Size",
-                            min = 8,
-                            max = 100,
-                            step = 1,
-                            get = function()
-                                return MVal("centerTextSize", settingsTable.textSize or 12)
-                            end,
-                            set = function(v)
-                                MSet("centerTextSize", v)
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "X Offset",
-                            min = -100,
-                            max = 100,
-                            step = 1,
-                            get = function()
-                                return MVal("centerTextX", 0)
-                            end,
-                            set = function(v)
-                                MSet("centerTextX", v)
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Y Offset",
-                            min = -60,
-                            max = 60,
-                            step = 1,
-                            get = function()
-                                return MVal("centerTextY", 0)
-                            end,
-                            set = function(v)
-                                MSet("centerTextY", v)
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Width %",
-                            min = 20,
-                            max = 200,
-                            step = 5,
-                            get = function()
-                                return MVal("centerTextWidthPct", 100)
-                            end,
-                            set = function(v)
-                                MSet("centerTextWidthPct", v)
-                            end,
-                        },
-                        {
-                            type = "multiswatch",
-                            label = "Indicator Color",
-                            disabled = function()
-                                local c = MVal("centerTextContent", "none")
-                                return c ~= "nametotarget" and c ~= "targetname"
-                            end,
-                            disabledTooltip = "This option only applies when Name > Target or Target is selected.",
-                            swatches = {
-                                {
-                                    tooltip = "Custom Colored",
-                                    hasAlpha = false,
-                                    getValue = function()
-                                        local c = MVal("centerTextTargetSepColor", nil)
-                                        if type(c) == "table" then
-                                            return c.r or 1, c.g or 1, c.b or 1
-                                        end
-                                        return 1, 1, 1
-                                    end,
-                                    setValue = function(r, g, b)
-                                        MSet("centerTextTargetSepColor", { r = r, g = g, b = b })
-                                    end,
-                                    onClick = function(self)
-                                        if MVal("centerTextTargetSepClassColor", false) then
-                                            MSet("centerTextTargetSepClassColor", false)
-                                            return
-                                        end
-                                        if self._eabOrigClick then
-                                            self._eabOrigClick(self)
-                                        end
-                                    end,
-                                    refreshAlpha = function()
-                                        return MVal("centerTextTargetSepClassColor", false) and 0.3 or 1
-                                    end,
-                                },
-                                {
-                                    tooltip = "Class Colored",
-                                    hasAlpha = false,
-                                    getValue = function()
-                                        local _, ct = UnitClass("player")
-                                        local cc = ct and CludesUI.GetClassColor(ct)
-                                        if cc then
-                                            return cc.r, cc.g, cc.b
-                                        end
-                                        return 1, 1, 1
-                                    end,
-                                    setValue = function() end,
-                                    onClick = function()
-                                        MSet("centerTextTargetSepClassColor", true)
-                                    end,
-                                    refreshAlpha = function()
-                                        return MVal("centerTextTargetSepClassColor", false) and 1 or 0.3
-                                    end,
-                                },
-                            },
-                        },
-                        {
-                            type = "input",
-                            label = "Separator",
-                            inputWidth = 60,
-                            get = function()
-                                return MVal("centerTextTargetSep", ">")
-                            end,
-                            set = function(v)
-                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                if v == "" then
-                                    v = ">"
-                                end
-                                MSet("centerTextTargetSep", v)
-                            end,
-                            disabled = function()
-                                return MVal("centerTextContent", "none") ~= "nametotarget"
-                            end,
-                            disabledTooltip = "This option only applies when Name > Target is selected.",
-                        },
-                        {
-                            type = "input",
-                            label = "Prefix",
-                            inputWidth = 60,
-                            tooltip = "Text shown before the target's name.",
-                            get = function()
-                                return MVal("centerTextTargetPrefix", "T:")
-                            end,
-                            set = function(v)
-                                -- Unlike Separator, empty is kept: no prefix.
-                                v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                MSet("centerTextTargetPrefix", v)
-                            end,
-                            disabled = function()
-                                return MVal("centerTextContent", "none") ~= "targetname"
-                            end,
-                            disabledTooltip = "This option only applies when Target is selected.",
-                        },
-                    }),
-                })
-
-                local classSw, classSwUp = CludesUI.BuildColorSwatch(
-                    region,
-                    region:GetFrameLevel() + 5,
-                    function()
-                        local _, class = UnitClass("player")
-                        local cc = class and CludesUI.GetClassColor(class)
-                        if cc then
-                            return cc.r, cc.g, cc.b
-                        end
-                        return 1, 1, 1
-                    end,
-                    function() end,
-                    nil,
-                    20
-                )
-                Pix.Point(classSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-                classSw:SetScript("OnClick", function()
-                    if MVal("centerTextContent", "none") == "none" then
-                        return
-                    end
-                    MSet("centerTextClassColor", true)
-                    CludesUI:RefreshPage()
-                end)
-                classSw:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(classSw, "Class Colored")
-                end)
-                classSw:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                local swGet = function()
-                    return MVal("centerTextColorR", 1),
-                        MVal("centerTextColorG", 1),
-                        MVal("centerTextColorB", 1)
-                end
-                local swSet = function(r, g, b)
-                    settingsTable.centerTextColorR = r
-                    settingsTable.centerTextColorG = g
-                    settingsTable.centerTextColorB = b
-                    ReloadAndUpdate()
-                end
-                local sw, swUp =
-                    CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, swGet, swSet, nil, 20)
-                Pix.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
-                region._lastInline = sw
-                local origClick = sw:GetScript("OnClick")
-                sw:SetScript("OnClick", function(self, ...)
-                    if MVal("centerTextContent", "none") == "none" then
-                        return
-                    end
-                    if MVal("centerTextClassColor", false) then
-                        MSet("centerTextClassColor", false)
-                        CludesUI:RefreshPage()
-                        return
-                    end
-                    if origClick then
-                        origClick(self, ...)
-                    end
-                end)
-                sw:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(sw, "Custom Colored")
-                end)
-                sw:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                local function UpdSwatches()
-                    local isNone = MVal("centerTextContent", "none") == "none"
-                    local isClass = MVal("centerTextClassColor", false)
-                    sw:SetAlpha((isClass or isNone) and 0.3 or 1)
-                    classSw:SetAlpha((isClass and not isNone) and 1 or 0.3)
-                end
-                RegisterWidgetRefresh(function()
-                    swUp()
-                    classSwUp()
-                    UpdSwatches()
-                end)
-                UpdSwatches()
-            end
-        end,
-    }
-    if unitKey == "boss" then
-        textSlots[4] = {
-            key = "extraText",
-            position = "Extra Text (full length)",
-            default = "none",
+            disabled = function()
+                return Content() ~= "nametotarget"
+            end,
+            disabledTooltip = "This option only applies when Name > Target is selected.",
+        }
+        rows[#rows + 1] = {
+            type = "input",
+            label = "Prefix",
+            inputWidth = 60,
+            tooltip = "Text shown before the target's name.",
+            get = function()
+                return MVal(key .. "TargetPrefix", "T:")
+            end,
+            -- Unlike Separator, empty is kept: no prefix.
+            set = function(v)
+                MSet(key .. "TargetPrefix", Clean(v))
+            end,
+            disabled = function()
+                return Content() ~= "targetname"
+            end,
+            disabledTooltip = "This option only applies when Target is selected.",
+        }
+        local shown = o.shown or o.name
+        return {
+            key = key,
+            position = shown,
+            default = default,
             cfg = {
                 type = "dropdown",
-                text = "Extra Text (full length)",
+                text = shown,
                 values = healthTextValues,
-                order = healthTextOrderBoss,
-                getValue = function()
-                    return MVal("extraTextContent", "none")
-                end,
+                order = o.order,
+                getValue = Content,
+                -- A content only one slot may show leaves the slots that held it.
                 setValue = function(v)
-                    settingsTable.extraTextContent = v
+                    settingsTable[contentKey] = v
+                    if o.clears and mod.UF_IsUniqueContent(v) then
+                        for _, other in ipairs(o.clears) do
+                            if settingsTable[other .. "Content"] == v then
+                                settingsTable[other .. "Content"] = "none"
+                            end
+                        end
+                    end
                     ReloadAndUpdate()
                     CludesUI:RefreshPage(true)
                 end,
             },
             decorate = function(region)
-                -- Extra Text retains the boss-only Alignment setting.
-                if unitKey == "boss" and not CludesUI._prebuilding then
-                    CludesUI.BuildInlineCog(region, {
-                        disabled = function()
-                            return MVal("extraTextContent", "none") == "none"
-                        end,
-                        disabledTooltip = "This option requires a text selection other than none.",
-                        title = "Extra Text Settings",
-                        rows = mod.UF_CoreTextRows("extraText", "none", MVal, MSet, {
-                            {
-                                type = "dropdown",
-                                label = "Alignment",
-                                values = { ["left"] = "Left", ["right"] = "Right", ["center"] = "Center" },
-                                order = { "left", "right", "center" },
-                                get = function()
-                                    return MVal("extraTextAlign", "left")
-                                end,
-                                set = function(v)
-                                    MSet("extraTextAlign", v)
-                                end,
-                            },
-                            {
-                                type = "slider",
-                                label = "Size",
-                                min = 8,
-                                max = 100,
-                                step = 1,
-                                get = function()
-                                    return MVal("extraTextSize", settingsTable.textSize or 12)
-                                end,
-                                set = function(v)
-                                    MSet("extraTextSize", v)
-                                end,
-                            },
-                            {
-                                type = "slider",
-                                label = "X Offset",
-                                min = -300,
-                                max = 300,
-                                step = 1,
-                                get = function()
-                                    return MVal("extraTextX", 0)
-                                end,
-                                set = function(v)
-                                    MSet("extraTextX", v)
-                                end,
-                            },
-                            {
-                                type = "slider",
-                                label = "Y Offset",
-                                min = -300,
-                                max = 300,
-                                step = 1,
-                                get = function()
-                                    return MVal("extraTextY", 0)
-                                end,
-                                set = function(v)
-                                    MSet("extraTextY", v)
-                                end,
-                            },
-                            {
-                                type = "slider",
-                                label = "Width %",
-                                min = 20,
-                                max = 200,
-                                step = 5,
-                                get = function()
-                                    return MVal("extraTextWidthPct", 100)
-                                end,
-                                set = function(v)
-                                    MSet("extraTextWidthPct", v)
-                                end,
-                            },
-                            {
-                                type = "multiswatch",
-                                label = "Indicator Color",
-                                disabled = function()
-                                    local c = MVal("extraTextContent", "none")
-                                    return c ~= "nametotarget" and c ~= "targetname"
-                                end,
-                                disabledTooltip = "This option only applies when Name > Target or Target is selected.",
-                                swatches = {
-                                    {
-                                        tooltip = "Custom Colored",
-                                        hasAlpha = false,
-                                        getValue = function()
-                                            local c = MVal("extraTextTargetSepColor", nil)
-                                            if type(c) == "table" then
-                                                return c.r or 1, c.g or 1, c.b or 1
-                                            end
-                                            return 1, 1, 1
-                                        end,
-                                        setValue = function(r, g, b)
-                                            MSet("extraTextTargetSepColor", { r = r, g = g, b = b })
-                                        end,
-                                        onClick = function(self)
-                                            if MVal("extraTextTargetSepClassColor", false) then
-                                                MSet("extraTextTargetSepClassColor", false)
-                                                return
-                                            end
-                                            if self._eabOrigClick then
-                                                self._eabOrigClick(self)
-                                            end
-                                        end,
-                                        refreshAlpha = function()
-                                            return MVal("extraTextTargetSepClassColor", false) and 0.3 or 1
-                                        end,
-                                    },
-                                    {
-                                        tooltip = "Class Colored",
-                                        hasAlpha = false,
-                                        getValue = function()
-                                            local _, ct = UnitClass("player")
-                                            local cc = ct and CludesUI.GetClassColor(ct)
-                                            if cc then
-                                                return cc.r, cc.g, cc.b
-                                            end
-                                            return 1, 1, 1
-                                        end,
-                                        setValue = function() end,
-                                        onClick = function()
-                                            MSet("extraTextTargetSepClassColor", true)
-                                        end,
-                                        refreshAlpha = function()
-                                            return MVal("extraTextTargetSepClassColor", false) and 1 or 0.3
-                                        end,
-                                    },
-                                },
-                            },
-                            {
-                                type = "input",
-                                label = "Separator",
-                                inputWidth = 60,
-                                get = function()
-                                    return MVal("extraTextTargetSep", ">")
-                                end,
-                                set = function(v)
-                                    v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                    if v == "" then
-                                        v = ">"
-                                    end
-                                    MSet("extraTextTargetSep", v)
-                                end,
-                                disabled = function()
-                                    return MVal("extraTextContent", "none") ~= "nametotarget"
-                                end,
-                                disabledTooltip = "This option only applies when Name > Target is selected.",
-                            },
-                            {
-                                type = "input",
-                                label = "Prefix",
-                                inputWidth = 60,
-                                tooltip = "Text shown before the target's name.",
-                                get = function()
-                                    return MVal("extraTextTargetPrefix", "T:")
-                                end,
-                                set = function(v)
-                                    -- Unlike Separator, empty is kept: no prefix.
-                                    v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
-                                    MSet("extraTextTargetPrefix", v)
-                                end,
-                                disabled = function()
-                                    return MVal("extraTextContent", "none") ~= "targetname"
-                                end,
-                                disabledTooltip = "This option only applies when Target is selected.",
-                            },
-                        }),
-                    })
-
-                    local classSw, classSwUp = CludesUI.BuildColorSwatch(
-                        region,
-                        region:GetFrameLevel() + 5,
-                        function()
-                            local _, class = UnitClass("player")
-                            local cc = class and CludesUI.GetClassColor(class)
-                            if cc then
-                                return cc.r, cc.g, cc.b
-                            end
-                            return 1, 1, 1
-                        end,
-                        function() end,
-                        nil,
-                        20
-                    )
-                    Pix.Point(classSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-                    classSw:SetScript("OnClick", function()
-                        if MVal("extraTextContent", "none") == "none" then
-                            return
-                        end
-                        MSet("extraTextClassColor", true)
-                        CludesUI:RefreshPage()
-                    end)
-                    classSw:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(classSw, "Class Colored")
-                    end)
-                    classSw:SetScript("OnLeave", function()
-                        CludesUI.HideWidgetTooltip()
-                    end)
-                    local swGet = function()
-                        return MVal("extraTextColorR", 1),
-                            MVal("extraTextColorG", 1),
-                            MVal("extraTextColorB", 1)
-                    end
-                    local swSet = function(r, g, b)
-                        settingsTable.extraTextColorR = r
-                        settingsTable.extraTextColorG = g
-                        settingsTable.extraTextColorB = b
-                        ReloadAndUpdate()
-                    end
-                    local sw, swUp =
-                        CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, swGet, swSet, nil, 20)
-                    Pix.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
-                    region._lastInline = sw
-                    local swOrigClick = sw:GetScript("OnClick")
-                    sw:SetScript("OnClick", function(self, ...)
-                        if MVal("extraTextContent", "none") == "none" then
-                            return
-                        end
-                        if MVal("extraTextClassColor", false) then
-                            MSet("extraTextClassColor", false)
-                            CludesUI:RefreshPage()
-                            return
-                        end
-                        if swOrigClick then
-                            swOrigClick(self, ...)
-                        end
-                    end)
-                    sw:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(sw, "Custom Colored")
-                    end)
-                    sw:SetScript("OnLeave", function()
-                        CludesUI.HideWidgetTooltip()
-                    end)
-                    local function UpdSwatches()
-                        local isNone = MVal("extraTextContent", "none") == "none"
-                        local isClass = MVal("extraTextClassColor", false)
-                        sw:SetAlpha((isClass or isNone) and 0.3 or 1)
-                        classSw:SetAlpha((isClass and not isNone) and 1 or 0.3)
-                    end
-                    RegisterWidgetRefresh(function()
-                        swUp()
-                        classSwUp()
-                        UpdSwatches()
-                    end)
-                    UpdSwatches()
+                if CludesUI._prebuilding then
+                    return
                 end
+                CludesUI.BuildInlineCog(region, {
+                    disabled = Off,
+                    disabledTooltip = "This option requires a text selection other than none.",
+                    title = o.name .. " Settings",
+                    rows = mod.UF_CoreTextRows(key, default, MVal, MSet, rows),
+                })
+                -- Class, then Custom, left of the cog. Both are dead while the slot
+                -- shows nothing; the one not in use dims.
+                local classSw, classSwUp = CludesUI.BuildColorSwatch(
+                    region,
+                    region:GetFrameLevel() + 5,
+                    function()
+                        local _, class = UnitClass("player")
+                        local cc = class and CludesUI.GetClassColor(class)
+                        if cc then
+                            return cc.r, cc.g, cc.b
+                        end
+                        return 1, 1, 1
+                    end,
+                    function() end,
+                    nil,
+                    20
+                )
+                Pix.Point(classSw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+                classSw:SetScript("OnClick", function()
+                    if Off() then
+                        return
+                    end
+                    MSet(classKey, true)
+                    CludesUI:RefreshPage()
+                end)
+                classSw:SetScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(classSw, "Class Colored")
+                end)
+                classSw:SetScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
+                local sw, swUp = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
+                    return MVal(key .. "ColorR", 1), MVal(key .. "ColorG", 1), MVal(key .. "ColorB", 1)
+                end, function(r, g, b)
+                    settingsTable[key .. "ColorR"] = r
+                    settingsTable[key .. "ColorG"] = g
+                    settingsTable[key .. "ColorB"] = b
+                    ReloadAndUpdate()
+                end, nil, 20)
+                Pix.Point(sw, "RIGHT", classSw, "LEFT", -8, 0)
+                region._lastInline = sw
+                local stockClick = sw:GetScript("OnClick")
+                sw:SetScript("OnClick", function(self, ...)
+                    if Off() then
+                        return
+                    end
+                    if MVal(classKey, false) then
+                        MSet(classKey, false)
+                        CludesUI:RefreshPage()
+                        return
+                    end
+                    if stockClick then
+                        stockClick(self, ...)
+                    end
+                end)
+                sw:SetScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(sw, "Custom Colored")
+                end)
+                sw:SetScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
+                local function Dim()
+                    local isNone, isClass = Off(), MVal(classKey, false)
+                    sw:SetAlpha((isClass or isNone) and 0.3 or 1)
+                    classSw:SetAlpha((isClass and not isNone) and 1 or 0.3)
+                end
+                RegisterWidgetRefresh(function()
+                    swUp()
+                    classSwUp()
+                    Dim()
+                end)
+                Dim()
             end,
         }
+    end
+    local slotOrder = (unitKey == "boss") and healthTextOrderBoss or healthTextOrder
+    local textSlots = {
+        TextSlot({
+            key = "leftText",
+            name = "Left Text",
+            default = "name",
+            order = slotOrder,
+            clears = { "rightText", "centerText" },
+        }),
+        TextSlot({
+            key = "rightText",
+            name = "Right Text",
+            default = "none",
+            order = slotOrder,
+            clears = { "leftText", "centerText" },
+        }),
+        TextSlot({ key = "centerText", name = "Center Text", default = "none", order = slotOrder }),
+    }
+    -- Boss frames add a full-length Extra Text with an Alignment of its own.
+    if unitKey == "boss" then
+        textSlots[4] = TextSlot({
+            key = "extraText",
+            name = "Extra Text",
+            shown = "Extra Text (full length)",
+            default = "none",
+            order = healthTextOrderBoss,
+            align = true,
+            reach = 300,
+        })
     end
     local textRow
     posY, textRow = mod.UFO_BuildTextSlots(W, hostFrame, posY, {
