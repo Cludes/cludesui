@@ -5476,6 +5476,18 @@ initFrame:SetScript("OnEvent", function(self)
             saved[key] = val
             CBM.RefreshStyle()
         end
+        -- A cog or row control on one style key: reads it through CBVal, writes
+        -- it through CBSetStyle.
+        local function CBGetter(key)
+            return function()
+                return CBVal(key)
+            end
+        end
+        local function CBSetter(key)
+            return function(val)
+                CBSetStyle(key, val)
+            end
+        end
         local function CBColor(key)
             local c = CBVal(key)
             if not c then
@@ -5618,12 +5630,8 @@ initFrame:SetScript("OnEvent", function(self)
             max = 24,
             step = 1,
             tooltip = "Space between the text and the edge of the bubble.",
-            getValue = function()
-                return CBVal("padding")
-            end,
-            setValue = function(val)
-                CBSetStyle("padding", val)
-            end,
+            getValue = CBGetter("padding"),
+            setValue = CBSetter("padding"),
             disabled = Off,
             disabledTooltip = GATE_REQ,
         }, {
@@ -5632,12 +5640,8 @@ initFrame:SetScript("OnEvent", function(self)
             min = 120,
             max = 500,
             step = 10,
-            getValue = function()
-                return CBVal("maxWidth")
-            end,
-            setValue = function(val)
-                CBSetStyle("maxWidth", val)
-            end,
+            getValue = CBGetter("maxWidth"),
+            setValue = CBSetter("maxWidth"),
             disabled = Off,
             disabledTooltip = GATE_REQ,
         })
@@ -5650,12 +5654,8 @@ initFrame:SetScript("OnEvent", function(self)
             text = "Font",
             values = fontValues,
             order = fontOrder,
-            getValue = function()
-                return CBVal("font")
-            end,
-            setValue = function(val)
-                CBSetStyle("font", val)
-            end,
+            getValue = CBGetter("font"),
+            setValue = CBSetter("font"),
             disabled = Off,
             disabledTooltip = GATE_REQ,
         }, {
@@ -5664,12 +5664,8 @@ initFrame:SetScript("OnEvent", function(self)
             min = 0,
             max = 4,
             step = 1,
-            getValue = function()
-                return CBVal("borderSize")
-            end,
-            setValue = function(val)
-                CBSetStyle("borderSize", val)
-            end,
+            getValue = CBGetter("borderSize"),
+            setValue = CBSetter("borderSize"),
             disabled = Off,
             disabledTooltip = GATE_REQ,
         })
@@ -5689,12 +5685,8 @@ initFrame:SetScript("OnEvent", function(self)
                         min = 8,
                         max = 24,
                         step = 1,
-                        get = function()
-                            return CBVal("fontSize")
-                        end,
-                        set = function(val)
-                            CBSetStyle("fontSize", val)
-                        end,
+                        get = CBGetter("fontSize"),
+                        set = CBSetter("fontSize"),
                     },
                     {
                         type = "dropdown",
@@ -5706,12 +5698,8 @@ initFrame:SetScript("OnEvent", function(self)
                             thick = "Thick Outline",
                         },
                         order = { "__global", "none", "outline", "thick" },
-                        get = function()
-                            return CBVal("outline")
-                        end,
-                        set = function(val)
-                            CBSetStyle("outline", val)
-                        end,
+                        get = CBGetter("outline"),
+                        set = CBSetter("outline"),
                     },
                     {
                         type = "toggle",
@@ -5785,12 +5773,8 @@ initFrame:SetScript("OnEvent", function(self)
             min = -80,
             max = 80,
             step = 2,
-            getValue = function()
-                return CBVal("offsetY")
-            end,
-            setValue = function(val)
-                CBSetStyle("offsetY", val)
-            end,
+            getValue = CBGetter("offsetY"),
+            setValue = CBSetter("offsetY"),
             disabled = Off,
             disabledTooltip = GATE_REQ,
         })
@@ -5859,12 +5843,8 @@ initFrame:SetScript("OnEvent", function(self)
                             BOTTOMRIGHT = "Bottom Right",
                         },
                         order = { "TOPLEFT", "TOP", "TOPRIGHT", "BOTTOMLEFT", "BOTTOM", "BOTTOMRIGHT" },
-                        get = function()
-                            return CBVal("nameAnchor")
-                        end,
-                        set = function(val)
-                            CBSetStyle("nameAnchor", val)
-                        end,
+                        get = CBGetter("nameAnchor"),
+                        set = CBSetter("nameAnchor"),
                     },
                     {
                         type = "slider",
@@ -5872,12 +5852,8 @@ initFrame:SetScript("OnEvent", function(self)
                         min = 6,
                         max = 24,
                         step = 1,
-                        get = function()
-                            return CBVal("nameFontSize")
-                        end,
-                        set = function(val)
-                            CBSetStyle("nameFontSize", val)
-                        end,
+                        get = CBGetter("nameFontSize"),
+                        set = CBSetter("nameFontSize"),
                     },
                     {
                         type = "slider",
@@ -5885,12 +5861,8 @@ initFrame:SetScript("OnEvent", function(self)
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return CBVal("nameOffsetX")
-                        end,
-                        set = function(val)
-                            CBSetStyle("nameOffsetX", val)
-                        end,
+                        get = CBGetter("nameOffsetX"),
+                        set = CBSetter("nameOffsetX"),
                     },
                     {
                         type = "slider",
@@ -5898,12 +5870,8 @@ initFrame:SetScript("OnEvent", function(self)
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return CBVal("nameOffsetY")
-                        end,
-                        set = function(val)
-                            CBSetStyle("nameOffsetY", val)
-                        end,
+                        get = CBGetter("nameOffsetY"),
+                        set = CBSetter("nameOffsetY"),
                     },
                 },
             })
