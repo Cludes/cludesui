@@ -3874,92 +3874,169 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     CludesUI.TogglePillFit = PX.ToggleFit
 
     -------------------------------------------------------------------------------
-    --  ShowPickMenu -- generic pick-one context menu (right-click "Add To" on
-    --  manager tiles). Dark popup at the CURSOR with icon+label rows; disabled
-    --  rows dim and ignore clicks; scrolls past maxHeight; closes on any outside
-    --  click (fullscreen catcher) or on picking a row. ONE shared frame + row
-    --  pool, reconfigured per open (menus are rare; frames are never GC'd).
+    --  ShowPickMenu: the pick-one context menu (right-click "Add To" on manager
+    --  tiles). A dark popup at the cursor with icon + label rows: disabled rows
+    --  dim and take no clicks, the list scrolls past maxHeight, and the menu
+    --  closes on a pick or on any click outside it (a full-screen catcher under
+    --  it). One shared frame and row list, dressed again for every open.
     --  opts = { title, fontPath, items = { { key, label, icon, disabled } },
     --           onPick(key), width (default 230), maxHeight (default 320) }
     -------------------------------------------------------------------------------
+    local PICK_ROW_H = 24
+
+    local function BuildPickMenu()
+        local menu = CreateFrame("Frame", nil, CludesUI.OverlayParent())
+        menu:SetFrameStrata("FULLSCREEN_DIALOG")
+        menu:SetFrameLevel(220)
+        menu:EnableMouse(true)
+        menu:SetClampedToScreen(true)
+        local backdrop = menu:CreateTexture(nil, "BACKGROUND")
+        backdrop:SetAllPoints()
+        backdrop:SetColorTexture(0.067, 0.067, 0.067, 0.98)
+        MakeRoundedBorder(menu, 1, 1, 1, 0.2, backdrop, nil, true)
+
+        -- Shown and hidden with the menu, just under it.
+        local catcher = CreateFrame("Button", nil, CludesUI.OverlayParent())
+        catcher:SetAllPoints(UIParent)
+        catcher:SetFrameStrata("FULLSCREEN_DIALOG")
+        catcher:SetFrameLevel(210)
+        catcher:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+        catcher:SetScript("OnClick", function()
+            menu:Hide()
+        end)
+        catcher:Hide()
+        menu._catcher = catcher
+        menu:SetScript("OnHide", function(self)
+            self._catcher:Hide()
+            -- Controller cursor: back onto the tile that opened it (set only under that cursor).
+            local opener = self._padOpener
+            if opener then
+                self._padOpener = nil
+                if CludesUI.PadCursorShown() then
+                    CludesUI.PadFocus(opener)
+                end
+            end
+        end)
+        menu:SetScript("OnShow", function(self)
+            self._catcher:Show()
+        end)
+        -- Controller cursor: on its overlay layer the menu is created hidden, so the
+        -- layer shows only with it; the menu and its catcher block what they cover
+        -- without being stops, and Cancel clicks the catcher (closing the menu).
+        if CludesUI.PadCP() then
+            menu:Hide()
+            CludesUI.PadHint(menu, "nodepass")
+            CludesUI.PadHint(catcher, "nodepass")
+            menu.CloseButton = catcher
+            CludesUI.TrackOverlay(catcher)
+            CludesUI.TrackOverlay(menu)
+        end
+
+        local title = menu:CreateFontString(nil, "OVERLAY")
+        title:SetPoint("TOPLEFT", menu, "TOPLEFT", 10, -7)
+        title:SetTextColor(0.6, 0.6, 0.6)
+        menu._title = title
+
+        -- The list: two rows a wheel notch, held inside the list's height.
+        local scroll = CreateFrame("ScrollFrame", nil, menu)
+        scroll:SetClipsChildren(true)
+        menu._scroll = scroll
+        local list = CreateFrame("Frame", nil, scroll)
+        scroll:SetScrollChild(list)
+        menu._child = list
+        scroll:EnableMouseWheel(true)
+        scroll:SetScript("OnMouseWheel", function(self, delta)
+            local maxS = math.max(0, menu._child:GetHeight() - self:GetHeight())
+            self:SetVerticalScroll(
+                math.max(0, math.min(maxS, self:GetVerticalScroll() - delta * PICK_ROW_H * 2))
+            )
+        end)
+        menu._rows = {}
+        return menu
+    end
+
+    -- Row idx of the list: a hover wash (none on a disabled row), the icon and
+    -- the label; a click on an enabled row closes the menu and reports its key.
+    local function BuildPickRow(menu, idx)
+        local row = CreateFrame("Button", nil, menu._child)
+        row:SetHeight(PICK_ROW_H)
+        row:SetPoint("TOPLEFT", menu._child, "TOPLEFT", 0, -(idx - 1) * PICK_ROW_H)
+        row:SetPoint("RIGHT", menu._child, "RIGHT", 0, 0)
+        local hov = row:CreateTexture(nil, "BACKGROUND")
+        hov:SetAllPoints()
+        hov:SetColorTexture(1, 1, 1, 0)
+        row._hov = hov
+        local ic = row:CreateTexture(nil, "ARTWORK")
+        ic:SetSize(16, 16)
+        ic:SetPoint("LEFT", row, "LEFT", 8, 0)
+        ic:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        row._icon = ic
+        local labelFS = row:CreateFontString(nil, "OVERLAY")
+        labelFS:SetPoint("RIGHT", row, "RIGHT", -8, 0)
+        labelFS:SetJustifyH("LEFT")
+        labelFS:SetWordWrap(false)
+        row._lbl = labelFS
+        row:SetScript("OnEnter", function(self)
+            if not self._disabled then
+                self._hov:SetColorTexture(1, 1, 1, 0.07)
+            end
+        end)
+        row:SetScript("OnLeave", function(self)
+            self._hov:SetColorTexture(1, 1, 1, 0)
+        end)
+        row:SetScript("OnClick", function(self)
+            if self._disabled then
+                return
+            end
+            menu:Hide()
+            if menu._onPick then
+                menu._onPick(self._key)
+            end
+        end)
+        return row
+    end
+
+    -- Dress a row for one item: the label clears the icon when there is one.
+    local function DressPickRow(row, it, fontFile)
+        row._key = it.key
+        row._disabled = it.disabled and true or false
+        row._hov:SetColorTexture(1, 1, 1, 0)
+        local lbl = row._lbl
+        lbl:SetFont(fontFile, 12, "")
+        lbl:SetText(it.label or tostring(it.key))
+        lbl:ClearAllPoints()
+        lbl:SetPoint("RIGHT", row, "RIGHT", -8, 0)
+        if it.icon then
+            row._icon:SetTexture(it.icon)
+            row._icon:Show()
+            lbl:SetPoint("LEFT", row, "LEFT", 30, 0)
+        else
+            row._icon:Hide()
+            lbl:SetPoint("LEFT", row, "LEFT", 10, 0)
+        end
+        if it.disabled then
+            row:SetAlpha(0.35)
+            lbl:SetTextColor(0.7, 0.7, 0.7)
+        else
+            row:SetAlpha(1)
+            lbl:SetTextColor(0.9, 0.9, 0.9)
+        end
+        row:Show()
+    end
+
     function CludesUI.ShowPickMenu(anchor, options)
         options = options or {}
         local fontFile = options.fontPath or "Fonts\\FRIZQT__.TTF"
         local width = options.width or 230
-        local maxH = options.maxHeight or 320
         local itemList = options.items or {}
-        local ROW_H = 24
 
         local menu = CludesUI._pickMenu
         if not menu then
-            menu = CreateFrame("Frame", nil, CludesUI.OverlayParent())
+            menu = BuildPickMenu()
             CludesUI._pickMenu = menu
-            menu:SetFrameStrata("FULLSCREEN_DIALOG")
-            menu:SetFrameLevel(220)
-            menu:EnableMouse(true)
-            menu:SetClampedToScreen(true)
-            local backdrop = menu:CreateTexture(nil, "BACKGROUND")
-            backdrop:SetAllPoints()
-            backdrop:SetColorTexture(0.067, 0.067, 0.067, 0.98)
-            MakeRoundedBorder(menu, 1, 1, 1, 0.2, backdrop, nil, true)
-
-            local catcher = CreateFrame("Button", nil, CludesUI.OverlayParent())
-            catcher:SetAllPoints(UIParent)
-            catcher:SetFrameStrata("FULLSCREEN_DIALOG")
-            catcher:SetFrameLevel(210)
-            catcher:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-            catcher:SetScript("OnClick", function()
-                menu:Hide()
-            end)
-            catcher:Hide()
-            menu._catcher = catcher
-            menu:SetScript("OnHide", function(self)
-                self._catcher:Hide()
-                -- Controller cursor: back onto the tile that opened it (set only under that cursor).
-                local opener = self._padOpener
-                if opener then
-                    self._padOpener = nil
-                    if CludesUI.PadCursorShown() then
-                        CludesUI.PadFocus(opener)
-                    end
-                end
-            end)
-            menu:SetScript("OnShow", function(self)
-                self._catcher:Show()
-            end)
-            -- Controller cursor: on its overlay layer the menu is created hidden, so the
-            -- layer shows only with it; the menu and its catcher block what they cover
-            -- without being stops, and Cancel clicks the catcher (closing the menu).
-            if CludesUI.PadCP() then
-                menu:Hide()
-                CludesUI.PadHint(menu, "nodepass")
-                CludesUI.PadHint(catcher, "nodepass")
-                menu.CloseButton = catcher
-                CludesUI.TrackOverlay(catcher)
-                CludesUI.TrackOverlay(menu)
-            end
-
-            local title = menu:CreateFontString(nil, "OVERLAY")
-            title:SetPoint("TOPLEFT", menu, "TOPLEFT", 10, -7)
-            title:SetTextColor(0.6, 0.6, 0.6)
-            menu._title = title
-
-            local scroll = CreateFrame("ScrollFrame", nil, menu)
-            scroll:SetClipsChildren(true)
-            menu._scroll = scroll
-            local childFrame = CreateFrame("Frame", nil, scroll)
-            scroll:SetScrollChild(childFrame)
-            menu._child = childFrame
-            scroll:EnableMouseWheel(true)
-            scroll:SetScript("OnMouseWheel", function(self, delta)
-                local maxS = math.max(0, menu._child:GetHeight() - self:GetHeight())
-                self:SetVerticalScroll(
-                    math.max(0, math.min(maxS, self:GetVerticalScroll() - delta * ROW_H * 2))
-                )
-            end)
-            menu._rows = {}
         end
 
+        -- A title band only when there is a title.
         local titleH = 6
         if options.title then
             menu._title:SetFont(fontFile, 11, "")
@@ -3970,9 +4047,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             menu._title:Hide()
         end
 
-        local listH = #itemList * ROW_H
-        local scrollH = math.min(listH, maxH)
-        menu:SetSize(width, titleH + scrollH + 8)
+        local listH = #itemList * PICK_ROW_H
+        menu:SetSize(width, titleH + math.min(listH, options.maxHeight or 320) + 8)
         menu._scroll:ClearAllPoints()
         menu._scroll:SetPoint("TOPLEFT", menu, "TOPLEFT", 0, -titleH)
         menu._scroll:SetPoint("BOTTOMRIGHT", menu, "BOTTOMRIGHT", 0, 6)
@@ -3980,70 +4056,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         menu._scroll:SetVerticalScroll(0)
 
         local rowList = menu._rows
-        for idx = 1, #itemList do
-            local it = itemList[idx]
+        for idx, it in ipairs(itemList) do
             local row = rowList[idx]
             if not row then
-                row = CreateFrame("Button", nil, menu._child)
-                row:SetHeight(ROW_H)
-                row:SetPoint("TOPLEFT", menu._child, "TOPLEFT", 0, -(idx - 1) * ROW_H)
-                row:SetPoint("RIGHT", menu._child, "RIGHT", 0, 0)
-                local hov = row:CreateTexture(nil, "BACKGROUND")
-                hov:SetAllPoints()
-                hov:SetColorTexture(1, 1, 1, 0)
-                row._hov = hov
-                local ic = row:CreateTexture(nil, "ARTWORK")
-                ic:SetSize(16, 16)
-                ic:SetPoint("LEFT", row, "LEFT", 8, 0)
-                ic:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-                row._icon = ic
-                local labelFS = row:CreateFontString(nil, "OVERLAY")
-                labelFS:SetPoint("RIGHT", row, "RIGHT", -8, 0)
-                labelFS:SetJustifyH("LEFT")
-                labelFS:SetWordWrap(false)
-                row._lbl = labelFS
-                row:SetScript("OnEnter", function(self)
-                    if not self._disabled then
-                        self._hov:SetColorTexture(1, 1, 1, 0.07)
-                    end
-                end)
-                row:SetScript("OnLeave", function(self)
-                    self._hov:SetColorTexture(1, 1, 1, 0)
-                end)
-                row:SetScript("OnClick", function(self)
-                    if self._disabled then
-                        return
-                    end
-                    menu:Hide()
-                    if menu._onPick then
-                        menu._onPick(self._key)
-                    end
-                end)
+                row = BuildPickRow(menu, idx)
                 rowList[idx] = row
             end
-            row._key = it.key
-            row._disabled = it.disabled and true or false
-            row._hov:SetColorTexture(1, 1, 1, 0)
-            row._lbl:SetFont(fontFile, 12, "")
-            row._lbl:SetText(it.label or tostring(it.key))
-            row._lbl:ClearAllPoints()
-            row._lbl:SetPoint("RIGHT", row, "RIGHT", -8, 0)
-            if it.icon then
-                row._icon:SetTexture(it.icon)
-                row._icon:Show()
-                row._lbl:SetPoint("LEFT", row, "LEFT", 30, 0)
-            else
-                row._icon:Hide()
-                row._lbl:SetPoint("LEFT", row, "LEFT", 10, 0)
-            end
-            if it.disabled then
-                row:SetAlpha(0.35)
-                row._lbl:SetTextColor(0.7, 0.7, 0.7)
-            else
-                row:SetAlpha(1)
-                row._lbl:SetTextColor(0.9, 0.9, 0.9)
-            end
-            row:Show()
+            DressPickRow(row, it, fontFile)
         end
         for idx = #itemList + 1, #rowList do
             rowList[idx]:Hide()
@@ -4051,10 +4070,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         menu._onPick = options.onPick
 
         -- Context-menu convention: open at the cursor (clamped on screen).
+        -- Controller cursor: the hidden pointer is not on the tile, so open at
+        -- the tile and put the cursor into the list.
         local scale = UIParent:GetEffectiveScale()
         local cx, cy = GetCursorPosition()
         menu:ClearAllPoints()
-        -- Controller cursor: the hidden pointer is not on the tile; open at the tile, cursor into the list.
         local padCursor = CludesUI.PadCursorShown()
         if padCursor and anchor then
             menu:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -2)
