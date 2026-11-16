@@ -21,6 +21,15 @@ CludesUI.TAB_LABEL_OVERRIDES[PAGE_TOOLTIPS] = "Tooltips & Menus"
 CludesUI.TAB_LABEL_OVERRIDES[PAGE_DRAGONRIDING] = "Skyriding"
 CludesUI.TAB_LABEL_OVERRIDES[PAGE_WINDOWMOVER] = "Window Mover"
 
+-- The account-wide settings table (these tabs' settings live at its top
+-- level), made if it is not there yet, for a write.
+local function Account()
+    if not CludesUIDB then
+        CludesUIDB = {}
+    end
+    return CludesUIDB
+end
+
 local initFrame = CreateFrame("Frame")
 initFrame:RegisterEvent("PLAYER_LOGIN")
 initFrame:SetScript("OnEvent", function(self)
@@ -391,10 +400,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return not CludesUIDB or CludesUIDB.reskinPopupsMenus ~= false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinPopupsMenus = val
+                Account().reskinPopupsMenus = val
                 -- Resurrect Accept Glow runs only under the reskin: sync a shown popup now
                 if CludesUI._EnsureResurrectGlow then
                     CludesUI._EnsureResurrectGlow()
@@ -418,10 +424,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.resurrectAcceptGlow or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.resurrectAcceptGlow = val
+                Account().resurrectAcceptGlow = val
                 if CludesUI._EnsureResurrectGlow then
                     CludesUI._EnsureResurrectGlow()
                 end
@@ -615,10 +618,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.tooltipFontScale or 1.0
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.tooltipFontScale = val
+                Account().tooltipFontScale = val
                 TooltipPreviewRepaint()
             end,
         }, {
@@ -630,10 +630,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return not CludesUIDB or CludesUIDB.reskinGameMenu ~= false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinGameMenu = val
+                Account().reskinGameMenu = val
                 CludesUI:ShowConfirmPopup({
                     title = "Reload Required",
                     message = "Changing the pause menu reskin requires a UI reload.",
@@ -693,10 +690,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return not CludesUIDB or CludesUIDB.customTooltips ~= false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.customTooltips = val
+                Account().customTooltips = val
                 if CludesUI.SyncAuraTooltipSkin then
                     CludesUI.SyncAuraTooltipSkin()
                 end
@@ -725,10 +719,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return (CludesUIDB and CludesUIDB.tooltipShowMode) or "always"
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.tooltipShowMode = val
+                Account().tooltipShowMode = val
                 CludesUI:RefreshPage() -- update the Use Modifier cog disabled state
             end,
         })
@@ -764,10 +755,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return (CludesUIDB and CludesUIDB.tooltipShowModifier) or "none"
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.tooltipShowModifier = val
+                            Account().tooltipShowModifier = val
                         end,
                     },
                 },
@@ -788,10 +776,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return CludesUIDB and CludesUIDB.tooltipAnchorCursor or false
                 end,
                 setValue = function(val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB.tooltipAnchorCursor = val
+                    Account().tooltipAnchorCursor = val
                     if CludesUI._applyTooltipCursorAnchor then
                         CludesUI._applyTooltipCursorAnchor()
                     end
@@ -826,10 +811,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return (CludesUIDB and CludesUIDB.tooltipGrowthDirection) or "default"
                 end,
                 setValue = function(val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB.tooltipGrowthDirection = val
+                    Account().tooltipGrowthDirection = val
                 end,
             }
         )
@@ -876,10 +858,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return CludesUIDB and CludesUIDB.tooltipCursorPosition or "top"
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.tooltipCursorPosition = val
+                            Account().tooltipCursorPosition = val
                         end,
                     },
                     {
@@ -892,10 +871,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return (CludesUIDB and CludesUIDB.tooltipCursorOffsetX) or 0
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.tooltipCursorOffsetX = val
+                            Account().tooltipCursorOffsetX = val
                         end,
                     },
                     {
@@ -908,10 +884,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return (CludesUIDB and CludesUIDB.tooltipCursorOffsetY) or 0
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.tooltipCursorOffsetY = val
+                            Account().tooltipCursorOffsetY = val
                         end,
                     },
                 },
@@ -947,10 +920,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return CludesUI.SpellIDOn()
                 end,
                 setValue = function(val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB.showSpellID = val
+                    Account().showSpellID = val
                     if CludesUI.SyncAuraSpellIDCVar then
                         CludesUI.SyncAuraSpellIDCVar()
                     end
@@ -1123,10 +1093,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return (CludesUIDB and CludesUIDB.spellIDModifier) or "none"
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.spellIDModifier = val
+                            Account().spellIDModifier = val
                             -- Modifier choice gates the engine-side combat
                             -- aura-ID CVar (12.1; no-op on retail).
                             if CludesUI.SyncAuraSpellIDCVar then
@@ -1141,10 +1108,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return not CludesUIDB or CludesUIDB.showIconID ~= false
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.showIconID = val
+                            Account().showIconID = val
                         end,
                     },
                     {
@@ -1154,10 +1118,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return not CludesUIDB or CludesUIDB.showItemID ~= false
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.showItemID = val
+                            Account().showItemID = val
                         end,
                     },
                 },
@@ -1179,10 +1140,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return CludesUIDB and CludesUIDB.showItemMaxStacks or false
                 end,
                 setValue = function(val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB.showItemMaxStacks = val
+                    Account().showItemMaxStacks = val
                     CludesUI:RefreshPage() -- update the Use Modifier cog disabled state
                 end,
             },
@@ -1195,10 +1153,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return CludesUIDB and CludesUIDB.tooltipShowBuffs or false
                 end,
                 setValue = function(val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB.tooltipShowBuffs = val
+                    Account().tooltipShowBuffs = val
                     if CludesUI._applyTooltipBuffs then
                         CludesUI._applyTooltipBuffs()
                     end
@@ -1231,10 +1186,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return (CludesUIDB and CludesUIDB.itemStackModifier) or "none"
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.itemStackModifier = val
+                            Account().itemStackModifier = val
                         end,
                     },
                 },
@@ -1247,10 +1199,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return ttReskinOff() or not (CludesUIDB and CludesUIDB.tooltipShowBuffs)
             end
             local function setBuffs(key, val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB[key] = val
+                Account()[key] = val
                 if CludesUI._applyTooltipBuffs then
                     CludesUI._applyTooltipBuffs()
                 end
@@ -1347,10 +1296,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return not stripHidden()
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.tooltipHideHealthStrip = not val
+                Account().tooltipHideHealthStrip = not val
                 if CludesUI._applyTooltipHealthStrip then
                     CludesUI._applyTooltipHealthStrip()
                 end
@@ -1372,10 +1318,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return math.floor(a * 100 + 0.5)
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.tooltipBgOpacity = val / 100
+                Account().tooltipBgOpacity = val / 100
                 if CludesUI.SyncAuraTooltipSkin then
                     CludesUI.SyncAuraTooltipSkin()
                 end
@@ -1435,10 +1378,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return CludesUIDB and CludesUIDB.tooltipHealthStripTexture or "blizzard"
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.tooltipHealthStripTexture = (val ~= "blizzard") and val or nil
+                            Account().tooltipHealthStripTexture = (val ~= "blizzard") and val or nil
                             applyStripStyle()
                         end,
                     },
@@ -1452,10 +1392,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return CludesUIDB and CludesUIDB.tooltipHealthStripHeight or 3
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.tooltipHealthStripHeight = (val ~= 3) and val or nil
+                            Account().tooltipHealthStripHeight = (val ~= 3) and val or nil
                             applyStripStyle()
                         end,
                     },
@@ -1474,10 +1411,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return R.BG_R, R.BG_G, R.BG_B, 1
                     end,
                     setValue = function(r, g, b)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB.tooltipBgColor = { r = r, g = g, b = b }
+                        Account().tooltipBgColor = { r = r, g = g, b = b }
                         if CludesUI.SyncAuraTooltipSkin then
                             CludesUI.SyncAuraTooltipSkin()
                         end
@@ -1560,10 +1494,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return not CludesUIDB or CludesUIDB.reskinWidgetBars ~= false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinWidgetBars = val and true or false
+                Account().reskinWidgetBars = val and true or false
                 -- Reload-bound, like the window packs: turned OFF, the skin
                 -- registers no events at all rather than running and
                 -- returning early, so the decision is taken once at login.
@@ -1585,10 +1516,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return CludesUIDB and CludesUIDB.reskinExtraActionButton == true
                     end,
                     setValue = function(val)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB.reskinExtraActionButton = val and true or false
+                        Account().reskinExtraActionButton = val and true or false
                     end,
                 }
             or nil
@@ -1601,10 +1529,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return not CludesUIDB or CludesUIDB.reskinQueuePopup ~= false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinQueuePopup = val
+                Account().reskinQueuePopup = val
                 if not val and CludesUI.ShowConfirmPopup then
                     CludesUI:ShowConfirmPopup({
                         title = "Reload Required",
@@ -1623,10 +1548,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return not CludesUIDB or CludesUIDB.showQueueTimer ~= false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.showQueueTimer = val
+                Account().showQueueTimer = val
                 CludesUI:RefreshPage() -- update the style cog + swatch disabled states
             end,
         }
@@ -1686,10 +1608,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return 0
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.widgetBarMinSize = val
+                            Account().widgetBarMinSize = val
                             -- Live: the seam re-reads and books one refresh; nil
                             -- only while the reskin is off (cog greyed then).
                             if CludesUI._HUDWidgetSetMinSize then
@@ -1741,10 +1660,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return (CludesUIDB and CludesUIDB[key]) or default
             end
             local function Set(key, val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB[key] = val
+                Account()[key] = val
                 if CludesUI.RefreshQueueTimerStyle then
                     CludesUI.RefreshQueueTimerStyle()
                 end
@@ -1934,10 +1850,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return (CludesUIDB and CludesUIDB.charSheetIconZoom) or 0.07
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.charSheetIconZoom = val
+                Account().charSheetIconZoom = val
                 if CludesUI._refreshCharSheetIconZoom then
                     CludesUI._refreshCharSheetIconZoom()
                 end
@@ -1989,10 +1902,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return CludesUIDB and CludesUIDB.showMythicRating or false
                 end,
                 setValue = function(val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB.showMythicRating = val
+                    Account().showMythicRating = val
                     if CludesUI._updateMythicRatingDisplay then
                         CludesUI._updateMythicRatingDisplay()
                     end
@@ -2023,10 +1933,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return not (CludesUIDB and CludesUIDB[key] == false)
                     end,
                     function(key, val)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB[key] = val
+                        Account()[key] = val
                         local refresh = CludesUI[refreshOf[key]]
                         if refresh then
                             refresh()
@@ -2053,10 +1960,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return CludesUIDB and CludesUIDB.charSheetSocketPanel ~= false
                 end,
                 setValue = function(val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB.charSheetSocketPanel = val
+                    Account().charSheetSocketPanel = val
                     if CludesUI._refreshCharSheetSocketPanel then
                         CludesUI._refreshCharSheetSocketPanel()
                     end
@@ -2084,10 +1988,7 @@ initFrame:SetScript("OnEvent", function(self)
                                 return CludesUIDB and CludesUIDB.charSheetSocketPanelStats == true or false
                             end,
                             set = function(val)
-                                if not CludesUIDB then
-                                    CludesUIDB = {}
-                                end
-                                CludesUIDB.charSheetSocketPanelStats = val
+                                Account().charSheetSocketPanelStats = val
                                 if CludesUI._refreshCharSheetSocketPanel then
                                     CludesUI._refreshCharSheetSocketPanel()
                                 end
@@ -2110,10 +2011,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return CludesUIDB and CludesUIDB.showUpgradeTrack ~= false
                 end,
                 setValue = function(val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB.showUpgradeTrack = val
+                    Account().showUpgradeTrack = val
                     if CludesUI._refreshUpgradeTrackVisibility then
                         CludesUI._refreshUpgradeTrackVisibility()
                     end
@@ -2144,10 +2042,7 @@ initFrame:SetScript("OnEvent", function(self)
             return "icons"
         end
         local function SetEnchantMode(showKey, namesKey, val)
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
-            CludesUIDB[showKey] = val ~= "none"
+            Account()[showKey] = val ~= "none"
             if val ~= "none" then
                 CludesUIDB[namesKey] = val == "text"
             end
@@ -2186,10 +2081,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.showPvpItemLevel or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.showPvpItemLevel = val
+                Account().showPvpItemLevel = val
                 if CludesUI._updatePvpIlvlDisplay then
                     CludesUI._updatePvpIlvlDisplay()
                 end
@@ -2212,10 +2104,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return (CludesUIDB and CludesUIDB.charSheetEnchantSize) or 9
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.charSheetEnchantSize = val
+                            Account().charSheetEnchantSize = val
                             if CludesUI._refreshCharSheetSlotLabels then
                                 CludesUI._refreshCharSheetSlotLabels()
                             end
@@ -2244,10 +2133,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return not (CludesUIDB and CludesUIDB.charSheetSeasonPanel == false)
                 end,
                 setValue = function(val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB.charSheetSeasonPanel = val
+                    Account().charSheetSeasonPanel = val
                     if CludesUI._refreshCharSheetSocketPanel then
                         CludesUI._refreshCharSheetSocketPanel()
                     end
@@ -2264,10 +2150,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.showCharSheetDurability or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.showCharSheetDurability = val
+                Account().showCharSheetDurability = val
                 if val then
                     if CludesUIDB.charSheetDurabilityLocation == nil then
                         CludesUIDB.charSheetDurabilityLocation = "model"
@@ -2304,10 +2187,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return CludesUIDB and CludesUIDB.charSheetDurabilityLocation or "model"
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.charSheetDurabilityLocation = val
+                            Account().charSheetDurabilityLocation = val
                             if CludesUI._updateCharSheetDurability then
                                 CludesUI._updateCharSheetDurability()
                             end
@@ -2324,10 +2204,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return not CludesUIDB or CludesUIDB.charSheetDurabilityShowLabel ~= false
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.charSheetDurabilityShowLabel = val
+                            Account().charSheetDurabilityShowLabel = val
                             if CludesUI._updateCharSheetDurability then
                                 CludesUI._updateCharSheetDurability()
                             end
@@ -2355,10 +2232,7 @@ initFrame:SetScript("OnEvent", function(self)
                                 return CludesUIDB and CludesUIDB.charSheetSeasonVault == true or false
                             end,
                             set = function(val)
-                                if not CludesUIDB then
-                                    CludesUIDB = {}
-                                end
-                                CludesUIDB.charSheetSeasonVault = val
+                                Account().charSheetSeasonVault = val
                                 if CludesUI._refreshCharSheetSocketPanel then
                                     CludesUI._refreshCharSheetSocketPanel()
                                 end
@@ -2393,10 +2267,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return CludesUIDB and CludesUIDB.flyoutItemStats or false
                 end,
                 setValue = function(val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB.flyoutItemStats = val
+                    Account().flyoutItemStats = val
                     CludesUI:RefreshPage()
                 end,
             }
@@ -2409,10 +2280,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.flyoutItemLevels or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.flyoutItemLevels = val
+                Account().flyoutItemLevels = val
             end,
         }, flyoutStatsCfg or CludesUI.BlankRowCfg())
         posY = posY - hgt
@@ -2430,10 +2298,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return CludesUIDB and CludesUIDB.flyoutItemStatsTertiary == true or false
                 end,
                 setValue = function(val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB.flyoutItemStatsTertiary = val
+                    Account().flyoutItemStatsTertiary = val
                 end,
             }, {
                 type = "toggle",
@@ -2445,10 +2310,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return CludesUIDB and CludesUIDB.charSheetHideSlotFlyoutArrows == true
                 end,
                 setValue = function(val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB.charSheetHideSlotFlyoutArrows = val
+                    Account().charSheetHideSlotFlyoutArrows = val
                     if CludesUI._refreshCharSheetSlotFlyoutArrows then
                         CludesUI._refreshCharSheetSlotFlyoutArrows()
                     end
@@ -2533,10 +2395,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.showAdjustedStats or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.showAdjustedStats = val
+                Account().showAdjustedStats = val
             end,
         })
         posY = posY - hgt
@@ -2599,10 +2458,7 @@ initFrame:SetScript("OnEvent", function(self)
                 itemList,
                 SectionShown,
                 function(key, val)
-                    if not CludesUIDB then
-                        CludesUIDB = {}
-                    end
-                    CludesUIDB["showStatCategory_" .. key] = val
+                    Account()["showStatCategory_" .. key] = val
                     if CludesUI._updateStatCategoryVisibility then
                         CludesUI._updateStatCategoryVisibility()
                     end
@@ -2632,10 +2488,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return CludesUIDB and CludesUIDB.showManaStat == true
                     end,
                     set = function(val)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB.showManaStat = val
+                        Account().showManaStat = val
                         if CludesUI._refreshStatsVisibility then
                             CludesUI._refreshStatsVisibility()
                         end
@@ -2660,10 +2513,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return not (CludesUIDB and CludesUIDB["showCrest_" .. key] == false)
                     end,
                     set = function(key, val)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB["showCrest_" .. key] = val
+                        Account()["showCrest_" .. key] = val
                         if CludesUI._refreshStatsVisibility then
                             CludesUI._refreshStatsVisibility()
                         end
@@ -2681,10 +2531,7 @@ initFrame:SetScript("OnEvent", function(self)
                         return not (CludesUIDB and CludesUIDB.charSheetBlizzColors == false)
                     end,
                     set = function(val)
-                        if not CludesUIDB then
-                            CludesUIDB = {}
-                        end
-                        CludesUIDB.charSheetBlizzColors = val
+                        Account().charSheetBlizzColors = val
                         if CludesUI._refreshCharacterSheetColors then
                             CludesUI._refreshCharacterSheetColors()
                         end
@@ -2749,10 +2596,7 @@ initFrame:SetScript("OnEvent", function(self)
                     or false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.highlightSecondaryItems = val
+                Account().highlightSecondaryItems = val
                 CludesUIDB.highlightTertiaryItems = val
             end,
         })
@@ -2774,10 +2618,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return not CludesUIDB or CludesUIDB.themedInspectSheet ~= false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.themedInspectSheet = val
+                Account().themedInspectSheet = val
                 CludesUI:ShowConfirmPopup({
                     title = "Reload Required",
                     message = "Inspect Sheet theme setting requires a UI reload to fully apply.",
@@ -2834,10 +2675,7 @@ initFrame:SetScript("OnEvent", function(self)
                             ) or 9
                         end,
                         set = function(val)
-                            if not CludesUIDB then
-                                CludesUIDB = {}
-                            end
-                            CludesUIDB.inspectEnchantSize = val
+                            Account().inspectEnchantSize = val
                             if CludesUI._refreshInspectSlotLabels then
                                 CludesUI._refreshInspectSlotLabels()
                             end
@@ -2861,10 +2699,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.inspectShowItemLevel ~= false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.inspectShowItemLevel = val
+                Account().inspectShowItemLevel = val
                 if CludesUI._refreshInspectItemLevelVisibility then
                     CludesUI._refreshInspectItemLevelVisibility()
                 end
@@ -2877,10 +2712,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.inspectShowUpgradeTrack ~= false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.inspectShowUpgradeTrack = val
+                Account().inspectShowUpgradeTrack = val
                 if CludesUI._refreshInspectUpgradeTrackVisibility then
                     CludesUI._refreshInspectUpgradeTrackVisibility()
                 end
@@ -2945,10 +2777,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.lfgRememberRoles == true
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.lfgRememberRoles = val
+                Account().lfgRememberRoles = val
                 if CludesUI._GroupFinder_RefreshQoL then
                     CludesUI._GroupFinder_RefreshQoL()
                 end
@@ -3219,10 +3048,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return (CludesUIDB and CludesUIDB.merchantListRowHeight) or 32
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.merchantListRowHeight = val
+                Account().merchantListRowHeight = val
                 if CludesUI._Merchant_RefreshRowHeight then
                     CludesUI._Merchant_RefreshRowHeight()
                 end
@@ -3239,10 +3065,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.merchantShowItemLevel == true
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.merchantShowItemLevel = val
+                Account().merchantShowItemLevel = val
                 if CludesUI._Merchant_RefreshItemLevels then
                     CludesUI._Merchant_RefreshItemLevels()
                 end
@@ -3259,10 +3082,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.merchantBulkBuy == true
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.merchantBulkBuy = val
+                Account().merchantBulkBuy = val
                 if CludesUI._Merchant_RefreshBulkBuy then
                     CludesUI._Merchant_RefreshBulkBuy()
                 end
@@ -3281,10 +3101,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return
             end
             local function setSize(key, val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB[key] = val
+                Account()[key] = val
                 if CludesUI._Merchant_RefreshExpand then
                     CludesUI._Merchant_RefreshExpand()
                 end
@@ -3342,10 +3159,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.merchantExpand == true
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.merchantExpand = val
+                Account().merchantExpand = val
                 if CludesUI._Merchant_RefreshExpand then
                     CludesUI._Merchant_RefreshExpand()
                 end
@@ -3527,10 +3341,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return not CludesUIDB or CludesUIDB.lootToastQualityStrip ~= false
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.lootToastQualityStrip = val
+                Account().lootToastQualityStrip = val
                 if CludesUI._LootToast_Refresh then
                     CludesUI._LootToast_Refresh()
                 end
@@ -3543,10 +3354,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.lootToastQualityStripMoney == true
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.lootToastQualityStripMoney = val
+                Account().lootToastQualityStripMoney = val
                 if CludesUI._LootToast_Refresh then
                     CludesUI._LootToast_Refresh()
                 end
@@ -3567,10 +3375,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return CludesUIDB and CludesUIDB.lootToastScale or 1.0
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.lootToastScale = val
+                Account().lootToastScale = val
                 if CludesUI._LootToast_Refresh then
                     CludesUI._LootToast_Refresh()
                 end
@@ -3609,10 +3414,7 @@ initFrame:SetScript("OnEvent", function(self)
             return val
         end
         local function Set(key, val)
-            if not CludesUIDB then
-                CludesUIDB = {}
-            end
-            CludesUIDB[key] = val
+            Account()[key] = val
             MA.Refresh()
         end
         -- Every recorded character, a header per realm (rebuilt on each open).
@@ -3781,10 +3583,7 @@ initFrame:SetScript("OnEvent", function(self)
         return 0.067, 0.067, 0.067, 0.97
     end
     local function WSModernSet(r, g, b, a)
-        if not CludesUIDB then
-            CludesUIDB = {}
-        end
-        CludesUIDB.blizzWindowModernDefault = { r = r, g = g, b = b, a = a }
+        Account().blizzWindowModernDefault = { r = r, g = g, b = b, a = a }
         if CludesUI._WSkinRefreshStyles then
             CludesUI._WSkinRefreshStyles()
         end
@@ -3945,10 +3744,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- What the set-all row's Blizz Default gives this card.
             blizzDefault = "blizzard",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.themedCharacterSheet = val
+                Account().themedCharacterSheet = val
                 CludesUIDB.themedInspectSheet = val
                 -- Individual feature toggles retain their values.
             end,
@@ -3964,10 +3760,7 @@ initFrame:SetScript("OnEvent", function(self)
                 or "Group Finder and Premade Groups window, plus browsing quality-of-life extras.",
             reloadMsg = "Changing the Group Finder reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinLFGMenu = val
+                Account().reskinLFGMenu = val
             end,
             -- Its one extra (Remember Sign-Up Roles) hooks retail's premade sign-up
             -- dialog, which Forever does not have.
@@ -3979,10 +3772,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "Restyles the Progress Legacy window (reward track, challenges and the legacy tree) in the CludesUI style.",
             reloadMsg = "Changing the Progress Legacy reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinLegacySystem = val
+                Account().reskinLegacySystem = val
             end,
         },
         {
@@ -3991,10 +3781,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "Weekly rewards window with custom tile backgrounds, progress colors, and completion states.",
             reloadMsg = "Changing the Great Vault reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinGreatVault = val
+                Account().reskinGreatVault = val
             end,
         },
         {
@@ -4003,10 +3790,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "Encounter Journal: instance select, boss details, loot lists, and the bottom nav tabs.",
             reloadMsg = "Changing the Adventure Guide reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinAdventureGuide = val
+                Account().reskinAdventureGuide = val
             end,
         },
         {
@@ -4015,10 +3799,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "Mounts, pets, toys, heirlooms, appearances, and campsites.",
             reloadMsg = "Changing the Collections reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinCollections = val
+                Account().reskinCollections = val
             end,
         },
         {
@@ -4027,10 +3808,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The Player Spells window: talents, spec selection, and the spellbook.",
             reloadMsg = "Changing the Talents & Spellbook reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinPlayerSpells = val
+                Account().reskinPlayerSpells = val
             end,
         },
         {
@@ -4039,10 +3817,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The professions overview book with squared icons and flat progress bars.",
             reloadMsg = "Changing the Professions reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinProfessionsBook = val
+                Account().reskinProfessionsBook = val
             end,
         },
         {
@@ -4051,10 +3826,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The profession crafting window: recipe list, schematic, specializations, and crafting orders.",
             reloadMsg = "Changing the Profession Crafting reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinProfessions = val
+                Account().reskinProfessions = val
             end,
         },
         {
@@ -4063,10 +3835,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The world map window chrome and the quest log side panel.",
             reloadMsg = "Changing the Map & Quest Log reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinWorldMap = val
+                Account().reskinWorldMap = val
             end,
         },
         {
@@ -4075,10 +3844,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The Guild & Communities window: roster, chat, and the community list.",
             reloadMsg = "Changing the Guild & Communities reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinGuild = val
+                Account().reskinGuild = val
             end,
         },
         {
@@ -4087,10 +3853,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The monthly calendar grid, event dialogs, and navigation arrows.",
             reloadMsg = "Changing the Calendar reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinCalendar = val
+                Account().reskinCalendar = val
             end,
         },
         {
@@ -4099,10 +3862,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The achievement window: categories, rows, progress bars, and search.",
             reloadMsg = "Changing the Achievements reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinAchievements = val
+                Account().reskinAchievements = val
             end,
         },
         {
@@ -4111,10 +3871,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The mailbox: inbox rows, send mail, open mail, and attachment slots.",
             reloadMsg = "Changing the Mail reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinMail = val
+                Account().reskinMail = val
             end,
             buildContent = not CludesUI.IS_FOREVER and BuildMailAltList or nil,
             searchText = not CludesUI.IS_FOREVER and { "Show Alt List", "Shown Characters" } or nil,
@@ -4125,10 +3882,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The item conversion window (catalyst and similar kiosks).",
             reloadMsg = "Changing the Catalyst reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinCatalyst = val
+                Account().reskinCatalyst = val
             end,
         },
         {
@@ -4137,10 +3891,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The gem socketing window with squared gem slots.",
             reloadMsg = "Changing the Gem Socketing reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinSocket = val
+                Account().reskinSocket = val
             end,
         },
         {
@@ -4149,10 +3900,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The item upgrade window: upgrade slot, track selector, cost, and the currency strip.",
             reloadMsg = "Changing the Item Upgrades reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinItemUpgrade = val
+                Account().reskinItemUpgrade = val
             end,
         },
         {
@@ -4161,10 +3909,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The loot window: item rows with squared icons, kept item quality colors.",
             reloadMsg = "Changing the Loot Window reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinLoot = val
+                Account().reskinLoot = val
             end,
             buildContent = BuildLootContent,
         },
@@ -4174,10 +3919,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = 'The "You received" popups for loot, currency, and upgrades.',
             reloadMsg = "Changing the Loot Toasts reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinLootToast = val
+                Account().reskinLootToast = val
             end,
             buildContent = BuildLootToastContent,
         },
@@ -4187,10 +3929,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The Battle.net popup when a friend comes online or goes offline, plus broadcasts and invites.",
             reloadMsg = "Changing the Friend Notifications reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinBNetToast = val
+                Account().reskinBNetToast = val
             end,
         },
         {
@@ -4199,10 +3938,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The need / greed / pass roll popups, with a squared icon and a flat roll timer.",
             reloadMsg = "Changing the Loot Roll Popups reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinLootRoll = val
+                Account().reskinLootRoll = val
             end,
         },
         {
@@ -4211,10 +3947,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The pending-rolls window: encounter picker, roll timer, and the result rows.",
             reloadMsg = "Changing the Loot Rolls Window reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinLootHistory = val
+                Account().reskinLootHistory = val
             end,
         },
         {
@@ -4223,10 +3956,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = 'The "you have been invited to a group" dialogs, with your role and Accept / Decline.',
             reloadMsg = "Changing the Group Invite Popup reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinGroupInvite = val
+                Account().reskinGroupInvite = val
             end,
         },
         {
@@ -4235,10 +3965,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The ready check prompt with its Yes / No buttons.",
             reloadMsg = "Changing the Ready Check reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinReadyCheck = val
+                Account().reskinReadyCheck = val
             end,
         },
         {
@@ -4247,10 +3974,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The housing dashboard window background, border, and title bar.",
             reloadMsg = "Changing the Housing Dashboard reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinHousing = val
+                Account().reskinHousing = val
             end,
         },
         {
@@ -4259,10 +3983,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "Flattens the micro menu buttons into the CludesUI style.",
             reloadMsg = "Changing the Micro Menu reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinMicroMenu = val
+                Account().reskinMicroMenu = val
             end,
         },
         {
@@ -4271,10 +3992,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "Flattens the bag bar slot buttons into the CludesUI style.",
             reloadMsg = "Changing the Bag Bar reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinBagBar = val
+                Account().reskinBagBar = val
             end,
         },
         {
@@ -4283,10 +4001,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The item preview / transmog dressing room window.",
             reloadMsg = "Changing the Dressing Room reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinDressUp = val
+                Account().reskinDressUp = val
             end,
         },
         {
@@ -4295,10 +4010,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The transmogrification window at the transmogrifier.",
             reloadMsg = "Changing the Transmogrifier reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinTransmog = val
+                Account().reskinTransmog = val
             end,
         },
         {
@@ -4307,10 +4019,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The vendor window: item list, buyback, and bottom money bar.",
             reloadMsg = "Changing the Merchant reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinMerchant = val
+                Account().reskinMerchant = val
             end,
             buildContent = BuildMerchantContent,
         },
@@ -4320,10 +4029,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The auction house: browse, sell, and my auctions views.",
             reloadMsg = "Changing the Auction House reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinAuctionHouse = val
+                Account().reskinAuctionHouse = val
             end,
         },
         {
@@ -4332,10 +4038,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The macro editor: tabs, icon grid, text well, and buttons.",
             reloadMsg = "Changing the Macros reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinMacros = val
+                Account().reskinMacros = val
             end,
         },
         {
@@ -4344,10 +4047,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "Blizzard's options window chrome: frame, tabs, search, and category rail.",
             reloadMsg = "Changing the Options Panel reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinSettings = val
+                Account().reskinSettings = val
             end,
         },
         {
@@ -4356,10 +4056,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The addon manager: list rows, checkboxes, and buttons.",
             reloadMsg = "Changing the AddOn List reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinAddonList = val
+                Account().reskinAddonList = val
             end,
         },
         {
@@ -4368,10 +4065,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The customer crafting orders window: browse, order form, and my orders.",
             reloadMsg = "Changing the Crafting Orders reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinCraftOrders = val
+                Account().reskinCraftOrders = val
             end,
         },
         {
@@ -4380,10 +4074,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The class and profession trainer window: skill list, train button, and cost display.",
             reloadMsg = "Changing the Trainer reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinTrainer = val
+                Account().reskinTrainer = val
             end,
         },
         {
@@ -4392,10 +4083,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The NPC dialog window: greeting text, gossip and quest options, and goodbye button.",
             reloadMsg = "Changing the Gossip reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinGossip = val
+                Account().reskinGossip = val
             end,
         },
         {
@@ -4404,10 +4092,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The NPC quest window: quest detail, progress, and reward panels plus the multi-quest greeting list.",
             reloadMsg = "Changing the Quest reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinQuest = val
+                Account().reskinQuest = val
             end,
         },
         {
@@ -4416,10 +4101,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The recipe preview window shown from a linked recipe or an inspected crafter.",
             reloadMsg = "Changing the Inspect Recipe reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinInspectRecipe = val
+                Account().reskinInspectRecipe = val
             end,
         },
         {
@@ -4428,10 +4110,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "Brann's configuration window: role and trinket slots, abilities, and the ability list.",
             reloadMsg = "Changing the Delves Companion reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinDelves = val
+                Account().reskinDelves = val
             end,
         },
         {
@@ -4447,10 +4126,7 @@ initFrame:SetScript("OnEvent", function(self)
                     and "Changing the Friends List reskin requires a UI reload to fully swap between Blizzard and Cludes styles."
                 or nil,
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinSocialUI = val
+                Account().reskinSocialUI = val
             end,
             buildContent = CludesUI.IS_FOREVER and BuildFriendsCardContent or nil,
             searchText = CludesUI.IS_FOREVER
@@ -4463,10 +4139,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The panel the minimap Group Finder eye shows on hover: queue titles, role icons and counts, and time in queue.",
             reloadMsg = "Changing the Queue Status reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinQueueStatus = val
+                Account().reskinQueueStatus = val
             end,
         },
         {
@@ -4475,10 +4148,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The delve difficulty window: tier dropdown, reward list and Enter button. The Map Properties row is left stock -- it is a Blizzard widget display and is not safe to restyle.",
             reloadMsg = "Changing the Delve Tier Picker reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinDelvePicker = val
+                Account().reskinDelvePicker = val
             end,
         },
         {
@@ -4487,10 +4157,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = 'Weekly and event choice windows such as Abundance harvests and "how will you aid..." pickers: option plates, headers, reward icons and buttons. Option artwork stays.',
             reloadMsg = "Changing the Choice Windows reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinPlayerChoice = val
+                Account().reskinPlayerChoice = val
             end,
         },
         {
@@ -4499,10 +4166,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The player-to-player trade window: frame, both item columns, the enchant slots, money rows and buttons. Item icons are squared and carry a rarity border. Both portraits are removed, as on every other window.",
             reloadMsg = "Changing the Trade reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinTrade = val
+                Account().reskinTrade = val
             end,
         },
         {
@@ -4511,10 +4175,7 @@ initFrame:SetScript("OnEvent", function(self)
             desc = "The battleground flag and orb carrier frames, dressed like CludesUI unit frames: health in the carrier's class color and power in its power color inside a thin black border, a square spec icon, a bordered trinket and cast bar, and the carrier's pet. The faction icon and the cast bar's fill stay as Blizzard draws them. To move them, turn on Move Flag Carriers in Layout Mode on the Utilities Shifter page.",
             reloadMsg = "Changing the Flag Carriers reskin requires a UI reload to fully swap between Blizzard and Cludes styles.",
             setEnabled = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.reskinFlagCarriers = val
+                Account().reskinFlagCarriers = val
             end,
         },
     }
@@ -5088,10 +4749,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return not MasterOff()
             end,
             setValue = function(val)
-                if not CludesUIDB then
-                    CludesUIDB = {}
-                end
-                CludesUIDB.thirdPartySkinsOff = (not val) and true or nil
+                Account().thirdPartySkinsOff = (not val) and true or nil
                 if val then
                     TurnedOn()
                 else
