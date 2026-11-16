@@ -1045,40 +1045,29 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                                         iconBtn:SetPushedAtlas(pressedAtlas)
                                     end
                                     iconBtn:SetHighlightAtlas(_haveAtlas)
-                                    -- Atlas icons carry an intrinsic colour; SetVertexColor only scales it, so desaturate first, then tint to #929292
-                                    -- (skipped when the menu keeps native colours).
-                                    local _nr, _ng, _nb = 0.573, 0.573, 0.573
-                                    local nrmTex = iconBtn:GetNormalTexture()
-                                    if nrmTex and not _moIconNative then
-                                        if nrmTex.SetDesaturated then
-                                            nrmTex:SetDesaturated(true)
+                                    -- Atlas icons carry an intrinsic colour that SetVertexColor
+                                    -- only scales, so each state is desaturated and tinted
+                                    -- #929292 first (unless the menu keeps native colours),
+                                    -- then takes the row's icon colour at alpha a.
+                                    local function GreyAtlas(tex, a)
+                                        if not tex then
+                                            return
                                         end
-                                        nrmTex:SetVertexColor(_nr, _ng, _nb, 1)
-                                    end
-                                    if nrmTex and icoC then
-                                        nrmTex:SetVertexColor(icoC[1], icoC[2], icoC[3], icoC[4])
-                                    end
-                                    local psdTex = iconBtn:GetPushedTexture()
-                                    if psdTex and not _moIconNative then
-                                        if psdTex.SetDesaturated then
-                                            psdTex:SetDesaturated(true)
-                                        end
-                                        psdTex:SetVertexColor(_nr, _ng, _nb, 1)
-                                    end
-                                    if psdTex and icoC then
-                                        psdTex:SetVertexColor(icoC[1], icoC[2], icoC[3], 1)
-                                    end
-                                    local hlTex = iconBtn:GetHighlightTexture()
-                                    if hlTex then
                                         if not _moIconNative then
-                                            if hlTex.SetDesaturated then
-                                                hlTex:SetDesaturated(true)
+                                            if tex.SetDesaturated then
+                                                tex:SetDesaturated(true)
                                             end
-                                            hlTex:SetVertexColor(_nr, _ng, _nb, 1)
+                                            tex:SetVertexColor(0.573, 0.573, 0.573, 1)
                                         end
                                         if icoC then
-                                            hlTex:SetVertexColor(icoC[1], icoC[2], icoC[3], 1)
+                                            tex:SetVertexColor(icoC[1], icoC[2], icoC[3], a)
                                         end
+                                    end
+                                    GreyAtlas(iconBtn:GetNormalTexture(), icoC and icoC[4])
+                                    GreyAtlas(iconBtn:GetPushedTexture(), 1)
+                                    local hlTex = iconBtn:GetHighlightTexture()
+                                    GreyAtlas(hlTex, 1)
+                                    if hlTex then
                                         hlTex:SetAlpha(0.4)
                                     end
                                 else
@@ -1095,26 +1084,29 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                                     end
                                     iconBtn._ico = ico
                                 end
-                                iconBtn:SetScript("OnEnter", function()
-                                    if iconBtn._ico then
-                                        if icoC then
-                                            iconBtn._ico:SetVertexColor(icoC[1], icoC[2], icoC[3], 1)
-                                        else
-                                            iconBtn._ico:SetVertexColor(1, 1, 1, 1)
-                                        end
+                                -- A texture icon lights on hover: its own colour at full
+                                -- alpha, or white over the resting light grey.
+                                local function PaintIcon(hot)
+                                    local ico = iconBtn._ico
+                                    if not ico then
+                                        return
                                     end
+                                    if icoC then
+                                        ico:SetVertexColor(icoC[1], icoC[2], icoC[3], hot and 1 or icoC[4])
+                                    elseif hot then
+                                        ico:SetVertexColor(1, 1, 1, 1)
+                                    else
+                                        ico:SetVertexColor(0.8, 0.8, 0.8, 1)
+                                    end
+                                end
+                                iconBtn:SetScript("OnEnter", function()
+                                    PaintIcon(true)
                                     if _moIconTooltip then
                                         ShowWidgetTooltip(iconBtn, _moIconTooltip(key))
                                     end
                                 end)
                                 iconBtn:SetScript("OnLeave", function()
-                                    if iconBtn._ico then
-                                        if icoC then
-                                            iconBtn._ico:SetVertexColor(icoC[1], icoC[2], icoC[3], icoC[4])
-                                        else
-                                            iconBtn._ico:SetVertexColor(0.8, 0.8, 0.8, 1)
-                                        end
-                                    end
+                                    PaintIcon(false)
                                     if _moIconTooltip then
                                         HideWidgetTooltip()
                                     end
