@@ -848,6 +848,149 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         return y - scrollH
     end
 
+    -- A section footer under a module list: its frame and top rule.
+    local function FooterBar(host, pad, top, totalW, height)
+        local footer = CreateFrame("Frame", nil, host)
+        PP.Size(footer, totalW, height)
+        PP.Point(footer, "TOPLEFT", host, "TOPLEFT", pad, top)
+        local rule = footer:CreateTexture(nil, "ARTWORK")
+        rule:SetColorTexture(1, 1, 1, 0.10)
+        rule:SetHeight(1)
+        PP.Point(rule, "TOPLEFT", footer, "TOPLEFT", SIDE_PAD, 0)
+        PP.Point(rule, "TOPRIGHT", footer, "TOPRIGHT", -SIDE_PAD, 0)
+        Unsnapped(rule)
+        return footer
+    end
+
+    -- A Done-style button: accent border and text on the dark background (the
+    -- caller adds MakeAccentFade for the hover). Returns button, label, border.
+    local function AccentButton(host, w, h, text, fontSize)
+        local btn = CreateFrame("Button", nil, host)
+        PP.Size(btn, w, h)
+        btn:SetFrameLevel(host:GetFrameLevel() + 2)
+        local DB = CludesUI.DARK_BG
+        local bg = CludesUI.SolidTex(btn, "BACKGROUND", DB.r, DB.g, DB.b, 0.92)
+        bg:SetAllPoints()
+        local brd = CludesUI.MakeRoundedBorder(btn, EG.r, EG.g, EG.b, 0.7, bg)
+        local lbl = CludesUI.MakeFont(btn, fontSize or 12, nil, EG.r, EG.g, EG.b)
+        lbl:SetAlpha(0.7)
+        lbl:SetPoint("CENTER")
+        lbl:SetText(CludesUI.L(text))
+        return btn, lbl, brd
+    end
+
+    -- The "Include:" checkbox dropdown left of a footer's button. rows: label,
+    -- sum (its word in the summary), tip, get(), set(refresh, ddBtn); a row
+    -- with enabled == false shows dimmed with offTip and takes no clicks. The
+    -- button reads Everything, Nothing Extra or the list of what is in.
+    -- Returns the dropdown button and its summary refresh.
+    local function IncludeDropdown(footer, nextTo, h, rows)
+        local ddBtn, ddLabelFS = MakeDropdown(footer, 190, h, function()
+            return ""
+        end)
+        PP.Point(ddBtn, "RIGHT", nextTo, "LEFT", -12, 0)
+        local incLbl = CludesUI.MakeFont(footer, 12, nil, 1, 1, 1, 0.6)
+        PP.Point(incLbl, "RIGHT", ddBtn, "LEFT", -8, 0)
+        incLbl:SetText(CludesUI.L("Include:"))
+
+        local function On(def)
+            return def.enabled ~= false and def.get()
+        end
+        local function RefreshSummary()
+            local parts, total = {}, 0
+            for _, def in ipairs(rows) do
+                if def.enabled ~= false then
+                    total = total + 1
+                    if def.get() then
+                        parts[#parts + 1] = CludesUI.L(def.sum)
+                    end
+                end
+            end
+            if #parts == 0 then
+                ddLabelFS:SetText(CludesUI.L("Nothing Extra"))
+            elseif #parts == total then
+                ddLabelFS:SetText(CludesUI.L("Everything"))
+            else
+                ddLabelFS:SetText(table.concat(parts, ", "))
+            end
+        end
+
+        local menu = MakeDropdownMenu(ddBtn, 240)
+        menu:SetSize(240, #rows * 26 + 8)
+        local marks = {}
+        local function RefreshMenu()
+            for i, def in ipairs(rows) do
+                marks[i]:SetShown(On(def))
+            end
+        end
+        local function RefreshAll()
+            RefreshMenu()
+            RefreshSummary()
+        end
+        for i, def in ipairs(rows) do
+            local row = CreateFrame("Button", nil, menu)
+            row:SetHeight(26)
+            row:SetPoint("TOPLEFT", menu, "TOPLEFT", 4, -(4 + (i - 1) * 26))
+            row:SetPoint("RIGHT", menu, "RIGHT", -4, 0)
+            row:SetFrameLevel(menu:GetFrameLevel() + 1)
+            local hl = row:CreateTexture(nil, "ARTWORK")
+            hl:SetAllPoints()
+            hl:SetColorTexture(1, 1, 1, 1)
+            hl:SetAlpha(0)
+            local box = CreateFrame("Frame", nil, row)
+            box:SetSize(CHK_SZ, CHK_SZ)
+            box:SetPoint("LEFT", row, "LEFT", 6, 0)
+            local boxBg = box:CreateTexture(nil, "BACKGROUND")
+            boxBg:SetAllPoints()
+            boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
+            CludesUI.MakeRoundedBorder(box, 0.224, 0.215, 0.207, 0.6, boxBg)
+            local tick = box:CreateTexture(nil, "ARTWORK")
+            tick:SetPoint("TOPLEFT", box, "TOPLEFT", 3, -3)
+            tick:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -3, 3)
+            tick:SetColorTexture(EG.r, EG.g, EG.b, 1)
+            CludesUI.RoundBody(box, tick, 1)
+            marks[i] = tick
+            local lbl = CludesUI.MakeFont(row, 12, nil, 1, 1, 1, 0.7)
+            lbl:SetPoint("LEFT", box, "RIGHT", 8, 0)
+            lbl:SetText(CludesUI.L(def.label))
+            local live = def.enabled ~= false
+            if not live then
+                row:SetAlpha(0.35)
+            end
+            row:SetScript("OnEnter", function()
+                if live then
+                    hl:SetAlpha(0.05)
+                end
+                CludesUI.ShowWidgetTooltip(row, CludesUI.L(live and def.tip or def.offTip))
+            end)
+            row:SetScript("OnLeave", function()
+                if live then
+                    hl:SetAlpha(0)
+                end
+                CludesUI.HideWidgetTooltip()
+            end)
+            if live then
+                row:SetScript("OnClick", function()
+                    def.set(RefreshAll, ddBtn)
+                    RefreshAll()
+                end)
+            end
+        end
+        -- HookScript: MakeDropdownMenu owns OnShow (scale, outside-click close).
+        menu:HookScript("OnShow", RefreshMenu)
+        ddBtn:SetScript("OnClick", function()
+            RefreshSummary()
+            if menu:IsShown() then
+                menu:Hide()
+            else
+                RefreshMenu()
+                menu:Show()
+            end
+        end)
+        RefreshSummary()
+        return ddBtn, RefreshSummary
+    end
+
     -------------------------------------------------------------------
     --  IMPORT PAGE BUILDER (shared by presets + import profile)
     -------------------------------------------------------------------
@@ -1129,19 +1272,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         -- Footer
         iy = iy - 8
-        local footerFrame = CreateFrame("Frame", nil, importPage)
-        PP.Size(footerFrame, totalW, FOOTER_H)
-        PP.Point(footerFrame, "TOPLEFT", importPage, "TOPLEFT", PAD, iy)
-
-        local footerDiv = footerFrame:CreateTexture(nil, "ARTWORK")
-        footerDiv:SetColorTexture(1, 1, 1, 0.10)
-        footerDiv:SetHeight(1)
-        PP.Point(footerDiv, "TOPLEFT", footerFrame, "TOPLEFT", SIDE_PAD, 0)
-        PP.Point(footerDiv, "TOPRIGHT", footerFrame, "TOPRIGHT", -SIDE_PAD, 0)
-        if footerDiv.SetSnapToPixelGrid then
-            footerDiv:SetSnapToPixelGrid(false)
-            footerDiv:SetTexelSnappingBias(0)
-        end
+        local footerFrame = FooterBar(importPage, PAD, iy, totalW, FOOTER_H)
 
         importCountFs = CludesUI.MakeFont(footerFrame, 12, nil, 1, 1, 1, 0.40)
         -- With Auto Assign present the footer has two rows, so the count sits on the upper one; otherwise it stays vertically centered.
@@ -1198,208 +1329,89 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             end)
         end
 
-        local IMP_BTN_W = 180
         local IMP_BTN_H = 30
-        local importBtn = CreateFrame("Button", nil, footerFrame)
-        PP.Size(importBtn, IMP_BTN_W, IMP_BTN_H)
+        local importBtn, impLbl, impBrd = AccentButton(footerFrame, 180, IMP_BTN_H, "Import Selected Addons")
         PP.Point(importBtn, "RIGHT", footerFrame, "RIGHT", -SIDE_PAD, 0)
-        importBtn:SetFrameLevel(footerFrame:GetFrameLevel() + 2)
 
-        local DB = CludesUI.DARK_BG
-        local impBg = CludesUI.SolidTex(importBtn, "BACKGROUND", DB.r, DB.g, DB.b, 0.92)
-        impBg:SetAllPoints()
-        local impBrd = CludesUI.MakeRoundedBorder(importBtn, EG.r, EG.g, EG.b, 0.7, impBg)
-        local impLbl = CludesUI.MakeFont(importBtn, 12, nil, EG.r, EG.g, EG.b)
-        impLbl:SetAlpha(0.7)
-        impLbl:SetPoint("CENTER")
-        impLbl:SetText(CludesUI.L("Import Selected Addons"))
-
-        -- "Include:" checkbox dropdown -- same four rows as the export footer (Overrides / Unlock Mode Layout / Global Settings / Window
-        -- & Tooltip Skins), left of the Import button. Rows the string has no data for are inert and excluded from the summary; Window
-        -- Skins keeps its confirmation gate on enable.
-        do
-            local ddBtn, ddLabelFS = MakeDropdown(footerFrame, 190, IMP_BTN_H, function()
-                return ""
-            end)
-            PP.Point(ddBtn, "RIGHT", importBtn, "LEFT", -12, 0)
-
-            local incLbl = CludesUI.MakeFont(footerFrame, 12, nil, 1, 1, 1, 0.6)
-            PP.Point(incLbl, "RIGHT", ddBtn, "LEFT", -8, 0)
-            incLbl:SetText(CludesUI.L("Include:"))
-
-            local rowDefs = {
-                {
-                    label = "Overrides",
-                    sum = "Overrides",
-                    enabled = stringHasOverrides,
-                    offTip = "This profile string does not carry any override data.",
-                    tip = "Import the sharer's complete override setup: spec and conditional override values, groups, their custom Layout Mode layouts, and Buff Manager overrides. This replaces ALL of your own overrides. Off = keep yours untouched.",
-                    get = function()
-                        return includeOverridesImport
-                    end,
-                    set = function()
-                        includeOverridesImport = not includeOverridesImport
-                    end,
-                },
-                {
-                    label = "Layout Mode Layout",
-                    sum = "Layout",
-                    enabled = true,
-                    tip = "Import the anchor & size-match relationships from this profile. Off = keep your own layout; only the selected modules' own positions/settings come in.",
-                    get = function()
-                        return includeLayoutImport
-                    end,
-                    set = function()
-                        includeLayoutImport = not includeLayoutImport
-                    end,
-                },
-                {
-                    label = "Global Settings",
-                    sum = "Globals",
-                    enabled = stringHasGlobals,
-                    offTip = "This profile string does not carry any global settings.",
-                    tip = "Apply the sharer's fonts, custom colours, dark mode, accent colour and UI scale. Off = keep your own global look and scale; only the selected modules' settings come in.",
-                    get = function()
-                        return includeGlobalsImport
-                    end,
-                    set = function()
-                        includeGlobalsImport = not includeGlobalsImport
-                    end,
-                },
-                {
-                    label = "Window & Tooltip Skins",
-                    sum = "Window Skins",
-                    enabled = stringHasBlizzSkin,
-                    offTip = "This profile string does not carry any Window & Tooltip Skins settings.",
-                    tip = "Apply the sharer's Window Skins Window Skins and Tooltips & Menus settings. These are account-wide and will overwrite yours across ALL profiles. Off = keep your own.",
-                    get = function()
-                        return includeWindowSkinsImport
-                    end,
-                    set = function(refresh)
-                        if includeWindowSkinsImport then
-                            includeWindowSkinsImport = false
-                            return
-                        end
-                        -- The answer is for this build of the import page: a build
-                        -- that dresses the dropdown again before it comes drops it.
-                        local ddGen = PoolGen(ddBtn)
-                        CludesUI:ShowConfirmPopup({
-                            title = CludesUI.L("Overwrite Window & Tooltip Settings?"),
-                            message = CludesUI.L(
-                                "This will replace YOUR Window Skins settings (the Window Skins and Tooltips & Menus tabs) with the sharer's, across ALL of your profiles. Your current settings on those two tabs cannot be recovered afterward."
-                            ),
-                            confirmText = CludesUI.L("OK"),
-                            cancelText = CludesUI.L("Cancel"),
-                            onConfirm = function()
-                                if not SameDress(ddBtn, ddGen) then
-                                    return
-                                end
-                                includeWindowSkinsImport = true
-                                if refresh then
-                                    refresh()
-                                end
-                            end,
-                        })
-                    end,
-                },
-            }
-
-            local function Summary()
-                local parts, total = {}, 0
-                for _, def in ipairs(rowDefs) do
-                    if def.enabled then
-                        total = total + 1
-                        if def.get() then
-                            parts[#parts + 1] = CludesUI.L(def.sum)
-                        end
+        -- Include: the same four extras as the export footer. Those the string
+        -- has no data for stay dimmed; Window Skins asks before turning on.
+        local rowDefs = {
+            {
+                label = "Overrides",
+                sum = "Overrides",
+                enabled = stringHasOverrides,
+                offTip = "This profile string does not carry any override data.",
+                tip = "Import the sharer's complete override setup: spec and conditional override values, groups, their custom Layout Mode layouts, and Buff Manager overrides. This replaces ALL of your own overrides. Off = keep yours untouched.",
+                get = function()
+                    return includeOverridesImport
+                end,
+                set = function()
+                    includeOverridesImport = not includeOverridesImport
+                end,
+            },
+            {
+                label = "Layout Mode Layout",
+                sum = "Layout",
+                enabled = true,
+                tip = "Import the anchor & size-match relationships from this profile. Off = keep your own layout; only the selected modules' own positions/settings come in.",
+                get = function()
+                    return includeLayoutImport
+                end,
+                set = function()
+                    includeLayoutImport = not includeLayoutImport
+                end,
+            },
+            {
+                label = "Global Settings",
+                sum = "Globals",
+                enabled = stringHasGlobals,
+                offTip = "This profile string does not carry any global settings.",
+                tip = "Apply the sharer's fonts, custom colours, dark mode, accent colour and UI scale. Off = keep your own global look and scale; only the selected modules' settings come in.",
+                get = function()
+                    return includeGlobalsImport
+                end,
+                set = function()
+                    includeGlobalsImport = not includeGlobalsImport
+                end,
+            },
+            {
+                label = "Window & Tooltip Skins",
+                sum = "Window Skins",
+                enabled = stringHasBlizzSkin,
+                offTip = "This profile string does not carry any Window & Tooltip Skins settings.",
+                tip = "Apply the sharer's Window Skins Window Skins and Tooltips & Menus settings. These are account-wide and will overwrite yours across ALL profiles. Off = keep your own.",
+                get = function()
+                    return includeWindowSkinsImport
+                end,
+                set = function(refresh, ddBtn)
+                    if includeWindowSkinsImport then
+                        includeWindowSkinsImport = false
+                        return
                     end
-                end
-                if #parts == 0 then
-                    return CludesUI.L("Nothing Extra")
-                end
-                if #parts == total then
-                    return CludesUI.L("Everything")
-                end
-                return table.concat(parts, ", ")
-            end
-            local function RefreshSummary()
-                ddLabelFS:SetText(Summary())
-            end
-
-            local menu = MakeDropdownMenu(ddBtn, 240)
-            menu:SetSize(240, #rowDefs * 26 + 8)
-            local marks = {}
-            local function RefreshMenu()
-                for i, def in ipairs(rowDefs) do
-                    marks[i]:SetShown(def.enabled and def.get())
-                end
-            end
-            local function RefreshAll()
-                RefreshMenu()
-                RefreshSummary()
-            end
-            for i, def in ipairs(rowDefs) do
-                local row = CreateFrame("Button", nil, menu)
-                row:SetHeight(26)
-                row:SetPoint("TOPLEFT", menu, "TOPLEFT", 4, -(4 + (i - 1) * 26))
-                row:SetPoint("RIGHT", menu, "RIGHT", -4, 0)
-                row:SetFrameLevel(menu:GetFrameLevel() + 1)
-                local hl = row:CreateTexture(nil, "ARTWORK")
-                hl:SetAllPoints()
-                hl:SetColorTexture(1, 1, 1, 1)
-                hl:SetAlpha(0)
-                local box = CreateFrame("Frame", nil, row)
-                box:SetSize(CHK_SZ, CHK_SZ)
-                box:SetPoint("LEFT", row, "LEFT", 6, 0)
-                local bbg = box:CreateTexture(nil, "BACKGROUND")
-                bbg:SetAllPoints()
-                bbg:SetColorTexture(0.114, 0.106, 0.099, 1)
-                CludesUI.MakeRoundedBorder(box, 0.224, 0.215, 0.207, 0.6, bbg)
-                local mark = box:CreateTexture(nil, "ARTWORK")
-                mark:SetPoint("TOPLEFT", box, "TOPLEFT", 3, -3)
-                mark:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -3, 3)
-                mark:SetColorTexture(EG.r, EG.g, EG.b, 1)
-                CludesUI.RoundBody(box, mark, 1)
-                marks[i] = mark
-                local lbl = CludesUI.MakeFont(row, 12, nil, 1, 1, 1, 0.7)
-                lbl:SetPoint("LEFT", box, "RIGHT", 8, 0)
-                lbl:SetText(CludesUI.L(def.label))
-                if def.enabled then
-                    row:SetScript("OnEnter", function()
-                        hl:SetAlpha(0.05)
-                        CludesUI.ShowWidgetTooltip(row, CludesUI.L(def.tip))
-                    end)
-                    row:SetScript("OnLeave", function()
-                        hl:SetAlpha(0)
-                        CludesUI.HideWidgetTooltip()
-                    end)
-                    row:SetScript("OnClick", function()
-                        def.set(RefreshAll)
-                        RefreshAll()
-                    end)
-                else
-                    row:SetAlpha(0.35)
-                    row:SetScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(row, CludesUI.L(def.offTip))
-                    end)
-                    row:SetScript("OnLeave", function()
-                        CludesUI.HideWidgetTooltip()
-                    end)
-                end
-            end
-            -- HookScript: MakeDropdownMenu owns OnShow (scale + outside-click close); our mark refresh rides alongside it.
-            menu:HookScript("OnShow", RefreshMenu)
-            ddBtn:SetScript("OnClick", function()
-                RefreshSummary()
-                if menu:IsShown() then
-                    menu:Hide()
-                else
-                    RefreshMenu()
-                    menu:Show()
-                end
-            end)
-            RefreshSummary()
-        end
+                    -- The answer is for this build of the import page: a build
+                    -- that dresses the dropdown again before it comes drops it.
+                    local ddGen = PoolGen(ddBtn)
+                    CludesUI:ShowConfirmPopup({
+                        title = CludesUI.L("Overwrite Window & Tooltip Settings?"),
+                        message = CludesUI.L(
+                            "This will replace YOUR Window Skins settings (the Window Skins and Tooltips & Menus tabs) with the sharer's, across ALL of your profiles. Your current settings on those two tabs cannot be recovered afterward."
+                        ),
+                        confirmText = CludesUI.L("OK"),
+                        cancelText = CludesUI.L("Cancel"),
+                        onConfirm = function()
+                            if not SameDress(ddBtn, ddGen) then
+                                return
+                            end
+                            includeWindowSkinsImport = true
+                            if refresh then
+                                refresh()
+                            end
+                        end,
+                    })
+                end,
+            },
+        }
+        IncludeDropdown(footerFrame, importBtn, IMP_BTN_H, rowDefs)
 
         MakeAccentFade(importBtn, impLbl, impBrd)
         importBtn:SetScript("OnClick", function()
@@ -2488,19 +2500,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         -- Footer (inside the background panel)
         y = y - 8
 
-        local footerFrame = CreateFrame("Frame", nil, parent)
-        PP.Size(footerFrame, totalW, FOOTER_H)
-        PP.Point(footerFrame, "TOPLEFT", parent, "TOPLEFT", PAD, y)
-
-        local footerDiv = footerFrame:CreateTexture(nil, "ARTWORK")
-        footerDiv:SetColorTexture(1, 1, 1, 0.10)
-        footerDiv:SetHeight(1)
-        PP.Point(footerDiv, "TOPLEFT", footerFrame, "TOPLEFT", SIDE_PAD, 0)
-        PP.Point(footerDiv, "TOPRIGHT", footerFrame, "TOPRIGHT", -SIDE_PAD, 0)
-        if footerDiv.SetSnapToPixelGrid then
-            footerDiv:SetSnapToPixelGrid(false)
-            footerDiv:SetTexelSnappingBias(0)
-        end
+        local footerFrame = FooterBar(parent, PAD, y, totalW, FOOTER_H)
 
         footerCountFs = CludesUI.MakeFont(footerFrame, 12, nil, 1, 1, 1, 0.40)
         -- Selection count, top-left of the footer. The Include dropdown and Export Profile button sit right-aligned on the same row.
@@ -2508,188 +2508,80 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         footerCountFs:SetJustifyH("LEFT")
         RefreshFooterCount()
 
-        local EXPORT_BTN_W = 180
         local EXPORT_BTN_H = 30
-        local exportSelBtn = CreateFrame("Button", nil, footerFrame)
-        PP.Size(exportSelBtn, EXPORT_BTN_W, EXPORT_BTN_H)
+        local exportSelBtn, eaLbl, eaBrd = AccentButton(footerFrame, 180, EXPORT_BTN_H, "Export Profile")
         PP.Point(exportSelBtn, "RIGHT", footerFrame, "RIGHT", -SIDE_PAD, 0)
-        exportSelBtn:SetFrameLevel(footerFrame:GetFrameLevel() + 2)
 
-        -- Styled to match the Done button: green border + text, dark bg, fade hover
-        local DB = CludesUI.DARK_BG
-        local eaBg = CludesUI.SolidTex(exportSelBtn, "BACKGROUND", DB.r, DB.g, DB.b, 0.92)
-        eaBg:SetAllPoints()
-        local eaBrd = CludesUI.MakeRoundedBorder(exportSelBtn, EG.r, EG.g, EG.b, 0.7, eaBg)
-        local eaLbl = CludesUI.MakeFont(exportSelBtn, 12, nil, EG.r, EG.g, EG.b)
-        eaLbl:SetAlpha(0.7)
-        eaLbl:SetPoint("CENTER")
-        eaLbl:SetText(CludesUI.L("Export Profile"))
-
-        -- "Include:" checkbox dropdown -- Overrides / Unlock Mode Layout / Global Settings, immediately left of the Export Profile button.
-        -- Overrides defaults to AUTO: on when every loaded module is checked, off for subsets, until explicitly toggled. Marks recompute
-        -- on every open so the auto state is current whenever the menu is visible.
-        do
-            local function AllLoadedSelected()
-                for _, item in ipairs(addonItems) do
-                    if item.loaded and not selectedAddons[item.folder] then
-                        return false
-                    end
-                end
-                return true
-            end
-            EffectiveIncludeOverrides = function()
-                if includeOverridesExport ~= nil then
-                    return includeOverridesExport
-                end
-                return AllLoadedSelected()
-            end
-
-            local ddBtn, ddLabelFS = MakeDropdown(footerFrame, 190, EXPORT_BTN_H, function()
-                return ""
-            end)
-            PP.Point(ddBtn, "RIGHT", exportSelBtn, "LEFT", -12, 0)
-
-            local incLbl = CludesUI.MakeFont(footerFrame, 12, nil, 1, 1, 1, 0.6)
-            PP.Point(incLbl, "RIGHT", ddBtn, "LEFT", -8, 0)
-            incLbl:SetText(CludesUI.L("Include:"))
-
-            -- The Window & Tooltip Skins row only exists when the Blizz UI Enhanced module is loaded (its bundle can't be built otherwise).
-            local hasBlizzSkinRow = CludesUI.IsModuleAddonLoaded("CludesUIBlizzardSkin")
-
-            local function Summary()
-                local parts = {}
-                local total = hasBlizzSkinRow and 4 or 3
-                if EffectiveIncludeOverrides() then
-                    parts[#parts + 1] = CludesUI.L("Overrides")
-                end
-                if includeLayoutExport then
-                    parts[#parts + 1] = CludesUI.L("Layout")
-                end
-                if includeGlobalsExport then
-                    parts[#parts + 1] = CludesUI.L("Globals")
-                end
-                if hasBlizzSkinRow and includeWindowSkinsExport then
-                    parts[#parts + 1] = CludesUI.L("Window Skins")
-                end
-                if #parts == 0 then
-                    return CludesUI.L("Nothing Extra")
-                end
-                if #parts == total then
-                    return CludesUI.L("Everything")
-                end
-                return table.concat(parts, ", ")
-            end
-            local function RefreshSummary()
-                ddLabelFS:SetText(Summary())
-            end
-
-            local rowDefs = {
-                {
-                    label = "Overrides",
-                    tip = "Include your complete override setup: spec and conditional override values, groups, their custom Layout Mode layouts, and Buff Manager overrides. On import this replaces the recipient's overrides entirely.",
-                    get = function()
-                        return EffectiveIncludeOverrides()
-                    end,
-                    set = function()
-                        includeOverridesExport = not EffectiveIncludeOverrides()
-                    end,
-                },
-                {
-                    label = "Layout Mode Layout",
-                    tip = "Include the anchor & size-match relationships between modules. Off = export each module's own positions only, with no cross-module tying.",
-                    get = function()
-                        return includeLayoutExport
-                    end,
-                    set = function()
-                        includeLayoutExport = not includeLayoutExport
-                    end,
-                },
-                {
-                    label = "Global Settings",
-                    tip = "Include fonts, custom colours, dark mode, accent colour and UI scale with this export. Off = only the selected modules' own settings export, keeping the recipient's global look.",
-                    get = function()
-                        return includeGlobalsExport
-                    end,
-                    set = function()
-                        includeGlobalsExport = not includeGlobalsExport
-                    end,
-                },
-            }
-            if hasBlizzSkinRow then
-                rowDefs[#rowDefs + 1] = {
-                    label = "Window & Tooltip Skins",
-                    tip = "Include your Window Skins settings from the Window Skins and Tooltips & Menus tabs. These are account-wide: if the importer opts in, they overwrite that player's settings across ALL of their profiles.",
-                    get = function()
-                        return includeWindowSkinsExport
-                    end,
-                    set = function()
-                        includeWindowSkinsExport = not includeWindowSkinsExport
-                    end,
-                }
-            end
-            local menu = MakeDropdownMenu(ddBtn, 240)
-            menu:SetSize(240, #rowDefs * 26 + 8)
-            local marks = {}
-            local function RefreshMenu()
-                for i, def in ipairs(rowDefs) do
-                    marks[i]:SetShown(def.get())
+        -- Include: Overrides is AUTO until toggled (on while every loaded module
+        -- is checked, off for a subset), so the menu and summary recompute it
+        -- on every open and hover.
+        local function AllLoadedSelected()
+            for _, item in ipairs(addonItems) do
+                if item.loaded and not selectedAddons[item.folder] then
+                    return false
                 end
             end
-            for i, def in ipairs(rowDefs) do
-                local row = CreateFrame("Button", nil, menu)
-                row:SetHeight(26)
-                row:SetPoint("TOPLEFT", menu, "TOPLEFT", 4, -(4 + (i - 1) * 26))
-                row:SetPoint("RIGHT", menu, "RIGHT", -4, 0)
-                row:SetFrameLevel(menu:GetFrameLevel() + 1)
-                local hl = row:CreateTexture(nil, "ARTWORK")
-                hl:SetAllPoints()
-                hl:SetColorTexture(1, 1, 1, 1)
-                hl:SetAlpha(0)
-                local box = CreateFrame("Frame", nil, row)
-                box:SetSize(CHK_SZ, CHK_SZ)
-                box:SetPoint("LEFT", row, "LEFT", 6, 0)
-                local bbg = box:CreateTexture(nil, "BACKGROUND")
-                bbg:SetAllPoints()
-                bbg:SetColorTexture(0.114, 0.106, 0.099, 1)
-                CludesUI.MakeRoundedBorder(box, 0.224, 0.215, 0.207, 0.6, bbg)
-                local mark = box:CreateTexture(nil, "ARTWORK")
-                mark:SetPoint("TOPLEFT", box, "TOPLEFT", 3, -3)
-                mark:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -3, 3)
-                mark:SetColorTexture(EG.r, EG.g, EG.b, 1)
-                CludesUI.RoundBody(box, mark, 1)
-                marks[i] = mark
-                local lbl = CludesUI.MakeFont(row, 12, nil, 1, 1, 1, 0.7)
-                lbl:SetPoint("LEFT", box, "RIGHT", 8, 0)
-                lbl:SetText(CludesUI.L(def.label))
-                row:SetScript("OnEnter", function()
-                    hl:SetAlpha(0.05)
-                    CludesUI.ShowWidgetTooltip(row, CludesUI.L(def.tip))
-                end)
-                row:SetScript("OnLeave", function()
-                    hl:SetAlpha(0)
-                    CludesUI.HideWidgetTooltip()
-                end)
-                row:SetScript("OnClick", function()
-                    def.set()
-                    RefreshMenu()
-                    RefreshSummary()
-                end)
-            end
-            -- HookScript: MakeDropdownMenu owns OnShow (scale + outside-click close); our mark refresh rides alongside it.
-            menu:HookScript("OnShow", RefreshMenu)
-            ddBtn:SetScript("OnClick", function()
-                RefreshSummary()
-                if menu:IsShown() then
-                    menu:Hide()
-                else
-                    RefreshMenu()
-                    menu:Show()
-                end
-            end)
-            -- Keep the AUTO-mode summary honest after module toggles.
-            ddBtn:HookScript("OnEnter", RefreshSummary)
-            RefreshSummary()
+            return true
         end
+        EffectiveIncludeOverrides = function()
+            if includeOverridesExport ~= nil then
+                return includeOverridesExport
+            end
+            return AllLoadedSelected()
+        end
+
+        local rowDefs = {
+            {
+                label = "Overrides",
+                sum = "Overrides",
+                tip = "Include your complete override setup: spec and conditional override values, groups, their custom Layout Mode layouts, and Buff Manager overrides. On import this replaces the recipient's overrides entirely.",
+                get = function()
+                    return EffectiveIncludeOverrides()
+                end,
+                set = function()
+                    includeOverridesExport = not EffectiveIncludeOverrides()
+                end,
+            },
+            {
+                label = "Layout Mode Layout",
+                sum = "Layout",
+                tip = "Include the anchor & size-match relationships between modules. Off = export each module's own positions only, with no cross-module tying.",
+                get = function()
+                    return includeLayoutExport
+                end,
+                set = function()
+                    includeLayoutExport = not includeLayoutExport
+                end,
+            },
+            {
+                label = "Global Settings",
+                sum = "Globals",
+                tip = "Include fonts, custom colours, dark mode, accent colour and UI scale with this export. Off = only the selected modules' own settings export, keeping the recipient's global look.",
+                get = function()
+                    return includeGlobalsExport
+                end,
+                set = function()
+                    includeGlobalsExport = not includeGlobalsExport
+                end,
+            },
+        }
+        -- Window & Tooltip Skins only while that module is loaded (its bundle needs it).
+        if CludesUI.IsModuleAddonLoaded("CludesUIBlizzardSkin") then
+            rowDefs[#rowDefs + 1] = {
+                label = "Window & Tooltip Skins",
+                sum = "Window Skins",
+                tip = "Include your Window Skins settings from the Window Skins and Tooltips & Menus tabs. These are account-wide: if the importer opts in, they overwrite that player's settings across ALL of their profiles.",
+                get = function()
+                    return includeWindowSkinsExport
+                end,
+                set = function()
+                    includeWindowSkinsExport = not includeWindowSkinsExport
+                end,
+            }
+        end
+        local ddBtn, refreshSummary = IncludeDropdown(footerFrame, exportSelBtn, EXPORT_BTN_H, rowDefs)
+        -- Keep the AUTO summary honest after module toggles.
+        ddBtn:HookScript("OnEnter", refreshSummary)
 
         MakeAccentFade(exportSelBtn, eaLbl, eaBrd)
         exportSelBtn:SetScript("OnClick", function()
