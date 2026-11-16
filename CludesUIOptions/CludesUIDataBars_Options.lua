@@ -1191,15 +1191,14 @@ initFrame:SetScript("OnEvent", function(self)
             if not lastSegs then
                 return nil
             end
+            -- Before the first segment whose middle lies past the cursor.
             local place = CursorStripPos()
-            local num = #lastSegs
-            for k = 1, num do
-                local s2 = lastSegs[k]
-                if place < (s2.pos or 0) + (s2.px or 0) / 2 then
+            for k, seg in ipairs(lastSegs) do
+                if place < (seg.pos or 0) + (seg.px or 0) / 2 then
                     return k
                 end
             end
-            return num + 1
+            return #lastSegs + 1
         end
 
         -- A drop is a no-op when only hidden segments (see BlockHidden) lie
@@ -1228,40 +1227,32 @@ initFrame:SetScript("OnEvent", function(self)
             local targetIdx = ComputeInsertIdx()
             -- Boundaries adjoining the dragged segment are a no-op drop.
             local noop = IsNoopDrop(dragIdx, targetIdx)
+            -- Counted without the dragged segment, everything at or after the
+            -- insertion point eases toward the end and everything before it
+            -- back toward the start.
+            local insertAt = targetIdx > dragIdx and targetIdx - 1 or targetIdx
             for k = 1, #segBtns do
-                if k == dragIdx or noop then
-                    segBtns[k]._tgtOff = 0
-                else
-                    -- Virtual-position rule (CDM): with the dragged segment removed
-                    -- from the indexing, everything at/after the insertion point eases
-                    -- toward the end, everything before it eases back toward the start.
-                    local vPos = k
-                    if k > dragIdx then
-                        vPos = k - 1
-                    end
-                    local vIns = targetIdx
-                    if targetIdx > dragIdx then
-                        vIns = targetIdx - 1
-                    end
-                    if vPos >= vIns then
-                        segBtns[k]._tgtOff = NUDGE
-                    else
-                        segBtns[k]._tgtOff = -NUDGE
-                    end
+                local off = 0
+                if k ~= dragIdx and not noop then
+                    local at = k > dragIdx and k - 1 or k
+                    off = at >= insertAt and NUDGE or -NUDGE
                 end
+                segBtns[k]._tgtOff = off
             end
             EnsureAnimTicker()
             if noop then
                 reorderLine:Hide()
                 return
             end
-            local num = #lastSegs
+            -- The insertion line: the target segment's leading edge, or the
+            -- last one's trailing edge for a drop at the end.
             local linePos
-            if targetIdx <= num then
-                linePos = lastSegs[targetIdx].pos or SEDGE
+            local target = lastSegs[targetIdx]
+            if target then
+                linePos = target.pos or SEDGE
             else
-                local lastSeg = lastSegs[num]
-                linePos = (lastSeg.pos or SEDGE) + (lastSeg.px or 0)
+                local last = lastSegs[#lastSegs]
+                linePos = (last.pos or SEDGE) + (last.px or 0)
             end
             reorderLine:ClearAllPoints()
             if vertical then
@@ -1332,17 +1323,16 @@ initFrame:SetScript("OnEvent", function(self)
                 scrollBar._brd:Hide()
             end
             scrollBar:SetAlpha(0.3)
+            -- The ghost: the segment's size (at least 24 long; a squashed
+            -- one takes the strip's thickness) and its type label.
             local ghost = EnsureDragGhost()
             local gw, gh = scrollBar:GetSize()
-            if not gw or gw < 24 then
-                gw = 24
-            end
             if not gh or gh < 12 then
                 gh = stripThick
             end
-            ghost:SetSize(gw, gh)
-            local tl = TYPE_LABEL[blocks[fromIdx].type] or blocks[fromIdx].type
-            ghost._lbl:SetText(L(tl))
+            ghost:SetSize(math.max(gw or 0, 24), gh)
+            local kind = blocks[fromIdx].type
+            ghost._lbl:SetText(L(TYPE_LABEL[kind] or kind))
             ghost:SetScale(0.5)
             ghost:Show()
             EnsureAnimTicker()
