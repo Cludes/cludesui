@@ -467,6 +467,17 @@ local function Advance(seconds)
 end
 -- Scenarios move the fake clock on, running every timer that falls due.
 G.HARNESS_ADVANCE = Advance
+-- Frames: count rendered frames of dt seconds, each running every shown
+-- frame's OnUpdate (work spread over frames, like an async decode).
+G.HARNESS_TICK = function(dt, count)
+    for _ = 1, count or 1 do
+        for _, f in ipairs(allFrames) do
+            local fn = f["\0scripts"] and f["\0scripts"].OnUpdate
+            if fn and f:IsShown() then Safe(fn, f, dt) end
+        end
+        Advance(dt)
+    end
+end
 
 -- Client identity
 local IFACE = FLAVOR == "forever" and 16001 or 120105

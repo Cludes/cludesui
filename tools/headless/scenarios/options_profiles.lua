@@ -77,3 +77,76 @@ for i = 1, n do
 end
 Rebuild("Profiles")
 SNAP("again", CUI._scrollFrame)
+
+-- The import flow: a string exported from the active profile pasted into the
+-- Import Profile page and Continue pressed; the import page is snapped, then
+-- each of its buttons clicked in turn.
+local function Walk(root, pred)
+    local out, stack = {}, { root }
+    while #stack > 0 do
+        local f = table.remove(stack, 1)
+        if type(f) == "table" and rawget(f, "\0children") then
+            if f:IsVisible() and pred(f) then out[#out + 1] = f end
+            for _, ch in ipairs(f["\0children"]) do stack[#stack + 1] = ch end
+        end
+    end
+    return out
+end
+local function Says(f, text)
+    for _, r in ipairs(rawget(f, "\0regions") or {}) do
+        local v = rawget(r, "\0v")
+        if v and v.Text == text then return true end
+    end
+    for _, ch in ipairs(rawget(f, "\0children") or {}) do
+        if Says(ch, text) then return true end
+    end
+    return false
+end
+local db = rawget(_G, "CludesUIDB")
+local okExp, str = pcall(CUI.ExportProfile, db and db.activeProfile or "Default")
+OUT:write("== export " .. tostring(okExp) .. " " .. tostring(type(str) == "string" and #str > 0) .. "\n")
+local root = CUI._profilesRoot
+local function PasteBox()
+    return Walk(root, function(f) return f["\0kind"] == "EditBox" and f:IsVisible() and f:GetParent() and f:GetParent()["\0kind"] == "ScrollFrame" end)[1]
+end
+-- Open the paste page: the main page button that shows the paste box.
+Rebuild("Profiles")
+for _, b in ipairs(Buttons(CUI._scrollFrame)) do
+    if PasteBox() then break end
+    if Says(b, CUI.L("Import Profile")) or Says(b, "Import Profile") then
+        pcall(b["\0scripts"].OnClick, b, "LeftButton")
+    end
+end
+local box = PasteBox()
+OUT:write("== paste page " .. tostring(box ~= nil) .. "\n")
+if box and okExp and type(str) == "string" then
+    box:SetText(str)
+    local cont = Walk(root, function(f) return f["\0kind"] == "Button" and Says(f, CUI.L("Continue")) end)[1]
+    OUT:write("== continue " .. tostring(cont ~= nil) .. "\n")
+    if cont then
+        pcall(cont["\0scripts"].OnClick, cont, "LeftButton")
+        for _ = 1, 1 do
+            HARNESS_TICK(0.05, 200)
+        end
+        SNAP("import page", root)
+        local n2 = #Walk(root, function(f) return f["\0kind"] == "Button" and f["\0scripts"].OnClick ~= nil end)
+        OUT:write("== import buttons " .. n2 .. "\n")
+        for i = 1, n2 do
+            local list = Walk(root, function(f) return f["\0kind"] == "Button" and f["\0scripts"].OnClick ~= nil end)
+            local b = list[i]
+            if b then
+                local before = Shown()
+                local ok, err = pcall(b["\0scripts"].OnClick, b, "LeftButton")
+                OUT:write("== import click " .. i .. (ok and "" or (" ERR " .. tostring(err))) .. " " .. Profiles() .. "\n")
+                for _, host in ipairs(Hosts()) do
+                    for _, c in ipairs({ host:GetChildren() }) do
+                        if c:IsShown() and not before[c] then
+                            SNAP("import click " .. i .. " opened", c)
+                            c:Hide()
+                        end
+                    end
+                end
+            end
+        end
+    end
+end
