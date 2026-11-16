@@ -19,6 +19,121 @@ end -- module disabled: no options page
 -- plain CreateFrame.
 local CreateFrame = CludesUI._Pool.CreateFrame
 
+-- A textured border's offsets and shifts, which travel with its style.
+local BORDER_TEX_KEYS =
+    { "borderTextureOffset", "borderTextureOffsetY", "borderTextureShiftX", "borderTextureShiftY" }
+
+-- A colour copied as a table of its own (r, g, b); nothing when there is none.
+local function CopyColor(t, key, c)
+    if c then
+        t[key] = { r = c.r, g = c.g, b = c.b }
+    end
+end
+
+-- The sync icon of a per-unit setting ("Apply <label> to all Frames"): it
+-- copies the selected unit's setting to every main frame, or to the frames
+-- ticked in its menu, and reads as synced while they all agree.
+-- opts.copy(t, from) writes the setting from the selected unit's table into
+-- another unit's t; opts.same(t, from) says whether t already agrees. A
+-- single value needs neither: opts.key, unset reading as opts.default (a
+-- function for a default that is looked up). opts.self also writes the
+-- selected unit itself (pinning its default). opts.units narrows the frames
+-- (all main frames by default). opts.after runs once the values moved (by
+-- default the frames reload and the page repaints). Shared by every Unit
+-- Frames options file.
+function mod.UFO_UnitSync(rgn, label, opts)
+    local env = mod._UFO_OptEnv
+    local units, unitDB, state = opts.units or env.GROUP_UNIT_ORDER, env.UNIT_DB_MAP, env.optState
+    local copy, same = opts.copy, opts.same
+    if not copy then
+        local key, default, unsetOnly = opts.key, opts.default, opts.unsetOnly
+        -- The default stands in for an unset value, and for false unless
+        -- opts.unsetOnly (a stored false is then a value of its own).
+        local function Value(t)
+            local v = t[key]
+            if v == nil or (v == false and not unsetOnly) then
+                if type(default) == "function" then
+                    return default()
+                end
+                return default
+            end
+            return v
+        end
+        copy = function(t, from)
+            t[key] = Value(from)
+        end
+        same = function(t, from)
+            return Value(t) == Value(from)
+        end
+    end
+    -- The menu never lists the selected unit, so only the All link can reach it.
+    local function Copy(list, includeSelf)
+        local self = state.selectedUnit
+        local from = unitDB[self]()
+        for _, unit in ipairs(list) do
+            if includeSelf or unit ~= self then
+                copy(unitDB[unit](), from)
+            end
+        end
+        if opts.after then
+            opts.after(list)
+        else
+            env.ReloadAndUpdate()
+            CludesUI:RefreshPage()
+        end
+    end
+    CludesUI.BuildSyncIcon({
+        region = rgn,
+        tooltip = "Apply " .. label .. " to all Frames",
+        onClick = function()
+            Copy(units, opts.self)
+        end,
+        isSynced = function()
+            local from = unitDB[state.selectedUnit]()
+            for _, unit in ipairs(units) do
+                if not same(unitDB[unit](), from) then
+                    return false
+                end
+            end
+            return true
+        end,
+        flashTargets = function()
+            return { rgn }
+        end,
+        multiApply = {
+            elementKeys = units,
+            elementLabels = env.SHORT_LABELS,
+            getCurrentKey = function()
+                return state.selectedUnit
+            end,
+            onApply = function(checked)
+                Copy(checked, true)
+            end,
+        },
+    })
+end
+
+-- A Text Bar slot's sync icon: the slot's content, with its own format when
+-- that content is Custom (any other content leaves the format alone).
+local function TextSlotSync(rgn, label, slot)
+    local content, format = "btb" .. slot .. "Content", "btb" .. slot .. "CustomFormat"
+    mod.UFO_UnitSync(rgn, label, {
+        self = true,
+        copy = function(t, from)
+            local v = from[content] or "none"
+            t[content] = v
+            if v == "custom" then
+                t[format] = from[format]
+            end
+        end,
+        same = function(t, from)
+            local v = from[content] or "none"
+            return (t[content] or "none") == v
+                and (v ~= "custom" or (t[format] or "") == (from[format] or ""))
+        end,
+    })
+end
+
 function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
     local environ = mod._UFO_OptEnv
     local AttachFrameSourceCog, BuildBarTexDropdown, BuildInactiveNotice, CLASS_FULL_COORDS =
@@ -28,8 +143,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
         environ.CLASS_FULL_COORDS
     local CLASS_FULL_SPRITE_BASE, GROUP_UNIT_ORDER, Pix, PromptReloadIfUnspawned =
         environ.CLASS_FULL_SPRITE_BASE, environ.GROUP_UNIT_ORDER, environ.PP, environ.PromptReloadIfUnspawned
-    local ReloadAndUpdate, SHORT_LABELS, UNIT_DB_MAP, UpdatePreview =
-        environ.ReloadAndUpdate, environ.SHORT_LABELS, environ.UNIT_DB_MAP, environ.UpdatePreview
+    local ReloadAndUpdate, UNIT_DB_MAP, UpdatePreview =
+        environ.ReloadAndUpdate, environ.UNIT_DB_MAP, environ.UpdatePreview
     local saved, frameList, optionState, portraitArtValues =
         environ.db, environ.frames, environ.optState, environ.portraitArtValues
     local TexBgRowCfg = environ.TexBgRowCfg
@@ -334,75 +449,27 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
     -- multi-selection compare/copy, and VisFullCopy carries the option booleans too,
     -- plus each target's boolean-trio derivation.
     if not CludesUI._prebuilding then
-        local rgn = visRow._leftRegion
-        local function CopyVisToUnit(key)
-            local source = UNIT_DB_MAP[optionState.selectedUnit]()
-            local dst = UNIT_DB_MAP[key]()
-            if dst == source then
-                return
-            end
-            CludesUI.VisFullCopy(dst, source, "barVisibility", nil, function(t, mode)
-                t.barVisibility = mode
-            end)
-            SyncUnitVisBooleans(dst)
-        end
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Visibility to all Frames",
-            isSynced = function()
-                local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if
-                        not CludesUI.VisFullEquals(
-                            source,
-                            "barVisibility",
-                            UNIT_DB_MAP[key](),
-                            "barVisibility"
-                        )
-                    then
-                        return false
-                    end
-                end
-                return true
+        mod.UFO_UnitSync(visRow._leftRegion, "Visibility", {
+            copy = function(t, from)
+                CludesUI.VisFullCopy(t, from, "barVisibility", nil, function(dst, mode)
+                    dst.barVisibility = mode
+                end)
+                SyncUnitVisBooleans(t)
             end,
-            onClick = function()
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    CopyVisToUnit(key)
-                end
+            same = function(t, from)
+                return CludesUI.VisFullEquals(from, "barVisibility", t, "barVisibility")
+            end,
+            -- A frame shown again that this session never spawned needs a reload.
+            after = function(list)
                 if mod.UpdateFrameVisibility then
                     mod.UpdateFrameVisibility()
                 end
                 ReloadAndUpdate()
                 CludesUI:RefreshPage(true)
-                local v = UNIT_DB_MAP[optionState.selectedUnit]().barVisibility or "always"
-                if v ~= "never" then
-                    PromptReloadIfUnspawned(GROUP_UNIT_ORDER)
+                if (UNIT_DB_MAP[optionState.selectedUnit]().barVisibility or "always") ~= "never" then
+                    PromptReloadIfUnspawned(list)
                 end
             end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    for _, key in ipairs(checkedKeys) do
-                        CopyVisToUnit(key)
-                    end
-                    if mod.UpdateFrameVisibility then
-                        mod.UpdateFrameVisibility()
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage(true)
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().barVisibility or "always"
-                    if v ~= "never" then
-                        PromptReloadIfUnspawned(checkedKeys)
-                    end
-                end,
-            },
         })
     end
 
@@ -448,50 +515,19 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
             CludesUI.SpecOverrides_DarkCondEditActive
         )
     end
-    -- Sync icon: Bar Texture (left region) -- pushes this unit's texture to frames
+    -- Sync icon: Bar Texture (left region); an unset unit draws the profile's texture.
     if not CludesUI._prebuilding then
         local rgn = barTexRow._leftRegion
-        local function ApplyTexTo(keyList)
-            local source = UNIT_DB_MAP[optionState.selectedUnit]()
-            local texture = source.healthBarTexture or saved.profile.healthBarTexture or "none"
-            for _, key in ipairs(keyList) do
-                if key ~= optionState.selectedUnit then
-                    UNIT_DB_MAP[key]().healthBarTexture = texture
-                end
-            end
-            ReloadAndUpdate()
-            UpdatePreview()
-            CludesUI:RefreshPage()
-        end
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Bar Texture to all Frames",
-            onClick = function()
-                ApplyTexTo(GROUP_UNIT_ORDER)
+        mod.UFO_UnitSync(rgn, "Bar Texture", {
+            key = "healthBarTexture",
+            default = function()
+                return saved.profile.healthBarTexture or "none"
             end,
-            isSynced = function()
-                local g = saved.profile.healthBarTexture or "none"
-                local srcTex = UNIT_DB_MAP[optionState.selectedUnit]().healthBarTexture or g
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().healthBarTexture or g) ~= srcTex then
-                        return false
-                    end
-                end
-                return true
+            after = function()
+                ReloadAndUpdate()
+                UpdatePreview()
+                CludesUI:RefreshPage()
             end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    ApplyTexTo(checkedKeys)
-                end,
-            },
         })
         -- Textured Background cog (same region, after the sync icon).
         CludesUI.BuildInlineCog(rgn, {
@@ -707,276 +743,98 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
         CludesUI.RegisterWidgetRefresh(UpdateCogVis)
         UpdateCogVis()
     end
-    -- Sync icon: Border Style (left region - dropdown)
+    -- Sync icons. Border Style carries what belongs to the style: the texture's
+    -- offsets and shifts, layering, colour, alpha and the power seam. Border
+    -- carries the size (step, exact pixels and corners) with the texture, its
+    -- offsets, colour and the hover highlight. Each compares only what decides
+    -- the look it names.
     if not CludesUI._prebuilding then
-        local bsLeftRgn = sharedScaleBorderRow._leftRegion
-        CludesUI.BuildSyncIcon({
-            region = bsLeftRgn,
-            tooltip = "Apply Border Style to all Frames",
-            onClick = function()
-                local bt = SGet("borderTexture") or "solid"
-                local ox = SGet("borderTextureOffset")
-                local oy = SGet("borderTextureOffsetY")
-                local sx = SGet("borderTextureShiftX")
-                local sy = SGet("borderTextureShiftY")
-                local bh = SGet("borderBehind")
-                local bc = SGet("borderColor")
-                local ba = SGet("borderAlpha")
-                local ps = SGet("borderPowerSeam")
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if key ~= optionState.selectedUnit then
-                        UNIT_DB_MAP[key]().borderTexture = bt
-                        UNIT_DB_MAP[key]().borderTextureOffset = ox
-                        UNIT_DB_MAP[key]().borderTextureOffsetY = oy
-                        UNIT_DB_MAP[key]().borderTextureShiftX = sx
-                        UNIT_DB_MAP[key]().borderTextureShiftY = sy
-                        UNIT_DB_MAP[key]().borderBehind = bh
-                        if bc then
-                            UNIT_DB_MAP[key]().borderColor = { r = bc.r, g = bc.g, b = bc.b }
-                        end
-                        UNIT_DB_MAP[key]().borderAlpha = ba
-                        UNIT_DB_MAP[key]().borderPowerSeam = ps
-                    end
+        mod.UFO_UnitSync(sharedScaleBorderRow._leftRegion, "Border Style", {
+            copy = function(t, from)
+                t.borderTexture = from.borderTexture or "solid"
+                for _, k in ipairs(BORDER_TEX_KEYS) do
+                    t[k] = from[k]
                 end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
+                t.borderBehind = from.borderBehind
+                CopyColor(t, "borderColor", from.borderColor)
+                t.borderAlpha = from.borderAlpha
+                t.borderPowerSeam = from.borderPowerSeam
             end,
-            isSynced = function()
-                local bt = SGet("borderTexture") or "solid"
-                local ox = SGet("borderTextureOffset")
-                local oy = SGet("borderTextureOffsetY")
-                local sx = SGet("borderTextureShiftX")
-                local sy = SGet("borderTextureShiftY")
-                local bh = SGet("borderBehind") or false
-                local ps = SGet("borderPowerSeam") == true
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().borderTexture or "solid") ~= bt then
-                        return false
-                    end
-                    if UNIT_DB_MAP[key]().borderTextureOffset ~= ox then
-                        return false
-                    end
-                    if UNIT_DB_MAP[key]().borderTextureOffsetY ~= oy then
-                        return false
-                    end
-                    if UNIT_DB_MAP[key]().borderTextureShiftX ~= sx then
-                        return false
-                    end
-                    if UNIT_DB_MAP[key]().borderTextureShiftY ~= sy then
-                        return false
-                    end
-                    if (UNIT_DB_MAP[key]().borderBehind or false) ~= bh then
-                        return false
-                    end
-                    if (UNIT_DB_MAP[key]().borderPowerSeam == true) ~= ps then
+            same = function(t, from)
+                if
+                    (t.borderTexture or "solid") ~= (from.borderTexture or "solid")
+                    or (t.borderBehind or false) ~= (from.borderBehind or false)
+                    or (t.borderPowerSeam == true) ~= (from.borderPowerSeam == true)
+                then
+                    return false
+                end
+                for _, k in ipairs(BORDER_TEX_KEYS) do
+                    if t[k] ~= from[k] then
                         return false
                     end
                 end
                 return true
             end,
-            flashTargets = function()
-                return { bsLeftRgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    local bt = SGet("borderTexture") or "solid"
-                    local ox = SGet("borderTextureOffset")
-                    local oy = SGet("borderTextureOffsetY")
-                    local sx = SGet("borderTextureShiftX")
-                    local sy = SGet("borderTextureShiftY")
-                    local bh = SGet("borderBehind")
-                    local bc = SGet("borderColor")
-                    local ba = SGet("borderAlpha")
-                    local ps = SGet("borderPowerSeam")
-                    for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().borderTexture = bt
-                        UNIT_DB_MAP[key]().borderTextureOffset = ox
-                        UNIT_DB_MAP[key]().borderTextureOffsetY = oy
-                        UNIT_DB_MAP[key]().borderTextureShiftX = sx
-                        UNIT_DB_MAP[key]().borderTextureShiftY = sy
-                        UNIT_DB_MAP[key]().borderBehind = bh
-                        if bc then
-                            UNIT_DB_MAP[key]().borderColor = { r = bc.r, g = bc.g, b = bc.b }
-                        end
-                        UNIT_DB_MAP[key]().borderAlpha = ba
-                        UNIT_DB_MAP[key]().borderPowerSeam = ps
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-            },
         })
-    end
-    -- Sync icon: Border (right region - border slider)
-    if not CludesUI._prebuilding then
-        local rgn = sharedScaleBorderRow._rightRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Border to all Frames",
-            onClick = function()
-                local bs = SVal("borderSize", 1)
-                local bpx = SGet("borderSizePx")
-                local bc = SGet("borderColor")
-                local ba = SGet("borderAlpha")
-                local bt = SGet("borderTexture") or "solid"
-                local hc = SGet("highlightColor")
-                local ha = SGet("highlightAlpha")
-                local ox = SGet("borderTextureOffset")
-                local oy = SGet("borderTextureOffsetY")
-                local sx = SGet("borderTextureShiftX")
-                local sy = SGet("borderTextureShiftY")
-                local cr, cm, cj =
-                    SVal("cornerRadius", 0), SGet("cornerMask"), SGet("cornerJoinPower") == true
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if key ~= optionState.selectedUnit then
-                        UNIT_DB_MAP[key]().borderSize = bs
-                        UNIT_DB_MAP[key]().cornerRadius = cr
-                        do
-                            -- All corners clears a set mask with 15, and Join off
-                            -- is false (nil would not travel through mirror sync).
-                            local t = UNIT_DB_MAP[key]()
-                            local m = cm
-                            if m == nil and t.cornerMask ~= nil then
-                                m = 15
-                            end
-                            t.cornerMask = m
-                            t.cornerJoinPower = cj
-                        end
-                        -- Verbatim (string / false / nil): the value only counts beside the same step and texture.
-                        do
-                            -- A source with no exact size clears a set one with
-                            -- false (nil would not travel through mirror sync).
-                            local t = UNIT_DB_MAP[key]()
-                            local v = bpx
-                            if v == nil and t.borderSizePx ~= nil then
-                                v = false
-                            end
-                            t.borderSizePx = v
-                        end
-                        if bc then
-                            UNIT_DB_MAP[key]().borderColor = { r = bc.r, g = bc.g, b = bc.b }
-                        end
-                        if ba then
-                            UNIT_DB_MAP[key]().borderAlpha = ba
-                        end
-                        UNIT_DB_MAP[key]().borderTexture = bt
-                        UNIT_DB_MAP[key]().borderTextureOffset = ox
-                        UNIT_DB_MAP[key]().borderTextureOffsetY = oy
-                        UNIT_DB_MAP[key]().borderTextureShiftX = sx
-                        UNIT_DB_MAP[key]().borderTextureShiftY = sy
-                        if hc then
-                            UNIT_DB_MAP[key]().highlightColor = { r = hc.r, g = hc.g, b = hc.b }
-                        end
-                        if ha then
-                            UNIT_DB_MAP[key]().highlightAlpha = ha
-                        end
-                    end
+        mod.UFO_UnitSync(sharedScaleBorderRow._rightRegion, "Border", {
+            copy = function(t, from)
+                local step, radius = from.borderSize, from.cornerRadius
+                if step == nil then
+                    step = 1
                 end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local bs = SVal("borderSize", 1)
-                local bt = SGet("borderTexture") or "solid"
-                local cr, cm, cj = SVal("cornerRadius", 0), SGet("cornerMask"), SGet("cornerJoinPower")
-                -- Exact sizes compare as rendered (a cleared or stale value equals none).
-                local bpx = CludesUI.BorderPx(SGet("borderSizePx"), bs, bt)
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().borderSize or 1) ~= bs then
-                        return false
-                    end
-                    if (UNIT_DB_MAP[key]().borderTexture or "solid") ~= bt then
-                        return false
-                    end
-                    if CludesUI.BorderPx(UNIT_DB_MAP[key]().borderSizePx, bs, bt) ~= bpx then
-                        return false
-                    end
-                    if (UNIT_DB_MAP[key]().cornerRadius or 0) ~= cr then
-                        return false
-                    end
-                    if (UNIT_DB_MAP[key]().cornerMask or 15) ~= (cm or 15) then
-                        return false
-                    end
-                    if (UNIT_DB_MAP[key]().cornerJoinPower == true) ~= (cj == true) then
-                        return false
-                    end
+                if radius == nil then
+                    radius = 0
                 end
-                return true
+                t.borderSize = step
+                t.cornerRadius = radius
+                -- A source with all corners, or no exact size, clears a value the
+                -- target holds with 15 / false: nil would not travel through
+                -- mirror sync. Join off is false for the same reason.
+                local mask, px = from.cornerMask, from.borderSizePx
+                if mask == nil and t.cornerMask ~= nil then
+                    mask = 15
+                end
+                if px == nil and t.borderSizePx ~= nil then
+                    px = false
+                end
+                t.cornerMask = mask
+                t.cornerJoinPower = from.cornerJoinPower == true
+                -- Verbatim (string / false / nil): it counts only beside the same step and texture.
+                t.borderSizePx = px
+                CopyColor(t, "borderColor", from.borderColor)
+                if from.borderAlpha then
+                    t.borderAlpha = from.borderAlpha
+                end
+                t.borderTexture = from.borderTexture or "solid"
+                for _, k in ipairs(BORDER_TEX_KEYS) do
+                    t[k] = from[k]
+                end
+                CopyColor(t, "highlightColor", from.highlightColor)
+                if from.highlightAlpha then
+                    t.highlightAlpha = from.highlightAlpha
+                end
             end,
-            flashTargets = function()
-                return { rgn }
+            same = function(t, from)
+                local step, radius = from.borderSize, from.cornerRadius
+                if step == nil then
+                    step = 1
+                end
+                if radius == nil then
+                    radius = 0
+                end
+                local tex = from.borderTexture or "solid"
+                -- Exact sizes compare as drawn (a cleared or stale value equals none).
+                return (t.borderSize or 1) == step
+                    and (t.borderTexture or "solid") == tex
+                    and CludesUI.BorderPx(t.borderSizePx, step, tex) == CludesUI.BorderPx(
+                        from.borderSizePx,
+                        step,
+                        tex
+                    )
+                    and (t.cornerRadius or 0) == radius
+                    and (t.cornerMask or 15) == (from.cornerMask or 15)
+                    and (t.cornerJoinPower == true) == (from.cornerJoinPower == true)
             end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    local bs = SVal("borderSize", 1)
-                    local bpx = SGet("borderSizePx")
-                    local bc = SGet("borderColor")
-                    local ba = SGet("borderAlpha")
-                    local bt = SGet("borderTexture") or "solid"
-                    local hc = SGet("highlightColor")
-                    local ha = SGet("highlightAlpha")
-                    local ox = SGet("borderTextureOffset")
-                    local oy = SGet("borderTextureOffsetY")
-                    local sx = SGet("borderTextureShiftX")
-                    local sy = SGet("borderTextureShiftY")
-                    local cr, cm, cj =
-                        SVal("cornerRadius", 0), SGet("cornerMask"), SGet("cornerJoinPower") == true
-                    for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().borderSize = bs
-                        UNIT_DB_MAP[key]().cornerRadius = cr
-                        do
-                            -- All corners clears a set mask with 15, and Join off
-                            -- is false (nil would not travel through mirror sync).
-                            local t = UNIT_DB_MAP[key]()
-                            local m = cm
-                            if m == nil and t.cornerMask ~= nil then
-                                m = 15
-                            end
-                            t.cornerMask = m
-                            t.cornerJoinPower = cj
-                        end
-                        do
-                            -- A source with no exact size clears a set one with
-                            -- false (nil would not travel through mirror sync).
-                            local t = UNIT_DB_MAP[key]()
-                            local v = bpx
-                            if v == nil and t.borderSizePx ~= nil then
-                                v = false
-                            end
-                            t.borderSizePx = v
-                        end
-                        if bc then
-                            UNIT_DB_MAP[key]().borderColor = { r = bc.r, g = bc.g, b = bc.b }
-                        end
-                        if ba then
-                            UNIT_DB_MAP[key]().borderAlpha = ba
-                        end
-                        UNIT_DB_MAP[key]().borderTexture = bt
-                        UNIT_DB_MAP[key]().borderTextureOffset = ox
-                        UNIT_DB_MAP[key]().borderTextureOffsetY = oy
-                        UNIT_DB_MAP[key]().borderTextureShiftX = sx
-                        UNIT_DB_MAP[key]().borderTextureShiftY = sy
-                        if hc then
-                            UNIT_DB_MAP[key]().highlightColor = { r = hc.r, g = hc.g, b = hc.b }
-                        end
-                        if ha then
-                            UNIT_DB_MAP[key]().highlightAlpha = ha
-                        end
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-            },
         })
     end
     -- Inline Border color swatch; Highlight lives on "Hover Borders" below
@@ -1220,48 +1078,11 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
     -- the other main frames. Each frame keeps its own value; unset frames
     -- fall back to the profile-wide default.
     if not CludesUI._prebuilding then
-        local rgn = tipStrataRow._rightRegion
-        local function CurStrata(key)
-            return UNIT_DB_MAP[key]().frameStrata or saved.profile.frameStrata or "MEDIUM"
-        end
-        local function ApplyStrataTo(keyList)
-            local strata = CurStrata(optionState.selectedUnit)
-            for _, key in ipairs(keyList) do
-                if key ~= optionState.selectedUnit then
-                    UNIT_DB_MAP[key]().frameStrata = strata
-                end
-            end
-            ReloadAndUpdate()
-            CludesUI:RefreshPage()
-        end
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Frame Strata to all Frames",
-            onClick = function()
-                ApplyStrataTo(GROUP_UNIT_ORDER)
+        mod.UFO_UnitSync(tipStrataRow._rightRegion, "Frame Strata", {
+            key = "frameStrata",
+            default = function()
+                return saved.profile.frameStrata or "MEDIUM"
             end,
-            isSynced = function()
-                local current = CurStrata(optionState.selectedUnit)
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if CurStrata(key) ~= current then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    ApplyStrataTo(checkedKeys)
-                end,
-            },
         })
     end
 
@@ -1660,8 +1481,7 @@ end
 
 function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
     local environ = mod._UFO_OptEnv
-    local GROUP_UNIT_ORDER, ReloadAndUpdate, SHORT_LABELS, UNIT_DB_MAP =
-        environ.GROUP_UNIT_ORDER, environ.ReloadAndUpdate, environ.SHORT_LABELS, environ.UNIT_DB_MAP
+    local ReloadAndUpdate, UNIT_DB_MAP = environ.ReloadAndUpdate, environ.UNIT_DB_MAP
     local UpdatePreview, saved, detPortraitShapeOrder, detPortraitShapeValues =
         environ.UpdatePreview, environ.db, environ.detPortraitShapeOrder, environ.detPortraitShapeValues
     local optionState, portraitArtOrder, portraitArtValues, portraitModeOrder2 =
@@ -1813,51 +1633,17 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
         }
     )
     posY = posY - hgt
-    -- Sync icon: Portrait Mode (Style)
+    -- Sync icon: Portrait Mode (Style); a mode of None also hides the portrait.
     if not CludesUI._prebuilding then
-        local rgn = sharedPortraitModeRow._leftRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Portrait Mode to all Frames",
-            onClick = function()
-                local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitStyle or "attached"
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if key ~= optionState.selectedUnit then
-                        UNIT_DB_MAP[key]().portraitStyle = v
-                        UNIT_DB_MAP[key]().showPortrait = (v ~= "none")
-                    end
-                end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
+        mod.UFO_UnitSync(sharedPortraitModeRow._leftRegion, "Portrait Mode", {
+            copy = function(t, from)
+                local style = from.portraitStyle or "attached"
+                t.portraitStyle = style
+                t.showPortrait = style ~= "none"
             end,
-            isSynced = function()
-                local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitStyle or "attached"
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().portraitStyle or "attached") ~= v then
-                        return false
-                    end
-                end
-                return true
+            same = function(t, from)
+                return (t.portraitStyle or "attached") == (from.portraitStyle or "attached")
             end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitStyle or "attached"
-                    for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().portraitStyle = v
-                        UNIT_DB_MAP[key]().showPortrait = (v ~= "none")
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-            },
         })
     end
     -- Portrait settings; the separator is offered only for attached portraits.
@@ -1968,49 +1754,15 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
             rows = rowList,
         })
     end
-    -- Sync icon: Portrait Mode (Art Style)
+    -- Sync icon: Portrait Mode (Art Style), copied as stored (unset included).
     if not CludesUI._prebuilding then
-        local rgn = sharedPortraitModeRow._rightRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Art Style to all Frames",
-            onClick = function()
-                local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitMode
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if key ~= optionState.selectedUnit then
-                        UNIT_DB_MAP[key]().portraitMode = v
-                    end
-                end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
+        mod.UFO_UnitSync(sharedPortraitModeRow._rightRegion, "Art Style", {
+            copy = function(t, from)
+                t.portraitMode = from.portraitMode
             end,
-            isSynced = function()
-                local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitMode or "none"
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().portraitMode or "none") ~= v then
-                        return false
-                    end
-                end
-                return true
+            same = function(t, from)
+                return (t.portraitMode or "none") == (from.portraitMode or "none")
             end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitMode
-                    for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().portraitMode = v
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-            },
         })
     end
 
@@ -2065,47 +1817,20 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
         posY = posY - hgt
         -- Sync icon: carries the opt-in with the choice.
         if not CludesUI._prebuilding then
-            local rgn = nonPlayerRow._leftRegion
-            local function ApplyNonPlayer(keyList)
-                local enabled, v = SVal("portraitNonPlayerOn", nil), SVal("portraitNonPlayer", "2d")
-                for _, key in ipairs(keyList) do
-                    local d = UNIT_DB_MAP[key]()
-                    d.portraitNonPlayerOn = enabled
-                    d.portraitNonPlayer = v
-                end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
-            end
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Non-Player Portrait to all Frames",
-                onClick = function()
-                    ApplyNonPlayer(GROUP_UNIT_ORDER)
-                end,
-                isSynced = function()
-                    local enabled, v = SVal("portraitNonPlayerOn", false), SVal("portraitNonPlayer", "2d")
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        local d = UNIT_DB_MAP[key]()
-                        if
-                            (d.portraitNonPlayerOn or false) ~= enabled
-                            or (d.portraitNonPlayer or "2d") ~= v
-                        then
-                            return false
-                        end
+            mod.UFO_UnitSync(nonPlayerRow._leftRegion, "Non-Player Portrait", {
+                self = true,
+                copy = function(t, from)
+                    local choice = from.portraitNonPlayer
+                    if choice == nil then
+                        choice = "2d"
                     end
-                    return true
+                    t.portraitNonPlayerOn = from.portraitNonPlayerOn
+                    t.portraitNonPlayer = choice
                 end,
-                flashTargets = function()
-                    return { rgn }
+                same = function(t, from)
+                    return (t.portraitNonPlayerOn or false) == (from.portraitNonPlayerOn or false)
+                        and (t.portraitNonPlayer or "2d") == (from.portraitNonPlayer or "2d")
                 end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = ApplyNonPlayer,
-                },
             })
         end
     end -- close Non-Player Portrait opt-in gate
@@ -2188,46 +1913,9 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
         -- Sync icons: Portrait Size (left) and Portrait Side (right)
         if not CludesUI._prebuilding then
             local rgn = sharedSizePosRow._leftRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Portrait Size to all Frames",
-                onClick = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitSize or 0
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if key ~= optionState.selectedUnit then
-                            UNIT_DB_MAP[key]().portraitSize = v
-                        end
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitSize or 0
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if (UNIT_DB_MAP[key]().portraitSize or 0) ~= v then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitSize or 0
-                        for _, key in ipairs(checkedKeys) do
-                            UNIT_DB_MAP[key]().portraitSize = v
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
+            mod.UFO_UnitSync(rgn, "Portrait Size", {
+                key = "portraitSize",
+                default = 0,
             })
             -- Zoom cog on Size slider
             local _, zoomShow
@@ -2331,46 +2019,9 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
         end
         if not CludesUI._prebuilding then
             local rgn = sharedSizePosRow._rightRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Portrait Position to all Frames",
-                onClick = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitSide or "left"
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if key ~= optionState.selectedUnit then
-                            UNIT_DB_MAP[key]().portraitSide = v
-                        end
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitSide or "left"
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if (UNIT_DB_MAP[key]().portraitSide or "left") ~= v then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optionState.selectedUnit]().portraitSide or "left"
-                        for _, key in ipairs(checkedKeys) do
-                            UNIT_DB_MAP[key]().portraitSide = v
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
+            mod.UFO_UnitSync(rgn, "Portrait Position", {
+                key = "portraitSide",
+                default = "left",
             })
         end
         sharedDetSizeRow = sharedSizePosRow
@@ -2651,46 +2302,9 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
         -- Sync icons: Shape (left) and Shape Border (right)
         if not CludesUI._prebuilding then
             local rgn = sharedShapeBorderRow._leftRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Portrait Shape to all Frames",
-                onClick = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().detachedPortraitShape or "portrait"
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if key ~= optionState.selectedUnit then
-                            UNIT_DB_MAP[key]().detachedPortraitShape = v
-                        end
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().detachedPortraitShape or "portrait"
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if (UNIT_DB_MAP[key]().detachedPortraitShape or "portrait") ~= v then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optionState.selectedUnit]().detachedPortraitShape or "portrait"
-                        for _, key in ipairs(checkedKeys) do
-                            UNIT_DB_MAP[key]().detachedPortraitShape = v
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
+            mod.UFO_UnitSync(rgn, "Portrait Shape", {
+                key = "detachedPortraitShape",
+                default = "portrait",
             })
         end
         if not CludesUI._prebuilding then
@@ -2702,101 +2316,39 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                 detachedPortraitOuterRingScale = 118,
                 detachedPortraitInnerShadow = false,
             }
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Shape Border to all Frames",
-                onClick = function()
-                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                    local bc = source.detachedPortraitBorderColor
-                    local bo = source.detachedPortraitBorderOpacity
-                    local bs = source.detachedPortraitBorderSize
-                    local cc = source.detachedPortraitClassColor
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if key ~= optionState.selectedUnit then
-                            local d = UNIT_DB_MAP[key]()
-                            if bc then
-                                d.detachedPortraitBorderColor = { r = bc.r, g = bc.g, b = bc.b }
-                            else
-                                d.detachedPortraitBorderColor = nil
-                            end
-                            d.detachedPortraitBorderOpacity = bo
-                            d.detachedPortraitBorderSize = bs
-                            d.detachedPortraitClassColor = cc
-                            for k in pairs(SB_EXTRAS) do
-                                d[k] = source[k]
-                            end
-                        end
+            -- Unset reads as its default on both sides: class colour on, size 7.
+            local function Or(v, def)
+                if v == nil then
+                    return def
+                end
+                return v
+            end
+            mod.UFO_UnitSync(rgn, "Shape Border", {
+                copy = function(t, from)
+                    local c = from.detachedPortraitBorderColor
+                    t.detachedPortraitBorderColor = c and { r = c.r, g = c.g, b = c.b } or nil
+                    t.detachedPortraitBorderOpacity = from.detachedPortraitBorderOpacity
+                    t.detachedPortraitBorderSize = from.detachedPortraitBorderSize
+                    t.detachedPortraitClassColor = from.detachedPortraitClassColor
+                    for k in pairs(SB_EXTRAS) do
+                        t[k] = from[k]
                     end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
                 end,
-                isSynced = function()
-                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                    local cc = source.detachedPortraitClassColor
-                    if cc == nil then
-                        cc = true
+                same = function(t, from)
+                    if
+                        Or(t.detachedPortraitClassColor, true)
+                            ~= Or(from.detachedPortraitClassColor, true)
+                        or (t.detachedPortraitBorderSize or 7) ~= (from.detachedPortraitBorderSize or 7)
+                    then
+                        return false
                     end
-                    local bs = source.detachedPortraitBorderSize or 7
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        local d = UNIT_DB_MAP[key]()
-                        local dcc = d.detachedPortraitClassColor
-                        if dcc == nil then
-                            dcc = true
-                        end
-                        if dcc ~= cc then
+                    for k, def in pairs(SB_EXTRAS) do
+                        if Or(t[k], def) ~= Or(from[k], def) then
                             return false
-                        end
-                        if (d.detachedPortraitBorderSize or 7) ~= bs then
-                            return false
-                        end
-                        for k, def in pairs(SB_EXTRAS) do
-                            local sv, dv = source[k], d[k]
-                            if sv == nil then
-                                sv = def
-                            end
-                            if dv == nil then
-                                dv = def
-                            end
-                            if sv ~= dv then
-                                return false
-                            end
                         end
                     end
                     return true
                 end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                        local bc = source.detachedPortraitBorderColor
-                        local bo = source.detachedPortraitBorderOpacity
-                        local bs = source.detachedPortraitBorderSize
-                        local cc = source.detachedPortraitClassColor
-                        for _, key in ipairs(checkedKeys) do
-                            local d = UNIT_DB_MAP[key]()
-                            if bc then
-                                d.detachedPortraitBorderColor = { r = bc.r, g = bc.g, b = bc.b }
-                            else
-                                d.detachedPortraitBorderColor = nil
-                            end
-                            d.detachedPortraitBorderOpacity = bo
-                            d.detachedPortraitBorderSize = bs
-                            d.detachedPortraitClassColor = cc
-                            for k in pairs(SB_EXTRAS) do
-                                d[k] = source[k]
-                            end
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
             })
         end
     end -- close Shape/Shape Border detached-only gate
@@ -2966,10 +2518,10 @@ end
 
 function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
     local environ = mod._UFO_OptEnv
-    local GROUP_UNIT_ORDER, Pix, RegisterWidgetRefresh, ReloadAndUpdate =
-        environ.GROUP_UNIT_ORDER, environ.PP, environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
-    local SHORT_LABELS, UNIT_DB_MAP, UpdatePreview, btbPositionOrder =
-        environ.SHORT_LABELS, environ.UNIT_DB_MAP, environ.UpdatePreview, environ.btbPositionOrder
+    local Pix, RegisterWidgetRefresh, ReloadAndUpdate =
+        environ.PP, environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
+    local UNIT_DB_MAP, UpdatePreview, btbPositionOrder =
+        environ.UNIT_DB_MAP, environ.UpdatePreview, environ.btbPositionOrder
     local btbPositionValues, btbTextOrder, btbTextValues, classIconLocOrder =
         environ.btbPositionValues, environ.btbTextOrder, environ.btbTextValues, environ.classIconLocOrder
     local classIconLocValues, classIconOrder, classIconValues, optionState =
@@ -3034,91 +2586,17 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
         -- Sync icon: Enable Text Bar
         if not CludesUI._prebuilding then
             local rgn = sharedBtbToggleRow._leftRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Enable Text Bar to all Frames",
-                onClick = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().bottomTextBar or false
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if key ~= optionState.selectedUnit then
-                            UNIT_DB_MAP[key]().bottomTextBar = v
-                        end
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().bottomTextBar or false
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if (UNIT_DB_MAP[key]().bottomTextBar or false) ~= v then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optionState.selectedUnit]().bottomTextBar or false
-                        for _, key in ipairs(checkedKeys) do
-                            UNIT_DB_MAP[key]().bottomTextBar = v
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
+            mod.UFO_UnitSync(rgn, "Enable Text Bar", {
+                key = "bottomTextBar",
+                default = false,
             })
         end
         -- Sync icon: Text Bar Position (right region)
         if not CludesUI._prebuilding then
             local rgn = sharedBtbToggleRow._rightRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Text Bar Position to all Frames",
-                onClick = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().btbPosition or "bottom"
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if key ~= optionState.selectedUnit then
-                            UNIT_DB_MAP[key]().btbPosition = v
-                        end
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().btbPosition or "bottom"
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if (UNIT_DB_MAP[key]().btbPosition or "bottom") ~= v then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optionState.selectedUnit]().btbPosition or "bottom"
-                        for _, key in ipairs(checkedKeys) do
-                            UNIT_DB_MAP[key]().btbPosition = v
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
+            mod.UFO_UnitSync(rgn, "Text Bar Position", {
+                key = "btbPosition",
+                default = "bottom",
             })
         end
         -- Inline color swatch for BTB background on Enable Text Bar
@@ -3272,86 +2750,18 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
         -- Sync icons: BTB Height (left) and BTB Width (right)
         if not CludesUI._prebuilding then
             local rgn = sharedBtbHeightRow._leftRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Text Bar Height to all Frames",
-                onClick = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().bottomTextBarHeight or 16
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        UNIT_DB_MAP[key]().bottomTextBarHeight = v
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().bottomTextBarHeight or 16
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if (UNIT_DB_MAP[key]().bottomTextBarHeight or 16) ~= v then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optionState.selectedUnit]().bottomTextBarHeight or 16
-                        for _, key in ipairs(checkedKeys) do
-                            UNIT_DB_MAP[key]().bottomTextBarHeight = v
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
+            mod.UFO_UnitSync(rgn, "Text Bar Height", {
+                key = "bottomTextBarHeight",
+                default = 16,
+                self = true,
             })
         end
         if not CludesUI._prebuilding then
             local rgn = sharedBtbHeightRow._rightRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Text Bar Width to all Frames",
-                onClick = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().btbWidth or 0
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        UNIT_DB_MAP[key]().btbWidth = v
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().btbWidth or 0
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if (UNIT_DB_MAP[key]().btbWidth or 0) ~= v then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optionState.selectedUnit]().btbWidth or 0
-                        for _, key in ipairs(checkedKeys) do
-                            UNIT_DB_MAP[key]().btbWidth = v
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
+            mod.UFO_UnitSync(rgn, "Text Bar Width", {
+                key = "btbWidth",
+                default = 0,
+                self = true,
             })
         end
 
@@ -4012,117 +3422,11 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
         -- Sync icons: BTB Left Text (left) and BTB Right Text (right)
         if not CludesUI._prebuilding then
             local rgn = sharedBtbTextRow._leftRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Text Bar Left Text to all Frames",
-                onClick = function()
-                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                    local v, fmt = source.btbLeftContent or "none", source.btbLeftCustomFormat
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        local d = UNIT_DB_MAP[key]()
-                        d.btbLeftContent = v
-                        if v == "custom" then
-                            d.btbLeftCustomFormat = fmt
-                        end
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                    local v, fmt = source.btbLeftContent or "none", source.btbLeftCustomFormat or ""
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        local d = UNIT_DB_MAP[key]()
-                        if (d.btbLeftContent or "none") ~= v then
-                            return false
-                        end
-                        if v == "custom" and (d.btbLeftCustomFormat or "") ~= fmt then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                        local v, fmt = source.btbLeftContent or "none", source.btbLeftCustomFormat
-                        for _, key in ipairs(checkedKeys) do
-                            local d = UNIT_DB_MAP[key]()
-                            d.btbLeftContent = v
-                            if v == "custom" then
-                                d.btbLeftCustomFormat = fmt
-                            end
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
-            })
+            TextSlotSync(rgn, "Text Bar Left Text", "Left")
         end
         if not CludesUI._prebuilding then
             local rgn = sharedBtbTextRow._rightRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Text Bar Right Text to all Frames",
-                onClick = function()
-                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                    local v, fmt = source.btbRightContent or "none", source.btbRightCustomFormat
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        local d = UNIT_DB_MAP[key]()
-                        d.btbRightContent = v
-                        if v == "custom" then
-                            d.btbRightCustomFormat = fmt
-                        end
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                    local v, fmt = source.btbRightContent or "none", source.btbRightCustomFormat or ""
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        local d = UNIT_DB_MAP[key]()
-                        if (d.btbRightContent or "none") ~= v then
-                            return false
-                        end
-                        if v == "custom" and (d.btbRightCustomFormat or "") ~= fmt then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                        local v, fmt = source.btbRightContent or "none", source.btbRightCustomFormat
-                        for _, key in ipairs(checkedKeys) do
-                            local d = UNIT_DB_MAP[key]()
-                            d.btbRightContent = v
-                            if v == "custom" then
-                                d.btbRightCustomFormat = fmt
-                            end
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
-            })
+            TextSlotSync(rgn, "Text Bar Right Text", "Right")
         end
 
         -- Row 4: Center Text + Class Icon
@@ -4518,101 +3822,14 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
         -- Sync icons: BTB Center Text (left) and Class Icon (right)
         if not CludesUI._prebuilding then
             local rgn = sharedBtbCenterRow._leftRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Text Bar Center Text to all Frames",
-                onClick = function()
-                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                    local v, fmt = source.btbCenterContent or "none", source.btbCenterCustomFormat
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        local d = UNIT_DB_MAP[key]()
-                        d.btbCenterContent = v
-                        if v == "custom" then
-                            d.btbCenterCustomFormat = fmt
-                        end
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                    local v, fmt = source.btbCenterContent or "none", source.btbCenterCustomFormat or ""
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        local d = UNIT_DB_MAP[key]()
-                        if (d.btbCenterContent or "none") ~= v then
-                            return false
-                        end
-                        if v == "custom" and (d.btbCenterCustomFormat or "") ~= fmt then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local source = UNIT_DB_MAP[optionState.selectedUnit]()
-                        local v, fmt = source.btbCenterContent or "none", source.btbCenterCustomFormat
-                        for _, key in ipairs(checkedKeys) do
-                            local d = UNIT_DB_MAP[key]()
-                            d.btbCenterContent = v
-                            if v == "custom" then
-                                d.btbCenterCustomFormat = fmt
-                            end
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
-            })
+            TextSlotSync(rgn, "Text Bar Center Text", "Center")
         end
         if not CludesUI._prebuilding then
             local rgn = sharedBtbCenterRow._rightRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Text Bar Class Icon to all Frames",
-                onClick = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().btbClassIcon or "none"
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        UNIT_DB_MAP[key]().btbClassIcon = v
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().btbClassIcon or "none"
-                    for _, key in ipairs(GROUP_UNIT_ORDER) do
-                        if (UNIT_DB_MAP[key]().btbClassIcon or "none") ~= v then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optionState.selectedUnit]().btbClassIcon or "none"
-                        for _, key in ipairs(checkedKeys) do
-                            UNIT_DB_MAP[key]().btbClassIcon = v
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
+            mod.UFO_UnitSync(rgn, "Text Bar Class Icon", {
+                key = "btbClassIcon",
+                default = "none",
+                self = true,
             })
         end
     end -- close Text Bar hidden-while-disabled gate
@@ -4622,13 +3839,9 @@ end
 
 function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
     local environ = mod._UFO_OptEnv
-    local CLASS_FULL_COORDS, GROUP_UNIT_ORDER, RegisterWidgetRefresh, ReloadAndUpdate =
-        environ.CLASS_FULL_COORDS,
-        environ.GROUP_UNIT_ORDER,
-        environ.RegisterWidgetRefresh,
-        environ.ReloadAndUpdate
-    local SHORT_LABELS, UNIT_DB_MAP, UpdatePreview, saved =
-        environ.SHORT_LABELS, environ.UNIT_DB_MAP, environ.UpdatePreview, environ.db
+    local CLASS_FULL_COORDS, RegisterWidgetRefresh, ReloadAndUpdate =
+        environ.CLASS_FULL_COORDS, environ.RegisterWidgetRefresh, environ.ReloadAndUpdate
+    local UNIT_DB_MAP, UpdatePreview, saved = environ.UNIT_DB_MAP, environ.UpdatePreview, environ.db
     local optionState = environ.optState
     local W, SApplySupport, SDB, SGetSupported =
         context.W, context.SApplySupport, context.SDB, context.SGetSupported
@@ -4766,46 +3979,11 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
         end
         -- Sync icon: Combat Indicator (player + target only -- focus has none)
         if SVisible("combatIndicatorStyle") and not CludesUI._prebuilding then
-            local rgn = sharedAddRow1._leftRegion
-            local ciSyncUnits = { "player", "target" }
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Combat Indicator Style to all Frames",
-                onClick = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().combatIndicatorStyle or "class"
-                    for _, key in ipairs(ciSyncUnits) do
-                        UNIT_DB_MAP[key]().combatIndicatorStyle = v
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().combatIndicatorStyle or "class"
-                    for _, key in ipairs(ciSyncUnits) do
-                        if (UNIT_DB_MAP[key]().combatIndicatorStyle or "class") ~= v then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = ciSyncUnits,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local v = UNIT_DB_MAP[optionState.selectedUnit]().combatIndicatorStyle or "class"
-                        for _, key in ipairs(checkedKeys) do
-                            UNIT_DB_MAP[key]().combatIndicatorStyle = v
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
+            mod.UFO_UnitSync(sharedAddRow1._leftRegion, "Combat Indicator Style", {
+                units = { "player", "target" },
+                key = "combatIndicatorStyle",
+                default = "class",
+                self = true,
             })
         end
 
@@ -5115,100 +4293,19 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
     end
     -- Sync icons: Raid Marker (left) and Marker Size (right)
     if not CludesUI._prebuilding then
-        local rgn = sharedAddRow4._leftRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Raid Marker to all Frames",
-            onClick = function()
-                local v = UNIT_DB_MAP[optionState.selectedUnit]().raidMarkerEnabled
-                if v == nil then
-                    v = false
-                end
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    UNIT_DB_MAP[key]().raidMarkerEnabled = v
-                end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local v = UNIT_DB_MAP[optionState.selectedUnit]().raidMarkerEnabled
-                if v == nil then
-                    v = false
-                end
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    local shade = UNIT_DB_MAP[key]().raidMarkerEnabled
-                    if shade == nil then
-                        shade = false
-                    end
-                    if shade ~= v then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().raidMarkerEnabled
-                    if v == nil then
-                        v = false
-                    end
-                    for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().raidMarkerEnabled = v
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-            },
+        mod.UFO_UnitSync(sharedAddRow4._leftRegion, "Raid Marker", {
+            key = "raidMarkerEnabled",
+            default = false,
+            unsetOnly = true,
+            self = true,
         })
     end
     if not CludesUI._prebuilding then
         local rgn = sharedAddRow4._rightRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Marker Size to all Frames",
-            onClick = function()
-                local v = UNIT_DB_MAP[optionState.selectedUnit]().raidMarkerSize or 28
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    UNIT_DB_MAP[key]().raidMarkerSize = v
-                end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local v = UNIT_DB_MAP[optionState.selectedUnit]().raidMarkerSize or 28
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().raidMarkerSize or 28) ~= v then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    local v = UNIT_DB_MAP[optionState.selectedUnit]().raidMarkerSize or 28
-                    for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().raidMarkerSize = v
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-            },
+        mod.UFO_UnitSync(rgn, "Marker Size", {
+            key = "raidMarkerSize",
+            default = 28,
+            self = true,
         })
     end
 
@@ -5323,67 +4420,18 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
             })
         end
         -- Player + target sync link; the Faction Indicator row below reuses it.
-        BuildLeaderSync = function(rgn, key, default, tooltip)
-            local function GetValue(unitToken)
-                local v = UNIT_DB_MAP[unitToken]()[key]
-                if v == nil then
-                    return default
-                end
-                return v
-            end
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = tooltip,
-                onClick = function()
-                    local v = GetValue(optionState.selectedUnit)
-                    for _, unitToken in ipairs(leaderSyncUnits) do
-                        UNIT_DB_MAP[unitToken]()[key] = v
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local v = GetValue(optionState.selectedUnit)
-                    for _, unitToken in ipairs(leaderSyncUnits) do
-                        if GetValue(unitToken) ~= v then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = leaderSyncUnits,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        local v = GetValue(optionState.selectedUnit)
-                        for _, unitToken in ipairs(checkedKeys) do
-                            UNIT_DB_MAP[unitToken]()[key] = v
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                },
+        BuildLeaderSync = function(rgn, key, default, label)
+            mod.UFO_UnitSync(rgn, label, {
+                units = leaderSyncUnits,
+                key = key,
+                default = default,
+                unsetOnly = true,
+                self = true,
             })
         end
         if not CludesUI._prebuilding then
-            BuildLeaderSync(
-                sharedAddRow5._leftRegion,
-                "leaderIndicatorEnabled",
-                true,
-                "Apply Leader Indicator to all Frames"
-            )
-            BuildLeaderSync(
-                sharedAddRow5._rightRegion,
-                "leaderIndicatorSize",
-                16,
-                "Apply Leader Icon Size to all Frames"
-            )
+            BuildLeaderSync(sharedAddRow5._leftRegion, "leaderIndicatorEnabled", true, "Leader Indicator")
+            BuildLeaderSync(sharedAddRow5._rightRegion, "leaderIndicatorSize", 16, "Leader Icon Size")
         end
     end
 
@@ -5729,12 +4777,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
         -- Size only: the player's mode list (Off/On) differs from the target's
         -- (with Opposite Faction), so the mode has no clean cross-frame copy.
         if not CludesUI._prebuilding then
-            BuildLeaderSync(
-                factionRow._rightRegion,
-                "factionIndicatorSize",
-                18,
-                "Apply Faction Icon Size to all Frames"
-            )
+            BuildLeaderSync(factionRow._rightRegion, "factionIndicatorSize", 18, "Faction Icon Size")
         end
         mod._ufAddPvEye(factionRow._leftRegion, "faction", "faction indicator")
         hostFrame._ufFactionRow = factionRow
