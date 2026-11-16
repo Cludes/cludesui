@@ -2483,6 +2483,36 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             return v or default
         end
     end
+    -- A text colour swatch left of a cog (Duration / Stack Text Color): one
+    -- boss colour key, white when unset; dimmed and dead while off() holds.
+    local function BossTextSwatch(rgn, key, tip, off)
+        local sw, upd = CludesUI.BuildColorSwatch(rgn, rgn:GetFrameLevel() + 5, function()
+            local c = saved.profile.boss[key]
+            if c then
+                return c.r, c.g, c.b
+            end
+            return 1, 1, 1
+        end, function(r, g, b)
+            saved.profile.boss[key] = { r = r, g = g, b = b }
+            ReloadAndUpdate()
+        end, false, 20)
+        sw:HookScript("OnEnter", function()
+            CludesUI.ShowWidgetTooltip(sw, tip)
+        end)
+        sw:HookScript("OnLeave", function()
+            CludesUI.HideWidgetTooltip()
+        end)
+        Pix.Point(sw, "RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
+        rgn._lastInline = sw
+        local function Paint()
+            upd()
+            local o = off()
+            sw:SetAlpha(o and 0.3 or 1)
+            sw:EnableMouse(not o)
+        end
+        Paint()
+        CludesUI.RegisterWidgetRefresh(Paint)
+    end
     local function BossSet(key, refreshAuras)
         return function(v)
             saved.profile.boss[key] = v
@@ -2941,62 +2971,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     },
                 },
             })
-            do
-                local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5, function()
-                    local c = saved.profile.boss.buffCooldownTextColor
-                    if c then
-                        return c.r, c.g, c.b
-                    end
-                    return 1, 1, 1
-                end, function(r, g, b)
-                    saved.profile.boss.buffCooldownTextColor = { r = r, g = g, b = b }
-                    ReloadAndUpdate()
-                end, false, 20)
-                sw:HookScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(sw, "Duration Text Color")
-                end)
-                sw:HookScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                Pix.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
-                rightRgn._lastInline = sw
-                local function apply()
-                    upd()
-                    local o = buffOff()
-                    sw:SetAlpha(o and 0.3 or 1)
-                    sw:EnableMouse(not o)
-                end
-                apply()
-                CludesUI.RegisterWidgetRefresh(apply)
-            end
-            do
-                local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5, function()
-                    local c = saved.profile.boss.buffStackTextColor
-                    if c then
-                        return c.r, c.g, c.b
-                    end
-                    return 1, 1, 1
-                end, function(r, g, b)
-                    saved.profile.boss.buffStackTextColor = { r = r, g = g, b = b }
-                    ReloadAndUpdate()
-                end, false, 20)
-                sw:HookScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(sw, "Stack Text Color")
-                end)
-                sw:HookScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                Pix.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
-                rightRgn._lastInline = sw
-                local function apply()
-                    upd()
-                    local o = buffOff()
-                    sw:SetAlpha(o and 0.3 or 1)
-                    sw:EnableMouse(not o)
-                end
-                apply()
-                CludesUI.RegisterWidgetRefresh(apply)
-            end
+            BossTextSwatch(rightRgn, "buffCooldownTextColor", "Duration Text Color", buffOff)
+            BossTextSwatch(rightRgn, "buffStackTextColor", "Stack Text Color", buffOff)
         end
         -- (Show Duration toggle lives inside the Duration & Stack cog above.)
 
@@ -3253,62 +3229,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     },
                 },
             })
-            do
-                local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5, function()
-                    local c = saved.profile.boss.debuffCooldownTextColor
-                    if c then
-                        return c.r, c.g, c.b
-                    end
-                    return 1, 1, 1
-                end, function(r, g, b)
-                    saved.profile.boss.debuffCooldownTextColor = { r = r, g = g, b = b }
-                    ReloadAndUpdate()
-                end, false, 20)
-                sw:HookScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(sw, "Duration Text Color")
-                end)
-                sw:HookScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                Pix.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
-                rightRgn._lastInline = sw
-                local function apply()
-                    upd()
-                    local o = debuffOff()
-                    sw:SetAlpha(o and 0.3 or 1)
-                    sw:EnableMouse(not o)
-                end
-                apply()
-                CludesUI.RegisterWidgetRefresh(apply)
-            end
-            do
-                local sw, upd = CludesUI.BuildColorSwatch(rightRgn, rightRgn:GetFrameLevel() + 5, function()
-                    local c = saved.profile.boss.debuffStackTextColor
-                    if c then
-                        return c.r, c.g, c.b
-                    end
-                    return 1, 1, 1
-                end, function(r, g, b)
-                    saved.profile.boss.debuffStackTextColor = { r = r, g = g, b = b }
-                    ReloadAndUpdate()
-                end, false, 20)
-                sw:HookScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(sw, "Stack Text Color")
-                end)
-                sw:HookScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                Pix.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
-                rightRgn._lastInline = sw
-                local function apply()
-                    upd()
-                    local o = debuffOff()
-                    sw:SetAlpha(o and 0.3 or 1)
-                    sw:EnableMouse(not o)
-                end
-                apply()
-                CludesUI.RegisterWidgetRefresh(apply)
-            end
+            BossTextSwatch(rightRgn, "debuffCooldownTextColor", "Duration Text Color", debuffOff)
+            BossTextSwatch(rightRgn, "debuffStackTextColor", "Stack Text Color", debuffOff)
         end
         -- (Show Duration toggle lives inside the Duration & Stack cog above.)
 
@@ -3603,76 +3525,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         },
                     },
                 })
-                do
-                    local sw, upd = CludesUI.BuildColorSwatch(
-                        rightRgn,
-                        rightRgn:GetFrameLevel() + 5,
-                        function()
-                            local c = saved.profile.boss.buffCooldownTextColor
-                            if c then
-                                return c.r, c.g, c.b
-                            end
-                            return 1, 1, 1
-                        end,
-                        function(r, g, b)
-                            saved.profile.boss.buffCooldownTextColor = { r = r, g = g, b = b }
-                            ReloadAndUpdate()
-                        end,
-                        false,
-                        20
-                    )
-                    sw:HookScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(sw, "Duration Text Color")
-                    end)
-                    sw:HookScript("OnLeave", function()
-                        CludesUI.HideWidgetTooltip()
-                    end)
-                    Pix.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
-                    rightRgn._lastInline = sw
-                    local function apply()
-                        upd()
-                        local o = buffOff()
-                        sw:SetAlpha(o and 0.3 or 1)
-                        sw:EnableMouse(not o)
-                    end
-                    apply()
-                    CludesUI.RegisterWidgetRefresh(apply)
-                end
-                do
-                    local sw, upd = CludesUI.BuildColorSwatch(
-                        rightRgn,
-                        rightRgn:GetFrameLevel() + 5,
-                        function()
-                            local c = saved.profile.boss.buffStackTextColor
-                            if c then
-                                return c.r, c.g, c.b
-                            end
-                            return 1, 1, 1
-                        end,
-                        function(r, g, b)
-                            saved.profile.boss.buffStackTextColor = { r = r, g = g, b = b }
-                            ReloadAndUpdate()
-                        end,
-                        false,
-                        20
-                    )
-                    sw:HookScript("OnEnter", function()
-                        CludesUI.ShowWidgetTooltip(sw, "Stack Text Color")
-                    end)
-                    sw:HookScript("OnLeave", function()
-                        CludesUI.HideWidgetTooltip()
-                    end)
-                    Pix.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
-                    rightRgn._lastInline = sw
-                    local function apply()
-                        upd()
-                        local o = buffOff()
-                        sw:SetAlpha(o and 0.3 or 1)
-                        sw:EnableMouse(not o)
-                    end
-                    apply()
-                    CludesUI.RegisterWidgetRefresh(apply)
-                end
+                BossTextSwatch(rightRgn, "buffCooldownTextColor", "Duration Text Color", buffOff)
+                BossTextSwatch(rightRgn, "buffStackTextColor", "Stack Text Color", buffOff)
             end
         end -- close buff sizing row hidden-while-None gate
 
@@ -3919,76 +3773,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                     -- Disabled while Simple Debuff Display is active: simple mode
                     -- uses its own (simpleDebuff*) cooldown text, so the regular
                     -- debuff Duration & Stack controls do not apply.
-                    do
-                        local sw, upd = CludesUI.BuildColorSwatch(
-                            rightRgn,
-                            rightRgn:GetFrameLevel() + 5,
-                            function()
-                                local c = saved.profile.boss.debuffCooldownTextColor
-                                if c then
-                                    return c.r, c.g, c.b
-                                end
-                                return 1, 1, 1
-                            end,
-                            function(r, g, b)
-                                saved.profile.boss.debuffCooldownTextColor = { r = r, g = g, b = b }
-                                ReloadAndUpdate()
-                            end,
-                            false,
-                            20
-                        )
-                        sw:HookScript("OnEnter", function()
-                            CludesUI.ShowWidgetTooltip(sw, "Duration Text Color")
-                        end)
-                        sw:HookScript("OnLeave", function()
-                            CludesUI.HideWidgetTooltip()
-                        end)
-                        Pix.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
-                        rightRgn._lastInline = sw
-                        local function apply()
-                            upd()
-                            local o = debuffOff()
-                            sw:SetAlpha(o and 0.3 or 1)
-                            sw:EnableMouse(not o)
-                        end
-                        apply()
-                        CludesUI.RegisterWidgetRefresh(apply)
-                    end
-                    do
-                        local sw, upd = CludesUI.BuildColorSwatch(
-                            rightRgn,
-                            rightRgn:GetFrameLevel() + 5,
-                            function()
-                                local c = saved.profile.boss.debuffStackTextColor
-                                if c then
-                                    return c.r, c.g, c.b
-                                end
-                                return 1, 1, 1
-                            end,
-                            function(r, g, b)
-                                saved.profile.boss.debuffStackTextColor = { r = r, g = g, b = b }
-                                ReloadAndUpdate()
-                            end,
-                            false,
-                            20
-                        )
-                        sw:HookScript("OnEnter", function()
-                            CludesUI.ShowWidgetTooltip(sw, "Stack Text Color")
-                        end)
-                        sw:HookScript("OnLeave", function()
-                            CludesUI.HideWidgetTooltip()
-                        end)
-                        Pix.Point(sw, "RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
-                        rightRgn._lastInline = sw
-                        local function apply()
-                            upd()
-                            local o = debuffOff()
-                            sw:SetAlpha(o and 0.3 or 1)
-                            sw:EnableMouse(not o)
-                        end
-                        apply()
-                        CludesUI.RegisterWidgetRefresh(apply)
-                    end
+                    BossTextSwatch(rightRgn, "debuffCooldownTextColor", "Duration Text Color", debuffOff)
+                    BossTextSwatch(rightRgn, "debuffStackTextColor", "Stack Text Color", debuffOff)
                 end
             end -- close debuff sizing row hidden-while-None gate
 
