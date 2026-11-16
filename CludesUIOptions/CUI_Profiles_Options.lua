@@ -328,6 +328,42 @@ local function MakeAccentFade(btn, lbl, brd)
         Paint(0)
     end
 end
+-- The current specialization's ID (nil while the client has none yet).
+local function CurrentSpecID()
+    local si = C_SpecializationInfo.GetSpecialization() or 0
+    return si and si > 0 and C_SpecializationInfo.GetSpecializationInfo(si) or nil
+end
+
+-- Switches to a stored profile and refreshes every module (budgeted: a manual
+-- switch, sliced by the watchdog). afterSwitch runs between the two. A profile
+-- that brings another font, window skins or style only takes full effect after
+-- a reload, so that asks for one; returns true when it asked.
+local function SwitchProfileAndAsk(name, profile, afterSwitch)
+    local font = CludesUI.ProfileChangesFont(profile)
+    local skins = CludesUI.ProfileChangesWindowSkins(profile)
+    local style = CludesUI.ProfileChangesStyle(profile)
+    CludesUI.SwitchProfile(name)
+    if afterSwitch then
+        afterSwitch()
+    end
+    CludesUI.RefreshAllAddons(true)
+    if not (font or skins or style) then
+        return false
+    end
+    CludesUI:ShowConfirmPopup({
+        title = CludesUI.L("Reload Required"),
+        message = font and CludesUI.L("Font changed. A UI reload is needed to apply the new font.")
+            or skins and CludesUI.L(
+                "Window skins changed for this profile. A UI reload is needed to apply them."
+            )
+            or CludesUI.L("Style changed for this profile. A UI reload is needed to apply it."),
+        confirmText = CludesUI.L("Reload Now"),
+        cancelText = CludesUI.L("Later"),
+        reload = true,
+    })
+    return true
+end
+
 -- A profile's keybind popup: built on its first open and kept across page
 -- builds; each open points it at that profile (ShowProfileKeybindPopup).
 local profileKeybindPopup
@@ -340,44 +376,15 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     local EG = CludesUI.CLUDES_GREEN
     local MEDIA = "Interface\\AddOns\\CludesUI\\media\\"
 
-    -- Safety net: if the active profile does not match the current spec assignment (e.g. spec info was unavailable at login), correct it now.
+    -- Safety net: the active profile follows the current spec's assignment
+    -- (spec info can be missing at login, so it may not have switched then).
     do
-        local si = C_SpecializationInfo.GetSpecialization() or 0
-        local sid = si and si > 0 and C_SpecializationInfo.GetSpecializationInfo(si) or nil
-        if sid then
-            local assigned = CludesUI.GetSpecProfile(sid)
-            if assigned then
-                local current = CludesUI.GetActiveProfileName()
-                if assigned ~= current then
-                    local _, profiles = CludesUI.GetProfileList()
-                    if profiles and profiles[assigned] then
-                        local fontWillChange = CludesUI.ProfileChangesFont(profiles[assigned])
-                        local skinsWillChange = CludesUI.ProfileChangesWindowSkins(profiles[assigned])
-                        local styleWillChange = CludesUI.ProfileChangesStyle(profiles[assigned])
-                        CludesUI.SwitchProfile(assigned)
-                        -- true = budgeted: manual apply (no spec change
-                        -- in flight), watchdog-sliced module refresh.
-                        CludesUI.RefreshAllAddons(true)
-                        if fontWillChange or skinsWillChange or styleWillChange then
-                            CludesUI:ShowConfirmPopup({
-                                title = CludesUI.L("Reload Required"),
-                                message = fontWillChange
-                                        and CludesUI.L(
-                                            "Font changed. A UI reload is needed to apply the new font."
-                                        )
-                                    or skinsWillChange and CludesUI.L(
-                                        "Window skins changed for this profile. A UI reload is needed to apply them."
-                                    )
-                                    or CludesUI.L(
-                                        "Style changed for this profile. A UI reload is needed to apply it."
-                                    ),
-                                confirmText = CludesUI.L("Reload Now"),
-                                cancelText = CludesUI.L("Later"),
-                                reload = true,
-                            })
-                        end
-                    end
-                end
+        local sid = CurrentSpecID()
+        local assigned = sid and CludesUI.GetSpecProfile(sid)
+        if assigned and assigned ~= CludesUI.GetActiveProfileName() then
+            local _, profiles = CludesUI.GetProfileList()
+            if profiles and profiles[assigned] then
+                SwitchProfileAndAsk(assigned, profiles[assigned])
             end
         end
     end
@@ -472,7 +479,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             Paint(false)
         end)
         btn._getLabel = getLabel
-        return btn, lbl, bg, brd
+        return btn, lbl, bg, brd, Paint
     end
 
     -- One menu per dropdown button, kept with the button: a build that dresses
@@ -508,6 +515,13 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
     -- Hoisted so the import callback can update it
     local ddLabel
+    -- After a profile was deleted, renamed or added: the dropdown shows the
+    -- active one and every page rebuilds.
+    local function ShowProfileChange()
+        ddLabel:SetText(CludesUI.GetActiveProfileName())
+        CludesUI:InvalidatePageCache()
+        CludesUI:RefreshPage(true)
+    end
 
     -------------------------------------------------------------------
     --  Shared helpers
@@ -1875,7 +1889,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         profLabel:SetJustifyH("LEFT")
 
         -- Active Profile dropdown
-        local ddBtn, ddLabelFS, ddBg, ddBrd = MakeDropdown(rowFrame, DD_W, CTRL_H, function()
+        local ddBtn, ddLabelFS, _, _, ddPaint = MakeDropdown(rowFrame, DD_W, CTRL_H, function()
             return CludesUI.GetActiveProfileName()
         end)
         CludesUI._profileDDBtn = ddBtn
@@ -1883,7 +1897,6 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         PP.Point(ddBtn, "TOPLEFT", profLabel, "BOTTOMLEFT", 0, -6)
 
         -- Profile dropdown menu with inline rename/delete/keybind
-        local aS = CludesUI.RD_DD_COLOURS
         local menu = MakeDropdownMenu(ddBtn, DD_W)
         local X_SZ = 14
         local menuItems = {}
@@ -1896,14 +1909,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             local mH = 4
             local idx = 0
             local activeName = CludesUI.GetActiveProfileName()
-            local specAssigned
-            do
-                local si = C_SpecializationInfo.GetSpecialization() or 0
-                local sid = si and si > 0 and C_SpecializationInfo.GetSpecializationInfo(si) or nil
-                if sid then
-                    specAssigned = CludesUI.GetSpecProfile(sid)
-                end
-            end
+            local sid = CurrentSpecID()
+            local specAssigned = sid and CludesUI.GetSpecProfile(sid) or nil
             for _, name in ipairs(order) do
                 if profiles[name] then
                     idx = idx + 1
@@ -2037,35 +2044,12 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                             end
                             menu:Hide()
                             local _, profs = CludesUI.GetProfileList()
-                            local fontWillChange = CludesUI.ProfileChangesFont(profs and profs[capName])
-                            local skinsWillChange =
-                                CludesUI.ProfileChangesWindowSkins(profs and profs[capName])
-                            local styleWillChange = CludesUI.ProfileChangesStyle(profs and profs[capName])
-                            CludesUI.SwitchProfile(capName)
-                            ddLabel:SetText(CludesUI.GetActiveProfileName())
-                            -- true = budgeted: manual swap site,
-                            -- watchdog-sliced module refresh.
-                            CludesUI.RefreshAllAddons(true)
-                            if fontWillChange or skinsWillChange or styleWillChange then
-                                CludesUI:ShowConfirmPopup({
-                                    title = CludesUI.L("Reload Required"),
-                                    message = fontWillChange
-                                            and CludesUI.L(
-                                                "Font changed. A UI reload is needed to apply the new font."
-                                            )
-                                        or skinsWillChange and CludesUI.L(
-                                            "Window skins changed for this profile. A UI reload is needed to apply them."
-                                        )
-                                        or CludesUI.L(
-                                            "Style changed for this profile. A UI reload is needed to apply it."
-                                        ),
-                                    confirmText = CludesUI.L("Reload Now"),
-                                    cancelText = CludesUI.L("Later"),
-                                    reload = true,
-                                })
-                            else
-                                -- Invalidate cached pages so per-profile lists (e.g. the CDM bar dropdown) rebuild: a live swap only
-                                -- re-points db.profile, so cached pages would show the old profile until reload.
+                            local asked = SwitchProfileAndAsk(capName, profs and profs[capName], function()
+                                ddLabel:SetText(CludesUI.GetActiveProfileName())
+                            end)
+                            -- A live switch only re-points db.profile: cached pages
+                            -- (per-profile lists such as the CDM bar dropdown) rebuild.
+                            if not asked then
                                 CludesUI:InvalidatePageCache()
                                 CludesUI:RefreshPage(true)
                             end
@@ -2082,9 +2066,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                                 cancelText = CludesUI.L("Cancel"),
                                 onConfirm = function()
                                     CludesUI.DeleteProfile(capName)
-                                    ddLabel:SetText(CludesUI.GetActiveProfileName())
-                                    CludesUI:InvalidatePageCache()
-                                    CludesUI:RefreshPage(true)
+                                    ShowProfileChange()
                                 end,
                             })
                         end)
@@ -2118,9 +2100,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                                         return
                                     end
                                     CludesUI.RenameProfile(capName, newName)
-                                    ddLabel:SetText(CludesUI.GetActiveProfileName())
-                                    CludesUI:InvalidatePageCache()
-                                    CludesUI:RefreshPage(true)
+                                    ShowProfileChange()
                                 end,
                             })
                         end)
@@ -2137,15 +2117,12 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             menu:SetHeight(mH + 4)
         end
 
+        -- The dropdown stays lit while its menu is open.
         local function ActiveApplyNormal()
-            ddLabelFS:SetTextColor(aS[17], aS[18], aS[19], aS[20])
-            ddBrd:SetColor(aS[9], aS[10], aS[11], aS[12])
-            ddBg:SetColorTexture(aS[1], aS[2], aS[3], aS[4])
+            ddPaint(false)
         end
         local function ActiveApplyHover()
-            ddLabelFS:SetTextColor(aS[21], aS[22], aS[23], aS[24])
-            ddBrd:SetColor(aS[13], aS[14], aS[15], aS[16])
-            ddBg:SetColorTexture(aS[5], aS[6], aS[7], aS[8])
+            ddPaint(true)
         end
 
         ddBtn:SetScript("OnClick", function()
