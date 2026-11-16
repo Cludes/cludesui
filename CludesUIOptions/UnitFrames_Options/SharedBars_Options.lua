@@ -126,46 +126,9 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
     -- Sync icons: Bar Height (left) and Bar Width (right)
     if not CludesUI._prebuilding then
         local rgn = sharedSizeRow._leftRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Health Bar Height to all Frames",
-            onClick = function()
-                local val = UNIT_DB_MAP[optionState.selectedUnit]().healthHeight or 46
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if key ~= optionState.selectedUnit then
-                        UNIT_DB_MAP[key]().healthHeight = val
-                    end
-                end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local val = UNIT_DB_MAP[optionState.selectedUnit]().healthHeight or 46
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().healthHeight or 46) ~= val then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    local val = UNIT_DB_MAP[optionState.selectedUnit]().healthHeight or 46
-                    for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().healthHeight = val
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-            },
+        mod.UFO_UnitSync(rgn, "Health Bar Height", {
+            key = "healthHeight",
+            default = 46,
         })
     end
     -- Reverse Fill cog on Bar Height (left region)
@@ -210,46 +173,9 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
     end
     if not CludesUI._prebuilding then
         local rgn = sharedSizeRow._rightRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Bar Width to all Frames",
-            onClick = function()
-                local val = UNIT_DB_MAP[optionState.selectedUnit]().frameWidth or 181
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if key ~= optionState.selectedUnit then
-                        UNIT_DB_MAP[key]().frameWidth = val
-                    end
-                end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local val = UNIT_DB_MAP[optionState.selectedUnit]().frameWidth or 181
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().frameWidth or 181) ~= val then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    local val = UNIT_DB_MAP[optionState.selectedUnit]().frameWidth or 181
-                    for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().frameWidth = val
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-            },
+        mod.UFO_UnitSync(rgn, "Bar Width", {
+            key = "frameWidth",
+            default = 181,
         })
     end
 
@@ -478,12 +404,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
             ReloadAndUpdate()
             CludesUI:RefreshPage()
         end
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Bar Background to all Frames",
-            onClick = function()
-                ApplyBgTo(GROUP_UNIT_ORDER)
-            end,
+        mod.UFO_UnitSync(rgn, "Bar Background", {
+            applyTo = ApplyBgTo,
             isSynced = function()
                 local source = UNIT_DB_MAP[optionState.selectedUnit]()
                 local function colEq(a, b)
@@ -509,19 +431,6 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                 end
                 return true
             end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    ApplyBgTo(checkedKeys)
-                end,
-            },
         })
     end
     -- Sync icon: Bar Color (left) -- fill/class color and gradient
@@ -568,12 +477,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
             ReloadAndUpdate()
             CludesUI:RefreshPage()
         end
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Bar Color to all Frames",
-            onClick = function()
-                ApplyColorTo(GROUP_UNIT_ORDER)
-            end,
+        mod.UFO_UnitSync(rgn, "Bar Color", {
+            applyTo = ApplyColorTo,
             isSynced = function()
                 local source = UNIT_DB_MAP[optionState.selectedUnit]()
                 local function colEq(a, b)
@@ -613,19 +518,6 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                 end
                 return true
             end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    ApplyColorTo(checkedKeys)
-                end,
-            },
         })
     end
     -- Fill Color cog on Bar Color (left region): the two settings that decide
@@ -816,46 +708,9 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
     -- Sync icon: Bar Opacity (right)
     if not CludesUI._prebuilding then
         local rgn = sharedOpacityRow._rightRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Bar Opacity to all Frames",
-            onClick = function()
-                local val = UNIT_DB_MAP[optionState.selectedUnit]().healthBarOpacity or 90
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if key ~= optionState.selectedUnit then
-                        UNIT_DB_MAP[key]().healthBarOpacity = val
-                    end
-                end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local val = UNIT_DB_MAP[optionState.selectedUnit]().healthBarOpacity or 90
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().healthBarOpacity or 90) ~= val then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    local val = UNIT_DB_MAP[optionState.selectedUnit]().healthBarOpacity or 90
-                    for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().healthBarOpacity = val
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-            },
+        mod.UFO_UnitSync(rgn, "Bar Opacity", {
+            key = "healthBarOpacity",
+            default = 90,
         })
     end
 
@@ -1015,12 +870,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                     ReloadAndUpdate()
                     CludesUI:RefreshPage(true)
                 end
-                CludesUI.BuildSyncIcon({
-                    region = rgn,
-                    tooltip = "Apply Left Text to all Frames",
-                    onClick = function()
-                        ApplyLeftTextTo(GROUP_UNIT_ORDER)
-                    end,
+                mod.UFO_UnitSync(rgn, "Left Text", {
+                    applyTo = ApplyLeftTextTo,
                     isSynced = function()
                         local source = UNIT_DB_MAP[optionState.selectedUnit]()
                         local val = source.leftTextContent or "name"
@@ -1073,19 +924,6 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                         end
                         return true
                     end,
-                    flashTargets = function()
-                        return { rgn }
-                    end,
-                    multiApply = {
-                        elementKeys = GROUP_UNIT_ORDER,
-                        elementLabels = SHORT_LABELS,
-                        getCurrentKey = function()
-                            return optionState.selectedUnit
-                        end,
-                        onApply = function(checkedKeys)
-                            ApplyLeftTextTo(checkedKeys)
-                        end,
-                    },
                 })
             end
             -- Cogwheel on Left Text (left region)
@@ -1426,12 +1264,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                     ReloadAndUpdate()
                     CludesUI:RefreshPage(true)
                 end
-                CludesUI.BuildSyncIcon({
-                    region = rgn,
-                    tooltip = "Apply Right Text to all Frames",
-                    onClick = function()
-                        ApplyRightTextTo(GROUP_UNIT_ORDER)
-                    end,
+                mod.UFO_UnitSync(rgn, "Right Text", {
+                    applyTo = ApplyRightTextTo,
                     isSynced = function()
                         local source = UNIT_DB_MAP[optionState.selectedUnit]()
                         local val = source.rightTextContent or "both"
@@ -1485,19 +1319,6 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                         end
                         return true
                     end,
-                    flashTargets = function()
-                        return { rgn }
-                    end,
-                    multiApply = {
-                        elementKeys = GROUP_UNIT_ORDER,
-                        elementLabels = SHORT_LABELS,
-                        getCurrentKey = function()
-                            return optionState.selectedUnit
-                        end,
-                        onApply = function(checkedKeys)
-                            ApplyRightTextTo(checkedKeys)
-                        end,
-                    },
                 })
             end
             -- Cogwheel on Right Text (right region)
@@ -1832,12 +1653,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                     ReloadAndUpdate()
                     CludesUI:RefreshPage(true)
                 end
-                CludesUI.BuildSyncIcon({
-                    region = rgn,
-                    tooltip = "Apply Center Text to all Frames",
-                    onClick = function()
-                        ApplyCenterTextTo(GROUP_UNIT_ORDER)
-                    end,
+                mod.UFO_UnitSync(rgn, "Center Text", {
+                    applyTo = ApplyCenterTextTo,
                     isSynced = function()
                         local source = UNIT_DB_MAP[optionState.selectedUnit]()
                         local val = source.centerTextContent or "none"
@@ -1893,19 +1710,6 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                         end
                         return true
                     end,
-                    flashTargets = function()
-                        return { rgn }
-                    end,
-                    multiApply = {
-                        elementKeys = GROUP_UNIT_ORDER,
-                        elementLabels = SHORT_LABELS,
-                        getCurrentKey = function()
-                            return optionState.selectedUnit
-                        end,
-                        onApply = function(checkedKeys)
-                            ApplyCenterTextTo(checkedKeys)
-                        end,
-                    },
                 })
             end
             -- Cogwheel on Center Text (left region)
@@ -2217,12 +2021,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                     ReloadAndUpdate()
                     CludesUI:RefreshPage(true)
                 end
-                CludesUI.BuildSyncIcon({
-                    region = rgn,
-                    tooltip = "Apply Extra Text to all Frames",
-                    onClick = function()
-                        ApplyExtraTextTo(GROUP_UNIT_ORDER)
-                    end,
+                mod.UFO_UnitSync(rgn, "Extra Text", {
+                    applyTo = ApplyExtraTextTo,
                     isSynced = function()
                         local source = UNIT_DB_MAP[optionState.selectedUnit]()
                         local val = source.extraTextContent or "none"
@@ -2279,19 +2079,6 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                         end
                         return true
                     end,
-                    flashTargets = function()
-                        return { rgn }
-                    end,
-                    multiApply = {
-                        elementKeys = GROUP_UNIT_ORDER,
-                        elementLabels = SHORT_LABELS,
-                        getCurrentKey = function()
-                            return optionState.selectedUnit
-                        end,
-                        onApply = function(checkedKeys)
-                            ApplyExtraTextTo(checkedKeys)
-                        end,
-                    },
                 })
             end
             -- Cogwheel on Extra Text (Center row right region): Alignment + Size/X/Y
@@ -2771,12 +2558,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
             ReloadAndUpdate()
             CludesUI:RefreshPage()
         end
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Hide Power Bar to all Frames",
-            onClick = function()
-                ApplyHideTo(GROUP_UNIT_ORDER)
-            end,
+        mod.UFO_UnitSync(rgn, "Hide Power Bar", {
+            applyTo = ApplyHideTo,
             isSynced = function()
                 local val = HiddenOf(optionState.selectedUnit)
                 for _, key in ipairs(GROUP_UNIT_ORDER) do
@@ -2786,60 +2569,13 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
                 end
                 return true
             end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    ApplyHideTo(checkedKeys)
-                end,
-            },
         })
     elseif not CludesUI._prebuilding then
         local rgn = sharedPowerRow1._leftRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Power Bar Height to all Frames",
-            onClick = function()
-                local val = UNIT_DB_MAP[optionState.selectedUnit]().powerHeight or 6
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    UNIT_DB_MAP[key]().powerHeight = val
-                end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local val = UNIT_DB_MAP[optionState.selectedUnit]().powerHeight or 6
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().powerHeight or 6) ~= val then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    local val = UNIT_DB_MAP[optionState.selectedUnit]().powerHeight or 6
-                    for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().powerHeight = val
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-            },
+        mod.UFO_UnitSync(rgn, "Power Bar Height", {
+            key = "powerHeight",
+            default = 6,
+            self = true,
         })
     end
     -- Reverse Fill cog on Bar Height or Hide Power Bar (left region)
@@ -2870,44 +2606,10 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
     end
     if not CludesUI._prebuilding and not stockPower then
         local rgn = sharedPowerRow1._rightRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Bar Position to all Frames",
-            onClick = function()
-                local val = UNIT_DB_MAP[optionState.selectedUnit]().powerPosition or "below"
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    UNIT_DB_MAP[key]().powerPosition = val
-                end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local val = UNIT_DB_MAP[optionState.selectedUnit]().powerPosition or "below"
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().powerPosition or "below") ~= val then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    local val = UNIT_DB_MAP[optionState.selectedUnit]().powerPosition or "below"
-                    for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().powerPosition = val
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-            },
+        mod.UFO_UnitSync(rgn, "Bar Position", {
+            key = "powerPosition",
+            default = "below",
+            self = true,
         })
     end
 
@@ -3045,46 +2747,9 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
     -- Fill Opacity sync (right of row 2)
     if not CludesUI._prebuilding then
         local rgn = sharedPowerRow2._rightRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Bar Opacity to all Frames",
-            onClick = function()
-                local val = UNIT_DB_MAP[optionState.selectedUnit]().powerBarOpacity or 100
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if key ~= optionState.selectedUnit then
-                        UNIT_DB_MAP[key]().powerBarOpacity = val
-                    end
-                end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local val = UNIT_DB_MAP[optionState.selectedUnit]().powerBarOpacity or 100
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().powerBarOpacity or 100) ~= val then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    local val = UNIT_DB_MAP[optionState.selectedUnit]().powerBarOpacity or 100
-                    for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().powerBarOpacity = val
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-            },
+        mod.UFO_UnitSync(rgn, "Bar Opacity", {
+            key = "powerBarOpacity",
+            default = 100,
         })
     end
 
@@ -3309,12 +2974,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
             ReloadAndUpdate()
             CludesUI:RefreshPage()
         end
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Bar Background to all Frames",
-            onClick = function()
-                ApplyBgTo(GROUP_UNIT_ORDER)
-            end,
+        mod.UFO_UnitSync(rgn, "Bar Background", {
+            applyTo = ApplyBgTo,
             isSynced = function()
                 local source = UNIT_DB_MAP[optionState.selectedUnit]()
                 local function colEq(a, b)
@@ -3340,19 +3001,6 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
                 end
                 return true
             end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    ApplyBgTo(checkedKeys)
-                end,
-            },
         })
     end
     -- Sync icon: Bar Color (left) -- fill/power color and gradient
@@ -3391,12 +3039,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
             ReloadAndUpdate()
             CludesUI:RefreshPage()
         end
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Bar Color to all Frames",
-            onClick = function()
-                ApplyColorTo(GROUP_UNIT_ORDER)
-            end,
+        mod.UFO_UnitSync(rgn, "Bar Color", {
+            applyTo = ApplyColorTo,
             isSynced = function()
                 local source = UNIT_DB_MAP[optionState.selectedUnit]()
                 local function colEq(a, b)
@@ -3439,19 +3083,6 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
                 end
                 return true
             end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    ApplyColorTo(checkedKeys)
-                end,
-            },
         })
     end
     -- Gradient cog on Bar Color (left region)
@@ -3623,44 +3254,10 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
     -- Text Position sync (left of row 4)
     if not CludesUI._prebuilding then
         local rgn = sharedPowerRow4._leftRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Power Text Position to all Frames",
-            onClick = function()
-                local val = UNIT_DB_MAP[optionState.selectedUnit]().powerPercentText or "none"
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    UNIT_DB_MAP[key]().powerPercentText = val
-                end
-                ReloadAndUpdate()
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local val = UNIT_DB_MAP[optionState.selectedUnit]().powerPercentText or "none"
-                for _, key in ipairs(GROUP_UNIT_ORDER) do
-                    if (UNIT_DB_MAP[key]().powerPercentText or "none") ~= val then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_UNIT_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return optionState.selectedUnit
-                end,
-                onApply = function(checkedKeys)
-                    local val = UNIT_DB_MAP[optionState.selectedUnit]().powerPercentText or "none"
-                    for _, key in ipairs(checkedKeys) do
-                        UNIT_DB_MAP[key]().powerPercentText = val
-                    end
-                    ReloadAndUpdate()
-                    CludesUI:RefreshPage()
-                end,
-            },
+        mod.UFO_UnitSync(rgn, "Power Text Position", {
+            key = "powerPercentText",
+            default = "none",
+            self = true,
         })
     end
     -- Sync icon: Text Color (right of row 4)
@@ -4915,86 +4512,18 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
             -- Sync icons: Class Resource Position (left) and Size (right)
             if not CludesUI._prebuilding then
                 local rgn = row._leftRegion
-                CludesUI.BuildSyncIcon({
-                    region = rgn,
-                    tooltip = "Apply Class Resource Position to all Frames",
-                    onClick = function()
-                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerPosition or "top"
-                        for _, key in ipairs(GROUP_UNIT_ORDER) do
-                            UNIT_DB_MAP[key]().classPowerPosition = val
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                    isSynced = function()
-                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerPosition or "top"
-                        for _, key in ipairs(GROUP_UNIT_ORDER) do
-                            if (UNIT_DB_MAP[key]().classPowerPosition or "top") ~= val then
-                                return false
-                            end
-                        end
-                        return true
-                    end,
-                    flashTargets = function()
-                        return { rgn }
-                    end,
-                    multiApply = {
-                        elementKeys = GROUP_UNIT_ORDER,
-                        elementLabels = SHORT_LABELS,
-                        getCurrentKey = function()
-                            return optionState.selectedUnit
-                        end,
-                        onApply = function(checkedKeys)
-                            local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerPosition or "top"
-                            for _, key in ipairs(checkedKeys) do
-                                UNIT_DB_MAP[key]().classPowerPosition = val
-                            end
-                            ReloadAndUpdate()
-                            CludesUI:RefreshPage()
-                        end,
-                    },
+                mod.UFO_UnitSync(rgn, "Class Resource Position", {
+                    key = "classPowerPosition",
+                    default = "top",
+                    self = true,
                 })
             end
             if not CludesUI._prebuilding then
                 local rgn = row._rightRegion
-                CludesUI.BuildSyncIcon({
-                    region = rgn,
-                    tooltip = "Apply Class Resource Size to all Frames",
-                    onClick = function()
-                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerSize or 8
-                        for _, key in ipairs(GROUP_UNIT_ORDER) do
-                            UNIT_DB_MAP[key]().classPowerSize = val
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                    isSynced = function()
-                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerSize or 8
-                        for _, key in ipairs(GROUP_UNIT_ORDER) do
-                            if (UNIT_DB_MAP[key]().classPowerSize or 8) ~= val then
-                                return false
-                            end
-                        end
-                        return true
-                    end,
-                    flashTargets = function()
-                        return { rgn }
-                    end,
-                    multiApply = {
-                        elementKeys = GROUP_UNIT_ORDER,
-                        elementLabels = SHORT_LABELS,
-                        getCurrentKey = function()
-                            return optionState.selectedUnit
-                        end,
-                        onApply = function(checkedKeys)
-                            local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerSize or 8
-                            for _, key in ipairs(checkedKeys) do
-                                UNIT_DB_MAP[key]().classPowerSize = val
-                            end
-                            ReloadAndUpdate()
-                            CludesUI:RefreshPage()
-                        end,
-                    },
+                mod.UFO_UnitSync(rgn, "Class Resource Size", {
+                    key = "classPowerSize",
+                    default = 8,
+                    self = true,
                 })
             end
 
@@ -5048,44 +4577,10 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
             -- Sync icons: Bar Spacing (left) and Background Color (right)
             if not CludesUI._prebuilding then
                 local rgn = sharedClassResRow3._leftRegion
-                CludesUI.BuildSyncIcon({
-                    region = rgn,
-                    tooltip = "Apply Class Resource Bar Spacing to all Frames",
-                    onClick = function()
-                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerSpacing or 2
-                        for _, key in ipairs(GROUP_UNIT_ORDER) do
-                            UNIT_DB_MAP[key]().classPowerSpacing = val
-                        end
-                        ReloadAndUpdate()
-                        CludesUI:RefreshPage()
-                    end,
-                    isSynced = function()
-                        local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerSpacing or 2
-                        for _, key in ipairs(GROUP_UNIT_ORDER) do
-                            if (UNIT_DB_MAP[key]().classPowerSpacing or 2) ~= val then
-                                return false
-                            end
-                        end
-                        return true
-                    end,
-                    flashTargets = function()
-                        return { rgn }
-                    end,
-                    multiApply = {
-                        elementKeys = GROUP_UNIT_ORDER,
-                        elementLabels = SHORT_LABELS,
-                        getCurrentKey = function()
-                            return optionState.selectedUnit
-                        end,
-                        onApply = function(checkedKeys)
-                            local val = UNIT_DB_MAP[optionState.selectedUnit]().classPowerSpacing or 2
-                            for _, key in ipairs(checkedKeys) do
-                                UNIT_DB_MAP[key]().classPowerSpacing = val
-                            end
-                            ReloadAndUpdate()
-                            CludesUI:RefreshPage()
-                        end,
-                    },
+                mod.UFO_UnitSync(rgn, "Class Resource Bar Spacing", {
+                    key = "classPowerSpacing",
+                    default = 2,
+                    self = true,
                 })
             end
             if not CludesUI._prebuilding then

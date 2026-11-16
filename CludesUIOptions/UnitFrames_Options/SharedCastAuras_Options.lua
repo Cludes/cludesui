@@ -921,12 +921,8 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
             end
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Bar Background to all Frames",
-                onClick = function()
-                    ApplyCastBgTo(GROUP_UNIT_ORDER)
-                end,
+            mod.UFO_UnitSync(rgn, "Bar Background", {
+                applyTo = ApplyCastBgTo,
                 isSynced = function()
                     local source = UNIT_DB_MAP[optionState.selectedUnit]()
                     local function colEq(a, b)
@@ -949,19 +945,6 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     end
                     return true
                 end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_UNIT_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return optionState.selectedUnit
-                    end,
-                    onApply = function(checkedKeys)
-                        ApplyCastBgTo(checkedKeys)
-                    end,
-                },
             })
         end
 

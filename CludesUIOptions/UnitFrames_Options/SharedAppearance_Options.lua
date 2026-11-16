@@ -39,8 +39,9 @@ end
 -- function for a default that is looked up). opts.self also writes the
 -- selected unit itself (pinning its default). opts.units narrows the frames
 -- (all main frames by default). opts.after runs once the values moved (by
--- default the frames reload and the page repaints). Shared by every Unit
--- Frames options file.
+-- default the frames reload and the page repaints). A setting that already
+-- has its own mover passes opts.applyTo(list), which does the whole copy and
+-- repaint, and opts.isSynced(). Shared by every Unit Frames options file.
 function mod.UFO_UnitSync(rgn, label, opts)
     local env = mod._UFO_OptEnv
     local units, unitDB, state = opts.units or env.GROUP_UNIT_ORDER, env.UNIT_DB_MAP, env.optState
@@ -67,28 +68,29 @@ function mod.UFO_UnitSync(rgn, label, opts)
         end
     end
     -- The menu never lists the selected unit, so only the All link can reach it.
-    local function Copy(list, includeSelf)
-        local self = state.selectedUnit
-        local from = unitDB[self]()
-        for _, unit in ipairs(list) do
-            if includeSelf or unit ~= self then
-                copy(unitDB[unit](), from)
+    local Copy = opts.applyTo
+        or function(list, includeSelf)
+            local self = state.selectedUnit
+            local from = unitDB[self]()
+            for _, unit in ipairs(list) do
+                if includeSelf or unit ~= self then
+                    copy(unitDB[unit](), from)
+                end
+            end
+            if opts.after then
+                opts.after(list)
+            else
+                env.ReloadAndUpdate()
+                CludesUI:RefreshPage()
             end
         end
-        if opts.after then
-            opts.after(list)
-        else
-            env.ReloadAndUpdate()
-            CludesUI:RefreshPage()
-        end
-    end
     CludesUI.BuildSyncIcon({
         region = rgn,
         tooltip = "Apply " .. label .. " to all Frames",
         onClick = function()
             Copy(units, opts.self)
         end,
-        isSynced = function()
+        isSynced = opts.isSynced or function()
             local from = unitDB[state.selectedUnit]()
             for _, unit in ipairs(units) do
                 if not same(unitDB[unit](), from) then
