@@ -2812,9 +2812,9 @@ end
 -- checkbox + confirmation), because applying it overwrites the recipient's
 -- settings across ALL of their profiles.
 --
--- CO-MAINTAIN with the module onReset key list in
--- CludesUIBlizzardSkin/CUI_BlizzardSkin_Options.lua: a new account-global
--- setting added to either tab must be added here too or it will not travel.
+-- The one list of these settings: a new account-global setting on either tab
+-- goes here, so it travels in exports AND the Window Skins reset clears it
+-- (that reset reads CludesUI.BLIZZ_SKIN_GLOBAL_KEYS).
 --
 -- Deliberately absent (state, not settings): lfgSavedRoles (the player's saved LFG
 -- roles), charSheetCollapsedSections (transient UI state), characterFramePos /
@@ -3035,6 +3035,9 @@ do
         "friendsListCard",
     })
 end
+-- The Window Skins module's reset clears this same list (plus the state
+-- above that it leaves out), so a key added here resets too.
+CludesUI.BLIZZ_SKIN_GLOBAL_KEYS = BLIZZ_SKIN_GLOBAL_KEYS
 
 -- Snapshot the bundle for export. nil-valued keys are simply absent from the
 -- snapshot; the import side clears keys absent from the bundle, so the

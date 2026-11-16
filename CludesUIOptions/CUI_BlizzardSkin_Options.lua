@@ -6739,238 +6739,41 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             end
             if CludesUIDB then
-                -- NOTE: these account-global keys also travel in profile exports via
-                -- BLIZZ_SKIN_GLOBAL_KEYS in CludesUI_Profiles.lua (the "Window &
-                -- Tooltip Skins" include). A new account-global setting on the Window
-                -- Skins or Tooltips, Menus & Popups tab must be added to BOTH lists.
-                CludesUIDB.thirdPartySkinsOff = nil
-                CludesUIDB.thirdPartySkinAddons = nil
-                CludesUIDB.customTooltips = nil
-                CludesUIDB.reskinPopupsMenus = nil
-                CludesUIDB.accentReskinElements = nil
-                CludesUIDB.tooltipPlayerTitles = nil
-                CludesUIDB.tooltipFontScale = nil
-                CludesUIDB.tooltipMythicScore = nil
-                CludesUIDB.tooltipAnchorCursor = nil
-                CludesUIDB.tooltipCursorPosition = nil
-                CludesUIDB.tooltipCursorOffsetX = nil
-                CludesUIDB.tooltipCursorOffsetY = nil
-                CludesUIDB.tooltipFixedPos = nil -- stale key from the account-global build
-                -- Per-profile fixed tooltip position: clearing it re-seeds from
-                -- Blizzard's CURRENT Edit Mode spot on the next tooltip show.
-                do
-                    local prof = CludesUI.GetActiveProfileData()
-                    if prof then
-                        prof.tooltipFixedPos = nil
-                    end
+                -- Every setting on the two tabs: the export bundle's own list
+                -- (CludesUI_Profiles.lua), so a setting added there resets too.
+                for _, k in ipairs(CludesUI.BLIZZ_SKIN_GLOBAL_KEYS) do
+                    CludesUIDB[k] = nil
                 end
-                CludesUIDB.uberTooltips = nil
-                CludesUIDB.uberTooltipsManual = nil
-                CludesUIDB.tooltipHideHealthStrip = nil
-                CludesUIDB.tooltipHealthStripTexture = nil
-                CludesUIDB.tooltipHealthStripHeight = nil
-                CludesUIDB.showItemMaxStacks = nil
-                CludesUIDB.itemStackModifier = nil
-                CludesUIDB.tooltipShowGuildRank = nil
-                CludesUIDB.tooltipShowMount = nil
-                CludesUIDB.tooltipShowTarget = nil
-                CludesUIDB.tooltipLevelColor = nil
-                CludesUIDB.tooltipClassLineColor = nil
-                CludesUIDB.tooltipFactionColor = nil
-                CludesUIDB.tooltipGuildmateColor = nil
-                CludesUIDB.tooltipCompactLevel = nil
-                CludesUIDB.tooltipAFKTag = nil
-                CludesUIDB.tooltipShowBuffs = nil
-                CludesUIDB.tooltipBuffPosition = nil
-                CludesUIDB.tooltipBuffSize = nil
-                CludesUIDB.tooltipBuffsPerRow = nil
-                CludesUIDB.tooltipBuffOffsetX = nil
-                CludesUIDB.tooltipBuffOffsetY = nil
-                if CludesUI._applyTooltipBuffs then
-                    CludesUI._applyTooltipBuffs()
-                end
-                CludesUIDB.reskinQueuePopup = nil
-                CludesUIDB.resurrectAcceptGlow = nil
-                -- Clear any glow on a currently visible popup (the setting
-                -- just went nil = off; hooks stay installed but inert).
-                if CludesUI._EnsureResurrectGlow then
-                    CludesUI._EnsureResurrectGlow()
-                end
-                CludesUIDB.reskinGameMenu = nil
-                CludesUIDB.popupMenuButtonBackgroundColor = nil
-                CludesUIDB.popupMenuButtonTextColorMode = nil
-                CludesUIDB.popupMenuButtonTextColor = nil
-                for _, prefixText in ipairs({
-                    "popupMenu",
-                    "popupMenuButton",
-                    "tooltip",
-                    "lootWindow",
-                    "lootIcon",
-                }) do
-                    for _, suffix in ipairs({
-                        "BorderTexture",
-                        "BorderThickness",
-                        "BorderThicknessPx",
-                        "BorderColor",
-                        "BorderColorMode",
-                        "BorderOpacity",
-                        "BorderOffsetX",
-                        "BorderOffsetY",
-                        "BorderShiftX",
-                        "BorderShiftY",
-                        "BorderBehind",
-                    }) do
-                        CludesUIDB[prefixText .. suffix] = nil
-                    end
-                end
-                -- Legacy numeric key the tooltip Border Size still falls back
-                -- to when tooltipBorderThickness is unset.
-                CludesUIDB.tooltipBorderSize = nil
-                if CludesUI.SyncAuraTooltipSkin then
-                    CludesUI.SyncAuraTooltipSkin()
-                end
-                CludesUIDB.reskinGreatVault = nil
-                CludesUIDB.reskinLFGMenu = nil
-                CludesUIDB.showQueueTimer = nil
-                CludesUIDB.queueTimerTextColor = nil
-                CludesUIDB.queueTimerTextSize = nil
-                CludesUIDB.queueTimerBarHeight = nil
-                CludesUIDB.queueTimerTextOffsetY = nil
-                CludesUIDB.blizzWindowSkinStyles = nil
-                CludesUIDB.blizzWindowModernBG = nil
-                CludesUIDB.blizzWindowModernDefault = nil
-                CludesUIDB.blizzWinAccentBar = nil
-                CludesUIDB.blizzWinBarFill = nil
-                CludesUIDB.blizzWinLinks = nil
-                CludesUIDB.reskinCollections = nil
-                CludesUIDB.reskinPlayerSpells = nil
-                CludesUIDB.reskinAdventureGuide = nil
-                CludesUIDB.reskinProfessionsBook = nil
-                CludesUIDB.reskinGuild = nil
-                CludesUIDB.reskinCalendar = nil
-                CludesUIDB.reskinAchievements = nil
-                CludesUIDB.reskinMail = nil
-                CludesUIDB.reskinCatalyst = nil
-                CludesUIDB.reskinSocket = nil
-                CludesUIDB.reskinItemUpgrade = nil
-                CludesUIDB.reskinLoot = nil
-                CludesUIDB.lootIconBorder = nil
-                CludesUIDB.lootWindowBorderQualityColor = nil
-                CludesUIDB.reskinLootToast = nil
-                CludesUIDB.reskinBNetToast = nil
-                CludesUIDB.lootToastQualityStrip = nil
-                CludesUIDB.lootToastQualityStripMoney = nil
-                CludesUIDB.lootToastScale = nil
-                CludesUIDB.reskinLootRoll = nil
-                CludesUIDB.reskinLootHistory = nil
-                CludesUIDB.reskinGroupInvite = nil
-                CludesUIDB.reskinReadyCheck = nil
-                CludesUIDB.reskinMicroMenu = nil
-                CludesUIDB.reskinBagBar = nil
-                CludesUIDB.reskinLegacySystem = nil
-                CludesUIDB.reskinHousing = nil
-                CludesUIDB.reskinProfessions = nil
-                CludesUIDB.reskinWorldMap = nil
-                CludesUIDB.reskinDressUp = nil
-                CludesUIDB.reskinTransmog = nil
-                CludesUIDB.reskinMerchant = nil
-                CludesUIDB.reskinAuctionHouse = nil
-                CludesUIDB.reskinMacros = nil
-                CludesUIDB.reskinSettings = nil
-                CludesUIDB.reskinAddonList = nil
-                CludesUIDB.reskinCraftOrders = nil
-                CludesUIDB.reskinTrainer = nil
-                CludesUIDB.reskinGossip = nil
-                CludesUIDB.reskinQuest = nil
-                CludesUIDB.reskinInspectRecipe = nil
-                CludesUIDB.reskinDelves = nil
-                CludesUIDB.reskinSocialUI = nil
-                CludesUIDB.reskinQueueStatus = nil
-                CludesUIDB.reskinDelvePicker = nil
-                CludesUIDB.reskinPlayerChoice = nil
-                CludesUIDB.reskinTrade = nil
-                CludesUIDB.reskinFlagCarriers = nil
-                CludesUIDB.windowSkinsStockSeeded = nil
-                CludesUIDB.windowSkinStyleSlots = nil
-                CludesUIDB.reskinWidgetBars = nil
-                CludesUIDB.widgetBarMinSize = nil
-                CludesUIDB.reskinExtraActionButton = nil
-                CludesUIDB.lfgRememberRoles = nil
-                CludesUIDB.lfgSavedRoles = nil
-                CludesUIDB.showMythicRating = nil
-                CludesUIDB.showPvpItemLevel = nil
-                CludesUIDB.charSheetSeasonPanel = nil
-                CludesUIDB.charSheetSeasonVault = nil
-                CludesUIDB.charSheetHideSlotFlyoutArrows = nil
-                CludesUIDB.flyoutItemLevels = nil
-                CludesUIDB.flyoutItemStats = nil
-                CludesUIDB.charSheetItemStats = nil
-                CludesUIDB.flyoutItemStatsTertiary = nil
-                CludesUIDB.charSheetItemStatsTertiary = nil
-                CludesUIDB.charSheetSocketPanelStats = nil
-                CludesUIDB.showCharSheetDurability = nil
-                CludesUIDB.charSheetDurabilityLocation = nil
-                CludesUIDB.charSheetDurabilityShowLabel = nil
-                CludesUIDB.showSecondaryRaw = nil
-                CludesUIDB.showSecondaryBoth = nil
-                CludesUIDB.showTertiaryRaw = nil
-                CludesUIDB.showTertiaryBoth = nil
-                CludesUIDB.showAdjustedStats = nil
-                CludesUIDB.showManaStat = nil
-                CludesUIDB.highlightSecondaryItems = nil
-                CludesUIDB.highlightTertiaryItems = nil
-                CludesUIDB.statCategoryColors = nil
-                CludesUIDB.statSectionsOrder = nil
-                CludesUIDB.charSheetCollapsedSections = nil
-                CludesUIDB.charSheetBlizzColors = nil
-                CludesUIDB.inspectEnchantNames = nil
-                CludesUIDB.inspectEnchantSize = nil
-                -- The rest of what the export bundle carries for these two tabs
-                -- (BLIZZ_SKIN_GLOBAL_KEYS): card and tooltip settings, defaults too.
+                -- Then the state the bundle leaves out (the Mail card's roster of
+                -- the player's own characters stays).
                 for _, k in ipairs({
-                    "themedCharacterSheet",
-                    "themedInspectSheet",
-                    "statCategoryUseColor",
-                    "showItemLevel",
-                    "showUpgradeTrack",
-                    "showGems",
-                    "showEnchants",
-                    "charSheetSocketPanel",
-                    "charSheetIconZoom",
-                    "charSheetEnchantNames",
-                    "charSheetEnchantSize",
-                    "inspectShowEnchants",
-                    "inspectShowItemLevel",
-                    "inspectShowUpgradeTrack",
-                    "merchantShowAsList",
-                    "merchantListRowHeight",
-                    "merchantShowItemLevel",
-                    "merchantBulkBuy",
-                    "merchantExpand",
-                    "merchantCols",
-                    "merchantRows",
-                    "tooltipItemLevel",
-                    "tooltipShowMode",
-                    "tooltipShowModifier",
-                    "tooltipGrowthDirection",
-                    "tooltipBgColor",
-                    "tooltipBgOpacity",
-                    "showSpellID",
-                    "spellIDModifier",
-                    "showIconID",
-                    "showItemID",
-                    "friendsListCard",
-                    "mailAltList",
-                    "mailAltListMax",
-                    "mailAltListMinLevel",
-                    "mailAltListSort",
-                    -- Shown Characters (the roster itself is recorded data, not a setting)
+                    "lfgSavedRoles",
+                    "charSheetCollapsedSections",
+                    "characterFramePos",
+                    "friendsFramePos",
+                    "windowSkinsStockSeeded",
                     "mailAltHidden",
+                    "tooltipFixedPos", -- stale key from the account-global build
+                    "blizzWindowModernBG", -- dead key
                 }) do
                     CludesUIDB[k] = nil
                 end
-                CludesUIDB.characterFramePos = nil
-                CludesUIDB.friendsFramePos = nil
+                -- The per-profile fixed tooltip position: cleared, it re-seeds from
+                -- Blizzard's CURRENT Edit Mode spot on the next tooltip show.
+                local prof = CludesUI.GetActiveProfileData()
+                if prof then
+                    prof.tooltipFixedPos = nil
+                end
+                if CludesUI._applyTooltipBuffs then
+                    CludesUI._applyTooltipBuffs()
+                end
+                -- Any glow on a popup on screen goes (the hooks stay, inert).
+                if CludesUI._EnsureResurrectGlow then
+                    CludesUI._EnsureResurrectGlow()
+                end
+                if CludesUI.SyncAuraTooltipSkin then
+                    CludesUI.SyncAuraTooltipSkin()
+                end
             end
             if CludesUI._applyTooltipCursorAnchor then
                 CludesUI._applyTooltipCursorAnchor()
