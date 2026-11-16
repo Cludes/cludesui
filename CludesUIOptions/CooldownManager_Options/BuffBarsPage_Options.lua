@@ -2185,33 +2185,32 @@ local function InitBuffBarsPage(
 
                 local mH = 4
 
-                -- Drag-and-drop: bar rows can be dragged onto another group's section (or
-                -- independent) to move them; zones collect every row of a group so the whole
-                -- section is a drop target. Inside the bar's own group the drop reorders
-                -- instead, at the gap a green insertion line marks. Drag flag declared
-                -- before any OnUpdate reads it.
+                -- Drag-and-drop: a bar row dragged onto another group's section (or
+                -- the independent one) moves there; a zone holds every row of a
+                -- section, so the whole section takes the drop. Inside the bar's own
+                -- group the drop reorders instead, at the gap a green line marks. The
+                -- drag flag exists before any OnUpdate reads it.
                 local dropZones = {} -- { gid, label, frames = {rows...}, rows = {{frame, idx}...}, head, tail }
                 local dragState = { idx = nil, name = nil }
                 dropMenu._dragActive = false
 
                 local function HoveredZone()
-                    for _, z in ipairs(dropZones) do
-                        for _, f in ipairs(z.frames) do
+                    for _, zone in ipairs(dropZones) do
+                        for _, f in ipairs(zone.frames) do
                             if f and f:IsMouseOver() then
-                                return z, f
+                                return zone, f
                             end
                         end
                     end
-                    return nil
                 end
 
-                -- Over a row of the dragged bar's own group: the bar's new place among
-                -- the members and the gap to mark (header = before the first bar, add
-                -- row = after the last, a bar row = the half the cursor is in). nil when
-                -- the drop would leave the order as it is.
-                local function ReorderTarget(z, f)
-                    local rowList = z and z.rows
-                    if not (rowList and f and dragState.idx) then
+                -- Over a row of the dragged bar's own group: its new place among the
+                -- members and the gap to mark (the header: before the first bar; the
+                -- add row: after the last; a bar row: the half the cursor is in).
+                -- nil when the drop would leave the order as it is.
+                local function ReorderTarget(zone, over)
+                    local rowList = zone and zone.rows
+                    if not (rowList and over and dragState.idx) then
                         return nil
                     end
                     local from, gap
@@ -2219,15 +2218,15 @@ local function InitBuffBarsPage(
                         if r.idx == dragState.idx then
                             from = k
                         end
-                        if r.frame == f then
+                        if r.frame == over then
                             local _, cy = GetCursorPosition()
-                            local mid = (f:GetTop() + f:GetBottom()) / 2
-                            gap = (cy / f:GetEffectiveScale() > mid) and k or k + 1
+                            local mid = (over:GetTop() + over:GetBottom()) / 2
+                            gap = (cy / over:GetEffectiveScale() > mid) and k or k + 1
                         end
                     end
-                    if f == z.head then
+                    if over == zone.head then
                         gap = 1
-                    elseif f == z.tail then
+                    elseif over == zone.tail then
                         gap = #rowList + 1
                     end
                     if not (from and gap) or gap == from or gap == from + 1 then
@@ -2238,8 +2237,8 @@ local function InitBuffBarsPage(
 
                 local insLine = inner:CreateTexture(nil, "OVERLAY", nil, 7)
                 insLine:SetHeight(2)
-                local ACC = CludesUI.CLUDES_GREEN
-                insLine:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.9)
+                local green = CludesUI.CLUDES_GREEN
+                insLine:SetColorTexture(green.r, green.g, green.b, 0.9)
                 insLine:Hide()
                 local function ShowInsLine(rowList, gap)
                     local r = rowList[gap] or rowList[#rowList]
@@ -2250,47 +2249,51 @@ local function InitBuffBarsPage(
                     insLine:Show()
                 end
 
+                -- The ghost under the cursor names the bar, and where it would go:
+                -- accent while the drop would reorder or move it ("bar  >  group").
                 local dragGhost
+                local function GhostText(text, accent)
+                    dragGhost._lbl:SetText(text or "")
+                    if accent then
+                        dragGhost._lbl:SetTextColor(ar, ag, ab, 1)
+                    else
+                        dragGhost._lbl:SetTextColor(1, 1, 1, 0.8)
+                    end
+                end
                 local function GhostUpdate()
                     local cx, cy = GetCursorPosition()
                     local sc = UIParent:GetEffectiveScale()
                     dragGhost:ClearAllPoints()
                     dragGhost:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", cx / sc + 14, cy / sc - 22)
-                    local z, f = HoveredZone()
-                    local place, gap = ReorderTarget(z, f)
+                    local zone, over = HoveredZone()
+                    local place, gap = ReorderTarget(zone, over)
                     if place then
-                        ShowInsLine(z.rows, gap)
-                        dragGhost._lbl:SetText(dragState.name or "")
-                        dragGhost._lbl:SetTextColor(ar, ag, ab, 1)
-                        return
+                        ShowInsLine(zone.rows, gap)
+                        return GhostText(dragState.name, true)
                     end
                     insLine:Hide()
-                    if z and dragState.idx then
-                        local t2 = mod.GetTrackedBuffBars()
-                        local c2 = t2.bars and t2.bars[dragState.idx]
-                        if c2 and mod.TBBBarGroupID(c2) ~= z.gid then
-                            dragGhost._lbl:SetText(dragState.name .. "  >  " .. z.label)
-                            dragGhost._lbl:SetTextColor(ar, ag, ab, 1)
-                            return
+                    if zone and dragState.idx then
+                        local bars = mod.GetTrackedBuffBars().bars
+                        local dragged = bars and bars[dragState.idx]
+                        if dragged and mod.TBBBarGroupID(dragged) ~= zone.gid then
+                            return GhostText(dragState.name .. "  >  " .. zone.label, true)
                         end
                     end
-                    dragGhost._lbl:SetText(dragState.name or "")
-                    dragGhost._lbl:SetTextColor(1, 1, 1, 0.8)
+                    GhostText(dragState.name, false)
                 end
+                -- One ghost frame for the session, dressed again by the first drag of each open.
                 local function EnsureGhost()
                     if dragGhost then
                         return dragGhost
                     end
-                    -- One ghost frame for the session, dressed again by the first
-                    -- drag of each menu open.
                     dragGhost = PoolKept(mod, "tbbDragGhost", "Frame", UIParent)
                     dragGhost:SetFrameStrata("TOOLTIP")
                     dragGhost:SetFrameLevel(500)
                     dragGhost:SetSize(10, 20)
-                    local gl = dragGhost:CreateFontString(nil, "OVERLAY")
-                    gl:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-                    gl:SetPoint("BOTTOMLEFT", dragGhost, "BOTTOMLEFT", 0, 0)
-                    dragGhost._lbl = gl
+                    local label = dragGhost:CreateFontString(nil, "OVERLAY")
+                    label:SetFont(FONT_PATH, 11, GetCDMOptOutline())
+                    label:SetPoint("BOTTOMLEFT", dragGhost, "BOTTOMLEFT", 0, 0)
+                    dragGhost._lbl = label
                     dragGhost:Hide()
                     return dragGhost
                 end
@@ -2793,33 +2796,33 @@ local function InitBuffBarsPage(
                     Hint("Right-click a bar to set its sounds")
                 end
 
+                -- A tall menu scrolls (wheel, 30 a notch) within MENU_MAX_H.
                 local totalH = mH + 4
                 inner:SetHeight(totalH)
                 if totalH > MENU_MAX_H then
                     dropMenu:SetHeight(MENU_MAX_H)
-                    local scrollFrame = CreateFrame("ScrollFrame", nil, dropMenu)
-                    scrollFrame:SetPoint("TOPLEFT", 0, -1)
-                    scrollFrame:SetPoint("BOTTOMRIGHT", 0, 1)
-                    scrollFrame:SetFrameLevel(dropMenu:GetFrameLevel() + 1)
-                    scrollFrame:EnableMouseWheel(true)
-                    scrollFrame:SetScrollChild(inner)
-                    local scrollPos = 0
-                    local maxScroll = totalH - MENU_MAX_H
-                    scrollFrame:SetScript("OnMouseWheel", function(_, delta)
-                        scrollPos = math.max(0, math.min(maxScroll, scrollPos - delta * 30))
-                        scrollFrame:SetVerticalScroll(scrollPos)
+                    local scroll = CreateFrame("ScrollFrame", nil, dropMenu)
+                    scroll:SetPoint("TOPLEFT", 0, -1)
+                    scroll:SetPoint("BOTTOMRIGHT", 0, 1)
+                    scroll:SetFrameLevel(dropMenu:GetFrameLevel() + 1)
+                    scroll:EnableMouseWheel(true)
+                    scroll:SetScrollChild(inner)
+                    local pos, maxScroll = 0, totalH - MENU_MAX_H
+                    scroll:SetScript("OnMouseWheel", function(_, delta)
+                        pos = math.max(0, math.min(maxScroll, pos - delta * 30))
+                        scroll:SetVerticalScroll(pos)
                     end)
                 else
                     dropMenu:SetHeight(totalH)
                 end
+                -- A press outside closes it, except mid-drag (a drag leaves the menu
+                -- with the button held) and in the row's sound menu or its lists.
                 dropMenu:SetScript("OnUpdate", function(m)
-                    -- Never dismiss mid-drag: dragging naturally leaves the menu bounds with the button held down.
                     if m._dragActive then
                         return
                     end
-                    -- A click in the row's sound menu or its flyouts is not a click outside.
-                    local snd = ddBtn._tbbSndMenu
-                    if snd and snd:IsShown() and snd._overAny and snd._overAny() then
+                    local sound = ddBtn._tbbSndMenu
+                    if sound and sound:IsShown() and sound._overAny and sound._overAny() then
                         return
                     end
                     if
@@ -2842,21 +2845,30 @@ local function InitBuffBarsPage(
                 ddMenu = dropMenu
             end
 
+            -- The button lights while hovered or while its menu is open.
+            local function Lit(on)
+                ddLbl:SetAlpha(on and mTxtHA or mTxtA)
+                ddBrd:SetColor(1, 1, 1, on and mBrdHA or mBrdA)
+                ddBg:SetColorTexture(mBgR, mBgG, mBgB, on and mBgHA or mBgA)
+            end
+            local function HideMenus()
+                if ddMenu then
+                    ddMenu:Hide()
+                end
+                if ddBtn._tbbSndMenu then
+                    ddBtn._tbbSndMenu:Hide()
+                end
+            end
             ddBtn:SetScript("OnEnter", function()
-                ddLbl:SetAlpha(mTxtHA)
-                ddBrd:SetColor(1, 1, 1, mBrdHA)
-                ddBg:SetColorTexture(mBgR, mBgG, mBgB, mBgHA)
+                Lit(true)
             end)
             ddBtn:SetScript("OnLeave", function()
-                if ddMenu and ddMenu:IsShown() then
-                    return
+                if not (ddMenu and ddMenu:IsShown()) then
+                    Lit(false)
                 end
-                ddLbl:SetAlpha(mTxtA)
-                ddBrd:SetColor(1, 1, 1, mBrdA)
-                ddBg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
             end)
             ddBtn:SetScript("OnClick", function()
-                -- An open buff picker (e.g. from "+ Add Bar to Group") yields to the management menu.
+                -- An open buff picker (e.g. from "+ Add Bar to Group") yields to this menu.
                 if _tbbSpellPickerMenu and _tbbSpellPickerMenu:IsShown() then
                     _tbbSpellPickerMenu:Hide()
                 end
@@ -2866,18 +2878,10 @@ local function InitBuffBarsPage(
                     BuildDDMenu()
                 end
             end)
-            ddBtn:HookScript("OnHide", function()
-                if ddMenu then
-                    ddMenu:Hide()
-                end
-                if ddBtn._tbbSndMenu then
-                    ddBtn._tbbSndMenu:Hide()
-                end
-            end)
+            ddBtn:HookScript("OnHide", HideMenus)
 
-            -- Keep the label current when settings refresh in place (e.g. a group rename commits without a full page rebuild).
+            -- The label follows in-place refreshes (a group rename commits without a page rebuild).
             CludesUI.RegisterWidgetRefresh(UpdateDDLabel)
-
             _tbbDDBtn = ddBtn
             return ddBtn
         end
