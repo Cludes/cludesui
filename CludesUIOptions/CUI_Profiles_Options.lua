@@ -1912,7 +1912,6 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                         itm = CreateFrame("Button", nil, menu)
                         itm:SetHeight(26)
                         itm:SetFrameLevel(menu:GetFrameLevel() + 1)
-
                         local lbl = itm:CreateFontString(nil, "OVERLAY")
                         lbl:SetFont(FONT, 13, CludesUI.GetFontOutlineFlag())
                         lbl:SetPoint("LEFT", itm, "LEFT", 10, 0)
@@ -1920,119 +1919,69 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                         lbl:SetJustifyH("LEFT")
                         lbl:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
                         itm._lbl = lbl
-
                         local hl = itm:CreateTexture(nil, "ARTWORK")
                         hl:SetAllPoints()
                         hl:SetColorTexture(1, 1, 1, 1)
                         hl:SetAlpha(0)
                         itm._hl = hl
 
-                        local xBtn = CreateFrame("Button", nil, itm)
-                        xBtn:SetSize(X_SZ, X_SZ)
-                        xBtn:SetPoint("RIGHT", itm, "RIGHT", -8, 0)
-                        xBtn:SetFrameLevel(itm:GetFrameLevel() + 2)
-                        local xIcon = xBtn:CreateTexture(nil, "OVERLAY")
-                        xIcon:SetAllPoints()
-                        if xIcon.SetSnapToPixelGrid then
-                            xIcon:SetSnapToPixelGrid(false)
-                            xIcon:SetTexelSnappingBias(0)
+                        -- Delete, Rename and Keybind icons at the right edge.
+                        local icons = {}
+                        local function Icon(file, anchor, rel, x)
+                            local b = CreateFrame("Button", nil, itm)
+                            b:SetSize(X_SZ, X_SZ)
+                            b:SetPoint("RIGHT", anchor, rel, x, 0)
+                            b:SetFrameLevel(itm:GetFrameLevel() + 2)
+                            local tex = b:CreateTexture(nil, "OVERLAY")
+                            tex:SetAllPoints()
+                            Unsnapped(tex)
+                            tex:SetTexture(MEDIA .. "icons\\" .. file)
+                            b:SetAlpha(0.4)
+                            icons[#icons + 1] = b
+                            return b
                         end
-                        xIcon:SetTexture(MEDIA .. "icons\\cui-close.png")
-                        xBtn:SetAlpha(0.4)
-                        itm._xBtn = xBtn
+                        local xBtn = Icon("cui-close.png", itm, "RIGHT", -8)
+                        local editBtn = Icon("cui-edit.png", xBtn, "LEFT", -4)
+                        local kbBtnI = Icon("cui-keybind-2.png", editBtn, "LEFT", -4)
+                        itm._xBtn, itm._editBtn, itm._kbBtn = xBtn, editBtn, kbBtnI
 
-                        local editBtn = CreateFrame("Button", nil, itm)
-                        editBtn:SetSize(X_SZ, X_SZ)
-                        editBtn:SetPoint("RIGHT", xBtn, "LEFT", -4, 0)
-                        editBtn:SetFrameLevel(itm:GetFrameLevel() + 2)
-                        local editIcon = editBtn:CreateTexture(nil, "OVERLAY")
-                        editIcon:SetAllPoints()
-                        if editIcon.SetSnapToPixelGrid then
-                            editIcon:SetSnapToPixelGrid(false)
-                            editIcon:SetTexelSnappingBias(0)
-                        end
-                        editIcon:SetTexture(MEDIA .. "icons\\cui-edit.png")
-                        editBtn:SetAlpha(0.4)
-                        itm._editBtn = editBtn
-
-                        local kbBtnI = CreateFrame("Button", nil, itm)
-                        kbBtnI:SetSize(X_SZ, X_SZ)
-                        kbBtnI:SetPoint("RIGHT", editBtn, "LEFT", -4, 0)
-                        kbBtnI:SetFrameLevel(itm:GetFrameLevel() + 2)
-                        local kbIconI = kbBtnI:CreateTexture(nil, "OVERLAY")
-                        kbIconI:SetAllPoints()
-                        if kbIconI.SetSnapToPixelGrid then
-                            kbIconI:SetSnapToPixelGrid(false)
-                            kbIconI:SetTexelSnappingBias(0)
-                        end
-                        kbIconI:SetTexture(MEDIA .. "icons\\cui-keybind-2.png")
-                        kbBtnI:SetAlpha(0.4)
-                        itm._kbBtn = kbBtnI
-
-                        local function IsOverInlineBtn()
+                        -- The row lights while the mouse is on it or on one of its
+                        -- icons (the icon under the mouse brightest), and dims
+                        -- back to its resting look (selected or not) once off all.
+                        local function OverIcon()
                             return xBtn:IsMouseOver() or editBtn:IsMouseOver() or kbBtnI:IsMouseOver()
                         end
-
-                        local function SetAllInlineAlpha(a)
-                            xBtn:SetAlpha(a)
-                            editBtn:SetAlpha(a)
-                            kbBtnI:SetAlpha(a)
+                        local function IconAlpha(a)
+                            for _, b in ipairs(icons) do
+                                b:SetAlpha(a)
+                            end
                         end
-
-                        itm:SetScript("OnEnter", function()
+                        itm._light = function()
                             lbl:SetTextColor(1, 1, 1, 1)
                             hl:SetAlpha(CludesUI.DD_ITEM_HL_A)
-                            SetAllInlineAlpha(0.8)
-                        end)
-                        itm:SetScript("OnLeave", function()
-                            if IsOverInlineBtn() then
-                                return
-                            end
+                            IconAlpha(0.8)
+                        end
+                        itm._dim = function()
                             lbl:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
                             hl:SetAlpha(itm._isSel and CludesUI.DD_ITEM_SEL_A or 0)
-                            SetAllInlineAlpha(0.4)
-                        end)
-
-                        local function InlineBtnEnter(self)
-                            lbl:SetTextColor(1, 1, 1, 1)
-                            hl:SetAlpha(CludesUI.DD_ITEM_HL_A)
-                            SetAllInlineAlpha(0.8)
-                            self:SetAlpha(1)
+                            IconAlpha(0.4)
                         end
-                        local function InlineBtnLeave(hoveredSelf)
-                            if itm:IsMouseOver() or IsOverInlineBtn() then
-                                hoveredSelf:SetAlpha(0.8)
-                                return
-                            end
-                            lbl:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-                            hl:SetAlpha(itm._isSel and CludesUI.DD_ITEM_SEL_A or 0)
-                            SetAllInlineAlpha(0.4)
+                        itm._overIcon = OverIcon
+                        for b, tip in pairs({ [xBtn] = "Delete", [editBtn] = "Rename", [kbBtnI] = "Keybind" }) do
+                            b:SetScript("OnEnter", function(self)
+                                itm._light()
+                                self:SetAlpha(1)
+                                CludesUI.ShowWidgetTooltip(self, CludesUI.L(tip))
+                            end)
+                            b:SetScript("OnLeave", function(self)
+                                if itm:IsMouseOver() or OverIcon() then
+                                    self:SetAlpha(0.8)
+                                else
+                                    itm._dim()
+                                end
+                                CludesUI.HideWidgetTooltip()
+                            end)
                         end
-
-                        xBtn:SetScript("OnEnter", function(self)
-                            InlineBtnEnter(self)
-                            CludesUI.ShowWidgetTooltip(self, CludesUI.L("Delete"))
-                        end)
-                        xBtn:SetScript("OnLeave", function(self)
-                            InlineBtnLeave(self)
-                            CludesUI.HideWidgetTooltip()
-                        end)
-                        editBtn:SetScript("OnEnter", function(self)
-                            InlineBtnEnter(self)
-                            CludesUI.ShowWidgetTooltip(self, CludesUI.L("Rename"))
-                        end)
-                        editBtn:SetScript("OnLeave", function(self)
-                            InlineBtnLeave(self)
-                            CludesUI.HideWidgetTooltip()
-                        end)
-                        kbBtnI:SetScript("OnEnter", function(self)
-                            InlineBtnEnter(self)
-                            CludesUI.ShowWidgetTooltip(self, CludesUI.L("Keybind"))
-                        end)
-                        kbBtnI:SetScript("OnLeave", function(self)
-                            InlineBtnLeave(self)
-                            CludesUI.HideWidgetTooltip()
-                        end)
                         menuItems[idx] = itm
                     end
 
@@ -2063,8 +2012,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                             CludesUI.HideWidgetTooltip()
                         end)
                     else
-                        local iLbl, iHl, iXBtn, iEditBtn, iKbBtnL =
-                            itm._lbl, itm._hl, itm._xBtn, itm._editBtn, itm._kbBtn
+                        local iLbl, iXBtn, iEditBtn, iKbBtnL = itm._lbl, itm._xBtn, itm._editBtn, itm._kbBtn
                         iLbl:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
                         iEditBtn:Show()
                         iKbBtnL:Show()
@@ -2077,26 +2025,11 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                             iEditBtn:ClearAllPoints()
                             iEditBtn:SetPoint("RIGHT", iXBtn, "LEFT", -4, 0)
                         end
-                        local function IsOverInline()
-                            return iXBtn:IsMouseOver() or iEditBtn:IsMouseOver() or iKbBtnL:IsMouseOver()
-                        end
-                        local function SetAllAlpha(a)
-                            iXBtn:SetAlpha(a)
-                            iEditBtn:SetAlpha(a)
-                            iKbBtnL:SetAlpha(a)
-                        end
-                        itm:SetScript("OnEnter", function()
-                            iLbl:SetTextColor(1, 1, 1, 1)
-                            iHl:SetAlpha(CludesUI.DD_ITEM_HL_A)
-                            SetAllAlpha(0.8)
-                        end)
+                        itm:SetScript("OnEnter", itm._light)
                         itm:SetScript("OnLeave", function()
-                            if IsOverInline() then
-                                return
+                            if not itm._overIcon() then
+                                itm._dim()
                             end
-                            iLbl:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-                            iHl:SetAlpha(itm._isSel and CludesUI.DD_ITEM_SEL_A or 0)
-                            SetAllAlpha(0.4)
                         end)
                         itm:SetScript("OnClick", function()
                             if capName == activeName then
