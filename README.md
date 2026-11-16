@@ -112,9 +112,13 @@ The spells your trainer has for you right now with their total price, then what 
 - **Discovery** (`/cdiscovery`). Library books, the Cozy Sleeping Bag chain, a Field Journal, every quest of every zone, rares and Rare Alerts.
 - **Professions** (`/cprof`). Each profession's next rank, recipes that still give skill, and a Recipe Finder.
 
+### Known Levels
+
+General > Display: a player whose level the game hides as ?? (10 or more levels above you) shows the level they had when you last saw it, or that PvP sharing sent, on unit frames, nameplates and tooltips. Mobs, and players you have not seen, stay ??.
+
 ### PvP
 
-`/cpvp`: enemy players around you with alerts and stealth warnings, Kill on Sight with reasons, the last hour, an ignore list, statistics with your wins and losses, sharing with your group and guild, a Kill on Sight button on the target frame, a watch list, a combat map, Local Defense announcements and zones to stay off in. While it is on, enemy nameplates reach 60 yards so players show up sooner. An enemy player whose level the game hides as ?? shows the level PvP has seen or been sent, on unit frames, nameplates and tooltips (Known Levels Instead of ??).
+`/cpvp`: enemy players around you with alerts and stealth warnings, Kill on Sight with reasons, the last hour, an ignore list, statistics with your wins and losses, sharing with your group and guild, a Kill on Sight button on the target frame, a watch list, a combat map, Local Defense announcements and zones to stay off in. While it is on, enemy nameplates reach 60 yards so players show up sooner.
 
 ## Profiles
 

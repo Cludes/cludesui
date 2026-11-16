@@ -318,21 +318,79 @@ local function Detected(name, acted, fromShare)
     end
 end
 
--- The level the game hides on a player 10 or more levels above you (UnitLevel
--- -1, shown "??"), from what this feature has seen or been sent. nil when the
--- level is not hidden, not known, only a guess, stale (below the "you plus 10"
--- the game's -1 already proves), or the option or feature is off. Unit frames,
--- nameplates and the tooltip ask it before showing "??".
-function CludesUI.KnownHiddenLevel(unit)
-    if not (Enabled() and Get("knownLevels")) then
-        return nil
+-------------------------------------------------------------------------------
+--  Known levels (General > Display on Forever; saved as pvp.knownLevels)
+--  The game hides the level of a player 10 or more levels above you (UnitLevel
+--  -1, shown "??"). This remembers levels while they can be read: every
+--  player you target, mouse over or see a nameplate for, PvP on or off (in
+--  pvp.levels, forgotten after PURGE_DAYS unseen), on top of the enemies the
+--  PvP feature tracks and the levels groupmates send it.
+-------------------------------------------------------------------------------
+local function NoteLevel(unit)
+    if not Get("knownLevels") then
+        return
     end
-    if tonumber(R(UnitLevel(unit))) ~= SKULL then
+    local name = PlayerName(unit)
+    local level = name and tonumber(R(UnitLevel(unit)))
+    if not (level and level > 0) then
+        return
+    end
+    local c = F.Cfg()
+    c.levels = c.levels or {} -- name -> { level, last seen (time()) }
+    local seen = c.levels[name]
+    if seen then
+        seen[1], seen[2] = level, time()
+    else
+        c.levels[name] = { level, time() }
+    end
+end
+
+do
+    local watcher = CreateFrame("Frame")
+    watcher:RegisterEvent("PLAYER_LOGIN")
+    watcher:RegisterEvent("PLAYER_TARGET_CHANGED")
+    watcher:RegisterEvent("UPDATE_MOUSEOVER_UNIT")
+    watcher:RegisterEvent("NAME_PLATE_UNIT_ADDED")
+    watcher:SetScript("OnEvent", function(_, event, unit)
+        if event == "PLAYER_TARGET_CHANGED" then
+            NoteLevel("target")
+        elseif event == "UPDATE_MOUSEOVER_UNIT" then
+            NoteLevel("mouseover")
+        elseif event == "NAME_PLATE_UNIT_ADDED" then
+            NoteLevel(unit)
+        else
+            local levels = F.Read().levels
+            if levels then
+                local cutoff = time() - PURGE_DAYS * 86400
+                for name, seen in pairs(levels) do
+                    if (seen[2] or 0) < cutoff then
+                        levels[name] = nil
+                    end
+                end
+            end
+        end
+    end)
+end
+
+-- The hidden level of a player, for unit frames, nameplates and the tooltip to
+-- show instead of "??": the newest of the PvP feature's (not a guess) and the
+-- remembered one. nil when the level is not hidden, not known, stale (below
+-- the "you plus 10" the game's -1 already proves), or the option is off.
+function CludesUI.KnownHiddenLevel(unit)
+    if not Get("knownLevels") or tonumber(R(UnitLevel(unit))) ~= SKULL then
         return nil
     end
     local name = PlayerName(unit)
-    local p = name and Store().players[name]
+    if not name then
+        return nil
+    end
+    local saved = F.Read()
+    local p = saved.players and saved.players[name]
     local level = p and not p.guess and p.level
+    local seen = saved.levels and saved.levels[name]
+    if seen and type(seen[1]) == "number" and (type(level) ~= "number" or seen[1] > level) then
+        level = seen[1]
+    end
     local mine = tonumber(R(UnitLevel("player")))
     if type(level) ~= "number" or not mine or level < mine + 10 then
         return nil
