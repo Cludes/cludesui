@@ -738,8 +738,24 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     -- Delete and Rename on a custom bar's row: small icons at
                     -- its right edge, dimmed until the row is hovered.
                     local delBtn, editBtn
+                    -- The row lit (hovered) and at rest (the selected bar's wash).
+                    local function Lit()
+                        iLbl:SetTextColor(1, 1, 1, 1)
+                        iHl:SetAlpha(hlA)
+                    end
+                    local function Rest()
+                        iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+                        iHl:SetAlpha(position == optionState.selectedCDMBarIndex and selA or 0)
+                        if delBtn then
+                            delBtn:SetAlpha(0.75)
+                        end
+                        if editBtn then
+                            editBtn:SetAlpha(0.75)
+                        end
+                    end
                     if isCustom then
-                        local function RowIcon(anchor, relPoint, x, file)
+                        -- Hovering an icon lights it, the row and its partner.
+                        local function RowIcon(anchor, relPoint, x, file, tip)
                             local btn = CreateFrame("Button", nil, item)
                             btn:SetSize(ICON_SZ, ICON_SZ)
                             btn:SetPoint("RIGHT", anchor, relPoint, x, 0)
@@ -753,10 +769,25 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             end
                             icon:SetTexture(MEDIA .. "icons\\" .. file)
                             btn:SetAlpha(0.75)
+                            btn:SetScript("OnEnter", function(self)
+                                self:SetAlpha(1)
+                                Lit()
+                                delBtn:SetAlpha(0.85)
+                                editBtn:SetAlpha(0.85)
+                                CludesUI.ShowWidgetTooltip(self, tip)
+                            end)
+                            btn:SetScript("OnLeave", function(self)
+                                if item:IsMouseOver() or delBtn:IsMouseOver() or editBtn:IsMouseOver() then
+                                    self:SetAlpha(0.85)
+                                else
+                                    Rest()
+                                end
+                                CludesUI.HideWidgetTooltip()
+                            end)
                             return btn
                         end
-                        delBtn = RowIcon(item, "RIGHT", -8, "cui-close.png")
-                        editBtn = RowIcon(delBtn, "LEFT", -4, "cui-edit.png")
+                        delBtn = RowIcon(item, "RIGHT", -8, "cui-close.png", "Delete")
+                        editBtn = RowIcon(delBtn, "LEFT", -4, "cui-edit.png", "Rename")
 
                         iLbl:SetPoint("RIGHT", editBtn, "LEFT", -4, 0)
 
@@ -880,40 +911,6 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             end)
                         end
 
-                        local function InlineBtnEnter(self)
-                            self:SetAlpha(1)
-                            iLbl:SetTextColor(1, 1, 1, 1)
-                            iHl:SetAlpha(hlA)
-                            delBtn:SetAlpha(0.85)
-                            editBtn:SetAlpha(0.85)
-                        end
-                        local function InlineBtnLeave(self)
-                            if item:IsMouseOver() or delBtn:IsMouseOver() or editBtn:IsMouseOver() then
-                                self:SetAlpha(0.85)
-                                return
-                            end
-                            delBtn:SetAlpha(0.75)
-                            editBtn:SetAlpha(0.75)
-                            iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                            iHl:SetAlpha(position == optionState.selectedCDMBarIndex and selA or 0)
-                        end
-
-                        delBtn:SetScript("OnEnter", function(self)
-                            InlineBtnEnter(self)
-                            CludesUI.ShowWidgetTooltip(self, "Delete")
-                        end)
-                        delBtn:SetScript("OnLeave", function(self)
-                            InlineBtnLeave(self)
-                            CludesUI.HideWidgetTooltip()
-                        end)
-                        editBtn:SetScript("OnEnter", function(self)
-                            InlineBtnEnter(self)
-                            CludesUI.ShowWidgetTooltip(self, "Rename")
-                        end)
-                        editBtn:SetScript("OnLeave", function(self)
-                            InlineBtnLeave(self)
-                            CludesUI.HideWidgetTooltip()
-                        end)
                         delBtn:SetScript("OnClick", function()
                             dropMenu:Hide()
                             local delName = b.name or b.key
@@ -970,30 +967,17 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     end
 
                     item:SetScript("OnEnter", function()
-                        iLbl:SetTextColor(1, 1, 1, 1)
-                        iHl:SetAlpha(hlA)
+                        Lit()
                         if delBtn then
                             delBtn:SetAlpha(1)
-                        end
-                        if editBtn then
                             editBtn:SetAlpha(1)
                         end
                     end)
                     item:SetScript("OnLeave", function()
-                        if delBtn and delBtn:IsMouseOver() then
+                        if delBtn and (delBtn:IsMouseOver() or editBtn:IsMouseOver()) then
                             return
                         end
-                        if editBtn and editBtn:IsMouseOver() then
-                            return
-                        end
-                        iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-                        iHl:SetAlpha(position == optionState.selectedCDMBarIndex and selA or 0)
-                        if delBtn then
-                            delBtn:SetAlpha(0.75)
-                        end
-                        if editBtn then
-                            editBtn:SetAlpha(0.75)
-                        end
+                        Rest()
                     end)
                     item:SetScript("OnClick", function()
                         dropMenu:Hide()
