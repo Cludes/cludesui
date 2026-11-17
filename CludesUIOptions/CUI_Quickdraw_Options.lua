@@ -747,20 +747,20 @@ initFrame:SetScript("OnEvent", function(self)
                     or (slot.kind == "panel" and "interface panel")
                     or (slot.kind == "equipmentset" and "equipment set")
                     or (slot.kind == "spec" and "specialization")
-                    -- Same icon and same name as a fixed spec entry on the
-                    -- character that made it, so the caption is the only place
-                    -- the difference between the two can be said.
+                    -- Same icon and same name as a fixed spec entry on the
+                    -- character that made it, so the caption is the only place
+                    -- the difference between the two can be said.
                     or (slot.kind == "dynamicspec" and "specialization, by position on this character")
-                    -- Checked before the plain profession caption below,
-                    -- since slot.extra would otherwise still match it.
+                    -- Checked before the plain profession caption below,
+                    -- since slot.extra would otherwise still match it.
                     or (slot.kind == "dynamicprofession" and slot.specialization and "profession specialization ability, by position on this character")
                     or (slot.kind == "dynamicprofession" and slot.extra and "profession's second ability, by position on this character")
-                    -- Same icon and same name as a fixed profession entry on
-                    -- the character that made it, just as with dynamicspec.
+                    -- Same icon and same name as a fixed profession entry on
+                    -- the character that made it, just as with dynamicspec.
                     or (slot.kind == "dynamicprofession" and "profession, by position on this character")
-                    -- The name above is already the spell this character would
-                    -- cast, so the caption says what picked it rather than
-                    -- repeating it.
+                    -- The name above is already the spell this character would
+                    -- cast, so the caption says what picked it rather than
+                    -- repeating it.
                     or (slot.kind == "dynamicrez" and "resurrection, chosen for this character")
                     or slot.kind
             end
@@ -2797,141 +2797,178 @@ initFrame:SetScript("OnEvent", function(self)
         return m
     end
 
+    -- A row's small inline button (the pencil or the X): square, two levels
+    -- above its row, unsnapped art, resting at the dim alpha. The caller
+    -- anchors it.
+    local function RowInlineButton(owner, iconFile)
+        local b = CreateFrame("Button", nil, owner)
+        b:SetSize(MM_X, MM_X)
+        b:SetFrameLevel(owner:GetFrameLevel() + 2)
+        local art = b:CreateTexture(nil, "OVERLAY")
+        art:SetAllPoints()
+        if art.SetSnapToPixelGrid then
+            art:SetSnapToPixelGrid(false)
+            art:SetTexelSnappingBias(0)
+        end
+        art:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\" .. iconFile)
+        b:SetAlpha(0.4)
+        return b
+    end
+
+    -- One pooled row of the selector menu: the menu's icon on the left (the
+    -- class-icon dropdown look, mirrored, since rename and delete own the
+    -- right edge; cropped like every action icon), its name, a highlight,
+    -- and the two inline buttons. The row lights while the pointer is over
+    -- it or either button, the hovered button brightest.
+    local function NewMenuRow(m, font)
+        local itm = CreateFrame("Button", nil, m)
+        itm:SetHeight(26)
+        itm:SetFrameLevel(m:GetFrameLevel() + 1)
+        local ico = itm:CreateTexture(nil, "ARTWORK")
+        ico:SetSize(18, 18)
+        ico:SetPoint("LEFT", itm, "LEFT", 8, 0)
+        ico:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        itm._ico = ico
+        local labelFS = itm:CreateFontString(nil, "OVERLAY")
+        labelFS:SetFont(font, 13, CludesUI.GetFontOutlineFlag())
+        labelFS:SetPoint("LEFT", ico, "RIGHT", 6, 0)
+        labelFS:SetPoint("RIGHT", itm, "RIGHT", -(MM_X * 2 + 22), 0)
+        labelFS:SetJustifyH("LEFT")
+        labelFS:SetWordWrap(false)
+        labelFS:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
+        itm._lbl = labelFS
+        local highlight = itm:CreateTexture(nil, "ARTWORK")
+        highlight:SetAllPoints()
+        highlight:SetColorTexture(1, 1, 1, 1)
+        highlight:SetAlpha(0)
+        itm._hl = highlight
+
+        local xBtn = RowInlineButton(itm, "cui-close.png")
+        xBtn:SetPoint("RIGHT", itm, "RIGHT", -8, 0)
+        itm._xBtn = xBtn
+        local editBtn = RowInlineButton(itm, "cui-edit.png")
+        editBtn:SetPoint("RIGHT", xBtn, "LEFT", -4, 0)
+        itm._editBtn = editBtn
+
+        local function Lit(on)
+            if on then
+                labelFS:SetTextColor(1, 1, 1, 1)
+                highlight:SetAlpha(CludesUI.DD_ITEM_HL_A)
+            else
+                labelFS:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
+                highlight:SetAlpha(itm._isSel and CludesUI.DD_ITEM_SEL_A or 0)
+            end
+            local a2 = on and 0.8 or 0.4
+            xBtn:SetAlpha(a2)
+            editBtn:SetAlpha(a2)
+        end
+        local function OverButtons()
+            return xBtn:IsMouseOver() or editBtn:IsMouseOver()
+        end
+        itm:SetScript("OnEnter", function()
+            Lit(true)
+        end)
+        itm:SetScript("OnLeave", function()
+            if not OverButtons() then
+                Lit(false)
+            end
+        end)
+        for b, tip in pairs({ [xBtn] = "Delete", [editBtn] = "Rename" }) do
+            b:SetScript("OnEnter", function(self2)
+                Lit(true)
+                self2:SetAlpha(1)
+                CludesUI.ShowWidgetTooltip(self2, tip)
+            end)
+            b:SetScript("OnLeave", function(self2)
+                if itm:IsMouseOver() or OverButtons() then
+                    self2:SetAlpha(0.8)
+                else
+                    Lit(false)
+                end
+                CludesUI.HideWidgetTooltip()
+            end)
+        end
+        return itm
+    end
+
+    -- Delete and rename, each behind its popup. Both close the menu first.
+    local function AskDeleteMenu(position)
+        mmMenu:Hide()
+        local pal = Palette(position)
+        CludesUI:ShowConfirmPopup({
+            title = "Delete Action Menu",
+            message = CludesUI.Lf(
+                "Delete %1$s and its contents? Entries "
+                    .. "in other action menus that open it are removed "
+                    .. "too, and the menus after it move up one place.",
+                (pal and pal.name) or AutoName(position)
+            ),
+            confirmText = "Delete",
+            cancelText = "Cancel",
+            onConfirm = function()
+                DeletePalette(position)
+            end,
+        })
+    end
+    local function AskRenameMenu(position)
+        mmMenu:Hide()
+        local pal = Palette(position)
+        local current = (pal and pal.name) or AutoName(position)
+        CludesUI:ShowInputPopup({
+            title = "Rename Action Menu",
+            message = CludesUI.Lf('Enter a new name for "%1$s":', current),
+            placeholder = current,
+            confirmText = "Rename",
+            cancelText = "Cancel",
+            onConfirm = function(newName)
+                local target = Palette(position)
+                if not target then
+                    return
+                end
+                -- Trimmed, and cut to 24 characters: the hub caption sits in
+                -- a small arc, and anything longer runs under the entries
+                -- either side. Empty goes back to the automatic name.
+                newName = strtrim(newName or "")
+                if #newName > 24 then
+                    newName = newName:sub(1, 24)
+                end
+                if newName == "" then
+                    newName = AutoName(position)
+                end
+                if newName ~= target.name then
+                    target.name = newName
+                    RebuildPage()
+                end
+            end,
+        })
+    end
+
     local function RebuildMenuRows()
         local m = EnsureMenuMenu()
-        local FONT = (CludesUI.GetFontPath()) or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
-        local mH = 4
-        local total = PaletteCount()
-        for i = 1, total do
-            local itm = mmItems[i]
-            if not itm then
-                itm = CreateFrame("Button", nil, m)
-                itm:SetHeight(26)
-                itm:SetFrameLevel(m:GetFrameLevel() + 1)
-                -- The menu's icon, the class-icon-dropdown treatment (icon
-                -- sized to the row less 8, label re-anchored to it) mirrored
-                -- to the left because the rename and delete buttons own this
-                -- row's right edge. Cropped like every action icon.
-                local ico = itm:CreateTexture(nil, "ARTWORK")
-                ico:SetSize(18, 18)
-                ico:SetPoint("LEFT", itm, "LEFT", 8, 0)
-                ico:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-                itm._ico = ico
-                local labelFS = itm:CreateFontString(nil, "OVERLAY")
-                labelFS:SetFont(FONT, 13, CludesUI.GetFontOutlineFlag())
-                labelFS:SetPoint("LEFT", ico, "RIGHT", 6, 0)
-                labelFS:SetPoint("RIGHT", itm, "RIGHT", -(MM_X * 2 + 22), 0)
-                labelFS:SetJustifyH("LEFT")
-                labelFS:SetWordWrap(false)
-                labelFS:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-                itm._lbl = labelFS
-                local highlight = itm:CreateTexture(nil, "ARTWORK")
-                highlight:SetAllPoints()
-                highlight:SetColorTexture(1, 1, 1, 1)
-                highlight:SetAlpha(0)
-                itm._hl = highlight
-
-                local xBtn = CreateFrame("Button", nil, itm)
-                xBtn:SetSize(MM_X, MM_X)
-                xBtn:SetPoint("RIGHT", itm, "RIGHT", -8, 0)
-                xBtn:SetFrameLevel(itm:GetFrameLevel() + 2)
-                local xIcon = xBtn:CreateTexture(nil, "OVERLAY")
-                xIcon:SetAllPoints()
-                if xIcon.SetSnapToPixelGrid then
-                    xIcon:SetSnapToPixelGrid(false)
-                    xIcon:SetTexelSnappingBias(0)
-                end
-                xIcon:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
-                xBtn:SetAlpha(0.4)
-                itm._xBtn = xBtn
-
-                local editBtn = CreateFrame("Button", nil, itm)
-                editBtn:SetSize(MM_X, MM_X)
-                editBtn:SetPoint("RIGHT", xBtn, "LEFT", -4, 0)
-                editBtn:SetFrameLevel(itm:GetFrameLevel() + 2)
-                local editIcon = editBtn:CreateTexture(nil, "OVERLAY")
-                editIcon:SetAllPoints()
-                if editIcon.SetSnapToPixelGrid then
-                    editIcon:SetSnapToPixelGrid(false)
-                    editIcon:SetTexelSnappingBias(0)
-                end
-                editIcon:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-edit.png")
-                editBtn:SetAlpha(0.4)
-                itm._editBtn = editBtn
-
-                local function IsOverInline()
-                    return xBtn:IsMouseOver() or editBtn:IsMouseOver()
-                end
-                local function SetAllInlineAlpha(a2)
-                    xBtn:SetAlpha(a2)
-                    editBtn:SetAlpha(a2)
-                end
-                itm:SetScript("OnEnter", function()
-                    labelFS:SetTextColor(1, 1, 1, 1)
-                    highlight:SetAlpha(CludesUI.DD_ITEM_HL_A)
-                    SetAllInlineAlpha(0.8)
-                end)
-                itm:SetScript("OnLeave", function()
-                    if IsOverInline() then
-                        return
-                    end
-                    labelFS:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-                    highlight:SetAlpha(itm._isSel and CludesUI.DD_ITEM_SEL_A or 0)
-                    SetAllInlineAlpha(0.4)
-                end)
-                local function InlineBtnEnter(self2)
-                    labelFS:SetTextColor(1, 1, 1, 1)
-                    highlight:SetAlpha(CludesUI.DD_ITEM_HL_A)
-                    SetAllInlineAlpha(0.8)
-                    self2:SetAlpha(1)
-                end
-                local function InlineBtnLeave(self2)
-                    if itm:IsMouseOver() or IsOverInline() then
-                        self2:SetAlpha(0.8)
-                        return
-                    end
-                    labelFS:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-                    highlight:SetAlpha(itm._isSel and CludesUI.DD_ITEM_SEL_A or 0)
-                    SetAllInlineAlpha(0.4)
-                end
-                xBtn:SetScript("OnEnter", function(self2)
-                    InlineBtnEnter(self2)
-                    CludesUI.ShowWidgetTooltip(self2, "Delete")
-                end)
-                xBtn:SetScript("OnLeave", function(self2)
-                    InlineBtnLeave(self2)
-                    CludesUI.HideWidgetTooltip()
-                end)
-                editBtn:SetScript("OnEnter", function(self2)
-                    InlineBtnEnter(self2)
-                    CludesUI.ShowWidgetTooltip(self2, "Rename")
-                end)
-                editBtn:SetScript("OnLeave", function(self2)
-                    InlineBtnLeave(self2)
-                    CludesUI.HideWidgetTooltip()
-                end)
-                mmItems[i] = itm
-            end
-
-            itm:SetPoint("TOPLEFT", m, "TOPLEFT", 1, -mH)
-            itm:SetPoint("TOPRIGHT", m, "TOPRIGHT", -1, -mH)
+        local font = (CludesUI.GetFontPath()) or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
+        local count = PaletteCount()
+        local top = 4
+        for i = 1, count do
+            local itm = mmItems[i] or NewMenuRow(m, font)
+            mmItems[i] = itm
+            itm:SetPoint("TOPLEFT", m, "TOPLEFT", 1, -top)
+            itm:SetPoint("TOPRIGHT", m, "TOPRIGHT", -1, -top)
             local pal = Palette(i)
             itm._ico:SetTexture(PaletteListIcon(pal))
             itm._lbl:SetText((pal and pal.name) or AutoName(i))
-            itm._isSel = (i == editPalette)
-            itm._hl:SetAlpha(itm._isSel and 0.04 or 0)
+            local selected = (i == editPalette)
+            itm._isSel = selected
+            itm._hl:SetAlpha(selected and 0.04 or 0)
             itm._lbl:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
 
-            -- The row being edited hides its X, exactly as the active profile
-            -- does -- which also means the last remaining menu never shows
-            -- one. Deleting is done from any OTHER row.
-            if itm._isSel then
-                itm._xBtn:Hide()
-                itm._editBtn:ClearAllPoints()
+            -- Like the active profile, the menu being edited has no X (so
+            -- the last menu left can never be deleted); its pencil slides
+            -- over into the X's place. Deleting happens from another row.
+            itm._xBtn:SetShown(not selected)
+            itm._editBtn:ClearAllPoints()
+            if selected then
                 itm._editBtn:SetPoint("RIGHT", itm, "RIGHT", -8, 0)
             else
-                itm._xBtn:Show()
-                itm._editBtn:ClearAllPoints()
                 itm._editBtn:SetPoint("RIGHT", itm._xBtn, "LEFT", -4, 0)
             end
 
@@ -2944,63 +2981,18 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             end)
             itm._xBtn:SetScript("OnClick", function()
-                mmMenu:Hide()
-                local pal2 = Palette(position)
-                local nm = (pal2 and pal2.name) or AutoName(position)
-                CludesUI:ShowConfirmPopup({
-                    title = "Delete Action Menu",
-                    message = CludesUI.Lf(
-                        "Delete %1$s and its contents? Entries "
-                            .. "in other action menus that open it are removed "
-                            .. "too, and the menus after it move up one place.",
-                        nm
-                    ),
-                    confirmText = "Delete",
-                    cancelText = "Cancel",
-                    onConfirm = function()
-                        DeletePalette(position)
-                    end,
-                })
+                AskDeleteMenu(position)
             end)
             itm._editBtn:SetScript("OnClick", function()
-                mmMenu:Hide()
-                local pal2 = Palette(position)
-                local current = (pal2 and pal2.name) or AutoName(position)
-                CludesUI:ShowInputPopup({
-                    title = "Rename Action Menu",
-                    message = CludesUI.Lf('Enter a new name for "%1$s":', current),
-                    placeholder = current,
-                    confirmText = "Rename",
-                    cancelText = "Cancel",
-                    onConfirm = function(newName)
-                        local pal3 = Palette(position)
-                        if not pal3 then
-                            return
-                        end
-                        newName = strtrim(newName or "")
-                        -- The hub caption sits inside a small arc; longer
-                        -- names run under the entries either side of it.
-                        if #newName > 24 then
-                            newName = newName:sub(1, 24)
-                        end
-                        if newName == "" then
-                            newName = AutoName(position)
-                        end
-                        if newName == pal3.name then
-                            return
-                        end
-                        pal3.name = newName
-                        RebuildPage()
-                    end,
-                })
+                AskRenameMenu(position)
             end)
             itm:Show()
-            mH = mH + 26
+            top = top + 26
         end
-        for i = total + 1, #mmItems do
+        for i = count + 1, #mmItems do
             mmItems[i]:Hide()
         end
-        m:SetHeight(mH + 4)
+        m:SetHeight(top + 4)
     end
 
     -- The anchor button, rebuilt with every page build (the menu above is
