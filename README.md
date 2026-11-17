@@ -130,7 +130,7 @@ Other addons can add a settings page to the CludesUI panel. See [PLUGINS_API.md]
 
 ## Releasing
 
-Run `sh tools/release.sh` (or `minor`, `major`, or an exact `X.Y.Z`). It puts the new version in every `.toc` and in `CludesUI.VERSION`, commits, tags and pushes. The tag builds `CludesUI-vX.Y.Z.zip` and publishes a release listing every change since the last one.
+Every push to `master` that changes the addons is released automatically: the next patch version is tagged and `CludesUI-vX.Y.Z.zip` is published with every change since the last release (pushes that only touch tools or docs make none). For a minor or major version, run `sh tools/release.sh minor` (or `major`, or an exact `X.Y.Z`): it puts the new version in every `.toc` and in `CludesUI.VERSION`, commits, tags and pushes.
 
 Every push to `master` runs a Lua syntax check and confirms that each file a `.toc` lists exists.
 

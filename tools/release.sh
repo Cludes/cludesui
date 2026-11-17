@@ -1,13 +1,16 @@
 #!/bin/sh
 # tools/release.sh [major|minor|patch|X.Y.Z]: puts the new version in every
 # addon's .toc and in CludesUI.VERSION, commits it as "Release vX.Y.Z", tags
-# it and pushes both. The
-# tag starts the Release workflow, which builds CludesUI-vX.Y.Z.zip and
-# publishes it with notes listing every change since the last release.
+# it and pushes both. The tag starts the Release workflow, which builds
+# CludesUI-vX.Y.Z.zip and publishes it with notes listing every change since
+# the last release. Every ordinary push to master already makes the next patch
+# release, so this is for a minor or major version (or an exact one); it
+# numbers from the newest tag, which is ahead of the .toc files.
 # Default: patch.
 set -e
 cd "$(dirname "$0")/.."
-cur=$(grep '^## Version:' CludesUI/CludesUI.toc | tr -d '\r' | sed 's/## Version: *//')
+git fetch -q --tags
+cur=$(git tag --list 'v*' --sort=-v:refname | head -1 | sed 's/^v//')
 want=${1:-patch}
 IFS=. read -r MA MI PA <<EOF
 $cur

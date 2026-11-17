@@ -1,16 +1,34 @@
 name: Release
 
-# Every vX.Y.Z tag becomes a GitHub release: CludesUI-vX.Y.Z.zip (every addon
-# folder, with that version stamped into each .toc and CludesUI.VERSION) and
-# notes listing each change since the previous tag. tools/release.sh makes the
-# tag; an older commit can be tagged too, and its release is dated by it.
+# Every push to master that changes the addons becomes a release: the next
+# patch version after the newest vX.Y.Z tag is tagged on that commit and
+# published as CludesUI-vX.Y.Z.zip (every addon folder, with that version
+# stamped into each .toc and CludesUI.VERSION) with notes listing each change
+# since the previous tag. A push that only changes tools, docs or this
+# workflow makes none. tools/release.sh still makes a minor or major (or any
+# chosen) version: its tag push releases that tag, and its "Release vX"
+# commit makes no extra patch release.
 
 on:
   push:
+    branches: [master]
     tags: ['v*']
+    paths-ignore:
+      - 'tools/**'
+      - '**.md'
+      - '.github/**'
+      - '.stylua.toml'
+      - '.gitignore'
+  # Run by hand (Actions > Release > Run workflow): releases master's newest commit.
+  workflow_dispatch:
 
 permissions:
   contents: write
+
+# One release at a time, so each one numbers from the tag the last one made.
+concurrency:
+  group: release
+  cancel-in-progress: false
 
 jobs:
   release:
@@ -20,43 +38,71 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build zip
+      - name: Version
+        id: version
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          if [ "$GITHUB_REF_TYPE" = "tag" ]; then
+            echo "tag=$GITHUB_REF_NAME" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git fetch --tags --force -q
+          # A commit release.sh tagged already, or its own "Release vX" commit.
+          if git tag --points-at HEAD | grep -q '^v' || git log -1 --format=%s | grep -q '^Release v'; then
+            echo "skip=1" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          last=$(git tag --list 'v*' --sort=-v:refname | head -1)
+          IFS=. read -r major minor patch <<< "${last#v}"
+          tag="v$major.$minor.$((patch + 1))"
+          git tag "$tag" HEAD
+          git push -q origin "$tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Build zip
+        if: steps.version.outputs.skip != '1'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          version="${TAG#v}"
           mkdir out
           cp -r CludesUI*/ out/
           # Line endings kept: only the number changes.
           sed -i "s/^\(## Version: *\)[0-9][0-9.]*/\1$version/" out/*/*.toc
           sed -i "s/^\(CludesUI\.VERSION = \"\)[0-9.]*\"/\1$version\"/" out/CludesUI/CludesUI.lua
-          (cd out && zip -r -q "../CludesUI-$GITHUB_REF_NAME.zip" .)
+          (cd out && zip -r -q "../CludesUI-$TAG.zip" .)
 
       - name: Release notes
+        if: steps.version.outputs.skip != '1'
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
-          prev=$(git describe --tags --abbrev=0 "$GITHUB_REF_NAME^" 2>/dev/null || true)
-          day=$(git log -1 --format=%cd --date=format:'%-d %B %Y' "$GITHUB_REF_NAME")
+          prev=$(git describe --tags --abbrev=0 "$TAG^" 2>/dev/null || true)
+          day=$(git log -1 --format=%cd --date=format:'%-d %B %Y' "$TAG")
           {
             echo "Released $day."
             echo
             echo "## Changes"
             echo
-            git log --no-merges --reverse --format='- %s' ${prev:+$prev..}"$GITHUB_REF_NAME" | grep -v '^- Release v' || true
+            git log --no-merges --reverse --format='- %s' ${prev:+$prev..}"$TAG" | grep -v '^- Release v' || true
             echo
             echo "## Install"
             echo
             echo "Unzip, then copy every \`CludesUI...\` folder into your game's \`Interface\\AddOns\` folder (Retail: \`World of Warcraft\\_retail_\\Interface\\AddOns\`) and restart the game."
             if [ -n "$prev" ]; then
               echo
-              echo "Full list of changes: https://github.com/$GITHUB_REPOSITORY/compare/$prev...$GITHUB_REF_NAME"
+              echo "Full list of changes: https://github.com/$GITHUB_REPOSITORY/compare/$prev...$TAG"
             fi
           } > notes.md
 
       - name: Publish
+        if: steps.version.outputs.skip != '1'
         env:
           GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
-          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
-            gh release upload "$GITHUB_REF_NAME" "CludesUI-$GITHUB_REF_NAME.zip" --clobber
-            gh release edit "$GITHUB_REF_NAME" --title "CludesUI $GITHUB_REF_NAME" --notes-file notes.md
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" "CludesUI-$TAG.zip" --clobber
+            gh release edit "$TAG" --title "CludesUI $TAG" --notes-file notes.md
           else
-            gh release create "$GITHUB_REF_NAME" "CludesUI-$GITHUB_REF_NAME.zip" --title "CludesUI $GITHUB_REF_NAME" --notes-file notes.md
+            gh release create "$TAG" "CludesUI-$TAG.zip" --title "CludesUI $TAG" --notes-file notes.md --verify-tag
           fi
