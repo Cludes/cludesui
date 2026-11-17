@@ -199,4 +199,51 @@ for _, page in ipairs(PAGES) do
         SNAP(page .. " header after", CUI._contentHeader or CUI._headerFrame)
     end
 end
+-- The Mythic+ Timer page with a textured border style (its offset row
+-- appears), every slider pressed; then everything that reacts to the mouse
+-- hovered (with what the hover shows snapped), once with the timer on and
+-- once with it off (the requirement tooltips).
+local function Hover(label)
+    local list = Find(CUI._scrollFrame, function(f)
+        return f:IsVisible() and f["\0scripts"].OnEnter ~= nil
+    end)
+    OUT:write("== " .. label .. " hover " .. #list .. "\n")
+    for i, f in ipairs(list) do
+        local before = ShownTops()
+        Call(f, "OnEnter")
+        for k, top in ipairs(NewTops(before)) do SNAP(label .. " hover " .. i .. " shows " .. k, top) end
+        Call(f, "OnLeave")
+    end
+end
+do
+    local db = rawget(_G, "_CUMT_AceDB")
+    local p = db and db.profile
+    if p then
+        p.customBorderStyle = true
+        local _, order = CUI.GetBorderTextureDropdown()
+        for _, k in ipairs(order or {}) do
+            if k ~= "solid" and k ~= "shadow" and k ~= "" then
+                p.borderTexture = k
+                break
+            end
+        end
+        OUT:write("== textured border " .. tostring(p.borderTexture) .. "\n")
+        Rebuild("Mythic+ Timer")
+        SNAP("textured border page", CUI._scrollFrame)
+        for i = 1, #Thumbs(CUI._scrollFrame) do
+            local t = Thumbs(CUI._scrollFrame)[i]
+            if t then
+                PressTrack(t, 60 + (i % 4) * 25)
+                Changed()
+            end
+        end
+        Rebuild("Mythic+ Timer")
+        Hover("timer on")
+        p.enabled = false
+        Rebuild("Mythic+ Timer")
+        SNAP("timer off page", CUI._scrollFrame)
+        Hover("timer off")
+        p.enabled = true
+    end
+end
 GetCursorPosition = function() return 0, 0 end
