@@ -210,3 +210,70 @@ if dd then
         menu:Hide()
     end
 end
+
+-- Rotation Assist (built only while the rotation helper can show, which the
+-- fake client never reports): the first bar's page under four styles, each
+-- snapped, its cogs opened and its colour swatches clicked, the rotation
+-- settings written out after each click.
+mod._CDM_RotationHelperOff = function() return false end
+local function RotationStore()
+    local runtime = mod.ECME and mod.ECME.db and mod.ECME.db.profile
+    local p = env.DB and env.DB()
+    return (runtime and runtime.cdmBars) or (p and p.cdmBars)
+end
+local function DumpRotation()
+    local c = RotationStore() or {}
+    local keys = {}
+    for k in pairs(c) do
+        if type(k) == "string" and k:find("^rotationAssist") then keys[#keys + 1] = k end
+    end
+    table.sort(keys)
+    local parts = {}
+    for _, k in ipairs(keys) do parts[#parts + 1] = k .. "=" .. Dump(c[k], 0) end
+    OUT:write("   rotation " .. table.concat(parts, ",") .. "\n")
+end
+for _, style in ipairs({ "blizzard", "solid", "pixel", "modern" }) do
+    local c = RotationStore()
+    if c then c.rotationAssistStyle = style end
+    Rebuild(1)
+    SNAP("rotation " .. style, CUI._scrollFrame)
+    local swatches = Find(CUI._scrollFrame, function(f)
+        if f["\0kind"] ~= "Button" or not f:IsVisible() or not f["\0scripts"].OnClick then return false end
+        local w, h = math.floor((f["\0w"] or 0) + 0.5), math.floor((f["\0h"] or 0) + 0.5)
+        return w == h and (w == 20 or w == 24)
+    end)
+    OUT:write("== rotation " .. style .. " swatches " .. #swatches .. "\n")
+    local cogs = Find(CUI._scrollFrame, function(f)
+        return f["\0kind"] == "Button" and rawget(f, "_cuiCogId") ~= nil and f:IsVisible()
+    end)
+    for j, cog in ipairs(cogs) do
+        local before = ShownTops()
+        Click(cog, "rotation cog " .. j)
+        HideNew(before, "rotation " .. style .. " cog " .. j)
+    end
+end
+-- The trio swatches on the Pixel Glow page, each clicked on a fresh build.
+do
+    local c = RotationStore()
+    if c then c.rotationAssistStyle = "pixel" end
+    local function Trio()
+        return Find(CUI._scrollFrame, function(f)
+            if f["\0kind"] ~= "Button" or not f:IsVisible() or not f["\0scripts"].OnClick then return false end
+            local w, h = math.floor((f["\0w"] or 0) + 0.5), math.floor((f["\0h"] or 0) + 0.5)
+            return w == h and (w == 20 or w == 24)
+        end)
+    end
+    Rebuild(1)
+    local count2 = #Trio()
+    for i = 1, count2 do
+        Rebuild(1)
+        local sw = Trio()[i]
+        if sw then
+            local before = ShownTops()
+            Click(sw, "rotation swatch " .. i)
+            HideNew(before)
+            OUT:write("== rotation swatch " .. i .. "\n")
+            DumpRotation()
+        end
+    end
+end
