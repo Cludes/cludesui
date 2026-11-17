@@ -300,6 +300,11 @@ local function DmApply()
         mod.DMP_RefreshPreview()
     end
 end
+-- After a change: the frames re-applied and the page built again.
+local function ApplyAndRedraw()
+    DmApply()
+    CludesUI:RefreshPage(true)
+end
 
 -- Frame Glow tile: the shared glow descriptor over the tile's own keys (always
 -- on, no None). The tile editor and the options preview (GO.Spec) share it.
@@ -886,8 +891,7 @@ local function BuildFxEffects(widget, sy, fxOwner)
             local blockIdx = bi
             del:SetScript("OnClick", function()
                 table.remove(entries, blockIdx)
-                DmApply()
-                CludesUI:RefreshPage(true)
+                ApplyAndRedraw()
             end)
         end
 
@@ -3387,53 +3391,60 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
         self:SetVerticalScroll(max(0, math.min(maxS, scroll - delta * 30)))
     end)
 
+    -- Each tile stacks under the last, the sidebar's width, in its font.
     local tileY = 0
+    local function AddTile(opts)
+        opts.width = sidebarW
+        opts.fontPath = fontFile
+        tileY = tileY - CludesUI.BuildManagerTile(sidebarChild, tileY, opts)
+    end
+    -- A tile's gray position suffix: the icon, square and bar containers sit
+    -- at a position; the base grid at the debuff position.
+    local function TilePosText(t)
+        if t.type == "icons" or t.type == "square" or t.type == "bar" then
+            return "(" .. L(POS_VALUES[t.position or "top"] or "") .. ")"
+        end
+    end
+    local basePosText = "(" .. L(POS_VALUES[p.debuffPosition or "bottomright"] or "") .. ")"
 
     -- Pinned Base Icons tile (All Specs view): undeletable, no toggle (an
     -- empty grid is expressed through the filters).
     if baseOwn then
-        tileY = tileY
-            - CludesUI.BuildManagerTile(sidebarChild, tileY, {
-                width = sidebarW,
-                fontPath = fontFile,
-                icon = SampleDebuffTexture(1),
-                title = L("Base Icons"),
-                posText = "(" .. L(POS_VALUES[p.debuffPosition or "bottomright"] or "") .. ")",
-                subtitle = L("The standard debuff grid"),
-                selected = (dmSel == "base" and not dmInhSel),
-                enabled = true,
-                onSelect = function()
-                    dmSel = "base"
-                    dmInhSel = nil
-                    CludesUI:RefreshPage(true)
-                end,
-            })
+        AddTile({
+            icon = SampleDebuffTexture(1),
+            title = L("Base Icons"),
+            posText = basePosText,
+            subtitle = L("The standard debuff grid"),
+            selected = (dmSel == "base" and not dmInhSel),
+            enabled = true,
+            onSelect = function()
+                dmSel = "base"
+                dmInhSel = nil
+                CludesUI:RefreshPage(true)
+            end,
+        })
     elseif baseInherited then
         -- Concrete spec view: the All Specs base grid as an INHERITED row
         -- (read-only here; the pill is this spec's own on/off).
         local disHere = mod.DM_BaseDisabled and mod.DM_BaseDisabled(dmSpecSel)
-        tileY = tileY
-            - CludesUI.BuildManagerTile(sidebarChild, tileY, {
-                width = sidebarW,
-                fontPath = fontFile,
-                icon = SampleDebuffTexture(1),
-                title = L("Base Icons"),
-                posText = "(" .. L(POS_VALUES[p.debuffPosition or "bottomright"] or "") .. ")",
-                subtitle = allSpecsName,
-                inheritedTooltip = CludesUI.Lf("Inherited from %1$s. Editable only there.", allSpecsName),
-                selected = inhSelBase,
-                enabled = (not disHere) and true or false,
-                showToggle = true,
-                onSelect = function()
-                    dmInhSel = { group = "allspecs", id = "base" }
-                    CludesUI:RefreshPage(true)
-                end,
-                onToggle = function()
-                    mod.DM_SetBaseDisabled(dmSpecSel, not mod.DM_BaseDisabled(dmSpecSel))
-                    DmApply()
-                    CludesUI:RefreshPage(true)
-                end,
-            })
+        AddTile({
+            icon = SampleDebuffTexture(1),
+            title = L("Base Icons"),
+            posText = basePosText,
+            subtitle = allSpecsName,
+            inheritedTooltip = CludesUI.Lf("Inherited from %1$s. Editable only there.", allSpecsName),
+            selected = inhSelBase,
+            enabled = (not disHere) and true or false,
+            showToggle = true,
+            onSelect = function()
+                dmInhSel = { group = "allspecs", id = "base" }
+                CludesUI:RefreshPage(true)
+            end,
+            onToggle = function()
+                mod.DM_SetBaseDisabled(dmSpecSel, not mod.DM_BaseDisabled(dmSpecSel))
+                ApplyAndRedraw()
+            end,
+        })
     end
 
     -- INHERITED group tiles lead concrete spec views: read-only here (edit
@@ -3446,37 +3457,29 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
             local gl = (mod.DM_BucketTiles and mod.DM_BucketTiles(gkey)) or {}
             for idx = 1, #gl do
                 local t = gl[idx]
-                local posText
-                if t.type == "icons" or t.type == "square" or t.type == "bar" then
-                    posText = "(" .. L(POS_VALUES[t.position or "top"] or "") .. ")"
-                end
                 local disHere = mod.DM_InhDisabled and mod.DM_InhDisabled(dmSpecSel, t.id)
-                tileY = tileY
-                    - CludesUI.BuildManagerTile(sidebarChild, tileY, {
-                        width = sidebarW,
-                        fontPath = fontFile,
-                        icon = TileFaceTexture(t),
-                        title = TileName(t),
-                        posText = posText,
-                        subtitle = gname,
-                        inheritedTooltip = CludesUI.Lf("Inherited from %1$s. Editable only there.", gname),
-                        selected = (dmInhSel and dmInhSel.group == gkey and dmInhSel.id == t.id) and true
-                            or false,
-                        -- Pill = the PER-SPEC enable only; a group-level disable
-                        -- dims the tile instead (the pill must never look dead).
-                        dimmed = not t.enabled or nil,
-                        enabled = (not disHere) and true or false,
-                        showToggle = true,
-                        onSelect = function()
-                            dmInhSel = { group = gkey, id = t.id }
-                            CludesUI:RefreshPage(true)
-                        end,
-                        onToggle = function()
-                            mod.DM_SetInhDisabled(dmSpecSel, t.id, not mod.DM_InhDisabled(dmSpecSel, t.id))
-                            DmApply()
-                            CludesUI:RefreshPage(true)
-                        end,
-                    })
+                AddTile({
+                    icon = TileFaceTexture(t),
+                    title = TileName(t),
+                    posText = TilePosText(t),
+                    subtitle = gname,
+                    inheritedTooltip = CludesUI.Lf("Inherited from %1$s. Editable only there.", gname),
+                    selected = (dmInhSel and dmInhSel.group == gkey and dmInhSel.id == t.id) and true
+                        or false,
+                    -- Pill = the PER-SPEC enable only; a group-level disable
+                    -- dims the tile instead (the pill must never look dead).
+                    dimmed = not t.enabled or nil,
+                    enabled = (not disHere) and true or false,
+                    showToggle = true,
+                    onSelect = function()
+                        dmInhSel = { group = gkey, id = t.id }
+                        CludesUI:RefreshPage(true)
+                    end,
+                    onToggle = function()
+                        mod.DM_SetInhDisabled(dmSpecSel, t.id, not mod.DM_InhDisabled(dmSpecSel, t.id))
+                        ApplyAndRedraw()
+                    end,
+                })
             end
         end
     end
@@ -3485,91 +3488,81 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
     -- suffix, routed-filters subtitle, pill toggle, atlas delete)
     for idx = 1, #tiles do
         local t = tiles[idx]
-        local posText
-        if t.type == "icons" or t.type == "square" or t.type == "bar" then
-            posText = "(" .. L(POS_VALUES[t.position or "top"] or "") .. ")"
-        end
-        tileY = tileY
-            - CludesUI.BuildManagerTile(sidebarChild, tileY, {
-                width = sidebarW,
-                fontPath = fontFile,
-                icon = TileFaceTexture(t),
-                -- User-typed name over the type-name default. Display-only
-                -- (additive key; DM_CfgFP serializes explicit fields, so a
-                -- rename never re-declares containers).
-                title = TileName(t),
-                posText = posText,
-                -- Live: filter and Match Mode clicks refresh without a rebuild.
-                subtitleFn = function()
-                    return TileSubtitle(t)
-                end,
-                selected = (dmSel == t.id and not dmInhSel),
-                enabled = t.enabled and true or false,
-                showToggle = true,
-                onSelect = function()
-                    dmSel = t.id
-                    dmInhSel = nil
-                    CludesUI:RefreshPage(true)
-                end,
-                -- Right-click: copy this tile into another editing-spec bucket
-                -- (full clone, fresh id; the source stays).
-                onContext = function(tileFrame)
-                    if not CludesUI.ShowPickMenu then
-                        return
-                    end
-                    CludesUI.ShowPickMenu(tileFrame, {
-                        title = L("Add To"),
-                        fontPath = fontFile,
-                        items = CludesUI.SpecBucketMenuItems(dmSpecSel, nil, mod.DM_ForeverKey),
-                        onPick = function(key)
-                            if mod.DM_CopyTile and mod.DM_CopyTile(t, key) then
-                                DmApply()
-                                CludesUI:RefreshPage(true)
-                            end
-                        end,
-                    })
-                end,
-                onToggle = function(val)
-                    t.enabled = val and true or false
-                    DmApply()
-                    CludesUI:RefreshPage(true)
-                end,
-                editTooltip = L("Rename Indicator"),
-                onEdit = function()
-                    local current = TileName(t)
-                    CludesUI:ShowInputPopup({
-                        title = L("Rename Indicator"),
-                        message = L("Enter a new name for this indicator:"),
-                        placeholder = current,
-                        confirmText = L("Rename"),
-                        cancelText = L("Cancel"),
-                        onConfirm = function(textValue)
-                            textValue = textValue and textValue:gsub("^%s+", ""):gsub("%s+$", "") or ""
-                            -- Empty reverts to the type-name default.
-                            t.name = (textValue ~= "") and textValue or nil
-                            CludesUI:RefreshPage(true)
-                        end,
-                    })
-                end,
-                onDelete = function()
-                    CludesUI:ShowConfirmPopup({
-                        title = L("Delete Indicator"),
-                        message = L("Delete this indicator? Its settings are removed from the profile."),
-                        confirmText = L("Delete"),
-                        cancelText = L("Cancel"),
-                        onConfirm = function()
-                            if mod.DM_DeleteTile then
-                                mod.DM_DeleteTile(t.id)
-                            end
-                            if dmSel == t.id then
-                                dmSel = "base"
-                            end
-                            DmApply()
-                            CludesUI:RefreshPage(true)
-                        end,
-                    })
-                end,
-            })
+        AddTile({
+            icon = TileFaceTexture(t),
+            -- User-typed name over the type-name default. Display-only
+            -- (additive key; DM_CfgFP serializes explicit fields, so a
+            -- rename never re-declares containers).
+            title = TileName(t),
+            posText = TilePosText(t),
+            -- Live: filter and Match Mode clicks refresh without a rebuild.
+            subtitleFn = function()
+                return TileSubtitle(t)
+            end,
+            selected = (dmSel == t.id and not dmInhSel),
+            enabled = t.enabled and true or false,
+            showToggle = true,
+            onSelect = function()
+                dmSel = t.id
+                dmInhSel = nil
+                CludesUI:RefreshPage(true)
+            end,
+            -- Right-click: copy this tile into another editing-spec bucket
+            -- (full clone, fresh id; the source stays).
+            onContext = function(tileFrame)
+                if not CludesUI.ShowPickMenu then
+                    return
+                end
+                CludesUI.ShowPickMenu(tileFrame, {
+                    title = L("Add To"),
+                    fontPath = fontFile,
+                    items = CludesUI.SpecBucketMenuItems(dmSpecSel, nil, mod.DM_ForeverKey),
+                    onPick = function(key)
+                        if mod.DM_CopyTile and mod.DM_CopyTile(t, key) then
+                            ApplyAndRedraw()
+                        end
+                    end,
+                })
+            end,
+            onToggle = function(val)
+                t.enabled = val and true or false
+                ApplyAndRedraw()
+            end,
+            editTooltip = L("Rename Indicator"),
+            onEdit = function()
+                local current = TileName(t)
+                CludesUI:ShowInputPopup({
+                    title = L("Rename Indicator"),
+                    message = L("Enter a new name for this indicator:"),
+                    placeholder = current,
+                    confirmText = L("Rename"),
+                    cancelText = L("Cancel"),
+                    onConfirm = function(textValue)
+                        textValue = textValue and textValue:gsub("^%s+", ""):gsub("%s+$", "") or ""
+                        -- Empty reverts to the type-name default.
+                        t.name = (textValue ~= "") and textValue or nil
+                        CludesUI:RefreshPage(true)
+                    end,
+                })
+            end,
+            onDelete = function()
+                CludesUI:ShowConfirmPopup({
+                    title = L("Delete Indicator"),
+                    message = L("Delete this indicator? Its settings are removed from the profile."),
+                    confirmText = L("Delete"),
+                    cancelText = L("Cancel"),
+                    onConfirm = function()
+                        if mod.DM_DeleteTile then
+                            mod.DM_DeleteTile(t.id)
+                        end
+                        if dmSel == t.id then
+                            dmSel = "base"
+                        end
+                        ApplyAndRedraw()
+                    end,
+                })
+            end,
+        })
     end
 
     -------------------------------------------------------------------
@@ -3842,8 +3835,7 @@ function mod.DMP_BuildPage(page, hostFrame, yOffset)
                         end
                         dmSel = t.id
                         dmInhSel = nil
-                        DmApply()
-                        CludesUI:RefreshPage(true)
+                        ApplyAndRedraw()
                     end
                 end)
 
