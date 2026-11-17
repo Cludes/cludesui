@@ -747,20 +747,20 @@ initFrame:SetScript("OnEvent", function(self)
                     or (slot.kind == "panel" and "interface panel")
                     or (slot.kind == "equipmentset" and "equipment set")
                     or (slot.kind == "spec" and "specialization")
-                    -- Same icon and same name as a fixed spec entry on the
-                    -- character that made it, so the caption is the only place
-                    -- the difference between the two can be said.
+                    -- Same icon and same name as a fixed spec entry on the
+                    -- character that made it, so the caption is the only place
+                    -- the difference between the two can be said.
                     or (slot.kind == "dynamicspec" and "specialization, by position on this character")
-                    -- Checked before the plain profession caption below,
-                    -- since slot.extra would otherwise still match it.
+                    -- Checked before the plain profession caption below,
+                    -- since slot.extra would otherwise still match it.
                     or (slot.kind == "dynamicprofession" and slot.specialization and "profession specialization ability, by position on this character")
                     or (slot.kind == "dynamicprofession" and slot.extra and "profession's second ability, by position on this character")
-                    -- Same icon and same name as a fixed profession entry on
-                    -- the character that made it, just as with dynamicspec.
+                    -- Same icon and same name as a fixed profession entry on
+                    -- the character that made it, just as with dynamicspec.
                     or (slot.kind == "dynamicprofession" and "profession, by position on this character")
-                    -- The name above is already the spell this character would
-                    -- cast, so the caption says what picked it rather than
-                    -- repeating it.
+                    -- The name above is already the spell this character would
+                    -- cast, so the caption says what picked it rather than
+                    -- repeating it.
                     or (slot.kind == "dynamicrez" and "resurrection, chosen for this character")
                     or slot.kind
             end
@@ -4002,302 +4002,211 @@ initFrame:SetScript("OnEvent", function(self)
         posY = posY - BuildApplyRow(hostFrame, posY, paletteCount > 1)
 
         -----------------------------------------------------------------------
+        --  Row helpers for the two sections below
+        --
+        --  Nearly every control from here down edits one per-menu value: it
+        --  reads through ACfg with a fallback rule, writes through ASet and
+        --  then refreshes. PerMenu fills that pair in (a cog row names it
+        --  get/set, a page row getValue/setValue, told apart by whether the
+        --  spec carries a label) and Gated adds the module switch most of
+        --  them dim behind. Put lays a two-half row and moves posY past it.
+        -----------------------------------------------------------------------
+        local function PerMenu(spec, key, read)
+            local function fetch()
+                return read(ACfg(key))
+            end
+            local function store(v)
+                ASet(key, v)
+                Refresh()
+            end
+            if spec.label then
+                spec.get, spec.set = fetch, store
+            else
+                spec.getValue, spec.setValue = fetch, store
+            end
+            return spec
+        end
+        local function Gated(spec, key, read)
+            spec.disabled = spec.disabled or Disabled
+            spec.disabledTooltip = spec.disabledTooltip or "the module"
+            return PerMenu(spec, key, read)
+        end
+        local function Or(fallback)
+            return function(v)
+                return v or fallback
+            end
+        end
+        local function OnUnlessOff(v)
+            return v ~= false
+        end
+        local function OffUnlessOn(v)
+            return v == true
+        end
+        local function Put(left, right)
+            local made, height = W:DualRow(hostFrame, posY, left, right)
+            posY = posY - height
+            return made
+        end
+
+        -----------------------------------------------------------------------
         --  LAYOUT
         -----------------------------------------------------------------------
         _, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
         posY = posY - hgt
 
-        -- The page keeps the two decisions every palette needs -- which
-        -- layout it draws as and where it opens -- and the two sizes everyone
-        -- reaches for. Every layout carries its primary dials on a page row
-        -- of its own below: the arc's radius and span (rotation riding the
-        -- span's cog), the fan's direction and window (the strip's settings
-        -- riding the direction's cog), and the grid's column pair. Only the
-        -- grid still builds a cog on the Layout dropdown, for the one row
-        -- left over (spacing); its nest style rides Nest Distance's cog
-        -- below. The Layout popup can never be open when
-        -- the layout changes under it -- the dropdown click that changes it
-        -- is a click outside the popup, which closes it -- so its rows cannot
-        -- go stale.
+        -- The page keeps the two decisions every menu needs (which layout it
+        -- draws as, and where it opens) and the two sizes people reach for
+        -- most. Each layout then gets a dial row of its own below: radius
+        -- and span for the arc (rotation on the span's cog), direction and
+        -- window for the fan (the rest of the strip on the direction's cog),
+        -- and the column pair for the grid. The grid alone still puts a cog
+        -- on Layout, for its spacing. Picking a layout is a click outside
+        -- that cog, which closes it, so its rows never go stale.
         local layoutMode = ACfg("layout") or "ARC"
 
-        local layoutCogTitle, layoutCogRows
-        if layoutMode == "GRID" then
-            layoutCogTitle = "Grid Settings"
-            layoutCogRows = {
-                {
-                    type = "slider",
-                    label = "Spacing",
-                    min = 0,
-                    max = 40,
-                    step = 1,
-                    disabled = Disabled,
-                    disabledTooltip = "the module",
-                    get = function()
-                        return ACfg("fanGap") or 10
-                    end,
-                    set = function(v)
-                        ASet("fanGap", v)
-                        Refresh()
-                    end,
-                },
-            }
+        -- In cursor mode the menu opens under the mouse, so the offsets
+        -- (the only way to place it: there is no drag editor and no Unlock
+        -- Mode entry) sit dead until Fixed Position is picked. Their cog
+        -- dims with them, so the row still says they exist.
+        local function fixedOnly()
+            return Disabled() or (ACfg("centerMode") or "CURSOR") ~= "SCREEN"
         end
-
-        row, hgt = W:DualRow(hostFrame, posY, {
-            type = "dropdown",
-            text = "Layout",
-            disabled = Disabled,
-            disabledTooltip = "the module",
-            values = layoutValues,
-            order = layoutOrder,
-            getValue = function()
-                return ACfg("layout") or "ARC"
-            end,
-            -- Rebuild, not Refresh: the cog beside this dropdown is loaded
-            -- with the rows of the layout picked here.
-            setValue = function(v)
-                ASet("layout", v)
-                RebuildPage()
-            end,
-        }, {
-            type = "dropdown",
-            text = "Open At",
-            disabled = Disabled,
-            disabledTooltip = "the module",
-            values = centerValues,
-            order = centerOrder,
-            getValue = function()
-                return ACfg("centerMode") or "CURSOR"
-            end,
-            setValue = function(v)
-                ASet("centerMode", v)
-                Refresh()
-            end,
-        })
-        do
-            -- Only the GRID builds a layout cog.
-            if layoutCogRows then
-                CludesUI.BuildInlineCog(row._leftRegion, {
-                    title = layoutCogTitle,
-                    rows = layoutCogRows,
-                })
-            end
-
-            -- The X/Y offsets are the ONLY way to place the palette: the
-            -- on-screen drag editor is gone, and this module is not yet
-            -- registered with Unlock Mode. In cursor mode the palette opens
-            -- wherever the mouse is, so both rows sit dead until Fixed
-            -- Position is picked.
-            local fixedOnly = function()
-                return Disabled() or (ACfg("centerMode") or "CURSOR") ~= "SCREEN"
-            end
-            -- The cog disables with the offsets it opens, so the row still says they exist.
-            CludesUI.BuildInlineCog(row._rightRegion, {
-                title = "Fixed Position",
+        local function Offset(label, key, reach)
+            return Gated({
+                type = "slider",
+                label = label,
+                min = -reach,
+                max = reach,
+                step = 1,
                 disabled = fixedOnly,
-                disabledTooltip = function()
-                    return Disabled() and "the module" or "Fixed Position mode"
+                disabledTooltip = "Fixed Position mode",
+            }, key, Or(0))
+        end
+
+        row = Put(
+            -- Rebuild, not Refresh: the grid's cog beside this dropdown only
+            -- exists for the layout picked here.
+            {
+                type = "dropdown",
+                text = "Layout",
+                disabled = Disabled,
+                disabledTooltip = "the module",
+                values = layoutValues,
+                order = layoutOrder,
+                getValue = function()
+                    return ACfg("layout") or "ARC"
                 end,
+                setValue = function(v)
+                    ASet("layout", v)
+                    RebuildPage()
+                end,
+            },
+            Gated(
+                { type = "dropdown", text = "Open At", values = centerValues, order = centerOrder },
+                "centerMode",
+                Or("CURSOR")
+            )
+        )
+        if layoutMode == "GRID" then
+            CludesUI.BuildInlineCog(row._leftRegion, {
+                title = "Grid Settings",
                 rows = {
-                    {
-                        type = "slider",
-                        label = "X Offset",
-                        min = -800,
-                        max = 800,
-                        step = 1,
-                        disabled = fixedOnly,
-                        disabledTooltip = "Fixed Position mode",
-                        get = function()
-                            return ACfg("posX") or 0
-                        end,
-                        set = function(v)
-                            ASet("posX", v)
-                            Refresh()
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Y Offset",
-                        min = -600,
-                        max = 600,
-                        step = 1,
-                        disabled = fixedOnly,
-                        disabledTooltip = "Fixed Position mode",
-                        get = function()
-                            return ACfg("posY") or 0
-                        end,
-                        set = function(v)
-                            ASet("posY", v)
-                            Refresh()
-                        end,
-                    },
+                    Gated(
+                        { type = "slider", label = "Spacing", min = 0, max = 40, step = 1 },
+                        "fanGap",
+                        Or(10)
+                    ),
                 },
             })
         end
-        posY = posY - hgt
+        CludesUI.BuildInlineCog(row._rightRegion, {
+            title = "Fixed Position",
+            disabled = fixedOnly,
+            disabledTooltip = function()
+                return Disabled() and "the module" or "Fixed Position mode"
+            end,
+            rows = {
+                Offset("X Offset", "posX", 800),
+                Offset("Y Offset", "posY", 600),
+            },
+        })
 
-        -----------------------------------------------------------------------
-        --  Grid dials -- on the page only while the edited menu draws as a
-        --  GRID, the same swap the arc and fan rows below make. Both are
-        --  per-menu; the cog on Layout keeps the rest of the grid's rows.
-        -----------------------------------------------------------------------
+        -- The per-layout dial rows. The Layout dropdown rebuilds the page, so
+        -- whichever one shows always matches the edited menu.
         if layoutMode == "GRID" then
-            row, hgt = W:DualRow(hostFrame, posY, {
-                type = "toggle",
-                text = "Auto Columns",
-                disabled = Disabled,
-                disabledTooltip = "the module",
-                getValue = function()
-                    return ACfg("gridAutoColumns") ~= false
-                end,
-                setValue = function(v)
-                    ASet("gridAutoColumns", v)
-                    Refresh()
-                end,
-            }, {
-                type = "slider",
-                text = "Grid Columns",
-                -- The top of the travel is the slot cap, not an arbitrary
-                -- 8. A grid never draws more columns than it has entries,
-                -- so asking for the most a palette can ever hold is how you
-                -- say "one row", and it stays one row as entries are added.
-                -- Column 1 is already the transpose of that, so both
-                -- single-file layouts are on the one slider and neither
-                -- needs a sentinel value.
-                min = 1,
-                max = MAX_SLOTS,
-                step = 1,
-                disabled = function()
-                    return Disabled() or ACfg("gridAutoColumns") ~= false
-                end,
-                requireState = "disabled",
-                disabledTooltip = "Auto Columns",
-                tooltip = CludesUI.Lf(
-                    "How many entries a row of the grid holds. 1 stacks "
-                        .. "them into a single column; %1$s -- the most slots an "
-                        .. "action menu can hold -- lays them out in a single row.",
-                    MAX_SLOTS
+            Put(
+                Gated({ type = "toggle", text = "Auto Columns" }, "gridAutoColumns", OnUnlessOff),
+                -- The slider tops out at the slot cap: a grid never draws
+                -- more columns than it has entries, so the cap means "one
+                -- row" and stays one row as entries are added, while 1 is a
+                -- single column. Both single-file shapes live on the one
+                -- slider and neither needs a special value.
+                Gated({
+                    type = "slider",
+                    text = "Grid Columns",
+                    min = 1,
+                    max = MAX_SLOTS,
+                    step = 1,
+                    disabled = function()
+                        return Disabled() or ACfg("gridAutoColumns") ~= false
+                    end,
+                    requireState = "disabled",
+                    disabledTooltip = "Auto Columns",
+                    tooltip = CludesUI.Lf(
+                        "How many entries a row of the grid holds. 1 stacks "
+                            .. "them into a single column; %1$s -- the most slots an "
+                            .. "action menu can hold -- lays them out in a single row.",
+                        MAX_SLOTS
+                    ),
+                }, "gridColumns", Or(4))
+            )
+        elseif layoutMode == "ARC" then
+            local arcRow = Put(
+                Gated(
+                    { type = "slider", text = "Distance from Center", min = 50, max = 220, step = 1 },
+                    "radius",
+                    Or(100)
                 ),
-                getValue = function()
-                    return ACfg("gridColumns") or 4
-                end,
-                setValue = function(v)
-                    ASet("gridColumns", v)
-                    Refresh()
-                end,
+                Gated(
+                    { type = "slider", text = "Arc Span", min = 30, max = 360, step = 5 },
+                    "arcSpan",
+                    Or(360)
+                )
+            )
+            -- A full circle has nowhere to point, so rotation only comes live
+            -- once the span is narrowed. A span edit is a click outside this
+            -- popup and closes it, so the check is fresh on every open.
+            CludesUI.BuildInlineCog(arcRow._rightRegion, {
+                title = "Arc Rotation",
+                rows = {
+                    Gated({
+                        type = "slider",
+                        label = "Arc Rotation",
+                        min = -180,
+                        max = 180,
+                        step = 5,
+                        disabled = function()
+                            return Disabled() or (ACfg("arcSpan") or 360) >= 360
+                        end,
+                        disabledTooltip = "an Arc Span below 360",
+                    }, "arcRotation", Or(0)),
+                },
             })
-            posY = posY - hgt
-        end
-
-        -----------------------------------------------------------------------
-        --  Arc dials -- on the page only while the edited menu draws as an
-        --  ARC (the Layout dropdown rebuilds the page, so this row swaps
-        --  with it). Both dials are per-menu; Rotation rides Span's cog
-        --  because a full-circle span has nowhere to point.
-        -----------------------------------------------------------------------
-        if layoutMode == "ARC" then
-            local arcRow
-            arcRow, hgt = W:DualRow(hostFrame, posY, {
-                type = "slider",
-                text = "Distance from Center",
-                min = 50,
-                max = 220,
-                step = 1,
-                disabled = Disabled,
-                disabledTooltip = "the module",
-                getValue = function()
-                    return ACfg("radius") or 100
-                end,
-                setValue = function(v)
-                    ASet("radius", v)
-                    Refresh()
-                end,
-            }, {
-                type = "slider",
-                text = "Arc Span",
-                min = 30,
-                max = 360,
-                step = 5,
-                disabled = Disabled,
-                disabledTooltip = "the module",
-                getValue = function()
-                    return ACfg("arcSpan") or 360
-                end,
-                setValue = function(v)
-                    ASet("arcSpan", v)
-                    Refresh()
-                end,
-            })
-            do
-                CludesUI.BuildInlineCog(arcRow._rightRegion, {
-                    title = "Arc Rotation",
-                    rows = {
-                        -- 360 is a full turn, and rotating a full circle is
-                        -- a no-op -- the row only comes live once the span
-                        -- has been narrowed to an arc that has somewhere to
-                        -- point. Span edits close this popup (a page click
-                        -- is a click outside it), so the predicate is fresh
-                        -- on every open.
-                        {
-                            type = "slider",
-                            label = "Arc Rotation",
-                            min = -180,
-                            max = 180,
-                            step = 5,
-                            disabled = function()
-                                return Disabled() or (ACfg("arcSpan") or 360) >= 360
-                            end,
-                            disabledTooltip = "an Arc Span below 360",
-                            get = function()
-                                return ACfg("arcRotation") or 0
-                            end,
-                            set = function(v)
-                                ASet("arcRotation", v)
-                                Refresh()
-                            end,
-                        },
-                    },
-                })
-            end
-            posY = posY - hgt
-        end
-
-        -----------------------------------------------------------------------
-        --  Fan dials -- on the page only while the edited menu draws as a
-        --  FAN, the same swap the arc row above makes. Both page values are
-        --  per-menu appearance; the cog on Fan Direction holds the rest of
-        --  the strip's settings.
-        -----------------------------------------------------------------------
-        if layoutMode == "FAN" then
-            local fanRow
-            fanRow, hgt = W:DualRow(
-                hostFrame,
-                posY,
-                {
+        elseif layoutMode == "FAN" then
+            local fanRow = Put(
+                Gated({
                     type = "dropdown",
                     text = "Fan Direction",
-                    disabled = Disabled,
-                    disabledTooltip = "the module",
                     values = orientValues,
                     order = orientOrder,
-                    getValue = function()
-                        return ACfg("fanOrientation") or "HORIZONTAL"
-                    end,
-                    setValue = function(v)
-                        ASet("fanOrientation", v)
-                        Refresh()
-                    end,
-                },
-                -- How much of the strip is drawn at all. Neighbours past this
-                -- many steps are hidden rather than shrunk further.
+                }, "fanOrientation", Or("HORIZONTAL")),
+                -- How much of the strip is drawn at all, shown as the whole
+                -- odd count (the centre and as many again each side) but
+                -- stored as the each-side window, (total - 1) / 2, which is
+                -- what every window, hover and snippet test works from.
                 {
                     type = "slider",
                     text = "Visible Icons",
-                    -- The whole strip, as the user sees it: an odd count, the
-                    -- centre plus the same number each side. Stored as the
-                    -- each-side WINDOW -- (total - 1) / 2 -- which is the
-                    -- number every window, hover and snippet test runs on.
                     min = 1,
                     max = 9,
                     step = 2,
@@ -4312,113 +4221,54 @@ initFrame:SetScript("OnEvent", function(self)
                     end,
                 }
             )
-            do
-                CludesUI.BuildInlineCog(fanRow._leftRegion, {
-                    title = "Fan Settings",
-                    rows = {
-                        -- The strip's hover channel: the entry under the
-                        -- pointer is the one a release fires, and pointing at
-                        -- none of them selects nothing. The wheel scrolls the
-                        -- strip either way.
-                        {
-                            type = "toggle",
-                            label = "Select Action with Mouse",
-                            disabled = Disabled,
-                            disabledTooltip = "the module",
-                            get = function()
-                                return ACfg("fanMouseSelect") ~= false
-                            end,
-                            set = function(v)
-                                ASet("fanMouseSelect", v)
-                                Refresh()
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Spacing",
-                            min = 0,
-                            max = 40,
-                            step = 1,
-                            disabled = Disabled,
-                            disabledTooltip = "the module",
-                            get = function()
-                                return ACfg("fanGap") or 10
-                            end,
-                            set = function(v)
-                                ASet("fanGap", v)
-                                Refresh()
-                            end,
-                        },
-                        {
-                            type = "toggle",
-                            label = "Invert Scroll",
-                            disabled = Disabled,
-                            disabledTooltip = "the module",
-                            get = function()
-                                return ACfg("fanInvert") == true
-                            end,
-                            set = function(v)
-                                ASet("fanInvert", v)
-                                Refresh()
-                            end,
-                        },
-                    },
-                })
-            end
-            posY = posY - hgt
+            -- Select Action with Mouse is the strip's hover channel: the entry
+            -- under the pointer is what a release fires, and pointing at none
+            -- picks nothing. The wheel scrolls the strip either way.
+            CludesUI.BuildInlineCog(fanRow._leftRegion, {
+                title = "Fan Settings",
+                rows = {
+                    Gated(
+                        { type = "toggle", label = "Select Action with Mouse" },
+                        "fanMouseSelect",
+                        OnUnlessOff
+                    ),
+                    Gated(
+                        { type = "slider", label = "Spacing", min = 0, max = 40, step = 1 },
+                        "fanGap",
+                        Or(10)
+                    ),
+                    Gated({ type = "toggle", label = "Invert Scroll" }, "fanInvert", OffUnlessOn),
+                },
+            })
         end
 
-        -----------------------------------------------------------------------
-        --  Nest geometry -- on the page only while some menu actually nests
-        --  another (Refresh escalates to a rebuild when that flips). Both
-        --  sliders are per-menu. The cog on Nest Distance is the edited
-        --  menu's layout's: the arc's shape pair, or the grid's nest style.
-        --  A fan nest has neither, so there it builds no cog at all -- the
-        --  layout swap rebuilds the page, same as the dial rows above.
-        -----------------------------------------------------------------------
+        -- Nest geometry, only while some menu really nests another (Refresh
+        -- turns into a rebuild when that changes). The cog on Nest Distance
+        -- belongs to the edited menu's layout: the arc's shape pair or the
+        -- grid's nest style. A fan nest has neither, so it gets no cog.
         if builtWithNest then
-            local nestRow
-            nestRow, hgt = W:DualRow(hostFrame, posY, {
-                type = "slider",
-                text = "Nest Distance",
-                disabled = Disabled,
-                disabledTooltip = "the module",
-                tooltip = "The gap between a nested menu's icons and the entry " .. "that opens it.",
-                min = 0,
-                max = 160,
-                step = 1,
-                getValue = function()
-                    return ACfg("nestBand") or 40
-                end,
-                setValue = function(v)
-                    ASet("nestBand", v)
-                    Refresh()
-                end,
-            }, {
-                type = "slider",
-                text = "Nest Icon Size",
-                disabled = Disabled,
-                disabledTooltip = "the module",
-                min = 0.4,
-                max = 1.0,
-                step = 0.05,
-                getValue = function()
-                    return ACfg("nestScale") or 0.8
-                end,
-                setValue = function(v)
-                    ASet("nestScale", v)
-                    Refresh()
-                end,
-            })
+            local nestRow = Put(
+                Gated({
+                    type = "slider",
+                    text = "Nest Distance",
+                    tooltip = "The gap between a nested menu's icons and the entry " .. "that opens it.",
+                    min = 0,
+                    max = 160,
+                    step = 1,
+                }, "nestBand", Or(40)),
+                Gated(
+                    { type = "slider", text = "Nest Icon Size", min = 0.4, max = 1.0, step = 0.05 },
+                    "nestScale",
+                    Or(0.8)
+                )
+            )
             if layoutMode == "ARC" then
                 CludesUI.BuildInlineCog(nestRow._leftRegion, {
                     title = "Arc Nest Shape",
                     rows = {
-                        {
+                        Gated({
                             type = "dropdown",
                             label = "Nest Width",
-                            disabled = Disabled,
-                            disabledTooltip = "the module",
                             tooltip = "How far along the arc a nest may spread its entries."
                                 .. " Contained keeps it clear of the next nest either side,"
                                 .. " so two of them are never drawn on top of one another."
@@ -4427,101 +4277,49 @@ initFrame:SetScript("OnEvent", function(self)
                                 .. " they only give up their angles while it is open.",
                             values = { NONE = "Contained", MIDPOINT = "Overflowing" },
                             order = { "NONE", "MIDPOINT" },
-                            get = function()
-                                return ACfg("arcChildOverflow") or "NONE"
-                            end,
-                            set = function(v)
-                                ASet("arcChildOverflow", v)
-                                Refresh()
-                            end,
-                        },
-                        {
+                        }, "arcChildOverflow", Or("NONE")),
+                        Gated({
                             type = "slider",
                             label = "Max Nest Span",
                             min = 30,
                             max = 180,
                             step = 5,
-                            disabled = Disabled,
-                            disabledTooltip = "the module",
                             tooltip = "The widest angle a nest's entries may spread over."
                                 .. " They stay on one ring for as long as they fit inside"
                                 .. " it; the rest go onto a second ring further out.",
-                            get = function()
-                                return ACfg("arcChildMaxSpan") or 90
-                            end,
-                            set = function(v)
-                                ASet("arcChildMaxSpan", v)
-                                Refresh()
-                            end,
-                        },
+                        }, "arcChildMaxSpan", Or(90)),
                     },
                 })
             elseif layoutMode == "GRID" then
+                -- Lane hugs the block as a halo centred on the point nearest
+                -- the entry that opens it, wrapping corners on a long run;
+                -- Halo uses the eight places around the entry itself with
+                -- the block faded behind. A value saved from the retired
+                -- Popout style reads as Lane, here and in the module.
                 CludesUI.BuildInlineCog(nestRow._leftRegion, {
                     title = "Grid Nest Style",
                     rows = {
-                        --   Lane     a halo hugging the block, centered on the
-                        --            point of it nearest the entry that opens
-                        --            it, wrapping the corners when the run is
-                        --            long
-                        --   Halo     the eight positions around the entry
-                        --            itself, the block faded behind them
-                        -- A stored value from the retired Popout style reads
-                        -- as Lane, here and in the module both.
-                        {
-                            type = "dropdown",
-                            label = "Grid Nest Style",
-                            disabled = Disabled,
-                            disabledTooltip = "the module",
-                            values = { PERIMETER = "Lane", HALO = "Halo" },
-                            order = { "PERIMETER", "HALO" },
-                            get = function()
-                                local v = ACfg("gridNestStyle")
+                        Gated(
+                            {
+                                type = "dropdown",
+                                label = "Grid Nest Style",
+                                values = { PERIMETER = "Lane", HALO = "Halo" },
+                                order = { "PERIMETER", "HALO" },
+                            },
+                            "gridNestStyle",
+                            function(v)
                                 return (v == "HALO") and "HALO" or "PERIMETER"
-                            end,
-                            set = function(v)
-                                ASet("gridNestStyle", v)
-                                Refresh()
-                            end,
-                        },
+                            end
+                        ),
                     },
                 })
             end
-            posY = posY - hgt
         end
 
-        row, hgt = W:DualRow(hostFrame, posY, {
-            type = "slider",
-            text = "Icon Size",
-            disabled = Disabled,
-            disabledTooltip = "the module",
-            min = 24,
-            max = 72,
-            step = 1,
-            getValue = function()
-                return ACfg("iconSize") or 40
-            end,
-            setValue = function(v)
-                ASet("iconSize", v)
-                Refresh()
-            end,
-        }, {
-            type = "slider",
-            text = "Scale",
-            disabled = Disabled,
-            disabledTooltip = "the module",
-            min = 0.5,
-            max = 2.0,
-            step = 0.01,
-            getValue = function()
-                return ACfg("scale") or 1.0
-            end,
-            setValue = function(v)
-                ASet("scale", v)
-                Refresh()
-            end,
-        })
-        posY = posY - hgt
+        Put(
+            Gated({ type = "slider", text = "Icon Size", min = 24, max = 72, step = 1 }, "iconSize", Or(40)),
+            Gated({ type = "slider", text = "Scale", min = 0.5, max = 2.0, step = 0.01 }, "scale", Or(1.0))
+        )
 
         -----------------------------------------------------------------------
         --  APPEARANCE
@@ -4529,254 +4327,163 @@ initFrame:SetScript("OnEvent", function(self)
         _, hgt = W:SectionHeader(hostFrame, "APPEARANCE", posY)
         posY = posY - hgt
 
-        row, hgt = W:DualRow(hostFrame, posY, {
-            type = "toggle",
-            text = "Show Cooldowns",
-            disabled = Disabled,
-            disabledTooltip = "the module",
-            getValue = function()
-                return ACfg("showCooldowns") ~= false
-            end,
-            setValue = function(v)
-                ASet("showCooldowns", v)
-                Refresh()
-            end,
-        }, {
-            type = "toggle",
-            text = "Dim Unusable Actions",
-            disabled = Disabled,
-            disabledTooltip = "the module",
-            tooltip = "Dims any actions you can't use right now.",
-            getValue = function()
-                return ACfg("showUsability") ~= false
-            end,
-            setValue = function(v)
-                ASet("showUsability", v)
-                Refresh()
-            end,
-        })
-        posY = posY - hgt
+        Put(
+            Gated({ type = "toggle", text = "Show Cooldowns" }, "showCooldowns", OnUnlessOff),
+            Gated({
+                type = "toggle",
+                text = "Dim Unusable Actions",
+                tooltip = "Dims any actions you can't use right now.",
+            }, "showUsability", OnUnlessOff)
+        )
 
-        -- Selection Color is the accent|custom|class swatch trio -- the
-        -- standard dual-swatch treatment (AttachLookSwatches in
-        -- CUI_BlizzardSkin_Options.lua) grown by one: accent by default and
-        -- resolved live, the custom swatch storing its own color, the class
-        -- swatch reading the player's class live. Exactly one of the three
-        -- is lit, and class outranks custom -- the module's SelectColor
-        -- resolves the stored pair the same way.
-        -- A label half, not a colorpicker: the custom swatch IS the picker.
-        -- The swatches are left out of the search index prebuild, whose row
-        -- is a stand-in with no frame to build on.
-        row, hgt = W:DualRow(hostFrame, posY, { type = "label", text = "Selection Color" }, {
-            type = "toggle",
-            text = "Show Action Text Label",
-            disabled = Disabled,
-            disabledTooltip = "the module",
-            tooltip = "Show the selected action's name next to the selected icon.",
-            getValue = function()
-                return ACfg("showActionText") == true
-            end,
-            setValue = function(v)
-                ASet("showActionText", v)
-                Refresh()
-            end,
-        })
+        -- Selection Color is three swatches, accent, custom and class, one
+        -- more than the usual look pair: accent by default and read live,
+        -- custom holding a colour of its own, class read live from the
+        -- player. One is lit at a time and class beats custom, the same
+        -- order the module's SelectColor resolves them in. The left half is
+        -- a label because the custom swatch is the picker; the search index
+        -- prebuild gets the stand-in row only, with nothing to build on.
+        row = Put(
+            { type = "label", text = "Selection Color" },
+            Gated({
+                type = "toggle",
+                text = "Show Action Text Label",
+                tooltip = "Show the selected action's name next to the selected icon.",
+            }, "showActionText", OffUnlessOn)
+        )
         if not CludesUI._prebuilding then
             local region = row._leftRegion
             local PPQ = CludesUI.PanelPP
+            local level = row:GetFrameLevel() + 3
 
-            local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
-                region,
-                row:GetFrameLevel() + 3,
-                function()
-                    local c = ACfg("selectColor") or {}
-                    return c[1] or 0.298, c[2] or 0.788, c[3] or 0.941
-                end,
-                function(r2, g2, b2)
-                    ASet("selectColor", { r2, g2, b2 })
-                    ASet("selectColorCustom", true)
-                    ASet("useClassColor", false)
-                    Refresh()
-                end,
-                false,
-                20
-            )
+            local function Swatch(read, pick, tip)
+                local sw, update = CludesUI.BuildColorSwatch(region, level, read, pick, false, 20)
+                sw:SetScript("OnEnter", function()
+                    CludesUI.ShowWidgetTooltip(sw, tip)
+                end)
+                sw:SetScript("OnLeave", function()
+                    CludesUI.HideWidgetTooltip()
+                end)
+                return sw, update
+            end
+            local function pickAccent()
+                ASet("selectColorCustom", false)
+                ASet("useClassColor", false)
+                Refresh()
+            end
+            local function pickClass()
+                ASet("useClassColor", true)
+                Refresh()
+            end
+            local function guarded(pick)
+                return function()
+                    if not Disabled() then
+                        pick()
+                    end
+                end
+            end
+
+            local customSwatch, updateCustom = Swatch(function()
+                local c = ACfg("selectColor") or {}
+                return c[1] or 0.298, c[2] or 0.788, c[3] or 0.941
+            end, function(r2, g2, b2)
+                ASet("selectColor", { r2, g2, b2 })
+                ASet("selectColorCustom", true)
+                ASet("useClassColor", false)
+                Refresh()
+            end, "Custom Color")
             PPQ.Point(customSwatch, "RIGHT", region, "RIGHT", -20, 0)
-            local origClick = customSwatch:GetScript("OnClick")
+            -- Until custom is the lit mode, a click only switches to it; the
+            -- next click opens the picker, as the window-skin pairs do.
+            local openPicker = customSwatch:GetScript("OnClick")
             customSwatch:SetScript("OnClick", function(self2, ...)
                 if Disabled() then
                     return
                 end
-                if ACfg("selectColorCustom") ~= true or ACfg("useClassColor") == true then
-                    -- First click only chooses the mode; the second opens the
-                    -- picker, exactly like the window-skin pairs.
-                    ASet("selectColorCustom", true)
-                    ASet("useClassColor", false)
-                    Refresh()
+                if ACfg("selectColorCustom") == true and ACfg("useClassColor") ~= true then
+                    if openPicker then
+                        openPicker(self2, ...)
+                    end
                     return
                 end
-                if origClick then
-                    origClick(self2, ...)
-                end
-            end)
-            customSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color")
-            end)
-            customSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
-
-            local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(
-                region,
-                row:GetFrameLevel() + 3,
-                function()
-                    return CludesUI.ResolveActiveAccent()
-                end,
-                function()
-                    ASet("selectColorCustom", false)
-                    ASet("useClassColor", false)
-                    Refresh()
-                end,
-                false,
-                20
-            )
-            PPQ.Point(accentSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
-            accentSwatch:SetScript("OnClick", function()
-                if Disabled() then
-                    return
-                end
-                ASet("selectColorCustom", false)
+                ASet("selectColorCustom", true)
                 ASet("useClassColor", false)
                 Refresh()
             end)
-            accentSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(accentSwatch, "Accent Color")
-            end)
-            accentSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
 
-            -- The Class Color swatch: the player's own class color, resolved
-            -- live like the accent. Its click chooses the mode; there is no
-            -- picker behind it, the class decides the color.
-            local classSwatch, updateClass = CludesUI.BuildColorSwatch(
-                region,
-                row:GetFrameLevel() + 3,
-                function()
-                    local c = RAID_CLASS_COLORS and RAID_CLASS_COLORS[select(2, UnitClass("player"))]
-                    if c then
-                        return c.r, c.g, c.b
-                    end
-                    return 1, 1, 1
-                end,
-                function()
-                    ASet("useClassColor", true)
-                    Refresh()
-                end,
-                false,
-                20
-            )
-            PPQ.Point(classSwatch, "RIGHT", accentSwatch, "LEFT", -8, 0)
-            classSwatch:SetScript("OnClick", function()
-                if Disabled() then
-                    return
+            local accentSwatch, updateAccent = Swatch(function()
+                return CludesUI.ResolveActiveAccent()
+            end, pickAccent, "Accent Color")
+            PPQ.Point(accentSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
+            accentSwatch:SetScript("OnClick", guarded(pickAccent))
+
+            -- The player's class colour, read live like the accent. A click
+            -- only picks the mode: the class decides the colour, so there
+            -- is no picker behind it.
+            local classSwatch, updateClass = Swatch(function()
+                local c = RAID_CLASS_COLORS and RAID_CLASS_COLORS[select(2, UnitClass("player"))]
+                if c then
+                    return c.r, c.g, c.b
                 end
-                ASet("useClassColor", true)
-                Refresh()
-            end)
-            classSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(classSwatch, "Class Color")
-            end)
-            classSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+                return 1, 1, 1
+            end, pickClass, "Class Color")
+            PPQ.Point(classSwatch, "RIGHT", accentSwatch, "LEFT", -8, 0)
+            classSwatch:SetScript("OnClick", guarded(pickClass))
             region._lastInline = classSwatch
 
             local function refreshSwatches()
                 updateCustom()
                 updateAccent()
                 updateClass()
-                if Disabled() then
-                    customSwatch:SetAlpha(0.3)
-                    accentSwatch:SetAlpha(0.3)
-                    classSwatch:SetAlpha(0.3)
-                else
-                    -- Exactly one of the three lit: class outranks custom,
-                    -- matching the module's SelectColor resolution.
-                    local class = ACfg("useClassColor") == true
-                    local custom = not class and ACfg("selectColorCustom") == true
-                    classSwatch:SetAlpha(class and 1 or 0.3)
-                    customSwatch:SetAlpha(custom and 1 or 0.3)
-                    accentSwatch:SetAlpha((class or custom) and 0.3 or 1)
+                local lit
+                if not Disabled() then
+                    if ACfg("useClassColor") == true then
+                        lit = classSwatch
+                    elseif ACfg("selectColorCustom") == true then
+                        lit = customSwatch
+                    else
+                        lit = accentSwatch
+                    end
+                end
+                for _, sw in ipairs({ customSwatch, accentSwatch, classSwatch }) do
+                    sw:SetAlpha(sw == lit and 1 or 0.3)
                 end
             end
             CludesUI.RegisterWidgetRefresh(refreshSwatches)
             refreshSwatches()
         end
-        -- No Selection Effects cog: the zoom and both falloffs are hardcoded
-        -- off in the module (FalloffRatios / SelectedZoom), pending the
+        -- There is no Selection Effects cog: the zoom and both falloffs are
+        -- switched off in the module (FalloffRatios / SelectedZoom) until the
         -- user's own animation pass.
-        posY = posY - hgt
 
-        local wmRow
-        wmRow, hgt = W:DualRow(
-            hostFrame,
-            posY,
-            {
+        -- Toggle World Markers sits beside the filter rather than in ACTION
+        -- MENU SETUP because both change what an entry does once the menu is
+        -- drawn and both are per menu; it also leaves no half row empty.
+        local wmRow = Put(
+            Gated({
                 type = "toggle",
                 text = "Hide Unavailable Actions",
-                disabled = Disabled,
-                disabledTooltip = "the module",
                 tooltip = "Hides any actions not available to this character.",
-                getValue = function()
-                    return ACfg("hideUnusable") ~= false
-                end,
-                setValue = function(v)
-                    ASet("hideUnusable", v)
-                    Refresh()
-                end,
-            },
-            -- Beside the filter rather than in ACTION MENU SETUP: both of
-            -- these change what an entry does once the menu is drawn, and both
-            -- are per menu. It also keeps this the last row of the section
-            -- with no half of it empty.
-            {
+            }, "hideUnusable", OnUnlessOff),
+            Gated({
                 type = "toggle",
                 text = "Toggle World Markers",
-                disabled = Disabled,
-                disabledTooltip = "the module",
                 tooltip = "Use a world marker entry again to pick that marker "
                     .. "back up. Off places the marker again, at the new "
                     .. "position.\n"
                     .. "This does not change the entry that clears all world "
                     .. "markers, or the cycling entry.",
-                getValue = function()
-                    return ACfg("worldMarkerToggle") ~= false
-                end,
-                setValue = function(v)
-                    ASet("worldMarkerToggle", v)
-                    Refresh()
-                end,
-            }
+            }, "worldMarkerToggle", OnUnlessOff)
         )
-        posY = posY - hgt
-
-        -- Inline cog on Toggle World Markers: the placed-marker pip opt-out.
+        -- Its cog holds the one opt-out: the pip on a placed marker.
         CludesUI.BuildInlineCog(wmRow._rightRegion, {
             title = "World Marker Entries",
             rows = {
-                {
+                PerMenu({
                     type = "toggle",
                     label = "Show Placed-Marker Pips",
                     tooltip = "Mark a world marker entry whose marker is on the ground with a small corner square, so you can see whether pressing it places or picks up.",
-                    get = function()
-                        return ACfg("worldMarkerPip") ~= false
-                    end,
-                    set = function(v)
-                        ASet("worldMarkerPip", v)
-                        Refresh()
-                    end,
-                },
+                }, "worldMarkerPip", OnUnlessOff),
             },
         })
 
