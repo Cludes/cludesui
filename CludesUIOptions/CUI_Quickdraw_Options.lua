@@ -765,20 +765,20 @@ initFrame:SetScript("OnEvent", function(self)
                     or (ent.kind == "panel" and "interface panel")
                     or (ent.kind == "equipmentset" and "equipment set")
                     or (ent.kind == "spec" and "specialization")
-                    -- Same icon and same name as a fixed spec entry on the
-                    -- character that made it, so the caption is the only place
-                    -- the difference between the two can be said.
+                    -- Same icon and same name as a fixed spec entry on the
+                    -- character that made it, so the caption is the only place
+                    -- the difference between the two can be said.
                     or (ent.kind == "dynamicspec" and "specialization, by position on this character")
-                    -- Checked before the plain profession caption below,
-                    -- since slot.extra would otherwise still match it.
+                    -- Checked before the plain profession caption below,
+                    -- since slot.extra would otherwise still match it.
                     or (ent.kind == "dynamicprofession" and ent.specialization and "profession specialization ability, by position on this character")
                     or (ent.kind == "dynamicprofession" and ent.extra and "profession's second ability, by position on this character")
-                    -- Same icon and same name as a fixed profession entry on
-                    -- the character that made it, just as with dynamicspec.
+                    -- Same icon and same name as a fixed profession entry on
+                    -- the character that made it, just as with dynamicspec.
                     or (ent.kind == "dynamicprofession" and "profession, by position on this character")
-                    -- The name above is already the spell this character would
-                    -- cast, so the caption says what picked it rather than
-                    -- repeating it.
+                    -- The name above is already the spell this character would
+                    -- cast, so the caption says what picked it rather than
+                    -- repeating it.
                     or (ent.kind == "dynamicrez" and "resurrection, chosen for this character")
                     or ent.kind
             end
@@ -2143,60 +2143,43 @@ initFrame:SetScript("OnEvent", function(self)
     --  also how the class-specific ones gate themselves: IsPlayerSpell answers
     --  no to every spell on the wrong class.
     ---------------------------------------------------------------------------
-    local function TargetMarkerSlots()
-        local result = {}
-        for i = 1, 8 do
-            result[#result + 1] = { kind = "raidtarget", id = i }
+    -- The eight markers, star to skull, then id 0: the clear-all entry.
+    local function MarkerRun(kind)
+        local run = {}
+        for id = 1, 9 do
+            run[id] = { kind = kind, id = id % 9 }
         end
-        result[#result + 1] = { kind = "raidtarget", id = 0 }
-        return result
+        return run
     end
-
+    local function TargetMarkerSlots()
+        return MarkerRun("raidtarget")
+    end
     local function WorldMarkerSlots()
-        local result = {}
-        for i = 1, 8 do
-            result[#result + 1] = { kind = "worldmarker", id = i }
-        end
-        result[#result + 1] = { kind = "worldmarker", id = 0 }
-        return result
+        return MarkerRun("worldmarker")
     end
 
     -- Numeric /ping aliases (1 attack, 2 warning, 3 on my way, 4 assist, 5 look):
     -- the word forms resolve through localized PING_TYPE_* globals and only match
     -- on English clients.
+    -- { entry name, /ping number, atlas suffix }, in the order they are listed.
+    local PING_ROWS = {
+        { "Look", 5, "NonThreat" },
+        { "Assist", 4, "Assist" },
+        { "Attack", 1, "Attack" },
+        { "Warning", 2, "Warning" },
+        { "On My Way", 3, "OnMyWay" },
+    }
     local function PingSlots()
-        return {
-            {
+        local made = {}
+        for n, ping in ipairs(PING_ROWS) do
+            made[n] = {
                 kind = "macrotext",
-                name = "Look",
-                macrotext = "/ping 5",
-                icon = { atlas = "Ping_Marker_Icon_NonThreat" },
-            },
-            {
-                kind = "macrotext",
-                name = "Assist",
-                macrotext = "/ping 4",
-                icon = { atlas = "Ping_Marker_Icon_Assist" },
-            },
-            {
-                kind = "macrotext",
-                name = "Attack",
-                macrotext = "/ping 1",
-                icon = { atlas = "Ping_Marker_Icon_Attack" },
-            },
-            {
-                kind = "macrotext",
-                name = "Warning",
-                macrotext = "/ping 2",
-                icon = { atlas = "Ping_Marker_Icon_Warning" },
-            },
-            {
-                kind = "macrotext",
-                name = "On My Way",
-                macrotext = "/ping 3",
-                icon = { atlas = "Ping_Marker_Icon_OnMyWay" },
-            },
-        }
+                name = ping[1],
+                macrotext = "/ping " .. ping[2],
+                icon = { atlas = "Ping_Marker_Icon_" .. ping[3] },
+            }
+        end
+        return made
     end
 
     -- The base item plus its two expansion siblings, then the toy variants.
@@ -3921,9 +3904,17 @@ initFrame:SetScript("OnEvent", function(self)
         -- The key is one for the profile (ProfilePut) and the switch is per menu
         -- (MenuPut): the gesture that picks an entry should mean the same thing
         -- whichever menu is up.
+        -- A profile key field read as a chord: nil while it is unbound ("" or
+        -- never set).
+        local function StoredChord(field)
+            local held = ProfileGet(field)
+            if type(held) == "string" and held ~= "" then
+                return held
+            end
+            return nil
+        end
         local function HasSelectKey()
-            local key = ProfileGet("confirmKey")
-            return type(key) == "string" and key ~= ""
+            return StoredChord("confirmKey") ~= nil
         end
         row, hgt = W:DualRow(
             hostFrame,
@@ -3956,11 +3947,7 @@ initFrame:SetScript("OnEvent", function(self)
                 .. "claimed only while a menu is up -- a mouse button keeps "
                 .. "its normal use the rest of the time.",
             read = function()
-                local key = ProfileGet("confirmKey")
-                if type(key) ~= "string" or key == "" then
-                    return nil
-                end
-                return key
+                return StoredChord("confirmKey")
             end,
             -- "" rather than nil for an unbind: the profile default is a string,
             -- and a nil would simply be re-merged from the defaults table.
@@ -3998,11 +3985,7 @@ initFrame:SetScript("OnEvent", function(self)
                     .. "only while a menu is up -- a mouse button keeps its normal "
                     .. "use the rest of the time.",
                 read = function()
-                    local key = ProfileGet("cancelKey")
-                    if type(key) ~= "string" or key == "" then
-                        return nil
-                    end
-                    return key
+                    return StoredChord("cancelKey")
                 end,
                 commit = function(keyChord)
                     -- A menu's own key would be taken over for as long as that menu
