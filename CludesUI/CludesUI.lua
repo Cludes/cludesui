@@ -1251,13 +1251,18 @@ do
         end
         navInfo[details.folder] = copy
     end
+    -- A group the running client left with no addons (Raid & Dungeon on WoW
+    -- Forever, where every member is switched off) gets no sidebar header:
+    -- an empty section only looks broken.
     local coreGroups = {}
     for _, set in ipairs(CludesUI.ADDON_GROUPS) do
         local members = {}
         for i, folder in ipairs(set.members) do
             members[i] = folder
         end
-        coreGroups[#coreGroups + 1] = { key = set.key, label = set.label, members = members }
+        if #members > 0 then
+            coreGroups[#coreGroups + 1] = { key = set.key, label = set.label, members = members }
+        end
     end
     CUI_NS.navInfo = navInfo
     CUI_NS.coreGroups = coreGroups
