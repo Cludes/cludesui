@@ -4578,105 +4578,83 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             end
         end
 
-        -- Re-snap BTB
+        -- An attached Text Bar snapped again: no wider than the frame, and
+        -- no taller than the room the class pips, health and power leave.
         if btbFrame and s.bottomTextBar and btbIsAtt then
             Pix.Size(btbFrame, tw, s.bottomTextBarHeight or 16)
-            local snappedBtbW = btbFrame:GetWidth()
-            local snappedBtbH = btbFrame:GetHeight()
-            -- Width: trim to frame width
-            if snappedBtbW > snappedFrameW + 0.01 then
+            local barW, barH = btbFrame:GetWidth(), btbFrame:GetHeight()
+            if barW > snappedFrameW + 0.01 then
                 btbFrame:SetWidth(snappedFrameW)
             end
-            -- Height: ensure full stack fits within frame height
-            local usedH = cpAboveH
-            if health then
-                usedH = usedH + health:GetHeight()
-            end
+            local stackH = cpAboveH + (health and health:GetHeight() or 0)
             if power and pvPpIsAtt and power:IsShown() then
-                usedH = usedH + power:GetHeight()
+                stackH = stackH + power:GetHeight()
             end
-            if usedH + snappedBtbH > snappedFrameH + 0.01 then
-                btbFrame:SetHeight(snappedBtbH - (usedH + snappedBtbH - snappedFrameH))
+            if stackH + barH > snappedFrameH + 0.01 then
+                btbFrame:SetHeight(barH - (stackH + barH - snappedFrameH))
             end
         end
 
-        -- Re-snap castbar width, but never trim boss custom widths (castbarWidth
-        -- > 0): they are deliberately off-frame and already clamped at sizing
-        -- time, so trimming would silently revert them to frame width.
+        -- The cast bar trimmed to the frame width too, except a boss bar with
+        -- its own Cast Bar Width: that one is meant to run past the frame and
+        -- was already held in at sizing time, so trimming it would quietly
+        -- put it back to frame width.
         if castBar then
-            local pvCbCustom = unitKey == "boss" and (s.castbarWidth or 0) > 0
-            local cbW = castBar:GetWidth()
-            if not pvCbCustom and cbW > snappedFrameW + 0.01 then
+            local ownWidth = unitKey == "boss" and (s.castbarWidth or 0) > 0
+            if not ownWidth and castBar:GetWidth() > snappedFrameW + 0.01 then
                 castBar:SetWidth(snappedFrameW)
             end
         end
 
-        -- Blizzard Style: the stock look over everything laid out above.
-        -- The cast bar hangs under the lowest bottom-anchored stack (live:
-        -- the aura block's bottom): merged buffs ride the debuff anchor, so
-        -- that stack decides; else a bottom debuff stack wins over a bottom
-        -- buff stack; nothing below = flush with the art.
+        -- Blizzard Style: the stock look over everything laid out above. The
+        -- cast bar hangs under the lowest bottom-anchored stack (live: the
+        -- aura block's bottom). Merged buffs ride the debuff anchor, so that
+        -- stack decides; else a bottom debuff stack beats a bottom buff stack;
+        -- with nothing below it sits flush with the art.
         local stackDrop = 0
         if blizzBelow then
             local merged = s.debuffAnchorBuffs == true and (s.debuffAnchor or "none") ~= "none"
-            if merged then
-                if debuffDrop then
-                    stackDrop = debuffDrop
-                end
-            elseif debuffDrop then
-                stackDrop = debuffDrop
-            elseif buffDrop then
-                stackDrop = buffDrop
-            end
+            stackDrop = debuffDrop or (not merged and buffDrop) or 0
         end
         if blizzG then
             popFrame._blizzApply(s, blizzG, blizzMirror, blizzExtras, ch, stackDrop)
         end
-        -- Spell cost preview: a third of the fill as the stock styles left it.
-        if popFrame._pvCostSeg and popFrame._pvCostSeg:IsShown() and popFrame._powerFill then
-            popFrame._pvCostSeg:SetWidth(math.floor(popFrame._powerFill:GetWidth() / 3 + 0.5))
+        -- Spell cost preview: a third of the fill, as the stock styles left it.
+        local costSeg = popFrame._pvCostSeg
+        if costSeg and costSeg:IsShown() and popFrame._powerFill then
+            costSeg:SetWidth(math.floor(popFrame._powerFill:GetWidth() / 3 + 0.5))
         end
 
-        -- Determine how much extra space buffs/debuffs need above/below the frame
-        local auraTopPad = 0 -- extra space above frame (push preview down)
-        if buffExtra > 0 then
-            local ba2 = s.buffAnchor or "topleft"
-            if ba2 == "topleft" or ba2 == "topright" then
-                auraTopPad = buffExtra
-            end
+        -- Room the auras need above the frame (the preview moves down by it):
+        -- a top-anchored buff or debuff row, then whatever a Y offset pushes
+        -- past the footprint on any anchor.
+        local function TopAnchored(anchor)
+            return anchor == "topleft" or anchor == "topright"
         end
-        if debuffExtra > 0 then
-            local da2 = s.debuffAnchor or "bottomleft"
-            if da2 == "topleft" or da2 == "topright" then
-                auraTopPad = auraTopPad + debuffExtra
-            end
+        local auraTopPad = 0
+        if buffExtra > 0 and TopAnchored(s.buffAnchor or "topleft") then
+            auraTopPad = buffExtra
         end
-        -- Add upward Y-offset overflow so the preview slides down far enough to
-        -- fit auras pushed above their footprint (any anchor).
+        if debuffExtra > 0 and TopAnchored(s.debuffAnchor or "bottomleft") then
+            auraTopPad = auraTopPad + debuffExtra
+        end
         auraTopPad = auraTopPad + auraTopOv
 
-        -- Extra space above frame for detached-top elements
+        -- And room for what floats above the frame: a detached top portrait
+        -- (Blizzard Style seats it in the art), a detached top Text Bar (none
+        -- under Blizzard Style), floating top class pips and the WoW Forever
+        -- pet happiness icon centred over the frame.
         local detTopExtra = 0
-        -- Detached top portrait (Blizzard Style seats it in the art instead)
-        if
-            sp
-            and not isAttached
-            and effectiveSide == "top"
-            and not blizzG
-            and portraitFrame
-            and portraitFrame:IsShown()
-        then
+        local portraitUp = sp and not isAttached and effectiveSide == "top" and not blizzG
+        if portraitUp and portraitFrame and portraitFrame:IsShown() then
             detTopExtra = detTopExtra + portraitDim + 15 + pYOff
         end
-        -- Detached top text bar (Blizzard Style has no text bar)
         if btbFrame and s.bottomTextBar and (s.btbPosition or "bottom") == "detached_top" and not blizzG then
             detTopExtra = detTopExtra + (s.bottomTextBarHeight or 16) + 15 + (s.btbY or 0)
         end
-        -- Floating "top" class power pips
         if cpTopH > 0 then
             detTopExtra = detTopExtra + cpTopH
         end
-        -- WoW Forever pet happiness icon centred above the frame
         if popFrame._happyInd and s.happinessEnabled ~= false and s.happinessAlign == "top" then
             detTopExtra = detTopExtra + math.max(0, (s.happinessSize or 20) + (s.happinessY or 0))
         end
