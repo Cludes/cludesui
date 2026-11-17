@@ -95,6 +95,23 @@ initFrame:SetScript("OnEvent", function(self)
         end
     end
 
+    -- A minimap setting read with its default, and written: false (nothing
+    -- written) while the minimap's settings do not exist yet, else written
+    -- and the minimap redrawn.
+    local function MapGet(key, default)
+        local m = MinimapDB()
+        return m and m[key] or default
+    end
+    local function MapSet(key, v)
+        local m = MinimapDB()
+        if not m then
+            return false
+        end
+        m[key] = v
+        RefreshMinimap()
+        return true
+    end
+
     local function FullRebuildMinimap()
         if _G._CUMM_FullRebuildMinimap then
             _G._CUMM_FullRebuildMinimap()
@@ -304,16 +321,12 @@ initFrame:SetScript("OnEvent", function(self)
                 },
                 order = { "square", "rectangular", "circle", "textured_circle" },
                 getValue = function()
-                    local m = MinimapDB()
-                    return m and m.shape or "square"
+                    return MapGet("shape", "square")
                 end,
                 setValue = function(v)
-                    local m = MinimapDB()
-                    if not m then
+                    if not MapSet("shape", v) then
                         return
                     end
-                    m.shape = v
-                    RefreshMinimap()
                     -- Rebuild: the Width | Height Offset row exists only on the rect layout.
                     CludesUI:RefreshPage(true)
                 end,
@@ -370,8 +383,7 @@ initFrame:SetScript("OnEvent", function(self)
             max = 600,
             step = 1,
             getValue = function()
-                local m = MinimapDB()
-                return m and m.mapSize or 140
+                return MapGet("mapSize", 140)
             end,
             setValue = function(v)
                 local m = MinimapDB()
@@ -420,16 +432,10 @@ initFrame:SetScript("OnEvent", function(self)
             step = 1,
             tooltip = "Size of mail, calendar, tracking, and minimap button group toggle",
             getValue = function()
-                local m = MinimapDB()
-                return m and m.interactableBtnSize or 21
+                return MapGet("interactableBtnSize", 21)
             end,
             setValue = function(v)
-                local m = MinimapDB()
-                if not m then
-                    return
-                end
-                m.interactableBtnSize = v
-                RefreshMinimap()
+                MapSet("interactableBtnSize", v)
             end,
         })
         posY = posY - hgt
@@ -695,12 +701,9 @@ initFrame:SetScript("OnEvent", function(self)
                             return (m and m.borderBehind) or false
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
+                            if not MapSet("borderBehind", v) then
                                 return
                             end
-                            m.borderBehind = v
-                            RefreshMinimap()
                             CludesUI:RefreshPage()
                         end,
                     },
@@ -884,31 +887,19 @@ initFrame:SetScript("OnEvent", function(self)
             step = 1,
             tooltip = "Automatically zoom back out to maximum distance after this many seconds of no manual zoom change. 0 disables the reset.",
             getValue = function()
-                local m = MinimapDB()
-                return m and m.zoomResetSeconds or 0
+                return MapGet("zoomResetSeconds", 0)
             end,
             setValue = function(v)
-                local m = MinimapDB()
-                if not m then
-                    return
-                end
-                m.zoomResetSeconds = v
-                RefreshMinimap()
+                MapSet("zoomResetSeconds", v)
             end,
         }, {
             type = "toggle",
             text = "Rotate Minimap",
             getValue = function()
-                local m = MinimapDB()
-                return m and m.rotateMinimap or false
+                return MapGet("rotateMinimap", false)
             end,
             setValue = function(v)
-                local m = MinimapDB()
-                if not m then
-                    return
-                end
-                m.rotateMinimap = v
-                RefreshMinimap()
+                MapSet("rotateMinimap", v)
             end,
         })
         posY = posY - hgt
@@ -982,16 +973,10 @@ initFrame:SetScript("OnEvent", function(self)
             step = 1,
             tooltip = "Size of addon minimap buttons in the flyout grid",
             getValue = function()
-                local m = MinimapDB()
-                return m and m.addonBtnSize or 24
+                return MapGet("addonBtnSize", 24)
             end,
             setValue = function(v)
-                local m = MinimapDB()
-                if not m then
-                    return
-                end
-                m.addonBtnSize = v
-                RefreshMinimap()
+                MapSet("addonBtnSize", v)
             end,
         })
         posY = posY - hgt
@@ -1135,8 +1120,7 @@ initFrame:SetScript("OnEvent", function(self)
             text = "Mouseover Extra Buttons",
             tooltip = "When enabled, the extra buttons (Great Vault, M+ Portals, Friends Online, Group Button) and any ungrouped minimap buttons only show while the mouse is over the minimap. The M+ Portals flyout keeps them shown until it closes.",
             getValue = function()
-                local m = MinimapDB()
-                return m and m.mouseoverExtraBtns or false
+                return MapGet("mouseoverExtraBtns", false)
             end,
             setValue = function(v)
                 local m = MinimapDB()
@@ -1249,8 +1233,7 @@ initFrame:SetScript("OnEvent", function(self)
             step = 0.01,
             tooltip = "Scales the M+ Portals flyout the portals button opens.",
             getValue = function()
-                local m = MinimapDB()
-                return m and m.extraFlyoutScale or 1.0
+                return MapGet("extraFlyoutScale", 1.0)
             end,
             setValue = function(v)
                 local m = MinimapDB()
@@ -1293,8 +1276,7 @@ initFrame:SetScript("OnEvent", function(self)
             step = 1,
             tooltip = "Max rows per section in the Friends Online tooltip (0 = the 30-row max). The cog can show each note under its row.",
             getValue = function()
-                local m = MinimapDB()
-                return m and m.friendsMaxRows or 0
+                return MapGet("friendsMaxRows", 0)
             end,
             setValue = function(v)
                 local m = MinimapDB()
@@ -1311,8 +1293,7 @@ initFrame:SetScript("OnEvent", function(self)
             step = 0.01,
             tooltip = "Scales the custom tooltips shown by the unique minimap buttons (Great Vault, friends, calendar, mail, tracking).",
             getValue = function()
-                local m = MinimapDB()
-                return m and m.customTooltipScale or 1.0
+                return MapGet("customTooltipScale", 1.0)
             end,
             setValue = function(v)
                 local m = MinimapDB()
@@ -1333,8 +1314,7 @@ initFrame:SetScript("OnEvent", function(self)
                         label = "Show Notes",
                         tooltip = "Shows each guild or friend note on a second line under its row. The tooltip gets taller.",
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.friendsShowNotes or false
+                            return MapGet("friendsShowNotes", false)
                         end,
                         set = function(v)
                             local m = MinimapDB()
@@ -1389,12 +1369,7 @@ initFrame:SetScript("OnEvent", function(self)
             end,
             getValue = BtnRowPos,
             setValue = function(v)
-                local m = MinimapDB()
-                if not m then
-                    return
-                end
-                m.btnRowPosition = v
-                RefreshMinimap()
+                MapSet("btnRowPosition", v)
             end,
         }, {
             type = "toggle",
@@ -1432,16 +1407,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 40,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.btnRowSpacing or 0
+                            return MapGet("btnRowSpacing", 0)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.btnRowSpacing = v
-                            RefreshMinimap()
+                            MapSet("btnRowSpacing", v)
                         end,
                     },
                     {
@@ -1451,16 +1420,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 60,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.btnRowDistance or 0
+                            return MapGet("btnRowDistance", 0)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.btnRowDistance = v
-                            RefreshMinimap()
+                            MapSet("btnRowDistance", v)
                         end,
                     },
                     {
@@ -1473,12 +1436,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return (m and m.flyoutGrowDir) or "auto"
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.flyoutGrowDir = v
-                            RefreshMinimap()
+                            MapSet("flyoutGrowDir", v)
                         end,
                     },
                 },
@@ -1580,12 +1538,9 @@ initFrame:SetScript("OnEvent", function(self)
                 order = { "never", "hover", "always" },
                 getValue = OmniumMode,
                 setValue = function(v)
-                    local m = MinimapDB()
-                    if not m then
+                    if not MapSet("omniumFolioMode", v) then
                         return
                     end
-                    m.omniumFolioMode = v
-                    RefreshMinimap()
                     CludesUI:RefreshPage()
                 end,
             }, {
@@ -1603,12 +1558,7 @@ initFrame:SetScript("OnEvent", function(self)
                     return (m and m.omniumFolioScale) or 0.75
                 end,
                 setValue = function(v)
-                    local m = MinimapDB()
-                    if not m then
-                        return
-                    end
-                    m.omniumFolioScale = v
-                    RefreshMinimap()
+                    MapSet("omniumFolioScale", v)
                 end,
             })
             posY = posY - hgt
@@ -1637,12 +1587,7 @@ initFrame:SetScript("OnEvent", function(self)
                                 return (m and m.omniumFolioCorner) or "BOTTOMLEFT"
                             end,
                             set = function(v)
-                                local m = MinimapDB()
-                                if not m then
-                                    return
-                                end
-                                m.omniumFolioCorner = v
-                                RefreshMinimap()
+                                MapSet("omniumFolioCorner", v)
                             end,
                         },
                         -- "X Offset" / "Y Offset" (not "X" / "Y"): labels under ~10px wide make
@@ -1659,12 +1604,7 @@ initFrame:SetScript("OnEvent", function(self)
                                 return (m and m.omniumFolioX) or 0
                             end,
                             set = function(v)
-                                local m = MinimapDB()
-                                if not m then
-                                    return
-                                end
-                                m.omniumFolioX = v
-                                RefreshMinimap()
+                                MapSet("omniumFolioX", v)
                             end,
                         },
                         {
@@ -1678,12 +1618,7 @@ initFrame:SetScript("OnEvent", function(self)
                                 return (m and m.omniumFolioY) or 0
                             end,
                             set = function(v)
-                                local m = MinimapDB()
-                                if not m then
-                                    return
-                                end
-                                m.omniumFolioY = v
-                                RefreshMinimap()
+                                MapSet("omniumFolioY", v)
                             end,
                         },
                     },
@@ -1729,12 +1664,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return (m and m.addonCompartmentScale) or 0.9
             end,
             setValue = function(v)
-                local m = MinimapDB()
-                if not m then
-                    return
-                end
-                m.addonCompartmentScale = v
-                RefreshMinimap()
+                MapSet("addonCompartmentScale", v)
             end,
         })
         posY = posY - hgt
@@ -1760,12 +1690,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return (m and m.addonCompartmentCorner) or "TOPRIGHT"
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.addonCompartmentCorner = v
-                            RefreshMinimap()
+                            MapSet("addonCompartmentCorner", v)
                         end,
                     },
                     {
@@ -1779,12 +1704,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return (m and m.addonCompartmentX) or 0
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.addonCompartmentX = v
-                            RefreshMinimap()
+                            MapSet("addonCompartmentX", v)
                         end,
                     },
                     {
@@ -1798,12 +1718,7 @@ initFrame:SetScript("OnEvent", function(self)
                             return (m and m.addonCompartmentY) or 0
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.addonCompartmentY = v
-                            RefreshMinimap()
+                            MapSet("addonCompartmentY", v)
                         end,
                     },
                 },
@@ -1846,12 +1761,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return m and m.scrollZoom
             end,
             setValue = function(v)
-                local m = MinimapDB()
-                if not m then
-                    return
-                end
-                m.scrollZoom = v
-                RefreshMinimap()
+                MapSet("scrollZoom", v)
             end,
         })
         posY = posY - hgt
@@ -1932,12 +1842,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
                 getValue = ElementRowPos,
                 setValue = function(v)
-                    local m = MinimapDB()
-                    if not m then
-                        return
-                    end
-                    m.elementRowPosition = v
-                    RefreshMinimap()
+                    MapSet("elementRowPosition", v)
                 end,
             }),
             {
@@ -1957,16 +1862,12 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
                 disabledTooltip = "Mail in Show Blizzard Elements",
                 getValue = function()
-                    local m = MinimapDB()
-                    return m and m.mailPosition or "button"
+                    return MapGet("mailPosition", "button")
                 end,
                 setValue = function(v)
-                    local m = MinimapDB()
-                    if not m then
+                    if not MapSet("mailPosition", v) then
                         return
                     end
-                    m.mailPosition = v
-                    RefreshMinimap()
                     CludesUI:RefreshPage()
                 end,
             }
@@ -1994,16 +1895,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 100,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.mailOffsetX or 0
+                            return MapGet("mailOffsetX", 0)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.mailOffsetX = v
-                            RefreshMinimap()
+                            MapSet("mailOffsetX", v)
                         end,
                     },
                     {
@@ -2013,16 +1908,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 500,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.mailOffsetY or 0
+                            return MapGet("mailOffsetY", 0)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.mailOffsetY = v
-                            RefreshMinimap()
+                            MapSet("mailOffsetY", v)
                         end,
                     },
                 },
@@ -2047,16 +1936,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 40,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.elementRowSpacing or 0
+                            return MapGet("elementRowSpacing", 0)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.elementRowSpacing = v
-                            RefreshMinimap()
+                            MapSet("elementRowSpacing", v)
                         end,
                     },
                     {
@@ -2066,16 +1949,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 60,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.elementRowDistance or 0
+                            return MapGet("elementRowDistance", 0)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.elementRowDistance = v
-                            RefreshMinimap()
+                            MapSet("elementRowDistance", v)
                         end,
                     },
                 },
@@ -2140,12 +2017,9 @@ initFrame:SetScript("OnEvent", function(self)
             order = { "none", "inside", "edge" },
             getValue = ClockMode,
             setValue = function(v)
-                local m = MinimapDB()
-                if not m then
+                if not MapSet("clockMode", v) then
                     return
                 end
-                m.clockMode = v
-                RefreshMinimap()
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -2158,16 +2032,10 @@ initFrame:SetScript("OnEvent", function(self)
             end,
             disabledTooltip = "Clock Style",
             getValue = function()
-                local m = MinimapDB()
-                return m and m.clockPosition or "top"
+                return MapGet("clockPosition", "top")
             end,
             setValue = function(v)
-                local m = MinimapDB()
-                if not m then
-                    return
-                end
-                m.clockPosition = v
-                RefreshMinimap()
+                MapSet("clockPosition", v)
             end,
         })
         posY = posY - hgt
@@ -2190,8 +2058,7 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 2.0,
                         step = 0.01,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.clockScale or 1.15
+                            return MapGet("clockScale", 1.15)
                         end,
                         set = function(v)
                             local m = MinimapDB()
@@ -2212,16 +2079,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 500,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.clockOffsetX or 0
+                            return MapGet("clockOffsetX", 0)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.clockOffsetX = v
-                            RefreshMinimap()
+                            MapSet("clockOffsetX", v)
                         end,
                     },
                     {
@@ -2231,16 +2092,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 500,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.clockOffsetY or 0
+                            return MapGet("clockOffsetY", 0)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.clockOffsetY = v
-                            RefreshMinimap()
+                            MapSet("clockOffsetY", v)
                         end,
                     },
                 },
@@ -2281,12 +2136,9 @@ initFrame:SetScript("OnEvent", function(self)
                 order = { "none", "inside", "edge" },
                 getValue = LocationMode,
                 setValue = function(v)
-                    local m = MinimapDB()
-                    if not m then
+                    if not MapSet("locationMode", v) then
                         return
                     end
-                    m.locationMode = v
-                    RefreshMinimap()
                     CludesUI:RefreshPage()
                 end,
             },
@@ -2300,16 +2152,10 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
                 disabledTooltip = "Zone Text Style",
                 getValue = function()
-                    local m = MinimapDB()
-                    return m and m.locationPosition or "bottom"
+                    return MapGet("locationPosition", "bottom")
                 end,
                 setValue = function(v)
-                    local m = MinimapDB()
-                    if not m then
-                        return
-                    end
-                    m.locationPosition = v
-                    RefreshMinimap()
+                    MapSet("locationPosition", v)
                 end,
             })
         )
@@ -2329,32 +2175,20 @@ initFrame:SetScript("OnEvent", function(self)
                         type = "toggle",
                         label = "Display Sub Zone",
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.zoneShowSubZone or false
+                            return MapGet("zoneShowSubZone", false)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.zoneShowSubZone = v
-                            RefreshMinimap()
+                            MapSet("zoneShowSubZone", v)
                         end,
                     },
                     {
                         type = "toggle",
                         label = "Reactive Coloring",
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.zoneReactiveColor or false
+                            return MapGet("zoneReactiveColor", false)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.zoneReactiveColor = v
-                            RefreshMinimap()
+                            MapSet("zoneReactiveColor", v)
                         end,
                     },
                 },
@@ -2379,8 +2213,7 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 2.0,
                         step = 0.01,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.locationScale or 1.15
+                            return MapGet("locationScale", 1.15)
                         end,
                         set = function(v)
                             local m = MinimapDB()
@@ -2401,16 +2234,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 500,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.locationOffsetX or 0
+                            return MapGet("locationOffsetX", 0)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.locationOffsetX = v
-                            RefreshMinimap()
+                            MapSet("locationOffsetX", v)
                         end,
                     },
                     {
@@ -2420,16 +2247,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 500,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.locationOffsetY or 0
+                            return MapGet("locationOffsetY", 0)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.locationOffsetY = v
-                            RefreshMinimap()
+                            MapSet("locationOffsetY", v)
                         end,
                     },
                 },
@@ -2454,12 +2275,9 @@ initFrame:SetScript("OnEvent", function(self)
             order = { "never", "hover", "always" },
             getValue = CoordsMode,
             setValue = function(v)
-                local m = MinimapDB()
-                if not m then
+                if not MapSet("coordsMode", v) then
                     return
                 end
-                m.coordsMode = v
-                RefreshMinimap()
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -2479,12 +2297,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return m.coordsPosition or (m.coordsBelow and "belowMap") or "topLeft"
             end,
             setValue = function(v)
-                local m = MinimapDB()
-                if not m then
-                    return
-                end
-                m.coordsPosition = v
-                RefreshMinimap()
+                MapSet("coordsPosition", v)
             end,
         })
         posY = posY - hgt
@@ -2506,16 +2319,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 2,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.coordPrecision or 0
+                            return MapGet("coordPrecision", 0)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.coordPrecision = v
-                            RefreshMinimap()
+                            MapSet("coordPrecision", v)
                         end,
                     },
                 },
@@ -2540,8 +2347,7 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 2.0,
                         step = 0.01,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.coordsScale or 1.0
+                            return MapGet("coordsScale", 1.0)
                         end,
                         set = function(v)
                             local m = MinimapDB()
@@ -2562,16 +2368,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 500,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.coordsBelowOffsetX or 0
+                            return MapGet("coordsBelowOffsetX", 0)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.coordsBelowOffsetX = v
-                            RefreshMinimap()
+                            MapSet("coordsBelowOffsetX", v)
                         end,
                     },
                     {
@@ -2581,16 +2381,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 500,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.coordsBelowOffsetY or 0
+                            return MapGet("coordsBelowOffsetY", 0)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.coordsBelowOffsetY = v
-                            RefreshMinimap()
+                            MapSet("coordsBelowOffsetY", v)
                         end,
                     },
                 },
@@ -2607,16 +2401,12 @@ initFrame:SetScript("OnEvent", function(self)
             type = "toggle",
             text = "Show FPS/MS",
             getValue = function()
-                local m = MinimapDB()
-                return m and m.showFPS or false
+                return MapGet("showFPS", false)
             end,
             setValue = function(v)
-                local m = MinimapDB()
-                if not m then
+                if not MapSet("showFPS", v) then
                     return
                 end
-                m.showFPS = v
-                RefreshMinimap()
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -2627,16 +2417,10 @@ initFrame:SetScript("OnEvent", function(self)
             disabled = FpsOff,
             disabledTooltip = "Show FPS/MS",
             getValue = function()
-                local m = MinimapDB()
-                return m and m.fpsPosition or "bottomLeft"
+                return MapGet("fpsPosition", "bottomLeft")
             end,
             setValue = function(v)
-                local m = MinimapDB()
-                if not m then
-                    return
-                end
-                m.fpsPosition = v
-                RefreshMinimap()
+                MapSet("fpsPosition", v)
             end,
         })
         posY = posY - hgt
@@ -2659,16 +2443,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 30,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.fpsTextSize or 12
+                            return MapGet("fpsTextSize", 12)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.fpsTextSize = v
-                            RefreshMinimap()
+                            MapSet("fpsTextSize", v)
                         end,
                     },
                     {
@@ -2683,28 +2461,17 @@ initFrame:SetScript("OnEvent", function(self)
                             return sl
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.fpsShowLocalMS = v
-                            RefreshMinimap()
+                            MapSet("fpsShowLocalMS", v)
                         end,
                     },
                     {
                         type = "toggle",
                         label = "Show World MS",
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.fpsShowWorldMS or false
+                            return MapGet("fpsShowWorldMS", false)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.fpsShowWorldMS = v
-                            RefreshMinimap()
+                            MapSet("fpsShowWorldMS", v)
                         end,
                     },
                     {
@@ -2714,16 +2481,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 5,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.fpsUpdateInterval or 3
+                            return MapGet("fpsUpdateInterval", 3)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.fpsUpdateInterval = v
-                            RefreshMinimap()
+                            MapSet("fpsUpdateInterval", v)
                         end,
                     },
                 },
@@ -2745,8 +2506,7 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 2.0,
                         step = 0.01,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.fpsScale or 1.0
+                            return MapGet("fpsScale", 1.0)
                         end,
                         set = function(v)
                             local m = MinimapDB()
@@ -2767,16 +2527,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 500,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.fpsOffsetX or 0
+                            return MapGet("fpsOffsetX", 0)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.fpsOffsetX = v
-                            RefreshMinimap()
+                            MapSet("fpsOffsetX", v)
                         end,
                     },
                     {
@@ -2786,16 +2540,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 500,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.fpsOffsetY or 0
+                            return MapGet("fpsOffsetY", 0)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.fpsOffsetY = v
-                            RefreshMinimap()
+                            MapSet("fpsOffsetY", v)
                         end,
                     },
                 },
@@ -2827,12 +2575,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return v
             end,
             setValue = function(v)
-                local m = MinimapDB()
-                if not m then
-                    return
-                end
-                m.fpsHoverTooltip = v
-                RefreshMinimap()
+                MapSet("fpsHoverTooltip", v)
             end,
         }, {
             type = "dropdown",
@@ -2890,16 +2633,10 @@ initFrame:SetScript("OnEvent", function(self)
             end,
             disabledTooltip = "Show Instance Difficulty as Text",
             getValue = function()
-                local m = MinimapDB()
-                return m and m.diffTextPosition or "topLeft"
+                return MapGet("diffTextPosition", "topLeft")
             end,
             setValue = function(v)
-                local m = MinimapDB()
-                if not m then
-                    return
-                end
-                m.diffTextPosition = v
-                RefreshMinimap()
+                MapSet("diffTextPosition", v)
             end,
         })
         posY = posY - hgt
@@ -2922,16 +2659,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 24,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.diffTextSize or 12
+                            return MapGet("diffTextSize", 12)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.diffTextSize = v
-                            RefreshMinimap()
+                            MapSet("diffTextSize", v)
                         end,
                     },
                     {
@@ -2941,16 +2672,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 500,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.diffTextOffsetX or 0
+                            return MapGet("diffTextOffsetX", 0)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.diffTextOffsetX = v
-                            RefreshMinimap()
+                            MapSet("diffTextOffsetX", v)
                         end,
                     },
                     {
@@ -2960,16 +2685,10 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 500,
                         step = 1,
                         get = function()
-                            local m = MinimapDB()
-                            return m and m.diffTextOffsetY or 0
+                            return MapGet("diffTextOffsetY", 0)
                         end,
                         set = function(v)
-                            local m = MinimapDB()
-                            if not m then
-                                return
-                            end
-                            m.diffTextOffsetY = v
-                            RefreshMinimap()
+                            MapSet("diffTextOffsetY", v)
                         end,
                     },
                 },
