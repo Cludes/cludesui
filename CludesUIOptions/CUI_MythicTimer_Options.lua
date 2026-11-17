@@ -277,58 +277,57 @@ initFrame:SetScript("OnEvent", function(self)
     -- The Kick Tracker page (its own file) builds its header from the kit.
     mod._MT_Preview = { NewState = PvNewState, Builder = PvBuilder, Update = PvUpdate, Repaint = PvRepaint }
 
+    -- The bar texture dropdown: every registered texture in the module's
+    -- order (separators dropped, SharedMedia ones appended first), each row
+    -- drawn over its own texture.
     local function BuildBarTexDropdown()
-        if mod.AppendSharedMediaBarTextures then
-            mod.AppendSharedMediaBarTextures()
+        local appendMedia = mod.AppendSharedMediaBarTextures
+        if appendMedia then
+            appendMedia()
         end
-
-        local values, sequence = {}, {}
-        local nameList = mod.barTextureNames or {}
-        local textureOrder = mod.barTextureOrder or {}
-        for _, key in ipairs(textureOrder) do
+        local names, files = mod.barTextureNames or {}, mod.barTextures or {}
+        local labels, keys = {}, {}
+        for _, key in ipairs(mod.barTextureOrder or {}) do
             if key ~= "---" then
-                values[key] = nameList[key] or key
-                sequence[#sequence + 1] = key
+                keys[#keys + 1] = key
+                labels[key] = names[key] or key
             end
         end
-
-        local textureLookup = mod.barTextures or {}
-        values._menuOpts = {
+        labels._menuOpts = {
             itemHeight = 28,
             background = function(key)
-                return textureLookup[key]
+                return files[key]
             end,
         }
-        return values, sequence
+        return labels, keys
     end
 
-    -- Build Page Toggle preview + sync the Quest Tracker suppression so it doesn't sit
-    -- on top of the M+ Timer preview frame.
+    -- The timer's sample run on or off. The Quest Tracker steps aside while
+    -- it shows, so the two never overlap.
     local function _setPreview(v)
         Set("showPreview", v)
         Refresh()
-        if _G._CUQT_SetSuppressed then
-            _G._CUQT_SetSuppressed("MTimerPreview", v == true)
+        local suppress = _G._CUQT_SetSuppressed
+        if suppress then
+            suppress("MTimerPreview", v == true)
         end
     end
 
-    -- Auto-disable the preview when the CUI options window closes, so the preview
-    -- frame doesn't linger after the user is done configuring. Installed once, the
-    -- first time the M+ Timer page is built (which guarantees CludesUIFrame exists).
+    -- Closing the settings window ends the sample run. Hooked once, on the
+    -- first build of the Mythic+ Timer page (the window exists by then).
     local function _installPreviewAutoOff()
-        local mf = _G.CludesUIFrame
-        if not mf or mf._eMTPreviewHook then
-            return
-        end
-        mf._eMTPreviewHook = true
-        mf:HookScript("OnHide", function()
-            if Cfg("showPreview") == true then
+        local panel = _G.CludesUIFrame
+        if panel and not panel._eMTPreviewHook then
+            panel._eMTPreviewHook = true
+            panel:HookScript("OnHide", function()
+                if Cfg("showPreview") ~= true then
+                    return
+                end
                 _setPreview(false)
-                CludesUI:RefreshPage() -- update toggle visual immediately
-            end
-        end)
+                CludesUI:RefreshPage() -- the toggle shows off at once
+            end)
+        end
     end
-
     local function BuildPage(pageName, hostFrame, yOffset)
         _installPreviewAutoOff()
 
@@ -2119,22 +2118,28 @@ initFrame:SetScript("OnEvent", function(self)
     -- Only ticked entries are stored (as true); with none ticked the bars
     -- show everywhere. The table is made on first use.
     local function TSBWhere()
-        local c = TSB()
-        if c then
-            c.whereToShow = c.whereToShow or {}
-            return c.whereToShow
+        local bars = TSB()
+        if not bars then
+            return nil
         end
+        local picked = bars.whereToShow
+        if not picked then
+            picked = {}
+            bars.whereToShow = picked
+        end
+        return picked
     end
     local function TSBWhereGet(k)
-        local t = TSBWhere()
-        return t and t[k] == true or false
+        local picked = TSBWhere()
+        return (picked ~= nil and picked[k] == true) and true or false
     end
     local function TSBWhereSet(k, v)
-        local t = TSBWhere()
-        if t then
-            t[k] = v and true or nil
-            TSBRefresh()
+        local picked = TSBWhere()
+        if not picked then
+            return
         end
+        picked[k] = v and true or nil
+        TSBRefresh()
     end
 
     -- Header previews: the Cast Bars' plain sample row, and the Target and
