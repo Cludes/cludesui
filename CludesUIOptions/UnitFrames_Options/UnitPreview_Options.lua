@@ -320,17 +320,12 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         end
     end
 
-    -- Health colours: the dark theme's fill and backing, else the unit's own
-    -- picks, with Dynamic Health Color over every flat source as on the live
-    -- bar (fed the preview's known fake percent, so the clean-number twin of
-    -- the engine curve stands in for UnitHealthPercent).
-    local hR, hG, hB, hA, bgR, bgG, bgB, bgA
-    local isDarkTheme = mod.UF_DarkThemeOn(prefs)
-    if isDarkTheme then
-        hR, hG, hB, hA = CludesUI.GetDarkModeFill()
-        bgR, bgG, bgB, bgA = CludesUI.GetDarkModeBg()
-    else
-        hA = (prefs.healthBarOpacity or 90) / 100
+    -- Health colours outside the dark theme, for a settings table (the
+    -- build's and every Update's): the fill from the unit's own picks with
+    -- Dynamic Health Color over every flat source as on the live bar (fed
+    -- the preview's known fake percent, so the clean-number twin of the
+    -- engine curve stands in for UnitHealthPercent), then the backing.
+    local function LitHealthColors(s)
         local function PlayerClassRGB()
             local _, token = UnitClass("player")
             local classColor = RAID_CLASS_COLORS[token]
@@ -340,35 +335,44 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             return 37 / 255, 193 / 255, 29 / 255
         end
         -- The boss preview stays hostile red: the live boss frame never class-colours.
-        local ownFill = prefs.customFillColor
-        if prefs.healthClassColored and unitKey ~= "boss" then
-            hR, hG, hB = PlayerClassRGB()
+        local r, g, b
+        local ownFill = s.customFillColor
+        if s.healthClassColored and unitKey ~= "boss" then
+            r, g, b = PlayerClassRGB()
         elseif ownFill then
-            hR, hG, hB = ownFill.r, ownFill.g, ownFill.b
+            r, g, b = ownFill.r, ownFill.g, ownFill.b
         elseif unitKey == "player" then
-            hR, hG, hB = PlayerClassRGB()
+            r, g, b = PlayerClassRGB()
         elseif unitKey == "pet" then
-            hR, hG, hB = 37 / 255, 193 / 255, 29 / 255
+            r, g, b = 37 / 255, 193 / 255, 29 / 255
         else
-            hR, hG, hB = 0.8, 0.2, 0.2
+            r, g, b = 0.8, 0.2, 0.2
         end
-        local dynR, dynG, dynB = mod.UF_PreviewDynamicColor(prefs, optionState._previewHealthPct or 0.70)
+        local dynR, dynG, dynB = mod.UF_PreviewDynamicColor(s, optionState._previewHealthPct or 0.70)
         if dynR then
-            hR, hG, hB = dynR, dynG, dynB
+            r, g, b = dynR, dynG, dynB
         end
         -- Backing: the player's class colour (the designer shows your class)
         -- while Class Colored Background is on, else the custom pick.
         local classBack
-        if prefs.bgClassColored then
+        if s.bgClassColored then
             local _, token = UnitClass("player")
             classBack = token and CludesUI.GetClassColor(token)
         end
-        local backPick = classBack or prefs.customBgColor
+        local backPick = classBack or s.customBgColor
         if backPick then
-            bgR, bgG, bgB = backPick.r, backPick.g, backPick.b
-        else
-            bgR, bgG, bgB = 17 / 255, 17 / 255, 17 / 255
+            return r, g, b, backPick.r, backPick.g, backPick.b
         end
+        return r, g, b, 17 / 255, 17 / 255, 17 / 255
+    end
+    local hR, hG, hB, hA, bgR, bgG, bgB, bgA
+    local isDarkTheme = mod.UF_DarkThemeOn(prefs)
+    if isDarkTheme then
+        hR, hG, hB, hA = CludesUI.GetDarkModeFill()
+        bgR, bgG, bgB, bgA = CludesUI.GetDarkModeBg()
+    else
+        hA = (prefs.healthBarOpacity or 90) / 100
+        hR, hG, hB, bgR, bgG, bgB = LitHealthColors(prefs)
         bgA = (prefs.customBgAlpha or 100) / 100
     end
 
@@ -808,9 +812,10 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
 
     -- The power fill colour: the power type's colour (the class colour with
     -- Class Colored) while Power Color is on, else the custom fill, else blue.
-    local function PowerFillRGB()
-        local byPower = prefs.powerPercentPowerColor ~= false
-        if byPower and prefs.powerClassColored then
+    local function PowerFillRGB(s)
+        s = s or prefs
+        local byPower = s.powerPercentPowerColor ~= false
+        if byPower and s.powerClassColored then
             local _, token = UnitClass("player")
             local classColor = CludesUI.GetClassColor(token)
             return classColor.r, classColor.g, classColor.b
@@ -819,7 +824,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             local typeColor = CludesUI.GetPowerColor(kind or "MANA")
             return typeColor.r, typeColor.g, typeColor.b
         end
-        local own = prefs.customPowerFillColor
+        local own = s.customPowerFillColor
         if own then
             return own.r, own.g, own.b
         end
@@ -2311,6 +2316,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
     popFrame._blizzApply = ApplyBlizzPreview
     popFrame._blizzInset = BlizzInsetAnchor
     popFrame._unitPrefs = UnitPrefs
+    popFrame._litHealth = LitHealthColors
+    popFrame._powerRGB = PowerFillRGB
 
     -- Update method
     function popFrame:Update()
@@ -2627,30 +2634,30 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             end
         end
         healthFill:ClearAllPoints()
-        -- Vertical Fill swaps the fill axis (grows up from bottom; Reverse Fill flips
-        -- it to grow down from top). Anchors sit on the non-growth axis; the other
-        -- dimension comes from the explicit PP.Width / PP.Height below.
-        if s.healthVerticalFill then
-            if s.healthReverseFill then
-                healthFill:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
-                healthFill:SetPoint("TOPRIGHT", health, "TOPRIGHT", 0, 0)
-            else
-                healthFill:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 0, 0)
-                healthFill:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
+        -- Vertical Fill turns the fill axis upright (growing up from the
+        -- bottom, or down from the top with Reverse Fill). The anchors pin the
+        -- cross axis; the filled length is set explicitly below.
+        local vertFill, revFill = s.healthVerticalFill, s.healthReverseFill
+        local hpShare = optionState._previewHealthPct or 0.70
+        local filledLen = math.floor((vertFill and hh or fw) * hpShare + 0.5)
+        local pinA, pinB = "TOPLEFT", "BOTTOMLEFT"
+        if vertFill then
+            pinA, pinB = "BOTTOMLEFT", "BOTTOMRIGHT"
+            if revFill then
+                pinA, pinB = "TOPLEFT", "TOPRIGHT"
             end
-            Pix.Height(healthFill, math.floor(hh * (optionState._previewHealthPct or 0.70) + 0.5))
+        elseif revFill then
+            pinA, pinB = "TOPRIGHT", "BOTTOMRIGHT"
+        end
+        healthFill:SetPoint(pinA, health, pinA, 0, 0)
+        healthFill:SetPoint(pinB, health, pinB, 0, 0)
+        if vertFill then
+            Pix.Height(healthFill, filledLen)
         else
-            if s.healthReverseFill then
-                healthFill:SetPoint("TOPRIGHT", health, "TOPRIGHT", 0, 0)
-                healthFill:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
-            else
-                healthFill:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
-                healthFill:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 0, 0)
-            end
-            Pix.Width(healthFill, math.floor(fw * (optionState._previewHealthPct or 0.70) + 0.5))
+            Pix.Width(healthFill, filledLen)
         end
 
-        -- Live-update dark mode colors
+        -- Health colours again, live (the dark theme's pair or the unit's picks).
         do
             local isDark = mod.UF_DarkThemeOn(s)
             local uHR, uHG, uHB, uBgR, uBgG, uBgB
@@ -2658,142 +2665,67 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
                 uHR, uHG, uHB = CludesUI.GetDarkModeFill()
                 uBgR, uBgG, uBgB = CludesUI.GetDarkModeBg()
             else
-                -- Custom fill skipped when class-colored; boss is always hostile-red.
-                local cFill = s.customFillColor
-                local isCC = s.healthClassColored and unitKey ~= "boss"
-                if isCC then
-                    local _, ct = UnitClass("player")
-                    local cc = RAID_CLASS_COLORS[ct]
-                    if cc then
-                        uHR, uHG, uHB = cc.r, cc.g, cc.b
-                    else
-                        uHR, uHG, uHB = 37 / 255, 193 / 255, 29 / 255
-                    end
-                elseif cFill then
-                    uHR, uHG, uHB = cFill.r, cFill.g, cFill.b
-                elseif unitKey == "player" then
-                    local _, ct = UnitClass("player")
-                    local cc = RAID_CLASS_COLORS[ct]
-                    if cc then
-                        uHR, uHG, uHB = cc.r, cc.g, cc.b
-                    else
-                        uHR, uHG, uHB = 37 / 255, 193 / 255, 29 / 255
-                    end
-                elseif unitKey == "pet" then
-                    uHR, uHG, uHB = 37 / 255, 193 / 255, 29 / 255
-                else
-                    uHR, uHG, uHB = 0.8, 0.2, 0.2
-                end
-                -- Dynamic Health Color overrides the flat sources above (see the
-                -- build-time twin); resolved at the preview's fake health percent.
-                local uDynR, uDynG, uDynB =
-                    mod.UF_PreviewDynamicColor(s, optionState._previewHealthPct or 0.70)
-                if uDynR then
-                    uHR, uHG, uHB = uDynR, uDynG, uDynB
-                end
-                -- Class-colored background (designer shows the player's class), else custom.
-                local uBgClassCC
-                if s.bgClassColored then
-                    local _, ct = UnitClass("player")
-                    uBgClassCC = ct and CludesUI.GetClassColor(ct)
-                end
-                if uBgClassCC then
-                    uBgR, uBgG, uBgB = uBgClassCC.r, uBgClassCC.g, uBgClassCC.b
-                else
-                    local cBg = s.customBgColor
-                    if cBg then
-                        uBgR, uBgG, uBgB = cBg.r, cBg.g, cBg.b
-                    else
-                        uBgR, uBgG, uBgB = 17 / 255, 17 / 255, 17 / 255
-                    end
-                end
+                uHR, uHG, uHB, uBgR, uBgG, uBgB = popFrame._litHealth(s)
             end
             healthFill:SetColorTexture(uHR, uHG, uHB, 1)
-            -- Bg covers only the empty portion so a reduced fill opacity reveals
-            -- the backdrop, not the bg color (live frame edge-anchor).
+            -- The backing covers only the empty part, so a fill below full
+            -- opacity shows the dark base, not the backing (the live edge anchor).
             healthBgColor:ClearAllPoints()
-            do
-                if s.healthVerticalFill then
-                    local hpH = math.floor(hh * (optionState._previewHealthPct or 0.70) + 0.5)
-                    if s.healthReverseFill then
-                        healthBgColor:SetPoint("TOPLEFT", health, "TOPLEFT", 0, -hpH)
-                        healthBgColor:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
-                    else
-                        healthBgColor:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
-                        healthBgColor:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, hpH)
-                    end
+            local leftIn, topIn, rightIn, bottomIn = 0, 0, 0, 0
+            if vertFill then
+                if revFill then
+                    topIn = -filledLen
                 else
-                    local hpW = math.floor(fw * (optionState._previewHealthPct or 0.70) + 0.5)
-                    if s.healthReverseFill then
-                        healthBgColor:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
-                        healthBgColor:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", -hpW, 0)
-                    else
-                        healthBgColor:SetPoint("TOPLEFT", health, "TOPLEFT", hpW, 0)
-                        healthBgColor:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
-                    end
+                    bottomIn = filledLen
                 end
+            elseif revFill then
+                rightIn = -filledLen
+            else
+                leftIn = filledLen
             end
+            healthBgColor:SetPoint("TOPLEFT", health, "TOPLEFT", leftIn, topIn)
+            healthBgColor:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", rightIn, bottomIn)
             healthBgColor:SetColorTexture(uBgR, uBgG, uBgB, 1)
-            -- Bar texture on the fills; mini frames use the donor texture unless
-            -- they set their own override.
-            do
-                local curTexKey = mod.ResolveHealthBarTextureKey(s, isMini and ds or nil)
-                local curTexPath = (mod.healthBarTextures or {})[curTexKey]
-                if healthFill then
-                    local hGA = s.healthBarOpacity or 90
-                    if hGA > 1.0 then
-                        hGA = hGA / 100
-                    end
-                    PV_FillColor(
-                        healthFill,
-                        curTexPath,
-                        uHR,
-                        uHG,
-                        uHB,
-                        (not isDark) and s.gradientEnabled,
-                        s.gradientColor,
-                        s.gradientDir,
-                        hGA
-                    )
+            -- The bar texture on both fills; a mini frame takes its donor's
+            -- texture unless it picked one of its own.
+            local texKeyNow = mod.ResolveHealthBarTextureKey(s, isMini and ds or nil)
+            local texNow = (mod.healthBarTextures or {})[texKeyNow]
+            if healthFill then
+                local fillA = s.healthBarOpacity or 90
+                if fillA > 1.0 then
+                    fillA = fillA / 100
                 end
-                if popFrame._powerFill then
-                    local pvFR, pvFG, pvFB
-                    local isPwrC2 = s.powerPercentPowerColor ~= false
-                    if isPwrC2 and s.powerClassColored then
-                        local _, ct = UnitClass("player")
-                        local cc = CludesUI.GetClassColor(ct)
-                        pvFR, pvFG, pvFB = cc.r, cc.g, cc.b
-                    elseif isPwrC2 then
-                        local _, pToken = UnitPowerType("player")
-                        local details = CludesUI.GetPowerColor(pToken or "MANA")
-                        pvFR, pvFG, pvFB = details.r, details.g, details.b
-                    else
-                        local cpf2 = s.customPowerFillColor
-                        if cpf2 then
-                            pvFR, pvFG, pvFB = cpf2.r, cpf2.g, cpf2.b
-                        else
-                            pvFR, pvFG, pvFB = 0, 0, 1
-                        end
-                    end
-                    popFrame._pR, popFrame._pG, popFrame._pB = pvFR, pvFG, pvFB
-                    if curTexPath then
-                        popFrame._powerFill:SetTexture(curTexPath)
-                        popFrame._powerFill:SetVertexColor(pvFR, pvFG, pvFB, 1)
-                    else
-                        popFrame._powerFill:SetVertexColor(1, 1, 1, 1)
-                        popFrame._powerFill:SetColorTexture(pvFR, pvFG, pvFB, 1)
-                    end
+                local withGradient = (not isDark) and s.gradientEnabled
+                PV_FillColor(
+                    healthFill,
+                    texNow,
+                    uHR,
+                    uHG,
+                    uHB,
+                    withGradient,
+                    s.gradientColor,
+                    s.gradientDir,
+                    fillA
+                )
+            end
+            local pFill = popFrame._powerFill
+            if pFill then
+                local pr, pg, pb = popFrame._powerRGB(s)
+                popFrame._pR, popFrame._pG, popFrame._pB = pr, pg, pb
+                if texNow then
+                    pFill:SetTexture(texNow)
+                    pFill:SetVertexColor(pr, pg, pb, 1)
+                else
+                    pFill:SetVertexColor(1, 1, 1, 1)
+                    pFill:SetColorTexture(pr, pg, pb, 1)
                 end
             end
 
-            -- Apply health bar alpha from unified opacity setting
-            local hFillA, hBgA
-            if isDark then
-                hFillA = 0.90
-                hBgA = 1
-            else
-                local barOp = (s.healthBarOpacity or 90) / 100
-                hFillA = barOp
+            -- Fill and backing alpha from the one opacity setting (fixed under
+            -- the dark theme).
+            local hFillA, hBgA = 0.90, 1
+            if not isDark then
+                hFillA = (s.healthBarOpacity or 90) / 100
                 hBgA = (s.customBgAlpha or 100) / 100
             end
             if healthFill then
@@ -2802,9 +2734,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             if healthBgColor then
                 healthBgColor:SetAlpha(hBgA)
             end
-            -- Textured Background, as live: a fixed full-size layer while the fill is opaque.
-            local tbPath =
-                mod.UF_TexBgPaths(unitKey, s, mod.ResolveHealthBarTextureKey(s, isMini and ds or nil))
+            -- Textured Background, as live: a fixed full-size layer while the
+            -- fill is opaque.
+            local tbPath = mod.UF_TexBgPaths(unitKey, s, texKeyNow)
             if tbPath then
                 local tb = mod.UF_TexBgLayer(health, tbPath, s.healthVerticalFill and not blizzG)
                 tb:SetVertexColor(uBgR, uBgG, uBgB, 1)
