@@ -25,6 +25,49 @@ local PoolKept, PoolGen = CludesUI._Pool.Kept, CludesUI._Pool.Gen
 -- A glow-style picker's items: the leading "inherit" entry (val nil, its
 -- caption given), then None (val 0) when noneVal is passed, then the seven
 -- glow styles in menu order. A fresh list on every call.
+-- A sound picker's items, in the shared sound order: one per sound (its
+-- name, or the key when it has none) and a divider for each "---" separator
+-- (built-in sounds above, LibSharedMedia ones below).
+local function SoundItems()
+    local items = {}
+    for _, key in ipairs(mod.FOCUSKICK_SOUND_ORDER or { "none" }) do
+        if type(key) == "string" and key:sub(1, 3) == "---" then
+            items[#items + 1] = { divider = true }
+        else
+            local names = mod.FOCUSKICK_SOUND_NAMES
+            items[#items + 1] = { val = key, label = (names and names[key]) or key }
+        end
+    end
+    return items
+end
+
+-- Hangs a speaker button on a sound row (none for silence) that plays the
+-- row's sound without picking it, as the sound dropdowns' preview does.
+local function AddSoundPreviewButton(si, item)
+    if not item.val or item.val == "none" then
+        return
+    end
+    local play = CreateFrame("Button", nil, si)
+    play:SetSize(16, 16)
+    play:SetPoint("RIGHT", si, "RIGHT", -8, 0)
+    play:SetFrameLevel(si:GetFrameLevel() + 2)
+    play:SetNormalAtlas(CludesUI.SOUND_ICON_ATLAS)
+    play:SetPushedAtlas(CludesUI.SOUND_ICON_PRESSED_ATLAS)
+    play:SetScript("OnClick", function()
+        local paths = mod.FOCUSKICK_SOUND_PATHS
+        local filePath = paths and paths[item.val]
+        if filePath then
+            PlaySoundFile(filePath, "Master")
+        end
+    end)
+    play:SetScript("OnEnter", function()
+        CludesUI.ShowWidgetTooltip(play, "Preview Sound")
+    end)
+    play:SetScript("OnLeave", function()
+        CludesUI.HideWidgetTooltip()
+    end)
+end
+
 local function GlowStyleItems(inheritLabel, noneVal)
     local items = { { val = nil, label = inheritLabel } }
     if noneVal then
@@ -1114,8 +1157,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             or (mod._myRacialsSet and mod._myRacialsSet[sid2])
                             or (bsX.customSpellIDs and bsX.customSpellIDs[sid2])
                         )
-                            -- Hosted-buff markers are reparented Blizzard buff frames,
-                            -- not preset icons -- never mint cas entries for them.
+                            -- Hosted-buff markers are reparented Blizzard buff frames,
+                            -- not preset icons -- never mint cas entries for them.
                             and not (mod.HostedBuffMarkerToSpell and mod.HostedBuffMarkerToSpell(sid2))
                         if isInj then
                             if mod.SlotIDFromKey(sid2) then
@@ -4330,43 +4373,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     -- Audio on Buff Gain/Loss sound list + speaker-preview decorator. Defined
                     -- once here so the Blizzard-tracked-buff rows AND the self-timed preset/custom
                     -- gain row share the same list + preview (entries mirror the Focus Cast Sound dropdown via the shared ns.FOCUSKICK_SOUND_* tables).
-                    local AUDIO_ITEMS = {}
-                    for _, key in ipairs(mod.FOCUSKICK_SOUND_ORDER or { "none" }) do
-                        if type(key) == "string" and key:sub(1, 3) == "---" then
-                            -- Separator inserted by AppendSharedMediaSounds between built-in and
-                            -- appended LibSharedMedia sounds. Render as a divider line, not a sound entry.
-                            AUDIO_ITEMS[#AUDIO_ITEMS + 1] = { divider = true }
-                        else
-                            AUDIO_ITEMS[#AUDIO_ITEMS + 1] = {
-                                val = key,
-                                label = (mod.FOCUSKICK_SOUND_NAMES and mod.FOCUSKICK_SOUND_NAMES[key]) or key,
-                            }
-                        end
-                    end
+                    local AUDIO_ITEMS = SoundItems()
                     -- Speaker-preview decorator: plays a row's focused sound without selecting it (mirrors the dropdown's preview icon).
-                    local function AddSoundPreview(si, item)
-                        if item.val and item.val ~= "none" then
-                            local play = CreateFrame("Button", nil, si)
-                            play:SetSize(16, 16)
-                            play:SetPoint("RIGHT", si, "RIGHT", -8, 0)
-                            play:SetFrameLevel(si:GetFrameLevel() + 2)
-                            play:SetNormalAtlas(CludesUI.SOUND_ICON_ATLAS)
-                            play:SetPushedAtlas(CludesUI.SOUND_ICON_PRESSED_ATLAS)
-                            play:SetScript("OnClick", function()
-                                local paths = mod.FOCUSKICK_SOUND_PATHS
-                                local filePath = paths and paths[item.val]
-                                if filePath then
-                                    PlaySoundFile(filePath, "Master")
-                                end
-                            end)
-                            play:SetScript("OnEnter", function()
-                                CludesUI.ShowWidgetTooltip(play, "Preview Sound")
-                            end)
-                            play:SetScript("OnLeave", function()
-                                CludesUI.HideWidgetTooltip()
-                            end)
-                        end
-                    end
                     -- "Audio on Buff Gain": stored per-icon as ss.buffActiveSoundKey ("none"/nil
                     -- = silent). Blizzard-tracked buffs fire it via the apply-edge hook
                     -- (EnsureBuffSoundHook -> TriggerAuraAppliedAlert); self-timed preset/custom buffs fire it from the cast-timer gain edge in UpdateCustomBuffBars (CdmHooks) off the SAME stored key.
@@ -4388,7 +4396,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             function()
                                 return ss.buffActiveSoundKey == nil
                             end,
-                            AddSoundPreview,
+                            AddSoundPreviewButton,
                             {
                                 searchable = true,
                                 apply = {
@@ -4419,7 +4427,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             function()
                                 return ss.buffLostSoundKey == nil
                             end,
-                            AddSoundPreview,
+                            AddSoundPreviewButton,
                             {
                                 searchable = true,
                                 apply = {
@@ -5373,43 +5381,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
 
                         -- Audio Effect on CD Ready (preset/trinket/racial/custom): fired when the
                         -- ability comes off cooldown via the FakeActive poll (PresetOnCD). Stored in
-                        -- customActiveStates so it travels with the item (own list/preview: the buff-bar branch's shared AUDIO_ITEMS/AddSoundPreview are out of scope in this branch).
-                        local CDR_ITEMS = {}
-                        for _, key in ipairs(mod.FOCUSKICK_SOUND_ORDER or { "none" }) do
-                            if type(key) == "string" and key:sub(1, 3) == "---" then
-                                CDR_ITEMS[#CDR_ITEMS + 1] = { divider = true }
-                            else
-                                CDR_ITEMS[#CDR_ITEMS + 1] = {
-                                    val = key,
-                                    label = (mod.FOCUSKICK_SOUND_NAMES and mod.FOCUSKICK_SOUND_NAMES[key])
-                                        or key,
-                                }
-                            end
-                        end
-                        local function AddCdrPreview(si, item)
-                            if not (item.val and item.val ~= "none") then
-                                return
-                            end
-                            local play = CreateFrame("Button", nil, si)
-                            play:SetSize(16, 16)
-                            play:SetPoint("RIGHT", si, "RIGHT", -8, 0)
-                            play:SetFrameLevel(si:GetFrameLevel() + 2)
-                            play:SetNormalAtlas(CludesUI.SOUND_ICON_ATLAS)
-                            play:SetPushedAtlas(CludesUI.SOUND_ICON_PRESSED_ATLAS)
-                            play:SetScript("OnClick", function()
-                                local filePath = mod.FOCUSKICK_SOUND_PATHS
-                                    and mod.FOCUSKICK_SOUND_PATHS[item.val]
-                                if filePath then
-                                    PlaySoundFile(filePath, "Master")
-                                end
-                            end)
-                            play:SetScript("OnEnter", function()
-                                CludesUI.ShowWidgetTooltip(play, "Preview Sound")
-                            end)
-                            play:SetScript("OnLeave", function()
-                                CludesUI.HideWidgetTooltip()
-                            end)
-                        end
+                        -- customActiveStates so it travels with the item (own list/preview: the buff-bar branch's shared AUDIO_ITEMS is out of scope in this branch).
+                        local CDR_ITEMS = SoundItems()
                         MakeSubnavRow("Audio Effect on CD Ready", CDR_ITEMS, function()
                             return (cas and cas.cdReadySoundKey) or "none"
                         end, function(v)
@@ -5420,7 +5393,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             end
                         end, function()
                             return not (cas and cas.cdReadySoundKey)
-                        end, AddCdrPreview, { searchable = true })
+                        end, AddSoundPreviewButton, { searchable = true })
 
                         if not hasActive then
                             MakeActionRow("Add Active State", function()
@@ -6365,41 +6338,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- the spell's real cooldown finishes. Same sound list + speaker preview as the
                         -- buff Audio rows/Focus Cast Sound (shared ns.FOCUSKICK_SOUND_* tables); stored
                         -- as ss.cdReadySoundKey ("none"/nil = silent). The per-frame SetDesaturated edge hook (gated by ns._cdmAnyCdReadySound) fires it on the on-CD -> ready edge.
-                        local CDR_AUDIO_ITEMS = {}
-                        for _, key in ipairs(mod.FOCUSKICK_SOUND_ORDER or { "none" }) do
-                            if type(key) == "string" and key:sub(1, 3) == "---" then
-                                CDR_AUDIO_ITEMS[#CDR_AUDIO_ITEMS + 1] = { divider = true }
-                            else
-                                CDR_AUDIO_ITEMS[#CDR_AUDIO_ITEMS + 1] = {
-                                    val = key,
-                                    label = (mod.FOCUSKICK_SOUND_NAMES and mod.FOCUSKICK_SOUND_NAMES[key])
-                                        or key,
-                                }
-                            end
-                        end
-                        local function AddCdrSoundPreview(si, item)
-                            if item.val and item.val ~= "none" then
-                                local play = CreateFrame("Button", nil, si)
-                                play:SetSize(16, 16)
-                                play:SetPoint("RIGHT", si, "RIGHT", -8, 0)
-                                play:SetFrameLevel(si:GetFrameLevel() + 2)
-                                play:SetNormalAtlas(CludesUI.SOUND_ICON_ATLAS)
-                                play:SetPushedAtlas(CludesUI.SOUND_ICON_PRESSED_ATLAS)
-                                play:SetScript("OnClick", function()
-                                    local paths = mod.FOCUSKICK_SOUND_PATHS
-                                    local filePath = paths and paths[item.val]
-                                    if filePath then
-                                        PlaySoundFile(filePath, "Master")
-                                    end
-                                end)
-                                play:SetScript("OnEnter", function()
-                                    CludesUI.ShowWidgetTooltip(play, "Preview Sound")
-                                end)
-                                play:SetScript("OnLeave", function()
-                                    CludesUI.HideWidgetTooltip()
-                                end)
-                            end
-                        end
+                        local CDR_AUDIO_ITEMS = SoundItems()
                         local cdReadySoundRow = MakeSubnavRow(
                             "Audio Effect on CD Ready",
                             CDR_AUDIO_ITEMS,
@@ -6421,7 +6360,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             function()
                                 return ss.cdReadySoundKey == nil
                             end,
-                            AddCdrSoundPreview,
+                            AddSoundPreviewButton,
                             {
                                 searchable = true,
                                 apply = {
