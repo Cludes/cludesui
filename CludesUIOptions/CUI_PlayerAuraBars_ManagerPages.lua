@@ -3082,142 +3082,29 @@ function mod.PABMP_ShowFilterEditor()
     -- Flush with the popup's bottom-right corner: same shape, rows clipped to it.
     CludesUI.MakeRoundedBorder(side, 1, 1, 1, 0.10, sideBg, nil, true)
 
-    local sideScroll = CreateFrame("ScrollFrame", nil, side)
-    sideScroll:SetPoint("TOPLEFT", side, "TOPLEFT", 1, -1)
-    sideScroll:SetPoint("BOTTOMRIGHT", side, "BOTTOMRIGHT", -1, 1)
-    sideScroll:SetFrameLevel(side:GetFrameLevel() + 1)
-    local sideChild = CreateFrame("Frame", nil, sideScroll)
-    sideChild:SetWidth(SIDE_W - 2)
-    sideScroll:SetScrollChild(sideChild)
-
-    local fy = -4
-    for idx = 1, #filters do
-        local f = filters[idx]
-        local isSel = (pabFilterSel == f.id)
-        local frow = CreateFrame("Button", nil, sideChild)
-        frow:SetHeight(26)
-        frow:SetPoint("TOPLEFT", sideChild, "TOPLEFT", 0, fy)
-        frow:SetPoint("TOPRIGHT", sideChild, "TOPRIGHT", 0, fy)
-        frow:SetFrameLevel(sideChild:GetFrameLevel() + 1)
-        local rbg = frow:CreateTexture(nil, "BACKGROUND")
-        rbg:SetAllPoints()
-        rbg:SetColorTexture(1, 1, 1, isSel and 0.07 or 0)
-        local rl = CludesUI.MakeFont(frow, 12, nil, 1, 1, 1)
-        rl:SetAlpha(isSel and 0.95 or 0.6)
-        rl:SetPoint("LEFT", frow, "LEFT", 10, 0)
-        rl:SetPoint("RIGHT", frow, "RIGHT", f.preset and -8 or -42, 0)
-        rl:SetJustifyH("LEFT")
-        rl:SetWordWrap(false)
-        rl:SetText(L(f.name))
-        if isSel then
-            local accent = frow:CreateTexture(nil, "ARTWORK", nil, 2)
-            accent:SetSize(2, 26)
-            accent:SetPoint("TOPLEFT", frow, "TOPLEFT", 0, 0)
-            accent:SetColorTexture(eg.r, eg.g, eg.b, 0.9)
-        end
-        frow:SetScript("OnEnter", function()
-            if not isSel then
-                rbg:SetColorTexture(1, 1, 1, 0.04)
-            end
-        end)
-        frow:SetScript("OnLeave", function()
-            rbg:SetColorTexture(1, 1, 1, isSel and 0.07 or 0)
-        end)
-        frow:SetScript("OnClick", function()
-            pabFilterSel = f.id
+    local sideScroll, sideChild, fy = CludesUI.BuildFilterSidebar(side, SIDE_W, filters, {
+        selected = pabFilterSel,
+        onPick = function(id)
+            pabFilterSel = id
             pabFilterScrollPos = 0
-            Rebuild()
-        end)
-
-        -- Imported Buff Manager presets (f.preset = true) are protected --
-        -- not renameable/deletable, matching BM2's own `if not f.preset`
-        -- guard exactly. User-created filters keep both icons.
-        if not f.preset then
-            local del = CreateFrame("Button", nil, frow)
-            del:SetSize(14, 14)
-            del:SetPoint("RIGHT", frow, "RIGHT", -6, 0)
-            del:SetFrameLevel(frow:GetFrameLevel() + 1)
-            del:SetAlpha(0.5)
-            local dx = del:CreateTexture(nil, "OVERLAY")
-            dx:SetAllPoints()
-            if dx.SetSnapToPixelGrid then
-                dx:SetSnapToPixelGrid(false)
-                dx:SetTexelSnappingBias(0)
-            end
-            dx:SetTexture(MEDIA_FE .. "cui-close.png")
-            del:SetScript("OnEnter", function(self)
-                self:SetAlpha(0.9)
-                CludesUI.ShowWidgetTooltip(self, L("Delete"))
-            end)
-            del:SetScript("OnLeave", function(self)
-                self:SetAlpha(0.5)
-                CludesUI.HideWidgetTooltip()
-            end)
-            del:SetScript("OnClick", function()
-                CludesUI:ShowConfirmPopup({
-                    title = L("Delete Filter"),
-                    message = L("Delete this filter? It is removed from every bar using it."),
-                    confirmText = L("Delete"),
-                    cancelText = L("Cancel"),
-                    onConfirm = function()
-                        mod.PAB_DeleteFilter(f.id)
-                        ApplyAll()
-                        Rebuild()
-                    end,
-                })
-            end)
-
-            local edit = CreateFrame("Button", nil, frow)
-            edit:SetSize(14, 14)
-            edit:SetPoint("RIGHT", del, "LEFT", -4, 0)
-            edit:SetFrameLevel(frow:GetFrameLevel() + 1)
-            edit:SetAlpha(0.5)
-            local ex = edit:CreateTexture(nil, "OVERLAY")
-            ex:SetAllPoints()
-            if ex.SetSnapToPixelGrid then
-                ex:SetSnapToPixelGrid(false)
-                ex:SetTexelSnappingBias(0)
-            end
-            ex:SetTexture(MEDIA_FE .. "cui-edit.png")
-            edit:SetScript("OnEnter", function(self)
-                self:SetAlpha(0.9)
-                CludesUI.ShowWidgetTooltip(self, L("Edit"))
-            end)
-            edit:SetScript("OnLeave", function(self)
-                self:SetAlpha(0.5)
-                CludesUI.HideWidgetTooltip()
-            end)
-            edit:SetScript("OnClick", function()
-                EditorInput({
-                    title = L("Rename Filter"),
-                    placeholder = L(f.name),
-                    confirmText = L("Rename"),
-                    cancelText = L("Cancel"),
-                    onConfirm = function(textValue)
-                        mod.PAB_RenameFilter(f.id, textValue)
-                        Rebuild()
-                    end,
-                })
-            end)
-        end
-        fy = fy - 27
-    end
-    local addFilterBtn = CludesUI.BuildPopupButton(sideChild, SIDE_W - 16, 26, "Add Filter", function()
-        EditorInput({
-            title = L("Add Filter"),
-            message = L("Name the new filter."),
-            confirmText = L("Add"),
-            cancelText = L("Cancel"),
-            onConfirm = function(textValue)
-                local f = mod.PAB_AddFilter((textValue and textValue ~= "" and textValue) or L("New Filter"))
-                if f then
-                    pabFilterSel = f.id
-                end
-                Rebuild()
-            end,
-        })
-    end)
-    addFilterBtn:SetPoint("TOPLEFT", sideChild, "TOPLEFT", 8, fy - 8)
+        end,
+        onAdded = function(id)
+            pabFilterSel = id
+        end,
+        delete = mod.PAB_DeleteFilter,
+        rename = mod.PAB_RenameFilter,
+        add = mod.PAB_AddFilter,
+        deleteMessage = "Delete this filter? It is removed from every bar using it.",
+        -- Imported Buff Manager presets (f.preset = true) stay protected (no
+        -- rename or delete), matching BM2's own guard.
+        renamePlaceholder = function(f)
+            return L(f.name)
+        end,
+        apply = ApplyAll,
+        rebuild = Rebuild,
+        input = EditorInput,
+        accent = eg,
+    })
     local sideBottom = fy - 8 - 26
     -- One-time copy of the Raid Frames Buff Manager filter library into this
     -- registry (same-named filters replaced, missing ones created; see

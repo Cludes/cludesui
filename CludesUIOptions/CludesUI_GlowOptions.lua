@@ -1245,3 +1245,154 @@ function CludesUI.BuildIconEffects(widget, sy, opts)
     end
     return sy
 end
+
+-------------------------------------------------------------------------------
+--  BuildFilterSidebar: the filter list down the right of the aura managers'
+--  filter editors (Raid Frames' Buff Manager, Player Aura Bars): a row per
+--  filter (accent bar and wash on the selected one; delete and rename icons
+--  on every filter but a protected preset) and an Add Filter button. opts:
+--  selected (the selected filter's id), onPick(id) (a row clicked),
+--  onAdded(id) (a filter added), delete(id), rename(id, text), add(name) ->
+--  the new filter, deleteMessage, renamePlaceholder(filter), apply() (after
+--  a delete), rebuild() (the editor drawn again), input(popupOpts) (the
+--  editor's text-input popup), accent ({ r, g, b }). Returns the scroll
+--  frame, its child and the y below the last row.
+-------------------------------------------------------------------------------
+function CludesUI.BuildFilterSidebar(side, sideW, filters, opts)
+    local MEDIA_FE = "Interface\\AddOns\\CludesUI\\media\\icons\\"
+    local eg = opts.accent
+    local sideScroll = CreateFrame("ScrollFrame", nil, side)
+    sideScroll:SetPoint("TOPLEFT", side, "TOPLEFT", 1, -1)
+    sideScroll:SetPoint("BOTTOMRIGHT", side, "BOTTOMRIGHT", -1, 1)
+    sideScroll:SetFrameLevel(side:GetFrameLevel() + 1)
+    local sideChild = CreateFrame("Frame", nil, sideScroll)
+    sideChild:SetWidth(sideW - 2)
+    sideScroll:SetScrollChild(sideChild)
+
+    local fy = -4
+    for idx = 1, #filters do
+        local f = filters[idx]
+        local isSel = (opts.selected == f.id)
+        local frow = CreateFrame("Button", nil, sideChild)
+        frow:SetHeight(26)
+        frow:SetPoint("TOPLEFT", sideChild, "TOPLEFT", 0, fy)
+        frow:SetPoint("TOPRIGHT", sideChild, "TOPRIGHT", 0, fy)
+        frow:SetFrameLevel(sideChild:GetFrameLevel() + 1)
+        local rbg = frow:CreateTexture(nil, "BACKGROUND")
+        rbg:SetAllPoints()
+        rbg:SetColorTexture(1, 1, 1, isSel and 0.07 or 0)
+        local rl = CludesUI.MakeFont(frow, 12, nil, 1, 1, 1)
+        rl:SetAlpha(isSel and 0.95 or 0.6)
+        rl:SetPoint("LEFT", frow, "LEFT", 10, 0)
+        rl:SetPoint("RIGHT", frow, "RIGHT", f.preset and -8 or -42, 0)
+        rl:SetJustifyH("LEFT")
+        rl:SetWordWrap(false)
+        rl:SetText(CludesUI.L(f.name) or f.name)
+        if isSel then
+            local accent = frow:CreateTexture(nil, "ARTWORK", nil, 2)
+            accent:SetSize(2, 26)
+            accent:SetPoint("TOPLEFT", frow, "TOPLEFT", 0, 0)
+            accent:SetColorTexture(eg.r, eg.g, eg.b, 0.9)
+        end
+        frow:SetScript("OnEnter", function()
+            if not isSel then
+                rbg:SetColorTexture(1, 1, 1, 0.04)
+            end
+        end)
+        frow:SetScript("OnLeave", function()
+            rbg:SetColorTexture(1, 1, 1, isSel and 0.07 or 0)
+        end)
+        frow:SetScript("OnClick", function()
+            opts.onPick(f.id)
+            opts.rebuild()
+        end)
+        if not f.preset then
+            -- Inline X (delete) + pencil (rename) -- the CDM preset-menu
+            -- inline-button pattern (cui-close / cui-edit at 14px).
+            local del = CreateFrame("Button", nil, frow)
+            del:SetSize(14, 14)
+            del:SetPoint("RIGHT", frow, "RIGHT", -6, 0)
+            del:SetFrameLevel(frow:GetFrameLevel() + 1)
+            del:SetAlpha(0.5)
+            local dx = del:CreateTexture(nil, "OVERLAY")
+            dx:SetAllPoints()
+            if dx.SetSnapToPixelGrid then
+                dx:SetSnapToPixelGrid(false)
+                dx:SetTexelSnappingBias(0)
+            end
+            dx:SetTexture(MEDIA_FE .. "cui-close.png")
+            del:SetScript("OnEnter", function(self)
+                self:SetAlpha(0.9)
+                CludesUI.ShowWidgetTooltip(self, CludesUI.L("Delete"))
+            end)
+            del:SetScript("OnLeave", function(self)
+                self:SetAlpha(0.5)
+                CludesUI.HideWidgetTooltip()
+            end)
+            del:SetScript("OnClick", function()
+                CludesUI:ShowConfirmPopup({
+                    title = CludesUI.L("Delete Filter"),
+                    message = CludesUI.L(opts.deleteMessage),
+                    confirmText = CludesUI.L("Delete"),
+                    cancelText = CludesUI.L("Cancel"),
+                    onConfirm = function()
+                        opts.delete(f.id)
+                        opts.apply()
+                        opts.rebuild()
+                    end,
+                })
+            end)
+
+            local edit = CreateFrame("Button", nil, frow)
+            edit:SetSize(14, 14)
+            edit:SetPoint("RIGHT", del, "LEFT", -4, 0)
+            edit:SetFrameLevel(frow:GetFrameLevel() + 1)
+            edit:SetAlpha(0.5)
+            local ex = edit:CreateTexture(nil, "OVERLAY")
+            ex:SetAllPoints()
+            if ex.SetSnapToPixelGrid then
+                ex:SetSnapToPixelGrid(false)
+                ex:SetTexelSnappingBias(0)
+            end
+            ex:SetTexture(MEDIA_FE .. "cui-edit.png")
+            edit:SetScript("OnEnter", function(self)
+                self:SetAlpha(0.9)
+                CludesUI.ShowWidgetTooltip(self, CludesUI.L("Edit"))
+            end)
+            edit:SetScript("OnLeave", function(self)
+                self:SetAlpha(0.5)
+                CludesUI.HideWidgetTooltip()
+            end)
+            edit:SetScript("OnClick", function()
+                opts.input({
+                    title = CludesUI.L("Rename Filter"),
+                    placeholder = opts.renamePlaceholder(f),
+                    confirmText = CludesUI.L("Rename"),
+                    cancelText = CludesUI.L("Cancel"),
+                    onConfirm = function(textValue)
+                        opts.rename(f.id, textValue)
+                        opts.rebuild()
+                    end,
+                })
+            end)
+        end
+        fy = fy - 27
+    end
+    local addFilterBtn = CludesUI.BuildPopupButton(sideChild, sideW - 16, 26, "Add Filter", function()
+        opts.input({
+            title = CludesUI.L("Add Filter"),
+            message = CludesUI.L("Name the new filter."),
+            confirmText = CludesUI.L("Add"),
+            cancelText = CludesUI.L("Cancel"),
+            onConfirm = function(textValue)
+                local f = opts.add((textValue and textValue ~= "" and textValue) or CludesUI.L("New Filter"))
+                if f then
+                    opts.onAdded(f.id)
+                end
+                opts.rebuild()
+            end,
+        })
+    end)
+    addFilterBtn:SetPoint("TOPLEFT", sideChild, "TOPLEFT", 8, fy - 8)
+    return sideScroll, sideChild, fy
+end

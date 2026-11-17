@@ -4259,142 +4259,27 @@ function mod.BMP_ShowFilterEditor(show, hide)
 
     -- Sidebar content scrolls when it outgrows the popup (standard smooth
     -- scroll + thin custom bar; bar shows only on overflow).
-    local sideScroll = CreateFrame("ScrollFrame", nil, side)
-    sideScroll:SetPoint("TOPLEFT", side, "TOPLEFT", 1, -1)
-    sideScroll:SetPoint("BOTTOMRIGHT", side, "BOTTOMRIGHT", -1, 1)
-    sideScroll:SetFrameLevel(side:GetFrameLevel() + 1)
-    local sideChild = CreateFrame("Frame", nil, sideScroll)
-    sideChild:SetWidth(SIDE_W - 2)
-    sideScroll:SetScrollChild(sideChild)
-
-    local fy = -4
-    for idx = 1, #filters do
-        local f = filters[idx]
-        local isSel = (fdSel == f.id)
-        local frow = CreateFrame("Button", nil, sideChild)
-        frow:SetHeight(26)
-        frow:SetPoint("TOPLEFT", sideChild, "TOPLEFT", 0, fy)
-        frow:SetPoint("TOPRIGHT", sideChild, "TOPRIGHT", 0, fy)
-        frow:SetFrameLevel(sideChild:GetFrameLevel() + 1)
-        local rbg = frow:CreateTexture(nil, "BACKGROUND")
-        rbg:SetAllPoints()
-        rbg:SetColorTexture(1, 1, 1, isSel and 0.07 or 0)
-        local rl = CludesUI.MakeFont(frow, 12, nil, 1, 1, 1)
-        rl:SetAlpha(isSel and 0.95 or 0.6)
-        rl:SetPoint("LEFT", frow, "LEFT", 10, 0)
-        rl:SetPoint("RIGHT", frow, "RIGHT", f.preset and -8 or -42, 0)
-        rl:SetJustifyH("LEFT")
-        rl:SetWordWrap(false)
-        rl:SetText(L(f.name))
-        if isSel then
-            local accent = frow:CreateTexture(nil, "ARTWORK", nil, 2)
-            accent:SetSize(2, 26)
-            accent:SetPoint("TOPLEFT", frow, "TOPLEFT", 0, 0)
-            accent:SetColorTexture(eg.r, eg.g, eg.b, 0.9)
-        end
-        frow:SetScript("OnEnter", function()
-            if not isSel then
-                rbg:SetColorTexture(1, 1, 1, 0.04)
-            end
-        end)
-        frow:SetScript("OnLeave", function()
-            rbg:SetColorTexture(1, 1, 1, isSel and 0.07 or 0)
-        end)
-        frow:SetScript("OnClick", function()
-            fdSel = f.id
+    local sideScroll, sideChild, fy = CludesUI.BuildFilterSidebar(side, SIDE_W, filters, {
+        selected = fdSel,
+        onPick = function(id)
+            fdSel = id
             fdScrollPos = 0 -- new filter = new list; start at the top
-            Rebuild()
-        end)
-        if not f.preset then
-            -- Inline X (delete) + pencil (rename) -- the CDM preset-menu
-            -- inline-button pattern (cui-close / cui-edit at 14px).
-            local del = CreateFrame("Button", nil, frow)
-            del:SetSize(14, 14)
-            del:SetPoint("RIGHT", frow, "RIGHT", -6, 0)
-            del:SetFrameLevel(frow:GetFrameLevel() + 1)
-            del:SetAlpha(0.5)
-            local dx = del:CreateTexture(nil, "OVERLAY")
-            dx:SetAllPoints()
-            if dx.SetSnapToPixelGrid then
-                dx:SetSnapToPixelGrid(false)
-                dx:SetTexelSnappingBias(0)
-            end
-            dx:SetTexture(MEDIA_FE .. "cui-close.png")
-            del:SetScript("OnEnter", function(self)
-                self:SetAlpha(0.9)
-                CludesUI.ShowWidgetTooltip(self, CludesUI.L("Delete"))
-            end)
-            del:SetScript("OnLeave", function(self)
-                self:SetAlpha(0.5)
-                CludesUI.HideWidgetTooltip()
-            end)
-            del:SetScript("OnClick", function()
-                CludesUI:ShowConfirmPopup({
-                    title = CludesUI.L("Delete Filter"),
-                    message = CludesUI.L("Delete this filter? It is removed from every indicator using it."),
-                    confirmText = CludesUI.L("Delete"),
-                    cancelText = CludesUI.L("Cancel"),
-                    onConfirm = function()
-                        mod.BM2_DeleteFilter(f.id)
-                        Apply()
-                        Rebuild()
-                    end,
-                })
-            end)
-
-            local edit = CreateFrame("Button", nil, frow)
-            edit:SetSize(14, 14)
-            edit:SetPoint("RIGHT", del, "LEFT", -4, 0)
-            edit:SetFrameLevel(frow:GetFrameLevel() + 1)
-            edit:SetAlpha(0.5)
-            local ex = edit:CreateTexture(nil, "OVERLAY")
-            ex:SetAllPoints()
-            if ex.SetSnapToPixelGrid then
-                ex:SetSnapToPixelGrid(false)
-                ex:SetTexelSnappingBias(0)
-            end
-            ex:SetTexture(MEDIA_FE .. "cui-edit.png")
-            edit:SetScript("OnEnter", function(self)
-                self:SetAlpha(0.9)
-                CludesUI.ShowWidgetTooltip(self, CludesUI.L("Edit"))
-            end)
-            edit:SetScript("OnLeave", function(self)
-                self:SetAlpha(0.5)
-                CludesUI.HideWidgetTooltip()
-            end)
-            edit:SetScript("OnClick", function()
-                EditorInput({
-                    title = CludesUI.L("Rename Filter"),
-                    placeholder = f.name,
-                    confirmText = CludesUI.L("Rename"),
-                    cancelText = CludesUI.L("Cancel"),
-                    onConfirm = function(textValue)
-                        mod.BM2_RenameFilter(f.id, textValue)
-                        Rebuild()
-                    end,
-                })
-            end)
-        end
-        fy = fy - 27
-    end
-    local addFilterBtn = CludesUI.BuildPopupButton(sideChild, SIDE_W - 16, 26, "Add Filter", function()
-        EditorInput({
-            title = CludesUI.L("Add Filter"),
-            message = CludesUI.L("Name the new filter."),
-            confirmText = CludesUI.L("Add"),
-            cancelText = CludesUI.L("Cancel"),
-            onConfirm = function(textValue)
-                local f = mod.BM2_AddFilter(
-                    (textValue and textValue ~= "" and textValue) or CludesUI.L("New Filter")
-                )
-                if f then
-                    fdSel = f.id
-                end
-                Rebuild()
-            end,
-        })
-    end)
-    addFilterBtn:SetPoint("TOPLEFT", sideChild, "TOPLEFT", 8, fy - 8)
+        end,
+        onAdded = function(id)
+            fdSel = id
+        end,
+        delete = mod.BM2_DeleteFilter,
+        rename = mod.BM2_RenameFilter,
+        add = mod.BM2_AddFilter,
+        deleteMessage = "Delete this filter? It is removed from every indicator using it.",
+        renamePlaceholder = function(f)
+            return f.name
+        end,
+        apply = Apply,
+        rebuild = Rebuild,
+        input = EditorInput,
+        accent = eg,
+    })
     local sideBottom = fy - 8 - 26
     -- One-time copy of the Player Aura Bars filter setups INTO this library
     -- by name (same-named filters replaced, missing ones created). Ids here
