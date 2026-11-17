@@ -435,406 +435,373 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
     local centerFS = TextSlot("centerTextSize")
     local extraFS = TextSlot("extraTextSize")
 
-    -- Resolve preview text for a content key
+    -- The sample a text content key shows, built from the preview's fake
+    -- health and power percents. prefixText is the slot's settings prefix
+    -- ("leftText", "btbRight" ...), which carries its Name Format, Target
+    -- separator, Target prefix and custom format.
     local function PreviewTextForContent(contentFrame, s, prefixText)
-        -- Mirror "Show Decimal on Text": one decimal on abbrevs/percents when the
-        -- global flag is on, else the Number Format for valueType like the live
-        -- tags (boss frames read "bossHealth" for health).
-        local function _pvAbbrev(val, valueType)
-            local conf = _G._CUI_AbbrevDecimalCfg
-            -- The live tags' function (WoW Forever: none under 10,000 abbreviates).
-            if conf then
-                return mod.AbbreviateNumbers(val, conf)
+        -- Numbers as the live tags print them: the Show Decimal on Text
+        -- function when that is on (WoW Forever: nothing under 10,000
+        -- abbreviates), else the Number Format for the value type (a boss
+        -- frame's health reads as "bossHealth").
+        local function Abbr(val, valueType)
+            local decimalCfg = _G._CUI_AbbrevDecimalCfg
+            if decimalCfg then
+                return mod.AbbreviateNumbers(val, decimalCfg)
             end
             if valueType ~= "absorb" and unitKey:match("^boss") then
                 valueType = "bossHealth"
             end
             return mod.AbbreviateValue(val, valueType)
         end
-        local function _pvPct(p01)
+        local function Pct(share)
             if not _G._CUI_TextDecimals then
-                return tostring(math.floor(p01 * 100))
+                return tostring(math.floor(share * 100))
             end
             local trim = _G._CUI_PctTrim
             if trim then
-                return AbbreviateNumbers(trim.curve:Evaluate(p01), trim.cfg)
+                return AbbreviateNumbers(trim.curve:Evaluate(share), trim.cfg)
             end
-            return string.format("%.1f", p01 * 100)
+            return string.format("%.1f", share * 100)
         end
-        local function _pvName()
-            -- The player's name as the live frame shows it (Forever surname).
-            local num = (unitKey == "player") and (CludesUI.WithSurname(UnitName("player")) or "Player")
-                or (_previewCreatureNames[unitKey] or unitKey)
-            -- The slot's Name Format.
+        -- The name the live frame would show (the player's with its WoW
+        -- Forever surname), cut to the slot's Name Format.
+        local function NameText()
+            local shown
+            if unitKey == "player" then
+                shown = CludesUI.WithSurname(UnitName("player")) or "Player"
+            else
+                shown = _previewCreatureNames[unitKey] or unitKey
+            end
             if prefixText and s then
-                num = CludesUI.ShortName(num, s[prefixText .. "NameFormat"])
+                shown = CludesUI.ShortName(shown, s[prefixText .. "NameFormat"])
             end
-            return num
+            return shown
         end
-        -- literal: the Target content's padded prefix in place of the
-        -- separator ("" = none); plain: the name in the slot colour.
-        local function _pvTargetSuffix(literal, plain)
-            local _, ct = UnitClass("player")
-            local cc = ct and CludesUI.GetClassColor(ct)
-            local tgt = "Target"
-            if cc and not plain then
-                tgt = string.format("%s%s|r", CludesUI.HexColor(cc.r, cc.g, cc.b), tgt)
+        local function Tint(text, r, g, b)
+            return string.format("%s%s|r", CludesUI.HexColor(r, g, b), text)
+        end
+        -- " > Target", mirroring the live [cui-tgtsep(...)] tag: the slot's
+        -- separator padded with spaces, in the class colour (the preview's
+        -- target is of the player's class) or its own colour (white by
+        -- default). literal replaces the padded separator ("" = none), as the
+        -- Target content's prefix does; plain leaves the name uncoloured.
+        local function TargetText(literal, plain)
+            local _, token = UnitClass("player")
+            local classColor = token and CludesUI.GetClassColor(token)
+            local word = "Target"
+            if classColor and not plain then
+                word = Tint(word, classColor.r, classColor.g, classColor.b)
             end
-            -- Mirror the live [cui-tgtsep(...)] tag: per-slot space-padded
-            -- separator, class-colored (preview target = player's class) or
-            -- custom (default white).
             local sep = literal
             if not sep then
-                sep = prefixText and s[prefixText .. "TargetSep"]
-                if type(sep) ~= "string" or sep == "" then
-                    sep = ">"
+                local picked = prefixText and s[prefixText .. "TargetSep"]
+                if type(picked) ~= "string" or picked == "" then
+                    picked = ">"
                 end
-                sep = " " .. sep .. " "
+                sep = " " .. picked .. " "
             end
             if sep == "" then
-                return tgt
+                return word
             end
             if prefixText and s[prefixText .. "TargetSepClassColor"] then
-                if cc then
-                    sep = string.format("%s%s|r", CludesUI.HexColor(cc.r, cc.g, cc.b), sep)
+                if classColor then
+                    sep = Tint(sep, classColor.r, classColor.g, classColor.b)
                 end
-            else
-                local c = prefixText and s[prefixText .. "TargetSepColor"]
-                local r, g, b = 1, 1, 1
-                if type(c) == "table" then
-                    r, g, b = c.r or 1, c.g or 1, c.b or 1
-                end
-                sep = string.format("%s%s|r", CludesUI.HexColor(r, g, b), sep)
+                return sep .. word
             end
-            return sep .. tgt
+            local own = prefixText and s[prefixText .. "TargetSepColor"]
+            if type(own) ~= "table" then
+                own = {}
+            end
+            return Tint(sep, own.r or 1, own.g or 1, own.b or 1) .. word
         end
-        -- Live frames truncate names by width (per-slot Width % clamp in the
-        -- position code); the preview relies on its own FontString width.
-        if contentFrame == "name" then
-            return _pvName()
-        elseif contentFrame == "nametotarget" then
-            return _pvName() .. _pvTargetSuffix()
-        elseif contentFrame == "targetname" then
-            -- Live twin: ns.ContentToZone's Target branch (Prefix nil = "T:",
-            -- "" = none; the name class colored only while the slot is).
-            local pre = prefixText and s[prefixText .. "TargetPrefix"]
-            if type(pre) ~= "string" then
-                pre = "T:"
-            end
-            return _pvTargetSuffix(
-                pre ~= "" and (pre .. " ") or "",
-                not (prefixText and s[prefixText .. "ClassColor"])
-            )
-        elseif contentFrame == "level" or contentFrame == "levelname" or contentFrame == "namelevel" then
+        local maxHP = UnitHealthMax("player") or 1
+        local hpShare = optionState._previewHealthPct or 0.70
+        local curHP = math.floor(maxHP * hpShare)
+        local maxPP = UnitPowerMax("player") or 100
+        local ppShare = optionState._previewPowerPct or 0.85
+        local curPP = math.floor(maxPP * ppShare)
+        local function LevelText()
             local lvl = UnitLevel("player")
             lvl = (type(lvl) == "number" and lvl > 0) and tostring(lvl) or "80"
-            -- Level Difficulty Color: sample as an attackable unit of your level.
+            -- Level Difficulty Color: tinted as an attackable unit of your level.
             if s and s.levelDifficultyColor then
                 lvl = CludesUI.ColorText(lvl, CludesUI.GetLevelDifficultyColor(tonumber(lvl), true))
             end
-            if contentFrame == "level" then
-                return lvl
-            elseif contentFrame == "levelname" then
-                return lvl .. " | " .. _pvName()
-            else
-                return _pvName() .. " | " .. lvl
+            return lvl
+        end
+        -- A shield or heal absorb sized at share of max health.
+        local function AbsorbText(share, short)
+            local amount = math.floor(maxHP * share)
+            if short then
+                return Abbr(amount, "absorb")
             end
-        elseif
-            contentFrame == "both"
-            or contentFrame == "bothdash"
-            or contentFrame == "curhpshort"
-            or contentFrame == "healthshort"
-            or contentFrame == "curmaxhp"
-            or contentFrame == "perhp"
-            or contentFrame == "perhpnosign"
-            or contentFrame == "perhpnum"
-            or contentFrame == "perhpnumdash"
-        then
-            local maxHP = UnitHealthMax("player") or 1
-            local pct = optionState._previewHealthPct or 0.70
-            local curHP = math.floor(maxHP * pct)
-            if contentFrame == "healthshort" then
+            return string.format("%d", amount)
+        end
+        local hpAbbr = function()
+            return Abbr(curHP, "health")
+        end
+        local ppWhole = function()
+            return math.floor(ppShare * 100)
+        end
+        -- Content keys and tag keys to the sample each shows. Live frames cut
+        -- names to a Width % per slot; the preview leaves that to the
+        -- FontString's own width.
+        local SAMPLE = {
+            name = NameText,
+            nametotarget = function()
+                return NameText() .. TargetText()
+            end,
+            -- The live Target content (ns.ContentToZone): prefix nil = "T:",
+            -- "" = none, the name class coloured only while the slot is.
+            targetname = function()
+                local pre = prefixText and s[prefixText .. "TargetPrefix"]
+                if type(pre) ~= "string" then
+                    pre = "T:"
+                end
+                return TargetText(
+                    pre ~= "" and (pre .. " ") or "",
+                    not (prefixText and s[prefixText .. "ClassColor"])
+                )
+            end,
+            level = LevelText,
+            levelname = function()
+                return LevelText() .. " | " .. NameText()
+            end,
+            namelevel = function()
+                return NameText() .. " | " .. LevelText()
+            end,
+            both = function()
+                return hpAbbr() .. " | " .. Pct(hpShare) .. "%"
+            end,
+            bothdash = function()
+                return hpAbbr() .. " - " .. Pct(hpShare) .. "%"
+            end,
+            curhpshort = hpAbbr,
+            healthshort = function()
                 return mod.AbbreviateShortHealth(curHP)
-            elseif contentFrame == "curhpshort" then
-                return _pvAbbrev(curHP, "health")
-            elseif contentFrame == "curmaxhp" then
-                return _pvAbbrev(curHP, "health") .. " / " .. _pvAbbrev(maxHP, "maxHealth")
-            elseif contentFrame == "perhp" then
-                return _pvPct(pct) .. "%"
-            elseif contentFrame == "perhpnosign" then
-                return _pvPct(pct)
-            elseif contentFrame == "perhpnum" then
-                return _pvPct(pct) .. "% | " .. _pvAbbrev(curHP, "health")
-            elseif contentFrame == "perhpnumdash" then
-                return _pvPct(pct) .. "% - " .. _pvAbbrev(curHP, "health")
-            elseif contentFrame == "bothdash" then
-                return _pvAbbrev(curHP, "health") .. " - " .. _pvPct(pct) .. "%"
-            else
-                return _pvAbbrev(curHP, "health") .. " | " .. _pvPct(pct) .. "%"
-            end
-        elseif contentFrame == "perpp" then
-            local ppPct = optionState._previewPowerPct or 0.85
-            return math.floor(ppPct * 100) .. "%"
-        elseif contentFrame == "curpp" then
-            local maxPP = UnitPowerMax("player") or 100
-            local ppPct = optionState._previewPowerPct or 0.85
-            return mod.AbbreviateNumbers(math.floor(maxPP * ppPct))
-        elseif contentFrame == "curmaxpp" then
-            local maxPP = UnitPowerMax("player") or 100
-            local ppPct = optionState._previewPowerPct or 0.85
-            return mod.AbbreviateNumbers(math.floor(maxPP * ppPct)) .. " / " .. mod.AbbreviateNumbers(maxPP)
-        elseif contentFrame == "curhp_curpp" then
-            local maxHP = UnitHealthMax("player") or 1
-            local pct = optionState._previewHealthPct or 0.70
-            local curHP = math.floor(maxHP * pct)
-            local maxPP = UnitPowerMax("player") or 100
-            local ppPct2 = optionState._previewPowerPct or 0.85
-            return _pvAbbrev(curHP, "health") .. " | " .. mod.AbbreviateNumbers(math.floor(maxPP * ppPct2))
-        elseif contentFrame == "perhp_perpp" then
-            local pct = optionState._previewHealthPct or 0.70
-            local ppPct3 = optionState._previewPowerPct or 0.85
-            return _pvPct(pct) .. "% | " .. math.floor(ppPct3 * 100) .. "%"
-        elseif contentFrame == "absorb" then
-            local maxHP = UnitHealthMax("player") or 1
-            return string.format("%d", math.floor(maxHP * 0.14))
-        elseif contentFrame == "absorbshort" then
-            local maxHP = UnitHealthMax("player") or 1
-            return _pvAbbrev(math.floor(maxHP * 0.14), "absorb")
-        elseif contentFrame == "healabsorb" then
-            local maxHP = UnitHealthMax("player") or 1
-            return string.format("%d", math.floor(maxHP * 0.08))
-        elseif contentFrame == "healabsorbshort" then
-            local maxHP = UnitHealthMax("player") or 1
-            return _pvAbbrev(math.floor(maxHP * 0.08), "absorb")
-        elseif contentFrame == "group" then
-            return "3"
-        elseif contentFrame == "custom" then
-            -- Live twin: ns.ContentToZone's custom branch, the engine's parse
-            -- filled with one sample per schema key.
-            local str = prefixText and s and s[prefixText .. "CustomFormat"]
-            local parsed = CludesUI.TextTags.Parse(mod.UF_TextTags, str)
+            end,
+            curmaxhp = function()
+                return hpAbbr() .. " / " .. Abbr(maxHP, "maxHealth")
+            end,
+            perhp = function()
+                return Pct(hpShare) .. "%"
+            end,
+            perhpnosign = function()
+                return Pct(hpShare)
+            end,
+            perhpnum = function()
+                return Pct(hpShare) .. "% | " .. hpAbbr()
+            end,
+            perhpnumdash = function()
+                return Pct(hpShare) .. "% - " .. hpAbbr()
+            end,
+            perpp = function()
+                return ppWhole() .. "%"
+            end,
+            curpp = function()
+                return mod.AbbreviateNumbers(curPP)
+            end,
+            curmaxpp = function()
+                return mod.AbbreviateNumbers(curPP) .. " / " .. mod.AbbreviateNumbers(maxPP)
+            end,
+            curhp_curpp = function()
+                return hpAbbr() .. " | " .. mod.AbbreviateNumbers(curPP)
+            end,
+            perhp_perpp = function()
+                return Pct(hpShare) .. "% | " .. ppWhole() .. "%"
+            end,
+            absorb = function()
+                return AbsorbText(0.14)
+            end,
+            absorbshort = function()
+                return AbsorbText(0.14, true)
+            end,
+            healabsorb = function()
+                return AbsorbText(0.08)
+            end,
+            healabsorbshort = function()
+                return AbsorbText(0.08, true)
+            end,
+            group = function()
+                return "3"
+            end,
+        }
+        -- Custom: the live parse of the slot's format (ns.ContentToZone's
+        -- custom branch), filled with one sample per tag; an unknown tag
+        -- reads as the short heal absorb.
+        SAMPLE.custom = function()
+            local parsed =
+                CludesUI.TextTags.Parse(mod.UF_TextTags, prefixText and s and s[prefixText .. "CustomFormat"])
             if not parsed then
                 return ""
             end
-            local keyList, vals = parsed.keys, {}
-            local maxHP = UnitHealthMax("player") or 1
-            local curHP = math.floor(maxHP * (optionState._previewHealthPct or 0.70))
-            local maxPP = UnitPowerMax("player") or 100
-            local ppPct = optionState._previewPowerPct or 0.85
-            local curPP = math.floor(maxPP * ppPct)
-            for idx = 1, #keyList do
-                local key, val = keyList[idx]
-                if key == "name" then
-                    val = _pvName()
-                elseif key == "target" then
-                    val = "Target"
-                elseif key == "group" then
-                    val = "3"
-                elseif key == "level" then
-                    val = PreviewTextForContent("level", s, prefixText)
-                elseif key == "hp" then
-                    val = tostring(curHP)
-                elseif key == "hp:abr" then
-                    val = _pvAbbrev(curHP, "health")
-                elseif key == "hp:max" then
-                    val = tostring(maxHP)
-                elseif key == "hp:max:abr" then
-                    val = _pvAbbrev(maxHP, "maxHealth")
-                elseif key == "hp:pct" then
-                    val = _pvPct(optionState._previewHealthPct or 0.70)
-                elseif key == "pp" then
-                    val = tostring(curPP)
-                elseif key == "pp:abr" then
-                    val = mod.AbbreviateNumbers(curPP)
-                elseif key == "pp:max" then
-                    val = tostring(maxPP)
-                elseif key == "pp:max:abr" then
-                    val = mod.AbbreviateNumbers(maxPP)
-                elseif key == "pp:pct" then
-                    val = tostring(math.floor(ppPct * 100))
-                elseif key == "absorb" then
-                    val = PreviewTextForContent("absorb", s, prefixText)
-                elseif key == "absorb:abr" then
-                    val = PreviewTextForContent("absorbshort", s, prefixText)
-                elseif key == "healabsorb" then
-                    val = PreviewTextForContent("healabsorb", s, prefixText)
-                else
-                    val = PreviewTextForContent("healabsorbshort", s, prefixText)
-                end
-                vals[idx] = val
+            local TAG = {
+                name = NameText,
+                target = function()
+                    return "Target"
+                end,
+                group = SAMPLE.group,
+                level = LevelText,
+                hp = function()
+                    return tostring(curHP)
+                end,
+                ["hp:abr"] = hpAbbr,
+                ["hp:max"] = function()
+                    return tostring(maxHP)
+                end,
+                ["hp:max:abr"] = function()
+                    return Abbr(maxHP, "maxHealth")
+                end,
+                ["hp:pct"] = function()
+                    return Pct(hpShare)
+                end,
+                pp = function()
+                    return tostring(curPP)
+                end,
+                ["pp:abr"] = SAMPLE.curpp,
+                ["pp:max"] = function()
+                    return tostring(maxPP)
+                end,
+                ["pp:max:abr"] = function()
+                    return mod.AbbreviateNumbers(maxPP)
+                end,
+                ["pp:pct"] = function()
+                    return tostring(ppWhole())
+                end,
+                absorb = SAMPLE.absorb,
+                ["absorb:abr"] = SAMPLE.absorbshort,
+                healabsorb = SAMPLE.healabsorb,
+            }
+            local tagKeys, filled = parsed.keys, {}
+            for i = 1, #tagKeys do
+                filled[i] = (TAG[tagKeys[i]] or SAMPLE.healabsorbshort)()
             end
-            return string.format(parsed.fmt, unpack(vals, 1, #keyList))
-        else
-            return ""
+            return string.format(parsed.fmt, unpack(filled, 1, #tagKeys))
         end
+        local make = SAMPLE[contentFrame]
+        return make and make() or ""
     end
 
-    -- Class color helper for preview
+    -- A slot's colour: the class colour while the slot asks for it (the
+    -- player's class on the player preview, a hostile red on any other),
+    -- else its own pick, white by default.
     local function PreviewClassColor(fontStr, useCC, customR, customG, customB)
         if not fontStr then
             return
         end
-        if useCC then
-            if unitKey == "player" then
-                local _, cls = UnitClass("player")
-                if cls then
-                    local c = CludesUI.GetClassColor(cls)
-                    if c then
-                        fontStr:SetTextColor(c.r, c.g, c.b)
-                        return
-                    end
-                end
-            else
-                fontStr:SetTextColor(0.9, 0.3, 0.3)
-                return
-            end
-        end
-        fontStr:SetTextColor(customR or 1, customG or 1, customB or 1)
-    end
-
-    -- Power color override for preview (takes priority over class color for power-related text)
-    local function PreviewPowerColor(fontStr, contentKey, usePowerColor, customFmt)
-        if not fontStr or not usePowerColor then
+        if useCC and unitKey ~= "player" then
+            fontStr:SetTextColor(0.9, 0.3, 0.3)
             return
         end
-        if mod.UF_IsPowerContent(contentKey, customFmt) then
-            local pcR, pcG, pcB = CludesUI.ResolveUnitPowerColor("player")
-            local details = pcR and { r = pcR, g = pcG, b = pcB }
-            if details then
-                fontStr:SetTextColor(details.r, details.g, details.b)
-            else
-                fontStr:SetTextColor(1, 1, 1)
-            end
+        local classColor
+        if useCC then
+            local _, token = UnitClass("player")
+            classColor = token and CludesUI.GetClassColor(token)
+        end
+        if classColor then
+            fontStr:SetTextColor(classColor.r, classColor.g, classColor.b)
+        else
+            fontStr:SetTextColor(customR or 1, customG or 1, customB or 1)
         end
     end
+
+    -- Power Color on a slot showing power content: the player's power
+    -- colour, over any class colour.
+    local function PreviewPowerColor(fontStr, contentKey, usePowerColor, customFmt)
+        if not (fontStr and usePowerColor and mod.UF_IsPowerContent(contentKey, customFmt)) then
+            return
+        end
+        local r, g, b = CludesUI.ResolveUnitPowerColor("player")
+        if r then
+            fontStr:SetTextColor(r, g, b)
+        else
+            fontStr:SetTextColor(1, 1, 1)
+        end
+    end
+
+    -- Where each health bar slot sits for its alignment: the point, and the
+    -- inset from that edge before the slot's own X offset.
+    local SLOT_EDGE = { left = { "LEFT", 5 }, right = { "RIGHT", -5 }, center = { "CENTER", 0 } }
+    -- Room the right slot's content takes, which the left slot's width
+    -- gives up so the two never overlap (the live frames truncate the same way).
+    local RIGHT_TEXT_ROOM = {
+        both = 75,
+        curhpshort = 38,
+        healthshort = 38,
+        curmaxhp = 75,
+        curmaxpp = 75,
+        perhp = 38,
+        perpp = 38,
+        curpp = 38,
+        curhp_curpp = 75,
+        perhp_perpp = 75,
+        level = 24,
+    }
+    -- Sets a slot's font from the unit's OWN size (as the live frames do:
+    -- slot size, else Text Size, else 12) and places it; false (and hidden)
+    -- for the "none" content.
+    local function PlaceSlot(fs, s, prefix, content, edge)
+        SetPVFont(fs, PREVIEW_FONT, s[prefix .. "Size"] or s.textSize or 12)
+        fs:ClearAllPoints()
+        if prefix == "extraText" then
+            fs:SetWidth(0)
+        end
+        if content == "none" then
+            fs:Hide()
+            return false
+        end
+        local spot = SLOT_EDGE[edge]
+        fs:SetJustifyH(spot[1])
+        Pix.Point(fs, spot[1], textOverlay, spot[1], spot[2] + (s[prefix .. "X"] or 0), s[prefix .. "Y"] or 0)
+        return true
+    end
+    local function FillSlot(fs, s, prefix, content)
+        fs:SetText(PreviewTextForContent(content, s, prefix))
+        fs:Show()
+        PreviewClassColor(
+            fs,
+            s[prefix .. "ClassColor"],
+            s[prefix .. "ColorR"],
+            s[prefix .. "ColorG"],
+            s[prefix .. "ColorB"]
+        )
+    end
+    -- Every slot draws on its own: a Center text hides neither Left nor Right.
     local function ApplyPreviewTextPositions(s)
-        local lc = s.leftTextContent or "name"
-        local rc = s.rightTextContent or (unitKey == "focus" and "perhp" or "both")
-        local cc = s.centerTextContent or "none"
-        -- Sizes come from the unit's OWN settings, exactly like the live
-        -- frames (settings.xTextSize or settings.textSize or 12). The old
-        -- donor read here made the mini/boss previews render the DONOR
-        -- frame's sizes while live honored the unit's own -- the boss
-        -- health-bar text size cogs moved only the in-world preview.
-        local lsz = s.leftTextSize or s.textSize or 12
-        local rsz = s.rightTextSize or s.textSize or 12
-        local csz = s.centerTextSize or s.textSize or 12
-        local lxo = s.leftTextX or 0
-        local lyo = s.leftTextY or 0
-        local rxo = s.rightTextX or 0
-        local ryo = s.rightTextY or 0
-        local cxo = s.centerTextX or 0
-        local cyo = s.centerTextY or 0
-
-        local ec = s.extraTextContent or "none"
-        SetPVFont(extraFS, PREVIEW_FONT, (s.extraTextSize or s.textSize or 12))
-        extraFS:ClearAllPoints()
-        extraFS:SetWidth(0)
-        if ec ~= "none" then
-            local exo = s.extraTextX or 0
-            local eyo = s.extraTextY or 0
-            local ealign = s.extraTextAlign or "left"
-            if ealign == "right" then
-                extraFS:SetJustifyH("RIGHT")
-                Pix.Point(extraFS, "RIGHT", textOverlay, "RIGHT", -5 + exo, eyo)
-            elseif ealign == "center" then
-                extraFS:SetJustifyH("CENTER")
-                Pix.Point(extraFS, "CENTER", textOverlay, "CENTER", exo, eyo)
-            else
-                extraFS:SetJustifyH("LEFT")
-                Pix.Point(extraFS, "LEFT", textOverlay, "LEFT", 5 + exo, eyo)
-            end
-            extraFS:SetText(PreviewTextForContent(ec, s, "extraText"))
-            extraFS:Show()
-            PreviewClassColor(
+        local leftKey = s.leftTextContent or "name"
+        local rightKey = s.rightTextContent or (unitKey == "focus" and "perhp" or "both")
+        local centerKey = s.centerTextContent or "none"
+        local extraKey = s.extraTextContent or "none"
+        if
+            PlaceSlot(
                 extraFS,
-                s.extraTextClassColor,
-                s.extraTextColorR,
-                s.extraTextColorG,
-                s.extraTextColorB
+                s,
+                "extraText",
+                extraKey,
+                SLOT_EDGE[s.extraTextAlign] and s.extraTextAlign or "left"
             )
-        else
-            extraFS:Hide()
+        then
+            FillSlot(extraFS, s, "extraText", extraKey)
         end
-
-        -- Each text position renders independently; Center does not hide Left/Right.
-        SetPVFont(centerFS, PREVIEW_FONT, csz)
-        centerFS:ClearAllPoints()
-        if cc ~= "none" then
-            centerFS:SetJustifyH("CENTER")
-            Pix.Point(centerFS, "CENTER", textOverlay, "CENTER", cxo, cyo)
-            centerFS:SetText(PreviewTextForContent(cc, s, "centerText"))
-            centerFS:Show()
-            PreviewClassColor(
-                centerFS,
-                s.centerTextClassColor,
-                s.centerTextColorR,
-                s.centerTextColorG,
-                s.centerTextColorB
-            )
-        else
-            centerFS:Hide()
+        if PlaceSlot(centerFS, s, "centerText", centerKey, "center") then
+            FillSlot(centerFS, s, "centerText", centerKey)
         end
-
-        SetPVFont(leftFS, PREVIEW_FONT, lsz)
-        leftFS:ClearAllPoints()
-        if lc ~= "none" then
-            leftFS:SetJustifyH("LEFT")
-            Pix.Point(leftFS, "LEFT", textOverlay, "LEFT", 5 + lxo, lyo)
-            -- Constrain width when opposing right text exists (matches live frame truncation)
-            local barW = s.frameWidth or 181
-            if rc ~= "none" then
-                local UF_TEXT_PADDING = 10
-                local ufTW = {
-                    both = 75,
-                    curhpshort = 38,
-                    healthshort = 38,
-                    curmaxhp = 75,
-                    curmaxpp = 75,
-                    perhp = 38,
-                    perpp = 38,
-                    curpp = 38,
-                    curhp_curpp = 75,
-                    perhp_perpp = 75,
-                    level = 24,
-                }
-                local rightUsed = (ufTW[rc] or 0) + UF_TEXT_PADDING
-                if rc == "custom" then
-                    rightUsed = mod.UF_EstimateTextWidth(rc, s.rightTextCustomFormat, true)
-                end
-                Pix.Width(leftFS, math.max(barW - rightUsed - 10, 20))
-            else
+        if PlaceSlot(leftFS, s, "leftText", leftKey, "left") then
+            if rightKey == "none" then
                 leftFS:SetWidth(0)
+            else
+                local taken = (RIGHT_TEXT_ROOM[rightKey] or 0) + 10
+                if rightKey == "custom" then
+                    taken = mod.UF_EstimateTextWidth(rightKey, s.rightTextCustomFormat, true)
+                end
+                Pix.Width(leftFS, math.max((s.frameWidth or 181) - taken - 10, 20))
             end
-            leftFS:SetText(PreviewTextForContent(lc, s, "leftText"))
-            leftFS:Show()
-            PreviewClassColor(
-                leftFS,
-                s.leftTextClassColor,
-                s.leftTextColorR,
-                s.leftTextColorG,
-                s.leftTextColorB
-            )
-        else
-            leftFS:Hide()
+            FillSlot(leftFS, s, "leftText", leftKey)
         end
-
-        SetPVFont(rightFS, PREVIEW_FONT, rsz)
-        rightFS:ClearAllPoints()
-        if rc ~= "none" then
-            rightFS:SetJustifyH("RIGHT")
-            Pix.Point(rightFS, "RIGHT", textOverlay, "RIGHT", -5 + rxo, ryo)
-            rightFS:SetText(PreviewTextForContent(rc, s, "rightText"))
-            rightFS:Show()
-            PreviewClassColor(
-                rightFS,
-                s.rightTextClassColor,
-                s.rightTextColorR,
-                s.rightTextColorG,
-                s.rightTextColorB
-            )
-        else
-            rightFS:Hide()
+        if PlaceSlot(rightFS, s, "rightText", rightKey, "right") then
+            FillSlot(rightFS, s, "rightText", rightKey)
         end
     end
     ApplyPreviewTextPositions(prefs)
