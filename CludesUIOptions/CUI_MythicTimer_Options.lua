@@ -2918,25 +2918,69 @@ initFrame:SetScript("OnEvent", function(self)
 
         local texValues, texOrder = BuildBarTexDropdown()
 
-        local function AnyOn()
-            local t = TFBBar("target")
-            local f = TFBBar("focus")
-            return (t and t.enabled == true) or (f and f.enabled == true)
+        local function Row(left, right)
+            row, hgt = W:DualRow(hostFrame, posY, left, right)
+            posY = posY - hgt
+            return row
         end
+        -- Settings both bars share (colours, kick hint, flash).
+        local S = Accessors(TFB, TFBRefresh)
 
-        -- One section per bar; identical rows driven by `which`.
+        -- One section per bar; the rows are the same, keyed by `which`.
         local function BuildBarSection(which, header, enableLabel)
-            local function C()
+            local A = Accessors(function()
                 return TFBBar(which)
-            end
-            local function On()
-                local c = C()
-                return c and c.enabled == true
-            end
+            end, TFBRefresh)
+            local On = A.IsOn("enabled")
             local function Off()
                 return not On()
             end
             local REQ = enableLabel
+            local function Gated(cfg)
+                cfg.disabled, cfg.disabledTooltip = Off, REQ
+                return cfg
+            end
+            local function Slider(text, key, lo, hi, def)
+                return Gated({
+                    type = "slider",
+                    text = text,
+                    min = lo,
+                    max = hi,
+                    step = 1,
+                    pixel = true,
+                    getValue = A.Or(key, def),
+                    setValue = A.Put(key),
+                })
+            end
+            local function Toggle(text, key, tooltip, read)
+                return Gated({
+                    type = "toggle",
+                    text = text,
+                    tooltip = tooltip,
+                    getValue = read or A.NotOff(key),
+                    setValue = A.Flag(key),
+                })
+            end
+            local function Cog(region, tip, title, rows)
+                CludesUI.BuildInlineCog(region, {
+                    tip = tip,
+                    title = title,
+                    disabled = Off,
+                    disabledTooltip = REQ,
+                    rows = rows,
+                })
+            end
+            local function SizeRow(label, key, hi, def)
+                return {
+                    type = "slider",
+                    label = label,
+                    min = 6,
+                    max = hi,
+                    step = 1,
+                    get = A.Or(key, def),
+                    set = A.Put(key),
+                }
+            end
 
             local heading
             heading, hgt = W:SectionHeader(hostFrame, header, posY)
@@ -2947,278 +2991,81 @@ initFrame:SetScript("OnEvent", function(self)
                 disabledTooltip = REQ,
             })
 
-            row, hgt = W:DualRow(hostFrame, posY, {
-                type = "toggle",
-                text = enableLabel,
-                tooltip = "A standalone cast bar for this unit, placeable anywhere in Layout Mode. Runs alongside the Unit Frames cast bars.",
-                getValue = On,
-                setValue = function(v)
-                    local c = C()
-                    if not c then
-                        return
-                    end
-                    c.enabled = v and true or false
-                    TFBRefresh()
-                    CludesUI:RefreshPage()
-                end,
-            }, {
-                type = "dropdown",
-                text = "Bar Texture",
-                disabled = Off,
-                disabledTooltip = REQ,
-                values = texValues,
-                order = texOrder,
-                getValue = function()
-                    local c = C()
-                    return (c and c.texture) or "none"
-                end,
-                setValue = function(v)
-                    local c = C()
-                    if c then
-                        c.texture = v
-                        TFBRefresh()
-                    end
-                end,
-            })
-            posY = posY - hgt
+            Row(
+                {
+                    type = "toggle",
+                    text = enableLabel,
+                    tooltip = "A standalone cast bar for this unit, placeable anywhere in Layout Mode. Runs alongside the Unit Frames cast bars.",
+                    getValue = On,
+                    setValue = A.Flag("enabled", true),
+                },
+                Gated({
+                    type = "dropdown",
+                    text = "Bar Texture",
+                    values = texValues,
+                    order = texOrder,
+                    getValue = A.Or("texture", "none"),
+                    setValue = A.Put("texture"),
+                })
+            )
+            Row(Slider("Width", "width", 80, 600, 260), Slider("Height", "height", 6, 60, 22))
 
-            _, hgt = W:DualRow(hostFrame, posY, {
-                type = "slider",
-                text = "Width",
-                min = 80,
-                max = 600,
-                step = 1,
-                pixel = true,
-                disabled = Off,
-                disabledTooltip = REQ,
-                getValue = function()
-                    local c = C()
-                    return (c and c.width) or 260
-                end,
-                setValue = function(v)
-                    local c = C()
-                    if c then
-                        c.width = v
-                        TFBRefresh()
-                    end
-                end,
-            }, {
-                type = "slider",
-                text = "Height",
-                min = 6,
-                max = 60,
-                step = 1,
-                pixel = true,
-                disabled = Off,
-                disabledTooltip = REQ,
-                getValue = function()
-                    local c = C()
-                    return (c and c.height) or 22
-                end,
-                setValue = function(v)
-                    local c = C()
-                    if c then
-                        c.height = v
-                        TFBRefresh()
-                    end
-                end,
-            })
-            posY = posY - hgt
-
-            row, hgt = W:DualRow(hostFrame, posY, {
-                type = "toggle",
-                text = "Show Spell Name",
-                disabled = Off,
-                disabledTooltip = REQ,
-                getValue = function()
-                    local c = C()
-                    return not c or c.showSpellName ~= false
-                end,
-                setValue = function(v)
-                    local c = C()
-                    if c then
-                        c.showSpellName = v and true or false
-                        TFBRefresh()
-                    end
-                end,
-            }, {
-                type = "toggle",
-                text = "Show Cast Timer",
-                disabled = Off,
-                disabledTooltip = REQ,
-                getValue = function()
-                    local c = C()
-                    return not c or c.showTimer ~= false
-                end,
-                setValue = function(v)
-                    local c = C()
-                    if c then
-                        c.showTimer = v and true or false
-                        TFBRefresh()
-                    end
-                end,
-            })
-            posY = posY - hgt
+            Row(Toggle("Show Spell Name", "showSpellName"), Toggle("Show Cast Timer", "showTimer"))
             if not CludesUI._prebuilding then
-                CludesUI.BuildInlineCog(row._leftRegion, {
-                    tip = "Spell Name Settings",
-                    title = "Spell Name",
-                    disabled = Off,
-                    disabledTooltip = REQ,
-                    rows = {
-                        {
-                            type = "slider",
-                            label = "Text Size",
-                            min = 6,
-                            max = 22,
-                            step = 1,
-                            get = function()
-                                local c = C()
-                                return (c and c.nameSize) or 11
-                            end,
-                            set = function(v)
-                                local c = C()
-                                if c then
-                                    c.nameSize = v
-                                    TFBRefresh()
-                                end
-                            end,
-                        },
-                    },
-                })
-                CludesUI.BuildInlineCog(row._rightRegion, {
-                    tip = "Cast Timer Settings",
-                    title = "Cast Timer",
-                    disabled = Off,
-                    disabledTooltip = REQ,
-                    rows = {
-                        {
-                            type = "slider",
-                            label = "Text Size",
-                            min = 6,
-                            max = 22,
-                            step = 1,
-                            get = function()
-                                local c = C()
-                                return (c and c.timerSize) or 11
-                            end,
-                            set = function(v)
-                                local c = C()
-                                if c then
-                                    c.timerSize = v
-                                    TFBRefresh()
-                                end
-                            end,
-                        },
-                    },
-                })
+                Cog(
+                    row._leftRegion,
+                    "Spell Name Settings",
+                    "Spell Name",
+                    { SizeRow("Text Size", "nameSize", 22, 11) }
+                )
+                Cog(
+                    row._rightRegion,
+                    "Cast Timer Settings",
+                    "Cast Timer",
+                    { SizeRow("Text Size", "timerSize", 22, 11) }
+                )
             end
 
-            row, hgt = W:DualRow(hostFrame, posY, {
-                type = "toggle",
-                text = "Show Icon",
-                disabled = Off,
-                disabledTooltip = REQ,
-                getValue = function()
-                    local c = C()
-                    return not c or c.showIcon ~= false
-                end,
-                setValue = function(v)
-                    local c = C()
-                    if c then
-                        c.showIcon = v and true or false
-                        TFBRefresh()
+            Row(
+                Toggle("Show Icon", "showIcon"),
+                Toggle(
+                    "Show Spell Target",
+                    "showTarget",
+                    "Show who the spell is being cast on, exactly like the nameplate cast bars.",
+                    -- Per bar; a bar never set follows the older shared switch.
+                    function()
+                        local mine = A.Raw("showTarget")()
+                        if mine == nil then
+                            mine = S.NotOff("showTarget")()
+                        end
+                        return mine
                     end
-                end,
-            }, {
-                type = "toggle",
-                text = "Show Spell Target",
-                disabled = Off,
-                disabledTooltip = REQ,
-                tooltip = "Show who the spell is being cast on, exactly like the nameplate cast bars.",
-                -- Per bar; an unset bar inherits the former shared toggle.
-                getValue = function()
-                    local c = C()
-                    local v = c and c.showTarget
-                    if v == nil then
-                        local t = TFB()
-                        v = not t or t.showTarget ~= false
-                    end
-                    return v
-                end,
-                setValue = function(v)
-                    local c = C()
-                    if c then
-                        c.showTarget = v and true or false
-                        TFBRefresh()
-                    end
-                end,
-            })
-            posY = posY - hgt
+                )
+            )
             if not CludesUI._prebuilding then
-                -- Colors are shared by both bars; only the text size is per bar.
-                CludesUI.BuildInlineCog(row._rightRegion, {
-                    tip = "Spell Target Settings",
-                    title = "Spell Target",
-                    disabled = Off,
-                    disabledTooltip = REQ,
-                    rows = {
-                        {
-                            type = "toggle",
-                            label = "Class Colored Names",
-                            get = function()
-                                local t = TFB()
-                                return not t or t.targetClassColor ~= false
-                            end,
-                            set = function(v)
-                                local t = TFB()
-                                if t then
-                                    t.targetClassColor = v and true or false
-                                    TFBRefresh()
-                                end
-                            end,
-                        },
-                        {
-                            type = "colorpicker",
-                            label = "Custom Color",
-                            disabled = function()
-                                local t = TFB()
-                                return not t or t.targetClassColor ~= false
-                            end,
-                            disabledTooltip = "Class Colored Names to be off",
-                            get = function()
-                                local t = TFB()
-                                local c = t and t.targetColor
-                                return (c and c.r) or 1, (c and c.g) or 1, (c and c.b) or 1
-                            end,
-                            set = function(r, g, b)
-                                local t = TFB()
-                                if not t then
-                                    return
-                                end
-                                t.targetColor = { r = r, g = g, b = b }
-                                TFBRefresh()
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = (which == "target") and "Text Size (Target)" or "Text Size (Focus)",
-                            min = 6,
-                            max = 20,
-                            step = 1,
-                            get = function()
-                                local c = C()
-                                return (c and c.targetSize) or 10
-                            end,
-                            set = function(v)
-                                local c = C()
-                                if c then
-                                    c.targetSize = v
-                                    TFBRefresh()
-                                end
-                            end,
-                        },
+                -- The colours belong to both bars; only the text size is per bar.
+                local getColor, setColor = S.Rgb("targetColor", 1, 1, 1)
+                Cog(row._rightRegion, "Spell Target Settings", "Spell Target", {
+                    {
+                        type = "toggle",
+                        label = "Class Colored Names",
+                        get = S.NotOff("targetClassColor"),
+                        set = S.Flag("targetClassColor"),
                     },
+                    {
+                        type = "colorpicker",
+                        label = "Custom Color",
+                        disabled = S.NotOff("targetClassColor"),
+                        disabledTooltip = "Class Colored Names to be off",
+                        get = getColor,
+                        set = setColor,
+                    },
+                    SizeRow(
+                        (which == "target") and "Text Size (Target)" or "Text Size (Focus)",
+                        "targetSize",
+                        20,
+                        10
+                    ),
                 })
             end
         end
@@ -3231,129 +3078,42 @@ initFrame:SetScript("OnEvent", function(self)
         posY = posY - hgt
 
         local function SharedOff()
-            return not AnyOn()
+            local t, f = TFBBar("target"), TFBBar("focus")
+            return not ((t and t.enabled == true) or (f and f.enabled == true))
         end
         local SHARED_REQ = "a Target or Focus Cast Bar"
 
-        local kickHintValues = { none = "None", tick = "Tick", tickbar = "Tick + Bar" }
-        local kickHintOrder = { "none", "tick", "tickbar" }
-
-        row, hgt = W:DualRow(hostFrame, posY, {
+        Row({
             type = "multiSwatch",
             text = "Cast Color",
             disabled = SharedOff,
             disabledTooltip = SHARED_REQ,
-            swatches = {
-                {
-                    tooltip = "Interruptible Cast",
-                    getValue = function()
-                        local t = TFB()
-                        local c = t and t.castColor
-                        return (c and c.r) or 0.70, (c and c.g) or 0.40, (c and c.b) or 0.90
-                    end,
-                    setValue = function(r, g, b)
-                        local t = TFB()
-                        if not t then
-                            return
-                        end
-                        t.castColor = { r = r, g = g, b = b }
-                        TFBRefresh()
-                    end,
-                },
-                {
-                    tooltip = "Interrupt on CD",
-                    getValue = function()
-                        local t = TFB()
-                        local c = t and t.interruptReady
-                        return (c and c.r) or 0.92, (c and c.g) or 0.35, (c and c.b) or 0.20
-                    end,
-                    setValue = function(r, g, b)
-                        local t = TFB()
-                        if not t then
-                            return
-                        end
-                        t.interruptReady = { r = r, g = g, b = b }
-                        TFBRefresh()
-                    end,
-                },
-                {
-                    tooltip = "Uninterruptible Cast",
-                    getValue = function()
-                        local t = TFB()
-                        local c = t and t.uninterruptible
-                        return (c and c.r) or 0.45, (c and c.g) or 0.45, (c and c.b) or 0.45
-                    end,
-                    setValue = function(r, g, b)
-                        local t = TFB()
-                        if not t then
-                            return
-                        end
-                        t.uninterruptible = { r = r, g = g, b = b }
-                        TFBRefresh()
-                    end,
-                },
-                {
-                    tooltip = "Important Cast",
-                    disabled = function()
-                        local t = TFB()
-                        return not (t and t.importantEnabled == true)
-                    end,
-                    disabledTooltip = "Important Cast Color",
-                    getValue = function()
-                        local t = TFB()
-                        local c = t and t.importantColor
-                        return (c and c.r) or 1, (c and c.g) or 0.2, (c and c.b) or 0.2
-                    end,
-                    setValue = function(r, g, b)
-                        local t = TFB()
-                        if not t then
-                            return
-                        end
-                        t.importantColor = { r = r, g = g, b = b }
-                        TFBRefresh()
-                    end,
-                },
-            },
+            swatches = CastColorSwatches(S, "castColor"),
         }, {
             type = "dropdown",
             text = "Kick Ready Mid-Cast Hint",
             disabled = SharedOff,
             disabledTooltip = SHARED_REQ,
             tooltip = 'Shows where your interrupt will be ready during a cast. "Tick" marks the exact spot on the cast bar; "Tick + Bar" also colours the window during which your interrupt will be available.',
-            values = kickHintValues,
-            order = kickHintOrder,
+            values = { none = "None", tick = "Tick", tickbar = "Tick + Bar" },
+            order = { "none", "tick", "tickbar" },
+            -- Two stored switches read as one three-way choice.
             getValue = function()
                 local t = TFB()
-                if not t then
-                    return "tick"
-                end
-                if t.kickTickEnabled == false then
+                if t and t.kickTickEnabled == false then
                     return "none"
                 end
-                if t.midCastEnabled == true then
-                    return "tickbar"
-                end
-                return "tick"
+                return (t and t.midCastEnabled == true) and "tickbar" or "tick"
             end,
             setValue = function(v)
                 local t = TFB()
-                if not t then
-                    return
+                if t then
+                    t.kickTickEnabled = v ~= "none"
+                    t.midCastEnabled = v ~= "none" and v ~= "tick"
+                    TFBRefresh()
                 end
-                if v == "none" then
-                    t.kickTickEnabled = false
-                    t.midCastEnabled = false
-                elseif v == "tick" then
-                    t.kickTickEnabled = true
-                    t.midCastEnabled = false
-                else
-                    t.kickTickEnabled = true
-                    t.midCastEnabled = true
-                end
-                TFBRefresh()
             end,
         })
-        posY = posY - hgt
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(row._leftRegion, {
                 tip = "Cast Color Settings",
@@ -3363,54 +3123,27 @@ initFrame:SetScript("OnEvent", function(self)
                         type = "toggle",
                         label = "Show Shield Icon",
                         tooltip = "Show a shield icon on the cast bar when the cast cannot be interrupted.",
-                        get = function()
-                            local t = TFB()
-                            return not t or t.showShield ~= false
-                        end,
-                        set = function(v)
-                            local t = TFB()
-                            if t then
-                                t.showShield = v and true or false
-                                TFBRefresh()
-                            end
-                        end,
+                        get = S.NotOff("showShield"),
+                        set = S.Flag("showShield"),
                     },
                     {
                         type = "toggle",
                         label = "Show Spark",
                         tooltip = "Show the bright spark at the leading edge of the cast bar fill.",
-                        get = function()
-                            local t = TFB()
-                            return not t or t.showSpark ~= false
-                        end,
-                        set = function(v)
-                            local t = TFB()
-                            if t then
-                                t.showSpark = v and true or false
-                                TFBRefresh()
-                            end
-                        end,
+                        get = S.NotOff("showSpark"),
+                        set = S.Flag("showSpark"),
                     },
                     {
                         type = "toggle",
                         label = "Important Cast Color",
                         tooltip = "Tint the cast bar with the Important colour when the unit casts a spell the game flags as important. Your interrupt being on cooldown still takes priority.",
-                        get = function()
-                            local t = TFB()
-                            return t and t.importantEnabled == true
-                        end,
-                        set = function(v)
-                            local t = TFB()
-                            if not t then
-                                return
-                            end
-                            t.importantEnabled = v and true or false
-                            TFBRefresh()
-                            CludesUI:RefreshPage()
-                        end,
+                        get = S.IsOn("importantEnabled"),
+                        set = S.Flag("importantEnabled", true),
                     },
                 },
             })
+            local getMid, setMid = S.Rgb("midCastColor", 0.318, 0.820, 0.357)
+            local getTick, setTick = S.Rgb("kickTickColor", 1, 1, 1)
             CludesUI.BuildInlineCog(row._rightRegion, {
                 tip = "Kick Hint Settings",
                 title = "Kick Ready Mid-Cast Hint",
@@ -3418,88 +3151,31 @@ initFrame:SetScript("OnEvent", function(self)
                     {
                         type = "colorpicker",
                         label = "Mid-Cast Bar Color",
-                        disabled = function()
-                            local t = TFB()
-                            return not (t and t.midCastEnabled == true)
-                        end,
+                        disabled = S.NotOn("midCastEnabled"),
                         disabledTooltip = "Tick + Bar",
-                        get = function()
-                            local t = TFB()
-                            local c = t and t.midCastColor
-                            return (c and c.r) or 0.318, (c and c.g) or 0.820, (c and c.b) or 0.357
-                        end,
-                        set = function(r, g, b)
-                            local t = TFB()
-                            if not t then
-                                return
-                            end
-                            t.midCastColor = { r = r, g = g, b = b }
-                            TFBRefresh()
-                        end,
+                        get = getMid,
+                        set = setMid,
                     },
-                    {
-                        type = "colorpicker",
-                        label = "Tick Color",
-                        get = function()
-                            local t = TFB()
-                            local c = t and t.kickTickColor
-                            return (c and c.r) or 1, (c and c.g) or 1, (c and c.b) or 1
-                        end,
-                        set = function(r, g, b)
-                            local t = TFB()
-                            if not t then
-                                return
-                            end
-                            t.kickTickColor = { r = r, g = g, b = b }
-                            TFBRefresh()
-                        end,
-                    },
+                    { type = "colorpicker", label = "Tick Color", get = getTick, set = setTick },
                 },
             })
         end
 
-        row, hgt = W:DualRow(hostFrame, posY, {
+        Row({
             type = "toggle",
             text = "Show Interrupted Flash Effect",
             disabled = SharedOff,
             disabledTooltip = SHARED_REQ,
             tooltip = 'Flash the cast bar and show "Interrupted" for a moment when the cast is interrupted.',
-            getValue = function()
-                local t = TFB()
-                return not t or t.interruptedFlash ~= false
-            end,
-            setValue = function(v)
-                local t = TFB()
-                if t then
-                    t.interruptedFlash = v and true or false
-                    TFBRefresh()
-                end
-            end,
+            getValue = S.NotOff("interruptedFlash"),
+            setValue = S.Flag("interruptedFlash"),
         }, { type = "label", text = "" })
-        posY = posY - hgt
         if not CludesUI._prebuilding then
+            local getFlash, setFlash = S.Rgb("interruptedColor", 0.8, 0, 0)
             CludesUI.BuildInlineCog(row._leftRegion, {
                 tip = "Interrupted Flash Settings",
                 title = "Interrupted Flash",
-                rows = {
-                    {
-                        type = "colorpicker",
-                        label = "Flash Color",
-                        get = function()
-                            local t = TFB()
-                            local c = t and t.interruptedColor
-                            return (c and c.r) or 0.8, (c and c.g) or 0, (c and c.b) or 0
-                        end,
-                        set = function(r, g, b)
-                            local t = TFB()
-                            if not t then
-                                return
-                            end
-                            t.interruptedColor = { r = r, g = g, b = b }
-                            TFBRefresh()
-                        end,
-                    },
-                },
+                rows = { { type = "colorpicker", label = "Flash Color", get = getFlash, set = setFlash } },
             })
         end
 
