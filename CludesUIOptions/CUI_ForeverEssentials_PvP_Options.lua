@@ -39,20 +39,20 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
 
     CludesUI:ClearContentHeader()
 
-    _, hgt = W:SectionHeader(hostFrame, "ENEMY PLAYERS", posY)
+    _, hgt = W:SectionHeader(hostFrame, "ENEMY DETECTION", posY)
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
         Tog(
             "enabled",
-            "Detect Enemy Players",
-            "Lists the enemy players near you, found from their nameplates, your target, your focus and your mouseover. Turn enemy nameplates on (Ctrl+V) to find the most: while this is on they show out to 60 yards. Does not run in dungeons, raids or sanctuaries."
+            "Enemy Detection",
+            "Keeps a list of enemy players around you, spotted through nameplates, your target, focus and mouseover. Turn on enemy nameplates (Ctrl+V) to spot the most; while this is on, nameplates reach 60 yards. Paused in dungeons, raids and sanctuaries."
         ),
         Tog(
             "autoShow",
-            "Open the List When an Enemy Is Seen",
-            "Opens the enemy list on its Nearby tab when a new enemy is seen. It cannot open during combat.",
+            "Open List on a New Enemy",
+            "Pops the enemy list open on the Nearby tab when someone new is spotted. It cannot open during combat.",
             Off
         )
     )
@@ -62,7 +62,7 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         text = "Enemy List",
         buttonText = "Open",
         width = 90,
-        tooltip = "The Nearby, Last Hour, Kill on Sight and Ignore lists. Click a name to target that player. /cpvp also opens it.",
+        tooltip = "Shows who is nearby, who you saw in the last hour, your Kill on Sight list and your ignore list. Click a name to target them. You can also type /cpvp.",
         onClick = function()
             P.Show()
         end,
@@ -71,7 +71,7 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         text = "Statistics",
         buttonText = "Open",
         width = 90,
-        tooltip = "Every enemy you have met, with your wins and losses against each, and a search box. /cpvp stats also opens it.",
+        tooltip = "Every enemy you have run into, with your wins and losses against each one. Searchable. You can also type /cpvp stats.",
         onClick = function()
             P.Stats()
         end,
@@ -79,13 +79,13 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
     posY = posY - hgt
     _, hgt = W:DualRow(hostFrame, posY, {
         type = "slider",
-        text = "Leave Nearby After",
+        text = "Keep on Nearby List For",
         min = 30,
         max = 300,
         step = 30,
         isPercent = false,
         disabled = Off,
-        tooltip = "How many seconds an enemy stays on the Nearby list after you last saw them.",
+        tooltip = "Seconds an enemy stays on the Nearby list after you last saw them.",
         getValue = function()
             return P.Get("removeAfter")
         end,
@@ -94,8 +94,8 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         end,
     }, {
         type = "slider",
-        text = "Names Shown",
-        tooltip = "The most names the enemy list shows at once.",
+        text = "Rows in the List",
+        tooltip = "How many enemies the list shows at once.",
         min = 5,
         max = 25,
         step = 1,
@@ -114,8 +114,8 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         posY,
         Tog(
             "battlegrounds",
-            "Also Run in Battlegrounds",
-            "Detects enemies in battlegrounds too. Off, it does not run there.",
+            "Detect in Battlegrounds",
+            "Keeps detecting enemies inside battlegrounds too. Off by default.",
             Off
         ),
         { type = "label", text = "" }
@@ -129,14 +129,14 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         posY,
         Tog(
             "sound",
-            "Alert Sound",
-            "Plays a sound when a new enemy is seen, and an alarm when a Kill on Sight enemy is seen or an enemy goes into stealth.",
+            "Play Alert Sounds",
+            "A sound when someone new is spotted, and an alarm for Kill on Sight enemies and enemies going into stealth.",
             Off
         ),
         Tog(
             "stealthWarn",
-            "Stealth Warning",
-            "Warns you when an enemy you can see goes into Stealth or Prowl.",
+            "Warn When an Enemy Stealths",
+            "A warning on screen when an enemy you can see vanishes into Stealth or Prowl.",
             Off
         )
     )
@@ -146,14 +146,14 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         posY,
         Tog(
             "kosWarn",
-            "Kill on Sight Warning",
-            "Warns you when a player on your Kill on Sight list is seen.",
+            "Warn on Kill on Sight",
+            "A warning on screen when someone on your Kill on Sight list is spotted.",
             Off
         ),
         Tog(
             "kosGuildWarn",
-            "Warn for Their Guildmates",
-            "Also warns you when someone from the guild of a Kill on Sight player is seen.",
+            "Include Their Guildmates",
+            "Also warns you about members of a Kill on Sight player's guild.",
             Off
         )
     )
@@ -163,29 +163,29 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         posY,
         Tog(
             "announceKoS",
-            "Announce Kill on Sight to My Group",
-            "Posts in party or raid chat when a Kill on Sight enemy is seen.",
+            "Tell Group About Kill on Sight",
+            "Posts a message in party or raid chat when a Kill on Sight enemy is spotted.",
             Off
         ),
         { type = "label", text = "" }
     )
     posY = posY - hgt
 
-    _, hgt = W:SectionHeader(hostFrame, "SHARING AND EXTRAS", posY)
+    _, hgt = W:SectionHeader(hostFrame, "SHARING AND TOOLS", posY)
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
         posY,
         Tog(
             "share",
-            "Share My Sightings",
-            "Sends the enemies you see to your party, raid and guild. Players there using CludesUI or Spy, in the same zone as you, receive them.",
+            "Share What I Spot",
+            "Sends the enemies you spot to your party, raid and guild. Anyone there running CludesUI or Spy in your zone gets them.",
             Off
         ),
         Tog(
             "useShared",
-            "Use Others' Sightings",
-            "Adds the enemies your party, raid and guild have seen in your zone to your list.",
+            "Use What Others Spot",
+            "Adds enemies your party, raid and guild spot in your zone to your own list.",
             Off
         )
     )
@@ -195,20 +195,20 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         posY,
         Tog(
             "kosButton",
-            "Kill on Sight Button",
-            "Puts a KoS button above the target frame when you target an enemy player. Click it to add or remove them from Kill on Sight; right-click it for more options.",
+            "Kill on Sight Button on Target",
+            "A small KoS button above your target frame when you target an enemy player. Click to add or remove them; right-click for more.",
             Off
         ),
         Tog(
             "minimapTip",
-            "Minimap Enemy Details",
-            "While you track humanoids, the minimap's tooltip shows the level and class of the enemies you know.",
+            "Enemy Details on Minimap",
+            "With Track Humanoids on, hovering a player dot on the minimap shows their level and class if you have met them.",
             Off
         )
     )
     posY = posY - hgt
 
-    _, hgt = W:SectionHeader(hostFrame, "WATCH LIST, COMBAT MAP AND ZONES", posY)
+    _, hgt = W:SectionHeader(hostFrame, "WATCH LIST AND MAP", posY)
     posY = posY - hgt
     _, hgt = W:DualRow(
         hostFrame,
@@ -216,13 +216,13 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         Tog(
             "watchWarn",
             "Warn When a Watched Player Is Near",
-            "Warns you when a player on your watch list is near. Add players of your own faction (a ninja looter, a griefer) from their right-click menu, or type /cpvp watch First Last: reason. /cpvp watchlist shows the list.",
+            "Your watch list is for players on your own side you want to avoid, like a ninja looter or a griefer. Add someone from their right-click menu or with /cpvp watch First Last: reason, and see the list with /cpvp watchlist.",
             Off
         ),
         Tog(
             "watchGroupWarn",
-            "Warn When One Is in Your Group",
-            "Also warns you when a player on your watch list is in your party or raid.",
+            "Warn When One Joins My Group",
+            "Also warns you when someone on your watch list is in your party or raid.",
             Off
         )
     )
@@ -232,17 +232,17 @@ function _G._CUI_BuildForeverPvPPage(_, hostFrame, yOffset)
         posY,
         Tog(
             "combatMap",
-            "Combat Map",
-            "Marks each win and loss on the world map with a skull where you fought: green for a win, red for a loss.",
+            "Fights on the World Map",
+            "Drops a skull on the world map wherever you won (green) or lost (red) a fight.",
             Off
         ),
         {
             type = "input",
-            text = "Turn Off In",
+            text = "Pause Detection In",
             inputWidth = 160,
             inputStyle = "popup",
             placeholder = "Booty Bay, Gadgetzan",
-            tooltip = "Zones or subzones, separated by commas, where enemy detection is turned off.",
+            tooltip = "Zones or subzones, separated by commas, where enemy detection pauses (a city you idle in, for example).",
             disabled = Off,
             getValue = function()
                 return P.Get("offZones")
