@@ -177,6 +177,16 @@ return function(OUT, units, stockOnly, eyesOnly)
             powerPercentTextPowerColor = (i == 1), powerTextColor = BLUE, powerPercentX = 1, powerPercentY = -1,
         })
     end
+    -- Modern class pips floating above and below the frame (with and
+    -- without an offset, the cast bar on), and custom-coloured.
+    for i, pos in ipairs({ "top", "bottom", "bottom" }) do
+        V("classpower modern " .. pos .. " " .. i, {
+            classPowerStyle = "modern", classPowerPosition = pos, classPowerSize = 9 + i, classPowerSpacing = i,
+            classPowerBarX = (i == 3) and 0 or 2, classPowerBarY = (i == 3) and 0 or -2,
+            classPowerClassColor = (i == 2), classPowerCustomColor = RED, classPowerEmptyColor = BLUE,
+            showPlayerCastbar = (i ~= 1), playerCastbarHeight = 16,
+        })
+    end
 
     local NIL = {}
     local function Apply(s, set)
