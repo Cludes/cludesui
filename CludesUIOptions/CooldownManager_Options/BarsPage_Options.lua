@@ -500,6 +500,18 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         bar._matchStrideH = nil
     end
 
+    -- After a change: the bars built again and the live preview redrawn
+    -- (resize: the preview's own size may have changed too).
+    local function RebuildBars(resize)
+        mod.BuildAllCDMBars()
+        Refresh()
+        if resize then
+            UpdateCDMPreviewAndResize()
+        else
+            UpdateCDMPreview()
+        end
+    end
+
     local barId = barInfo.key
     local function BD()
         local pp = DB()
@@ -1245,9 +1257,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     -- numRows change invalidates cached match dims (rows is one
                     -- of the inputs to the matched-axis dim calculation).
                     ClearMatchDims(edge)
-                    mod.BuildAllCDMBars()
-                    Refresh()
-                    UpdateCDMPreviewAndResize()
+                    RebuildBars(true)
                     CludesUI:RefreshPage()
                 end,
             }
@@ -1338,9 +1348,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             end,
             setValue = function(v)
                 BD().barBgEnabled = v
-                mod.BuildAllCDMBars()
-                Refresh()
-                UpdateCDMPreview()
+                RebuildBars()
                 CludesUI:RefreshPage()
             end,
         }, row3Right)
@@ -1362,9 +1370,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         BD().barBgG = g
                         BD().barBgB = b
                         BD().barBgA = a
-                        mod.BuildAllCDMBars()
-                        Refresh()
-                        UpdateCDMPreview()
+                        RebuildBars()
                     end,
                     true,
                     20
@@ -1489,9 +1495,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             if mod.RecaptureBarAnchor then
                                 mod.RecaptureBarAnchor(edge.key)
                             end
-                            mod.BuildAllCDMBars()
-                            Refresh()
-                            UpdateCDMPreviewAndResize()
+                            RebuildBars(true)
                         end,
                     },
                     {
@@ -1514,9 +1518,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             if v then
                                 BD().customBottomRowEnabled = nil
                             end
-                            mod.BuildAllCDMBars()
-                            Refresh()
-                            UpdateCDMPreviewAndResize()
+                            RebuildBars(true)
                         end,
                     },
                     {
@@ -1559,9 +1561,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 v = nil
                             end
                             BD().topRowCount = v
-                            mod.BuildAllCDMBars()
-                            Refresh()
-                            UpdateCDMPreviewAndResize()
+                            RebuildBars(true)
                         end,
                     },
                     {
@@ -1591,9 +1591,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             if v then
                                 BD().customBottomRowSizeEnabled = nil
                             end
-                            mod.BuildAllCDMBars()
-                            Refresh()
-                            UpdateCDMPreviewAndResize()
+                            RebuildBars(true)
                         end,
                     },
                     {
@@ -1626,9 +1624,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 v = nil
                             end
                             BD().topRowSizeOffset = v
-                            mod.BuildAllCDMBars()
-                            Refresh()
-                            UpdateCDMPreviewAndResize()
+                            RebuildBars(true)
                         end,
                     },
                     {
@@ -1656,9 +1652,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             if v then
                                 BD().customTopRowSizeEnabled = nil
                             end
-                            mod.BuildAllCDMBars()
-                            Refresh()
-                            UpdateCDMPreviewAndResize()
+                            RebuildBars(true)
                         end,
                     },
                     {
@@ -1691,9 +1685,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 v = nil
                             end
                             BD().bottomRowSizeOffset = v
-                            mod.BuildAllCDMBars()
-                            Refresh()
-                            UpdateCDMPreviewAndResize()
+                            RebuildBars(true)
                         end,
                     },
                 },
@@ -1843,9 +1835,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         v = nil
                     end
                     BD().maxIcons = v
-                    mod.BuildAllCDMBars()
-                    Refresh()
-                    UpdateCDMPreviewAndResize()
+                    RebuildBars(true)
                     C_Timer.After(0, function()
                         CludesUI:RefreshPage()
                     end)
@@ -1888,9 +1878,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         v = nil
                     end
                     BD().overflowTarget = v
-                    mod.BuildAllCDMBars()
-                    Refresh()
-                    UpdateCDMPreviewAndResize()
+                    RebuildBars(true)
                 end,
             })
             posY = posY - hgt
@@ -1916,9 +1904,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 edge.rowGrowDirection = nil
                 -- Orientation flip swaps the meaning of width-axis vs height-axis, so width/height match caches no longer apply.
                 ClearMatchDims(edge)
-                mod.BuildAllCDMBars()
-                Refresh()
-                UpdateCDMPreviewAndResize()
+                RebuildBars(true)
             end,
         }
 
@@ -1946,9 +1932,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 end,
                 setValue = function(v)
                     BD().hidePlaceholderIcon = v
-                    mod.BuildAllCDMBars()
-                    Refresh()
-                    UpdateCDMPreviewAndResize()
+                    RebuildBars(true)
                     CludesUI:RefreshPage()
                 end,
             }, vertOrientCfg)
@@ -2455,9 +2439,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         edge.iconCropPercent = v
                         -- Icon height changes: drop the same match caches the shape setter drops.
                         ClearMatchDims(edge)
-                        mod.BuildAllCDMBars()
-                        Refresh()
-                        UpdateCDMPreviewAndResize()
+                        RebuildBars(true)
                     end,
                 },
             },
@@ -2540,9 +2522,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     end
                     ClearMatchDims(b)
                 end)
-                mod.BuildAllCDMBars()
-                Refresh()
-                UpdateCDMPreviewAndResize()
+                RebuildBars(true)
                 CludesUI:RefreshPage()
             end,
         })
@@ -2569,9 +2549,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 ForEachSyncBar(function(b)
                     b.iconZoom = v
                 end)
-                mod.BuildAllCDMBars()
-                Refresh()
-                UpdateCDMPreview()
+                RebuildBars()
                 CludesUI:RefreshPage()
             end,
         })
@@ -2616,9 +2594,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     b.borderA = ba
                     b.borderClassColor = cc
                 end)
-                mod.BuildAllCDMBars()
-                Refresh()
-                UpdateCDMPreview()
+                RebuildBars()
                 CludesUI:RefreshPage()
             end,
             isSynced = function()
@@ -2676,9 +2652,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 end,
                 setValue = function(v)
                     BD().showInactiveBuffIcons = v
-                    mod.BuildAllCDMBars()
-                    Refresh()
-                    UpdateCDMPreviewAndResize()
+                    RebuildBars(true)
                     CludesUI:RefreshPage()
                 end,
             }
@@ -2717,9 +2691,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 edge._matchPhysWidth = nil
                 edge._matchPhysHeight = nil
                 ClearMatchDims(edge)
-                mod.BuildAllCDMBars()
-                Refresh()
-                UpdateCDMPreviewAndResize()
+                RebuildBars(true)
             end,
         })
         posY = posY - hgt
@@ -2776,9 +2748,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 local edge = BD()
                 edge.spacing = v
                 ClearMatchDims(edge)
-                mod.BuildAllCDMBars()
-                Refresh()
-                UpdateCDMPreviewAndResize()
+                RebuildBars(true)
             end,
         })
         posY = posY - hgt
@@ -2826,9 +2796,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         edge.borderSize = BORDER_SIZES["thin"]
                     end
                     ClearMatchDims(edge)
-                    mod.BuildAllCDMBars()
-                    Refresh()
-                    UpdateCDMPreviewAndResize()
+                    RebuildBars(true)
                     -- The Border Size slot is a different control under a custom shape: rebuild the page.
                     CludesUI:RefreshPage(true)
                 end,
@@ -2889,9 +2857,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     setValue = function(v)
                         BD().borderThickness = v
                         BD().borderSize = BORDER_SIZES[v] or 1
-                        mod.BuildAllCDMBars()
-                        Refresh()
-                        UpdateCDMPreview()
+                        RebuildBars()
                     end,
                 }
             else
@@ -2915,9 +2881,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         BD().borderSizePx = v
                     end,
                     apply = function()
-                        mod.BuildAllCDMBars()
-                        Refresh()
-                        UpdateCDMPreview()
+                        RebuildBars()
                     end,
                 })
             end
@@ -2963,9 +2927,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         if edge.borderSizePx then
                             edge.borderSizePx = false
                         end
-                        mod.BuildAllCDMBars()
-                        Refresh()
-                        UpdateCDMPreview()
+                        RebuildBars()
                         CludesUI:RefreshPage(true)
                     end,
                 })
@@ -3009,9 +2971,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             BD().borderTextureOffsetY = v
                         end,
                         apply = function()
-                            mod.BuildAllCDMBars()
-                            Refresh()
-                            UpdateCDMPreview()
+                            RebuildBars()
                         end,
                     })
                     _, hgt = W:DualRow(
@@ -3048,9 +3008,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 BD().borderTextureShiftX = v == 0 and nil or v
-                                mod.BuildAllCDMBars()
-                                Refresh()
-                                UpdateCDMPreview()
+                                RebuildBars()
                             end,
                         },
                         {
@@ -3072,9 +3030,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 BD().borderTextureShiftY = v == 0 and nil or v
-                                mod.BuildAllCDMBars()
-                                Refresh()
-                                UpdateCDMPreview()
+                                RebuildBars()
                             end,
                         },
                         {
@@ -3085,9 +3041,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 BD().borderBehind = v == false and nil or v
-                                mod.BuildAllCDMBars()
-                                Refresh()
-                                UpdateCDMPreview()
+                                RebuildBars()
                                 CludesUI:RefreshPage()
                             end,
                         },
@@ -3242,9 +3196,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             b.borderSizePx = pxv
                             b.borderClassColor = cc
                         end)
-                        mod.BuildAllCDMBars()
-                        Refresh()
-                        UpdateCDMPreview()
+                        RebuildBars()
                         CludesUI:RefreshPage()
                     end,
                 })
@@ -3287,9 +3239,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 edge._matchPhysWidth = nil
                 edge._matchPhysHeight = nil
                 ClearMatchDims(edge)
-                mod.BuildAllCDMBars()
-                Refresh()
-                UpdateCDMPreviewAndResize()
+                RebuildBars(true)
             end,
         }, {
             type = "slider",
@@ -3308,9 +3258,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 -- cached _matchIconPhys was computed against the old spacing -- new
                 -- spacing means the icons no longer fit the matched bar dimension.
                 ClearMatchDims(edge)
-                mod.BuildAllCDMBars()
-                Refresh()
-                UpdateCDMPreviewAndResize()
+                RebuildBars(true)
             end,
         })
         posY = posY - hgt
@@ -3337,9 +3285,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         -- Spacing change invalidates each bar's match cache.
                         ClearMatchDims(b)
                     end)
-                    mod.BuildAllCDMBars()
-                    Refresh()
-                    UpdateCDMPreviewAndResize()
+                    RebuildBars(true)
                     CludesUI:RefreshPage()
                 end,
             })
@@ -3377,9 +3323,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         edge.minSizeIcons = v
                         -- Growth-axis extent changed: cached match dims stale.
                         ClearMatchDims(edge)
-                        mod.BuildAllCDMBars()
-                        Refresh()
-                        UpdateCDMPreviewAndResize()
+                        RebuildBars(true)
                     end,
                 },
             },
@@ -3417,9 +3361,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     setValue = function(v)
                         BD().borderThickness = v
                         BD().borderSize = BORDER_SIZES[v] or 1
-                        mod.BuildAllCDMBars()
-                        Refresh()
-                        UpdateCDMPreview()
+                        RebuildBars()
                     end,
                 }
             else
@@ -3443,9 +3385,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         BD().borderSizePx = v
                     end,
                     apply = function()
-                        mod.BuildAllCDMBars()
-                        Refresh()
-                        UpdateCDMPreview()
+                        RebuildBars()
                     end,
                 })
             end
@@ -3490,9 +3430,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         if edge.borderSizePx then
                             edge.borderSizePx = false
                         end
-                        mod.BuildAllCDMBars()
-                        Refresh()
-                        UpdateCDMPreview()
+                        RebuildBars()
                         CludesUI:RefreshPage(true)
                     end,
                 }),
@@ -3537,9 +3475,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             BD().borderTextureOffsetY = v
                         end,
                         apply = function()
-                            mod.BuildAllCDMBars()
-                            Refresh()
-                            UpdateCDMPreview()
+                            RebuildBars()
                         end,
                     })
                     _, hgt = W:DualRow(
@@ -3576,9 +3512,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 BD().borderTextureShiftX = v == 0 and nil or v
-                                mod.BuildAllCDMBars()
-                                Refresh()
-                                UpdateCDMPreview()
+                                RebuildBars()
                             end,
                         },
                         {
@@ -3600,9 +3534,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 BD().borderTextureShiftY = v == 0 and nil or v
-                                mod.BuildAllCDMBars()
-                                Refresh()
-                                UpdateCDMPreview()
+                                RebuildBars()
                             end,
                         },
                         {
@@ -3613,9 +3545,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             end,
                             set = function(v)
                                 BD().borderBehind = v == false and nil or v
-                                mod.BuildAllCDMBars()
-                                Refresh()
-                                UpdateCDMPreview()
+                                RebuildBars()
                                 CludesUI:RefreshPage()
                             end,
                         },
@@ -3800,9 +3730,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             b.borderB = bb
                             b.borderA = ba
                         end)
-                        mod.BuildAllCDMBars()
-                        Refresh()
-                        UpdateCDMPreview()
+                        RebuildBars()
                         CludesUI:RefreshPage()
                     end,
                 })
@@ -3852,9 +3780,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         edge.borderSize = BORDER_SIZES["thin"]
                     end
                     ClearMatchDims(edge)
-                    mod.BuildAllCDMBars()
-                    Refresh()
-                    UpdateCDMPreviewAndResize()
+                    RebuildBars(true)
                     -- The Border Size slot is a different control under a custom shape: rebuild the page.
                     CludesUI:RefreshPage(true)
                 end,
@@ -3915,9 +3841,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         setValue = function(v)
             BD().stackCountSize = v
             mod.RefreshCDMIconAppearance(BD().key)
-            mod.BuildAllCDMBars()
-            Refresh()
-            UpdateCDMPreview()
+            RebuildBars()
         end,
     })
     posY = posY - hgt
@@ -4069,9 +3993,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         edge.itemCountOOC = (v == "ooc") or nil
                         edge.showItemCount = (v ~= "never")
                         mod.RefreshCDMIconAppearance(edge.key)
-                        mod.BuildAllCDMBars()
-                        Refresh()
-                        UpdateCDMPreview()
+                        RebuildBars()
                         CludesUI:RefreshPage()
                     end,
                 },
@@ -4145,9 +4067,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     set = function(v)
                         BD().stackCountPosition = v
                         mod.RefreshCDMIconAppearance(BD().key)
-                        mod.BuildAllCDMBars()
-                        Refresh()
-                        UpdateCDMPreview()
+                        RebuildBars()
                     end,
                 },
                 {
@@ -4162,9 +4082,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     set = function(v)
                         BD().stackCountX = v
                         mod.RefreshCDMIconAppearance(BD().key)
-                        mod.BuildAllCDMBars()
-                        Refresh()
-                        UpdateCDMPreview()
+                        RebuildBars()
                     end,
                 },
                 {
@@ -4179,9 +4097,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     set = function(v)
                         BD().stackCountY = v
                         mod.RefreshCDMIconAppearance(BD().key)
-                        mod.BuildAllCDMBars()
-                        Refresh()
-                        UpdateCDMPreview()
+                        RebuildBars()
                     end,
                 },
             },
@@ -4203,9 +4119,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 BD().stackCountG = g
                 BD().stackCountB = b
                 mod.RefreshCDMIconAppearance(BD().key)
-                mod.BuildAllCDMBars()
-                Refresh()
-                UpdateCDMPreview()
+                RebuildBars()
             end,
             false,
             20
