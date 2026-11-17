@@ -114,7 +114,7 @@ The spells your trainer has for you right now with their total price, then what 
 
 ### Known Levels
 
-General > Display: a player whose level the game hides as ?? (10 or more levels above you) shows the level they had when you last saw it, or that PvP sharing sent, on unit frames, nameplates and tooltips. Mobs, and players you have not seen, stay ??.
+Forever Essentials > General: a player whose level the game hides as ?? (10 or more levels above you) shows the level they had when you last saw it, or that PvP sharing sent, on unit frames, nameplates and tooltips. Mobs, and players you have not seen, stay ??.
 
 ### PvP
 

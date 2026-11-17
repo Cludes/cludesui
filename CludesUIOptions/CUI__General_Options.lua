@@ -1296,24 +1296,6 @@ initFrame:SetScript("OnEvent", function(self)
             })
         end
 
-        -- Forever: a player's level the game hides as ?? (10+ levels above
-        -- you), from when it could last be read (Forever Essentials keeps it).
-        local pvp = CludesUI.IS_FOREVER and CludesUI._PvP
-        if pvp then
-            _, hgt = W:DualRow(hostFrame, posY, {
-                type = "toggle",
-                text = "Known Levels Instead of ??",
-                tooltip = "The game hides the level of a player 10 or more levels above you. Shows the level they had when you last saw it (or a groupmate's PvP sharing sent it) on unit frames, nameplates and tooltips. Mobs, and players you have not seen, stay ??.",
-                getValue = function()
-                    return pvp.Get("knownLevels")
-                end,
-                setValue = function(val)
-                    pvp.Cfg().knownLevels = val
-                end,
-            }, { type = "label", text = "" })
-            posY = posY - hgt
-        end
-
         _, hgt = W:Spacer(hostFrame, posY, 20)
         posY = posY - hgt
 

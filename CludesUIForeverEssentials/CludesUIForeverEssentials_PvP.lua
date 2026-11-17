@@ -319,7 +319,7 @@ local function Detected(name, acted, fromShare)
 end
 
 -------------------------------------------------------------------------------
---  Known levels (General > Display on Forever; saved as pvp.knownLevels)
+--  Known levels (Forever Essentials > General; saved as pvp.knownLevels)
 --  The game hides the level of a player 10 or more levels above you (UnitLevel
 --  -1, shown "??"). This remembers levels while they can be read: every
 --  player you target, mouse over or see a nameplate for, PvP on or off (in
