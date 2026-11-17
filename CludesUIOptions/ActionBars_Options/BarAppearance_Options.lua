@@ -2123,64 +2123,41 @@ local function BuildBarAppearance(hostFrame, posY, context)
             local PG_STATES = EAB_VT.PAGING_STATES or {}
             local BKP = EAB_VT.BAR_KEY_TO_PAGE or {}
 
+            -- The pages a state can switch this bar to: Default, then the page
+            -- of every other action bar (a bar cannot page to itself).
             local pagingValues = { none = "Default" }
             local pagingOrder = { "none" }
-            local barList = {
-                { key = "MainBar", label = "Action Bar 1 (Main)" },
-                { key = "Bar2", label = "Action Bar 2" },
-                { key = "Bar3", label = "Action Bar 3" },
-                { key = "Bar4", label = "Action Bar 4" },
-                { key = "Bar5", label = "Action Bar 5" },
-                { key = "Bar6", label = "Action Bar 6" },
-                { key = "Bar7", label = "Action Bar 7" },
-                { key = "Bar8", label = "Action Bar 8" },
-                { key = "Bar9", label = "Action Bar 9" },
-                { key = "Bar10", label = "Action Bar 10" },
-            }
-            for _, bl in ipairs(barList) do
-                -- Skip self (can't page a bar to itself)
-                if bl.key ~= selKey then
-                    local pg = BKP[bl.key]
-                    if pg then
-                        pagingValues[tostring(pg)] = bl.label
-                        pagingOrder[#pagingOrder + 1] = tostring(pg)
-                    end
+            for idx = 1, 10 do
+                local key = idx == 1 and "MainBar" or ("Bar" .. idx)
+                local pg = key ~= selKey and BKP[key]
+                if pg then
+                    pagingValues[tostring(pg)] = idx == 1 and "Action Bar 1 (Main)" or ("Action Bar " .. idx)
+                    pagingOrder[#pagingOrder + 1] = tostring(pg)
                 end
             end
 
             local function GetPagingVal(stateId)
                 local paging = SGet("paging")
-                if not paging then
-                    return "none"
-                end
-                local v = paging[stateId]
-                if not v then
-                    return "none"
-                end
-                return tostring(v)
+                local v = paging and paging[stateId]
+                return v and tostring(v) or "none"
             end
             local function SetPagingVal(stateId, val)
-                local bars = ABAR.db.profile.bars[selKey]
-                if not bars.paging then
-                    bars.paging = {}
-                end
-                if val == "none" then
-                    -- nil, not false: the driver builder reads nil as "unconfigured -> native
-                    -- form fallback", while false would suppress the form's bonusbar swap.
-                    bars.paging[stateId] = nil
-                else
-                    bars.paging[stateId] = tonumber(val)
-                end
-                -- Clean up: if all values are false (all disabled), reset
+                local bar = ABAR.db.profile.bars[selKey]
+                bar.paging = bar.paging or {}
+                -- Default stores nil, not false: the driver builder reads nil as
+                -- unconfigured (the form's own bonus bar swap still applies),
+                -- while false would suppress it.
+                bar.paging[stateId] = val ~= "none" and tonumber(val) or nil
+                -- Nothing paged any more: an empty table again.
                 local anySet = false
-                for _, v in pairs(bars.paging) do
+                for _, v in pairs(bar.paging) do
                     if v then
                         anySet = true
                         break
                     end
                 end
                 if not anySet then
-                    bars.paging = {}
+                    bar.paging = {}
                 end
                 if mod.RebuildBarPaging then
                     mod.RebuildBarPaging(selKey)
@@ -2232,25 +2209,21 @@ local function BuildBarAppearance(hostFrame, posY, context)
             -- say (the runtime's rule too). Off hides the group's dropdowns
             -- and the bar stops paging on its states; their picks are kept for
             -- when it is turned back on.
-            local function ModifierOn()
+            local function GroupOn(key)
                 if SGet("modTargetPaging") == false then
                     return false
                 end
-                local v = SGet("modifierPaging")
-                if v ~= nil then
-                    return v and true or false
+                local v = SGet(key)
+                if v == nil then
+                    v = ModTargetOn()
                 end
-                return ModTargetOn() and true or false
+                return v and true or false
+            end
+            local function ModifierOn()
+                return GroupOn("modifierPaging")
             end
             local function TargetOn()
-                if SGet("modTargetPaging") == false then
-                    return false
-                end
-                local v = SGet("targetPaging")
-                if v ~= nil then
-                    return v and true or false
-                end
-                return ModTargetOn() and true or false
+                return GroupOn("targetPaging")
             end
             local modOn, targetOn = ModifierOn(), TargetOn()
 
@@ -2284,17 +2257,18 @@ local function BuildBarAppearance(hostFrame, posY, context)
                 label = "Target Paging",
                 tooltip = "Pages this bar while you have a friendly or hostile target.",
             }
-            local function PagingGet(k)
-                if k == "form" then
+            local PAGING_GET = {
+                form = function()
                     return not SGet("disableFormPaging")
-                end
-                if k == "skyriding" then
+                end,
+                skyriding = function()
                     return not SGet("disableSkyridingPaging")
-                end
-                if k == "modifier" then
-                    return ModifierOn()
-                end
-                return TargetOn()
+                end,
+                modifier = ModifierOn,
+                target = TargetOn,
+            }
+            local function PagingGet(k)
+                return (PAGING_GET[k] or TargetOn)()
             end
             -- Writing one group's key first settles the other group's key to
             -- what it shows. Under modTargetPaging false (both held off),
