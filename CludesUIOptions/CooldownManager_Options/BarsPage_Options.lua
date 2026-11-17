@@ -1960,6 +1960,35 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         local NP_SIDE_VALUES = { LEFT = "Left", RIGHT = "Right", TOP = "Top", BOTTOM = "Bottom" }
         local NP_SIDE_ORDER = { "LEFT", "RIGHT", "TOP", "BOTTOM" }
 
+        local function ApplyAnchor()
+            if mod.ApplyFocusKickAnchor then
+                mod.ApplyFocusKickAnchor()
+            end
+        end
+        local function RefreshReminders()
+            if mod.RefreshFocusReminders then
+                mod.RefreshFocusReminders()
+            end
+        end
+        -- A cog slider over one of this bar's settings: read with its default,
+        -- written and then applied by apply().
+        local function BarSlider(label, key, default, minV, maxV, apply)
+            return {
+                type = "slider",
+                label = label,
+                min = minV,
+                max = maxV,
+                step = 1,
+                get = function()
+                    return BD()[key] or default
+                end,
+                set = function(v)
+                    BD()[key] = v
+                    apply()
+                end,
+            }
+        end
+
         -- Row 1: Nameplate Anchor (left) | Focus Text Reminders (right)
         local npRow
         npRow, hgt = W:DualRow(hostFrame, posY, {
@@ -1972,9 +2001,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             end,
             setValue = function(v)
                 BD().nameplateAnchorSide = v
-                if mod.ApplyFocusKickAnchor then
-                    mod.ApplyFocusKickAnchor()
-                end
+                ApplyAnchor()
                 CludesUI:RefreshPage()
             end,
         }, {
@@ -1987,9 +2014,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             end,
             setValue = function(v)
                 BD().focusReminderEnabled = v
-                if mod.RefreshFocusReminders then
-                    mod.RefreshFocusReminders()
-                end
+                RefreshReminders()
                 CludesUI:RefreshPage()
             end,
         })
@@ -2002,38 +2027,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 anchorTo = rgn._control,
                 title = "Nameplate Offset",
                 rows = {
-                    {
-                        type = "slider",
-                        label = "X Offset",
-                        min = -100,
-                        max = 100,
-                        step = 1,
-                        get = function()
-                            return BD().nameplateOffsetX or 0
-                        end,
-                        set = function(v)
-                            BD().nameplateOffsetX = v
-                            if mod.ApplyFocusKickAnchor then
-                                mod.ApplyFocusKickAnchor()
-                            end
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Y Offset",
-                        min = -100,
-                        max = 100,
-                        step = 1,
-                        get = function()
-                            return BD().nameplateOffsetY or 0
-                        end,
-                        set = function(v)
-                            BD().nameplateOffsetY = v
-                            if mod.ApplyFocusKickAnchor then
-                                mod.ApplyFocusKickAnchor()
-                            end
-                        end,
-                    },
+                    BarSlider("X Offset", "nameplateOffsetX", 0, -100, 100, ApplyAnchor),
+                    BarSlider("Y Offset", "nameplateOffsetY", 0, -100, 100, ApplyAnchor),
                 },
             })
         end
@@ -2048,54 +2043,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             CludesUI.BuildInlineCog(rgn, {
                 title = "Focus Reminder Settings",
                 rows = {
-                    {
-                        type = "slider",
-                        label = "Text Size",
-                        min = 8,
-                        max = 50,
-                        step = 1,
-                        get = function()
-                            return BD().focusReminderSize or 26
-                        end,
-                        set = function(v)
-                            BD().focusReminderSize = v
-                            if mod.RefreshFocusReminders then
-                                mod.RefreshFocusReminders()
-                            end
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "X Offset",
-                        min = -100,
-                        max = 100,
-                        step = 1,
-                        get = function()
-                            return BD().focusReminderOffsetX or 0
-                        end,
-                        set = function(v)
-                            BD().focusReminderOffsetX = v
-                            if mod.RefreshFocusReminders then
-                                mod.RefreshFocusReminders()
-                            end
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Y Offset",
-                        min = -100,
-                        max = 100,
-                        step = 1,
-                        get = function()
-                            return BD().focusReminderOffsetY or 0
-                        end,
-                        set = function(v)
-                            BD().focusReminderOffsetY = v
-                            if mod.RefreshFocusReminders then
-                                mod.RefreshFocusReminders()
-                            end
-                        end,
-                    },
+                    BarSlider("Text Size", "focusReminderSize", 26, 8, 50, RefreshReminders),
+                    BarSlider("X Offset", "focusReminderOffsetX", 0, -100, 100, RefreshReminders),
+                    BarSlider("Y Offset", "focusReminderOffsetY", 0, -100, 100, RefreshReminders),
                 },
             })
 
@@ -2117,9 +2067,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             Pix.Point(accentSwatch, "RIGHT", rgn._lastInline or ctrl, "LEFT", -8, 0)
             accentSwatch:SetScript("OnClick", function()
                 BD().focusReminderUseAccent = true
-                if mod.RefreshFocusReminders then
-                    mod.RefreshFocusReminders()
-                end
+                RefreshReminders()
                 CludesUI:RefreshPage()
             end)
             accentSwatch:SetScript("OnEnter", function()
@@ -2140,9 +2088,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 function(r, g, b)
                     BD().focusReminderR, BD().focusReminderG, BD().focusReminderB = r, g, b
                     BD().focusReminderUseAccent = false
-                    if mod.RefreshFocusReminders then
-                        mod.RefreshFocusReminders()
-                    end
+                    RefreshReminders()
                 end,
                 false,
                 20
@@ -2163,9 +2109,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             customBlock:SetScript("OnClick", function()
                 if BD().focusReminderUseAccent then
                     BD().focusReminderUseAccent = false
-                    if mod.RefreshFocusReminders then
-                        mod.RefreshFocusReminders()
-                    end
+                    RefreshReminders()
                     CludesUI:RefreshPage()
                 end
             end)
