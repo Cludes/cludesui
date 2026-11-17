@@ -544,6 +544,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         local ITEM_H = 26
         local MEDIA = "Interface\\AddOns\\CludesUI\\media\\"
         local ICON_SZ = 14
+        -- The bars every profile has; any other (Focus Kick aside) is custom.
+        local BUILT_IN = { cooldowns = true, utility = true, buffs = true }
 
         -- Dropdown button
         local ddBtn = CreateFrame("Button", nil, heading)
@@ -582,14 +584,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         local function CustomBarDisplayOrder()
             local sequence, seen, byKey = {}, {}, {}
             for _, b in ipairs(barList) do
-                if
-                    b.key
-                    and not b.isGhostBar
-                    and b.key ~= "cooldowns"
-                    and b.key ~= "utility"
-                    and b.key ~= "buffs"
-                    and b.key ~= "focuskick"
-                then
+                if b.key and not b.isGhostBar and not BUILT_IN[b.key] and b.key ~= "focuskick" then
                     byKey[b.key] = b
                 end
             end
@@ -643,7 +638,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             local mH = 4
             local customCount = 0
             for _, b in ipairs(barList) do
-                if b.key ~= "cooldowns" and b.key ~= "utility" and b.key ~= "buffs" and not b.isGhostBar then
+                if not BUILT_IN[b.key] and not b.isGhostBar then
                     customCount = customCount + 1
                 end
             end
@@ -703,12 +698,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     -- FocusKick is treated as a built-in: cannot be deleted
                     -- or renamed even though its barType is "cooldowns".
                     local isFocusKick = (b.key == "focuskick")
-                    local isCustom = (
-                        b.key ~= "cooldowns"
-                        and b.key ~= "utility"
-                        and b.key ~= "buffs"
-                        and not isFocusKick
-                    )
+                    local isCustom = not BUILT_IN[b.key] and not isFocusKick
 
                     -- Hint above the custom-bar band (only when reorderable).
                     if reorderable and not hintShown and ordByKey[b.key] then
@@ -745,36 +735,28 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     iHl:SetColorTexture(1, 1, 1, 1)
                     iHl:SetAlpha(position == optionState.selectedCDMBarIndex and selA or 0)
 
-                    -- Delete + Rename buttons for custom bars
+                    -- Delete and Rename on a custom bar's row: small icons at
+                    -- its right edge, dimmed until the row is hovered.
                     local delBtn, editBtn
                     if isCustom then
-                        delBtn = CreateFrame("Button", nil, item)
-                        delBtn:SetSize(ICON_SZ, ICON_SZ)
-                        delBtn:SetPoint("RIGHT", item, "RIGHT", -8, 0)
-                        delBtn:SetFrameLevel(item:GetFrameLevel() + 2)
-                        local delIcon = delBtn:CreateTexture(nil, "OVERLAY")
-                        delIcon:SetSize(ICON_SZ, ICON_SZ)
-                        delIcon:SetPoint("CENTER", delBtn, "CENTER", 0, 0)
-                        if delIcon.SetSnapToPixelGrid then
-                            delIcon:SetSnapToPixelGrid(false)
-                            delIcon:SetTexelSnappingBias(0)
+                        local function RowIcon(anchor, relPoint, x, file)
+                            local btn = CreateFrame("Button", nil, item)
+                            btn:SetSize(ICON_SZ, ICON_SZ)
+                            btn:SetPoint("RIGHT", anchor, relPoint, x, 0)
+                            btn:SetFrameLevel(item:GetFrameLevel() + 2)
+                            local icon = btn:CreateTexture(nil, "OVERLAY")
+                            icon:SetSize(ICON_SZ, ICON_SZ)
+                            icon:SetPoint("CENTER", btn, "CENTER", 0, 0)
+                            if icon.SetSnapToPixelGrid then
+                                icon:SetSnapToPixelGrid(false)
+                                icon:SetTexelSnappingBias(0)
+                            end
+                            icon:SetTexture(MEDIA .. "icons\\" .. file)
+                            btn:SetAlpha(0.75)
+                            return btn
                         end
-                        delIcon:SetTexture(MEDIA .. "icons\\cui-close.png")
-                        delBtn:SetAlpha(0.75)
-
-                        editBtn = CreateFrame("Button", nil, item)
-                        editBtn:SetSize(ICON_SZ, ICON_SZ)
-                        editBtn:SetPoint("RIGHT", delBtn, "LEFT", -4, 0)
-                        editBtn:SetFrameLevel(item:GetFrameLevel() + 2)
-                        local edIcon = editBtn:CreateTexture(nil, "OVERLAY")
-                        edIcon:SetSize(ICON_SZ, ICON_SZ)
-                        edIcon:SetPoint("CENTER", editBtn, "CENTER", 0, 0)
-                        if edIcon.SetSnapToPixelGrid then
-                            edIcon:SetSnapToPixelGrid(false)
-                            edIcon:SetTexelSnappingBias(0)
-                        end
-                        edIcon:SetTexture(MEDIA .. "icons\\cui-edit.png")
-                        editBtn:SetAlpha(0.75)
+                        delBtn = RowIcon(item, "RIGHT", -8, "cui-close.png")
+                        editBtn = RowIcon(delBtn, "LEFT", -4, "cui-edit.png")
 
                         iLbl:SetPoint("RIGHT", editBtn, "LEFT", -4, 0)
 
