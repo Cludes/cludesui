@@ -3192,32 +3192,33 @@ initFrame:SetScript("OnEvent", function(self)
         return p and p.runSummary
     end
 
+    -- A Run Summary setting, fallback while it was never stored.
     local function RSGet(key, fallback)
         local c = RSCfg()
         local v = c and c[key]
-        if v == nil then
-            return fallback
+        if v ~= nil then
+            return v
         end
-        return v
+        return fallback
     end
 
+    -- Stores a Run Summary setting, then re-applies it and repaints an open
+    -- panel (columns and scale show at once, not only on the next opening).
     local function RSSet(key, val)
         local c = RSCfg()
         if c then
             c[key] = val
         end
-        if mod.RS_Apply then
-            mod.RS_Apply()
-        end
-        -- Column toggles and the scale change how an already open panel looks,
-        -- so repaint it instead of waiting for the next time it is opened.
-        if mod.RS_Refresh then
-            mod.RS_Refresh()
+        for _, step in ipairs({ "RS_Apply", "RS_Refresh" }) do
+            if mod[step] then
+                mod[step]()
+            end
         end
     end
 
     local function RSOn()
-        return RSCfg() ~= nil and RSCfg().enabled == true
+        local c = RSCfg()
+        return c ~= nil and c.enabled == true
     end
     local function RSOff()
         return not RSOn()
@@ -3226,7 +3227,7 @@ initFrame:SetScript("OnEvent", function(self)
     local function BuildRSPage(pageName, hostFrame, yOffset)
         local W = CludesUI.Widgets
         local posY = yOffset
-        local row, hgt
+        local _, hgt
 
         if CludesUI.ClearContentHeader then
             CludesUI:ClearContentHeader()
@@ -3234,37 +3235,70 @@ initFrame:SetScript("OnEvent", function(self)
         hostFrame._showRowDivider = true
 
         local REQ = "Enable Run Summary"
+        local function Row(left, right)
+            _, hgt = W:DualRow(hostFrame, posY, left, right)
+            posY = posY - hgt
+        end
+        local function Section(title)
+            _, hgt = W:SectionHeader(hostFrame, title, posY)
+            posY = posY - hgt
+        end
+        -- A switch that is on until turned off.
+        local function Switch(text, key, tooltip)
+            return {
+                type = "toggle",
+                text = text,
+                tooltip = tooltip,
+                disabled = RSOff,
+                disabledTooltip = REQ,
+                getValue = function()
+                    return RSGet(key, true) == true
+                end,
+                setValue = function(v)
+                    RSSet(key, v and true or false)
+                end,
+            }
+        end
+        local function Slider(text, key, lo, hi, step, def, tooltip)
+            return {
+                type = "slider",
+                text = text,
+                tooltip = tooltip,
+                min = lo,
+                max = hi,
+                step = step,
+                disabled = RSOff,
+                disabledTooltip = REQ,
+                getValue = function()
+                    return RSGet(key, def)
+                end,
+                setValue = function(v)
+                    RSSet(key, v)
+                end,
+            }
+        end
 
-        -----------------------------------------------------------------
-        --  Top action buttons: Show Preview + Clear Run History, two 312x38
-        --  buttons centred with a 40px gap.
-        -----------------------------------------------------------------
+        -- Two 312x38 buttons across the top, centred with a 40px gap between.
         do
             local PPn = CludesUI.PanelPP
-            local BTN_W = 312
-            local BTN_H = 38
-            local GAP = 40
+            local BTN_W, BTN_H, GAP = 312, 38, 40
             local ROW_H = BTN_H + 20
-            local rowFrame = CreateFrame("Frame", nil, hostFrame)
-            local totalW = hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2
-            PPn.Size(rowFrame, totalW, ROW_H)
-            PPn.Point(rowFrame, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY)
-
-            local previewBtn = CreateFrame("Button", nil, rowFrame)
-            PPn.Size(previewBtn, BTN_W, BTN_H)
-            PPn.Point(previewBtn, "RIGHT", rowFrame, "CENTER", -(GAP / 2), 0)
-            previewBtn:SetFrameLevel(rowFrame:GetFrameLevel() + 1)
-            CludesUI.MakeStyledButton(previewBtn, "Show Preview", 14, CludesUI.WB_COLOURS, function()
+            local strip = CreateFrame("Frame", nil, hostFrame)
+            PPn.Size(strip, hostFrame:GetWidth() - CludesUI.CONTENT_PAD * 2, ROW_H)
+            PPn.Point(strip, "TOPLEFT", hostFrame, "TOPLEFT", CludesUI.CONTENT_PAD, posY)
+            local function Action(label, point, dx, onClick)
+                local btn = CreateFrame("Button", nil, strip)
+                PPn.Size(btn, BTN_W, BTN_H)
+                PPn.Point(btn, point, strip, "CENTER", dx, 0)
+                btn:SetFrameLevel(strip:GetFrameLevel() + 1)
+                CludesUI.MakeStyledButton(btn, label, 14, CludesUI.WB_COLOURS, onClick)
+            end
+            Action("Show Preview", "RIGHT", -(GAP / 2), function()
                 if mod.RS_ShowPreview then
                     mod.RS_ShowPreview()
                 end
             end)
-
-            local clearBtn = CreateFrame("Button", nil, rowFrame)
-            PPn.Size(clearBtn, BTN_W, BTN_H)
-            PPn.Point(clearBtn, "LEFT", rowFrame, "CENTER", GAP / 2, 0)
-            clearBtn:SetFrameLevel(rowFrame:GetFrameLevel() + 1)
-            CludesUI.MakeStyledButton(clearBtn, "Clear Run History", 14, CludesUI.WB_COLOURS, function()
+            Action("Clear Run History", "LEFT", GAP / 2, function()
                 CludesUI:ShowConfirmPopup({
                     title = "Clear Run History",
                     message = "Delete every recorded Mythic+ run for this character?",
@@ -3277,194 +3311,76 @@ initFrame:SetScript("OnEvent", function(self)
                     end,
                 })
             end)
-
             posY = posY - ROW_H
         end
 
-        row, hgt = W:SectionHeader(hostFrame, "RUN SUMMARY", posY)
-        posY = posY - hgt
+        Section("RUN SUMMARY")
+        Row(
+            {
+                type = "toggle",
+                text = "Enable Run Summary",
+                tooltip = "Records every finished Mythic+ key and shows an overview of the group when the run ends. Nothing is registered or created while this is off.",
+                getValue = RSOn,
+                setValue = function(v)
+                    RSSet("enabled", v and true or false)
+                    CludesUI:RefreshPage()
+                end,
+            },
+            Switch(
+                "Show After Looting",
+                "showAfterLoot",
+                "Open the overview once the end of run chest has been looted. With this off it opens as soon as the key ends. /ov reopens it at any time."
+            )
+        )
+        Row(
+            Slider("History Size", "historySize", 5, 50, 1, 20),
+            Slider("Panel Scale", "scale", 0.5, 2, 0.05, 1)
+        )
+        Row(
+            Slider(
+                "Text Size",
+                "textSize",
+                10,
+                20,
+                1,
+                14,
+                "Size of the player rows. The title and column headers keep their own size."
+            ),
+            { type = "label", text = "" }
+        )
 
-        row, hgt = W:DualRow(hostFrame, posY, {
-            type = "toggle",
-            text = "Enable Run Summary",
-            tooltip = "Records every finished Mythic+ key and shows an overview of the group when the run ends. Nothing is registered or created while this is off.",
-            getValue = RSOn,
-            setValue = function(v)
-                RSSet("enabled", v and true or false)
-                CludesUI:RefreshPage()
-            end,
-        }, {
-            type = "toggle",
-            text = "Show After Looting",
-            tooltip = "Open the overview once the end of run chest has been looted. With this off it opens as soon as the key ends. /ov reopens it at any time.",
-            disabled = RSOff,
-            disabledTooltip = REQ,
-            getValue = function()
-                return RSGet("showAfterLoot", true) == true
-            end,
-            setValue = function(v)
-                RSSet("showAfterLoot", v and true or false)
-            end,
-        })
-        posY = posY - hgt
+        Section("COLUMNS")
+        Row(
+            Switch("Show Spec Icons", "showSpecIcons"),
+            Switch(
+                "Item Level",
+                "colItemLevel",
+                "Shown in grey next to each name. Item levels are read by inspecting party members during the run, so a member who stayed out of range shows none."
+            )
+        )
+        Row(
+            Switch(
+                "M+ Score",
+                "colScore",
+                "Current season score plus the gain from this run. Your own gain is the exact value the server reports; for party members it is their score before the key subtracted from their score after it."
+            ),
+            Switch(
+                "Loot",
+                "colLoot",
+                "What each player looted. Your own chest reward always appears; other players' items only when the server announces the loot to the group, which it does not always do for the end of run chest."
+            )
+        )
+        Row(
+            Switch(
+                "DPS",
+                "colDps",
+                "Read from Blizzard's own damage meter. With that meter switched off this column, Damage Taken and Interrupts stay empty."
+            ),
+            Switch("Damage Taken", "colDamageTaken")
+        )
+        Row(Switch("Interrupts", "colInterrupts"), Switch("Deaths", "colDeaths"))
 
-        row, hgt = W:DualRow(hostFrame, posY, {
-            type = "slider",
-            text = "History Size",
-            min = 5,
-            max = 50,
-            step = 1,
-            disabled = RSOff,
-            disabledTooltip = REQ,
-            getValue = function()
-                return RSGet("historySize", 20)
-            end,
-            setValue = function(v)
-                RSSet("historySize", v)
-            end,
-        }, {
-            type = "slider",
-            text = "Panel Scale",
-            min = 0.5,
-            max = 2,
-            step = 0.05,
-            disabled = RSOff,
-            disabledTooltip = REQ,
-            getValue = function()
-                return RSGet("scale", 1)
-            end,
-            setValue = function(v)
-                RSSet("scale", v)
-            end,
-        })
-        posY = posY - hgt
-
-        row, hgt = W:DualRow(hostFrame, posY, {
-            type = "slider",
-            text = "Text Size",
-            min = 10,
-            max = 20,
-            step = 1,
-            tooltip = "Size of the player rows. The title and column headers keep their own size.",
-            disabled = RSOff,
-            disabledTooltip = REQ,
-            getValue = function()
-                return RSGet("textSize", 14)
-            end,
-            setValue = function(v)
-                RSSet("textSize", v)
-            end,
-        }, { type = "label", text = "" })
-        posY = posY - hgt
-
-        row, hgt = W:SectionHeader(hostFrame, "COLUMNS", posY)
-        posY = posY - hgt
-
-        row, hgt = W:DualRow(hostFrame, posY, {
-            type = "toggle",
-            text = "Show Spec Icons",
-            disabled = RSOff,
-            disabledTooltip = REQ,
-            getValue = function()
-                return RSGet("showSpecIcons", true) == true
-            end,
-            setValue = function(v)
-                RSSet("showSpecIcons", v and true or false)
-            end,
-        }, {
-            type = "toggle",
-            text = "Item Level",
-            tooltip = "Shown in grey next to each name. Item levels are read by inspecting party members during the run, so a member who stayed out of range shows none.",
-            disabled = RSOff,
-            disabledTooltip = REQ,
-            getValue = function()
-                return RSGet("colItemLevel", true) == true
-            end,
-            setValue = function(v)
-                RSSet("colItemLevel", v and true or false)
-            end,
-        })
-        posY = posY - hgt
-
-        row, hgt = W:DualRow(hostFrame, posY, {
-            type = "toggle",
-            text = "M+ Score",
-            tooltip = "Current season score plus the gain from this run. Your own gain is the exact value the server reports; for party members it is their score before the key subtracted from their score after it.",
-            disabled = RSOff,
-            disabledTooltip = REQ,
-            getValue = function()
-                return RSGet("colScore", true) == true
-            end,
-            setValue = function(v)
-                RSSet("colScore", v and true or false)
-            end,
-        }, {
-            type = "toggle",
-            text = "Loot",
-            tooltip = "What each player looted. Your own chest reward always appears; other players' items only when the server announces the loot to the group, which it does not always do for the end of run chest.",
-            disabled = RSOff,
-            disabledTooltip = REQ,
-            getValue = function()
-                return RSGet("colLoot", true) == true
-            end,
-            setValue = function(v)
-                RSSet("colLoot", v and true or false)
-            end,
-        })
-        posY = posY - hgt
-
-        row, hgt = W:DualRow(hostFrame, posY, {
-            type = "toggle",
-            text = "DPS",
-            tooltip = "Read from Blizzard's own damage meter. With that meter switched off this column, Damage Taken and Interrupts stay empty.",
-            disabled = RSOff,
-            disabledTooltip = REQ,
-            getValue = function()
-                return RSGet("colDps", true) == true
-            end,
-            setValue = function(v)
-                RSSet("colDps", v and true or false)
-            end,
-        }, {
-            type = "toggle",
-            text = "Damage Taken",
-            disabled = RSOff,
-            disabledTooltip = REQ,
-            getValue = function()
-                return RSGet("colDamageTaken", true) == true
-            end,
-            setValue = function(v)
-                RSSet("colDamageTaken", v and true or false)
-            end,
-        })
-        posY = posY - hgt
-
-        row, hgt = W:DualRow(hostFrame, posY, {
-            type = "toggle",
-            text = "Interrupts",
-            disabled = RSOff,
-            disabledTooltip = REQ,
-            getValue = function()
-                return RSGet("colInterrupts", true) == true
-            end,
-            setValue = function(v)
-                RSSet("colInterrupts", v and true or false)
-            end,
-        }, {
-            type = "toggle",
-            text = "Deaths",
-            disabled = RSOff,
-            disabledTooltip = REQ,
-            getValue = function()
-                return RSGet("colDeaths", true) == true
-            end,
-            setValue = function(v)
-                RSSet("colDeaths", v and true or false)
-            end,
-        })
-        posY = posY - hgt
-
-        row, hgt = W:Spacer(hostFrame, posY, 20)
+        _, hgt = W:Spacer(hostFrame, posY, 20)
         posY = posY - hgt
         hostFrame:SetHeight(math.abs(posY - yOffset))
     end
