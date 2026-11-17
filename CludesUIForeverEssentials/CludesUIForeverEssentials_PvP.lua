@@ -372,12 +372,27 @@ do
     end)
 end
 
--- The hidden level of a player, for unit frames, nameplates and the tooltip to
--- show instead of "??": the newest of the PvP feature's (not a guess) and the
--- remembered one. nil when the level is not hidden, not known, stale (below
--- the "you plus 10" the game's -1 already proves), or the option is off.
+-- The level to show instead of "??" for a unit whose shown (effective) level
+-- is hidden, for unit frames, nameplates and the tooltip. On WoW Forever only
+-- the effective level hides (UnitEffectiveLevel -1) while UnitLevel still
+-- answers, so that comes first. Where UnitLevel hides too (-1), a player's
+-- remembered level: the newest of the PvP feature's (not a guess) and the
+-- noted one, unless stale (below the "you plus 10" the -1 already proves).
+-- nil when the shown level is not hidden, nothing is known, or the option is
+-- off.
 function CludesUI.KnownHiddenLevel(unit)
-    if not Get("knownLevels") or tonumber(R(UnitLevel(unit))) ~= SKULL then
+    if not Get("knownLevels") then
+        return nil
+    end
+    local shown = tonumber(R(UnitEffectiveLevel(unit)))
+    if shown and shown > 0 then
+        return nil
+    end
+    local real = tonumber(R(UnitLevel(unit)))
+    if real and real > 0 then
+        return real
+    end
+    if real ~= SKULL then
         return nil
     end
     local name = PlayerName(unit)

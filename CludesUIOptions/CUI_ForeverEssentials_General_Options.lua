@@ -452,7 +452,7 @@ _G._CUI_BuildForeverGeneralPage = function(page, hostFrame, yOffset)
         _, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Known Levels Instead of ??",
-            tooltip = "The game hides the level of a player 10 or more levels above you. Shows the level they had when you last saw it (or a groupmate's PvP sharing sent it) on unit frames, nameplates and tooltips. Mobs, and players you have not seen, stay ??.",
+            tooltip = "Unit frames, nameplates and tooltips show ?? for anything 10 or more levels above you. This shows the real level instead: the one the game still gives addons, or for a player whose level is hidden, the level they had when you last saw it (or a groupmate's PvP sharing sent it).",
             getValue = function()
                 return pvp.Get("knownLevels")
             end,

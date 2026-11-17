@@ -19,7 +19,12 @@ local function Stub(e)
     e.UnitIsPlayer = function() return true end
     e.UnitName = function(u) if u == "player" then return "Me", nil end return target.name, nil end
     e.UnitLevel = function(u) if u == "player" then return 20 end return target.level end
-    e.UnitEffectiveLevel = e.UnitLevel
+    -- The shown level: hidden (-1) with the real one, unless a case sets it apart.
+    e.UnitEffectiveLevel = function(u)
+        if u == "player" then return 20 end
+        if target.effective ~= nil then return target.effective end
+        return target.level
+    end
 end
 Stub(getfenv(fn))
 Stub(_G)
@@ -73,6 +78,20 @@ Case("option off", "Gankmaster", -1)
 CludesUIDB.pvp.knownLevels = nil
 CludesUIDB.pvp.enabled = true
 Case("pvp on", "Gankmaster", -1)
+
+-- WoW Forever as measured in game: the shown (effective) level hides (-1)
+-- while UnitLevel still answers. The real level wins, remembered or not;
+-- a shown level that is not hidden is left alone.
+target.effective = -1
+Case("shown hidden, real 53, never seen", "Nobody", 53)
+Case("shown hidden, real 53, remembered 58", "Gankmaster", 53)
+target.effective = 44
+Case("shown 44, real 53 (not hidden)", "Nobody", 53)
+target.effective = -1
+CludesUIDB.pvp.knownLevels = false
+Case("shown hidden, real 53, option off", "Nobody", 53)
+CludesUIDB.pvp.knownLevels = nil
+target.effective = nil
 
 local np = CUI._ModuleNS and CUI._ModuleNS.CludesUINameplates
 if np and np.GetUnitLevelText then
