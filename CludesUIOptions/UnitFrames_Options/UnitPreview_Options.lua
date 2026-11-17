@@ -1669,7 +1669,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
     combatInd:SetSize(24, 24)
     combatInd:SetPoint("CENTER", portraitFrame or health, "CENTER", 0, 0)
     popFrame._combatIndicator = combatInd
-    popFrame._factionIndicator = IndicatorTex(6)
+    local factionInd = IndicatorTex(6)
+    popFrame._factionIndicator = factionInd
     popFrame._pvRaid = IndicatorTex(6)
     popFrame._pvRaid:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
     popFrame._pvLeader = IndicatorTex(6)
