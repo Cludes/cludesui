@@ -4423,10 +4423,12 @@ function mod.BMP_ShowFilterEditor(show, hide)
         end
     end
     -- Alphabetical by spell name (id tiebreak for identical names).
-    local function NameOf(ident)
+    local function SpellName(ident)
         return (mod.SPELL_NAME_BY_ID and mod.SPELL_NAME_BY_ID[ident])
             or (C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(ident))
-            or tostring(ident)
+    end
+    local function NameOf(ident)
+        return SpellName(ident) or tostring(ident)
     end
     local function ByName(a, b)
         local na, nb = NameOf(a), NameOf(b)
@@ -4440,156 +4442,32 @@ function mod.BMP_ShowFilterEditor(show, hide)
     end
     table.sort(customList, ByName)
 
-    local cy = 0
-    local function SpellRow(ident, classColor)
-        local srow = CreateFrame("Button", nil, childFrame)
-        srow:SetHeight(24)
-        srow:SetPoint("TOPLEFT", childFrame, "TOPLEFT", 2, cy)
-        srow:SetPoint("TOPRIGHT", childFrame, "TOPRIGHT", -2, cy)
-        srow:SetFrameLevel(childFrame:GetFrameLevel() + 1)
-        local highlight = srow:CreateTexture(nil, "ARTWORK")
-        highlight:SetAllPoints()
-        highlight:SetColorTexture(1, 1, 1, 0)
-        local box = CreateFrame("Frame", nil, srow)
-        box:SetSize(16, 16)
-        box:SetPoint("LEFT", srow, "LEFT", 6, 0)
-        local boxBg = box:CreateTexture(nil, "BACKGROUND")
-        boxBg:SetAllPoints()
-        boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-        local boxBrd = CludesUI.MakeRoundedBorder(box, 0.4, 0.4, 0.4, 0.6, boxBg)
-        local chk = box:CreateTexture(nil, "ARTWORK")
-        chk:SetPoint("TOPLEFT", box, "TOPLEFT", 2, -2)
-        chk:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -2, 2)
-        chk:SetColorTexture(eg.r, eg.g, eg.b, 1)
-        CludesUI.RoundBody(box, chk, 2)
-        local on = sel.spells[ident] and true or false
-        local ico = srow:CreateTexture(nil, "ARTWORK")
-        ico:SetSize(22, 22)
-        ico:SetPoint("LEFT", box, "RIGHT", 6, 0)
-        local texture = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(ident)
-        if texture then
-            ico:SetTexture(texture)
-        end
-        ico:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        local name = (mod.SPELL_NAME_BY_ID and mod.SPELL_NAME_BY_ID[ident])
-            or (C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(ident))
-        local lr, lg2, lb2 = 1, 1, 1
-        if classColor then
-            lr, lg2, lb2 = classColor.r, classColor.g, classColor.b
-        end
-        -- A user-added id the preset has since curated keeps its custom mark
-        -- (it stays if the curation is ever dropped) but is a curated row now:
-        -- no remove control.
-        local removable = sel.custom[ident] and not (curated and curated[ident])
-        local labelFS = CludesUI.MakeFont(srow, 13, nil, lr, lg2, lb2)
-        labelFS:SetPoint("LEFT", ico, "RIGHT", 6, 0)
-        labelFS:SetPoint("RIGHT", srow, "RIGHT", removable and -24 or -6, 0)
-        labelFS:SetJustifyH("LEFT")
-        labelFS:SetWordWrap(false)
-        labelFS:SetText(name or ("Spell " .. tostring(ident)))
-        -- Toggles update IN PLACE -- a rebuild here would reset the list
-        -- scroll position out from under the cursor.
-        local function UpdateRow()
-            on = sel.spells[ident] and true or false
-            if on then
-                chk:Show()
-                if boxBrd and boxBrd.SetColor then
-                    boxBrd:SetColor(eg.r, eg.g, eg.b, 0.8)
-                end
-            else
-                chk:Hide()
-                if boxBrd and boxBrd.SetColor then
-                    boxBrd:SetColor(0.4, 0.4, 0.4, 0.6)
-                end
-            end
-            labelFS:SetAlpha(on and 0.9 or 0.45)
-            -- Dim the spell icon with the text (it stayed full-bright).
-            ico:SetAlpha(on and 1 or 0.45)
-            ico:SetDesaturated(not on)
-        end
-        UpdateRow()
-        srow:SetScript("OnEnter", function()
-            highlight:SetColorTexture(1, 1, 1, 0.04)
-        end)
-        srow:SetScript("OnLeave", function()
-            highlight:SetColorTexture(1, 1, 1, 0)
-        end)
-        srow:SetScript("OnClick", function()
-            mod.BM2_SetSpellState(sel.id, ident, not on)
-            Apply()
-            UpdateRow()
-        end)
-        if removable then
-            local del = CreateFrame("Button", nil, srow)
-            del:SetSize(14, 14)
-            del:SetPoint("RIGHT", srow, "RIGHT", -6, 0)
-            del:SetFrameLevel(srow:GetFrameLevel() + 1)
-            del:SetAlpha(0.5)
-            local dx = del:CreateTexture(nil, "OVERLAY")
-            dx:SetAllPoints()
-            if dx.SetSnapToPixelGrid then
-                dx:SetSnapToPixelGrid(false)
-                dx:SetTexelSnappingBias(0)
-            end
-            dx:SetTexture(MEDIA_FE .. "cui-close.png")
-            del:SetScript("OnEnter", function(self)
-                self:SetAlpha(0.9)
-            end)
-            del:SetScript("OnLeave", function(self)
-                self:SetAlpha(0.5)
-            end)
-            del:SetScript("OnClick", function()
-                mod.BM2_SetSpellState(sel.id, ident, nil)
+    CludesUI.BuildFilterSpellList(
+        childFrame,
+        {
+            { CludesUI.L("Custom"), customList },
+            { CludesUI.L("All Classes"), byClass.ALL },
+        },
+        byClass,
+        CLASS_ORDER,
+        {
+            spells = sel.spells,
+            label = SpellName,
+            -- A user-added id the preset has since curated keeps its custom mark
+            -- (it stays if the curation is ever dropped) but is a curated row
+            -- now: no remove control.
+            removable = function(ident)
+                return sel.custom[ident] and not (curated and curated[ident])
+            end,
+            set = function(ident, value)
+                mod.BM2_SetSpellState(sel.id, ident, value)
                 Apply()
-                Rebuild()
-            end)
-        end
-        cy = cy - 29
-    end
-    local function GroupHeader(textValue)
-        local heading = CludesUI.MakeFont(childFrame, 14, nil, 0.5, 0.5, 0.5)
-        heading:SetPoint("TOPLEFT", childFrame, "TOPLEFT", 2, cy - 10)
-        heading:SetText(textValue)
-        local line = childFrame:CreateTexture(nil, "ARTWORK")
-        line:SetHeight(1)
-        line:SetPoint("LEFT", heading, "RIGHT", 6, 0)
-        line:SetPoint("RIGHT", childFrame, "RIGHT", -10, 0)
-        line:SetColorTexture(0.3, 0.3, 0.3, 0.5)
-        cy = cy - 30
-    end
-    -- Custom leads (the user's own additions), then All Classes, then the class groups.
-    if #customList > 0 then
-        GroupHeader(CludesUI.L("Custom"))
-        for idx = 1, #customList do
-            SpellRow(customList[idx])
-        end
-    end
-    if byClass.ALL and #byClass.ALL > 0 then
-        GroupHeader(CludesUI.L("All Classes"))
-        for idx = 1, #byClass.ALL do
-            SpellRow(byClass.ALL[idx])
-        end
-    end
-    for c = 1, #CLASS_ORDER do
-        local cls = CLASS_ORDER[c]
-        local entries = byClass[cls]
-        if entries and #entries > 0 then
-            local cc = RAID_CLASS_COLORS and RAID_CLASS_COLORS[cls]
-            local cname = LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[cls] or cls
-            GroupHeader(cc and ("|c" .. cc.colorStr .. cname .. "|r") or cname)
-            for idx = 1, #entries do
-                SpellRow(entries[idx], cc)
-            end
-        end
-    end
-    if cy == 0 then
-        local empty = CludesUI.MakeFont(childFrame, 12, nil, 1, 1, 1)
-        empty:SetAlpha(0.4)
-        empty:SetPoint("TOPLEFT", childFrame, "TOPLEFT", 4, -6)
-        empty:SetText(CludesUI.L("No spells yet. Add spell IDs above."))
-        cy = -30
-    end
-    childFrame:SetHeight(math.abs(cy) + 10)
+            end,
+            rebuild = Rebuild,
+            emptyText = CludesUI.L("No spells yet. Add spell IDs above."),
+            accent = eg,
+        }
+    )
 
     -- Restore the preserved scroll position (rebuilds from add/remove/
     -- rename land the user back where they were, clamped to the new range).

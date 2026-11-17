@@ -1488,3 +1488,160 @@ function CludesUI.BuildFilterEditorShell(owner, slot, keepKey, width, height)
     end
     return dimmer, dialog
 end
+
+-------------------------------------------------------------------------------
+--  BuildFilterSpellList: the spell checklist of the aura managers' filter
+--  editors. lead is a list of { title, ids } groups drawn first, then one
+--  class-coloured group per token of classOrder that byClass holds ids for;
+--  empty groups are skipped. opts: spells (id -> on), label(id) (the spell's
+--  name, or nil), removable(id), set(id, value) (writes and applies a toggle,
+--  or a removal with nil), rebuild() (after a removal), emptyText, accent.
+--  Toggles repaint the row in place, so the list keeps its scroll position.
+--  Sizes child to fit.
+-------------------------------------------------------------------------------
+function CludesUI.BuildFilterSpellList(child, lead, byClass, classOrder, opts)
+    local MEDIA_FE = "Interface\\AddOns\\CludesUI\\media\\icons\\"
+    local eg, spells = opts.accent, opts.spells
+    local y = 0
+
+    local function Heading(text)
+        local heading = CludesUI.MakeFont(child, 14, nil, 0.5, 0.5, 0.5)
+        heading:SetPoint("TOPLEFT", child, "TOPLEFT", 2, y - 10)
+        heading:SetText(text)
+        local rule = child:CreateTexture(nil, "ARTWORK")
+        rule:SetHeight(1)
+        rule:SetPoint("LEFT", heading, "RIGHT", 6, 0)
+        rule:SetPoint("RIGHT", child, "RIGHT", -10, 0)
+        rule:SetColorTexture(0.3, 0.3, 0.3, 0.5)
+        y = y - 30
+    end
+
+    local function RemoveButton(row, id)
+        local del = CreateFrame("Button", nil, row)
+        del:SetSize(14, 14)
+        del:SetPoint("RIGHT", row, "RIGHT", -6, 0)
+        del:SetFrameLevel(row:GetFrameLevel() + 1)
+        del:SetAlpha(0.5)
+        local cross = del:CreateTexture(nil, "OVERLAY")
+        cross:SetAllPoints()
+        if cross.SetSnapToPixelGrid then
+            cross:SetSnapToPixelGrid(false)
+            cross:SetTexelSnappingBias(0)
+        end
+        cross:SetTexture(MEDIA_FE .. "cui-close.png")
+        del:SetScript("OnEnter", function(self)
+            self:SetAlpha(0.9)
+        end)
+        del:SetScript("OnLeave", function(self)
+            self:SetAlpha(0.5)
+        end)
+        del:SetScript("OnClick", function()
+            opts.set(id, nil)
+            opts.rebuild()
+        end)
+    end
+
+    local function Row(id, tint)
+        local row = CreateFrame("Button", nil, child)
+        row:SetHeight(24)
+        row:SetPoint("TOPLEFT", child, "TOPLEFT", 2, y)
+        row:SetPoint("TOPRIGHT", child, "TOPRIGHT", -2, y)
+        row:SetFrameLevel(child:GetFrameLevel() + 1)
+        local wash = row:CreateTexture(nil, "ARTWORK")
+        wash:SetAllPoints()
+        wash:SetColorTexture(1, 1, 1, 0)
+        local box = CreateFrame("Frame", nil, row)
+        box:SetSize(16, 16)
+        box:SetPoint("LEFT", row, "LEFT", 6, 0)
+        local boxBg = box:CreateTexture(nil, "BACKGROUND")
+        boxBg:SetAllPoints()
+        boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
+        local border = CludesUI.MakeRoundedBorder(box, 0.4, 0.4, 0.4, 0.6, boxBg)
+        local fill = box:CreateTexture(nil, "ARTWORK")
+        fill:SetPoint("TOPLEFT", box, "TOPLEFT", 2, -2)
+        fill:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -2, 2)
+        fill:SetColorTexture(eg.r, eg.g, eg.b, 1)
+        CludesUI.RoundBody(box, fill, 2)
+        local icon = row:CreateTexture(nil, "ARTWORK")
+        icon:SetSize(22, 22)
+        icon:SetPoint("LEFT", box, "RIGHT", 6, 0)
+        local art = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(id)
+        if art then
+            icon:SetTexture(art)
+        end
+        icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        local canRemove = opts.removable(id)
+        local label =
+            CludesUI.MakeFont(row, 13, nil, tint and tint.r or 1, tint and tint.g or 1, tint and tint.b or 1)
+        label:SetPoint("LEFT", icon, "RIGHT", 6, 0)
+        label:SetPoint("RIGHT", row, "RIGHT", canRemove and -24 or -6, 0)
+        label:SetJustifyH("LEFT")
+        label:SetWordWrap(false)
+        label:SetText(opts.label(id) or ("Spell " .. tostring(id)))
+
+        local on
+        local function Paint()
+            on = spells[id] and true or false
+            if on then
+                fill:Show()
+            else
+                fill:Hide()
+            end
+            if border and border.SetColor then
+                if on then
+                    border:SetColor(eg.r, eg.g, eg.b, 0.8)
+                else
+                    border:SetColor(0.4, 0.4, 0.4, 0.6)
+                end
+            end
+            label:SetAlpha(on and 0.9 or 0.45)
+            icon:SetAlpha(on and 1 or 0.45)
+            icon:SetDesaturated(not on)
+        end
+        Paint()
+        row:SetScript("OnEnter", function()
+            wash:SetColorTexture(1, 1, 1, 0.04)
+        end)
+        row:SetScript("OnLeave", function()
+            wash:SetColorTexture(1, 1, 1, 0)
+        end)
+        row:SetScript("OnClick", function()
+            opts.set(id, not on)
+            Paint()
+        end)
+        if canRemove then
+            RemoveButton(row, id)
+        end
+        y = y - 29
+    end
+
+    local function Group(title, ids, tint)
+        if ids and #ids > 0 then
+            Heading(title)
+            for idx = 1, #ids do
+                Row(ids[idx], tint)
+            end
+        end
+    end
+
+    for idx = 1, #lead do
+        Group(lead[idx][1], lead[idx][2])
+    end
+    for idx = 1, #classOrder do
+        local token = classOrder[idx]
+        local ids = byClass[token]
+        if ids and #ids > 0 then
+            local tint = RAID_CLASS_COLORS and RAID_CLASS_COLORS[token]
+            local title = LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[token] or token
+            Group(tint and ("|c" .. tint.colorStr .. title .. "|r") or title, ids, tint)
+        end
+    end
+    if y == 0 then
+        local empty = CludesUI.MakeFont(child, 12, nil, 1, 1, 1)
+        empty:SetAlpha(0.4)
+        empty:SetPoint("TOPLEFT", child, "TOPLEFT", 4, -6)
+        empty:SetText(opts.emptyText)
+        y = -30
+    end
+    child:SetHeight(math.abs(y) + 10)
+end
