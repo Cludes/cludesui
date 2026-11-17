@@ -2491,6 +2491,81 @@ local function BuildBarAppearance(hostFrame, posY, context)
         end,
     }
 
+    -- A text's re-apply: the cooldown countdown has its own.
+    local function ApplyFonts(k)
+        ABAR:ApplyFontsForBar(k)
+    end
+    local function ApplyCooldownFonts(k)
+        ABAR:ApplyCooldownFontsForBar(k)
+    end
+    -- A text cog's offset slider over key (-150 to 150).
+    local function OffsetRow(label, key, apply)
+        return {
+            type = "slider",
+            label = label,
+            min = -150,
+            max = 150,
+            step = 1,
+            get = function()
+                return SVal(key, 0)
+            end,
+            set = function(v)
+                SSet(key, v, apply)
+                SUpdatePreview()
+            end,
+        }
+    end
+    -- A text's colour swatch beside its size slider (white until set).
+    local function TextColorSwatch(rgn, key, apply, off, offTip)
+        CludesUI.BuildInlineSwatches(rgn, {
+            {
+                getValue = function()
+                    local c = SGet(key)
+                    if not c then
+                        return 1, 1, 1
+                    end
+                    return c.r, c.g, c.b
+                end,
+                setValue = function(r, g, b)
+                    SSetColor(key, r, g, b, nil, apply)
+                    SUpdatePreview()
+                end,
+            },
+        }, { disabled = off, disabledTooltip = offTip })
+    end
+    -- The offsets cog and colour of a button text (prefix count, keybind or
+    -- macro): Position (the anchor; Default stored false, not nil, as profile
+    -- sync copies only keys that exist; a new anchor seeds its offsets), then
+    -- X and Y offsets, greyed with the text.
+    local function TextCog(rgn, prefix, title, off, offTip)
+        local ANCHOR, OX, OY = prefix .. "Anchor", prefix .. "OffsetX", prefix .. "OffsetY"
+        CludesUI.BuildInlineCog(rgn, {
+            title = title,
+            disabled = off,
+            disabledTooltip = offTip,
+            rows = {
+                {
+                    type = "dropdown",
+                    label = "Position",
+                    values = TEXT_ANCHOR_LABELS,
+                    order = TEXT_ANCHOR_DROPDOWN_ORDER,
+                    get = function()
+                        return SVal(ANCHOR, "default")
+                    end,
+                    set = function(v)
+                        local anchor = v ~= "default" and v or nil
+                        SSeedTextOffsets(prefix, ANCHOR, OX, OY, anchor)
+                        SSet(ANCHOR, anchor or false, ApplyFonts)
+                        SUpdatePreview()
+                    end,
+                },
+                OffsetRow("X Offset", OX, ApplyFonts),
+                OffsetRow("Y Offset", OY, ApplyFonts),
+            },
+        })
+        TextColorSwatch(rgn, prefix .. "FontColor", ApplyFonts, off, offTip)
+    end
+
     -- Cooldown Numbers | Cooldown Text Size. Cooldown Numbers LIVE-toggles
     -- Blizzard's countdownForCooldowns CVar and is never stored in our DB;
     -- the CVar is written only on an actual user flip.
@@ -2596,38 +2671,8 @@ local function BuildBarAppearance(hostFrame, posY, context)
             disabled = TextOff.cooldown,
             disabledTooltip = "Cooldown Numbers",
             rows = {
-                {
-                    type = "slider",
-                    label = "X Offset",
-                    min = -150,
-                    max = 150,
-                    step = 1,
-                    get = function()
-                        return SVal("cooldownTextXOffset", 0)
-                    end,
-                    set = function(v)
-                        SSet("cooldownTextXOffset", v, function(k)
-                            ABAR:ApplyCooldownFontsForBar(k)
-                        end)
-                        SUpdatePreview()
-                    end,
-                },
-                {
-                    type = "slider",
-                    label = "Y Offset",
-                    min = -150,
-                    max = 150,
-                    step = 1,
-                    get = function()
-                        return SVal("cooldownTextYOffset", 0)
-                    end,
-                    set = function(v)
-                        SSet("cooldownTextYOffset", v, function(k)
-                            ABAR:ApplyCooldownFontsForBar(k)
-                        end)
-                        SUpdatePreview()
-                    end,
-                },
+                OffsetRow("X Offset", "cooldownTextXOffset", ApplyCooldownFonts),
+                OffsetRow("Y Offset", "cooldownTextYOffset", ApplyCooldownFonts),
                 {
                     type = "toggle",
                     label = "Fit Size to Button",
@@ -2644,23 +2689,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
             },
         })
 
-        CludesUI.BuildInlineSwatches(rgn, {
-            {
-                getValue = function()
-                    local c = SGet("cooldownTextColor")
-                    if not c then
-                        return 1, 1, 1
-                    end
-                    return c.r, c.g, c.b
-                end,
-                setValue = function(r, g, b)
-                    SSetColor("cooldownTextColor", r, g, b, nil, function(k)
-                        ABAR:ApplyCooldownFontsForBar(k)
-                    end)
-                    SUpdatePreview()
-                end,
-            },
-        }, { disabled = TextOff.cooldown, disabledTooltip = "Cooldown Numbers" })
+        TextColorSwatch(rgn, "cooldownTextColor", ApplyCooldownFonts, TextOff.cooldown, "Cooldown Numbers")
     end
 
     -- Charge Numbers | Charge Text Size. Charge Numbers: which counts this
@@ -2728,80 +2757,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
 
     do
         local rgn = chargesRow._rightRegion
-        CludesUI.BuildInlineCog(rgn, {
-            title = "Charges Text Offsets",
-            disabled = TextOff.charges,
-            disabledTooltip = "Charge Numbers",
-            rows = {
-                {
-                    type = "dropdown",
-                    label = "Position",
-                    values = TEXT_ANCHOR_LABELS,
-                    order = TEXT_ANCHOR_DROPDOWN_ORDER,
-                    get = function()
-                        return SVal("countAnchor", "default")
-                    end,
-                    set = function(v)
-                        local anchor = v ~= "default" and v or nil
-                        SSeedTextOffsets("count", "countAnchor", "countOffsetX", "countOffsetY", anchor)
-                        SSet("countAnchor", anchor or false, function(k)
-                            ABAR:ApplyFontsForBar(k)
-                        end)
-                        SUpdatePreview()
-                    end,
-                },
-                {
-                    type = "slider",
-                    label = "X Offset",
-                    min = -150,
-                    max = 150,
-                    step = 1,
-                    get = function()
-                        return SVal("countOffsetX", 0)
-                    end,
-                    set = function(v)
-                        SSet("countOffsetX", v, function(k)
-                            ABAR:ApplyFontsForBar(k)
-                        end)
-                        SUpdatePreview()
-                    end,
-                },
-                {
-                    type = "slider",
-                    label = "Y Offset",
-                    min = -150,
-                    max = 150,
-                    step = 1,
-                    get = function()
-                        return SVal("countOffsetY", 0)
-                    end,
-                    set = function(v)
-                        SSet("countOffsetY", v, function(k)
-                            ABAR:ApplyFontsForBar(k)
-                        end)
-                        SUpdatePreview()
-                    end,
-                },
-            },
-        })
-
-        CludesUI.BuildInlineSwatches(rgn, {
-            {
-                getValue = function()
-                    local c = SGet("countFontColor")
-                    if not c then
-                        return 1, 1, 1
-                    end
-                    return c.r, c.g, c.b
-                end,
-                setValue = function(r, g, b)
-                    SSetColor("countFontColor", r, g, b, nil, function(k)
-                        ABAR:ApplyFontsForBar(k)
-                    end)
-                    SUpdatePreview()
-                end,
-            },
-        }, { disabled = TextOff.charges, disabledTooltip = "Charge Numbers" })
+        TextCog(rgn, "count", "Charges Text Offsets", TextOff.charges, "Charge Numbers")
     end
 
     -- Keybind Text | Keybind Text Size
@@ -2858,87 +2814,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
 
     do
         local rgn = keybindRow._rightRegion
-        CludesUI.BuildInlineCog(rgn, {
-            title = "Keybind Text Offsets",
-            disabled = TextOff.keybind,
-            disabledTooltip = "Keybind Text",
-            rows = {
-                {
-                    type = "dropdown",
-                    label = "Position",
-                    values = TEXT_ANCHOR_LABELS,
-                    order = TEXT_ANCHOR_DROPDOWN_ORDER,
-                    get = function()
-                        return SVal("keybindAnchor", "default")
-                    end,
-                    set = function(v)
-                        local anchor = v ~= "default" and v or nil
-                        SSeedTextOffsets(
-                            "keybind",
-                            "keybindAnchor",
-                            "keybindOffsetX",
-                            "keybindOffsetY",
-                            anchor
-                        )
-                        -- Default is stored false, not nil: profile sync copies only keys that exist.
-                        SSet("keybindAnchor", anchor or false, function(k)
-                            ABAR:ApplyFontsForBar(k)
-                        end)
-                        SUpdatePreview()
-                    end,
-                },
-                {
-                    type = "slider",
-                    label = "X Offset",
-                    min = -150,
-                    max = 150,
-                    step = 1,
-                    get = function()
-                        return SVal("keybindOffsetX", 0)
-                    end,
-                    set = function(v)
-                        SSet("keybindOffsetX", v, function(k)
-                            ABAR:ApplyFontsForBar(k)
-                        end)
-                        SUpdatePreview()
-                    end,
-                },
-                {
-                    type = "slider",
-                    label = "Y Offset",
-                    min = -150,
-                    max = 150,
-                    step = 1,
-                    get = function()
-                        return SVal("keybindOffsetY", 0)
-                    end,
-                    set = function(v)
-                        SSet("keybindOffsetY", v, function(k)
-                            ABAR:ApplyFontsForBar(k)
-                        end)
-                        SUpdatePreview()
-                    end,
-                },
-            },
-        })
-
-        CludesUI.BuildInlineSwatches(rgn, {
-            {
-                getValue = function()
-                    local c = SGet("keybindFontColor")
-                    if not c then
-                        return 1, 1, 1
-                    end
-                    return c.r, c.g, c.b
-                end,
-                setValue = function(r, g, b)
-                    SSetColor("keybindFontColor", r, g, b, nil, function(k)
-                        ABAR:ApplyFontsForBar(k)
-                    end)
-                    SUpdatePreview()
-                end,
-            },
-        }, { disabled = TextOff.keybind, disabledTooltip = "Keybind Text" })
+        TextCog(rgn, "keybind", "Keybind Text Offsets", TextOff.keybind, "Keybind Text")
     end
 
     -- Macro Text | Macro Text Size
@@ -2995,80 +2871,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
 
     do
         local rgn = macroRow._rightRegion
-        CludesUI.BuildInlineCog(rgn, {
-            title = "Macro Text Offsets",
-            disabled = TextOff.macro,
-            disabledTooltip = "Macro Text",
-            rows = {
-                {
-                    type = "dropdown",
-                    label = "Position",
-                    values = TEXT_ANCHOR_LABELS,
-                    order = TEXT_ANCHOR_DROPDOWN_ORDER,
-                    get = function()
-                        return SVal("macroAnchor", "default")
-                    end,
-                    set = function(v)
-                        local anchor = v ~= "default" and v or nil
-                        SSeedTextOffsets("macro", "macroAnchor", "macroOffsetX", "macroOffsetY", anchor)
-                        SSet("macroAnchor", anchor or false, function(k)
-                            ABAR:ApplyFontsForBar(k)
-                        end)
-                        SUpdatePreview()
-                    end,
-                },
-                {
-                    type = "slider",
-                    label = "X Offset",
-                    min = -150,
-                    max = 150,
-                    step = 1,
-                    get = function()
-                        return SVal("macroOffsetX", 0)
-                    end,
-                    set = function(v)
-                        SSet("macroOffsetX", v, function(k)
-                            ABAR:ApplyFontsForBar(k)
-                        end)
-                        SUpdatePreview()
-                    end,
-                },
-                {
-                    type = "slider",
-                    label = "Y Offset",
-                    min = -150,
-                    max = 150,
-                    step = 1,
-                    get = function()
-                        return SVal("macroOffsetY", 0)
-                    end,
-                    set = function(v)
-                        SSet("macroOffsetY", v, function(k)
-                            ABAR:ApplyFontsForBar(k)
-                        end)
-                        SUpdatePreview()
-                    end,
-                },
-            },
-        })
-
-        CludesUI.BuildInlineSwatches(rgn, {
-            {
-                getValue = function()
-                    local c = SGet("macroFontColor")
-                    if not c then
-                        return 1, 1, 1
-                    end
-                    return c.r, c.g, c.b
-                end,
-                setValue = function(r, g, b)
-                    SSetColor("macroFontColor", r, g, b, nil, function(k)
-                        ABAR:ApplyFontsForBar(k)
-                    end)
-                    SUpdatePreview()
-                end,
-            },
-        }, { disabled = TextOff.macro, disabledTooltip = "Macro Text" })
+        TextCog(rgn, "macro", "Macro Text Offsets", TextOff.macro, "Macro Text")
     end
 
     _, hgt = W:Spacer(hostFrame, posY, 20)
