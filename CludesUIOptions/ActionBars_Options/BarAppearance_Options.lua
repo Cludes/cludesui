@@ -41,6 +41,48 @@ local function BuildBarAppearance(hostFrame, posY, context)
     local iconsSectionHeader, textSectionHeader
     local keybindRow, chargesRow
 
+    -- A sync icon on rgn for one group of settings: read() takes the selected
+    -- bar's values once, copy(bar, v, key) writes them into another bar and
+    -- re-applies it, same(bar, v) says whether a bar already matches. All
+    -- copies to every action bar, Multiple to the ticked ones, and the page
+    -- repaints after either; it reads synced while every bar matches.
+    local function BarSync(rgn, tooltip, read, copy, same)
+        local function CopyTo(keys)
+            local v = read()
+            for _, key in ipairs(keys) do
+                copy(ABAR.db.profile.bars[key], v, key)
+            end
+            CludesUI:RefreshPage()
+        end
+        CludesUI.BuildSyncIcon({
+            region = rgn,
+            tooltip = tooltip,
+            onClick = function()
+                CopyTo(GROUP_BAR_ORDER)
+            end,
+            isSynced = function()
+                local v = read()
+                for _, key in ipairs(GROUP_BAR_ORDER) do
+                    if not same(ABAR.db.profile.bars[key], v) then
+                        return false
+                    end
+                end
+                return true
+            end,
+            flashTargets = function()
+                return { rgn }
+            end,
+            multiApply = {
+                elementKeys = GROUP_BAR_ORDER,
+                elementLabels = SHORT_LABELS,
+                getCurrentKey = function()
+                    return SelectedKey()
+                end,
+                onApply = CopyTo,
+            },
+        })
+    end
+
     -- A row whose items or cog hold settings with labels of their own (a
     -- checklist, a dropdown with a settings cog) registers its search entry
     -- right before the row, as the index keeps the first entry of a label:
@@ -1021,47 +1063,15 @@ local function BuildBarAppearance(hostFrame, posY, context)
 
     do
         local rgn = classColorBorderRow._rightRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Icon Zoom to all Bars",
-            onClick = function()
-                local v = SB().iconZoom or ABAR.db.profile.iconZoom or 5.5
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    ABAR.db.profile.bars[key].iconZoom = v
-                    ABAR:ApplyBordersForBar(key)
-                    ABAR:ApplyShapesForBar(key)
-                end
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local v = SB().iconZoom or ABAR.db.profile.iconZoom or 5.5
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if (ABAR.db.profile.bars[key].iconZoom or ABAR.db.profile.iconZoom or 5.5) ~= v then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_BAR_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return SelectedKey()
-                end,
-                onApply = function(checkedKeys)
-                    local v = SB().iconZoom or ABAR.db.profile.iconZoom or 5.5
-                    for _, key in ipairs(checkedKeys) do
-                        ABAR.db.profile.bars[key].iconZoom = v
-                        ABAR:ApplyBordersForBar(key)
-                        ABAR:ApplyShapesForBar(key)
-                    end
-                    CludesUI:RefreshPage()
-                end,
-            },
-        })
+        BarSync(rgn, "Apply Icon Zoom to all Bars", function()
+            return SB().iconZoom or ABAR.db.profile.iconZoom or 5.5
+        end, function(bar, v, key)
+            bar.iconZoom = v
+            ABAR:ApplyBordersForBar(key)
+            ABAR:ApplyShapesForBar(key)
+        end, function(bar, v)
+            return (bar.iconZoom or ABAR.db.profile.iconZoom or 5.5) == v
+        end)
     end
 
     -- Icon Background | Blizzard Icon Background
@@ -2522,87 +2532,24 @@ local function BuildBarAppearance(hostFrame, posY, context)
         posY = posY - hgt
         do
             local rgn = behaviorRow._leftRegion
-            local function CopyTo(key, v)
-                ABAR.db.profile.bars[key].clickThrough = v
+            BarSync(rgn, "Apply Click Through to all Bars", function()
+                return SB().clickThrough or false
+            end, function(bar, v, key)
+                bar.clickThrough = v
                 ABAR:ApplyClickThroughForBar(key)
-            end
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Click Through to all Bars",
-                onClick = function()
-                    local v = SB().clickThrough or false
-                    for _, key in ipairs(GROUP_BAR_ORDER) do
-                        CopyTo(key, v)
-                    end
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local v = SB().clickThrough or false
-                    for _, key in ipairs(GROUP_BAR_ORDER) do
-                        if (ABAR.db.profile.bars[key].clickThrough or false) ~= v then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_BAR_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return SelectedKey()
-                    end,
-                    onApply = function(checkedKeys)
-                        local v = SB().clickThrough or false
-                        for _, key in ipairs(checkedKeys) do
-                            CopyTo(key, v)
-                        end
-                        CludesUI:RefreshPage()
-                    end,
-                },
-            })
+            end, function(bar, v)
+                return (bar.clickThrough or false) == v
+            end)
         end
         do
             local rgn = behaviorRow._rightRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Disable Tooltips to all Bars",
-                onClick = function()
-                    local v = SB().disableTooltips or false
-                    for _, key in ipairs(GROUP_BAR_ORDER) do
-                        ABAR.db.profile.bars[key].disableTooltips = v
-                    end
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local v = SB().disableTooltips or false
-                    for _, key in ipairs(GROUP_BAR_ORDER) do
-                        if (ABAR.db.profile.bars[key].disableTooltips or false) ~= v then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_BAR_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return SelectedKey()
-                    end,
-                    onApply = function(checkedKeys)
-                        local v = SB().disableTooltips or false
-                        for _, key in ipairs(checkedKeys) do
-                            ABAR.db.profile.bars[key].disableTooltips = v
-                        end
-                        CludesUI:RefreshPage()
-                    end,
-                },
-            })
+            BarSync(rgn, "Apply Disable Tooltips to all Bars", function()
+                return SB().disableTooltips or false
+            end, function(bar, v)
+                bar.disableTooltips = v
+            end, function(bar, v)
+                return (bar.disableTooltips or false) == v
+            end)
         end
 
         if showPaging then
@@ -3489,45 +3436,14 @@ local function BuildBarAppearance(hostFrame, posY, context)
     keybindRow = row
     do
         local rgn = row._leftRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Keybind Visibility to all Bars",
-            onClick = function()
-                local v = SB().hideKeybind
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    ABAR.db.profile.bars[key].hideKeybind = v
-                    ABAR:ApplyFontsForBar(key)
-                end
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local v = SB().hideKeybind or false
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if (ABAR.db.profile.bars[key].hideKeybind or false) ~= v then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_BAR_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return SelectedKey()
-                end,
-                onApply = function(checkedKeys)
-                    local v = SB().hideKeybind
-                    for _, key in ipairs(checkedKeys) do
-                        ABAR.db.profile.bars[key].hideKeybind = v
-                        ABAR:ApplyFontsForBar(key)
-                    end
-                    CludesUI:RefreshPage()
-                end,
-            },
-        })
+        BarSync(rgn, "Apply Keybind Visibility to all Bars", function()
+            return SB().hideKeybind
+        end, function(bar, v, key)
+            bar.hideKeybind = v
+            ABAR:ApplyFontsForBar(key)
+        end, function(bar, v)
+            return (bar.hideKeybind or false) == (v or false)
+        end)
     end
     do
         local rgn = keybindRow._rightRegion
@@ -3737,45 +3653,14 @@ local function BuildBarAppearance(hostFrame, posY, context)
     posY = posY - hgt
     do
         local rgn = macroRow._leftRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Macro Text Visibility to all Bars",
-            onClick = function()
-                local v = SB().hideMacroText
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    ABAR.db.profile.bars[key].hideMacroText = v
-                    ABAR:ApplyFontsForBar(key)
-                end
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local v = SB().hideMacroText or false
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if (ABAR.db.profile.bars[key].hideMacroText or false) ~= v then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_BAR_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return SelectedKey()
-                end,
-                onApply = function(checkedKeys)
-                    local v = SB().hideMacroText
-                    for _, key in ipairs(checkedKeys) do
-                        ABAR.db.profile.bars[key].hideMacroText = v
-                        ABAR:ApplyFontsForBar(key)
-                    end
-                    CludesUI:RefreshPage()
-                end,
-            },
-        })
+        BarSync(rgn, "Apply Macro Text Visibility to all Bars", function()
+            return SB().hideMacroText
+        end, function(bar, v, key)
+            bar.hideMacroText = v
+            ABAR:ApplyFontsForBar(key)
+        end, function(bar, v)
+            return (bar.hideMacroText or false) == (v or false)
+        end)
     end
     do
         local rgn = macroRow._rightRegion
