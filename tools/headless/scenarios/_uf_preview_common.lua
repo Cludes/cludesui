@@ -7,7 +7,7 @@
 -- built), then its Update run (snapshotted again), then the settings put
 -- back. The last rounds repeat a few variants with Blizzard Style forced on
 -- and with the unit frame handed to another source (the disabled overlay).
-return function(OUT, units)
+return function(OUT, units, stockOnly, eyesOnly)
     local CUI = rawget(_G, "CludesUI")
     CUI:SelectModule("CludesUIUnitFrames")
     CUI:SelectPage("Main Frames")
@@ -214,6 +214,112 @@ return function(OUT, units)
             pf:Hide()
         end
         host:Hide()
+    end
+    -- eyesOnly: every preview eye toggle on (heal absorb, max health, heal
+    -- prediction, power cost, combat icon, dispel overlay with its border
+    -- and icons, faction, raid marker, leader, elite), over the variants that
+    -- feed them, with the dispel overlay modes and custom combat icons cycled.
+    if eyesOnly then
+        local opt = env.optState
+        local eyeFlags = {
+            showHealAbsorbPreview = true, showCombatIndicatorPreview = true,
+            showDispelOverlayPreview = true, showMaxHealthPreview = true,
+        }
+        local modFlags = {
+            _ufShowHealPredPreview = true, _ufShowPowerCostPreview = true,
+            _ufPvEyes = { faction = true, raid = true, leader = true, elite = true, raidIndex = 3 },
+        }
+        local oldOpt, oldMod = Apply(opt, eyeFlags), Apply(mod, modFlags)
+        local DISPEL = { "full", "gradient", "gradient_reverse", "gradient_sharp", "left", "none", "full" }
+        local GROWTH = { "right", "left", "up", "down", "none", "right", "left" }
+        local picks = {}
+        for _, v in ipairs(variants) do
+            if v.name:find("^absorb") or v.name:find("^indicators") or v.name:find("^power ")
+                or v.name:find("^portrait") or v.name == "default" or v.name:find("^classpower") then
+                picks[#picks + 1] = v
+            end
+        end
+        for _, unit in ipairs(units) do
+            local s = prof[unit]
+            if s then
+                for pi, v in ipairs(picks) do
+                    local k = (pi % #DISPEL) + 1
+                    local old = Apply(s, v.set)
+                    local old2 = Apply(s, {
+                        combatIndicatorStyle = (pi % 3 == 0) and ("combat" .. (pi % 6)) or s.combatIndicatorStyle,
+                        maxHealthStyle = (pi % 2 == 0) and "maxHealthStripes" or s.maxHealthStyle,
+                        healPrediction = true, powerCostPrediction = true, factionIndicatorMode = "pvp",
+                        raidMarkerEnabled = true, eliteIndicatorEnabled = true,
+                    })
+                    local old3 = Apply(prof, {
+                        dispelOverlay = DISPEL[k], dispelOverlayOpacity = 70, dispelCustomBorder = (pi % 2 == 1),
+                        showDispelIcons = true, dispelIconGrowth = GROWTH[k], dispelIconSize = 14 + k,
+                        dispelIconPosition = ({ "left", "right", "center" })[(pi % 3) + 1],
+                        dispelIconOffsetX = 1, dispelIconOffsetY = -1,
+                    })
+                    Run("eyes " .. unit .. " " .. v.name, unit, (pi % 2 == 0) and "right" or "left")
+                    Restore(prof, old3)
+                    Restore(s, old2)
+                    Restore(s, old)
+                end
+            end
+        end
+        Restore(mod, oldMod)
+        Restore(opt, oldOpt)
+        return
+    end
+    -- stockOnly: the stock look rounds alone (Blizzard Style through the
+    -- module's own style latch, the Classic WoW UI kit and, on WoW Forever,
+    -- the Forever kit), over a picked set of variants.
+    if stockOnly then
+        local PICKS = {
+            "default", "text 1", "health a", "health b", "power above", "power detached_top", "power none",
+            "portrait attached 2d", "portrait detached 3d", "portrait none class", "cast left", "cast right",
+            "cast none", "cast off", "textbar top", "textbar detached_bottom", "classpower above", "absorb 2",
+            "absorb 5", "auras 1", "indicators 2", "power zero above",
+        }
+        local byName = {}
+        for _, v in ipairs(variants) do
+            byName[v.name] = v
+        end
+        local BS = CUI.BlizzStyle
+        local saved = {
+            get = BS.Get, active = BS.Active, forever = BS.Forever,
+            style = mod._ufStyle, fstyle = mod._ufForever, kit = mod.UF_BLIZZ,
+        }
+        local kits = { { "blizzard", "blizzard", false, saved.kit } }
+        if mod.UF_KITS and mod.UF_KITS.classic then
+            kits[#kits + 1] = { "classic", "classic", false, mod.UF_KITS.classic }
+        end
+        if CUI.IS_FOREVER == true and mod.UF_ForeverKit then
+            kits[#kits + 1] = { "forever", "blizzard", true, mod.UF_ForeverKit() }
+        end
+        for _, kit in ipairs(kits) do
+            local label, active, isForever, kitTable = kit[1], kit[2], kit[3], kit[4]
+            BS.Get = function(key) return key == "unitframes" or saved.get(key) end
+            BS.Active = function(key) if key == "unitframes" then return active end return saved.active(key) end
+            BS.Forever = function(key) if key == "unitframes" then return isForever end return saved.forever(key) end
+            mod._ufStyle, mod._ufForever, mod.UF_BLIZZ = active, isForever, kitTable
+            for _, unit in ipairs(units) do
+                local s = prof[unit]
+                if s then
+                    for pi, name in ipairs(PICKS) do
+                        local v = byName[name]
+                        if v then
+                            local side = (pi % 2 == 0) and "right" or "left"
+                            local old = Apply(s, v.set)
+                            local old2 = Apply(s, { portraitSide = side, blizzScale = (pi % 3 == 0) and 1.3 or 1 })
+                            Run(label .. " " .. unit .. " " .. name .. " " .. side, unit, side)
+                            Restore(s, old2)
+                            Restore(s, old)
+                        end
+                    end
+                end
+            end
+        end
+        BS.Get, BS.Active, BS.Forever = saved.get, saved.active, saved.forever
+        mod._ufStyle, mod._ufForever, mod.UF_BLIZZ = saved.style, saved.fstyle, saved.kit
+        return
     end
     for _, unit in ipairs(units) do
         local s = prof[unit]
