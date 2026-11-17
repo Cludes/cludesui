@@ -1232,10 +1232,12 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         end
     end
 
-    -- Class Power Pips (player only preview) -- matches nameplate pip style
+    -- Class power pips (player preview only), in the nameplate pip look:
+    -- three of the class's pips lit, the rest empty.
     local cpPipContainer, cpPips
     if unitKey == "player" then
-        local CLASS_POWER_MAP = {
+        -- Pip count per class; a class whose count depends on spec lists it by spec id.
+        local PIPS_BY_CLASS = {
             ROGUE = { 5 },
             DRUID = { [103] = 5, [104] = 5, [105] = 5 },
             PALADIN = { 5 },
@@ -1250,86 +1252,74 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             WARRIOR = { [72] = 4 },
         }
         local _, playerClass = UnitClass("player")
-        local cpInfo = CLASS_POWER_MAP[playerClass]
-        local cpMax = 0
-        if cpInfo then
-            if cpInfo[1] then
-                cpMax = cpInfo[1]
-            else
-                local specInfo = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization()
-                local specID = specInfo and C_SpecializationInfo.GetSpecializationInfo(specInfo)
-                cpMax = specID and cpInfo[specID] or 0
-            end
+        local counts = PIPS_BY_CLASS[playerClass]
+        local cpMax = counts and counts[1] or 0
+        if counts and not counts[1] then
+            local specIndex = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization()
+            local specID = specIndex and C_SpecializationInfo.GetSpecializationInfo(specIndex)
+            cpMax = specID and counts[specID] or 0
         end
-        -- Resolve fill color from global system
-        local cpColor = { 1.00, 0.84, 0.30 }
-        if CludesUI.GetResourceColor then
-            local rc = CludesUI.GetResourceColor(playerClass)
-            if rc then
-                cpColor = { rc.r, rc.g, rc.b }
-            end
-        elseif CludesUI.GetClassColor then
-            local cc = CludesUI.GetClassColor(playerClass)
-            if cc then
-                cpColor = { cc.r, cc.g, cc.b }
-            end
+        -- Lit colour: the suite's resource colour for the class (its class
+        -- colour where that lookup is missing), gold by default.
+        local litRGB = { 1.00, 0.84, 0.30 }
+        local colorOf = CludesUI.GetResourceColor or CludesUI.GetClassColor
+        local found = colorOf and colorOf(playerClass)
+        if found then
+            litRGB = { found.r, found.g, found.b }
         end
 
         if cpMax > 0 then
             cpPipContainer = CreateFrame("Frame", nil, popFrame)
             cpPipContainer:SetFrameLevel(popFrame:GetFrameLevel() + 4)
-            -- Background texture behind all pips
             local cpBgTex = cpPipContainer:CreateTexture(nil, "BACKGROUND")
             cpBgTex:SetAllPoints()
-            local initBg = prefs.classPowerBgColor or { r = 0.082, g = 0.082, b = 0.082, a = 1.0 }
-            cpBgTex:SetColorTexture(initBg.r, initBg.g, initBg.b, initBg.a)
+            local backing = prefs.classPowerBgColor or { r = 0.082, g = 0.082, b = 0.082, a = 1.0 }
+            cpBgTex:SetColorTexture(backing.r, backing.g, backing.b, backing.a)
             cpPipContainer._bgTex = cpBgTex
             cpPips = {}
-            for idx = 1, cpMax do
+            local lit = math.min(3, cpMax)
+            for pipIndex = 1, cpMax do
                 local pip = cpPipContainer:CreateTexture(nil, "OVERLAY", nil, 3)
                 pip:SetColorTexture(1, 1, 1, 1)
                 Pix.Size(pip, 8, 3)
-                cpPips[idx] = pip
-            end
-            -- Color pips: first 3 filled, rest empty (preview)
-            local previewFilled = math.min(3, cpMax)
-            for idx = 1, cpMax do
-                if idx <= previewFilled then
-                    cpPips[idx]:SetColorTexture(cpColor[1], cpColor[2], cpColor[3], 1)
+                if pipIndex <= lit then
+                    pip:SetColorTexture(litRGB[1], litRGB[2], litRGB[3], 1)
                 end
+                cpPips[pipIndex] = pip
             end
-            cpPipContainer:Hide() -- shown in Update() if style ~= "none"
+            -- Update shows the row unless the style is "none".
+            cpPipContainer:Hide()
 
-            -- 1px inset bottom border for "above" (frame border color); sublevel 7 so
-            -- it renders over the pip fills (sublevel 3).
+            -- A 1px line in the frame border colour along the bottom, for the
+            -- "above" position only; sublevel 7 keeps it over the pips (3).
             local cpBottomBdr = cpPipContainer:CreateTexture(nil, "OVERLAY", nil, 7)
             cpBottomBdr:SetHeight(1)
             Pix.Point(cpBottomBdr, "BOTTOMLEFT", cpPipContainer, "BOTTOMLEFT", 0, 0)
             Pix.Point(cpBottomBdr, "BOTTOMRIGHT", cpPipContainer, "BOTTOMRIGHT", 0, 0)
-            local initBdrC = prefs.borderColor or { r = 0, g = 0, b = 0 }
-            cpBottomBdr:SetColorTexture(initBdrC.r, initBdrC.g, initBdrC.b, 1)
-            cpBottomBdr:Hide() -- shown only when position is "above"
+            local edgeColor = prefs.borderColor or { r = 0, g = 0, b = 0 }
+            cpBottomBdr:SetColorTexture(edgeColor.r, edgeColor.g, edgeColor.b, 1)
+            cpBottomBdr:Hide()
             cpPipContainer._bottomBdr = cpBottomBdr
-        end -- cpMax > 0
+        end
     end
 
-    -- Border: plain frame child of barArea with 4 edge textures, PixelUtil sized.
-    -- Never BackdropTemplate -- its edgeSize clipping drops sides on small frames
-    -- and its internal snapping can't be disabled.
+    -- Border: a plain frame on barArea with four edge textures sized through
+    -- PixelUtil. Never BackdropTemplate: its edgeSize clipping drops sides on
+    -- small frames and its snapping cannot be turned off. It wraps the health
+    -- and power bars and an attached Text Bar.
     local bdrSize = prefs.borderSize or 1
     local bdrColor = prefs.borderColor or { r = 0, g = 0, b = 0 }
     local bdrTexKey = prefs.borderTexture or "solid"
     local border = CreateFrame("Frame", nil, popFrame)
     border:SetPoint("TOPLEFT", barArea, "TOPLEFT", 0, 0)
     border:SetPoint("TOPRIGHT", barArea, "TOPRIGHT", 0, 0)
-    local initBdrBtbPos = prefs.btbPosition or "bottom"
-    local initBdrBtbAtt = (initBdrBtbPos == "top" or initBdrBtbPos == "bottom")
+    local barPosNow = prefs.btbPosition or "bottom"
+    local wrapsTextBar = prefs.bottomTextBar and (barPosNow == "top" or barPosNow == "bottom")
     border:SetHeight(
-        prefs.healthHeight
-            + initPpExtra
-            + (prefs.bottomTextBar and initBdrBtbAtt and (prefs.bottomTextBarHeight or 16) or 0)
+        prefs.healthHeight + initPpExtra + (wrapsTextBar and (prefs.bottomTextBarHeight or 16) or 0)
     )
     border:SetFrameLevel(barArea:GetFrameLevel() + 5)
+    local edgePx = CludesUI.BorderPx(prefs.borderSizePx, bdrSize, bdrTexKey)
     CludesUI.ApplyBorderStyle(
         border,
         bdrSize,
@@ -1345,16 +1335,20 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         "unitframes",
         bdrSize,
         nil,
-        CludesUI.BorderPx(prefs.borderSizePx, bdrSize, bdrTexKey)
+        edgePx
     )
     if bdrSize == 0 and bdrTexKey == "solid" then
         border:Hide()
     end
 
-    -- Position an absorb StatusBar per edge mode (mirrors UpdateAbsorbBarReverseFill
-    -- in CUI_UnitFrames_Absorb.lua): overlay = fills missing-health from the
-    -- current-HP edge (backfills over filled health only for overshields);
-    -- right/left = pinned to that edge, fills toward center, ignoring reverse fill.
+    -- Places an absorb StatusBar for its edge mode, as the live
+    -- UpdateAbsorbBarReverseFill (CUI_UnitFrames_Absorb.lua) does. "right" /
+    -- "left" pin it to that end of the health bar, filling inward whatever
+    -- the reverse fill; the overlay reverse modes fill into the health fill
+    -- from its leading edge (the clip trims the rest, and the preview shield
+    -- never outgrows health, so Full looks the same); plain overlay fills the
+    -- missing health from the current-health edge. Vertical fill swaps the
+    -- axis but keeps the key names: "right" is the top, "left" the bottom.
     local function PositionPreviewAbsorb(bar, mode, isRev, isVert)
         if not bar then
             return
@@ -1362,75 +1356,29 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         bar:ClearAllPoints()
         bar:SetOrientation(isVert and "VERTICAL" or "HORIZONTAL")
         mod.ApplyFillRotation(bar)
+        local near, far, sideA, sideB = "LEFT", "RIGHT", "TOP", "BOTTOM"
         if isVert then
-            -- Vertical fill: same rules, axis swapped. Key names persist --
-            -- "right" = far edge of the fill axis (top), "left" = near (bottom).
-            if mode == "right" then
-                bar:SetReverseFill(true)
-                bar:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
-                bar:SetPoint("TOPRIGHT", health, "TOPRIGHT", 0, 0)
-            elseif mode == "left" then
-                bar:SetReverseFill(false)
-                bar:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 0, 0)
-                bar:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
-            elseif mode == "overlayReverse" or mode == "overlayReverseFull" then
-                -- Overlay Reverse: shield fills INTO the health fill from
-                -- its leading edge; the preview clip masks excess. The
-                -- preview shield never exceeds health, so Full matches.
-                if isRev then
-                    bar:SetReverseFill(false)
-                    bar:SetPoint("BOTTOMLEFT", healthFill, "BOTTOMLEFT", 0, 0)
-                    bar:SetPoint("BOTTOMRIGHT", healthFill, "BOTTOMRIGHT", 0, 0)
-                else
-                    bar:SetReverseFill(true)
-                    bar:SetPoint("TOPLEFT", healthFill, "TOPLEFT", 0, 0)
-                    bar:SetPoint("TOPRIGHT", healthFill, "TOPRIGHT", 0, 0)
-                end
-            elseif isRev then
-                -- Reverse: missing health is BELOW, shield grows down from the health fill's bottom.
-                bar:SetReverseFill(true)
-                bar:SetPoint("TOPLEFT", healthFill, "BOTTOMLEFT", 0, 0)
-                bar:SetPoint("TOPRIGHT", healthFill, "BOTTOMRIGHT", 0, 0)
-            else
-                -- Normal: missing health is ABOVE, shield grows up from the health fill's top.
-                bar:SetReverseFill(false)
-                bar:SetPoint("BOTTOMLEFT", healthFill, "TOPLEFT", 0, 0)
-                bar:SetPoint("BOTTOMRIGHT", healthFill, "TOPRIGHT", 0, 0)
-            end
-            return
+            near, far, sideA, sideB = "BOTTOM", "TOP", "LEFT", "RIGHT"
         end
-        if mode == "right" then
-            bar:SetReverseFill(true)
-            bar:SetPoint("TOPRIGHT", health, "TOPRIGHT", 0, 0)
-            bar:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
-        elseif mode == "left" then
-            bar:SetReverseFill(false)
-            bar:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
-            bar:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 0, 0)
+        -- own: the bar's end that is pinned; onto: the target end it pins to.
+        local target, own, onto = healthFill, nil, nil
+        if mode == "right" or mode == "left" then
+            target = health
+            own = (mode == "right") and far or near
+            onto = own
         elseif mode == "overlayReverse" or mode == "overlayReverseFull" then
-            -- Overlay Reverse: shield fills INTO the health fill from its
-            -- leading edge; the preview clip masks excess. The preview
-            -- shield never exceeds health, so Full matches.
-            if isRev then
-                bar:SetReverseFill(false)
-                bar:SetPoint("TOPLEFT", healthFill, "TOPLEFT", 0, 0)
-                bar:SetPoint("BOTTOMLEFT", healthFill, "BOTTOMLEFT", 0, 0)
-            else
-                bar:SetReverseFill(true)
-                bar:SetPoint("TOPRIGHT", healthFill, "TOPRIGHT", 0, 0)
-                bar:SetPoint("BOTTOMRIGHT", healthFill, "BOTTOMRIGHT", 0, 0)
-            end
-        elseif isRev then
-            -- Reverse: missing health is on the LEFT, shield grows left from the health fill's left.
-            bar:SetReverseFill(true)
-            bar:SetPoint("TOPRIGHT", healthFill, "TOPLEFT", 0, 0)
-            bar:SetPoint("BOTTOMRIGHT", healthFill, "BOTTOMLEFT", 0, 0)
+            own = isRev and near or far
+            onto = own
         else
-            -- Normal: missing health is on the RIGHT, shield grows right from the health fill's right.
-            bar:SetReverseFill(false)
-            bar:SetPoint("TOPLEFT", healthFill, "TOPRIGHT", 0, 0)
-            bar:SetPoint("BOTTOMLEFT", healthFill, "BOTTOMRIGHT", 0, 0)
+            own = isRev and far or near
+            onto = isRev and near or far
         end
+        bar:SetReverseFill(own == far)
+        local function Corner(axisEnd, crossSide)
+            return isVert and (axisEnd .. crossSide) or (crossSide .. axisEnd)
+        end
+        bar:SetPoint(Corner(own, sideA), target, Corner(onto, sideA), 0, 0)
+        bar:SetPoint(Corner(own, sideB), target, Corner(onto, sideB), 0, 0)
     end
 
     -- Absorb bars (style-aware preview for player, target, focus):
