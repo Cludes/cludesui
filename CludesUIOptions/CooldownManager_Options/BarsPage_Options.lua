@@ -4798,6 +4798,38 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             local fallback = DB()
             return (runtime and runtime.cdmBars) or (fallback and fallback.cdmBars)
         end
+        -- A rotation setting read with its default, and written (when the store
+        -- exists) with the highlights redrawn either way.
+        local function RotGet(key, default)
+            local c = RotationBars()
+            return (c and c[key]) or default
+        end
+        local function RotRedraw()
+            if mod.UpdateRotationHighlights then
+                mod.UpdateRotationHighlights()
+            end
+        end
+        local function RotSet(key, v)
+            local c = RotationBars()
+            if c then
+                c[key] = v
+            end
+            RotRedraw()
+        end
+        local function RotCustomRGB()
+            return RotGet("rotationAssistColorR", 1),
+                RotGet("rotationAssistColorG", 0),
+                RotGet("rotationAssistColorB", 0)
+        end
+        local function RotSetCustomRGB(r, g, b)
+            local c = RotationBars()
+            if c then
+                c.rotationAssistColorR = r
+                c.rotationAssistColorG = g
+                c.rotationAssistColorB = b
+            end
+            RotRedraw()
+        end
         -- Which of the Thickness / Outset rows the current style reads (the renderer
         -- uses thickness for Solid Border and Pixel Glow, outset for every style but
         -- Blizzard Default): 0 = neither, 1 = outset only, 3 = both. The rows below
@@ -4819,45 +4851,35 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         -- Style | Color and Thickness | Outset: built only while the CDM highlight
         -- can show (Show Rotation Helper on, Blizzard's Assisted Highlight on).
         if not mod._CDM_RotationHelperOff() then
+            local ROT_STYLE_ORDER =
+                { "blizzard", "solid", "pixel", "shape", "button", "autocast", "gcd", "modern", "classic" }
+            local ROT_STYLE_NAMES = {
+                blizzard = "Blizzard Default",
+                solid = "Solid Border",
+                pixel = "Pixel Glow",
+                shape = "Shape Glow",
+                button = "Action Button Glow",
+                autocast = "Auto-Cast Shine",
+                gcd = "GCD",
+                modern = "Modern WoW Glow",
+                classic = "Classic WoW Glow",
+            }
             local rotStyleRow
             rotStyleRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "dropdown",
                 text = "Rotation Assist Style",
-                values = {
-                    blizzard = "Blizzard Default",
-                    solid = "Solid Border",
-                    pixel = "Pixel Glow",
-                    shape = "Shape Glow",
-                    button = "Action Button Glow",
-                    autocast = "Auto-Cast Shine",
-                    gcd = "GCD",
-                    modern = "Modern WoW Glow",
-                    classic = "Classic WoW Glow",
-                },
-                order = {
-                    "blizzard",
-                    "solid",
-                    "pixel",
-                    "shape",
-                    "button",
-                    "autocast",
-                    "gcd",
-                    "modern",
-                    "classic",
-                },
+                values = ROT_STYLE_NAMES,
+                order = ROT_STYLE_ORDER,
                 tooltip = "Choose the profile-wide border or glow used for Blizzard's Assisted Combat suggestion.",
                 getValue = function()
-                    local c = RotationBars()
-                    return (c and c.rotationAssistStyle) or "blizzard"
+                    return RotGet("rotationAssistStyle", "blizzard")
                 end,
                 setValue = function(v)
                     local c = RotationBars()
                     if c then
                         local before = RotRowsKey()
                         c.rotationAssistStyle = v
-                        if mod.UpdateRotationHighlights then
-                            mod.UpdateRotationHighlights()
-                        end
+                        RotRedraw()
                         -- Full rebuild only when the Thickness / Outset row set changes;
                         -- the in-place refresh otherwise.
                         CludesUI:RefreshPage(RotRowsKey() ~= before)
@@ -4880,8 +4902,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     local colorSwatch, defaultSwatch, classSwatch =
                         CludesUI.BuildTrioColorSwatch(colorRgn, rotStyleRow:GetFrameLevel() + 3, {
                             getMode = function()
-                                local c = RotationBars()
-                                return (c and c.rotationAssistColorMode) or "default"
+                                return RotGet("rotationAssistColorMode", "default")
                             end,
                             setMode = function(mode)
                                 local c = RotationBars()
@@ -4892,28 +4913,11 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 -- before the write (as the widget factory does).
                                 local snap = CludesUI._SOAttribution(colorRgn)
                                 c.rotationAssistColorMode = mode
-                                if mod.UpdateRotationHighlights then
-                                    mod.UpdateRotationHighlights()
-                                end
+                                RotRedraw()
                                 CludesUI._NotifySettingWrite(colorRgn, snap)
                             end,
-                            getCustomRGB = function()
-                                local c = RotationBars()
-                                return (c and c.rotationAssistColorR) or 1,
-                                    (c and c.rotationAssistColorG) or 0,
-                                    (c and c.rotationAssistColorB) or 0
-                            end,
-                            setCustomRGB = function(r, g, b)
-                                local c = RotationBars()
-                                if c then
-                                    c.rotationAssistColorR = r
-                                    c.rotationAssistColorG = g
-                                    c.rotationAssistColorB = b
-                                end
-                                if mod.UpdateRotationHighlights then
-                                    mod.UpdateRotationHighlights()
-                                end
-                            end,
+                            getCustomRGB = RotCustomRGB,
+                            setCustomRGB = RotSetCustomRGB,
                             hasClassColor = true,
                             onChange = function()
                                 CludesUI:RefreshPage()
@@ -4943,40 +4947,20 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 values = { default = "Default", custom = "Custom", class = "Class Color" },
                                 order = { "default", "custom", "class" },
                                 getValue = function()
-                                    local c = RotationBars()
-                                    return (c and c.rotationAssistColorMode) or "default"
+                                    return RotGet("rotationAssistColorMode", "default")
                                 end,
                                 setValue = function(mode)
-                                    local c = RotationBars()
-                                    if c then
-                                        c.rotationAssistColorMode = mode
-                                    end
-                                    if mod.UpdateRotationHighlights then
-                                        mod.UpdateRotationHighlights()
-                                    end
+                                    RotSet("rotationAssistColorMode", mode)
                                 end,
                             },
                             {
                                 type = "colorpicker",
                                 text = "Rotation Assist Custom Color",
                                 getValue = function()
-                                    local c = RotationBars()
-                                    return (c and c.rotationAssistColorR) or 1,
-                                        (c and c.rotationAssistColorG) or 0,
-                                        (c and c.rotationAssistColorB) or 0,
-                                        1
+                                    local r, g, b = RotCustomRGB()
+                                    return r, g, b, 1
                                 end,
-                                setValue = function(r, g, b)
-                                    local c = RotationBars()
-                                    if c then
-                                        c.rotationAssistColorR = r
-                                        c.rotationAssistColorG = g
-                                        c.rotationAssistColorB = b
-                                    end
-                                    if mod.UpdateRotationHighlights then
-                                        mod.UpdateRotationHighlights()
-                                    end
-                                end,
+                                setValue = RotSetCustomRGB,
                             },
                         },
                     }
@@ -4996,17 +4980,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     trackWidth = 120,
                     tooltip = "Thickness in physical pixels for Solid Border and Pixel Glow.",
                     getValue = function()
-                        local c = RotationBars()
-                        return (c and c.rotationAssistThickness) or 3
+                        return RotGet("rotationAssistThickness", 3)
                     end,
                     setValue = function(v)
-                        local c = RotationBars()
-                        if c then
-                            c.rotationAssistThickness = v
-                        end
-                        if mod.UpdateRotationHighlights then
-                            mod.UpdateRotationHighlights()
-                        end
+                        RotSet("rotationAssistThickness", v)
                     end,
                 }
                 local outsetCfg = {
@@ -5018,17 +4995,10 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     trackWidth = 120,
                     tooltip = "How many pixels the custom effect extends beyond the icon.",
                     getValue = function()
-                        local c = RotationBars()
-                        return (c and c.rotationAssistOutset) or 1
+                        return RotGet("rotationAssistOutset", 1)
                     end,
                     setValue = function(v)
-                        local c = RotationBars()
-                        if c then
-                            c.rotationAssistOutset = v
-                        end
-                        if mod.UpdateRotationHighlights then
-                            mod.UpdateRotationHighlights()
-                        end
+                        RotSet("rotationAssistOutset", v)
                     end,
                 }
                 if rotRows >= 2 then
