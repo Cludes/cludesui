@@ -1392,6 +1392,61 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
     -- while its Heal Absorb Style eye is on, which hides the shield.
     local absorbBar, healAbsorbBar, absorbTopBar, healAbsorbTopBar
     local WHITE_TEX = "Interface\\Buttons\\WHITE8X8"
+    local STRIPED_TEX = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped3.tga"
+    -- Paints an absorb StatusBar: texture from the style (SharedMedia names
+    -- go through the bar texture lookup), tiled where the style tiles, at the
+    -- given draw sublevel and colour, placed for its edge mode. Shared with
+    -- pf:Update (reached through pf: Update is at the upvalue cap).
+    local function PaintAbsorb(bar, s, style, fallbackTex, sublevel, r, g, b, a, edgeMode)
+        bar:SetStatusBarTexture(mod.ResolveAbsorbStyleTex(style, fallbackTex))
+        local fill = bar:GetStatusBarTexture()
+        if fill then
+            fill:SetDrawLayer("ARTWORK", sublevel)
+            local tiled = (mod.ABSORB_TILED_STYLES[style] == true)
+            fill:SetHorizTile(tiled)
+            fill:SetVertTile(tiled)
+        end
+        bar:SetStatusBarColor(r, g, b, a)
+        PositionPreviewAbsorb(bar, edgeMode or "overlay", s.healthReverseFill, s.healthVerticalFill)
+    end
+    -- The shield absorb's look. Its opacity follows the live GetAbsorbOpacity
+    -- (CUI_UnitFrames_Absorb.lua): the set opacity, else the style's own.
+    local function PaintShield(bar, s)
+        local style = s.showPlayerAbsorb
+        local STYLE_ALPHA = {
+            striped = 0.8,
+            stripedReversed = 0.8,
+            clean = (s.absorbCleanAlpha or 30) / 100,
+            blizzard = 0.8,
+        }
+        local a = s.absorbOpacity and (s.absorbOpacity / 100) or STYLE_ALPHA[style] or 0.8
+        local c = s.absorbColor or { r = 1, g = 1, b = 1 }
+        PaintAbsorb(bar, s, style, STRIPED_TEX, 1, c.r, c.g, c.b, a, s.absorbEdgeMode)
+        return style
+    end
+    -- The heal absorb's look: red by default; the outlined stripe styles
+    -- carry their own colour, so those draw untinted.
+    local function PaintHealAbsorb(bar, s, style)
+        local c = s.healAbsorbColor or { r = 0.8, g = 0.15, b = 0.15 }
+        if style == "largeOutlinedStripes" or style == "largeOutlinedStripesR" then
+            c = { r = 1, g = 1, b = 1 }
+        end
+        local a = (s.healAbsorbOpacity or 65) / 100
+        PaintAbsorb(
+            bar,
+            s,
+            style,
+            WHITE_TEX,
+            2,
+            c.r or 0.8,
+            c.g or 0.15,
+            c.b or 0.15,
+            a,
+            s.healAbsorbEdgeMode
+        )
+    end
+    popFrame._paintShield = PaintShield
+    popFrame._paintHealAbsorb = PaintHealAbsorb
     if unitKey == "player" or unitKey == "target" or unitKey == "focus" then
         -- The fills hang off the health fill's current-health edge at full
         -- frame width, so a high preview fill would run past the bar; the
@@ -1401,77 +1456,22 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         absClip:SetFrameLevel(health:GetFrameLevel() + 1)
         absClip:SetClipsChildren(true)
 
-        -- One absorb StatusBar: texture from the style (SharedMedia names go
-        -- through the bar texture lookup), tiled where the style tiles, at
-        -- the given draw sublevel, colour and edge mode.
-        local function MakeAbsorbBar(style, fallbackTex, sublevel, r, g, b, a, edgeMode)
-            local bar = CreateFrame("StatusBar", nil, absClip)
-            bar:SetStatusBarTexture(mod.ResolveAbsorbStyleTex(style, fallbackTex))
-            local fill = bar:GetStatusBarTexture()
-            if fill then
-                fill:SetDrawLayer("ARTWORK", sublevel)
-                local tiled = (mod.ABSORB_TILED_STYLES[style] == true)
-                fill:SetHorizTile(tiled)
-                fill:SetVertTile(tiled)
-            end
-            bar:SetStatusBarColor(r, g, b, a)
-            PositionPreviewAbsorb(
-                bar,
-                edgeMode or "overlay",
-                prefs.healthReverseFill,
-                prefs.healthVerticalFill
-            )
+        local function SizeAbsorbBar(bar)
             Pix.Width(bar, frameW)
             Pix.Height(bar, healthH)
             bar:SetMinMaxValues(0, 1)
             bar:SetValue(0.14)
             bar:SetFrameLevel(health:GetFrameLevel() + 1)
-            return bar
         end
-
-        -- Shield absorb. Its opacity follows the live GetAbsorbOpacity
-        -- (CUI_UnitFrames_Absorb.lua): the set opacity, else the style's own.
-        local absStyle = prefs.showPlayerAbsorb
-        local STYLE_ALPHA = {
-            striped = 0.8,
-            stripedReversed = 0.8,
-            clean = (prefs.absorbCleanAlpha or 30) / 100,
-            blizzard = 0.8,
-        }
-        local shieldA = prefs.absorbOpacity and (prefs.absorbOpacity / 100) or STYLE_ALPHA[absStyle] or 0.8
-        local shieldC = prefs.absorbColor or { r = 1, g = 1, b = 1 }
-        local STRIPED_TEX = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped3.tga"
-        absorbBar = MakeAbsorbBar(
-            absStyle,
-            STRIPED_TEX,
-            1,
-            shieldC.r,
-            shieldC.g,
-            shieldC.b,
-            shieldA,
-            prefs.absorbEdgeMode
-        )
+        absorbBar = CreateFrame("StatusBar", nil, absClip)
+        local absStyle = PaintShield(absorbBar, prefs)
+        SizeAbsorbBar(absorbBar)
         if not absStyle or absStyle == "none" then
             absorbBar:Hide()
         end
-
-        -- Heal absorb: red by default; the outlined stripe styles carry their
-        -- own colour, so those draw untinted.
-        local healStyle = prefs.healAbsorbStyle or "clean"
-        local healC = prefs.healAbsorbColor or { r = 0.8, g = 0.15, b = 0.15 }
-        if healStyle == "largeOutlinedStripes" or healStyle == "largeOutlinedStripesR" then
-            healC = { r = 1, g = 1, b = 1 }
-        end
-        healAbsorbBar = MakeAbsorbBar(
-            healStyle,
-            WHITE_TEX,
-            2,
-            healC.r or 0.8,
-            healC.g or 0.15,
-            healC.b or 0.15,
-            (prefs.healAbsorbOpacity or 65) / 100,
-            prefs.healAbsorbEdgeMode
-        )
+        healAbsorbBar = CreateFrame("StatusBar", nil, absClip)
+        PaintHealAbsorb(healAbsorbBar, prefs, prefs.healAbsorbStyle or "clean")
+        SizeAbsorbBar(healAbsorbBar)
         healAbsorbBar:Hide()
         -- A black backing (Heal Absorb Background Opacity) one sublevel under
         -- the heal absorb fill, following its rect.
@@ -3396,40 +3396,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         if absorbBar then
             local absS = s.showPlayerAbsorb
             if (not _healWillShow) and absS and absS ~= "none" then
-                local _paTex = {
-                    striped = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped3.tga",
-                    stripedReversed = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped-5-reversed.png",
-                    clean = "Interface\\Buttons\\WHITE8X8",
-                    blizzard = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\blizzard.tga",
-                    largeOutlinedStripes = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\large-habsorb-left.png",
-                    largeOutlinedStripesR = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\large-habsorb-right.png",
-                    largeStripes = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\large-absorb-left.png",
-                    largeStripesR = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\large-absorb-right.png",
-                }
-                local _paAlpha = {
-                    striped = 0.8,
-                    stripedReversed = 0.8,
-                    clean = (s.absorbCleanAlpha or 30) / 100,
-                    blizzard = 0.8,
-                }
-                -- Effective opacity/color: mirrors GetAbsorbOpacity in CUI_UnitFrames_Absorb.lua
-                local _paA = s.absorbOpacity and (s.absorbOpacity / 100) or _paAlpha[absS] or 0.8
-                local _paC = s.absorbColor or { r = 1, g = 1, b = 1 }
-                absorbBar:SetStatusBarTexture(mod.ResolveAbsorbStyleTex(absS, _paTex.striped))
-                local _paFill = absorbBar:GetStatusBarTexture()
-                if _paFill then
-                    _paFill:SetDrawLayer("ARTWORK", 1)
-                    local _paTiled = (mod.ABSORB_TILED_STYLES[absS] == true)
-                    _paFill:SetHorizTile(_paTiled)
-                    _paFill:SetVertTile(_paTiled)
-                end
-                absorbBar:SetStatusBarColor(_paC.r, _paC.g, _paC.b, _paA)
-                PositionPreviewAbsorb(
-                    absorbBar,
-                    s.absorbEdgeMode or "overlay",
-                    s.healthReverseFill,
-                    s.healthVerticalFill
-                )
+                popFrame._paintShield(absorbBar, s)
                 absorbBar:SetWidth(fw)
                 absorbBar:SetHeight(hh)
                 absorbBar:Show()
@@ -3473,28 +3440,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         if healAbsorbBar then
             local haS = s.healAbsorbStyle or "clean"
             if _healPrev and haS ~= "none" then
-                local _haA = (s.healAbsorbOpacity or 65) / 100
-                local _haC = s.healAbsorbColor or { r = 0.8, g = 0.15, b = 0.15 }
-                if haS == "largeOutlinedStripes" or haS == "largeOutlinedStripesR" then
-                    _haC = { r = 1, g = 1, b = 1 }
-                end
-                healAbsorbBar:SetStatusBarTexture(
-                    mod.ResolveAbsorbStyleTex(haS, "Interface\\Buttons\\WHITE8X8")
-                )
-                local _haFill = healAbsorbBar:GetStatusBarTexture()
-                if _haFill then
-                    _haFill:SetDrawLayer("ARTWORK", 2)
-                    local _haTiled = (mod.ABSORB_TILED_STYLES[haS] == true)
-                    _haFill:SetHorizTile(_haTiled)
-                    _haFill:SetVertTile(_haTiled)
-                end
-                healAbsorbBar:SetStatusBarColor(_haC.r or 0.8, _haC.g or 0.15, _haC.b or 0.15, _haA)
-                PositionPreviewAbsorb(
-                    healAbsorbBar,
-                    s.healAbsorbEdgeMode or "overlay",
-                    s.healthReverseFill,
-                    s.healthVerticalFill
-                )
+                popFrame._paintHealAbsorb(healAbsorbBar, s, haS)
                 healAbsorbBar:SetWidth(fw)
                 healAbsorbBar:SetHeight(hh)
                 healAbsorbBar:Show()
