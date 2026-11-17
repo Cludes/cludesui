@@ -315,3 +315,68 @@ if fkIdx then
         end
     end
 end
+
+-- The bar menu's reorder grips (the custom bars added above): the first
+-- custom row dragged below the last, then the last dragged above the first,
+-- and a press without movement (no drag), the saved menu order written out
+-- after each. The fake client puts every frame's top at 500.
+do
+    local cursorY, down = 0, false
+    GetCursorPosition = function() return 0, cursorY end
+    IsMouseButtonDown = function() return down end
+    local function Order()
+        local p = env.DB and env.DB()
+        local o = p and p.cdmBars and p.cdmBars.customBarMenuOrder
+        OUT:write("   menu order " .. (o and table.concat(o, ",") or "nil") .. "\n")
+    end
+    local function OpenMenu()
+        Rebuild(1)
+        local hdr = CUI._contentHeader or CUI._headerFrame
+        local btn = Find(hdr, function(f)
+            return f["\0kind"] == "Button" and f:IsVisible() and math.floor((f["\0w"] or 0) + 0.5) == 350
+                and math.floor((f["\0h"] or 0) + 0.5) == 34 and f["\0scripts"].OnClick ~= nil
+        end)[1]
+        if not btn then return nil end
+        local before = ShownTops()
+        Click(btn, "menu open")
+        for _, host in ipairs(Hosts()) do
+            for _, c in ipairs({ host:GetChildren() }) do
+                if c:IsShown() and not before[c] then return c end
+            end
+        end
+    end
+    local function Grips(menu)
+        return Find(menu, function(f)
+            if f["\0kind"] ~= "Button" or not f:IsVisible() or not f["\0scripts"].OnMouseDown then return false end
+            for _, r in ipairs(rawget(f, "\0regions") or {}) do
+                local v = rawget(r, "\0v")
+                if v and v.Text == "=" then return true end
+            end
+            return false
+        end)
+    end
+    local function Drag(label, which, fromY, toY)
+        local menu = OpenMenu()
+        local grips = menu and Grips(menu) or {}
+        OUT:write("== grip " .. label .. " grips " .. #grips .. "\n")
+        local g = which == "last" and grips[#grips] or grips[1]
+        if not g then return end
+        cursorY, down = fromY, true
+        pcall(g["\0scripts"].OnMouseDown, g, "LeftButton")
+        cursorY = toY
+        HARNESS_TICK(0.02, 2)
+        SNAP("grip " .. label .. " mid", menu)
+        down = false
+        pcall(g["\0scripts"].OnMouseUp, g, "LeftButton")
+        Order()
+        if menu:IsShown() then
+            SNAP("grip " .. label .. " after", menu)
+            menu:Hide()
+        end
+    end
+    Order()
+    Drag("first to end", "first", 400, 0)
+    Drag("last to top", "last", 400, 1000)
+    Drag("no move", "first", 400, 401)
+    GetCursorPosition = function() return 0, 0 end
+end
