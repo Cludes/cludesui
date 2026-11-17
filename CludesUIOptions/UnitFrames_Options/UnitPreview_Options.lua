@@ -2944,85 +2944,71 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             end
         end
 
-        -- Power percent text in preview
+        -- Power text, at its Text Position in its format, as the live bar shows it.
         if ppPreviewFS then
             local ppPos = s.powerPercentText or "none"
             local ppFmt = CludesUI.PowerTextFormat(s.powerTextFormat or "perpp")
-            if ppPos ~= "none" and ppFmt ~= "none" and power then
-                local ppSz = s.powerPercentSize or 9
-                local ppOx = s.powerPercentX or 0
-                local ppOy = s.powerPercentY or 0
-                SetPVFont(ppPreviewFS, PREVIEW_FONT, ppSz)
+            if ppPos == "none" or ppFmt == "none" or not power then
+                ppPreviewFS:Hide()
+            else
+                SetPVFont(ppPreviewFS, PREVIEW_FONT, s.powerPercentSize or 9)
                 ppPreviewFS:ClearAllPoints()
-                if ph > 0 then
-                    if ppPos == "left" then
-                        ppPreviewFS:SetJustifyH("LEFT")
-                        Pix.Point(ppPreviewFS, "LEFT", power, "LEFT", 2 + ppOx, ppOy)
-                    elseif ppPos == "right" then
-                        ppPreviewFS:SetJustifyH("RIGHT")
-                        Pix.Point(ppPreviewFS, "RIGHT", power, "RIGHT", -2 + ppOx, ppOy)
-                    else
-                        ppPreviewFS:SetJustifyH("CENTER")
-                        Pix.Point(ppPreviewFS, "CENTER", power, "CENTER", ppOx, ppOy)
-                    end
-                else
-                    -- Power Bar Height 0: the zero-height frame's rect won't resolve,
-                    -- so anchor the text to the HEALTH bar in the power row instead
-                    -- (mirrors the real frame).
+                local justify, inset, lane = "CENTER", 0, ""
+                if ppPos == "left" then
+                    justify, inset, lane = "LEFT", 2, "LEFT"
+                elseif ppPos == "right" then
+                    justify, inset, lane = "RIGHT", -2, "RIGHT"
+                end
+                ppPreviewFS:SetJustifyH(justify)
+                -- At Power Bar Height 0 the bar's rect never resolves, so the
+                -- text meets the health bar's edge in the power row instead,
+                -- as on the live frame.
+                local target, ownEdge, targetEdge = power, "", ""
+                if ph <= 0 then
                     local above = (pvPpPos == "above" or pvPpPos == "detached_top")
-                    local hEdge = above and "TOP" or "BOTTOM" -- health edge to meet
-                    local fEdge = above and "BOTTOM" or "TOP" -- text edge that meets it
-                    if ppPos == "left" then
-                        ppPreviewFS:SetJustifyH("LEFT")
-                        Pix.Point(ppPreviewFS, fEdge .. "LEFT", health, hEdge .. "LEFT", 2 + ppOx, ppOy)
-                    elseif ppPos == "right" then
-                        ppPreviewFS:SetJustifyH("RIGHT")
-                        Pix.Point(ppPreviewFS, fEdge .. "RIGHT", health, hEdge .. "RIGHT", -2 + ppOx, ppOy)
-                    else
-                        ppPreviewFS:SetJustifyH("CENTER")
-                        Pix.Point(ppPreviewFS, fEdge, health, hEdge, ppOx, ppOy)
-                    end
+                    target = health
+                    ownEdge, targetEdge = above and "BOTTOM" or "TOP", above and "TOP" or "BOTTOM"
                 end
-                local ppPctVal = optionState._previewPowerPct or 0.85
-                local ppPctRaw = math.floor(ppPctVal * 100)
-                local ppSuffix = (s.powerShowPercent == false) and "" or "%"
-                local ppCurFake = mod.AbbreviateNumbers(18200)
-                local ppTxt
+                local ownPoint = ownEdge .. lane
+                local targetPoint = targetEdge .. lane
+                Pix.Point(
+                    ppPreviewFS,
+                    ownPoint ~= "" and ownPoint or "CENTER",
+                    target,
+                    targetPoint ~= "" and targetPoint or "CENTER",
+                    inset + (s.powerPercentX or 0),
+                    s.powerPercentY or 0
+                )
+                local pctPart = math.floor((optionState._previewPowerPct or 0.85) * 100)
+                    .. ((s.powerShowPercent == false) and "" or "%")
+                local curPart = mod.AbbreviateNumbers(18200)
+                local shown
                 if ppFmt == "custom" then
-                    ppTxt = PreviewTextForContent("custom", s, "powerText")
-                elseif ppFmt == "smart" then
-                    ppTxt = ppPctRaw .. ppSuffix -- preview always shows percent for smart
+                    shown = PreviewTextForContent("custom", s, "powerText")
                 elseif ppFmt == "curpp" then
-                    ppTxt = ppCurFake
+                    shown = curPart
                 elseif ppFmt == "curmaxpp" then
-                    ppTxt = ppCurFake .. " / " .. mod.AbbreviateNumbers(22000)
+                    shown = curPart .. " / " .. mod.AbbreviateNumbers(22000)
                 elseif ppFmt == "both" then
-                    ppTxt = ppCurFake .. " | " .. ppPctRaw .. ppSuffix
-                else -- "perpp"
-                    ppTxt = ppPctRaw .. ppSuffix
-                end
-                ppPreviewFS:SetText(ppTxt)
-                if s.powerPercentTextPowerColor then
-                    -- CUI global power color (player's current power) as the swatch
-                    -- and real frame use, not hardcoded blue.
-                    local _, pToken = UnitPowerType("player")
-                    local details = CludesUI.GetPowerColor(pToken or "MANA")
-                    if details then
-                        ppPreviewFS:SetTextColor(details.r, details.g, details.b)
-                    else
-                        ppPreviewFS:SetTextColor(1, 1, 1)
-                    end
+                    shown = curPart .. " | " .. pctPart
                 else
-                    local ptc = s.powerTextColor
-                    if ptc then
-                        ppPreviewFS:SetTextColor(ptc.r, ptc.g, ptc.b)
-                    else
-                        ppPreviewFS:SetTextColor(1, 1, 1)
-                    end
+                    -- Percent, and Smart (the preview always shows its percent).
+                    shown = pctPart
+                end
+                ppPreviewFS:SetText(shown)
+                -- Power Color: the player's current power colour, as the swatch
+                -- and the live frame use; else the text colour, white by default.
+                local tint = s.powerTextColor
+                if s.powerPercentTextPowerColor then
+                    local _, kind = UnitPowerType("player")
+                    tint = CludesUI.GetPowerColor(kind or "MANA")
+                end
+                if tint then
+                    ppPreviewFS:SetTextColor(tint.r, tint.g, tint.b)
+                else
+                    ppPreviewFS:SetTextColor(1, 1, 1)
                 end
                 ppPreviewFS:Show()
-            else
-                ppPreviewFS:Hide()
             end
         end
 
@@ -3060,49 +3046,48 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             end
         end
 
-        -- Bottom Text Bar update (before castbar so castbar can anchor to it)
+        -- Text Bar, placed before the cast bar (which may hang off it). An
+        -- attached bar centres under the bars and an attached portrait.
         local cbOff = 0
-        if sp and isAttached and side == "right" then
-            cbOff = pw / 2
-        elseif sp and isAttached and side == "left" then
-            cbOff = -(pw / 2)
+        if sp and isAttached then
+            if side == "right" then
+                cbOff = pw / 2
+            elseif side == "left" then
+                cbOff = -(pw / 2)
+            end
         end
         local btbPos = s.btbPosition or "bottom"
         local btbIsAtt = (btbPos == "top" or btbPos == "bottom")
-        if btbFrame then
-            local btbH2 = s.bottomTextBarHeight or 16
-            if s.bottomTextBar then
-                local btbIsDetached = not btbIsAtt
-                local btbW2 = btbIsDetached and (s.btbWidth or 0) or 0
-                local btbTW = (btbW2 > 0 and btbIsDetached) and btbW2 or tw
-                Pix.Size(btbFrame, btbTW, btbH2)
-                if btbIsDetached and saved.profile.enableCustomBarStratas then
-                    btbFrame:SetFrameLevel(popFrame:GetFrameLevel() + 50)
-                elseif btbIsDetached then
-                    btbFrame:SetFrameLevel(popFrame:GetFrameLevel() + 3)
-                end
-                btbFrame:ClearAllPoints()
-                local btbPvAnchor = (pvPpIsAtt and power and power:IsShown()) and power or health
-                if btbPos == "top" then
-                    Pix.Point(btbFrame, "BOTTOM", health, "TOP", cbOff, 0)
-                elseif btbPos == "detached_top" then
-                    btbFrame:SetPoint("BOTTOM", popFrame, "TOP", s.btbX or 0, 15 + (s.btbY or 0))
-                elseif btbPos == "detached_bottom" then
-                    btbFrame:SetPoint("TOP", popFrame, "BOTTOM", s.btbX or 0, -15 + (s.btbY or 0))
-                else
-                    Pix.Point(btbFrame, "TOP", btbPvAnchor, "BOTTOM", cbOff, 0)
-                end
-                local bgc = s.btbBgColor or { r = 0.2, g = 0.2, b = 0.2 }
-                local bga = s.btbBgOpacity or 1.0
-                btbBg:SetColorTexture(bgc.r, bgc.g, bgc.b, bga)
-                ApplyBTBPreviewTexts(s)
-                if not btbFrame:IsShown() then
-                    btbFrame:Show()
-                end
+        if btbFrame and not s.bottomTextBar then
+            if btbFrame:IsShown() then
+                btbFrame:Hide()
+            end
+        elseif btbFrame then
+            local floating = not btbIsAtt
+            local ownW = floating and (s.btbWidth or 0) or 0
+            Pix.Size(btbFrame, ownW > 0 and ownW or tw, s.bottomTextBarHeight or 16)
+            -- A floating bar rides over the frame (far over it with custom bar stratas).
+            if floating then
+                local raise = saved.profile.enableCustomBarStratas and 50 or 3
+                btbFrame:SetFrameLevel(popFrame:GetFrameLevel() + raise)
+            end
+            btbFrame:ClearAllPoints()
+            local under = (pvPpIsAtt and power and power:IsShown()) and power or health
+            local dx, dy = s.btbX or 0, s.btbY or 0
+            if btbPos == "top" then
+                Pix.Point(btbFrame, "BOTTOM", health, "TOP", cbOff, 0)
+            elseif btbPos == "detached_top" then
+                btbFrame:SetPoint("BOTTOM", popFrame, "TOP", dx, 15 + dy)
+            elseif btbPos == "detached_bottom" then
+                btbFrame:SetPoint("TOP", popFrame, "BOTTOM", dx, -15 + dy)
             else
-                if btbFrame:IsShown() then
-                    btbFrame:Hide()
-                end
+                Pix.Point(btbFrame, "TOP", under, "BOTTOM", cbOff, 0)
+            end
+            local fillColor = s.btbBgColor or { r = 0.2, g = 0.2, b = 0.2 }
+            btbBg:SetColorTexture(fillColor.r, fillColor.g, fillColor.b, s.btbBgOpacity or 1.0)
+            ApplyBTBPreviewTexts(s)
+            if not btbFrame:IsShown() then
+                btbFrame:Show()
             end
         end
 
