@@ -3252,16 +3252,17 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             Pix.Point(castBar, "TOP", hangFrom, "BOTTOM", (onTextBar and 0 or cbOff) + iconShift, 0)
         end
 
-        -- Border size and color (encompasses health+power+BTB+above pips); a mini
-        -- frame's Border Size override replaces the donor's size, as live.
+        -- Border round the health and power bars, an attached Text Bar and
+        -- pips above; a mini frame's Border Size override replaces the
+        -- donor's size, as live.
         local bs = s.borderSizeOverride or bds.borderSize or 1
         local bc = bds.borderColor or { r = 0, g = 0, b = 0 }
         local bTexKey = bds.borderTexture or "solid"
-        local borderH = bh2 + (s.bottomTextBar and btbIsAtt and (s.bottomTextBarHeight or 16) or 0)
         border:ClearAllPoints()
         border:SetPoint("TOPLEFT", barArea, "TOPLEFT", 0, 0)
         border:SetPoint("TOPRIGHT", barArea, "TOPRIGHT", 0, 0)
-        border:SetHeight(borderH)
+        border:SetHeight(bh2 + (s.bottomTextBar and btbIsAtt and (s.bottomTextBarHeight or 16) or 0))
+        local borderPx = CludesUI.BorderPx((not s.borderSizeOverride) and bds.borderSizePx, bs, bTexKey)
         CludesUI.ApplyBorderStyle(
             border,
             bs,
@@ -3277,152 +3278,111 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             "unitframes",
             bs,
             nil,
-            CludesUI.BorderPx((not s.borderSizeOverride) and bds.borderSizePx, bs, bTexKey)
+            borderPx
         )
 
-        -- Class Power Pips update (player only)
-        if cpPipContainer and cpPips then
-            if cpStyle == "modern" then
-                local cpPos = s.classPowerPosition or "top"
-                local cpMax = #cpPips
-                local cpSizeAdj = s.classPowerSize or 8
-                local cpSpacingAdj = s.classPowerSpacing or 2
-                local pipW = cpSizeAdj
-                local pipH = math.max(3, math.floor(cpSizeAdj * 0.375))
-                local pipGap = cpSpacingAdj
-
-                local cpBgCol = s.classPowerBgColor or { r = 0.082, g = 0.082, b = 0.082, a = 1.0 }
-                if cpPipContainer._bgTex then
-                    cpPipContainer._bgTex:SetColorTexture(cpBgCol.r, cpBgCol.g, cpBgCol.b, cpBgCol.a)
-                end
-
-                cpPipContainer:ClearAllPoints()
-                if cpPos == "above" then
-                    -- Flush with the health bar edges; Snap() rounds every position
-                    -- to physical pixel boundaries so pip gaps are identical.
-                    local efs = cpPipContainer:GetEffectiveScale()
-                    if efs <= 0 then
-                        efs = 1
-                    end
-                    local function Snap(val)
-                        return math.floor(val * efs + 0.5) / efs
-                    end
-                    local intW = math.floor(fw)
-                    -- Pip boundaries: n pips with (n-1) snapped gaps of pipGap.
-                    local gapPx = Snap(pipGap)
-                    local totalGapW = (cpMax - 1) * gapPx
-                    local totalPipW = intW - totalGapW
-                    local basePipW = totalPipW / cpMax
-                    cpPipContainer:SetPoint("BOTTOMLEFT", health, "TOPLEFT", 0, 0)
-                    cpPipContainer:SetPoint("BOTTOMRIGHT", health, "TOPRIGHT", 0, 0)
-                    cpPipContainer:SetHeight(pipH)
-                    for idx = 1, cpMax do
-                        -- Snap pip i's proportional left/right edges.
-                        local leftEdge = Snap((idx - 1) * (basePipW + gapPx))
-                        local rightEdge = Snap((idx - 1) * (basePipW + gapPx) + basePipW)
-                        local wid = rightEdge - leftEdge
-                        cpPips[idx]:ClearAllPoints()
-                        cpPips[idx]:SetSize(wid, pipH)
-                        cpPips[idx]:SetPoint("TOPLEFT", cpPipContainer, "TOPLEFT", leftEdge, 0)
-                        cpPips[idx]:Show()
-                    end
-                else
-                    -- "top" / "bottom" floating, pixel-perfect sizing
-                    local efs = cpPipContainer:GetEffectiveScale()
-                    if efs <= 0 then
-                        efs = 1
-                    end
-                    local function Snap(val)
-                        return math.floor(val * efs + 0.5) / efs
-                    end
-                    local snappedW = Snap(pipW)
-                    local snappedH = Snap(pipH)
-                    local snappedGap = Snap(pipGap)
-                    local totalPipW = cpMax * snappedW + (cpMax - 1) * snappedGap
-                    Pix.Size(cpPipContainer, totalPipW, snappedH)
-                    if cpPos == "top" then
-                        local cpXOff = s.classPowerBarX or 0
-                        local cpYOff = s.classPowerBarY or 0
-                        Pix.Point(cpPipContainer, "BOTTOM", health, "TOP", cpXOff, cpYOff)
-                    else
-                        local cpXOff = s.classPowerBarX or 0
-                        local cpYOff = s.classPowerBarY or 0
-                        local cpBaseY = -1
-                        if cpYOff == 0 and castBar and ch > 0 and s.showPlayerCastbar then
-                            cpBaseY = -1 - ch
-                        end
-                        -- Blizzard Style: live measures from the stock box's
-                        -- bottom (barArea here), whatever hangs under the art.
-                        Pix.Point(
-                            cpPipContainer,
-                            "TOP",
-                            blizzG and barArea or popFrame,
-                            "BOTTOM",
-                            cpXOff,
-                            cpBaseY + cpYOff
-                        )
-                    end
-                    local posX = 0
-                    for idx = 1, cpMax do
-                        cpPips[idx]:ClearAllPoints()
-                        cpPips[idx]:SetSize(snappedW, snappedH)
-                        cpPips[idx]:SetPoint("TOPLEFT", cpPipContainer, "TOPLEFT", Snap(posX), 0)
-                        cpPips[idx]:Show()
-                        posX = posX + snappedW + snappedGap
-                    end
-                end
-                -- 1px bottom border on pip container (only for "above" position)
-                if cpPipContainer._bottomBdr then
-                    if cpPos == "above" then
-                        cpPipContainer._bottomBdr:SetColorTexture(bc.r, bc.g, bc.b, 1)
-                        cpPipContainer._bottomBdr:Show()
-                    else
-                        cpPipContainer._bottomBdr:Hide()
-                    end
-                end
-                -- Re-color pips based on class color toggle
-                local _, cpPlayerClass = UnitClass("player")
-                local cpUseCC = s.classPowerClassColor ~= false
-                local cpCr, cpCg, cpCb
-                if not cpUseCC then
-                    local cc = s.classPowerCustomColor or { r = 1, g = 0.82, b = 0 }
-                    cpCr, cpCg, cpCb = cc.r, cc.g, cc.b
-                else
-                    local rc = CludesUI.GetResourceColor(cpPlayerClass)
-                    if rc then
-                        cpCr, cpCg, cpCb = rc.r, rc.g, rc.b
-                    else
-                        local cc = CludesUI.GetClassColor(cpPlayerClass)
-                        if cc then
-                            cpCr, cpCg, cpCb = cc.r, cc.g, cc.b
-                        else
-                            cpCr, cpCg, cpCb = 1, 0.84, 0.30
-                        end
-                    end
-                end
-                local cpEmptyCol = s.classPowerEmptyColor or { r = 0.2, g = 0.2, b = 0.2, a = 1.0 }
-                local previewFilled = math.min(3, cpMax)
-                for idx = 1, cpMax do
-                    if idx <= previewFilled then
-                        cpPips[idx]:SetColorTexture(cpCr, cpCg, cpCb, 1)
-                        cpPips[idx]:SetAlpha(1)
-                    else
-                        cpPips[idx]:SetColorTexture(cpEmptyCol.r, cpEmptyCol.g, cpEmptyCol.b, cpEmptyCol.a)
-                        cpPips[idx]:SetAlpha(1)
-                    end
-                end
-                cpPipContainer:Show()
-                if popFrame._cpPipOv then
-                    popFrame._cpPipOv:Show()
+        -- Class pips (player only), in the Modern style; any other style
+        -- hides the row.
+        if cpPipContainer and cpPips and cpStyle ~= "modern" then
+            cpPipContainer:Hide()
+            for _, pip in ipairs(cpPips) do
+                pip:Hide()
+            end
+            if popFrame._cpPipOv then
+                popFrame._cpPipOv:Hide()
+            end
+        elseif cpPipContainer and cpPips then
+            local cpPos = s.classPowerPosition or "top"
+            local cpMax = #cpPips
+            local pipSize, pipGap = s.classPowerSize or 8, s.classPowerSpacing or 2
+            local pipH = math.max(3, math.floor(pipSize * 0.375))
+            local backC = s.classPowerBgColor or { r = 0.082, g = 0.082, b = 0.082, a = 1.0 }
+            if cpPipContainer._bgTex then
+                cpPipContainer._bgTex:SetColorTexture(backC.r, backC.g, backC.b, backC.a)
+            end
+            cpPipContainer:ClearAllPoints()
+            -- Every edge rounds to a physical pixel, so the gaps all match.
+            local efs = cpPipContainer:GetEffectiveScale()
+            if efs <= 0 then
+                efs = 1
+            end
+            local function Snap(val)
+                return math.floor(val * efs + 0.5) / efs
+            end
+            if cpPos == "above" then
+                -- Flush with the health bar's edges: the width shared out as
+                -- cpMax pips with snapped gaps, each pip's edges snapped.
+                local gapPx = Snap(pipGap)
+                local eachW = (math.floor(fw) - (cpMax - 1) * gapPx) / cpMax
+                cpPipContainer:SetPoint("BOTTOMLEFT", health, "TOPLEFT", 0, 0)
+                cpPipContainer:SetPoint("BOTTOMRIGHT", health, "TOPRIGHT", 0, 0)
+                cpPipContainer:SetHeight(pipH)
+                for idx, pip in ipairs(cpPips) do
+                    local leftEdge = Snap((idx - 1) * (eachW + gapPx))
+                    local rightEdge = Snap((idx - 1) * (eachW + gapPx) + eachW)
+                    pip:ClearAllPoints()
+                    pip:SetSize(rightEdge - leftEdge, pipH)
+                    pip:SetPoint("TOPLEFT", cpPipContainer, "TOPLEFT", leftEdge, 0)
+                    pip:Show()
                 end
             else
-                cpPipContainer:Hide()
-                for idx = 1, #cpPips do
-                    cpPips[idx]:Hide()
+                -- Floating over ("top") or under the frame, at pixel-exact sizes.
+                local eachW, eachH, gapPx = Snap(pipSize), Snap(pipH), Snap(pipGap)
+                Pix.Size(cpPipContainer, cpMax * eachW + (cpMax - 1) * gapPx, eachH)
+                local dx, dy = s.classPowerBarX or 0, s.classPowerBarY or 0
+                if cpPos == "top" then
+                    Pix.Point(cpPipContainer, "BOTTOM", health, "TOP", dx, dy)
+                else
+                    -- Under a shown cast bar unless moved; Blizzard Style
+                    -- measures from the stock box's bottom (barArea here), as
+                    -- live, whatever hangs under the art.
+                    local baseY = -1
+                    if dy == 0 and castBar and ch > 0 and s.showPlayerCastbar then
+                        baseY = -1 - ch
+                    end
+                    Pix.Point(cpPipContainer, "TOP", blizzG and barArea or popFrame, "BOTTOM", dx, baseY + dy)
                 end
-                if popFrame._cpPipOv then
-                    popFrame._cpPipOv:Hide()
+                local x = 0
+                for _, pip in ipairs(cpPips) do
+                    pip:ClearAllPoints()
+                    pip:SetSize(eachW, eachH)
+                    pip:SetPoint("TOPLEFT", cpPipContainer, "TOPLEFT", Snap(x), 0)
+                    pip:Show()
+                    x = x + eachW + gapPx
                 end
+            end
+            -- The 1px border-coloured line under the row, for "above" only.
+            local underline = cpPipContainer._bottomBdr
+            if underline and cpPos == "above" then
+                underline:SetColorTexture(bc.r, bc.g, bc.b, 1)
+                underline:Show()
+            elseif underline then
+                underline:Hide()
+            end
+            -- Three pips lit: the resource colour (or class colour, else gold)
+            -- with Class Color on, else the custom pick; the rest empty.
+            local _, cpClass = UnitClass("player")
+            local lit
+            if s.classPowerClassColor == false then
+                lit = s.classPowerCustomColor or { r = 1, g = 0.82, b = 0 }
+            else
+                lit = CludesUI.GetResourceColor(cpClass)
+                    or CludesUI.GetClassColor(cpClass)
+                    or { r = 1, g = 0.84, b = 0.30 }
+            end
+            local empty = s.classPowerEmptyColor or { r = 0.2, g = 0.2, b = 0.2, a = 1.0 }
+            local litCount = math.min(3, cpMax)
+            for idx, pip in ipairs(cpPips) do
+                if idx <= litCount then
+                    pip:SetColorTexture(lit.r, lit.g, lit.b, 1)
+                else
+                    pip:SetColorTexture(empty.r, empty.g, empty.b, empty.a)
+                end
+                pip:SetAlpha(1)
+            end
+            cpPipContainer:Show()
+            if popFrame._cpPipOv then
+                popFrame._cpPipOv:Show()
             end
         end
 
