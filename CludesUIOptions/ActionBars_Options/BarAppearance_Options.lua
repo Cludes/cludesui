@@ -87,6 +87,37 @@ local function BuildBarAppearance(hostFrame, posY, context)
         })
     end
 
+    -- The sync icon of a button text (prefix keybind, count or macro): its
+    -- colour, size, X and Y offsets and anchor. A colour is copied only when
+    -- the selected bar has one; an unset anchor is stored as false.
+    local function TextSync(rgn, tooltip, prefix)
+        local COLOR, SIZE = prefix .. "FontColor", prefix .. "FontSize"
+        local OX, OY, ANCHOR = prefix .. "OffsetX", prefix .. "OffsetY", prefix .. "Anchor"
+        BarSync(rgn, tooltip, function()
+            local s = SB()
+            return { c = s[COLOR], sz = s[SIZE] or 12, ox = s[OX] or 0, oy = s[OY] or 0, an = s[ANCHOR] }
+        end, function(bar, v, key)
+            local c = v.c
+            if c then
+                bar[COLOR] = { r = c.r, g = c.g, b = c.b }
+            end
+            bar[SIZE] = v.sz
+            bar[OX] = v.ox
+            bar[OY] = v.oy
+            bar[ANCHOR] = v.an or false
+            ABAR:ApplyFontsForBar(key)
+        end, function(bar, v)
+            if (bar[SIZE] or 12) ~= v.sz or (bar[OX] or 0) ~= v.ox or (bar[OY] or 0) ~= v.oy then
+                return false
+            end
+            if (bar[ANCHOR] or nil) ~= (v.an or nil) then
+                return false
+            end
+            local c, bc = v.c, bar[COLOR]
+            return not c or (bc and bc.r == c.r and bc.g == c.g and bc.b == c.b) and true or false
+        end)
+    end
+
     -- A row whose items or cog hold settings with labels of their own (a
     -- checklist, a dropdown with a settings cog) registers its search entry
     -- right before the row, as the index keeps the first entry of a label:
@@ -558,105 +589,42 @@ local function BuildBarAppearance(hostFrame, posY, context)
             end
         end
         local bsLeftRgn = abBsRow._leftRegion
-        CludesUI.BuildSyncIcon({
-            region = bsLeftRgn,
-            tooltip = "Apply Border Style to all Bars",
-            onClick = function()
-                local bt = SB().borderTexture or "solid"
-                local ox = SB().borderTextureOffset
-                local oy = SB().borderTextureOffsetY
-                local sx = SB().borderTextureShiftX
-                local sy = SB().borderTextureShiftY
-                local bh = SB().borderBehind
-                local ba = SB().borderAboveEffects
-                local bc = SB().borderColor
-                local bcc = SB().borderClassColor
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    ABAR.db.profile.bars[key].borderTexture = bt
-                    ABAR.db.profile.bars[key].borderTextureOffset = ox
-                    ABAR.db.profile.bars[key].borderTextureOffsetY = oy
-                    ABAR.db.profile.bars[key].borderTextureShiftX = sx
-                    ABAR.db.profile.bars[key].borderTextureShiftY = sy
-                    ABAR.db.profile.bars[key].borderBehind = bh
-                    ABAR.db.profile.bars[key].borderAboveEffects = ba
-                    if bc then
-                        ABAR.db.profile.bars[key].borderColor = { r = bc.r, g = bc.g, b = bc.b, a = bc.a }
-                    end
-                    ABAR.db.profile.bars[key].borderClassColor = bcc
-                    ABAR:ApplyBordersForBar(key)
-                end
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local bt = SB().borderTexture or "solid"
-                local ox = SB().borderTextureOffset
-                local oy = SB().borderTextureOffsetY
-                local sx = SB().borderTextureShiftX
-                local sy = SB().borderTextureShiftY
-                local bh = SB().borderBehind or false
-                local ba = SB().borderAboveEffects or false
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if (ABAR.db.profile.bars[key].borderTexture or "solid") ~= bt then
-                        return false
-                    end
-                    if ABAR.db.profile.bars[key].borderTextureOffset ~= ox then
-                        return false
-                    end
-                    if ABAR.db.profile.bars[key].borderTextureOffsetY ~= oy then
-                        return false
-                    end
-                    if ABAR.db.profile.bars[key].borderTextureShiftX ~= sx then
-                        return false
-                    end
-                    if ABAR.db.profile.bars[key].borderTextureShiftY ~= sy then
-                        return false
-                    end
-                    if (ABAR.db.profile.bars[key].borderBehind or false) ~= bh then
-                        return false
-                    end
-                    if (ABAR.db.profile.bars[key].borderAboveEffects or false) ~= ba then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { bsLeftRgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_BAR_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return SelectedKey()
-                end,
-                onApply = function(checkedKeys)
-                    local bt = SB().borderTexture or "solid"
-                    local ox = SB().borderTextureOffset
-                    local oy = SB().borderTextureOffsetY
-                    local sx = SB().borderTextureShiftX
-                    local sy = SB().borderTextureShiftY
-                    local bh = SB().borderBehind
-                    local ba = SB().borderAboveEffects
-                    local bc = SB().borderColor
-                    local bcc = SB().borderClassColor
-                    for _, key in ipairs(checkedKeys) do
-                        ABAR.db.profile.bars[key].borderTexture = bt
-                        ABAR.db.profile.bars[key].borderTextureOffset = ox
-                        ABAR.db.profile.bars[key].borderTextureOffsetY = oy
-                        ABAR.db.profile.bars[key].borderTextureShiftX = sx
-                        ABAR.db.profile.bars[key].borderTextureShiftY = sy
-                        ABAR.db.profile.bars[key].borderBehind = bh
-                        ABAR.db.profile.bars[key].borderAboveEffects = ba
-                        if bc then
-                            ABAR.db.profile.bars[key].borderColor = { r = bc.r, g = bc.g, b = bc.b, a = bc.a }
-                        end
-                        ABAR.db.profile.bars[key].borderClassColor = bcc
-                        ABAR:ApplyBordersForBar(key)
-                    end
-                    CludesUI:RefreshPage()
-                end,
-            },
-        })
+        BarSync(bsLeftRgn, "Apply Border Style to all Bars", function()
+            local s = SB()
+            return {
+                texture = s.borderTexture,
+                ox = s.borderTextureOffset,
+                oy = s.borderTextureOffsetY,
+                sx = s.borderTextureShiftX,
+                sy = s.borderTextureShiftY,
+                behind = s.borderBehind,
+                above = s.borderAboveEffects,
+                color = s.borderColor,
+                classColor = s.borderClassColor,
+            }
+        end, function(bar, v, key)
+            bar.borderTexture = v.texture or "solid"
+            bar.borderTextureOffset = v.ox
+            bar.borderTextureOffsetY = v.oy
+            bar.borderTextureShiftX = v.sx
+            bar.borderTextureShiftY = v.sy
+            bar.borderBehind = v.behind
+            bar.borderAboveEffects = v.above
+            local bc = v.color
+            if bc then
+                bar.borderColor = { r = bc.r, g = bc.g, b = bc.b, a = bc.a }
+            end
+            bar.borderClassColor = v.classColor
+            ABAR:ApplyBordersForBar(key)
+        end, function(bar, v)
+            return (bar.borderTexture or "solid") == (v.texture or "solid")
+                and bar.borderTextureOffset == v.ox
+                and bar.borderTextureOffsetY == v.oy
+                and bar.borderTextureShiftX == v.sx
+                and bar.borderTextureShiftY == v.sy
+                and (bar.borderBehind or false) == (v.behind or false)
+                and (bar.borderAboveEffects or false) == (v.above or false)
+        end)
     end
 
     do
@@ -762,121 +730,58 @@ local function BuildBarAppearance(hostFrame, posY, context)
 
     do
         local rgn = abBsRow._rightRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Border Size and Color to all Bars",
-            onClick = function()
-                local th = SB().borderThickness
-                local thPx = SB().borderThicknessPx -- copied as is (string, false or nil)
-                local c = SB().borderColor
-                local cc = SB().borderClassColor
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    ABAR.db.profile.bars[key].borderThickness = th
-                    do
-                        local t = ABAR.db.profile.bars[key]
-                        local v = thPx
-                        if v == nil and t.borderThicknessPx ~= nil then
-                            v = false
-                        end
-                        t.borderThicknessPx = v
-                    end
-                    local record = mod.BORDER_THICKNESS[th]
-                    if record then
-                        local shape = ABAR.db.profile.bars[key].buttonShape or "none"
-                        if shape ~= "none" and shape ~= "cropped" then
-                            ABAR.db.profile.bars[key].shapeBorderSize = record.shape
-                            ABAR.db.profile.bars[key].shapeBorderEnabled = record.shape > 0
-                        else
-                            ABAR.db.profile.bars[key].borderSize = record.regular
-                            ABAR.db.profile.bars[key].borderEnabled = record.regular > 0
-                        end
-                    end
-                    if c then
-                        ABAR.db.profile.bars[key].borderColor = { r = c.r, g = c.g, b = c.b, a = c.a }
-                        ABAR.db.profile.bars[key].shapeBorderColor = { r = c.r, g = c.g, b = c.b, a = c.a }
-                    end
-                    ABAR.db.profile.bars[key].borderClassColor = cc
-                    ABAR:ApplyBordersForBar(key)
-                    ABAR:ApplyShapesForBar(key)
+        BarSync(rgn, "Apply Border Size and Color to all Bars", function()
+            local s = SB()
+            -- borderThicknessPx is copied as is (string, false or nil).
+            return {
+                th = s.borderThickness,
+                px = s.borderThicknessPx,
+                c = s.borderColor,
+                cc = s.borderClassColor,
+            }
+        end, function(bar, v, key)
+            bar.borderThickness = v.th
+            local px = v.px
+            if px == nil and bar.borderThicknessPx ~= nil then
+                px = false
+            end
+            bar.borderThicknessPx = px
+            local record = mod.BORDER_THICKNESS[v.th]
+            if record then
+                local shape = bar.buttonShape or "none"
+                if shape ~= "none" and shape ~= "cropped" then
+                    bar.shapeBorderSize = record.shape
+                    bar.shapeBorderEnabled = record.shape > 0
+                else
+                    bar.borderSize = record.regular
+                    bar.borderEnabled = record.regular > 0
                 end
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local th = SB().borderThickness or "thin"
-                local thPx = SB().borderThicknessPx or false -- nil and false render alike
-                local cc = SB().borderClassColor or false
-                local c = SB().borderColor
-                local cr, cg, cb, ca = c and c.r or 0, c and c.g or 0, c and c.b or 0, c and c.a or 1
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if (ABAR.db.profile.bars[key].borderThickness or "thin") ~= th then
-                        return false
-                    end
-                    if (ABAR.db.profile.bars[key].borderThicknessPx or false) ~= thPx then
-                        return false
-                    end
-                    if (ABAR.db.profile.bars[key].borderClassColor or false) ~= cc then
-                        return false
-                    end
-                    local bc = ABAR.db.profile.bars[key].borderColor
-                    if
-                        (bc and bc.r or 0) ~= cr
-                        or (bc and bc.g or 0) ~= cg
-                        or (bc and bc.b or 0) ~= cb
-                        or (bc and bc.a or 1) ~= ca
-                    then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_BAR_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return SelectedKey()
-                end,
-                onApply = function(checkedKeys)
-                    local th = SB().borderThickness
-                    local thPx = SB().borderThicknessPx -- copied as is (string, false or nil)
-                    local c = SB().borderColor
-                    local cc = SB().borderClassColor
-                    for _, key in ipairs(checkedKeys) do
-                        ABAR.db.profile.bars[key].borderThickness = th
-                        do
-                            local t = ABAR.db.profile.bars[key]
-                            local v = thPx
-                            if v == nil and t.borderThicknessPx ~= nil then
-                                v = false
-                            end
-                            t.borderThicknessPx = v
-                        end
-                        local record = mod.BORDER_THICKNESS[th]
-                        if record then
-                            local shape = ABAR.db.profile.bars[key].buttonShape or "none"
-                            if shape ~= "none" and shape ~= "cropped" then
-                                ABAR.db.profile.bars[key].shapeBorderSize = record.shape
-                                ABAR.db.profile.bars[key].shapeBorderEnabled = record.shape > 0
-                            else
-                                ABAR.db.profile.bars[key].borderSize = record.regular
-                                ABAR.db.profile.bars[key].borderEnabled = record.regular > 0
-                            end
-                        end
-                        if c then
-                            ABAR.db.profile.bars[key].borderColor = { r = c.r, g = c.g, b = c.b, a = c.a }
-                            ABAR.db.profile.bars[key].shapeBorderColor =
-                                { r = c.r, g = c.g, b = c.b, a = c.a }
-                        end
-                        ABAR.db.profile.bars[key].borderClassColor = cc
-                        ABAR:ApplyBordersForBar(key)
-                        ABAR:ApplyShapesForBar(key)
-                    end
-                    CludesUI:RefreshPage()
-                end,
-            },
-        })
+            end
+            local c = v.c
+            if c then
+                bar.borderColor = { r = c.r, g = c.g, b = c.b, a = c.a }
+                bar.shapeBorderColor = { r = c.r, g = c.g, b = c.b, a = c.a }
+            end
+            bar.borderClassColor = v.cc
+            ABAR:ApplyBordersForBar(key)
+            ABAR:ApplyShapesForBar(key)
+        end, function(bar, v)
+            -- nil and false render alike.
+            if
+                (bar.borderThickness or "thin") ~= (v.th or "thin")
+                or (bar.borderThicknessPx or false) ~= (v.px or false)
+            then
+                return false
+            end
+            if (bar.borderClassColor or false) ~= (v.cc or false) then
+                return false
+            end
+            local c, bc = v.c, bar.borderColor
+            return (bc and bc.r or 0) == (c and c.r or 0)
+                and (bc and bc.g or 0) == (c and c.g or 0)
+                and (bc and bc.b or 0) == (c and c.b or 0)
+                and (bc and bc.a or 1) == (c and c.a or 1)
+        end)
     end
 
     local classColorBorderRow
@@ -970,99 +875,41 @@ local function BuildBarAppearance(hostFrame, posY, context)
     posY = posY - hgt
     do
         local rgn = classColorBorderRow._leftRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Custom Button Shape to all Bars",
-            onClick = function()
-                local v = SGet("buttonShape") or "none"
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    local bs = ABAR.db.profile.bars[key]
-                    bs.iconZoom = mod.SHAPE_ZOOM_DEFAULTS[v] or 5.5
-                    bs.buttonShape = v
-                    if v ~= "none" and v ~= "cropped" then
-                        bs.borderThickness = mod.BORDER_THICKNESS_DEFAULT_SHAPE
-                        local record = mod.BORDER_THICKNESS[mod.BORDER_THICKNESS_DEFAULT_SHAPE]
-                        bs.shapeBorderSize = record.shape
-                        bs.shapeBorderEnabled = true
-                    else
-                        bs.borderThickness = mod.BORDER_THICKNESS_DEFAULT_REGULAR
-                        local record = mod.BORDER_THICKNESS[mod.BORDER_THICKNESS_DEFAULT_REGULAR]
-                        bs.borderSize = record.regular
-                        bs.borderEnabled = true
-                    end
-                    if v == "cropped" then
-                        bs.keybindFontSize = 11
-                        bs.countFontSize = 11
-                        ABAR.ApplyShapeTextOffsets(bs, 0, 1, 0, -1)
-                    else
-                        bs.keybindFontSize = 12
-                        bs.countFontSize = 12
-                        ABAR.ApplyShapeTextOffsets(bs, 0, 0, 0, 0)
-                    end
-                    ABAR:ApplyShapesForBar(key)
-                    ABAR:ApplyPaddingForBar(key)
-                    ABAR:ApplyBordersForBar(key)
-                    ABAR:ApplyFontsForBar(key)
-                end
-                ABAR:RefreshProcGlows()
-                SUpdatePreview()
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local v = SGet("buttonShape") or "none"
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if (ABAR.db.profile.bars[key].buttonShape or "none") ~= v then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_BAR_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return SelectedKey()
-                end,
-                onApply = function(checkedKeys)
-                    local v = SGet("buttonShape") or "none"
-                    for _, key in ipairs(checkedKeys) do
-                        local bs = ABAR.db.profile.bars[key]
-                        bs.iconZoom = mod.SHAPE_ZOOM_DEFAULTS[v] or 5.5
-                        bs.buttonShape = v
-                        if v ~= "none" and v ~= "cropped" then
-                            bs.borderThickness = mod.BORDER_THICKNESS_DEFAULT_SHAPE
-                            local record = mod.BORDER_THICKNESS[mod.BORDER_THICKNESS_DEFAULT_SHAPE]
-                            bs.shapeBorderSize = record.shape
-                            bs.shapeBorderEnabled = true
-                        else
-                            bs.borderThickness = mod.BORDER_THICKNESS_DEFAULT_REGULAR
-                            local record = mod.BORDER_THICKNESS[mod.BORDER_THICKNESS_DEFAULT_REGULAR]
-                            bs.borderSize = record.regular
-                            bs.borderEnabled = true
-                        end
-                        if v == "cropped" then
-                            bs.keybindFontSize = 11
-                            bs.countFontSize = 11
-                            ABAR.ApplyShapeTextOffsets(bs, 0, 1, 0, -1)
-                        else
-                            bs.keybindFontSize = 12
-                            bs.countFontSize = 12
-                            ABAR.ApplyShapeTextOffsets(bs, 0, 0, 0, 0)
-                        end
-                        ABAR:ApplyShapesForBar(key)
-                        ABAR:ApplyPaddingForBar(key)
-                        ABAR:ApplyBordersForBar(key)
-                        ABAR:ApplyFontsForBar(key)
-                    end
-                    ABAR:RefreshProcGlows()
-                    SUpdatePreview()
-                    CludesUI:RefreshPage()
-                end,
-            },
-        })
+        BarSync(rgn, "Apply Custom Button Shape to all Bars", function()
+            return SGet("buttonShape") or "none"
+        end, function(bs, v, key)
+            bs.iconZoom = mod.SHAPE_ZOOM_DEFAULTS[v] or 5.5
+            bs.buttonShape = v
+            if v ~= "none" and v ~= "cropped" then
+                bs.borderThickness = mod.BORDER_THICKNESS_DEFAULT_SHAPE
+                local record = mod.BORDER_THICKNESS[mod.BORDER_THICKNESS_DEFAULT_SHAPE]
+                bs.shapeBorderSize = record.shape
+                bs.shapeBorderEnabled = true
+            else
+                bs.borderThickness = mod.BORDER_THICKNESS_DEFAULT_REGULAR
+                local record = mod.BORDER_THICKNESS[mod.BORDER_THICKNESS_DEFAULT_REGULAR]
+                bs.borderSize = record.regular
+                bs.borderEnabled = true
+            end
+            if v == "cropped" then
+                bs.keybindFontSize = 11
+                bs.countFontSize = 11
+                ABAR.ApplyShapeTextOffsets(bs, 0, 1, 0, -1)
+            else
+                bs.keybindFontSize = 12
+                bs.countFontSize = 12
+                ABAR.ApplyShapeTextOffsets(bs, 0, 0, 0, 0)
+            end
+            ABAR:ApplyShapesForBar(key)
+            ABAR:ApplyPaddingForBar(key)
+            ABAR:ApplyBordersForBar(key)
+            ABAR:ApplyFontsForBar(key)
+        end, function(bar, v)
+            return (bar.buttonShape or "none") == v
+        end, function()
+            ABAR:RefreshProcGlows()
+            SUpdatePreview()
+        end)
     end
 
     do
@@ -1522,56 +1369,24 @@ local function BuildBarAppearance(hostFrame, posY, context)
                         end
                         ABAR:ApplyBackgroundForBar(key)
                     end
-                    CludesUI.BuildSyncIcon({
-                        region = regionFrame,
-                        tooltip = "Apply Background Border Size and Color to all Bars",
-                        onClick = function()
-                            for _, key in ipairs(GROUP_BAR_ORDER) do
-                                ApplySizeTo(key)
-                            end
-                            CludesUI:RefreshPage()
-                        end,
-                        isSynced = function()
-                            local thickness = SVal("bgBorderThickness", "none")
-                            local thicknessPx = SGet("bgBorderThicknessPx") or false -- nil and false render alike
-                            local color = SGet("bgBorderColor") or { r = 0, g = 0, b = 0, a = 1 }
-                            for _, key in ipairs(GROUP_BAR_ORDER) do
-                                local target = ABAR.db.profile.bars[key]
-                                if (target.bgBorderThickness or "none") ~= thickness then
-                                    return false
-                                end
-                                if (target.bgBorderThicknessPx or false) ~= thicknessPx then
-                                    return false
-                                end
-                                local targetColor = target.bgBorderColor or { r = 0, g = 0, b = 0, a = 1 }
-                                if
-                                    targetColor.r ~= color.r
-                                    or targetColor.g ~= color.g
-                                    or targetColor.b ~= color.b
-                                    or targetColor.a ~= color.a
-                                then
-                                    return false
-                                end
-                            end
-                            return true
-                        end,
-                        flashTargets = function()
-                            return { regionFrame }
-                        end,
-                        multiApply = {
-                            elementKeys = GROUP_BAR_ORDER,
-                            elementLabels = SHORT_LABELS,
-                            getCurrentKey = function()
-                                return SelectedKey()
-                            end,
-                            onApply = function(checkedKeys)
-                                for _, key in ipairs(checkedKeys) do
-                                    ApplySizeTo(key)
-                                end
-                                CludesUI:RefreshPage()
-                            end,
-                        },
-                    })
+                    BarSync(regionFrame, "Apply Background Border Size and Color to all Bars", function()
+                        return {
+                            th = SVal("bgBorderThickness", "none"),
+                            px = SGet("bgBorderThicknessPx") or false, -- nil and false render alike
+                            color = SGet("bgBorderColor") or { r = 0, g = 0, b = 0, a = 1 },
+                        }
+                    end, function(_, _, key)
+                        ApplySizeTo(key)
+                    end, function(target, v)
+                        if
+                            (target.bgBorderThickness or "none") ~= v.th
+                            or (target.bgBorderThicknessPx or false) ~= v.px
+                        then
+                            return false
+                        end
+                        local tc, c = target.bgBorderColor or { r = 0, g = 0, b = 0, a = 1 }, v.color
+                        return tc.r == c.r and tc.g == c.g and tc.b == c.b and tc.a == c.a
+                    end)
                 end
 
                 do
@@ -1680,60 +1495,16 @@ local function BuildBarAppearance(hostFrame, posY, context)
                         target.bgBorderBehind = source.bgBorderBehind
                         ABAR:ApplyBackgroundForBar(key)
                     end
-                    CludesUI.BuildSyncIcon({
-                        region = regionFrame,
-                        tooltip = "Apply Background Border Style to all Bars",
-                        onClick = function()
-                            for _, key in ipairs(GROUP_BAR_ORDER) do
-                                ApplyStyleTo(key)
-                            end
-                            CludesUI:RefreshPage()
-                        end,
-                        isSynced = function()
-                            local source = SB()
-                            for _, key in ipairs(GROUP_BAR_ORDER) do
-                                local target = ABAR.db.profile.bars[key]
-                                if
-                                    (target.bgBorderTexture or "solid")
-                                    ~= (source.bgBorderTexture or "solid")
-                                then
-                                    return false
-                                end
-                                if target.bgBorderOffsetX ~= source.bgBorderOffsetX then
-                                    return false
-                                end
-                                if target.bgBorderOffsetY ~= source.bgBorderOffsetY then
-                                    return false
-                                end
-                                if target.bgBorderShiftX ~= source.bgBorderShiftX then
-                                    return false
-                                end
-                                if target.bgBorderShiftY ~= source.bgBorderShiftY then
-                                    return false
-                                end
-                                if (target.bgBorderBehind or false) ~= (source.bgBorderBehind or false) then
-                                    return false
-                                end
-                            end
-                            return true
-                        end,
-                        flashTargets = function()
-                            return { regionFrame }
-                        end,
-                        multiApply = {
-                            elementKeys = GROUP_BAR_ORDER,
-                            elementLabels = SHORT_LABELS,
-                            getCurrentKey = function()
-                                return SelectedKey()
-                            end,
-                            onApply = function(checkedKeys)
-                                for _, key in ipairs(checkedKeys) do
-                                    ApplyStyleTo(key)
-                                end
-                                CludesUI:RefreshPage()
-                            end,
-                        },
-                    })
+                    BarSync(regionFrame, "Apply Background Border Style to all Bars", SB, function(_, _, key)
+                        ApplyStyleTo(key)
+                    end, function(target, source)
+                        return (target.bgBorderTexture or "solid") == (source.bgBorderTexture or "solid")
+                            and target.bgBorderOffsetX == source.bgBorderOffsetX
+                            and target.bgBorderOffsetY == source.bgBorderOffsetY
+                            and target.bgBorderShiftX == source.bgBorderShiftX
+                            and target.bgBorderShiftY == source.bgBorderShiftY
+                            and (target.bgBorderBehind or false) == (source.bgBorderBehind or false)
+                    end)
                 end
             end
 
@@ -2813,88 +2584,35 @@ local function BuildBarAppearance(hostFrame, posY, context)
 
     do
         local rgn = cdTextRow._rightRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Cooldown Text Settings to all Bars",
-            onClick = function()
-                local s = SB()
-                local c = s.cooldownTextColor
-                local sz = s.cooldownFontSize or 12
-                local ox = s.cooldownTextXOffset or 0
-                local oy = s.cooldownTextYOffset or 0
-                local ft = s.cooldownFontFit or false
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if c then
-                        ABAR.db.profile.bars[key].cooldownTextColor = { r = c.r, g = c.g, b = c.b }
-                    end
-                    ABAR.db.profile.bars[key].cooldownFontSize = sz
-                    ABAR.db.profile.bars[key].cooldownTextXOffset = ox
-                    ABAR.db.profile.bars[key].cooldownTextYOffset = oy
-                    ABAR.db.profile.bars[key].cooldownFontFit = ft
-                    ABAR:ApplyCooldownFontsForBar(key)
-                end
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local s = SB()
-                local sz = s.cooldownFontSize or 12
-                local c = s.cooldownTextColor
-                local ox = s.cooldownTextXOffset or 0
-                local oy = s.cooldownTextYOffset or 0
-                local ft = s.cooldownFontFit or false
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    local b = ABAR.db.profile.bars[key]
-                    if (b.cooldownFontSize or 12) ~= sz then
-                        return false
-                    end
-                    if (b.cooldownTextXOffset or 0) ~= ox then
-                        return false
-                    end
-                    if (b.cooldownTextYOffset or 0) ~= oy then
-                        return false
-                    end
-                    if (b.cooldownFontFit or false) ~= ft then
-                        return false
-                    end
-                    if c then
-                        local bc = b.cooldownTextColor
-                        if not bc or bc.r ~= c.r or bc.g ~= c.g or bc.b ~= c.b then
-                            return false
-                        end
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_BAR_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return SelectedKey()
-                end,
-                onApply = function(checkedKeys)
-                    local s = SB()
-                    local c = s.cooldownTextColor
-                    local sz = s.cooldownFontSize or 12
-                    local ox = s.cooldownTextXOffset or 0
-                    local oy = s.cooldownTextYOffset or 0
-                    local ft = s.cooldownFontFit or false
-                    for _, key in ipairs(checkedKeys) do
-                        if c then
-                            ABAR.db.profile.bars[key].cooldownTextColor = { r = c.r, g = c.g, b = c.b }
-                        end
-                        ABAR.db.profile.bars[key].cooldownFontSize = sz
-                        ABAR.db.profile.bars[key].cooldownTextXOffset = ox
-                        ABAR.db.profile.bars[key].cooldownTextYOffset = oy
-                        ABAR.db.profile.bars[key].cooldownFontFit = ft
-                        ABAR:ApplyCooldownFontsForBar(key)
-                    end
-                    CludesUI:RefreshPage()
-                end,
-            },
-        })
+        BarSync(rgn, "Apply Cooldown Text Settings to all Bars", function()
+            local s = SB()
+            return {
+                c = s.cooldownTextColor,
+                sz = s.cooldownFontSize or 12,
+                ox = s.cooldownTextXOffset or 0,
+                oy = s.cooldownTextYOffset or 0,
+                fit = s.cooldownFontFit or false,
+            }
+        end, function(bar, v, key)
+            local c = v.c
+            if c then
+                bar.cooldownTextColor = { r = c.r, g = c.g, b = c.b }
+            end
+            bar.cooldownFontSize = v.sz
+            bar.cooldownTextXOffset = v.ox
+            bar.cooldownTextYOffset = v.oy
+            bar.cooldownFontFit = v.fit
+            ABAR:ApplyCooldownFontsForBar(key)
+        end, function(bar, v)
+            if (bar.cooldownFontSize or 12) ~= v.sz or (bar.cooldownTextXOffset or 0) ~= v.ox then
+                return false
+            end
+            if (bar.cooldownTextYOffset or 0) ~= v.oy or (bar.cooldownFontFit or false) ~= v.fit then
+                return false
+            end
+            local c, bc = v.c, bar.cooldownTextColor
+            return not c or (bc and bc.r == c.r and bc.g == c.g and bc.b == c.b) and true or false
+        end)
     end
 
     do
@@ -3031,87 +2749,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
     end)
     do
         local rgn = chargesRow._rightRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Charges Text Settings to all Bars",
-            onClick = function()
-                local s = SB()
-                local c = s.countFontColor
-                local sz = s.countFontSize or 12
-                local ox = s.countOffsetX or 0
-                local oy = s.countOffsetY or 0
-                local an = s.countAnchor
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if c then
-                        ABAR.db.profile.bars[key].countFontColor = { r = c.r, g = c.g, b = c.b }
-                    end
-                    ABAR.db.profile.bars[key].countFontSize = sz
-                    ABAR.db.profile.bars[key].countOffsetX = ox
-                    ABAR.db.profile.bars[key].countOffsetY = oy
-                    ABAR.db.profile.bars[key].countAnchor = an or false
-                    ABAR:ApplyFontsForBar(key)
-                end
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local s = SB()
-                local sz = s.countFontSize or 12
-                local c = s.countFontColor
-                local ox = s.countOffsetX or 0
-                local oy = s.countOffsetY or 0
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    local b = ABAR.db.profile.bars[key]
-                    if (b.countFontSize or 12) ~= sz then
-                        return false
-                    end
-                    if (b.countOffsetX or 0) ~= ox then
-                        return false
-                    end
-                    if (b.countOffsetY or 0) ~= oy then
-                        return false
-                    end
-                    if (b.countAnchor or nil) ~= (s.countAnchor or nil) then
-                        return false
-                    end
-                    if c then
-                        local bc = b.countFontColor
-                        if not bc or bc.r ~= c.r or bc.g ~= c.g or bc.b ~= c.b then
-                            return false
-                        end
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_BAR_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return SelectedKey()
-                end,
-                onApply = function(checkedKeys)
-                    local s = SB()
-                    local c = s.countFontColor
-                    local sz = s.countFontSize or 12
-                    local ox = s.countOffsetX or 0
-                    local oy = s.countOffsetY or 0
-                    local an = s.countAnchor
-                    for _, key in ipairs(checkedKeys) do
-                        if c then
-                            ABAR.db.profile.bars[key].countFontColor = { r = c.r, g = c.g, b = c.b }
-                        end
-                        ABAR.db.profile.bars[key].countFontSize = sz
-                        ABAR.db.profile.bars[key].countOffsetX = ox
-                        ABAR.db.profile.bars[key].countOffsetY = oy
-                        ABAR.db.profile.bars[key].countAnchor = an or false
-                        ABAR:ApplyFontsForBar(key)
-                    end
-                    CludesUI:RefreshPage()
-                end,
-            },
-        })
+        TextSync(rgn, "Apply Charges Text Settings to all Bars", "count")
     end
 
     do
@@ -3241,87 +2879,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
     end
     do
         local rgn = keybindRow._rightRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Keybind Text Settings to all Bars",
-            onClick = function()
-                local s = SB()
-                local c = s.keybindFontColor
-                local sz = s.keybindFontSize or 12
-                local ox = s.keybindOffsetX or 0
-                local oy = s.keybindOffsetY or 0
-                local an = s.keybindAnchor
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if c then
-                        ABAR.db.profile.bars[key].keybindFontColor = { r = c.r, g = c.g, b = c.b }
-                    end
-                    ABAR.db.profile.bars[key].keybindFontSize = sz
-                    ABAR.db.profile.bars[key].keybindOffsetX = ox
-                    ABAR.db.profile.bars[key].keybindOffsetY = oy
-                    ABAR.db.profile.bars[key].keybindAnchor = an or false
-                    ABAR:ApplyFontsForBar(key)
-                end
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local s = SB()
-                local sz = s.keybindFontSize or 12
-                local c = s.keybindFontColor
-                local ox = s.keybindOffsetX or 0
-                local oy = s.keybindOffsetY or 0
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    local b = ABAR.db.profile.bars[key]
-                    if (b.keybindFontSize or 12) ~= sz then
-                        return false
-                    end
-                    if (b.keybindOffsetX or 0) ~= ox then
-                        return false
-                    end
-                    if (b.keybindOffsetY or 0) ~= oy then
-                        return false
-                    end
-                    if (b.keybindAnchor or nil) ~= (s.keybindAnchor or nil) then
-                        return false
-                    end
-                    if c then
-                        local bc = b.keybindFontColor
-                        if not bc or bc.r ~= c.r or bc.g ~= c.g or bc.b ~= c.b then
-                            return false
-                        end
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_BAR_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return SelectedKey()
-                end,
-                onApply = function(checkedKeys)
-                    local s = SB()
-                    local c = s.keybindFontColor
-                    local sz = s.keybindFontSize or 12
-                    local ox = s.keybindOffsetX or 0
-                    local oy = s.keybindOffsetY or 0
-                    local an = s.keybindAnchor
-                    for _, key in ipairs(checkedKeys) do
-                        if c then
-                            ABAR.db.profile.bars[key].keybindFontColor = { r = c.r, g = c.g, b = c.b }
-                        end
-                        ABAR.db.profile.bars[key].keybindFontSize = sz
-                        ABAR.db.profile.bars[key].keybindOffsetX = ox
-                        ABAR.db.profile.bars[key].keybindOffsetY = oy
-                        ABAR.db.profile.bars[key].keybindAnchor = an or false
-                        ABAR:ApplyFontsForBar(key)
-                    end
-                    CludesUI:RefreshPage()
-                end,
-            },
-        })
+        TextSync(rgn, "Apply Keybind Text Settings to all Bars", "keybind")
     end
 
     do
@@ -3458,87 +3016,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
     end
     do
         local rgn = macroRow._rightRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Macro Text Settings to all Bars",
-            onClick = function()
-                local s = SB()
-                local c = s.macroFontColor
-                local sz = s.macroFontSize or 12
-                local ox = s.macroOffsetX or 0
-                local oy = s.macroOffsetY or 0
-                local an = s.macroAnchor
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if c then
-                        ABAR.db.profile.bars[key].macroFontColor = { r = c.r, g = c.g, b = c.b }
-                    end
-                    ABAR.db.profile.bars[key].macroFontSize = sz
-                    ABAR.db.profile.bars[key].macroOffsetX = ox
-                    ABAR.db.profile.bars[key].macroOffsetY = oy
-                    ABAR.db.profile.bars[key].macroAnchor = an or false
-                    ABAR:ApplyFontsForBar(key)
-                end
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local s = SB()
-                local sz = s.macroFontSize or 12
-                local c = s.macroFontColor
-                local ox = s.macroOffsetX or 0
-                local oy = s.macroOffsetY or 0
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    local b = ABAR.db.profile.bars[key]
-                    if (b.macroFontSize or 12) ~= sz then
-                        return false
-                    end
-                    if (b.macroOffsetX or 0) ~= ox then
-                        return false
-                    end
-                    if (b.macroOffsetY or 0) ~= oy then
-                        return false
-                    end
-                    if (b.macroAnchor or nil) ~= (s.macroAnchor or nil) then
-                        return false
-                    end
-                    if c then
-                        local bc = b.macroFontColor
-                        if not bc or bc.r ~= c.r or bc.g ~= c.g or bc.b ~= c.b then
-                            return false
-                        end
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_BAR_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return SelectedKey()
-                end,
-                onApply = function(checkedKeys)
-                    local s = SB()
-                    local c = s.macroFontColor
-                    local sz = s.macroFontSize or 12
-                    local ox = s.macroOffsetX or 0
-                    local oy = s.macroOffsetY or 0
-                    local an = s.macroAnchor
-                    for _, key in ipairs(checkedKeys) do
-                        if c then
-                            ABAR.db.profile.bars[key].macroFontColor = { r = c.r, g = c.g, b = c.b }
-                        end
-                        ABAR.db.profile.bars[key].macroFontSize = sz
-                        ABAR.db.profile.bars[key].macroOffsetX = ox
-                        ABAR.db.profile.bars[key].macroOffsetY = oy
-                        ABAR.db.profile.bars[key].macroAnchor = an or false
-                        ABAR:ApplyFontsForBar(key)
-                    end
-                    CludesUI:RefreshPage()
-                end,
-            },
-        })
+        TextSync(rgn, "Apply Macro Text Settings to all Bars", "macro")
     end
 
     do
