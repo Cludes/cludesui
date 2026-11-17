@@ -39,161 +39,129 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
     -- Preview clamps the aura Y offset to this magnitude so a large offset
     -- can't balloon the preview/content header; real frames apply it in full.
     local PREVIEW_Y_CAP = 50
-    -- Preview fill coloring with optional additive gradient (mirrors real frames).
-    local function PV_FillColor(texture, texPath, br, backdrop, bb, gEnabled, gColor, gDir, alpha)
+    -- Paints one preview fill the way the live bars do: a flat tint, or with
+    -- the gradient on, the bar colour fading into the gradient colour.
+    local GRADIENT_FALLBACK = { r = 0.20, g = 0.20, b = 0.80 }
+    local function PV_FillColor(texture, texPath, r, g, b, useGradient, toColor, direction, alpha)
         if not texture then
             return
         end
-        if gEnabled then
-            local gr, gg, gbb = 0.20, 0.20, 0.80
-            if gColor then
-                gr, gg, gbb = gColor.r, gColor.g, gColor.b
-            end
+        if not useGradient then
             if texPath then
                 texture:SetTexture(texPath)
+                texture:SetVertexColor(r, g, b, 1)
             else
-                texture:SetColorTexture(1, 1, 1, 1)
+                texture:SetColorTexture(r, g, b, 1)
             end
-            texture:SetVertexColor(1, 1, 1, 1)
-            -- Gradient overrides region alpha, so Bar Opacity is baked into
-            -- the gradient endpoint alphas.
-            local a = alpha or 1
-            texture:SetGradient(
-                gDir or "HORIZONTAL",
-                CreateColor(br, backdrop, bb, a),
-                CreateColor(gr, gg, gbb, a)
-            )
-        elseif texPath then
-            texture:SetTexture(texPath)
-            texture:SetVertexColor(br, backdrop, bb, 1)
-        else
-            texture:SetColorTexture(br, backdrop, bb, 1)
+            return
         end
+        local to = toColor or GRADIENT_FALLBACK
+        if texPath then
+            texture:SetTexture(texPath)
+        else
+            texture:SetColorTexture(1, 1, 1, 1)
+        end
+        texture:SetVertexColor(1, 1, 1, 1)
+        -- A gradient replaces the region alpha, so Bar Opacity rides both
+        -- of its endpoint colours instead.
+        local endA = alpha or 1
+        texture:SetGradient(
+            direction or "HORIZONTAL",
+            CreateColor(r, g, b, endA),
+            CreateColor(to.r, to.g, to.b, endA)
+        )
     end
-    local p = saved.profile
-    local prefs
-    if unitKey == "player" then
-        prefs = p.player
-    elseif unitKey == "target" then
-        prefs = p.target
-    elseif unitKey == "focus" then
-        prefs = p.focus
-    elseif unitKey == "pet" then
-        prefs = p.pet
-    elseif unitKey == "boss" then
-        prefs = p.boss
-    elseif unitKey == "targettarget" then
-        prefs = p.targettarget
-    elseif unitKey == "focustarget" then
-        prefs = p.focustarget
-    else
-        prefs = p.player
+
+    -- The settings table this preview dresses from, read fresh on each call
+    -- (a held table goes stale after a profile switch); a unit key this
+    -- builder does not know shows the player's.
+    local DRESSED_UNITS = {
+        player = true,
+        target = true,
+        focus = true,
+        pet = true,
+        boss = true,
+        targettarget = true,
+        focustarget = true,
+    }
+    local function UnitPrefs()
+        return saved.profile[DRESSED_UNITS[unitKey] and unitKey or "player"]
     end
+    local prefs = UnitPrefs()
 
     side = side or "left"
 
-    -- Mini frames (ToT/FoT/Pet) have no power bar, cast bar or auras at
-    -- runtime, so the preview draws none, except the pet's opt-in buffs and
-    -- debuffs (drawn while their Location is set) and, on WoW Forever, the
-    -- pet's power bar in the CUI look (the stock styles paint their own).
+    -- The live mini frames (ToT, FoT, pet) carry no cast bar, power bar or
+    -- debuffs, so neither does their preview. Two exceptions: the pet keeps
+    -- its opt-in auras (shown while a Location is picked) and, on WoW
+    -- Forever, its power bar in the CludesUI look (a stock style paints its own).
     local isMiniPreview = (unitKey == "targettarget" or unitKey == "focustarget" or unitKey == "pet")
-    local noPowerPreview = isMiniPreview
-        and not (unitKey == "pet" and mod.UF_PetHasPower and not ResolveBlizzPreview(unitKey, prefs))
+    local petDrawsPower = unitKey == "pet" and mod.UF_PetHasPower and not ResolveBlizzPreview(unitKey, prefs)
+    local noPowerPreview = isMiniPreview and not petDrawsPower
     local noDebuffPreview = isMiniPreview and unitKey ~= "pet"
     local noCastbarPreview = isMiniPreview
 
-    local hasPortraitSupport = (prefs.showPortrait ~= nil or prefs.portraitMode ~= nil)
-    local portraitShownByUser = prefs.showPortrait ~= false
-    local showPortrait = hasPortraitSupport
-        and (prefs.portraitStyle or saved.profile.portraitStyle or "attached") ~= "none"
-        and portraitShownByUser
-    local frameW = prefs.frameWidth or 181
-    local healthH = prefs.healthHeight or 46
-    local powerH = noPowerPreview and 0 or (prefs.powerHeight or 6)
-    local initPpPos = noPowerPreview and "none" or mod.UF_PowerPos(prefs)
+    local portraitLook = prefs.portraitStyle or saved.profile.portraitStyle or "attached"
+    local hasPortraitSupport = prefs.showPortrait ~= nil or prefs.portraitMode ~= nil
+    local showPortrait = hasPortraitSupport and portraitLook ~= "none" and prefs.showPortrait ~= false
+    local frameW, healthH = prefs.frameWidth or 181, prefs.healthHeight or 46
+    local powerH, initPpPos = 0, "none"
+    if not noPowerPreview then
+        powerH, initPpPos = prefs.powerHeight or 6, mod.UF_PowerPos(prefs)
+    end
     local initPpIsAtt = (initPpPos == "below" or initPpPos == "above")
     local initPpExtra = initPpIsAtt and powerH or 0
-    -- Castbar gate: player = showPlayerCastbar (always locked to the frame),
-    -- target/focus = showCastbar, mini frames never.
-    local castbarH
-    if noCastbarPreview then
-        castbarH = 0
-    elseif unitKey == "player" then
-        local pch = prefs.playerCastbarHeight
-        castbarH = prefs.showPlayerCastbar and (pch and pch > 0 and pch or 14) or 0
-    else
-        castbarH = (prefs.showCastbar ~= false) and (prefs.castbarHeight or 14) or 0
+    -- Cast bar height: the player's follows Show Cast Bar (it is always
+    -- pinned to the frame), target and focus follow theirs, and a cast bar
+    -- the live layout moved out of the strip under the frame reserves no
+    -- room there (the same call the live aura containers make).
+    local castbarH = 0
+    if not noCastbarPreview then
+        if unitKey ~= "player" then
+            castbarH = (prefs.showCastbar ~= false) and (prefs.castbarHeight or 14) or 0
+        elseif prefs.showPlayerCastbar then
+            local ownH = prefs.playerCastbarHeight
+            castbarH = (ownH and ownH > 0) and ownH or 14
+        end
     end
-    -- A cast bar moved out of the strip below the frame reserves no space in
-    -- the live layout, so the preview must not draw it there either (same
-    -- decision, one helper: CludesUIUnitFrames/CUI_UnitFrames_AuraContainers.lua).
-    if castbarH > 0 and CludesUI.UF_CastbarBelowFrame and not CludesUI.UF_CastbarBelowFrame(unitKey) then
+    local inStrip = CludesUI.UF_CastbarBelowFrame
+    if castbarH > 0 and inStrip and not inStrip(unitKey) then
         castbarH = 0
     end
     local barH = healthH + initPpExtra
-    local isAttachedInit = (prefs.portraitStyle or saved.profile.portraitStyle or "attached") == "attached"
+    local isAttachedInit = portraitLook == "attached"
     local portraitW = (showPortrait and isAttachedInit) and barH or 0
     local totalW = frameW + portraitW
     local totalH = barH
 
-    -- Compute initial aura extra height (buffs/debuffs extend beyond frame)
-    local initBuffExtra = 0
-    local initBuffTopPad = 0
+    -- Header room the first build keeps above (top pad) and below (extra)
+    -- the frame for each aura row, the reserve pf:Update makes too, so the
+    -- page is spaced right before any slider moves. A corner anchor adds a
+    -- row; a Y offset past the frame adds its overflow on that side, and a
+    -- side-anchored row (sideways true) may overflow either way.
+    local initBuffExtra, initBuffTopPad = 0, 0
+    local function ReserveAuraRoom(anchor, iconSize, offsetY, sideways)
+        local atTop = anchor == "topleft" or anchor == "topright"
+        local atBottom = anchor == "bottomleft" or anchor == "bottomright"
+        if atTop or atBottom then
+            local rowH = (iconSize or 22) + 3
+            initBuffExtra = initBuffExtra + rowH
+            if atTop then
+                initBuffTopPad = initBuffTopPad + rowH
+            end
+        end
+        local shift = math.max(-PREVIEW_Y_CAP, math.min(PREVIEW_Y_CAP, offsetY or 0))
+        if shift > 0 and (atTop or (sideways and not atBottom)) then
+            initBuffTopPad = initBuffTopPad + shift
+        elseif shift < 0 and (atBottom or (sideways and not atTop)) then
+            initBuffExtra = initBuffExtra - shift
+        end
+    end
     if prefs.showBuffs then
-        local ba = prefs.buffAnchor or "topleft"
-        -- Only top/bottom anchors extend vertically; left/right columns grow sideways.
-        if ba == "topleft" or ba == "topright" or ba == "bottomleft" or ba == "bottomright" then
-            initBuffExtra = (prefs.buffSize or 22) + 1 + 2
-        end
-        if ba == "topleft" or ba == "topright" then
-            initBuffTopPad = initBuffExtra
-        end
-        -- Mirror pf:Update's Y-offset overflow reserve (auraTopOv/auraBotOv) so the
-        -- first build spaces content correctly; else it's wrong until a slider nudge.
-        local boy = math.max(-PREVIEW_Y_CAP, math.min(PREVIEW_Y_CAP, prefs.buffOffsetY or 0))
-        if ba == "topleft" or ba == "topright" then
-            if boy > 0 then
-                initBuffTopPad = initBuffTopPad + boy
-            end
-        elseif ba == "bottomleft" or ba == "bottomright" then
-            if boy < 0 then
-                initBuffExtra = initBuffExtra - boy
-            end
-        else
-            if boy > 0 then
-                initBuffTopPad = initBuffTopPad + boy
-            elseif boy < 0 then
-                initBuffExtra = initBuffExtra - boy
-            end
-        end
+        ReserveAuraRoom(prefs.buffAnchor or "topleft", prefs.buffSize, prefs.buffOffsetY, true)
     end
-    do
-        local da = prefs.debuffAnchor or "none"
-        if da == "topleft" or da == "topright" or da == "bottomleft" or da == "bottomright" then
-            local debuffH = (prefs.debuffSize or 22) + 1 + 2
-            initBuffExtra = initBuffExtra + debuffH
-            if da == "topleft" or da == "topright" then
-                initBuffTopPad = initBuffTopPad + debuffH
-            end
-        end
-        -- Mirror the debuff Y-offset overflow reserved in pf:Update.
-        local doy = math.max(-PREVIEW_Y_CAP, math.min(PREVIEW_Y_CAP, prefs.debuffOffsetY or 0))
-        if da == "topleft" or da == "topright" then
-            if doy > 0 then
-                initBuffTopPad = initBuffTopPad + doy
-            end
-        elseif da == "bottomleft" or da == "bottomright" then
-            if doy < 0 then
-                initBuffExtra = initBuffExtra - doy
-            end
-        elseif da ~= "none" then
-            if doy > 0 then
-                initBuffTopPad = initBuffTopPad + doy
-            elseif doy < 0 then
-                initBuffExtra = initBuffExtra - doy
-            end
-        end
-    end
+    local firstDebuffAnchor = prefs.debuffAnchor or "none"
+    ReserveAuraRoom(firstDebuffAnchor, prefs.debuffSize, prefs.debuffOffsetY, firstDebuffAnchor ~= "none")
 
     local popFrame = CreateFrame("Frame", nil, hostFrame)
     -- The unit this dress shows: a kept header root hands the same frame to the
@@ -219,165 +187,127 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
     Pix.Size(barArea, totalW, barH)
     Pix.Point(barArea, "TOPLEFT", popFrame, "TOPLEFT", 0, 0)
 
-    -- Portrait
+    -- Portrait: a clipped box over a dark backing, holding one texture (the
+    -- 2D portrait or the class art) and, made on first need, a PlayerModel
+    -- (3D, and the test for whether a 2D portrait may be mirrored).
     local portraitFrame
     if hasPortraitSupport then
         portraitFrame = CreateFrame("Frame", nil, popFrame)
         Pix.Size(portraitFrame, barH, barH)
         portraitFrame:SetClipsChildren(true)
-        local portraitBg = portraitFrame:CreateTexture(nil, "BACKGROUND")
-        portraitBg:SetAllPoints()
-        portraitBg:SetColorTexture(0.082, 0.082, 0.082, 1)
-        portraitFrame._previewBg = portraitBg
-        if side == "left" then
-            Pix.Point(portraitFrame, "TOPLEFT", barArea, "TOPLEFT", 0, 0)
-        else
-            Pix.Point(portraitFrame, "TOPRIGHT", barArea, "TOPRIGHT", 0, 0)
-        end
+        local backing = portraitFrame:CreateTexture(nil, "BACKGROUND")
+        backing:SetAllPoints()
+        backing:SetColorTexture(0.082, 0.082, 0.082, 1)
+        portraitFrame._previewBg = backing
+        local nearCorner = (side == "left") and "TOPLEFT" or "TOPRIGHT"
+        Pix.Point(portraitFrame, nearCorner, barArea, nearCorner, 0, 0)
 
+        local function FillBox(region)
+            region:SetPoint("TOPLEFT", portraitFrame, "TOPLEFT", 0, 0)
+            region:SetPoint("BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", 0, 0)
+        end
         local portraitTex = portraitFrame:CreateTexture(nil, "ARTWORK")
-        portraitTex:SetPoint("TOPLEFT", portraitFrame, "TOPLEFT", 0, 0)
-        portraitTex:SetPoint("BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", 0, 0)
+        FillBox(portraitTex)
         portraitTex:SetTexCoord(0.15, 0.85, 0.15, 0.85)
 
-        -- Lazy model for 3D preview or enabled 2D mirror eligibility checks.
-        local portraitModel = nil
-
+        local portraitModel
         local function EnsurePreviewModel()
-            if portraitModel then
-                return portraitModel
+            if not portraitModel then
+                portraitModel = CreateFrame("PlayerModel", nil, portraitFrame)
+                FillBox(portraitModel)
+                portraitModel:SetUnit("player")
+                portraitModel:SetCamera(0)
+                portraitModel:Hide()
+                portraitFrame._previewModel = portraitModel
             end
-            portraitModel = CreateFrame("PlayerModel", nil, portraitFrame)
-            portraitModel:SetPoint("TOPLEFT", portraitFrame, "TOPLEFT", 0, 0)
-            portraitModel:SetPoint("BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", 0, 0)
-            portraitModel:SetUnit("player")
-            portraitModel:SetCamera(0)
-            portraitModel:Hide()
-            portraitFrame._previewModel = portraitModel
             return portraitModel
         end
+        -- The texture pinned inside the box, `inset` px in from every edge.
+        local function SeatPortraitTex(inset)
+            portraitTex:ClearAllPoints()
+            Pix.Point(portraitTex, "TOPLEFT", portraitFrame, "TOPLEFT", inset, -inset)
+            Pix.Point(portraitTex, "BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", -inset, inset)
+        end
 
-        -- Track last applied mode+style+zoom+mirror to avoid redundant re-init
-        local _lastAppliedMode = nil
-        local _lastAppliedStyle = nil
-        local _lastAppliedZoom = nil
-        local _lastAppliedMirror = nil
-
+        -- What the box last drew. An Update that changes none of mode, art
+        -- style, zoom and mirror leaves the box alone: seating a PlayerModel
+        -- again on every Update blinks and costs a great deal of GPU.
+        local drawn = {}
         local function ApplyPortraitMode()
-            -- Read settings fresh from DB; a captured table goes stale after a
-            -- preview switch or cache restore.
-            local curSettings
-            if unitKey == "player" then
-                curSettings = saved.profile.player
-            elseif unitKey == "target" then
-                curSettings = saved.profile.target
-            elseif unitKey == "focus" then
-                curSettings = saved.profile.focus
-            elseif unitKey == "pet" then
-                curSettings = saved.profile.pet
-            elseif unitKey == "boss" then
-                curSettings = saved.profile.boss
-            elseif unitKey == "targettarget" then
-                curSettings = saved.profile.targettarget
-            elseif unitKey == "focustarget" then
-                curSettings = saved.profile.focustarget
-            else
-                curSettings = saved.profile.player
-            end
-            local mode = curSettings.portraitMode or "2d"
-            -- A non-player frame that opted in previews its Class art fallback
-            -- (the stock styles keep their own portrait). The resolved mode is
-            -- the memo key, so every input of the fallback rides it.
+            local cur = UnitPrefs()
+            local mode = cur.portraitMode or "2d"
+            -- A non-player frame that opted in shows its Class art fallback
+            -- (a stock style keeps its own portrait). The resolved mode is
+            -- what the memo compares, so the fallback's inputs ride it.
             if
                 mode == "class"
                 and unitKey ~= "player"
-                and curSettings.portraitNonPlayerOn
+                and cur.portraitNonPlayerOn
                 and not CludesUI.BlizzStyle.Get("unitframes")
             then
-                mode = mod.UF_ClassFallback(curSettings)
+                mode = mod.UF_ClassFallback(cur)
             end
-            local style = curSettings.classThemeStyle or "modern"
-            local zoom = (curSettings.portraitArtScale or 100) + (curSettings.portrait3dZoom or 100) * 1000
-            -- Mirror Portrait also turns 3D models; never under a stock style.
-            local mirror = (curSettings.portraitMirror and not CludesUI.BlizzStyle.Get("unitframes")) and true
-                or false
-            -- Skip unchanged: re-initializing PlayerModel every Update() blinks
-            -- and costs massive GPU.
-            if mode == _lastAppliedMode and style == _lastAppliedStyle and zoom == _lastAppliedZoom then
-                if mirror == _lastAppliedMirror then
+            local style = cur.classThemeStyle or "modern"
+            local zoom = (cur.portraitArtScale or 100) + (cur.portrait3dZoom or 100) * 1000
+            -- Mirror Portrait turns 3D models too, and never under a stock style.
+            local mirror = cur.portraitMirror and not CludesUI.BlizzStyle.Get("unitframes") and true or false
+            if mode == drawn.mode and style == drawn.style and zoom == drawn.zoom then
+                if mirror == drawn.mirror then
                     return
                 end
                 if mode == "3d" and portraitModel then
-                    _lastAppliedMirror = mirror
+                    drawn.mirror = mirror
                     mod.UF_ApplyPortraitRotation(portraitModel, mirror)
                     return
                 end
             end
-            _lastAppliedMode = mode
-            _lastAppliedStyle = style
-            _lastAppliedZoom = zoom
-            _lastAppliedMirror = mirror
+            drawn.mode, drawn.style, drawn.zoom, drawn.mirror = mode, style, zoom, mirror
             portraitFrame._previewMode = mode
-            -- The preview reuses one texture for class art and 2D portraits.
+            -- Class art and the 2D portrait share the one texture, so a mask
+            -- the class art left behind comes off for anything else.
             if mode ~= "class" and portraitTex._classZoomMasked then
                 portraitTex:RemoveMaskTexture(portraitTex._classZoomMask)
                 portraitTex._classZoomMask:Hide()
                 portraitTex._classZoomMasked = nil
             end
+            portraitFrame:Show()
             if mode == "3d" then
-                portraitFrame:Show()
                 portraitTex:Hide()
-                local pm = EnsurePreviewModel()
-                pm:SetUnit("player")
-                pm:SetCamera(0)
-                pm:SetPortraitZoom(1)
-                pm:SetPosition(0, 0, 0)
-                local camScale = (curSettings.portrait3dZoom or 100) / 100
-                pm:SetCamDistanceScale(camScale)
-                pm:Show()
-                mod.UF_ApplyPortraitRotation(pm, mirror)
+                local model = EnsurePreviewModel()
+                model:SetUnit("player")
+                model:SetCamera(0)
+                model:SetPortraitZoom(1)
+                model:SetPosition(0, 0, 0)
+                model:SetCamDistanceScale((cur.portrait3dZoom or 100) / 100)
+                model:Show()
+                mod.UF_ApplyPortraitRotation(model, mirror)
+                return
+            end
+            if portraitModel then
+                portraitModel:Hide()
+            end
+            if mode == "none" then
+                -- The non-player "Nothing" fallback: just the empty backing.
+                portraitTex:Hide()
             elseif mode == "class" then
-                portraitFrame:Show()
-                if portraitModel then
-                    portraitModel:Hide()
-                end
                 portraitTex:Show()
-                local _, ct = UnitClass("player")
-                ApplyClassIconTexture_Preview(portraitTex, ct or "WARRIOR", style, mirror)
+                local _, classToken = UnitClass("player")
+                ApplyClassIconTexture_Preview(portraitTex, classToken or "WARRIOR", style, mirror)
                 portraitTex:SetAlpha(0.9)
-                -- Use current portrait frame height for inset (not captured barH)
-                local curBH = portraitFrame:GetHeight()
-                if curBH < 1 then
-                    curBH = barH
-                end
-                local inset = math.floor(curBH * 0.08)
-                portraitTex:ClearAllPoints()
-                Pix.Point(portraitTex, "TOPLEFT", portraitFrame, "TOPLEFT", inset, -inset)
-                Pix.Point(portraitTex, "BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", -inset, inset)
-            elseif mode == "none" then
-                -- Non-player fallback "Nothing": the empty backdrop.
-                portraitFrame:Show()
-                if portraitModel then
-                    portraitModel:Hide()
-                end
-                portraitTex:Hide()
+                -- Inset from the box's height now, not the build-time barH.
+                local boxH = portraitFrame:GetHeight()
+                SeatPortraitTex(math.floor((boxH < 1 and barH or boxH) * 0.08))
             else
-                portraitFrame:Show()
-                if portraitModel then
-                    portraitModel:Hide()
-                end
                 portraitTex:Show()
                 SetPortraitTexture(portraitTex, "player")
                 mirror = mirror and mod.UF_CanMirrorPortrait2D(EnsurePreviewModel(), "player")
+                local u0, u1 = 0.15, 0.85
                 if mirror then
-                    portraitTex:SetTexCoord(0.85, 0.15, 0.15, 0.85)
-                else
-                    portraitTex:SetTexCoord(0.15, 0.85, 0.15, 0.85)
+                    u0, u1 = u1, u0
                 end
+                portraitTex:SetTexCoord(u0, u1, 0.15, 0.85)
                 portraitTex:SetAlpha(1)
-                portraitTex:ClearAllPoints()
-                Pix.Point(portraitTex, "TOPLEFT", portraitFrame, "TOPLEFT", 0, 0)
-                Pix.Point(portraitTex, "BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", 0, 0)
+                SeatPortraitTex(0)
             end
         end
         portraitFrame._applyMode = ApplyPortraitMode
@@ -385,102 +315,82 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         portraitFrame._previewTex = portraitTex
         portraitFrame._previewModel = portraitModel
         ApplyPortraitMode()
-
         if not showPortrait then
             portraitFrame:Hide()
         end
     end
 
-    -- Health bar color
+    -- Health colours: the dark theme's fill and backing, else the unit's own
+    -- picks, with Dynamic Health Color over every flat source as on the live
+    -- bar (fed the preview's known fake percent, so the clean-number twin of
+    -- the engine curve stands in for UnitHealthPercent).
     local hR, hG, hB, hA, bgR, bgG, bgB, bgA
     local isDarkTheme = mod.UF_DarkThemeOn(prefs)
     if isDarkTheme then
         hR, hG, hB, hA = CludesUI.GetDarkModeFill()
         bgR, bgG, bgB, bgA = CludesUI.GetDarkModeBg()
     else
-        local barOpacity = (prefs.healthBarOpacity or 90) / 100
-        hA = barOpacity
-        -- Custom fill color is skipped when class-colored. Boss preview is
-        -- always hostile-red: the real boss frame never class-colors.
-        local cFill = prefs.customFillColor
-        local isClassColored = prefs.healthClassColored and unitKey ~= "boss"
-        if isClassColored then
-            local _, classToken = UnitClass("player")
-            local cc = RAID_CLASS_COLORS[classToken]
-            if cc then
-                hR, hG, hB = cc.r, cc.g, cc.b
-            else
-                hR, hG, hB = 37 / 255, 193 / 255, 29 / 255
+        hA = (prefs.healthBarOpacity or 90) / 100
+        local function PlayerClassRGB()
+            local _, token = UnitClass("player")
+            local classColor = RAID_CLASS_COLORS[token]
+            if classColor then
+                return classColor.r, classColor.g, classColor.b
             end
-        elseif cFill then
-            hR, hG, hB = cFill.r, cFill.g, cFill.b
+            return 37 / 255, 193 / 255, 29 / 255
+        end
+        -- The boss preview stays hostile red: the live boss frame never class-colours.
+        local ownFill = prefs.customFillColor
+        if prefs.healthClassColored and unitKey ~= "boss" then
+            hR, hG, hB = PlayerClassRGB()
+        elseif ownFill then
+            hR, hG, hB = ownFill.r, ownFill.g, ownFill.b
         elseif unitKey == "player" then
-            local _, classToken = UnitClass("player")
-            local cc = RAID_CLASS_COLORS[classToken]
-            if cc then
-                hR, hG, hB = cc.r, cc.g, cc.b
-            else
-                hR, hG, hB = 37 / 255, 193 / 255, 29 / 255
-            end
+            hR, hG, hB = PlayerClassRGB()
         elseif unitKey == "pet" then
             hR, hG, hB = 37 / 255, 193 / 255, 29 / 255
         else
             hR, hG, hB = 0.8, 0.2, 0.2
         end
-        -- Dynamic Health Color outranks every flat source above, exactly as it
-        -- does on the live bar. The preview's health percent is a known fake,
-        -- so this takes the clean-number twin of the engine curve rather than
-        -- UnitHealthPercent.
-        local pvDynR, pvDynG, pvDynB =
-            mod.UF_PreviewDynamicColor(prefs, optionState._previewHealthPct or 0.70)
-        if pvDynR then
-            hR, hG, hB = pvDynR, pvDynG, pvDynB
+        local dynR, dynG, dynB = mod.UF_PreviewDynamicColor(prefs, optionState._previewHealthPct or 0.70)
+        if dynR then
+            hR, hG, hB = dynR, dynG, dynB
         end
-        -- Class-colored background (designer shows the player's class), else custom.
-        local bgClassCC
+        -- Backing: the player's class colour (the designer shows your class)
+        -- while Class Colored Background is on, else the custom pick.
+        local classBack
         if prefs.bgClassColored then
-            local _, ct = UnitClass("player")
-            bgClassCC = ct and CludesUI.GetClassColor(ct)
+            local _, token = UnitClass("player")
+            classBack = token and CludesUI.GetClassColor(token)
         end
-        if bgClassCC then
-            bgR, bgG, bgB = bgClassCC.r, bgClassCC.g, bgClassCC.b
+        local backPick = classBack or prefs.customBgColor
+        if backPick then
+            bgR, bgG, bgB = backPick.r, backPick.g, backPick.b
         else
-            local cBg = prefs.customBgColor
-            if cBg then
-                bgR, bgG, bgB = cBg.r, cBg.g, cBg.b
-            else
-                bgR, bgG, bgB = 17 / 255, 17 / 255, 17 / 255
-            end
+            bgR, bgG, bgB = 17 / 255, 17 / 255, 17 / 255
         end
         bgA = (prefs.customBgAlpha or 100) / 100
     end
 
-    -- Health bar
+    -- Health bar. The backing colour covers only the missing-health part, so
+    -- a fill below full opacity shows the dark base through it rather than
+    -- the backing colour; Update re-anchors it for reverse fill, as live.
+    local fillW = math.floor(frameW * (optionState._previewHealthPct or 0.70) + 0.5)
     local health = CreateFrame("Frame", nil, popFrame)
     Pix.Size(health, frameW, healthH)
     local healthBgColor = health:CreateTexture(nil, "BACKGROUND")
-    -- Cover only the empty (missing-health) portion so a reduced fill opacity
-    -- shows the backdrop through the fill, not the bg color. The live-update
-    -- pass below re-anchors this for reverse fill (matches live frames).
-    healthBgColor:SetPoint(
-        "TOPLEFT",
-        health,
-        "TOPLEFT",
-        math.floor(frameW * (optionState._previewHealthPct or 0.70) + 0.5),
-        0
-    )
+    healthBgColor:SetPoint("TOPLEFT", health, "TOPLEFT", fillW, 0)
     healthBgColor:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
     healthBgColor:SetColorTexture(bgR, bgG, bgB, 1)
     healthBgColor:SetAlpha(bgA)
-    local pvPowerAboveOff = (initPpPos == "above") and powerH or 0
-    if showPortrait and portraitFrame then
-        if side == "left" then
-            Pix.Point(health, "TOPLEFT", portraitFrame, "TOPRIGHT", 0, -pvPowerAboveOff)
-        else
-            Pix.Point(health, "TOPRIGHT", portraitFrame, "TOPLEFT", 0, -pvPowerAboveOff)
-        end
+    -- A power bar above the health bar pushes the health bar down by its height.
+    local dropForPower = (initPpPos == "above") and powerH or 0
+    if not (showPortrait and portraitFrame) then
+        Pix.Point(health, "TOPLEFT", barArea, "TOPLEFT", 0, -dropForPower)
+    elseif side == "left" then
+        Pix.Point(health, "TOPLEFT", portraitFrame, "TOPRIGHT", 0, -dropForPower)
     else
-        Pix.Point(health, "TOPLEFT", barArea, "TOPLEFT", 0, -pvPowerAboveOff)
+        Pix.Point(health, "TOPRIGHT", portraitFrame, "TOPLEFT", 0, -dropForPower)
     end
 
     local healthBg = health:CreateTexture(nil, "BACKGROUND", nil, -1)
@@ -490,18 +400,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
     local healthFill = health:CreateTexture(nil, "ARTWORK")
     healthFill:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
     healthFill:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 0, 0)
-    healthFill:SetWidth(math.floor(frameW * (optionState._previewHealthPct or 0.70) + 0.5))
-    PV_FillColor(
-        healthFill,
-        nil,
-        hR,
-        hG,
-        hB,
-        (not isDarkTheme) and prefs.gradientEnabled,
-        prefs.gradientColor,
-        prefs.gradientDir,
-        hA
-    )
+    healthFill:SetWidth(fillW)
+    local healthGradient = (not isDarkTheme) and prefs.gradientEnabled
+    PV_FillColor(healthFill, nil, hR, hG, hB, healthGradient, prefs.gradientColor, prefs.gradientDir, hA)
     healthFill:SetAlpha(hA)
     popFrame._healthFill = healthFill
     popFrame._hR, popFrame._hG, popFrame._hB, popFrame._hA = hR, hG, hB, hA
@@ -513,39 +414,26 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         dispelOverlayPreview:Hide()
     end
 
-    -- Text overlay frame (sits above absorb StatusBar and border)
+    -- Text layer over the health bar, above the absorb bars and the border.
     local textOverlay = CreateFrame("Frame", nil, popFrame)
     textOverlay:SetAllPoints(health)
     textOverlay:SetFrameStrata(popFrame:GetFrameStrata())
     textOverlay:SetFrameLevel(math.max(popFrame:GetFrameLevel() + 20, health:GetFrameLevel() + 12))
 
-    -- Left text
-    local leftContent = prefs.leftTextContent or "name"
-    local rightContent = prefs.rightTextContent or (unitKey == "focus" and "perhp" or "both")
-    local leftTS = prefs.leftTextSize or prefs.textSize or 12
-    local rightTS = prefs.rightTextSize or prefs.textSize or 12
-    local leftFS = textOverlay:CreateFontString(nil, "OVERLAY")
-    SetPVFont(leftFS, PREVIEW_FONT, leftTS)
-    leftFS:SetTextColor(1, 1, 1)
-    leftFS:SetWordWrap(false)
-
-    -- Right text
-    local rightFS = textOverlay:CreateFontString(nil, "OVERLAY")
-    SetPVFont(rightFS, PREVIEW_FONT, rightTS)
-    rightFS:SetTextColor(1, 1, 1)
-    rightFS:SetWordWrap(false)
-
-    local centerFS = textOverlay:CreateFontString(nil, "OVERLAY")
-    SetPVFont(centerFS, PREVIEW_FONT, prefs.centerTextSize or prefs.textSize or 12)
-    centerFS:SetTextColor(1, 1, 1)
-    centerFS:SetWordWrap(false)
-
-    -- Extra Text FontString: anchored per extraTextAlign, never width-constrained
-    -- (live frames never truncate it either).
-    local extraFS = textOverlay:CreateFontString(nil, "OVERLAY")
-    SetPVFont(extraFS, PREVIEW_FONT, prefs.extraTextSize or prefs.textSize or 12)
-    extraFS:SetTextColor(1, 1, 1)
-    extraFS:SetWordWrap(false)
+    -- The four health bar text slots, white and unwrapped until Update
+    -- places and colours them. Extra Text is never width-limited (the
+    -- live frames never cut it short either).
+    local function TextSlot(sizeKey)
+        local fs = textOverlay:CreateFontString(nil, "OVERLAY")
+        SetPVFont(fs, PREVIEW_FONT, prefs[sizeKey] or prefs.textSize or 12)
+        fs:SetTextColor(1, 1, 1)
+        fs:SetWordWrap(false)
+        return fs
+    end
+    local leftFS = TextSlot("leftTextSize")
+    local rightFS = TextSlot("rightTextSize")
+    local centerFS = TextSlot("centerTextSize")
+    local extraFS = TextSlot("extraTextSize")
 
     -- Resolve preview text for a content key
     local function PreviewTextForContent(contentFrame, s, prefixText)
@@ -2612,6 +2500,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
     popFrame._blizzScale = BlizzPreviewScale
     popFrame._blizzApply = ApplyBlizzPreview
     popFrame._blizzInset = BlizzInsetAnchor
+    popFrame._unitPrefs = UnitPrefs
 
     -- Update method
     function popFrame:Update()
@@ -2625,24 +2514,7 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             end
             return
         end
-        local s
-        if unitKey == "player" then
-            s = saved.profile.player
-        elseif unitKey == "target" then
-            s = saved.profile.target
-        elseif unitKey == "focus" then
-            s = saved.profile.focus
-        elseif unitKey == "pet" then
-            s = saved.profile.pet
-        elseif unitKey == "boss" then
-            s = saved.profile.boss
-        elseif unitKey == "targettarget" then
-            s = saved.profile.targettarget
-        elseif unitKey == "focustarget" then
-            s = saved.profile.focustarget
-        else
-            s = saved.profile.player
-        end
+        local s = popFrame._unitPrefs()
 
         -- Blizzard Style: stock geometry (nil = CUI look); Frame Scale rides
         -- the preview scale so every anchor and the header math follow it.
