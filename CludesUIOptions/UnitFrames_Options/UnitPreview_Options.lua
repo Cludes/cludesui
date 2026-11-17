@@ -3091,239 +3091,183 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             end
         end
 
-        if castBar then
-            if ch > 0 then
-                -- Cast icon "part of the bar": narrow + shift the bar so the icon
-                -- sits inside the width; off = full width, icon hangs outside.
-                local ciInWidth = mod.UF_CastIconInWidth(unitKey, s)
-                local ciOnRight, ciOffX, ciOffY
-                if unitKey == "player" then
-                    ciOnRight = s.playerCastbarIconRight == true
-                    ciOffX = s.playerCastIconOffsetX or 0
-                    ciOffY = s.playerCastIconOffsetY or 0
-                else
-                    ciOnRight = s.castbarIconRight == true
-                    ciOffX = s.castIconOffsetX or 0
-                    ciOffY = s.castIconOffsetY or 0
+        -- Cast bar, laid out live: its width (narrowed when the icon is part of
+        -- the bar), backing, fill, icon and the three text zones, then its
+        -- one authoritative anchor (under the Text Bar or the bars, shifted
+        -- for the icon).
+        if castBar and ch <= 0 then
+            castBar:Hide()
+            if castIconFrame then
+                castIconFrame:Hide()
+            end
+        elseif castBar then
+            local isPlayer = unitKey == "player"
+            local iconInBar = mod.UF_CastIconInWidth(unitKey, s)
+            local iconOnRight = s[isPlayer and "playerCastbarIconRight" or "castbarIconRight"] == true
+            local offsetKey = isPlayer and "playerCastIconOffset" or "castIconOffset"
+            local iconDX, iconDY = s[offsetKey .. "X"] or 0, s[offsetKey .. "Y"] or 0
+            -- Boss: a Cast Bar Width above 0 replaces the frame width, held to
+            -- tw + 120 (see the note in the build).
+            local fullW = tw
+            if unitKey == "boss" and (s.castbarWidth or 0) > 0 then
+                fullW = math.min(math.max(s.castbarWidth, 30), tw + 120)
+            end
+            local barW = iconInBar and math.max(1, fullW - ch) or fullW
+            castBar:SetSize(barW, ch)
+            castBar:Show()
+            -- Backing colour and opacity, with the Textured Background as live
+            -- (never over the stock cast art).
+            local backTex = castBar._previewBgTex
+            if backTex then
+                local backC = s.castBgColor
+                local unitTexKey = s.healthBarTexture or saved.profile.healthBarTexture or "none"
+                local stockArt = CludesUI.BlizzStyle.Active("unitframes") == "blizzard"
+                local backPath = mod.UF_TexBgCastPath(s, unitTexKey, stockArt)
+                local br, bgc, bb = backC and backC.r or 0, backC and backC.g or 0, backC and backC.b or 0
+                mod.UF_TexBgPaint(backTex, backPath, br, bgc, bb, s.castBgAlpha or 0.5)
+            end
+            if castFill then
+                castFill:ClearAllPoints()
+                local fillEnd, endInset = "LEFT", 1
+                if s.castReverseFill then
+                    fillEnd, endInset = "RIGHT", -1
                 end
-                local ciIconW = ch
-                -- Boss castbarWidth > 0 overrides the frame-matched width, clamped
-                -- to tw + 120 (see the creation-time note).
-                local cbBaseW = tw
-                if unitKey == "boss" and (s.castbarWidth or 0) > 0 then
-                    cbBaseW = math.min(math.max(s.castbarWidth, 30), tw + 120)
-                end
-                local ciBarW = ciInWidth and math.max(1, cbBaseW - ciIconW) or cbBaseW
-                castBar:SetSize(ciBarW, ch)
-                -- Authoritative anchoring happens once below (handles the BTB /
-                -- attached-power cases plus the icon-in-width shift).
-                castBar:Show()
-                -- Re-apply bg color/alpha so Bar Background updates live.
-                if castBar._previewBgTex then
-                    local cbgC = s.castBgColor
-                    -- Textured Background, as live (never over the stock cast art).
-                    local cbPath = mod.UF_TexBgCastPath(
-                        s,
-                        s.healthBarTexture or saved.profile.healthBarTexture or "none",
-                        CludesUI.BlizzStyle.Active("unitframes") == "blizzard"
-                    )
-                    mod.UF_TexBgPaint(
-                        castBar._previewBgTex,
-                        cbPath,
-                        cbgC and cbgC.r or 0,
-                        cbgC and cbgC.g or 0,
-                        cbgC and cbgC.b or 0,
-                        s.castBgAlpha or 0.5
-                    )
-                end
-                if castFill then
-                    castFill:ClearAllPoints()
-                    if s.castReverseFill then
-                        Pix.Point(castFill, "TOPRIGHT", castBar, "TOPRIGHT", -1, 0)
-                        Pix.Point(castFill, "BOTTOMRIGHT", castBar, "BOTTOMRIGHT", -1, 1)
-                    else
-                        Pix.Point(castFill, "TOPLEFT", castBar, "TOPLEFT", 1, 0)
-                        Pix.Point(castFill, "BOTTOMLEFT", castBar, "BOTTOMLEFT", 1, 1)
-                    end
-                    castFill:SetWidth(
-                        math.floor(math.max(0, ciBarW - 2) * (optionState._previewCastFill or 0.6) + 0.5)
-                    )
-                    -- Update fill color from per-unit settings (class colored only for player)
-                    local fillC
-                    if unitKey == "player" and s.castbarClassColored then
-                        local _, classToken = UnitClass("player")
-                        if classToken then
-                            fillC = RAID_CLASS_COLORS[classToken]
-                        end
-                    end
-                    if not fillC then
-                        fillC = s.castbarFillColor
-                    end
-                    -- Cast fill reuses the unit's health bar texture unless the cast
-                    -- bars carry one of their own (matches real frames).
-                    -- WHITE8X8 fallback ensures PV_FillColor always sets vertex color fresh.
-                    local cbTexKey = s.healthBarTexture or saved.profile.healthBarTexture or "none"
-                    local ownCb = saved.profile.castBarTexture
-                    if ownCb and ownCb ~= "inherit" then
-                        cbTexKey = ownCb
-                    end
-                    local cbTexPath = (mod.healthBarTextures or {})[cbTexKey]
-                        or "Interface\\Buttons\\WHITE8X8"
-                    local fc = fillC or saved.profile.castbarColor or { r = 0.114, g = 0.655, b = 0.514 }
-                    PV_FillColor(castFill, cbTexPath, fc.r, fc.g, fc.b, nil, nil, nil, 1)
-                    -- The "Blizzard" fill is the vanilla cast bar's own art, tinted.
-                    if cbTexKey == "blizzard" then
-                        castFill:SetAtlas("UI-CastingBar-Fill", true)
-                    end
-                end
-                if castIconFrame then
-                    castIconFrame:SetSize(ch, ch)
-                    castIconFrame:ClearAllPoints()
-                    if ciOnRight then
-                        Pix.Point(castIconFrame, "TOPLEFT", castBar, "TOPRIGHT", ciOffX, ciOffY)
-                    else
-                        Pix.Point(castIconFrame, "TOPRIGHT", castBar, "TOPLEFT", ciOffX, ciOffY)
-                    end
-                    local showIcon
-                    if unitKey == "player" then
-                        showIcon = s.showPlayerCastIcon ~= false
-                    else
-                        showIcon = s.showCastIcon ~= false
-                    end
-                    if showIcon then
-                        castIconFrame:Show()
-                    else
-                        castIconFrame:Hide()
-                    end
-                    if castIconFrame._iconTex then
-                        local spellIcon = (unitKey == "player")
-                                and (optionState._previewCastSpell and optionState._previewCastSpell.icon or 136197)
-                            or 136197
-                        castIconFrame._iconTex:SetTexture(spellIcon)
-                    end
-                end
-                -- Side-aware three-zone layout as on the live cast bar; name and
-                -- duration apply to every unit, player has no target zone.
-                local pvNameSide = s.castSpellNameSide or "left"
-                local pvTgtSide = s.castSpellTargetSide or "right"
-                local pvDurSide = s.castDurationSide or "right"
-                local showDur = s.showCastDuration ~= false
-                local showTgt = s.showCastTarget ~= false
-                local pvBarW = castBar:GetWidth()
-                local pvHasW = pvBarW and pvBarW > 0
-                local pvTimerW = (s.castDurationSize or 10) * 2.2
-                local pvTextW = pvHasW and (pvBarW * 0.42) or 0
-                if castNameFS2 then
-                    local spellName = (unitKey == "player")
-                            and (optionState._previewCastSpell and optionState._previewCastSpell.name or "Spell Name")
-                        or "Spell Name"
-                    castNameFS2:SetText(spellName)
-                    SetPVFont(castNameFS2, PREVIEW_FONT, s.castSpellNameSize or 11)
-                    local snC = s.castSpellNameColor or { r = 1, g = 1, b = 1 }
-                    castNameFS2:SetTextColor(snC.r, snC.g, snC.b)
-                    castNameFS2:ClearAllPoints()
-                    if pvNameSide == "none" then
-                        castNameFS2:Hide()
-                    elseif pvHasW then
-                        local pt, xb, jh = mod.GetCastTextAnchor(
-                            pvNameSide,
-                            showDur and pvDurSide == pvNameSide,
-                            pvTimerW,
-                            false
-                        )
-                        castNameFS2:SetWidth(pvTextW)
-                        castNameFS2:SetJustifyH(jh)
-                        castNameFS2:SetPoint(
-                            pt,
-                            castBar,
-                            pt,
-                            xb + (s.castSpellNameX or 0),
-                            1 + (s.castSpellNameY or 0)
-                        )
-                        castNameFS2:Show()
-                    end
-                end
-                if castTimeFS then
-                    local spCastTime = (
-                        optionState._previewCastSpell and optionState._previewCastSpell.castTime
-                    ) or 3.0
-                    castTimeFS:SetText(
-                        string.format("%.1f", spCastTime * (1 - (optionState._previewCastFill or 0.6)))
-                    )
-                    SetPVFont(castTimeFS, PREVIEW_FONT, s.castDurationSize or 10)
-                    local dtC = s.castDurationColor or { r = 1, g = 1, b = 1 }
-                    castTimeFS:SetTextColor(dtC.r, dtC.g, dtC.b)
-                    castTimeFS:SetShown(showDur)
-                    if pvHasW then
-                        local pt, xb, jh = mod.GetCastTextAnchor(pvDurSide, false, pvTimerW, true)
-                        castTimeFS:SetWidth(pvTimerW)
-                        castTimeFS:SetJustifyH(jh)
-                        castTimeFS:ClearAllPoints()
-                        castTimeFS:SetPoint(
-                            pt,
-                            castBar,
-                            pt,
-                            xb + (s.castDurationX or 0),
-                            (s.castDurationY or 0)
-                        )
-                    end
-                end
-                if castTargetFS then
-                    SetPVFont(castTargetFS, PREVIEW_FONT, s.castSpellTargetSize or 11)
-                    local tsC = s.castSpellTargetColor or { r = 1, g = 1, b = 1 }
-                    castTargetFS:SetTextColor(tsC.r, tsC.g, tsC.b)
-                    castTargetFS:SetShown(showTgt)
-                    if pvHasW then
-                        local pt, xb, jh = mod.GetCastTextAnchor(
-                            pvTgtSide,
-                            showDur and pvDurSide == pvTgtSide,
-                            pvTimerW,
-                            false
-                        )
-                        castTargetFS:SetWidth(pvTextW)
-                        castTargetFS:SetJustifyH(jh)
-                        castTargetFS:ClearAllPoints()
-                        castTargetFS:SetPoint(
-                            pt,
-                            castBar,
-                            pt,
-                            xb + (s.castSpellTargetX or 0),
-                            (s.castSpellTargetY or 0)
-                        )
-                    end
-                end
-                -- Re-flow so a live JustifyH change takes effect on already-rendered text.
-                if castNameFS2 then
-                    mod.ReflowFontString(castNameFS2)
-                end
-                if castTimeFS then
-                    mod.ReflowFontString(castTimeFS)
-                end
-                if castTargetFS then
-                    mod.ReflowFontString(castTargetFS)
-                end
-                castBar:ClearAllPoints()
-                local pvBtbVisible = (btbFrame and s.bottomTextBar and btbPos == "bottom")
-                local cbAnchorFrame = pvBtbVisible and btbFrame
-                    or ((pvPpIsAtt and power and power:IsShown()) and power or health)
-                local cbAnchorOff = pvBtbVisible and 0 or cbOff
-                -- Icon-in-width: shift the narrowed bar half an icon width toward
-                -- the icon-free side (left icon -> right, right icon -> left) so the
-                -- footprint stays flush under the frame, as on the real frame.
-                Pix.Point(
-                    castBar,
-                    "TOP",
-                    cbAnchorFrame,
-                    "BOTTOM",
-                    cbAnchorOff + (ciInWidth and (ciOnRight and -(ciIconW / 2) or (ciIconW / 2)) or 0),
-                    0
+                Pix.Point(castFill, "TOP" .. fillEnd, castBar, "TOP" .. fillEnd, endInset, 0)
+                Pix.Point(castFill, "BOTTOM" .. fillEnd, castBar, "BOTTOM" .. fillEnd, endInset, 1)
+                castFill:SetWidth(
+                    math.floor(math.max(0, barW - 2) * (optionState._previewCastFill or 0.6) + 0.5)
                 )
-            else
-                castBar:Hide()
-                if castIconFrame then
-                    castIconFrame:Hide()
+                -- Fill colour: the class colour on the player with Class Colored,
+                -- else the unit's pick, else the profile's cast colour, else teal.
+                local classFill
+                if isPlayer and s.castbarClassColored then
+                    local _, token = UnitClass("player")
+                    classFill = token and RAID_CLASS_COLORS[token]
+                end
+                local fc = classFill
+                    or s.castbarFillColor
+                    or saved.profile.castbarColor
+                    or { r = 0.114, g = 0.655, b = 0.514 }
+                -- The unit's bar texture unless the cast bars carry their own (as
+                -- live); WHITE8X8 as the fallback so the tint is always set fresh.
+                local ownTex = saved.profile.castBarTexture
+                local fillKey = s.healthBarTexture or saved.profile.healthBarTexture or "none"
+                if ownTex and ownTex ~= "inherit" then
+                    fillKey = ownTex
+                end
+                local fillPath = (mod.healthBarTextures or {})[fillKey] or "Interface\\Buttons\\WHITE8X8"
+                PV_FillColor(castFill, fillPath, fc.r, fc.g, fc.b, nil, nil, nil, 1)
+                -- "Blizzard" is the vanilla cast bar's own fill art, tinted.
+                if fillKey == "blizzard" then
+                    castFill:SetAtlas("UI-CastingBar-Fill", true)
                 end
             end
+            local sample = isPlayer and optionState._previewCastSpell or nil
+            if castIconFrame then
+                castIconFrame:SetSize(ch, ch)
+                castIconFrame:ClearAllPoints()
+                if iconOnRight then
+                    Pix.Point(castIconFrame, "TOPLEFT", castBar, "TOPRIGHT", iconDX, iconDY)
+                else
+                    Pix.Point(castIconFrame, "TOPRIGHT", castBar, "TOPLEFT", iconDX, iconDY)
+                end
+                if s[isPlayer and "showPlayerCastIcon" or "showCastIcon"] ~= false then
+                    castIconFrame:Show()
+                else
+                    castIconFrame:Hide()
+                end
+                if castIconFrame._iconTex then
+                    castIconFrame._iconTex:SetTexture(sample and sample.icon or 136197)
+                end
+            end
+            -- The three zones, side-aware as on the live cast bar: name and
+            -- duration on every unit, the target zone on all but the player.
+            local nameSide = s.castSpellNameSide or "left"
+            local targetSide = s.castSpellTargetSide or "right"
+            local timeSide = s.castDurationSide or "right"
+            local showDur = s.showCastDuration ~= false
+            local shownW = castBar:GetWidth()
+            local hasW = shownW and shownW > 0
+            local timeW = (s.castDurationSize or 10) * 2.2
+            local zoneW = hasW and (shownW * 0.42) or 0
+            local function Tint(fs, c)
+                c = c or { r = 1, g = 1, b = 1 }
+                fs:SetTextColor(c.r, c.g, c.b)
+            end
+            local function PlaceZone(fs, zoneSide, isTime, width, x, y)
+                local pt, xb, jh = mod.GetCastTextAnchor(
+                    zoneSide,
+                    not isTime and showDur and timeSide == zoneSide,
+                    timeW,
+                    isTime
+                )
+                fs:SetWidth(width)
+                fs:SetJustifyH(jh)
+                fs:ClearAllPoints()
+                fs:SetPoint(pt, castBar, pt, xb + x, y)
+            end
+            if castNameFS2 then
+                castNameFS2:SetText(sample and sample.name or "Spell Name")
+                SetPVFont(castNameFS2, PREVIEW_FONT, s.castSpellNameSize or 11)
+                Tint(castNameFS2, s.castSpellNameColor)
+                castNameFS2:ClearAllPoints()
+                if nameSide == "none" then
+                    castNameFS2:Hide()
+                elseif hasW then
+                    PlaceZone(
+                        castNameFS2,
+                        nameSide,
+                        false,
+                        zoneW,
+                        s.castSpellNameX or 0,
+                        1 + (s.castSpellNameY or 0)
+                    )
+                    castNameFS2:Show()
+                end
+            end
+            if castTimeFS then
+                local fullCast = (optionState._previewCastSpell and optionState._previewCastSpell.castTime)
+                    or 3.0
+                castTimeFS:SetText(
+                    string.format("%.1f", fullCast * (1 - (optionState._previewCastFill or 0.6)))
+                )
+                SetPVFont(castTimeFS, PREVIEW_FONT, s.castDurationSize or 10)
+                Tint(castTimeFS, s.castDurationColor)
+                castTimeFS:SetShown(showDur)
+                if hasW then
+                    PlaceZone(castTimeFS, timeSide, true, timeW, s.castDurationX or 0, (s.castDurationY or 0))
+                end
+            end
+            if castTargetFS then
+                SetPVFont(castTargetFS, PREVIEW_FONT, s.castSpellTargetSize or 11)
+                Tint(castTargetFS, s.castSpellTargetColor)
+                castTargetFS:SetShown(s.showCastTarget ~= false)
+                if hasW then
+                    PlaceZone(
+                        castTargetFS,
+                        targetSide,
+                        false,
+                        zoneW,
+                        s.castSpellTargetX or 0,
+                        (s.castSpellTargetY or 0)
+                    )
+                end
+            end
+            -- Flow the text again so a live justify change shows on text already drawn.
+            for _, fs in ipairs({ castNameFS2, castTimeFS, castTargetFS }) do
+                mod.ReflowFontString(fs)
+            end
+            castBar:ClearAllPoints()
+            local onTextBar = btbFrame and s.bottomTextBar and btbPos == "bottom"
+            local hangFrom = onTextBar and btbFrame
+                or ((pvPpIsAtt and power and power:IsShown()) and power or health)
+            -- An icon that is part of the bar moves the narrowed bar half an icon
+            -- toward the icon-free side, so the pair sits flush under the frame.
+            local iconShift = 0
+            if iconInBar then
+                iconShift = iconOnRight and -(ch / 2) or (ch / 2)
+            end
+            Pix.Point(castBar, "TOP", hangFrom, "BOTTOM", (onTextBar and 0 or cbOff) + iconShift, 0)
         end
 
         -- Border size and color (encompasses health+power+BTB+above pips); a mini
