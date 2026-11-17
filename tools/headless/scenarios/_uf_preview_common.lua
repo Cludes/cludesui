@@ -169,6 +169,14 @@ return function(OUT, units)
             happinessX = 2, happinessY = 1,
         })
     end
+    -- Power Bar Height 0 with its text: the text meets the health bar instead.
+    for i, pos in ipairs({ "above", "below", "detached_top" }) do
+        V("power zero " .. pos, {
+            powerPosition = pos, powerHeight = 0, powerPercentText = ({ "center", "left", "right" })[i],
+            powerTextFormat = ({ "perpp", "both", "curmaxpp" })[i], powerShowPercent = (i ~= 2),
+            powerPercentTextPowerColor = (i == 1), powerTextColor = BLUE, powerPercentX = 1, powerPercentY = -1,
+        })
+    end
 
     local NIL = {}
     local function Apply(s, set)
