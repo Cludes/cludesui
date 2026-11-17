@@ -103,3 +103,10 @@ for _, page in ipairs({ "Buff Manager", "Debuff Manager" }) do
         end
     end
 end
+
+-- The pages again after every click (sections the clicks added, such as
+-- Icon Effects, included).
+for _, page in ipairs({ "Buff Manager", "Debuff Manager" }) do
+    Rebuild(page)
+    SNAP(page .. " page after clicks", CUI._scrollFrame)
+end

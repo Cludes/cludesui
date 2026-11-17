@@ -2515,85 +2515,15 @@ end
 -------------------------------------------------------------------------------
 
 local function BuildFxEffects(widget, sy, conf, apply)
-    local W = CludesUI.Widgets
-    local Pix = CludesUI.PanelPP
-    if not (W and Pix) then
-        return sy
-    end
-    local hh
-    local MEDIA_MP = "Interface\\AddOns\\CludesUI\\media\\icons\\"
-
-    local entries = conf.fxList or {}
-
     -- Real AuraButtons forbid driver-ticked glows (Blizzard_AuraButton.xml:
     -- ForbiddenAspects baked into the template), so the icon glow is an engine
     -- host: the shared controls offer only what renders there.
-    local GO = CludesUI.GlowOptions
-
-    -- One "ICON EFFECTS" section block per list entry.
-    for bi = 1, #entries do
-        local e = entries[bi]
-        if not e.filters then
-            e.filters = {}
-        end
-
-        local hdrRgn
-        hdrRgn, hh = W:SectionHeader(widget, "ICON EFFECTS", sy)
-        sy = sy - hh
-        -- Remove X right after the section title text
-        if hdrRgn then
-            local del = CreateFrame("Button", nil, hdrRgn)
-            del:SetSize(14, 14)
-            if hdrRgn._label then
-                del:SetPoint("LEFT", hdrRgn._label, "RIGHT", 8, 0)
-            else
-                del:SetPoint("BOTTOMRIGHT", hdrRgn, "BOTTOMRIGHT", 0, 6)
-            end
-            del:SetFrameLevel(hdrRgn:GetFrameLevel() + 2)
-            del:SetAlpha(0.5)
-            local dx = del:CreateTexture(nil, "OVERLAY")
-            dx:SetAllPoints()
-            if dx.SetSnapToPixelGrid then
-                dx:SetSnapToPixelGrid(false)
-                dx:SetTexelSnappingBias(0)
-            end
-            dx:SetTexture(MEDIA_MP .. "cui-close.png")
-            del:SetScript("OnEnter", function(self)
-                self:SetAlpha(0.9)
-                CludesUI.ShowWidgetTooltip(self, CludesUI.L("Delete"))
-            end)
-            del:SetScript("OnLeave", function(self)
-                self:SetAlpha(0.5)
-                CludesUI.HideWidgetTooltip()
-            end)
-            local blockIdx = bi
-            del:SetScript("OnClick", function()
-                table.remove(entries, blockIdx)
-                apply()
-                CludesUI:RefreshPage(true)
-            end)
-        end
-
-        -- Row 1: Filters | Icon Glow (shared glow controls)
-        local glowDesc = GO.PrefixSite(function()
-            return e
-        end, "glow", "engine", apply)
-        -- The half next to Filters is too narrow for the color swatches.
-        glowDesc.colorInCog = true
-        local row
-        row, hh = W:DualRow(widget, sy, {
-            type = "dropdown",
-            text = "Filters",
-            values = { __placeholder = "..." },
-            order = { "__placeholder" },
-            getValue = function()
-                return "__placeholder"
-            end,
-            setValue = function() end,
-        }, GO.DropdownSpec(glowDesc, "Icon Glow"))
-        sy = sy - hh
-        do
-            local rgn = row._leftRegion
+    return CludesUI.BuildIconEffects(widget, sy, {
+        entries = conf.fxList or {},
+        apply = apply,
+        sizeMax = 400,
+        fontKey = "unitFrames",
+        filters = function(rgn, e)
             if rgn._control then
                 rgn._control:Hide()
             end
@@ -2612,122 +2542,45 @@ local function BuildFxEffects(widget, sy, conf, apply)
                     CludesUI:RefreshPage()
                 end
             )
-            Pix.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
+            CludesUI.PanelPP.Point(cbDD, "RIGHT", rgn, "RIGHT", -20, 0)
             rgn._control = cbDD
             rgn._lastInline = nil
             if cbRefresh then
                 CludesUI.RegisterWidgetRefresh(cbRefresh)
             end
-        end
-        GO.AttachInline(row._rightRegion, glowDesc)
-
-        -- Row 2: Border (+ swatch) | Size (icon size for the matched
-        -- filters; 0 = the bar's own icon size).
+        end,
         -- Border: solid px only (no Border Style here), so a plain 0-4 slider view
         -- over e.borderSize, the same number the dropdown wrote. A custom Icon
         -- Shape keeps the None..Strong dropdown (the shape ring is on/off); the
         -- Icon Shape setter rebuilds the page on a none/custom crossing.
-        local fxBorderCfg
-        if IsMaskShape(conf.iconShape) then
-            fxBorderCfg = {
-                type = "dropdown",
-                text = "Border",
-                values = BORDER_SIZE_VALUES,
-                order = BORDER_SIZE_LEVELS,
-                itemDisabled = function(val)
-                    return IsMaskShape(conf.iconShape) and BORDER_SIZE_SHAPE_DISABLED[val] or false
-                end,
-                itemDisabledTooltip = function()
-                    return "This option requires a non-custom shape to be selected"
-                end,
-                getValue = function()
-                    return BORDER_SIZE_KEY[e.borderSize or 0] or "none"
-                end,
-                setValue = function(val)
-                    e.borderSize = BORDER_SIZE_NUM[val] or 0
-                    apply()
-                end,
-            }
-        else
-            fxBorderCfg = {
-                type = "slider",
-                text = "Border",
-                min = 0,
-                max = 4,
-                step = 1,
-                trackWidth = 120,
-                getValue = function()
-                    return e.borderSize or 0
-                end,
-                setValue = function(val)
-                    e.borderSize = val
-                    apply()
-                end,
-            }
-        end
-        local bRow
-        bRow, hh = W:DualRow(widget, sy, fxBorderCfg, {
-            type = "slider",
-            text = "Size",
-            min = 0,
-            max = 400,
-            step = 1,
-            trackWidth = 120,
-            getValue = function()
-                return e.size or 0
-            end,
-            setValue = function(val)
-                e.size = (val and val > 0) and val or nil
-                apply()
-            end,
-        })
-        sy = sy - hh
-        do
-            local rgn = bRow._leftRegion
-            local colorSwatch = CludesUI.BuildColorSwatch(rgn, bRow:GetFrameLevel() + 3, function()
-                local c = e.borderColor or { r = 0, g = 0, b = 0 }
-                return c.r or 0, c.g or 0, c.b or 0, 1
-            end, function(r, g, b)
-                e.borderColor = { r = r, g = g, b = b }
-                apply()
-            end, false, 20)
-            colorSwatch:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            rgn._lastInline = colorSwatch
-        end
-    end
-
-    -- "Add Icon Effects Per-Filter" accent text link (centered)
-    do
-        local ar, ag, ab = 1, 0.82, 0.30
-        if CludesUI.GetAccentColor then
-            ar, ag, ab = CludesUI.GetAccentColor()
-        end
-        local addBtn = CreateFrame("Button", nil, widget)
-        addBtn:SetHeight(22)
-        addBtn:SetPoint("TOP", widget, "TOP", 0, sy - 17)
-        addBtn:SetFrameLevel(widget:GetFrameLevel() + 2)
-        local labelFS = addBtn:CreateFontString(nil, "OVERLAY")
-        local fp = (CludesUI.GetFontPath("unitFrames")) or "Fonts\\FRIZQT__.TTF"
-        labelFS:SetFont(fp, 16, "")
-        labelFS:SetPoint("CENTER", addBtn, "CENTER", 0, 0)
-        labelFS:SetText(CludesUI.L("Add Icon Effects Per-Filter"))
-        labelFS:SetTextColor(ar, ag, ab)
-        labelFS:SetAlpha(0.9)
-        addBtn:SetWidth(labelFS:GetStringWidth() + 8)
-        addBtn:SetScript("OnEnter", function()
-            labelFS:SetAlpha(1)
-        end)
-        addBtn:SetScript("OnLeave", function()
-            labelFS:SetAlpha(0.9)
-        end)
-        addBtn:SetScript("OnClick", function()
+        borderCfg = function(e)
+            if IsMaskShape(conf.iconShape) then
+                return {
+                    type = "dropdown",
+                    text = "Border",
+                    values = BORDER_SIZE_VALUES,
+                    order = BORDER_SIZE_LEVELS,
+                    itemDisabled = function(val)
+                        return IsMaskShape(conf.iconShape) and BORDER_SIZE_SHAPE_DISABLED[val] or false
+                    end,
+                    itemDisabledTooltip = function()
+                        return "This option requires a non-custom shape to be selected"
+                    end,
+                    getValue = function()
+                        return BORDER_SIZE_KEY[e.borderSize or 0] or "none"
+                    end,
+                    setValue = function(val)
+                        e.borderSize = BORDER_SIZE_NUM[val] or 0
+                        apply()
+                    end,
+                }
+            end
+        end,
+        addEntry = function()
             conf.fxList = conf.fxList or {}
             conf.fxList[#conf.fxList + 1] = { filters = {} }
-            CludesUI:RefreshPage(true)
-        end)
-        sy = sy - 17 - 22 - 8
-    end
-    return sy
+        end,
+    })
 end
 
 -------------------------------------------------------------------------------

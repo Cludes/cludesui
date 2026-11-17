@@ -77,6 +77,51 @@ Rebuild()
 SNAP("page", CUI._scrollFrame)
 SNAP("header", CUI._contentHeader or CUI._headerFrame)
 DumpPab()
+
+-- Icon Effects live on debuff bars: select the default Debuffs bar (its
+-- sidebar tile, the last clickable frame holding a "Debuffs" title; an
+-- earlier one belongs to another section), then add two Icon Effects
+-- sections through the link.
+local function ClickHolderOf(text)
+    local stack, hit = { { CUI._scrollFrame, nil } }, nil
+    while #stack > 0 do
+        local item = table.remove(stack, 1)
+        local f, holder = item[1], item[2]
+        if type(f) == "table" and rawget(f, "\0children") then
+            if f["\0kind"] == "Button" and f:IsVisible() and f["\0scripts"].OnClick then holder = f end
+            for _, r in ipairs(rawget(f, "\0regions") or {}) do
+                local v = rawget(r, "\0v")
+                if holder and v and v.Text == text then hit = holder end
+            end
+            for _, ch in ipairs(f["\0children"]) do stack[#stack + 1] = { ch, holder } end
+        end
+    end
+    if hit then pcall(hit["\0scripts"].OnClick, hit, "LeftButton") end
+    return hit ~= nil
+end
+local function AddFxLink()
+    return Find(CUI._scrollFrame, function(f)
+        if f["\0kind"] ~= "Button" or not f:IsVisible() then return false end
+        for _, r in ipairs(rawget(f, "\0regions") or {}) do
+            local v = rawget(r, "\0v")
+            if v and v.Text == "Add Icon Effects Per-Filter" then return true end
+        end
+        return false
+    end)[1]
+end
+OUT:write("== selected debuffs " .. tostring(ClickHolderOf("Debuffs")) .. "\n")
+for i = 1, 2 do
+    Rebuild()
+    local link = AddFxLink()
+    OUT:write("== add icon effects " .. i .. " " .. tostring(link ~= nil) .. "\n")
+    if link then pcall(link["\0scripts"].OnClick, link, "LeftButton") end
+end
+Rebuild()
+SNAP("page with icon effects", CUI._scrollFrame)
+DumpPab()
+
+-- Every visible button clicked, each on a fresh build (the Icon Effects
+-- sections' delete buttons among them).
 local n = #Buttons()
 OUT:write("== buttons " .. n .. "\n")
 for i = 1, n do
@@ -100,3 +145,5 @@ for i = 1, n do
         DumpPab()
     end
 end
+Rebuild()
+SNAP("page after clicks", CUI._scrollFrame)

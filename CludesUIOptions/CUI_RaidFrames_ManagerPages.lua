@@ -826,14 +826,6 @@ local function BuildTileFiltersDD(region, t, dm)
     )
 end
 local function BuildFxEffects(widget, sy, fxOwner)
-    local W = CludesUI.Widgets
-    local Pix = CludesUI.PP or CludesUI.PanelPP
-    if not (W and Pix) then
-        return sy
-    end
-    local hh
-    local MEDIA_MP = "Interface\\AddOns\\CludesUI\\media\\icons\\"
-
     -- One-time heal: the first Effects build stored a single fxGlow config.
     if fxOwner.fxGlow then
         local fg = fxOwner.fxGlow
@@ -848,162 +840,19 @@ local function BuildFxEffects(widget, sy, fxOwner)
         }
         fxOwner.fxGlow = nil
     end
-    local entries = fxOwner.fxList or {}
-
-    local GO = CludesUI.GlowOptions
-
-    -- One "ICON EFFECTS" section block per list entry.
-    for bi = 1, #entries do
-        local e = entries[bi]
-        if not e.filters then
-            e.filters = {}
-        end
-
-        local hdrRgn
-        hdrRgn, hh = W:SectionHeader(widget, "ICON EFFECTS", sy)
-        sy = sy - hh
-        -- Remove X right after the section title text
-        if hdrRgn then
-            local del = CreateFrame("Button", nil, hdrRgn)
-            del:SetSize(14, 14)
-            if hdrRgn._label then
-                del:SetPoint("LEFT", hdrRgn._label, "RIGHT", 8, 0)
-            else
-                del:SetPoint("BOTTOMRIGHT", hdrRgn, "BOTTOMRIGHT", 0, 6)
-            end
-            del:SetFrameLevel(hdrRgn:GetFrameLevel() + 2)
-            del:SetAlpha(0.5)
-            local dx = del:CreateTexture(nil, "OVERLAY")
-            dx:SetAllPoints()
-            if dx.SetSnapToPixelGrid then
-                dx:SetSnapToPixelGrid(false)
-                dx:SetTexelSnappingBias(0)
-            end
-            dx:SetTexture(MEDIA_MP .. "cui-close.png")
-            del:SetScript("OnEnter", function(self)
-                self:SetAlpha(0.9)
-                CludesUI.ShowWidgetTooltip(self, CludesUI.L("Delete"))
-            end)
-            del:SetScript("OnLeave", function(self)
-                self:SetAlpha(0.5)
-                CludesUI.HideWidgetTooltip()
-            end)
-            local blockIdx = bi
-            del:SetScript("OnClick", function()
-                table.remove(entries, blockIdx)
-                ApplyAndRedraw()
-            end)
-        end
-
-        -- Row 1: Filters | Icon Glow (shared glow controls)
-        local glowDesc = GO.PrefixSite(function()
-            return e
-        end, "glow", "engine", DmApply)
-        -- The half next to Filters is too narrow for the color swatches.
-        glowDesc.colorInCog = true
-        local row
-        row, hh = W:DualRow(widget, sy, {
-            type = "dropdown",
-            text = "Filters",
-            values = { __placeholder = "..." },
-            order = { "__placeholder" },
-            getValue = function()
-                return "__placeholder"
-            end,
-            setValue = function() end,
-        }, GO.DropdownSpec(glowDesc, "Icon Glow"))
-        sy = sy - hh
-        do
-            -- The SAME filter dropdown as Assigned Debuffs / tile panes
-            -- (shared items incl. the split dispel entries + tooltips).
-            if not e.filters then
-                e.filters = {}
-            end
-            BuildFilterCBDropdown(row._leftRegion, e.filters, DmTable() or {})
-        end
-        GO.AttachInline(row._rightRegion, glowDesc)
-
-        -- Row 2: Border (+ swatch, the DISPLAY-section Border style) | Size
-        -- (icon size for the matched filters; 0 = the grid's own size).
-        local bRow
-        bRow, hh = W:DualRow(widget, sy, {
-            type = "slider",
-            text = "Border",
-            min = 0,
-            max = 4,
-            step = 1,
-            trackWidth = 120,
-            getValue = function()
-                return e.borderSize or 0
-            end,
-            setValue = function(val)
-                e.borderSize = val
-                DmApply()
-            end,
-        }, {
-            type = "slider",
-            text = "Size",
-            min = 0,
-            max = 80,
-            step = 1,
-            trackWidth = 120,
-            getValue = function()
-                return e.size or 0
-            end,
-            setValue = function(val)
-                e.size = (val and val > 0) and val or nil
-                DmApply()
-            end,
-        })
-        sy = sy - hh
-        do
-            local region = bRow._leftRegion
-            local swatch = CludesUI.BuildColorSwatch(region, bRow:GetFrameLevel() + 3, function()
-                local c = e.borderColor or { r = 0, g = 0, b = 0 }
-                return c.r or 0, c.g or 0, c.b or 0, 1
-            end, function(r, g, b)
-                e.borderColor = { r = r, g = g, b = b }
-                DmApply()
-            end, false, 20)
-            swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-            region._lastInline = swatch
-        end
-    end
-
-    -- "Add Icon Effects Per-Filter" accent text link (centered)
-    do
-        local ar, ag, ab = 1, 0.82, 0.30
-        if CludesUI.GetAccentColor then
-            ar, ag, ab = CludesUI.GetAccentColor()
-        end
-        local addBtn = CreateFrame("Button", nil, widget)
-        addBtn:SetHeight(22)
-        addBtn:SetPoint("TOP", widget, "TOP", 0, sy - 17)
-        addBtn:SetFrameLevel(widget:GetFrameLevel() + 2)
-        local labelFS = addBtn:CreateFontString(nil, "OVERLAY")
-        local fp = (CludesUI.GetFontPath("options")) or "Fonts\\FRIZQT__.TTF"
-        labelFS:SetFont(fp, 16, "")
-        labelFS:SetPoint("CENTER", addBtn, "CENTER", 0, 0)
-        labelFS:SetText(CludesUI.L("Add Icon Effects Per-Filter"))
-        labelFS:SetTextColor(ar, ag, ab)
-        labelFS:SetAlpha(0.9)
-        addBtn:SetWidth(labelFS:GetStringWidth() + 8)
-        addBtn:SetScript("OnEnter", function()
-            labelFS:SetAlpha(1)
-        end)
-        addBtn:SetScript("OnLeave", function()
-            labelFS:SetAlpha(0.9)
-        end)
-        addBtn:SetScript("OnClick", function()
-            if not fxOwner.fxList then
-                fxOwner.fxList = {}
-            end
+    return CludesUI.BuildIconEffects(widget, sy, {
+        entries = fxOwner.fxList or {},
+        apply = DmApply,
+        -- The SAME filter dropdown as Assigned Debuffs / tile panes
+        -- (shared items incl. the split dispel entries + tooltips).
+        filters = function(region, e)
+            BuildFilterCBDropdown(region, e.filters, DmTable() or {})
+        end,
+        addEntry = function()
+            fxOwner.fxList = fxOwner.fxList or {}
             fxOwner.fxList[#fxOwner.fxList + 1] = { filters = {} }
-            CludesUI:RefreshPage(true)
-        end)
-        sy = sy - 17 - 22 - 8
-    end
-    return sy
+        end,
+    })
 end
 
 -- Shared tile Filters checkbox dropdown (grid AND effect tiles): identical
