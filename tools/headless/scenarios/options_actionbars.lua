@@ -116,3 +116,68 @@ for i = 1, count do
         BarSettings("MainBar")
     end
 end
+
+-- Every sync icon's "All" link on the Main Bar page, each on a fresh build,
+-- after the Main Bar is given settings unlike every other bar's, with every
+-- bar's settings written out after each click (the copy paths).
+local function AllLinks()
+    return Find(CUI._scrollFrame, function(f)
+        if f["\0kind"] ~= "Button" or not f:IsVisible() or not f["\0scripts"].OnClick then return false end
+        for _, r in ipairs(rawget(f, "\0regions") or {}) do
+            local v = rawget(r, "\0v")
+            if v and v.Text == "All" then return true end
+        end
+        return false
+    end)
+end
+do
+    local env = mod._ABO_OptEnv
+    local db = env and env.EAB and env.EAB.db
+    local bars = db and db.profile and db.profile.bars
+    local main = bars and bars.MainBar
+    if main then
+        local distinct = {
+            borderTexture = "glow", borderTextureOffset = 2, borderTextureOffsetY = 3, borderTextureShiftX = 1,
+            borderTextureShiftY = -1, borderBehind = true, borderAboveEffects = true,
+            borderColor = { r = 0.1, g = 0.2, b = 0.3, a = 0.9 }, borderClassColor = false,
+            borderThickness = "thick", borderThicknessPx = 3, shapeBorderColor = { r = 0.4, g = 0.5, b = 0.6, a = 1 },
+            buttonShape = "circle", iconZoom = 7, bgSpacing = 5, bgColor = { r = 0.3, g = 0.1, b = 0.2 }, bgAlpha = 0.4,
+            hideKeybind = true, keybindFontSize = 15, keybindOffsetX = 2, keybindOffsetY = -3, keybindAnchor = "TOPLEFT",
+            keybindFontColor = { r = 0.9, g = 0.8, b = 0.1 }, hideMacroText = true, macroFontSize = 13,
+            cooldownFontSize = 17, chargesFontSize = 11, clickThrough = true, disableTooltips = true,
+            rangeColoring = false, itemRank = false, barFrame = true, bgEnabled = true,
+        }
+        for k, v in pairs(distinct) do main[k] = v end
+    end
+    -- The runtime's re-apply can hit a fake-client gap mid-loop: keep it from
+    -- cutting the copy loop short.
+    local eab = env and env.EAB
+    if eab then
+        for k, v in pairs(getmetatable(eab) and getmetatable(eab).__index or {}) do
+            if type(v) == "function" and k:find("^Apply") then eab[k] = function(...) pcall(v, ...) end end
+        end
+        for k, v in pairs(eab) do
+            if type(v) == "function" and type(k) == "string" and k:find("^Apply") then
+                eab[k] = function(...) pcall(v, ...) end
+            end
+        end
+    end
+    local function DumpBars()
+        if not bars then return end
+        for _, key in ipairs(mod.BAR_DROPDOWN_ORDER) do
+            if bars[key] then OUT:write("   " .. key .. " " .. Dump(bars[key], 0) .. "\n") end
+        end
+    end
+    Rebuild("MainBar")
+    local count = #AllLinks()
+    OUT:write("== sync links " .. count .. "\n")
+    for i = 1, count do
+        Rebuild("MainBar")
+        local link = AllLinks()[i]
+        if link then
+            local ok, err = pcall(link["\0scripts"].OnClick, link, "LeftButton")
+            OUT:write("== sync " .. i .. (ok and "" or (" ERR " .. tostring(err))) .. "\n")
+            DumpBars()
+        end
+    end
+end
