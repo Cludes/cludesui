@@ -22,6 +22,28 @@ end -- module disabled: no options page
 local CreateFrame = CludesUI._Pool.CreateFrame
 local PoolKept, PoolGen = CludesUI._Pool.Kept, CludesUI._Pool.Gen
 
+-- A glow-style picker's items: the leading "inherit" entry (val nil, its
+-- caption given), then None (val 0) when noneVal is passed, then the seven
+-- glow styles in menu order. A fresh list on every call.
+local function GlowStyleItems(inheritLabel, noneVal)
+    local items = { { val = nil, label = inheritLabel } }
+    if noneVal then
+        items[2] = { val = noneVal, label = "None" }
+    end
+    for _, style in ipairs({
+        { 1, "Pixel Glow" },
+        { 3, "Action Button Glow" },
+        { 4, "Auto-Cast Shine" },
+        { 2, "Shape Glow" },
+        { 5, "GCD" },
+        { 6, "Modern WoW Glow" },
+        { 7, "Classic WoW Glow" },
+    }) do
+        items[#items + 1] = { val = style[1], label = style[2] }
+    end
+    return items
+end
+
 local function ShowWrongBarTypePopup(spellName, isSpellBuff)
     if not CludesUI or not CludesUI.ShowConfirmPopup then
         return
@@ -1092,8 +1114,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             or (mod._myRacialsSet and mod._myRacialsSet[sid2])
                             or (bsX.customSpellIDs and bsX.customSpellIDs[sid2])
                         )
-                            -- Hosted-buff markers are reparented Blizzard buff frames,
-                            -- not preset icons -- never mint cas entries for them.
+                            -- Hosted-buff markers are reparented Blizzard buff frames,
+                            -- not preset icons -- never mint cas entries for them.
                             and not (mod.HostedBuffMarkerToSpell and mod.HostedBuffMarkerToSpell(sid2))
                         if isInj then
                             if mod.SlotIDFromKey(sid2) then
@@ -2153,27 +2175,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 div1:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
                 mH = mH + 9
 
-                local GLOW_ITEMS = {
-                    { val = nil, label = "Default" },
-                    { val = 0, label = "None" },
-                    { val = 1, label = "Pixel Glow" },
-                    { val = 3, label = "Action Button Glow" },
-                    { val = 4, label = "Auto-Cast Shine" },
-                    { val = 2, label = "Shape Glow" },
-                    { val = 5, label = "GCD" },
-                    { val = 6, label = "Modern WoW Glow" },
-                    { val = 7, label = "Classic WoW Glow" },
-                }
-                local ACTIVE_GLOW_ITEMS = {
-                    { val = nil, label = "None" },
-                    { val = 1, label = "Pixel Glow" },
-                    { val = 3, label = "Action Button Glow" },
-                    { val = 4, label = "Auto-Cast Shine" },
-                    { val = 2, label = "Shape Glow" },
-                    { val = 5, label = "GCD" },
-                    { val = 6, label = "Modern WoW Glow" },
-                    { val = 7, label = "Classic WoW Glow" },
-                }
+                local GLOW_ITEMS = GlowStyleItems("Default", 0)
+                local ACTIVE_GLOW_ITEMS = GlowStyleItems("None")
                 local ACTIVE_SWIPE_ITEMS = {
                     { val = "custom", label = "CD Swipe Color" },
                     { val = "class", label = "CD Swipe Class Colored" },
@@ -3566,17 +3569,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
 
                     -- BUFF BAR per-icon menu. "Buff Glow" reuses the glow-style picker but is
                     -- driven by the while-shown buff-glow path (not proc). nil = inherit the bar's Buff Glow; 0 = None (force the glow off on this one icon).
-                    local BUFF_GLOW_ITEMS = {
-                        { val = nil, label = "Default" },
-                        { val = 0, label = "None" },
-                        { val = 1, label = "Pixel Glow" },
-                        { val = 3, label = "Action Button Glow" },
-                        { val = 4, label = "Auto-Cast Shine" },
-                        { val = 2, label = "Shape Glow" },
-                        { val = 5, label = "GCD" },
-                        { val = 6, label = "Modern WoW Glow" },
-                        { val = 7, label = "Classic WoW Glow" },
-                    }
+                    local BUFF_GLOW_ITEMS = GlowStyleItems("Default", 0)
                     MakeSubnavRow(
                         "Buff Glow",
                         BUFF_GLOW_ITEMS,
