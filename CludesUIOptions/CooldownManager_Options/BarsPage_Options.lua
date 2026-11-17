@@ -2580,6 +2580,164 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     local BORDER_ORDER = { "none", "thin", "normal", "heavy", "strong" }
     local BORDER_SIZES = { none = 0, thin = 1, normal = 2, heavy = 3, strong = 4 }
 
+    -- The Icon Shape, Icon Zoom and Border Style sync icons, the same in
+    -- the buff-bar layout and the regular one.
+    local function IconShapeSync(region)
+        if CludesUI._prebuilding then
+            return
+        end
+        CludesUI.BuildSyncIcon({
+            region = region,
+            tooltip = "Apply Icon Shape to all Bars",
+            isSynced = function()
+                local edge = BD()
+                local v = edge.iconShape or "none"
+                local zoom = edge.iconZoom or 0.08
+                local crop = mod.CdmCropPercent(edge)
+                local synced = true
+                ForEachSyncBar(function(b)
+                    if
+                        (b.iconShape or "none") ~= v
+                        or (b.iconZoom or 0.08) ~= zoom
+                        or mod.CdmCropPercent(b) ~= crop
+                    then
+                        synced = false
+                    end
+                end)
+                return synced
+            end,
+            onClick = function()
+                local edge = BD()
+                local v = edge.iconShape or "none"
+                local zoom = edge.iconZoom or 0.08
+                local crop = edge.iconCropPercent
+                ForEachSyncBar(function(b)
+                    b.iconShape = v
+                    b.iconZoom = zoom
+                    b.iconCropPercent = crop
+                    local isCS = (v ~= "none" and v ~= "cropped")
+                    if isCS then
+                        b.borderThickness = "strong"
+                        b.borderSize = BORDER_SIZES["strong"]
+                    else
+                        b.borderThickness = "thin"
+                        b.borderSize = BORDER_SIZES["thin"]
+                    end
+                    b._matchIconPhys = nil
+                    b._matchExtraPixels = nil
+                    b._matchStride = nil
+                    b._matchExtraPixelsH = nil
+                    b._matchStrideH = nil
+                end)
+                mod.BuildAllCDMBars()
+                Refresh()
+                UpdateCDMPreviewAndResize()
+                CludesUI:RefreshPage()
+            end,
+        })
+    end
+    local function IconZoomSync(region)
+        if CludesUI._prebuilding then
+            return
+        end
+        CludesUI.BuildSyncIcon({
+            region = region,
+            tooltip = "Apply Icon Zoom to all Bars",
+            isSynced = function()
+                local v = BD().iconZoom or 0.08
+                local synced = true
+                ForEachSyncBar(function(b)
+                    if (b.iconZoom or 0.08) ~= v then
+                        synced = false
+                    end
+                end)
+                return synced
+            end,
+            onClick = function()
+                local v = BD().iconZoom or 0.08
+                ForEachSyncBar(function(b)
+                    b.iconZoom = v
+                end)
+                mod.BuildAllCDMBars()
+                Refresh()
+                UpdateCDMPreview()
+                CludesUI:RefreshPage()
+            end,
+        })
+    end
+    local function BorderStyleSync(region)
+        if CludesUI._prebuilding then
+            return
+        end
+        CludesUI.BuildSyncIcon({
+            region = region,
+            tooltip = "Apply Border Style to all Bars",
+            onClick = function()
+                local edge = BD()
+                local bt = edge.borderTexture or "solid"
+                local ox = edge.borderTextureOffset
+                local oy = edge.borderTextureOffsetY
+                local sx = edge.borderTextureShiftX
+                local sy = edge.borderTextureShiftY
+                local th = edge.borderThickness or "thin"
+                local sz = edge.borderSize or 1
+                local px = edge.borderSizePx
+                local bh = edge.borderBehind
+                local br, backdrop, bb, ba = edge.borderR, edge.borderG, edge.borderB, edge.borderA
+                local cc = edge.borderClassColor
+                ForEachSyncBar(function(b)
+                    b.borderTexture = bt
+                    b.borderTextureOffset = ox
+                    b.borderTextureOffsetY = oy
+                    b.borderTextureShiftX = sx
+                    b.borderTextureShiftY = sy
+                    b.borderThickness = th
+                    b.borderSize = sz
+                    local pxv = px
+                    if pxv == nil and b.borderSizePx ~= nil then
+                        pxv = false
+                    end
+                    b.borderSizePx = pxv
+                    b.borderBehind = bh
+                    b.borderR = br
+                    b.borderG = backdrop
+                    b.borderB = bb
+                    b.borderA = ba
+                    b.borderClassColor = cc
+                end)
+                mod.BuildAllCDMBars()
+                Refresh()
+                UpdateCDMPreview()
+                CludesUI:RefreshPage()
+            end,
+            isSynced = function()
+                local edge = BD()
+                local bt = edge.borderTexture or "solid"
+                local ox = edge.borderTextureOffset
+                local oy = edge.borderTextureOffsetY
+                local sx = edge.borderTextureShiftX
+                local sy = edge.borderTextureShiftY
+                local bh = edge.borderBehind or false
+                local synced = true
+                ForEachSyncBar(function(b)
+                    if (b.borderTexture or "solid") ~= bt then
+                        synced = false
+                    end
+                    if b.borderTextureOffset ~= ox or b.borderTextureOffsetY ~= oy then
+                        synced = false
+                    end
+                    if b.borderTextureShiftX ~= sx or b.borderTextureShiftY ~= sy then
+                        synced = false
+                    end
+                    if (b.borderBehind or false) ~= bh then
+                        synced = false
+                    end
+                end)
+                return synced
+            end,
+        })
+    end
+
     local isBuffGlowBar = isBuffBar or (barInfo.barType == "custom_buff")
     local scaleAnimRow
     if isBuffGlowBar then
@@ -2798,84 +2956,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         AttachCropCog(buffShapeZoomRow._leftRegion)
 
         -- Sync icon on Custom Icon Shape (left of row 3)
-        if not CludesUI._prebuilding then
-            CludesUI.BuildSyncIcon({
-                region = buffShapeZoomRow._leftRegion,
-                tooltip = "Apply Icon Shape to all Bars",
-                isSynced = function()
-                    local edge = BD()
-                    local v = edge.iconShape or "none"
-                    local zoom = edge.iconZoom or 0.08
-                    local crop = mod.CdmCropPercent(edge)
-                    local synced = true
-                    ForEachSyncBar(function(b)
-                        if
-                            (b.iconShape or "none") ~= v
-                            or (b.iconZoom or 0.08) ~= zoom
-                            or mod.CdmCropPercent(b) ~= crop
-                        then
-                            synced = false
-                        end
-                    end)
-                    return synced
-                end,
-                onClick = function()
-                    local edge = BD()
-                    local v = edge.iconShape or "none"
-                    local zoom = edge.iconZoom or 0.08
-                    local crop = edge.iconCropPercent
-                    ForEachSyncBar(function(b)
-                        b.iconShape = v
-                        b.iconZoom = zoom
-                        b.iconCropPercent = crop
-                        local isCS = (v ~= "none" and v ~= "cropped")
-                        if isCS then
-                            b.borderThickness = "strong"
-                            b.borderSize = BORDER_SIZES["strong"]
-                        else
-                            b.borderThickness = "thin"
-                            b.borderSize = BORDER_SIZES["thin"]
-                        end
-                        b._matchIconPhys = nil
-                        b._matchExtraPixels = nil
-                        b._matchStride = nil
-                        b._matchExtraPixelsH = nil
-                        b._matchStrideH = nil
-                    end)
-                    mod.BuildAllCDMBars()
-                    Refresh()
-                    UpdateCDMPreviewAndResize()
-                    CludesUI:RefreshPage()
-                end,
-            })
-        end
+        IconShapeSync(buffShapeZoomRow._leftRegion)
         -- Sync icon on Icon Zoom (right of row 3)
-        if not CludesUI._prebuilding then
-            CludesUI.BuildSyncIcon({
-                region = buffShapeZoomRow._rightRegion,
-                tooltip = "Apply Icon Zoom to all Bars",
-                isSynced = function()
-                    local v = BD().iconZoom or 0.08
-                    local synced = true
-                    ForEachSyncBar(function(b)
-                        if (b.iconZoom or 0.08) ~= v then
-                            synced = false
-                        end
-                    end)
-                    return synced
-                end,
-                onClick = function()
-                    local v = BD().iconZoom or 0.08
-                    ForEachSyncBar(function(b)
-                        b.iconZoom = v
-                    end)
-                    mod.BuildAllCDMBars()
-                    Refresh()
-                    UpdateCDMPreview()
-                    CludesUI:RefreshPage()
-                end,
-            })
-        end
+        IconZoomSync(buffShapeZoomRow._rightRegion)
 
         -- Row 4: Border Size + swatches | Border Style dropdown + offset cog
         do
@@ -3268,75 +3351,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 })
             end
             -- Sync icon: Border Style (right region)
-            if not CludesUI._prebuilding then
-                CludesUI.BuildSyncIcon({
-                    region = buffBsRow._rightRegion,
-                    tooltip = "Apply Border Style to all Bars",
-                    onClick = function()
-                        local edge = BD()
-                        local bt = edge.borderTexture or "solid"
-                        local ox = edge.borderTextureOffset
-                        local oy = edge.borderTextureOffsetY
-                        local sx = edge.borderTextureShiftX
-                        local sy = edge.borderTextureShiftY
-                        local th = edge.borderThickness or "thin"
-                        local sz = edge.borderSize or 1
-                        local px = edge.borderSizePx
-                        local bh = edge.borderBehind
-                        local br, backdrop, bb, ba = edge.borderR, edge.borderG, edge.borderB, edge.borderA
-                        local cc = edge.borderClassColor
-                        ForEachSyncBar(function(b)
-                            b.borderTexture = bt
-                            b.borderTextureOffset = ox
-                            b.borderTextureOffsetY = oy
-                            b.borderTextureShiftX = sx
-                            b.borderTextureShiftY = sy
-                            b.borderThickness = th
-                            b.borderSize = sz
-                            local pxv = px
-                            if pxv == nil and b.borderSizePx ~= nil then
-                                pxv = false
-                            end
-                            b.borderSizePx = pxv
-                            b.borderBehind = bh
-                            b.borderR = br
-                            b.borderG = backdrop
-                            b.borderB = bb
-                            b.borderA = ba
-                            b.borderClassColor = cc
-                        end)
-                        mod.BuildAllCDMBars()
-                        Refresh()
-                        UpdateCDMPreview()
-                        CludesUI:RefreshPage()
-                    end,
-                    isSynced = function()
-                        local edge = BD()
-                        local bt = edge.borderTexture or "solid"
-                        local ox = edge.borderTextureOffset
-                        local oy = edge.borderTextureOffsetY
-                        local sx = edge.borderTextureShiftX
-                        local sy = edge.borderTextureShiftY
-                        local bh = edge.borderBehind or false
-                        local synced = true
-                        ForEachSyncBar(function(b)
-                            if (b.borderTexture or "solid") ~= bt then
-                                synced = false
-                            end
-                            if b.borderTextureOffset ~= ox or b.borderTextureOffsetY ~= oy then
-                                synced = false
-                            end
-                            if b.borderTextureShiftX ~= sx or b.borderTextureShiftY ~= sy then
-                                synced = false
-                            end
-                            if (b.borderBehind or false) ~= bh then
-                                synced = false
-                            end
-                        end)
-                        return synced
-                    end,
-                })
-            end
+            BorderStyleSync(buffBsRow._rightRegion)
         end
     else
         local icsWDis2, icsWTip2 = CludesUI.MatchGuard("CDM_" .. barId, "Width")
@@ -3735,75 +3750,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 UpdateCogVis()
             end
             -- Sync icon: Border Style (left region of bsRow)
-            if not CludesUI._prebuilding then
-                CludesUI.BuildSyncIcon({
-                    region = bsRow._leftRegion,
-                    tooltip = "Apply Border Style to all Bars",
-                    onClick = function()
-                        local edge = BD()
-                        local bt = edge.borderTexture or "solid"
-                        local ox = edge.borderTextureOffset
-                        local oy = edge.borderTextureOffsetY
-                        local sx = edge.borderTextureShiftX
-                        local sy = edge.borderTextureShiftY
-                        local th = edge.borderThickness or "thin"
-                        local sz = edge.borderSize or 1
-                        local px = edge.borderSizePx
-                        local bh = edge.borderBehind
-                        local br, backdrop, bb, ba = edge.borderR, edge.borderG, edge.borderB, edge.borderA
-                        local cc = edge.borderClassColor
-                        ForEachSyncBar(function(b)
-                            b.borderTexture = bt
-                            b.borderTextureOffset = ox
-                            b.borderTextureOffsetY = oy
-                            b.borderTextureShiftX = sx
-                            b.borderTextureShiftY = sy
-                            b.borderThickness = th
-                            b.borderSize = sz
-                            local pxv = px
-                            if pxv == nil and b.borderSizePx ~= nil then
-                                pxv = false
-                            end
-                            b.borderSizePx = pxv
-                            b.borderBehind = bh
-                            b.borderR = br
-                            b.borderG = backdrop
-                            b.borderB = bb
-                            b.borderA = ba
-                            b.borderClassColor = cc
-                        end)
-                        mod.BuildAllCDMBars()
-                        Refresh()
-                        UpdateCDMPreview()
-                        CludesUI:RefreshPage()
-                    end,
-                    isSynced = function()
-                        local edge = BD()
-                        local bt = edge.borderTexture or "solid"
-                        local ox = edge.borderTextureOffset
-                        local oy = edge.borderTextureOffsetY
-                        local sx = edge.borderTextureShiftX
-                        local sy = edge.borderTextureShiftY
-                        local bh = edge.borderBehind or false
-                        local synced = true
-                        ForEachSyncBar(function(b)
-                            if (b.borderTexture or "solid") ~= bt then
-                                synced = false
-                            end
-                            if b.borderTextureOffset ~= ox or b.borderTextureOffsetY ~= oy then
-                                synced = false
-                            end
-                            if b.borderTextureShiftX ~= sx or b.borderTextureShiftY ~= sy then
-                                synced = false
-                            end
-                            if (b.borderBehind or false) ~= bh then
-                                synced = false
-                            end
-                        end)
-                        return synced
-                    end,
-                })
-            end
+            BorderStyleSync(bsRow._leftRegion)
             -- Inline color swatches on Border Size (right region)
             if not CludesUI._prebuilding then
                 local rightRgn = bsRow._rightRegion
@@ -4054,83 +4001,8 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
 
         AttachCropCog(shapeRow._leftRegion)
 
-        if not CludesUI._prebuilding then
-            CludesUI.BuildSyncIcon({
-                region = shapeRow._leftRegion,
-                tooltip = "Apply Icon Shape to all Bars",
-                isSynced = function()
-                    local edge = BD()
-                    local v = edge.iconShape or "none"
-                    local zoom = edge.iconZoom or 0.08
-                    local crop = mod.CdmCropPercent(edge)
-                    local synced = true
-                    ForEachSyncBar(function(b)
-                        if
-                            (b.iconShape or "none") ~= v
-                            or (b.iconZoom or 0.08) ~= zoom
-                            or mod.CdmCropPercent(b) ~= crop
-                        then
-                            synced = false
-                        end
-                    end)
-                    return synced
-                end,
-                onClick = function()
-                    local edge = BD()
-                    local v = edge.iconShape or "none"
-                    local zoom = edge.iconZoom or 0.08
-                    local crop = edge.iconCropPercent
-                    ForEachSyncBar(function(b)
-                        b.iconShape = v
-                        b.iconZoom = zoom
-                        b.iconCropPercent = crop
-                        local isCS = (v ~= "none" and v ~= "cropped")
-                        if isCS then
-                            b.borderThickness = "strong"
-                            b.borderSize = BORDER_SIZES["strong"]
-                        else
-                            b.borderThickness = "thin"
-                            b.borderSize = BORDER_SIZES["thin"]
-                        end
-                        b._matchIconPhys = nil
-                        b._matchExtraPixels = nil
-                        b._matchStride = nil
-                        b._matchExtraPixelsH = nil
-                        b._matchStrideH = nil
-                    end)
-                    mod.BuildAllCDMBars()
-                    Refresh()
-                    UpdateCDMPreviewAndResize()
-                    CludesUI:RefreshPage()
-                end,
-            })
-        end
-        if not CludesUI._prebuilding then
-            CludesUI.BuildSyncIcon({
-                region = shapeRow._rightRegion,
-                tooltip = "Apply Icon Zoom to all Bars",
-                isSynced = function()
-                    local v = BD().iconZoom or 0.08
-                    local synced = true
-                    ForEachSyncBar(function(b)
-                        if (b.iconZoom or 0.08) ~= v then
-                            synced = false
-                        end
-                    end)
-                    return synced
-                end,
-                onClick = function()
-                    local v = BD().iconZoom or 0.08
-                    ForEachSyncBar(function(b)
-                        b.iconZoom = v
-                    end)
-                    mod.BuildAllCDMBars()
-                    Refresh()
-                    UpdateCDMPreview()
-                    CludesUI:RefreshPage()
-                end,
-            })
-        end
+        IconShapeSync(shapeRow._leftRegion)
+        IconZoomSync(shapeRow._rightRegion)
     end -- not isBuffGlowBar
 
     -- Row 4: Duration Size (cog + swatch) | Stack Size (cog + swatch)
