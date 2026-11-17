@@ -112,6 +112,23 @@ initFrame:SetScript("OnEvent", function(self)
         return true
     end
 
+    -- A cog slider over one minimap setting (min to max in steps of step).
+    local function MapSlider(label, key, default, minV, maxV, step)
+        return {
+            type = "slider",
+            label = label,
+            min = minV,
+            max = maxV,
+            step = step,
+            get = function()
+                return MapGet(key, default)
+            end,
+            set = function(v)
+                MapSet(key, v)
+            end,
+        }
+    end
+
     local function FullRebuildMinimap()
         if _G._CUMM_FullRebuildMinimap then
             _G._CUMM_FullRebuildMinimap()
@@ -1413,19 +1430,7 @@ initFrame:SetScript("OnEvent", function(self)
                             MapSet("btnRowSpacing", v)
                         end,
                     },
-                    {
-                        type = "slider",
-                        label = "Distance from Map",
-                        min = -20,
-                        max = 60,
-                        step = 1,
-                        get = function()
-                            return MapGet("btnRowDistance", 0)
-                        end,
-                        set = function(v)
-                            MapSet("btnRowDistance", v)
-                        end,
-                    },
+                    MapSlider("Distance from Map", "btnRowDistance", 0, -20, 60, 1),
                     {
                         type = "dropdown",
                         label = "Grow Tooltip/Popup",
@@ -1888,32 +1893,8 @@ initFrame:SetScript("OnEvent", function(self)
                 end,
                 title = "Mail Position",
                 rows = {
-                    {
-                        type = "slider",
-                        label = "X Offset",
-                        min = -100,
-                        max = 100,
-                        step = 1,
-                        get = function()
-                            return MapGet("mailOffsetX", 0)
-                        end,
-                        set = function(v)
-                            MapSet("mailOffsetX", v)
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Y Offset",
-                        min = -500,
-                        max = 500,
-                        step = 1,
-                        get = function()
-                            return MapGet("mailOffsetY", 0)
-                        end,
-                        set = function(v)
-                            MapSet("mailOffsetY", v)
-                        end,
-                    },
+                    MapSlider("X Offset", "mailOffsetX", 0, -100, 100, 1),
+                    MapSlider("Y Offset", "mailOffsetY", 0, -500, 500, 1),
                 },
             })
         end
@@ -1942,19 +1923,7 @@ initFrame:SetScript("OnEvent", function(self)
                             MapSet("elementRowSpacing", v)
                         end,
                     },
-                    {
-                        type = "slider",
-                        label = "Distance from Map",
-                        min = -20,
-                        max = 60,
-                        step = 1,
-                        get = function()
-                            return MapGet("elementRowDistance", 0)
-                        end,
-                        set = function(v)
-                            MapSet("elementRowDistance", v)
-                        end,
-                    },
+                    MapSlider("Distance from Map", "elementRowDistance", 0, -20, 60, 1),
                 },
             })
             BlockInline(cogBtn)
@@ -2072,32 +2041,8 @@ initFrame:SetScript("OnEvent", function(self)
                             end
                         end,
                     },
-                    {
-                        type = "slider",
-                        label = "X Offset",
-                        min = -500,
-                        max = 500,
-                        step = 1,
-                        get = function()
-                            return MapGet("clockOffsetX", 0)
-                        end,
-                        set = function(v)
-                            MapSet("clockOffsetX", v)
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Y Offset",
-                        min = -500,
-                        max = 500,
-                        step = 1,
-                        get = function()
-                            return MapGet("clockOffsetY", 0)
-                        end,
-                        set = function(v)
-                            MapSet("clockOffsetY", v)
-                        end,
-                    },
+                    MapSlider("X Offset", "clockOffsetX", 0, -500, 500, 1),
+                    MapSlider("Y Offset", "clockOffsetY", 0, -500, 500, 1),
                 },
             })
         end
@@ -2227,32 +2172,8 @@ initFrame:SetScript("OnEvent", function(self)
                             end
                         end,
                     },
-                    {
-                        type = "slider",
-                        label = "X Offset",
-                        min = -500,
-                        max = 500,
-                        step = 1,
-                        get = function()
-                            return MapGet("locationOffsetX", 0)
-                        end,
-                        set = function(v)
-                            MapSet("locationOffsetX", v)
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Y Offset",
-                        min = -500,
-                        max = 500,
-                        step = 1,
-                        get = function()
-                            return MapGet("locationOffsetY", 0)
-                        end,
-                        set = function(v)
-                            MapSet("locationOffsetY", v)
-                        end,
-                    },
+                    MapSlider("X Offset", "locationOffsetX", 0, -500, 500, 1),
+                    MapSlider("Y Offset", "locationOffsetY", 0, -500, 500, 1),
                 },
             })
         end
@@ -2312,19 +2233,7 @@ initFrame:SetScript("OnEvent", function(self)
                 disabledTooltip = "Show Coordinates",
                 title = "Coordinate Precision",
                 rows = {
-                    {
-                        type = "slider",
-                        label = "Decimal Places",
-                        min = 0,
-                        max = 2,
-                        step = 1,
-                        get = function()
-                            return MapGet("coordPrecision", 0)
-                        end,
-                        set = function(v)
-                            MapSet("coordPrecision", v)
-                        end,
-                    },
+                    MapSlider("Decimal Places", "coordPrecision", 0, 0, 2, 1),
                 },
             })
         end
@@ -2361,32 +2270,8 @@ initFrame:SetScript("OnEvent", function(self)
                             end
                         end,
                     },
-                    {
-                        type = "slider",
-                        label = "X Offset",
-                        min = -500,
-                        max = 500,
-                        step = 1,
-                        get = function()
-                            return MapGet("coordsBelowOffsetX", 0)
-                        end,
-                        set = function(v)
-                            MapSet("coordsBelowOffsetX", v)
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Y Offset",
-                        min = -500,
-                        max = 500,
-                        step = 1,
-                        get = function()
-                            return MapGet("coordsBelowOffsetY", 0)
-                        end,
-                        set = function(v)
-                            MapSet("coordsBelowOffsetY", v)
-                        end,
-                    },
+                    MapSlider("X Offset", "coordsBelowOffsetX", 0, -500, 500, 1),
+                    MapSlider("Y Offset", "coordsBelowOffsetY", 0, -500, 500, 1),
                 },
             })
         end
@@ -2436,19 +2321,7 @@ initFrame:SetScript("OnEvent", function(self)
                 disabledTooltip = "Show FPS/MS",
                 title = "FPS/MS Settings",
                 rows = {
-                    {
-                        type = "slider",
-                        label = "Text Size",
-                        min = 8,
-                        max = 30,
-                        step = 1,
-                        get = function()
-                            return MapGet("fpsTextSize", 12)
-                        end,
-                        set = function(v)
-                            MapSet("fpsTextSize", v)
-                        end,
-                    },
+                    MapSlider("Text Size", "fpsTextSize", 12, 8, 30, 1),
                     {
                         type = "toggle",
                         label = "Show Local MS",
@@ -2474,19 +2347,7 @@ initFrame:SetScript("OnEvent", function(self)
                             MapSet("fpsShowWorldMS", v)
                         end,
                     },
-                    {
-                        type = "slider",
-                        label = "Update Interval",
-                        min = 1,
-                        max = 5,
-                        step = 1,
-                        get = function()
-                            return MapGet("fpsUpdateInterval", 3)
-                        end,
-                        set = function(v)
-                            MapSet("fpsUpdateInterval", v)
-                        end,
-                    },
+                    MapSlider("Update Interval", "fpsUpdateInterval", 3, 1, 5, 1),
                 },
             })
         end
@@ -2520,32 +2381,8 @@ initFrame:SetScript("OnEvent", function(self)
                             end
                         end,
                     },
-                    {
-                        type = "slider",
-                        label = "X Offset",
-                        min = -500,
-                        max = 500,
-                        step = 1,
-                        get = function()
-                            return MapGet("fpsOffsetX", 0)
-                        end,
-                        set = function(v)
-                            MapSet("fpsOffsetX", v)
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Y Offset",
-                        min = -500,
-                        max = 500,
-                        step = 1,
-                        get = function()
-                            return MapGet("fpsOffsetY", 0)
-                        end,
-                        set = function(v)
-                            MapSet("fpsOffsetY", v)
-                        end,
-                    },
+                    MapSlider("X Offset", "fpsOffsetX", 0, -500, 500, 1),
+                    MapSlider("Y Offset", "fpsOffsetY", 0, -500, 500, 1),
                 },
             })
         end
@@ -2652,45 +2489,9 @@ initFrame:SetScript("OnEvent", function(self)
                 disabledTooltip = "Show Instance Difficulty as Text",
                 title = "Difficulty Text Size and Position",
                 rows = {
-                    {
-                        type = "slider",
-                        label = "Text Size",
-                        min = 8,
-                        max = 24,
-                        step = 1,
-                        get = function()
-                            return MapGet("diffTextSize", 12)
-                        end,
-                        set = function(v)
-                            MapSet("diffTextSize", v)
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "X Offset",
-                        min = -500,
-                        max = 500,
-                        step = 1,
-                        get = function()
-                            return MapGet("diffTextOffsetX", 0)
-                        end,
-                        set = function(v)
-                            MapSet("diffTextOffsetX", v)
-                        end,
-                    },
-                    {
-                        type = "slider",
-                        label = "Y Offset",
-                        min = -500,
-                        max = 500,
-                        step = 1,
-                        get = function()
-                            return MapGet("diffTextOffsetY", 0)
-                        end,
-                        set = function(v)
-                            MapSet("diffTextOffsetY", v)
-                        end,
-                    },
+                    MapSlider("Text Size", "diffTextSize", 12, 8, 24, 1),
+                    MapSlider("X Offset", "diffTextOffsetX", 0, -500, 500, 1),
+                    MapSlider("Y Offset", "diffTextOffsetY", 0, -500, 500, 1),
                 },
             })
         end
