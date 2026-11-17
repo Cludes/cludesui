@@ -806,11 +806,45 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
     end
     ApplyPreviewTextPositions(prefs)
 
-    -- Power bar
+    -- The power fill colour: the power type's colour (the class colour with
+    -- Class Colored) while Power Color is on, else the custom fill, else blue.
+    local function PowerFillRGB()
+        local byPower = prefs.powerPercentPowerColor ~= false
+        if byPower and prefs.powerClassColored then
+            local _, token = UnitClass("player")
+            local classColor = CludesUI.GetClassColor(token)
+            return classColor.r, classColor.g, classColor.b
+        elseif byPower then
+            local _, kind = UnitPowerType("player")
+            local typeColor = CludesUI.GetPowerColor(kind or "MANA")
+            return typeColor.r, typeColor.g, typeColor.b
+        end
+        local own = prefs.customPowerFillColor
+        if own then
+            return own.r, own.g, own.b
+        end
+        return 0, 0, 1
+    end
+    local function PaintPowerFill(fill, texPath, r, g, b)
+        local opacity = (prefs.powerBarOpacity or 100) / 100
+        PV_FillColor(
+            fill,
+            texPath,
+            r,
+            g,
+            b,
+            prefs.powerGradientEnabled,
+            prefs.powerGradientColor,
+            prefs.powerGradientDir,
+            opacity
+        )
+        return opacity
+    end
+
+    -- Power bar: made for every unit that can show one, even at height 0, so
+    -- a 0 height bar still carries its text and grows back when raised.
     local power
     local ppPreviewFS
-    -- Create the bar + text overlay for any power-supporting unit even at height
-    -- 0, so "power bar 0 + text" works and the bar survives 0 -> back up.
     if not noPowerPreview then
         power = CreateFrame("Frame", nil, popFrame)
         Pix.Size(power, frameW, powerH)
@@ -823,78 +857,67 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         powerFill:SetWidth(math.floor(frameW * (optionState._previewPowerPct or 0.85) + 0.5))
         popFrame._powerFill = powerFill
 
-        local isPowerColored = prefs.powerPercentPowerColor ~= false
-        local customPFill = prefs.customPowerFillColor
-        local customPBg = prefs.customPowerBgColor
-        local pfR, pfG, pfB
-        if isPowerColored and prefs.powerClassColored then
-            local _, ct = UnitClass("player")
-            local cc = CludesUI.GetClassColor(ct)
-            pfR, pfG, pfB = cc.r, cc.g, cc.b
-        elseif isPowerColored then
-            local _, pToken = UnitPowerType("player")
-            local details = CludesUI.GetPowerColor(pToken or "MANA")
-            pfR, pfG, pfB = details.r, details.g, details.b
-        elseif customPFill then
-            pfR, pfG, pfB = customPFill.r, customPFill.g, customPFill.b
-        else
-            pfR, pfG, pfB = 0, 0, 1
-        end
-        local pbR, pbG, pbB
+        local fillR, fillG, fillB = PowerFillRGB()
+        -- Backing: the power colour darkened (Power Colored Background), else
+        -- the custom pick, else near black.
+        local backR, backG, backB = 17 / 255, 17 / 255, 17 / 255
+        local ownBack = prefs.customPowerBgColor
         if prefs.powerBgPowerColored then
-            local _, pbToken = UnitPowerType("player")
-            local pbInfo = CludesUI.GetPowerColor(pbToken or "MANA")
-            local pbF = CludesUI.GetPowerBgDarkenFactor()
-            pbR, pbG, pbB = pbInfo.r * pbF, pbInfo.g * pbF, pbInfo.b * pbF
-        elseif customPBg then
-            pbR, pbG, pbB = customPBg.r, customPBg.g, customPBg.b
-        else
-            pbR, pbG, pbB = 17 / 255, 17 / 255, 17 / 255
+            local _, kind = UnitPowerType("player")
+            local typeColor = CludesUI.GetPowerColor(kind or "MANA")
+            local dim = CludesUI.GetPowerBgDarkenFactor()
+            backR, backG, backB = typeColor.r * dim, typeColor.g * dim, typeColor.b * dim
+        elseif ownBack then
+            backR, backG, backB = ownBack.r, ownBack.g, ownBack.b
         end
-        local powerOpacity = (prefs.powerBarOpacity or 100) / 100
-        powerBg:SetColorTexture(pbR, pbG, pbB, 1)
+        powerBg:SetColorTexture(backR, backG, backB, 1)
         powerBg:SetAlpha((prefs.customPowerBgAlpha or 100) / 100)
-        PV_FillColor(
-            powerFill,
-            nil,
-            pfR,
-            pfG,
-            pfB,
-            prefs.powerGradientEnabled,
-            prefs.powerGradientColor,
-            prefs.powerGradientDir,
-            powerOpacity
-        )
-        powerFill:SetAlpha(powerOpacity)
-        -- Fill Opacity < 100: bg covers only the empty portion, mirroring the live
-        -- world-show-through behavior.
-        if powerOpacity < 1 then
+        local fillOpacity = PaintPowerFill(powerFill, nil, fillR, fillG, fillB)
+        powerFill:SetAlpha(fillOpacity)
+        -- Below full Fill Opacity the backing covers only the empty part, so
+        -- the world shows through the fill as it does live.
+        if fillOpacity < 1 then
             popFrame._powerBgOpAnchored = true
             powerBg:ClearAllPoints()
-            if prefs.powerReverseFill then
-                powerBg:SetPoint("TOPLEFT", power, "TOPLEFT", 0, 0)
-                powerBg:SetPoint("BOTTOMRIGHT", powerFill, "BOTTOMLEFT", 0, 0)
-            else
-                powerBg:SetPoint("TOPLEFT", powerFill, "TOPRIGHT", 0, 0)
-                powerBg:SetPoint("BOTTOMRIGHT", power, "BOTTOMRIGHT", 0, 0)
-            end
+            local reversed = prefs.powerReverseFill
+            powerBg:SetPoint(
+                "TOPLEFT",
+                reversed and power or powerFill,
+                reversed and "TOPLEFT" or "TOPRIGHT",
+                0,
+                0
+            )
+            powerBg:SetPoint(
+                "BOTTOMRIGHT",
+                reversed and powerFill or power,
+                reversed and "BOTTOMLEFT" or "BOTTOMRIGHT",
+                0,
+                0
+            )
         end
-        -- Initial anchor based on power position
+        -- First placement for the Bar Position (Update places it again).
         if initPpPos == "none" then
             power:Hide()
-        elseif initPpPos == "above" then
-            Pix.Point(power, "BOTTOMLEFT", health, "TOPLEFT", 0, 0)
-            Pix.Point(power, "BOTTOMRIGHT", health, "TOPRIGHT", 0, 0)
-        elseif initPpPos == "detached_top" then
-            power:SetPoint("BOTTOM", health, "TOP", prefs.powerX or 0, 15 + (prefs.powerY or 0))
-        elseif initPpPos == "detached_bottom" then
-            power:SetPoint("TOP", health, "BOTTOM", prefs.powerX or 0, -15 + (prefs.powerY or 0))
+        elseif initPpPos == "detached_top" or initPpPos == "detached_bottom" then
+            local onTop = initPpPos == "detached_top"
+            local lift = (onTop and 15 or -15) + (prefs.powerY or 0)
+            power:SetPoint(
+                onTop and "BOTTOM" or "TOP",
+                health,
+                onTop and "TOP" or "BOTTOM",
+                prefs.powerX or 0,
+                lift
+            )
         else
-            Pix.Point(power, "TOPLEFT", health, "BOTTOMLEFT", 0, 0)
-            Pix.Point(power, "TOPRIGHT", health, "BOTTOMRIGHT", 0, 0)
+            local ownEdge, healthEdge = "TOP", "BOTTOM"
+            if initPpPos == "above" then
+                ownEdge, healthEdge = "BOTTOM", "TOP"
+            end
+            Pix.Point(power, ownEdge .. "LEFT", health, healthEdge .. "LEFT", 0, 0)
+            Pix.Point(power, ownEdge .. "RIGHT", health, healthEdge .. "RIGHT", 0, 0)
         end
 
-        -- Power percent text overlay in preview (parented to pf, above border)
+        -- The power text's own layer on pf, over the border.
         local ppOvr = CreateFrame("Frame", nil, popFrame)
         ppOvr:SetAllPoints(power)
         ppOvr:SetFrameLevel(barArea:GetFrameLevel() + 8)
@@ -903,11 +926,11 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         ppPreviewFS:Hide()
     end
 
-    -- Bar texture: applied to the fill textures directly (preview uses plain Frames, not StatusBars)
+    -- Bar texture, laid straight onto the fill textures (the preview's bars
+    -- are plain Frames, not StatusBars).
     do
         local texKey = prefs.healthBarTexture or saved.profile.healthBarTexture or "none"
         local texPath = (mod.healthBarTextures or {})[texKey]
-
         if texPath then
             PV_FillColor(
                 healthFill,
@@ -915,203 +938,151 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
                 hR,
                 hG,
                 hB,
-                (not isDarkTheme) and prefs.gradientEnabled,
+                healthGradient,
                 prefs.gradientColor,
                 prefs.gradientDir,
                 hA
             )
         end
         if popFrame._powerFill and powerH > 0 then
-            local txR, txG, txB
-            local isPwrC = prefs.powerPercentPowerColor ~= false
-            if isPwrC and prefs.powerClassColored then
-                local _, ct = UnitClass("player")
-                local cc = CludesUI.GetClassColor(ct)
-                txR, txG, txB = cc.r, cc.g, cc.b
-            elseif isPwrC then
-                local _, pToken = UnitPowerType("player")
-                local details = CludesUI.GetPowerColor(pToken or "MANA")
-                txR, txG, txB = details.r, details.g, details.b
-            else
-                local cpf = prefs.customPowerFillColor
-                if cpf then
-                    txR, txG, txB = cpf.r, cpf.g, cpf.b
-                else
-                    txR, txG, txB = 0, 0, 1
-                end
-            end
-            popFrame._pR, popFrame._pG, popFrame._pB = txR, txG, txB
-            PV_FillColor(
-                popFrame._powerFill,
-                texPath,
-                txR,
-                txG,
-                txB,
-                prefs.powerGradientEnabled,
-                prefs.powerGradientColor,
-                prefs.powerGradientDir,
-                (prefs.powerBarOpacity or 100) / 100
-            )
+            local r, g, b = PowerFillRGB()
+            popFrame._pR, popFrame._pG, popFrame._pB = r, g, b
+            PaintPowerFill(popFrame._powerFill, texPath, r, g, b)
         end
     end
 
-    -- Castbar -- always created for player (toggled in Update); conditional for others
+    -- Cast bar: always made for the player (Update shows or hides it), for
+    -- the others only while it has a height.
     local castBar, castFill, castNameFS2, castIconFrame
-    local shouldCreateCastbar = (unitKey == "player") or (castbarH > 0)
     local castTimeFS, castTargetFS
-    if shouldCreateCastbar then
-        local initCH = (unitKey == "player") and (castbarH > 0 and castbarH or 14) or castbarH
-        -- Cast icon "part of the bar": bar (bg + border + fill) shrinks and the
-        -- icon fills the freed space with the outer edge fixed, as on the real
-        -- cast bar. Off = icon hangs outside, bar at full width.
-        local pvCastIconW = initCH
-        -- "Part of the bar" resolves through the module's own rule (the
-        -- stock styles force it for a shown icon), so the preview lays
-        -- the icon out exactly as live does.
-        local pvCastIconInWidth = mod.UF_CastIconInWidth(unitKey, prefs)
-        local pvCastIconOnRight, pvCastIconOffX, pvCastIconOffY
-        if unitKey == "player" then
-            pvCastIconOnRight = prefs.playerCastbarIconRight == true
-            pvCastIconOffX = prefs.playerCastIconOffsetX or 0
-            pvCastIconOffY = prefs.playerCastIconOffsetY or 0
-        else
-            pvCastIconOnRight = prefs.castbarIconRight == true
-            pvCastIconOffX = prefs.castIconOffsetX or 0
-            pvCastIconOffY = prefs.castIconOffsetY or 0
+    if unitKey == "player" or castbarH > 0 then
+        local isPlayer = unitKey == "player"
+        local initCH = castbarH
+        if isPlayer and castbarH <= 0 then
+            initCH = 14
         end
-        -- Boss: castbarWidth > 0 overrides the frame-matched width (0 = match).
-        -- Clamped here to frameW + 120 so an extreme value can't spill across the
-        -- options panel (pf doesn't clip children); real frames use the true width.
-        local pvCbBaseW = totalW
+        -- Icon as part of the bar: the bar (backing, border and fill) narrows
+        -- and the icon takes the freed room with the outer edge fixed, as on
+        -- the live cast bar; off, the icon hangs outside a full-width bar.
+        -- The module's own rule decides it (a stock style forces it for a
+        -- shown icon), so the preview lays it out exactly as live.
+        local iconW = initCH
+        local iconInBar = mod.UF_CastIconInWidth(unitKey, prefs)
+        local iconOnRight = prefs[isPlayer and "playerCastbarIconRight" or "castbarIconRight"] == true
+        local offsetKey = isPlayer and "playerCastIconOffset" or "castIconOffset"
+        local iconDX, iconDY = prefs[offsetKey .. "X"] or 0, prefs[offsetKey .. "Y"] or 0
+        -- Boss: a Cast Bar Width above 0 replaces the frame width (0 = match),
+        -- held to frame width + 120 here so an extreme value cannot spill over
+        -- the options panel (pf does not clip); live frames take it in full.
+        local fullW = totalW
         if unitKey == "boss" and (prefs.castbarWidth or 0) > 0 then
-            pvCbBaseW = math.min(math.max(prefs.castbarWidth, 30), totalW + 120)
+            fullW = math.min(math.max(prefs.castbarWidth, 30), totalW + 120)
         end
-        local pvBarW = pvCastIconInWidth and math.max(1, pvCbBaseW - pvCastIconW) or pvCbBaseW
+        local barW = iconInBar and math.max(1, fullW - iconW) or fullW
         castBar = CreateFrame("Frame", nil, popFrame)
-        Pix.Size(castBar, pvBarW, initCH)
+        Pix.Size(castBar, barW, initCH)
         local cbAnchor = power or health
         local cbOffset = 0
-        if showPortrait and side == "right" then
-            cbOffset = portraitW / 2
-        elseif showPortrait and side == "left" then
-            cbOffset = -(portraitW / 2)
+        if showPortrait then
+            if side == "right" then
+                cbOffset = portraitW / 2
+            elseif side == "left" then
+                cbOffset = -(portraitW / 2)
+            end
         end
         castBar._cbAnchor = cbAnchor
         castBar._cbOffset = cbOffset
-        -- Icon-in-width shifts the narrowed bar toward the icon-free side by half
-        -- the icon width, so the footprint stays where the full bar was.
-        Pix.Point(
-            castBar,
-            "TOP",
-            cbAnchor,
-            "BOTTOM",
-            cbOffset
-                + (pvCastIconInWidth and (pvCastIconOnRight and -(pvCastIconW / 2) or (pvCastIconW / 2)) or 0),
-            0
-        )
+        -- A narrowed bar moves half the icon width toward the side without
+        -- the icon, so bar and icon fill the full bar's footprint.
+        local iconShift = 0
+        if iconInBar then
+            iconShift = iconOnRight and -(iconW / 2) or (iconW / 2)
+        end
+        Pix.Point(castBar, "TOP", cbAnchor, "BOTTOM", cbOffset + iconShift, 0)
         if castbarH > 0 then
             totalH = totalH + castbarH
         end
 
-        -- Background matching real castbar: black 50% alpha
+        -- Half-black backing and a 1px black border, as the live cast bar.
         local cbBg = castBar:CreateTexture(nil, "BACKGROUND")
         cbBg:SetAllPoints(castBar)
         cbBg:SetColorTexture(0, 0, 0, 0.5)
         castBar._previewBgTex = cbBg
-
-        -- Black borders via unified PP system
         Pix.CreateBorder(castBar, 0, 0, 0, 1, 1, "OVERLAY", 0)
 
-        -- Cast fill fills the (possibly shortened) bar.
+        -- The fill spans the (maybe narrowed) bar; Update gives it its real
+        -- colour and texture, this teal is only the first paint.
         castFill = castBar:CreateTexture(nil, "ARTWORK")
         Pix.Point(castFill, "TOPLEFT", castBar, "TOPLEFT", 1, 0)
         Pix.Point(castFill, "BOTTOMLEFT", castBar, "BOTTOMLEFT", 1, 1)
-        Pix.Width(castFill, math.max(0, pvBarW - 2) * (optionState._previewCastFill or 0.6))
-        -- Initial placeholder; real color + bar texture applied in the Update closure.
+        Pix.Width(castFill, math.max(0, barW - 2) * (optionState._previewCastFill or 0.6))
         castFill:SetColorTexture(0.114, 0.655, 0.514, 1)
 
-        -- Cast spell name and icon -- class spell for player, generic for enemies
-        local castSpellName, castSpellIcon
-        if unitKey == "player" then
-            castSpellName = optionState._previewCastSpell and optionState._previewCastSpell.name
-                or "Spell Name"
-            castSpellIcon = optionState._previewCastSpell and optionState._previewCastSpell.icon or 136197
-        else
-            castSpellName = "Spell Name"
-            castSpellIcon = 136197 -- Shadow Bolt icon as generic
-        end
+        -- The player casts one of its class spells; anyone else a generic
+        -- spell under the Shadow Bolt icon.
+        local sample = isPlayer and optionState._previewCastSpell or nil
+        local castSpellName = sample and sample.name or "Spell Name"
+        local castSpellIcon = sample and sample.icon or 136197
 
-        -- Text overlay above both castbar border (+1) and main frame border
+        -- Text layer over the cast bar's border and the frame border.
         local cbTextOvr = CreateFrame("Frame", nil, castBar)
         cbTextOvr:SetAllPoints(castBar)
         cbTextOvr:SetFrameLevel(popFrame:GetFrameLevel() + 11)
-
-        -- Three-zone layout: all zones truncate (no word wrap)
-        castNameFS2 = cbTextOvr:CreateFontString(nil, "OVERLAY")
-        SetPVFont(castNameFS2, PREVIEW_FONT, 11)
-        castNameFS2:SetJustifyH("LEFT")
-        castNameFS2:SetWordWrap(false)
-        castNameFS2:SetMaxLines(1)
+        -- Name, time and target: one line each, cut short rather than wrapped.
+        local function CastText(size, justify)
+            local fs = cbTextOvr:CreateFontString(nil, "OVERLAY")
+            SetPVFont(fs, PREVIEW_FONT, size)
+            fs:SetJustifyH(justify)
+            fs:SetWordWrap(false)
+            fs:SetMaxLines(1)
+            return fs
+        end
+        castNameFS2 = CastText(11, "LEFT")
         castNameFS2:SetTextColor(1, 1, 1)
         castNameFS2:SetText(castSpellName)
-
-        castTimeFS = cbTextOvr:CreateFontString(nil, "OVERLAY")
-        SetPVFont(castTimeFS, PREVIEW_FONT, 11)
-        castTimeFS:SetJustifyH("RIGHT")
-        castTimeFS:SetWordWrap(false)
-        castTimeFS:SetMaxLines(1)
+        castTimeFS = CastText(11, "RIGHT")
         castTimeFS:SetTextColor(1, 1, 1)
-        local spellCastTime = (optionState._previewCastSpell and optionState._previewCastSpell.castTime)
-            or 3.0
-        castTimeFS:SetText(string.format("%.1f", spellCastTime * (1 - (optionState._previewCastFill or 0.6))))
-
-        if unitKey ~= "player" then
-            castTargetFS = cbTextOvr:CreateFontString(nil, "OVERLAY")
-            SetPVFont(castTargetFS, PREVIEW_FONT, 10)
-            castTargetFS:SetJustifyH("RIGHT")
-            castTargetFS:SetWordWrap(false)
-            castTargetFS:SetMaxLines(1)
+        local fullCast = (optionState._previewCastSpell and optionState._previewCastSpell.castTime) or 3.0
+        castTimeFS:SetText(string.format("%.1f", fullCast * (1 - (optionState._previewCastFill or 0.6))))
+        if not isPlayer then
+            castTargetFS = CastText(10, "RIGHT")
             castTargetFS:SetText(UnitName("player") or "Player")
-            local _, ct = UnitClass("player")
-            local cc = ct and RAID_CLASS_COLORS and RAID_CLASS_COLORS[ct]
-            if cc then
-                castTargetFS:SetTextColor(cc.r, cc.g, cc.b)
+            local _, token = UnitClass("player")
+            local classColor = token and RAID_CLASS_COLORS and RAID_CLASS_COLORS[token]
+            if classColor then
+                castTargetFS:SetTextColor(classColor.r, classColor.g, classColor.b)
             else
                 castTargetFS:SetTextColor(1, 1, 1)
             end
         end
 
-        -- Initial three-zone positioning
-        do
-            local barW = castBar:GetWidth() or totalW
-            local timerW = 11 * 2.2
-            castNameFS2:SetWidth(barW * 0.42)
-            castNameFS2:SetPoint("LEFT", castBar, "LEFT", 5, 1)
-            castTimeFS:SetWidth(timerW)
-            castTimeFS:SetPoint("RIGHT", castBar, "RIGHT", -3, 0)
-            if castTargetFS then
-                castTargetFS:SetWidth(barW * 0.42)
-                castTargetFS:SetPoint("RIGHT", castBar, "RIGHT", -3 - timerW, 0)
-            end
+        -- First layout of the three: name at the left, time at the right,
+        -- target just inside the time.
+        local shownW = castBar:GetWidth() or totalW
+        local timeW = 11 * 2.2
+        castNameFS2:SetWidth(shownW * 0.42)
+        castNameFS2:SetPoint("LEFT", castBar, "LEFT", 5, 1)
+        castTimeFS:SetWidth(timeW)
+        castTimeFS:SetPoint("RIGHT", castBar, "RIGHT", -3, 0)
+        if castTargetFS then
+            castTargetFS:SetWidth(shownW * 0.42)
+            castTargetFS:SetPoint("RIGHT", castBar, "RIGHT", -3 - timeW, 0)
         end
 
-        -- Cast spell icon: left of the castbar, right when "Show Icon on Right".
-        -- Plain frame + edge textures (not BackdropTemplate) for pixel-perfect rendering.
-        local iconSize = initCH
+        -- Spell icon off the bar's left end (right with Show Icon on Right);
+        -- with the icon as part of the bar it lands inside the footprint.
+        -- A plain frame and edge textures, not BackdropTemplate, for exact pixels.
         castIconFrame = CreateFrame("Frame", nil, popFrame)
-        Pix.Size(castIconFrame, iconSize, iconSize)
-        -- Icon hangs off the bar's chosen edge; with "part of the bar" the bar is
-        -- narrower and shifted, so the icon sits inside the footprint.
-        if pvCastIconOnRight then
-            Pix.Point(castIconFrame, "TOPLEFT", castBar, "TOPRIGHT", pvCastIconOffX, pvCastIconOffY)
+        Pix.Size(castIconFrame, initCH, initCH)
+        if iconOnRight then
+            Pix.Point(castIconFrame, "TOPLEFT", castBar, "TOPRIGHT", iconDX, iconDY)
         else
-            Pix.Point(castIconFrame, "TOPRIGHT", castBar, "TOPLEFT", pvCastIconOffX, pvCastIconOffY)
+            Pix.Point(castIconFrame, "TOPRIGHT", castBar, "TOPLEFT", iconDX, iconDY)
         end
         local iconBg = castIconFrame:CreateTexture(nil, "BACKGROUND")
         iconBg:SetAllPoints()
         iconBg:SetColorTexture(0, 0, 0, 1)
         castIconFrame._bg = iconBg
-        -- 1px black border via unified PP system
         Pix.CreateBorder(castIconFrame, 0, 0, 0, 1)
         local castIconTex = castIconFrame:CreateTexture(nil, "ARTWORK")
         Pix.Point(castIconTex, "TOPLEFT", castIconFrame, "TOPLEFT", 1, -1)
@@ -1120,8 +1091,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         castIconTex:SetTexture(castSpellIcon)
         castIconFrame._iconTex = castIconTex
 
-        -- Hide initially if player castbar not enabled
-        if unitKey == "player" and castbarH <= 0 then
+        -- The player's bar starts hidden while its cast bar is off.
+        if isPlayer and castbarH <= 0 then
             castBar:Hide()
             castIconFrame:Hide()
         end
