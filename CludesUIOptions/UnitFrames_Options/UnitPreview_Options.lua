@@ -1098,184 +1098,137 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         end
     end
 
-    -- Text Bar (preview) -- mirrors real CreateBottomTextBar
+    -- Text Bar: the live bottom text bar's twin (CreateBottomTextBar). It has
+    -- no border of its own; the main frame's border takes it in.
     local btbFrame, btbBg, btbLeftFS, btbRightFS, btbCenterFS, btbClassIconTex
     local ApplyBTBPreviewTexts
     do
         local btbH = prefs.bottomTextBarHeight or 16
-        local initPos = prefs.btbPosition or "bottom"
-        local initIsDetached = (initPos == "detached_top" or initPos == "detached_bottom")
-        local initBtbW = initIsDetached and (prefs.btbWidth or 0) or 0
-        local initBtbTW = (initBtbW > 0 and initIsDetached) and initBtbW or totalW
+        local barPos = prefs.btbPosition or "bottom"
+        local detached = (barPos == "detached_top" or barPos == "detached_bottom")
+        local attached = (barPos == "top" or barPos == "bottom")
+        local ownW = detached and (prefs.btbWidth or 0) or 0
         btbFrame = CreateFrame("Frame", nil, popFrame)
-        Pix.Size(btbFrame, initBtbTW, btbH)
-        local btbAnchor = (initPpIsAtt and power) and power or health
-        local btbXOff = 0
-        local initBtbIsAtt = (initPos == "top" or initPos == "bottom")
-        if initBtbIsAtt and showPortrait and isAttachedInit then
+        Pix.Size(btbFrame, ownW > 0 and ownW or totalW, btbH)
+        local underFrame = (initPpIsAtt and power) and power or health
+        -- An attached bar centres under the bars and portrait together.
+        local slide = 0
+        if attached and showPortrait and isAttachedInit then
             if side == "right" then
-                btbXOff = portraitW / 2
+                slide = portraitW / 2
             elseif side == "left" then
-                btbXOff = -(portraitW / 2)
+                slide = -(portraitW / 2)
             end
         end
-        if initPos == "top" then
-            Pix.Point(btbFrame, "BOTTOM", health, "TOP", btbXOff, 0)
-        elseif initPos == "detached_top" then
-            btbFrame:SetPoint("BOTTOM", health, "TOP", prefs.btbX or 0, 15 + (prefs.btbY or 0))
-        elseif initPos == "detached_bottom" then
-            btbFrame:SetPoint("TOP", btbAnchor, "BOTTOM", prefs.btbX or 0, -15 + (prefs.btbY or 0))
+        local dx, dy = prefs.btbX or 0, prefs.btbY or 0
+        if barPos == "top" then
+            Pix.Point(btbFrame, "BOTTOM", health, "TOP", slide, 0)
+        elseif barPos == "detached_top" then
+            btbFrame:SetPoint("BOTTOM", health, "TOP", dx, 15 + dy)
+        elseif barPos == "detached_bottom" then
+            btbFrame:SetPoint("TOP", underFrame, "BOTTOM", dx, -15 + dy)
         else
-            Pix.Point(btbFrame, "TOP", btbAnchor, "BOTTOM", btbXOff, 0)
+            Pix.Point(btbFrame, "TOP", underFrame, "BOTTOM", slide, 0)
         end
 
-        local bgc = prefs.btbBgColor or { r = 0.2, g = 0.2, b = 0.2 }
-        local bga = prefs.btbBgOpacity or 1.0
+        local fillColor = prefs.btbBgColor or { r = 0.2, g = 0.2, b = 0.2 }
         btbBg = btbFrame:CreateTexture(nil, "BACKGROUND")
         btbBg:SetAllPoints()
-        btbBg:SetColorTexture(bgc.r, bgc.g, bgc.b, bga)
+        btbBg:SetColorTexture(fillColor.r, fillColor.g, fillColor.b, prefs.btbBgOpacity or 1.0)
 
-        -- No BTB border of its own: the main frame border encompasses the BTB.
-
-        -- Text overlay (above border at barArea+5)
+        -- Text layer over the border (which sits at barArea + 5).
         local btbTextOvr = CreateFrame("Frame", nil, btbFrame)
         btbTextOvr:SetAllPoints()
         btbTextOvr:SetFrameLevel(barArea:GetFrameLevel() + 10)
+        local function BarText(prefix)
+            local fs = btbTextOvr:CreateFontString(nil, "OVERLAY")
+            SetPVFont(fs, PREVIEW_FONT, prefs[prefix .. "Size"] or 11)
+            fs:SetTextColor(1, 1, 1)
+            fs:SetWordWrap(false)
+            return fs
+        end
+        btbLeftFS = BarText("btbLeft")
+        btbRightFS = BarText("btbRight")
+        btbCenterFS = BarText("btbCenter")
 
-        btbLeftFS = btbTextOvr:CreateFontString(nil, "OVERLAY")
-        SetPVFont(btbLeftFS, PREVIEW_FONT, prefs.btbLeftSize or 11)
-        btbLeftFS:SetTextColor(1, 1, 1)
-        btbLeftFS:SetWordWrap(false)
-
-        btbRightFS = btbTextOvr:CreateFontString(nil, "OVERLAY")
-        SetPVFont(btbRightFS, PREVIEW_FONT, prefs.btbRightSize or 11)
-        btbRightFS:SetTextColor(1, 1, 1)
-        btbRightFS:SetWordWrap(false)
-
-        btbCenterFS = btbTextOvr:CreateFontString(nil, "OVERLAY")
-        SetPVFont(btbCenterFS, PREVIEW_FONT, prefs.btbCenterSize or 11)
-        btbCenterFS:SetTextColor(1, 1, 1)
-        btbCenterFS:SetWordWrap(false)
-
-        -- Class icon texture on BTB preview on a high-level frame so it renders above the border
-        local btbClassIconHolder = CreateFrame("Frame", nil, btbFrame)
-        btbClassIconHolder:SetAllPoints(btbTextOvr)
-        btbClassIconHolder:SetFrameLevel(barArea:GetFrameLevel() + 12)
-        btbClassIconTex = btbClassIconHolder:CreateTexture(nil, "ARTWORK")
+        -- The class icon rides its own higher frame so it draws over the border.
+        local iconLayer = CreateFrame("Frame", nil, btbFrame)
+        iconLayer:SetAllPoints(btbTextOvr)
+        iconLayer:SetFrameLevel(barArea:GetFrameLevel() + 12)
+        btbClassIconTex = iconLayer:CreateTexture(nil, "ARTWORK")
         btbClassIconTex:SetTexCoord(0, 1, 0, 1)
         btbClassIconTex:Hide()
 
-        -- Position BTB texts
+        -- Each slot: its point and edge inset, before its own X offset.
+        local BAR_SLOTS = {
+            { btbLeftFS, "btbLeft", "LEFT", 5 },
+            { btbRightFS, "btbRight", "RIGHT", -5 },
+            { btbCenterFS, "btbCenter", "CENTER", 0 },
+        }
+        local ICON_SPOT = { center = { "CENTER", 0 }, right = { "RIGHT", -3 }, left = { "LEFT", 3 } }
+        local function IconOverlayShown(on)
+            local hit = popFrame._btbClassIconOv
+            if not hit then
+                return
+            end
+            if on then
+                hit:Show()
+            else
+                hit:Hide()
+            end
+        end
         ApplyBTBPreviewTexts = function(s)
-            local lc = s.btbLeftContent or "none"
-            local rc = s.btbRightContent or "none"
-            local cc = s.btbCenterContent or "none"
-            local lsz = s.btbLeftSize or 11
-            local rsz = s.btbRightSize or 11
-            local csz = s.btbCenterSize or 11
-
-            SetPVFont(btbLeftFS, PREVIEW_FONT, lsz)
-            btbLeftFS:ClearAllPoints()
-            if lc ~= "none" then
-                btbLeftFS:SetJustifyH("LEFT")
-                Pix.Point(btbLeftFS, "LEFT", btbTextOvr, "LEFT", 5 + (s.btbLeftX or 0), s.btbLeftY or 0)
-                btbLeftFS:SetText(PreviewTextForContent(lc, s, "btbLeft"))
-                btbLeftFS:Show()
-                PreviewClassColor(
-                    btbLeftFS,
-                    s.btbLeftClassColor,
-                    s.btbLeftColorR,
-                    s.btbLeftColorG,
-                    s.btbLeftColorB
-                )
-                PreviewPowerColor(btbLeftFS, lc, s.btbLeftPowerColor, s.btbLeftCustomFormat)
-            else
-                btbLeftFS:Hide()
-            end
-
-            SetPVFont(btbRightFS, PREVIEW_FONT, rsz)
-            btbRightFS:ClearAllPoints()
-            if rc ~= "none" then
-                btbRightFS:SetJustifyH("RIGHT")
-                Pix.Point(btbRightFS, "RIGHT", btbTextOvr, "RIGHT", -5 + (s.btbRightX or 0), s.btbRightY or 0)
-                btbRightFS:SetText(PreviewTextForContent(rc, s, "btbRight"))
-                btbRightFS:Show()
-                PreviewClassColor(
-                    btbRightFS,
-                    s.btbRightClassColor,
-                    s.btbRightColorR,
-                    s.btbRightColorG,
-                    s.btbRightColorB
-                )
-                PreviewPowerColor(btbRightFS, rc, s.btbRightPowerColor, s.btbRightCustomFormat)
-            else
-                btbRightFS:Hide()
-            end
-
-            SetPVFont(btbCenterFS, PREVIEW_FONT, csz)
-            btbCenterFS:ClearAllPoints()
-            if cc ~= "none" then
-                btbCenterFS:SetJustifyH("CENTER")
-                Pix.Point(btbCenterFS, "CENTER", btbTextOvr, "CENTER", s.btbCenterX or 0, s.btbCenterY or 0)
-                btbCenterFS:SetText(PreviewTextForContent(cc, s, "btbCenter"))
-                btbCenterFS:Show()
-                PreviewClassColor(
-                    btbCenterFS,
-                    s.btbCenterClassColor,
-                    s.btbCenterColorR,
-                    s.btbCenterColorG,
-                    s.btbCenterColorB
-                )
-                PreviewPowerColor(btbCenterFS, cc, s.btbCenterPowerColor, s.btbCenterCustomFormat)
-            else
-                btbCenterFS:Hide()
-            end
-
-            -- Class icon in BTB preview
-            local ciStyle = s.btbClassIcon or "none"
-            if ciStyle ~= "none" then
-                local _, classToken = UnitClass("player")
-                if classToken and ApplyClassIconTexture_Preview(btbClassIconTex, classToken, ciStyle) then
-                    local ciSz = s.btbClassIconSize or 14
-                    Pix.Size(btbClassIconTex, ciSz, ciSz)
-                    btbClassIconTex:ClearAllPoints()
-                    local ciLoc = s.btbClassIconLocation or "left"
-                    local ciOx = s.btbClassIconX or 0
-                    local ciOy = s.btbClassIconY or 0
-                    if ciLoc == "center" then
-                        Pix.Point(btbClassIconTex, "CENTER", btbTextOvr, "CENTER", ciOx, ciOy)
-                    elseif ciLoc == "right" then
-                        Pix.Point(btbClassIconTex, "RIGHT", btbTextOvr, "RIGHT", -3 + ciOx, ciOy)
-                    else
-                        Pix.Point(btbClassIconTex, "LEFT", btbTextOvr, "LEFT", 3 + ciOx, ciOy)
-                    end
-                    btbClassIconTex:Show()
-                    if popFrame._btbClassIconOv then
-                        popFrame._btbClassIconOv:Show()
-                    end
+            for _, slot in ipairs(BAR_SLOTS) do
+                local fs, prefix, point, inset = slot[1], slot[2], slot[3], slot[4]
+                local content = s[prefix .. "Content"] or "none"
+                SetPVFont(fs, PREVIEW_FONT, s[prefix .. "Size"] or 11)
+                fs:ClearAllPoints()
+                if content == "none" then
+                    fs:Hide()
                 else
-                    btbClassIconTex:Hide()
-                    if popFrame._btbClassIconOv then
-                        popFrame._btbClassIconOv:Hide()
-                    end
-                end
-            else
-                btbClassIconTex:Hide()
-                if popFrame._btbClassIconOv then
-                    popFrame._btbClassIconOv:Hide()
+                    fs:SetJustifyH(point)
+                    Pix.Point(
+                        fs,
+                        point,
+                        btbTextOvr,
+                        point,
+                        inset + (s[prefix .. "X"] or 0),
+                        s[prefix .. "Y"] or 0
+                    )
+                    fs:SetText(PreviewTextForContent(content, s, prefix))
+                    fs:Show()
+                    local r, g, b = s[prefix .. "ColorR"], s[prefix .. "ColorG"], s[prefix .. "ColorB"]
+                    PreviewClassColor(fs, s[prefix .. "ClassColor"], r, g, b)
+                    PreviewPowerColor(fs, content, s[prefix .. "PowerColor"], s[prefix .. "CustomFormat"])
                 end
             end
+
+            -- The class icon, in the picked art style at its Location.
+            local iconStyle = s.btbClassIcon or "none"
+            local _, classToken
+            if iconStyle ~= "none" then
+                _, classToken = UnitClass("player")
+            end
+            if not (classToken and ApplyClassIconTexture_Preview(btbClassIconTex, classToken, iconStyle)) then
+                btbClassIconTex:Hide()
+                IconOverlayShown(false)
+                return
+            end
+            local iconSize = s.btbClassIconSize or 14
+            Pix.Size(btbClassIconTex, iconSize, iconSize)
+            btbClassIconTex:ClearAllPoints()
+            local spot = ICON_SPOT[s.btbClassIconLocation] or ICON_SPOT.left
+            local iconX = spot[2] + (s.btbClassIconX or 0)
+            Pix.Point(btbClassIconTex, spot[1], btbTextOvr, spot[1], iconX, s.btbClassIconY or 0)
+            btbClassIconTex:Show()
+            IconOverlayShown(true)
         end
         ApplyBTBPreviewTexts(prefs)
 
-        local initBtbPos = prefs.btbPosition or "bottom"
-        local initBtbIsAtt = (initBtbPos == "top" or initBtbPos == "bottom")
         if not prefs.bottomTextBar then
             btbFrame:Hide()
-        else
-            if initBtbIsAtt then
-                totalH = totalH + btbH
-            end
+        elseif attached then
+            totalH = totalH + btbH
         end
     end
 
