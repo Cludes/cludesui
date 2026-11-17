@@ -2136,94 +2136,91 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             btbFrame:Hide()
         end
 
-        -- Cast bar: under the art box (the text bar no longer sits between)
-        -- -- or, on the frames whose bar hangs off the aura block, under the
-        -- lowest bottom aura stack (`drop`, from Update) -- with the stock
-        -- background, fill art, frame and text box.
+        -- Cast bar: under the art box (no Text Bar between them now), or on
+        -- the frames whose bar hangs off the aura block, under the lowest
+        -- bottom aura stack (`drop`, from Update); in the stock background,
+        -- fill art, frame and text box.
         if castBar and castBar:IsShown() and ch > 0 then
-            local inW, onRight = mod.UF_CastIconInWidth(unitKey, s)
-            if unitKey == "player" then
-                onRight = s.playerCastbarIconRight == true
-            else
-                onRight = s.castbarIconRight == true
-            end
+            local inW = mod.UF_CastIconInWidth(unitKey, s)
+            local onRight = s[unitKey == "player" and "playerCastbarIconRight" or "castbarIconRight"] == true
             local UFC = mod.UF_CAST_BLIZZ
-            -- The classic kit's cast chrome (nil on the stock kit): the
-            -- vanilla frame round the user's own fill, no stock
+            -- The classic kit's own cast chrome (nil on the stock kit): the
+            -- vanilla frame round the user's own fill, and no stock
             -- background, fill art or text box.
             local CK = mod.UF_BLIZZ.cast
-            -- The stock text box (spell name shown) hangs 13px under the
-            -- bar and the icon spans bar + box, as live; an in-width icon
-            -- shifts the bar by half that width to keep the pair centred.
-            local tbAtlas = (not CK) and UFC and mod.UF_BlizzAtlas(UFC.textbox)
+            local function StockAtlas(key)
+                return (not CK) and UFC and mod.UF_BlizzAtlas(UFC[key])
+            end
+            -- The stock text box (while the spell name shows) hangs 13px under
+            -- the bar and the icon spans bar and box, as live; an icon that
+            -- is part of the bar moves the bar half that width to centre the pair.
+            local tbAtlas = StockAtlas("textbox")
             local nameSide = s.castSpellNameSide or "left"
             local tbOn = tbAtlas and castNameFS2 and nameSide ~= "none"
             local icoW = ch + (tbOn and 13 or 0)
+            local shift = 0
+            if inW then
+                shift = onRight and -(icoW / 2) or (icoW / 2)
+            end
             castBar:ClearAllPoints()
-            castBar:SetPoint(
-                "TOP",
-                barArea,
-                "BOTTOM",
-                inW and (onRight and -(icoW / 2) or (icoW / 2)) or 0,
-                padBottom - (drop or 0)
-            )
+            castBar:SetPoint("TOP", barArea, "BOTTOM", shift, padBottom - (drop or 0))
             if castIconFrame then
                 castIconFrame:SetSize(icoW, icoW)
             end
-            -- The retail background under WoW Forever too, as live.
-            local bgAtlas = (not CK) and UFC and mod.UF_BlizzAtlas(UFC.bg)
-            if bgAtlas and castBar._previewBgTex then
-                CludesUI.StockAtlas(castBar._previewBgTex, bgAtlas)
-                castBar._previewBgTex:ClearAllPoints()
-                castBar._previewBgTex:SetPoint("TOPLEFT", castBar, "TOPLEFT", -1, 1)
-                castBar._previewBgTex:SetPoint("BOTTOMRIGHT", castBar, "BOTTOMRIGHT", 1, -1)
+            -- The retail background, under WoW Forever too, as live.
+            local bgAtlas = StockAtlas("bg")
+            local backTex = castBar._previewBgTex
+            if bgAtlas and backTex then
+                CludesUI.StockAtlas(backTex, bgAtlas)
+                backTex:ClearAllPoints()
+                backTex:SetPoint("TOPLEFT", castBar, "TOPLEFT", -1, 1)
+                backTex:SetPoint("BOTTOMRIGHT", castBar, "BOTTOMRIGHT", 1, -1)
             end
-            local fillAtlas = (not CK) and UFC and mod.UF_BlizzAtlas(UFC.cast)
+            local fillAtlas = StockAtlas("cast")
             if fillAtlas and castFill then
                 castFill:SetAtlas(fillAtlas)
                 castFill:SetVertexColor(1, 1, 1, 1)
             end
             Pix.HideBorder(castBar)
             if castIconFrame then
-                -- Bare art, as live: no plate, no border, no 1px inset
-                -- (Update re-snaps the inset every pass; this runs after).
+                -- Bare art as live: no plate, border or 1px inset (Update
+                -- re-seats the inset each pass; this runs after it).
                 Pix.HideBorder(castIconFrame)
                 if castIconFrame._bg then
                     castIconFrame._bg:Hide()
                 end
-                if castIconFrame._iconTex then
-                    castIconFrame._iconTex:ClearAllPoints()
-                    castIconFrame._iconTex:SetAllPoints(castIconFrame)
-                    castIconFrame._iconTex:SetTexCoord(0, 1, 0, 1)
+                local art = castIconFrame._iconTex
+                if art then
+                    art:ClearAllPoints()
+                    art:SetAllPoints(castIconFrame)
+                    art:SetTexCoord(0, 1, 0, 1)
                 end
             end
-            local frAtlas = (not CK) and UFC and mod.UF_BlizzAtlas(UFC.frame)
+            local frAtlas = StockAtlas("frame")
             if CK then
-                -- The vanilla frame round the footprint: bar plus icon
-                -- while the icon is part of the bar (as live, the icon
-                -- sits inside the frame's window), on an art frame
-                -- above both so the rim overlaps the icon's edges too.
-                local af = castBar._classicArt
-                if not af then
-                    af = CreateFrame("Frame", nil, popFrame)
-                    af:EnableMouse(false)
-                    af:SetFrameLevel(popFrame:GetFrameLevel() + 3)
-                    castBar._classicArt = af
-                    castBar._blizzFrame = af:CreateTexture(nil, "OVERLAY", nil, 2)
+                -- The vanilla frame round the footprint (bar and icon while the
+                -- icon is part of the bar, which live sits inside the frame's
+                -- window), on an art frame over both so the rim overlaps the
+                -- icon's edges too.
+                local rim = castBar._classicArt
+                if not rim then
+                    rim = CreateFrame("Frame", nil, popFrame)
+                    rim:EnableMouse(false)
+                    rim:SetFrameLevel(popFrame:GetFrameLevel() + 3)
+                    castBar._classicArt = rim
+                    castBar._blizzFrame = rim:CreateTexture(nil, "OVERLAY", nil, 2)
                 end
-                af:ClearAllPoints()
-                if inW and castIconFrame and castIconFrame:IsShown() then
-                    if onRight then
-                        af:SetPoint("TOPLEFT", castBar, "TOPLEFT", 0, 0)
-                        af:SetPoint("BOTTOMRIGHT", castIconFrame, "BOTTOMRIGHT", 0, 0)
-                    else
-                        af:SetPoint("TOPLEFT", castIconFrame, "TOPLEFT", 0, 0)
-                        af:SetPoint("BOTTOMRIGHT", castBar, "BOTTOMRIGHT", 0, 0)
-                    end
+                rim:ClearAllPoints()
+                if not (inW and castIconFrame and castIconFrame:IsShown()) then
+                    rim:SetAllPoints(castBar)
+                elseif onRight then
+                    rim:SetPoint("TOPLEFT", castBar, "TOPLEFT", 0, 0)
+                    rim:SetPoint("BOTTOMRIGHT", castIconFrame, "BOTTOMRIGHT", 0, 0)
                 else
-                    af:SetAllPoints(castBar)
+                    rim:SetPoint("TOPLEFT", castIconFrame, "TOPLEFT", 0, 0)
+                    rim:SetPoint("BOTTOMRIGHT", castBar, "BOTTOMRIGHT", 0, 0)
                 end
-                mod.UF_SeatClassicCastFrame(castBar._blizzFrame, af, ch, s[mod.UF_CastClassicKey(unitKey)])
+                mod.UF_SeatClassicCastFrame(castBar._blizzFrame, rim, ch, s[mod.UF_CastClassicKey(unitKey)])
             elseif frAtlas then
                 local fr = castBar._blizzFrame
                 if not fr then
