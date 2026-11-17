@@ -4600,83 +4600,85 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             Pix.Point(popFrame._segFrame, "TOP", popFrame:GetParent(), "TOP", 0, pillY)
         end
 
-        -- Combat indicator preview
-        if combatInd then
-            if
-                optionState.showCombatIndicatorPreview
-                and s.combatIndicatorStyle
-                and s.combatIndicatorStyle ~= "none"
-            then
-                local ciStyle = s.combatIndicatorStyle or "class"
-                local ciColor = s.combatIndicatorColor or "custom"
-                local ciSz = s.combatIndicatorSize or 22
-                local ciOx = s.combatIndicatorX or 0
-                local ciOy = s.combatIndicatorY or 0
-                local ciPos = s.combatIndicatorPosition or "healthbar"
-                combatInd:SetSize(ciSz, ciSz)
-                combatInd:ClearAllPoints()
-                -- "healthbar" is the stored value labeled "Center" in the dropdown;
-                -- "center" is a render alias for it. Portrait follows the live
-                -- rule (ns.UF_PortraitShown): a stock style (blizzG) always
-                -- shows its portrait, whatever Portrait Mode says.
-                if ciPos == "portrait" and portraitFrame and (sp or blizzG) then
-                    combatInd:SetPoint("CENTER", portraitFrame, "CENTER", ciOx, ciOy)
-                elseif ciPos == "textbar" then
-                    combatInd:SetPoint("CENTER", btbFrame or popFrame, "CENTER", ciOx, ciOy)
-                elseif ciPos == "healthbar" or ciPos == "center" then
-                    combatInd:SetPoint("CENTER", health, "CENTER", ciOx, ciOy)
-                else
-                    local anchor = (ciPos == "topright" and "TOPRIGHT")
-                        or (ciPos == "bottomleft" and "BOTTOMLEFT")
-                        or (ciPos == "bottomright" and "BOTTOMRIGHT")
-                        or "TOPLEFT"
-                    combatInd:SetPoint(anchor, health, anchor, ciOx, ciOy)
-                end
-                local _, classToken = UnitClass("player")
-                -- Custom combat icons (combat0..5) render untinted; Standard/Class
-                -- Theme are tinted by the colour mode below.
-                if ciStyle:find("^combat%d") then
-                    combatInd:SetTexture(COMBAT_MEDIA_P .. ciStyle .. ".tga")
-                    combatInd:SetTexCoord(0, 1, 0, 1)
-                    if combatInd.SetDesaturated then
-                        combatInd:SetDesaturated(false)
-                    end
-                    combatInd:SetVertexColor(1, 1, 1, 1)
-                else
-                    if ciStyle == "class" then
-                        combatInd:SetTexture(COMBAT_MEDIA_P .. "combat-indicator-class-custom.png")
-                        local crd = CLASS_FULL_COORDS[classToken]
-                        if crd then
-                            combatInd:SetTexCoord(crd[1], crd[2], crd[3], crd[4])
-                        else
-                            combatInd:SetTexCoord(0, 1, 0, 1)
-                        end
-                    else
-                        combatInd:SetTexture(COMBAT_MEDIA_P .. "combat-indicator-custom.png")
-                        combatInd:SetTexCoord(0, 1, 0, 1)
-                    end
-                    if ciColor == "classcolor" then
-                        local cc = RAID_CLASS_COLORS[classToken] or { r = 1, g = 1, b = 1 }
-                        combatInd:SetVertexColor(cc.r, cc.g, cc.b, 1)
-                    elseif ciColor == "custom" then
-                        local cc = s.combatIndicatorCustomColor or { r = 1, g = 1, b = 1 }
-                        combatInd:SetVertexColor(cc.r or 1, cc.g or 1, cc.b or 1, 1)
-                    else
-                        combatInd:SetVertexColor(1, 1, 1, 1)
-                    end
-                end
-                combatInd:Show()
+        -- The corner a stored indicator place names; anything else takes the
+        -- indicator's own default corner.
+        local CORNER = {
+            topleft = "TOPLEFT",
+            topright = "TOPRIGHT",
+            bottomleft = "BOTTOMLEFT",
+            bottomright = "BOTTOMRIGHT",
+        }
+        local WHITE_RGB = { r = 1, g = 1, b = 1 }
+        -- Combat indicator, behind its eye toggle.
+        local combatOn = optionState.showCombatIndicatorPreview
+            and s.combatIndicatorStyle
+            and s.combatIndicatorStyle ~= "none"
+        if combatInd and not combatOn then
+            combatInd:Hide()
+        elseif combatInd then
+            local ciStyle = s.combatIndicatorStyle or "class"
+            local ciColor = s.combatIndicatorColor or "custom"
+            local ciSz = s.combatIndicatorSize or 22
+            local ciOx, ciOy = s.combatIndicatorX or 0, s.combatIndicatorY or 0
+            local ciPos = s.combatIndicatorPosition or "healthbar"
+            combatInd:SetSize(ciSz, ciSz)
+            combatInd:ClearAllPoints()
+            -- "healthbar" is the stored value the dropdown calls Center, and
+            -- "center" draws the same. Portrait follows the live rule
+            -- (ns.UF_PortraitShown): a stock style (blizzG) always shows its
+            -- portrait, whatever Portrait Mode says.
+            if ciPos == "portrait" and portraitFrame and (sp or blizzG) then
+                combatInd:SetPoint("CENTER", portraitFrame, "CENTER", ciOx, ciOy)
+            elseif ciPos == "textbar" then
+                combatInd:SetPoint("CENTER", btbFrame or popFrame, "CENTER", ciOx, ciOy)
+            elseif ciPos == "healthbar" or ciPos == "center" then
+                combatInd:SetPoint("CENTER", health, "CENTER", ciOx, ciOy)
             else
-                combatInd:Hide()
+                local corner = CORNER[ciPos] or "TOPLEFT"
+                combatInd:SetPoint(corner, health, corner, ciOx, ciOy)
             end
+            local _, classToken = UnitClass("player")
+            if ciStyle:find("^combat%d") then
+                -- The custom combat icons (combat0..5) draw untinted.
+                combatInd:SetTexture(COMBAT_MEDIA_P .. ciStyle .. ".tga")
+                combatInd:SetTexCoord(0, 1, 0, 1)
+                if combatInd.SetDesaturated then
+                    combatInd:SetDesaturated(false)
+                end
+                combatInd:SetVertexColor(1, 1, 1, 1)
+            else
+                -- Standard and Class Theme take the colour mode's tint.
+                local coords
+                if ciStyle == "class" then
+                    combatInd:SetTexture(COMBAT_MEDIA_P .. "combat-indicator-class-custom.png")
+                    coords = CLASS_FULL_COORDS[classToken]
+                else
+                    combatInd:SetTexture(COMBAT_MEDIA_P .. "combat-indicator-custom.png")
+                end
+                if coords then
+                    combatInd:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
+                else
+                    combatInd:SetTexCoord(0, 1, 0, 1)
+                end
+                local tint = WHITE_RGB
+                if ciColor == "classcolor" then
+                    tint = RAID_CLASS_COLORS[classToken] or WHITE_RGB
+                elseif ciColor == "custom" then
+                    tint = s.combatIndicatorCustomColor or WHITE_RGB
+                end
+                combatInd:SetVertexColor(tint.r or 1, tint.g or 1, tint.b or 1, 1)
+            end
+            combatInd:Show()
         end
-        -- Faction indicator preview, behind its row's eye toggle: your own faction
-        -- on the player frame, the other faction on the target frame (what
-        -- Opposite Faction shows).
+        -- Faction indicator, behind its eye toggle: your own faction on the
+        -- player frame, the other one on the target frame (what Opposite
+        -- Faction shows), with your own badge on both.
         if factionInd then
-            local fMode = s.factionIndicatorMode or "off"
-            local fEye = mod._ufPvEyes and mod._ufPvEyes.faction
-            if (unitKey == "player" or unitKey == "target") and fMode ~= "off" and fEye then
+            local eyeOn = mod._ufPvEyes and mod._ufPvEyes.faction
+            local wanted = (s.factionIndicatorMode or "off") ~= "off"
+            if not ((unitKey == "player" or unitKey == "target") and wanted and eyeOn) then
+                factionInd:Hide()
+            else
                 local mine = UnitFactionGroup("player")
                 local fac = mine
                 if unitKey == "target" then
@@ -4689,22 +4691,16 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
                 local fPos = s.factionIndicatorPosition or "topright"
                 local fOx, fOy = s.factionIndicatorX or 0, s.factionIndicatorY or 0
                 local fStyle = s.factionIndicatorStyle or "pvp"
-                -- The preview shows your own badge on both frames.
                 CludesUI.SetFactionArt(factionInd, fStyle, fac, CludesUI.FactionBadgeFor(fStyle, "player"))
                 factionInd:SetSize(fSz, fSz)
                 factionInd:ClearAllPoints()
                 if fPos == "portrait" and portraitFrame and (sp or blizzG) then
                     factionInd:SetPoint("CENTER", portraitFrame, "CENTER", fOx, fOy)
                 else
-                    local anchor = (fPos == "topleft" and "TOPLEFT")
-                        or (fPos == "bottomleft" and "BOTTOMLEFT")
-                        or (fPos == "bottomright" and "BOTTOMRIGHT")
-                        or "TOPRIGHT"
-                    factionInd:SetPoint(anchor, popFrame, anchor, fOx, fOy)
+                    local corner = CORNER[fPos] or "TOPRIGHT"
+                    factionInd:SetPoint(corner, popFrame, corner, fOx, fOy)
                 end
                 factionInd:Show()
-            else
-                factionInd:Hide()
             end
         end
         -- Raid marker / leader / elite previews, shown by their rows' eye toggles
