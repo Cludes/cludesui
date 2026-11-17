@@ -43,14 +43,18 @@ local function BuildBarAppearance(hostFrame, posY, context)
 
     -- A sync icon on rgn for one group of settings: read() takes the selected
     -- bar's values once, copy(bar, v, key) writes them into another bar and
-    -- re-applies it, same(bar, v) says whether a bar already matches. All
-    -- copies to every action bar, Multiple to the ticked ones, and the page
-    -- repaints after either; it reads synced while every bar matches.
-    local function BarSync(rgn, tooltip, read, copy, same)
+    -- re-applies it, same(bar, v, key) says whether a bar already matches, and
+    -- after() (optional) re-applies what every bar shares once the copies are
+    -- done. All copies to every action bar, Multiple to the ticked ones, and
+    -- the page repaints after either; it reads synced while every bar matches.
+    local function BarSync(rgn, tooltip, read, copy, same, after)
         local function CopyTo(keys)
             local v = read()
             for _, key in ipairs(keys) do
                 copy(ABAR.db.profile.bars[key], v, key)
+            end
+            if after then
+                after()
             end
             CludesUI:RefreshPage()
         end
@@ -63,7 +67,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
             isSynced = function()
                 local v = read()
                 for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if not same(ABAR.db.profile.bars[key], v) then
+                    if not same(ABAR.db.profile.bars[key], v, key) then
                         return false
                     end
                 end
@@ -1253,41 +1257,13 @@ local function BuildBarAppearance(hostFrame, posY, context)
             target.bgPadY = nil
             ABAR:ApplyBackgroundForBar(key)
         end
-        CludesUI.BuildSyncIcon({
-            region = regionFrame,
-            tooltip = "Apply Bar Background Spacing to all Bars",
-            onClick = function()
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    ApplySpacingTo(key)
-                end
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local spacing = CurrentSpacing(SB())
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if CurrentSpacing(ABAR.db.profile.bars[key]) ~= spacing then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { regionFrame }
-            end,
-            multiApply = {
-                elementKeys = GROUP_BAR_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return SelectedKey()
-                end,
-                onApply = function(checkedKeys)
-                    for _, key in ipairs(checkedKeys) do
-                        ApplySpacingTo(key)
-                    end
-                    CludesUI:RefreshPage()
-                end,
-            },
-        })
+        BarSync(regionFrame, "Apply Bar Background Spacing to all Bars", function()
+            return CurrentSpacing(SB())
+        end, function(_, _, key)
+            ApplySpacingTo(key)
+        end, function(bar, spacing)
+            return CurrentSpacing(bar) == spacing
+        end)
     end
 
     -- Bar Background's other rows: Spacing last, unless it sits beside Bar
@@ -1356,42 +1332,14 @@ local function BuildBarAppearance(hostFrame, posY, context)
                     }
                     ABAR:ApplyBackgroundForBar(key)
                 end
-                CludesUI.BuildSyncIcon({
-                    region = regionFrame,
-                    tooltip = "Apply Background Color to all Bars",
-                    onClick = function()
-                        for _, key in ipairs(GROUP_BAR_ORDER) do
-                            ApplyColorTo(key)
-                        end
-                        CludesUI:RefreshPage()
-                    end,
-                    isSynced = function()
-                        local color = SGet("bgColor") or { r = 0, g = 0, b = 0 }
-                        for _, key in ipairs(GROUP_BAR_ORDER) do
-                            local target = ABAR.db.profile.bars[key].bgColor or { r = 0, g = 0, b = 0 }
-                            if target.r ~= color.r or target.g ~= color.g or target.b ~= color.b then
-                                return false
-                            end
-                        end
-                        return true
-                    end,
-                    flashTargets = function()
-                        return { regionFrame }
-                    end,
-                    multiApply = {
-                        elementKeys = GROUP_BAR_ORDER,
-                        elementLabels = SHORT_LABELS,
-                        getCurrentKey = function()
-                            return SelectedKey()
-                        end,
-                        onApply = function(checkedKeys)
-                            for _, key in ipairs(checkedKeys) do
-                                ApplyColorTo(key)
-                            end
-                            CludesUI:RefreshPage()
-                        end,
-                    },
-                })
+                BarSync(regionFrame, "Apply Background Color to all Bars", function()
+                    return SGet("bgColor") or { r = 0, g = 0, b = 0 }
+                end, function(_, _, key)
+                    ApplyColorTo(key)
+                end, function(bar, color)
+                    local target = bar.bgColor or { r = 0, g = 0, b = 0 }
+                    return target.r == color.r and target.g == color.g and target.b == color.b
+                end)
             end
 
             do
@@ -1401,41 +1349,13 @@ local function BuildBarAppearance(hostFrame, posY, context)
                     target.bgOpacity = BackgroundOpacity(SB())
                     ABAR:ApplyBackgroundForBar(key)
                 end
-                CludesUI.BuildSyncIcon({
-                    region = regionFrame,
-                    tooltip = "Apply Background Opacity to all Bars",
-                    onClick = function()
-                        for _, key in ipairs(GROUP_BAR_ORDER) do
-                            ApplyOpacityTo(key)
-                        end
-                        CludesUI:RefreshPage()
-                    end,
-                    isSynced = function()
-                        local opacity = BackgroundOpacity(SB())
-                        for _, key in ipairs(GROUP_BAR_ORDER) do
-                            if BackgroundOpacity(ABAR.db.profile.bars[key]) ~= opacity then
-                                return false
-                            end
-                        end
-                        return true
-                    end,
-                    flashTargets = function()
-                        return { regionFrame }
-                    end,
-                    multiApply = {
-                        elementKeys = GROUP_BAR_ORDER,
-                        elementLabels = SHORT_LABELS,
-                        getCurrentKey = function()
-                            return SelectedKey()
-                        end,
-                        onApply = function(checkedKeys)
-                            for _, key in ipairs(checkedKeys) do
-                                ApplyOpacityTo(key)
-                            end
-                            CludesUI:RefreshPage()
-                        end,
-                    },
-                })
+                BarSync(regionFrame, "Apply Background Opacity to all Bars", function()
+                    return BackgroundOpacity(SB())
+                end, function(_, _, key)
+                    ApplyOpacityTo(key)
+                end, function(bar, opacity)
+                    return BackgroundOpacity(bar) == opacity
+                end)
             end
 
             do
@@ -1996,43 +1916,13 @@ local function BuildBarAppearance(hostFrame, posY, context)
                         ABAR:ApplyPaddingForBar(key)
                     end
                 end
-                CludesUI.BuildSyncIcon({
-                    region = rgn,
-                    tooltip = "Apply Bar Frame to all Bars",
-                    onClick = function()
-                        local v = mod.AB_ForeverBg(SelectedKey())
-                        for _, key in ipairs(GROUP_BAR_ORDER) do
-                            BgTo(key, v)
-                        end
-                        CludesUI:RefreshPage()
-                    end,
-                    isSynced = function()
-                        local v = mod.AB_ForeverBg(SelectedKey())
-                        for _, key in ipairs(GROUP_BAR_ORDER) do
-                            if mod.AB_ForeverBg(key) ~= v then
-                                return false
-                            end
-                        end
-                        return true
-                    end,
-                    flashTargets = function()
-                        return { rgn }
-                    end,
-                    multiApply = {
-                        elementKeys = GROUP_BAR_ORDER,
-                        elementLabels = SHORT_LABELS,
-                        getCurrentKey = function()
-                            return SelectedKey()
-                        end,
-                        onApply = function(checkedKeys)
-                            local v = mod.AB_ForeverBg(SelectedKey())
-                            for _, key in ipairs(checkedKeys) do
-                                BgTo(key, v)
-                            end
-                            CludesUI:RefreshPage()
-                        end,
-                    },
-                })
+                BarSync(rgn, "Apply Bar Frame to all Bars", function()
+                    return mod.AB_ForeverBg(SelectedKey())
+                end, function(_, v, key)
+                    BgTo(key, v)
+                end, function(_, v, key)
+                    return mod.AB_ForeverBg(key) == v
+                end)
             end
             local bgOn = SVal("bgEnabled", false)
             local bgRow
@@ -2051,45 +1941,14 @@ local function BuildBarAppearance(hostFrame, posY, context)
         end
         do
             local regionFrame = bgRgn
-            CludesUI.BuildSyncIcon({
-                region = regionFrame,
-                tooltip = "Apply Bar Background Enable to all Bars",
-                onClick = function()
-                    local enabled = SVal("bgEnabled", false)
-                    for _, key in ipairs(GROUP_BAR_ORDER) do
-                        ABAR.db.profile.bars[key].bgEnabled = enabled
-                        ABAR:ApplyBackgroundForBar(key)
-                    end
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local enabled = SVal("bgEnabled", false)
-                    for _, key in ipairs(GROUP_BAR_ORDER) do
-                        if (ABAR.db.profile.bars[key].bgEnabled or false) ~= enabled then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { regionFrame }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_BAR_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return SelectedKey()
-                    end,
-                    onApply = function(checkedKeys)
-                        local enabled = SVal("bgEnabled", false)
-                        for _, key in ipairs(checkedKeys) do
-                            ABAR.db.profile.bars[key].bgEnabled = enabled
-                            ABAR:ApplyBackgroundForBar(key)
-                        end
-                        CludesUI:RefreshPage()
-                    end,
-                },
-            })
+            BarSync(regionFrame, "Apply Bar Background Enable to all Bars", function()
+                return SVal("bgEnabled", false)
+            end, function(bar, enabled, key)
+                bar.bgEnabled = enabled
+                ABAR:ApplyBackgroundForBar(key)
+            end, function(bar, enabled)
+                return (bar.bgEnabled or false) == enabled
+            end)
         end
         BuildBarBackgroundRows(CAPS.forever)
     end
@@ -2179,53 +2038,20 @@ local function BuildBarAppearance(hostFrame, posY, context)
     posY = posY - hgt
     do
         local rgn = rangeSwipeRow._leftRegion
-        CludesUI.BuildSyncIcon({
-            region = rgn,
-            tooltip = "Apply Range Coloring to all Bars",
-            onClick = function()
-                local v = SB().outOfRangeColoring or false
-                local c = SB().outOfRangeColor
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    ABAR.db.profile.bars[key].outOfRangeColoring = v
-                    if c then
-                        ABAR.db.profile.bars[key].outOfRangeColor = { r = c.r, g = c.g, b = c.b }
-                    end
-                end
-                ABAR:ApplyRangeColoring()
-                CludesUI:RefreshPage()
-            end,
-            isSynced = function()
-                local v = SB().outOfRangeColoring or false
-                for _, key in ipairs(GROUP_BAR_ORDER) do
-                    if (ABAR.db.profile.bars[key].outOfRangeColoring or false) ~= v then
-                        return false
-                    end
-                end
-                return true
-            end,
-            flashTargets = function()
-                return { rgn }
-            end,
-            multiApply = {
-                elementKeys = GROUP_BAR_ORDER,
-                elementLabels = SHORT_LABELS,
-                getCurrentKey = function()
-                    return SelectedKey()
-                end,
-                onApply = function(checkedKeys)
-                    local v = SB().outOfRangeColoring or false
-                    local c = SB().outOfRangeColor
-                    for _, key in ipairs(checkedKeys) do
-                        ABAR.db.profile.bars[key].outOfRangeColoring = v
-                        if c then
-                            ABAR.db.profile.bars[key].outOfRangeColor = { r = c.r, g = c.g, b = c.b }
-                        end
-                    end
-                    ABAR:ApplyRangeColoring()
-                    CludesUI:RefreshPage()
-                end,
-            },
-        })
+        BarSync(rgn, "Apply Range Coloring to all Bars", function()
+            local s = SB()
+            return { on = s.outOfRangeColoring or false, color = s.outOfRangeColor }
+        end, function(bar, v)
+            bar.outOfRangeColoring = v.on
+            local c = v.color
+            if c then
+                bar.outOfRangeColor = { r = c.r, g = c.g, b = c.b }
+            end
+        end, function(bar, v)
+            return (bar.outOfRangeColoring or false) == v.on
+        end, function()
+            ABAR:ApplyRangeColoring()
+        end)
     end
     do
         local leftRgn = rangeSwipeRow._leftRegion
@@ -2400,49 +2226,17 @@ local function BuildBarAppearance(hostFrame, posY, context)
         -- setting for every bar.
         do
             local rgn = itemRow._rightRegion
-            CludesUI.BuildSyncIcon({
-                region = rgn,
-                tooltip = "Apply Item Rank to all Bars",
-                onClick = function()
-                    local v = SB().showRankIcon or false
-                    for _, key in ipairs(GROUP_BAR_ORDER) do
-                        ABAR.db.profile.bars[key].showRankIcon = v
-                    end
-                    if _G._CUAB_Apply then
-                        _G._CUAB_Apply()
-                    end
-                    CludesUI:RefreshPage()
-                end,
-                isSynced = function()
-                    local v = SB().showRankIcon or false
-                    for _, key in ipairs(GROUP_BAR_ORDER) do
-                        if (ABAR.db.profile.bars[key].showRankIcon or false) ~= v then
-                            return false
-                        end
-                    end
-                    return true
-                end,
-                flashTargets = function()
-                    return { rgn }
-                end,
-                multiApply = {
-                    elementKeys = GROUP_BAR_ORDER,
-                    elementLabels = SHORT_LABELS,
-                    getCurrentKey = function()
-                        return SelectedKey()
-                    end,
-                    onApply = function(checkedKeys)
-                        local v = SB().showRankIcon or false
-                        for _, key in ipairs(checkedKeys) do
-                            ABAR.db.profile.bars[key].showRankIcon = v
-                        end
-                        if _G._CUAB_Apply then
-                            _G._CUAB_Apply()
-                        end
-                        CludesUI:RefreshPage()
-                    end,
-                },
-            })
+            BarSync(rgn, "Apply Item Rank to all Bars", function()
+                return SB().showRankIcon or false
+            end, function(bar, v)
+                bar.showRankIcon = v
+            end, function(bar, v)
+                return (bar.showRankIcon or false) == v
+            end, function()
+                if _G._CUAB_Apply then
+                    _G._CUAB_Apply()
+                end
+            end)
         end
     end
 
