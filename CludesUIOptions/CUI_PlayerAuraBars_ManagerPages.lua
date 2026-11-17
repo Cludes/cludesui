@@ -3076,110 +3076,36 @@ function mod.PABMP_ShowFilterEditor()
         return
     end
 
-    local leftX = CreateFrame("Frame", nil, dialog)
-    leftX:SetPoint("TOPLEFT", dialog, "TOPLEFT", 16, -44)
-    leftX:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -(SIDE_W + 12), 12)
-    leftX:SetFrameLevel(dialog:GetFrameLevel() + 1)
-
-    local nm = CludesUI.MakeFont(leftX, 13, nil, 1, 1, 1)
-    nm:SetAlpha(0.9)
-    nm:SetPoint("TOPLEFT", leftX, "TOPLEFT", 2, -2)
-    nm:SetText(L(sel.name))
-    if not sel.preset then
-        local ren = CreateFrame("Button", nil, leftX)
-        ren:SetSize(54, 16)
-        ren:SetPoint("LEFT", nm, "RIGHT", 10, 0)
-        ren:SetFrameLevel(leftX:GetFrameLevel() + 2)
-        local rl = CludesUI.MakeFont(ren, 11, nil, ar, ag, ab)
-        rl:SetAlpha(0.9)
-        rl:SetPoint("LEFT")
-        rl:SetText(L("Rename"))
-        ren:SetScript("OnEnter", function()
-            rl:SetAlpha(1)
-        end)
-        ren:SetScript("OnLeave", function()
-            rl:SetAlpha(0.9)
-        end)
-        ren:SetScript("OnClick", function()
-            EditorInput({
-                title = L("Rename Filter"),
-                placeholder = L(sel.name),
-                confirmText = L("Rename"),
-                cancelText = L("Cancel"),
-                onConfirm = function(textValue)
-                    mod.PAB_RenameFilter(sel.id, textValue)
-                    Rebuild()
-                end,
-            })
-        end)
+    local function SpellName(ident)
+        return C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(ident)
     end
-
-    -- Search Spells: same curated (deduped) universe as the Extra Spells
-    -- dropdown, matching BM2's own search exactly (BM2's comment:
-    -- "identical list to the Extra Spells dropdown").
-    local searchDD = CludesUI.BuildVisOptsCBDropdown(leftX, 170, leftX:GetFrameLevel() + 5, function()
-        local universe = DedupedPresetSpellUniverse()
-        local result = {}
-        for idx = 1, #universe do
-            local ident = universe[idx]
-            -- An id kept only for the other client is not on the filter here.
-            if sel.spells[ident] == nil or mod.PAB_OtherClientSpell(sel, ident) then
-                local nm2 = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(ident)
-                result[#result + 1] = {
-                    key = ident,
-                    label = nm2 or tostring(ident),
-                    noCheck = true,
-                    icon = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(ident),
-                }
-            end
-        end
-        table.sort(result, function(a, b)
-            return tostring(a.label or a.key) < tostring(b.label or b.key)
-        end)
-        return result
-    end, function()
-        return false
-    end, function(k, val)
-        if val and mod.PAB_AddSpellToFilter and mod.PAB_AddSpellToFilter(sel.id, k) then
-            ApplyAll()
-            Rebuild()
-        end
-    end, nil, 10, true)
-    searchDD:ClearAllPoints()
-    searchDD:SetPoint("TOPLEFT", leftX, "TOPLEFT", 2, -23)
-    for _, r in ipairs({ searchDD:GetRegions() }) do
-        if r.SetText and r.GetText then
-            r:SetText(L("Search Spells"))
-            break
-        end
-    end
-
-    local addSpellBtn = CludesUI.BuildPopupButton(leftX, 110, 24, "Add Spell ID", function()
-        EditorInput({
-            title = L("Add Spell ID"),
-            message = L("Enter the spell ID to add to this filter."),
-            confirmText = L("Add"),
-            cancelText = L("Cancel"),
-            onConfirm = function(textValue)
-                local ident = tonumber(textValue or "")
-                if ident and mod.PAB_AddSpellToFilter(sel.id, ident) then
-                    ApplyAll()
-                    Rebuild()
+    local leftX, scroll, childFrame = CludesUI.BuildFilterDetail(dialog, SIDE_W, POPUP_W, sel, {
+        -- Same curated (deduped) universe as the Extra Spells dropdown.
+        searchIds = function()
+            local universe = DedupedPresetSpellUniverse()
+            local ids = {}
+            for idx = 1, #universe do
+                local ident = universe[idx]
+                -- An id kept only for the other client is not on the filter here.
+                if sel.spells[ident] == nil or mod.PAB_OtherClientSpell(sel, ident) then
+                    ids[#ids + 1] = ident
                 end
-            end,
-        })
-    end)
-    addSpellBtn:SetPoint("LEFT", searchDD, "RIGHT", 8, 0)
-
-    -- Spell checkbox list: mirrors the checkbox-dropdown widget's visuals exactly (16px
-    -- box, accent fill inset 2, hover wash), grouped by class (via
-    -- PAB_SPELL_CLASS_HINTS) with a Custom group for anything without a hint.
-    local scroll = CreateFrame("ScrollFrame", nil, leftX)
-    scroll:SetPoint("TOPLEFT", leftX, "TOPLEFT", 0, -58)
-    scroll:SetPoint("BOTTOMRIGHT", leftX, "BOTTOMRIGHT", 0, 0)
-    local childFrame = CreateFrame("Frame", nil, scroll)
-    childFrame:SetWidth(POPUP_W - SIDE_W - 40)
-    scroll:SetScrollChild(childFrame)
+            end
+            return ids
+        end,
+        label = SpellName,
+        addPicked = function(ident)
+            return mod.PAB_AddSpellToFilter and mod.PAB_AddSpellToFilter(sel.id, ident)
+        end,
+        addTyped = function(ident)
+            return mod.PAB_AddSpellToFilter(sel.id, ident)
+        end,
+        rename = mod.PAB_RenameFilter,
+        renamePlaceholder = L(sel.name),
+        apply = ApplyAll,
+        rebuild = Rebuild,
+        input = EditorInput,
+    })
     local _updSpellThumb, setSpellScroll = AttachEditorScroll(scroll, childFrame, function(val)
         pabFilterScrollPos = val
     end)
@@ -3245,9 +3171,7 @@ function mod.PABMP_ShowFilterEditor()
         CLASS_ORDER,
         {
             spells = sel.spells,
-            label = function(ident)
-                return C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(ident)
-            end,
+            label = SpellName,
             removable = function()
                 return true
             end,

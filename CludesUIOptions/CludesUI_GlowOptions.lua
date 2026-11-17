@@ -1645,3 +1645,135 @@ function CludesUI.BuildFilterSpellList(child, lead, byClass, classOrder, opts)
     end
     child:SetHeight(math.abs(y) + 10)
 end
+
+-------------------------------------------------------------------------------
+--  BuildFilterDetail: the left pane of the aura managers' filter editors for
+--  the selected filter sel: its name (with a Rename link unless it is a
+--  preset), the Search Spells dropdown, the Add Spell ID button and the
+--  scroll frame the spell checklist goes in. opts: searchIds() (ids the
+--  search offers), label(id) (a spell's name, or nil), addPicked(id) and
+--  addTyped(id) (true when the spell was added), rename(id, text),
+--  renamePlaceholder, apply(), rebuild(), input(popupOpts). Returns the pane,
+--  the scroll frame and its child.
+-------------------------------------------------------------------------------
+function CludesUI.BuildFilterDetail(dialog, sideW, popupW, sel, opts)
+    local L = CludesUI.L
+    local ar, ag, ab = 1, 0.82, 0.30
+    if CludesUI.GetAccentColor then
+        ar, ag, ab = CludesUI.GetAccentColor()
+    end
+    local function Added(ok)
+        if ok then
+            opts.apply()
+            opts.rebuild()
+        end
+    end
+
+    local pane = CreateFrame("Frame", nil, dialog)
+    pane:SetPoint("TOPLEFT", dialog, "TOPLEFT", 16, -44)
+    pane:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -(sideW + 12), 12)
+    pane:SetFrameLevel(dialog:GetFrameLevel() + 1)
+
+    local title = CludesUI.MakeFont(pane, 13, nil, 1, 1, 1)
+    title:SetAlpha(0.9)
+    title:SetPoint("TOPLEFT", pane, "TOPLEFT", 2, -2)
+    title:SetText(L(sel.name))
+    if not sel.preset then
+        local link = CreateFrame("Button", nil, pane)
+        link:SetSize(54, 16)
+        link:SetPoint("LEFT", title, "RIGHT", 10, 0)
+        link:SetFrameLevel(pane:GetFrameLevel() + 2)
+        local text = CludesUI.MakeFont(link, 11, nil, ar, ag, ab)
+        text:SetAlpha(0.9)
+        text:SetPoint("LEFT")
+        text:SetText(L("Rename"))
+        link:SetScript("OnEnter", function()
+            text:SetAlpha(1)
+        end)
+        link:SetScript("OnLeave", function()
+            text:SetAlpha(0.9)
+        end)
+        link:SetScript("OnClick", function()
+            opts.input({
+                title = L("Rename Filter"),
+                placeholder = opts.renamePlaceholder,
+                confirmText = L("Rename"),
+                cancelText = L("Cancel"),
+                onConfirm = function(textValue)
+                    opts.rename(sel.id, textValue)
+                    opts.rebuild()
+                end,
+            })
+        end)
+    end
+
+    -- Search Spells: an action list (nothing in it is ever checked); a pick
+    -- adds the spell and the editor is drawn again without it.
+    local function SearchItems()
+        local ids, items = opts.searchIds(), {}
+        for idx = 1, #ids do
+            local id = ids[idx]
+            items[#items + 1] = {
+                key = id,
+                label = opts.label(id) or tostring(id),
+                noCheck = true,
+                icon = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(id),
+            }
+        end
+        table.sort(items, function(a, b)
+            return tostring(a.label or a.key) < tostring(b.label or b.key)
+        end)
+        return items
+    end
+    local search = CludesUI.BuildVisOptsCBDropdown(
+        pane,
+        170,
+        pane:GetFrameLevel() + 5,
+        SearchItems,
+        function()
+            return false
+        end,
+        function(id, picked)
+            if picked then
+                Added(opts.addPicked(id))
+            end
+        end,
+        nil,
+        10,
+        true
+    )
+    search:ClearAllPoints()
+    search:SetPoint("TOPLEFT", pane, "TOPLEFT", 2, -23)
+    -- One-shot title: a checkbox dropdown's checked-count summary ("None")
+    -- reads wrong for a search, and every add draws the editor again.
+    for _, region in ipairs({ search:GetRegions() }) do
+        if region.SetText and region.GetText then
+            region:SetText(L("Search Spells"))
+            break
+        end
+    end
+
+    local addId = CludesUI.BuildPopupButton(pane, 110, 24, "Add Spell ID", function()
+        opts.input({
+            title = L("Add Spell ID"),
+            message = L("Enter the spell ID to add to this filter."),
+            confirmText = L("Add"),
+            cancelText = L("Cancel"),
+            onConfirm = function(textValue)
+                local id = tonumber(textValue or "")
+                if id then
+                    Added(opts.addTyped(id))
+                end
+            end,
+        })
+    end)
+    addId:SetPoint("LEFT", search, "RIGHT", 8, 0)
+
+    local scroll = CreateFrame("ScrollFrame", nil, pane)
+    scroll:SetPoint("TOPLEFT", pane, "TOPLEFT", 0, -58)
+    scroll:SetPoint("BOTTOMRIGHT", pane, "BOTTOMRIGHT", 0, 0)
+    local child = CreateFrame("Frame", nil, scroll)
+    child:SetWidth(popupW - sideW - 40)
+    scroll:SetScrollChild(child)
+    return pane, scroll, child
+end

@@ -4250,54 +4250,14 @@ function mod.BMP_ShowFilterEditor(show, hide)
         return
     end
 
-    local leftX = CreateFrame("Frame", nil, dialog)
-    leftX:SetPoint("TOPLEFT", dialog, "TOPLEFT", 16, -44)
-    leftX:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", -(SIDE_W + 12), 12)
-    leftX:SetFrameLevel(dialog:GetFrameLevel() + 1)
-
-    local nm = CludesUI.MakeFont(leftX, 13, nil, 1, 1, 1)
-    nm:SetAlpha(0.9)
-    nm:SetPoint("TOPLEFT", leftX, "TOPLEFT", 2, -2)
-    nm:SetText(L(sel.name))
-    if not sel.preset then
-        local ren = CreateFrame("Button", nil, leftX)
-        ren:SetSize(54, 16)
-        ren:SetPoint("LEFT", nm, "RIGHT", 10, 0)
-        ren:SetFrameLevel(leftX:GetFrameLevel() + 2)
-        local rl = CludesUI.MakeFont(ren, 11, nil, ar, ag, ab)
-        rl:SetAlpha(0.9)
-        rl:SetPoint("LEFT")
-        rl:SetText(CludesUI.L("Rename"))
-        ren:SetScript("OnEnter", function()
-            rl:SetAlpha(1)
-        end)
-        ren:SetScript("OnLeave", function()
-            rl:SetAlpha(0.9)
-        end)
-        ren:SetScript("OnClick", function()
-            EditorInput({
-                title = CludesUI.L("Rename Filter"),
-                placeholder = sel.name,
-                confirmText = CludesUI.L("Rename"),
-                cancelText = CludesUI.L("Cancel"),
-                onConfirm = function(textValue)
-                    mod.BM2_RenameFilter(sel.id, textValue)
-                    Rebuild()
-                end,
-            })
-        end)
+    local function SpellName(ident)
+        return (mod.SPELL_NAME_BY_ID and mod.SPELL_NAME_BY_ID[ident])
+            or (C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(ident))
     end
-
-    -- Preset-universe spell search (identical list to the Extra Spells
-    -- dropdown: curated primaries, name-sorted, spell icons, searchable):
-    -- every spell already ON this filter is excluded -- checked or unchecked, curated
-    -- or custom alike. Picking one adds it to the filter's Custom group (the same
-    -- landing as Add Spell ID) and the editor rebuild re-lists without it.
-    local searchDD = CludesUI.BuildVisOptsCBDropdown(
-        leftX,
-        170,
-        leftX:GetFrameLevel() + 5,
-        function()
+    local leftX, scroll, childFrame = CludesUI.BuildFilterDetail(dialog, SIDE_W, POPUP_W, sel, {
+        -- The preset universe (the Extra Spells dropdown's list) minus every
+        -- spell already on this filter, checked or not, curated or custom.
+        searchIds = function()
             local f = (mod.BM2_GetFilter and mod.BM2_GetFilter(sel.id)) or sel
             local universe = (mod.BM2_AllPresetSpells and mod.BM2_AllPresetSpells()) or {}
             -- WoW Forever: a rank alternate on the filter holds its family's
@@ -4322,7 +4282,7 @@ function mod.BMP_ShowFilterEditor(show, hide)
                     end
                 end
             end
-            local result = {}
+            local ids = {}
             for idx = 1, #universe do
                 local ident = universe[idx]
                 -- An id kept only for the other client is not on the filter here.
@@ -4334,74 +4294,26 @@ function mod.BMP_ShowFilterEditor(show, hide)
                     or (f.custom and f.custom[ident])
                     or (held and held[ident])
                 if not onFilter then
-                    local nm = (mod.SPELL_NAME_BY_ID and mod.SPELL_NAME_BY_ID[ident])
-                        or (C_Spell.GetSpellName and C_Spell.GetSpellName(ident))
-                    result[#result + 1] = {
-                        key = ident,
-                        label = nm or tostring(ident),
-                        noCheck = true,
-                        icon = C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(ident),
-                    }
+                    ids[#ids + 1] = ident
                 end
             end
-            table.sort(result, function(a, b)
-                return tostring(a.label or a.key) < tostring(b.label or b.key)
-            end)
-            return result
+            return ids
         end,
-        function()
-            return false
-        end, -- nothing listed is ever on the filter
-        function(k, val)
-            if val and mod.BM2_AddCustomSpell and mod.BM2_AddCustomSpell(sel.id, k) then
-                Apply()
-                Rebuild()
-            end
+        label = SpellName,
+        addPicked = function(ident)
+            return mod.BM2_AddCustomSpell and mod.BM2_AddCustomSpell(sel.id, ident)
         end,
-        nil,
-        10,
-        true
-    )
-    searchDD:ClearAllPoints()
-    searchDD:SetPoint("TOPLEFT", leftX, "TOPLEFT", 2, -23)
-    -- One-shot title: the checked-count summary a checkbox dropdown shows
-    -- ("None") reads wrong for an action search, and every add rebuilds
-    -- the editor, so the label never needs re-asserting.
-    for _, r in ipairs({ searchDD:GetRegions() }) do
-        if r.SetText and r.GetText then
-            r:SetText(CludesUI.L("Search Spells"))
-            break
-        end
-    end
-
-    local addSpellBtn = CludesUI.BuildPopupButton(leftX, 110, 24, "Add Spell ID", function()
-        EditorInput({
-            title = CludesUI.L("Add Spell ID"),
-            message = CludesUI.L("Enter the spell ID to add to this filter."),
-            confirmText = CludesUI.L("Add"),
-            cancelText = CludesUI.L("Cancel"),
-            onConfirm = function(textValue)
-                local ident = tonumber(textValue or "")
-                -- Typed: the ID tracks that aura alone (a Search Spells
-                -- pick above keeps the buff's other versions).
-                if ident and mod.BM2_AddCustomSpell(sel.id, ident, true) then
-                    Apply()
-                    Rebuild()
-                end
-            end,
-        })
-    end)
-    addSpellBtn:SetPoint("LEFT", searchDD, "RIGHT", 8, 0)
-
-    -- Spell checkbox list: rows mirror the checkbox-dropdown widget's
-    -- visuals exactly (16px box at 0.12/0.12/0.14, gray 0.4 border, accent
-    -- fill inset 2, hover wash), grouped All Classes / class-colored / Custom.
-    local scroll = CreateFrame("ScrollFrame", nil, leftX)
-    scroll:SetPoint("TOPLEFT", leftX, "TOPLEFT", 0, -58)
-    scroll:SetPoint("BOTTOMRIGHT", leftX, "BOTTOMRIGHT", 0, 0)
-    local childFrame = CreateFrame("Frame", nil, scroll)
-    childFrame:SetWidth(POPUP_W - SIDE_W - 40)
-    scroll:SetScrollChild(childFrame)
+        -- Typed: the ID tracks that aura alone (a Search Spells pick keeps
+        -- the buff's other versions).
+        addTyped = function(ident)
+            return mod.BM2_AddCustomSpell(sel.id, ident, true)
+        end,
+        rename = mod.BM2_RenameFilter,
+        renamePlaceholder = sel.name,
+        apply = Apply,
+        rebuild = Rebuild,
+        input = EditorInput,
+    })
     -- Standard smooth scroll + thin bar; every scroll write persists the
     -- position so rebuilds land the user back where they were.
     local _updSpellThumb, setSpellScroll = AttachEditorScroll(scroll, childFrame, function(val)
@@ -4423,10 +4335,6 @@ function mod.BMP_ShowFilterEditor(show, hide)
         end
     end
     -- Alphabetical by spell name (id tiebreak for identical names).
-    local function SpellName(ident)
-        return (mod.SPELL_NAME_BY_ID and mod.SPELL_NAME_BY_ID[ident])
-            or (C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(ident))
-    end
     local function NameOf(ident)
         return SpellName(ident) or tostring(ident)
     end
