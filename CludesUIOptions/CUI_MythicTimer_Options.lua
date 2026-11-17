@@ -137,89 +137,100 @@ initFrame:SetScript("OnEvent", function(self)
     --  under a pooled frame); only the title host and its font strings come
     --  from the pool.
     ---------------------------------------------------------------------------
-    local PV_TITLE_H = 15 -- the 12 px title line and its 3 px gap, header px
-    local PV_PAD_Y = 20 -- above and below the block
+    local PV_TITLE_H = 15 -- header px for the 12 px title line plus its 3 px gap
+    local PV_PAD_Y = 20 -- header px kept clear above and below the block
     local PV_MIN_H = 80
 
     local function PvNewState()
         return { cols = {} }
     end
 
-    -- Paints every column and lays the block out; returns the header height
-    -- (header px). building: the header builder's own pass, which returns
-    -- the height instead of writing it.
+    -- Paints one column at the state's scale and fits it to colW (header
+    -- px). It is painted at the previous fit first so its pixel snaps read
+    -- the scale it will show at, and again only when the fit moves. Returns
+    -- the column's shown height in header px, or nil when it has nothing.
+    local function PvPaintColumn(st, col, colW)
+        local host = col.host
+        local fit = col.fit or 1
+        host:SetScale(st.scale * fit)
+        local w, h = col.def.paint(host)
+        if not w then
+            col.w = nil
+            host:Hide()
+            col.fs:Hide()
+            return nil
+        end
+        local want = 1
+        if not col.def.noFit then
+            want = math.min(1, colW / (w * st.scale))
+        end
+        if math.abs(want - fit) > 0.001 then
+            fit = want
+            host:SetScale(st.scale * fit)
+            w, h = col.def.paint(host)
+        end
+        col.w, col.h, col.fit = w, h, fit
+        host:SetSize(w, h)
+        return h * fit * st.scale
+    end
+
+    -- Puts a painted column's top on the block's top line at column slot
+    -- idx of num, its title just above it. Offsets are in the host's own
+    -- units (header px over its scale), snapped to its pixel grid.
+    local function PvPlaceColumn(st, col, idx, num, colW, blockH)
+        local host, heading = col.host, st.hdr
+        local own = st.scale * col.fit
+        local onePx = CludesUI.PP.perfect / host:GetEffectiveScale()
+        local x = ((idx - 1) - (num - 1) / 2) * colW
+        local y = blockH / 2 - PV_TITLE_H
+        host:ClearAllPoints()
+        host:SetPoint("TOP", heading, "CENTER", PvSnap(x / own, onePx), PvSnap(y / own, onePx))
+        host:SetAlpha(col.def.on() and 1 or 0.3)
+        host:Show()
+        col.fs:ClearAllPoints()
+        col.fs:SetPoint("BOTTOMLEFT", host, "TOPLEFT", 0, 3)
+        col.fs:Show()
+    end
+
+    -- Paints and lays out every column of a state and gives the header
+    -- height (header px). building: the header builder's own pass, which
+    -- takes the height as its return value instead of having it written.
     local function PvUpdate(st, building)
         local heading = st.hdr
         if not heading then
             return 0
         end
-        local hdrW = st.hdrW or heading:GetWidth()
-        -- The panel's scale compensated: a sample renders at UIParent's.
+        local width = st.hdrW or heading:GetWidth()
+        -- A sample renders at UIParent's scale, not the panel's.
         st.scale = UIParent:GetEffectiveScale() / heading:GetEffectiveScale()
         local cols = st.cols
         local num = #cols
-        local colW = (hdrW - 2 * CludesUI.CONTENT_PAD) / num
-        local isShown, maxH = 0, 0
-        for idx = 1, num do
-            local c = cols[idx]
-            local host = c.host
-            if host:GetParent() ~= heading then
-                host:SetParent(heading)
+        local colW = (width - 2 * CludesUI.CONTENT_PAD) / num
+        local shown, tallest = 0, 0
+        for _, col in ipairs(cols) do
+            if col.host:GetParent() ~= heading then
+                col.host:SetParent(heading)
             end
-            -- Painted at the last pass's scale, so the sample's pixel snaps
-            -- read the scale it shows at; a changed fit paints it again.
-            local fit = c.fit or 1
-            host:SetScale(st.scale * fit)
-            local wid, hgt = c.def.paint(host)
-            if not wid then
-                c.w = nil
-                host:Hide()
-                c.fs:Hide()
-            else
-                local wanted = c.def.noFit and 1 or math.min(1, colW / (wid * st.scale))
-                if math.abs(wanted - fit) > 0.001 then
-                    fit = wanted
-                    host:SetScale(st.scale * fit)
-                    wid, hgt = c.def.paint(host)
-                end
-                c.w, c.h, c.fit = wid, hgt, fit
-                host:SetSize(wid, hgt)
-                isShown = isShown + 1
-                maxH = math.max(maxH, hgt * fit * st.scale)
+            local h = PvPaintColumn(st, col, colW)
+            if h then
+                shown = shown + 1
+                tallest = math.max(tallest, h)
             end
         end
-        -- Every element's top on one line, its title above it: the block
-        -- (the title line and the tallest element) centred in the header.
-        -- A SetPoint offset is in the host's own units, so the header px
-        -- divide by the host's scale.
-        local blockH = maxH + PV_TITLE_H
-        for idx = 1, num do
-            local c = cols[idx]
-            if c.w then
-                local host = c.host
-                local hs = st.scale * c.fit
-                local onePx = CludesUI.PP.perfect / host:GetEffectiveScale()
-                local cx = (-(num - 1) / 2 + (idx - 1)) * colW
-                local topY = blockH / 2 - PV_TITLE_H
-                host:ClearAllPoints()
-                host:SetPoint("TOP", heading, "CENTER", PvSnap(cx / hs, onePx), PvSnap(topY / hs, onePx))
-                host:SetAlpha(c.def.on() and 1 or 0.3)
-                host:Show()
-                c.fs:ClearAllPoints()
-                c.fs:SetPoint("BOTTOMLEFT", host, "TOPLEFT", 0, 3)
-                c.fs:Show()
+        -- The title line and the tallest sample, centred as one block.
+        local blockH = tallest + PV_TITLE_H
+        for idx, col in ipairs(cols) do
+            if col.w then
+                PvPlaceColumn(st, col, idx, num, colW, blockH)
             end
         end
-        local H = 0
-        if isShown > 0 then
-            H = math.max(PV_MIN_H, math.ceil(blockH + 2 * PV_PAD_Y))
-        end
+        local H = shown > 0 and math.max(PV_MIN_H, math.ceil(blockH + 2 * PV_PAD_Y)) or 0
         st.baseH = H
         if not building then
-            -- Silent: the page moves down, never scrolls under the header;
-            -- written only for a change of at least half a physical pixel.
+            -- Written silently (the page shifts down instead of sliding under
+            -- the header), and only when it moves by half a physical pixel.
             local es = heading:GetEffectiveScale()
-            local px = (es > 0) and (CludesUI.PP.perfect / es) or 1
+            local px = es > 0 and CludesUI.PP.perfect / es or 1
             if math.abs(heading:GetHeight() - H) >= px * 0.5 then
                 CludesUI:SetContentHeaderHeightSilent(H)
             end
@@ -227,36 +238,35 @@ initFrame:SetScript("OnEvent", function(self)
         return H
     end
 
-    -- The header builder of a state over its column defs (in order, every
-    -- build, so the pool hands the same kinds back in the same order).
-    local function PvBuilder(st, cols)
+    -- A header builder for a state and its column defs. The defs are walked
+    -- in order on every build, so the pool returns the same kinds of frame
+    -- in the same order each time.
+    local function PvBuilder(st, defs)
         return function(heading, hdrW)
             st.hdr = heading
-            local lblHost = CreateFrame("Frame", nil, heading)
-            lblHost:SetAllPoints(heading)
-            lblHost:SetFrameLevel(heading:GetFrameLevel() + 3)
-            st.lblHost = lblHost
-            for idx = 1, #cols do
-                local c = st.cols[idx]
-                if not c then
-                    c = {}
-                    st.cols[idx] = c
-                end
-                c.def = cols[idx]
-                c.host = c.host or _G.CreateFrame("Frame", nil, heading)
-                local fontStr = CludesUI.MakeFont(lblHost, 11, nil, 1, 1, 1)
-                fontStr:SetAlpha(0.6)
-                fontStr:SetText(CludesUI.L(c.def.title))
-                c.fs = fontStr
+            local titles = CreateFrame("Frame", nil, heading)
+            titles:SetAllPoints(heading)
+            titles:SetFrameLevel(heading:GetFrameLevel() + 3)
+            st.lblHost = titles
+            for idx, def in ipairs(defs) do
+                local col = st.cols[idx] or {}
+                st.cols[idx] = col
+                col.def = def
+                -- Not pooled: a sample must never hang under a pooled frame.
+                col.host = col.host or _G.CreateFrame("Frame", nil, heading)
+                local label = CludesUI.MakeFont(titles, 11, nil, 1, 1, 1)
+                label:SetAlpha(0.6)
+                label:SetText(CludesUI.L(def.title))
+                col.fs = label
             end
             st.hdrW = hdrW
-            local hgt = PvUpdate(st, true)
+            local H = PvUpdate(st, true)
             st.hdrW = nil
-            return hgt
+            return H
         end
     end
 
-    -- A write on the page: its shown preview paints again.
+    -- After a write on the page: repaint its preview if it is on screen.
     local function PvRepaint(st)
         if st.hdr and st.hdr:IsVisible() then
             PvUpdate(st, false)
