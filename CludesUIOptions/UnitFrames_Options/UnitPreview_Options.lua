@@ -1800,13 +1800,12 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         elseif af._dragon then
             af._dragon:Hide()
         end
-        -- Level number in the art's level circle (the player's own level
-        -- as the sample), honouring Show Level and the level's own size
-        -- and offsets. The string exists whenever the art has a circle
-        -- (hidden while off), so its click overlay is built once with the
-        -- page and follows the toggle.
-        local Lv = G.level
-        local lf = af._level
+        -- The level number in the art's level circle (your own level as the
+        -- sample), following Show Level and the level's size and offsets. The
+        -- string exists whenever the art has a circle (hidden while off), so
+        -- the page builds its click overlay once and it follows the toggle.
+        local Lv, B = G.level, G.badge
+        local lf, lb = af._level, af._levelBadge
         if Lv and not lf then
             lf = af:CreateFontString(nil, "OVERLAY")
             lf:SetFontObject(GameNormalNumberFont)
@@ -1814,8 +1813,6 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             popFrame._levelFS = lf
         end
         -- WoW Forever: the round level badge behind the number.
-        local B = G.badge
-        local lb = af._levelBadge
         if B and not lb then
             lb = af:CreateTexture(nil, "OVERLAY", nil, -1)
             mod.UF_SetArt(lb, B.atlas)
@@ -1825,15 +1822,19 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         if lb then
             lb:SetShown((lvOn and B) and true or false)
         end
-        if lvOn then
-            -- The name's font object (shadow) and face, as live: a name on a
-            -- font family gives its roman member's face. (A plain call:
+        if not lvOn then
+            if lf then
+                lf:Hide()
+            end
+        else
+            -- The name's font object (its shadow) and face, as live; a name on
+            -- a font family lends its roman member's face. (Called plainly:
             -- `nf and nf:GetFont()` would keep only the face.)
             local nf = popFrame._nameFS
             if nf then
                 local fo = nf:GetFontObject()
-                local source = (fo and CludesUI._fontFamilySet[fo] and fo:GetFontObjectForAlphabet("roman"))
-                    or nf
+                local family = fo and CludesUI._fontFamilySet[fo]
+                local source = (family and fo:GetFontObjectForAlphabet("roman")) or nf
                 local face, size, flags = source:GetFont()
                 if face then
                     if fo then
@@ -1844,104 +1845,87 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             end
             lf:ClearAllPoints()
             lf:SetJustifyH(Lv.justify or "CENTER")
-            -- The badge takes the level's offsets and the number centres on it.
-            local rel, lx, ly = barArea, s.blizzLevelX or 0, s.blizzLevelY or 0
+            -- With a badge the badge takes the offsets and the number centres on it.
+            local onto, dx, dy = barArea, s.blizzLevelX or 0, s.blizzLevelY or 0
             if B then
                 lb:SetSize(B.size, B.size)
                 lb:ClearAllPoints()
-                mod.UF_BlizzPoint(lb, B.point, barArea, B.point, B.x + lx, B.y + ly, mirror)
-                rel, lx, ly = lb, 0, 0
+                mod.UF_BlizzPoint(lb, B.point, barArea, B.point, B.x + dx, B.y + dy, mirror)
+                onto, dx, dy = lb, 0, 0
             end
-            mod.UF_BlizzPoint(lf, Lv.point, rel, Lv.relPoint or Lv.point, Lv.x + lx, Lv.y + ly, mirror)
-            -- WoW Forever paints the player's own level white.
-            if B and unitKey == "player" then
-                lf:SetTextColor(1, 1, 1)
-            else
-                lf:SetTextColor(1, 0.82, 0)
-            end
+            mod.UF_BlizzPoint(lf, Lv.point, onto, Lv.relPoint or Lv.point, Lv.x + dx, Lv.y + dy, mirror)
+            -- WoW Forever paints the player's own level white; else stock gold.
+            local white = B and unitKey == "player"
+            lf:SetTextColor(1, white and 1 or 0.82, white and 1 or 0)
             lf:SetText(UnitLevel("player"))
             lf:Show()
-        elseif lf then
-            lf:Hide()
         end
         if popFrame._levelOv then
             popFrame._levelOv:SetShown(lvOn and true or false)
         end
 
-        -- Health bar at the stock spot; horizontal fill (the stock track has
-        -- no vertical variant); colours, texture, gradient, opacity as set.
+        -- Health bar at the stock spot, filling sideways (the stock track has
+        -- no upright variant), in the colours, texture, gradient and opacity set.
         health:ClearAllPoints()
         mod.UF_BlizzPoint(health, "TOPLEFT", barArea, "TOPLEFT", HB.x, -HB.y, mirror)
         health:SetSize(HB.w, HB.h)
         health:SetFrameLevel(lvl + 3)
+        -- The absorb pieces sit one level over the bars.
         local absClip = absorbBar and absorbBar:GetParent()
         if absClip and absClip ~= health then
             absClip:SetFrameLevel(lvl + 4)
         end
-        if absorbBar then
-            absorbBar:SetFrameLevel(lvl + 4)
-        end
-        if healAbsorbBar then
-            healAbsorbBar:SetFrameLevel(lvl + 4)
-        end
-        if absorbTopBar then
-            absorbTopBar:SetFrameLevel(lvl + 4)
-        end
-        if healAbsorbTopBar then
-            healAbsorbTopBar:SetFrameLevel(lvl + 4)
+        for _, piece in ipairs({
+            absorbBar or false,
+            healAbsorbBar or false,
+            absorbTopBar or false,
+            healAbsorbTopBar or false,
+        }) do
+            if piece then
+                piece:SetFrameLevel(lvl + 4)
+            end
         end
         local hpW = math.floor(HB.w * pct + 0.5)
         healthFill:ClearAllPoints()
         healthBgColor:ClearAllPoints()
-        if s.healthReverseFill then
-            healthFill:SetPoint("TOPRIGHT", health, "TOPRIGHT", 0, 0)
-            healthFill:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
-            healthBgColor:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
-            healthBgColor:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", -hpW, 0)
-        else
-            healthFill:SetPoint("TOPLEFT", health, "TOPLEFT", 0, 0)
-            healthFill:SetPoint("BOTTOMLEFT", health, "BOTTOMLEFT", 0, 0)
-            healthBgColor:SetPoint("TOPLEFT", health, "TOPLEFT", hpW, 0)
-            healthBgColor:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
-        end
+        local fromRight = s.healthReverseFill
+        local fillEdge = fromRight and "RIGHT" or "LEFT"
+        healthFill:SetPoint("TOP" .. fillEdge, health, "TOP" .. fillEdge, 0, 0)
+        healthFill:SetPoint("BOTTOM" .. fillEdge, health, "BOTTOM" .. fillEdge, 0, 0)
+        healthBgColor:SetPoint("TOPLEFT", health, "TOPLEFT", fromRight and 0 or hpW, 0)
+        healthBgColor:SetPoint("BOTTOMRIGHT", health, "BOTTOMRIGHT", fromRight and -hpW or 0, 0)
         healthFill:SetWidth(hpW)
-        if absorbBar then
-            absorbBar:SetSize(HB.w, HB.h)
+        for _, bar in ipairs({ absorbBar or false, healAbsorbBar or false }) do
+            if bar then
+                bar:SetSize(HB.w, HB.h)
+            end
         end
-        if healAbsorbBar then
-            healAbsorbBar:SetSize(HB.w, HB.h)
-        end
-        -- Stock rounded mask on everything in the track (a mirrored small
-        -- frame runs unmasked: masks cannot flip), then the bar's own bevel.
+        -- The stock rounded mask goes on everything in the track (a mirrored
+        -- small frame runs unmasked: masks cannot flip), then the bar's bevel.
         local hm = health._blizzMask
         local hMaskOK = not mirror and mod.UF_AtlasOK(G.health.mask)
-        -- Everything drawn in the track (list reused; absorb fills can be
-        -- swapped by a style change, so it is refilled each pass).
+        -- Everything drawn in the track, in one reused list refilled each pass
+        -- (a style change can swap the absorb fills).
         local hTex = popFrame._blizzTrackTex
         if not hTex then
             hTex = {}
             popFrame._blizzTrackTex = hTex
         end
         table.wipe(hTex)
-        hTex[#hTex + 1] = healthFill
-        hTex[#hTex + 1] = healthBg
-        hTex[#hTex + 1] = healthBgColor
-        if health._cuiBgTex then
-            hTex[#hTex + 1] = health._cuiBgTex
-        end -- Textured Background layer
-        if dispelOverlayPreview then
-            hTex[#hTex + 1] = dispelOverlayPreview
+        local function Track(region)
+            if region then
+                hTex[#hTex + 1] = region
+            end
         end
-        if absorbBar and absorbBar:GetStatusBarTexture() then
-            hTex[#hTex + 1] = absorbBar:GetStatusBarTexture()
-        end
+        Track(healthFill)
+        Track(healthBg)
+        Track(healthBgColor)
+        Track(health._cuiBgTex) -- the Textured Background layer
+        Track(dispelOverlayPreview)
+        Track(absorbBar and absorbBar:GetStatusBarTexture())
         if healAbsorbBar then
-            if healAbsorbBar:GetStatusBarTexture() then
-                hTex[#hTex + 1] = healAbsorbBar:GetStatusBarTexture()
-            end
-            if healAbsorbBar._bg then
-                hTex[#hTex + 1] = healAbsorbBar._bg
-            end
+            Track(healAbsorbBar:GetStatusBarTexture())
+            Track(healAbsorbBar._bg)
         end
         if hMaskOK then
             if not hm then
