@@ -84,6 +84,45 @@ initFrame:SetScript("OnEvent", function(self)
         CludesUI:RefreshPage(true)
     end
 
+    -- One-line stand-ins for the closures the Mythic+ Timer rows repeat.
+    -- The timer as a whole switched off.
+    local function ModOff()
+        return Cfg("enabled") == false
+    end
+    -- The timer, or the switch named by key, turned off.
+    local function OffWith(key)
+        return function()
+            return Cfg("enabled") == false or Cfg(key) == false
+        end
+    end
+    -- The stored value, else def.
+    local function Or(key, def)
+        return function()
+            return Cfg(key) or def
+        end
+    end
+    -- A switch read as on until turned off / off until turned on.
+    local function NotOff(key)
+        return function()
+            return Cfg(key) ~= false
+        end
+    end
+    local function IsTrue(key)
+        return function()
+            return Cfg(key) == true
+        end
+    end
+    -- Stores the value and re-applies the timer; repaint also redraws the page.
+    local function Keep(key, repaint)
+        return function(v)
+            Set(key, v)
+            Refresh()
+            if repaint then
+                CludesUI:RefreshPage()
+            end
+        end
+    end
+
     ---------------------------------------------------------------------------
     --  Header previews: one kit for the Kick Tracker, Cast Bars and
     --  Target/Focus Bars pages. A page's header shows its elements side by
@@ -329,9 +368,7 @@ initFrame:SetScript("OnEvent", function(self)
         posY = posY - hgt
         CludesUI.BuildSectionUnlockJump(heading, {
             key = "EMT_MythicTimer",
-            disabled = function()
-                return Cfg("enabled") == false
-            end,
+            disabled = ModOff,
             disabledTooltip = "Enable Mythic+ Timer",
         })
 
@@ -342,9 +379,7 @@ initFrame:SetScript("OnEvent", function(self)
             type = "toggle",
             text = "Enable Mythic+ Timer",
             tooltip = "The Mythic+ timer window in keys.",
-            getValue = function()
-                return Cfg("enabled") ~= false
-            end,
+            getValue = NotOff("enabled"),
             setValue = function(v)
                 Set("enabled", v and true or false)
                 if not v and Cfg("showPreview") == true then
@@ -355,15 +390,11 @@ initFrame:SetScript("OnEvent", function(self)
         }, {
             type = "dropdown",
             text = "Text Align",
-            disabled = function()
-                return Cfg("enabled") == false
-            end,
+            disabled = ModOff,
             disabledTooltip = "the module",
             values = alignAllValues,
             order = alignAllOrder,
-            getValue = function()
-                return Cfg("alignAllText") or "RIGHT"
-            end,
+            getValue = Or("alignAllText", "RIGHT"),
             setValue = function(v)
                 Set("alignAllText", v)
                 if _G._CUMT_RebuildStandalone then
@@ -426,27 +457,18 @@ initFrame:SetScript("OnEvent", function(self)
         scaleRow, hgt = W:DualRow(hostFrame, posY, {
             type = "slider",
             text = "Scale",
-            disabled = function()
-                return Cfg("enabled") == false
-            end,
+            disabled = ModOff,
             disabledTooltip = "the module",
             min = 0.5,
             max = 2.0,
             step = 0.01,
             isPercent = false,
-            getValue = function()
-                return Cfg("scale") or 1.0
-            end,
-            setValue = function(v)
-                Set("scale", v)
-                Refresh()
-            end,
+            getValue = Or("scale", 1.0),
+            setValue = Keep("scale"),
         }, {
             type = "slider",
             text = "Background Opacity",
-            disabled = function()
-                return Cfg("enabled") == false
-            end,
+            disabled = ModOff,
             disabledTooltip = "the module",
             min = 0,
             max = 100,
@@ -475,20 +497,13 @@ initFrame:SetScript("OnEvent", function(self)
                         min = 180,
                         max = 420,
                         step = 1,
-                        get = function()
-                            return Cfg("frameWidth") or 260
-                        end,
-                        set = function(v)
-                            Set("frameWidth", v)
-                            Refresh()
-                        end,
+                        get = Or("frameWidth", 260),
+                        set = Keep("frameWidth"),
                     },
                 },
                 gap = 6,
                 chain = false,
-                disabled = function()
-                    return Cfg("enabled") == false
-                end,
+                disabled = ModOff,
                 disabledTooltip = "the module",
             })
         end
@@ -514,22 +529,15 @@ initFrame:SetScript("OnEvent", function(self)
             max = 420,
             step = 1,
             isPercent = false,
-            getValue = function()
-                return Cfg("barWidth") or 210
-            end,
-            setValue = function(v)
-                Set("barWidth", v)
-                Refresh()
-            end,
+            getValue = Or("barWidth", 210),
+            setValue = Keep("barWidth"),
         }, {
             type = "toggle",
             text = "Custom Border Style",
             tooltip = "Show the border style and size controls for the timer bars.",
             disabled = _barsOff,
             disabledTooltip = _barsReq,
-            getValue = function()
-                return Cfg("customBorderStyle") == true
-            end,
+            getValue = IsTrue("customBorderStyle"),
             setValue = function(v)
                 Set("customBorderStyle", v)
                 ApplyBorder()
@@ -581,9 +589,7 @@ initFrame:SetScript("OnEvent", function(self)
                     disabledTooltip = _borderReq,
                     values = borderTexValues,
                     order = borderTexOrder,
-                    getValue = function()
-                        return Cfg("borderTexture") or "solid"
-                    end,
+                    getValue = Or("borderTexture", "solid"),
                     setValue = function(v)
                         Set("borderTexture", v)
                         Set("borderTextureOffset", nil)
@@ -623,15 +629,11 @@ initFrame:SetScript("OnEvent", function(self)
                     text = "Border Size",
                     disabled = _borderOff,
                     disabledTooltip = _borderReq,
-                    getStep = function()
-                        return Cfg("borderSize") or 0
-                    end,
+                    getStep = Or("borderSize", 0),
                     setStep = function(step)
                         Set("borderSize", step)
                     end,
-                    getTex = function()
-                        return Cfg("borderTexture") or "solid"
-                    end,
+                    getTex = Or("borderTexture", "solid"),
                     getPx = function()
                         return Cfg("borderSizePx")
                     end,
@@ -652,15 +654,9 @@ initFrame:SetScript("OnEvent", function(self)
             if borderTex ~= "" and borderTex ~= "solid" then
                 local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                     addonKey = "MythicPlus",
-                    getTex = function()
-                        return Cfg("borderTexture") or "solid"
-                    end,
-                    getStep = function()
-                        return Cfg("borderSize") or 0
-                    end,
-                    getSizeKey = function()
-                        return Cfg("borderSize") or 0
-                    end,
+                    getTex = Or("borderTexture", "solid"),
+                    getStep = Or("borderSize", 0),
+                    getSizeKey = Or("borderSize", 0),
                     getPx = function()
                         return Cfg("borderSizePx")
                     end,
@@ -697,9 +693,7 @@ initFrame:SetScript("OnEvent", function(self)
                         {
                             type = "toggle",
                             label = "Apply to Forces Bar",
-                            get = function()
-                                return Cfg("borderApplyToForces") ~= false
-                            end,
+                            get = NotOff("borderApplyToForces"),
                             set = function(v)
                                 Set("borderApplyToForces", v)
                                 ApplyBorder()
@@ -1024,17 +1018,10 @@ initFrame:SetScript("OnEvent", function(self)
         row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Title",
-            disabled = function()
-                return Cfg("enabled") == false
-            end,
+            disabled = ModOff,
             disabledTooltip = "the module",
-            getValue = function()
-                return Cfg("showTitle") ~= false
-            end,
-            setValue = function(v)
-                Set("showTitle", v)
-                Refresh()
-            end,
+            getValue = NotOff("showTitle"),
+            setValue = Keep("showTitle"),
         }, {
             type = "slider",
             text = "Title Size",
@@ -1042,17 +1029,10 @@ initFrame:SetScript("OnEvent", function(self)
             max = 24,
             step = 1,
             trackWidth = 130,
-            disabled = function()
-                return Cfg("enabled") == false or Cfg("showTitle") == false
-            end,
+            disabled = OffWith("showTitle"),
             disabledTooltip = ModuleOr("Show Title"),
-            getValue = function()
-                return Cfg("titleSize") or 16
-            end,
-            setValue = function(v)
-                Set("titleSize", v)
-                Refresh()
-            end,
+            getValue = Or("titleSize", 16),
+            setValue = Keep("titleSize"),
         })
         -- Regular-cog settings popup on Show Title: Show Dungeon Name (default on;
         -- when off the title shows only the +key level, not the dungeon name).
@@ -1064,31 +1044,19 @@ initFrame:SetScript("OnEvent", function(self)
                     {
                         type = "toggle",
                         label = "Show Dungeon Name",
-                        get = function()
-                            return Cfg("showDungeonName") ~= false
-                        end,
-                        set = function(v)
-                            Set("showDungeonName", v)
-                            Refresh()
-                        end,
+                        get = NotOff("showDungeonName"),
+                        set = Keep("showDungeonName"),
                     },
                     -- Moves the lone "+key" title down onto the timer line as "+21  |  timer".
                     -- Only meaningful when the dungeon name is hidden, so it is gated on that.
                     {
                         type = "toggle",
                         label = "Show Key Level on Timer",
-                        disabled = function()
-                            return Cfg("showDungeonName") ~= false
-                        end,
+                        disabled = NotOff("showDungeonName"),
                         disabledTooltip = "Show Dungeon Name",
                         requireState = "disabled",
-                        get = function()
-                            return Cfg("showKeyLevelOnTimer") == true
-                        end,
-                        set = function(v)
-                            Set("showKeyLevelOnTimer", v)
-                            Refresh()
-                        end,
+                        get = IsTrue("showKeyLevelOnTimer"),
+                        set = Keep("showKeyLevelOnTimer"),
                     },
                     {
                         type = "slider",
@@ -1101,58 +1069,43 @@ initFrame:SetScript("OnEvent", function(self)
                             return Cfg("showKeyLevelOnTimer") ~= true
                         end,
                         disabledTooltip = "Show Key Level on Timer",
-                        get = function()
-                            return Cfg("keyLevelTimerSpacing") or 8
-                        end,
-                        set = function(v)
-                            Set("keyLevelTimerSpacing", v)
-                            Refresh()
-                        end,
+                        get = Or("keyLevelTimerSpacing", 8),
+                        set = Keep("keyLevelTimerSpacing"),
                     },
                 },
-                disabled = function()
-                    return Cfg("enabled") == false or Cfg("showTitle") == false
-                end,
+                disabled = OffWith("showTitle"),
                 disabledTooltip = ModuleOr("Show Title"),
             })
             -- Inline accent + custom colour swatches on the Title Size slider.
-            _AttachInlineAccentSwatches(row._rightRegion, "titleUseAccent", "titleColor", 1, 1, 1, function()
-                return Cfg("enabled") == false or Cfg("showTitle") == false
-            end, "Show Title")
+            _AttachInlineAccentSwatches(
+                row._rightRegion,
+                "titleUseAccent",
+                "titleColor",
+                1,
+                1,
+                1,
+                OffWith("showTitle"),
+                "Show Title"
+            )
         end
         posY = posY - hgt
 
         row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Affix",
-            disabled = function()
-                return Cfg("enabled") == false
-            end,
+            disabled = ModOff,
             disabledTooltip = "the module",
-            getValue = function()
-                return Cfg("showAffixes") ~= false
-            end,
-            setValue = function(v)
-                Set("showAffixes", v)
-                Refresh()
-            end,
+            getValue = NotOff("showAffixes"),
+            setValue = Keep("showAffixes"),
         }, {
             type = "dropdown",
             text = "Title/Affix Position",
-            disabled = function()
-                return Cfg("enabled") == false
-            end,
+            disabled = ModOff,
             disabledTooltip = "the module",
             values = titleAffixPositionValues,
             order = titleAffixPositionOrder,
-            getValue = function()
-                return Cfg("titleAffixPosition") or "ABOVE_TIMER"
-            end,
-            setValue = function(v)
-                Set("titleAffixPosition", v)
-                Refresh()
-                CludesUI:RefreshPage()
-            end,
+            getValue = Or("titleAffixPosition", "ABOVE_TIMER"),
+            setValue = Keep("titleAffixPosition", true),
         })
         -- Inline Affix Size cog on Show Affix (cog before swatch), then the Affix Color swatch
         if not CludesUI._prebuilding then
@@ -1166,23 +1119,23 @@ initFrame:SetScript("OnEvent", function(self)
                         min = 6,
                         max = 20,
                         step = 1,
-                        get = function()
-                            return Cfg("affixSize") or 12
-                        end,
-                        set = function(v)
-                            Set("affixSize", v)
-                            Refresh()
-                        end,
+                        get = Or("affixSize", 12),
+                        set = Keep("affixSize"),
                     },
                 },
-                disabled = function()
-                    return Cfg("enabled") == false or Cfg("showAffixes") == false
-                end,
+                disabled = OffWith("showAffixes"),
                 disabledTooltip = ModuleOr("Show Affix"),
             })
-            _AttachInlineSwatch(row._leftRegion, "affixTextColor", 1, 1, 1, nil, function()
-                return Cfg("enabled") == false or Cfg("showAffixes") == false
-            end, "Show Affix")
+            _AttachInlineSwatch(
+                row._leftRegion,
+                "affixTextColor",
+                1,
+                1,
+                1,
+                nil,
+                OffWith("showAffixes"),
+                "Show Affix"
+            )
             -- Title/Affix Spacing cog on Position (now the right-side widget)
             CludesUI.BuildInlineCog(row._rightRegion, {
                 title = "Title/Affix Spacing",
@@ -1199,13 +1152,8 @@ initFrame:SetScript("OnEvent", function(self)
                             return (Cfg("titleAffixPosition") or "ABOVE_TIMER") == "BELOW_TIMER"
                         end,
                         disabledTooltip = "Above Timer",
-                        get = function()
-                            return Cfg("titleAffixDeathGap") or 11
-                        end,
-                        set = function(v)
-                            Set("titleAffixDeathGap", v)
-                            Refresh()
-                        end,
+                        get = Or("titleAffixDeathGap", 11),
+                        set = Keep("titleAffixDeathGap"),
                     },
                     {
                         type = "slider",
@@ -1221,10 +1169,7 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("titleAffixTimerGap") or Cfg("titleAffixSandwichGap") or 6
                         end,
-                        set = function(v)
-                            Set("titleAffixTimerGap", v)
-                            Refresh()
-                        end,
+                        set = Keep("titleAffixTimerGap"),
                     },
                     {
                         type = "slider",
@@ -1240,15 +1185,10 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("titleAffixBarGap") or Cfg("titleAffixSandwichGap") or 6
                         end,
-                        set = function(v)
-                            Set("titleAffixBarGap", v)
-                            Refresh()
-                        end,
+                        set = Keep("titleAffixBarGap"),
                     },
                 },
-                disabled = function()
-                    return Cfg("enabled") == false
-                end,
+                disabled = ModOff,
                 disabledTooltip = "the module",
             })
         end
@@ -1275,48 +1215,29 @@ initFrame:SetScript("OnEvent", function(self)
             max = 32,
             step = 1,
             isPercent = false,
-            getValue = function()
-                return Cfg("timerTextSize") or 20
-            end,
-            setValue = function(v)
-                Set("timerTextSize", v)
-                Refresh()
-            end,
+            getValue = Or("timerTextSize", 20),
+            setValue = Keep("timerTextSize"),
         }, {
             type = "dropdown",
             text = "Timer Format",
-            disabled = function()
-                return Cfg("enabled") == false
-            end,
+            disabled = ModOff,
             disabledTooltip = "the module",
             values = timerDisplayValues,
             order = timerDisplayOrder,
-            getValue = function()
-                return Cfg("timerDisplayMode") or "REMAINING_TOTAL"
-            end,
-            setValue = function(v)
-                Set("timerDisplayMode", v)
-                Refresh()
-            end,
+            getValue = Or("timerDisplayMode", "REMAINING_TOTAL"),
+            setValue = Keep("timerDisplayMode"),
         })
         posY = posY - hgt
 
         row, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Timer Font",
-            disabled = function()
-                return Cfg("enabled") == false
-            end,
+            disabled = ModOff,
             disabledTooltip = "the module",
             values = timerFontValues,
             order = timerFontOrder,
-            getValue = function()
-                return Cfg("timerFont") or "__global"
-            end,
-            setValue = function(v)
-                Set("timerFont", v)
-                Refresh()
-            end,
+            getValue = Or("timerFont", "__global"),
+            setValue = Keep("timerFont"),
         }, CludesUI.BlankRowCfg())
         posY = posY - hgt
 
@@ -1326,33 +1247,17 @@ initFrame:SetScript("OnEvent", function(self)
         row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Timer Bar",
-            disabled = function()
-                return Cfg("enabled") == false
-            end,
+            disabled = ModOff,
             disabledTooltip = "the module",
-            getValue = function()
-                return Cfg("showTimerBar") ~= false
-            end,
-            setValue = function(v)
-                Set("showTimerBar", v)
-                Refresh()
-                CludesUI:RefreshPage()
-            end,
+            getValue = NotOff("showTimerBar"),
+            setValue = Keep("showTimerBar", true),
         }, {
             type = "toggle",
             text = "Move Timer Inside Bar",
-            disabled = function()
-                return Cfg("enabled") == false or Cfg("showTimerBar") == false
-            end,
+            disabled = OffWith("showTimerBar"),
             disabledTooltip = ModuleOr("Show Timer Bar"),
-            getValue = function()
-                return Cfg("timerInBar") == true
-            end,
-            setValue = function(v)
-                Set("timerInBar", v)
-                Refresh()
-                CludesUI:RefreshPage()
-            end,
+            getValue = IsTrue("timerInBar"),
+            setValue = Keep("timerInBar", true),
         })
         if not CludesUI._prebuilding then
             -- These rows only affect the in-bar timer, so the cog also requires Move Timer Inside Bar.
@@ -1367,13 +1272,8 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 40,
                         step = 1,
                         tooltip = "Minimum height of the timer bar while the timer is inside it. The larger of this and Timer Bar Height is used.",
-                        get = function()
-                            return Cfg("barHeightExpanded") or 22
-                        end,
-                        set = function(v)
-                            Set("barHeightExpanded", v)
-                            Refresh()
-                        end,
+                        get = Or("barHeightExpanded", 22),
+                        set = Keep("barHeightExpanded"),
                     },
                     {
                         type = "slider",
@@ -1382,25 +1282,15 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 1,
                         step = 0.05,
                         tooltip = "Opacity of the bar fill while the timer is inside it.",
-                        get = function()
-                            return Cfg("barFillAlphaExpanded") or 0.85
-                        end,
-                        set = function(v)
-                            Set("barFillAlphaExpanded", v)
-                            Refresh()
-                        end,
+                        get = Or("barFillAlphaExpanded", 0.85),
+                        set = Keep("barFillAlphaExpanded"),
                     },
                     {
                         type = "toggle",
                         label = "Left Text",
                         tooltip = "Align the timer text to the left edge of the bar instead of centering it.",
-                        get = function()
-                            return Cfg("timerInBarLeftText") == true
-                        end,
-                        set = function(v)
-                            Set("timerInBarLeftText", v)
-                            Refresh()
-                        end,
+                        get = IsTrue("timerInBarLeftText"),
+                        set = Keep("timerInBarLeftText"),
                     },
                 },
                 disabled = function()
@@ -1425,17 +1315,13 @@ initFrame:SetScript("OnEvent", function(self)
             type = "slider",
             text = "Timer Bar Height",
             tooltip = "Height of the timer bar. While the timer is inside the bar, In-Bar Height sets the minimum.",
-            disabled = function()
-                return Cfg("enabled") == false or Cfg("showTimerBar") == false
-            end,
+            disabled = OffWith("showTimerBar"),
             disabledTooltip = ModuleOr("Show Timer Bar"),
             min = 4,
             max = 30,
             step = 1,
             isPercent = false,
-            getValue = function()
-                return Cfg("barHeight") or 8
-            end,
+            getValue = Or("barHeight", 8),
             setValue = function(v)
                 -- Pin the forces bar to its current height before the first
                 -- change, so the two height sliders act independently.
@@ -1448,19 +1334,12 @@ initFrame:SetScript("OnEvent", function(self)
         }, {
             type = "dropdown",
             text = "Timer Bar Texture",
-            disabled = function()
-                return Cfg("enabled") == false or Cfg("showTimerBar") == false
-            end,
+            disabled = OffWith("showTimerBar"),
             disabledTooltip = ModuleOr("Show Timer Bar"),
             values = texValues,
             order = texOrder,
-            getValue = function()
-                return Cfg("barTexture") or "none"
-            end,
-            setValue = function(v)
-                Set("barTexture", v)
-                Refresh()
-            end,
+            getValue = Or("barTexture", "none"),
+            setValue = Keep("barTexture"),
         })
         -- Inline cog on Bar Texture: the bar's background texture
         CludesUI.BuildInlineCog(row._rightRegion, {
@@ -1472,18 +1351,11 @@ initFrame:SetScript("OnEvent", function(self)
                     label = "Background Texture",
                     values = texValues,
                     order = texOrder,
-                    get = function()
-                        return Cfg("barBgTexture") or "none"
-                    end,
-                    set = function(v)
-                        Set("barBgTexture", v)
-                        Refresh()
-                    end,
+                    get = Or("barBgTexture", "none"),
+                    set = Keep("barBgTexture"),
                 },
             },
-            disabled = function()
-                return Cfg("enabled") == false or Cfg("showTimerBar") == false
-            end,
+            disabled = OffWith("showTimerBar"),
             disabledTooltip = ModuleOr("Show Timer Bar"),
         })
         posY = posY - hgt
@@ -1515,9 +1387,7 @@ initFrame:SetScript("OnEvent", function(self)
                 type = "toggle",
                 text = "Show " .. labelText .. " Timer Text",
                 tooltip = "Show Timer Text",
-                disabled = function()
-                    return Cfg("enabled") == false
-                end,
+                disabled = ModOff,
                 disabledTooltip = "the module",
                 getValue = IsTimerTextShown,
                 setValue = function(v)
@@ -1593,9 +1463,7 @@ initFrame:SetScript("OnEvent", function(self)
                     disabledTooltip = ModuleOr(conf.text),
                 })
                 -- Inline colour swatch (the +N threshold / segment colour), left of the cog
-                _AttachInlineSwatch(region, barColorKey, defR, defG, defB, afterBarSet, function()
-                    return Cfg("enabled") == false
-                end, "the module")
+                _AttachInlineSwatch(region, barColorKey, defR, defG, defB, afterBarSet, ModOff, "the module")
             end
 
             return conf, attach
@@ -1651,20 +1519,12 @@ initFrame:SetScript("OnEvent", function(self)
         row, hgt = W:DualRow(hostFrame, posY, {
             type = "dropdown",
             text = "Ticks / Gaps",
-            disabled = function()
-                return Cfg("enabled") == false or Cfg("showTimerBar") == false
-            end,
+            disabled = OffWith("showTimerBar"),
             disabledTooltip = ModuleOr("Show Timer Bar"),
             values = timerBarStyleValues,
             order = timerBarStyleOrder,
-            getValue = function()
-                return Cfg("timerBarStyle") or "TICKS"
-            end,
-            setValue = function(v)
-                Set("timerBarStyle", v)
-                Refresh()
-                CludesUI:RefreshPage()
-            end,
+            getValue = Or("timerBarStyle", "TICKS"),
+            setValue = Keep("timerBarStyle", true),
         }, p3cfg)
         -- Inline cog first so it sits adjacent to the control, then the Tick Color
         -- swatch (TICKS style only) left of it (cog-before-swatch rule).
@@ -1683,13 +1543,8 @@ initFrame:SetScript("OnEvent", function(self)
                             return (Cfg("timerBarStyle") or "TICKS") ~= "TICKS"
                         end,
                         disabledTooltip = "Ticks",
-                        get = function()
-                            return Cfg("tickAlpha") or 1
-                        end,
-                        set = function(v)
-                            Set("tickAlpha", v)
-                            Refresh()
-                        end,
+                        get = Or("tickAlpha", 1),
+                        set = Keep("tickAlpha"),
                     },
                     {
                         type = "slider",
@@ -1702,18 +1557,11 @@ initFrame:SetScript("OnEvent", function(self)
                             return (Cfg("timerBarStyle") or "TICKS") ~= "SEGMENTS"
                         end,
                         disabledTooltip = "Gaps",
-                        get = function()
-                            return Cfg("timerBarSegmentGap") or 2
-                        end,
-                        set = function(v)
-                            Set("timerBarSegmentGap", v)
-                            Refresh()
-                        end,
+                        get = Or("timerBarSegmentGap", 2),
+                        set = Keep("timerBarSegmentGap"),
                     },
                 },
-                disabled = function()
-                    return Cfg("enabled") == false or Cfg("showTimerBar") == false
-                end,
+                disabled = OffWith("showTimerBar"),
                 disabledTooltip = ModuleOr("Show Timer Bar"),
             })
             _AttachInlineSwatch(row._leftRegion, "timerTickColor", 1, 1, 1, nil, function()
@@ -1743,18 +1591,10 @@ initFrame:SetScript("OnEvent", function(self)
         row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Enemy Forces",
-            disabled = function()
-                return Cfg("enabled") == false
-            end,
+            disabled = ModOff,
             disabledTooltip = "the module",
-            getValue = function()
-                return Cfg("showEnemyBar") ~= false
-            end,
-            setValue = function(v)
-                Set("showEnemyBar", v)
-                Refresh()
-                CludesUI:RefreshPage()
-            end,
+            getValue = NotOff("showEnemyBar"),
+            setValue = Keep("showEnemyBar", true),
         }, {
             type = "slider",
             text = "Forces Bar Height",
@@ -1770,10 +1610,7 @@ initFrame:SetScript("OnEvent", function(self)
             getValue = function()
                 return Cfg("enemyBarHeight") or Cfg("barHeight") or 8
             end,
-            setValue = function(v)
-                Set("enemyBarHeight", v)
-                Refresh()
-            end,
+            setValue = Keep("enemyBarHeight"),
         })
         posY = posY - hgt
 
@@ -1784,13 +1621,8 @@ initFrame:SetScript("OnEvent", function(self)
             disabledTooltip = ModuleOr("Show Enemy Forces"),
             values = forcesTextValues,
             order = forcesTextOrder,
-            getValue = function()
-                return Cfg("enemyForcesTextFormat") or "PERCENT"
-            end,
-            setValue = function(v)
-                Set("enemyForcesTextFormat", v)
-                Refresh()
-            end,
+            getValue = Or("enemyForcesTextFormat", "PERCENT"),
+            setValue = Keep("enemyForcesTextFormat"),
         }, {
             type = "dropdown",
             text = "Percent Position",
@@ -1799,13 +1631,8 @@ initFrame:SetScript("OnEvent", function(self)
             disabledTooltip = ModuleOr("Show Enemy Forces"),
             values = { LABEL = "In Label Text", BAR = "In Bar", BESIDE = "Beside Bar" },
             order = { "LABEL", "BAR", "BESIDE" },
-            getValue = function()
-                return Cfg("enemyForcesPctPos") or "LABEL"
-            end,
-            setValue = function(v)
-                Set("enemyForcesPctPos", v)
-                Refresh()
-            end,
+            getValue = Or("enemyForcesPctPos", "LABEL"),
+            setValue = Keep("enemyForcesPctPos"),
         })
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(row._leftRegion, {
@@ -1815,13 +1642,8 @@ initFrame:SetScript("OnEvent", function(self)
                     {
                         type = "toggle",
                         label = "Hide Label",
-                        get = function()
-                            return Cfg("hideEnemyForcesLabel") == true
-                        end,
-                        set = function(v)
-                            Set("hideEnemyForcesLabel", v)
-                            Refresh()
-                        end,
+                        get = IsTrue("hideEnemyForcesLabel"),
+                        set = Keep("hideEnemyForcesLabel"),
                     },
                     {
                         type = "slider",
@@ -1832,10 +1654,7 @@ initFrame:SetScript("OnEvent", function(self)
                         get = function()
                             return Cfg("enemyForcesTextSize") or Cfg("objectivesSize") or 12
                         end,
-                        set = function(v)
-                            Set("enemyForcesTextSize", v)
-                            Refresh()
-                        end,
+                        set = Keep("enemyForcesTextSize"),
                     },
                     {
                         type = "slider",
@@ -1843,13 +1662,8 @@ initFrame:SetScript("OnEvent", function(self)
                         min = -80,
                         max = 80,
                         step = 1,
-                        get = function()
-                            return Cfg("enemyForcesTextOffsetX") or 0
-                        end,
-                        set = function(v)
-                            Set("enemyForcesTextOffsetX", v)
-                            Refresh()
-                        end,
+                        get = Or("enemyForcesTextOffsetX", 0),
+                        set = Keep("enemyForcesTextOffsetX"),
                     },
                     {
                         type = "slider",
@@ -1857,13 +1671,8 @@ initFrame:SetScript("OnEvent", function(self)
                         min = -40,
                         max = 40,
                         step = 1,
-                        get = function()
-                            return Cfg("enemyForcesTextOffsetY") or 0
-                        end,
-                        set = function(v)
-                            Set("enemyForcesTextOffsetY", v)
-                            Refresh()
-                        end,
+                        get = Or("enemyForcesTextOffsetY", 0),
+                        set = Keep("enemyForcesTextOffsetY"),
                     },
                 },
                 disabled = _forcesOff,
@@ -1879,13 +1688,8 @@ initFrame:SetScript("OnEvent", function(self)
             disabledTooltip = ModuleOr("Show Enemy Forces"),
             values = { BOTTOM = "Bottom", UNDER_BAR = "Under Timer Bar" },
             order = { "BOTTOM", "UNDER_BAR" },
-            getValue = function()
-                return Cfg("enemyForcesPos") or "BOTTOM"
-            end,
-            setValue = function(v)
-                Set("enemyForcesPos", v)
-                Refresh()
-            end,
+            getValue = Or("enemyForcesPos", "BOTTOM"),
+            setValue = Keep("enemyForcesPos"),
         }, {
             type = "dropdown",
             text = "Forces Bar Texture",
@@ -1894,13 +1698,8 @@ initFrame:SetScript("OnEvent", function(self)
             disabledTooltip = ModuleOr("Show Enemy Forces"),
             values = texValues,
             order = texOrder,
-            getValue = function()
-                return Cfg("enemyBarTexture") or "none"
-            end,
-            setValue = function(v)
-                Set("enemyBarTexture", v)
-                Refresh()
-            end,
+            getValue = Or("enemyBarTexture", "none"),
+            setValue = Keep("enemyBarTexture"),
         })
         if not CludesUI._prebuilding then
             -- The background texture cog, then the fill colour (accent or custom) as inline swatches.
@@ -1913,13 +1712,8 @@ initFrame:SetScript("OnEvent", function(self)
                         label = "Background Texture",
                         values = texValues,
                         order = texOrder,
-                        get = function()
-                            return Cfg("enemyBarBgTexture") or "none"
-                        end,
-                        set = function(v)
-                            Set("enemyBarBgTexture", v)
-                            Refresh()
-                        end,
+                        get = Or("enemyBarBgTexture", "none"),
+                        set = Keep("enemyBarBgTexture"),
                     },
                 },
                 disabled = _forcesOff,
@@ -1968,14 +1762,8 @@ initFrame:SetScript("OnEvent", function(self)
             disabled = _forcesOff,
             disabledTooltip = ModuleOr("Show Enemy Forces"),
             tooltip = "Previews the forces of every enemy in combat with a visible nameplate on the enemy forces bar.",
-            getValue = function()
-                return Cfg("showPullBar") == true
-            end,
-            setValue = function(v)
-                Set("showPullBar", v)
-                Refresh()
-                CludesUI:RefreshPage()
-            end,
+            getValue = IsTrue("showPullBar"),
+            setValue = Keep("showPullBar", true),
         }, {
             type = "slider",
             text = "Current Pull Color",
@@ -2019,36 +1807,21 @@ initFrame:SetScript("OnEvent", function(self)
         row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Boss Objectives",
-            disabled = function()
-                return Cfg("enabled") == false
-            end,
+            disabled = ModOff,
             disabledTooltip = "the module",
-            getValue = function()
-                return Cfg("showObjectives") ~= false
-            end,
-            setValue = function(v)
-                Set("showObjectives", v)
-                Refresh()
-                CludesUI:RefreshPage()
-            end,
+            getValue = NotOff("showObjectives"),
+            setValue = Keep("showObjectives", true),
         }, {
             type = "slider",
             text = "Objectives Size",
-            disabled = function()
-                return Cfg("enabled") == false or Cfg("showObjectives") == false
-            end,
+            disabled = OffWith("showObjectives"),
             disabledTooltip = ModuleOr("Show Boss Objectives"),
             min = 8,
             max = 20,
             step = 1,
             isPercent = false,
-            getValue = function()
-                return Cfg("objectivesSize") or 12
-            end,
-            setValue = function(v)
-                Set("objectivesSize", v)
-                Refresh()
-            end,
+            getValue = Or("objectivesSize", 12),
+            setValue = Keep("objectivesSize"),
         })
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineCog(row._leftRegion, {
@@ -2061,13 +1834,8 @@ initFrame:SetScript("OnEvent", function(self)
                         min = -80,
                         max = 80,
                         step = 1,
-                        get = function()
-                            return Cfg("objectiveTextOffsetX") or 0
-                        end,
-                        set = function(v)
-                            Set("objectiveTextOffsetX", v)
-                            Refresh()
-                        end,
+                        get = Or("objectiveTextOffsetX", 0),
+                        set = Keep("objectiveTextOffsetX"),
                     },
                     {
                         type = "slider",
@@ -2075,18 +1843,11 @@ initFrame:SetScript("OnEvent", function(self)
                         min = -40,
                         max = 40,
                         step = 1,
-                        get = function()
-                            return Cfg("objectiveTextOffsetY") or 0
-                        end,
-                        set = function(v)
-                            Set("objectiveTextOffsetY", v)
-                            Refresh()
-                        end,
+                        get = Or("objectiveTextOffsetY", 0),
+                        set = Keep("objectiveTextOffsetY"),
                     },
                 },
-                disabled = function()
-                    return Cfg("enabled") == false or Cfg("showObjectives") == false
-                end,
+                disabled = OffWith("showObjectives"),
                 disabledTooltip = ModuleOr("Show Boss Objectives"),
             })
         end
@@ -2097,17 +1858,10 @@ initFrame:SetScript("OnEvent", function(self)
         row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show Objective Times",
-            disabled = function()
-                return Cfg("enabled") == false or Cfg("showObjectives") == false
-            end,
+            disabled = OffWith("showObjectives"),
             disabledTooltip = ModuleOr("Show Boss Objectives"),
-            getValue = function()
-                return Cfg("showObjectiveTimes") ~= false
-            end,
-            setValue = function(v)
-                Set("showObjectiveTimes", v)
-                Refresh()
-            end,
+            getValue = NotOff("showObjectiveTimes"),
+            setValue = Keep("showObjectiveTimes"),
         }, {
             type = "dropdown",
             text = "Time Position",
@@ -2131,13 +1885,8 @@ initFrame:SetScript("OnEvent", function(self)
             end,
             values = objectiveTimePositionValues,
             order = objectiveTimePositionOrder,
-            getValue = function()
-                return Cfg("objectiveTimePosition") or "RIGHT"
-            end,
-            setValue = function(v)
-                Set("objectiveTimePosition", v)
-                Refresh()
-            end,
+            getValue = Or("objectiveTimePosition", "RIGHT"),
+            setValue = Keep("objectiveTimePosition"),
         })
         posY = posY - hgt
 
@@ -2145,37 +1894,23 @@ initFrame:SetScript("OnEvent", function(self)
             type = "slider",
             pixel = true,
             text = "Objective Spacing",
-            disabled = function()
-                return Cfg("enabled") == false or Cfg("showObjectives") == false
-            end,
+            disabled = OffWith("showObjectives"),
             disabledTooltip = ModuleOr("Show Boss Objectives"),
             min = 0,
             max = 12,
             step = 1,
             isPercent = false,
-            getValue = function()
-                return Cfg("objectiveGap") or 4
-            end,
-            setValue = function(v)
-                Set("objectiveGap", v)
-                Refresh()
-            end,
+            getValue = Or("objectiveGap", 4),
+            setValue = Keep("objectiveGap"),
         }, {
             type = "dropdown",
             text = "Split Compare",
-            disabled = function()
-                return Cfg("enabled") == false or Cfg("showObjectives") == false
-            end,
+            disabled = OffWith("showObjectives"),
             disabledTooltip = ModuleOr("Show Boss Objectives"),
             values = compareModeValues,
             order = compareModeOrder,
-            getValue = function()
-                return Cfg("objectiveCompareMode") or "NONE"
-            end,
-            setValue = function(v)
-                Set("objectiveCompareMode", v)
-                Refresh()
-            end,
+            getValue = Or("objectiveCompareMode", "NONE"),
+            setValue = Keep("objectiveCompareMode"),
         })
         -- Split Compare cog: strict scoping (only meaningful for the level scopes,
         -- since Per Dungeon is the fallback it removes) and the upcoming-split target.
@@ -2192,13 +1927,8 @@ initFrame:SetScript("OnEvent", function(self)
                             return (Cfg("objectiveCompareMode") or "NONE") == "NONE"
                         end,
                         disabledTooltip = "This option requires a Split Compare mode",
-                        get = function()
-                            return Cfg("showUpcomingSplitTargets") == true
-                        end,
-                        set = function(v)
-                            Set("showUpcomingSplitTargets", v)
-                            Refresh()
-                        end,
+                        get = IsTrue("showUpcomingSplitTargets"),
+                        set = Keep("showUpcomingSplitTargets"),
                     },
                     {
                         type = "toggle",
@@ -2209,13 +1939,8 @@ initFrame:SetScript("OnEvent", function(self)
                             return mode ~= "LEVEL" and mode ~= "LEVEL_AFFIX"
                         end,
                         disabledTooltip = "This option requires Split Compare to include a key level",
-                        get = function()
-                            return Cfg("objectiveCompareStrict") == true
-                        end,
-                        set = function(v)
-                            Set("objectiveCompareStrict", v)
-                            Refresh()
-                        end,
+                        get = IsTrue("objectiveCompareStrict"),
+                        set = Keep("objectiveCompareStrict"),
                     },
                     {
                         type = "toggle",
@@ -2225,18 +1950,11 @@ initFrame:SetScript("OnEvent", function(self)
                             return (Cfg("objectiveCompareMode") or "NONE") == "NONE"
                         end,
                         disabledTooltip = "This option requires a Split Compare mode",
-                        get = function()
-                            return Cfg("showFastestRunSplits") == true
-                        end,
-                        set = function(v)
-                            Set("showFastestRunSplits", v)
-                            Refresh()
-                        end,
+                        get = IsTrue("showFastestRunSplits"),
+                        set = Keep("showFastestRunSplits"),
                     },
                 },
-                disabled = function()
-                    return Cfg("enabled") == false or Cfg("showObjectives") == false
-                end,
+                disabled = OffWith("showObjectives"),
                 disabledTooltip = ModuleOr("Show Boss Objectives"),
             })
         end
