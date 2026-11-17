@@ -277,3 +277,41 @@ do
         end
     end
 end
+
+-- The Focus Kick bar (its own section; the test profile has none until the
+-- module adds it): page snapped, cogs opened, toggles and swatches clicked
+-- with the bar written out after each.
+if mod.EnsureFocusKickBar then mod.EnsureFocusKickBar() end
+local fkIdx
+for i, b in ipairs(Bars()) do
+    if b.key == "focuskick" then fkIdx = i end
+end
+OUT:write("== focus kick bar " .. tostring(fkIdx) .. "\n")
+if fkIdx then
+    Rebuild(fkIdx)
+    SNAP("focus kick page", CUI._scrollFrame)
+    local cogs = Find(CUI._scrollFrame, function(f)
+        return f["\0kind"] == "Button" and rawget(f, "_cuiCogId") ~= nil and f:IsVisible()
+    end)
+    OUT:write("== focus kick cogs " .. #cogs .. "\n")
+    for j, cog in ipairs(cogs) do
+        local before = ShownTops()
+        Click(cog, "fk cog " .. j)
+        HideNew(before, "fk cog " .. j)
+    end
+    Rebuild(fkIdx)
+    local fkCount = #Controls()
+    OUT:write("== focus kick controls " .. fkCount .. "\n")
+    for i = 1, fkCount do
+        Rebuild(fkIdx)
+        local c = Controls()[i]
+        if c then
+            local before = ShownTops()
+            Click(c, "fk control " .. i)
+            HARNESS_ADVANCE(0.2)
+            HideNew(before)
+            OUT:write("== fk control " .. i .. "\n")
+            DumpBars(fkIdx)
+        end
+    end
+end
