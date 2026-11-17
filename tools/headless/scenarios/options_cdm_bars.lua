@@ -171,3 +171,42 @@ for i = 1, links do
         DumpBars()
     end
 end
+
+-- The bar selector menu (the header's 350x34 dropdown), with two custom bars
+-- added so their rows carry Rename, Delete and the reorder grip: opened and
+-- snapped, every row hovered and left.
+if mod.AddCDMBar then
+    mod.AddCDMBar("cooldowns", "Custom A")
+    mod.AddCDMBar("buffs", "Custom B")
+end
+Rebuild(1)
+local header = CUI._contentHeader or CUI._headerFrame
+local dd = Find(header, function(f)
+    return f["\0kind"] == "Button" and f:IsVisible() and math.floor((f["\0w"] or 0) + 0.5) == 350
+        and math.floor((f["\0h"] or 0) + 0.5) == 34 and f["\0scripts"].OnClick ~= nil
+end)[1]
+OUT:write("== bar menu button " .. tostring(dd ~= nil) .. "\n")
+if dd then
+    local before = ShownTops()
+    Click(dd, "bar menu")
+    local menu
+    for _, host in ipairs(Hosts()) do
+        for _, c in ipairs({ host:GetChildren() }) do
+            if c:IsShown() and not before[c] then menu = menu or c end
+        end
+    end
+    OUT:write("== bar menu " .. tostring(menu ~= nil) .. "\n")
+    if menu then
+        SNAP("bar menu", menu)
+        local rows = Find(menu, function(f) return f["\0kind"] == "Button" and f:IsVisible() end)
+        OUT:write("== bar menu buttons " .. #rows .. "\n")
+        for i, r in ipairs(rows) do
+            local enter, leave = r["\0scripts"].OnEnter, r["\0scripts"].OnLeave
+            if enter then pcall(enter, r) end
+            SNAP("bar menu button " .. i .. " lit", r)
+            if leave then pcall(leave, r) end
+        end
+        SNAP("bar menu after hover", menu)
+        menu:Hide()
+    end
+end
