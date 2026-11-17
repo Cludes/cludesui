@@ -1943,41 +1943,49 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         end
         mod.UF_BlizzBarShadow(health, hMaskOK and hm or nil, HB.h)
 
-        -- Power: the small frames carry the stock bar (the mock builds none,
-        -- so a plain one is built here once); a main frame's attached bar
-        -- moves into the track, a detached one keeps its own spot.
+        -- Power: the small frames carry the stock bar (the mock has none, so a
+        -- plain one is made here once); a main frame's attached bar moves into
+        -- the track, and a detached one keeps its own spot.
         local pw = power
         if isMini then
             pw = popFrame._blizzPower
             if not pw then
                 pw = CreateFrame("Frame", nil, popFrame)
-                local backdrop = pw:CreateTexture(nil, "BACKGROUND")
-                backdrop:SetAllPoints()
-                backdrop:SetColorTexture(17 / 255, 17 / 255, 17 / 255, 1)
-                local fill = pw:CreateTexture(nil, "ARTWORK")
-                fill:SetPoint("TOPLEFT", pw, "TOPLEFT", 0, 0)
-                fill:SetPoint("BOTTOMLEFT", pw, "BOTTOMLEFT", 0, 0)
-                pw._bg, pw._fill = backdrop, fill
+                local back = pw:CreateTexture(nil, "BACKGROUND")
+                back:SetAllPoints()
+                back:SetColorTexture(17 / 255, 17 / 255, 17 / 255, 1)
+                local bar = pw:CreateTexture(nil, "ARTWORK")
+                bar:SetPoint("TOPLEFT", pw, "TOPLEFT", 0, 0)
+                bar:SetPoint("BOTTOMLEFT", pw, "BOTTOMLEFT", 0, 0)
+                pw._bg, pw._fill = back, bar
                 popFrame._blizzPower = pw
             end
-            -- The small frames' bar takes the donor's texture, as live.
-            local texKey = mod.ResolveHealthBarTextureKey(
-                s,
-                mod.GetMiniDonorSettings and mod.GetMiniDonorSettings(unitKey) or saved.profile.player
+            -- The small frames' bar wears the donor's texture, as live, with
+            -- the Textured Background under it.
+            local donor = mod.GetMiniDonorSettings and mod.GetMiniDonorSettings(unitKey)
+                or saved.profile.player
+            local texKey = mod.ResolveHealthBarTextureKey(s, donor)
+            local _, kind = UnitPowerType("player")
+            local tint = CludesUI.GetPowerColor(kind or "MANA")
+            PV_FillColor(
+                pw._fill,
+                (mod.healthBarTextures or {})[texKey],
+                tint.r,
+                tint.g,
+                tint.b,
+                nil,
+                nil,
+                nil,
+                1
             )
-            local texPath = (mod.healthBarTextures or {})[texKey]
-            local _, pToken = UnitPowerType("player")
-            local pc = CludesUI.GetPowerColor(pToken or "MANA")
-            PV_FillColor(pw._fill, texPath, pc.r, pc.g, pc.b, nil, nil, nil, 1)
-            -- Textured Background, as live.
-            local _, mpTex = mod.UF_TexBgPaths(unitKey, s, texKey)
-            mod.UF_TexBgPaint(pw._bg, mpTex, 17 / 255, 17 / 255, 17 / 255, 1)
+            local _, backTex = mod.UF_TexBgPaths(unitKey, s, texKey)
+            mod.UF_TexBgPaint(pw._bg, backTex, 17 / 255, 17 / 255, 17 / 255, 1)
         end
         local pPos = mod.UF_PowerPos(s)
         local inTrack = pw and (isMini or pPos == "below" or pPos == "above")
         if inTrack then
-            -- A mirrored small frame's bar runs unmasked, so it stops where
-            -- the health bar does (as live, UF_ApplyBlizzardLayout).
+            -- A mirrored small frame's bar runs unmasked, so it ends where the
+            -- health bar does (as live, UF_ApplyBlizzardLayout).
             local px, pwid = G.power.x, G.power.w
             if isMini and mirror and px < HB.x then
                 pwid = pwid - (HB.x - px)
@@ -1991,13 +1999,9 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             local backdrop = pw._bg or popFrame._powerBg
             if fill then
                 fill:ClearAllPoints()
-                if not isMini and s.powerReverseFill then
-                    fill:SetPoint("TOPRIGHT", pw, "TOPRIGHT", 0, 0)
-                    fill:SetPoint("BOTTOMRIGHT", pw, "BOTTOMRIGHT", 0, 0)
-                else
-                    fill:SetPoint("TOPLEFT", pw, "TOPLEFT", 0, 0)
-                    fill:SetPoint("BOTTOMLEFT", pw, "BOTTOMLEFT", 0, 0)
-                end
+                local fillEdge = (not isMini and s.powerReverseFill) and "RIGHT" or "LEFT"
+                fill:SetPoint("TOP" .. fillEdge, pw, "TOP" .. fillEdge, 0, 0)
+                fill:SetPoint("BOTTOM" .. fillEdge, pw, "BOTTOM" .. fillEdge, 0, 0)
                 fill:SetWidth(math.floor(pwid * ppct + 0.5))
             end
             local pm = pw._blizzMask
@@ -2042,8 +2046,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
                 end
             end
         end
-        -- Hide Power Bar: the bar stays down, and so does its text (its own
-        -- frame, with its click overlay).
+        -- Hide Power Bar keeps the bar down, and its text with it (the text's
+        -- own frame, which carries its click overlay).
         if merged and pw then
             pw:Hide()
         end
@@ -2052,42 +2056,36 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             ppOv:SetShown(not merged)
         end
 
-        -- Portrait: always on, stock spot and size, stock mask, under the
-        -- art; 3D cannot be masked, so 2D art stands in as on the live frame.
+        -- Portrait: always shown, at the stock spot and size under the art,
+        -- in the stock mask. 3D cannot be masked, so 2D art stands in for it
+        -- as on the live frame, and every CludesUI portrait extra steps aside.
         if portraitFrame then
+            local P = G.portrait
             portraitFrame:Show()
             portraitFrame:ClearAllPoints()
-            mod.UF_BlizzPoint(
-                portraitFrame,
-                G.portrait.point,
-                barArea,
-                G.portrait.point,
-                G.portrait.x,
-                G.portrait.y,
-                mirror
-            )
-            portraitFrame:SetSize(G.portrait.size, G.portrait.size)
+            mod.UF_BlizzPoint(portraitFrame, P.point, barArea, P.point, P.x, P.y, mirror)
+            portraitFrame:SetSize(P.size, P.size)
             portraitFrame:SetFrameLevel(lvl + 1)
             portraitFrame:SetClipsChildren(false)
-            if portraitFrame._previewBg then
-                portraitFrame._previewBg:Hide()
-            end
-            if portraitFrame._shapeBorderTex then
-                portraitFrame._shapeBorderTex:Hide()
-            end
-            if portraitFrame._sqBorderTexs then
-                for _, t in ipairs(portraitFrame._sqBorderTexs) do
-                    t:Hide()
+            local function HideIf(region)
+                if region then
+                    region:Hide()
                 end
+            end
+            HideIf(portraitFrame._previewBg)
+            HideIf(portraitFrame._shapeBorderTex)
+            for _, edge in ipairs(portraitFrame._sqBorderTexs or {}) do
+                edge:Hide()
             end
             mod.UF_PortraitExtras(portraitFrame, nil)
             mod.UF_PortraitDragon(portraitFrame, nil)
             local texture = portraitFrame._previewTex
-            if portraitFrame._shapeMask then
+            local shapeMask = portraitFrame._shapeMask
+            if shapeMask then
                 if texture then
-                    pcall(texture.RemoveMaskTexture, texture, portraitFrame._shapeMask)
+                    pcall(texture.RemoveMaskTexture, texture, shapeMask)
                 end
-                portraitFrame._shapeMask:Hide()
+                shapeMask:Hide()
             end
             local model = portraitFrame._previewModel
             if model and model:IsShown() then
@@ -2096,41 +2094,43 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             if texture then
                 texture:Show()
                 if (s.portraitMode or "2d") ~= "class" then
-                    -- Third argument: the client's own round crop off where the
-                    -- stock mask is not a circle (the player frame).
-                    SetPortraitTexture(texture, "player", G.portrait.rawArt)
+                    -- The third argument turns the client's own round crop off
+                    -- where the stock mask is not a circle (the player frame).
+                    SetPortraitTexture(texture, "player", P.rawArt)
                     texture:SetTexCoord(0, 1, 0, 1)
                     texture:SetAlpha(1)
                     texture:ClearAllPoints()
                     texture:SetPoint("TOPLEFT", portraitFrame, "TOPLEFT", 0, 0)
                     texture:SetPoint("BOTTOMRIGHT", portraitFrame, "BOTTOMRIGHT", 0, 0)
                 end
-                if mod.UF_AtlasOK(G.portrait.mask) then
+                if mod.UF_AtlasOK(P.mask) then
                     local m = portraitFrame._blizzMask
                     if not m then
                         m = portraitFrame:CreateMaskTexture()
                         m:SetAllPoints(portraitFrame)
                         portraitFrame._blizzMask = m
                     end
-                    mod.UF_StockMask(m, G.portrait.mask)
+                    mod.UF_StockMask(m, P.mask)
                     m:Show()
                     mod.UF_SetMask(texture, m)
                 end
             end
         end
 
-        -- Left text zone on the name strip; the others stay bar-relative.
-        if G.name and leftFS:IsShown() then
+        -- The left text moves onto the name strip; the other slots stay on the bar.
+        local nameSpot = G.name
+        if nameSpot and leftFS:IsShown() then
             leftFS:ClearAllPoints()
-            leftFS:SetJustifyH(G.name.justify or "LEFT")
-            local xOffset, yOffset = s.leftTextX or 0, s.leftTextY or 0
-            -- Keep the user's X offset screen-relative when UF_BlizzPoint mirrors it.
-            local posX = G.name.x + (mirror and -xOffset or xOffset)
-            mod.UF_BlizzPoint(leftFS, G.name.point, barArea, G.name.point, posX, G.name.y + yOffset, mirror)
-            leftFS:SetWidth(G.name.w)
+            leftFS:SetJustifyH(nameSpot.justify or "LEFT")
+            local dx, dy = s.leftTextX or 0, s.leftTextY or 0
+            -- UF_BlizzPoint mirrors x, so the user's X offset is flipped first
+            -- to stay screen-relative.
+            local x = nameSpot.x + (mirror and -dx or dx)
+            mod.UF_BlizzPoint(leftFS, nameSpot.point, barArea, nameSpot.point, x, nameSpot.y + dy, mirror)
+            leftFS:SetWidth(nameSpot.w)
         end
 
-        -- No CUI chrome: the border and text bar step aside for the art.
+        -- No CludesUI chrome: the border and the Text Bar make way for the art.
         border:Hide()
         if btbFrame then
             btbFrame:Hide()
