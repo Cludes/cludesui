@@ -4287,96 +4287,80 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
             end
         end
 
-        -- Fake static cooldown swipe + duration/stack text on the boss debuff
-        -- preview icons (mirrors the live boss aura buttons); sizing and visibility
-        -- follow the boss aura settings so those controls live-update here.
+        -- Boss debuff samples carry the still cooldown swipe, a duration and
+        -- one stack number, as the live boss aura buttons do. Their look
+        -- follows the boss aura settings (the Simple Debuffs set while that
+        -- mode is on), so those controls update here live.
         do
             local showExtras = (unitKey == "boss") and not noDebuffPreview
-            local showCDText, cdTextSize, cdTOffX, cdTOffY, stackTextSize, stackTextPosition, stackTOffX, stackTOffY, cdTextColor, stackTextColor
+            local cdOn, cdSize, cdX, cdY, cdColor, stSize, stPos, stX, stY, stColor
             if showExtras then
+                local cdKey, cdDefault, cdShowKey = "debuffCooldownText", 10, "debuffShowCooldownText"
                 if mod.GetBossSimpleDebuffMode(s) ~= "none" then
-                    showCDText = s.simpleDebuffShowCooldownText
-                    cdTextSize = s.simpleDebuffCooldownTextSize or 14
-                    cdTOffX = s.simpleDebuffCooldownTextOffsetX or 0
-                    cdTOffY = s.simpleDebuffCooldownTextOffsetY or 0
-                else
-                    showCDText = s.debuffShowCooldownText
-                    cdTextSize = s.debuffCooldownTextSize or 10
-                    cdTOffX = s.debuffCooldownTextOffsetX or 0
-                    cdTOffY = s.debuffCooldownTextOffsetY or 0
+                    cdKey, cdDefault, cdShowKey =
+                        "simpleDebuffCooldownText", 14, "simpleDebuffShowCooldownText"
                 end
-                stackTextSize = s.debuffStackTextSize or 14
-                stackTextPosition = s.debuffStackTextPosition or "bottomright"
-                stackTOffX = s.debuffStackTextOffsetX or 0
-                stackTOffY = s.debuffStackTextOffsetY or 0
-                cdTextColor = s.debuffCooldownTextColor or { r = 1, g = 1, b = 1 }
-                stackTextColor = s.debuffStackTextColor or { r = 1, g = 1, b = 1 }
+                cdOn = s[cdShowKey]
+                cdSize = s[cdKey .. "Size"] or cdDefault
+                cdX, cdY = s[cdKey .. "OffsetX"] or 0, s[cdKey .. "OffsetY"] or 0
+                stSize = s.debuffStackTextSize or 14
+                stPos = s.debuffStackTextPosition or "bottomright"
+                stX, stY = s.debuffStackTextOffsetX or 0, s.debuffStackTextOffsetY or 0
+                cdColor = s.debuffCooldownTextColor or { r = 1, g = 1, b = 1 }
+                stColor = s.debuffStackTextColor or { r = 1, g = 1, b = 1 }
             end
             local fontP = (CludesUI.GetFontPath("unitFrames")) or "Fonts\\FRIZQT__.TTF"
-            for idx = 1, #debuffIcons do
-                local df = debuffIcons[idx]
+            for idx, df in ipairs(debuffIcons) do
                 local cd, dt, st = df._previewCD, df._durText, df._stackText
-                if showExtras and df:IsShown() then
-                    if cd and not cd:IsShown() then
-                        cd:Show()
-                    end
-                    if dt then
-                        if showCDText then
-                            CludesUI.ApplyIconTextFont(dt, fontP, cdTextSize, "unitFrames")
-                            dt:ClearAllPoints()
-                            dt:SetPoint("CENTER", df, "CENTER", cdTOffX, cdTOffY)
-                            dt:SetTextColor(cdTextColor.r, cdTextColor.g, cdTextColor.b)
-                            dt:Show()
-                        else
-                            dt:Hide()
-                        end
-                    end
-                    -- Stack text on one icon only (most debuffs are unstacked);
-                    -- icon 2 matches the in-game preview.
-                    if st then
-                        if idx == 2 then
-                            CludesUI.ApplyIconTextFont(st, fontP, stackTextSize, "unitFrames")
-                            st:SetText(3)
-                            mod.ApplyStackAnchor(st, df, stackTextPosition, stackTOffX, stackTOffY)
-                            st:SetTextColor(stackTextColor.r, stackTextColor.g, stackTextColor.b)
-                            st:Show()
-                        else
-                            st:Hide()
-                        end
-                    end
-                else
-                    if cd then
-                        cd:Hide()
-                    end
-                    if dt then
+                local dressed = showExtras and df:IsShown()
+                if cd and not dressed then
+                    cd:Hide()
+                elseif cd and not cd:IsShown() then
+                    cd:Show()
+                end
+                if dt then
+                    if dressed and cdOn then
+                        CludesUI.ApplyIconTextFont(dt, fontP, cdSize, "unitFrames")
+                        dt:ClearAllPoints()
+                        dt:SetPoint("CENTER", df, "CENTER", cdX, cdY)
+                        dt:SetTextColor(cdColor.r, cdColor.g, cdColor.b)
+                        dt:Show()
+                    else
                         dt:Hide()
                     end
-                    if st then
+                end
+                -- A stack number on the second icon only (most debuffs do not
+                -- stack), matching the in-game preview.
+                if st then
+                    if dressed and idx == 2 then
+                        CludesUI.ApplyIconTextFont(st, fontP, stSize, "unitFrames")
+                        st:SetText(3)
+                        mod.ApplyStackAnchor(st, df, stPos, stX, stY)
+                        st:SetTextColor(stColor.r, stColor.g, stColor.b)
+                        st:Show()
+                    else
                         st:Hide()
                     end
                 end
             end
         end
 
-        local btbExtra = (btbFrame and s.bottomTextBar and btbIsAtt) and (s.bottomTextBarHeight or 16) or 0
-        local th = bh2 + btbExtra + (ch > 0 and ch or 0)
-        -- Blizzard Style: the visible art (its transparent rows trimmed) plus
-        -- the cast bar strip (no text bar) -- unless the bar hangs below the
-        -- auras, when the strip is reserved under them instead (auraExtra).
+        -- Frame height: the bars, an attached Text Bar and the cast bar strip.
+        -- Under Blizzard Style it is the visible art (its transparent rows
+        -- trimmed) plus the cast bar strip, unless the cast bar hangs below
+        -- the auras, when that strip is kept under them instead (auraExtra).
+        local textBarH = (btbFrame and s.bottomTextBar and btbIsAtt) and (s.bottomTextBarHeight or 16) or 0
+        local th = bh2 + textBarH + (ch > 0 and ch or 0)
         if blizzG then
             local pad = blizzG.pad
             th = blizzG.h - (pad and (pad.top + pad.bottom) or 0)
             if ch > 0 then
                 cbStrip = ch
-                -- The stock text box hangs 13px under the cast bar: reserve
-                -- it so the content header below does not overlap it.
+                -- The stock text box hangs 13px under the cast bar; it is kept
+                -- clear so the content header below does not run into it.
                 local UFC = mod.UF_CAST_BLIZZ
-                if
-                    UFC
-                    and not mod.UF_BLIZZ.cast
-                    and mod.UF_BlizzAtlas(UFC.textbox)
-                    and (s.castSpellNameSide or "left") ~= "none"
-                then
+                local nameShown = (s.castSpellNameSide or "left") ~= "none"
+                if UFC and not mod.UF_BLIZZ.cast and mod.UF_BlizzAtlas(UFC.textbox) and nameShown then
                     cbStrip = cbStrip + 13
                 end
                 if not blizzBelow then
@@ -4386,39 +4370,38 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         end
         popFrame:SetSize(tw, th)
 
-        -- Apply preview scale; shrink to fit when the frame is wider than the panel
+        -- The preview scale, shrunk to fit when the frame is wider than the panel.
         local baseScale = popFrame._previewScale or 1
+        local roomW = (popFrame:GetParent():GetWidth() - (CludesUI.CONTENT_PAD or 10) * 2) / baseScale
         local fitScale = 1
-        do
-            local PAD = CludesUI.CONTENT_PAD or 10
-            local availW = (popFrame:GetParent():GetWidth() - PAD * 2) / baseScale
-            if tw > availW and tw > 0 and availW > 0 then
-                fitScale = availW / tw
-            end
+        if tw > roomW and tw > 0 and roomW > 0 then
+            fitScale = roomW / tw
         end
         local combinedScale = baseScale * fitScale
         popFrame:SetScale(combinedScale)
 
-        -- Recalculate border sizes after scale change so they stay pixel-perfect
+        -- The border again at the new scale, so it stays pixel exact.
         if border then
-            local bs2 = s.borderSizeOverride or bds.borderSize or 1
-            local bTex2 = bds.borderTexture or "solid"
+            local edge = s.borderSizeOverride or bds.borderSize or 1
+            local edgeTex = bds.borderTexture or "solid"
+            local edgeC = bds.borderColor or { r = 0, g = 0, b = 0 }
+            local edgePx = CludesUI.BorderPx((not s.borderSizeOverride) and bds.borderSizePx, edge, edgeTex)
             CludesUI.ApplyBorderStyle(
                 border,
-                bs2,
-                (bds.borderColor or { r = 0, g = 0, b = 0 }).r,
-                (bds.borderColor or { r = 0, g = 0, b = 0 }).g,
-                (bds.borderColor or { r = 0, g = 0, b = 0 }).b,
+                edge,
+                edgeC.r,
+                edgeC.g,
+                edgeC.b,
                 bds.borderAlpha or 1,
-                bTex2,
+                edgeTex,
                 bds.borderTextureOffset,
                 bds.borderTextureOffsetY,
                 bds.borderTextureShiftX,
                 bds.borderTextureShiftY,
                 "unitframes",
-                bs2,
+                edge,
                 nil,
-                CludesUI.BorderPx((not s.borderSizeOverride) and bds.borderSizePx, bs2, bTex2)
+                edgePx
             )
         end
         -- Rounded corners, as on the live frame: the border frame is the shape
