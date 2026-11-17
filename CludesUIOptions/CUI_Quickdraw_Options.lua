@@ -49,12 +49,12 @@ initFrame:SetScript("OnEvent", function(self)
         return db and db.profile
     end
 
-    local function Cfg(key)
+    local function ProfileGet(key)
         local p = DB()
         return p and p[key]
     end
 
-    local function Set(key, val)
+    local function ProfilePut(key, val)
         local p = DB()
         if p then
             p[key] = val
@@ -65,11 +65,11 @@ initFrame:SetScript("OnEvent", function(self)
     -- holds a nested entry). Rows are structural, so when nest presence flips
     -- under a plain Refresh -- the first nested entry added, the last one
     -- removed -- the refresh escalates to a rebuild and the row appears or
-    -- goes with it. HasAnyNest is assigned below PaletteCount.
+    -- goes with it. HasAnyNest is assigned below MenuCount.
     local builtWithNest = false
     local HasAnyNest
 
-    local function Refresh()
+    local function Reapply()
         if _G._CUQD_Apply then
             _G._CUQD_Apply()
         end
@@ -80,7 +80,7 @@ initFrame:SetScript("OnEvent", function(self)
         CludesUI:RefreshPage()
     end
 
-    local function RebuildPage()
+    local function RedrawPage()
         if _G._CUQD_Apply then
             _G._CUQD_Apply()
         end
@@ -89,14 +89,14 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- Which palette the ACTION MENU SETUP section is editing. Transient: the editor
     -- is a panel-session concept, not a saved setting.
-    local editPalette = 1
+    local editingMenu = 1
 
-    local function PaletteCount()
-        return math.min(MAX_PALETTES, math.max(1, Cfg("paletteCount") or 1))
+    local function MenuCount()
+        return math.min(MAX_PALETTES, math.max(1, ProfileGet("paletteCount") or 1))
     end
 
-    local function Palette(index)
-        return mod.EnsurePalette and mod.EnsurePalette(index or editPalette)
+    local function MenuTable(index)
+        return mod.EnsurePalette and mod.EnsurePalette(index or editingMenu)
     end
 
     -- A palette as stored, for getters: nothing created or compacted (getters
@@ -104,8 +104,8 @@ initFrame:SetScript("OnEvent", function(self)
     local function PaletteRead(index)
         local prof = DB()
         local pals = prof and prof.palettes
-        local pal = type(pals) == "table" and pals[index or editPalette]
-        return type(pal) == "table" and pal or nil
+        local menuT = type(pals) == "table" and pals[index or editingMenu]
+        return type(menuT) == "table" and menuT or nil
     end
 
     -- Does ANY menu hold a nested entry? Read-only walk over the stored
@@ -117,9 +117,9 @@ initFrame:SetScript("OnEvent", function(self)
         if type(palettes) ~= "table" then
             return false
         end
-        for i = 1, PaletteCount() do
-            local pal = palettes[i]
-            local slots = type(pal) == "table" and pal.slots
+        for i = 1, MenuCount() do
+            local menuT = palettes[i]
+            local slots = type(menuT) == "table" and menuT.slots
             for jdx = 1, (type(slots) == "table" and #slots or 0) do
                 local s = slots[jdx]
                 if type(s) == "table" and s.kind == "palette" then
@@ -138,29 +138,29 @@ initFrame:SetScript("OnEvent", function(self)
     --  (ns.APPEARANCE_KEYS) and the fallback: a palette with no override of its
     --  own reads the profile's value, so a profile written before any of this
     --  existed draws exactly as it did. Only the module's enable switch and
-    --  the menu list itself are profile state through Cfg/Set; the "Apply All
+    --  the menu list itself are profile state through ProfileGet/ProfilePut; the "Apply All
     --  Settings From" row below the preview is the bridge between menus.
     --
     --  The module is outside Spec Overrides (CludesUI_SpecOverrides.lua):
     --  which specs a menu works in is its own Assign to Spec setting instead.
     ---------------------------------------------------------------------------
-    local function ACfg(key)
-        local pal = PaletteRead(editPalette)
-        local a = pal and pal.appearance
+    local function MenuGet(key)
+        local menuT = PaletteRead(editingMenu)
+        local a = menuT and menuT.appearance
         local v = a and a[key]
         if v ~= nil then
             return v
         end
-        return Cfg(key)
+        return ProfileGet(key)
     end
 
-    local function ASet(key, val)
-        local pal = mod.EnsurePalette and mod.EnsurePalette(editPalette)
-        if not pal then
+    local function MenuPut(key, val)
+        local menuT = mod.EnsurePalette and mod.EnsurePalette(editingMenu)
+        if not menuT then
             return
         end
-        pal.appearance = pal.appearance or {}
-        pal.appearance[key] = val
+        menuT.appearance = menuT.appearance or {}
+        menuT.appearance[key] = val
     end
 
     -- From the module, so the name an emptied box reverts to is the same string
@@ -174,8 +174,8 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- A menu's name as the page shows it.
     local function MenuName(index)
-        local pal = PaletteRead(index)
-        return (pal and pal.name) or AutoName(index)
+        local menuT = PaletteRead(index)
+        return (menuT and menuT.name) or AutoName(index)
     end
 
     -- The icon a menu is listed BY, everywhere one is listed: its first entry,
@@ -243,7 +243,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- The menus sharing owner's key, in index order.
     local function Sharers(ownerFrame)
         local result = {}
-        for i = 1, PaletteCount() do
+        for i = 1, MenuCount() do
             if i ~= ownerFrame and mod.ShareOwner(i) == ownerFrame then
                 result[#result + 1] = i
             end
@@ -272,9 +272,9 @@ initFrame:SetScript("OnEvent", function(self)
         if not heir then
             return nil
         end
-        Palette(heir).keyShare = nil
+        MenuTable(heir).keyShare = nil
         for num = 2, #entries do
-            Palette(entries[num]).keyShare = heir
+            MenuTable(entries[num]).keyShare = heir
         end
         if k1 then
             SetBinding(k1, BINDING_PREFIX .. heir)
@@ -302,7 +302,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- The menu of this profile a binding action opens, or nil.
     local function PaletteOfAction(action)
         local num = type(action) == "string" and tonumber(action:match("^" .. BINDING_PREFIX .. "(%d+)$"))
-        if num and num >= 1 and num <= PaletteCount() then
+        if num and num >= 1 and num <= MenuCount() then
             return num
         end
         return nil
@@ -322,8 +322,8 @@ initFrame:SetScript("OnEvent", function(self)
                 SetBinding(k2, nil)
             end
         end
-        Palette(ownerFrame).keyShare = nil
-        Palette(position).keyShare = ownerFrame
+        MenuTable(ownerFrame).keyShare = nil
+        MenuTable(position).keyShare = ownerFrame
         if k1 or k2 then
             SaveBindings(GetCurrentBindingSet())
         end
@@ -337,7 +337,7 @@ initFrame:SetScript("OnEvent", function(self)
                     MenuName(ownerFrame)
                 )
         )
-        RebuildPage()
+        RedrawPage()
     end
 
     -- An Assign to Spec change can let menus that share a key load together:
@@ -345,7 +345,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- Returns true when it broke one.
     local function CheckShares()
         local broke = false
-        for ownerFrame = 1, PaletteCount() do
+        for ownerFrame = 1, MenuCount() do
             local kept = {}
             for _, s in ipairs(Sharers(ownerFrame)) do
                 local success = mod.PalettesExclusive(s, ownerFrame)
@@ -357,7 +357,7 @@ initFrame:SetScript("OnEvent", function(self)
                 if success then
                     kept[#kept + 1] = s
                 else
-                    Palette(s).keyShare = nil
+                    MenuTable(s).keyShare = nil
                     broke = true
                     CludesUI.Print(
                         CludesUI.COLOR_CODES.BRAND
@@ -396,7 +396,7 @@ initFrame:SetScript("OnEvent", function(self)
             else
                 -- A key of its own ends a share; a primary that menus share
                 -- stays with them, else it is let go.
-                Palette(palette).keyShare = nil
+                MenuTable(palette).keyShare = nil
                 if oldK1 and oldK1 ~= chord and not HandOffKeys(palette, oldK1, nil) then
                     SetBinding(oldK1, nil)
                 end
@@ -418,7 +418,7 @@ initFrame:SetScript("OnEvent", function(self)
             end
         else
             -- A key of its own (or none) ends a share.
-            Palette(palette).keyShare = nil
+            MenuTable(palette).keyShare = nil
             -- Unbind: this one clears every key the palette holds, which is what
             -- "unbind" means; keys menus share stay with them.
             if not HandOffKeys(palette, oldK1, oldK2) then
@@ -432,7 +432,7 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         SaveBindings(GetCurrentBindingSet())
-        RebuildPage()
+        RedrawPage()
     end
 
     -- chord = a binding string to assign, or nil to leave the palette unbound.
@@ -505,7 +505,7 @@ initFrame:SetScript("OnEvent", function(self)
                 onConfirm = function()
                     if InCombatLockdown() then
                         Complain("Action Wheel: keybinds can't be changed in combat.")
-                        RebuildPage()
+                        RedrawPage()
                         return
                     end
                     ApplyKey(palette, chord, stolenFrom)
@@ -571,7 +571,7 @@ initFrame:SetScript("OnEvent", function(self)
     --  it is the same renderer, the arrangement here is literally the one the
     --  user steers at in play.
     --
-    --  Cached, not rebuilt. BuildPage runs on every RebuildPage and WoW frames
+    --  Cached, not rebuilt. BuildPage runs on every RedrawPage and WoW frames
     --  are never collected, so re-creating thirteen of them per rebuild would
     --  leak. The page WRAPPER is discarded on rebuild though, so the block is
     --  re-parented and re-anchored on every build.
@@ -581,7 +581,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- margin: the preview turns slot labels off, so the palette only has to clear
     -- the block's own edges rather than leave room for captions under it.
     local PREVIEW_SPAN = 124
-    local previewBlock, previewView
+    local previewHost, previewWheel
 
     -- Half-extent the block can give a layout on one axis. The block is as wide
     -- as the panel's content and only PREVIEW_H tall, so the two budgets differ
@@ -590,7 +590,7 @@ initFrame:SetScript("OnEvent", function(self)
         if vertical then
             return PREVIEW_H * 0.5 - 24
         end
-        local wid = previewBlock and previewBlock:GetWidth() or 0
+        local wid = previewHost and previewHost:GetWidth() or 0
         -- The block is anchored on both sides, so its width is unresolved on
         -- the very first build. Layout re-runs on every Refresh, so a fallback
         -- here corrects itself rather than sticking.
@@ -629,12 +629,12 @@ initFrame:SetScript("OnEvent", function(self)
     -- radius, icon and dead zone by one factor keeps the proportions the user
     -- chose, so a tight arc still previews as a tight one.
     local function PreviewGeom()
-        local radius = ACfg("radius") or 100
-        local iconSize = ACfg("iconSize") or 40
+        local radius = MenuGet("radius") or 100
+        local iconSize = MenuGet("iconSize") or 40
         -- Fixed, not a setting: the module hardcodes the dead zone (see
         -- DefaultGeom). Still scaled by the fit below like the rest.
         local deadZone = 24
-        local layout = ACfg("layout") or "ARC"
+        local layout = MenuGet("layout") or "ARC"
         -- No selection zoom (hardcoded off in the module), so the fit
         -- budgets no growth headroom.
         local zoom = 1
@@ -642,19 +642,19 @@ initFrame:SetScript("OnEvent", function(self)
         if layout == "GRID" then
             -- The grid is bounded on BOTH axes, so both budgets have to be met:
             -- the block's width across the columns, and its height down the rows.
-            local palette = Palette(editPalette)
+            local palette = MenuTable(editingMenu)
             local num = PreviewEntryCount(palette)
             local cols, rowList
-            if previewView then
-                cols, rowList = previewView:GridDims()
+            if previewWheel then
+                cols, rowList = previewWheel:GridDims()
             end
             -- The view answers from its last Layout, so it has nothing to say
             -- until the first one has run.
             if not cols or rowList < 1 then
-                cols = math.min(ACfg("gridColumns") or 4, num)
+                cols = math.min(MenuGet("gridColumns") or 4, num)
                 rowList = math.ceil(num / cols)
             end
-            local pitch = iconSize + (ACfg("fanGap") or 10)
+            local pitch = iconSize + (MenuGet("fanGap") or 10)
             k = math.min(
                 PREVIEW_MAX_ZOOM,
                 BlockSpan(false) / (cols * pitch * 0.5 + iconSize * (zoom - 1) * 0.5),
@@ -667,17 +667,17 @@ initFrame:SetScript("OnEvent", function(self)
             -- Icons), the wheel scrolling the rest into view -- so the fit is
             -- measured over the drawn window, not the whole palette. The "+"
             -- sits off the strip's own line and costs the length nothing.
-            local palette = Palette(editPalette)
+            local palette = MenuTable(editingMenu)
             local nReal = palette and #palette.slots or 0
-            local window = ACfg("fanVisible") or 2
+            local window = MenuGet("fanVisible") or 2
             local drawn = math.min(math.max(nReal, 1), window * 2 + 1)
             -- Through the module rather than off the key: with the falloff
             -- switched off the strip spreads out to full pitch, and a fit
             -- measured at the stored decay would run it out of the block.
             -- One branch only -- a fan is always wheel-steered now.
             local reach =
-                mod.FanReach(drawn, iconSize, ACfg("fanGap") or 10, (mod.FalloffRatios(editPalette)))
-            local vertical = ACfg("fanOrientation") == "VERTICAL"
+                mod.FanReach(drawn, iconSize, MenuGet("fanGap") or 10, (mod.FalloffRatios(editingMenu)))
+            local vertical = MenuGet("fanOrientation") == "VERTICAL"
             -- Both axes, not just the one the strip runs along: a short strip
             -- fits its own length several times over, and without the crossways
             -- budget it would grow until the icons ran out of the block.
@@ -708,7 +708,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- single block of text, so the caption and the hints carry their own color
     -- codes. Gray for what the entry IS, blue for what the mouse can do to it.
     local function PreviewTooltip(widget)
-        local palette = Palette(editPalette)
+        local palette = MenuTable(editingMenu)
         local slot = palette and palette.slots[widget.index]
         local textValue
         if slot then
@@ -719,7 +719,7 @@ initFrame:SetScript("OnEvent", function(self)
                 -- the whole nested menu everywhere but the halo -- eight fixed
                 -- positions round a cell, and no ninth to put a child in. See
                 -- NestChildCap.
-                local cap = mod.NestChildCap and mod.NestChildCap(editPalette)
+                local cap = mod.NestChildCap and mod.NestChildCap(editingMenu)
                 local childFrame = mod.ChildIndex(slot)
                 local kids = mod.ChildSlots and mod.ChildSlots(childFrame, cap)
                 caption = (kids and #kids == 1) and CludesUI.Lf("nested action menu, %1$d entry", 1)
@@ -747,20 +747,20 @@ initFrame:SetScript("OnEvent", function(self)
                     or (slot.kind == "panel" and "interface panel")
                     or (slot.kind == "equipmentset" and "equipment set")
                     or (slot.kind == "spec" and "specialization")
-                    -- Same icon and same name as a fixed spec entry on the
-                    -- character that made it, so the caption is the only place
-                    -- the difference between the two can be said.
+                    -- Same icon and same name as a fixed spec entry on the
+                    -- character that made it, so the caption is the only place
+                    -- the difference between the two can be said.
                     or (slot.kind == "dynamicspec" and "specialization, by position on this character")
-                    -- Checked before the plain profession caption below,
-                    -- since slot.extra would otherwise still match it.
+                    -- Checked before the plain profession caption below,
+                    -- since slot.extra would otherwise still match it.
                     or (slot.kind == "dynamicprofession" and slot.specialization and "profession specialization ability, by position on this character")
                     or (slot.kind == "dynamicprofession" and slot.extra and "profession's second ability, by position on this character")
-                    -- Same icon and same name as a fixed profession entry on
-                    -- the character that made it, just as with dynamicspec.
+                    -- Same icon and same name as a fixed profession entry on
+                    -- the character that made it, just as with dynamicspec.
                     or (slot.kind == "dynamicprofession" and "profession, by position on this character")
-                    -- The name above is already the spell this character would
-                    -- cast, so the caption says what picked it rather than
-                    -- repeating it.
+                    -- The name above is already the spell this character would
+                    -- cast, so the caption says what picked it rather than
+                    -- repeating it.
                     or (slot.kind == "dynamicrez" and "resurrection, chosen for this character")
                     or slot.kind
             end
@@ -791,7 +791,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- Place whatever is on the cursor. An empty cursor is not an error: a bare
     -- left-click on a slot should do nothing at all, cursor untouched.
     local function PreviewPlace(widget)
-        local palette = Palette(editPalette)
+        local palette = MenuTable(editingMenu)
         local slot = palette and mod.SlotFromCursor()
         if not slot then
             return
@@ -804,7 +804,7 @@ initFrame:SetScript("OnEvent", function(self)
             palette.slots[widget.index] = slot
         end
         ClearCursor()
-        Refresh()
+        Reapply()
     end
 
     ---------------------------------------------------------------------------
@@ -1386,9 +1386,9 @@ initFrame:SetScript("OnEvent", function(self)
     -- client gave out.
     local function PaletteEntries()
         local result = {}
-        for i = 1, PaletteCount() do
-            if i ~= editPalette and mod.CanNest and mod.CanNest(editPalette, i) then
-                local palette = Palette(i)
+        for i = 1, MenuCount() do
+            if i ~= editingMenu and mod.CanNest and mod.CanNest(editingMenu, i) then
+                local palette = MenuTable(i)
                 local name = (palette and palette.name) or AutoName(i)
                 local total = palette and #palette.slots or 0
                 result[#result + 1] = {
@@ -1501,7 +1501,7 @@ initFrame:SetScript("OnEvent", function(self)
 
     -- Returns true when a slot was actually committed.
     local function AssignEntry(record)
-        local palette = Palette(editPalette)
+        local palette = MenuTable(editingMenu)
         if not palette then
             return false
         end
@@ -1529,7 +1529,7 @@ initFrame:SetScript("OnEvent", function(self)
             return false
         end
         HidePicker()
-        Refresh()
+        Reapply()
         return true
     end
 
@@ -1941,10 +1941,10 @@ initFrame:SetScript("OnEvent", function(self)
                 -- Before HidePicker, which clears the index on OnHide. The
                 -- guard mirrors AssignEntry's: a slot already gone leaves
                 -- nothing to remove and the menu stays up.
-                local palette = Palette(editPalette)
+                local palette = MenuTable(editingMenu)
                 if palette and pickerReplaceIndex and mod.RemoveSlot(palette, pickerReplaceIndex) then
                     HidePicker()
-                    Refresh()
+                    Reapply()
                 end
             end)
             r:Show()
@@ -2526,12 +2526,12 @@ initFrame:SetScript("OnEvent", function(self)
     -- offer the preset at all), and each table in it is fresh from the
     -- builder, so nothing here needs copying.
     local function AddPalette(preset, slots)
-        local total = PaletteCount()
+        local total = MenuCount()
         if total >= MAX_PALETTES then
             return
         end
-        Set("paletteCount", total + 1)
-        local palette = Palette(total + 1)
+        ProfilePut("paletteCount", total + 1)
+        local palette = MenuTable(total + 1)
         if palette then
             -- The index may have been used and abandoned by the retired
             -- palette-count slider, whose decrease hid palettes without
@@ -2548,9 +2548,9 @@ initFrame:SetScript("OnEvent", function(self)
                 end
             end
         end
-        editPalette = total + 1
+        editingMenu = total + 1
         HidePicker()
-        RebuildPage()
+        RedrawPage()
     end
 
     -- One pooled row of the shared menu, filled in. Shared by the two views
@@ -2649,7 +2649,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- shifted palette's keybind moves with it.
     local function DeletePalette(index)
         local p = DB()
-        local total = PaletteCount()
+        local total = MenuCount()
         if not p or total <= 1 or index < 1 or index > total then
             return
         end
@@ -2664,7 +2664,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- Materialize every live palette first: the shift walks 1 .. count and
         -- table.remove stops at the first hole.
         for i = 1, total do
-            Palette(i)
+            MenuTable(i)
         end
 
         -- Keys the deleted palette shared stay with the palettes sharing them,
@@ -2672,7 +2672,7 @@ initFrame:SetScript("OnEvent", function(self)
         local handed = HandOffKeys(index, GetBindingKey(BINDING_PREFIX .. index))
 
         table.remove(p.palettes, index)
-        Set("paletteCount", total - 1)
+        ProfilePut("paletteCount", total - 1)
 
         -- The auto-names close ranks with everything else. A palette the user
         -- never renamed carries the number it was made under, so deleting
@@ -2681,14 +2681,14 @@ initFrame:SetScript("OnEvent", function(self)
         -- same name a second time. Only the auto-name moves: a name the user
         -- typed is theirs, whatever it happens to look like.
         for i = index, total - 1 do
-            local palette = Palette(i)
+            local palette = MenuTable(i)
             if palette and palette.name == AutoName(i + 1) then
                 palette.name = AutoName(i)
             end
         end
 
         for i = 1, total - 1 do
-            local palette = Palette(i)
+            local palette = MenuTable(i)
             for jdx = #palette.slots, 1, -1 do
                 local s = palette.slots[jdx]
                 if s.kind == "palette" then
@@ -2737,13 +2737,13 @@ initFrame:SetScript("OnEvent", function(self)
         -- Keep the editor pointed at the palette it was on, which now sits one
         -- index lower; deleting the edited palette itself falls to whichever
         -- palette took its number.
-        if editPalette > index then
-            editPalette = editPalette - 1
+        if editingMenu > index then
+            editingMenu = editingMenu - 1
         end
-        if editPalette > total - 1 then
-            editPalette = total - 1
+        if editingMenu > total - 1 then
+            editingMenu = total - 1
         end
-        RebuildPage()
+        RedrawPage()
     end
 
     ---------------------------------------------------------------------------
@@ -2821,34 +2821,34 @@ initFrame:SetScript("OnEvent", function(self)
     -- and the two inline buttons. The row lights while the pointer is over
     -- it or either button, the hovered button brightest.
     local function NewMenuRow(m, font)
-        local itm = CreateFrame("Button", nil, m)
-        itm:SetHeight(26)
-        itm:SetFrameLevel(m:GetFrameLevel() + 1)
-        local ico = itm:CreateTexture(nil, "ARTWORK")
+        local rowBtn = CreateFrame("Button", nil, m)
+        rowBtn:SetHeight(26)
+        rowBtn:SetFrameLevel(m:GetFrameLevel() + 1)
+        local ico = rowBtn:CreateTexture(nil, "ARTWORK")
         ico:SetSize(18, 18)
-        ico:SetPoint("LEFT", itm, "LEFT", 8, 0)
+        ico:SetPoint("LEFT", rowBtn, "LEFT", 8, 0)
         ico:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        itm._ico = ico
-        local labelFS = itm:CreateFontString(nil, "OVERLAY")
+        rowBtn._ico = ico
+        local labelFS = rowBtn:CreateFontString(nil, "OVERLAY")
         labelFS:SetFont(font, 13, CludesUI.GetFontOutlineFlag())
         labelFS:SetPoint("LEFT", ico, "RIGHT", 6, 0)
-        labelFS:SetPoint("RIGHT", itm, "RIGHT", -(MM_X * 2 + 22), 0)
+        labelFS:SetPoint("RIGHT", rowBtn, "RIGHT", -(MM_X * 2 + 22), 0)
         labelFS:SetJustifyH("LEFT")
         labelFS:SetWordWrap(false)
         labelFS:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-        itm._lbl = labelFS
-        local highlight = itm:CreateTexture(nil, "ARTWORK")
+        rowBtn._lbl = labelFS
+        local highlight = rowBtn:CreateTexture(nil, "ARTWORK")
         highlight:SetAllPoints()
         highlight:SetColorTexture(1, 1, 1, 1)
         highlight:SetAlpha(0)
-        itm._hl = highlight
+        rowBtn._hl = highlight
 
-        local xBtn = RowInlineButton(itm, "cui-close.png")
-        xBtn:SetPoint("RIGHT", itm, "RIGHT", -8, 0)
-        itm._xBtn = xBtn
-        local editBtn = RowInlineButton(itm, "cui-edit.png")
+        local xBtn = RowInlineButton(rowBtn, "cui-close.png")
+        xBtn:SetPoint("RIGHT", rowBtn, "RIGHT", -8, 0)
+        rowBtn._xBtn = xBtn
+        local editBtn = RowInlineButton(rowBtn, "cui-edit.png")
         editBtn:SetPoint("RIGHT", xBtn, "LEFT", -4, 0)
-        itm._editBtn = editBtn
+        rowBtn._editBtn = editBtn
 
         local function Lit(on)
             if on then
@@ -2856,7 +2856,7 @@ initFrame:SetScript("OnEvent", function(self)
                 highlight:SetAlpha(CludesUI.DD_ITEM_HL_A)
             else
                 labelFS:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-                highlight:SetAlpha(itm._isSel and CludesUI.DD_ITEM_SEL_A or 0)
+                highlight:SetAlpha(rowBtn._isSel and CludesUI.DD_ITEM_SEL_A or 0)
             end
             local a2 = on and 0.8 or 0.4
             xBtn:SetAlpha(a2)
@@ -2865,10 +2865,10 @@ initFrame:SetScript("OnEvent", function(self)
         local function OverButtons()
             return xBtn:IsMouseOver() or editBtn:IsMouseOver()
         end
-        itm:SetScript("OnEnter", function()
+        rowBtn:SetScript("OnEnter", function()
             Lit(true)
         end)
-        itm:SetScript("OnLeave", function()
+        rowBtn:SetScript("OnLeave", function()
             if not OverButtons() then
                 Lit(false)
             end
@@ -2880,7 +2880,7 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI.ShowWidgetTooltip(self2, tip)
             end)
             b:SetScript("OnLeave", function(self2)
-                if itm:IsMouseOver() or OverButtons() then
+                if rowBtn:IsMouseOver() or OverButtons() then
                     self2:SetAlpha(0.8)
                 else
                     Lit(false)
@@ -2888,20 +2888,20 @@ initFrame:SetScript("OnEvent", function(self)
                 CludesUI.HideWidgetTooltip()
             end)
         end
-        return itm
+        return rowBtn
     end
 
     -- Delete and rename, each behind its popup. Both close the menu first.
     local function AskDeleteMenu(position)
         mmMenu:Hide()
-        local pal = Palette(position)
+        local menuT = MenuTable(position)
         CludesUI:ShowConfirmPopup({
             title = "Delete Action Menu",
             message = CludesUI.Lf(
                 "Delete %1$s and its contents? Entries "
                     .. "in other action menus that open it are removed "
                     .. "too, and the menus after it move up one place.",
-                (pal and pal.name) or AutoName(position)
+                (menuT and menuT.name) or AutoName(position)
             ),
             confirmText = "Delete",
             cancelText = "Cancel",
@@ -2912,8 +2912,8 @@ initFrame:SetScript("OnEvent", function(self)
     end
     local function AskRenameMenu(position)
         mmMenu:Hide()
-        local pal = Palette(position)
-        local current = (pal and pal.name) or AutoName(position)
+        local menuT = MenuTable(position)
+        local current = (menuT and menuT.name) or AutoName(position)
         CludesUI:ShowInputPopup({
             title = "Rename Action Menu",
             message = CludesUI.Lf('Enter a new name for "%1$s":', current),
@@ -2921,7 +2921,7 @@ initFrame:SetScript("OnEvent", function(self)
             confirmText = "Rename",
             cancelText = "Cancel",
             onConfirm = function(newName)
-                local target = Palette(position)
+                local target = MenuTable(position)
                 if not target then
                     return
                 end
@@ -2937,7 +2937,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 if newName ~= target.name then
                     target.name = newName
-                    RebuildPage()
+                    RedrawPage()
                 end
             end,
         })
@@ -2946,47 +2946,47 @@ initFrame:SetScript("OnEvent", function(self)
     local function RebuildMenuRows()
         local m = EnsureMenuMenu()
         local font = (CludesUI.GetFontPath()) or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
-        local count = PaletteCount()
+        local count = MenuCount()
         local top = 4
         for i = 1, count do
-            local itm = mmItems[i] or NewMenuRow(m, font)
-            mmItems[i] = itm
-            itm:SetPoint("TOPLEFT", m, "TOPLEFT", 1, -top)
-            itm:SetPoint("TOPRIGHT", m, "TOPRIGHT", -1, -top)
-            local pal = Palette(i)
-            itm._ico:SetTexture(PaletteListIcon(pal))
-            itm._lbl:SetText((pal and pal.name) or AutoName(i))
-            local selected = (i == editPalette)
-            itm._isSel = selected
-            itm._hl:SetAlpha(selected and 0.04 or 0)
-            itm._lbl:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
+            local rowBtn = mmItems[i] or NewMenuRow(m, font)
+            mmItems[i] = rowBtn
+            rowBtn:SetPoint("TOPLEFT", m, "TOPLEFT", 1, -top)
+            rowBtn:SetPoint("TOPRIGHT", m, "TOPRIGHT", -1, -top)
+            local menuT = MenuTable(i)
+            rowBtn._ico:SetTexture(PaletteListIcon(menuT))
+            rowBtn._lbl:SetText((menuT and menuT.name) or AutoName(i))
+            local selected = (i == editingMenu)
+            rowBtn._isSel = selected
+            rowBtn._hl:SetAlpha(selected and 0.04 or 0)
+            rowBtn._lbl:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
 
             -- Like the active profile, the menu being edited has no X (so
             -- the last menu left can never be deleted); its pencil slides
             -- over into the X's place. Deleting happens from another row.
-            itm._xBtn:SetShown(not selected)
-            itm._editBtn:ClearAllPoints()
+            rowBtn._xBtn:SetShown(not selected)
+            rowBtn._editBtn:ClearAllPoints()
             if selected then
-                itm._editBtn:SetPoint("RIGHT", itm, "RIGHT", -8, 0)
+                rowBtn._editBtn:SetPoint("RIGHT", rowBtn, "RIGHT", -8, 0)
             else
-                itm._editBtn:SetPoint("RIGHT", itm._xBtn, "LEFT", -4, 0)
+                rowBtn._editBtn:SetPoint("RIGHT", rowBtn._xBtn, "LEFT", -4, 0)
             end
 
             local position = i
-            itm:SetScript("OnClick", function()
+            rowBtn:SetScript("OnClick", function()
                 mmMenu:Hide()
-                if position ~= editPalette then
-                    editPalette = position
-                    RebuildPage()
+                if position ~= editingMenu then
+                    editingMenu = position
+                    RedrawPage()
                 end
             end)
-            itm._xBtn:SetScript("OnClick", function()
+            rowBtn._xBtn:SetScript("OnClick", function()
                 AskDeleteMenu(position)
             end)
-            itm._editBtn:SetScript("OnClick", function()
+            rowBtn._editBtn:SetScript("OnClick", function()
                 AskRenameMenu(position)
             end)
-            itm:Show()
+            rowBtn:Show()
             top = top + 26
         end
         for i = count + 1, #mmItems do
@@ -3023,8 +3023,8 @@ initFrame:SetScript("OnEvent", function(self)
         labelFS:SetPoint("LEFT", btn, "LEFT", 12, 0)
         local arrow = CludesUI.MakeDropdownArrow(btn, 12, PPQ)
         labelFS:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
-        local pal = Palette(editPalette)
-        labelFS:SetText((pal and pal.name) or AutoName(editPalette))
+        local menuT = MenuTable(editingMenu)
+        labelFS:SetText((menuT and menuT.name) or AutoName(editingMenu))
         local s = CludesUI.RD_DD_COLOURS
         btn:SetScript("OnEnter", function()
             labelFS:SetTextColor(s[21], s[22], s[23], s[24])
@@ -3036,11 +3036,11 @@ initFrame:SetScript("OnEvent", function(self)
             brd:SetColor(s[9], s[10], s[11], s[12])
             backdrop:SetColorTexture(s[1], s[2], s[3], s[4])
         end)
-        if Cfg("enabled") ~= true then
+        if ProfileGet("enabled") ~= true then
             btn:SetAlpha(0.4)
         end
         btn:SetScript("OnClick", function()
-            if Cfg("enabled") ~= true then
+            if ProfileGet("enabled") ~= true then
                 return
             end
             local m = EnsureMenuMenu()
@@ -3094,16 +3094,16 @@ initFrame:SetScript("OnEvent", function(self)
         if CludesUI._prebuilding then
             return
         end
-        local palette = editPalette
+        local palette = editingMenu
         local action = BINDING_PREFIX .. palette
         local plainMouse = specInfo and specInfo.plainMouse
         -- BuildPage's own Disabled() is a local of that function and out of
-        -- scope here, the same reason BuildMenuSelector reads Cfg directly.
+        -- scope here, the same reason BuildMenuSelector reads ProfileGet directly.
         -- A spec may widen the gate and name the requirement for the disabled
         -- tooltip.
         local Disabled = (specInfo and specInfo.disabled)
             or function()
-                return Cfg("enabled") ~= true
+                return ProfileGet("enabled") ~= true
             end
 
         -- Right-click means two different things on a plainMouse picker
@@ -3178,11 +3178,11 @@ initFrame:SetScript("OnEvent", function(self)
     -- Nearest widget CENTRE is the layout-agnostic form of the same question,
     -- and it also follows the strip while it slides.
     local function PreviewDropTarget()
-        if not previewView:IsFan() then
-            return previewView:HitTest()
+        if not previewWheel:IsFan() then
+            return previewWheel:HitTest()
         end
 
-        local isShown = previewView:ShownCount()
+        local isShown = previewWheel:ShownCount()
         if isShown < 1 then
             return nil
         end
@@ -3190,7 +3190,7 @@ initFrame:SetScript("OnEvent", function(self)
         local mx, my = GetCursorPosition()
         local best, bestDist
         for i = 1, isShown do
-            local wid = previewView:GetSlotWidget(i)
+            local wid = previewWheel:GetSlotWidget(i)
             -- Not folded into an `and`: that truncates to one value and would
             -- drop cy on the floor.
             local cx, cy
@@ -3214,7 +3214,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- Installed on the press and cleared on the release, so the block is idle
     -- whenever nothing is being dragged.
     local function PreviewDragUpdate()
-        local es = previewView:GetFrame():GetEffectiveScale()
+        local es = previewWheel:GetFrame():GetEffectiveScale()
         local posX, posY = GetCursorPosition()
         posX, posY = posX / es, posY / es
         if not dragging then
@@ -3225,9 +3225,9 @@ initFrame:SetScript("OnEvent", function(self)
                 return
             end
             dragging = true
-            local wid = previewView:GetSlotWidget(dragFrom)
+            local wid = previewWheel:GetSlotWidget(dragFrom)
             wid:SetAlpha(0.4)
-            wid:SetFrameLevel(previewView:GetFrame():GetFrameLevel() + 20)
+            wid:SetFrameLevel(previewWheel:GetFrame():GetFrameLevel() + 20)
             HidePreviewTooltip()
         end
         -- The entry under the cursor. The "+" entry resolves to the
@@ -3236,27 +3236,27 @@ initFrame:SetScript("OnEvent", function(self)
         -- n can reach 0 mid-drag -- right-click removes while the left
         -- button is still held -- and min(hit, 0) is 0, which is TRUTHY
         -- in Lua and would index widget 0.
-        local num = previewView:SlotCount()
+        local num = previewWheel:SlotCount()
         dragTarget = (hit and num > 0) and math.min(hit, num) or nil
-        previewView:SetSelection(dragTarget)
+        previewWheel:SetSelection(dragTarget)
     end
 
     local function EndPreviewDrag()
         if dragFrom then
-            local wid = previewView:GetSlotWidget(dragFrom)
+            local wid = previewWheel:GetSlotWidget(dragFrom)
             wid:SetAlpha(1)
-            wid:SetFrameLevel(previewView:GetFrame():GetFrameLevel() + 1)
+            wid:SetFrameLevel(previewWheel:GetFrame():GetFrameLevel() + 1)
         end
         dragFrom, dragging = nil, false
-        if previewBlock then
-            previewBlock:SetScript("OnUpdate", nil)
+        if previewHost then
+            previewHost:SetScript("OnUpdate", nil)
         end
-        previewView:SetSelection(nil)
+        previewWheel:SetSelection(nil)
     end
 
     local function InstallPreviewScripts()
         for i = 1, (mod.MAX_SLOTS or 12) do
-            local wid = previewView:GetSlotWidget(i)
+            local wid = previewWheel:GetSlotWidget(i)
             wid:RegisterForClicks("LeftButtonUp", "RightButtonUp", "MiddleButtonUp")
 
             wid:SetScript("OnEnter", function(self)
@@ -3265,14 +3265,14 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 -- Reuse the selection paint: hovering an entry in the panel looks
                 -- exactly like steering onto it in play.
-                previewView:SetSelection(self.index)
+                previewWheel:SetSelection(self.index)
                 PreviewTooltip(self)
             end)
             wid:SetScript("OnLeave", function()
                 if dragging then
                     return
                 end
-                previewView:SetSelection(nil)
+                previewWheel:SetSelection(nil)
                 HidePreviewTooltip()
             end)
 
@@ -3281,9 +3281,9 @@ initFrame:SetScript("OnEvent", function(self)
                     if self.isPlaceholder then
                         return
                     end
-                    local palette = Palette(editPalette)
+                    local palette = MenuTable(editingMenu)
                     if palette and mod.RemoveSlot(palette, self.index) then
-                        Refresh()
+                        Reapply()
                     end
                     return
                 end
@@ -3317,11 +3317,11 @@ initFrame:SetScript("OnEvent", function(self)
                 if GetCursorInfo() then
                     return
                 end
-                local es = previewView:GetFrame():GetEffectiveScale()
+                local es = previewWheel:GetFrame():GetEffectiveScale()
                 local posX, posY = GetCursorPosition()
                 dragStartX, dragStartY = posX / es, posY / es
                 dragFrom, dragTarget = self.index, nil
-                previewBlock:SetScript("OnUpdate", PreviewDragUpdate)
+                previewHost:SetScript("OnUpdate", PreviewDragUpdate)
             end)
 
             -- OnMouseUp is delivered to the frame that got OnMouseDown even when
@@ -3335,9 +3335,9 @@ initFrame:SetScript("OnEvent", function(self)
                 if not moved or not to then
                     return
                 end
-                local palette = Palette(editPalette)
+                local palette = MenuTable(editingMenu)
                 if palette and mod.MoveSlot(palette, from, to) then
-                    Refresh()
+                    Reapply()
                 end
             end)
         end
@@ -3359,12 +3359,12 @@ initFrame:SetScript("OnEvent", function(self)
         -- pointing at an unrelated slot.
         HidePicker()
 
-        if not previewBlock then
-            previewBlock = CreateFrame("Frame", nil, hostFrame)
+        if not previewHost then
+            previewHost = CreateFrame("Frame", nil, hostFrame)
             -- Held by this file across builds: out of its page's frame pool, so
             -- no later dress of the page hands it out for another use, and the
             -- live palette view built on it below stays as it is.
-            Pool.Keep(previewBlock)
+            Pool.Keep(previewHost)
             -- Opted out of the inline search (the RaidFrames overlays'
             -- _searchIgnore, same reason): the search re-anchors collected
             -- children with a single saved point against the WRAPPER it first
@@ -3373,13 +3373,13 @@ initFrame:SetScript("OnEvent", function(self)
             -- to a dead wrapper and collapses it to zero width -- the preview
             -- then stays invisible on every cache-restore path (reopening
             -- after unlock mode, /cqd) until something rebuilds the page.
-            previewBlock._searchIgnore = true
+            previewHost._searchIgnore = true
 
-            local backdrop = previewBlock:CreateTexture(nil, "BACKGROUND")
+            local backdrop = previewHost:CreateTexture(nil, "BACKGROUND")
             backdrop:SetAllPoints()
-            previewBlock._bg = backdrop
+            previewHost._bg = backdrop
 
-            previewView = mod.CreatePaletteView(previewBlock, {
+            previewWheel = mod.CreatePaletteView(previewHost, {
                 interactive = true,
                 geom = PreviewGeom,
                 -- Arrangement is what this preview is for; a live cooldown swipe
@@ -3389,7 +3389,7 @@ initFrame:SetScript("OnEvent", function(self)
                 -- targeting is out of range of a spell you are only filing.
                 showUsability = false,
             })
-            previewView:GetFrame():SetPoint("CENTER", previewBlock, "CENTER", 0, 0)
+            previewWheel:GetFrame():SetPoint("CENTER", previewHost, "CENTER", 0, 0)
             InstallPreviewScripts()
 
             -- The editor strip windows and scrolls exactly like play: the
@@ -3397,8 +3397,8 @@ initFrame:SetScript("OnEvent", function(self)
             -- SetFanCenter -- the preview is insecure, and the fold in
             -- ApplyFanGeometry does the rest. Direction matches the live
             -- wheel snippet, Invert Scroll included.
-            previewBlock:EnableMouseWheel(true)
-            previewBlock:SetScript("OnMouseWheel", function(_, delta)
+            previewHost:EnableMouseWheel(true)
+            previewHost:SetScript("OnMouseWheel", function(_, delta)
                 -- Shift is the strip's modifier: the block eats the wheel
                 -- event either way, so a plain tick is handed to the panel's
                 -- own scroll frame and the page keeps scrolling over the
@@ -3411,33 +3411,33 @@ initFrame:SetScript("OnEvent", function(self)
                     end
                     return
                 end
-                if Cfg("enabled") ~= true then
+                if ProfileGet("enabled") ~= true then
                     return
                 end
                 if
-                    not (previewView:IsFan() and not previewView:IsGrid() and not previewView:IsHoverFan())
+                    not (previewWheel:IsFan() and not previewWheel:IsGrid() and not previewWheel:IsHoverFan())
                 then
                     return
                 end
-                local isShown = previewView.shownCount or 0
+                local isShown = previewWheel.shownCount or 0
                 if isShown < 2 then
                     return
                 end
                 local step = (delta > 0) and -1 or 1
-                if ACfg("fanInvert") == true then
+                if MenuGet("fanInvert") == true then
                     step = -step
                 end
-                previewView:SetFanCenter((((previewView.fanTarget or 1) - 1 + step) % isShown) + 1)
+                previewWheel:SetFanCenter((((previewWheel.fanTarget or 1) - 1 + step) % isShown) + 1)
             end)
 
-            local hint = CludesUI.MakeFont(previewBlock, 12, nil, 0.5, 0.5, 0.5)
-            hint:SetPoint("BOTTOM", previewBlock, "BOTTOM", 0, 7)
+            local hint = CludesUI.MakeFont(previewHost, 12, nil, 0.5, 0.5, 0.5)
+            hint:SetPoint("BOTTOM", previewHost, "BOTTOM", 0, 7)
             hint:SetText(CludesUI.L("Shift+Scroll to see more"))
-            previewBlock._scrollHint = hint
+            previewHost._scrollHint = hint
 
             -- A press held while the panel closes under it (Esc, or the combat
             -- auto-hide) would otherwise resume as a phantom drag on reshow.
-            previewBlock:SetScript("OnHide", function()
+            previewHost:SetScript("OnHide", function()
                 if dragFrom then
                     EndPreviewDrag()
                 end
@@ -3449,7 +3449,7 @@ initFrame:SetScript("OnEvent", function(self)
 
             -- Blocks the preview outright while the module is off, matching the
             -- disabled overlay the standard rows draw over themselves.
-            local size = CreateFrame("Frame", nil, previewBlock)
+            local size = CreateFrame("Frame", nil, previewHost)
             size:SetAllPoints()
             size:EnableMouse(true)
             local dimTex = size:CreateTexture(nil, "OVERLAY")
@@ -3461,10 +3461,10 @@ initFrame:SetScript("OnEvent", function(self)
             size:SetScript("OnLeave", function()
                 CludesUI.HideWidgetTooltip()
             end)
-            previewBlock._dim = size
+            previewHost._dim = size
         end
 
-        previewBlock:SetParent(hostFrame)
+        previewHost:SetParent(hostFrame)
         -- The block reads as one row of its section's alternation: tick the
         -- same per-parent counter the widget rows use and take whatever shade
         -- this position lands on. A fixed shade only matches until the row
@@ -3472,41 +3472,41 @@ initFrame:SetScript("OnEvent", function(self)
         -- icon row's removal left this block the same color as its neighbor.
         local rc = CludesUI._rowCounters
         rc[hostFrame] = (rc[hostFrame] or 0) + 1
-        previewBlock._bg:SetColorTexture(
+        previewHost._bg:SetColorTexture(
             0,
             0,
             0,
             (rc[hostFrame] % 2 == 0) and CludesUI.ROW_BG_EVEN or CludesUI.ROW_BG_ODD
         )
-        previewBlock:ClearAllPoints()
+        previewHost:ClearAllPoints()
         -- Anchored on both sides rather than sized from parent:GetWidth(): the
         -- wrapper's own width is not resolved yet on the first build, and this
         -- block is cached, so a zero read would stick for the panel's lifetime.
-        Pix.Point(previewBlock, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yPos)
-        Pix.Point(previewBlock, "TOPRIGHT", hostFrame, "TOPRIGHT", -CONTENT_PAD, yPos)
-        Pix.Height(previewBlock, PREVIEW_H)
+        Pix.Point(previewHost, "TOPLEFT", hostFrame, "TOPLEFT", CONTENT_PAD, yPos)
+        Pix.Point(previewHost, "TOPRIGHT", hostFrame, "TOPRIGHT", -CONTENT_PAD, yPos)
+        Pix.Height(previewHost, PREVIEW_H)
         -- Re-asserted per build: an explicit frame level is absolute, and the
         -- block's own level moves when it is re-parented to a fresh wrapper.
-        previewBlock._dim:SetFrameLevel(previewBlock:GetFrameLevel() + 30)
-        previewBlock._dim:SetShown(Cfg("enabled") ~= true)
-        previewBlock:Show()
-        previewView:Layout(editPalette)
+        previewHost._dim:SetFrameLevel(previewHost:GetFrameLevel() + 30)
+        previewHost._dim:SetShown(ProfileGet("enabled") ~= true)
+        previewHost:Show()
+        previewWheel:Layout(editingMenu)
         -- A freshly laid out strip sits at its default centre, which is a
         -- position between entries rather than on one. Park it on the first
         -- slot so the preview opens looking like the strip in play does. Only a
         -- SCROLLED strip has a centre at all: the grid and the pointer-steered
         -- fan draw every entry at a fixed position and select by proximity.
-        if previewView:IsFan() and not previewView:IsGrid() and not previewView:IsHoverFan() then
-            previewView:SetFanCenter(1)
+        if previewWheel:IsFan() and not previewWheel:IsGrid() and not previewWheel:IsHoverFan() then
+            previewWheel:SetFanCenter(1)
         end
 
         -- Only when there is actually more to scroll to: a palette that fits
         -- inside the window entirely draws every entry already, and the hint
         -- would promise something the wheel cannot deliver.
-        local pal = Palette(editPalette)
-        previewBlock._scrollHint:SetShown(
-            (ACfg("layout") or "ARC") == "FAN"
-                and (pal and #pal.slots or 0) > ((ACfg("fanVisible") or 2) * 2 + 1)
+        local menuT = MenuTable(editingMenu)
+        previewHost._scrollHint:SetShown(
+            (MenuGet("layout") or "ARC") == "FAN"
+                and (menuT and #menuT.slots or 0) > ((MenuGet("fanVisible") or 2) * 2 + 1)
         )
 
         return PREVIEW_H
@@ -3523,7 +3523,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- and keybind are not settings and are never touched.
     local function CopyAllMenuSettings(srcIdx, dstIdx)
         local source = mod.PaletteProfile and mod.PaletteProfile(srcIdx)
-        local dst = Palette(dstIdx)
+        local dst = MenuTable(dstIdx)
         local keyList = mod.APPEARANCE_KEYS
         if not source or not dst or not keyList then
             return
@@ -3536,7 +3536,7 @@ initFrame:SetScript("OnEvent", function(self)
             end
             dst.appearance[key] = v
         end
-        Refresh()
+        Reapply()
         CludesUI:RefreshPage(true)
     end
 
@@ -3548,7 +3548,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- breaks a share changes keybind buttons the page refresh leaves alone,
     -- so the page rebuilds -- once the menu has closed (a rebuild closes it).
     local function BuildSpecPair(row, ddW)
-        local palIdx = editPalette
+        local palIdx = editingMenu
         local ALL = CludesUI.SPEC_PICK_ALL
         local itemList, roles = CludesUI.SpecPickItems({ roles = true })
         local cbDD, cbRefresh
@@ -3581,8 +3581,8 @@ initFrame:SetScript("OnEvent", function(self)
                 return specs ~= nil and specs[key] == true
             end,
             function(key, val)
-                local pal = Palette(palIdx)
-                if not pal then
+                local menuT = MenuTable(palIdx)
+                if not menuT then
                     return
                 end
                 local role = roles[key]
@@ -3594,10 +3594,10 @@ initFrame:SetScript("OnEvent", function(self)
                             set[role[i]] = true
                         end
                     end
-                    pal.specs = set
+                    menuT.specs = set
                     cbDD:Click() -- close, as the Resource Bars picker does
                 else
-                    local set = pal.specs or {}
+                    local set = menuT.specs or {}
                     local ids = CludesUI.IS_FOREVER and CludesUI.ForeverClassSpecIDs(key)
                     if ids then
                         for i = 1, #ids do
@@ -3606,10 +3606,10 @@ initFrame:SetScript("OnEvent", function(self)
                     else
                         set[key] = val and true or nil
                     end
-                    pal.specs = next(set) and set or nil
+                    menuT.specs = next(set) and set or nil
                 end
                 local broke = CheckShares()
-                Refresh()
+                Reapply()
                 if cbRefresh then
                     cbRefresh()
                 end
@@ -3618,7 +3618,7 @@ initFrame:SetScript("OnEvent", function(self)
                     if open and open:IsShown() then
                         sharesBroken = true
                     else
-                        RebuildPage()
+                        RedrawPage()
                     end
                 end
             end,
@@ -3629,12 +3629,12 @@ initFrame:SetScript("OnEvent", function(self)
             function()
                 if sharesBroken then
                     sharesBroken = false
-                    RebuildPage()
+                    RedrawPage()
                 end
             end,
             {
                 disabled = function()
-                    return Cfg("enabled") ~= true
+                    return ProfileGet("enabled") ~= true
                 end,
                 disabledTooltip = "the module",
             }
@@ -3666,7 +3666,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- registered widget refresh snaps the label back after each pick.
     local function BuildApplyRow(hostFrame, posY, withCopy)
         local PPQ = CludesUI.PanelPP
-        local curIdx = editPalette
+        local curIdx = editingMenu
 
         local ROW_H = 50
         -- Bespoke controls the search index does not list: its prebuild only
@@ -3687,7 +3687,7 @@ initFrame:SetScript("OnEvent", function(self)
         if withCopy then
             local ddValues = { [""] = "Choose Menu..." }
             local ddOrder = {}
-            for i = 1, PaletteCount() do
+            for i = 1, MenuCount() do
                 if i ~= curIdx then
                     ddValues[i] = MenuName(i)
                     ddOrder[#ddOrder + 1] = i
@@ -3766,7 +3766,7 @@ initFrame:SetScript("OnEvent", function(self)
         -- Not `== false`: the master switch is opt-in, so an absent key counts
         -- as off. The appearance sub-settings below stay nil-means-on.
         local function Disabled()
-            return Cfg("enabled") ~= true
+            return ProfileGet("enabled") ~= true
         end
 
         -- What this build assumed about nest presence; Refresh compares
@@ -3777,12 +3777,12 @@ initFrame:SetScript("OnEvent", function(self)
         -- under it can change without one: switching to a profile that holds
         -- fewer palettes repoints the data with no reload, and the module reset
         -- leaves a single palette behind. Clamped here rather than at each
-        -- reader because Palette, ACfg and ASet all go through
+        -- reader because MenuTable, MenuGet and MenuPut all go through
         -- ns.EnsurePalette, which would CREATE the out-of-range palette and
         -- bank that junk in the profile the user has just moved to.
-        local paletteCount = PaletteCount()
-        if editPalette > paletteCount then
-            editPalette = paletteCount
+        local paletteCount = MenuCount()
+        if editingMenu > paletteCount then
+            editingMenu = paletteCount
         end
 
         local centerValues = { CURSOR = "Cursor", SCREEN = "Fixed Position" }
@@ -3808,11 +3808,11 @@ initFrame:SetScript("OnEvent", function(self)
                 type = "toggle",
                 text = "Enable Action Wheel",
                 getValue = function()
-                    return Cfg("enabled") == true
+                    return ProfileGet("enabled") == true
                 end,
                 setValue = function(v)
-                    Set("enabled", v)
-                    RebuildPage()
+                    ProfilePut("enabled", v)
+                    RedrawPage()
                 end,
             },
             -- The chooser it opens offers an empty palette or a preset. The new
@@ -3822,10 +3822,10 @@ initFrame:SetScript("OnEvent", function(self)
                 type = "labeledButton",
                 text = "Add Action Menu",
                 disabled = function()
-                    return Disabled() or PaletteCount() >= MAX_PALETTES
+                    return Disabled() or MenuCount() >= MAX_PALETTES
                 end,
                 disabledTooltip = function()
-                    if PaletteCount() >= MAX_PALETTES then
+                    if MenuCount() >= MAX_PALETTES then
                         return "This profile already holds " .. MAX_PALETTES .. " action menus"
                     end
                     return "This option requires the module to be enabled"
@@ -3872,11 +3872,11 @@ initFrame:SetScript("OnEvent", function(self)
         -- disabled until a key exists. Together on one row because neither
         -- does anything without the other.
         --
-        -- The key is one for the profile (Set) and the switch is per menu
-        -- (ASet): the gesture that picks an entry should mean the same thing
+        -- The key is one for the profile (ProfilePut) and the switch is per menu
+        -- (MenuPut): the gesture that picks an entry should mean the same thing
         -- whichever menu is up.
         local function HasSelectKey()
-            local key = Cfg("confirmKey")
+            local key = ProfileGet("confirmKey")
             return type(key) == "string" and key ~= ""
         end
         row, hgt = W:DualRow(
@@ -3896,11 +3896,11 @@ initFrame:SetScript("OnEvent", function(self)
                     .. "Point at an entry and press the Select Action key to use it.\n"
                     .. "Press the menu's own keybind again, or Escape, to close it.",
                 getValue = function()
-                    return ACfg("toggleMode") == true
+                    return MenuGet("toggleMode") == true
                 end,
                 setValue = function(v)
-                    ASet("toggleMode", v)
-                    Refresh()
+                    MenuPut("toggleMode", v)
+                    Reapply()
                 end,
             }
         )
@@ -3910,7 +3910,7 @@ initFrame:SetScript("OnEvent", function(self)
                 .. "claimed only while a menu is up -- a mouse button keeps "
                 .. "its normal use the rest of the time.",
             read = function()
-                local key = Cfg("confirmKey")
+                local key = ProfileGet("confirmKey")
                 if type(key) ~= "string" or key == "" then
                     return nil
                 end
@@ -3921,8 +3921,8 @@ initFrame:SetScript("OnEvent", function(self)
             -- RefreshPage as well as Refresh: Toggle Menu Open beside this
             -- takes its disabled state from whether a key is bound.
             commit = function(chord)
-                Set("confirmKey", chord or "")
-                Refresh()
+                ProfilePut("confirmKey", chord or "")
+                Reapply()
                 CludesUI:RefreshPage()
             end,
             -- A bare mouse button is the point of this one. See BuildKeybindButton.
@@ -3952,7 +3952,7 @@ initFrame:SetScript("OnEvent", function(self)
                     .. "only while a menu is up -- a mouse button keeps its normal "
                     .. "use the rest of the time.",
                 read = function()
-                    local key = Cfg("cancelKey")
+                    local key = ProfileGet("cancelKey")
                     if type(key) ~= "string" or key == "" then
                         return nil
                     end
@@ -3966,19 +3966,19 @@ initFrame:SetScript("OnEvent", function(self)
                     -- binding itself: one chord, two meanings, and the wrong one
                     -- wins.
                     if chord then
-                        if chord == Cfg("confirmKey") then
+                        if chord == ProfileGet("confirmKey") then
                             Complain("Action Wheel: that key is already the Toggled Menu Select Action.")
                             return
                         end
-                        for i = 1, (Cfg("paletteCount") or 1) do
+                        for i = 1, (ProfileGet("paletteCount") or 1) do
                             if GetBindingKey(BINDING_PREFIX .. i) == chord then
                                 Complain("Action Wheel: that key opens a menu, so it cannot also close one.")
                                 return
                             end
                         end
                     end
-                    Set("cancelKey", chord or "")
-                    Refresh()
+                    ProfilePut("cancelKey", chord or "")
+                    Reapply()
                 end,
                 -- The same reason as the Select key: a bare mouse button is what
                 -- this is for.
@@ -3997,7 +3997,7 @@ initFrame:SetScript("OnEvent", function(self)
         --  Row helpers for the two sections below
         --
         --  Nearly every control from here down edits one per-menu value: it
-        --  reads through ACfg with a fallback rule, writes through ASet and
+        --  reads through MenuGet with a fallback rule, writes through MenuPut and
         --  then refreshes. PerMenu fills that pair in (a cog row names it
         --  get/set, a page row getValue/setValue, told apart by whether the
         --  spec carries a label) and Gated adds the module switch most of
@@ -4005,11 +4005,11 @@ initFrame:SetScript("OnEvent", function(self)
         -----------------------------------------------------------------------
         local function PerMenu(spec, key, read)
             local function fetch()
-                return read(ACfg(key))
+                return read(MenuGet(key))
             end
             local function store(v)
-                ASet(key, v)
-                Refresh()
+                MenuPut(key, v)
+                Reapply()
             end
             if spec.label then
                 spec.get, spec.set = fetch, store
@@ -4054,14 +4054,14 @@ initFrame:SetScript("OnEvent", function(self)
         -- and the column pair for the grid. The grid alone still puts a cog
         -- on Layout, for its spacing. Picking a layout is a click outside
         -- that cog, which closes it, so its rows never go stale.
-        local layoutMode = ACfg("layout") or "ARC"
+        local layoutMode = MenuGet("layout") or "ARC"
 
         -- In cursor mode the menu opens under the mouse, so the offsets
         -- (the only way to place it: there is no drag editor and no Unlock
         -- Mode entry) sit dead until Fixed Position is picked. Their cog
         -- dims with them, so the row still says they exist.
         local function fixedOnly()
-            return Disabled() or (ACfg("centerMode") or "CURSOR") ~= "SCREEN"
+            return Disabled() or (MenuGet("centerMode") or "CURSOR") ~= "SCREEN"
         end
         local function Offset(label, key, reach)
             return Gated({
@@ -4086,11 +4086,11 @@ initFrame:SetScript("OnEvent", function(self)
                 values = layoutValues,
                 order = layoutOrder,
                 getValue = function()
-                    return ACfg("layout") or "ARC"
+                    return MenuGet("layout") or "ARC"
                 end,
                 setValue = function(v)
-                    ASet("layout", v)
-                    RebuildPage()
+                    MenuPut("layout", v)
+                    RedrawPage()
                 end,
             },
             Gated(
@@ -4140,7 +4140,7 @@ initFrame:SetScript("OnEvent", function(self)
                     max = MAX_SLOTS,
                     step = 1,
                     disabled = function()
-                        return Disabled() or ACfg("gridAutoColumns") ~= false
+                        return Disabled() or MenuGet("gridAutoColumns") ~= false
                     end,
                     requireState = "disabled",
                     disabledTooltip = "Auto Columns",
@@ -4178,7 +4178,7 @@ initFrame:SetScript("OnEvent", function(self)
                         max = 180,
                         step = 5,
                         disabled = function()
-                            return Disabled() or (ACfg("arcSpan") or 360) >= 360
+                            return Disabled() or (MenuGet("arcSpan") or 360) >= 360
                         end,
                         disabledTooltip = "an Arc Span below 360",
                     }, "arcRotation", Or(0)),
@@ -4205,11 +4205,11 @@ initFrame:SetScript("OnEvent", function(self)
                     disabled = Disabled,
                     disabledTooltip = "the module",
                     getValue = function()
-                        return ((ACfg("fanVisible") or 2) * 2) + 1
+                        return ((MenuGet("fanVisible") or 2) * 2) + 1
                     end,
                     setValue = function(v)
-                        ASet("fanVisible", (v - 1) * 0.5)
-                        Refresh()
+                        MenuPut("fanVisible", (v - 1) * 0.5)
+                        Reapply()
                     end,
                 }
             )
@@ -4359,13 +4359,13 @@ initFrame:SetScript("OnEvent", function(self)
                 return sw, update
             end
             local function pickAccent()
-                ASet("selectColorCustom", false)
-                ASet("useClassColor", false)
-                Refresh()
+                MenuPut("selectColorCustom", false)
+                MenuPut("useClassColor", false)
+                Reapply()
             end
             local function pickClass()
-                ASet("useClassColor", true)
-                Refresh()
+                MenuPut("useClassColor", true)
+                Reapply()
             end
             local function guarded(pick)
                 return function()
@@ -4376,13 +4376,13 @@ initFrame:SetScript("OnEvent", function(self)
             end
 
             local customSwatch, updateCustom = Swatch(function()
-                local c = ACfg("selectColor") or {}
+                local c = MenuGet("selectColor") or {}
                 return c[1] or 0.298, c[2] or 0.788, c[3] or 0.941
             end, function(r2, g2, b2)
-                ASet("selectColor", { r2, g2, b2 })
-                ASet("selectColorCustom", true)
-                ASet("useClassColor", false)
-                Refresh()
+                MenuPut("selectColor", { r2, g2, b2 })
+                MenuPut("selectColorCustom", true)
+                MenuPut("useClassColor", false)
+                Reapply()
             end, "Custom Color")
             PPQ.Point(customSwatch, "RIGHT", region, "RIGHT", -20, 0)
             -- Until custom is the lit mode, a click only switches to it; the
@@ -4392,15 +4392,15 @@ initFrame:SetScript("OnEvent", function(self)
                 if Disabled() then
                     return
                 end
-                if ACfg("selectColorCustom") == true and ACfg("useClassColor") ~= true then
+                if MenuGet("selectColorCustom") == true and MenuGet("useClassColor") ~= true then
                     if openPicker then
                         openPicker(self2, ...)
                     end
                     return
                 end
-                ASet("selectColorCustom", true)
-                ASet("useClassColor", false)
-                Refresh()
+                MenuPut("selectColorCustom", true)
+                MenuPut("useClassColor", false)
+                Reapply()
             end)
 
             local accentSwatch, updateAccent = Swatch(function()
@@ -4429,9 +4429,9 @@ initFrame:SetScript("OnEvent", function(self)
                 updateClass()
                 local lit
                 if not Disabled() then
-                    if ACfg("useClassColor") == true then
+                    if MenuGet("useClassColor") == true then
                         lit = classSwatch
-                    elseif ACfg("selectColorCustom") == true then
+                    elseif MenuGet("selectColorCustom") == true then
                         lit = customSwatch
                     else
                         lit = accentSwatch
@@ -4525,7 +4525,7 @@ initFrame:SetScript("OnEvent", function(self)
             end
             -- The reset leaves one palette, so the editor cannot stay pointed
             -- at whichever one it was on.
-            editPalette = 1
+            editingMenu = 1
         end,
     })
 end)
