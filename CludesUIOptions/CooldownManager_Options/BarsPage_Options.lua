@@ -489,6 +489,17 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
     )
     posY = posY - hgt
 
+    -- A change to a bar's size inputs (rows, icon size, spacing, shape)
+    -- drops the matched-axis dimensions the layout pass caches, so they are
+    -- worked out again.
+    local function ClearMatchDims(bar)
+        bar._matchIconPhys = nil
+        bar._matchExtraPixels = nil
+        bar._matchStride = nil
+        bar._matchExtraPixelsH = nil
+        bar._matchStrideH = nil
+    end
+
     local barId = barInfo.key
     local function BD()
         local pp = DB()
@@ -1233,11 +1244,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     end
                     -- numRows change invalidates cached match dims (rows is one
                     -- of the inputs to the matched-axis dim calculation).
-                    edge._matchIconPhys = nil
-                    edge._matchExtraPixels = nil
-                    edge._matchStride = nil
-                    edge._matchExtraPixelsH = nil
-                    edge._matchStrideH = nil
+                    ClearMatchDims(edge)
                     mod.BuildAllCDMBars()
                     Refresh()
                     UpdateCDMPreviewAndResize()
@@ -1908,11 +1915,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 -- horizontal-bar values, LEFT/RIGHT vertical).
                 edge.rowGrowDirection = nil
                 -- Orientation flip swaps the meaning of width-axis vs height-axis, so width/height match caches no longer apply.
-                edge._matchIconPhys = nil
-                edge._matchExtraPixels = nil
-                edge._matchStride = nil
-                edge._matchExtraPixelsH = nil
-                edge._matchStrideH = nil
+                ClearMatchDims(edge)
                 mod.BuildAllCDMBars()
                 Refresh()
                 UpdateCDMPreviewAndResize()
@@ -2451,11 +2454,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         local edge = BD()
                         edge.iconCropPercent = v
                         -- Icon height changes: drop the same match caches the shape setter drops.
-                        edge._matchIconPhys = nil
-                        edge._matchExtraPixels = nil
-                        edge._matchStride = nil
-                        edge._matchExtraPixelsH = nil
-                        edge._matchStrideH = nil
+                        ClearMatchDims(edge)
                         mod.BuildAllCDMBars()
                         Refresh()
                         UpdateCDMPreviewAndResize()
@@ -2539,11 +2538,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         b.borderThickness = "thin"
                         b.borderSize = BORDER_SIZES["thin"]
                     end
-                    b._matchIconPhys = nil
-                    b._matchExtraPixels = nil
-                    b._matchStride = nil
-                    b._matchExtraPixelsH = nil
-                    b._matchStrideH = nil
+                    ClearMatchDims(b)
                 end)
                 mod.BuildAllCDMBars()
                 Refresh()
@@ -2721,11 +2716,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 edge.iconSize = v
                 edge._matchPhysWidth = nil
                 edge._matchPhysHeight = nil
-                edge._matchIconPhys = nil
-                edge._matchExtraPixels = nil
-                edge._matchStride = nil
-                edge._matchExtraPixelsH = nil
-                edge._matchStrideH = nil
+                ClearMatchDims(edge)
                 mod.BuildAllCDMBars()
                 Refresh()
                 UpdateCDMPreviewAndResize()
@@ -2784,11 +2775,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             setValue = function(v)
                 local edge = BD()
                 edge.spacing = v
-                edge._matchIconPhys = nil
-                edge._matchExtraPixels = nil
-                edge._matchStride = nil
-                edge._matchExtraPixelsH = nil
-                edge._matchStrideH = nil
+                ClearMatchDims(edge)
                 mod.BuildAllCDMBars()
                 Refresh()
                 UpdateCDMPreviewAndResize()
@@ -2838,11 +2825,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         edge.borderThickness = "thin"
                         edge.borderSize = BORDER_SIZES["thin"]
                     end
-                    edge._matchIconPhys = nil
-                    edge._matchExtraPixels = nil
-                    edge._matchStride = nil
-                    edge._matchExtraPixelsH = nil
-                    edge._matchStrideH = nil
+                    ClearMatchDims(edge)
                     mod.BuildAllCDMBars()
                     Refresh()
                     UpdateCDMPreviewAndResize()
@@ -3303,11 +3286,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 -- new value wins over any stored target width/height.
                 edge._matchPhysWidth = nil
                 edge._matchPhysHeight = nil
-                edge._matchIconPhys = nil
-                edge._matchExtraPixels = nil
-                edge._matchStride = nil
-                edge._matchExtraPixelsH = nil
-                edge._matchStrideH = nil
+                ClearMatchDims(edge)
                 mod.BuildAllCDMBars()
                 Refresh()
                 UpdateCDMPreviewAndResize()
@@ -3328,11 +3307,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 -- Spacing change invalidates the width/height match cache because the
                 -- cached _matchIconPhys was computed against the old spacing -- new
                 -- spacing means the icons no longer fit the matched bar dimension.
-                edge._matchIconPhys = nil
-                edge._matchExtraPixels = nil
-                edge._matchStride = nil
-                edge._matchExtraPixelsH = nil
-                edge._matchStrideH = nil
+                ClearMatchDims(edge)
                 mod.BuildAllCDMBars()
                 Refresh()
                 UpdateCDMPreviewAndResize()
@@ -3360,11 +3335,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     ForEachSyncBar(function(b)
                         b.spacing = v
                         -- Spacing change invalidates each bar's match cache.
-                        b._matchIconPhys = nil
-                        b._matchExtraPixels = nil
-                        b._matchStride = nil
-                        b._matchExtraPixelsH = nil
-                        b._matchStrideH = nil
+                        ClearMatchDims(b)
                     end)
                     mod.BuildAllCDMBars()
                     Refresh()
@@ -3405,11 +3376,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         local edge = BD()
                         edge.minSizeIcons = v
                         -- Growth-axis extent changed: cached match dims stale.
-                        edge._matchIconPhys = nil
-                        edge._matchExtraPixels = nil
-                        edge._matchStride = nil
-                        edge._matchExtraPixelsH = nil
-                        edge._matchStrideH = nil
+                        ClearMatchDims(edge)
                         mod.BuildAllCDMBars()
                         Refresh()
                         UpdateCDMPreviewAndResize()
@@ -3884,11 +3851,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         edge.borderThickness = "thin"
                         edge.borderSize = BORDER_SIZES["thin"]
                     end
-                    edge._matchIconPhys = nil
-                    edge._matchExtraPixels = nil
-                    edge._matchStride = nil
-                    edge._matchExtraPixelsH = nil
-                    edge._matchStrideH = nil
+                    ClearMatchDims(edge)
                     mod.BuildAllCDMBars()
                     Refresh()
                     UpdateCDMPreviewAndResize()
