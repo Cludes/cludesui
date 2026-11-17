@@ -338,30 +338,80 @@ initFrame:SetScript("OnEvent", function(self)
             end
         end
 
-        local alignValues = { LEFT = "Left", CENTER = "Center", RIGHT = "Right" }
-        local alignOrder = { "LEFT", "CENTER", "RIGHT" }
-        local titleAffixPositionValues = {
-            ABOVE_TIMER = "Above Timer",
-            BELOW_TIMER = "Below Timer",
-        }
-        local titleAffixPositionOrder = { "ABOVE_TIMER", "BELOW_TIMER" }
-        local objectiveTimePositionValues = { RIGHT = "Right", LEFT = "Left" }
-        local objectiveTimePositionOrder = { "RIGHT", "LEFT" }
-        local compareModeValues = {
-            NONE = "None",
-            DUNGEON = "Per Dungeon",
-            LEVEL = "Per Dungeon + Level",
-            LEVEL_AFFIX = "Per Dungeon + Level + Affixes",
-        }
-        local compareModeOrder = { "NONE", "DUNGEON", "LEVEL", "LEVEL_AFFIX" }
-        local forcesTextValues = {
-            PERCENT = "Percent",
-            COUNT = "Count / Total",
-            COUNT_PERCENT = "Count / Total + %",
-            COUNT_REMAINING = "Count / Total + Remaining",
-            REMAINING = "Remaining Count",
-        }
-        local forcesTextOrder = { "PERCENT", "COUNT", "COUNT_PERCENT", "COUNT_REMAINING", "REMAINING" }
+        -- Inline swatches sit left of a DualRow region's control, each one
+        -- chained off the region's last inline item so they line up beside
+        -- an inline cog.
+        local function Chain(region, sw)
+            Pix.Point(sw, "RIGHT", region._lastInline or region._control or region, "LEFT", -8, 0)
+            region._lastInline = sw
+        end
+        -- A cover that swallows clicks on a swatch while it is unavailable and
+        -- names the requirement on hover (tip: text, or a function giving it).
+        local function Cover(sw, tip)
+            local cover = CreateFrame("Frame", nil, sw)
+            cover:SetAllPoints()
+            cover:SetFrameLevel(sw:GetFrameLevel() + 10)
+            cover:EnableMouse(true)
+            cover:SetScript("OnEnter", function()
+                local text = tip
+                if type(text) == "function" then
+                    text = text()
+                end
+                CludesUI.ShowWidgetTooltip(sw, CludesUI.DisabledTooltip(text or "the module"))
+            end)
+            cover:SetScript("OnLeave", function()
+                CludesUI.HideWidgetTooltip()
+            end)
+            return cover
+        end
+        -- A colour stored as { r, g, b } under key, def* for what is unset.
+        local function StoredRgb(key, defR, defG, defB)
+            return function()
+                local c = Cfg(key)
+                if not c then
+                    return defR, defG, defB, 1
+                end
+                return c.r or defR, c.g or defG, c.b or defB, 1
+            end
+        end
+
+        -- A dropdown's labels and their order from "KEY", "Label" pairs.
+        local function Choices(...)
+            local labels, keys = {}, {}
+            for i = 1, select("#", ...), 2 do
+                local key, label = select(i, ...)
+                labels[key] = label
+                keys[#keys + 1] = key
+            end
+            return labels, keys
+        end
+        local alignValues, alignOrder = Choices("LEFT", "Left", "CENTER", "Center", "RIGHT", "Right")
+        local titleAffixPositionValues, titleAffixPositionOrder =
+            Choices("ABOVE_TIMER", "Above Timer", "BELOW_TIMER", "Below Timer")
+        local objectiveTimePositionValues, objectiveTimePositionOrder =
+            Choices("RIGHT", "Right", "LEFT", "Left")
+        local compareModeValues, compareModeOrder = Choices(
+            "NONE",
+            "None",
+            "DUNGEON",
+            "Per Dungeon",
+            "LEVEL",
+            "Per Dungeon + Level",
+            "LEVEL_AFFIX",
+            "Per Dungeon + Level + Affixes"
+        )
+        local forcesTextValues, forcesTextOrder = Choices(
+            "PERCENT",
+            "Percent",
+            "COUNT",
+            "Count / Total",
+            "COUNT_PERCENT",
+            "Count / Total + %",
+            "COUNT_REMAINING",
+            "Count / Total + Remaining",
+            "REMAINING",
+            "Remaining Count"
+        )
 
         -- DISPLAY
         heading, hgt = W:SectionHeader(hostFrame, "DISPLAY", posY)
@@ -408,46 +458,43 @@ initFrame:SetScript("OnEvent", function(self)
         -- window while the page is open (off again when the panel closes,
         -- _installPreviewAutoOff). None in the search pre-build.
         if not CludesUI._prebuilding then
-            local EYE_VISIBLE, EYE_INVISIBLE = CludesUI.EYE_VISIBLE_ICON, CludesUI.EYE_INVISIBLE_ICON
-            local region = row._leftRegion
-            local eyeBtn = CreateFrame("Button", nil, region)
-            eyeBtn:SetSize(26, 26)
-            eyeBtn:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-            eyeBtn:SetFrameLevel(region:GetFrameLevel() + 5)
-            region._lastInline = eyeBtn
-            local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
-            eyeTex:SetAllPoints()
-            local function Off()
-                return Cfg("enabled") == false
+            local slot = row._leftRegion
+            local eye = CreateFrame("Button", nil, slot)
+            eye:SetSize(26, 26)
+            eye:SetPoint("RIGHT", slot._lastInline or slot._control, "LEFT", -8, 0)
+            eye:SetFrameLevel(slot:GetFrameLevel() + 5)
+            slot._lastInline = eye
+            local glyph = eye:CreateTexture(nil, "OVERLAY")
+            glyph:SetAllPoints()
+            local TIP = { width = 175 }
+            -- Resting strength: faint while the timer is off.
+            local function Rest(btn)
+                CludesUI.SetGlyphAlpha(btn, ModOff() and 0.15 or 0.4)
             end
-            local function RefreshEye()
-                -- The art is named the other way round: the "invisible" file is the open eye.
-                eyeTex:SetTexture(Cfg("showPreview") == true and EYE_INVISIBLE or EYE_VISIBLE)
-                CludesUI.SetGlyphAlpha(eyeBtn, Off() and 0.15 or 0.4)
+            local function Paint()
+                -- The icon files are named backwards: EYE_INVISIBLE_ICON draws the open eye.
+                local open = Cfg("showPreview") == true
+                glyph:SetTexture(open and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON)
+                Rest(eye)
             end
-            RefreshEye()
-            CludesUI.RegisterWidgetRefresh(RefreshEye)
-            eyeBtn:SetScript("OnClick", function()
-                if Off() then
-                    return
+            Paint()
+            CludesUI.RegisterWidgetRefresh(Paint)
+            eye:SetScript("OnClick", function()
+                if not ModOff() then
+                    _setPreview(Cfg("showPreview") ~= true)
+                    Paint()
                 end
-                _setPreview(Cfg("showPreview") ~= true)
-                RefreshEye()
             end)
-            eyeBtn:SetScript("OnEnter", function(self)
-                if Off() then
-                    CludesUI.ShowWidgetTooltip(
-                        self,
-                        CludesUI.DisabledTooltip("Enable Mythic+ Timer"),
-                        { width = 175 }
-                    )
-                    return
+            eye:SetScript("OnEnter", function(self)
+                if ModOff() then
+                    CludesUI.ShowWidgetTooltip(self, CludesUI.DisabledTooltip("Enable Mythic+ Timer"), TIP)
+                else
+                    CludesUI.SetGlyphAlpha(self, 0.7)
+                    CludesUI.ShowWidgetTooltip(self, "Show/Hide Preview", TIP)
                 end
-                CludesUI.SetGlyphAlpha(self, 0.7)
-                CludesUI.ShowWidgetTooltip(self, "Show/Hide Preview", { width = 175 })
             end)
-            eyeBtn:SetScript("OnLeave", function(self)
-                CludesUI.SetGlyphAlpha(self, Off() and 0.15 or 0.4)
+            eye:SetScript("OnLeave", function(self)
+                Rest(self)
                 CludesUI.HideWidgetTooltip()
             end)
         end
@@ -546,19 +593,15 @@ initFrame:SetScript("OnEvent", function(self)
         })
         posY = posY - hgt
 
-        --Border Style (+ cog) | Border Size (+ inline swatch)
-        -- Only built when "Custom Border Style" (above) is on, so the whole
-        -- row plus its offset cog and colour swatch stay hidden by default and
-        -- reclaim their space when off.
+        -- Border Style (with its cog) | Border Size (with a colour swatch):
+        -- built only while Custom Border Style is on, so by default the row,
+        -- its offsets, cog and swatch take no space at all.
         if Cfg("customBorderStyle") then
-            -- The border reaches the forces bar only with Apply to Forces Bar on, so
-            -- with the timer bar hidden it has nothing to draw on without it. The
-            -- Border Options cog (which holds that toggle) stays usable regardless.
+            -- Without the timer bar the border has only the forces bar to draw
+            -- on, which takes Apply to Forces Bar. The Border Options cog holds
+            -- that switch, so it stays usable either way.
             local function _borderOff()
-                if _barsOff() then
-                    return true
-                end
-                return Cfg("showTimerBar") == false and Cfg("borderApplyToForces") == false
+                return _barsOff() or (Cfg("showTimerBar") == false and Cfg("borderApplyToForces") == false)
             end
             local function _borderReq()
                 if _barsOff() then
@@ -566,10 +609,18 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 return "This option requires Show Timer Bar or Apply to Forces Bar to be enabled"
             end
-            -- Distinct local names on purpose: this border-texture list must NOT
-            -- be confused with the bar-texture "texValues"/"texOrder" used by the
-            -- timer and forces bar Texture dropdowns. Feeding border textures into
-            -- those dropdowns once let a border key get written into barTexture.
+            local function Raw(key)
+                return function()
+                    return Cfg(key)
+                end
+            end
+            local function Quiet(key)
+                return function(v)
+                    Set(key, v)
+                end
+            end
+            -- Named apart from texValues/texOrder (the bar texture lists) on
+            -- purpose: a mix-up once wrote a border key into barTexture.
             local borderTexValues, borderTexOrder = CludesUI.GetBorderTextureDropdown()
             borderTexValues.shadow = nil
             for idx = #borderTexOrder, 1, -1 do
@@ -577,6 +628,7 @@ initFrame:SetScript("OnEvent", function(self)
                     table.remove(borderTexOrder, idx)
                 end
             end
+            local BLACK, WHITE = { r = 0, g = 0, b = 0 }, { r = 1, g = 1, b = 1 }
 
             local bsRow
             bsRow, hgt = W:DualRow(
@@ -590,33 +642,27 @@ initFrame:SetScript("OnEvent", function(self)
                     values = borderTexValues,
                     order = borderTexOrder,
                     getValue = Or("borderTexture", "solid"),
+                    -- A new style starts clean: no offsets or shifts, its own
+                    -- select colour (else white, or black for solid), its own
+                    -- default size, and the size back in steps.
                     setValue = function(v)
                         Set("borderTexture", v)
-                        Set("borderTextureOffset", nil)
-                        Set("borderTextureOffsetY", nil)
-                        Set("borderTextureShiftX", nil)
-                        Set("borderTextureShiftY", nil)
-                        local selC = CludesUI.GetBorderSelectColor(v)
-                        if selC then
-                            -- The style's select colour (Pixels grey).
-                            Set("borderR", selC.r)
-                            Set("borderG", selC.g)
-                            Set("borderB", selC.b)
-                            Set("borderA", 1)
-                        elseif v ~= "solid" then
-                            Set("borderR", 1)
-                            Set("borderG", 1)
-                            Set("borderB", 1)
-                            Set("borderA", 1)
-                        else
-                            Set("borderR", 0)
-                            Set("borderG", 0)
-                            Set("borderB", 0)
-                            Set("borderA", 1)
+                        for _, key in ipairs({
+                            "borderTextureOffset",
+                            "borderTextureOffsetY",
+                            "borderTextureShiftX",
+                            "borderTextureShiftY",
+                        }) do
+                            Set(key, nil)
                         end
-                        local defSz = CludesUI.GetBorderDefaultSize("MythicPlus", v)
-                        if defSz then
-                            Set("borderSize", defSz)
+                        local col = CludesUI.GetBorderSelectColor(v) or (v ~= "solid" and WHITE) or BLACK
+                        Set("borderR", col.r)
+                        Set("borderG", col.g)
+                        Set("borderB", col.b)
+                        Set("borderA", 1)
+                        local size = CludesUI.GetBorderDefaultSize("MythicPlus", v)
+                        if size then
+                            Set("borderSize", size)
                         end
                         if Cfg("borderSizePx") then
                             Set("borderSizePx", false)
@@ -630,16 +676,10 @@ initFrame:SetScript("OnEvent", function(self)
                     disabled = _borderOff,
                     disabledTooltip = _borderReq,
                     getStep = Or("borderSize", 0),
-                    setStep = function(step)
-                        Set("borderSize", step)
-                    end,
+                    setStep = Quiet("borderSize"),
                     getTex = Or("borderTexture", "solid"),
-                    getPx = function()
-                        return Cfg("borderSizePx")
-                    end,
-                    setPx = function(v)
-                        Set("borderSizePx", v)
-                    end,
+                    getPx = Raw("borderSizePx"),
+                    setPx = Quiet("borderSizePx"),
                     apply = function()
                         ApplyBorder()
                         CludesUI:RefreshPage()
@@ -647,9 +687,9 @@ initFrame:SetScript("OnEvent", function(self)
                 })
             )
             posY = posY - hgt
-            -- Width Offset | Height Offset: only while a textured style is
-            -- selected (a solid border has no outward offsets). Built during
-            -- prebuild too so the y advance is identical whenever it is present.
+            -- Width / Height Offset, only for a textured style (a solid border
+            -- has no outward offsets); the search pre-build makes it too, so
+            -- the page measures the same either way.
             local borderTex = Cfg("borderTexture") or "solid"
             if borderTex ~= "" and borderTex ~= "solid" then
                 local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
@@ -657,36 +697,56 @@ initFrame:SetScript("OnEvent", function(self)
                     getTex = Or("borderTexture", "solid"),
                     getStep = Or("borderSize", 0),
                     getSizeKey = Or("borderSize", 0),
-                    getPx = function()
-                        return Cfg("borderSizePx")
-                    end,
-                    getX = function()
-                        return Cfg("borderTextureOffset")
-                    end,
-                    setX = function(v)
-                        Set("borderTextureOffset", v)
-                    end,
-                    getY = function()
-                        return Cfg("borderTextureOffsetY")
-                    end,
-                    setY = function(v)
-                        Set("borderTextureOffsetY", v)
-                    end,
-                    apply = function()
-                        ApplyBorder()
-                    end,
+                    getPx = Raw("borderSizePx"),
+                    getX = Raw("borderTextureOffset"),
+                    setX = Quiet("borderTextureOffset"),
+                    getY = Raw("borderTextureOffsetY"),
+                    setY = Quiet("borderTextureOffsetY"),
+                    apply = ApplyBorder,
                 })
-                ocfgL.disabled, ocfgL.disabledTooltip = _borderOff, _borderReq
-                ocfgR.disabled, ocfgR.disabledTooltip = _borderOff, _borderReq
+                for _, half in ipairs({ ocfgL, ocfgR }) do
+                    half.disabled, half.disabledTooltip = _borderOff, _borderReq
+                end
                 row, hgt = W:DualRow(hostFrame, posY, ocfgL, ocfgR)
                 posY = posY - hgt
             end
-            -- Inline cog for border options (left region)
             if not CludesUI._prebuilding then
-                local region = bsRow._leftRegion
-                CludesUI.BuildInlineCog(region, {
+                -- A shift: the stored one, else the style's default for its size
+                -- (slot 3 of GetBorderDefaults for X, 4 for Y).
+                local function Shift(axis, slot)
+                    local key = "borderTextureShift" .. axis
+                    return {
+                        type = "slider",
+                        label = "Shift " .. axis,
+                        min = -10,
+                        max = 10,
+                        step = 1,
+                        get = function()
+                            local v = Cfg(key)
+                            if v then
+                                return v
+                            end
+                            return (
+                                select(
+                                    slot,
+                                    CludesUI.GetBorderDefaults(
+                                        "MythicPlus",
+                                        Cfg("borderTexture") or "solid",
+                                        Cfg("borderSize") or 1
+                                    )
+                                )
+                            )
+                        end,
+                        set = function(v)
+                            Set(key, v)
+                            ApplyBorder()
+                        end,
+                    }
+                end
+                local left = bsRow._leftRegion
+                CludesUI.BuildInlineCog(left, {
                     title = "Border Options",
-                    -- Greys with the bars; stays usable when only Apply to Forces Bar is off.
+                    -- Greys with the bars only: Apply to Forces Bar lives here.
                     disabled = _barsOff,
                     disabledTooltip = _barsReq,
                     rows = {
@@ -700,101 +760,39 @@ initFrame:SetScript("OnEvent", function(self)
                                 CludesUI:RefreshPage()
                             end,
                         },
-                        {
-                            type = "slider",
-                            label = "Shift X",
-                            min = -10,
-                            max = 10,
-                            step = 1,
-                            get = function()
-                                local v = Cfg("borderTextureShiftX")
-                                if v then
-                                    return v
-                                end
-                                local tex = Cfg("borderTexture") or "solid"
-                                local sz = Cfg("borderSize") or 1
-                                local _, _, dsx = CludesUI.GetBorderDefaults("MythicPlus", tex, sz)
-                                return dsx
-                            end,
-                            set = function(v)
-                                Set("borderTextureShiftX", v == 0 and nil or v)
-                                ApplyBorder()
-                            end,
-                        },
-                        {
-                            type = "slider",
-                            label = "Shift Y",
-                            min = -10,
-                            max = 10,
-                            step = 1,
-                            get = function()
-                                local v = Cfg("borderTextureShiftY")
-                                if v then
-                                    return v
-                                end
-                                local tex = Cfg("borderTexture") or "solid"
-                                local sz = Cfg("borderSize") or 1
-                                local _, _, _, dsy = CludesUI.GetBorderDefaults("MythicPlus", tex, sz)
-                                return dsy
-                            end,
-                            set = function(v)
-                                Set("borderTextureShiftY", v == 0 and nil or v)
-                                ApplyBorder()
-                            end,
-                        },
+                        Shift("X", 3),
+                        Shift("Y", 4),
                     },
-                    anchorTo = region._control,
+                    anchorTo = left._control,
                 })
-            end
-            -- Inline color swatch on Border Size (right region)
-            if not CludesUI._prebuilding then
-                local region = bsRow._rightRegion
-                local ctrl = region._control
-                local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
-                    region,
-                    region:GetFrameLevel() + 3,
-                    function()
-                        return Cfg("borderR") or 0,
-                            Cfg("borderG") or 0,
-                            Cfg("borderB") or 0,
-                            Cfg("borderA") or 1
-                    end,
-                    function(r, g, b, a)
-                        Set("borderR", r)
-                        Set("borderG", g)
-                        Set("borderB", b)
-                        Set("borderA", a)
-                        ApplyBorder()
-                    end,
-                    true,
-                    20
-                )
-                Pix.Point(colorSwatch, "RIGHT", ctrl, "LEFT", -8, 0)
-                -- Disabled block: swallows clicks and shows the requirement tooltip.
-                local block = CreateFrame("Frame", nil, colorSwatch)
-                block:SetAllPoints()
-                block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-                block:EnableMouse(true)
-                block:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip(_borderReq()))
-                end)
-                block:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                local function UpdateSwatch()
-                    updateSwatch()
+
+                -- The border colour, left of the Border Size control.
+                local right = bsRow._rightRegion
+                local anchor = right._control
+                local sw, repaint = CludesUI.BuildColorSwatch(right, right:GetFrameLevel() + 3, function()
+                    return Cfg("borderR") or 0, Cfg("borderG") or 0, Cfg("borderB") or 0, Cfg("borderA") or 1
+                end, function(r, g, b, a)
+                    Set("borderR", r)
+                    Set("borderG", g)
+                    Set("borderB", b)
+                    Set("borderA", a)
+                    ApplyBorder()
+                end, true, 20)
+                Pix.Point(sw, "RIGHT", anchor, "LEFT", -8, 0)
+                local cover = Cover(sw, _borderReq)
+                local function Sync()
+                    repaint()
                     local off = _borderOff()
-                    colorSwatch:SetAlpha(off and 0.3 or 1)
-                    block:SetShown(off)
+                    sw:SetAlpha(off and 0.3 or 1)
+                    cover:SetShown(off)
                 end
-                CludesUI.RegisterWidgetRefresh(UpdateSwatch)
-                UpdateSwatch()
+                CludesUI.RegisterWidgetRefresh(Sync)
+                Sync()
             end
         end
 
-        -- Inline color swatch attached to a DualRow region (left of the control,
-        -- chaining off rgn._lastInline so it coexists with an inline cog). Blocked
-        -- + dimmed via overlay when isDisabled() is true, mirroring the cog pattern.
+        -- One custom colour swatch (key, defaults def*); afterSet(r, g, b)
+        -- runs after the store. Dimmed and covered while isDisabled() holds.
         local function _AttachInlineSwatch(
             region,
             colorKey,
@@ -805,17 +803,10 @@ initFrame:SetScript("OnEvent", function(self)
             isDisabled,
             disabledTip
         )
-            local Pix = CludesUI.PP
-            local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+            local sw, repaint = CludesUI.BuildColorSwatch(
                 region,
                 region:GetFrameLevel() + 5,
-                function()
-                    local c = Cfg(colorKey)
-                    if c then
-                        return c.r or defR, c.g or defG, c.b or defB, 1
-                    end
-                    return defR, defG, defB, 1
-                end,
+                StoredRgb(colorKey, defR, defG, defB),
                 function(r, g, b)
                     Set(colorKey, { r = r, g = g, b = b })
                     if afterSet then
@@ -826,43 +817,27 @@ initFrame:SetScript("OnEvent", function(self)
                 false,
                 18
             )
-            Pix.Point(colorSwatch, "RIGHT", region._lastInline or region._control or region, "LEFT", -8, 0)
-            region._lastInline = colorSwatch
-            local block = CreateFrame("Frame", nil, colorSwatch)
-            block:SetAllPoints()
-            block:SetFrameLevel(colorSwatch:GetFrameLevel() + 10)
-            block:EnableMouse(true)
-            block:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(colorSwatch, CludesUI.DisabledTooltip(disabledTip or "the module"))
-            end)
-            block:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
-            local function UpdateState()
-                if updateSwatch then
-                    updateSwatch()
+            Chain(region, sw)
+            local cover = Cover(sw, disabledTip)
+            local function Sync()
+                if repaint then
+                    repaint()
                 end
-                if isDisabled and isDisabled() then
-                    colorSwatch:SetAlpha(0.3)
-                    block:Show()
-                else
-                    colorSwatch:SetAlpha(1)
-                    block:Hide()
-                end
+                local off = isDisabled and isDisabled()
+                sw:SetAlpha(off and 0.3 or 1)
+                cover:SetShown(off and true or false)
             end
-            CludesUI.RegisterWidgetRefresh(UpdateState)
-            UpdateState()
-            return colorSwatch
+            CludesUI.RegisterWidgetRefresh(Sync)
+            Sync()
+            return sw
         end
 
-        -- Attach the accent + custom colour pair as two INLINE swatches on a
-        -- DualRow region, chaining off rgn._lastInline. Click the accent swatch
-        -- to follow the theme accent; click the custom swatch to switch to a
-        -- custom colour (opens the picker).
-        -- The inactive swatch dims to 0.3; both are blocked + dimmed with the
-        -- requirement tooltip while isDisabled() is true (mirrors _AttachInlineSwatch).
-        -- followTip/followColor optionally replace the accent swatch's label and
-        -- color source when the "follow" color is not the theme accent.
+        -- A pair of inline swatches choosing where a colour comes from: the
+        -- first follows the theme accent (or followColor(), labelled
+        -- followTip), the second is a stored custom colour. Clicking the
+        -- first turns useAccentKey on; clicking the second while it is on
+        -- turns it off, and only otherwise opens the picker. The unused one
+        -- dims; both dim further and are covered while isDisabled() holds.
         local function _AttachInlineAccentSwatches(
             region,
             useAccentKey,
@@ -875,44 +850,36 @@ initFrame:SetScript("OnEvent", function(self)
             followTip,
             followColor
         )
-            local Pix = CludesUI.PP
-
-            -- Accent swatch (nearest the control, or the cog): live theme accent.
-            local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(
+            local function Follow(on)
+                Set(useAccentKey, on)
+                Refresh()
+                CludesUI:RefreshPage()
+            end
+            local accent, repaintAccent = CludesUI.BuildColorSwatch(
                 region,
                 region:GetFrameLevel() + 5,
                 function()
-                    local ar, ag, ab
+                    local r, g, b
                     if followColor then
-                        ar, ag, ab = followColor()
+                        r, g, b = followColor()
                     else
-                        ar, ag, ab = CludesUI.ResolveActiveAccent()
+                        r, g, b = CludesUI.ResolveActiveAccent()
                     end
-                    return ar, ag, ab, 1
+                    return r, g, b, 1
                 end,
                 function() end,
                 false,
                 18
             )
-            accentSwatch:SetScript("OnClick", function()
-                Set(useAccentKey, true)
-                Refresh()
-                CludesUI:RefreshPage()
+            accent:SetScript("OnClick", function()
+                Follow(true)
             end)
-            Pix.Point(accentSwatch, "RIGHT", region._lastInline or region._control or region, "LEFT", -8, 0)
-            region._lastInline = accentSwatch
+            Chain(region, accent)
 
-            -- Custom-colour swatch (to the left of accent): the stored custom colour.
-            local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
+            local custom, repaintCustom = CludesUI.BuildColorSwatch(
                 region,
                 region:GetFrameLevel() + 5,
-                function()
-                    local c = Cfg(colorKey)
-                    if c then
-                        return c.r or defR, c.g or defG, c.b or defB, 1
-                    end
-                    return defR, defG, defB, 1
-                end,
+                StoredRgb(colorKey, defR, defG, defB),
                 function(r, g, b)
                     Set(colorKey, { r = r, g = g, b = b })
                     Refresh()
@@ -920,74 +887,44 @@ initFrame:SetScript("OnEvent", function(self)
                 false,
                 18
             )
-            -- Preserve BuildColorSwatch's picker click, but while accent mode is on a
-            -- click just switches back to custom mode (accent turns off) instead.
-            local openPicker = customSwatch:GetScript("OnClick")
-            customSwatch:SetScript("OnClick", function(self)
+            local pick = custom:GetScript("OnClick")
+            custom:SetScript("OnClick", function(self)
                 if Cfg(useAccentKey) ~= false then
-                    Set(useAccentKey, false)
-                    Refresh()
-                    CludesUI:RefreshPage()
-                    return
-                end
-                if openPicker then
-                    openPicker(self)
+                    Follow(false)
+                elseif pick then
+                    pick(self)
                 end
             end)
-            Pix.Point(customSwatch, "RIGHT", region._lastInline or region._control or region, "LEFT", -8, 0)
-            region._lastInline = customSwatch
+            Chain(region, custom)
 
-            -- Per-swatch hover tooltip (colour name when enabled) + disabled block.
-            local function AddBlock(sw, enterTip)
+            -- Hover names the colour; the cover takes over while unavailable.
+            for _, pair in ipairs({ { accent, followTip or "Accent Color" }, { custom, "Custom Color" } }) do
+                local sw, name = pair[1], pair[2]
                 sw:HookScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(sw, enterTip)
+                    CludesUI.ShowWidgetTooltip(sw, name)
                 end)
                 sw:HookScript("OnLeave", function()
                     CludesUI.HideWidgetTooltip()
                 end)
-                local block = CreateFrame("Frame", nil, sw)
-                block:SetAllPoints()
-                block:SetFrameLevel(sw:GetFrameLevel() + 10)
-                block:EnableMouse(true)
-                block:SetScript("OnEnter", function()
-                    -- disabledTip may be a function, like a DualRow cfg.disabledTooltip.
-                    local tipText = disabledTip
-                    if type(tipText) == "function" then
-                        tipText = tipText()
-                    end
-                    CludesUI.ShowWidgetTooltip(sw, CludesUI.DisabledTooltip(tipText or "the module"))
-                end)
-                block:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
-                sw._block = block
+                sw._block = Cover(sw, disabledTip)
             end
-            AddBlock(accentSwatch, followTip or "Accent Color")
-            AddBlock(customSwatch, "Custom Color")
 
-            local function UpdateState()
-                if updateAccent then
-                    updateAccent()
+            local function Sync()
+                if repaintAccent then
+                    repaintAccent()
                 end
-                if updateCustom then
-                    updateCustom()
+                if repaintCustom then
+                    repaintCustom()
                 end
-                local disabled = isDisabled and isDisabled()
+                local off = isDisabled and isDisabled()
                 local useAccent = Cfg(useAccentKey) ~= false
-                if disabled then
-                    accentSwatch:SetAlpha(0.15)
-                    accentSwatch._block:Show()
-                    customSwatch:SetAlpha(0.15)
-                    customSwatch._block:Show()
-                else
-                    accentSwatch:SetAlpha(useAccent and 1 or 0.3)
-                    accentSwatch._block:Hide()
-                    customSwatch:SetAlpha(useAccent and 0.3 or 1)
-                    customSwatch._block:Hide()
-                end
+                accent:SetAlpha(off and 0.15 or (useAccent and 1 or 0.3))
+                custom:SetAlpha(off and 0.15 or (useAccent and 0.3 or 1))
+                accent._block:SetShown(off and true or false)
+                custom._block:SetShown(off and true or false)
             end
-            CludesUI.RegisterWidgetRefresh(UpdateState)
-            UpdateState()
+            CludesUI.RegisterWidgetRefresh(Sync)
+            Sync()
         end
 
         local timerDisplayValues = {
