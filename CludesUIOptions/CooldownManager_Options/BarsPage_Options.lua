@@ -689,6 +689,28 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 insLine:SetColorTexture(ACC.r, ACC.g, ACC.b, 0.9)
                 insLine:Hide()
             end
+            local function ResetDrag()
+                dragState.row = nil
+                dragState.startY = nil
+                dragState.active = false
+                dragState.slot = nil
+            end
+            -- The slot (1 .. #customRows + 1) a row dragged to height cY would
+            -- drop into: before the first other custom row whose middle lies
+            -- below it.
+            local function DropSlot(item, cY, menuTop)
+                local slot = #customRows
+                for ri, r2 in ipairs(customRows) do
+                    if r2.item ~= item then
+                        if cY > menuTop + r2.topY - ITEM_H / 2 then
+                            slot = ri
+                            break
+                        end
+                        slot = ri + 1
+                    end
+                end
+                return math.max(1, math.min(slot, #customRows + 1))
+            end
 
             for _, b in ipairs(displayList) do
                 local position = realIdx[b]
@@ -839,22 +861,9 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                     item:SetAlpha(0.8)
                                     grip:SetTextColor(1, 1, 1, 0.6)
                                 end
-                                local sc = dropMenu:GetEffectiveScale()
-                                local cY = cy / sc
+                                local cY = cy / dropMenu:GetEffectiveScale()
                                 local mT = dropMenu:GetTop() or 0
-                                -- Insertion slot among the custom rows (skip self).
-                                local iI = #customRows
-                                for ri, r2 in ipairs(customRows) do
-                                    if r2.item ~= item then
-                                        local rm = mT + r2.topY - ITEM_H / 2
-                                        if cY > rm then
-                                            iI = ri
-                                            break
-                                        end
-                                        iI = ri + 1
-                                    end
-                                end
-                                iI = math.max(1, math.min(iI, #customRows + 1))
+                                local iI = DropSlot(item, cY, mT)
                                 dragState.slot = iI
                                 local bandTop = customRows[1] and customRows[1].topY or 0
                                 local lnY = (iI <= 1) and (bandTop + 1) or (bandTop - (iI - 1) * ITEM_H + 1)
@@ -872,10 +881,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                                 end
                                 local wasActive = dragState.active
                                 local slot = dragState.slot
-                                dragState.row = nil
-                                dragState.startY = nil
-                                dragState.active = false
-                                dragState.slot = nil
+                                ResetDrag()
                                 if insLine then
                                     insLine:Hide()
                                 end
