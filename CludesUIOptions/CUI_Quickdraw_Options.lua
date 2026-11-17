@@ -40,9 +40,7 @@ initFrame:SetScript("OnEvent", function(self)
     -- would skip that whenever the panel is the first to see a profile the user
     -- has just switched to. The db local is still kept for the reset handler.
     local function DB()
-        if not db then
-            db = _G._CUQD_AceDB
-        end
+        db = db or _G._CUQD_AceDB
         if mod.Profile then
             return mod.Profile()
         end
@@ -50,15 +48,19 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     local function ProfileGet(key)
-        local p = DB()
-        return p and p[key]
+        local prof = DB()
+        if prof then
+            return prof[key]
+        end
+        return prof
     end
 
     local function ProfilePut(key, val)
-        local p = DB()
-        if p then
-            p[key] = val
+        local prof = DB()
+        if not prof then
+            return
         end
+        prof[key] = val
     end
 
     -- Whether the page was BUILT with the nest-geometry row on it (some menu
@@ -69,21 +71,26 @@ initFrame:SetScript("OnEvent", function(self)
     local builtWithNest = false
     local HasAnyNest
 
+    -- Hands the edited settings to the running module.
+    local function PushToModule()
+        local apply = _G._CUQD_Apply
+        if apply then
+            apply()
+        end
+    end
+
     local function Reapply()
-        if _G._CUQD_Apply then
-            _G._CUQD_Apply()
-        end
-        if HasAnyNest and HasAnyNest() ~= builtWithNest and CludesUI.RefreshPage then
+        PushToModule()
+        local nestFlipped = HasAnyNest and HasAnyNest() ~= builtWithNest
+        if nestFlipped and CludesUI.RefreshPage then
             CludesUI:RefreshPage(true)
-            return
+        else
+            CludesUI:RefreshPage()
         end
-        CludesUI:RefreshPage()
     end
 
     local function RedrawPage()
-        if _G._CUQD_Apply then
-            _G._CUQD_Apply()
-        end
+        PushToModule()
         CludesUI:RefreshPage(true)
     end
 
@@ -92,7 +99,13 @@ initFrame:SetScript("OnEvent", function(self)
     local editingMenu = 1
 
     local function MenuCount()
-        return math.min(MAX_PALETTES, math.max(1, ProfileGet("paletteCount") or 1))
+        local count = ProfileGet("paletteCount") or 1
+        if count < 1 then
+            count = 1
+        elseif count > MAX_PALETTES then
+            count = MAX_PALETTES
+        end
+        return count
     end
 
     local function MenuTable(index)
@@ -103,9 +116,15 @@ initFrame:SetScript("OnEvent", function(self)
     -- must not write; the panel's read trace runs them).
     local function PaletteRead(index)
         local prof = DB()
-        local pals = prof and prof.palettes
-        local menuT = type(pals) == "table" and pals[index or editingMenu]
-        return type(menuT) == "table" and menuT or nil
+        local stored = prof and prof.palettes
+        if type(stored) ~= "table" then
+            return nil
+        end
+        local found = stored[index or editingMenu]
+        if type(found) == "table" then
+            return found
+        end
+        return nil
     end
 
     -- Does ANY menu hold a nested entry? Read-only walk over the stored
@@ -113,17 +132,18 @@ initFrame:SetScript("OnEvent", function(self)
     -- this runs on every Refresh to notice presence flipping.
     HasAnyNest = function()
         local prof = DB()
-        local palettes = prof and prof.palettes
-        if type(palettes) ~= "table" then
+        local stored = prof and prof.palettes
+        if type(stored) ~= "table" then
             return false
         end
         for i = 1, MenuCount() do
-            local menuT = palettes[i]
-            local entryList = type(menuT) == "table" and menuT.slots
-            for jdx = 1, (type(entryList) == "table" and #entryList or 0) do
-                local sv = entryList[jdx]
-                if type(sv) == "table" and sv.kind == "palette" then
-                    return true
+            local entries = type(stored[i]) == "table" and stored[i].slots
+            if type(entries) == "table" then
+                for n = 1, #entries do
+                    local e = entries[n]
+                    if type(e) == "table" and e.kind == "palette" then
+                        return true
+                    end
                 end
             end
         end
@@ -146,36 +166,39 @@ initFrame:SetScript("OnEvent", function(self)
     ---------------------------------------------------------------------------
     local function MenuGet(key)
         local menuT = PaletteRead(editingMenu)
-        local a = menuT and menuT.appearance
-        local v = a and a[key]
-        if v ~= nil then
-            return v
+        local own = menuT and menuT.appearance and menuT.appearance[key]
+        if own == nil then
+            return ProfileGet(key)
         end
-        return ProfileGet(key)
+        return own
     end
 
     local function MenuPut(key, val)
         local menuT = mod.EnsurePalette and mod.EnsurePalette(editingMenu)
-        if not menuT then
-            return
+        if menuT then
+            local over = menuT.appearance or {}
+            menuT.appearance = over
+            over[key] = val
         end
-        menuT.appearance = menuT.appearance or {}
-        menuT.appearance[key] = val
     end
 
     -- From the module, so the name an emptied box reverts to is the same string
     -- the module hands a fresh palette.
     local function AutoName(index)
-        if mod.AutoPaletteName then
-            return mod.AutoPaletteName(index)
+        local named = mod.AutoPaletteName
+        if not named then
+            return "Action Menu " .. index
         end
-        return "Action Menu " .. index
+        return named(index)
     end
 
     -- A menu's name as the page shows it.
     local function MenuName(index)
         local menuT = PaletteRead(index)
-        return (menuT and menuT.name) or AutoName(index)
+        if menuT and menuT.name then
+            return menuT.name
+        end
+        return AutoName(index)
     end
 
     -- The icon a menu is listed BY, everywhere one is listed: its first entry,
@@ -185,13 +208,8 @@ initFrame:SetScript("OnEvent", function(self)
     -- menu would send this round its own loop. An empty menu shows the bag.
     local function PaletteListIcon(pmenu)
         local first = pmenu and pmenu.slots and pmenu.slots[1]
-        if first and first.kind ~= "palette" and mod.SlotDisplay then
-            local glyph = mod.SlotDisplay(first)
-            if glyph then
-                return glyph
-            end
-        end
-        return "Interface\\Icons\\INV_Misc_Bag_08"
+        local glyph = first and first.kind ~= "palette" and mod.SlotDisplay and mod.SlotDisplay(first)
+        return glyph or "Interface\\Icons\\INV_Misc_Bag_08"
     end
 
     ---------------------------------------------------------------------------
@@ -532,33 +550,32 @@ initFrame:SetScript("OnEvent", function(self)
     -- The watcher serves the page's keybind rows and nothing else, so it is
     -- created the first time the page is built rather than at login: a session
     -- that never opens this page pays no frame and no event.
-    local lastKeySig = nil
-    local bindWatcher = nil
+    local keysSeen = nil
+    local keyWatch = nil
     local function PaletteKeySignature()
-        local sig = ""
+        local parts = {}
         for i = 1, MAX_PALETTES do
             local k1, k2 = GetBindingKey(BINDING_PREFIX .. i)
-            sig = sig .. "|" .. (k1 or "") .. "/" .. (k2 or "")
+            parts[i] = (k1 or "") .. "/" .. (k2 or "")
         end
-        return sig
+        return "|" .. table.concat(parts, "|")
     end
 
     local function EnsureBindWatcher()
-        if bindWatcher then
+        if keyWatch then
             return
         end
-        lastKeySig = PaletteKeySignature()
-        bindWatcher = CreateFrame("Frame")
-        bindWatcher:RegisterEvent("UPDATE_BINDINGS")
-        bindWatcher:SetScript("OnEvent", function()
-            local sig = PaletteKeySignature()
-            if sig == lastKeySig then
-                return
-            end
-            lastKeySig = sig
-            CludesUI:InvalidatePageCache()
-            if CludesUI:IsShown() and CludesUI.RefreshPage then
-                CludesUI:RefreshPage(true)
+        keysSeen = PaletteKeySignature()
+        keyWatch = CreateFrame("Frame")
+        keyWatch:RegisterEvent("UPDATE_BINDINGS")
+        keyWatch:SetScript("OnEvent", function()
+            local now = PaletteKeySignature()
+            if now ~= keysSeen then
+                keysSeen = now
+                CludesUI:InvalidatePageCache()
+                if CludesUI:IsShown() and CludesUI.RefreshPage then
+                    CludesUI:RefreshPage(true)
+                end
             end
         end)
     end
@@ -748,20 +765,20 @@ initFrame:SetScript("OnEvent", function(self)
                     or (ent.kind == "panel" and "interface panel")
                     or (ent.kind == "equipmentset" and "equipment set")
                     or (ent.kind == "spec" and "specialization")
-                    -- Same icon and same name as a fixed spec entry on the
-                    -- character that made it, so the caption is the only place
-                    -- the difference between the two can be said.
+                    -- Same icon and same name as a fixed spec entry on the
+                    -- character that made it, so the caption is the only place
+                    -- the difference between the two can be said.
                     or (ent.kind == "dynamicspec" and "specialization, by position on this character")
-                    -- Checked before the plain profession caption below,
-                    -- since slot.extra would otherwise still match it.
+                    -- Checked before the plain profession caption below,
+                    -- since slot.extra would otherwise still match it.
                     or (ent.kind == "dynamicprofession" and ent.specialization and "profession specialization ability, by position on this character")
                     or (ent.kind == "dynamicprofession" and ent.extra and "profession's second ability, by position on this character")
-                    -- Same icon and same name as a fixed profession entry on
-                    -- the character that made it, just as with dynamicspec.
+                    -- Same icon and same name as a fixed profession entry on
+                    -- the character that made it, just as with dynamicspec.
                     or (ent.kind == "dynamicprofession" and "profession, by position on this character")
-                    -- The name above is already the spell this character would
-                    -- cast, so the caption says what picked it rather than
-                    -- repeating it.
+                    -- The name above is already the spell this character would
+                    -- cast, so the caption says what picked it rather than
+                    -- repeating it.
                     or (ent.kind == "dynamicrez" and "resurrection, chosen for this character")
                     or ent.kind
             end
@@ -3528,22 +3545,28 @@ initFrame:SetScript("OnEvent", function(self)
     -- exactly what the source draws right now. A menu's actions, name, icon
     -- and keybind are not settings and are never touched.
     local function CopyAllMenuSettings(srcIdx, dstIdx)
-        local source = mod.PaletteProfile and mod.PaletteProfile(srcIdx)
-        local dst = MenuTable(dstIdx)
-        local keyList = mod.APPEARANCE_KEYS
-        if not source or not dst or not keyList then
+        local from = mod.PaletteProfile and mod.PaletteProfile(srcIdx)
+        local into = MenuTable(dstIdx)
+        local wanted = mod.APPEARANCE_KEYS
+        if not (from and into and wanted) then
             return
         end
-        dst.appearance = dst.appearance or {}
-        for key in pairs(keyList) do
-            local v = source[key]
-            if type(v) == "table" then
-                v = CludesUI.Lite.DeepCopy(v)
-            end
-            dst.appearance[key] = v
+        local over = into.appearance or {}
+        into.appearance = over
+        for key in pairs(wanted) do
+            local v = from[key]
+            over[key] = (type(v) == "table") and CludesUI.Lite.DeepCopy(v) or v
         end
         Reapply()
         CludesUI:RefreshPage(true)
+    end
+
+    -- The dim caption in front of each dropdown on the row below the preview.
+    local function PairCaption(parent, text)
+        local fs = CludesUI.MakeFont(parent, 14, nil, 1, 1, 1)
+        fs:SetText(CludesUI.L(text))
+        fs:SetTextColor(1, 1, 1, 0.6)
+        return fs
     end
 
     -- "Assign to Spec": the specs the edited menu loads in (palette.specs, a
@@ -3554,90 +3577,107 @@ initFrame:SetScript("OnEvent", function(self)
     -- breaks a share changes keybind buttons the page refresh leaves alone,
     -- so the page rebuilds -- once the menu has closed (a rebuild closes it).
     local function BuildSpecPair(row, ddW)
-        local palIdx = editingMenu
+        local menuIdx = editingMenu
         local ALL = CludesUI.SPEC_PICK_ALL
         local itemList, roles = CludesUI.SpecPickItems({ roles = true })
-        local cbDD, cbRefresh
-        local sharesBroken = false
-        cbDD, cbRefresh = CludesUI.BuildVisOptsCBDropdown(
+        local specDD, refreshSpecDD
+        -- A pick that broke a share while the list was open rebuilds the
+        -- page once the list closes, not under the pointer.
+        local rebuildOnClose = false
+
+        -- On WoW Forever a list row stands for a whole class: its spec IDs.
+        local function ClassSpecs(key)
+            return CludesUI.IS_FOREVER and CludesUI.ForeverClassSpecIDs(key)
+        end
+
+        local function IsTicked(key)
+            local specs = mod.PaletteSpecs(menuIdx)
+            if key == ALL then
+                return specs == nil
+            end
+            if roles[key] then
+                return false
+            end
+            local ids = ClassSpecs(key)
+            if not ids then
+                return specs ~= nil and specs[key] == true
+            end
+            if not specs then
+                return false
+            end
+            for n = 1, #ids do
+                if not specs[ids[n]] then
+                    return false
+                end
+            end
+            return true
+        end
+
+        local function OnPick(key, val)
+            local menuT = MenuTable(menuIdx)
+            if not menuT then
+                return
+            end
+            local role = roles[key]
+            if key == ALL or role then
+                -- All clears the list (no list is every spec); a role row
+                -- sets exactly that role's specs. Either closes the list.
+                local chosen = nil
+                if role then
+                    chosen = {}
+                    for n = 1, #role do
+                        chosen[role[n]] = true
+                    end
+                end
+                menuT.specs = chosen
+                specDD:Click() -- close, as the Resource Bars picker does
+            else
+                local chosen = menuT.specs or {}
+                local mark = val and true or nil
+                local ids = ClassSpecs(key)
+                if ids then
+                    for n = 1, #ids do
+                        chosen[ids[n]] = mark
+                    end
+                else
+                    chosen[key] = mark
+                end
+                menuT.specs = next(chosen) and chosen or nil
+            end
+            local broke = CheckShares()
+            Reapply()
+            if refreshSpecDD then
+                refreshSpecDD()
+            end
+            if broke then
+                local openList = CludesUI._openDropdownMenu
+                if openList and openList:IsShown() then
+                    rebuildOnClose = true
+                else
+                    RedrawPage()
+                end
+            end
+        end
+
+        local function OnListClosed()
+            if rebuildOnClose then
+                rebuildOnClose = false
+                RedrawPage()
+            end
+        end
+
+        specDD, refreshSpecDD = CludesUI.BuildVisOptsCBDropdown(
             row,
             ddW,
             row:GetFrameLevel() + 2,
             itemList,
-            function(key)
-                local specs = mod.PaletteSpecs(palIdx)
-                if key == ALL then
-                    return specs == nil
-                end
-                if roles[key] then
-                    return false
-                end
-                local ids = CludesUI.IS_FOREVER and CludesUI.ForeverClassSpecIDs(key)
-                if ids then
-                    if not specs then
-                        return false
-                    end
-                    for i = 1, #ids do
-                        if not specs[ids[i]] then
-                            return false
-                        end
-                    end
-                    return true
-                end
-                return specs ~= nil and specs[key] == true
-            end,
-            function(key, val)
-                local menuT = MenuTable(palIdx)
-                if not menuT then
-                    return
-                end
-                local role = roles[key]
-                if key == ALL or role then
-                    local set
-                    if role then
-                        set = {}
-                        for i = 1, #role do
-                            set[role[i]] = true
-                        end
-                    end
-                    menuT.specs = set
-                    cbDD:Click() -- close, as the Resource Bars picker does
-                else
-                    local set = menuT.specs or {}
-                    local ids = CludesUI.IS_FOREVER and CludesUI.ForeverClassSpecIDs(key)
-                    if ids then
-                        for i = 1, #ids do
-                            set[ids[i]] = val and true or nil
-                        end
-                    else
-                        set[key] = val and true or nil
-                    end
-                    menuT.specs = next(set) and set or nil
-                end
-                local broke = CheckShares()
-                Reapply()
-                if cbRefresh then
-                    cbRefresh()
-                end
-                if broke then
-                    local open = CludesUI._openDropdownMenu
-                    if open and open:IsShown() then
-                        sharesBroken = true
-                    else
-                        RedrawPage()
-                    end
-                end
-            end,
+            IsTicked,
+            OnPick,
             nil,
             10,
             true,
             nil,
-            function()
-                if sharesBroken then
-                    sharesBroken = false
-                    RedrawPage()
-                end
-            end,
+            OnListClosed,
             {
                 disabled = function()
                     return ProfileGet("enabled") ~= true
@@ -3645,22 +3685,19 @@ initFrame:SetScript("OnEvent", function(self)
                 disabledTooltip = "the module",
             }
         )
-        local tipText = CludesUI.L("Choose the specs this action menu works in.")
-        cbDD:HookScript("OnEnter", function()
-            local open = CludesUI._openDropdownMenu
-            if not (open and open:IsShown()) then
-                CludesUI.ShowWidgetTooltip(cbDD, tipText)
+        local hint = CludesUI.L("Choose the specs this action menu works in.")
+        specDD:HookScript("OnEnter", function()
+            local openList = CludesUI._openDropdownMenu
+            if not (openList and openList:IsShown()) then
+                CludesUI.ShowWidgetTooltip(specDD, hint)
             end
         end)
-        cbDD:HookScript("OnLeave", function()
+        specDD:HookScript("OnLeave", function()
             CludesUI.HideWidgetTooltip()
         end)
-        CludesUI.RegisterWidgetRefresh(cbRefresh)
+        CludesUI.RegisterWidgetRefresh(refreshSpecDD)
 
-        local labelText = CludesUI.MakeFont(row, 14, nil, 1, 1, 1)
-        labelText:SetText(CludesUI.L("Assign to Spec"))
-        labelText:SetTextColor(1, 1, 1, 0.6)
-        return labelText, cbDD
+        return PairCaption(row, "Assign to Spec"), specDD
     end
 
     -- The row below the preview: Assign to Spec, and with another menu to copy
@@ -3671,83 +3708,86 @@ initFrame:SetScript("OnEvent", function(self)
     -- always returns the placeholder so the dropdown stores nothing, and the
     -- registered widget refresh snaps the label back after each pick.
     local function BuildApplyRow(hostFrame, posY, withCopy)
-        local PPQ = CludesUI.PanelPP
-        local curIdx = editingMenu
-
-        local ROW_H = 50
+        local ROW_HEIGHT = 50
         -- Bespoke controls the search index does not list: its prebuild only
         -- takes the height.
         if CludesUI._prebuilding then
-            return ROW_H
+            return ROW_HEIGHT
         end
-        local contentPad = CludesUI.CONTENT_PAD or 45
-        local rowFrame = CreateFrame("Frame", nil, hostFrame)
-        PPQ.Size(rowFrame, hostFrame:GetWidth() - contentPad * 2, ROW_H)
-        PPQ.Point(rowFrame, "TOPLEFT", hostFrame, "TOPLEFT", contentPad, posY)
+        local Pix = CludesUI.PanelPP
+        local target = editingMenu
+        local pad = CludesUI.CONTENT_PAD or 45
+        local strip = CreateFrame("Frame", nil, hostFrame)
+        Pix.Size(strip, hostFrame:GetWidth() - pad * 2, ROW_HEIGHT)
+        Pix.Point(strip, "TOPLEFT", hostFrame, "TOPLEFT", pad, posY)
 
-        local DD_W, GAP, PAIR_GAP = 180, 12, 40
-        local specLabel, specDD = BuildSpecPair(rowFrame, DD_W)
-        local totalW = specLabel:GetStringWidth() + GAP + DD_W
+        local DROP_W, LABEL_GAP, BETWEEN = 180, 12, 40
+        -- Each pair is { caption, dropdown }.
+        local pairList = { { BuildSpecPair(strip, DROP_W) } }
 
-        local labelText, ddBtn
         if withCopy then
-            local ddValues = { [""] = "Choose Menu..." }
-            local ddOrder = {}
+            local names, order = { [""] = "Choose Menu..." }, {}
             for i = 1, MenuCount() do
-                if i ~= curIdx then
-                    ddValues[i] = MenuName(i)
-                    ddOrder[#ddOrder + 1] = i
+                if i ~= target then
+                    names[i] = MenuName(i)
+                    order[#order + 1] = i
                 end
             end
-
-            labelText = CludesUI.MakeFont(rowFrame, 14, nil, 1, 1, 1)
-            labelText:SetText(CludesUI.L("Apply All Settings From"))
-            labelText:SetTextColor(1, 1, 1, 0.6)
-
-            ddBtn = CludesUI.BuildDropdownControl(
-                rowFrame,
-                DD_W,
-                rowFrame:GetFrameLevel() + 2,
-                ddValues,
-                ddOrder,
+            local caption = PairCaption(strip, "Apply All Settings From")
+            local fromDD = CludesUI.BuildDropdownControl(
+                strip,
+                DROP_W,
+                strip:GetFrameLevel() + 2,
+                names,
+                order,
+                -- Always the placeholder, so the dropdown itself stores nothing.
                 function()
                     return ""
                 end,
                 function(srcIdx)
-                    if srcIdx == "" then
-                        return
+                    if srcIdx ~= "" then
+                        CludesUI:ShowConfirmPopup({
+                            title = "Apply All Settings",
+                            message = CludesUI.Lf(
+                                "Copy all settings from %1$s to %2$s?",
+                                MenuName(srcIdx),
+                                MenuName(target)
+                            ),
+                            disclaimer = "This overwrites this action menu's current settings. Its actions, name, and keybind are not changed.",
+                            confirmText = "Apply",
+                            cancelText = "Cancel",
+                            onConfirm = function()
+                                CopyAllMenuSettings(srcIdx, target)
+                            end,
+                        })
                     end
-                    CludesUI:ShowConfirmPopup({
-                        title = "Apply All Settings",
-                        message = CludesUI.Lf(
-                            "Copy all settings from %1$s to %2$s?",
-                            MenuName(srcIdx),
-                            MenuName(curIdx)
-                        ),
-                        disclaimer = "This overwrites this action menu's current settings. Its actions, name, and keybind are not changed.",
-                        confirmText = "Apply",
-                        cancelText = "Cancel",
-                        onConfirm = function()
-                            CopyAllMenuSettings(srcIdx, curIdx)
-                        end,
-                    })
                 end
             )
-            ddBtn._ttText = "Copy every setting from another action menu to this one."
+            fromDD._ttText = "Copy every setting from another action menu to this one."
+            -- Snaps the label back to the placeholder after each pick.
             CludesUI.RegisterWidgetRefresh(function()
-                ddBtn._refreshLabel()
+                fromDD._refreshLabel()
             end)
-            totalW = totalW + PAIR_GAP + labelText:GetStringWidth() + GAP + DD_W
+            pairList[2] = { caption, fromDD }
         end
 
-        specLabel:SetPoint("LEFT", rowFrame, "CENTER", -totalW / 2, 0)
-        specDD:SetPoint("LEFT", specLabel, "RIGHT", GAP, 0)
-        if labelText then
-            labelText:SetPoint("LEFT", specDD, "RIGHT", PAIR_GAP, 0)
-            ddBtn:SetPoint("LEFT", labelText, "RIGHT", GAP, 0)
+        -- The pairs centred on the row as one line.
+        local width = 0
+        for n, pr in ipairs(pairList) do
+            width = width + (n > 1 and BETWEEN or 0) + pr[1]:GetStringWidth() + LABEL_GAP + DROP_W
+        end
+        local prevDD
+        for _, pr in ipairs(pairList) do
+            if prevDD then
+                pr[1]:SetPoint("LEFT", prevDD, "RIGHT", BETWEEN, 0)
+            else
+                pr[1]:SetPoint("LEFT", strip, "CENTER", -width / 2, 0)
+            end
+            pr[2]:SetPoint("LEFT", pr[1], "RIGHT", LABEL_GAP, 0)
+            prevDD = pr[2]
         end
 
-        return ROW_H
+        return ROW_HEIGHT
     end
 
     ---------------------------------------------------------------------------
