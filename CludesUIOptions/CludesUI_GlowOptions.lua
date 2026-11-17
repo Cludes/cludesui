@@ -1396,3 +1396,95 @@ function CludesUI.BuildFilterSidebar(side, sideW, filters, opts)
     addFilterBtn:SetPoint("TOPLEFT", sideChild, "TOPLEFT", 8, fy - 8)
     return sideScroll, sideChild, fy
 end
+
+-------------------------------------------------------------------------------
+--  BuildFilterEditorShell: the window of an aura manager's filter editor: a
+--  dimmer over the screen (a click on it closes the editor), the dialog
+--  (width x height, at the popup scale) titled Edit Filters, a close X, and
+--  Escape closing the editor alone. The editor is kept on owner[slot] while
+--  shown; keepKey names the one kept frame the pool dresses again on every
+--  open. Returns the dimmer and the dialog.
+-------------------------------------------------------------------------------
+function CludesUI.BuildFilterEditorShell(owner, slot, keepKey, width, height)
+    local PoolKept, PoolOwned = CludesUI._Pool.Kept, CludesUI._Pool.Owned
+    local dimmer = PoolKept(owner, keepKey, "Frame", UIParent)
+    dimmer:SetFrameStrata("FULLSCREEN_DIALOG")
+    dimmer:SetAllPoints(UIParent)
+    dimmer:EnableMouse(true)
+    dimmer:EnableMouseWheel(true)
+    dimmer:SetScript("OnMouseWheel", function() end)
+    -- Clicking off the popup closes the editor (the popup is mouse-enabled,
+    -- so clicks on it never reach the dimmer).
+    dimmer:SetScript("OnMouseDown", function()
+        dimmer:Hide()
+        owner[slot] = nil
+    end)
+    local dimTex = CludesUI.SolidTex(dimmer, "BACKGROUND", 0, 0, 0, 0.25)
+    dimTex:SetAllPoints()
+    owner[slot] = dimmer
+
+    local dialog = CreateFrame("Frame", nil, dimmer)
+    dialog:SetSize(width, height)
+    dialog:SetPoint("CENTER", UIParent, "CENTER", 0, 20)
+    dialog:SetFrameStrata("FULLSCREEN_DIALOG")
+    dialog:SetFrameLevel(dimmer:GetFrameLevel() + 10)
+    dialog:EnableMouse(true)
+    local popBg = CludesUI.SolidTex(dialog, "BACKGROUND", 0.062, 0.070, 0.082, 1)
+    popBg:SetAllPoints()
+    CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.15, popBg)
+    dialog:SetScale((CludesUI.GetPopupScale and CludesUI.GetPopupScale()) or 1)
+
+    local title = CludesUI.MakeFont(dialog, 16, "", 1, 1, 1)
+    title:SetPoint("TOP", dialog, "TOP", 0, -18)
+    title:SetText(CludesUI.L("Edit Filters"))
+
+    -- Close button (top-right): the borderless X (the boxed close-popup
+    -- variant reads as a framed button here).
+    do
+        local close = CreateFrame("Button", nil, dialog)
+        close:SetSize(19, 19)
+        close:SetPoint("TOPRIGHT", dialog, "TOPRIGHT", -13, -8)
+        close:SetFrameLevel(dialog:GetFrameLevel() + 5)
+        local closeIcon = close:CreateTexture(nil, "ARTWORK")
+        closeIcon:SetAllPoints()
+        closeIcon:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
+        closeIcon:SetAlpha(0.40)
+        closeIcon:SetSnapToPixelGrid(false)
+        closeIcon:SetTexelSnappingBias(0)
+        close:SetScript("OnEnter", function()
+            closeIcon:SetAlpha(0.50)
+        end)
+        close:SetScript("OnLeave", function()
+            closeIcon:SetAlpha(0.40)
+        end)
+        close:SetScript("OnClick", function()
+            dimmer:Hide()
+            owner[slot] = nil
+        end)
+    end
+
+    -- Escape closes the editor alone: the key is swallowed here, so it never
+    -- reaches the Escape proxy that would close the options window too.
+    -- SetPropagateKeyboardInput is protected in combat, so the editor takes
+    -- the keyboard only when built out of combat and stands aside in it. The
+    -- capture is a frame of its own, owned by the popup outside its child
+    -- list: a dress in combat cannot clear keyboard flags, so it leaves only
+    -- that frame for the next dress out of combat, never the popup.
+    if not InCombatLockdown() then
+        local keyList = PoolOwned(dialog, "keys", "Frame", dialog)
+        keyList:SetAllPoints(dialog)
+        keyList:EnableKeyboard(true)
+        keyList:SetPropagateKeyboardInput(true)
+        keyList:SetScript("OnKeyDown", function(self, key)
+            if InCombatLockdown() then
+                return
+            end
+            self:SetPropagateKeyboardInput(key ~= "ESCAPE")
+            if key == "ESCAPE" then
+                dimmer:Hide()
+                owner[slot] = nil
+            end
+        end)
+    end
+    return dimmer, dialog
+end
