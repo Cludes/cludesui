@@ -1914,33 +1914,34 @@ initFrame:SetScript("OnEvent", function(self)
     end
 
     ---------------------------------------------------------------------------
-    --  Shared helpers for the Mythic+ Tools cast-bar tabs
+    --  What the cast bar pages share: their settings tables and refreshes
     ---------------------------------------------------------------------------
-    local function TSB()
-        local p = DB()
-        return p and p.tsb
+    -- A sub-table of the profile (nil until the profile exists).
+    local function ProfilePart(key)
+        return function()
+            local p = DB()
+            return p and p[key]
+        end
     end
-    local function TFB()
-        local p = DB()
-        return p and p.tfb
-    end
+    local TSB = ProfilePart("tsb") -- Cast Bars
+    local TFB = ProfilePart("tfb") -- Target/Focus Bars, both bars' shared keys
+    -- One of the Target/Focus Bars ("target" or "focus").
     local function TFBBar(which)
         local t = TFB()
         return t and t[which]
     end
-    -- The runtime restyles first, the header sample paints second.
-    local function TSBRefresh()
-        if mod.TSB_Refresh then
-            mod.TSB_Refresh()
+    -- Each refresh restyles the live bars, then repaints the header sample.
+    local function Restyler(exportName, pv)
+        return function()
+            local apply = mod[exportName]
+            if apply then
+                apply()
+            end
+            PvRepaint(pv)
         end
-        PvRepaint(tsbPv)
     end
-    local function TFBRefresh()
-        if mod.TFB_Refresh then
-            mod.TFB_Refresh()
-        end
-        PvRepaint(tfbPv)
-    end
+    local TSBRefresh = Restyler("TSB_Refresh", tsbPv)
+    local TFBRefresh = Restyler("TFB_Refresh", tfbPv)
 
     -- Closure makers for one settings table, so a row names its key once
     -- instead of spelling out the lookup. tbl() hands back the table (nil
@@ -2072,9 +2073,9 @@ initFrame:SetScript("OnEvent", function(self)
         }
     end
 
-    -- Where to Show labels, keyed by the content keys of ns.MTWhere: one
-    -- table for every Where to Show list of the module (Targeted Spell Bars,
-    -- Kick Tracker).
+    -- Where to Show labels for the content keys of ns.MTWhere, the one list
+    -- behind every Where to Show of the module (Cast Bars here, Kick
+    -- Tracker on its own page).
     local WHERE_LABELS = {
         open_world = "Open World",
         raid_mythic = "Mythic Raid",
@@ -2092,157 +2093,128 @@ initFrame:SetScript("OnEvent", function(self)
         out_of_combat = "Out of Combat",
     }
     mod._MT_WHERE_LABELS = WHERE_LABELS
-    -- The bar texture dropdown data, for the Kick Tracker page (its own file).
+    -- The Kick Tracker page (its own file) uses the bar texture list too.
     mod._MT_BuildBarTexDropdown = BuildBarTexDropdown
 
-    -- Where to Show: same content-type list and multi-select checkbox
-    -- dropdown (CludesUI.BuildVisOptsCBDropdown) as AuraBuffReminders.
+    -- The Cast Bars' Where to Show checklist (CludesUI.BuildVisOptsCBDropdown,
+    -- as on the buff reminders page): every content type but arenas and
+    -- battlegrounds, then the two combat states.
     local TSB_WHERE_ITEMS = {}
-    do
-        local keyList = {
-            "open_world",
-            "raid_mythic",
-            "raid_heroic",
-            "raid_normal_lfr",
-            "dungeon_mythic",
-            "dungeon_nonmythic",
-            "timewalking",
-            "delve",
-            "lair",
-            "scenario",
-            "in_combat",
-            "out_of_combat",
-        }
-        for idx = 1, #keyList do
-            TSB_WHERE_ITEMS[idx] = { key = keyList[idx], label = WHERE_LABELS[keyList[idx]] }
-        end
+    for _, key in ipairs({
+        "open_world",
+        "raid_mythic",
+        "raid_heroic",
+        "raid_normal_lfr",
+        "dungeon_mythic",
+        "dungeon_nonmythic",
+        "timewalking",
+        "delve",
+        "lair",
+        "scenario",
+        "in_combat",
+        "out_of_combat",
+    }) do
+        TSB_WHERE_ITEMS[#TSB_WHERE_ITEMS + 1] = { key = key, label = WHERE_LABELS[key] }
     end
+    -- Only ticked entries are stored (as true); with none ticked the bars
+    -- show everywhere. The table is made on first use.
     local function TSBWhere()
         local c = TSB()
-        if not c then
-            return nil
+        if c then
+            c.whereToShow = c.whereToShow or {}
+            return c.whereToShow
         end
-        c.whereToShow = c.whereToShow or {}
-        return c.whereToShow
     end
-    -- Positive filter: only selected entries are stored (true); nothing
-    -- selected = the bars show everywhere.
     local function TSBWhereGet(k)
         local t = TSBWhere()
         return t and t[k] == true or false
     end
     local function TSBWhereSet(k, v)
         local t = TSBWhere()
-        if not t then
-            return
+        if t then
+            t[k] = v and true or nil
+            TSBRefresh()
         end
-        t[k] = v and true or nil
-        TSBRefresh()
     end
 
-    -- The cast bar pages' header previews: the Cast Bars group's plain sample
-    -- row, and the Target and Focus cast bars side by side. A column whose
-    -- runtime export is missing hides instead of erroring. Each painter returns
-    -- two values, so the guard is a statement: an `and` chain would keep only
-    -- the width.
+    -- Header previews: the Cast Bars' plain sample row, and the Target and
+    -- Focus cast bars side by side. A column whose runtime painter is missing
+    -- hides rather than errors; the painter's two results (width, height)
+    -- pass straight through.
+    local function Painter(exportName, which)
+        return function(host)
+            local paint = mod[exportName]
+            if not paint then
+                return
+            end
+            if which then
+                return paint(host, which)
+            end
+            return paint(host)
+        end
+    end
+    local function BarOn(which)
+        return Accessors(function()
+            return TFBBar(which)
+        end, TFBRefresh).IsOn("enabled")
+    end
+    local tsbAcc = Accessors(TSB, TSBRefresh)
     local tsbBuilder = PvBuilder(tsbPv, {
-        {
-            title = "Cast Bars",
-            on = function()
-                local c = TSB()
-                return c and c.enabled == true
-            end,
-            paint = function(host)
-                if mod.TSB_PaintSample then
-                    return mod.TSB_PaintSample(host)
-                end
-            end,
-        },
+        { title = "Cast Bars", on = tsbAcc.IsOn("enabled"), paint = Painter("TSB_PaintSample") },
     })
     local tfbBuilder = PvBuilder(tfbPv, {
-        {
-            title = "Target Cast Bar",
-            on = function()
-                local c = TFBBar("target")
-                return c and c.enabled == true
-            end,
-            paint = function(host)
-                if mod.TFB_PaintSample then
-                    return mod.TFB_PaintSample(host, "target")
-                end
-            end,
-        },
-        {
-            title = "Focus Cast Bar",
-            on = function()
-                local c = TFBBar("focus")
-                return c and c.enabled == true
-            end,
-            paint = function(host)
-                if mod.TFB_PaintSample then
-                    return mod.TFB_PaintSample(host, "focus")
-                end
-            end,
-        },
+        { title = "Target Cast Bar", on = BarOn("target"), paint = Painter("TFB_PaintSample", "target") },
+        { title = "Focus Cast Bar", on = BarOn("focus"), paint = Painter("TFB_PaintSample", "focus") },
     })
 
     ---------------------------------------------------------------------------
-    --  Targeted Spell Bars page
+    --  Cast Bars page
     ---------------------------------------------------------------------------
-    ---------------------------------------------------------------------------
-    --  Glow site: the Targeted Spell Bars important cast glow as a shared glow
-    --  descriptor, used by the TSB page and the Global Settings Glows page. The
-    --  bar is an engine host by choice (zero per-frame Lua): C-side styles only.
-    ---------------------------------------------------------------------------
+    -- The Important Cast Glow as a shared glow descriptor, used by this page
+    -- and by the Glows page of Global Settings. The bar hosts it on the
+    -- engine (no per-frame Lua), so only the C-side styles apply.
     local mtImpGlowDesc
     do
         local GO = CludesUI.GlowOptions
-        local function TsbOff()
-            local c = TSB()
-            return not (c and c.enabled == true)
-        end
         mtImpGlowDesc = {
             host = "engine",
             caps = { mode = true, params = true, bg = true },
             defaultColor = { r = 1, g = 0.2, b = 0.2 },
-            disabled = TsbOff,
+            disabled = tsbAcc.NotOn("enabled"),
             disabledTooltip = "Enable Cast Bars",
-            isOff = function()
-                local c = TSB()
-                return not (c and c.importantGlow == true)
-            end,
+            isOff = tsbAcc.NotOn("importantGlow"),
             onChange = TSBRefresh,
-            get = function(f)
+            get = function(field)
                 local c = TSB()
                 if not c then
                     return nil
                 end
-                if f == "style" then
+                if field == "style" then
                     return c.importantGlowStyle or 1
-                elseif f == "mode" then
-                    return c.importantGlowColorMode or "custom"
-                elseif f == "color" then
-                    local col = c.importantGlowColor
-                    return (col and col.r) or 1, (col and col.g) or 0.2, (col and col.b) or 0.2
                 end
-                return CludesUI.GlowOptions.FlatGet(c, "importantGlow", f)
+                if field == "mode" then
+                    return c.importantGlowColorMode or "custom"
+                end
+                if field == "color" then
+                    return tsbAcc.Rgb("importantGlowColor", 1, 0.2, 0.2)()
+                end
+                return CludesUI.GlowOptions.FlatGet(c, "importantGlow", field)
             end,
-            set = function(f, a, b2, c2)
+            -- Style 0 switches the glow off and keeps the last style.
+            set = function(field, a, b2, c2)
                 local c = TSB()
                 if not c then
                     return
                 end
-                if f == "style" then
-                    if a == 0 then
-                        c.importantGlow = false
-                    else
-                        c.importantGlow = true
+                if field == "style" then
+                    c.importantGlow = a ~= 0
+                    if a ~= 0 then
                         c.importantGlowStyle = a
                     end
-                elseif f == "mode" then
+                elseif field == "mode" then
                     c.importantGlowColorMode = a
                 else
-                    CludesUI.GlowOptions.FlatSet(c, "importantGlow", f, a, b2, c2)
+                    CludesUI.GlowOptions.FlatSet(c, "importantGlow", field, a, b2, c2)
                 end
             end,
         }
