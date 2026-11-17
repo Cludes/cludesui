@@ -1381,265 +1381,236 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         bar:SetPoint(Corner(own, sideB), target, Corner(onto, sideB), 0, 0)
     end
 
-    -- Absorb bars (style-aware preview for player, target, focus):
-    --   absorbBar     = shield (damage) absorb, white/shield, drawn below
-    --   healAbsorbBar = heal absorb, red, one sublevel above; shown only while
-    --                   the Heal Absorb Style eyeball is on
+    -- Absorb bars (player, target and focus), drawn in the chosen styles:
+    -- the shield absorb underneath and the heal absorb one sublevel above
+    -- it. On the preview the two take turns: the heal absorb shows only
+    -- while its Heal Absorb Style eye is on, which hides the shield.
     local absorbBar, healAbsorbBar, absorbTopBar, healAbsorbTopBar
+    local WHITE_TEX = "Interface\\Buttons\\WHITE8X8"
     if unitKey == "player" or unitKey == "target" or unitKey == "focus" then
-        local PREV_ABS_TEX = {
-            striped = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped3.tga",
-            stripedReversed = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped-5-reversed.png",
-            clean = "Interface\\Buttons\\WHITE8X8",
-            blizzard = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\blizzard.tga",
-            largeOutlinedStripes = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\large-habsorb-left.png",
-            largeOutlinedStripesR = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\large-habsorb-right.png",
-            largeStripes = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\large-absorb-left.png",
-            largeStripesR = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\large-absorb-right.png",
-        }
-        -- Clip container: absorb fills anchor off the health fill's current-HP
-        -- edge at full frame width, so a high preview fill overruns the bar.
-        -- Real frames clamp; mirror that by clipping to the health bar's rect.
+        -- The fills hang off the health fill's current-health edge at full
+        -- frame width, so a high preview fill would run past the bar; the
+        -- live frames clamp, and this clip to the health bar does the same.
         local absClip = CreateFrame("Frame", nil, health)
         absClip:SetAllPoints(health)
         absClip:SetFrameLevel(health:GetFrameLevel() + 1)
         absClip:SetClipsChildren(true)
 
-        -- Shield (damage) absorb
+        -- One absorb StatusBar: texture from the style (SharedMedia names go
+        -- through the bar texture lookup), tiled where the style tiles, at
+        -- the given draw sublevel, colour and edge mode.
+        local function MakeAbsorbBar(style, fallbackTex, sublevel, r, g, b, a, edgeMode)
+            local bar = CreateFrame("StatusBar", nil, absClip)
+            bar:SetStatusBarTexture(mod.ResolveAbsorbStyleTex(style, fallbackTex))
+            local fill = bar:GetStatusBarTexture()
+            if fill then
+                fill:SetDrawLayer("ARTWORK", sublevel)
+                local tiled = (mod.ABSORB_TILED_STYLES[style] == true)
+                fill:SetHorizTile(tiled)
+                fill:SetVertTile(tiled)
+            end
+            bar:SetStatusBarColor(r, g, b, a)
+            PositionPreviewAbsorb(
+                bar,
+                edgeMode or "overlay",
+                prefs.healthReverseFill,
+                prefs.healthVerticalFill
+            )
+            Pix.Width(bar, frameW)
+            Pix.Height(bar, healthH)
+            bar:SetMinMaxValues(0, 1)
+            bar:SetValue(0.14)
+            bar:SetFrameLevel(health:GetFrameLevel() + 1)
+            return bar
+        end
+
+        -- Shield absorb. Its opacity follows the live GetAbsorbOpacity
+        -- (CUI_UnitFrames_Absorb.lua): the set opacity, else the style's own.
         local absStyle = prefs.showPlayerAbsorb
-        local PREV_ABS_ALPHA = {
+        local STYLE_ALPHA = {
             striped = 0.8,
             stripedReversed = 0.8,
             clean = (prefs.absorbCleanAlpha or 30) / 100,
             blizzard = 0.8,
         }
-        -- SharedMedia keys fall through to the health-bar texture lookup.
-        local texture = mod.ResolveAbsorbStyleTex(absStyle, PREV_ABS_TEX.striped)
-        -- Effective opacity/color: mirrors GetAbsorbOpacity in CUI_UnitFrames_Absorb.lua
-        local alpha = prefs.absorbOpacity and (prefs.absorbOpacity / 100) or PREV_ABS_ALPHA[absStyle] or 0.8
-        local ac = prefs.absorbColor or { r = 1, g = 1, b = 1 }
-        absorbBar = CreateFrame("StatusBar", nil, absClip)
-        absorbBar:SetStatusBarTexture(texture)
-        local absFillTex = absorbBar:GetStatusBarTexture()
-        if absFillTex then
-            absFillTex:SetDrawLayer("ARTWORK", 1)
-            local absTiled = (mod.ABSORB_TILED_STYLES[absStyle] == true)
-            absFillTex:SetHorizTile(absTiled)
-            absFillTex:SetVertTile(absTiled)
-        end
-        absorbBar:SetStatusBarColor(ac.r, ac.g, ac.b, alpha)
-        PositionPreviewAbsorb(
-            absorbBar,
-            prefs.absorbEdgeMode or "overlay",
-            prefs.healthReverseFill,
-            prefs.healthVerticalFill
+        local shieldA = prefs.absorbOpacity and (prefs.absorbOpacity / 100) or STYLE_ALPHA[absStyle] or 0.8
+        local shieldC = prefs.absorbColor or { r = 1, g = 1, b = 1 }
+        local STRIPED_TEX = "Interface\\AddOns\\CludesUI\\media\\textures\\shields\\striped3.tga"
+        absorbBar = MakeAbsorbBar(
+            absStyle,
+            STRIPED_TEX,
+            1,
+            shieldC.r,
+            shieldC.g,
+            shieldC.b,
+            shieldA,
+            prefs.absorbEdgeMode
         )
-        Pix.Width(absorbBar, frameW)
-        Pix.Height(absorbBar, healthH)
-        absorbBar:SetMinMaxValues(0, 1)
-        absorbBar:SetValue(0.14)
-        absorbBar:SetFrameLevel(health:GetFrameLevel() + 1)
         if not absStyle or absStyle == "none" then
             absorbBar:Hide()
         end
 
-        -- Heal absorb (red, one sublevel above the shield absorb); on the preview
-        -- the two are mutually exclusive -- visible only while the eyeball is on,
-        -- which hides absorbBar.
-        local haStyle = prefs.healAbsorbStyle or "clean"
-        local haTex = mod.ResolveAbsorbStyleTex(haStyle, "Interface\\Buttons\\WHITE8X8")
-        local haAlpha = (prefs.healAbsorbOpacity or 65) / 100
-        local hc = prefs.healAbsorbColor or { r = 0.8, g = 0.15, b = 0.15 }
-        if haStyle == "largeOutlinedStripes" or haStyle == "largeOutlinedStripesR" then
-            hc = { r = 1, g = 1, b = 1 }
+        -- Heal absorb: red by default; the outlined stripe styles carry their
+        -- own colour, so those draw untinted.
+        local healStyle = prefs.healAbsorbStyle or "clean"
+        local healC = prefs.healAbsorbColor or { r = 0.8, g = 0.15, b = 0.15 }
+        if healStyle == "largeOutlinedStripes" or healStyle == "largeOutlinedStripesR" then
+            healC = { r = 1, g = 1, b = 1 }
         end
-        healAbsorbBar = CreateFrame("StatusBar", nil, absClip)
-        healAbsorbBar:SetStatusBarTexture(haTex)
-        local haFillTex = healAbsorbBar:GetStatusBarTexture()
-        if haFillTex then
-            haFillTex:SetDrawLayer("ARTWORK", 2)
-            local haTiled = (mod.ABSORB_TILED_STYLES[haStyle] == true)
-            haFillTex:SetHorizTile(haTiled)
-            haFillTex:SetVertTile(haTiled)
-        end
-        healAbsorbBar:SetStatusBarColor(hc.r or 0.8, hc.g or 0.15, hc.b or 0.15, haAlpha)
-        PositionPreviewAbsorb(
-            healAbsorbBar,
-            prefs.healAbsorbEdgeMode or "overlay",
-            prefs.healthReverseFill,
-            prefs.healthVerticalFill
+        healAbsorbBar = MakeAbsorbBar(
+            healStyle,
+            WHITE_TEX,
+            2,
+            healC.r or 0.8,
+            healC.g or 0.15,
+            healC.b or 0.15,
+            (prefs.healAbsorbOpacity or 65) / 100,
+            prefs.healAbsorbEdgeMode
         )
-        Pix.Width(healAbsorbBar, frameW)
-        Pix.Height(healAbsorbBar, healthH)
-        healAbsorbBar:SetMinMaxValues(0, 1)
-        healAbsorbBar:SetValue(0.14)
-        healAbsorbBar:SetFrameLevel(health:GetFrameLevel() + 1)
         healAbsorbBar:Hide()
-        -- Black backing under the heal-absorb fill (healAbsorbBgOpacity), one
-        -- sublevel below it and tracking its rect.
-        local haBgPv = healAbsorbBar:CreateTexture(nil, "ARTWORK", nil, 1)
-        haBgPv:SetColorTexture(0, 0, 0, (prefs.healAbsorbBgOpacity or 15) / 100)
-        haBgPv:SetAllPoints(healAbsorbBar:GetStatusBarTexture())
-        healAbsorbBar._bg = haBgPv
+        -- A black backing (Heal Absorb Background Opacity) one sublevel under
+        -- the heal absorb fill, following its rect.
+        local healBack = healAbsorbBar:CreateTexture(nil, "ARTWORK", nil, 1)
+        healBack:SetColorTexture(0, 0, 0, (prefs.healAbsorbBgOpacity or 15) / 100)
+        healBack:SetAllPoints(healAbsorbBar:GetStatusBarTexture())
+        healAbsorbBar._bg = healBack
 
-        -- Max Health Style preview (its eyeball): a fixed reduced maximum on the
-        -- bar's far end, styled by the live frames' function. Driven in pf:Update.
-        popFrame._pvMaxHp = CreateFrame("StatusBar", nil, health)
-        popFrame._pvMaxHp:SetAllPoints(health)
-        popFrame._pvMaxHp:SetFrameLevel(health:GetFrameLevel() + 2)
-        popFrame._pvMaxHp:SetMinMaxValues(0, 1)
-        popFrame._pvMaxHp:SetValue(0.2)
-        popFrame._pvMaxHp._bg = popFrame._pvMaxHp:CreateTexture(nil, "ARTWORK", nil, 2)
-        popFrame._pvMaxHp:Hide()
+        -- Max Health Style (its eye): a fixed reduced maximum on the bar's far
+        -- end, styled by the live frames' own function; pf:Update drives it.
+        local maxHp = CreateFrame("StatusBar", nil, health)
+        maxHp:SetAllPoints(health)
+        maxHp:SetFrameLevel(health:GetFrameLevel() + 2)
+        maxHp:SetMinMaxValues(0, 1)
+        maxHp:SetValue(0.2)
+        maxHp._bg = maxHp:CreateTexture(nil, "ARTWORK", nil, 2)
+        maxHp:Hide()
+        popFrame._pvMaxHp = maxHp
 
-        -- Heal prediction preview (Heal Prediction eyeball): others' heals at the
-        -- full incoming total underneath, yours on top, from the HP edge. The
-        -- holder clips at the bar's end unless Overheal lets them run past it.
-        -- Fields on pf, not locals: this builder is long. Driven in pf:Update.
-        popFrame._pvPredHolder = CreateFrame("Frame", nil, health)
-        popFrame._pvPredHolder:SetAllPoints(health)
-        popFrame._pvPredHolder:SetFrameLevel(health:GetFrameLevel() + 1)
-        for idx, key in ipairs({ "_pvPredOther", "_pvPredMy" }) do
-            local bar = CreateFrame("StatusBar", nil, popFrame._pvPredHolder)
-            bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+        -- Heal Prediction (its eye): other players' heals at the whole incoming
+        -- total underneath, yours over them, both from the health edge. Their
+        -- holder clips at the bar's end unless Overheal lets them run on.
+        -- Kept on pf (this builder is long); pf:Update drives them.
+        local predHolder = CreateFrame("Frame", nil, health)
+        predHolder:SetAllPoints(health)
+        predHolder:SetFrameLevel(health:GetFrameLevel() + 1)
+        popFrame._pvPredHolder = predHolder
+        for layer, key in ipairs({ "_pvPredOther", "_pvPredMy" }) do
+            local bar = CreateFrame("StatusBar", nil, predHolder)
+            bar:SetStatusBarTexture(WHITE_TEX)
             bar:SetMinMaxValues(0, 1)
-            bar:SetFrameLevel(health:GetFrameLevel() + idx)
+            bar:SetFrameLevel(health:GetFrameLevel() + layer)
             bar:Hide()
             popFrame[key] = bar
         end
 
-        -- Absorb / Heal Absorb preview strips, parented to the frame so "above"
-        -- positions sit outside the health bar. Driven below.
-        absorbTopBar = CreateFrame("StatusBar", nil, popFrame)
-        absorbTopBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-        absorbTopBar:SetMinMaxValues(0, 1)
-        absorbTopBar:SetValue(0.45)
-        absorbTopBar:Hide()
-        healAbsorbTopBar = CreateFrame("StatusBar", nil, popFrame)
-        healAbsorbTopBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-        healAbsorbTopBar:SetMinMaxValues(0, 1)
-        healAbsorbTopBar:SetValue(0.45)
-        healAbsorbTopBar:Hide()
+        -- The Absorb and Heal Absorb strips, on pf so an "above" strip can sit
+        -- outside the health bar; placed further down.
+        local function StripBar()
+            local bar = CreateFrame("StatusBar", nil, popFrame)
+            bar:SetStatusBarTexture(WHITE_TEX)
+            bar:SetMinMaxValues(0, 1)
+            bar:SetValue(0.45)
+            bar:Hide()
+            return bar
+        end
+        absorbTopBar = StripBar()
+        healAbsorbTopBar = StripBar()
     end
     popFrame._absorbBar = absorbBar
     popFrame._healAbsorbBar = healAbsorbBar
     popFrame._absorbTopBar = absorbTopBar
     popFrame._healAbsorbTopBar = healAbsorbTopBar
 
-    -- Fake buff icons (all units, shown when showBuffs is on and anchor is not "none")
+    -- A sample aura icon: black edge (the backdrop showing round the icon's
+    -- 1px inset, like the live black border), raised past the border frame
+    -- (barArea + 5) and its pixel border holder (barArea + 6).
+    local function SampleAuraIcon(size, iconID)
+        local icon = CreateFrame("Frame", nil, popFrame, "BackdropTemplate")
+        Pix.Size(icon, size, size)
+        icon:SetBackdrop(SOLID_BACKDROP)
+        icon:SetBackdropColor(0, 0, 0, 1)
+        icon:SetFrameLevel(barArea:GetFrameLevel() + 7)
+        local art = icon:CreateTexture(nil, "ARTWORK")
+        Pix.Point(art, "TOPLEFT", icon, "TOPLEFT", 1, -1)
+        Pix.Point(art, "BOTTOMRIGHT", icon, "BOTTOMRIGHT", -1, 1)
+        art:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+        art:SetTexture(iconID)
+        icon._iconTex = art
+        return icon
+    end
+
+    -- Two sample buffs on every unit, shown while Show Buffs is on with an anchor.
     local buffIcons = {}
     do
-        local buffSize = prefs.buffSize or 22
-        local buffGap = 1
-        for idx = 1, 2 do
-            local bf = CreateFrame("Frame", nil, popFrame, "BackdropTemplate")
-            Pix.Size(bf, buffSize, buffSize)
-            bf:SetBackdrop(SOLID_BACKDROP)
-            bf:SetBackdropColor(0, 0, 0, 1)
-            -- Clear the border frame (barArea+5) and its solid PP border
-            -- sub-container (barArea+6) so the icons render above both.
-            bf:SetFrameLevel(barArea:GetFrameLevel() + 7)
-            Pix.Point(bf, "BOTTOMLEFT", popFrame, "TOPLEFT", (idx - 1) * (buffSize + buffGap), buffGap)
-            local texture = bf:CreateTexture(nil, "ARTWORK")
-            Pix.Point(texture, "TOPLEFT", bf, "TOPLEFT", 1, -1)
-            Pix.Point(texture, "BOTTOMRIGHT", bf, "BOTTOMRIGHT", -1, 1)
-            texture:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-            texture:SetTexture(_previewBuffIcons[idx] or 135932)
-            bf._iconTex = texture
-            buffIcons[idx] = bf
-            local showB = prefs.showBuffs and (prefs.buffAnchor or "topleft") ~= "none"
-            if not showB then
-                bf:Hide()
+        local size = prefs.buffSize or 22
+        local buffsShown = prefs.showBuffs and (prefs.buffAnchor or "topleft") ~= "none"
+        for slot = 1, 2 do
+            local icon = SampleAuraIcon(size, _previewBuffIcons[slot] or 135932)
+            Pix.Point(icon, "BOTTOMLEFT", popFrame, "TOPLEFT", (slot - 1) * (size + 1), 1)
+            buffIcons[slot] = icon
+            if not buffsShown then
+                icon:Hide()
             end
         end
     end
 
-    -- Fake debuff icons (all units, shown when debuffAnchor is not "none")
+    -- Twenty sample debuffs on every unit with debuffs, shown while the
+    -- debuff anchor is set. Each carries a still cooldown swipe (an hour
+    -- long, parked at a fixed share so the wedge never moves) and still
+    -- duration and stack numbers, which only the boss preview shows (pf:Update
+    -- sizes them from the boss aura settings).
     local debuffIcons = {}
     do
-        local debuffSize = prefs.debuffSize or 22
-        local debuffGap = 1
-        local previewDebuffIcons = {
-            136116,
-            132099,
-            136182,
-            136214,
-            132155,
-            136201,
-            136148,
-            136175,
-            136130,
-            136160,
-            136195,
-            136133,
-            136222,
-            136168,
-            136205,
-            136186,
-            136124,
-            136151,
-            136210,
-            136143,
-        }
-        for idx = 1, 20 do
-            local df = CreateFrame("Frame", nil, popFrame, "BackdropTemplate")
-            Pix.Size(df, debuffSize, debuffSize)
-            df:SetBackdrop(SOLID_BACKDROP)
-            -- Black 1px edge (backdrop showing through the icon's 1px inset),
-            -- matching the buff icons and the live frames' black border.
-            df:SetBackdropColor(0, 0, 0, 1)
-            -- Clear the border frame (barArea+5) and its PP border container
-            -- (barArea+6); df's cd (+1) and text host (+2) ride up with it.
-            df:SetFrameLevel(barArea:GetFrameLevel() + 7)
-            Pix.Point(df, "TOPLEFT", popFrame, "BOTTOMLEFT", (idx - 1) * (debuffSize + debuffGap), -debuffGap)
-            local texture = df:CreateTexture(nil, "ARTWORK")
-            Pix.Point(texture, "TOPLEFT", df, "TOPLEFT", 1, -1)
-            Pix.Point(texture, "BOTTOMRIGHT", df, "BOTTOMRIGHT", -1, 1)
-            texture:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-            texture:SetTexture(previewDebuffIcons[idx] or 136116)
-            df._iconTex = texture
-            -- Static fake cooldown swipe (huge duration parked at a fixed fraction
-            -- so the wedge never moves) plus static duration/stack text. Shown only
-            -- on the boss preview in pf:Update, sized per the boss aura settings.
-            local cd = CreateFrame("Cooldown", nil, df, "CooldownFrameTemplate")
-            cd:SetPoint("TOPLEFT", df, "TOPLEFT", 1, -1)
-            cd:SetPoint("BOTTOMRIGHT", df, "BOTTOMRIGHT", -1, 1)
-            cd:SetFrameLevel(df:GetFrameLevel() + 1)
-            cd:SetDrawEdge(false)
-            cd:SetDrawBling(false)
-            cd:SetReverse(false)
-            cd:SetDrawSwipe(true)
-            cd:SetSwipeColor(0, 0, 0, 0.6)
-            cd:SetHideCountdownNumbers(true)
-            local frac = 0.25 + (((idx - 1) % 5) * 0.15)
-            cd:SetCooldown(GetTime() - 3600 * (1 - frac), 3600)
-            cd:Hide()
-            df._previewCD = cd
-            local textHost = CreateFrame("Frame", nil, df)
-            textHost:SetAllPoints(df)
-            textHost:SetFrameLevel(cd:GetFrameLevel() + 1)
-            local pvFontP = (CludesUI.GetFontPath("unitFrames")) or "Fonts\\FRIZQT__.TTF"
-            local durText = textHost:CreateFontString(nil, "OVERLAY", nil, 7)
-            CludesUI.ApplyIconTextFont(durText, pvFontP, 10, "unitFrames")
-            durText:SetPoint("CENTER", df, "CENTER", 0, 0)
-            durText:SetText(4 + ((idx - 1) % 5) * 5)
+        local size = prefs.debuffSize or 22
+        local ICON_IDS = {}
+        local idList = "136116 132099 136182 136214 132155 136201 136148 136175 136130 136160"
+            .. " 136195 136133 136222 136168 136205 136186 136124 136151 136210 136143"
+        for id in idList:gmatch("%d+") do
+            ICON_IDS[#ICON_IDS + 1] = tonumber(id)
+        end
+        local auraFont = (CludesUI.GetFontPath("unitFrames")) or "Fonts\\FRIZQT__.TTF"
+        local debuffsHidden = noDebuffPreview or (prefs.debuffAnchor or "bottomleft") == "none"
+        for slot = 1, 20 do
+            local icon = SampleAuraIcon(size, ICON_IDS[slot] or 136116)
+            Pix.Point(icon, "TOPLEFT", popFrame, "BOTTOMLEFT", (slot - 1) * (size + 1), -1)
+            local step = (slot - 1) % 5
+            local swipe = CreateFrame("Cooldown", nil, icon, "CooldownFrameTemplate")
+            swipe:SetPoint("TOPLEFT", icon, "TOPLEFT", 1, -1)
+            swipe:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", -1, 1)
+            swipe:SetFrameLevel(icon:GetFrameLevel() + 1)
+            swipe:SetDrawEdge(false)
+            swipe:SetDrawBling(false)
+            swipe:SetReverse(false)
+            swipe:SetDrawSwipe(true)
+            swipe:SetSwipeColor(0, 0, 0, 0.6)
+            swipe:SetHideCountdownNumbers(true)
+            swipe:SetCooldown(GetTime() - 3600 * (1 - (0.25 + step * 0.15)), 3600)
+            swipe:Hide()
+            icon._previewCD = swipe
+            local numbers = CreateFrame("Frame", nil, icon)
+            numbers:SetAllPoints(icon)
+            numbers:SetFrameLevel(swipe:GetFrameLevel() + 1)
+            local durText = numbers:CreateFontString(nil, "OVERLAY", nil, 7)
+            CludesUI.ApplyIconTextFont(durText, auraFont, 10, "unitFrames")
+            durText:SetPoint("CENTER", icon, "CENTER", 0, 0)
+            durText:SetText(4 + step * 5)
             durText:Hide()
-            df._durText = durText
-            local stackText = textHost:CreateFontString(nil, "OVERLAY", nil, 7)
-            CludesUI.ApplyIconTextFont(stackText, pvFontP, 14, "unitFrames")
-            stackText:SetText(2 + ((idx - 1) % 5))
+            icon._durText = durText
+            local stackText = numbers:CreateFontString(nil, "OVERLAY", nil, 7)
+            CludesUI.ApplyIconTextFont(stackText, auraFont, 14, "unitFrames")
+            stackText:SetText(2 + step)
             stackText:Hide()
-            df._stackText = stackText
-            debuffIcons[idx] = df
-            if noDebuffPreview or (prefs.debuffAnchor or "bottomleft") == "none" then
-                df:Hide()
+            icon._stackText = stackText
+            debuffIcons[slot] = icon
+            if debuffsHidden then
+                icon:Hide()
             end
         end
     end
 
-    -- Disabled overlay: parented to UIParent (pf's strata would clamp it) so it
-    -- renders above ALL other child frames. Owned by pf: the next dress of the
-    -- same preview frame gets the same overlay back (hidden at pf's reset).
+    -- Disabled overlay: on UIParent (pf's strata would cap it) so it covers
+    -- every child of the preview. pf owns it, so the next dress of the same
+    -- preview frame gets the same overlay back (hidden when pf is reset).
     local disabledOverlay = PoolOwned(popFrame, "disabled", "Frame", UIParent, "BackdropTemplate")
     disabledOverlay:SetFrameStrata("FULLSCREEN_DIALOG")
     disabledOverlay:SetBackdrop(SOLID_BACKDROP)
@@ -1649,7 +1620,8 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
     SetPVFont(disabledText, PREVIEW_FONT, 11)
     disabledText:SetTextColor(1, 1, 1)
     disabledText:SetText(CludesUI.L("Disabled"))
-    -- Position overlay and text relative to pf/health (updated in Update and on show)
+    -- Lays the overlay over pf at pf's scale, its label centred (run on
+    -- every Update and whenever the preview shows).
     local function SyncDisabledOverlay()
         disabledOverlay:ClearAllPoints()
         disabledOverlay:SetScale(popFrame:GetScale())
@@ -1659,56 +1631,55 @@ function mod.UFO_BuildUnitPreview(hostFrame, unitKey, side)
         disabledText:SetPoint("CENTER", disabledOverlay, "CENTER", 0, 0)
     end
     SyncDisabledOverlay()
-
-    -- Auto-hide the UIParent-parented overlay when the preview hides (tab switch,
-    -- module switch, page cache stash, the panel folding to its mini window).
+    -- The overlay lives on UIParent, so it hides with the preview (tab or
+    -- module switch, page cache stash, the panel folding to its mini
+    -- window) and comes back when the preview shows again without an
+    -- Update (unfolding the panel runs no OnShow callback).
     popFrame:HookScript("OnHide", function()
         disabledOverlay:Hide()
     end)
-    -- And bring it back when the preview re-shows without an Update (the panel
-    -- unfolding from its mini window runs no OnShow callback).
     popFrame:HookScript("OnShow", function()
-        local uk = unitKey:match("^boss") and "boss" or unitKey
-        if mod.GetUnitFrameSource(uk) ~= "cui" then
-            SyncDisabledOverlay()
-            disabledOverlay:Show()
+        local sourceKey = unitKey:match("^boss") and "boss" or unitKey
+        if mod.GetUnitFrameSource(sourceKey) == "cui" then
+            return
         end
+        SyncDisabledOverlay()
+        disabledOverlay:Show()
     end)
 
-    -- Combat indicator preview texture (highest frame level)
+    -- Indicator samples on one holder above everything else: the combat
+    -- icon (centred on the portrait, else the health bar), the faction
+    -- icon (player and target), and the raid marker, leader and elite
+    -- icons, each behind its row's eye. Kept on pf (this builder is long).
     local COMBAT_MEDIA_P = "Interface\\AddOns\\CludesUI\\media\\combat\\"
     local combatIndHolder = CreateFrame("Frame", nil, popFrame)
     combatIndHolder:SetAllPoints(popFrame)
     combatIndHolder:SetFrameLevel(popFrame:GetFrameLevel() + 20)
-    local combatInd = combatIndHolder:CreateTexture(nil, "OVERLAY", nil, 7)
+    local function IndicatorTex(sublevel)
+        local tex = combatIndHolder:CreateTexture(nil, "OVERLAY", nil, sublevel)
+        tex:Hide()
+        return tex
+    end
+    local combatInd = IndicatorTex(7)
     combatInd:SetSize(24, 24)
     combatInd:SetPoint("CENTER", portraitFrame or health, "CENTER", 0, 0)
-    combatInd:Hide()
     popFrame._combatIndicator = combatInd
-    -- Faction indicator preview (player + target), on the same raised holder
-    local factionInd = combatIndHolder:CreateTexture(nil, "OVERLAY", nil, 6)
-    factionInd:Hide()
-    popFrame._factionIndicator = factionInd
-    -- Raid marker / leader / elite previews, each behind its row's eye toggle
-    -- (pf fields, not locals: this builder is long).
-    popFrame._pvRaid = combatIndHolder:CreateTexture(nil, "OVERLAY", nil, 6)
+    popFrame._factionIndicator = IndicatorTex(6)
+    popFrame._pvRaid = IndicatorTex(6)
     popFrame._pvRaid:SetTexture("Interface\\TargetingFrame\\UI-RaidTargetingIcons")
-    popFrame._pvRaid:Hide()
-    popFrame._pvLeader = combatIndHolder:CreateTexture(nil, "OVERLAY", nil, 6)
+    popFrame._pvLeader = IndicatorTex(6)
     popFrame._pvLeader:SetTexture("Interface\\GroupFrame\\UI-Group-LeaderIcon")
-    popFrame._pvLeader:Hide()
-    popFrame._pvElite = combatIndHolder:CreateTexture(nil, "OVERLAY", nil, 6)
+    popFrame._pvElite = IndicatorTex(6)
     popFrame._pvElite:SetAtlas("nameplates-icon-elite-gold")
-    popFrame._pvElite:Hide()
     -- WoW Forever: the pet's happiness icon (the happy face as the sample),
-    -- placed each Update beside the frame as the live icon is. It sits on
-    -- its own frame so the page's click overlay shows and hides with it.
+    -- placed beside the frame on each Update as the live one is. Its own
+    -- frame lets the page's click overlay show and hide with it.
     if unitKey == "pet" and CludesUI.IS_FOREVER == true then
         local happyInd = CreateFrame("Frame", nil, popFrame)
         happyInd:SetFrameLevel(popFrame:GetFrameLevel() + 20)
-        local happyTex = happyInd:CreateTexture(nil, "OVERLAY")
-        happyTex:SetAllPoints()
-        happyTex:SetAtlas("UI-PetHappiness")
+        local face = happyInd:CreateTexture(nil, "OVERLAY")
+        face:SetAllPoints()
+        face:SetAtlas("UI-PetHappiness")
         happyInd:Hide()
         popFrame._happyInd = happyInd
     end
