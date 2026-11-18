@@ -448,13 +448,13 @@ local function AGKept()
     end
     return agKept
 end
-local function AnimKept(kind)
-    local entries = ANIM_INFO[kind]
+local function AnimKept(kindName)
+    local entries = ANIM_INFO[kindName]
     if entries == nil then
-        local ag = ProbeHolder():CreateAnimationGroup()
-        local success, a = pcall(ag.CreateAnimation, ag, kind)
+        local animGroup = ProbeHolder():CreateAnimationGroup()
+        local success, a = pcall(animGroup.CreateAnimation, animGroup, kindName)
         entries = success and a and CaptureKept(a, ANIM_KEPT) or false
-        ANIM_INFO[kind] = entries
+        ANIM_INFO[kindName] = entries
     end
     return entries
 end
@@ -462,27 +462,27 @@ end
 -- A region as the engine made it on a probe object: its draw layer, anchors
 -- (relative to the object), shown state and look (a texture's blend mode; a
 -- font string's font, colours and justification).
-local function CaptureRegion(reg, p)
+local function CaptureRegion(registry, p)
     local c = { points = {} }
-    c.layer, c.sub = reg:GetDrawLayer()
-    for i = 1, reg:GetNumPoints() do
-        local pt, rel, rp, posX, cursorY = reg:GetPoint(i)
+    c.layer, c.sub = registry:GetDrawLayer()
+    for i = 1, registry:GetNumPoints() do
+        local pt, rel, rp, posX, cursorY = registry:GetPoint(i)
         c.points[i] = { pt, rel == p or rel, rp, posX, cursorY }
     end
-    c.shown = reg:IsShown() and true or false
-    if reg.GetBlendMode then
-        c.blend = reg:GetBlendMode()
+    c.shown = registry:IsShown() and true or false
+    if registry.GetBlendMode then
+        c.blend = registry:GetBlendMode()
     end
-    if reg.GetFont then
-        local filePath, size, flags = reg:GetFont()
+    if registry.GetFont then
+        local filePath, size, flags = registry:GetFont()
         if filePath then
             c.font = { filePath, size, flags }
         end
-        c.fontObject = reg:GetFontObject()
-        c.color = { reg:GetTextColor() }
-        c.shadow = { reg:GetShadowColor() }
-        c.shadowOff = { reg:GetShadowOffset() }
-        c.jh, c.jv = reg:GetJustifyH(), reg:GetJustifyV()
+        c.fontObject = registry:GetFontObject()
+        c.color = { registry:GetTextColor() }
+        c.shadow = { registry:GetShadowColor() }
+        c.shadowOff = { registry:GetShadowOffset() }
+        c.jh, c.jv = registry:GetJustifyH(), registry:GetJustifyV()
     end
     return c
 end
@@ -491,15 +491,15 @@ end
 -- input defaults, how many regions and children the engine gives it, and what
 -- each engine-made region of a known role is like when new.
 local KIND_INFO = {}
-local function KindInfo(rec)
-    local kind = rec.kind
-    local details = KIND_INFO[kind]
+local function KindInfo(record)
+    local kindName = record.kind
+    local details = KIND_INFO[kindName]
     if details then
         return details
     end
-    local p = _G.CreateFrame(rec.ftype, nil, ProbeHolder(), rec.tmpl)
+    local p = _G.CreateFrame(record.ftype, nil, ProbeHolder(), record.tmpl)
     local m = getmetatable(p).__index
-    details = { scripts = rec.tmpl and TEMPLATE_SCRIPTS[rec.tmpl] or nil }
+    details = { scripts = record.tmpl and TEMPLATE_SCRIPTS[record.tmpl] or nil }
     local keyList
     for keyName, val in pairs(p) do
         if type(keyName) == "string" and keyName:byte(1) ~= 0 then
@@ -512,20 +512,20 @@ local function KindInfo(rec)
     details.wheel = (m.IsMouseWheelEnabled and p:IsMouseWheelEnabled()) and true or false
     details.clips = (m.DoesClipChildren and p:DoesClipChildren()) and true or false
     details.keyboard = (m.IsKeyboardEnabled and p:IsKeyboardEnabled()) and true or false
-    if rec.ftype == "EditBox" then
+    if record.ftype == "EditBox" then
         details.autoFocus = p:IsAutoFocus() and true or false
     end
-    local kv = KEPT_VALUES[rec.ftype]
+    local kv = KEPT_VALUES[record.ftype]
     if kv then
         details.kept = CaptureKept(p, kv)
     end
     -- the engine's regions of known roles are reset in place, so they are never
     -- counted among the unnamed regions a new object starts with
-    local roles = ENGINE_ROLES[rec.ftype]
+    local roleMap = ENGINE_ROLES[record.ftype]
     local named = 0
-    if roles then
-        for i = 1, #roles do
-            local get = m[roles[i].get]
+    if roleMap then
+        for i = 1, #roleMap do
+            local get = m[roleMap[i].get]
             if get and SafeCall(get, p) then
                 named = named + 1
             end
@@ -533,21 +533,21 @@ local function KindInfo(rec)
     end
     details.nRegions = select("#", p:GetRegions()) - named
     details.nChildren = select("#", p:GetChildren())
-    if roles then
+    if roleMap then
         local eng = {}
-        for i = 1, #roles do
-            local role = roles[i]
-            local get, make = m[role.get], role.make and m[role.make]
+        for i = 1, #roleMap do
+            local roleName = roleMap[i]
+            local get, make = m[roleName.get], roleName.make and m[roleName.make]
             -- the text region is measured as a dress that shows text makes it: with a font object
-            if make and role.text and m.SetNormalFontObject then
+            if make and roleName.text and m.SetNormalFontObject then
                 pcall(m.SetNormalFontObject, p, _G.GameFontNormal)
             end
             if make then
-                pcall(make, p, role.text and " " or PROBE_ART)
+                pcall(make, p, roleName.text and " " or PROBE_ART)
             end
-            local reg = get and SafeCall(get, p)
-            if reg then
-                eng[i] = CaptureRegion(reg, p)
+            local registry = get and SafeCall(get, p)
+            if registry then
+                eng[i] = CaptureRegion(registry, p)
             end
         end
         details.eng = eng
@@ -555,7 +555,7 @@ local function KindInfo(rec)
     if p:IsShown() then
         p:Hide()
     end
-    KIND_INFO[kind] = details
+    KIND_INFO[kindName] = details
     return details
 end
 
@@ -634,71 +634,71 @@ end
 local AcquireRegion, AcquireAG, AcquireAnim -- defined below
 
 -- A slot ExemptScripts keeps through resets is set on its first dress only.
-local function ExemptSlot(self, rec, slot, what)
-    if devOn and rec.exemptGen ~= rec.gen then
-        local name = self.GetName and self:GetName() or "?"
+local function ExemptSlot(self, record, slotIndex, what)
+    if devOn and record.exemptGen ~= record.gen then
+        local label = self.GetName and self:GetName() or "?"
         DevWarn(
-            "exempt:" .. tostring(name) .. tostring(slot),
+            "exempt:" .. tostring(label) .. tostring(slotIndex),
             "a later dress "
                 .. what
                 .. " "
-                .. tostring(slot)
+                .. tostring(slotIndex)
                 .. " on "
-                .. tostring(name)
+                .. tostring(label)
                 .. ", whose "
-                .. tostring(slot)
+                .. tostring(slotIndex)
                 .. " keeps its hooks through resets"
         )
     end
 end
 
-local function O_SetScript(self, slot, func)
-    getmetatable(self).__index.SetScript(self, slot, func)
-    local rec = REC[self]
-    if not rec then
+local function O_SetScript(self, slotIndex, func)
+    getmetatable(self).__index.SetScript(self, slotIndex, func)
+    local record = REC[self]
+    if not record then
         return
     end
-    if rec.exempt and rec.exempt[slot] then
-        ExemptSlot(self, rec, slot, "set")
+    if record.exempt and record.exempt[slotIndex] then
+        ExemptSlot(self, record, slotIndex, "set")
         return
     end
-    local s = rec.scripts
+    local s = record.scripts
     if not s then
         s = {}
-        rec.scripts = s
+        record.scripts = s
     end
-    s[slot] = true
+    s[slotIndex] = true
 end
 
-local function O_HookScript(self, slot, func, ...)
-    local r = getmetatable(self).__index.HookScript(self, slot, func, ...)
-    local rec = REC[self]
-    if not rec then
+local function O_HookScript(self, slotIndex, func, ...)
+    local r = getmetatable(self).__index.HookScript(self, slotIndex, func, ...)
+    local record = REC[self]
+    if not record then
         return r
     end
-    if rec.exempt and rec.exempt[slot] then
-        ExemptSlot(self, rec, slot, "hooked")
+    if record.exempt and record.exempt[slotIndex] then
+        ExemptSlot(self, record, slotIndex, "hooked")
         return r
     end
-    local s = rec.scripts
+    local s = record.scripts
     if not s then
         s = {}
-        rec.scripts = s
+        record.scripts = s
     end
-    s[slot] = true
+    s[slotIndex] = true
     return r
 end
 
-local function O_SetAttribute(self, name, value)
-    getmetatable(self).__index.SetAttribute(self, name, value)
-    local rec = REC[self]
-    if rec and name ~= nil then
-        local a = rec.attrs
+local function O_SetAttribute(self, label, value)
+    getmetatable(self).__index.SetAttribute(self, label, value)
+    local record = REC[self]
+    if record and label ~= nil then
+        local a = record.attrs
         if not a then
             a = {}
-            rec.attrs = a
+            record.attrs = a
         end
-        a[name] = true
+        a[label] = true
     end
 end
 
@@ -715,39 +715,39 @@ end
 
 -- Creation goes to the pool only on an object the pool still manages (a
 -- retired one creates as any frame does).
-local function O_CreateTexture(self, name, layer, tmpl, subMenu)
-    if name ~= nil or tmpl ~= nil or CludesUI._prebuilding or not REC[self] then
-        return getmetatable(self).__index.CreateTexture(self, name, layer, tmpl, subMenu)
+local function O_CreateTexture(self, label, layer, template, subMenu)
+    if label ~= nil or template ~= nil or CludesUI._prebuilding or not REC[self] then
+        return getmetatable(self).__index.CreateTexture(self, label, layer, template, subMenu)
     end
     return AcquireRegion(self, "Texture", "CreateTexture", layer, subMenu)
 end
-local function O_CreateMaskTexture(self, name, layer, tmpl, subMenu)
-    if name ~= nil or tmpl ~= nil or CludesUI._prebuilding or not REC[self] then
-        return getmetatable(self).__index.CreateMaskTexture(self, name, layer, tmpl, subMenu)
+local function O_CreateMaskTexture(self, label, layer, template, subMenu)
+    if label ~= nil or template ~= nil or CludesUI._prebuilding or not REC[self] then
+        return getmetatable(self).__index.CreateMaskTexture(self, label, layer, template, subMenu)
     end
     return AcquireRegion(self, "MaskTexture", "CreateMaskTexture", layer, subMenu)
 end
-local function O_CreateLine(self, name, layer, tmpl, subMenu)
-    if name ~= nil or tmpl ~= nil or CludesUI._prebuilding or not REC[self] then
-        return getmetatable(self).__index.CreateLine(self, name, layer, tmpl, subMenu)
+local function O_CreateLine(self, label, layer, template, subMenu)
+    if label ~= nil or template ~= nil or CludesUI._prebuilding or not REC[self] then
+        return getmetatable(self).__index.CreateLine(self, label, layer, template, subMenu)
     end
     return AcquireRegion(self, "Line", "CreateLine", layer, subMenu)
 end
-local function O_CreateFontString(self, name, layer, tmpl, ...)
-    if name ~= nil or tmpl ~= nil or CludesUI._prebuilding or not REC[self] then
-        return getmetatable(self).__index.CreateFontString(self, name, layer, tmpl, ...)
+local function O_CreateFontString(self, label, layer, template, ...)
+    if label ~= nil or template ~= nil or CludesUI._prebuilding or not REC[self] then
+        return getmetatable(self).__index.CreateFontString(self, label, layer, template, ...)
     end
     return AcquireRegion(self, "FontString", "CreateFontString", layer, nil)
 end
-local function O_CreateAnimationGroup(self, name, tmpl)
-    if name ~= nil or tmpl ~= nil or CludesUI._prebuilding or not REC[self] then
-        return getmetatable(self).__index.CreateAnimationGroup(self, name, tmpl)
+local function O_CreateAnimationGroup(self, label, template)
+    if label ~= nil or template ~= nil or CludesUI._prebuilding or not REC[self] then
+        return getmetatable(self).__index.CreateAnimationGroup(self, label, template)
     end
     return AcquireAG(self)
 end
-local function O_CreateAnimation(self, atype, name, tmpl)
-    if name ~= nil or tmpl ~= nil or CludesUI._prebuilding or not REC[self] then
-        return getmetatable(self).__index.CreateAnimation(self, atype, name, tmpl)
+local function O_CreateAnimation(self, atype, label, template)
+    if label ~= nil or template ~= nil or CludesUI._prebuilding or not REC[self] then
+        return getmetatable(self).__index.CreateAnimation(self, atype, label, template)
     end
     return AcquireAnim(self, atype)
 end
@@ -756,15 +756,15 @@ end
 -- take (a group cannot drop one): pointed at a hidden region before the group
 -- plays, so they change nothing (the group's next reset points them back).
 local inertTarget
-local function QuietLeftovers(ag)
-    local grec = REC[ag]
-    local pools = grec and grec.pools
-    if not pools then
+local function QuietLeftovers(animGroup)
+    local grec = REC[animGroup]
+    local poolMap = grec and grec.pools
+    if not poolMap then
         return
     end
     local current = grec.cur
-    for kind, entries in pairs(pools) do
-        for i = (current[kind] or 0) + 1, #entries do
+    for kindName, entries in pairs(poolMap) do
+        for i = (current[kindName] or 0) + 1, #entries do
             local a = entries[i]
             local ar = REC[a]
             if ar and not ar.inert then
@@ -808,9 +808,9 @@ local REGION_OVERRIDES =
 -- A texture's rotation point: SetToDefaults keeps the last one SetRotation gave
 -- it, so a texture marked here has a new texture's point put back by its reset.
 local function O_TexSetRotation(self, ...)
-    local rec = REC[self]
-    if rec then
-        rec.rotated = true
+    local record = REC[self]
+    if record then
+        record.rotated = true
     end
     return getmetatable(self).__index.SetRotation(self, ...)
 end
@@ -833,12 +833,12 @@ local function EngineSetter(setName, getName)
         local m = getmetatable(self).__index
         local r1, r2 = m[setName](self, ...)
         local get = m[getName]
-        local reg = get and get(self)
-        local back = reg and engHidden[reg]
+        local registry = get and get(self)
+        local back = registry and engHidden[registry]
         if back ~= nil then
-            engHidden[reg] = nil
+            engHidden[registry] = nil
             if back then
-                reg:Show()
+                registry:Show()
             end
         end
         return r1, r2
@@ -846,24 +846,24 @@ local function EngineSetter(setName, getName)
 end
 -- frame type -> { [setter name] = override } (made once, here)
 local ENGINE_OVERRIDES = {}
-for ftype, roles in pairs(ENGINE_ROLES) do
+for frameType, roleMap in pairs(ENGINE_ROLES) do
     local set = {}
-    for i = 1, #roles do
-        local sets = roles[i].sets
+    for i = 1, #roleMap do
+        local sets = roleMap[i].sets
         if sets then
             for jdx = 1, #sets do
-                set[sets[jdx]] = EngineSetter(sets[jdx], roles[i].get)
+                set[sets[jdx]] = EngineSetter(sets[jdx], roleMap[i].get)
             end
         end
     end
-    ENGINE_OVERRIDES[ftype] = set
+    ENGINE_OVERRIDES[frameType] = set
 end
 
 -- Dev mode only: a pooled frame that something re-parents while it is idle is
 -- held by module state (it must be Pool.Keep'd, plan C2).
 local function O_DevSetParent(self, hostFrame, ...)
-    local rec = REC[self]
-    if rec and rec.idle and rec.cls == "pooled" then
+    local record = REC[self]
+    if record and record.idle and record.cls == "pooled" then
         local site = _G.debugstack and _G.debugstack(2, 1, 0) or "?"
         DevWarn(
             "tripwire:" .. site,
@@ -875,25 +875,25 @@ end
 
 local function Install(object, set)
     local m = getmetatable(object).__index
-    for name, func in pairs(set) do
-        if rawget(m, name) ~= nil then
-            rawset(object, name, func)
+    for label, func in pairs(set) do
+        if rawget(m, label) ~= nil then
+            rawset(object, label, func)
         end
     end
 end
 
 -- A retired frame drops the pool's instance overrides: a plain frame again.
-local function StripOverrides(object, ftype)
-    for name, func in pairs(FRAME_OVERRIDES) do
-        if rawget(object, name) == func then
-            rawset(object, name, nil)
+local function StripOverrides(object, frameType)
+    for label, func in pairs(FRAME_OVERRIDES) do
+        if rawget(object, label) == func then
+            rawset(object, label, nil)
         end
     end
-    local eng = ENGINE_OVERRIDES[ftype]
+    local eng = ENGINE_OVERRIDES[frameType]
     if eng then
-        for name, func in pairs(eng) do
-            if rawget(object, name) == func then
-                rawset(object, name, nil)
+        for label, func in pairs(eng) do
+            if rawget(object, label) == func then
+                rawset(object, label, nil)
             end
         end
     end
@@ -902,33 +902,33 @@ local function StripOverrides(object, ftype)
     end
 end
 
-local function NewFrameRec(cls, kind, ftype, tmpl, host)
+local function NewFrameRec(cls, kindName, frameType, template, hostFrame)
     return {
         cls = cls,
-        kind = kind,
-        ftype = ftype,
-        tmpl = tmpl,
-        host = host,
+        kind = kindName,
+        ftype = frameType,
+        tmpl = template,
+        host = hostFrame,
         gen = 1,
         idle = false,
         isFrame = true,
     }
 end
 
-local function RegisterFrame(object, rec)
-    REC[object] = rec
+local function RegisterFrame(object, record)
+    REC[object] = record
     -- a button's pushed text offset as new, read from the button itself as it is
     -- made (a new button's offset is not one fixed value): its resets put it back
     local m = getmetatable(object).__index
     if m.GetPushedTextOffset then
-        rec.pushX, rec.pushY = object:GetPushedTextOffset()
+        record.pushX, record.pushY = object:GetPushedTextOffset()
     end
     Install(object, FRAME_OVERRIDES)
-    local eng = ENGINE_OVERRIDES[rec.ftype]
+    local eng = ENGINE_OVERRIDES[record.ftype]
     if eng then
         Install(object, eng)
     end
-    if devOn and rec.cls == "pooled" then
+    if devOn and record.cls == "pooled" then
         rawset(object, "SetParent", O_DevSetParent)
     end
     return object
@@ -951,8 +951,8 @@ local function ForgetRegistries(object, isFrame)
             rc[object] = nil
         end
         local forget = CludesUI._ForgetEscapeClose
-        local rec = REC[object]
-        if forget and not (rec and rec.exempt and (rec.exempt.OnShow or rec.exempt.OnHide)) then
+        local record = REC[object]
+        if forget and not (record and record.exempt and (record.exempt.OnShow or record.exempt.OnHide)) then
             forget(object)
         end
     end
@@ -966,24 +966,24 @@ local function ForgetPixelSnap(object)
     end
 end
 
-local function ResetScripts(object, rec, m, base)
-    local s = rec.scripts
+local function ResetScripts(object, record, m, base)
+    local s = record.scripts
     if s and next(s) then
         local set = m.SetScript
-        for slot in pairs(s) do
-            set(object, slot, base and base[slot] or nil)
-            s[slot] = nil
+        for slotIndex in pairs(s) do
+            set(object, slotIndex, base and base[slotIndex] or nil)
+            s[slotIndex] = nil
         end
     end
 end
 
-local function ResetAttrs(object, rec, m)
-    local a = rec.attrs
+local function ResetAttrs(object, record, m)
+    local a = record.attrs
     if a and next(a) then
         local set = m.SetAttribute
-        for name in pairs(a) do
-            set(object, name, nil)
-            a[name] = nil
+        for label in pairs(a) do
+            set(object, label, nil)
+            a[label] = nil
         end
     end
 end
@@ -991,8 +991,8 @@ end
 -- Every string key goes, except the keys a new object of the kind has (put
 -- back to their values), keys naming a method of the object's type (instance
 -- hooks: the pool's own overrides, TrackOverlay's) and its host attachment keys.
-local function WipeKeys(object, rec, m, base)
-    local keep = rec.attachKeys
+local function WipeKeys(object, record, m, base)
+    local keep = record.attachKeys
     for keyName, val in pairs(object) do
         if type(keyName) == "string" and keyName:byte(1) ~= 0 then
             local bv = base and base[keyName]
@@ -1090,8 +1090,8 @@ local function Parts(o, r, moved, depth)
     end
     local om = OWNED[o]
     if om then
-        for _, slot in pairs(om) do
-            local entries = slot.list
+        for _, slotIndex in pairs(om) do
+            local entries = slotIndex.list
             for i = 1, #entries do
                 local posX = entries[i]
                 local xr = REC[posX]
@@ -1104,9 +1104,9 @@ local function Parts(o, r, moved, depth)
     if not r.isFrame then
         return
     end
-    local pools = r.pools
-    if pools then
-        for _, entries in pairs(pools) do
+    local poolMap = r.pools
+    if poolMap then
+        for _, entries in pairs(poolMap) do
             for i = 1, #entries do
                 local posX = entries[i]
                 local xr = REC[posX]
@@ -1218,12 +1218,12 @@ local function FreezeTo(f, ref)
     end
     local UIParent = _G.UIParent
     if ref ~= UIParent and ref ~= f then
-        local rl, rb, rw, rh = ref:GetRect()
-        if not (isv and (isv(rl) or isv(rb) or isv(rw) or isv(rh))) and rl and rb and rw and rh then
+        local rl, rebuild, rw, rh = ref:GetRect()
+        if not (isv and (isv(rl) or isv(rebuild) or isv(rw) or isv(rh))) and rl and rebuild and rw and rh then
             -- ref's corner in f's own units (each scales its own offsets)
             local keyName = ref:GetEffectiveScale() / f:GetEffectiveScale()
             f:ClearAllPoints()
-            if pcall(f.SetPoint, f, "TOPLEFT", ref, "TOPLEFT", l - rl * keyName, b + height - (rb + rh) * keyName) then
+            if pcall(f.SetPoint, f, "TOPLEFT", ref, "TOPLEFT", l - rl * keyName, b + height - (rebuild + rh) * keyName) then
                 f:SetSize(wid, height)
                 return
             end
@@ -1234,21 +1234,21 @@ local function FreezeTo(f, ref)
     f:SetSize(wid, height)
 end
 
-local function FreezeWalk(host, hrec, hostMoved)
+local function FreezeWalk(hostFrame, hostRec, hostMoved)
     walkSerial = walkSerial + 1
     local serial = walkSerial
     frzN = 0
-    hrec.fw = serial
+    hostRec.fw = serial
     if hostMoved then
-        hrec.fm = serial
+        hostRec.fm = serial
     end
     -- the host's own parts are dressed again by its pass, whether or not the
     -- host itself is
-    Parts(host, hrec, true, 1)
+    Parts(hostFrame, hostRec, true, 1)
     if frzN == 0 then
         return
     end
-    local ref = hostMoved and PlacedBy(host) or host
+    local ref = hostMoved and PlacedBy(hostFrame) or hostFrame
     for i = 1, frzN do
         local f = frzList[i]
         depBudget = 64
@@ -1260,12 +1260,12 @@ end
 
 -- Called once per pass, before its host's parts move (ResetContents). A pass
 -- that starts while one pins (a script a pin fires) leaves it to that one.
-local function FreezeUnder(host, hrec, hostMoved)
+local function FreezeUnder(hostFrame, hostRec, hostMoved)
     if walking then
         return
     end
     walking = true
-    local success, err = pcall(FreezeWalk, host, hrec, hostMoved)
+    local success, err = pcall(FreezeWalk, hostFrame, hostRec, hostMoved)
     walking = false
     for i = 1, frzN do
         frzList[i] = nil
@@ -1299,14 +1299,14 @@ end
 
 -- pass: PASS_RESET (a kept host's reset) or PASS_BEGIN (Pool.Begin) starts a
 -- pass on obj; nil for an object handed out again within one (already walked).
-local function ResetContents(object, rec, details, pass)
+local function ResetContents(object, record, details, pass)
     -- pooled objects of this host, wherever they are now: hidden, idle
-    local pools = rec.pools
-    if pools then
-        for _, entries in pairs(pools) do
+    local poolMap = record.pools
+    if poolMap then
+        for _, entries in pairs(poolMap) do
             ParkList(entries)
         end
-        local current = rec.cur
+        local current = record.cur
         for keyName in pairs(current) do
             current[keyName] = 0
         end
@@ -1314,16 +1314,16 @@ local function ResetContents(object, rec, details, pass)
     -- owned objects: hidden, cursors back to the start
     local om = OWNED[object]
     if om then
-        for _, slot in pairs(om) do
-            ParkList(slot.list)
-            slot.cur = 0
+        for _, slotIndex in pairs(om) do
+            ParkList(slotIndex.list)
+            slotIndex.cur = 0
         end
     end
     -- attachments: hidden, their onReset runs. Pool.Begin does not reset the
     -- host, so the host's own decorations (Pool.Attach: a border, a mark, a
     -- glow) stay as they are; what module state keeps (Pool.Keep) is parked
     -- as the rest of what the host handed out is
-    local att = rec.attach
+    local att = record.attach
     if att then
         for i = 1, #att do
             local a = att[i]
@@ -1341,9 +1341,9 @@ local function ResetContents(object, rec, details, pass)
     -- the start of a pass, after what the parts' hiding closes and before any
     -- part moves: what shows over the host and hangs on its parts stays put
     if pass then
-        FreezeUnder(object, rec, pass == PASS_RESET)
+        FreezeUnder(object, record, pass == PASS_RESET)
     end
-    if not rec.isFrame then
+    if not record.isFrame then
         return
     end
     -- children and regions the pool does not manage
@@ -1365,39 +1365,39 @@ local function ResetContents(object, rec, details, pass)
     -- the engine's regions of known roles: named here (rec.engRegs), reset in
     -- place after the frame's own reset (ResetFrame), never buried
     local named
-    local roles = ENGINE_ROLES[rec.ftype]
-    if roles then
+    local roleMap = ENGINE_ROLES[record.ftype]
+    if roleMap then
         local m = getmetatable(object).__index
-        for i = 1, #roles do
-            local get = m[roles[i].get]
-            local reg = get and get(object)
-            if reg and REC[reg] == nil then
+        for i = 1, #roleMap do
+            local get = m[roleMap[i].get]
+            local registry = get and get(object)
+            if registry and REC[registry] == nil then
                 if not named then
-                    named = rec.engRegs
+                    named = record.engRegs
                     if not named then
                         named = {}
-                        rec.engRegs = named
+                        record.engRegs = named
                     end
                 end
-                named[reg] = i
+                named[registry] = i
             end
         end
     end
     skip = details and details.nRegions or 0
     t, num = Pack(object:GetRegions())
     for i = 1, num do
-        local reg = t[i]
-        if REC[reg] == nil and not (named and named[reg]) then
+        local registry = t[i]
+        if REC[registry] == nil and not (named and named[registry]) then
             if skip > 0 then
                 skip = skip - 1
-            elseif ENGINE_UNSURE[rec.ftype] then
+            elseif ENGINE_UNSURE[record.ftype] then
                 -- maybe the engine's, unnamed: left in place, the frame is retired
-                if reg:IsShown() then
-                    reg:Hide()
+                if registry:IsShown() then
+                    registry:Hide()
                 end
-                rec.engine = true
+                record.engine = true
             else
-                Bury(reg)
+                Bury(registry)
                 buried = buried + 1
             end
         end
@@ -1406,18 +1406,18 @@ local function ResetContents(object, rec, details, pass)
     -- animation groups the pool does not manage cannot move: stopped
     t, num = Pack(object:GetAnimationGroups())
     for i = 1, num do
-        local ag = t[i]
-        if REC[ag] == nil then
-            ag:Stop()
+        local animGroup = t[i]
+        if REC[animGroup] == nil then
+            animGroup:Stop()
         end
     end
     Release()
     if buried > 0 and devOn then
         DevWarn(
-            "foreign:" .. tostring(rec.key or rec.kind),
+            "foreign:" .. tostring(record.key or record.kind),
             buried
                 .. " foreign object(s) under "
-                .. tostring(rec.key or rec.kind)
+                .. tostring(record.key or record.kind)
                 .. " (made without the pool)"
         )
     end
@@ -1436,10 +1436,10 @@ local function ApplyCooldownTemplate(cd)
 end
 
 local verified = {}
-local function Fixed(rec, what)
-    if devOn and not verified[rec.kind .. what] then
-        verified[rec.kind .. what] = true
-        DevWarn("fix:" .. rec.kind .. what, "SetToDefaults left " .. what .. " on a " .. rec.kind)
+local function Fixed(record, what)
+    if devOn and not verified[record.kind .. what] then
+        verified[record.kind .. what] = true
+        DevWarn("fix:" .. record.kind .. what, "SetToDefaults left " .. what .. " on a " .. record.kind)
     end
 end
 
@@ -1459,9 +1459,9 @@ end
 
 -- A frame that is still a pool scroll frame's scroll child leaves it before
 -- its next dress: that scroll frame, idle or not, would keep positioning it.
-local function ReleaseScrollChild(object, rec)
-    local scrollFrame = rec.scrollOwner
-    rec.scrollOwner = nil
+local function ReleaseScrollChild(object, record)
+    local scrollFrame = record.scrollOwner
+    record.scrollOwner = nil
     if not scrollFrame or scrollFrame:GetScrollChild() ~= object then
         return
     end
@@ -1472,9 +1472,9 @@ local function ReleaseScrollChild(object, rec)
 end
 
 -- A region placed as the same region of a new object is (c, from the probe).
-local function PlaceAsNew(object, reg, c)
-    reg:SetDrawLayer(c.layer, c.sub)
-    reg:ClearAllPoints()
+local function PlaceAsNew(object, registry, c)
+    registry:SetDrawLayer(c.layer, c.sub)
+    registry:ClearAllPoints()
     local pts = c.points
     for jdx = 1, #pts do
         local p = pts[jdx]
@@ -1482,7 +1482,7 @@ local function PlaceAsNew(object, reg, c)
         if rel == true then
             rel = object
         end
-        reg:SetPoint(p[1], rel, p[3], p[4], p[5])
+        registry:SetPoint(p[1], rel, p[3], p[4], p[5])
     end
 end
 
@@ -1493,89 +1493,89 @@ end
 -- takes a new region's look and shown state. A button's text takes no look of
 -- its own: back at the engine's defaults, it gets the font object the next
 -- dress gives the button, as a new button's text does.
-local function ResetEngineRegion(object, reg, c, role)
-    local isText = reg.GetFont ~= nil
-    if isText and not role.live then
-        if reg.SetToDefaults then
-            reg:SetToDefaults()
+local function ResetEngineRegion(object, registry, c, roleName)
+    local isText = registry.GetFont ~= nil
+    if isText and not roleName.live then
+        if registry.SetToDefaults then
+            registry:SetToDefaults()
         end
         if c then
-            PlaceAsNew(object, reg, c)
+            PlaceAsNew(object, registry, c)
         end
-        if reg:GetFont() then
-            reg:SetText("")
+        if registry:GetFont() then
+            registry:SetText("")
         end
-        if reg:IsShown() then
-            reg:Hide()
+        if registry:IsShown() then
+            registry:Hide()
         end
         if c then
-            engHidden[reg] = c.shown
+            engHidden[registry] = c.shown
         else
-            engHidden[reg] = true
+            engHidden[registry] = true
         end
         return
     end
     if c ~= nil and (c.font ~= nil or not isText) then
-        if reg.SetToDefaults then
-            reg:SetToDefaults()
+        if registry.SetToDefaults then
+            registry:SetToDefaults()
         end
-        if reg.GetNumMaskTextures then
-            for jdx = reg:GetNumMaskTextures(), 1, -1 do
-                local mask = reg:GetMaskTexture(jdx)
+        if registry.GetNumMaskTextures then
+            for jdx = registry:GetNumMaskTextures(), 1, -1 do
+                local mask = registry:GetMaskTexture(jdx)
                 if mask then
-                    reg:RemoveMaskTexture(mask)
+                    registry:RemoveMaskTexture(mask)
                 end
             end
         end
-        ForgetPixelSnap(reg)
-        PlaceAsNew(object, reg, c)
+        ForgetPixelSnap(registry)
+        PlaceAsNew(object, registry, c)
         if c.blend then
-            reg:SetBlendMode(c.blend)
+            registry:SetBlendMode(c.blend)
         end
         if c.font then
             if c.fontObject then
-                reg:SetFontObject(c.fontObject)
+                registry:SetFontObject(c.fontObject)
             end
-            reg:SetFont(c.font[1], c.font[2], c.font[3])
+            registry:SetFont(c.font[1], c.font[2], c.font[3])
             local col = c.color
-            reg:SetTextColor(col[1], col[2], col[3], col[4])
+            registry:SetTextColor(col[1], col[2], col[3], col[4])
             col = c.shadow
-            reg:SetShadowColor(col[1], col[2], col[3], col[4])
-            reg:SetShadowOffset(c.shadowOff[1], c.shadowOff[2])
-            reg:SetJustifyH(c.jh)
-            reg:SetJustifyV(c.jv)
+            registry:SetShadowColor(col[1], col[2], col[3], col[4])
+            registry:SetShadowOffset(c.shadowOff[1], c.shadowOff[2])
+            registry:SetJustifyH(c.jh)
+            registry:SetJustifyV(c.jv)
         end
     end
-    if role.live then
-        if c and (reg:IsShown() and true or false) ~= c.shown then
-            reg:SetShown(c.shown)
+    if roleName.live then
+        if c and (registry:IsShown() and true or false) ~= c.shown then
+            registry:SetShown(c.shown)
         end
         return
     end
-    if reg.SetTexture then
-        reg:SetTexture(nil)
+    if registry.SetTexture then
+        registry:SetTexture(nil)
     end
-    if reg:IsShown() then
-        reg:Hide()
+    if registry:IsShown() then
+        registry:Hide()
     end
     if c then
-        engHidden[reg] = c.shown
+        engHidden[registry] = c.shown
     else
-        engHidden[reg] = true
+        engHidden[registry] = true
     end
 end
 
-local function ResetEngineRegions(object, rec, details, named)
-    local roles = ENGINE_ROLES[rec.ftype]
+local function ResetEngineRegions(object, record, details, named)
+    local roleMap = ENGINE_ROLES[record.ftype]
     local eng = details.eng
     local m = devOn and getmetatable(object).__index
-    for reg, i in pairs(named) do
-        named[reg] = nil
-        ResetEngineRegion(object, reg, eng and eng[i], roles[i])
+    for registry, i in pairs(named) do
+        named[registry] = nil
+        ResetEngineRegion(object, registry, eng and eng[i], roleMap[i])
         if m then
-            local get = m[roles[i].get]
-            if get and get(object) ~= reg then
-                Fixed(rec, " no " .. roles[i].get:sub(4) .. " (its frame's reset dropped it)")
+            local get = m[roleMap[i].get]
+            if get and get(object) ~= registry then
+                Fixed(record, " no " .. roleMap[i].get:sub(4) .. " (its frame's reset dropped it)")
             end
         end
     end
@@ -1585,15 +1585,15 @@ end
 -- pass-through or keyboard flag in combat: only an out-of-combat reset may
 -- clear it). pass: see ResetContents. hidden: left hidden at the end (shown
 -- by the code that dresses it), so no OnShow runs at the reset.
-local function ResetFrame(object, rec, hostFrame, pass, hidden)
+local function ResetFrame(object, record, hostFrame, pass, hidden)
     local m = getmetatable(object).__index
-    local details = KindInfo(rec)
+    local details = KindInfo(record)
     if _G.InCombatLockdown() and (HasPropagate(object, m) or KeyboardChanged(object, m, details)) then
-        rec.dirty = true
+        record.dirty = true
         return false
     end
-    rec.dirty = nil
-    rec.engine = nil
+    record.dirty = nil
+    record.engine = nil
     local hook = rawget(object, "_cuiOnRecycle")
     if hook then
         pcall(hook, object)
@@ -1611,19 +1611,19 @@ local function ResetFrame(object, rec, hostFrame, pass, hidden)
         end
         object:Hide()
     end
-    if rec.ftype == "EditBox" and object:HasFocus() then
+    if record.ftype == "EditBox" and object:HasFocus() then
         object:ClearFocus()
     end
-    if rec.scrollOwner then
-        ReleaseScrollChild(object, rec)
+    if record.scrollOwner then
+        ReleaseScrollChild(object, record)
     end
-    ResetContents(object, rec, details, pass)
-    ResetScripts(object, rec, m, details.scripts)
+    ResetContents(object, record, details, pass)
+    ResetScripts(object, record, m, details.scripts)
     object:UnregisterAllEvents()
-    ResetAttrs(object, rec, m)
+    ResetAttrs(object, record, m)
     ForgetRegistries(object, true)
-    WipeKeys(object, rec, m, details.keys)
-    if rec.ftype == "Cooldown" then
+    WipeKeys(object, record, m, details.keys)
+    if record.ftype == "Cooldown" then
         object:Clear()
     end
     -- Click and drag registration: no getter reads either back, so the
@@ -1644,26 +1644,26 @@ local function ResetFrame(object, rec, hostFrame, pass, hidden)
         object:SetAlpha(1)
         object:SetScale(1)
     end
-    if rec.ftype == "PlayerModel" and m.ClearModel then
+    if record.ftype == "PlayerModel" and m.ClearModel then
         object:ClearModel()
     end
     ForgetPixelSnap(object)
     -- what SetToDefaults is documented to cover, checked where it is cheap
     if object:GetAlpha() ~= 1 then
         object:SetAlpha(1)
-        Fixed(rec, "alpha")
+        Fixed(record, "alpha")
     end
     if (object:IsMouseEnabled() and true or false) ~= details.mouse then
         object:EnableMouse(details.mouse)
-        Fixed(rec, "mouse")
+        Fixed(record, "mouse")
     end
     if m.IsMouseWheelEnabled and (object:IsMouseWheelEnabled() and true or false) ~= details.wheel then
         object:EnableMouseWheel(details.wheel)
-        Fixed(rec, "wheel")
+        Fixed(record, "wheel")
     end
     if m.DoesClipChildren and (object:DoesClipChildren() and true or false) ~= details.clips then
         object:SetClipsChildren(details.clips)
-        Fixed(rec, "clips")
+        Fixed(record, "clips")
     end
     -- what SetToDefaults keeps: the keyboard flag (left as it is only in combat,
     -- where it already matches), the pushed text offset, the kind's own settings
@@ -1671,16 +1671,16 @@ local function ResetFrame(object, rec, hostFrame, pass, hidden)
     if KeyboardChanged(object, m, details) and not _G.InCombatLockdown() then
         object:EnableKeyboard(details.keyboard)
     end
-    if rec.pushX then
+    if record.pushX then
         local posX, cursorY = object:GetPushedTextOffset()
-        if posX ~= rec.pushX or cursorY ~= rec.pushY then
-            object:SetPushedTextOffset(rec.pushX, rec.pushY)
+        if posX ~= record.pushX or cursorY ~= record.pushY then
+            object:SetPushedTextOffset(record.pushX, record.pushY)
         end
     end
     -- a setting the engine will not put back retires the frame, as a region the
     -- pool cannot name does: it is never handed out again
     if details.kept and not RestoreKept(object, details.kept) then
-        rec.engine = true
+        record.engine = true
     end
     if m.ClearHistory then
         object:ClearHistory()
@@ -1688,10 +1688,10 @@ local function ResetFrame(object, rec, hostFrame, pass, hidden)
     -- No API clears a scroll frame's scroll child (SetScrollChild takes no nil):
     -- a child of an earlier dress gives way to the frame's hidden placeholder,
     -- which positions nothing and gives the frame no scroll range.
-    if rec.ftype == "ScrollFrame" then
+    if record.ftype == "ScrollFrame" then
         local childFrame = object:GetScrollChild()
-        if childFrame and childFrame ~= rec.placeholder then
-            m.SetScrollChild(object, PlaceholderFor(object, rec))
+        if childFrame and childFrame ~= record.placeholder then
+            m.SetScrollChild(object, PlaceholderFor(object, record))
         end
     end
     -- placement: the parent, its strata and the level a new child gets
@@ -1704,16 +1704,16 @@ local function ResetFrame(object, rec, hostFrame, pass, hidden)
     end
     object:SetFrameLevel(hostFrame and (hostFrame:GetFrameLevel() + 1) or 0)
     -- the engine's regions of known roles (named by ResetContents)
-    local named = rec.engRegs
+    local named = record.engRegs
     if named and next(named) then
-        ResetEngineRegions(object, rec, details, named)
+        ResetEngineRegions(object, record, details, named)
     end
-    if rec.tmpl == "CooldownFrameTemplate" then
+    if record.tmpl == "CooldownFrameTemplate" then
         ApplyCooldownTemplate(object)
         if object:IsShown() then
             object:Hide()
         end
-    elseif rec.ftype == "EditBox" then
+    elseif record.ftype == "EditBox" then
         -- a shown auto-focus edit box takes the keyboard: show it without, then
         -- put the new object's default back (one kept hidden is shown by its
         -- dress, which turns auto-focus off first: see Pool.Kept)
@@ -1727,8 +1727,8 @@ local function ResetFrame(object, rec, hostFrame, pass, hidden)
         -- hook (CludesUI.TrackOverlay) never sees the reset (the Hide above it does)
         m.Show(object)
     end
-    rec.gen = rec.gen + 1
-    rec.idle = false
+    record.gen = record.gen + 1
+    record.idle = false
     return true
 end
 
@@ -1755,23 +1755,23 @@ local function ResetAnim(a, r)
     return fit
 end
 
-local function ResetAG(ag, rec)
-    local m = getmetatable(ag).__index
-    ag:Stop()
-    ResetScripts(ag, rec, m, nil)
-    WipeKeys(ag, rec, m, nil)
-    if ag.SetToDefaults then
-        ag:SetToDefaults()
+local function ResetAG(animGroup, record)
+    local m = getmetatable(animGroup).__index
+    animGroup:Stop()
+    ResetScripts(animGroup, record, m, nil)
+    WipeKeys(animGroup, record, m, nil)
+    if animGroup.SetToDefaults then
+        animGroup:SetToDefaults()
     end
     -- what SetToDefaults keeps: the looping, final alpha and speed
     local kept = AGKept()
-    local fit = not kept or RestoreKept(ag, kept)
+    local fit = not kept or RestoreKept(animGroup, kept)
     -- its animations are reset where they are (a group cannot drop one) and
     -- handed back in order by CreateAnimation; the ones the next dress does
     -- not take are quieted before the group plays (QuietLeftovers)
-    local pools = rec.pools
-    if pools then
-        for _, entries in pairs(pools) do
+    local poolMap = record.pools
+    if poolMap then
+        for _, entries in pairs(poolMap) do
             for i = 1, #entries do
                 local a = entries[i]
                 local ar = REC[a]
@@ -1782,38 +1782,38 @@ local function ResetAG(ag, rec)
                 ar.fresh = true
             end
         end
-        local current = rec.cur
+        local current = record.cur
         for keyName in pairs(current) do
             current[keyName] = 0
         end
     end
     -- a value the engine will not put back (an animation's smoothing): the group
     -- is retired by AcquireAG, never handed out again
-    rec.unfit = not fit or nil
-    rec.gen = rec.gen + 1
-    rec.idle = false
+    record.unfit = not fit or nil
+    record.gen = record.gen + 1
+    record.idle = false
 end
 
 -- A group the pool will not hand out again: stopped where it is (a group cannot
 -- move), a plain group again (no pool overrides), out of the pool.
-local function RetireAG(ag)
-    local rec = REC[ag]
-    REC[ag] = nil
-    ag:Stop()
-    for name, func in pairs(AG_OVERRIDES) do
-        if rawget(ag, name) == func then
-            rawset(ag, name, nil)
+local function RetireAG(animGroup)
+    local record = REC[animGroup]
+    REC[animGroup] = nil
+    animGroup:Stop()
+    for label, func in pairs(AG_OVERRIDES) do
+        if rawget(animGroup, label) == func then
+            rawset(animGroup, label, nil)
         end
     end
-    local pools = rec and rec.pools
-    if pools then
-        for _, entries in pairs(pools) do
+    local poolMap = record and record.pools
+    if poolMap then
+        for _, entries in pairs(poolMap) do
             for i = 1, #entries do
                 local a = entries[i]
                 REC[a] = nil
-                for name, func in pairs(ANIM_OVERRIDES) do
-                    if rawget(a, name) == func then
-                        rawset(a, name, nil)
+                for label, func in pairs(ANIM_OVERRIDES) do
+                    if rawget(a, label) == func then
+                        rawset(a, label, nil)
                     end
                 end
             end
@@ -1821,21 +1821,21 @@ local function RetireAG(ag)
     end
 end
 
-local function ResetRegion(object, rec, host, layer, subMenu)
+local function ResetRegion(object, record, hostFrame, layer, subMenu)
     local m = getmetatable(object).__index
     if object:IsShown() then
         object:Hide()
     end
-    ResetScripts(object, rec, m, nil)
+    ResetScripts(object, record, m, nil)
     ForgetRegistries(object, false)
-    WipeKeys(object, rec, m, nil)
+    WipeKeys(object, record, m, nil)
     -- its own animation groups: stopped, handed back in order
-    local pools = rec.pools
-    if pools then
-        for _, entries in pairs(pools) do
+    local poolMap = record.pools
+    if poolMap then
+        for _, entries in pairs(poolMap) do
             ParkList(entries)
         end
-        local current = rec.cur
+        local current = record.cur
         for keyName in pairs(current) do
             current[keyName] = 0
         end
@@ -1847,11 +1847,11 @@ local function ResetRegion(object, rec, host, layer, subMenu)
         object:SetAlpha(1)
     end
     -- a line's thickness and a rotated texture's rotation point as new (SetToDefaults keeps both)
-    if rec.thick and object:GetThickness() ~= rec.thick then
-        object:SetThickness(rec.thick)
+    if record.thick and object:GetThickness() ~= record.thick then
+        object:SetThickness(record.thick)
     end
-    if rec.rotated then
-        rec.rotated = nil
+    if record.rotated then
+        record.rotated = nil
         local r0, p0 = TexRotation()
         if p0 then
             m.SetRotation(object, r0, p0)
@@ -1867,13 +1867,13 @@ local function ResetRegion(object, rec, host, layer, subMenu)
     end
     ForgetPixelSnap(object)
     object:SetDrawLayer(layer, subMenu)
-    if object:GetParent() ~= host then
-        m.SetParent(object, host)
+    if object:GetParent() ~= hostFrame then
+        m.SetParent(object, hostFrame)
     end
     object:Show()
-    rec.layer, rec.sub = layer, subMenu
-    rec.gen = rec.gen + 1
-    rec.idle = false
+    record.layer, record.sub = layer, subMenu
+    record.gen = record.gen + 1
+    record.idle = false
 end
 
 -------------------------------------------------------------------------------
@@ -1882,19 +1882,19 @@ end
 -- An object the pool will not hand out again: out of its list, a plain frame
 -- again (no pool overrides), buried.
 local function Retire(object)
-    local rec = REC[object]
+    local record = REC[object]
     REC[object] = nil
-    if rec then
-        StripOverrides(object, rec.ftype)
+    if record then
+        StripOverrides(object, record.ftype)
     end
     if object:IsShown() then
         object:Hide()
     end
     Bury(object)
-    if rec and devOn then
+    if record and devOn then
         DevWarn(
-            "retire:" .. tostring(rec.kind),
-            "a " .. tostring(rec.kind) .. " with a region the pool cannot name is not reused"
+            "retire:" .. tostring(record.kind),
+            "a " .. tostring(record.kind) .. " with a region the pool cannot name is not reused"
         )
     end
 end
@@ -1922,9 +1922,9 @@ local function TakeFrame(entries, i, hostFrame)
     while tries > 0 and entries[i] do
         tries = tries - 1
         local object = entries[i]
-        local rec = REC[object]
-        if ResetFrame(object, rec, hostFrame) then
-            if not rec.engine then
+        local record = REC[object]
+        if ResetFrame(object, record, hostFrame) then
+            if not record.engine then
                 return object
             end
             tremove(entries, i)
@@ -1938,124 +1938,124 @@ local function TakeFrame(entries, i, hostFrame)
     return nil
 end
 
-local function AcquireFrame(host, hrec, ftype, tmpl)
-    local kind = tmpl and (ftype .. "|" .. tmpl) or ftype
-    local pools = hrec.pools
-    if not pools then
-        pools = {}
-        hrec.pools = pools
-        hrec.cur = {}
+local function AcquireFrame(hostFrame, hostRec, frameType, template)
+    local kindName = template and (frameType .. "|" .. template) or frameType
+    local poolMap = hostRec.pools
+    if not poolMap then
+        poolMap = {}
+        hostRec.pools = poolMap
+        hostRec.cur = {}
     end
-    local entries = pools[kind]
+    local entries = poolMap[kindName]
     if not entries then
         entries = {}
-        pools[kind] = entries
+        poolMap[kindName] = entries
     end
-    local i = (hrec.cur[kind] or 0) + 1
-    local object = TakeFrame(entries, i, host)
+    local i = (hostRec.cur[kindName] or 0) + 1
+    local object = TakeFrame(entries, i, hostFrame)
     if not object then
-        object = _G.CreateFrame(ftype, nil, host, tmpl)
-        RegisterFrame(object, NewFrameRec("pooled", kind, ftype, tmpl, host))
+        object = _G.CreateFrame(frameType, nil, hostFrame, template)
+        RegisterFrame(object, NewFrameRec("pooled", kindName, frameType, template, hostFrame))
         tinsert(entries, i, object)
     end
-    hrec.cur[kind] = i
+    hostRec.cur[kindName] = i
     return object
 end
 
-AcquireRegion = function(host, kind, method, layer, subMenu)
-    local hrec = REC[host]
-    local pools = hrec.pools
-    if not pools then
-        pools = {}
-        hrec.pools = pools
-        hrec.cur = {}
+AcquireRegion = function(hostFrame, kindName, method, layer, subMenu)
+    local hostRec = REC[hostFrame]
+    local poolMap = hostRec.pools
+    if not poolMap then
+        poolMap = {}
+        hostRec.pools = poolMap
+        hostRec.cur = {}
     end
-    local entries = pools[kind]
+    local entries = poolMap[kindName]
     if not entries then
         entries = {}
-        pools[kind] = entries
+        poolMap[kindName] = entries
     end
-    local i = (hrec.cur[kind] or 0) + 1
+    local i = (hostRec.cur[kindName] or 0) + 1
     -- the draw layer a new region of this call gets (the engine default when unset)
     local nLayer = layer or "ARTWORK"
-    local nSub = (kind ~= "FontString" and tonumber(subMenu)) or 0
+    local nSub = (kindName ~= "FontString" and tonumber(subMenu)) or 0
     local object = entries[i]
     if object then
-        ResetRegion(object, REC[object], host, nLayer, nSub)
+        ResetRegion(object, REC[object], hostFrame, nLayer, nSub)
     else
-        if kind == "FontString" then
-            object = getmetatable(host).__index.CreateFontString(host, nil, layer)
+        if kindName == "FontString" then
+            object = getmetatable(hostFrame).__index.CreateFontString(hostFrame, nil, layer)
         else
-            object = getmetatable(host).__index[method](host, nil, layer, nil, subMenu)
+            object = getmetatable(hostFrame).__index[method](hostFrame, nil, layer, nil, subMenu)
         end
         REC[object] = {
             cls = "pooled",
-            kind = kind,
-            host = host,
+            kind = kindName,
+            host = hostFrame,
             gen = 1,
             idle = false,
             region = true,
             layer = nLayer,
             sub = nSub,
-            thick = kind == "Line" and object.GetThickness and object:GetThickness() or nil,
+            thick = kindName == "Line" and object.GetThickness and object:GetThickness() or nil,
         }
         Install(object, REGION_OVERRIDES)
-        if kind == "Texture" then
+        if kindName == "Texture" then
             Install(object, TEX_OVERRIDES)
         end
         entries[i] = object
     end
-    hrec.cur[kind] = i
+    hostRec.cur[kindName] = i
     return object
 end
 
-AcquireAG = function(host)
-    local hrec = REC[host]
-    local pools = hrec.pools
-    if not pools then
-        pools = {}
-        hrec.pools = pools
-        hrec.cur = {}
+AcquireAG = function(hostFrame)
+    local hostRec = REC[hostFrame]
+    local poolMap = hostRec.pools
+    if not poolMap then
+        poolMap = {}
+        hostRec.pools = poolMap
+        hostRec.cur = {}
     end
-    local entries = pools.AnimationGroup
+    local entries = poolMap.AnimationGroup
     if not entries then
         entries = {}
-        pools.AnimationGroup = entries
+        poolMap.AnimationGroup = entries
     end
-    local i = (hrec.cur.AnimationGroup or 0) + 1
-    local ag = entries[i]
-    if ag then
-        ResetAG(ag, REC[ag])
-        if REC[ag].unfit then
-            RetireAG(ag)
-            ag = nil
+    local i = (hostRec.cur.AnimationGroup or 0) + 1
+    local animGroup = entries[i]
+    if animGroup then
+        ResetAG(animGroup, REC[animGroup])
+        if REC[animGroup].unfit then
+            RetireAG(animGroup)
+            animGroup = nil
         end
     end
-    if not ag then
-        ag = getmetatable(host).__index.CreateAnimationGroup(host)
-        REC[ag] = { cls = "pooled", kind = "AnimationGroup", host = host, gen = 1, idle = false, isAG = true }
-        Install(ag, AG_OVERRIDES)
-        entries[i] = ag
+    if not animGroup then
+        animGroup = getmetatable(hostFrame).__index.CreateAnimationGroup(hostFrame)
+        REC[animGroup] = { cls = "pooled", kind = "AnimationGroup", host = hostFrame, gen = 1, idle = false, isAG = true }
+        Install(animGroup, AG_OVERRIDES)
+        entries[i] = animGroup
     end
-    hrec.cur.AnimationGroup = i
-    return ag
+    hostRec.cur.AnimationGroup = i
+    return animGroup
 end
 
-AcquireAnim = function(ag, atype)
-    local grec = REC[ag]
-    local pools = grec.pools
-    if not pools then
-        pools = {}
-        grec.pools = pools
+AcquireAnim = function(animGroup, atype)
+    local grec = REC[animGroup]
+    local poolMap = grec.pools
+    if not poolMap then
+        poolMap = {}
+        grec.pools = poolMap
         grec.cur = {}
     end
-    local kind = atype or "Animation"
-    local entries = pools[kind]
+    local kindName = atype or "Animation"
+    local entries = poolMap[kindName]
     if not entries then
         entries = {}
-        pools[kind] = entries
+        poolMap[kindName] = entries
     end
-    local i = (grec.cur[kind] or 0) + 1
+    local i = (grec.cur[kindName] or 0) + 1
     local a = entries[i]
     if a then
         local ar = REC[a]
@@ -2068,36 +2068,36 @@ AcquireAnim = function(ag, atype)
         end
         ar.idle = false
     else
-        a = getmetatable(ag).__index.CreateAnimation(ag, atype)
-        REC[a] = { cls = "pooled", kind = kind, host = ag, gen = 1, idle = false, isAnim = true }
+        a = getmetatable(animGroup).__index.CreateAnimation(animGroup, atype)
+        REC[a] = { cls = "pooled", kind = kindName, host = animGroup, gen = 1, idle = false, isAnim = true }
         Install(a, ANIM_OVERRIDES)
         entries[i] = a
     end
-    grec.cur[kind] = i
+    grec.cur[kindName] = i
     return a
 end
 
 -------------------------------------------------------------------------------
 --  Public API
 -------------------------------------------------------------------------------
-local function CanonicalType(ftype)
-    if type(ftype) ~= "string" then
+local function CanonicalType(frameType)
+    if type(frameType) ~= "string" then
         return nil
     end
-    return FRAME_TYPES[ftype] or FRAME_TYPES[ftype:lower()]
+    return FRAME_TYPES[frameType] or FRAME_TYPES[frameType:lower()]
 end
 
-function Pool.CreateFrame(ftype, name, hostFrame, tmpl, ident)
-    if name == nil and ident == nil and hostFrame ~= nil and not CludesUI._prebuilding then
+function Pool.CreateFrame(frameType, label, hostFrame, template, ident)
+    if label == nil and ident == nil and hostFrame ~= nil and not CludesUI._prebuilding then
         local prec = REC[hostFrame]
-        if prec and prec.isFrame and (tmpl == nil or TEMPLATES[tmpl]) then
-            local ft = CanonicalType(ftype)
+        if prec and prec.isFrame and (template == nil or TEMPLATES[template]) then
+            local ft = CanonicalType(frameType)
             if ft then
-                return AcquireFrame(hostFrame, prec, ft, tmpl)
+                return AcquireFrame(hostFrame, prec, ft, template)
             end
         end
     end
-    return _G.CreateFrame(ftype, name, hostFrame, tmpl, ident)
+    return _G.CreateFrame(frameType, label, hostFrame, template, ident)
 end
 
 -- A new frame for Pool.Kept, hidden when asked (it has no OnShow script yet,
@@ -2110,13 +2110,13 @@ local function NewKept(object, hidden)
 end
 
 -- Every reset of a kept frame starts a pass on it (ResetContents).
-function Pool.Kept(ownerFrame, key, ftype, hostFrame, tmpl, name, hidden)
+function Pool.Kept(ownerFrame, key, frameType, hostFrame, template, label, hidden)
     if CludesUI._prebuilding or ownerFrame == nil or key == nil then
-        return NewKept(_G.CreateFrame(ftype, name, hostFrame, tmpl), hidden)
+        return NewKept(_G.CreateFrame(frameType, label, hostFrame, template), hidden)
     end
-    local ft = CanonicalType(ftype)
-    if not ft or (tmpl ~= nil and not TEMPLATES[tmpl]) then
-        return NewKept(_G.CreateFrame(ftype, name, hostFrame, tmpl), hidden)
+    local ft = CanonicalType(frameType)
+    if not ft or (template ~= nil and not TEMPLATES[template]) then
+        return NewKept(_G.CreateFrame(frameType, label, hostFrame, template), hidden)
     end
     RefreshDev()
     local map = KEPT[ownerFrame]
@@ -2126,64 +2126,64 @@ function Pool.Kept(ownerFrame, key, ftype, hostFrame, tmpl, name, hidden)
     end
     local object = map[key]
     if object then
-        local rec = REC[object]
-        if rec and ResetFrame(object, rec, hostFrame, PASS_RESET, hidden) and not rec.engine then
-            rec.host = hostFrame
+        local record = REC[object]
+        if record and ResetFrame(object, record, hostFrame, PASS_RESET, hidden) and not record.engine then
+            record.host = hostFrame
             return object, false
         end
         map[key] = nil
         Retire(object)
     end
-    object = _G.CreateFrame(ft, name, hostFrame, tmpl)
-    local rec = NewFrameRec("kept", tmpl and (ft .. "|" .. tmpl) or ft, ft, tmpl, hostFrame)
-    rec.key = key
-    RegisterFrame(object, rec)
+    object = _G.CreateFrame(ft, label, hostFrame, template)
+    local record = NewFrameRec("kept", template and (ft .. "|" .. template) or ft, ft, template, hostFrame)
+    record.key = key
+    RegisterFrame(object, record)
     map[key] = object
     return NewKept(object, hidden)
 end
 
-function Pool.Owned(ownerFrame, labelText, ftype, hostFrame, tmpl)
-    local ft = CanonicalType(ftype)
-    if CludesUI._prebuilding or ownerFrame == nil or not ft or (tmpl ~= nil and not TEMPLATES[tmpl]) then
-        return _G.CreateFrame(ftype, nil, hostFrame, tmpl)
+function Pool.Owned(ownerFrame, labelText, frameType, hostFrame, template)
+    local ft = CanonicalType(frameType)
+    if CludesUI._prebuilding or ownerFrame == nil or not ft or (template ~= nil and not TEMPLATES[template]) then
+        return _G.CreateFrame(frameType, nil, hostFrame, template)
     end
     local om = OWNED[ownerFrame]
     if not om then
         om = {}
         OWNED[ownerFrame] = om
     end
-    local skey = tostring(labelText) .. "|" .. ft .. "|" .. (tmpl or "")
-    local slot = om[skey]
-    if not slot then
-        slot = { list = {}, cur = 0 }
-        om[skey] = slot
+    local skey = tostring(labelText) .. "|" .. ft .. "|" .. (template or "")
+    local slotIndex = om[skey]
+    if not slotIndex then
+        slotIndex = { list = {}, cur = 0 }
+        om[skey] = slotIndex
     end
-    local i = slot.cur + 1
-    local object = TakeFrame(slot.list, i, hostFrame)
+    local i = slotIndex.cur + 1
+    local object = TakeFrame(slotIndex.list, i, hostFrame)
     if not object then
-        object = _G.CreateFrame(ft, nil, hostFrame, tmpl)
-        local rec = NewFrameRec("owned", tmpl and (ft .. "|" .. tmpl) or ft, ft, tmpl, hostFrame)
-        RegisterFrame(object, rec)
-        tinsert(slot.list, i, object)
+        object = _G.CreateFrame(ft, nil, hostFrame, template)
+        local record = NewFrameRec("owned", template and (ft .. "|" .. template) or ft, ft, template, hostFrame)
+        RegisterFrame(object, record)
+        tinsert(slotIndex.list, i, object)
     end
     local orec = REC[object]
     orec.host = hostFrame
-    slot.cur = i
+    slotIndex.cur = i
     return object
 end
 
-function Pool.Begin(host)
+function Pool.Begin(hostFrame)
     if CludesUI._prebuilding then
         return
     end
-    local rec = REC[host]
-    if not (rec and rec.isFrame) then
+    local record = REC[hostFrame]
+    if not (record and record.isFrame) then
         return
     end
     RefreshDev()
-    ResetContents(host, rec, KindInfo(rec), PASS_BEGIN)
+    ResetContents(hostFrame, record, KindInfo(record), PASS_BEGIN)
     -- the host itself is not reset: its own engine regions stay as they are
-    local named = rec.engRegs
+    local named = record.engRegs
     if named then
         for keyName in pairs(named) do
             named[keyName] = nil
@@ -2196,43 +2196,43 @@ end
 -- what the host is placed by before that pass starts (the panel collapses the
 -- content header before its header root is dressed again). The pass then
 -- finds those objects placed by what the host is placed by and leaves them.
-function Pool.Pin(host)
+function Pool.Pin(hostFrame)
     if CludesUI._prebuilding then
         return
     end
-    local rec = REC[host]
-    if rec and rec.isFrame then
-        FreezeUnder(host, rec, true)
+    local record = REC[hostFrame]
+    if record and record.isFrame then
+        FreezeUnder(hostFrame, record, true)
     end
 end
 
 -- Records whenever obj is a pooled object, also during the global search's
 -- prebuild (a live pooled object a prebuild builder touches stays managed).
 function Pool.Keep(object)
-    local rec = REC[object]
-    if not rec or rec.cls ~= "pooled" then
+    local record = REC[object]
+    if not record or record.cls ~= "pooled" then
         return object
     end
-    local hrec = REC[rec.host]
-    local entries = hrec and hrec.pools and hrec.pools[rec.kind]
+    local hostRec = REC[record.host]
+    local entries = hostRec and hostRec.pools and hostRec.pools[record.kind]
     if entries then
         for i = 1, #entries do
             if entries[i] == object then
                 tremove(entries, i)
-                local c = hrec.cur[rec.kind] or 0
+                local c = hostRec.cur[record.kind] or 0
                 if i <= c then
-                    hrec.cur[rec.kind] = c - 1
+                    hostRec.cur[record.kind] = c - 1
                 end
                 break
             end
         end
     end
-    rec.cls = "keep"
-    if hrec then
-        local att = hrec.attach
+    record.cls = "keep"
+    if hostRec then
+        local att = hostRec.attach
         if not att then
             att = {}
-            hrec.attach = att
+            hostRec.attach = att
         end
         att[#att + 1] = object
     end
@@ -2241,12 +2241,12 @@ end
 
 -- Records whenever host is a pooled object, also during the global search's
 -- prebuild (a border made then on a live pooled frame must stay on it).
-function Pool.Attach(host, object, key, onReset)
+function Pool.Attach(hostFrame, object, key, onReset)
     if object == nil then
         return false
     end
-    local hrec = REC[host]
-    if not hrec then
+    local hostRec = REC[hostFrame]
+    if not hostRec then
         return false
     end
     local orec = REC[object]
@@ -2257,12 +2257,12 @@ function Pool.Attach(host, object, key, onReset)
         orec = { cls = "attach" }
         REC[object] = orec
     end
-    if orec.host ~= host then
-        orec.host = host
-        local att = hrec.attach
+    if orec.host ~= hostFrame then
+        orec.host = hostFrame
+        local att = hostRec.attach
         if not att then
             att = {}
-            hrec.attach = att
+            hostRec.attach = att
         end
         -- listed once per host, however often it moves between hosts
         local listed = false
@@ -2278,10 +2278,10 @@ function Pool.Attach(host, object, key, onReset)
     end
     orec.onReset = onReset
     if key ~= nil then
-        local ks = hrec.attachKeys
+        local ks = hostRec.attachKeys
         if not ks then
             ks = {}
-            hrec.attachKeys = ks
+            hostRec.attachKeys = ks
         end
         ks[key] = true
     end
@@ -2307,23 +2307,23 @@ end
 -- The slots survive every later reset; a later dress that sets or hooks one
 -- again is reported in dev mode (ExemptSlot).
 function Pool.ExemptScripts(object, ...)
-    local rec = object and REC[object]
-    if not rec then
+    local record = object and REC[object]
+    if not record then
         return
     end
-    local ex = rec.exempt
+    local ex = record.exempt
     if not ex then
         ex = {}
-        rec.exempt = ex
+        record.exempt = ex
     end
-    if rec.exemptGen == nil then
-        rec.exemptGen = rec.gen
+    if record.exemptGen == nil then
+        record.exemptGen = record.gen
     end -- the dress that first exempted
     for i = 1, select("#", ...) do
-        local slot = select(i, ...)
-        ex[slot] = true
-        if rec.scripts then
-            rec.scripts[slot] = nil
+        local slotIndex = select(i, ...)
+        ex[slotIndex] = true
+        if record.scripts then
+            record.scripts[slotIndex] = nil
         end
     end
 end
@@ -2331,12 +2331,12 @@ end
 -- Dev mode: pooled objects anywhere under a host (its pools, and the pools of
 -- every object it handed out) that are idle yet shown were shown by code
 -- outside the pool (an object kept by module state).
-local function DevIdleShown(rec, labelText, level)
-    local pools = rec.pools
-    if not pools or level > 16 then
+local function DevIdleShown(record, labelText, level)
+    local poolMap = record.pools
+    if not poolMap or level > 16 then
         return
     end
-    for kind, entries in pairs(pools) do
+    for kindName, entries in pairs(poolMap) do
         for i = 1, #entries do
             local o = entries[i]
             local r = REC[o]
@@ -2344,9 +2344,9 @@ local function DevIdleShown(rec, labelText, level)
                 if r.idle then
                     if o:IsShown() then
                         DevWarn(
-                            "idleshown:" .. tostring(labelText) .. kind,
+                            "idleshown:" .. tostring(labelText) .. kindName,
                             "an idle "
-                                .. kind
+                                .. kindName
                                 .. " shows on "
                                 .. tostring(labelText)
                                 .. " (kept by module state?)"
@@ -2359,20 +2359,20 @@ local function DevIdleShown(rec, labelText, level)
         end
     end
 end
-function Pool._DevEndPass(host, labelText)
-    if not devOn or host == nil then
+function Pool._DevEndPass(hostFrame, labelText)
+    if not devOn or hostFrame == nil then
         return
     end
-    local rec = REC[host]
-    if rec then
-        DevIdleShown(rec, labelText, 0)
+    local record = REC[hostFrame]
+    if record then
+        DevIdleShown(record, labelText, 0)
     end
     -- kept frames another owner placed on this host (a section a module keeps
     -- on a page wrapper) hold pools of their own: walked too
     for _, map in pairs(KEPT) do
         for _, keyName in pairs(map) do
             local kr = REC[keyName]
-            if kr and kr.host == host then
+            if kr and kr.host == hostFrame then
                 DevIdleShown(kr, tostring(labelText) .. "/" .. tostring(kr.key), 0)
             end
         end
@@ -2408,21 +2408,21 @@ end
 -- Harness hook (pagereuse harness reset-fuzz): resets obj exactly as the pool
 -- does before handing it out again on the same host.
 function Pool._ResetForTest(object)
-    local rec = object and REC[object]
-    if not rec then
+    local record = object and REC[object]
+    if not record then
         return false
     end
-    if rec.region then
-        ResetRegion(object, rec, rec.host, rec.layer, rec.sub)
+    if record.region then
+        ResetRegion(object, record, record.host, record.layer, record.sub)
         return true
-    elseif rec.isAG then
-        ResetAG(object, rec)
+    elseif record.isAG then
+        ResetAG(object, record)
         return true
-    elseif rec.isAnim then
-        ResetAnim(object, rec)
+    elseif record.isAnim then
+        ResetAnim(object, record)
         return true
     end
-    return ResetFrame(object, rec, rec.host)
+    return ResetFrame(object, record, record.host)
 end
 
 -------------------------------------------------------------------------------
@@ -2450,10 +2450,10 @@ function Pool._DevVerifyReset()
     local result, kinds = {}, 0
     refusedLog = {}
     verifyOwner = verifyOwner or {}
-    local host = Pool.Kept(verifyOwner, "host", "Frame", _G.UIParent)
-    host:Hide()
-    host:SetSize(200, 200)
-    host:SetPoint("CENTER")
+    local hostFrame = Pool.Kept(verifyOwner, "host", "Frame", _G.UIParent)
+    hostFrame:Hide()
+    hostFrame:SetSize(200, 200)
+    hostFrame:SetPoint("CENTER")
 
     -- a vector (a texture's rotation point) prints its values
     local function Fmt(val)
@@ -2465,29 +2465,29 @@ function Pool._DevVerifyReset()
         end
         return tostring(val)
     end
-    local function Say(kind, what, va, vb)
-        result[#result + 1] = kind .. " " .. what .. ": new=" .. Fmt(va) .. " reset=" .. Fmt(vb)
+    local function Say(kindName, what, va, vb)
+        result[#result + 1] = kindName .. " " .. what .. ": new=" .. Fmt(va) .. " reset=" .. Fmt(vb)
     end
     local function Packed(...)
         return { n = select("#", ...), ... }
     end
     -- a getter's results on both objects; ownA / ownB stand for each other
-    local function Compare(kind, labelText, a, b, get, ga, ownA, ownB)
+    local function Compare(kindName, labelText, a, b, get, ga, ownA, ownB)
         local fa, fb = a[get], b[get]
         if type(fa) ~= "function" or type(fb) ~= "function" then
             return
         end
         local ra = Packed(pcall(fa, a, unpack(ga or EMPTY)))
-        local rb = Packed(pcall(fb, b, unpack(ga or EMPTY)))
-        if not ra[1] and not rb[1] then
+        local rebuild = Packed(pcall(fb, b, unpack(ga or EMPTY)))
+        if not ra[1] and not rebuild[1] then
             return
         end
-        if ra[1] ~= rb[1] then
-            Say(kind, labelText or get, ra[1] and "ok" or "error", rb[1] and "ok" or "error")
+        if ra[1] ~= rebuild[1] then
+            Say(kindName, labelText or get, ra[1] and "ok" or "error", rebuild[1] and "ok" or "error")
             return
         end
-        for i = 2, max(ra.n, rb.n) do
-            local posX, cursorY = ra[i], rb[i]
+        for i = 2, max(ra.n, rebuild.n) do
+            local posX, cursorY = ra[i], rebuild[i]
             local same
             if type(posX) == "number" and type(cursorY) == "number" then
                 same = abs(posX - cursorY) < 0.001
@@ -2495,7 +2495,7 @@ function Pool._DevVerifyReset()
                 same = SameVal(posX, cursorY) or (ownA ~= nil and posX == ownA and cursorY == ownB)
             end
             if not same then
-                Say(kind, (labelText or get) .. (i > 2 and ("#" .. (i - 1)) or ""), posX, cursorY)
+                Say(kindName, (labelText or get) .. (i > 2 and ("#" .. (i - 1)) or ""), posX, cursorY)
                 return
             end
         end
@@ -2521,21 +2521,21 @@ function Pool._DevVerifyReset()
                 pcall(set, b, not val)
             end
         elseif type(c.v) == "function" then
-            pcall(set, b, c.v(host))
+            pcall(set, b, c.v(hostFrame))
         else
             pcall(set, b, unpack(c.v or EMPTY))
         end
     end
-    local function Check(kind, a, b, c)
+    local function Check(kindName, a, b, c)
         if c.key then
             if rawget(a, c.key) ~= rawget(b, c.key) then
-                Say(kind, "key " .. c.key, rawget(a, c.key), rawget(b, c.key))
+                Say(kindName, "key " .. c.key, rawget(a, c.key), rawget(b, c.key))
             end
             return
         end
         local get = c.get or c.flip
         if get then
-            Compare(kind, nil, a, b, get, c.ga, a, b)
+            Compare(kindName, nil, a, b, get, c.ga, a, b)
         end
     end
 
@@ -2760,7 +2760,7 @@ function Pool._DevVerifyReset()
         "GetJustifyV",
     }
 
-    local function Run(kind, entries, a, b, dress)
+    local function Run(kindName, entries, a, b, dress)
         kinds = kinds + 1
         for _, part in ipairs(entries) do
             for _, c in ipairs(part) do
@@ -2772,7 +2772,7 @@ function Pool._DevVerifyReset()
             dress(b)
             for _, part in ipairs(entries) do
                 for _, c in ipairs(part) do
-                    Check(kind, a, b, c)
+                    Check(kindName, a, b, c)
                 end
             end
         end
@@ -2780,84 +2780,84 @@ function Pool._DevVerifyReset()
     local function DressFrame(o)
         o:SetSize(40, 20)
         o:ClearAllPoints()
-        o:SetPoint("CENTER", host)
+        o:SetPoint("CENTER", hostFrame)
         if o.SetFont and o:GetObjectType() == "EditBox" then
             o:SetFont(FONT, 12, "")
         end
     end
 
-    local function VerifyFrame(ftype, tmpl, entries)
-        local kind = tmpl and (ftype .. "|" .. tmpl) or ftype
-        local a = _G.CreateFrame(ftype, nil, host, tmpl)
-        local b = Pool.CreateFrame(ftype, nil, host, tmpl)
+    local function VerifyFrame(frameType, template, entries)
+        local kindName = template and (frameType .. "|" .. template) or frameType
+        local a = _G.CreateFrame(frameType, nil, hostFrame, template)
+        local b = Pool.CreateFrame(frameType, nil, hostFrame, template)
         if not REC[b] then
-            Say(kind, "pool", "pooled", "not pooled")
+            Say(kindName, "pool", "pooled", "not pooled")
             return
         end
-        local finish = Run(kind, entries, a, b, DressFrame)
-        local roles = ENGINE_ROLES[ftype]
-        if roles then
-            for _, role in ipairs(roles) do
-                if role.make and b[role.make] then
-                    if role.text then
+        local finish = Run(kindName, entries, a, b, DressFrame)
+        local roleMap = ENGINE_ROLES[frameType]
+        if roleMap then
+            for _, roleName in ipairs(roleMap) do
+                if roleName.make and b[roleName.make] then
+                    if roleName.text then
                         pcall(b.SetNormalFontObject, b, _G.GameFontNormal)
                     end
-                    pcall(b[role.make], b, role.text and "x" or ART)
+                    pcall(b[roleName.make], b, roleName.text and "x" or ART)
                 end
-                local reg = b[role.get] and SafeCall(b[role.get], b)
-                if reg then
-                    if reg.SetVertexColor then
-                        pcall(reg.SetVertexColor, reg, 1, 0, 0, 0.5)
+                local registry = b[roleName.get] and SafeCall(b[roleName.get], b)
+                if registry then
+                    if registry.SetVertexColor then
+                        pcall(registry.SetVertexColor, registry, 1, 0, 0, 0.5)
                     end
-                    if reg.SetTextColor then
-                        pcall(reg.SetTextColor, reg, 1, 0, 0, 1)
+                    if registry.SetTextColor then
+                        pcall(registry.SetTextColor, registry, 1, 0, 0, 1)
                     end
-                    pcall(reg.SetAlpha, reg, 0.5)
-                    pcall(reg.ClearAllPoints, reg)
+                    pcall(registry.SetAlpha, registry, 0.5)
+                    pcall(registry.ClearAllPoints, registry)
                 end
             end
         end
-        if ftype == "ScrollFrame" then
+        if frameType == "ScrollFrame" then
             local childFrame = _G.CreateFrame("Frame", nil, b)
             childFrame:SetSize(10, 500)
             b:SetScrollChild(childFrame)
         end
         Pool._ResetForTest(b)
         finish()
-        if ftype == "ScrollFrame" then
+        if frameType == "ScrollFrame" then
             local ca, checkBtn = a:GetScrollChild(), b:GetScrollChild()
             if ca ~= nil or (checkBtn ~= nil and not Pool._IsPlaceholder(checkBtn)) then
-                Say(kind, "GetScrollChild", ca, checkBtn)
+                Say(kindName, "GetScrollChild", ca, checkBtn)
             end
         end
-        if roles then
-            for _, role in ipairs(roles) do
-                local ga, gb = a[role.get], b[role.get]
+        if roleMap then
+            for _, roleName in ipairs(roleMap) do
+                local ga, gb = a[roleName.get], b[roleName.get]
                 local ra = ga and SafeCall(ga, a)
-                local rb = gb and SafeCall(gb, b)
-                if rb and not role.live and ra == nil and rb:IsShown() then
-                    local drawn = (rb.GetTexture and (rb:GetTexture() or (rb.GetAtlas and rb:GetAtlas())))
-                        or (rb.GetText and rb:GetText() ~= "" and rb:GetText())
+                local rebuild = gb and SafeCall(gb, b)
+                if rebuild and not roleName.live and ra == nil and rebuild:IsShown() then
+                    local drawn = (rebuild.GetTexture and (rebuild:GetTexture() or (rebuild.GetAtlas and rebuild:GetAtlas())))
+                        or (rebuild.GetText and rebuild:GetText() ~= "" and rebuild:GetText())
                     if drawn then
-                        Say(kind, role.get .. " after the reset", "none", drawn)
+                        Say(kindName, roleName.get .. " after the reset", "none", drawn)
                     end
                 end
-                if role.make and a[role.make] then
-                    if role.text then
+                if roleName.make and a[roleName.make] then
+                    if roleName.text then
                         pcall(a.SetNormalFontObject, a, _G.GameFontNormal)
                         pcall(b.SetNormalFontObject, b, _G.GameFontNormal)
                     end
-                    pcall(a[role.make], a, role.text and "y" or ART)
-                    pcall(b[role.make], b, role.text and "y" or ART)
+                    pcall(a[roleName.make], a, roleName.text and "y" or ART)
+                    pcall(b[roleName.make], b, roleName.text and "y" or ART)
                     ra = ga and SafeCall(ga, a)
-                    rb = gb and SafeCall(gb, b)
+                    rebuild = gb and SafeCall(gb, b)
                 end
-                if ra and rb then
+                if ra and rebuild then
                     for _, g in ipairs(REGION_LOOK) do
-                        Compare(kind, role.get .. ":" .. g, ra, rb, g, g == "GetPoint" and { 1 } or nil, a, b)
+                        Compare(kindName, roleName.get .. ":" .. g, ra, rebuild, g, g == "GetPoint" and { 1 } or nil, a, b)
                     end
-                elseif (ra == nil) ~= (rb == nil) and (role.make or role.live) then
-                    Say(kind, role.get, ra, rb)
+                elseif (ra == nil) ~= (rebuild == nil) and (roleName.make or roleName.live) then
+                    Say(kindName, roleName.get, ra, rebuild)
                 end
             end
         end
@@ -2865,23 +2865,23 @@ function Pool._DevVerifyReset()
         a:SetParent(Graveyard())
     end
 
-    local function VerifyRegion(kind, method, entries)
-        local a = getmetatable(host).__index[method](host, nil, "ARTWORK")
-        local b = host[method](host, nil, "ARTWORK")
+    local function VerifyRegion(kindName, method, entries)
+        local a = getmetatable(hostFrame).__index[method](hostFrame, nil, "ARTWORK")
+        local b = hostFrame[method](hostFrame, nil, "ARTWORK")
         if not REC[b] then
-            Say(kind, "pool", "pooled", "not pooled")
+            Say(kindName, "pool", "pooled", "not pooled")
             return
         end
-        local finish = Run(kind, entries, a, b, function(o)
+        local finish = Run(kindName, entries, a, b, function(o)
             o:ClearAllPoints()
-            if kind == "Line" then
-                o:SetStartPoint("TOPLEFT", host)
-                o:SetEndPoint("BOTTOMRIGHT", host)
+            if kindName == "Line" then
+                o:SetStartPoint("TOPLEFT", hostFrame)
+                o:SetEndPoint("BOTTOMRIGHT", hostFrame)
             else
                 o:SetSize(32, 16)
-                o:SetPoint("CENTER", host)
+                o:SetPoint("CENTER", hostFrame)
             end
-            if kind == "FontString" then
+            if kindName == "FontString" then
                 o:SetFont(FONT, 12, "")
                 o:SetText("Fuzz")
             end
@@ -2893,9 +2893,9 @@ function Pool._DevVerifyReset()
     end
 
     local function VerifyAnimations()
-        local fa = getmetatable(host).__index.CreateAnimationGroup(host)
+        local fa = getmetatable(hostFrame).__index.CreateAnimationGroup(hostFrame)
         local faA = fa:CreateAnimation("Alpha")
-        local gb = host:CreateAnimationGroup()
+        local gb = hostFrame:CreateAnimationGroup()
         local gbA = gb:CreateAnimation("Alpha")
         if not REC[gb] then
             Say("AnimationGroup", "pool", "pooled", "not pooled")
@@ -2938,8 +2938,8 @@ function Pool._DevVerifyReset()
     -- an edit box whose history lines changed: when its reset cannot put them
     -- back, the pool must retire it (never hand it out again)
     do
-        local a = _G.CreateFrame("EditBox", nil, host)
-        local b = Pool.CreateFrame("EditBox", nil, host)
+        local a = _G.CreateFrame("EditBox", nil, hostFrame)
+        local b = Pool.CreateFrame("EditBox", nil, hostFrame)
         if REC[b] and pcall(b.SetHistoryLines, b, 5) then
             Pool._ResetForTest(b)
             local r = REC[b]
@@ -2952,9 +2952,9 @@ function Pool._DevVerifyReset()
     end
     -- the same for an animation's smoothing: its group must be retired
     do
-        local fa = getmetatable(host).__index.CreateAnimationGroup(host)
+        local fa = getmetatable(hostFrame).__index.CreateAnimationGroup(hostFrame)
         local faA = fa:CreateAnimation("Alpha")
-        local gb = host:CreateAnimationGroup()
+        local gb = hostFrame:CreateAnimationGroup()
         local gbA = gb:CreateAnimation("Alpha")
         if REC[gb] and pcall(gbA.SetSmoothing, gbA, "IN") then
             Pool._ResetForTest(gb)

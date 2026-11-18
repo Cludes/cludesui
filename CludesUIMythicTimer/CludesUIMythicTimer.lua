@@ -132,18 +132,18 @@ end
 
 local CopyTable = CludesUI.Lite.DeepCopy
 
-local function CalculateBonusTimers(maxTime, affixes)
-    local plusTwoT = (maxTime or 0) * PLUS_TWO_RATIO
-    local plusThreeT = (maxTime or 0) * PLUS_THREE_RATIO
+local function CalculateBonusTimers(timeLimit, affixes)
+    local plusTwoT = (timeLimit or 0) * PLUS_TWO_RATIO
+    local plusThreeT = (timeLimit or 0) * PLUS_THREE_RATIO
 
-    if not maxTime or maxTime <= 0 then
+    if not timeLimit or timeLimit <= 0 then
         return plusTwoT, plusThreeT
     end
 
     if affixes then
         for _, affixID in ipairs(affixes) do
             if affixID == CHALLENGERS_PERIL_AFFIX_ID then
-                local oldTimer = maxTime - 90
+                local oldTimer = timeLimit - 90
                 if oldTimer > 0 then
                     plusTwoT = oldTimer * PLUS_TWO_RATIO + 90
                     plusThreeT = oldTimer * PLUS_THREE_RATIO + 90
@@ -460,9 +460,9 @@ local DB_DEFAULTS = {
 CludesUI.RegisterBorderDefaults("MythicPlus", CludesUI.BORDER_DEFAULTS_BARS)
 
 -- State
-local db
+local store
 local updateTicker
-local currentRun = {
+local activeRun = {
     active = false,
     mapID = nil,
     mapName = "",
@@ -489,15 +489,15 @@ local function ScanPartyAlive()
     local count = GetNumGroupMembers()
     for i = 1, count do
         local unitToken = (prefixText == "party" and i == count) and "player" or (prefixText .. i)
-        local name = UnitName(unitToken)
-        if name and not UnitIsDeadOrGhost(unitToken) then
-            _partyAlive[name] = true
+        local label = UnitName(unitToken)
+        if label and not UnitIsDeadOrGhost(unitToken) then
+            _partyAlive[label] = true
         end
     end
     if prefixText == "party" then
-        local name = UnitName("player")
-        if name and not UnitIsDeadOrGhost("player") then
-            _partyAlive[name] = true
+        local label = UnitName("player")
+        if label and not UnitIsDeadOrGhost("player") then
+            _partyAlive[label] = true
         end
     end
 end
@@ -512,17 +512,17 @@ local function CheckForNewDeaths(newDeathCount)
     local count = GetNumGroupMembers()
     for i = 1, count do
         local unitToken = (prefixText == "party" and i == count) and "player" or (prefixText .. i)
-        local name = UnitName(unitToken)
-        if name and _partyAlive[name] and UnitIsDeadOrGhost(unitToken) then
-            playerDeaths[name] = (playerDeaths[name] or 0) + 1
-            _partyAlive[name] = nil
+        local label = UnitName(unitToken)
+        if label and _partyAlive[label] and UnitIsDeadOrGhost(unitToken) then
+            playerDeaths[label] = (playerDeaths[label] or 0) + 1
+            _partyAlive[label] = nil
         end
     end
     if prefixText == "party" then
-        local name = UnitName("player")
-        if name and _partyAlive[name] and UnitIsDeadOrGhost("player") then
-            playerDeaths[name] = (playerDeaths[name] or 0) + 1
-            _partyAlive[name] = nil
+        local label = UnitName("player")
+        if label and _partyAlive[label] and UnitIsDeadOrGhost("player") then
+            playerDeaths[label] = (playerDeaths[label] or 0) + 1
+            _partyAlive[label] = nil
         end
     end
     _prevDeathCount = newDeathCount
@@ -559,11 +559,11 @@ local function FormatRemaining(remaining)
     return FormatTime(remaining)
 end
 
-local function RoundToInt(value)
-    if not value then
+local function RoundToInt(amount)
+    if not amount then
         return 0
     end
-    return floor(value + 0.5)
+    return floor(amount + 0.5)
 end
 
 local function GetColor(list, fallbackR, fallbackG, fallbackB)
@@ -573,46 +573,46 @@ local function GetColor(list, fallbackR, fallbackG, fallbackB)
     return fallbackR, fallbackG, fallbackB
 end
 
-local function GetTimerBarFillColor(profile, elapsed, plusThreeTime, plusTwoTime, maxTime)
-    if profile and profile.timerBarUseCustomColor == true then
-        return GetColor(profile.timerBarColor, 0.4, 1, 0.4)
+local function GetTimerBarFillColor(profileTbl, timePassed, plusThreeTime, plusTwoTime, timeLimit)
+    if profileTbl and profileTbl.timerBarUseCustomColor == true then
+        return GetColor(profileTbl.timerBarColor, 0.4, 1, 0.4)
     end
-    if maxTime and maxTime > 0 and elapsed > plusTwoTime then
+    if timeLimit and timeLimit > 0 and timePassed > plusTwoTime then
         -- +2 lost: solid #B059CC.
         return 0xB0 / 255, 0x59 / 255, 0xCC / 255
-    elseif maxTime and maxTime > 0 and elapsed > plusThreeTime then
+    elseif timeLimit and timeLimit > 0 and timePassed > plusThreeTime then
         -- +3 lost, +2 still on: match the +2 threshold color.
-        return GetColor(profile and profile.timerPlusTwoColor, 0.3, 0.8, 1)
+        return GetColor(profileTbl and profileTbl.timerPlusTwoColor, 0.3, 0.8, 1)
     end
     -- On for +3: match the +3 threshold color.
-    return GetColor(profile and profile.timerPlusThreeColor, 0.4, 1, 0.4)
+    return GetColor(profileTbl and profileTbl.timerPlusThreeColor, 0.4, 1, 0.4)
 end
 
-local function GetTimerSegmentFillColor(profile, elapsed, plusThreeTime, plusTwoTime)
-    if elapsed > plusTwoTime then
-        return GetColor(profile and profile.timerSegment3Color, 0xB0 / 255, 0x59 / 255, 0xCC / 255)
-    elseif elapsed > plusThreeTime then
-        return GetColor(profile and profile.timerSegment2Color, 0.3, 0.8, 1)
+local function GetTimerSegmentFillColor(profileTbl, timePassed, plusThreeTime, plusTwoTime)
+    if timePassed > plusTwoTime then
+        return GetColor(profileTbl and profileTbl.timerSegment3Color, 0xB0 / 255, 0x59 / 255, 0xCC / 255)
+    elseif timePassed > plusThreeTime then
+        return GetColor(profileTbl and profileTbl.timerSegment2Color, 0.3, 0.8, 1)
     end
-    return GetColor(profile and profile.timerSegment1Color, 0.4, 1, 0.4)
+    return GetColor(profileTbl and profileTbl.timerSegment1Color, 0.4, 1, 0.4)
 end
 
-local function GetTimerSegmentTextColor(profile, index)
+local function GetTimerSegmentTextColor(profileTbl, index)
     if index == 3 then
-        if profile and profile.thresholdPlusOneTextWhite == true then
+        if profileTbl and profileTbl.thresholdPlusOneTextWhite == true then
             return 1, 1, 1
         end
-        return GetColor(profile and profile.timerSegment3Color, 0xB0 / 255, 0x59 / 255, 0xCC / 255)
+        return GetColor(profileTbl and profileTbl.timerSegment3Color, 0xB0 / 255, 0x59 / 255, 0xCC / 255)
     elseif index == 2 then
-        if profile and profile.thresholdPlusTwoTextWhite == true then
+        if profileTbl and profileTbl.thresholdPlusTwoTextWhite == true then
             return 1, 1, 1
         end
-        return GetColor(profile and profile.timerSegment2Color, 0.3, 0.8, 1)
+        return GetColor(profileTbl and profileTbl.timerSegment2Color, 0.3, 0.8, 1)
     end
-    if profile and profile.thresholdPlusThreeTextWhite == true then
+    if profileTbl and profileTbl.thresholdPlusThreeTextWhite == true then
         return 1, 1, 1
     end
-    return GetColor(profile and profile.timerSegment1Color, 0.4, 1, 0.4)
+    return GetColor(profileTbl and profileTbl.timerSegment1Color, 0.4, 1, 0.4)
 end
 
 local function NormalizeAffixKey(affixes)
@@ -624,38 +624,38 @@ local function NormalizeAffixKey(affixes)
     return table.concat(ids, "-")
 end
 
-local function GetScopeKey(run, mode)
-    if not run or not run.mapID then
+local function GetScopeKey(runRec, modeName)
+    if not runRec or not runRec.mapID then
         return nil
     end
 
-    if mode == COMPARE_DUNGEON then
-        return tostring(run.mapID)
-    elseif mode == COMPARE_LEVEL then
-        return format("%s:%d", run.mapID, run.level or 0)
-    elseif mode == COMPARE_LEVEL_AFFIX then
-        return format("%s:%d:%s", run.mapID, run.level or 0, NormalizeAffixKey(run.affixes))
+    if modeName == COMPARE_DUNGEON then
+        return tostring(runRec.mapID)
+    elseif modeName == COMPARE_LEVEL then
+        return format("%s:%d", runRec.mapID, runRec.level or 0)
+    elseif modeName == COMPARE_LEVEL_AFFIX then
+        return format("%s:%d:%s", runRec.mapID, runRec.level or 0, NormalizeAffixKey(runRec.affixes))
     end
 
     return nil
 end
 
 local function EnsureProfileStore(key)
-    if not db or not db.profile then
+    if not store or not store.profile then
         return nil
     end
-    if not db.profile[key] then
-        db.profile[key] = {}
+    if not store.profile[key] then
+        store.profile[key] = {}
     end
-    return db.profile[key]
+    return store.profile[key]
 end
 
-local function GetReferenceObjectiveTime(run, objectiveIndex, mode)
-    if mode == COMPARE_NONE then
+local function GetReferenceObjectiveTime(runRec, objectiveIndex, modeName)
+    if modeName == COMPARE_NONE then
         return nil
     end
 
-    local storage = (db.profile.showFastestRunSplits and EnsureProfileStore("fastestRunSplits"))
+    local storage = (store.profile.showFastestRunSplits and EnsureProfileStore("fastestRunSplits"))
         or EnsureProfileStore("bestObjectiveSplits")
     if not storage then
         return nil
@@ -665,18 +665,18 @@ local function GetReferenceObjectiveTime(run, objectiveIndex, mode)
     -- (LEVEL_AFFIX -> LEVEL -> DUNGEON); strict mode = exact scope only, so a
     -- new key level shows no comparison instead of the dungeon-wide best.
     local tryOrder
-    if db.profile.objectiveCompareStrict == true then
-        tryOrder = { mode }
-    elseif mode == COMPARE_LEVEL_AFFIX then
+    if store.profile.objectiveCompareStrict == true then
+        tryOrder = { modeName }
+    elseif modeName == COMPARE_LEVEL_AFFIX then
         tryOrder = { COMPARE_LEVEL_AFFIX, COMPARE_LEVEL, COMPARE_DUNGEON }
-    elseif mode == COMPARE_LEVEL then
+    elseif modeName == COMPARE_LEVEL then
         tryOrder = { COMPARE_LEVEL, COMPARE_DUNGEON }
     else
-        tryOrder = { mode }
+        tryOrder = { modeName }
     end
 
     for _, tryMode in ipairs(tryOrder) do
-        local scopeKey = GetScopeKey(run, tryMode)
+        local scopeKey = GetScopeKey(runRec, tryMode)
         local scope = scopeKey and storage[scopeKey]
         if scope and scope[objectiveIndex] then
             return scope[objectiveIndex]
@@ -685,38 +685,38 @@ local function GetReferenceObjectiveTime(run, objectiveIndex, mode)
     return nil
 end
 
-local function UpdateBestObjectiveSplits(run, objectiveIndex, elapsed)
+local function UpdateBestObjectiveSplits(runRec, objectiveIndex, timePassed)
     local storage = EnsureProfileStore("bestObjectiveSplits")
     if not storage then
         return
     end
 
-    for _, mode in ipairs({ COMPARE_DUNGEON, COMPARE_LEVEL, COMPARE_LEVEL_AFFIX }) do
-        local scopeKey = GetScopeKey(run, mode)
+    for _, modeName in ipairs({ COMPARE_DUNGEON, COMPARE_LEVEL, COMPARE_LEVEL_AFFIX }) do
+        local scopeKey = GetScopeKey(runRec, modeName)
         if scopeKey then
             if not storage[scopeKey] then
                 storage[scopeKey] = {}
             end
             local previous = storage[scopeKey][objectiveIndex]
-            if not previous or elapsed < previous then
-                storage[scopeKey][objectiveIndex] = elapsed
+            if not previous or timePassed < previous then
+                storage[scopeKey][objectiveIndex] = timePassed
             end
         end
     end
 end
 
 local function UpdateObjectiveCompletion(object, objectiveIndex)
-    if not db or not db.profile or not object or not object.elapsed or object.elapsed <= 0 then
+    if not store or not store.profile or not object or not object.elapsed or object.elapsed <= 0 then
         return
     end
 
-    local compareMode = db.profile.objectiveCompareMode or COMPARE_NONE
-    local reference = GetReferenceObjectiveTime(currentRun, objectiveIndex, compareMode)
+    local compareMode = store.profile.objectiveCompareMode or COMPARE_NONE
+    local reference = GetReferenceObjectiveTime(activeRun, objectiveIndex, compareMode)
     object.referenceElapsed = reference
     object.compareDelta = reference and (object.elapsed - reference) or nil
     object.isNewBest = reference == nil or object.elapsed < reference
 
-    UpdateBestObjectiveSplits(currentRun, objectiveIndex, object.elapsed)
+    UpdateBestObjectiveSplits(activeRun, objectiveIndex, object.elapsed)
 end
 
 -- The splits of the fastest COMPLETED run per scope, beside the per-objective
@@ -729,24 +729,24 @@ local function SaveFastestRunSplits()
     if not storage then
         return
     end
-    local run = currentRun
-    local elapsed = run.elapsed
+    local runRec = activeRun
+    local timePassed = runRec.elapsed
     -- The completion time can come from GetWorldElapsedTime after a
     -- depletion, which may hand back a secret: no compare on that. A run
     -- with no known time (0) never replaces the stored one.
-    if type(elapsed) ~= "number" or (issecretvalue and issecretvalue(elapsed)) or elapsed <= 0 then
+    if type(timePassed) ~= "number" or (issecretvalue and issecretvalue(timePassed)) or timePassed <= 0 then
         return
     end
-    for _, mode in ipairs(FASTEST_RUN_SCOPES) do
-        local scopeKey = GetScopeKey(run, mode)
+    for _, modeName in ipairs(FASTEST_RUN_SCOPES) do
+        local scopeKey = GetScopeKey(runRec, modeName)
         if scopeKey then
             if not storage[scopeKey] then
                 storage[scopeKey] = {}
             end
             local previousRunTime = storage[scopeKey].overallRunTime
-            if not previousRunTime or elapsed < previousRunTime then
-                storage[scopeKey].overallRunTime = elapsed
-                for objectiveIndex, objective in ipairs(run.objectives) do
+            if not previousRunTime or timePassed < previousRunTime then
+                storage[scopeKey].overallRunTime = timePassed
+                for objectiveIndex, objective in ipairs(runRec.objectives) do
                     local t = objective.elapsed
                     storage[scopeKey][objectiveIndex] = (t and t > 0) and t or nil
                 end
@@ -780,10 +780,10 @@ local function BuildSplitCompareText(referenceTime, currentTime, deltaOnly, fast
     return format("  |cff888888(%s, %s%s%s)|r", FormatTime(referenceTime), colorHex, diffPrefix, diffText)
 end
 
-local function FormatEnemyForcesText(enemyObj, formatId, compact)
-    local rawCurrent = enemyObj.rawQuantity or enemyObj.quantity or 0
-    local rawTotal = enemyObj.rawTotalQuantity or enemyObj.totalQuantity or 100
-    local percent = enemyObj.percent or enemyObj.quantity or 0
+local function FormatEnemyForcesText(enemyLine, formatId, compact)
+    local rawCurrent = enemyLine.rawQuantity or enemyLine.quantity or 0
+    local rawTotal = enemyLine.rawTotalQuantity or enemyLine.totalQuantity or 100
+    local percent = enemyLine.percent or enemyLine.quantity or 0
     local remaining = max(0, rawTotal - rawCurrent)
     local suffix = compact and "" or CludesUI.L(" Enemy Forces")
 
@@ -812,12 +812,12 @@ end
 -- Objective tracking
 local function UpdateObjectives()
     local numCriteria = select(3, C_Scenario.GetStepInfo()) or 0
-    local elapsed = currentRun.elapsed
+    local timePassed = activeRun.elapsed
 
     for i = 1, numCriteria do
         local details = C_ScenarioInfo.GetCriteriaInfo(i)
         if details then
-            local object = currentRun.objectives[i]
+            local object = activeRun.objectives[i]
             if not object then
                 object = {
                     name = "",
@@ -830,7 +830,7 @@ local function UpdateObjectives()
                     percent = 0,
                     isWeighted = false,
                 }
-                currentRun.objectives[i] = object
+                activeRun.objectives[i] = object
             end
 
             -- Strip Blizzard's leading checkmark so completed objectives
@@ -848,17 +848,17 @@ local function UpdateObjectives()
                 -- only from the table this run's check passed. Until the timer reads a
                 -- real time nothing is stamped: the objective waits for the first tick
                 -- that does.
-                local splits = db and db.profile._activeRunSplits
-                local saved = splits and splits == currentRun._checkedSplits and splits[i]
+                local splitList = store and store.profile._activeRunSplits
+                local saved = splitList and splitList == activeRun._checkedSplits and splitList[i]
                 if saved and saved > 0 then
                     object._stampLater = nil
                     object.elapsed = saved
                     -- The comparison it had when first stamped: its own banked best must
                     -- not become its reference. Looked up again when compare is off or the
                     -- fastest run is the reference (written only at completion).
-                    local refs = (db.profile.objectiveCompareMode or COMPARE_NONE) ~= COMPARE_NONE
-                        and not db.profile.showFastestRunSplits
-                        and splits.refs
+                    local refs = (store.profile.objectiveCompareMode or COMPARE_NONE) ~= COMPARE_NONE
+                        and not store.profile.showFastestRunSplits
+                        and splitList.refs
                     if refs and refs[i] ~= nil then
                         local ref = refs[i] or nil
                         object.referenceElapsed = ref
@@ -867,25 +867,25 @@ local function UpdateObjectives()
                     else
                         UpdateObjectiveCompletion(object, i)
                     end
-                elseif elapsed > 0 then
+                elseif timePassed > 0 then
                     object._stampLater = nil
-                    object.elapsed = elapsed
+                    object.elapsed = timePassed
                     UpdateObjectiveCompletion(object, i)
                     -- Persist for reload survival, with the run's server start time and
                     -- the comparison the split got
-                    if db and db.profile then
-                        if not splits or splits ~= currentRun._checkedSplits then
-                            splits = {
-                                mapID = currentRun.mapID,
-                                level = currentRun.level,
-                                start = GetServerTime() - elapsed,
+                    if store and store.profile then
+                        if not splitList or splitList ~= activeRun._checkedSplits then
+                            splitList = {
+                                mapID = activeRun.mapID,
+                                level = activeRun.level,
+                                start = GetServerTime() - timePassed,
                             }
-                            db.profile._activeRunSplits = splits
-                            currentRun._checkedSplits = splits
+                            store.profile._activeRunSplits = splitList
+                            activeRun._checkedSplits = splitList
                         end
-                        splits[i] = elapsed
-                        splits.refs = splits.refs or {}
-                        splits.refs[i] = object.referenceElapsed or false
+                        splitList[i] = timePassed
+                        splitList.refs = splitList.refs or {}
+                        splitList.refs[i] = object.referenceElapsed or false
                     end
                 else
                     object._stampLater = true
@@ -898,7 +898,7 @@ local function UpdateObjectives()
             object.rawTotalQuantity = details.totalQuantity or 0
             if details.isWeightedProgress then
                 object.isWeighted = true
-                currentRun._weightedObj = object -- cached for RenderEnemyForces
+                activeRun._weightedObj = object -- cached for RenderEnemyForces
                 -- Normalize weighted progress to a 0-100 percent value.
                 -- Cache the parsed result keyed on the raw string -- skips
                 -- the gsub/tonumber chain on every tick where quantityString
@@ -948,12 +948,12 @@ local function UpdateObjectives()
         end
     end
 
-    if currentRun.completed then
+    if activeRun.completed then
         SaveFastestRunSplits()
     end
 
-    for i = numCriteria + 1, #currentRun.objectives do
-        currentRun.objectives[i] = nil
+    for i = numCriteria + 1, #activeRun.objectives do
+        activeRun.objectives[i] = nil
     end
 end
 
@@ -988,66 +988,66 @@ local _lastTickedSec = -1
 -- "no split later than now". The table that passes is the only one saved
 -- splits are read from; a different one (a profile switched in mid-key) is
 -- checked again, map and level included.
-local function CheckSavedSplits(elapsed)
-    currentRun._checkSplits = nil
-    currentRun._checkedSplits = nil
-    local splits = db and db.profile._activeRunSplits
-    if not splits then
+local function CheckSavedSplits(timePassed)
+    activeRun._checkSplits = nil
+    activeRun._checkedSplits = nil
+    local splitList = store and store.profile._activeRunSplits
+    if not splitList then
         return
     end
-    local stale = splits.mapID ~= currentRun.mapID or splits.level ~= currentRun.level
-    if not stale and splits.start then
-        stale = GetServerTime() - elapsed > splits.start + 30
+    local stale = splitList.mapID ~= activeRun.mapID or splitList.level ~= activeRun.level
+    if not stale and splitList.start then
+        stale = GetServerTime() - timePassed > splitList.start + 30
     elseif not stale then
-        for k, t in pairs(splits) do
-            if type(k) == "number" and t > elapsed then
+        for k, t in pairs(splitList) do
+            if type(k) == "number" and t > timePassed then
                 stale = true
                 break
             end
         end
     end
     if stale then
-        db.profile._activeRunSplits = nil
+        store.profile._activeRunSplits = nil
     else
-        currentRun._checkedSplits = splits
+        activeRun._checkedSplits = splitList
     end
 end
 
 -- A saved table this run has not checked arms the check again
 local function NoteSavedSplits()
-    local splits = db and db.profile._activeRunSplits
-    if splits and splits ~= currentRun._checkedSplits then
-        currentRun._checkSplits = true
+    local splitList = store and store.profile._activeRunSplits
+    if splitList and splitList ~= activeRun._checkedSplits then
+        activeRun._checkSplits = true
     end
 end
 
 local function OnTimerTick()
-    if not currentRun.active then
+    if not activeRun.active then
         return
     end
 
-    local elapsed = select(2, GetWorldElapsedTime(1))
-    if not (elapsed and elapsed >= 0) then
+    local timePassed = select(2, GetWorldElapsedTime(1))
+    if not (timePassed and timePassed >= 0) then
         return
     end
 
     -- Deduplicate: only refresh the display once per whole second.
-    local sec = floor(elapsed)
+    local sec = floor(timePassed)
     if sec == _lastTickedSec then
         return
     end
     _lastTickedSec = sec
 
-    currentRun.elapsed = elapsed
+    activeRun.elapsed = timePassed
 
     NoteSavedSplits()
-    if currentRun._checkSplits and elapsed > 0 then
-        CheckSavedSplits(elapsed)
+    if activeRun._checkSplits and timePassed > 0 then
+        CheckSavedSplits(timePassed)
     end
 
     local deathCount, timeLost = C_ChallengeMode.GetDeathCount()
-    currentRun.deaths = deathCount or 0
-    currentRun.deathTimeLost = timeLost or 0
+    activeRun.deaths = deathCount or 0
+    activeRun.deathTimeLost = timeLost or 0
 
     -- Detect per-player deaths, then refresh alive snapshot for next tick
     CheckForNewDeaths(deathCount or 0)
@@ -1086,7 +1086,7 @@ local function OnUpdateFallback(_, dt)
     OnTimerTick()
 end
 
-local standaloneFrame
+local soloFrame
 local standaloneCreated = false
 local _timerLoopWanted = false
 local function StartTimerLoop()
@@ -1094,15 +1094,15 @@ local function StartTimerLoop()
         return
     end
     _timerLoopWanted = true
-    if standaloneFrame then
+    if soloFrame then
         _onUpdateAccum = 0
-        standaloneFrame:SetScript("OnUpdate", OnUpdateFallback)
+        soloFrame:SetScript("OnUpdate", OnUpdateFallback)
     end
 end
 local function StopTimerLoop()
     _timerLoopWanted = false
-    if standaloneFrame then
-        standaloneFrame:SetScript("OnUpdate", nil)
+    if soloFrame then
+        soloFrame:SetScript("OnUpdate", nil)
     end
 end
 
@@ -1112,7 +1112,7 @@ end
 -- SetParent (avoids tainting the secure scenario tree), no recursion into
 -- children (avoids the invisible-click-catcher pattern).
 local function TrackerShouldBeHidden()
-    if not (db and db.profile and db.profile.enabled) then
+    if not (store and store.profile and store.profile.enabled) then
         return false
     end
     -- Hide during active challenge AND after it completes but before the
@@ -1127,7 +1127,7 @@ local function TrackerShouldBeHidden()
     then
         return true
     end
-    if currentRun and currentRun.completed then
+    if activeRun and activeRun.completed then
         local _, iType = GetInstanceInfo()
         return iType == "party"
     end
@@ -1212,42 +1212,42 @@ local function StartRun()
     local mapName, _, timeLimit = C_ChallengeMode.GetMapUIInfo(mapID)
     local level, affixes = C_ChallengeMode.GetActiveKeystoneInfo()
 
-    currentRun.active = true
-    currentRun.completed = false
-    currentRun.mapID = mapID
-    currentRun.mapName = mapName or "Unknown"
-    currentRun.level = level or 0
-    local splits = db and db.profile and db.profile._activeRunSplits
-    if splits and (splits.mapID ~= currentRun.mapID or splits.level ~= currentRun.level) then
-        db.profile._activeRunSplits = nil
-        splits = nil
+    activeRun.active = true
+    activeRun.completed = false
+    activeRun.mapID = mapID
+    activeRun.mapName = mapName or "Unknown"
+    activeRun.level = level or 0
+    local splitList = store and store.profile and store.profile._activeRunSplits
+    if splitList and (splitList.mapID ~= activeRun.mapID or splitList.level ~= activeRun.level) then
+        store.profile._activeRunSplits = nil
+        splitList = nil
     end
     -- A reload mid-key resumes past every saved split; a fresh key starts near 0.
     -- The timer reads 0 both before a fresh key starts and until it is populated
     -- after a reload, so the first tick that reads a real time decides.
-    currentRun._checkedSplits = nil
-    currentRun._checkSplits = splits and true or nil
-    currentRun.maxTime = timeLimit or 0
-    currentRun.elapsed = 0
-    currentRun.deaths = 0
-    currentRun.deathTimeLost = 0
+    activeRun._checkedSplits = nil
+    activeRun._checkSplits = splitList and true or nil
+    activeRun.maxTime = timeLimit or 0
+    activeRun.elapsed = 0
+    activeRun.deaths = 0
+    activeRun.deathTimeLost = 0
     wipe(playerDeaths)
     _prevDeathCount = 0
     ScanPartyAlive()
-    currentRun.affixes = affixes or {}
+    activeRun.affixes = affixes or {}
     -- Cache affix names ONCE at run start. They never change mid-run, but
     -- RenderStandalone was previously calling C_ChallengeMode.GetAffixInfo
     -- for every affix on every render tick.
-    currentRun.affixNames = {}
+    activeRun.affixNames = {}
     if affixes then
         for i, affixID in ipairs(affixes) do
-            local name = C_ChallengeMode.GetAffixInfo(affixID)
-            currentRun.affixNames[i] = name or ""
+            local label = C_ChallengeMode.GetAffixInfo(affixID)
+            activeRun.affixNames[i] = label or ""
         end
     end
-    currentRun._lastDungeonComplete = false
-    currentRun._weightedObj = nil -- populated by UpdateObjectives
-    wipe(currentRun.objectives)
+    activeRun._lastDungeonComplete = false
+    activeRun._weightedObj = nil -- populated by UpdateObjectives
+    wipe(activeRun.objectives)
 
     StartTimerLoop()
     OnTimerTick() -- prime the display immediately
@@ -1257,8 +1257,8 @@ local function StartRun()
 end
 
 local function CompleteRun()
-    currentRun.completed = true
-    currentRun.active = false
+    activeRun.completed = true
+    activeRun.active = false
 
     StopTimerLoop()
 
@@ -1269,16 +1269,16 @@ local function CompleteRun()
         and C_ChallengeMode.GetChallengeCompletionInfo
         and C_ChallengeMode.GetChallengeCompletionInfo()
     if completionInfo and completionInfo.time and completionInfo.time > 0 then
-        currentRun.elapsed = completionInfo.time / 1000
+        activeRun.elapsed = completionInfo.time / 1000
     else
         local elapsedTime = select(2, GetWorldElapsedTime(1))
-        currentRun.elapsed = elapsedTime or currentRun.elapsed
+        activeRun.elapsed = elapsedTime or activeRun.elapsed
     end
     -- The check can still be waiting for a real time (a reload just before the last kill)
-    local e = currentRun.elapsed
+    local e = activeRun.elapsed
     NoteSavedSplits()
     if
-        currentRun._checkSplits
+        activeRun._checkSplits
         and type(e) == "number"
         and not (issecretvalue and issecretvalue(e))
         and e > 0
@@ -1286,29 +1286,29 @@ local function CompleteRun()
         CheckSavedSplits(e)
     end
     UpdateObjectives()
-    if db and db.profile then
-        db.profile._activeRunSplits = nil
+    if store and store.profile then
+        store.profile._activeRunSplits = nil
     end
     NotifyRefresh()
 end
 
 local function ResetRun()
     _lastTickedSec = -1
-    currentRun.active = false
-    currentRun.completed = false
-    currentRun.mapID = nil
-    currentRun.mapName = ""
-    currentRun.level = 0
-    currentRun.maxTime = 0
-    currentRun.elapsed = 0
-    currentRun.deaths = 0
-    currentRun.deathTimeLost = 0
+    activeRun.active = false
+    activeRun.completed = false
+    activeRun.mapID = nil
+    activeRun.mapName = ""
+    activeRun.level = 0
+    activeRun.maxTime = 0
+    activeRun.elapsed = 0
+    activeRun.deaths = 0
+    activeRun.deathTimeLost = 0
     wipe(playerDeaths)
     _prevDeathCount = 0
     wipe(_partyAlive)
-    currentRun._lastDungeonComplete = false
-    wipe(currentRun.affixes)
-    wipe(currentRun.objectives)
+    activeRun._lastDungeonComplete = false
+    wipe(activeRun.affixes)
+    wipe(activeRun.objectives)
     -- The saved splits stay: re-entering this run uses them again, and the
     -- next key drops them (StartRun, CheckSavedSplits).
 
@@ -1403,14 +1403,14 @@ local PREVIEW_RUN = {
 -- names from those same IDs, so do the same here. When an ID is not in the current
 -- season the API returns nil, so the hardcoded English falls back through L() instead.
 local function LocalizePreview()
-    local run = PREVIEW_RUN
+    local runRec = PREVIEW_RUN
     if C_ChallengeMode and C_ChallengeMode.GetMapUIInfo then
-        run.mapName = C_ChallengeMode.GetMapUIInfo(run.mapID) or CludesUI.L(run.mapName)
+        runRec.mapName = C_ChallengeMode.GetMapUIInfo(runRec.mapID) or CludesUI.L(runRec.mapName)
     end
-    if run._previewAffixIDs and C_ChallengeMode and C_ChallengeMode.GetAffixInfo then
-        for i, ident in ipairs(run._previewAffixIDs) do
-            local name = C_ChallengeMode.GetAffixInfo(ident)
-            run._previewAffixNames[i] = name or CludesUI.L(run._previewAffixNames[i])
+    if runRec._previewAffixIDs and C_ChallengeMode and C_ChallengeMode.GetAffixInfo then
+        for i, ident in ipairs(runRec._previewAffixIDs) do
+            local label = C_ChallengeMode.GetAffixInfo(ident)
+            runRec._previewAffixNames[i] = label or CludesUI.L(runRec._previewAffixNames[i])
         end
     end
 end
@@ -1452,7 +1452,7 @@ end
 -- addon check asks this before naming another Mythic+ timer addon: those only
 -- clash with the timer window, not with the rest of Mythic+ Tools.
 _G._CUMT_IsTimerEnabled = function()
-    return (db and db.profile and db.profile.enabled) and true or false
+    return (store and store.profile and store.profile.enabled) and true or false
 end
 
 -- Preset system removed. Users tweak settings directly.
@@ -1460,18 +1460,18 @@ end
 -- Reset the current profile back to defaults.
 -- Used by the module's "Reset" button in the CludesUI options panel.
 _G._CUMT_ResetProfile = function()
-    if not db or not db.profile then
+    if not store or not store.profile then
         return false
     end
 
     -- Clear every key in the current profile
-    for key in pairs(db.profile) do
-        db.profile[key] = nil
+    for key in pairs(store.profile) do
+        store.profile[key] = nil
     end
 
     -- Repopulate with DB defaults
-    for key, value in pairs(DB_DEFAULTS.profile) do
-        db.profile[key] = type(value) == "table" and CopyTable(value) or value
+    for key, amount in pairs(DB_DEFAULTS.profile) do
+        store.profile[key] = type(amount) == "table" and CopyTable(amount) or amount
     end
 
     if _G._CUMT_StandaloneRefresh then
@@ -1572,12 +1572,12 @@ local function ApplyBorderTo(hostFrame, anchor, key, p, size, texKey, r, g, b, a
 end
 
 mod.ApplyBorder = function()
-    if not standaloneFrame or not db or not db.profile then
+    if not soloFrame or not store or not store.profile then
         return
     end
 
-    local frame = standaloneFrame
-    local p = db.profile
+    local frame = soloFrame
+    local p = store.profile
     local size = p.borderSize or 0
     -- "Custom Border Style" is the master gate: when off, no border renders
     -- regardless of the saved borderSize.
@@ -1640,8 +1640,8 @@ mod.ApplyBorder = function()
     elseif frame._timerSegBgs then
         -- Legacy texture-only segments (pre-shell); keep border working if hosts
         -- were never built this session.
-        for i, seg in ipairs(frame._timerSegBgs) do
-            ApplyBorderTo(frame, seg, "_emtSegBorderFrame" .. i, p, segSize, texKey, r, g, b, a, segPx)
+        for i, segment in ipairs(frame._timerSegBgs) do
+            ApplyBorderTo(frame, segment, "_emtSegBorderFrame" .. i, p, segSize, texKey, r, g, b, a, segPx)
         end
     end
 end
@@ -1689,7 +1689,7 @@ end
 -- resolve via CludesUI.ResolveFontName, matching the Quest Tracker font
 -- picker; anything else falls back to the module font (SFont).
 local function TimerFont()
-    local key = db and db.profile and db.profile.timerFont
+    local key = store and store.profile and store.profile.timerFont
     if key and key ~= "__global" and CludesUI and CludesUI.ResolveFontName then
         local filePath = CludesUI.ResolveFontName(key)
         if filePath and filePath ~= "" then
@@ -1860,25 +1860,25 @@ do
     -- Returns the placed segment's fill texture, the anchor for the next one.
     -- Texture, color, range and size are re-applied only when the render's
     -- style version changed; per update a segment just re-anchors and SetValues.
-    local function PlaceSegment(frame, num, anchor, value)
-        local seg = frame._pullSegs[num]
-        if not seg then
-            seg = CreateFrame("StatusBar", nil, frame._pullClip)
-            seg:EnableMouse(false)
-            frame._pullSegs[num] = seg
+    local function PlaceSegment(frame, num, anchor, amount)
+        local segment = frame._pullSegs[num]
+        if not segment then
+            segment = CreateFrame("StatusBar", nil, frame._pullClip)
+            segment:EnableMouse(false)
+            frame._pullSegs[num] = segment
         end
-        if seg._styleVer ~= frame._pullStyleVer then
-            seg._styleVer = frame._pullStyleVer
-            seg:SetStatusBarTexture(frame._pullTex)
-            seg:SetStatusBarColor(frame._pullR, frame._pullG, frame._pullB, frame._pullA)
-            seg:SetMinMaxValues(0, frame._pullTotal)
-            seg:SetSize(frame._pullW, frame._pullH)
+        if segment._styleVer ~= frame._pullStyleVer then
+            segment._styleVer = frame._pullStyleVer
+            segment:SetStatusBarTexture(frame._pullTex)
+            segment:SetStatusBarColor(frame._pullR, frame._pullG, frame._pullB, frame._pullA)
+            segment:SetMinMaxValues(0, frame._pullTotal)
+            segment:SetSize(frame._pullW, frame._pullH)
         end
-        seg:ClearAllPoints()
-        seg:SetPoint("TOPLEFT", anchor, "TOPRIGHT", 0, 0)
-        seg:SetValue(value)
-        seg:Show()
-        return seg:GetStatusBarTexture()
+        segment:ClearAllPoints()
+        segment:SetPoint("TOPLEFT", anchor, "TOPRIGHT", 0, 0)
+        segment:SetValue(amount)
+        segment:Show()
+        return segment:GetStatusBarTexture()
     end
 
     local function UpdatePullSegments(frame)
@@ -1904,10 +1904,10 @@ do
                     -- nil for enemies that give no forces. The value itself is
                     -- only ever handed to SetValue, never read: the nil test
                     -- reads its type tag, never the (secret) value.
-                    local value = C_ScenarioInfo.GetUnitCriteriaProgressValues(unitToken)
-                    if type(value) ~= "nil" then
+                    local amount = C_ScenarioInfo.GetUnitCriteriaProgressValues(unitToken)
+                    if type(amount) ~= "nil" then
                         num = num + 1
-                        anchor = PlaceSegment(frame, num, anchor, value)
+                        anchor = PlaceSegment(frame, num, anchor, amount)
                     end
                 end
             end
@@ -1915,10 +1915,10 @@ do
         HidePullSegments(frame, num + 1)
     end
 
-    RenderPullSegments = function(frame, clip, run, enemyObj, p, wid, hgt, barR, barG, barB)
+    RenderPullSegments = function(frame, clip, runRec, enemyLine, p, wid, hgt, barR, barG, barB)
         SyncPullEvents()
-        local sum = enemyObj.rawTotalQuantity
-        if p.showPullBar ~= true or enemyObj.completed or not sum or sum <= 0 then
+        local sum = enemyLine.rawTotalQuantity
+        if p.showPullBar ~= true or enemyLine.completed or not sum or sum <= 0 then
             HidePullSegments(frame)
             return
         end
@@ -1950,7 +1950,7 @@ do
             frame._pullStyleVer = (frame._pullStyleVer or 0) + 1
         end
         frame._pullOn = true
-        frame._pullPreview = run._previewPullValues
+        frame._pullPreview = runRec._previewPullValues
         UpdatePullSegments(frame)
     end
 
@@ -1967,12 +1967,12 @@ do
 
     local function RunPendingUpdate()
         updatePending = false
-        UpdatePullSegments(standaloneFrame)
+        UpdatePullSegments(soloFrame)
     end
 
     SyncPullEvents = function(inCombat)
-        local p = db and db.profile
-        local on = (currentRun.active and p and p.showPullBar == true and p.showEnemyBar ~= false) and true
+        local p = store and store.profile
+        local on = (activeRun.active and p and p.showPullBar == true and p.showEnemyBar ~= false) and true
             or false
         if inCombat == nil then
             inCombat = InCombatLockdown()
@@ -2014,12 +2014,12 @@ do
     end)
 end
 
-local function StripDefeated(name)
-    if not name then
-        return name
+local function StripDefeated(label)
+    if not label then
+        return label
     end
-    name = name:gsub("[Dd]efeated", "")
-    return name:match("^%s*(.-)%s*$") or name
+    label = label:gsub("[Dd]efeated", "")
+    return label:match("^%s*(.-)%s*$") or label
 end
 
 local objRows = {}
@@ -2027,20 +2027,20 @@ local function GetObjRow(hostFrame, position)
     if objRows[position] then
         return objRows[position]
     end
-    local nameFS = hostFrame:CreateFontString(nil, "OVERLAY")
-    nameFS:SetWordWrap(false)
-    nameFS:SetNonSpaceWrap(false)
-    local timeFS = hostFrame:CreateFontString(nil, "OVERLAY")
-    timeFS:SetWordWrap(false)
-    timeFS:SetNonSpaceWrap(false)
-    local record = { name = nameFS, time = timeFS }
+    local nameText = hostFrame:CreateFontString(nil, "OVERLAY")
+    nameText:SetWordWrap(false)
+    nameText:SetNonSpaceWrap(false)
+    local timeText = hostFrame:CreateFontString(nil, "OVERLAY")
+    timeText:SetWordWrap(false)
+    timeText:SetNonSpaceWrap(false)
+    local record = { name = nameText, time = timeText }
     objRows[position] = record
     return record
 end
 
 local function CreateStandaloneFrame()
     if standaloneCreated then
-        return standaloneFrame
+        return soloFrame
     end
     standaloneCreated = true
 
@@ -2129,15 +2129,15 @@ local function CreateStandaloneFrame()
     frame._deathHit:EnableMouse(true)
 
     -- Custom two-column death tooltip
-    local deathTT = CreateFrame("Frame", nil, UIParent)
-    deathTT:SetFrameStrata("TOOLTIP")
-    deathTT:SetFrameLevel(200)
-    deathTT:Hide()
-    local ttBg = deathTT:CreateTexture(nil, "BACKGROUND")
+    local deathTip = CreateFrame("Frame", nil, UIParent)
+    deathTip:SetFrameStrata("TOOLTIP")
+    deathTip:SetFrameLevel(200)
+    deathTip:Hide()
+    local ttBg = deathTip:CreateTexture(nil, "BACKGROUND")
     ttBg:SetAllPoints()
     ttBg:SetColorTexture(0.067, 0.067, 0.067, 0.90)
-    CludesUI.MakeBorder(deathTT, 1, 1, 1, 0.15, CludesUI.PanelPP)
-    deathTT._rows = {}
+    CludesUI.MakeBorder(deathTip, 1, 1, 1, 0.15, CludesUI.PanelPP)
+    deathTip._rows = {}
 
     local TT_PAD = 8
     local TT_ROW_H = 14
@@ -2145,31 +2145,31 @@ local function CreateStandaloneFrame()
     local TT_FONT = CludesUI.EXPRESSWAY or "Fonts\\FRIZQT__.TTF"
 
     local function EnsureRows(num)
-        for i = #deathTT._rows + 1, num do
-            local nameFS = deathTT:CreateFontString(nil, "OVERLAY")
+        for i = #deathTip._rows + 1, num do
+            local nameText = deathTip:CreateFontString(nil, "OVERLAY")
             -- A group member's name: a font family (Cyrillic, Korean and Chinese
             -- names draw), no shadow, its only font write.
-            CludesUI.SetFontFamily(nameFS, TT_FONT, 10, "", false)
-            nameFS:SetJustifyH("LEFT")
-            local countFS = deathTT:CreateFontString(nil, "OVERLAY")
+            CludesUI.SetFontFamily(nameText, TT_FONT, 10, "", false)
+            nameText:SetJustifyH("LEFT")
+            local countFS = deathTip:CreateFontString(nil, "OVERLAY")
             countFS:SetFont(TT_FONT, 10, "")
             countFS:SetJustifyH("RIGHT")
-            deathTT._rows[i] = { name = nameFS, count = countFS }
+            deathTip._rows[i] = { name = nameText, count = countFS }
         end
     end
 
     frame._deathHit:SetScript("OnEnter", function(self)
         local deaths = playerDeaths
-        if not next(deaths) and currentRun.deaths and currentRun.deaths > 0 then
-            deaths = { [UnitName("player") or "You"] = currentRun.deaths }
+        if not next(deaths) and activeRun.deaths and activeRun.deaths > 0 then
+            deaths = { [UnitName("player") or "You"] = activeRun.deaths }
         end
         if not next(deaths) then
             return
         end
 
         local list = {}
-        for name, count in pairs(deaths) do
-            list[#list + 1] = { name = name, count = count }
+        for label, count in pairs(deaths) do
+            list[#list + 1] = { name = label, count = count }
         end
         table.sort(list, function(a, b)
             if a.count ~= b.count then
@@ -2181,26 +2181,26 @@ local function CreateStandaloneFrame()
         EnsureRows(#list)
 
         -- Hide all rows first
-        for i = 1, #deathTT._rows do
-            deathTT._rows[i].name:Hide()
-            deathTT._rows[i].count:Hide()
+        for i = 1, #deathTip._rows do
+            deathTip._rows[i].name:Hide()
+            deathTip._rows[i].count:Hide()
         end
 
         -- Measure max name width for tooltip sizing
         local maxNameW = 0
         local maxCountW = 0
         for i, record in ipairs(list) do
-            local row = deathTT._rows[i]
+            local line = deathTip._rows[i]
             local class = select(2, UnitClass(record.name))
             local color = class and (RAID_CLASS_COLORS[class] or RAID_CLASS_COLORS["PRIEST"])
             local short = Ambiguate and Ambiguate(record.name, "short") or record.name
             local colored = color and color:WrapTextInColorCode(short) or short
-            row.name:SetText(colored)
-            row.name:SetTextColor(1, 1, 1, 0.80)
-            row.count:SetText(record.count)
-            row.count:SetTextColor(1, 1, 1, 0.80)
-            local nw = row.name:GetStringWidth() or 0
-            local cw = row.count:GetStringWidth() or 0
+            line.name:SetText(colored)
+            line.name:SetTextColor(1, 1, 1, 0.80)
+            line.count:SetText(record.count)
+            line.count:SetTextColor(1, 1, 1, 0.80)
+            local nw = line.name:GetStringWidth() or 0
+            local cw = line.count:GetStringWidth() or 0
             if nw > maxNameW then
                 maxNameW = nw
             end
@@ -2212,32 +2212,32 @@ local function CreateStandaloneFrame()
         local ttW = TT_PAD + maxNameW + 12 + maxCountW + TT_PAD
         local ttH = TT_PAD + #list * TT_ROW_H + (#list - 1) * TT_GAP + TT_PAD
 
-        deathTT:SetSize(ttW, ttH)
+        deathTip:SetSize(ttW, ttH)
 
         -- Position rows
         for i, record in ipairs(list) do
-            local row = deathTT._rows[i]
+            local line = deathTip._rows[i]
             local yOff = -TT_PAD - (i - 1) * (TT_ROW_H + TT_GAP)
-            row.name:ClearAllPoints()
-            row.name:SetPoint("TOPLEFT", deathTT, "TOPLEFT", TT_PAD, yOff)
-            row.count:ClearAllPoints()
-            row.count:SetPoint("TOPRIGHT", deathTT, "TOPRIGHT", -TT_PAD, yOff)
-            row.name:Show()
-            row.count:Show()
+            line.name:ClearAllPoints()
+            line.name:SetPoint("TOPLEFT", deathTip, "TOPLEFT", TT_PAD, yOff)
+            line.count:ClearAllPoints()
+            line.count:SetPoint("TOPRIGHT", deathTip, "TOPRIGHT", -TT_PAD, yOff)
+            line.name:Show()
+            line.count:Show()
         end
 
         -- Anchor tooltip above the death text
         local right = (self._align or "LEFT") == "RIGHT"
-        deathTT:ClearAllPoints()
+        deathTip:ClearAllPoints()
         if right then
-            deathTT:SetPoint("BOTTOMRIGHT", self, "TOPRIGHT", 0, 4)
+            deathTip:SetPoint("BOTTOMRIGHT", self, "TOPRIGHT", 0, 4)
         else
-            deathTT:SetPoint("BOTTOMLEFT", self, "TOPLEFT", 0, 4)
+            deathTip:SetPoint("BOTTOMLEFT", self, "TOPLEFT", 0, 4)
         end
-        deathTT:Show()
+        deathTip:Show()
     end)
     frame._deathHit:SetScript("OnLeave", function()
-        deathTT:Hide()
+        deathTip:Hide()
     end)
     frame._enemyFS = frame:CreateFontString(nil, "OVERLAY")
     frame._enemyFS:SetParent(frame._emtTextLayer)
@@ -2251,14 +2251,14 @@ local function CreateStandaloneFrame()
     frame:Hide()
 
     -- Apply saved scale and position immediately so the frame never flashes at default
-    if db and db.profile then
-        local scale = db.profile.scale or 1.0
+    if store and store.profile then
+        local scale = store.profile.scale or 1.0
         if scale == 0 then
             scale = 1.0
         end
         frame:SetScale(scale)
-        if db.profile.standalonePos then
-            local place = db.profile.standalonePos
+        if store.profile.standalonePos then
+            local place = store.profile.standalonePos
             local cx, cy = place.centerX, place.centerY
             if not cx then
                 -- Legacy TOPLEFT-stored position; will be migrated to center
@@ -2278,7 +2278,7 @@ local function CreateStandaloneFrame()
         end
     end
 
-    standaloneFrame = frame
+    soloFrame = frame
     -- If a run is already active (e.g. /reload mid-key), wire up the
     -- OnUpdate fallback now that the frame exists.
     if _timerLoopWanted then
@@ -2289,24 +2289,24 @@ local function CreateStandaloneFrame()
 end
 
 local function RenderStandalone()
-    if not db or not db.profile.enabled then
-        if standaloneFrame then
-            standaloneFrame:Hide()
+    if not store or not store.profile.enabled then
+        if soloFrame then
+            soloFrame:Hide()
         end
         return
     end
 
-    local p = db.profile
+    local p = store.profile
     local isPreview = false
-    local run = currentRun
-    if not run.active and not run.completed then
+    local runRec = activeRun
+    if not runRec.active and not runRec.completed then
         if p.showPreview or unlockLayoutActive then
-            run = PREVIEW_RUN
+            runRec = PREVIEW_RUN
             LocalizePreview()
             isPreview = true
         else
-            if standaloneFrame then
-                standaloneFrame:Hide()
+            if soloFrame then
+                soloFrame:Hide()
             end
             return
         end
@@ -2383,10 +2383,10 @@ local function RenderStandalone()
             local title
             if p.showDungeonName == false then
                 -- Show only the key level number, not the dungeon name.
-                title = format("%s+%d|r", CludesUI.HexColor(tR, tG, tB), run.level)
+                title = format("%s+%d|r", CludesUI.HexColor(tR, tG, tB), runRec.level)
             else
                 title =
-                    format("%s+%d  %s|r", CludesUI.HexColor(tR, tG, tB), run.level, run.mapName or "Mythic+")
+                    format("%s+%d  %s|r", CludesUI.HexColor(tR, tG, tB), runRec.level, runRec.mapName or "Mythic+")
             end
             frame._titleFS:SetJustifyH(titleAlign)
             frame._titleFS:SetTextColor(1, 1, 1)
@@ -2405,18 +2405,18 @@ local function RenderStandalone()
 
         if p.showAffixes then
             local nameList = {}
-            if run._previewAffixNames then
-                for _, name in ipairs(run._previewAffixNames) do
-                    nameList[#nameList + 1] = name
+            if runRec._previewAffixNames then
+                for _, label in ipairs(runRec._previewAffixNames) do
+                    nameList[#nameList + 1] = label
                 end
             else
                 -- Use the cached affix names snapshotted at StartRun. Falls back
                 -- to GetAffixInfo only if cache is missing (run started before
                 -- this code path was added, or preview mode).
-                for i, ident in ipairs(run.affixes) do
-                    local name = (run.affixNames and run.affixNames[i]) or C_ChallengeMode.GetAffixInfo(ident)
-                    if name then
-                        nameList[#nameList + 1] = name
+                for i, ident in ipairs(runRec.affixes) do
+                    local label = (runRec.affixNames and runRec.affixNames[i]) or C_ChallengeMode.GetAffixInfo(ident)
+                    if label then
+                        nameList[#nameList + 1] = label
                     end
                 end
             end
@@ -2448,7 +2448,7 @@ local function RenderStandalone()
     end
 
     -- Deaths (toggle removed; always on when there are deaths)
-    if run.deaths > 0 and not p.deathsInTitle then
+    if runRec.deaths > 0 and not p.deathsInTitle then
         local deathAlign = _ra(p.deathAlign or "LEFT")
         local dPad = ContentPad(deathAlign)
         SetFS(frame._deathFS, 12)
@@ -2456,8 +2456,8 @@ local function RenderStandalone()
         local dR, dG, dB = GetColor(p.deathTextColor, 0.93, 0.33, 0.33)
         frame._deathFS:SetTextColor(dR, dG, dB)
         frame._deathFS:SetText(
-            run.deaths == 1 and CludesUI.Lf("%1$d Death  -%2$s", run.deaths, FormatTime(run.deathTimeLost))
-                or CludesUI.Lf("%1$d Deaths  -%2$s", run.deaths, FormatTime(run.deathTimeLost))
+            runRec.deaths == 1 and CludesUI.Lf("%1$d Death  -%2$s", runRec.deaths, FormatTime(runRec.deathTimeLost))
+                or CludesUI.Lf("%1$d Deaths  -%2$s", runRec.deaths, FormatTime(runRec.deathTimeLost))
         )
         frame._deathFS:ClearAllPoints()
         frame._deathFS:SetPoint("TOPLEFT", frame, "TOPLEFT", dPad, posY - 5)
@@ -2486,16 +2486,16 @@ local function RenderStandalone()
     end
 
     -- Timer colours
-    local elapsed = run.elapsed or 0
-    local maxTime = run.maxTime or 0
-    local timeLeft = max(0, maxTime - elapsed)
-    local plusTwoT, plusThreeT = CalculateBonusTimers(maxTime, run.affixes)
+    local timePassed = runRec.elapsed or 0
+    local timeLimit = runRec.maxTime or 0
+    local timeLeft = max(0, timeLimit - timePassed)
+    local plusTwoT, plusThreeT = CalculateBonusTimers(timeLimit, runRec.affixes)
     -- A completed run's elapsed is its completion time (CompleteRun)
     local timerBarR, timerBarG, timerBarB
     if p.timerBarStyle == "SEGMENTS" then
-        timerBarR, timerBarG, timerBarB = GetTimerSegmentFillColor(p, elapsed, plusThreeT, plusTwoT)
+        timerBarR, timerBarG, timerBarB = GetTimerSegmentFillColor(p, timePassed, plusThreeT, plusTwoT)
     else
-        timerBarR, timerBarG, timerBarB = GetTimerBarFillColor(p, elapsed, plusThreeT, plusTwoT, maxTime)
+        timerBarR, timerBarG, timerBarB = GetTimerBarFillColor(p, timePassed, plusThreeT, plusTwoT, timeLimit)
     end
 
     -- Build timer text per user-selected display mode.
@@ -2505,30 +2505,30 @@ local function RenderStandalone()
     --   ELAPSED_DETAIL   -> "21:23 (11:37 / 33:00)"
     local timerText
     local timerDetailText
-    if run.completed then
+    if runRec.completed then
         -- Completed run: freeze the clock at the final elapsed seconds but preserve the
         -- user's chosen display mode so "/33:00" doesn't vanish on completion.
-        local mode = p.timerDisplayMode or "REMAINING_TOTAL"
-        local elaStr = FormatTime(elapsed)
-        local maxStr = FormatTime(maxTime)
-        if mode == "REMAINING_TOTAL" then
+        local modeName = p.timerDisplayMode or "REMAINING_TOTAL"
+        local elaStr = FormatTime(timePassed)
+        local maxStr = FormatTime(timeLimit)
+        if modeName == "REMAINING_TOTAL" then
             timerText = elaStr .. " / " .. maxStr
-        elseif mode == "ELAPSED_DETAIL" then
+        elseif modeName == "ELAPSED_DETAIL" then
             timerText = elaStr
             timerDetailText = " (" .. elaStr .. " / " .. maxStr .. ")"
         else
             timerText = elaStr
         end
     else
-        local mode = p.timerDisplayMode or "REMAINING_TOTAL"
-        local elaStr = FormatTime(elapsed)
-        local maxStr = FormatTime(maxTime)
-        local remStr = FormatRemaining(maxTime - elapsed)
-        if mode == "REMAINING_TOTAL" then
+        local modeName = p.timerDisplayMode or "REMAINING_TOTAL"
+        local elaStr = FormatTime(timePassed)
+        local maxStr = FormatTime(timeLimit)
+        local remStr = FormatRemaining(timeLimit - timePassed)
+        if modeName == "REMAINING_TOTAL" then
             timerText = elaStr .. " / " .. maxStr
-        elseif mode == "ELAPSED" then
+        elseif modeName == "ELAPSED" then
             timerText = remStr
-        elseif mode == "ELAPSED_DETAIL" then
+        elseif modeName == "ELAPSED_DETAIL" then
             timerText = remStr
             timerDetailText = " (" .. elaStr .. " / " .. maxStr .. ")"
         else
@@ -2537,8 +2537,8 @@ local function RenderStandalone()
     end
 
     local tR, tG, tB = 1, 1, 1
-    local depleted = (run.completed and elapsed > maxTime)
-        or ((not run.completed) and timeLeft <= 0 and maxTime > 0)
+    local depleted = (runRec.completed and timePassed > timeLimit)
+        or ((not runRec.completed) and timeLeft <= 0 and timeLimit > 0)
     if depleted then
         tR, tG, tB = GetColor(p.timerExpiredColor, 0.9, 0.2, 0.2)
     end
@@ -2560,7 +2560,7 @@ local function RenderStandalone()
         end
 
         local showRem = p.showThreshRemaining == true
-        if (p.showPlusTwoTimer or p.showPlusThreeTimer or showRem) and maxTime > 0 then
+        if (p.showPlusTwoTimer or p.showPlusThreeTimer or showRem) and timeLimit > 0 then
             local plusThreeSize = p.thresholdPlusThreeSize or p.thresholdSize or 12
             local plusTwoSize = p.thresholdPlusTwoSize or p.thresholdSize or 12
             local plusOneSize = p.thresholdPlusOneSize or p.thresholdSize or 12
@@ -2572,7 +2572,7 @@ local function RenderStandalone()
             )
 
             local function buildLabel(threshTime, color)
-                local diff = threshTime - elapsed
+                local diff = threshTime - timePassed
                 if diff >= 0 then
                     local cR, cG, cB = GetColor(color, 0.3, 0.8, 1)
                     return format("%s%s|r", CludesUI.HexColor(cR, cG, cB), FormatTime(diff))
@@ -2583,9 +2583,9 @@ local function RenderStandalone()
             local segmentedThresholds = (p.timerBarStyle == "SEGMENTS")
             local segmentGap = segmentedThresholds and max(0, p.timerBarSegmentGap or 2) or 0
             local plusThreeLabelX =
-                max(0, min(_barW_for_thresh, _barW_for_thresh * (plusThreeT / maxTime) - segmentGap / 2))
+                max(0, min(_barW_for_thresh, _barW_for_thresh * (plusThreeT / timeLimit) - segmentGap / 2))
             local plusTwoLabelX =
-                max(0, min(_barW_for_thresh, _barW_for_thresh * (plusTwoT / maxTime) - segmentGap / 2))
+                max(0, min(_barW_for_thresh, _barW_for_thresh * (plusTwoT / timeLimit) - segmentGap / 2))
             local thresholdAnchorBar = frame._barHost or frame._barBg
             if underBarMode and p.showTimerBar == false and p.showEnemyBar ~= false then
                 thresholdAnchorBar = frame._enemyBarHost or frame._enemyBarBg
@@ -2660,7 +2660,7 @@ local function RenderStandalone()
                 else
                     frame._threshRemFS:SetTextColor(tR, tG, tB)
                 end
-                threshWr = SetThreshText(frame._threshRemFS, FormatRemaining(maxTime - elapsed))
+                threshWr = SetThreshText(frame._threshRemFS, FormatRemaining(timeLimit - timePassed))
             end
 
             if not showRem then
@@ -2668,7 +2668,7 @@ local function RenderStandalone()
                 if p.showPlusThreeTimer then
                     placeAt(
                         frame._threshFS,
-                        segmentedThresholds and plusThreeLabelX or (_barW_for_thresh * (plusThreeT / maxTime)),
+                        segmentedThresholds and plusThreeLabelX or (_barW_for_thresh * (plusThreeT / timeLimit)),
                         segmentedThresholds,
                         p.thresholdPlusThreeTextOffsetX,
                         p.thresholdPlusThreeTextOffsetY
@@ -2680,7 +2680,7 @@ local function RenderStandalone()
                 if p.showPlusTwoTimer then
                     placeAt(
                         frame._threshFS2,
-                        segmentedThresholds and plusTwoLabelX or (_barW_for_thresh * (plusTwoT / maxTime)),
+                        segmentedThresholds and plusTwoLabelX or (_barW_for_thresh * (plusTwoT / timeLimit)),
                         segmentedThresholds,
                         p.thresholdPlusTwoTextOffsetX,
                         p.thresholdPlusTwoTextOffsetY
@@ -2740,7 +2740,7 @@ local function RenderStandalone()
                     entries[#entries + 1] = {
                         fs = frame._threshFS,
                         w = threshW3,
-                        center = barW * (plusThreeT / maxTime),
+                        center = barW * (plusThreeT / timeLimit),
                     }
                 else
                     frame._threshFS:Hide()
@@ -2749,7 +2749,7 @@ local function RenderStandalone()
                     entries[#entries + 1] = {
                         fs = frame._threshFS2,
                         w = threshW2,
-                        center = barW * (plusTwoT / maxTime),
+                        center = barW * (plusTwoT / timeLimit),
                     }
                 else
                     frame._threshFS2:Hide()
@@ -2826,16 +2826,16 @@ local function RenderStandalone()
 
         -- Use cached ref (set by UpdateObjectives) instead of re-finding
         -- the weighted objective on every render.
-        local enemyObj = run._weightedObj
-        if not enemyObj then
-            for _, object in ipairs(run.objectives) do
+        local enemyLine = runRec._weightedObj
+        if not enemyLine then
+            for _, object in ipairs(runRec.objectives) do
                 if object.isWeighted then
-                    enemyObj = object
+                    enemyLine = object
                     break
                 end
             end
         end
-        if not enemyObj then
+        if not enemyLine then
             frame._enemyFS:Hide()
             if frame._enemyBarHost then
                 frame._enemyBarHost:Hide()
@@ -2849,9 +2849,9 @@ local function RenderStandalone()
             return
         end
 
-        local objAlign = _ra(p.objectiveAlign or "LEFT")
-        local ePad = ContentPad(objAlign)
-        local pctRaw = min(100, max(0, enemyObj.quantity))
+        local lineAlign = _ra(p.objectiveAlign or "LEFT")
+        local ePad = ContentPad(lineAlign)
+        local pctRaw = min(100, max(0, enemyLine.quantity))
         local pctPos = p.enemyForcesPctPos or "LABEL"
         local showEnemyText = p.showEnemyText ~= false
 
@@ -2861,7 +2861,7 @@ local function RenderStandalone()
         if pctPos == "LABEL" then
             -- compact=true skips the " Enemy Forces" suffix baked into
             -- FormatEnemyForcesText, so percent/count text shows alone.
-            labelText = FormatEnemyForcesText(enemyObj, enemyTextFormat, hideLabel)
+            labelText = FormatEnemyForcesText(enemyLine, enemyTextFormat, hideLabel)
         elseif hideLabel then
             labelText = ""
         else
@@ -2871,7 +2871,7 @@ local function RenderStandalone()
         local enemyTextSize = p.enemyForcesTextSize or p.objectivesSize or 12
         SetFS(frame._enemyFS, enemyTextSize)
         ApplyShadow(frame._enemyFS)
-        if enemyObj.completed then
+        if enemyLine.completed then
             frame._enemyFS:SetTextColor(GetColor(p.objectiveCompletedColor, 0.3, 0.8, 0.3))
         else
             frame._enemyFS:SetTextColor(GetColor(p.objectiveTextColor, 0.9, 0.9, 0.9))
@@ -2884,7 +2884,7 @@ local function RenderStandalone()
         end
 
         local function RenderEnemyBar()
-            local besideRoom = (not enemyObj.completed and pctPos == "BESIDE") and 62 or 0
+            local besideRoom = (not enemyLine.completed and pctPos == "BESIDE") and 62 or 0
             local barW = math.min(p.barWidth or 210, innerW - TBAR_PAD * 2) - besideRoom
             if barW < 60 then
                 barW = 60
@@ -2893,9 +2893,9 @@ local function RenderStandalone()
             EnsureShellTextures(enemyClip, frame, "_enemyBarBg", "_enemyBarFill")
             local eInset = GetBarBleedInset(p, true)
             enemyHost:ClearAllPoints()
-            if objAlign == "RIGHT" then
+            if lineAlign == "RIGHT" then
                 enemyHost:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -(PAD + TBAR_PAD), posY)
-            elseif objAlign == "CENTER" then
+            elseif lineAlign == "CENTER" then
                 enemyHost:SetPoint("TOP", frame, "TOP", 0, posY)
             else
                 enemyHost:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD + TBAR_PAD, posY)
@@ -2908,7 +2908,7 @@ local function RenderStandalone()
             frame._enemyBarBg:Show()
 
             local eR, eG, eB
-            if enemyObj.completed then
+            if enemyLine.completed then
                 eR, eG, eB = GetColor(p.objectiveCompletedColor, 0.3, 0.8, 0.3)
             elseif p.enemyBarUseAccent ~= false then
                 eR, eG, eB = GetAccentColor()
@@ -2916,7 +2916,7 @@ local function RenderStandalone()
                 eR, eG, eB = GetColor(p.enemyBarColor, 0.35, 0.55, 0.8)
             end
 
-            local epct = enemyObj.completed and 1 or min(1, max(0, pctRaw / 100))
+            local epct = enemyLine.completed and 1 or min(1, max(0, pctRaw / 100))
             local clipW = max(1, barW - eInset * 2)
             local clipH = max(1, ENEMY_BAR_H - eInset * 2)
             local eFillW = max(1, clipW * epct)
@@ -2925,7 +2925,7 @@ local function RenderStandalone()
             frame._enemyBarFill:SetSize(eFillW, clipH)
             ApplyBarTexture(frame._enemyBarFill, p.enemyBarTexture, eR, eG, eB, 0.8)
             frame._enemyBarFill:Show()
-            RenderPullSegments(frame, enemyClip, run, enemyObj, p, clipW, clipH, eR, eG, eB)
+            RenderPullSegments(frame, enemyClip, runRec, enemyLine, p, clipW, clipH, eR, eG, eB)
 
             if not frame._enemyBarText then
                 frame._enemyBarText = frame:CreateFontString(nil, "OVERLAY")
@@ -2938,21 +2938,21 @@ local function RenderStandalone()
                 -- In-bar percent is always white for readability over the
                 -- accent-filled bar regardless of completion / user colors.
                 frame._enemyBarText:SetTextColor(1, 1, 1)
-                frame._enemyBarText:SetText(FormatEnemyForcesText(enemyObj, enemyTextFormat, true))
+                frame._enemyBarText:SetText(FormatEnemyForcesText(enemyLine, enemyTextFormat, true))
                 frame._enemyBarText:ClearAllPoints()
                 frame._enemyBarText:SetPoint("CENTER", enemyHost, "CENTER", 0, 0)
                 frame._enemyBarText:Show()
             elseif pctPos == "BESIDE" then
                 SetFS(frame._enemyBarText, enemyTextSize)
                 ApplyShadow(frame._enemyBarText)
-                if enemyObj.completed then
+                if enemyLine.completed then
                     frame._enemyBarText:SetTextColor(GetColor(p.objectiveCompletedColor, 0.3, 0.8, 0.3))
                 else
                     frame._enemyBarText:SetTextColor(GetColor(p.objectiveTextColor, 0.9, 0.9, 0.9))
                 end
-                frame._enemyBarText:SetText(FormatEnemyForcesText(enemyObj, enemyTextFormat, true))
+                frame._enemyBarText:SetText(FormatEnemyForcesText(enemyLine, enemyTextFormat, true))
                 frame._enemyBarText:ClearAllPoints()
-                if objAlign == "RIGHT" then
+                if lineAlign == "RIGHT" then
                     frame._enemyBarText:SetPoint("RIGHT", enemyHost, "LEFT", -4, 0)
                 else
                     frame._enemyBarText:SetPoint("LEFT", enemyHost, "RIGHT", 4, 0)
@@ -2976,7 +2976,7 @@ local function RenderStandalone()
             frame._enemyFS:ClearAllPoints()
             frame._enemyFS:SetPoint("TOPLEFT", frame, "TOPLEFT", ePad + labelX, labelY)
             frame._enemyFS:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -ePad + labelX, labelY)
-            frame._enemyFS:SetJustifyH(objAlign)
+            frame._enemyFS:SetJustifyH(lineAlign)
             frame._enemyFS:Show()
             local trailingGap = underBarMode and (4 - 2 + 5) or 4
             posY = posY - (frame._enemyFS:GetStringHeight() or 12) - trailingGap
@@ -3074,13 +3074,13 @@ local function RenderStandalone()
             frame._keyLevelFS:SetJustifyH("LEFT")
             frame._keyLevelFS:SetWidth(0)
             -- "||" renders as a single literal pipe ("|" is WoW's escape introducer).
-            SetTextDiff(frame._keyLevelFS, format("+%d  ||", run.level))
+            SetTextDiff(frame._keyLevelFS, format("+%d  ||", runRec.level))
             keySpacing = p.keyLevelTimerSpacing or 8
             keyExtra = (frame._keyLevelFS:GetStringWidth() or 0) + keySpacing
         end
 
         if timerDetailText then
-            local _mode = (not run.completed) and (p.timerDisplayMode or "REMAINING_TOTAL") or nil
+            local _mode = (not runRec.completed) and (p.timerDisplayMode or "REMAINING_TOTAL") or nil
             local detailSize = (_mode == "REMAINING_TOTAL") and 20 or 12
             SetTimerFS(frame._timerDetailFS, detailSize)
             ApplyShadow(frame._timerDetailFS)
@@ -3194,7 +3194,7 @@ local function RenderStandalone()
     end
 
     -- Timer bar
-    if maxTime > 0 and p.showTimerBar ~= false then
+    if timeLimit > 0 and p.showTimerBar ~= false then
         local barW = math.min(p.barWidth or 210, innerW - TBAR_PAD * 2)
         if barW < 60 then
             barW = 60
@@ -3223,7 +3223,7 @@ local function RenderStandalone()
         frame._barBg:SetAlpha(1)
         frame._barBg:Show()
 
-        local fillPct = min(1, elapsed / maxTime)
+        local fillPct = min(1, timePassed / timeLimit)
         local fillW = max(1, clipW * fillPct)
         frame._barFill:ClearAllPoints()
         frame._barFill:SetPoint("TOPLEFT", barClip, "TOPLEFT", 0, 0)
@@ -3297,8 +3297,8 @@ local function RenderStandalone()
             -- center, then derive the far gap edge as nearEdge + gapW so every
             -- gap is exactly gapW physical pixels wide (no independent-snap drift).
             local gapW = _snap(max(0, p.timerBarSegmentGap or 2))
-            local b3 = _snap(barW * (plusThreeT / maxTime))
-            local b2 = _snap(barW * (plusTwoT / maxTime))
+            local b3 = _snap(barW * (plusThreeT / timeLimit))
+            local b2 = _snap(barW * (plusTwoT / timeLimit))
             local g3L = _snap(b3 - gapW / 2)
             local g3R = g3L + gapW
             local g2L = _snap(b2 - gapW / 2)
@@ -3306,11 +3306,11 @@ local function RenderStandalone()
             local segs = {
                 { x1 = 0, x2 = g3L, t1 = 0, t2 = plusThreeT },
                 { x1 = g3R, x2 = g2L, t1 = plusThreeT, t2 = plusTwoT },
-                { x1 = g2R, x2 = barW, t1 = plusTwoT, t2 = maxTime },
+                { x1 = g2R, x2 = barW, t1 = plusTwoT, t2 = timeLimit },
             }
-            for i, seg in ipairs(segs) do
-                local x1 = max(0, min(barW, seg.x1))
-                local x2v = max(0, min(barW, seg.x2))
+            for i, segment in ipairs(segs) do
+                local x1 = max(0, min(barW, segment.x1))
+                local x2v = max(0, min(barW, segment.x2))
                 local wid = x2v - x1
                 if wid < 1 then
                     wid = 1
@@ -3329,8 +3329,8 @@ local function RenderStandalone()
                 ApplyBarTexture(backdrop, p.barBgTexture, 0.12, 0.12, 0.12, 0.9)
                 backdrop:Show()
 
-                local segDur = max(1, seg.t2 - seg.t1)
-                local segPct = min(1, max(0, (elapsed - seg.t1) / segDur))
+                local segDur = max(1, segment.t2 - segment.t1)
+                local segPct = min(1, max(0, (timePassed - segment.t1) / segDur))
                 local segClipW = max(1, wid - barInset * 2)
                 local segClipH = max(1, TBAR_H - barInset * 2)
                 local fillTex = frame._timerSegFills[i]
@@ -3367,10 +3367,10 @@ local function RenderStandalone()
                 "TOPLEFT",
                 barHost,
                 "TOPLEFT",
-                _snap(barW * (plusThreeT / maxTime)) - _tickW / 2,
+                _snap(barW * (plusThreeT / timeLimit)) - _tickW / 2,
                 -barInset
             )
-            if p.timerTickColor or whiteTicks or elapsed > plusThreeT then
+            if p.timerTickColor or whiteTicks or timePassed > plusThreeT then
                 frame._seg3:SetColorTexture(tickR, tickG, tickB, tickA)
             else
                 frame._seg3:SetColorTexture(0.4, 1, 0.4, tickA)
@@ -3383,10 +3383,10 @@ local function RenderStandalone()
                 "TOPLEFT",
                 barHost,
                 "TOPLEFT",
-                _snap(barW * (plusTwoT / maxTime)) - _tickW / 2,
+                _snap(barW * (plusTwoT / timeLimit)) - _tickW / 2,
                 -barInset
             )
-            if p.timerTickColor or whiteTicks or elapsed > plusTwoT then
+            if p.timerTickColor or whiteTicks or timePassed > plusTwoT then
                 frame._seg2:SetColorTexture(tickR, tickG, tickB, tickA)
             else
                 frame._seg2:SetColorTexture(0.3, 0.8, 1, tickA)
@@ -3415,7 +3415,7 @@ local function RenderStandalone()
             -- In-bar mode folds the "+key  |" prefix inline (the pixel Spacing
             -- slider only applies to the standalone, non-in-bar clock).
             if keyLevelOnTimer then
-                barTimerText = format("+%d  ||  ", run.level) .. barTimerText
+                barTimerText = format("+%d  ||  ", runRec.level) .. barTimerText
             end
             SetTextDiff(frame._barTimerFS, barTimerText)
             frame._barTimerFS:ClearAllPoints()
@@ -3469,18 +3469,18 @@ local function RenderStandalone()
     -- Objectives
     local objIdx = 0
     if p.showObjectives then
-        local objAlign = _ra(p.objectiveAlign or "LEFT")
-        local oPad = ContentPad(objAlign)
-        for i, object in ipairs(run.objectives) do
+        local lineAlign = _ra(p.objectiveAlign or "LEFT")
+        local oPad = ContentPad(lineAlign)
+        for i, object in ipairs(runRec.objectives) do
             if not object.isWeighted then
                 objIdx = objIdx + 1
                 local record = GetObjRow(frame, objIdx)
-                local nameFS, timeFS = record.name, record.time
+                local nameText, timeText = record.name, record.time
                 local objSize = p.objectivesSize or 12
-                SetFS(nameFS, objSize)
-                ApplyShadow(nameFS)
-                SetFS(timeFS, objSize)
-                ApplyShadow(timeFS)
+                SetFS(nameText, objSize)
+                ApplyShadow(nameText)
+                SetFS(timeText, objSize)
+                ApplyShadow(timeText)
 
                 local displayName = StripDefeated(object.name) or ("Objective " .. i)
                 -- Preview only: a real run gets its objective names from the game.
@@ -3491,9 +3491,9 @@ local function RenderStandalone()
                     displayName = format("%d/%d %s", object.quantity or 0, object.totalQuantity, displayName)
                 end
                 if object.completed then
-                    nameFS:SetTextColor(GetColor(p.objectiveCompletedColor, 0.3, 0.8, 0.3))
+                    nameText:SetTextColor(GetColor(p.objectiveCompletedColor, 0.3, 0.8, 0.3))
                 else
-                    nameFS:SetTextColor(GetColor(p.objectiveTextColor, 0.9, 0.9, 0.9))
+                    nameText:SetTextColor(GetColor(p.objectiveTextColor, 0.9, 0.9, 0.9))
                 end
                 local timeStr = ""
                 if
@@ -3526,7 +3526,7 @@ local function RenderStandalone()
                     if isPreview then
                         target = object.previewSplit
                     else
-                        target = GetReferenceObjectiveTime(run, i, compareMode)
+                        target = GetReferenceObjectiveTime(runRec, i, compareMode)
                     end
                     compareSuffix = BuildSplitCompareText(target)
                 end
@@ -3547,67 +3547,67 @@ local function RenderStandalone()
                 local objTextX = p.objectiveTextOffsetX or 0
                 local objTextY = p.objectiveTextOffsetY or 0
                 local objY = posY + objTextY
-                nameFS:ClearAllPoints()
-                timeFS:ClearAllPoints()
-                nameFS:SetText(displayName)
+                nameText:ClearAllPoints()
+                timeText:ClearAllPoints()
+                nameText:SetText(displayName)
                 if splitText ~= "" then
-                    timeFS:SetText(splitText)
-                    timeFS:SetTextColor(1, 1, 1, 1)
-                    timeFS:SetWidth(0)
-                    local timeW = timeFS:GetStringWidth() or 0
+                    timeText:SetText(splitText)
+                    timeText:SetTextColor(1, 1, 1, 1)
+                    timeText:SetWidth(0)
+                    local timeW = timeText:GetStringWidth() or 0
                     local nameMaxW = oInnerW - timeW - splitGap
                     if nameMaxW < 20 then
                         nameMaxW = 20
                     end
-                    nameFS:SetWidth(0)
-                    local nameW = nameFS:GetStringWidth() or 0
+                    nameText:SetWidth(0)
+                    local nameW = nameText:GetStringWidth() or 0
                     if nameW > nameMaxW then
                         nameW = nameMaxW
                     end
                     if nameW < 20 then
                         nameW = 20
                     end
-                    nameFS:SetWidth(nameW)
+                    nameText:SetWidth(nameW)
                     if timeOnLeft then
-                        if objAlign == "RIGHT" then
-                            nameFS:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -oPad + objTextX, objY)
-                            timeFS:SetPoint("TOPRIGHT", nameFS, "TOPLEFT", -splitGap, 0)
-                        elseif objAlign == "CENTER" then
+                        if lineAlign == "RIGHT" then
+                            nameText:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -oPad + objTextX, objY)
+                            timeText:SetPoint("TOPRIGHT", nameText, "TOPLEFT", -splitGap, 0)
+                        elseif lineAlign == "CENTER" then
                             local groupW = timeW + splitGap + nameW
-                            timeFS:SetPoint("TOP", frame, "TOP", objTextX - (groupW - timeW) / 2, objY)
-                            nameFS:SetPoint("TOPLEFT", timeFS, "TOPRIGHT", splitGap, 0)
+                            timeText:SetPoint("TOP", frame, "TOP", objTextX - (groupW - timeW) / 2, objY)
+                            nameText:SetPoint("TOPLEFT", timeText, "TOPRIGHT", splitGap, 0)
                         else
-                            timeFS:SetPoint("TOPLEFT", frame, "TOPLEFT", oPad + objTextX, objY)
-                            nameFS:SetPoint("TOPLEFT", timeFS, "TOPRIGHT", splitGap, 0)
+                            timeText:SetPoint("TOPLEFT", frame, "TOPLEFT", oPad + objTextX, objY)
+                            nameText:SetPoint("TOPLEFT", timeText, "TOPRIGHT", splitGap, 0)
                         end
                     else
-                        if objAlign == "RIGHT" then
-                            timeFS:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -oPad + objTextX, objY)
-                            nameFS:SetPoint("TOPRIGHT", timeFS, "TOPLEFT", -splitGap, 0)
-                        elseif objAlign == "CENTER" then
+                        if lineAlign == "RIGHT" then
+                            timeText:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -oPad + objTextX, objY)
+                            nameText:SetPoint("TOPRIGHT", timeText, "TOPLEFT", -splitGap, 0)
+                        elseif lineAlign == "CENTER" then
                             local groupW = nameW + splitGap + timeW
-                            nameFS:SetPoint("TOP", frame, "TOP", objTextX - (groupW - nameW) / 2, objY)
-                            timeFS:SetPoint("TOPLEFT", nameFS, "TOPRIGHT", splitGap, 0)
+                            nameText:SetPoint("TOP", frame, "TOP", objTextX - (groupW - nameW) / 2, objY)
+                            timeText:SetPoint("TOPLEFT", nameText, "TOPRIGHT", splitGap, 0)
                         else
-                            nameFS:SetPoint("TOPLEFT", frame, "TOPLEFT", oPad + objTextX, objY)
-                            timeFS:SetPoint("TOPLEFT", nameFS, "TOPRIGHT", splitGap, 0)
+                            nameText:SetPoint("TOPLEFT", frame, "TOPLEFT", oPad + objTextX, objY)
+                            timeText:SetPoint("TOPLEFT", nameText, "TOPRIGHT", splitGap, 0)
                         end
                     end
-                    timeFS:Show()
+                    timeText:Show()
                 else
-                    timeFS:Hide()
-                    if objAlign == "RIGHT" then
-                        nameFS:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -oPad + objTextX, objY)
-                    elseif objAlign == "CENTER" then
-                        nameFS:SetPoint("TOP", frame, "TOP", objTextX, objY)
+                    timeText:Hide()
+                    if lineAlign == "RIGHT" then
+                        nameText:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -oPad + objTextX, objY)
+                    elseif lineAlign == "CENTER" then
+                        nameText:SetPoint("TOP", frame, "TOP", objTextX, objY)
                     else
-                        nameFS:SetPoint("TOPLEFT", frame, "TOPLEFT", oPad + objTextX, objY)
+                        nameText:SetPoint("TOPLEFT", frame, "TOPLEFT", oPad + objTextX, objY)
                     end
-                    nameFS:SetWidth(oInnerW)
+                    nameText:SetWidth(oInnerW)
                 end
-                nameFS:SetJustifyH(objAlign)
-                nameFS:Show()
-                posY = posY - (nameFS:GetStringHeight() or 12) - OBJ_GAP
+                nameText:SetJustifyH(lineAlign)
+                nameText:Show()
+                posY = posY - (nameText:GetStringHeight() or 12) - OBJ_GAP
             end
         end
     end
@@ -3654,11 +3654,11 @@ end
 -- so the next RenderStandalone() re-creates them from scratch. Use when a
 -- setting (e.g. text alignment) won't take effect via re-render alone.
 _G._CUMT_RebuildStandalone = function()
-    if standaloneFrame then
-        standaloneFrame:SetScript("OnUpdate", nil) -- the timer fallback moves to the new frame
-        standaloneFrame:Hide()
+    if soloFrame then
+        soloFrame:SetScript("OnUpdate", nil) -- the timer fallback moves to the new frame
+        soloFrame:Hide()
     end
-    standaloneFrame = nil
+    soloFrame = nil
     standaloneCreated = false
     wipe(objRows)
     RenderStandalone()
@@ -3669,14 +3669,14 @@ end
 -- the unscaled frame; otherwise repeated calls after SetScale would compute a different
 -- center each time and the frame would drift.
 local function _ensureCenterPos()
-    local place = db and db.profile and db.profile.standalonePos
+    local place = store and store.profile and store.profile.standalonePos
     if not place then
         return
     end
     if place.centerX and place.centerY then
         return
     end
-    local frame = standaloneFrame
+    local frame = soloFrame
     if not (frame and frame:GetCenter()) then
         return
     end
@@ -3696,7 +3696,7 @@ local function _centerPosFromSaved(place)
     if not place or place.centerX == nil or place.centerY == nil then
         return
     end
-    local scale = (db and db.profile and db.profile.scale) or 1.0
+    local scale = (store and store.profile and store.profile.scale) or 1.0
     if scale == 0 then
         scale = 1.0
     end
@@ -3704,15 +3704,15 @@ local function _centerPosFromSaved(place)
 end
 
 local function ApplyStandalonePosition()
-    if not db then
+    if not store then
         return
     end
-    if not standaloneFrame then
+    if not soloFrame then
         return
     end
     _ensureCenterPos()
-    local place = db.profile.standalonePos
-    local scale = db.profile.scale or 1.0
+    local place = store.profile.standalonePos
+    local scale = store.profile.scale or 1.0
     if scale == 0 then
         scale = 1.0
     end
@@ -3720,11 +3720,11 @@ local function ApplyStandalonePosition()
     -- SetPoint offsets are in the frame's OWN scaled coord space, so the
     -- effective on-screen offset = stored * scale. To keep the visual
     -- center pinned regardless of scale, divide the stored offset by scale.
-    standaloneFrame:SetScale(scale)
+    soloFrame:SetScale(scale)
     local sx, sy = _centerPosFromSaved(place)
     if sx ~= nil then
-        standaloneFrame:ClearAllPoints()
-        standaloneFrame:SetPoint("CENTER", UIParent, "CENTER", sx, sy)
+        soloFrame:ClearAllPoints()
+        soloFrame:SetPoint("CENTER", UIParent, "CENTER", sx, sy)
     end
 end
 _G._CUMT_ApplyStandalonePosition = ApplyStandalonePosition
@@ -3773,8 +3773,8 @@ local function _isInChallengeMode()
 end
 
 local function HandleRuntimeEvent(evt)
-    if not db or not db.profile.enabled then
-        if currentRun.active or currentRun.completed then
+    if not store or not store.profile.enabled then
+        if activeRun.active or activeRun.completed then
             ResetRun()
         end
         return
@@ -3782,20 +3782,20 @@ local function HandleRuntimeEvent(evt)
 
     local activeMapID = C_ChallengeMode.GetActiveChallengeMapID()
     if activeMapID then
-        if not currentRun.active and not currentRun.completed then
+        if not activeRun.active and not activeRun.completed then
             StartRun()
         end
         -- Pure event-driven completion check: criteria updates fire when
         -- bosses die and when the weighted enemy-forces tally crosses 100.
-        if currentRun.active and evt == "SCENARIO_CRITERIA_UPDATE" then
+        if activeRun.active and evt == "SCENARIO_CRITERIA_UPDATE" then
             if IsDungeonComplete() then
                 CompleteRun()
             end
         end
-    elseif (currentRun.active or currentRun.completed) and not _isInChallengeMode() then
+    elseif (activeRun.active or activeRun.completed) and not _isInChallengeMode() then
         -- M+ cleared and we're no longer in a M+ instance. Salvage as
         -- completion if the last criteria update saw it complete.
-        if currentRun.active and IsDungeonComplete() then
+        if activeRun.active and IsDungeonComplete() then
             CompleteRun()
         else
             ResetRun()
@@ -3834,7 +3834,7 @@ end
 -- Toggle high-frequency event subscriptions based on whether we're actually in a
 -- key. Outside M+ we don't want to wake on every quest update or subzone change.
 local function SyncRunEvents()
-    if currentRun.active then
+    if activeRun.active then
         _registerRunEvents()
     else
         _unregisterRunEvents()
@@ -3859,15 +3859,15 @@ runtimeFrame:SetScript("OnEvent", function(_, evt)
 end)
 
 function EMT:OnInitialize()
-    db = CludesUI.Lite.NewDB("CludesUIMythicTimerDB", DB_DEFAULTS)
-    _G._CUMT_AceDB = db
+    store = CludesUI.Lite.NewDB("CludesUIMythicTimerDB", DB_DEFAULTS)
+    _G._CUMT_AceDB = store
     AppendSharedMediaBarTextures()
 
-    if db and db.profile then
-        local pp = db.profile
-        for key, value in pairs(DB_DEFAULTS.profile) do
+    if store and store.profile then
+        local pp = store.profile
+        for key, amount in pairs(DB_DEFAULTS.profile) do
             if pp[key] == nil then
-                pp[key] = type(value) == "table" and CopyTable(value) or value
+                pp[key] = type(amount) == "table" and CopyTable(amount) or amount
             end
         end
         -- showPreview is a transient options-panel state. /reload doesn't fire
@@ -3878,7 +3878,7 @@ function EMT:OnInitialize()
 
     -- Season-based data purge: clear split records from previous seasons.
     C_Timer.After(2, function()
-        if not db or not db.profile then
+        if not store or not store.profile then
             return
         end
         local currentMaps = C_ChallengeMode.GetMapTable()
@@ -3891,24 +3891,24 @@ function EMT:OnInitialize()
             validMapIDs[mapID] = true
         end
 
-        if db.profile.bestObjectiveSplits then
-            for scopeKey in pairs(db.profile.bestObjectiveSplits) do
+        if store.profile.bestObjectiveSplits then
+            for scopeKey in pairs(store.profile.bestObjectiveSplits) do
                 -- Keys are normally scoped strings ("<mapID>-..."), but legacy
                 -- data can store a bare numeric mapID. tostring() guards against
                 -- calling :match on a number (crashes in Lua 5.1).
                 local mapIDStr = tostring(scopeKey):match("^(%d+)")
                 local mapID = tonumber(mapIDStr)
                 if mapID and not validMapIDs[mapID] then
-                    db.profile.bestObjectiveSplits[scopeKey] = nil
+                    store.profile.bestObjectiveSplits[scopeKey] = nil
                 end
             end
         end
-        if db.profile.fastestRunSplits then
-            for scopeKey in pairs(db.profile.fastestRunSplits) do
+        if store.profile.fastestRunSplits then
+            for scopeKey in pairs(store.profile.fastestRunSplits) do
                 local mapIDStr = tostring(scopeKey):match("^(%d+)")
                 local mapID = tonumber(mapIDStr)
                 if mapID and not validMapIDs[mapID] then
-                    db.profile.fastestRunSplits[scopeKey] = nil
+                    store.profile.fastestRunSplits[scopeKey] = nil
                 end
             end
         end
@@ -3922,18 +3922,18 @@ function EMT:OnEnable()
     -- they carry their own per-feature enable flags and must work with the
     -- timer feature turned off. Both are no-ops while their flags are off.
     if mod.TSB_OnEnable then
-        mod.TSB_OnEnable(db)
+        mod.TSB_OnEnable(store)
     end
     if mod.TFB_OnEnable then
-        mod.TFB_OnEnable(db)
+        mod.TFB_OnEnable(store)
     end
     if mod.RS_OnEnable then
-        mod.RS_OnEnable(db)
+        mod.RS_OnEnable(store)
     end
     if mod.KT_OnEnable then
-        mod.KT_OnEnable(db)
+        mod.KT_OnEnable(store)
     end
-    if not db or not db.profile.enabled then
+    if not store or not store.profile.enabled then
         return
     end
 
@@ -3951,9 +3951,9 @@ function EMT:OnEnable()
                     ApplyStandalonePosition()
                 end
             else
-                if not db.profile.showPreview and not currentRun.active and not currentRun.completed then
-                    if standaloneFrame then
-                        standaloneFrame:Hide()
+                if not store.profile.showPreview and not activeRun.active and not activeRun.completed then
+                    if soloFrame then
+                        soloFrame:Hide()
                     end
                 else
                     RenderStandalone()
@@ -3978,7 +3978,7 @@ function EMT:OnEnable()
                     return _G._CUMT_GetStandaloneFrame and _G._CUMT_GetStandaloneFrame()
                 end,
                 getSize = function()
-                    local frame = standaloneFrame
+                    local frame = soloFrame
                     if frame then
                         return frame:GetWidth(), frame:GetHeight()
                     end
@@ -4004,8 +4004,8 @@ function EMT:OnEnable()
                     -- Unlock Cancel hands back the pre-session snapshot, i.e. the
                     -- value already stored, while the frame still sits at the
                     -- dragged spot: keep the stored value, never the live read.
-                    local frame = standaloneFrame
-                    local current = db.profile.standalonePos
+                    local frame = soloFrame
+                    local current = store.profile.standalonePos
                     local isRestore = current
                         and posX ~= nil
                         and current.centerX == posX
@@ -4016,13 +4016,13 @@ function EMT:OnEnable()
                         local fes = frame:GetEffectiveScale() or 1
                         local ues = UIParent:GetEffectiveScale() or 1
                         local ratio = fes / ues
-                        db.profile.standalonePos = {
+                        store.profile.standalonePos = {
                             centerX = cx * ratio - upX,
                             centerY = cy * ratio - upY,
                         }
                     end
                     if frame and not CludesUI._unlockActive then
-                        local sx, sy = _centerPosFromSaved(db.profile.standalonePos)
+                        local sx, sy = _centerPosFromSaved(store.profile.standalonePos)
                         if sx ~= nil then
                             frame:ClearAllPoints()
                             frame:SetPoint("CENTER", UIParent, "CENTER", sx, sy)
@@ -4046,7 +4046,7 @@ function EMT:OnEnable()
                     -- scaled timers ever drifted. The /scale division belongs ONLY at
                     -- the module's own SetPoint (ApplyStandalonePosition /
                     -- _centerPosFromSaved), never in the interchange format.
-                    local place = db.profile.standalonePos
+                    local place = store.profile.standalonePos
                     if not (place and place.centerX and place.centerY) then
                         return nil
                     end
@@ -4058,10 +4058,10 @@ function EMT:OnEnable()
                     }
                 end,
                 clearPos = function()
-                    db.profile.standalonePos = nil
+                    store.profile.standalonePos = nil
                 end,
                 applyPos = function()
-                    if standaloneFrame then
+                    if soloFrame then
                         ApplyStandalonePosition()
                     end
                 end,
