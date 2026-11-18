@@ -627,59 +627,74 @@ end
 --  renders icon/cooldown/count. onAdded runs after validation; the caller
 --  handles AddTrackedSpell.
 ---------------------------------------------------------------------------
-local function ShowCustomItemIDPopup(barId, onAdded)
-    local environ = mod._CDMO_OptEnv
-    local FONT_PATH, GetCDMOptOutline = environ.FONT_PATH, environ.GetCDMOptOutline
-    local popupName = "CUI_CDM_ItemIDPopup"
-    local dialog = _G[popupName]
+-- The add-by-number popups (Custom Item, Equipment Slot): a title, the
+-- entry box with a grey placeholder, an optional live echo line under it
+-- (spec.echo(line, n) paints it from the typed number), a red status line
+-- that clears itself 2.5s after each message, Add and Cancel. spec.toMarker
+-- (n, SetStatus) turns the typed number into the bar entry to add, or says
+-- why not and returns nil; an entry already on the bar is refused. onAdded
+-- gets the new entry.
+local function ShowMarkerPopup(spec, barId, onAdded)
+    local dialog = _G[spec.name]
     if not dialog then
-        local POPUP_W, POPUP_H = 320, 164
+        local env = mod._CDMO_OptEnv
+        local font, outline = env.FONT_PATH, env.GetCDMOptOutline()
         local dimmer
-        dialog, dimmer = NewEntryDialog(popupName, POPUP_W, POPUP_H)
+        dialog, dimmer = NewEntryDialog(spec.name, 320, spec.height)
 
-        local title = NewDialogTitle(dialog, CludesUI.L("Add Custom Item"))
+        local title = NewDialogTitle(dialog, CludesUI.L(spec.title))
         dialog._title = title
 
-        local editBox = NewEntryBox(dialog, 9)
+        local editBox = NewEntryBox(dialog, spec.maxLetters)
         editBox:SetPoint("TOP", title, "BOTTOM", 0, -16)
 
         local placeholder = editBox:CreateFontString(nil, "ARTWORK")
-        placeholder:SetFont(FONT_PATH, 12, GetCDMOptOutline())
+        placeholder:SetFont(font, 12, outline)
         placeholder:SetPoint("CENTER")
         placeholder:SetTextColor(0.5, 0.5, 0.5, 0.5)
-        placeholder:SetText(CludesUI.L("Item ID"))
-        editBox:SetScript("OnTextChanged", function(self)
-            if self:GetText() == "" then
-                placeholder:Show()
-            else
-                placeholder:Hide()
-            end
-        end)
+        placeholder:SetText(CludesUI.L(spec.placeholder))
         dialog._editBox = editBox
 
+        local echoLine
+        if spec.echo then
+            echoLine = dialog:CreateFontString(nil, "OVERLAY")
+            echoLine:SetFont(font, 12, outline)
+            echoLine:SetPoint("TOP", editBox, "BOTTOM", 0, -8)
+            echoLine:SetWidth(320 - 24)
+            echoLine:SetText("")
+            dialog._nameLine = echoLine
+        end
+        editBox:SetScript("OnTextChanged", function(self)
+            local text = self:GetText()
+            placeholder:SetShown(text == "")
+            if echoLine then
+                spec.echo(echoLine, tonumber(text))
+            end
+        end)
+
         local status = dialog:CreateFontString(nil, "OVERLAY")
-        status:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        status:SetPoint("TOP", editBox, "BOTTOM", 0, -6)
+        status:SetFont(font, 11, outline)
+        if echoLine then
+            status:SetPoint("TOP", echoLine, "BOTTOM", 0, -4)
+        else
+            status:SetPoint("TOP", editBox, "BOTTOM", 0, -6)
+        end
         status:SetTextColor(1, 0.3, 0.3, 1)
         status:SetText("")
         dialog._status = status
         dialog._statusTimer = nil
 
-        local addBtn = NewDialogButton(dialog, "Add", true)
-        dialog._addBtn = addBtn
-
+        dialog._addBtn = NewDialogButton(dialog, "Add", true)
         local cancelBtn = NewDialogButton(dialog, "Cancel", false)
-        cancelBtn:SetScript("OnClick", function()
+        local function Close()
             dimmer:Hide()
-        end)
+        end
+        cancelBtn:SetScript("OnClick", Close)
         dialog._cancelBtn = cancelBtn
-
-        editBox:SetScript("OnEscapePressed", function()
-            dimmer:Hide()
-        end)
+        editBox:SetScript("OnEscapePressed", Close)
 
         dialog._dimmer = dimmer
-        _G[popupName] = dialog
+        _G[spec.name] = dialog
     end
 
     local function SetStatus(textValue, r, g, b)
@@ -696,29 +711,15 @@ local function ShowCustomItemIDPopup(barId, onAdded)
     end
 
     local function DoAdd()
-        local textValue = dialog._editBox:GetText()
-        local itemId = tonumber(textValue)
-        -- IDs below 100 are reserved: the -1..-19 range encodes equipment slots (never renderable as items before this cutoff existed).
-        if not itemId or itemId < 100 then
-            SetStatus("Enter a valid item ID")
+        local marker = spec.toMarker(tonumber(dialog._editBox:GetText()), SetStatus)
+        if not marker then
             return
         end
-        itemId = math.floor(itemId)
-        local itemName = C_Item.GetItemNameByID(itemId)
-        if not itemName then
-            -- Item data not cached yet -- request it and ask the user to retry.
-            C_Item.RequestLoadItemDataByID(itemId)
-            SetStatus("Loading item data, try again")
-            return
-        end
-        local marker = -itemId
-        local sdChk = mod.GetBarSpellData(barId)
-        if sdChk and sdChk.assignedSpells then
-            for _, existing in ipairs(sdChk.assignedSpells) do
-                if existing == marker then
-                    SetStatus("Already tracked")
-                    return
-                end
+        local sd = mod.GetBarSpellData(barId)
+        for _, existing in ipairs(sd and sd.assignedSpells or {}) do
+            if existing == marker then
+                SetStatus("Already tracked")
+                return
             end
         end
         dialog._dimmer:Hide()
@@ -731,9 +732,39 @@ local function ShowCustomItemIDPopup(barId, onAdded)
     dialog._editBox:SetScript("OnEnterPressed", DoAdd)
     dialog._editBox:SetText("")
     dialog._status:SetText("")
+    if dialog._nameLine then
+        dialog._nameLine:SetText("")
+    end
     mod.PadPopupOpen(dialog._dimmer, dialog, dialog._cancelBtn) -- controller cursor
     dialog._dimmer:Show()
     dialog._editBox:SetFocus()
+end
+
+-- An item by its ID, kept as -itemID. IDs under 100 are refused: -1 to -19
+-- are the equipment slots. An item the client has not loaded yet is asked
+-- for, and the user to try again.
+local ITEM_POPUP = {
+    name = "CUI_CDM_ItemIDPopup",
+    height = 164,
+    maxLetters = 9,
+    title = "Add Custom Item",
+    placeholder = "Item ID",
+    toMarker = function(itemId, SetStatus)
+        if not itemId or itemId < 100 then
+            SetStatus("Enter a valid item ID")
+            return nil
+        end
+        itemId = math.floor(itemId)
+        if not C_Item.GetItemNameByID(itemId) then
+            C_Item.RequestLoadItemDataByID(itemId)
+            SetStatus("Loading item data, try again")
+            return nil
+        end
+        return -itemId
+    end,
+}
+local function ShowCustomItemIDPopup(barId, onAdded)
+    ShowMarkerPopup(ITEM_POPUP, barId, onAdded)
 end
 
 ---------------------------------------------------------------------------
@@ -741,126 +772,38 @@ end
 --  encoding) so the icon follows whatever item is equipped there (e.g. slot 6 = belt +
 --  its tinker). The name line echoes the typed slot (localized name + equipped item) so a bare number is confirmed before Add.
 ---------------------------------------------------------------------------
-local function ShowEquipmentSlotPopup(barId, onAdded)
-    local environ = mod._CDMO_OptEnv
-    local FONT_PATH, GetCDMOptOutline = environ.FONT_PATH, environ.GetCDMOptOutline
-    local popupName = "CUI_CDM_SlotIDPopup"
-    local dialog = _G[popupName]
-    if not dialog then
-        local POPUP_W, POPUP_H = 320, 184
-        local dimmer
-        dialog, dimmer = NewEntryDialog(popupName, POPUP_W, POPUP_H)
-
-        local title = NewDialogTitle(dialog, CludesUI.L("Add Equipment Slot"))
-        dialog._title = title
-
-        local editBox = NewEntryBox(dialog, 2)
-        editBox:SetPoint("TOP", title, "BOTTOM", 0, -16)
-
-        local placeholder = editBox:CreateFontString(nil, "ARTWORK")
-        placeholder:SetFont(FONT_PATH, 12, GetCDMOptOutline())
-        placeholder:SetPoint("CENTER")
-        placeholder:SetTextColor(0.5, 0.5, 0.5, 0.5)
-        placeholder:SetText(CludesUI.L("Slot ID"))
-        dialog._editBox = editBox
-
-        -- Live echo: localized slot name + the item currently equipped there, so the bare number is confirmed before Add.
-        local nameLine = dialog:CreateFontString(nil, "OVERLAY")
-        nameLine:SetFont(FONT_PATH, 12, GetCDMOptOutline())
-        nameLine:SetPoint("TOP", editBox, "BOTTOM", 0, -8)
-        nameLine:SetWidth(POPUP_W - 24)
-        nameLine:SetText("")
-        dialog._nameLine = nameLine
-
-        editBox:SetScript("OnTextChanged", function(self)
-            if self:GetText() == "" then
-                placeholder:Show()
-            else
-                placeholder:Hide()
-            end
-            local slot = tonumber(self:GetText())
-            local slotName = slot and mod.INV_SLOT_NAMES[slot]
-            if slotName then
-                local itemId = GetInventoryItemID("player", slot)
-                local itemName = itemId and C_Item.GetItemNameByID(itemId)
-                nameLine:SetTextColor(0.6, 1, 0.6, 1)
-                nameLine:SetText(slotName .. " - " .. (itemName or EMPTY or ""))
-            elseif slot then
-                nameLine:SetTextColor(1, 0.4, 0.4, 0.9)
-                nameLine:SetText("Enter a slot ID from 1 to 19")
-            else
-                nameLine:SetText("")
-            end
-        end)
-
-        local status = dialog:CreateFontString(nil, "OVERLAY")
-        status:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        status:SetPoint("TOP", nameLine, "BOTTOM", 0, -4)
-        status:SetTextColor(1, 0.3, 0.3, 1)
-        status:SetText("")
-        dialog._status = status
-        dialog._statusTimer = nil
-
-        local addBtn = NewDialogButton(dialog, "Add", true)
-        dialog._addBtn = addBtn
-
-        local cancelBtn = NewDialogButton(dialog, "Cancel", false)
-        cancelBtn:SetScript("OnClick", function()
-            dimmer:Hide()
-        end)
-        dialog._cancelBtn = cancelBtn
-
-        editBox:SetScript("OnEscapePressed", function()
-            dimmer:Hide()
-        end)
-
-        dialog._dimmer = dimmer
-        _G[popupName] = dialog
-    end
-
-    local function SetStatus(textValue, r, g, b)
-        dialog._status:SetText(CludesUI.L(textValue))
-        dialog._status:SetTextColor(r or 1, g or 0.3, b or 0.3, 1)
-        if dialog._statusTimer then
-            dialog._statusTimer:Cancel()
+local SLOT_POPUP = {
+    name = "CUI_CDM_SlotIDPopup",
+    height = 184,
+    maxLetters = 2,
+    title = "Add Equipment Slot",
+    placeholder = "Slot ID",
+    -- The slot's name and what is in it now (green), or a red hint for a
+    -- number that is not a slot.
+    echo = function(line, slot)
+        local slotName = slot and mod.INV_SLOT_NAMES[slot]
+        if slotName then
+            local itemId = GetInventoryItemID("player", slot)
+            local itemName = itemId and C_Item.GetItemNameByID(itemId)
+            line:SetTextColor(0.6, 1, 0.6, 1)
+            line:SetText(slotName .. " - " .. (itemName or EMPTY or ""))
+        elseif slot then
+            line:SetTextColor(1, 0.4, 0.4, 0.9)
+            line:SetText("Enter a slot ID from 1 to 19")
+        else
+            line:SetText("")
         end
-        if textValue ~= "" then
-            dialog._statusTimer = C_Timer.NewTimer(2.5, function()
-                dialog._status:SetText("")
-            end)
-        end
-    end
-
-    local function DoAdd()
-        local slot = tonumber(dialog._editBox:GetText())
+    end,
+    toMarker = function(slot, SetStatus)
         if not slot or not mod.INV_SLOT_NAMES[slot] then
             SetStatus("Enter a slot ID from 1 to 19")
-            return
+            return nil
         end
-        local marker = -slot
-        local sdChk = mod.GetBarSpellData(barId)
-        if sdChk and sdChk.assignedSpells then
-            for _, existing in ipairs(sdChk.assignedSpells) do
-                if existing == marker then
-                    SetStatus("Already tracked")
-                    return
-                end
-            end
-        end
-        dialog._dimmer:Hide()
-        if onAdded then
-            onAdded(marker)
-        end
-    end
-
-    dialog._addBtn:SetScript("OnClick", DoAdd)
-    dialog._editBox:SetScript("OnEnterPressed", DoAdd)
-    dialog._editBox:SetText("")
-    dialog._status:SetText("")
-    dialog._nameLine:SetText("")
-    mod.PadPopupOpen(dialog._dimmer, dialog, dialog._cancelBtn) -- controller cursor
-    dialog._dimmer:Show()
-    dialog._editBox:SetFocus()
+        return -slot
+    end,
+}
+local function ShowEquipmentSlotPopup(barId, onAdded)
+    ShowMarkerPopup(SLOT_POPUP, barId, onAdded)
 end
 
 ---------------------------------------------------------------------------
