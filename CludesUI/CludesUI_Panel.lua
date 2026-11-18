@@ -1060,6 +1060,34 @@ local function BuildSidebar()
 
     -- Helper: attach the shared decoration set to a sidebar nav button
     -- (active indicator, selection glow, top/bottom edge lines, hover glow, hover indicator)
+    -- A nav row's icon and caption: the white icon (offPath) over a hidden
+    -- accent-tinted glow copy of its lit version (onPath), then the dim
+    -- caption to their right. Both paths are kept on the button for the
+    -- selected/unselected swap. Returns the icon and the caption.
+    local function AddNavIconAndLabel(btn, onPath, offPath, caption)
+        local glow = btn:CreateTexture(nil, "ARTWORK", nil, 0)
+        glow:SetTexture(onPath)
+        glow:SetSize(NAV_ICON_W, NAV_ICON_H)
+        glow:SetPoint("LEFT", btn, "LEFT", NAV_LEFT, 0)
+        glow:SetDesaturated(true)
+        glow:SetVertexColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
+        glow:Hide()
+        btn._iconGlow = glow
+        RegAccent({ type = "vertex", obj = glow })
+        local icon = btn:CreateTexture(nil, "ARTWORK", nil, 1)
+        icon:SetTexture(offPath)
+        icon:SetSize(NAV_ICON_W, NAV_ICON_H)
+        icon:SetPoint("LEFT", btn, "LEFT", NAV_LEFT, 0)
+        btn._icon = icon
+        btn._iconOn = onPath
+        btn._iconOff = offPath
+        local label = MakeFont(btn, 14, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
+        label:SetPoint("LEFT", icon, "RIGHT", NAV_TXT_GAP, 0)
+        label:SetText(caption)
+        btn._label = label
+        return icon, label
+    end
+
     local function DecorateSidebarButton(btn)
         local EG = CLUDES_GREEN
         btn._indicator = SolidTex(btn, "ARTWORK", EG.r, EG.g, EG.b, 1)
@@ -1094,30 +1122,12 @@ local function BuildSidebar()
 
         DecorateSidebarButton(btn)
 
-        -- Glow layer (behind icon): tinted version of the -on texture
-        local iconGlow = btn:CreateTexture(nil, "ARTWORK", nil, 0)
-        iconGlow:SetTexture(ICONS_PATH .. "sidebar\\unlockmode-ig-on.png")
-        iconGlow:SetSize(NAV_ICON_W, NAV_ICON_H)
-        iconGlow:SetPoint("LEFT", btn, "LEFT", NAV_LEFT, 0)
-        iconGlow:SetDesaturated(true)
-        iconGlow:SetVertexColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
-        iconGlow:Hide()
-        btn._iconGlow = iconGlow
-        RegAccent({ type = "vertex", obj = iconGlow })
-
-        -- Icon layer (on top of glow): always the white off texture
-        local icon = btn:CreateTexture(nil, "ARTWORK", nil, 1)
-        icon:SetTexture(ICONS_PATH .. "sidebar\\unlockmode-ig.png")
-        icon:SetSize(NAV_ICON_W, NAV_ICON_H)
-        icon:SetPoint("LEFT", btn, "LEFT", NAV_LEFT, 0)
-        btn._icon = icon
-        btn._iconOn = ICONS_PATH .. "sidebar\\unlockmode-ig-on.png"
-        btn._iconOff = ICONS_PATH .. "sidebar\\unlockmode-ig.png"
-
-        local label = MakeFont(btn, 14, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
-        label:SetPoint("LEFT", icon, "RIGHT", NAV_TXT_GAP, 0)
-        label:SetText(CludesUI.L("Layout Mode"))
-        btn._label = label
+        local icon, label = AddNavIconAndLabel(
+            btn,
+            ICONS_PATH .. "sidebar\\unlockmode-ig-on.png",
+            ICONS_PATH .. "sidebar\\unlockmode-ig.png",
+            CludesUI.L("Layout Mode")
+        )
 
         -- Always "loaded" appearance
         label:SetTextColor(NAV_ENABLED_TEXT.r, NAV_ENABLED_TEXT.g, NAV_ENABLED_TEXT.b, NAV_ENABLED_TEXT.a)
@@ -1171,30 +1181,12 @@ local function BuildSidebar()
 
         DecorateSidebarButton(btn)
 
-        -- Glow layer (behind icon): tinted version of the -on texture
-        local iconGlow = btn:CreateTexture(nil, "ARTWORK", nil, 0)
-        iconGlow:SetTexture(ICONS_PATH .. "sidebar\\settings-ig-on-2.png")
-        iconGlow:SetSize(NAV_ICON_W, NAV_ICON_H)
-        iconGlow:SetPoint("LEFT", btn, "LEFT", NAV_LEFT, 0)
-        iconGlow:SetDesaturated(true)
-        iconGlow:SetVertexColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
-        iconGlow:Hide()
-        btn._iconGlow = iconGlow
-        RegAccent({ type = "vertex", obj = iconGlow })
-
-        -- Icon layer (on top of glow): always the white off texture
-        local icon = btn:CreateTexture(nil, "ARTWORK", nil, 1)
-        icon:SetTexture(ICONS_PATH .. "sidebar\\settings-ig-2.png")
-        icon:SetSize(NAV_ICON_W, NAV_ICON_H)
-        icon:SetPoint("LEFT", btn, "LEFT", NAV_LEFT, 0)
-        btn._icon = icon
-        btn._iconOn = ICONS_PATH .. "sidebar\\settings-ig-on-2.png"
-        btn._iconOff = ICONS_PATH .. "sidebar\\settings-ig-2.png"
-
-        local label = MakeFont(btn, 14, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
-        label:SetPoint("LEFT", icon, "RIGHT", NAV_TXT_GAP, 0)
-        label:SetText(CludesUI.L("Global Settings"))
-        btn._label = label
+        local icon, label = AddNavIconAndLabel(
+            btn,
+            ICONS_PATH .. "sidebar\\settings-ig-on-2.png",
+            ICONS_PATH .. "sidebar\\settings-ig-2.png",
+            CludesUI.L("Global Settings")
+        )
 
         -- No download icon for global settings
         local dlIcon = btn:CreateTexture(nil, "ARTWORK")
@@ -1276,30 +1268,12 @@ local function BuildSidebar()
 
         DecorateSidebarButton(btn)
 
-        -- Glow layer (behind icon): tinted version of the -on texture
-        local iconGlow = btn:CreateTexture(nil, "ARTWORK", nil, 0)
-        iconGlow:SetTexture(ICONS_PATH .. "sidebar\\notes-on.png")
-        iconGlow:SetSize(NAV_ICON_W, NAV_ICON_H)
-        iconGlow:SetPoint("LEFT", btn, "LEFT", NAV_LEFT, 0)
-        iconGlow:SetDesaturated(true)
-        iconGlow:SetVertexColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
-        iconGlow:Hide()
-        btn._iconGlow = iconGlow
-        RegAccent({ type = "vertex", obj = iconGlow })
-
-        -- Icon layer (on top of glow): always the white off texture
-        local icon = btn:CreateTexture(nil, "ARTWORK", nil, 1)
-        icon:SetTexture(ICONS_PATH .. "sidebar\\notes-off.png")
-        icon:SetSize(NAV_ICON_W, NAV_ICON_H)
-        icon:SetPoint("LEFT", btn, "LEFT", NAV_LEFT, 0)
-        btn._icon = icon
-        btn._iconOn = ICONS_PATH .. "sidebar\\notes-on.png"
-        btn._iconOff = ICONS_PATH .. "sidebar\\notes-off.png"
-
-        local label = MakeFont(btn, 14, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
-        label:SetPoint("LEFT", icon, "RIGHT", NAV_TXT_GAP, 0)
-        label:SetText(CludesUI.L("Patch Notes"))
-        btn._label = label
+        local icon, label = AddNavIconAndLabel(
+            btn,
+            ICONS_PATH .. "sidebar\\notes-on.png",
+            ICONS_PATH .. "sidebar\\notes-off.png",
+            CludesUI.L("Patch Notes")
+        )
 
         label:SetTextColor(NAV_ENABLED_TEXT.r, NAV_ENABLED_TEXT.g, NAV_ENABLED_TEXT.b, NAV_ENABLED_TEXT.a)
         icon:SetDesaturated(false)
@@ -1438,30 +1412,12 @@ local function BuildSidebar()
 
         DecorateSidebarButton(btn)
 
-        -- Glow layer (behind icon): tinted version of the -on texture
-        local iconGlow = btn:CreateTexture(nil, "ARTWORK", nil, 0)
-        iconGlow:SetTexture(ICONS_PATH .. "sidebar\\profiles-on.png")
-        iconGlow:SetSize(NAV_ICON_W, NAV_ICON_H)
-        iconGlow:SetPoint("LEFT", btn, "LEFT", NAV_LEFT, 0)
-        iconGlow:SetDesaturated(true)
-        iconGlow:SetVertexColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
-        iconGlow:Hide()
-        btn._iconGlow = iconGlow
-        RegAccent({ type = "vertex", obj = iconGlow })
-
-        -- Icon layer (on top of glow): always the white off texture
-        local icon = btn:CreateTexture(nil, "ARTWORK", nil, 1)
-        icon:SetTexture(ICONS_PATH .. "sidebar\\profiles-off.png")
-        icon:SetSize(NAV_ICON_W, NAV_ICON_H)
-        icon:SetPoint("LEFT", btn, "LEFT", NAV_LEFT, 0)
-        btn._icon = icon
-        btn._iconOn = ICONS_PATH .. "sidebar\\profiles-on.png"
-        btn._iconOff = ICONS_PATH .. "sidebar\\profiles-off.png"
-
-        local label = MakeFont(btn, 14, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, TEXT_DIM.a)
-        label:SetPoint("LEFT", icon, "RIGHT", NAV_TXT_GAP, 0)
-        label:SetText(CludesUI.L("Profiles"))
-        btn._label = label
+        local icon, label = AddNavIconAndLabel(
+            btn,
+            ICONS_PATH .. "sidebar\\profiles-on.png",
+            ICONS_PATH .. "sidebar\\profiles-off.png",
+            CludesUI.L("Profiles")
+        )
 
         label:SetTextColor(NAV_ENABLED_TEXT.r, NAV_ENABLED_TEXT.g, NAV_ENABLED_TEXT.b, NAV_ENABLED_TEXT.a)
         icon:SetDesaturated(false)
