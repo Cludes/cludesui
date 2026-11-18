@@ -68,12 +68,12 @@ end
 
 -- Color mode per bar: nil/reactive = state-driven defaults, "accent" = live
 -- accent color, "custom" = stored custom color.
-function mod.ResolveDataBarColor(s, r, g, b)
+function mod.ResolveDataBarColor(s, region, g, b)
     local mode = s and s.colorMode
     if mode == "accent" then
         local ACC = CludesUI.CLUDES_GREEN
         if ACC then
-            return ACC.r or r, ACC.g or g, ACC.b or b
+            return ACC.r or region, ACC.g or g, ACC.b or b
         end
     elseif mode == "custom" then
         local c = s.customColor
@@ -82,7 +82,7 @@ function mod.ResolveDataBarColor(s, r, g, b)
         end
         return 1, 1, 1
     end
-    return r, g, b
+    return region, g, b
 end
 
 -- Accent-mode bars repaint live when the user changes the accent color.
@@ -90,9 +90,9 @@ CludesUI.RegAccent({
     type = "callback",
     fn = function()
         for _, bk in ipairs({ "XPBar", "RepBar", "FavorBar" }) do
-            local f = dataBarFrames[bk]
-            if f and f._updateFunc then
-                f._updateFunc()
+            local frame = dataBarFrames[bk]
+            if frame and frame._updateFunc then
+                frame._updateFunc()
             end
         end
     end,
@@ -112,13 +112,13 @@ CludesUI.RegAccent({
 -- above it. A child of the holder, so the mouseover fade carries it; the
 -- holder's alpha is never read or written. On ns.
 mod.ApplyDataBarBorder = function(holderFrame, s)
-    local host = holderFrame._cbHost
+    local owner = holderFrame._cbHost
     local line = holderFrame._border and holderFrame._border._frame
     if not s.customBorder then
         if holderFrame._cbOn then
             holderFrame._cbOn = nil
-            CludesUI.HideBorderStyle(host)
-            host:Hide()
+            CludesUI.HideBorderStyle(owner)
+            owner:Hide()
             -- An XP bar art frame keeps the line hidden.
             if line and not holderFrame._xpArtOn then
                 line:Show()
@@ -127,13 +127,13 @@ mod.ApplyDataBarBorder = function(holderFrame, s)
         return
     end
     local lvl = holderFrame:GetFrameLevel()
-    if not host then
-        host = CreateFrame("Frame", nil, holderFrame)
-        host:SetAllPoints(holderFrame)
-        host:EnableMouse(false)
-        holderFrame._cbHost = host
+    if not owner then
+        owner = CreateFrame("Frame", nil, holderFrame)
+        owner:SetAllPoints(holderFrame)
+        owner:EnableMouse(false)
+        holderFrame._cbHost = owner
     end
-    host:SetFrameLevel(lvl + 1)
+    owner:SetFrameLevel(lvl + 1)
     if not holderFrame._cbOn then
         holderFrame._cbOn = true
         if line then
@@ -144,7 +144,7 @@ mod.ApplyDataBarBorder = function(holderFrame, s)
     local c = s.borderColor
     local sz, px = ResolveBorderThickness(s)
     CludesUI.ApplyBorderStyle(
-        host,
+        owner,
         sz,
         c and c.r or 0,
         c and c.g or 0,
@@ -162,7 +162,7 @@ mod.ApplyDataBarBorder = function(holderFrame, s)
     )
     local topY = lvl + 2
     if texture ~= "" and texture ~= "solid" then
-        local edge = CludesUI._bdBorderData[host]
+        local edge = CludesUI._bdBorderData[owner]
         if edge then
             if s.borderBehind then
                 topY = lvl
@@ -405,25 +405,25 @@ local function CreateDataBarFrame(barId, updateFunc, hostFrame)
         holderFrame._border = CludesUI.MakeBorder(holderFrame, 0, 0, 0, 1)
     end
 
-    local bar =
+    local barFrame =
         CreateFrame("StatusBar", not hostFrame and "CludesEAB_" .. barId .. "_Bar" or nil, holderFrame)
-    bar:SetStatusBarTexture("Interface\\BUTTONS\\WHITE8X8")
+    barFrame:SetStatusBarTexture("Interface\\BUTTONS\\WHITE8X8")
     if Pix then
-        Pix.SetInside(bar, holderFrame, 1, 1)
+        Pix.SetInside(barFrame, holderFrame, 1, 1)
     else
-        bar:SetPoint("TOPLEFT", 1, -1)
-        bar:SetPoint("BOTTOMRIGHT", -1, 1)
+        barFrame:SetPoint("TOPLEFT", 1, -1)
+        barFrame:SetPoint("BOTTOMRIGHT", -1, 1)
     end
-    bar:SetMinMaxValues(0, 1)
-    bar:SetValue(0)
-    bar:GetStatusBarTexture():SetDrawLayer("ARTWORK", 4)
+    barFrame:SetMinMaxValues(0, 1)
+    barFrame:SetValue(0)
+    barFrame:GetStatusBarTexture():SetDrawLayer("ARTWORK", 4)
 
     -- Text lives on its own host ABOVE the MakeBorder strips: the border
     -- container renders two levels above the holder, and frame level beats
     -- draw layer, so a string on the bar itself gets cut by the border edges
     -- whenever the glyphs reach them (large Text Size / short bars).
-    local textHost = CreateFrame("Frame", nil, bar)
-    textHost:SetAllPoints(bar)
+    local textHost = CreateFrame("Frame", nil, barFrame)
+    textHost:SetAllPoints(barFrame)
     local edges = holderFrame._border and holderFrame._border.edges
     textHost:SetFrameLevel(
         ((edges and edges.GetFrameLevel and edges:GetFrameLevel()) or holderFrame:GetFrameLevel() + 2) + 1
@@ -443,7 +443,7 @@ local function CreateDataBarFrame(barId, updateFunc, hostFrame)
     textValue:SetPoint("CENTER", sInit and sInit.textOffsetX or 0, sInit and sInit.textOffsetY or 0)
     textValue:SetTextColor(1, 1, 1, 1)
 
-    holderFrame._bar = bar
+    holderFrame._bar = barFrame
     holderFrame._text = textValue
     holderFrame._updateFunc = updateFunc
 
@@ -518,7 +518,7 @@ local function UpdateRepBar()
         return
     end
 
-    local bar = widget._bar
+    local barFrame = widget._bar
     local textValue = widget._text
 
     local payload = C_Reputation
@@ -606,7 +606,7 @@ local function UpdateRepBar()
     end
 
     local color = DATA_BAR_COLORS.rep[reaction] or DATA_BAR_COLORS.rep[4]
-    bar:SetStatusBarColor(mod.ResolveDataBarColor(s, color.r, color.g, color.b))
+    barFrame:SetStatusBarColor(mod.ResolveDataBarColor(s, color.r, color.g, color.b))
 
     -- Hide capped / maxed factions (Exalted with no paragon, max friendship, etc.)
     if nextReactionThreshold == math.huge or currentReactionThreshold == nextReactionThreshold then
@@ -620,8 +620,8 @@ local function UpdateRepBar()
         maximum = 1
     end
 
-    bar:SetMinMaxValues(0, maximum)
-    bar:SetValue(current)
+    barFrame:SetMinMaxValues(0, maximum)
+    barFrame:SetValue(current)
 
     local pct = (current / maximum) * 100
     -- The tooltip must show the same numbers the bar shows. Recomputing them
@@ -767,7 +767,7 @@ if not CludesUI.IS_FOREVER then
             return
         end
 
-        local bar = widget._bar
+        local barFrame = widget._bar
         local textValue = widget._text
 
         -- No house / no data yet / max house level (no next-level requirement).
@@ -787,9 +787,9 @@ if not CludesUI.IS_FOREVER then
         if current > st.needed then
             current = st.needed
         end
-        bar:SetMinMaxValues(0, st.needed)
-        bar:SetValue(current)
-        bar:SetStatusBarColor(
+        barFrame:SetMinMaxValues(0, st.needed)
+        barFrame:SetValue(current)
+        barFrame:SetStatusBarColor(
             mod.ResolveDataBarColor(
                 s,
                 DATA_BAR_COLORS.favor.r,

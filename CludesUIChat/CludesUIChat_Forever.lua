@@ -83,48 +83,48 @@ CHAT.FV = FV
 --  The line's art is the latched Border Style's (shipped or Blizzard's live
 --  art; ForeverBorder reads "textured" as the live one).
 -------------------------------------------------------------------------------
-local function NewBox(host)
-    local box = { host = host }
-    box.fill = host:CreateTexture(nil, "BACKGROUND")
-    box.rim = CUI.ForeverBorder(host, "BORDER", 0, nil, mod.ChatFvKind())
+local function NewBox(owner)
+    local box = { host = owner }
+    box.fill = owner:CreateTexture(nil, "BACKGROUND")
+    box.rim = CUI.ForeverBorder(owner, "BORDER", 0, nil, mod.ChatFvKind())
     return box
 end
 
-local function Seat(t, host, tp, x1, y1, x2, y2)
+local function Seat(t, owner, tp, x1, y1, x2, y2)
     t:ClearAllPoints()
-    t:SetPoint("TOPLEFT", host, tp, x1, y1)
-    t:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", x2, y2)
+    t:SetPoint("TOPLEFT", owner, tp, x1, y1)
+    t:SetPoint("BOTTOMRIGHT", owner, "BOTTOMRIGHT", x2, y2)
 end
 
 -- The line's outer edge on the host's sides (pulled in by inX), its top ty
 -- off the host point tp (TOPLEFT or BOTTOMLEFT) and its bottom by above the
 -- host's bottom; the fill FOREVER_BORDER.fill in from that edge (its
 -- corners inside the chamfers).
-local function SeatBox(box, host, tp, ty, by, inX)
-    local f, posX = BORDER.fill, inX or 0
+local function SeatBox(box, owner, tp, ty, by, inX)
+    local frame, posX = BORDER.fill, inX or 0
     local s = box.seat
     if not s then
         s = {}
         box.seat = s
     end
     s[1], s[2], s[3], s[4], s[5] = tp, posX, ty, -posX, by
-    CUI.ForeverBorderSeat(box.rim, host, tp, posX, ty, -posX, by)
+    CUI.ForeverBorderSeat(box.rim, owner, tp, posX, ty, -posX, by)
     if box.lift then
-        CUI.ForeverBorderSeat(box.lift, host, tp, posX, ty, -posX, by)
+        CUI.ForeverBorderSeat(box.lift, owner, tp, posX, ty, -posX, by)
     end
-    Seat(box.fill, host, tp, posX + f, ty - f, -posX - f, by + f)
+    Seat(box.fill, owner, tp, posX + frame, ty - frame, -posX - frame, by + frame)
 end
 
 -- Heavy Bronze: the frame and the body fill under it, on an art host drawn
 -- at the piece's scale; with `lift` also its copper copy (a highlight),
 -- hidden until shown.
-local function NewHeavyBox(host, lift)
-    local box = { host = host, heavy = true }
-    box.fill = host:CreateTexture(nil, "BACKGROUND")
-    box.rim = CUI.ForeverHeavy(host, "BORDER")
+local function NewHeavyBox(owner, lift)
+    local box = { host = owner, heavy = true }
+    box.fill = owner:CreateTexture(nil, "BACKGROUND")
+    box.rim = CUI.ForeverHeavy(owner, "BORDER")
     if lift then
         local l = HEAVY.lift
-        box.lift = CUI.ForeverHeavy(host, "ARTWORK", 0, true)
+        box.lift = CUI.ForeverHeavy(owner, "ARTWORK", 0, true)
         CUI.ForeverHeavyPaint(box.lift, l[1], l[2], l[3], l[4])
         CUI.ForeverHeavyShown(box.lift, false)
     end
@@ -133,13 +133,13 @@ end
 
 -- The rim's outer edge as SeatBox places the line's (UI units); the fill
 -- FOREVER_HEAVY.fill in from it, under the rim.
-local function SeatHeavyBox(box, host, tp, ty, by, inX)
+local function SeatHeavyBox(box, owner, tp, ty, by, inX)
     local posX = inX or 0
-    CUI.ForeverHeavySeat(box.rim, host, tp, posX, ty, -posX, by)
+    CUI.ForeverHeavySeat(box.rim, owner, tp, posX, ty, -posX, by)
     if box.lift then
-        CUI.ForeverHeavySeat(box.lift, host, tp, posX, ty, -posX, by)
+        CUI.ForeverHeavySeat(box.lift, owner, tp, posX, ty, -posX, by)
     end
-    CUI.ForeverHeavyFill(box.rim, box.fill, host, tp, posX, ty, -posX, by)
+    CUI.ForeverHeavyFill(box.rim, box.fill, owner, tp, posX, ty, -posX, by)
 end
 
 -- The line's copper copy over it (the selected tab, a hovered plate), built
@@ -159,13 +159,13 @@ local function ShowLift(box, isShown)
     CUI.ForeverBorderShown(lift, isShown)
 end
 
-local function PaintFill(t, texture, r, g, b, a)
+local function PaintFill(t, texture, region, g, b, a)
     if texture then
         t:SetTexture(texture)
-        t:SetVertexColor(r, g, b, a)
+        t:SetVertexColor(region, g, b, a)
     else
         t:SetVertexColor(1, 1, 1, 1)
-        t:SetColorTexture(r, g, b, a)
+        t:SetColorTexture(region, g, b, a)
     end
 end
 
@@ -194,11 +194,11 @@ function CHAT.FV_SeatInput(castFrame, eb, inputH)
     if eb then
         CHAT.FV_PlaceEditBox(castFrame, eb, inputH)
     end
-    local d = CFD(castFrame)
-    local ins = d._bgIns
+    local skinData = CFD(castFrame)
+    local ins = skinData._bgIns
     if not ins then
         ins = {}
-        d._bgIns = ins
+        skinData._bgIns = ins
     end
     ins.l, ins.r = -FV.X, FV.X
     ins.t = FV.TOP + ((castFrame == _G.ChatFrame2) and FV.CL_BAR or 0)
@@ -209,55 +209,55 @@ end
 -- Both boxes off the panel's edges; re-seated only when the input height
 -- changes.
 function CHAT.FV_LayoutPanel(castFrame, inputH)
-    local d = CFD(castFrame)
-    local host = d.fvHost
-    if not host or d.fvInputH == inputH then
+    local skinData = CFD(castFrame)
+    local owner = skinData.fvHost
+    if not owner or skinData.fvInputH == inputH then
         return
     end
-    d.fvInputH = inputH
+    skinData.fvInputH = inputH
     local inTall = inputH + 2 * FV.IN_PAD
-    if d.fvMsg.heavy then
-        SeatHeavyBox(d.fvMsg, host, "TOPLEFT", 0, inTall + FV.GAP)
-        SeatHeavyBox(d.fvIn, host, "BOTTOMLEFT", inTall, 0)
+    if skinData.fvMsg.heavy then
+        SeatHeavyBox(skinData.fvMsg, owner, "TOPLEFT", 0, inTall + FV.GAP)
+        SeatHeavyBox(skinData.fvIn, owner, "BOTTOMLEFT", inTall, 0)
         return
     end
-    SeatBox(d.fvMsg, host, "TOPLEFT", 0, inTall + FV.GAP)
-    SeatBox(d.fvIn, host, "BOTTOMLEFT", inTall, 0)
+    SeatBox(skinData.fvMsg, owner, "TOPLEFT", 0, inTall + FV.GAP)
+    SeatBox(skinData.fvIn, owner, "BOTTOMLEFT", inTall, 0)
 end
 
 -- Built once per panel, at its creation. The host sits one level over the
 -- panel, under our message frame (panel + 4); Heavy Bronze draws it at the
 -- panel's art scale.
 function CHAT.FV_BuildPanel(castFrame, backdrop, inputH)
-    local d = CFD(castFrame)
-    if d.fvHost then
+    local skinData = CFD(castFrame)
+    if skinData.fvHost then
         return
     end
-    local host = CreateFrame("Frame", nil, backdrop)
+    local owner = CreateFrame("Frame", nil, backdrop)
     local New = NewBox
     if mod.ChatFvHeavy() then
-        host:SetScale(FV.panelK)
+        owner:SetScale(FV.panelK)
         New = NewHeavyBox
     end
-    host:SetAllPoints(backdrop)
-    d.fvHost = host
-    d.fvMsg, d.fvIn = New(host), New(host)
+    owner:SetAllPoints(backdrop)
+    skinData.fvHost = owner
+    skinData.fvMsg, skinData.fvIn = New(owner), New(owner)
     CHAT.FV_LayoutPanel(castFrame, inputH)
     local p = FV._fill
-    PaintFill(d.fvMsg.fill, p.tex, p.r, p.g, p.b, p.a)
-    PaintFill(d.fvIn.fill, p.tex, p.r, p.g, p.b, p.a)
+    PaintFill(skinData.fvMsg.fill, p.tex, p.r, p.g, p.b, p.a)
+    PaintFill(skinData.fvIn.fill, p.tex, p.r, p.g, p.b, p.a)
 end
 
 -- The chat background colour/texture (Chat page) fills both boxes.
-function CHAT.FV_PaintFills(texture, r, g, b, a)
+function CHAT.FV_PaintFills(texture, region, g, b, a)
     local p = FV._fill
-    p.tex, p.r, p.g, p.b, p.a = texture, r, g, b, a
-    for idx = 1, 20 do
-        local castFrame = _G["ChatFrame" .. idx]
-        local d = castFrame and CFD(castFrame)
-        if d and d.fvHost then
-            PaintFill(d.fvMsg.fill, texture, r, g, b, a)
-            PaintFill(d.fvIn.fill, texture, r, g, b, a)
+    p.tex, p.r, p.g, p.b, p.a = texture, region, g, b, a
+    for index = 1, 20 do
+        local castFrame = _G["ChatFrame" .. index]
+        local skinData = castFrame and CFD(castFrame)
+        if skinData and skinData.fvHost then
+            PaintFill(skinData.fvMsg.fill, texture, region, g, b, a)
+            PaintFill(skinData.fvIn.fill, texture, region, g, b, a)
         end
     end
 end
@@ -271,12 +271,12 @@ end
 -------------------------------------------------------------------------------
 local tabCol -- colour objects (selected bottom, top, idle bottom, top)
 local function TabColours()
-    local s, idx = FV.tabSel, FV.tabIdle
+    local s, index = FV.tabSel, FV.tabIdle
     tabCol = {
         CreateColor(s[1], s[2], s[3], s[4]),
         CreateColor(s[5], s[6], s[7], s[8]),
-        CreateColor(idx[1], idx[2], idx[3], idx[4]),
-        CreateColor(idx[5], idx[6], idx[7], idx[8]),
+        CreateColor(index[1], index[2], index[3], index[4]),
+        CreateColor(index[5], index[6], index[7], index[8]),
     }
 end
 
@@ -394,19 +394,19 @@ function CHAT.FV_Plate(button, enabled)
         if not enabled then
             return
         end
-        local host = CreateFrame("Frame", nil, button)
+        local owner = CreateFrame("Frame", nil, button)
         local heavy = mod.ChatFvHeavy()
         if heavy then
-            host:SetScale(FV.btnK)
+            owner:SetScale(FV.btnK)
         end
-        host:SetAllPoints(button)
-        p = heavy and NewHeavyBox(host, true) or NewBox(host)
+        owner:SetAllPoints(button)
+        p = heavy and NewHeavyBox(owner, true) or NewBox(owner)
         local c = FV.plateFill
         p.fill:SetColorTexture(c[1], c[2], c[3], c[4])
         if heavy then
-            SeatHeavyBox(p, host, "TOPLEFT", 0, 0)
+            SeatHeavyBox(p, owner, "TOPLEFT", 0, 0)
         else
-            SeatBox(p, host, "TOPLEFT", 0, 0)
+            SeatBox(p, owner, "TOPLEFT", 0, 0)
         end
         button._fvPlate = p
         button:HookScript("OnEnter", heavy and HeavyPlateEnter or PlateEnter)

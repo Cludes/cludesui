@@ -79,13 +79,13 @@ local function ApplyAbsorbStyle(absorbBar, style, prefs)
     absorbBar:SetStatusBarTexture(texture)
     -- Per-component default: a partial colour table would throw here.
     absorbBar:SetStatusBarColor(ac.r or 1, ac.g or 1, ac.b or 1, alpha)
-    local fill = absorbBar:GetStatusBarTexture()
-    if fill then
-        fill:SetDrawLayer("ARTWORK", 1)
-        fill:SetHorizTile(tiled)
-        fill:SetVertTile(tiled)
+    local fillTex = absorbBar:GetStatusBarTexture()
+    if fillTex then
+        fillTex:SetDrawLayer("ARTWORK", 1)
+        fillTex:SetHorizTile(tiled)
+        fillTex:SetVertTile(tiled)
         if mask then
-            fill:AddMaskTexture(mask)
+            fillTex:AddMaskTexture(mask)
         end
     end
     -- New fill object + tiling state: re-derive rotation (stretch styles rotate
@@ -146,13 +146,13 @@ local function ApplyHealAbsorbStyle(haBar, style, prefs)
     local mask = haBar._absorbMask
     haBar:SetStatusBarTexture(texture)
     haBar:SetStatusBarColor(hc.r or 0.8, hc.g or 0.15, hc.b or 0.15, alpha)
-    local fill = haBar:GetStatusBarTexture()
-    if fill then
-        fill:SetDrawLayer("ARTWORK", 2)
-        fill:SetHorizTile(tiled)
-        fill:SetVertTile(tiled)
+    local fillTex = haBar:GetStatusBarTexture()
+    if fillTex then
+        fillTex:SetDrawLayer("ARTWORK", 2)
+        fillTex:SetHorizTile(tiled)
+        fillTex:SetVertTile(tiled)
         if mask then
-            fill:AddMaskTexture(mask)
+            fillTex:AddMaskTexture(mask)
         end
     end
     mod.ApplyFillRotation(haBar)
@@ -240,11 +240,11 @@ local function UpdateAbsorbBarReverseFill(widget, isReversed, settingsOverride)
     local healClip = ab._healClip
     -- Indexed, not ipairs: ha can be nil and ipairs would stop at the hole.
     local axisBars = { ab, fw, ha }
-    for idx = 1, 3 do
-        local bar = axisBars[idx]
-        if bar then
-            bar:SetOrientation(isVert and "VERTICAL" or "HORIZONTAL")
-            mod.ApplyFillRotation(bar) -- rotate stretch styles only
+    for index = 1, 3 do
+        local barFrame = axisBars[index]
+        if barFrame then
+            barFrame:SetOrientation(isVert and "VERTICAL" or "HORIZONTAL")
+            mod.ApplyFillRotation(barFrame) -- rotate stretch styles only
         end
     end
 
@@ -548,12 +548,12 @@ function mod.UF_AnchorHealPred(ab)
     end
     local myTex = my:GetStatusBarTexture()
     local isVert, isRev = ab._isVert and true or false, ab._isReversed and true or false
-    for idx = 1, 2 do
-        local bar = (idx == 1) and my or other
-        bar:SetOrientation(isVert and "VERTICAL" or "HORIZONTAL")
-        mod.ApplyFillRotation(bar)
-        bar:SetReverseFill(isRev)
-        bar:ClearAllPoints()
+    for index = 1, 2 do
+        local barFrame = (index == 1) and my or other
+        barFrame:SetOrientation(isVert and "VERTICAL" or "HORIZONTAL")
+        mod.ApplyFillRotation(barFrame)
+        barFrame:SetReverseFill(isRev)
+        barFrame:ClearAllPoints()
     end
     local a1, b1, a2, b2
     if isVert then
@@ -574,17 +574,17 @@ function mod.UF_AnchorHealPred(ab)
 end
 
 function mod.UF_NewHealPredBar(ab)
-    local bar = CreateFrame("StatusBar", nil, ab._missClip)
-    bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    local fill = bar:GetStatusBarTexture()
-    if fill and ab._absorbMask then
-        fill:AddMaskTexture(ab._absorbMask)
+    local barFrame = CreateFrame("StatusBar", nil, ab._missClip)
+    barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    local fillTex = barFrame:GetStatusBarTexture()
+    if fillTex and ab._absorbMask then
+        fillTex:AddMaskTexture(ab._absorbMask)
     end
-    bar:SetMinMaxValues(0, 1)
-    bar:SetValue(0)
-    bar:SetFrameLevel(ab._hpBar:GetFrameLevel() + 1)
-    bar:Hide()
-    return bar
+    barFrame:SetMinMaxValues(0, 1)
+    barFrame:SetValue(0)
+    barFrame:SetFrameLevel(ab._hpBar:GetFrameLevel() + 1)
+    barFrame:Hide()
+    return barFrame
 end
 
 -- Seats the segment fills' masks: the health-bar-bounds edge mask and, under
@@ -596,20 +596,20 @@ function mod.UF_HealPredMasks(ab)
     local inside = (ab._predOver or 0) == 0
     local edge = ab._absorbMask
     local shape = ab._hpBar._blizzMask
-    for idx = 1, 2 do
-        local bar = (idx == 1) and ab._predMy or ab._predOther
-        local fill = bar:GetStatusBarTexture()
-        if fill then
+    for index = 1, 2 do
+        local barFrame = (index == 1) and ab._predMy or ab._predOther
+        local fillTex = barFrame:GetStatusBarTexture()
+        if fillTex then
             if edge then
-                pcall(fill.RemoveMaskTexture, fill, edge)
+                pcall(fillTex.RemoveMaskTexture, fillTex, edge)
                 if inside then
-                    fill:AddMaskTexture(edge)
+                    fillTex:AddMaskTexture(edge)
                 end
             end
             if shape then
-                pcall(fill.RemoveMaskTexture, fill, shape)
+                pcall(fillTex.RemoveMaskTexture, fillTex, shape)
                 if inside and ab._blizzMaskOn then
-                    fill:AddMaskTexture(shape)
+                    fillTex:AddMaskTexture(shape)
                 end
             end
         end
@@ -628,7 +628,7 @@ function mod.UF_HealPredLayout(ab)
     local holderFrame = ab._predHolder
     if over > 0 and holderFrame then
         local ext = (ab._isVert and hgt or wid) * over / 100
-        local l, r, t, b = 0, 0, 0, 0
+        local l, region, t, b = 0, 0, 0, 0
         if ab._isVert then
             if ab._isReversed then
                 b = -ext
@@ -638,11 +638,11 @@ function mod.UF_HealPredLayout(ab)
         elseif ab._isReversed then
             l = -ext
         else
-            r = ext
+            region = ext
         end
         holderFrame:ClearAllPoints()
         holderFrame:SetPoint("TOPLEFT", hp, "TOPLEFT", l, t)
-        holderFrame:SetPoint("BOTTOMRIGHT", hp, "BOTTOMRIGHT", r, b)
+        holderFrame:SetPoint("BOTTOMRIGHT", hp, "BOTTOMRIGHT", region, b)
     end
 end
 
@@ -735,12 +735,12 @@ function mod.UF_HealPredApply(widget, unitKey, s)
     local retex = ab._predTexPath ~= filePath
     if retex then
         ab._predTexPath = filePath
-        for idx = 1, 2 do
-            local bar = (idx == 1) and my or other
-            bar:SetStatusBarTexture(filePath)
-            local fill = bar:GetStatusBarTexture()
-            if fill then
-                UnsnapTex(fill)
+        for index = 1, 2 do
+            local barFrame = (index == 1) and my or other
+            barFrame:SetStatusBarTexture(filePath)
+            local fillTex = barFrame:GetStatusBarTexture()
+            if fillTex then
+                UnsnapTex(fillTex)
             end
         end
     end
@@ -768,10 +768,10 @@ function mod.UF_HealPredApply(widget, unitKey, s)
             holderFrame:SetFrameLevel(hp:GetFrameLevel() + 1)
             hostFrame = holderFrame
         end
-        for idx = 1, 2 do
-            local bar = (idx == 1) and other or my
-            bar:SetParent(hostFrame)
-            bar:SetFrameLevel(hp:GetFrameLevel() + idx)
+        for index = 1, 2 do
+            local barFrame = (index == 1) and other or my
+            barFrame:SetParent(hostFrame)
+            barFrame:SetFrameLevel(hp:GetFrameLevel() + index)
         end
         mod.UF_HealPredMasks(ab)
     end
@@ -804,28 +804,28 @@ end
 mod.UF_MAXHP_UNITS = { player = true, target = true, focus = true }
 
 -- Texture, tint, opacity and the black backing; shared with the options preview.
-function mod.UF_ApplyMaxHealthStyle(bar, style, s, mask)
-    local fill = CludesUI.ApplyMaxHealthStyle(bar, style, s, mod.ResolveAbsorbStyleTex)
-    if fill then
+function mod.UF_ApplyMaxHealthStyle(barFrame, style, s, mask)
+    local fillTex = CludesUI.ApplyMaxHealthStyle(barFrame, style, s, mod.ResolveAbsorbStyleTex)
+    if fillTex then
         if mask then
-            pcall(fill.RemoveMaskTexture, fill, mask)
-            fill:AddMaskTexture(mask)
+            pcall(fillTex.RemoveMaskTexture, fillTex, mask)
+            fillTex:AddMaskTexture(mask)
         end
         -- A retexture can replace the fill object: re-seat the backing on it.
-        local backdrop = bar._bg
+        local backdrop = barFrame._bg
         if backdrop then
             backdrop:SetColorTexture(0, 0, 0, ((s and s.maxHealthBgOpacity) or 100) / 100)
             backdrop:ClearAllPoints()
-            backdrop:SetAllPoints(fill)
+            backdrop:SetAllPoints(fillTex)
         end
     end
 end
 
 -- The loss sits at the bar's far end, on whichever fill axis the health bar uses.
-function mod.UF_OrientMaxHealth(bar, isReversed, isVert)
-    bar:SetOrientation(isVert and "VERTICAL" or "HORIZONTAL")
-    bar:SetReverseFill(not isReversed)
-    mod.ApplyFillRotation(bar)
+function mod.UF_OrientMaxHealth(barFrame, isReversed, isVert)
+    barFrame:SetOrientation(isVert and "VERTICAL" or "HORIZONTAL")
+    barFrame:SetReverseFill(not isReversed)
+    mod.ApplyFillRotation(barFrame)
 end
 
 -- The maxhp channel's painter. The API returns a plain fraction of the maximum
@@ -833,16 +833,16 @@ end
 function mod.UF_PaintMaxHp(widget, unitToken)
     local hpe = widget.HealthPrediction
     local ab = hpe and hpe.damageAbsorb
-    local bar = ab and ab._maxHp
-    if not (bar and ab._maxHpOn) then
+    local barFrame = ab and ab._maxHp
+    if not (barFrame and ab._maxHpOn) then
         return
     end
     local pct = GetUnitTotalModifiedMaxHealthPercent(unitToken)
     if pct > 0 then
-        bar:SetValue(math.min(pct, 1))
-        bar:Show()
+        barFrame:SetValue(math.min(pct, 1))
+        barFrame:Show()
     else
-        bar:Hide()
+        barFrame:Hide()
     end
 end
 mod.Engine.SetPainter("maxhp", mod.UF_PaintMaxHp)
@@ -865,26 +865,26 @@ function mod.UF_MaxHpApply(widget, unitKey)
         s = GetSettingsForUnit(unitKey)
     end
     local style = (s and s.maxHealthStyle) or "none"
-    local bar = ab._maxHp
+    local barFrame = ab._maxHp
     if style == "none" then
         if ab._maxHpOn then
             ab._maxHpOn = false
-            bar:Hide()
+            barFrame:Hide()
             mod.Engine.SetChannelOn(widget, "maxhp", false)
         end
         return
     end
-    if not bar then
-        bar = CreateFrame("StatusBar", nil, ab._hpBar)
-        bar:SetAllPoints(ab._hpBar)
-        bar:SetFrameLevel(ab._hpBar:GetFrameLevel() + 2)
-        bar:SetMinMaxValues(0, 1)
-        bar._bg = bar:CreateTexture(nil, "ARTWORK", nil, 2)
-        bar:Hide()
-        ab._maxHp = bar
+    if not barFrame then
+        barFrame = CreateFrame("StatusBar", nil, ab._hpBar)
+        barFrame:SetAllPoints(ab._hpBar)
+        barFrame:SetFrameLevel(ab._hpBar:GetFrameLevel() + 2)
+        barFrame:SetMinMaxValues(0, 1)
+        barFrame._bg = barFrame:CreateTexture(nil, "ARTWORK", nil, 2)
+        barFrame:Hide()
+        ab._maxHp = barFrame
     end
-    mod.UF_ApplyMaxHealthStyle(bar, style, s, ab._absorbMask)
-    mod.UF_OrientMaxHealth(bar, ab._isReversed, ab._isVert)
+    mod.UF_ApplyMaxHealthStyle(barFrame, style, s, ab._absorbMask)
+    mod.UF_OrientMaxHealth(barFrame, ab._isReversed, ab._isVert)
     if not ab._maxHpOn then
         ab._maxHpOn = true
         mod.Engine.SetChannelOn(widget, "maxhp", true)
@@ -1133,13 +1133,13 @@ do
             belt = C_Timer.NewTicker(0.5, function()
                 local nowTime = GetTime()
                 local any = false
-                for f in pairs(armed) do
+                for frame in pairs(armed) do
                     any = true
-                    if (nowTime - (f._absPaintAt or 0)) > 0.45 then
-                        local hp = f.HealthPrediction
+                    if (nowTime - (frame._absPaintAt or 0)) > 0.45 then
+                        local hp = frame.HealthPrediction
                         local shade = hp and hp.Override
                         if shade then
-                            shade(f, "CUI_AbsorbBelt", f._cuiUnit)
+                            shade(frame, "CUI_AbsorbBelt", frame._cuiUnit)
                         end
                     end
                 end

@@ -52,11 +52,11 @@ local UNIT_EVENTS =
 local hmFrame, drinkName, shareCurve
 local rowList, members, list, tracked, rank, units, watchers = {}, {}, {}, {}, {}, {}, {}
 local RAID, PARTY = {}, {}
-for idx = 1, 40 do
-    RAID[idx] = "raid" .. idx
+for index = 1, 40 do
+    RAID[index] = "raid" .. index
 end
-for idx = 1, 4 do
-    PARTY[idx] = "party" .. idx
+for index = 1, 4 do
+    PARTY[index] = "party" .. index
 end
 
 local function HMHere()
@@ -90,15 +90,15 @@ local function Units()
         units[1] = "player"
     end
     if IsInRaid() then
-        for idx = 1, math.min(GetNumGroupMembers(), 40) do
-            local me = UnitIsUnit(RAID[idx], "player")
+        for index = 1, math.min(GetNumGroupMembers(), 40) do
+            local me = UnitIsUnit(RAID[index], "player")
             if not Secret(me) and not me then
-                units[#units + 1] = RAID[idx]
+                units[#units + 1] = RAID[index]
             end
         end
     else
-        for idx = 1, math.min(GetNumSubgroupMembers(), 4) do
-            units[#units + 1] = PARTY[idx]
+        for index = 1, math.min(GetNumSubgroupMembers(), 4) do
+            units[#units + 1] = PARTY[index]
         end
     end
     return units
@@ -162,8 +162,8 @@ local function DrinkChanged(m, details)
     end
     local ident = m.drinkID
     if ident then
-        for _, r in ipairs(details.removedAuraInstanceIDs or {}) do
-            if r == ident then
+        for _, region in ipairs(details.removedAuraInstanceIDs or {}) do
+            if region == ident then
                 m.drinking, m.drinkID = false, nil
             end
         end
@@ -211,16 +211,16 @@ local function Held(a, b)
 end
 
 local function Sort()
-    for idx = 1, #list do
-        if list[idx].secret then
+    for index = 1, #list do
+        if list[index].secret then
             table.sort(list, Held)
             return
         end
     end
     table.sort(list, Less)
     wipe(rank)
-    for idx = 1, #list do
-        rank[list[idx].guid] = idx
+    for index = 1, #list do
+        rank[list[index].guid] = index
     end
 end
 
@@ -245,79 +245,79 @@ local SAMPLE = {
     { name = "Paladin", class = "PALADIN", guid = "4", state = DEAD },
 }
 
-local function Row(idx)
-    local r = rowList[idx]
-    if r then
-        return r
+local function Row(index)
+    local region = rowList[index]
+    if region then
+        return region
     end
-    r = CreateFrame("Frame", nil, hmFrame)
-    r.icon = r:CreateTexture(nil, "ARTWORK")
-    r.icon:SetTexture(DRINK_ICON)
-    r.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    r.icon:SetPoint("LEFT", 0, -1)
-    r.pct = r:CreateFontString(nil, "OVERLAY")
-    r.pct:SetPoint("RIGHT")
-    r.pct:SetJustifyH("RIGHT")
-    r.name = r:CreateFontString(nil, "OVERLAY")
-    r.name:SetJustifyH("LEFT")
-    r.name:SetWordWrap(false)
-    rowList[idx] = r
-    return r
+    region = CreateFrame("Frame", nil, hmFrame)
+    region.icon = region:CreateTexture(nil, "ARTWORK")
+    region.icon:SetTexture(DRINK_ICON)
+    region.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    region.icon:SetPoint("LEFT", 0, -1)
+    region.pct = region:CreateFontString(nil, "OVERLAY")
+    region.pct:SetPoint("RIGHT")
+    region.pct:SetJustifyH("RIGHT")
+    region.name = region:CreateFontString(nil, "OVERLAY")
+    region.name:SetJustifyH("LEFT")
+    region.name:SetWordWrap(false)
+    rowList[index] = region
+    return region
 end
 
 local function PaintRows(entries)
     local size, drinks = HM.Get("size"), HM.Get("drinking")
     local step = size + ROW_PAD
     hmFrame:SetSize(HM.Get("width"), #entries * step + 2 * PAD)
-    for idx, m in ipairs(entries) do
-        local r = Row(idx)
-        r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", PAD, -PAD - (idx - 1) * step)
-        r:SetPoint("TOPRIGHT", -PAD, -PAD - (idx - 1) * step)
-        r:SetHeight(step)
-        CludesUI.Kit.Font(r.name, size, "essentials")
-        CludesUI.Kit.Font(r.pct, size, "essentials")
-        r.icon:SetSize(size, size)
-        r.name:ClearAllPoints()
-        r.name:SetPoint("LEFT", drinks and (size + ICON_GAP) or 0, 0)
-        r.name:SetPoint("RIGHT", r.pct, "LEFT", -8, 0)
-        r.name:SetText(m.name)
+    for index, m in ipairs(entries) do
+        local region = Row(index)
+        region:ClearAllPoints()
+        region:SetPoint("TOPLEFT", PAD, -PAD - (index - 1) * step)
+        region:SetPoint("TOPRIGHT", -PAD, -PAD - (index - 1) * step)
+        region:SetHeight(step)
+        CludesUI.Kit.Font(region.name, size, "essentials")
+        CludesUI.Kit.Font(region.pct, size, "essentials")
+        region.icon:SetSize(size, size)
+        region.name:ClearAllPoints()
+        region.name:SetPoint("LEFT", drinks and (size + ICON_GAP) or 0, 0)
+        region.name:SetPoint("RIGHT", region.pct, "LEFT", -8, 0)
+        region.name:SetText(m.name)
         local c = RAID_CLASS_COLORS[m.class]
         if c then
-            r.name:SetTextColor(c.r, c.g, c.b)
+            region.name:SetTextColor(c.r, c.g, c.b)
         else
-            r.name:SetTextColor(1, 1, 1)
+            region.name:SetTextColor(1, 1, 1)
         end
-        r.icon:SetShown(drinks and m.drinking == true)
+        region.icon:SetShown(drinks and m.drinking == true)
         if m.state then
-            r.pct:SetText(m.state)
+            region.pct:SetText(m.state)
             if m.state == DEAD then
-                r.pct:SetTextColor(1, 0.3, 0.3)
+                region.pct:SetTextColor(1, 0.3, 0.3)
             else
-                r.pct:SetTextColor(0.6, 0.6, 0.6)
+                region.pct:SetTextColor(0.6, 0.6, 0.6)
             end
         elseif m.secret then
-            r.pct:SetTextColor(1, 1, 1)
-            if not SecretShare(r.pct, m.unit) then
-                r.pct:SetText(UNKNOWN)
+            region.pct:SetTextColor(1, 1, 1)
+            if not SecretShare(region.pct, m.unit) then
+                region.pct:SetText(UNKNOWN)
             end
         elseif m.pct then
-            r.pct:SetText(("%.1f%%"):format(math.floor(m.pct * 1000 + 0.5) / 10))
+            region.pct:SetText(("%.1f%%"):format(math.floor(m.pct * 1000 + 0.5) / 10))
             if m.pct < OUT then
-                r.pct:SetTextColor(1, 0.3, 0.3)
+                region.pct:SetTextColor(1, 0.3, 0.3)
             elseif m.pct < LOW then
-                r.pct:SetTextColor(1, 0.8, 0.2)
+                region.pct:SetTextColor(1, 0.8, 0.2)
             else
-                r.pct:SetTextColor(0.4, 0.9, 0.5)
+                region.pct:SetTextColor(0.4, 0.9, 0.5)
             end
         else
-            r.pct:SetText(UNKNOWN)
-            r.pct:SetTextColor(0.6, 0.6, 0.6)
+            region.pct:SetText(UNKNOWN)
+            region.pct:SetTextColor(0.6, 0.6, 0.6)
         end
-        r:Show()
+        region:Show()
     end
-    for idx = #entries + 1, #rowList do
-        rowList[idx]:Hide()
+    for index = #entries + 1, #rowList do
+        rowList[index]:Hide()
     end
 end
 
@@ -334,8 +334,8 @@ local function HMRedraw()
         hmFrame:Hide()
         return
     end
-    for idx = 1, #list do
-        Read(list[idx])
+    for index = 1, #list do
+        Read(list[index])
     end
     Sort()
     PaintRows(list)
@@ -369,12 +369,12 @@ local function OnUnitEvent(wid, evt, _, arg)
 end
 
 local function Watch()
-    for idx, m in ipairs(list) do
-        local wid = watchers[idx]
+    for index, m in ipairs(list) do
+        local wid = watchers[index]
         if not wid then
             wid = CreateFrame("Frame")
             wid:SetScript("OnEvent", OnUnitEvent)
-            watchers[idx] = wid
+            watchers[index] = wid
         end
         if wid.unit ~= m.unit then
             wid:UnregisterAllEvents()
@@ -384,9 +384,9 @@ local function Watch()
             end
         end
     end
-    for idx = #list + 1, #watchers do
-        watchers[idx]:UnregisterAllEvents()
-        watchers[idx].unit = nil
+    for index = #list + 1, #watchers do
+        watchers[index]:UnregisterAllEvents()
+        watchers[index].unit = nil
     end
 end
 
@@ -429,8 +429,8 @@ HMApply = function()
     wipe(tracked)
     if HMHere() then
         Roster()
-        for idx = 1, #list do
-            Drinking(list[idx])
+        for index = 1, #list do
+            Drinking(list[index])
         end
     end
     Watch()
@@ -573,8 +573,8 @@ local function IsPassive()
     if not PetHasActionBar() then
         return false
     end
-    for idx = 1, NUM_PET_ACTION_SLOTS do
-        local name, _, _, isActive = GetPetActionInfo(idx)
+    for index = 1, NUM_PET_ACTION_SLOTS do
+        local name, _, _, isActive = GetPetActionInfo(index)
         if name == "PET_MODE_PASSIVE" then
             return isActive == true
         end

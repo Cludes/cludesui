@@ -329,7 +329,7 @@ CludesUI.IsSmartPowerPercent = CUI_IsSmartPowerPercent
 -- one decimal, 100 for two). Ten-thousand-grouping locales (koKR/zhCN/zhTW) take
 -- the shared number engine's thousand/wan/yi units instead of k/m/b, so these
 -- frames read the same as Damage Meters and the gold bar on those clients.
-local function DecimalAbbrevConfig(d, shortHealth)
+local function DecimalAbbrevConfig(skinData, shortHealth)
     local g = CludesUI.NumberAbbrevGlyphs()
     if g then
         return {
@@ -337,22 +337,22 @@ local function DecimalAbbrevConfig(d, shortHealth)
                 {
                     breakpoint = 1e8,
                     abbreviation = g[3],
-                    significandDivisor = 1e8 / d,
-                    fractionDivisor = d,
+                    significandDivisor = 1e8 / skinData,
+                    fractionDivisor = skinData,
                     abbreviationIsGlobal = false,
                 },
                 {
                     breakpoint = 1e4,
                     abbreviation = g[2],
-                    significandDivisor = 1e4 / d,
-                    fractionDivisor = d,
+                    significandDivisor = 1e4 / skinData,
+                    fractionDivisor = skinData,
                     abbreviationIsGlobal = false,
                 },
                 {
                     breakpoint = 1e3,
                     abbreviation = g[1],
-                    significandDivisor = 1e3 / d,
-                    fractionDivisor = d,
+                    significandDivisor = 1e3 / skinData,
+                    fractionDivisor = skinData,
                     abbreviationIsGlobal = false,
                 },
             },
@@ -363,22 +363,22 @@ local function DecimalAbbrevConfig(d, shortHealth)
             {
                 breakpoint = 1e9,
                 abbreviation = shortHealth and "B" or "b",
-                significandDivisor = 1e9 / d,
-                fractionDivisor = d,
+                significandDivisor = 1e9 / skinData,
+                fractionDivisor = skinData,
                 abbreviationIsGlobal = false,
             },
             {
                 breakpoint = 1e6,
                 abbreviation = shortHealth and "M" or "m",
-                significandDivisor = 1e6 / d,
-                fractionDivisor = d,
+                significandDivisor = 1e6 / skinData,
+                fractionDivisor = skinData,
                 abbreviationIsGlobal = false,
             },
             {
                 breakpoint = 1e3,
                 abbreviation = shortHealth and "K" or "k",
-                significandDivisor = 1e3 / d,
-                fractionDivisor = d,
+                significandDivisor = 1e3 / skinData,
+                fractionDivisor = skinData,
                 abbreviationIsGlobal = false,
             },
         },
@@ -388,8 +388,8 @@ end
 -- the thousand band goes (the shared engine's trim, CludesUI_NumberFormat.lua).
 if CludesUI.IS_FOREVER then
     local bands = DecimalAbbrevConfig
-    DecimalAbbrevConfig = function(d, shortHealth)
-        local conf = bands(d, shortHealth)
+    DecimalAbbrevConfig = function(skinData, shortHealth)
+        local conf = bands(skinData, shortHealth)
         if not shortHealth then
             conf.breakpointData = CludesUI.ForeverAbbrevTiers(conf.breakpointData)
         end
@@ -642,8 +642,8 @@ function CludesUI.GetPlayerPowerOverride()
         -- Balance "Astral Power", saved only under its spec
         -- ID: Cat and Bear Form (form IDs 1 and 5) keep their own power, every
         -- other form shows Astral Power.
-        local f = GetShapeshiftFormID()
-        if f ~= 1 and f ~= 5 then
+        local frame = GetShapeshiftFormID()
+        if frame ~= 1 and frame ~= 5 then
             return Enum.PowerType.LunarPower
         end
         return nil
@@ -725,9 +725,9 @@ end
 -- hands it to SetFormattedText untouched).
 -- Returns ok, r, g, b -- ok is a PLAIN boolean, r/g/b may be SECRET, only safe as setter args.
 local function ResolveRestrictedClassColor(unitToken, class)
-    local success, r, g, b = CludesUI.GetClassColorForRestrictedUnit(unitToken, class)
+    local success, region, g, b = CludesUI.GetClassColorForRestrictedUnit(unitToken, class)
     if success then
-        return true, r, g, b
+        return true, region, g, b
     end
     if C_ClassColor and C_ClassColor.GetClassColor then
         local c = C_ClassColor.GetClassColor(class)
@@ -761,8 +761,8 @@ mod.ResolveBgClassColor = function(classUnit)
         end
         return false
     end
-    local r, g, b = mod.ResolveUnitNameColor(classUnit)
-    return r ~= nil, r, g, b
+    local region, g, b = mod.ResolveUnitNameColor(classUnit)
+    return region ~= nil, region, g, b
 end
 
 -- External nickname providers key us by this addon name. Suite = "CludesUI" (the
@@ -894,9 +894,9 @@ end
 -- nicknames (or a flipped provider checkbox) apply without a /reload. Fired by
 -- the provider callbacks below; cheap (a handful of frames).
 function mod.RefreshAllUnitNames()
-    for _, f in pairs(frameList) do
-        if type(f) == "table" and f._cuiTextZones then
-            mod.UF_PaintText(f, f._cuiUnit)
+    for _, frame in pairs(frameList) do
+        if type(frame) == "table" and frame._cuiTextZones then
+            mod.UF_PaintText(frame, frame._cuiUnit)
         end
     end
 end
@@ -911,11 +911,11 @@ _G._CUUF_RefreshUnitNames = mod.RefreshAllUnitNames
 -- varies; the zone repaint restores the real strings synchronously, no flicker.
 do
     local function ForceTextRepaint()
-        for _, f in pairs(frameList) do
+        for _, frame in pairs(frameList) do
             -- The painter refuses an empty token, so a frame between units must
             -- not be blanked here either -- it would never get the value back.
-            if type(f) == "table" and f._cuiTextZones and f._cuiUnit and UnitExists(f._cuiUnit) then
-                local zones = f._cuiTextZones
+            if type(frame) == "table" and frame._cuiTextZones and frame._cuiUnit and UnitExists(frame._cuiUnit) then
+                local zones = frame._cuiTextZones
                 for i = 1, #zones do
                     local fontStr = zones[i].fs
                     if fontStr and fontStr.SetText then
@@ -923,7 +923,7 @@ do
                     end
                 end
                 if #zones > 0 then
-                    mod.UF_PaintText(f, f._cuiUnit)
+                    mod.UF_PaintText(frame, frame._cuiUnit)
                 end
             end
         end
@@ -1071,8 +1071,8 @@ TagFns.tgtcol = function(unitToken)
     if not tunit or not UnitExists(tunit) then
         return ""
     end
-    local r, g, b = mod.ResolveUnitNameColor(tunit)
-    if not r then
+    local region, g, b = mod.ResolveUnitNameColor(tunit)
+    if not region then
         -- Secret class token (identity-restricted target, e.g. a boss's own
         -- target): GenerateHexColor's result may itself be secret, but still
         -- renders correctly through SetFormattedText's arg lane -- don't reject it.
@@ -1094,16 +1094,16 @@ TagFns.tgtcol = function(unitToken)
             local c = (mod.Colors and mod.Colors.reaction and mod.Colors.reaction[reaction])
                 or FACTION_BAR_COLORS[reaction]
             if c then
-                r, g, b = c.r, c.g, c.b
+                region, g, b = c.r, c.g, c.b
             end
         end
     end
-    if not r then
+    if not region then
         return ""
     end
     return string.format(
         "|cff%02x%02x%02x",
-        math.floor(r * 255 + 0.5),
+        math.floor(region * 255 + 0.5),
         math.floor(g * 255 + 0.5),
         math.floor(b * 255 + 0.5)
     )
@@ -1148,8 +1148,8 @@ do
         if issecretvalue(l) or l == "" then
             return l
         end
-        local r, g, b = CludesUI.GetLevelColor(u, (l == "??") and -1 or l)
-        return CludesUI.ColorText(l, r, g, b)
+        local region, g, b = CludesUI.GetLevelColor(u, (l == "??") and -1 or l)
+        return CludesUI.ColorText(l, region, g, b)
     end
     -- Same, with friendly units in their difficulty color too (Include Friendly).
     P.levelcolall = function(u)
@@ -1157,8 +1157,8 @@ do
         if issecretvalue(l) or l == "" then
             return l
         end
-        local r, g, b = CludesUI.GetLevelColor(u, (l == "??") and -1 or l, true)
-        return CludesUI.ColorText(l, r, g, b)
+        local region, g, b = CludesUI.GetLevelColor(u, (l == "??") and -1 or l, true)
+        return CludesUI.ColorText(l, region, g, b)
     end
     P.name = TagFns.name
     P.tgtcol = TagFns.tgtcol
@@ -1287,11 +1287,11 @@ do
                 if not (u and UnitExists(u .. "target")) then
                     return ""
                 end
-                local r, g, b = mod.ResolveUnitNameColor(u .. "target")
-                if r then
+                local region, g, b = mod.ResolveUnitNameColor(u .. "target")
+                if region then
                     return scrollFrame(
                         "|cff%02x%02x%02x%s|r",
-                        math.floor(r * 255 + 0.5),
+                        math.floor(region * 255 + 0.5),
                         math.floor(g * 255 + 0.5),
                         math.floor(b * 255 + 0.5),
                         sep
@@ -1629,11 +1629,11 @@ do
     local function MarkReads(z)
         local pieces = z.pieces
         for i = 1, #pieces do
-            local r = PIECE_READS[pieces[i]]
-            if r == nil then
+            local region = PIECE_READS[pieces[i]]
+            if region == nil then
                 z.any = true
-            elseif r ~= "id" then
-                z[r] = true
+            elseif region ~= "id" then
+                z[region] = true
             end
         end
         if z.abs or z.habs then
@@ -1707,10 +1707,10 @@ do
     rosterEv:SetScript("OnUpdate", function(self)
         self:Hide()
         local kept = false
-        for _, f in pairs(frameList) do
-            local zones = type(f) == "table" and f._cuiTextZones
+        for _, frame in pairs(frameList) do
+            local zones = type(frame) == "table" and frame._cuiTextZones
             if zones then
-                local unitToken = f._cuiUnit
+                local unitToken = frame._cuiUnit
                 local live = unitToken and UnitExists(unitToken)
                 for i = 1, #zones do
                     local z = zones[i]

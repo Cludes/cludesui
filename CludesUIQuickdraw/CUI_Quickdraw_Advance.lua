@@ -97,8 +97,8 @@ function PaletteView:AdvanceGrid(noPointer)
     -- layout's cancel, and it has no dead zone, a grid's centre being an
     -- ordinary cell.
     if dx and not best then
-        for idx = 1, isShown do
-            local bx, by = self:GridBase(idx, cols, rowList, pitch)
+        for index = 1, isShown do
+            local bx, by = self:GridBase(index, cols, rowList, pitch)
             local ox, oy = (dx - bx) / pitch, (dy - by) / pitch
             -- ^0.5, not sqrt: the snippet has no sqrt and must use the power
             -- form, and the two are not bit-identical in Lua 5.1. Matching them
@@ -106,7 +106,7 @@ function PaletteView:AdvanceGrid(noPointer)
             -- entry on screen and firing another.
             local key = (ox * ox + oy * oy) ^ 0.5
             if not bestK or key < bestK then
-                best, bestK = idx, key
+                best, bestK = index, key
             end
         end
         if bestK and bestK > GRID_REACH then
@@ -122,9 +122,9 @@ function PaletteView:AdvanceGrid(noPointer)
     local size = (open and open.dim) and NEST_DIM_ALPHA or 1
     local shrink = (open and open.dim) and NEST_DIM_SCALE or 1
 
-    for idx = 1, isShown do
-        local wid = self.widgets[idx]
-        local bx, by = self:GridBase(idx, cols, rowList, pitch)
+    for index = 1, isShown do
+        local wid = self.widgets[index]
+        local bx, by = self:GridBase(index, cols, rowList, pitch)
 
         -- Falloff is the 2D distance, in cells. A grid has no privileged axis,
         -- so projecting onto one -- as the strip does -- would make the zoom
@@ -146,7 +146,7 @@ function PaletteView:AdvanceGrid(noPointer)
         -- was opened. It may still draw back to make room -- the halo needs the
         -- ground its parent would otherwise be standing on.
         if open then
-            if idx ~= open.parent then
+            if index ~= open.parent then
                 s, a = s * shrink, a * size
             elseif open.parentScale then
                 s = s * open.parentScale
@@ -263,15 +263,15 @@ function PaletteView:FanSlotOffset(slot)
     if not slot or not target or isShown < 1 then
         return nil
     end
-    local d = (slot - target) % isShown
-    if d * 2 > isShown then
-        d = d - isShown
+    local skinData = (slot - target) % isShown
+    if skinData * 2 > isShown then
+        skinData = skinData - isShown
     end
     local p = self:P()
-    if abs(d) > ((p and p.fanVisible) or 2) + 0.5 then
+    if abs(skinData) > ((p and p.fanVisible) or 2) + 0.5 then
         return nil
     end
-    return d
+    return skinData
 end
 
 -- How far the pointer has been carried toward leaving the strip: 0 while it is
@@ -407,7 +407,7 @@ function PaletteView:AdvanceFan(elapsed)
             end
             local _, iconSize = self:Geom()
             local pitch = iconSize + ((p2 and p2.fanGap) or 10)
-            local d = floor(along / pitch + 0.5)
+            local skinData = floor(along / pitch + 0.5)
             -- One window everywhere now -- the editor draws it too -- and
             -- the same number the snippet was pushed as eqdFanWin, so drawn
             -- and fired agree.
@@ -423,12 +423,12 @@ function PaletteView:AdvanceFan(elapsed)
             -- real icon and the -half slot is empty ground.
             if
                 abs(across) <= iconSize * 0.5
-                and abs(along - d * pitch) <= iconSize * 0.5
-                and abs(d) <= window + 0.5
-                and d * 2 <= isShown
-                and -d * 2 < isShown
+                and abs(along - skinData * pitch) <= iconSize * 0.5
+                and abs(skinData) <= window + 0.5
+                and skinData * 2 <= isShown
+                and -skinData * 2 < isShown
             then
-                sel = ((self.fanTarget - 1 + d) % isShown) + 1
+                sel = ((self.fanTarget - 1 + skinData) % isShown) + 1
             end
         end
     end
@@ -692,8 +692,8 @@ function mod.CreatePaletteView(hostFrame, options)
     -- The palette's own entries exist from the outset; nested ones are made on
     -- demand, because most palettes hold none and a full set would be another
     -- MAX_SLOTS x MAX_CHILDREN frames per view.
-    for idx = 1, MAX_SLOTS do
-        view.widgets[idx] = CreateSlotWidget(view, idx)
+    for index = 1, MAX_SLOTS do
+        view.widgets[index] = CreateSlotWidget(view, index)
     end
 
     views[#views + 1] = view

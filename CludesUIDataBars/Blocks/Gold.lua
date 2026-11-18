@@ -166,7 +166,7 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
     button:SetPoint("CENTER")
     button:EnableMouse(true)
     button:RegisterForClicks("AnyUp")
-    local icon = button:CreateTexture(nil, "OVERLAY")
+    local iconTex = button:CreateTexture(nil, "OVERLAY")
     local label = button:CreateFontString(nil, "OVERLAY")
     local slots = button:CreateFontString(nil, "OVERLAY")
     K.AttachTextOffset(inst, label) -- the slot count follows the label
@@ -204,15 +204,15 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
 
     local function PaintIcon()
         if hovered then
-            icon:SetVertexColor(TextColour())
+            iconTex:SetVertexColor(TextColour())
         else
-            icon:SetVertexColor(K.IconColorOf(blockCfg))
+            iconTex:SetVertexColor(K.IconColorOf(blockCfg))
         end
     end
 
     function inst:Refresh()
         local s = Settings()
-        K.SetBlockIcon(icon, blockCfg)
+        K.SetBlockIcon(iconTex, blockCfg)
         local barH = barCtx.GetThickness()
         local fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
         -- The bag icon runs 4px bigger than the text, and sits 2px closer.
@@ -224,7 +224,7 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
 
         mod.SetFont(label, fontSize, barCtx.cfg)
         mod.SetFont(slots, fontSize, barCtx.cfg)
-        local r, g, b = TextColour()
+        local region, g, b = TextColour()
         if barCtx.IsVertical() then
             -- One coin per line.
             local lines = mod.MoneyTokens(
@@ -240,20 +240,20 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
         else
             label:SetText(MoneyText(money, coinColours))
         end
-        label:SetTextColor(r, g, b, 1)
+        label:SetTextColor(region, g, b, 1)
         if s.showBagSpace == true then
             slots:SetText("(" .. FreeSlots() .. ")")
             slots:Show()
         else
             slots:Hide()
         end
-        slots:SetTextColor(r, g, b, 1)
+        slots:SetTextColor(region, g, b, 1)
         if iconSize > 0 then
-            icon:SetSize(iconSize, iconSize)
+            iconTex:SetSize(iconSize, iconSize)
             PaintIcon()
-            icon:Show()
+            iconTex:Show()
         else
-            icon:Hide()
+            iconTex:Hide()
         end
 
         if barCtx.IsVertical() then
@@ -262,14 +262,14 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
             local inner = max(30, slotW - 8)
             local height = 8
             if iconSize > 0 then
-                icon:ClearAllPoints()
-                icon:SetPoint("TOP", button, "TOP", 0, -4)
+                iconTex:ClearAllPoints()
+                iconTex:SetPoint("TOP", button, "TOP", 0, -4)
                 height = height + iconSize + 2
             end
             mod.SetWrappedText(label, inner, "CENTER")
             label:ClearAllPoints()
             if iconSize > 0 then
-                label:SetPoint("TOP", icon, "BOTTOM", 0, -2)
+                label:SetPoint("TOP", iconTex, "BOTTOM", 0, -2)
             else
                 label:SetPoint("TOP", button, "TOP", 0, -4)
             end
@@ -290,9 +290,9 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
             local budget = K.HBudget(self, 100)
             mod.ResetInlineText(label, "LEFT")
             mod.ResetInlineText(slots, "LEFT")
-            icon:SetSize(iconSize, iconSize)
-            icon:ClearAllPoints()
-            icon:SetPoint("LEFT", button, "LEFT", 0, 0)
+            iconTex:SetSize(iconSize, iconSize)
+            iconTex:ClearAllPoints()
+            iconTex:SetPoint("LEFT", button, "LEFT", 0, 0)
             label:ClearAllPoints()
             label:SetPoint("LEFT", button, "LEFT", iconSize + gap, 0)
             slots:ClearAllPoints()
@@ -322,10 +322,10 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
             return
         end
         label:SetText(MoneyText(Ledger.Money() or 0, blockCfg.useCoinColor == true and not hovered))
-        local r, g, b = TextColour()
-        label:SetTextColor(r, g, b, 1)
-        slots:SetTextColor(r, g, b, 1)
-        if icon:IsShown() then
+        local region, g, b = TextColour()
+        label:SetTextColor(region, g, b, 1)
+        slots:SetTextColor(region, g, b, 1)
+        if iconTex:IsShown() then
             PaintIcon()
         end
     end
@@ -406,9 +406,9 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
                     for _, key in ipairs(byRealm[realm]) do
                         local entry = chars[key]
                         local color = entry.class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[entry.class]
-                        local r, g, b = 1, 1, 1
+                        local region, g, b = 1, 1, 1
                         if color then
-                            r, g, b = color.r, color.g, color.b
+                            region, g, b = color.r, color.g, color.b
                         end
                         -- Ctrl+Alt+click forgets a character; never this one,
                         -- which is saved again on every money change.
@@ -421,7 +421,7 @@ mod.BlockFactories.gold = function(blockCfg, slot, contentFrame, barCtx)
                                 Forget(key)
                                 mod.Tip_Hide(button)
                             end
-                        end, r, g, b)
+                        end, region, g, b)
                     end
                 end
                 if left > 0 then

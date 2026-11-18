@@ -41,8 +41,8 @@ local viewerHooksInstalled = false
 local function ReapplyPositions()
     for barId, icons in pairs(cdmBarIcons) do
         if icons then
-            for idx = 1, #icons do
-                local widget = icons[idx]
+            for index = 1, #icons do
+                local widget = icons[index]
                 if widget then
                     local fd = hookFrameData[widget]
                     local anchor = fd and fd._cdmAnchor
@@ -692,23 +692,23 @@ function mod.SetupViewerHooks()
                                     -- each pass, matching the primary glowOverlay (+16).
                                     fd.buffGlowOverlay:SetFrameLevel(widget:GetFrameLevel() + 16)
                                     if not fd.buffGlowActive then
-                                        local cr, cg, cb
+                                        local cr, cg, callback
                                         if edge.buffGlowMode == "custom" then
-                                            cr, cg, cb = edge.buffGlowR, edge.buffGlowG, edge.buffGlowB
+                                            cr, cg, callback = edge.buffGlowR, edge.buffGlowG, edge.buffGlowB
                                         end
                                         local classColor = edge.buffGlowMode == "class"
                                         if fd._bgColor == "class" then
                                             classColor = true
                                         elseif fd._bgColor == "custom" then
                                             classColor = false
-                                            cr, cg, cb = fd._bgR or cr, fd._bgG or cg, fd._bgB or cb
+                                            cr, cg, callback = fd._bgR or cr, fd._bgG or cg, fd._bgB or callback
                                         end
                                         if classColor then
                                             local cc = CludesUI.GetClassColor(CludesUI._playerClass)
-                                            cr, cg, cb = cc.r, cc.g, cc.b
+                                            cr, cg, callback = cc.r, cc.g, cc.b
                                         end
                                         fd.buffGlowOverlay:SetAlpha(1)
-                                        mod.StartNativeGlow(fd.buffGlowOverlay, effGlowType, cr, cg, cb, {
+                                        mod.StartNativeGlow(fd.buffGlowOverlay, effGlowType, cr, cg, callback, {
                                             N = edge.buffGlowLines or 8,
                                             th = edge.buffGlowThickness or 2,
                                             period = edge.buffGlowSpeed or 4,
@@ -893,16 +893,16 @@ function mod.SetupViewerHooks()
                                     and (fd._activeGlowOn or mod._cdmAnyActiveGlow)
                                 then
                                     local swipeColor = widget.cooldownSwipeColor
-                                    local r
+                                    local region
                                     if swipeColor and type(swipeColor) ~= "number" and swipeColor.GetRGBA then
-                                        r = swipeColor:GetRGBA()
+                                        region = swipeColor:GetRGBA()
                                         -- Secret or unavailable reads as "no
                                         -- data" -- neither edge acts on it.
-                                        if type(r) ~= "number" or issecretvalue(r) then
-                                            r = nil
+                                        if type(region) ~= "number" or issecretvalue(region) then
+                                            region = nil
                                         end
                                     end
-                                    if r == 0 then
+                                    if region == 0 then
                                         -- Clean 0: not active. Clear a glow we own.
                                         -- Also re-arm the no-config latch below so
                                         -- the next activation re-checks settings.
@@ -920,7 +920,7 @@ function mod.SetupViewerHooks()
                                             end
                                         end
                                     elseif
-                                        r
+                                        region
                                         and mod._cdmAnyActiveGlow
                                         and not fd._activeGlowNoCfg
                                         and not (
@@ -1362,8 +1362,8 @@ _G._CUCDM_ScanSwiftmend = function()
     if not SwiftmendEnabled() then
         return
     end
-    for idx = 1, #_smHookedIcons do
-        _smHookedIcons[idx]:SetVertexColor(1, 1, 1)
+    for index = 1, #_smHookedIcons do
+        _smHookedIcons[index]:SetVertexColor(1, 1, 1)
     end
 end
 

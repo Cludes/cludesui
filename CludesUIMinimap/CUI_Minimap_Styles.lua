@@ -83,10 +83,10 @@ function SKIN._PositionAddonCompartment(button)
             end
         else
             local mapW = Minimap:GetWidth() or (mp.mapSize or 140)
-            local r = (mapW / 2 + 5 * (mapW / 198)) / (button:GetScale() or 1)
+            local region = (mapW / 2 + 5 * (mapW / 198)) / (button:GetScale() or 1)
             local dx = (corner == "BOTTOMLEFT" or corner == "TOPLEFT") and -0.7071 or 0.7071
             local dy = (corner == "BOTTOMLEFT" or corner == "BOTTOMRIGHT") and -0.7071 or 0.7071
-            button:SetPoint("CENTER", Minimap, "CENTER", r * dx + nx, r * dy + ny)
+            button:SetPoint("CENTER", Minimap, "CENTER", region * dx + nx, region * dy + ny)
             placed = true
         end
     end
@@ -187,14 +187,14 @@ SKIN._MapCrop = function(p, mapSize)
     if SKIN._MinimapFvSquare() then
         local _, locationMode = GetElementModes(p)
         if locationMode ~= "none" then
-            local r = math.floor((SKIN._SqTitle() - SKIN._SqOut()) / 2 * 256 / mapSize + 0.5)
-            r = math.max(SKIN.CROP_MASK_MIN, math.min(SKIN.CROP_MASK_MAX, r))
-            local mask = cropMasks[r]
+            local region = math.floor((SKIN._SqTitle() - SKIN._SqOut()) / 2 * 256 / mapSize + 0.5)
+            region = math.max(SKIN.CROP_MASK_MIN, math.min(SKIN.CROP_MASK_MAX, region))
+            local mask = cropMasks[region]
             if not mask then
-                mask = "Interface\\AddOns\\CludesUIMinimap\\Media\\crop\\minimap-crop-" .. r .. ".tga"
-                cropMasks[r] = mask
+                mask = "Interface\\AddOns\\CludesUIMinimap\\Media\\crop\\minimap-crop-" .. region .. ".tga"
+                cropMasks[region] = mask
             end
-            return r * mapSize / 256, mask
+            return region * mapSize / 256, mask
         end
     end
     return 0
@@ -420,13 +420,13 @@ end
 -- A button's spot on the ring round the map (stock-style button row):
 -- radius r, angle t (radians, 0 = right, counter-clockwise), snapped to the
 -- physical grid at the row's effective scale.
-SKIN._ArcPoint = function(button, minimap, r, t, es)
+SKIN._ArcPoint = function(button, minimap, region, t, es)
     button:SetPoint(
         "CENTER",
         minimap,
         "CENTER",
-        Pix.SnapForES(r * math.cos(t), es),
-        Pix.SnapForES(r * math.sin(t), es)
+        Pix.SnapForES(region * math.cos(t), es),
+        Pix.SnapForES(region * math.sin(t), es)
     )
 end
 
@@ -444,7 +444,7 @@ end
 -- can undo, and the underlay follows the compass rect.
 SKIN._ApplyBlizzMinimapChrome = function(minimap, mapSize)
     local s = mapSize / 198
-    local d = GetFFD(minimap)
+    local skinData = GetFFD(minimap)
     local compass = _G.MinimapCompassTexture
     -- WoW Forever look only: plain Blizzard Style keeps its own geometry everywhere.
     local fv = SKIN._MinimapForever() == true
@@ -501,16 +501,16 @@ SKIN._ApplyBlizzMinimapChrome = function(minimap, mapSize)
     -- rides that bar's slot, 8 in from each end (the clock, Blizzard's tenant
     -- of its right end, stays the module's own element); a client without the
     -- art keeps the stock kit 3 higher.
-    local header = d.blizzHeader
+    local header = skinData.blizzHeader
     if not header then
         header = CreateFrame("Frame", nil, minimap)
         header:EnableMouse(false)
-        local bar = fv and C_Texture.GetAtlasInfo(SKIN.FV_HEADER_ATLAS)
-        if bar then
+        local barFrame = fv and C_Texture.GetAtlasInfo(SKIN.FV_HEADER_ATLAS)
+        if barFrame then
             local texture = header:CreateTexture(nil, "BACKGROUND")
             texture:SetAllPoints(header)
             texture:SetAtlas(SKIN.FV_HEADER_ATLAS)
-            header:SetSize(bar.width, bar.height)
+            header:SetSize(barFrame.width, barFrame.height)
             local slot = CreateFrame("Frame", nil, header)
             slot:EnableMouse(false)
             slot:SetPoint("TOPLEFT", header, "TOPLEFT", 8, -1)
@@ -523,7 +523,7 @@ SKIN._ApplyBlizzMinimapChrome = function(minimap, mapSize)
                 pcall(NineSliceUtil.ApplyLayoutByName, header, "UniqueCornersLayout", "ui-hud-minimap-button")
             end
         end
-        d.blizzHeader = header
+        skinData.blizzHeader = header
     end
     local barY = 24
     if header._fvBar then
@@ -597,43 +597,43 @@ end
 SKIN.FV_ROW_AIR = 4
 SKIN.FV_RING_GAP = 3
 SKIN._ApplyForeverSquare = function(minimap)
-    local d = GetFFD(minimap)
+    local skinData = GetFFD(minimap)
     local slim = SKIN._sqSlim
-    local widget = d.fvFrame
+    local widget = skinData.fvFrame
     if not widget then
         widget = CreateFrame("Frame", nil, minimap)
         widget:EnableMouse(false)
         if slim then
             local band = widget:CreateTexture(nil, "BACKGROUND")
             band:SetColorTexture(0, 0, 0, SKIN.FV_SLIM_BAND)
-            d.fvSlimBand = band
-            d.fvSlimRing = CludesUI.ForeverBorder(widget, "ARTWORK")
-            d.fvSlimRule = CludesUI.ForeverBorderDivider(widget, "ARTWORK", 1)
+            skinData.fvSlimBand = band
+            skinData.fvSlimRing = CludesUI.ForeverBorder(widget, "ARTWORK")
+            skinData.fvSlimRule = CludesUI.ForeverBorderDivider(widget, "ARTWORK", 1)
         else
             widget:SetScale(CludesUI.FOREVER_HEAVY.k)
-            d.fvHeavyRim = CludesUI.ForeverHeavy(widget, "ARTWORK")
+            skinData.fvHeavyRim = CludesUI.ForeverHeavy(widget, "ARTWORK")
         end
-        d.fvFrame = widget
+        skinData.fvFrame = widget
         local slot = CreateFrame("Frame", nil, minimap)
         slot:EnableMouse(false)
-        d.fvTitleSlot = slot
+        skinData.fvTitleSlot = slot
         local outer = CreateFrame("Frame", nil, minimap)
         outer:EnableMouse(false)
-        d.fvOuter = outer
+        skinData.fvOuter = outer
     end
     local _, locationMode = GetElementModes(SKIN.db.profile.minimap)
     local title = locationMode ~= "none"
     SKIN._fvTitleOn = title
     -- The map as it shows: the layout frame once the title bar crops the canvas.
-    local vis = d.layoutFrame or minimap
+    local vis = skinData.layoutFrame or minimap
     widget:SetFrameLevel(minimap:GetFrameLevel() + 2)
     widget:ClearAllPoints()
     widget:SetAllPoints(vis)
     local o = SKIN._SqOut()
     local topY = title and SKIN._SqTitle() or o
     if slim then
-        CludesUI.ForeverBorderSeat(d.fvSlimRing, vis, nil, -o, topY, o, -o)
-        local band, rule = d.fvSlimBand, d.fvSlimRule
+        CludesUI.ForeverBorderSeat(skinData.fvSlimRing, vis, nil, -o, topY, o, -o)
+        local band, rule = skinData.fvSlimBand, skinData.fvSlimRule
         band:SetShown(title)
         rule:SetShown(title)
         if title then
@@ -649,26 +649,26 @@ SKIN._ApplyForeverSquare = function(minimap)
             rule:SetPoint("BOTTOMRIGHT", vis, "TOPRIGHT", o - B.line, 0)
         end
     else
-        CludesUI.ForeverHeavyTitle(d.fvHeavyRim, title)
-        CludesUI.ForeverHeavySeat(d.fvHeavyRim, vis, nil, -o, topY, o, -o)
+        CludesUI.ForeverHeavyTitle(skinData.fvHeavyRim, title)
+        CludesUI.ForeverHeavySeat(skinData.fvHeavyRim, vis, nil, -o, topY, o, -o)
     end
     widget:Show()
-    d.fvOuter:ClearAllPoints()
-    d.fvOuter:SetPoint("TOPLEFT", vis, "TOPLEFT", -o, topY)
-    d.fvOuter:SetPoint("BOTTOMRIGHT", vis, "BOTTOMRIGHT", o, -o)
-    d.fvTitleSlot:ClearAllPoints()
+    skinData.fvOuter:ClearAllPoints()
+    skinData.fvOuter:SetPoint("TOPLEFT", vis, "TOPLEFT", -o, topY)
+    skinData.fvOuter:SetPoint("BOTTOMRIGHT", vis, "BOTTOMRIGHT", o, -o)
+    skinData.fvTitleSlot:ClearAllPoints()
     if slim then
         -- The band between the side lines (2px of air past the map's sides),
         -- from 1px under the top line's inner shadow down to 5 above the
         -- map's top, clear of the divider's line and outer shadow.
-        d.fvTitleSlot:SetPoint("TOPLEFT", vis, "TOPLEFT", 2, topY - 4)
-        d.fvTitleSlot:SetPoint("BOTTOMRIGHT", vis, "TOPRIGHT", -2, 5)
+        skinData.fvTitleSlot:SetPoint("TOPLEFT", vis, "TOPLEFT", 2, topY - 4)
+        skinData.fvTitleSlot:SetPoint("BOTTOMRIGHT", vis, "TOPRIGHT", -2, 5)
     else
         -- The band between the side rims (their inner edges 3 inside the map's
         -- sides), 2px of air at each end.
-        local bar = CludesUI.FOREVER_HEAVY.title
-        d.fvTitleSlot:SetPoint("TOPLEFT", vis, "TOPLEFT", o + 2, topY - bar.band)
-        d.fvTitleSlot:SetPoint("BOTTOMRIGHT", vis, "TOPRIGHT", -o - 2, topY - bar.bandEnd)
+        local barFrame = CludesUI.FOREVER_HEAVY.title
+        skinData.fvTitleSlot:SetPoint("TOPLEFT", vis, "TOPLEFT", o + 2, topY - barFrame.band)
+        skinData.fvTitleSlot:SetPoint("BOTTOMRIGHT", vis, "TOPRIGHT", -o - 2, topY - barFrame.bandEnd)
     end
     local ab = CludesUI._ModuleNS.CludesUIActionBars
     if ab then
@@ -712,8 +712,8 @@ CludesUI._ModuleNS[ADDON_NAME].MinimapQueueEyeSpot = SKIN._QueueEyeSpot
 -- one; a child of the map, so it hides with it. Built once under the latch;
 -- the disc repaints only on DIEL_CYCLE_CHANGED.
 SKIN._ApplyForeverDiel = function(minimap, mapSize)
-    local d = GetFFD(minimap)
-    local orb = d.foreverDiel
+    local skinData = GetFFD(minimap)
+    local orb = skinData.foreverDiel
     if not orb then
         local rim = C_Texture.GetAtlasInfo("UI-HUD-Minimap-Frame-Cycle")
         if not rim then
@@ -735,7 +735,7 @@ SKIN._ApplyForeverDiel = function(minimap, mapSize)
             Paint(isDay)
         end)
         Paint(C_DateAndTime.IsDayTime())
-        d.foreverDiel = orb
+        skinData.foreverDiel = orb
     end
     local s = mapSize / 198
     orb:ClearAllPoints()
@@ -751,11 +751,11 @@ end
 -- the stock art left behind are reset.
 SKIN._ClassicZoomButton = function(button, isIn, s)
     button:SetSize(32 * s, 32 * s)
-    local d = GetFFD(button)
-    if d.classicSkin then
+    local skinData = GetFFD(button)
+    if skinData.classicSkin then
         return
     end
-    d.classicSkin = true
+    skinData.classicSkin = true
     local base = isIn and "Interface\\Minimap\\UI-Minimap-ZoomInButton-"
         or "Interface\\Minimap\\UI-Minimap-ZoomOutButton-"
     button:SetNormalTexture(base .. "Up")
@@ -797,8 +797,8 @@ end
 -- on the banner between the ends. Created once, re-anchored per apply pass.
 SKIN._ApplyClassicMinimapChrome = function(minimap, mapSize)
     local s = mapSize / 140
-    local d = GetFFD(minimap)
-    local ring = d.classicRing
+    local skinData = GetFFD(minimap)
+    local ring = skinData.classicRing
     if not ring then
         ring = CreateFrame("Frame", nil, minimap)
         ring:EnableMouse(false)
@@ -806,14 +806,14 @@ SKIN._ApplyClassicMinimapChrome = function(minimap, mapSize)
         texture:SetAllPoints(ring)
         texture:SetTexture("Interface\\Minimap\\UI-Minimap-Border")
         texture:SetTexCoord(0.25, 1.0, 0.125, 0.875)
-        d.classicRing = ring
+        skinData.classicRing = ring
     end
     ring:ClearAllPoints()
     ring:SetPoint("CENTER", minimap, "CENTER", -8 * s, -24 * s)
     ring:SetSize(192 * s, 192 * s)
     ring:SetFrameLevel(minimap:GetFrameLevel() + 3)
     ring:Show()
-    local header = d.blizzHeader
+    local header = skinData.blizzHeader
     if not header then
         header = CreateFrame("Frame", nil, minimap)
         header:EnableMouse(false)
@@ -838,7 +838,7 @@ SKIN._ApplyClassicMinimapChrome = function(minimap, mapSize)
         slot:SetPoint("CENTER", header, "CENTER", 0, 1)
         slot:EnableMouse(false)
         header._zoneSlot = slot
-        d.blizzHeader = header
+        skinData.blizzHeader = header
     end
     header:ClearAllPoints()
     header:SetSize(mapSize + 36, 28)

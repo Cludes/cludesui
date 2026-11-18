@@ -348,67 +348,67 @@ do
         if _friendsTT then
             return _friendsTT
         end
-        local f = CreateFrame("Frame", nil, UIParent)
-        f:SetFrameStrata("TOOLTIP")
-        f:SetFrameLevel(200)
-        f:SetClampedToScreen(true)
-        f:EnableMouse(true)
-        f:SetScript("OnEnter", CancelFTTHide)
-        f:SetScript("OnLeave", ScheduleFTTHide)
-        f:HookScript("OnHide", function()
+        local frame = CreateFrame("Frame", nil, UIParent)
+        frame:SetFrameStrata("TOOLTIP")
+        frame:SetFrameLevel(200)
+        frame:SetClampedToScreen(true)
+        frame:EnableMouse(true)
+        frame:SetScript("OnEnter", CancelFTTHide)
+        frame:SetScript("OnLeave", ScheduleFTTHide)
+        frame:HookScript("OnHide", function()
             if _fttMenu then
                 _fttMenu:Hide()
             end
         end)
-        f:Hide()
-        local backdrop = f:CreateTexture(nil, "BACKGROUND")
+        frame:Hide()
+        local backdrop = frame:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0.067, 0.067, 0.067, 0.92)
-        CludesUI.MakeBorder(f, 1, 1, 1, 0.15, CludesUI.PanelPP)
+        CludesUI.MakeBorder(frame, 1, 1, 1, 0.15, CludesUI.PanelPP)
         -- Hovering this tooltip counts as hovering the extra-button stack (crossing onto it
         -- must not hide them); MO_OverAny reads it via EBS since this local is do-block
         -- scoped. The OnHide hook is required or nothing re-runs the fade-out on close.
-        SKIN._friendsTT = f
-        f:HookScript("OnShow", function()
+        SKIN._friendsTT = frame
+        frame:HookScript("OnShow", function()
             if MO_Evaluate then
                 MO_Evaluate()
             end
         end)
-        f:HookScript("OnHide", function()
+        frame:HookScript("OnHide", function()
             if MO_Evaluate then
                 MO_Evaluate()
             end
         end)
-        _friendsTT = f
-        return f
+        _friendsTT = frame
+        return frame
     end
 
     local function EnsureFTTRow(position)
         if _friendsTTRows[position] then
             return _friendsTTRows[position]
         end
-        local tt = GetFriendsTT()
-        local btn = CreateFrame("Button", nil, tt)
-        btn:EnableMouse(true)
-        btn:RegisterForClicks("AnyUp")
-        btn:SetHeight(FTT_ROW_H)
-        local highlight = btn:CreateTexture(nil, "BACKGROUND")
+        local tooltip = GetFriendsTT()
+        local button = CreateFrame("Button", nil, tooltip)
+        button:EnableMouse(true)
+        button:RegisterForClicks("AnyUp")
+        button:SetHeight(FTT_ROW_H)
+        local highlight = button:CreateTexture(nil, "BACKGROUND")
         highlight:SetAllPoints()
         highlight:SetColorTexture(1, 1, 1, 0.08)
         highlight:Hide()
-        btn._hl = highlight
-        btn:SetScript("OnEnter", function(self)
+        button._hl = highlight
+        button:SetScript("OnEnter", function(self)
             CancelFTTHide()
             if self._entry then
                 self._hl:Show()
             end
         end)
-        btn:SetScript("OnLeave", function(self)
+        button:SetScript("OnLeave", function(self)
             self._hl:Hide()
             ScheduleFTTHide()
         end)
         -- Left-click whispers (frame-scoped, no FCF taint); right-click opens the menu.
-        btn:SetScript("OnClick", function(self, mouseButton)
+        button:SetScript("OnClick", function(self, mouseButton)
             if not self._entry then
                 return
             end
@@ -424,41 +424,41 @@ do
         end)
         -- Name/zone are centred on the first line (not the button), so a note row can grow
         -- the button downward without moving them.
-        local nameFS = btn:CreateFontString(nil, "OVERLAY")
+        local nameFS = button:CreateFontString(nil, "OVERLAY")
         FTTNameFont(nameFS, 10)
         nameFS:SetJustifyH("LEFT")
-        nameFS:SetPoint("LEFT", btn, "TOPLEFT", 0, -FTT_ROW_H / 2)
-        local zoneFS = btn:CreateFontString(nil, "OVERLAY")
+        nameFS:SetPoint("LEFT", button, "TOPLEFT", 0, -FTT_ROW_H / 2)
+        local zoneFS = button:CreateFontString(nil, "OVERLAY")
         zoneFS:SetFont(FTT_FONT(), 10, "")
         zoneFS:SetJustifyH("RIGHT")
-        zoneFS:SetPoint("RIGHT", btn, "TOPRIGHT", 0, -FTT_ROW_H / 2)
+        zoneFS:SetPoint("RIGHT", button, "TOPRIGHT", 0, -FTT_ROW_H / 2)
         -- Optional second line: guild/friend note, indented, truncated to the row width.
         -- One line only: a line break inside a note would overlap the rows around it.
-        local noteFS = btn:CreateFontString(nil, "OVERLAY")
+        local noteFS = button:CreateFontString(nil, "OVERLAY")
         FTTNameFont(noteFS, 9)
         noteFS:SetJustifyH("LEFT")
         noteFS:SetWordWrap(false)
         noteFS:SetMaxLines(1)
         noteFS:SetTextColor(0.75, 0.75, 0.75, 0.9)
-        noteFS:SetPoint("LEFT", btn, "TOPLEFT", FTT_NOTE_INDENT, -FTT_ROW_H - FTT_NOTE_H / 2)
-        noteFS:SetPoint("RIGHT", btn, "TOPRIGHT", 0, -FTT_ROW_H - FTT_NOTE_H / 2)
+        noteFS:SetPoint("LEFT", button, "TOPLEFT", FTT_NOTE_INDENT, -FTT_ROW_H - FTT_NOTE_H / 2)
+        noteFS:SetPoint("RIGHT", button, "TOPRIGHT", 0, -FTT_ROW_H - FTT_NOTE_H / 2)
         noteFS:Hide()
-        _friendsTTRows[position] = { button = btn, name = nameFS, zone = zoneFS, note = noteFS }
+        _friendsTTRows[position] = { button = button, name = nameFS, zone = zoneFS, note = noteFS }
         return _friendsTTRows[position]
     end
 
     -- Row targets (read by its OnClick and the menu): target = character name (invite + character whisper), bnet = Battle.net account (preferred for whisper).
-    local function FTTSetRowTarget(btn, target, bnet)
-        btn._fttTarget = target
-        btn._fttBnet = bnet
+    local function FTTSetRowTarget(button, target, bnet)
+        button._fttTarget = target
+        button._fttBnet = bnet
     end
 
     local function EnsureFTTHeader(position)
         if _friendsTTHeaders[position] then
             return _friendsTTHeaders[position]
         end
-        local tt = GetFriendsTT()
-        local fontStr = tt:CreateFontString(nil, "OVERLAY")
+        local tooltip = GetFriendsTT()
+        local fontStr = tooltip:CreateFontString(nil, "OVERLAY")
         fontStr:SetFont(FTT_FONT(), 12, "")
         fontStr:SetJustifyH("CENTER")
         fontStr:SetTextColor(1, 1, 1, 0.9)
@@ -470,8 +470,8 @@ do
         if _friendsTTDividers[position] then
             return _friendsTTDividers[position]
         end
-        local tt = GetFriendsTT()
-        local texture = tt:CreateTexture(nil, "ARTWORK")
+        local tooltip = GetFriendsTT()
+        local texture = tooltip:CreateTexture(nil, "ARTWORK")
         texture:SetColorTexture(1, 1, 1, 0.12)
         local Pix = CludesUI.PP
         if Pix and Pix.Snap then
@@ -486,9 +486,9 @@ do
     function ShowFriendsTooltip(anchor)
         CancelFTTHide()
         local guild, favorites, friends = GatherOnlineFriends()
-        local tt = GetFriendsTT()
+        local tooltip = GetFriendsTT()
         -- Scale the whole tooltip to the user's Custom Tooltip Size (re-applied each show).
-        tt:SetScale(GetCustomTooltipScale())
+        tooltip:SetScale(GetCustomTooltipScale())
         local sum = #guild + #favorites + #friends
 
         local mp = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
@@ -513,17 +513,17 @@ do
 
         -- Hide pooled elements and clear stale entry refs.
         for i = 1, #_friendsTTRows do
-            local r = _friendsTTRows[i]
-            r.name:Hide()
-            r.zone:Hide()
-            r.note:Hide()
-            if r.button then
-                r.button:Hide()
-                r.button:SetHeight(FTT_ROW_H)
-                r.button._entry = nil
-                FTTSetRowTarget(r.button, nil)
-                if r.button._hl then
-                    r.button._hl:Hide()
+            local region = _friendsTTRows[i]
+            region.name:Hide()
+            region.zone:Hide()
+            region.note:Hide()
+            if region.button then
+                region.button:Hide()
+                region.button:SetHeight(FTT_ROW_H)
+                region.button._entry = nil
+                FTTSetRowTarget(region.button, nil)
+                if region.button._hl then
+                    region.button._hl:Hide()
                 end
             end
         end
@@ -539,18 +539,18 @@ do
             FTTNameFont(row.name, 10)
             row.name:SetText(CludesUI.COLOR_CODES.DIM .. CludesUI.L("No friends online") .. "|r")
             row.zone:SetText("")
-            tt:SetSize(FTT_PAD * 2 + 140, FTT_PAD + FTT_ROW_H + FTT_PAD)
+            tooltip:SetSize(FTT_PAD * 2 + 140, FTT_PAD + FTT_ROW_H + FTT_PAD)
             row.button:ClearAllPoints()
-            row.button:SetPoint("TOPLEFT", tt, "TOPLEFT", FTT_PAD, -FTT_PAD)
-            row.button:SetPoint("TOPRIGHT", tt, "TOPRIGHT", -FTT_PAD, -FTT_PAD)
+            row.button:SetPoint("TOPLEFT", tooltip, "TOPLEFT", FTT_PAD, -FTT_PAD)
+            row.button:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -FTT_PAD, -FTT_PAD)
             row.button._entry = nil
             FTTSetRowTarget(row.button, nil)
             row.button:Show()
             row.name:Show()
-            tt:ClearAllPoints()
+            tooltip:ClearAllPoints()
             local gpt = SKIN._Grow.edge[SKIN._Grow.Dir()] or SKIN._Grow.edge.left
-            tt:SetPoint(gpt[1], anchor, gpt[2], gpt[3], gpt[4])
-            tt:Show()
+            tooltip:SetPoint(gpt[1], anchor, gpt[2], gpt[3], gpt[4])
+            tooltip:Show()
             return sum
         end
 
@@ -578,8 +578,8 @@ do
                 divIdx = divIdx + 1
                 local div = EnsureFTTDivider(divIdx)
                 div:ClearAllPoints()
-                div:SetPoint("TOPLEFT", tt, "TOPLEFT", FTT_PAD, curY)
-                div:SetPoint("TOPRIGHT", tt, "TOPRIGHT", -FTT_PAD, curY)
+                div:SetPoint("TOPLEFT", tooltip, "TOPLEFT", FTT_PAD, curY)
+                div:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -FTT_PAD, curY)
                 div:Show()
                 curY = curY - div:GetHeight() - FTT_DIV_PAD
             end
@@ -599,7 +599,7 @@ do
                 or "4cc9f0"
             heading:SetText(CludesUI.L(sec.title) .. " (|cff" .. acHex .. #sec.list .. "|r)")
             heading:ClearAllPoints()
-            heading:SetPoint("TOP", tt, "TOP", 0, curY)
+            heading:SetPoint("TOP", tooltip, "TOP", 0, curY)
             heading:Show()
             curY = curY - FTT_HDR_H - 5 -- spacing below header
 
@@ -638,8 +638,8 @@ do
                 row.button._entry = e
                 FTTSetRowTarget(row.button, e.full or e.name, e.bnetName)
                 row.button:ClearAllPoints()
-                row.button:SetPoint("TOPLEFT", tt, "TOPLEFT", FTT_PAD, curY)
-                row.button:SetPoint("TOPRIGHT", tt, "TOPRIGHT", -FTT_PAD, curY)
+                row.button:SetPoint("TOPLEFT", tooltip, "TOPLEFT", FTT_PAD, curY)
+                row.button:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -FTT_PAD, curY)
                 row.button:Show()
                 row.name:Show()
                 row.zone:Show()
@@ -684,8 +684,8 @@ do
                 row.button._entry = nil
                 FTTSetRowTarget(row.button, nil)
                 row.button:ClearAllPoints()
-                row.button:SetPoint("TOPLEFT", tt, "TOPLEFT", FTT_PAD, curY)
-                row.button:SetPoint("TOPRIGHT", tt, "TOPRIGHT", -FTT_PAD, curY)
+                row.button:SetPoint("TOPLEFT", tooltip, "TOPLEFT", FTT_PAD, curY)
+                row.button:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -FTT_PAD, curY)
                 row.button:Show()
                 row.name:Show()
                 curY = curY - (FTT_ROW_H + FTT_GAP)
@@ -697,11 +697,11 @@ do
         local ttW = math.max(contentW, noteW, 160)
         local ttH = -curY + FTT_PAD
 
-        tt:SetSize(ttW, ttH)
-        tt:ClearAllPoints()
+        tooltip:SetSize(ttW, ttH)
+        tooltip:ClearAllPoints()
         local gpt = SKIN._Grow.edge[SKIN._Grow.Dir()] or SKIN._Grow.edge.left
-        tt:SetPoint(gpt[1], anchor, gpt[2], gpt[3], gpt[4])
-        tt:Show()
+        tooltip:SetPoint(gpt[1], anchor, gpt[2], gpt[3], gpt[4])
+        tooltip:Show()
         -- SetClampedToScreen handles off-screen for every Grow direction.
         return sum
     end
@@ -725,28 +725,28 @@ local function GetCalendarTT()
     if _calendarTT then
         return _calendarTT
     end
-    local f = CreateFrame("Frame", nil, UIParent)
-    f:SetFrameStrata("TOOLTIP")
-    f:SetFrameLevel(200)
-    f:SetClampedToScreen(true)
-    f:Hide()
-    local backdrop = f:CreateTexture(nil, "BACKGROUND")
+    local frame = CreateFrame("Frame", nil, UIParent)
+    frame:SetFrameStrata("TOOLTIP")
+    frame:SetFrameLevel(200)
+    frame:SetClampedToScreen(true)
+    frame:Hide()
+    local backdrop = frame:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0.067, 0.067, 0.067, 0.92)
-    CludesUI.MakeBorder(f, 1, 1, 1, 0.15, CludesUI.PanelPP)
-    _calendarTT = f
-    return f
+    CludesUI.MakeBorder(frame, 1, 1, 1, 0.15, CludesUI.PanelPP)
+    _calendarTT = frame
+    return frame
 end
 
 local function EnsureCalendarTTRow(position)
     if _calendarTTRows[position] then
         return _calendarTTRows[position]
     end
-    local tt = GetCalendarTT()
-    local leftFS = tt:CreateFontString(nil, "OVERLAY")
+    local tooltip = GetCalendarTT()
+    local leftFS = tooltip:CreateFontString(nil, "OVERLAY")
     leftFS:SetFont(FTT_FONT(), 10, "")
     leftFS:SetJustifyH("LEFT")
-    local rightFS = tt:CreateFontString(nil, "OVERLAY")
+    local rightFS = tooltip:CreateFontString(nil, "OVERLAY")
     rightFS:SetFont(FTT_FONT(), 10, "")
     rightFS:SetJustifyH("RIGHT")
     _calendarTTRows[position] = { left = leftFS, right = rightFS }
@@ -757,12 +757,12 @@ local function EnsureCalendarTTFooter(position)
     if _calendarTTFooters[position] then
         return _calendarTTFooters[position]
     end
-    local tt = GetCalendarTT()
-    local leftFS = tt:CreateFontString(nil, "OVERLAY")
+    local tooltip = GetCalendarTT()
+    local leftFS = tooltip:CreateFontString(nil, "OVERLAY")
     leftFS:SetFont(FTT_FONT(), 10, "")
     leftFS:SetJustifyH("LEFT")
     leftFS:SetTextColor(1, 1, 1, 0.65)
-    local rightFS = tt:CreateFontString(nil, "OVERLAY")
+    local rightFS = tooltip:CreateFontString(nil, "OVERLAY")
     rightFS:SetFont(FTT_FONT(), 10, "")
     rightFS:SetJustifyH("RIGHT")
     rightFS:SetTextColor(1, 1, 1, 0.80)
@@ -774,8 +774,8 @@ local function EnsureCalendarTTTitle()
     if _calendarTTTitle then
         return _calendarTTTitle
     end
-    local tt = GetCalendarTT()
-    local fontStr = tt:CreateFontString(nil, "OVERLAY")
+    local tooltip = GetCalendarTT()
+    local fontStr = tooltip:CreateFontString(nil, "OVERLAY")
     fontStr:SetFont(FTT_FONT(), 12, "")
     fontStr:SetJustifyH("CENTER")
     fontStr:SetTextColor(1, 1, 1, 0.90)
@@ -814,9 +814,9 @@ local function HideCalendarTooltip()
 end
 
 local function ShowCalendarTooltip(anchor, lockoutEntries)
-    local tt = GetCalendarTT()
+    local tooltip = GetCalendarTT()
     -- Scale the whole tooltip to the user's Custom Tooltip Size (re-applied each show).
-    tt:SetScale(GetCustomTooltipScale())
+    tooltip:SetScale(GetCustomTooltipScale())
     local font = FTT_FONT()
 
     for i = 1, #_calendarTTRows do
@@ -841,7 +841,7 @@ local function ShowCalendarTooltip(anchor, lockoutEntries)
     local curY = -CTT_PAD
 
     title:ClearAllPoints()
-    title:SetPoint("TOP", tt, "TOP", 0, curY)
+    title:SetPoint("TOP", tooltip, "TOP", 0, curY)
     title:Show()
     curY = curY - CTT_TITLE_H - CTT_GAP
 
@@ -852,9 +852,9 @@ local function ShowCalendarTooltip(anchor, lockoutEntries)
         row.left:SetText(record.left)
         row.right:SetText(record.right or "")
         row.left:ClearAllPoints()
-        row.left:SetPoint("TOPLEFT", tt, "TOPLEFT", CTT_PAD, curY)
+        row.left:SetPoint("TOPLEFT", tooltip, "TOPLEFT", CTT_PAD, curY)
         row.right:ClearAllPoints()
-        row.right:SetPoint("TOPRIGHT", tt, "TOPRIGHT", -CTT_PAD, curY)
+        row.right:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -CTT_PAD, curY)
         row.left:Show()
         if record.right and record.right ~= "" then
             row.right:Show()
@@ -881,9 +881,9 @@ local function ShowCalendarTooltip(anchor, lockoutEntries)
         footer.left:SetText(fd.left)
         footer.right:SetText(fd.right)
         footer.left:ClearAllPoints()
-        footer.left:SetPoint("TOPLEFT", tt, "TOPLEFT", CTT_PAD, curY)
+        footer.left:SetPoint("TOPLEFT", tooltip, "TOPLEFT", CTT_PAD, curY)
         footer.right:ClearAllPoints()
-        footer.right:SetPoint("TOPRIGHT", tt, "TOPRIGHT", -CTT_PAD, curY)
+        footer.right:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -CTT_PAD, curY)
         footer.left:Show()
         footer.right:Show()
 
@@ -903,11 +903,11 @@ local function ShowCalendarTooltip(anchor, lockoutEntries)
     local ttW = math.max(contentW, 180)
     local ttH = -curY + CTT_PAD
 
-    tt:SetSize(ttW, ttH)
-    tt:ClearAllPoints()
+    tooltip:SetSize(ttW, ttH)
+    tooltip:ClearAllPoints()
     local gpt = SKIN._Grow.edge[SKIN._Grow.Dir()] or SKIN._Grow.edge.left
-    tt:SetPoint(gpt[1], anchor, gpt[2], gpt[3], gpt[4])
-    tt:Show()
+    tooltip:SetPoint(gpt[1], anchor, gpt[2], gpt[3], gpt[4])
+    tooltip:Show()
 end
 
 -- Saved instance lockouts for the calendar tooltip: inclusion/tier come from each
@@ -918,11 +918,11 @@ local LOCKOUT_TIER_ORDER = { lfr = 1, normal = 2, heroic = 3, mythic = 4 }
 local function LockoutTierAndLabel(difficulty, fallbackLabel)
     local tier, labelText = "normal", fallbackLabel
     if GetDifficultyInfo and difficulty then
-        local d = { GetDifficultyInfo(difficulty) }
-        labelText = d[1] or fallbackLabel
-        if d[6] then
+        local skinData = { GetDifficultyInfo(difficulty) }
+        labelText = skinData[1] or fallbackLabel
+        if skinData[6] then
             tier = "mythic" -- displays as mythic
-        elseif d[3] or d[5] then
+        elseif skinData[3] or skinData[5] then
             tier = "heroic" -- is, or displays as, heroic
         end
     end

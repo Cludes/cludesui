@@ -272,9 +272,9 @@ local function HookPetJournal()
     if PetJournal_InitPetButton then
         HookJournal()
     else
-        local f = CreateFrame("Frame")
-        f:RegisterEvent("ADDON_LOADED")
-        f:SetScript("OnEvent", function(self, _, name)
+        local frame = CreateFrame("Frame")
+        frame:RegisterEvent("ADDON_LOADED")
+        frame:SetScript("OnEvent", function(self, _, name)
             if name ~= "Blizzard_Collections" then
                 return
             end
@@ -295,11 +295,11 @@ local function ApplyPetSummon(fresh)
     end
     RefreshJournal()
     local on = IsEnabled()
-    for idx = 1, #EVENTS do
+    for index = 1, #EVENTS do
         if on then
-            ev:RegisterEvent(EVENTS[idx])
+            ev:RegisterEvent(EVENTS[index])
         else
-            ev:UnregisterEvent(EVENTS[idx])
+            ev:UnregisterEvent(EVENTS[index])
         end
     end
     if not on then

@@ -266,8 +266,8 @@ do
     Q.Prepare = Prepare
 
     local function AddSkills(...)
-        for idx = 1, select("#", ...) do
-            local index = select(idx, ...)
+        for index = 1, select("#", ...) do
+            local index = select(index, ...)
             if index then
                 local rank, _, _, _, line = select(3, GetProfessionInfo(index))
                 if line then
@@ -290,8 +290,8 @@ do
             standings[faction] = payload and payload.currentStanding
         end
         wipe(logged)
-        for idx = 1, C_QuestLog.GetNumQuestLogEntries() do
-            local ident = C_QuestLog.GetQuestIDForLogIndex(idx)
+        for index = 1, C_QuestLog.GetNumQuestLogEntries() do
+            local ident = C_QuestLog.GetQuestIDForLogIndex(index)
             if ident then
                 logged[ident] = true
             end
@@ -322,8 +322,8 @@ do
             status = "closed"
         else
             local entries = closers[ident] or NONE
-            for idx = 1, #entries do
-                if done[entries[idx]] or logged[entries[idx]] then
+            for index = 1, #entries do
+                if done[entries[index]] or logged[entries[index]] then
                     status = "closed"
                     break
                 end
@@ -373,12 +373,12 @@ do
 
     local function FoundOrder(a, b)
         local la, ca, sa = FoundKey(a)
-        local lb, cb, scrollBar = FoundKey(b)
+        local lb, callback, scrollBar = FoundKey(b)
         if la ~= lb then
             return la < lb
         end
-        if ca ~= cb then
-            return ca < cb
+        if ca ~= callback then
+            return ca < callback
         end
         if sa ~= scrollBar then
             return sa < scrollBar
@@ -408,11 +408,11 @@ do
     end
 
     local function RecycleGivers()
-        for idx = #givers, 1, -1 do
-            local entry = givers[idx]
+        for index = #givers, 1, -1 do
+            local entry = givers[index]
             wipe(entry.quests)
             spare[#spare + 1] = entry
-            givers[idx] = nil
+            givers[index] = nil
         end
         wipe(giverAt)
     end
@@ -468,8 +468,8 @@ do
         wipe(done)
         local all = C_QuestLog.GetAllCompletedQuestIDs and C_QuestLog.GetAllCompletedQuestIDs()
         if all then
-            for idx = 1, #all do
-                done[all[idx]] = true
+            for index = 1, #all do
+                done[all[index]] = true
             end
             return
         end
@@ -567,9 +567,9 @@ do
 
     function Q.ChainAt(chain)
         local steps = chain.steps
-        for idx = #steps, 1, -1 do
-            if Q.StepDone(steps[idx]) then
-                return idx + 1, #steps
+        for index = #steps, 1, -1 do
+            if Q.StepDone(steps[index]) then
+                return index + 1, #steps
             end
         end
         return 1, #steps
@@ -751,10 +751,10 @@ do
         if not chain then
             return
         end
-        for idx, step in ipairs(chain.steps) do
+        for index, step in ipairs(chain.steps) do
             for _, other in ipairs(step) do
                 if other == ident then
-                    return idx, #chain.steps
+                    return index, #chain.steps
                 end
             end
         end
@@ -908,12 +908,12 @@ do
         elseif evt == "QUEST_GREETING" then
             wipe(offered)
             wipe(titles)
-            for idx = 1, GetNumAvailableQuests() do
-                local ident = GetAvailableQuestInfo and select(5, GetAvailableQuestInfo(idx))
+            for index = 1, GetNumAvailableQuests() do
+                local ident = GetAvailableQuestInfo and select(5, GetAvailableQuestInfo(index))
                 if ident then
                     offered[ident] = true
                 else
-                    titles[GetAvailableTitle(idx) or ""] = true
+                    titles[GetAvailableTitle(index) or ""] = true
                 end
             end
             if next(titles) then
@@ -991,11 +991,11 @@ do
     end
 
     local function Nearest(points, px, py, bx, by, bestD)
-        for idx = 1, #points, 2 do
-            local dx, dy = points[idx] / 100 - px, points[idx + 1] / 100 - py
-            local d = dx * dx + dy * dy
-            if not bestD or d < bestD then
-                bx, by, bestD = points[idx], points[idx + 1], d
+        for index = 1, #points, 2 do
+            local dx, dy = points[index] / 100 - px, points[index + 1] / 100 - py
+            local skinData = dx * dx + dy * dy
+            if not bestD or skinData < bestD then
+                bx, by, bestD = points[index], points[index + 1], skinData
             end
         end
         return bx, by, bestD
@@ -1203,15 +1203,15 @@ do
         end
         tipText:AddLine(" ")
         tipText:AddLine("Drops", unpack(GOLD))
-        for _, item in ipairs(loot) do
-            local c = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[item[LOOT_QUALITY]]
+        for _, entry in ipairs(loot) do
+            local c = ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[entry[LOOT_QUALITY]]
                 or { r = 1, g = 1, b = 1 }
-            local icon = C_Item.GetItemIconByID(item[LOOT_ID])
-            local name = (icon and ("|T%s:14:14|t "):format(icon) or "")
-                .. item[LOOT_NAME]
-                .. (item[LOOT_NEW] == 1 and " " .. CludesUI.Kit.AccentHex() .. "(new in Forever)|r" or "")
-                .. (R.Dropped(npc, item[LOOT_ID]) and " |cff60d080(you got it)|r" or "")
-            local chance = item[LOOT_CHANCE]
+            local iconTex = C_Item.GetItemIconByID(entry[LOOT_ID])
+            local name = (iconTex and ("|T%s:14:14|t "):format(iconTex) or "")
+                .. entry[LOOT_NAME]
+                .. (entry[LOOT_NEW] == 1 and " " .. CludesUI.Kit.AccentHex() .. "(new in Forever)|r" or "")
+                .. (R.Dropped(npc, entry[LOOT_ID]) and " |cff60d080(you got it)|r" or "")
+            local chance = entry[LOOT_CHANCE]
             tipText:AddDoubleLine(
                 name,
                 chance >= 1 and ("%d%%"):format(math.floor(chance + 0.5)) or ("%.1f%%"):format(chance),
@@ -1310,8 +1310,8 @@ do
                         and tonumber(itemLink:match("item:(%d+)"))
                     or nil
                 local sources = { GetLootSourceInfo(slot) }
-                for idx = 1, #sources, 2 do
-                    local unitGuid = sources[idx]
+                for index = 1, #sources, 2 do
+                    local unitGuid = sources[index]
                     if not Secret(unitGuid) then
                         Count(unitGuid)
                         local npc = R.NpcOf(unitGuid)
@@ -1744,8 +1744,8 @@ local function Anchor(p)
 end
 
 local function ClearPins()
-    for idx = 1, pinsUsed do
-        pins[idx]:Hide()
+    for index = 1, pinsUsed do
+        pins[index]:Hide()
     end
     pinsUsed = 0
 end
@@ -1871,11 +1871,11 @@ local function DrawPins()
         for _, giver in ipairs(Q.Givers(mapID, Get("pinGrey"), Get("chainsOnly"))) do
             local quests = giver.quests
             local p = Pin(giver.x, giver.y, size * 0.8, function(tipText)
-                for idx, ident in ipairs(quests) do
-                    if idx > 1 then
+                for index, ident in ipairs(quests) do
+                    if index > 1 then
                         tipText:AddLine(" ")
                     end
-                    if idx == 1 then
+                    if index == 1 then
                         QuestTip(ident)(tipText)
                     else
                         local c = GetQuestDifficultyColor(Q.Level(ident))
@@ -1920,8 +1920,8 @@ local function DrawPins()
 end
 
 local function RescalePins()
-    for idx = 1, pinsUsed do
-        Anchor(pins[idx])
+    for index = 1, pinsUsed do
+        Anchor(pins[index])
     end
 end
 
@@ -2057,8 +2057,8 @@ local function QuestRow(R2, ident, indent)
     local sub
     if status == "later" then
         local nameList = {}
-        for idx, before in ipairs(Q.Blocking(ident)) do
-            if idx > 3 then
+        for index, before in ipairs(Q.Blocking(ident)) do
+            if index > 3 then
                 nameList[#nameList + 1] = "..."
                 break
             end
@@ -2103,8 +2103,8 @@ local function DrawQuestZone(R2, zone)
                     ),
                     { indent = 4, colour = at > steps and MUTED or { 1, 1, 1 } }
                 )
-                for idx, step in ipairs(chain.steps) do
-                    if not (hide and Q.StepDone(step)) and (idx >= at - 1 or not hide) then
+                for index, step in ipairs(chain.steps) do
+                    if not (hide and Q.StepDone(step)) and (index >= at - 1 or not hide) then
                         for _, ident in ipairs(step) do
                             QuestRow(R2, ident, 18)
                         end

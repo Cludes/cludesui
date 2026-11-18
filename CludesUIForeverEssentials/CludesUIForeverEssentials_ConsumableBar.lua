@@ -60,10 +60,10 @@ end
 -- subclass -> category order index, for the categories turned on.
 local function WantedSubs()
     local wanted = {}
-    for idx, c in ipairs(CATEGORIES) do
+    for index, c in ipairs(CATEGORIES) do
         if Get(c.key) then
             for _, s in ipairs(c.subs) do
-                wanted[s] = idx
+                wanted[s] = index
             end
         end
     end
@@ -95,8 +95,8 @@ local function Collect()
     return entries
 end
 
-local function Button(idx)
-    local b = buttons[idx]
+local function Button(index)
+    local b = buttons[index]
     if b then
         return b
     end
@@ -126,7 +126,7 @@ local function Button(idx)
     b:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
-    buttons[idx] = b
+    buttons[index] = b
     return b
 end
 
@@ -161,20 +161,20 @@ local function Layout()
     local size, max = Get("iconSize"), Get("maxIcons")
     local entries = Enabled() and Collect() or {}
     local num = math.min(#entries, max)
-    for idx = 1, num do
-        local ident = entries[idx].id
-        local b = Button(idx)
+    for index = 1, num do
+        local ident = entries[index].id
+        local b = Button(index)
         b.itemID = ident
         b:SetAttribute("item", "item:" .. ident)
         b.icon:SetTexture(C_Item.GetItemIconByID(ident))
         b:SetSize(size, size)
         b:ClearAllPoints()
-        b:SetPoint("LEFT", holderFrame, "LEFT", (idx - 1) * (size + GAP), 0)
+        b:SetPoint("LEFT", holderFrame, "LEFT", (index - 1) * (size + GAP), 0)
         b:Show()
     end
-    for idx = num + 1, #buttons do
-        buttons[idx]:Hide()
-        buttons[idx].itemID = nil
+    for index = num + 1, #buttons do
+        buttons[index]:Hide()
+        buttons[index].itemID = nil
     end
     holderFrame:SetSize(math.max(1, num) * (size + GAP) - GAP, size)
     Paint()

@@ -367,14 +367,14 @@ local function PrivateTooltip(line, ident)
     local name, class, localClass, _, ilvl, _, _, _, _, _, _, score, pvpIlvl, _, _, specID =
         C_LFGList.GetApplicantMemberInfo(ident, k)
     local cc = class and RAID_CLASS_COLORS[class]
-    local r, g, b = 1, 1, 1
+    local region, g, b = 1, 1, 1
     if cc then
-        r, g, b = cc.r, cc.g, cc.b
+        region, g, b = cc.r, cc.g, cc.b
     end
     GameTooltip:SetOwner(line, "ANCHOR_NONE")
     GameTooltip:SetPoint("BOTTOMLEFT", line, "TOPLEFT", 105, 0)
     local isShown = mod.OwnListGet("streamerNames") and localClass or name
-    GameTooltip:SetText(isShown or " ", r, g, b)
+    GameTooltip:SetText(isShown or " ", region, g, b)
     if not mod.OwnListGet("streamerSpec") and type(specID) == "number" and specID > 0 then
         local specName = select(2, GetSpecializationInfoByID(specID))
         if specName then
@@ -591,7 +591,7 @@ local function MakeLine(b, k)
     l.specBorder:Hide()
     -- own role buttons, the leader can switch an applicant's role
     l.roles = {}
-    for idx = 1, 3 do
+    for index = 1, 3 do
         local rb = CreateFrame("Button", nil, l)
         rb.tex = rb:CreateTexture(nil, "ARTWORK")
         rb.tex:SetPoint("CENTER")
@@ -638,7 +638,7 @@ local function MakeLine(b, k)
             self:GetParent():UnlockHighlight()
             GameTooltip_Hide()
         end)
-        l.roles[idx] = rb
+        l.roles[index] = rb
     end
     l:SetScript("OnClick", LineMenu)
     l:SetScript("OnEnter", LineEnter)
@@ -647,7 +647,7 @@ local function MakeLine(b, k)
     return l
 end
 
-local function MakeBlock(idx, hostFrame, storage)
+local function MakeBlock(index, hostFrame, storage)
     local b = CreateFrame("Frame", nil, hostFrame or body)
     b.bg = b:CreateTexture(nil, "BACKGROUND")
     b.bg:SetAllPoints()
@@ -688,7 +688,7 @@ local function MakeBlock(idx, hostFrame, storage)
     b.status = b:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     b.status:SetJustifyH("RIGHT")
     local into = storage or blocks
-    into[idx] = b
+    into[index] = b
     return b
 end
 
@@ -723,17 +723,17 @@ local function PlaceCells(l)
         fontStr:Hide()
     end
     for c = #cols, 1, -1 do
-        local col = cols[c]
-        posX = posX - col.w
-        local fontStr = l.cells[col.key]
+        local colour = cols[c]
+        posX = posX - colour.w
+        local fontStr = l.cells[colour.key]
         if fontStr then
             fontStr:Show()
             fontStr:ClearAllPoints()
             fontStr:SetPoint("LEFT", l, "RIGHT", posX, 0)
-            fontStr:SetWidth(col.w)
-        elseif col == ROLE_COL then
+            fontStr:SetWidth(colour.w)
+        elseif colour == ROLE_COL then
             l.roleX = posX
-        elseif col == SPEC_COL then
+        elseif colour == SPEC_COL then
             l.specX = posX
         end
     end
@@ -766,9 +766,9 @@ local function PaintSpec(l, class, specID, grey)
     t:SetPoint("CENTER", l, "RIGHT", l.specX + SPEC_COL.w / 2, 0)
     t:SetTexCoord(0, 1, 0, 1)
     local square = mod.OwnListGet("iconShape") == "square"
-    local icon = type(specID) == "number" and specID > 0 and select(4, GetSpecializationInfoByID(specID))
-    if icon then
-        t:SetTexture(icon)
+    local iconTex = type(specID) == "number" and specID > 0 and select(4, GetSpecializationInfoByID(specID))
+    if iconTex then
+        t:SetTexture(iconTex)
         t:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     elseif square then
         local cc = class and C_ClassColor and C_ClassColor.GetClassColor(class)
@@ -794,7 +794,7 @@ local function PaintSpec(l, class, specID, grey)
             end
             bf:Show()
         end
-    elseif icon then
+    elseif iconTex then
         t:AddMaskTexture(l.specMask)
         l.specMasked = true
         if bpx > 0 then
@@ -943,8 +943,8 @@ local function FillLine(l, ident, k, grey, noTouch)
     if damage then
         picked[#picked + 1] = "DAMAGER"
     end
-    for idx = 1, 3 do
-        local rb, role = l.roles[idx], picked[idx]
+    for index = 1, 3 do
+        local rb, role = l.roles[index], picked[index]
         rb:SetShown(role ~= nil and not grey)
         rb.role = role
         if role then
@@ -959,7 +959,7 @@ local function FillLine(l, ident, k, grey, noTouch)
                 "LEFT",
                 l,
                 "RIGHT",
-                l.roleX + (ROLE_COL.w - #picked * step + ROLE_GAP) / 2 + (idx - 1) * step,
+                l.roleX + (ROLE_COL.w - #picked * step + ROLE_GAP) / 2 + (index - 1) * step,
                 0
             )
         end
@@ -981,12 +981,12 @@ local function FillLine(l, ident, k, grey, noTouch)
     end
     if baseCols == COLS_KEYS then
         if type(score) == "number" then
-            local r, g, b = 1, 1, 1
+            local region, g, b = 1, 1, 1
             if mod.GFRatingColor then
-                r, g, b = mod.GFRatingColor(score)
+                region, g, b = mod.GFRatingColor(score)
             end
             c.rating:SetText(score)
-            c.rating:SetTextColor(r, g, b)
+            c.rating:SetTextColor(region, g, b)
         else
             c.rating:SetText("-")
         end
@@ -1101,15 +1101,15 @@ local function Position()
     end
     local height = body:GetHeight() or 0
     local sum = 0
-    for idx = 1, #entries do
-        sum = sum + blocks[idx].h + GAP
+    for index = 1, #entries do
+        sum = sum + blocks[index].h + GAP
     end
     sum = math.max(0, sum - GAP)
     local maxPx = math.max(0, sum - height)
     scrollPx = math.max(0, math.min(scrollPx, maxPx))
     local posY = -scrollPx
-    for idx = 1, #entries do
-        local b = blocks[idx]
+    for index = 1, #entries do
+        local b = blocks[index]
         b:ClearAllPoints()
         b:SetPoint("TOPLEFT", body, "TOPLEFT", 0, -posY)
         b:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, -posY)
@@ -1243,8 +1243,8 @@ local function PaintHeader()
     end
     local posX, used = 0, 0
     for c = #cols, 1, -1 do
-        local col = cols[c]
-        posX = posX - col.w
+        local colour = cols[c]
+        posX = posX - colour.w
         used = used + 1
         local fontStr = head.titles[used]
         if not fontStr then
@@ -1255,8 +1255,8 @@ local function PaintHeader()
         end
         fontStr:ClearAllPoints()
         fontStr:SetPoint("LEFT", head, "RIGHT", posX, 0)
-        fontStr:SetWidth(col.w)
-        fontStr:SetText(col.title)
+        fontStr:SetWidth(colour.w)
+        fontStr:SetText(colour.title)
         fontStr:Show()
     end
 end
@@ -1270,9 +1270,9 @@ VisibleCols = function(base, result)
     end
     result = result or visibleCols
     wipe(result)
-    for _, col in ipairs(base) do
-        if not ((noSpec and col == SPEC_COL) or (noRating and col == RATING_COL)) then
-            result[#result + 1] = col
+    for _, colour in ipairs(base) do
+        if not ((noSpec and colour == SPEC_COL) or (noRating and colour == RATING_COL)) then
+            result[#result + 1] = colour
         end
     end
     return result
@@ -1312,24 +1312,24 @@ local function Paint()
     end
     local current = GetNumGroupMembers(HOME)
     local numInvited = C_LFGList.GetNumInvitedApplicantMembers()
-    for idx, ident in ipairs(entries) do
-        local b = blocks[idx] or MakeBlock(idx)
+    for index, ident in ipairs(entries) do
+        local b = blocks[index] or MakeBlock(index)
         b.h = FillBlock(b, ident, numAllowed, current, numInvited)
     end
-    for idx = #entries + 1, #blocks do
-        blocks[idx].applicantID = nil
-        blocks[idx]:Hide()
+    for index = #entries + 1, #blocks do
+        blocks[index].applicantID = nil
+        blocks[index]:Hide()
     end
     empty:SetShown(#entries == 0)
     Position()
 end
 
-local function HoldHidden(f, a)
+local function HoldHidden(frame, a)
     if guard or not isActive or a == 0 then
         return
     end
     guard = true
-    f:SetAlpha(0)
+    frame:SetAlpha(0)
     guard = false
 end
 
@@ -1360,12 +1360,12 @@ local function MakeRaidRoles(hostFrame)
             "CLAMPTOBLACKADDITIVE"
         )
         mask:SetAllPoints(backdrop)
-        local icon = rr:CreateTexture(nil, "ARTWORK", nil, 3)
-        icon:SetPoint("CENTER", backdrop)
+        local iconTex = rr:CreateTexture(nil, "ARTWORK", nil, 3)
+        iconTex:SetPoint("CENTER", backdrop)
         local count = rr:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         count:SetJustifyH("CENTER")
         count:SetPoint("BOTTOM", backdrop, "TOP", 0, 1)
-        rr.parts[k] = { bg = backdrop, mask = mask, icon = icon, count = count }
+        rr.parts[k] = { bg = backdrop, mask = mask, icon = iconTex, count = count }
     end
     return rr
 end
@@ -1430,8 +1430,8 @@ local function Build()
         0,
         0
     )
-    for _, f in ipairs(Faded()) do
-        hooksecurefunc(f, "SetAlpha", HoldHidden)
+    for _, frame in ipairs(Faded()) do
+        hooksecurefunc(frame, "SetAlpha", HoldHidden)
     end
 end
 
@@ -1453,8 +1453,8 @@ local function SetActive(nowTime)
     end
     local a = isActive and 0 or 1
     guard = true
-    for _, f in ipairs(Faded()) do
-        f:SetAlpha(a)
+    for _, frame in ipairs(Faded()) do
+        frame:SetAlpha(a)
     end
     guard = false
     widget:SetShown(isActive)
@@ -1468,27 +1468,27 @@ end
 -- a black bar over blizzard's text, the mouse stops there so its tooltip can't show either
 local censor = {}
 local function CensorBar(key, fontStr, enabled, maxW, hgt)
-    local bar = censor[key]
-    if not bar then
+    local barFrame = censor[key]
+    if not barFrame then
         if not enabled then
             return
         end
-        bar = CreateFrame("Frame", nil, AV)
-        bar:SetFrameLevel(AV:GetFrameLevel() + 30)
-        bar:EnableMouse(true)
-        local texture = bar:CreateTexture(nil, "ARTWORK")
+        barFrame = CreateFrame("Frame", nil, AV)
+        barFrame:SetFrameLevel(AV:GetFrameLevel() + 30)
+        barFrame:EnableMouse(true)
+        local texture = barFrame:CreateTexture(nil, "ARTWORK")
         texture:SetAllPoints()
         texture:SetColorTexture(0, 0, 0, 1)
-        censor[key] = bar
+        censor[key] = barFrame
     end
-    bar:SetShown(enabled and true or false)
+    barFrame:SetShown(enabled and true or false)
     if not enabled then
         return
     end
     local wid = math.max(40, math.min(fontStr:GetStringWidth() or maxW, maxW))
-    bar:ClearAllPoints()
-    bar:SetPoint("LEFT", fontStr, "LEFT", -2, 0)
-    bar:SetSize(wid + 4, hgt)
+    barFrame:ClearAllPoints()
+    barFrame:SetPoint("LEFT", fontStr, "LEFT", -2, 0)
+    barFrame:SetSize(wid + 4, hgt)
 end
 
 local function PaintCensor()
@@ -1652,8 +1652,8 @@ local function PvNames(kind)
     local used, start = {}, kind == "raid" and 7 or 0
     local function Take(cls)
         for pass = 1, 2 do
-            for idx = 0, #roster - 1 do
-                local k = (start + idx) % #roster + 1
+            for index = 0, #roster - 1 do
+                local k = (start + index) % #roster + 1
                 local e = roster[k]
                 if not used[k] and (pass == 2 or e.class == cls) then
                     used[k] = true
@@ -1667,19 +1667,19 @@ local function PvNames(kind)
     local ids, payload = apv.ids, apv.data
     wipe(ids)
     wipe(payload)
-    for idx, a in ipairs(PV_APPS[kind]) do
-        local ident = kind .. idx
+    for index, a in ipairs(PV_APPS[kind]) do
+        local ident = kind .. index
         local m = {}
-        for k, d in ipairs(a.members) do
+        for k, skinData in ipairs(a.members) do
             m[k] = {
-                name = d[9] or Take(d[1]),
-                class = d[1],
-                spec = d[2],
-                roles = d[3],
-                assigned = d[4],
-                ilvl = math.max(1, base + d[5]),
-                score = d[6],
-                best = d[7] and { bestRunLevel = d[7], finishedSuccess = d[8] },
+                name = skinData[9] or Take(skinData[1]),
+                class = skinData[1],
+                spec = skinData[2],
+                roles = skinData[3],
+                assigned = skinData[4],
+                ilvl = math.max(1, base + skinData[5]),
+                score = skinData[6],
+                best = skinData[7] and { bestRunLevel = skinData[7], finishedSuccess = skinData[8] },
             }
         end
         ids[#ids + 1] = ident
@@ -1688,7 +1688,7 @@ local function PvNames(kind)
                 applicationStatus = a.status or "applied",
                 numMembers = #m,
                 isNew = false,
-                displayOrderID = idx,
+                displayOrderID = index,
                 comment = a.note or "",
             },
             members = m,
@@ -1769,14 +1769,14 @@ end
 local function PvPosition()
     local hgt = apv.body:GetHeight() or 0
     local sum = -GAP
-    for idx = 1, #apv.ids do
-        sum = sum + apv.blocks[idx].h + GAP
+    for index = 1, #apv.ids do
+        sum = sum + apv.blocks[index].h + GAP
     end
     apv.maxScroll = math.max(0, sum - hgt)
     apv.scroll = math.max(0, math.min(apv.scroll, apv.maxScroll))
     local posY = -apv.scroll
-    for idx = 1, #apv.ids do
-        local b = apv.blocks[idx]
+    for index = 1, #apv.ids do
+        local b = apv.blocks[index]
         b:ClearAllPoints()
         b:SetPoint("TOPLEFT", apv.body, "TOPLEFT", 0, -posY)
         b:SetPoint("TOPRIGHT", apv.body, "TOPRIGHT", 0, -posY)
@@ -1796,17 +1796,17 @@ local function PvPosition()
     end
 end
 
-local function PvBuild(host)
-    local f = CreateFrame("Frame", nil, host)
-    f:SetAllPoints(host)
-    apv.frame = f
-    apv.head = CreateFrame("Frame", nil, f)
+local function PvBuild(owner)
+    local frame = CreateFrame("Frame", nil, owner)
+    frame:SetAllPoints(owner)
+    apv.frame = frame
+    apv.head = CreateFrame("Frame", nil, frame)
     apv.head.titles = {}
     local nameTitle = apv.head:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     nameTitle:SetPoint("LEFT", apv.head, "LEFT", 6, 0)
     nameTitle:SetText(NAME or "Name")
     apv.raidRoles = MakeRaidRoles(apv.head)
-    apv.body = CreateFrame("Frame", nil, f)
+    apv.body = CreateFrame("Frame", nil, frame)
     apv.body:SetClipsChildren(true)
     apv.body:EnableMouseWheel(true)
     apv.body:SetScript("OnMouseWheel", function(_, delta)
@@ -1868,27 +1868,27 @@ local function PvPaint(kind, wid, hgt)
     PaintHeader()
     -- the counts sit left of the column titles
     local colsW = 0
-    for _, col in ipairs(cols) do
-        colsW = colsW + col.w
+    for _, colour in ipairs(cols) do
+        colsW = colsW + colour.w
     end
     apv.raidRoles:ClearAllPoints()
     apv.raidRoles:SetPoint("RIGHT", apv.head, "RIGHT", -colsW - 8, 0)
     PaintRaidRoles()
     local max = entryActivity.maxNumPlayers
-    for idx, ident in ipairs(apv.ids) do
-        local b = apv.blocks[idx] or MakeBlock(idx, apv.body, apv.blocks)
+    for index, ident in ipairs(apv.ids) do
+        local b = apv.blocks[index] or MakeBlock(index, apv.body, apv.blocks)
         b.preview = true
         b.h = FillBlock(b, ident, max, 1, 0)
     end
-    for idx = #apv.ids + 1, #apv.blocks do
-        apv.blocks[idx].applicantID = nil
-        apv.blocks[idx]:Hide()
+    for index = #apv.ids + 1, #apv.blocks do
+        apv.blocks[index].applicantID = nil
+        apv.blocks[index]:Hide()
     end
 end
 
 -- draws the sample applicants for a key ("dungeon") or a raid into host,
 -- w by h; kind nil hides them
-function mod.ApplicantPreviewPaint(host, kind, wid, hgt)
+function mod.ApplicantPreviewPaint(owner, kind, wid, hgt)
     if not kind then
         if apv.frame then
             apv.frame:Hide()
@@ -1896,7 +1896,7 @@ function mod.ApplicantPreviewPaint(host, kind, wid, hgt)
         return
     end
     if not apv.frame then
-        PvBuild(host)
+        PvBuild(owner)
     end
     if apv.kind ~= kind then
         apv.kind, apv.scroll = kind, 0

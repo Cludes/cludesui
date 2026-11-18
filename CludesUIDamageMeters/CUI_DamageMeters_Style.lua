@@ -50,8 +50,8 @@ mod.DM_CLASSIC_HDR_LIFT = 0.05 -- plus this, so a black window still gets a visi
 function mod.DMStyle()
     local val = mod._dmStyle
     if val == nil then
-        local d = _G._CUDM_DB
-        local dm = d and d.profile and d.profile.dm
+        local skinData = _G._CUDM_DB
+        local dm = skinData and skinData.profile and skinData.profile.dm
         if not dm then
             return "cui"
         end
@@ -370,14 +370,14 @@ end
 -- A texture as the tiled tooltip background in the given colour and opacity
 -- (the file is near-white; the vertex colour is the tone). Tiling is set up
 -- once per texture; every call re-tints.
-function mod.DMClassicTint(texture, r, g, b, a)
+function mod.DMClassicTint(texture, region, g, b, a)
     if not texture._classicTiled then
         texture._classicTiled = true
         texture:SetHorizTile(true)
         texture:SetVertTile(true)
         texture:SetTexture(mod.DM_CLASSIC_BG, "REPEAT", "REPEAT")
     end
-    texture:SetVertexColor(r or 0, g or 0, b or 0, a or 1)
+    texture:SetVertexColor(region or 0, g or 0, b or 0, a or 1)
 end
 -- Header background: the stock atlas (opacity still applies) under Blizzard
 -- Style, Forever's header band in its place under the WoW Forever variant
@@ -387,7 +387,7 @@ end
 -- colour is the trailing winR/winG/winB when given (a window body tinted
 -- from its own settings), the main meter's otherwise; the configured colour
 -- on the CUI look.
-function mod.DMPaintHeaderBg(texture, r, g, b, a, winR, winG, winB)
+function mod.DMPaintHeaderBg(texture, region, g, b, a, winR, winG, winB)
     local style = mod.DMStyle()
     if style == "blizzard" then
         if mod._dmForever and mod.DMFvHeader(texture, a) then
@@ -405,7 +405,7 @@ function mod.DMPaintHeaderBg(texture, r, g, b, a, winR, winG, winB)
             a
         )
     else
-        texture:SetColorTexture(r, g, b, a)
+        texture:SetColorTexture(region, g, b, a)
     end
 end
 -- Classic WoW UI window edge: the vanilla chat tab's own border, the art the
@@ -436,12 +436,12 @@ mod.DM_CLASSIC_EDGE_UV = {
 -- window's corners, edges spanning between them. Built once per window.
 function mod.DMClassicEdge(window, e)
     local p = {}
-    for idx = 1, 8 do
-        local specInfo = mod.DM_CLASSIC_EDGE_UV[idx]
+    for index = 1, 8 do
+        local specInfo = mod.DM_CLASSIC_EDGE_UV[index]
         local t = window:CreateTexture(nil, "BORDER")
         t:SetTexture(mod.DM_CLASSIC_EDGE)
         t:SetTexCoord(specInfo[2], specInfo[3], specInfo[4], specInfo[5])
-        if idx <= 4 then
+        if index <= 4 then
             t:SetSize(e, e)
         end
         p[specInfo[1]] = t
@@ -470,7 +470,7 @@ end
 -- nothing. The tab's own inside is pure black (no vertex tint could colour
 -- it), so the window keeps the tile as its body. All regions of the window
 -- frame, under every child; built once per bg texture, re-tinted per call.
-function mod.DMPaintClassicBg(texture, r, g, b, a, edged)
+function mod.DMPaintClassicBg(texture, region, g, b, a, edged)
     if not edged then
         texture:SetTexture(nil)
         texture:SetColorTexture(0, 0, 0, 0)
@@ -491,7 +491,7 @@ function mod.DMPaintClassicBg(texture, r, g, b, a, edged)
         texture:SetTexture(nil)
         texture:SetColorTexture(0, 0, 0, 0)
     end
-    mod.DMClassicTint(tile, r, g, b, a)
+    mod.DMClassicTint(tile, region, g, b, a)
 end
 -- How far the header and the row area sit inside the window under Classic
 -- WoW UI (past the rim and bevel) and WoW Forever (past the bronze line, or
@@ -539,7 +539,7 @@ end
 mod.DM_BLIZZ_BG_BODY = 245 / 255
 mod._dmBgLo = CreateColor(0, 0, 0, 1)
 mod._dmBgHi = CreateColor(0, 0, 0, 0.5)
-function mod.DMPaintWindowBg(texture, r, g, b, a, edged, texKey)
+function mod.DMPaintWindowBg(texture, region, g, b, a, edged, texKey)
     local style = mod.DMStyle()
     if style == "cui" then
         local filePath = texKey
@@ -547,18 +547,18 @@ function mod.DMPaintWindowBg(texture, r, g, b, a, edged, texKey)
             and CUI.ResolveTexturePath(_G._CUDM_BarTextures, texKey, nil)
         if filePath then
             texture:SetTexture(filePath)
-            texture:SetVertexColor(r, g, b, a)
+            texture:SetVertexColor(region, g, b, a)
             texture._dmTexturedBg = true
         else
             if texture._dmTexturedBg then
                 texture:SetVertexColor(1, 1, 1, 1)
                 texture._dmTexturedBg = nil
             end
-            texture:SetColorTexture(r, g, b, a)
+            texture:SetColorTexture(region, g, b, a)
         end
         return
     elseif style == "classic" then
-        mod.DMPaintClassicBg(texture, r, g, b, a, edged)
+        mod.DMPaintClassicBg(texture, region, g, b, a, edged)
         return
     end
     if mod._dmForever and mod.DMPaintForeverBg(texture, a, edged) then
@@ -569,14 +569,14 @@ function mod.DMPaintWindowBg(texture, r, g, b, a, edged, texKey)
         local hostFrame = texture:GetParent()
         local layer, sub = texture:GetDrawLayer()
         parts = {}
-        for idx = 1, 2 do
+        for index = 1, 2 do
             local t = hostFrame:CreateTexture(nil, layer or "BACKGROUND", nil, sub or 0)
             t:SetTexture("Interface\\Buttons\\WHITE8X8")
             if t.SetSnapToPixelGrid then
                 t:SetSnapToPixelGrid(false)
                 t:SetTexelSnappingBias(0)
             end
-            parts[idx] = t
+            parts[index] = t
         end
         parts[1]:SetPoint("TOPLEFT", texture, "TOPLEFT", 0, 0)
         parts[1]:SetPoint("TOPRIGHT", texture, "TOPRIGHT", 0, 0)
@@ -606,19 +606,19 @@ mod._dmShadeClear = CreateColor(0, 0, 0, 0)
 mod._dmShadeTop = CreateColor(0, 0, 0, 0.55)
 mod._dmShadeBottom = CreateColor(0, 0, 0, 0.30)
 mod._dmShadeEnd = CreateColor(0, 0, 0, 0.35)
-function mod.DMApplyBlizzFill(fill)
-    local sh = fill._blizzShadow
+function mod.DMApplyBlizzFill(fillTex)
+    local sh = fillTex._blizzShadow
     if not sh then
         sh = {}
-        fill._blizzShadow = sh
-        for idx = 1, 4 do
-            local texture = fill:CreateTexture(nil, "OVERLAY", nil, -3)
+        fillTex._blizzShadow = sh
+        for index = 1, 4 do
+            local texture = fillTex:CreateTexture(nil, "OVERLAY", nil, -3)
             texture:SetTexture("Interface\\Buttons\\WHITE8X8")
             if texture.SetSnapToPixelGrid then
                 texture:SetSnapToPixelGrid(false)
                 texture:SetTexelSnappingBias(0)
             end
-            sh[idx] = texture
+            sh[index] = texture
         end
         -- VERTICAL runs bottom -> top, HORIZONTAL left -> right.
         sh[1]:SetGradient("VERTICAL", mod._dmShadeClear, mod._dmShadeTop)
@@ -626,8 +626,8 @@ function mod.DMApplyBlizzFill(fill)
         sh[3]:SetGradient("HORIZONTAL", mod._dmShadeEnd, mod._dmShadeClear)
         sh[4]:SetGradient("HORIZONTAL", mod._dmShadeClear, mod._dmShadeEnd)
     end
-    local ft = fill:GetStatusBarTexture()
-    local hgt = fill:GetHeight()
+    local ft = fillTex:GetStatusBarTexture()
+    local hgt = fillTex:GetHeight()
     -- A bar carrying secret values (the tooltip preview rows in combat)
     -- reports a secret height; the last plain height stands in, then the
     -- row default, so nothing here ever compares a secret.
@@ -662,8 +662,8 @@ function mod.DMApplyBlizzFill(fill)
     sh[4]:SetPoint("TOPRIGHT", ft, "TOPRIGHT", 0, 0)
     sh[4]:SetPoint("BOTTOMRIGHT", ft, "BOTTOMRIGHT", 0, 0)
     sh[4]:SetWidth(ends)
-    for idx = 1, 4 do
-        sh[idx]:Show()
+    for index = 1, 4 do
+        sh[index]:Show()
     end
 end
 -- Row background: the stock shadowed track under the fill plus its edge
@@ -671,24 +671,24 @@ end
 -- insets: the track sits 2px outside the fill on every side, exactly under
 -- its edge). One-time per row. WoW Forever wears the same track (a bar
 -- texture, not frame art).
-function mod.DMApplyBlizzBarBg(bar)
-    local backdrop = bar._bg
-    if not backdrop or not bar.fill then
+function mod.DMApplyBlizzBarBg(barFrame)
+    local backdrop = barFrame._bg
+    if not backdrop or not barFrame.fill then
         return
     end
-    if bar._blizzBgOn then
+    if barFrame._blizzBgOn then
         return
     end
-    bar._blizzBgOn = true
+    barFrame._blizzBgOn = true
     backdrop:SetAtlas(mod.DM_BLIZZ_BAR_BG)
     backdrop:SetVertexColor(1, 1, 1, 1)
     backdrop:ClearAllPoints()
-    backdrop:SetPoint("TOPLEFT", bar.fill, "TOPLEFT", -2, 2)
-    backdrop:SetPoint("BOTTOMRIGHT", bar.fill, "BOTTOMRIGHT", 2, -2)
-    local edge = bar.fill:CreateTexture(nil, "OVERLAY", nil, 6)
+    backdrop:SetPoint("TOPLEFT", barFrame.fill, "TOPLEFT", -2, 2)
+    backdrop:SetPoint("BOTTOMRIGHT", barFrame.fill, "BOTTOMRIGHT", 2, -2)
+    local edge = barFrame.fill:CreateTexture(nil, "OVERLAY", nil, 6)
     edge:SetAtlas(mod.DM_BLIZZ_BAR_EDGE)
-    edge:SetPoint("TOPLEFT", bar.fill, "TOPLEFT", -2, 2)
-    edge:SetPoint("BOTTOMRIGHT", bar.fill, "BOTTOMRIGHT", 2, -2)
+    edge:SetPoint("TOPLEFT", barFrame.fill, "TOPLEFT", -2, 2)
+    edge:SetPoint("BOTTOMRIGHT", barFrame.fill, "BOTTOMRIGHT", 2, -2)
 end
 
 -------------------------------------------------------------------------------
@@ -777,24 +777,24 @@ function mod.DMFvFrameArt(ownerFrame, outside)
     end
     if mod.DMFvHeavy() then
         local H = CUI.FOREVER_HEAVY
-        local host = CreateFrame("Frame", nil, ownerFrame)
-        host:SetScale(H.k)
-        host:SetFrameLevel(ownerFrame:GetFrameLevel() + mod.DM_FV.frameLevel)
-        host:SetAllPoints(ownerFrame)
+        local owner = CreateFrame("Frame", nil, ownerFrame)
+        owner:SetScale(H.k)
+        owner:SetFrameLevel(ownerFrame:GetFrameLevel() + mod.DM_FV.frameLevel)
+        owner:SetAllPoints(ownerFrame)
         local o = outside and H.band * H.k or 0
-        CUI.ForeverHeavySeat(CUI.ForeverHeavy(host, "ARTWORK"), ownerFrame, "TOPLEFT", -o, o, o, -o)
-        ownerFrame._fvRim = host
-        return host
+        CUI.ForeverHeavySeat(CUI.ForeverHeavy(owner, "ARTWORK"), ownerFrame, "TOPLEFT", -o, o, o, -o)
+        ownerFrame._fvRim = owner
+        return owner
     end
     if not (mod.DMForever() and CUI.ForeverBorderOK()) then
         return nil
     end
-    local host = CreateFrame("Frame", nil, ownerFrame)
-    host:SetFrameLevel(ownerFrame:GetFrameLevel() + mod.DM_FV.frameLevel)
-    host:SetAllPoints(ownerFrame)
+    local owner = CreateFrame("Frame", nil, ownerFrame)
+    owner:SetFrameLevel(ownerFrame:GetFrameLevel() + mod.DM_FV.frameLevel)
+    owner:SetAllPoints(ownerFrame)
     local o = outside and CUI.FOREVER_BORDER.fill or 0
     CUI.ForeverBorderSeat(
-        CUI.ForeverBorder(host, nil, nil, nil, mod._dmFvKind),
+        CUI.ForeverBorder(owner, nil, nil, nil, mod._dmFvKind),
         ownerFrame,
         "TOPLEFT",
         -o,
@@ -802,8 +802,8 @@ function mod.DMFvFrameArt(ownerFrame, outside)
         o,
         -o
     )
-    ownerFrame._fvRim = host
-    return host
+    ownerFrame._fvRim = owner
+    return owner
 end
 -- Window background under WoW Forever. With `edged` the window wears the
 -- bronze line over a flat dark body spanning it (from the line's inner
@@ -913,18 +913,18 @@ end
 -- on that client: a bronze line round a black body, soft shadow), its line
 -- 1px outside our flush panel, in place of the CUI fill and border. False
 -- off the variant or without the art.
-function mod.DMFvMenuArt(f, backdrop)
+function mod.DMFvMenuArt(frame, backdrop)
     local atlas = mod.DM_FV.menu
     if not (mod.DMForever() and mod.DMFvAtlas(atlas)) then
         return false
     end
-    local t = f:CreateTexture(nil, "BACKGROUND", nil, -1)
+    local t = frame:CreateTexture(nil, "BACKGROUND", nil, -1)
     t:SetAtlas(atlas)
-    t:SetPoint("TOPLEFT", f, "TOPLEFT", -10, 7)
-    t:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 10, -13)
+    t:SetPoint("TOPLEFT", frame, "TOPLEFT", -10, 7)
+    t:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 10, -13)
     t:SetAlpha(0.925)
     backdrop:SetColorTexture(0, 0, 0, 0)
-    f._fvArt = t
+    frame._fvArt = t
     return true
 end
 -- A home page card's background as Forever's list button ("normal" |

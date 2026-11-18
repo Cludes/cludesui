@@ -374,9 +374,9 @@ mod.BlockFactories.timeplayed = function(blockCfg, slot, contentFrame, barCtx)
             for _, key in ipairs(byRealm[realm]) do
                 local entry = record[key]
                 local color = entry.class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[entry.class]
-                local r, g, b = 1, 1, 1
+                local region, g, b = 1, 1, 1
                 if color then
-                    r, g, b = color.r, color.g, color.b
+                    region, g, b = color.r, color.g, color.b
                 end
                 local who = entry.name or "?"
                 if entry.level then
@@ -393,7 +393,7 @@ mod.BlockFactories.timeplayed = function(blockCfg, slot, contentFrame, barCtx)
                     end
                     record[key] = nil
                     mod.Tip_Hide(button)
-                end, r, g, b, 1, 1, 1)
+                end, region, g, b, 1, 1, 1)
             end
         end
         mod.Tip_AddLine(" ")

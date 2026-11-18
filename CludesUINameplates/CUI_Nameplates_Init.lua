@@ -273,8 +273,8 @@ function npAddon:OnEnable()
         local cui = type(slots) == "table" and slots.cui
         if type(cui) == "table" then
             local keyList = mod._npClassicCastKeys
-            for idx = 1, #keyList do
-                local k = keyList[idx]
+            for index = 1, #keyList do
+                local k = keyList[index]
                 if cui[k] == nil then
                     cui[k] = p[k]
                 end
@@ -371,8 +371,8 @@ do
         elseif rightEl and rightEl ~= "none" then
             local ca = backing._cachedHealthSlots
             if ca then
-                for idx = 1, ca._count or 0 do
-                    local e = ca[idx]
+                for index = 1, ca._count or 0 do
+                    local e = ca[index]
                     if e and e.slotKey == "textSlotRight" and e.fs then
                         anchorTo = e.fs
                         break
@@ -669,8 +669,8 @@ mod.ApplyKeptNameplateCVars = function()
         return
     end
     local nameList = mod._keptCVarNames
-    for idx = 1, #nameList do
-        local name = nameList[idx]
+    for index = 1, #nameList do
+        local name = nameList[index]
         local val = tonumber(kept[name])
         if val and C_CVar.GetCVarInfo(name) and not mod.KeptCVarSame(GetCVar(name), val) then
             CludesUI.SetCVar(name, val, "CludesUINameplates")

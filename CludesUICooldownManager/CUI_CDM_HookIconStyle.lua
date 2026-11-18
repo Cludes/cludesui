@@ -154,15 +154,15 @@ function mod.CdmApplyBlizzIconArt(widget)
     end
     local fc = FC(widget)
     local classic = mod.CdmClassicIcons()
-    local host = fc.blizzHost
-    if not host then
+    local owner = fc.blizzHost
+    if not owner then
         -- Pooled with an options preview slot (an options page pool host);
         -- the plain CreateFrame on a live icon.
-        host = POOL.CreateFrame("Frame", nil, widget)
-        host:SetAllPoints(widget)
-        host:EnableMouse(false)
-        fc.blizzHost = host
-        local shade = host:CreateTexture(nil, "OVERLAY", nil, 5)
+        owner = POOL.CreateFrame("Frame", nil, widget)
+        owner:SetAllPoints(widget)
+        owner:EnableMouse(false)
+        fc.blizzHost = owner
+        local shade = owner:CreateTexture(nil, "OVERLAY", nil, 5)
         if classic then
             shade:SetTexture(mod.CDM_CLASSIC_RING)
         else
@@ -199,8 +199,8 @@ function mod.CdmApplyBlizzIconArt(widget)
         local fd = hookFrameData[widget]
         local texture = (fd and fd.tex) or widget.Icon
         local num = texture and texture.GetNumMaskTextures and texture:GetNumMaskTextures() or 0
-        for idx = 1, num do
-            local m = texture:GetMaskTexture(idx)
+        for index = 1, num do
+            local m = texture:GetMaskTexture(index)
             if m then
                 pcall(m.SetAtlas, m, mod.CDM_BLIZZ_MASK)
                 pcall(m.SetAlpha, m, 1)
@@ -210,27 +210,27 @@ function mod.CdmApplyBlizzIconArt(widget)
     end
     -- Ring above the art and swipe (+14), below glows (+16) and text (+23).
     local lvl = widget:GetFrameLevel() + 15
-    if host:GetFrameLevel() ~= lvl then
-        host:SetFrameLevel(lvl)
+    if owner:GetFrameLevel() ~= lvl then
+        owner:SetFrameLevel(lvl)
     end
     local wid, hgt = widget:GetSize()
     if fc.blizzArtW ~= wid or fc.blizzArtH ~= hgt then
         fc.blizzArtW, fc.blizzArtH = wid, hgt
         local shade = fc.blizzOverlay
         if classic then
-            mod.CdmPlaceClassicRing(shade, host, wid, hgt)
+            mod.CdmPlaceClassicRing(shade, owner, wid, hgt)
         else
             shade:ClearAllPoints()
             shade:SetPoint(
                 "TOPLEFT",
-                host,
+                owner,
                 "TOPLEFT",
                 -wid * mod.CDM_BLIZZ_RING_X,
                 hgt * mod.CDM_BLIZZ_RING_Y
             )
             shade:SetPoint(
                 "BOTTOMRIGHT",
-                host,
+                owner,
                 "BOTTOMRIGHT",
                 wid * mod.CDM_BLIZZ_RING_X,
                 -hgt * mod.CDM_BLIZZ_RING_Y
@@ -326,9 +326,9 @@ end
 local function CdmFrameIsActive(widget)
     local swipeColor = widget and widget.cooldownSwipeColor
     if swipeColor and type(swipeColor) ~= "number" and swipeColor.GetRGBA then
-        local r = swipeColor:GetRGBA()
-        if r and type(r) == "number" and not issecretvalue(r) then
-            return r ~= 0
+        local region = swipeColor:GetRGBA()
+        if region and type(region) == "number" and not issecretvalue(region) then
+            return region ~= 0
         end
     end
     return false
@@ -576,8 +576,8 @@ local function WatchMaxStacksFrame(widget, fd)
         local ef = mod.TakeShell()
         ef:RegisterEvent("SPELL_UPDATE_CHARGES")
         ef:SetScript("OnEvent", function()
-            for f, d in pairs(mod._maxStacksWatch) do
-                EvalMaxStacksFrame(f, d)
+            for frame, skinData in pairs(mod._maxStacksWatch) do
+                EvalMaxStacksFrame(frame, skinData)
             end
         end)
         mod._maxStacksEventFrame = ef

@@ -75,7 +75,7 @@ local function CreateIndicatorBtn(name, hostFrame, upAtlas, overAtlas, downAtlas
     button._bg = backdrop
 
     -- Icon sized to preserve the atlas aspect ratio within the button.
-    local icon = button:CreateTexture(nil, "ARTWORK")
+    local iconTex = button:CreateTexture(nil, "ARTWORK")
     local inset = 3
     local ratio = upAtlas and INDICATOR_ATLAS_RATIO[upAtlas]
     if ratio then
@@ -90,17 +90,17 @@ local function CreateIndicatorBtn(name, hostFrame, upAtlas, overAtlas, downAtlas
             iconH = avail * scale
             iconW = (avail * ratio) * scale
         end
-        icon:SetSize(iconW, iconH)
+        iconTex:SetSize(iconW, iconH)
         local off = INDICATOR_ATLAS_OFFSET[name]
-        icon:SetPoint("CENTER", button, "CENTER", off and off[1] or 0, off and off[2] or 0)
+        iconTex:SetPoint("CENTER", button, "CENTER", off and off[1] or 0, off and off[2] or 0)
     else
-        icon:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
-        icon:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
+        iconTex:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
+        iconTex:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
     end
     if upAtlas then
-        icon:SetAtlas(upAtlas)
+        iconTex:SetAtlas(upAtlas)
     end
-    button._icon = icon
+    button._icon = iconTex
     button._upAtlas = upAtlas
     button._overAtlas = overAtlas
     button._downAtlas = downAtlas
@@ -155,8 +155,8 @@ local function GetOrderedWeeklyActivities(activityType)
     end
 
     local ordered = {}
-    for idx = 1, #activities do
-        ordered[idx] = activities[idx]
+    for index = 1, #activities do
+        ordered[index] = activities[index]
     end
 
     table.sort(ordered, function(a, b)
@@ -185,26 +185,26 @@ end
 local function BuildVaultRowData(labelText, activityType, isRaid)
     local activities = GetOrderedWeeklyActivities(activityType)
     local tokens = {}
-    for idx = 1, 3 do
-        local details = activities and activities[idx]
+    for index = 1, 3 do
+        local details = activities and activities[index]
         if not details then
-            tokens[idx] = { text = "-", state = "empty" }
+            tokens[index] = { text = "-", state = "empty" }
         else
             local progress = math.max(0, tonumber(details.progress) or 0)
             local threshold = math.max(0, tonumber(details.threshold) or 0)
             local level = math.max(0, tonumber(details.level) or 0)
             if threshold <= 0 then
-                tokens[idx] = { text = "-", state = "empty" }
+                tokens[index] = { text = "-", state = "empty" }
             elseif progress >= threshold then
                 if isRaid then
-                    tokens[idx] = { text = ("%d/%d"):format(progress, threshold), state = "done" }
+                    tokens[index] = { text = ("%d/%d"):format(progress, threshold), state = "done" }
                 elseif level > 0 then
-                    tokens[idx] = { text = "+" .. level, state = "done" }
+                    tokens[index] = { text = "+" .. level, state = "done" }
                 else
-                    tokens[idx] = { text = ("%d/%d"):format(progress, threshold), state = "done" }
+                    tokens[index] = { text = ("%d/%d"):format(progress, threshold), state = "done" }
                 end
             else
-                tokens[idx] = {
+                tokens[index] = {
                     text = ("%d/%d"):format(progress, threshold),
                     state = progress > 0 and "partial" or "empty",
                 }
@@ -225,61 +225,61 @@ local function GetVaultTooltip()
     if _vaultTT then
         return _vaultTT
     end
-    local f = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    f:SetBackdrop({
+    local frame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+    frame:SetBackdrop({
         bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
         edgeFile = "Interface\\ChatFrame\\ChatFrameBackground",
         edgeSize = 1,
     })
-    f:SetBackdropColor(0.06, 0.06, 0.06, 0.90)
-    f:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
-    f:SetFrameStrata("TOOLTIP")
-    f:SetClampedToScreen(true)
-    f:Hide()
+    frame:SetBackdropColor(0.06, 0.06, 0.06, 0.90)
+    frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
+    frame:SetFrameStrata("TOOLTIP")
+    frame:SetClampedToScreen(true)
+    frame:Hide()
 
     -- Fade animations (matches ShowWidgetTooltip/HideWidgetTooltip)
-    local fadeInAG = f:CreateAnimationGroup()
+    local fadeInAG = frame:CreateAnimationGroup()
     local fadeIn = fadeInAG:CreateAnimation("Alpha")
     fadeIn:SetDuration(0.25)
     fadeIn:SetSmoothing("OUT")
     fadeInAG:SetScript("OnFinished", function()
-        f:SetAlpha(1)
+        frame:SetAlpha(1)
     end)
-    f._fadeInAG = fadeInAG
-    f._fadeIn = fadeIn
+    frame._fadeInAG = fadeInAG
+    frame._fadeIn = fadeIn
 
-    local fadeOutAG = f:CreateAnimationGroup()
+    local fadeOutAG = frame:CreateAnimationGroup()
     local fadeOut = fadeOutAG:CreateAnimation("Alpha")
     fadeOut:SetDuration(0.25)
     fadeOut:SetSmoothing("IN")
     fadeOutAG:SetScript("OnFinished", function()
-        f:SetAlpha(0)
-        f:Hide()
+        frame:SetAlpha(0)
+        frame:Hide()
     end)
-    f._fadeOutAG = fadeOutAG
-    f._fadeOut = fadeOut
+    frame._fadeOutAG = fadeOutAG
+    frame._fadeOut = fadeOut
 
     -- Title row (font set at show-time)
-    local title = f:CreateFontString(nil, "OVERLAY")
+    local title = frame:CreateFontString(nil, "OVERLAY")
     title:SetFont("Fonts\\FRIZQT__.TTF", 11, "") -- placeholder, updated on show
     title:SetTextColor(0.80, 0.80, 0.80, 1)
-    title:SetPoint("TOP", f, "TOP", 0, -VAULT_PAD)
+    title:SetPoint("TOP", frame, "TOP", 0, -VAULT_PAD)
     title:SetText(CludesUI.L("Great Vault"))
-    f._title = title
+    frame._title = title
 
     -- 3 data rows x 4 columns (label + 3 tokens)
     for row = 1, 3 do
         _vaultTTRows[row] = {}
-        for col = 0, 3 do
-            local fontStr = f:CreateFontString(nil, "OVERLAY")
+        for colour = 0, 3 do
+            local fontStr = frame:CreateFontString(nil, "OVERLAY")
             fontStr:SetFont("Fonts\\FRIZQT__.TTF", 11, "") -- placeholder, updated on show
             fontStr:SetJustifyH("LEFT")
-            _vaultTTRows[row][col] = fontStr
+            _vaultTTRows[row][colour] = fontStr
         end
     end
 
-    _vaultTT = f
-    return f
+    _vaultTT = frame
+    return frame
 end
 
 local function ShowVaultTooltip(anchor)
@@ -305,24 +305,24 @@ local function ShowVaultTooltip(anchor)
         BuildVaultRowData(CludesUI.L("World"), worldType, false),
     }
 
-    local tt = GetVaultTooltip()
+    local tooltip = GetVaultTooltip()
     -- Scale the whole tooltip to the user's Custom Tooltip Size (re-applied each show).
-    tt:SetScale(GetCustomTooltipScale())
+    tooltip:SetScale(GetCustomTooltipScale())
 
     local fontFile = (CludesUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF"
     local fontFlags = (CludesUI.GetFontOutlineFlag("minimap")) or ""
-    tt._title:SetFont(fontFile, 11, fontFlags)
-    for r = 1, 3 do
-        _vaultTTRows[r][0]:SetFont(fontFile, 11, fontFlags)
+    tooltip._title:SetFont(fontFile, 11, fontFlags)
+    for region = 1, 3 do
+        _vaultTTRows[region][0]:SetFont(fontFile, 11, fontFlags)
         for c = 1, 3 do
-            _vaultTTRows[r][c]:SetFont(fontFile, 10, fontFlags)
+            _vaultTTRows[region][c]:SetFont(fontFile, 10, fontFlags)
         end
     end
 
     local colWidths = { 0, 0, 0, 0 }
-    for r = 1, 3 do
-        local rd = rowList[r]
-        local labelFS = _vaultTTRows[r][0]
+    for region = 1, 3 do
+        local rd = rowList[region]
+        local labelFS = _vaultTTRows[region][0]
         labelFS:SetText(rd.label)
         labelFS:SetTextColor(0.812, 0.592, 0.212, 1)
         local wid = labelFS:GetStringWidth() or 0
@@ -332,7 +332,7 @@ local function ShowVaultTooltip(anchor)
 
         for c = 1, 3 do
             local tk = rd.tokens[c]
-            local fontStr = _vaultTTRows[r][c]
+            local fontStr = _vaultTTRows[region][c]
             fontStr:SetText(tk.text)
             local tr, tg, tb = GetVaultTokenColor(tk.state)
             fontStr:SetTextColor(tr, tg, tb, 1)
@@ -343,34 +343,34 @@ local function ShowVaultTooltip(anchor)
         end
     end
 
-    local titleTop = VAULT_PAD + (tt._title:GetStringHeight() or 14) + 4
+    local titleTop = VAULT_PAD + (tooltip._title:GetStringHeight() or 14) + 4
     local colX = { VAULT_PAD }
     for c = 2, 4 do
         colX[c] = colX[c - 1] + colWidths[c - 1] + VAULT_COL_GAP
     end
     local totalW = colX[4] + colWidths[4] + VAULT_PAD
 
-    for r = 1, 3 do
-        local posY = -(titleTop + (r - 1) * VAULT_ROW_H)
+    for region = 1, 3 do
+        local posY = -(titleTop + (region - 1) * VAULT_ROW_H)
         for c = 0, 3 do
-            _vaultTTRows[r][c]:ClearAllPoints()
-            _vaultTTRows[r][c]:SetPoint("TOPLEFT", tt, "TOPLEFT", colX[c + 1], posY)
+            _vaultTTRows[region][c]:ClearAllPoints()
+            _vaultTTRows[region][c]:SetPoint("TOPLEFT", tooltip, "TOPLEFT", colX[c + 1], posY)
         end
     end
 
     local totalH = titleTop + 3 * VAULT_ROW_H + VAULT_PAD
-    tt:SetSize(totalW, totalH)
-    tt:ClearAllPoints()
+    tooltip:SetSize(totalW, totalH)
+    tooltip:ClearAllPoints()
     local gpt = SKIN._Grow.center[SKIN._Grow.Dir()] or SKIN._Grow.center.left
-    tt:SetPoint(gpt[1], anchor, gpt[2], gpt[3], gpt[4])
+    tooltip:SetPoint(gpt[1], anchor, gpt[2], gpt[3], gpt[4])
 
-    tt._fadeOutAG:Stop()
-    tt._fadeInAG:Stop()
-    tt:SetAlpha(0)
-    tt:Show()
-    tt._fadeIn:SetFromAlpha(0)
-    tt._fadeIn:SetToAlpha(1)
-    tt._fadeInAG:Play()
+    tooltip._fadeOutAG:Stop()
+    tooltip._fadeInAG:Stop()
+    tooltip:SetAlpha(0)
+    tooltip:Show()
+    tooltip._fadeIn:SetFromAlpha(0)
+    tooltip._fadeIn:SetToAlpha(1)
+    tooltip._fadeInAG:Play()
 end
 
 local function HideVaultTooltip()
@@ -501,13 +501,13 @@ local function ToggleMinimapPortalFlyout(anchorBtn)
         local bBottom = anchorBtn:GetBottom() * bs
         local bLeft = anchorBtn:GetLeft() * bs
         local bRight = anchorBtn:GetRight() * bs
-        local dir = SKIN._Grow.Dir()
+        local direction = SKIN._Grow.Dir()
         flyout:ClearAllPoints()
-        if dir == "right" then
+        if direction == "right" then
             flyout:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", (bRight + 4) / fontStr, (bTop + 4) / fontStr)
-        elseif dir == "up" then
+        elseif direction == "up" then
             flyout:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", (bLeft - 4) / fontStr, (bTop + 4) / fontStr)
-        elseif dir == "down" then
+        elseif direction == "down" then
             flyout:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", (bLeft - 4) / fontStr, (bBottom - 4) / fontStr)
         else
             flyout:SetPoint("TOPRIGHT", UIParent, "BOTTOMLEFT", (bLeft - 4) / fontStr, (bTop + 4) / fontStr)
@@ -543,10 +543,10 @@ local function CreatePortalBtn(hostFrame)
     backdrop:SetFrameLevel(button:GetFrameLevel() - 1)
     button._bg = backdrop
 
-    local icon = button:CreateTexture(nil, "ARTWORK")
-    icon:SetTexture("Interface\\Icons\\Spell_Arcane_PortalDalaran")
-    icon:SetTexCoord(6 / 64, 58 / 64, 6 / 64, 58 / 64)
-    button._icon = icon
+    local iconTex = button:CreateTexture(nil, "ARTWORK")
+    iconTex:SetTexture("Interface\\Icons\\Spell_Arcane_PortalDalaran")
+    iconTex:SetTexCoord(6 / 64, 58 / 64, 6 / 64, 58 / 64)
+    button._icon = iconTex
 
     SizePortalBtn(button)
 
@@ -581,7 +581,7 @@ local function CreatePortalBtn(hostFrame)
         ToggleMinimapPortalFlyout(self)
     end)
 
-    icon:SetVertexColor(0.85, 0.85, 0.85, 1)
+    iconTex:SetVertexColor(0.85, 0.85, 0.85, 1)
 
     button._indicatorKey = "_portals"
 

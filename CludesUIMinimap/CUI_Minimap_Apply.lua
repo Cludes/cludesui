@@ -230,8 +230,8 @@ local function ApplyMinimap()
         blocker:SetFrameLevel(minimap:GetFrameLevel() + 10)
         blocker:SetPassThroughButtons("LeftButton", "RightButton")
         blocker:SetPropagateMouseMotion(true)
-        blocker:SetScript("OnMouseUp", function(_, btn)
-            if btn == "MiddleButton" then
+        blocker:SetScript("OnMouseUp", function(_, button)
+            if button == "MiddleButton" then
                 SKIN._MapMiddleClick()
             end
         end)
@@ -292,7 +292,7 @@ local function ApplyMinimap()
         GetFFD(minimap).bg:SetAlpha(0)
     end
 
-    local r, g, b, borderA = GetBorderStyleColor(p)
+    local region, g, b, borderA = GetBorderStyleColor(p)
     -- Hide the circular quest area ring on square minimaps
     if minimap.SetArchBlobRingScalar then
         minimap:SetArchBlobRingScalar(isCircle and 1 or 0)
@@ -389,11 +389,11 @@ local function ApplyMinimap()
         -- BackdropTemplate) on a dedicated host frame -- the engine shows/hides the host
         -- freely, so it must never be the Minimap itself.
         local bs = p.borderSize or 1
-        local host = GetFFD(minimap).borderHost
-        if not host then
-            host = CreateFrame("Frame", nil, minimap)
-            host:EnableMouse(false)
-            GetFFD(minimap).borderHost = host
+        local owner = GetFFD(minimap).borderHost
+        if not owner then
+            owner = CreateFrame("Frame", nil, minimap)
+            owner:EnableMouse(false)
+            GetFFD(minimap).borderHost = owner
         end
         -- Re-anchor on EVERY apply, not just create: this pass queues the Minimap's
         -- reparent to UIParent a frame out (above), and a host anchored across that
@@ -404,19 +404,19 @@ local function ApplyMinimap()
         -- survive a reload even though the stored value was never lost; anchoring only at
         -- creation made it permanent for the session, tracking how much else was loading
         -- at login rather than the actual setting. Re-setting the points forces a layout recompute; harmless no-op otherwise.
-        host:ClearAllPoints()
-        host:SetAllPoints(GetFFD(minimap).layoutFrame or minimap)
+        owner:ClearAllPoints()
+        owner:SetAllPoints(GetFFD(minimap).layoutFrame or minimap)
         -- Same level as the minimap keeps the border under all child buttons; Show Behind drops it under the map surface for the Shadow style.
-        host:SetFrameLevel(
+        owner:SetFrameLevel(
             p.borderBehind and math.max(0, minimap:GetFrameLevel() - 1) or minimap:GetFrameLevel()
         )
-        host:SetAlpha(1)
+        owner:SetAlpha(1)
         -- Exact size beside the legacy step (nil = the legacy path unchanged).
         local px = CludesUI.BorderPx(p.borderSizePx, bs, p.borderTexture or "solid")
         CludesUI.ApplyBorderStyle(
-            host,
+            owner,
             bs,
-            r,
+            region,
             g,
             b,
             borderA,
@@ -455,7 +455,7 @@ local function ApplyMinimap()
         circBorder:ClearAllPoints()
         circBorder:SetPoint("TOPLEFT", minimap, "TOPLEFT", -bs, bs)
         circBorder:SetPoint("BOTTOMRIGHT", minimap, "BOTTOMRIGHT", bs, -bs)
-        circBorder._tex:SetVertexColor(r, g, b, 1)
+        circBorder._tex:SetVertexColor(region, g, b, 1)
         circBorder:Show()
         if GetFFD(minimap).texCircBorder then
             GetFFD(minimap).texCircBorder:Hide()
@@ -478,7 +478,7 @@ local function ApplyMinimap()
         texCircBorder:ClearAllPoints()
         texCircBorder:SetPoint("TOPLEFT", minimap, "TOPLEFT", -inset, inset)
         texCircBorder:SetPoint("BOTTOMRIGHT", minimap, "BOTTOMRIGHT", inset, -inset)
-        texCircBorder:SetVertexColor(r, g, b, 1)
+        texCircBorder:SetVertexColor(region, g, b, 1)
         texCircBorder:Show()
     end
 
@@ -492,13 +492,13 @@ local function ApplyMinimap()
                 if not mp or not mp.useClassColor or mp.borderUseClassColor then
                     return
                 end
-                local host = GetFFD(minimap).borderHost
-                if host and host:IsShown() then
-                    CludesUI.SetBorderStyleColor(host, ar, ag, ab, 1)
+                local owner = GetFFD(minimap).borderHost
+                if owner and owner:IsShown() then
+                    CludesUI.SetBorderStyleColor(owner, ar, ag, ab, 1)
                 end
-                local cb = GetFFD(minimap).circBorder
-                if cb and cb:IsShown() then
-                    cb._tex:SetVertexColor(ar, ag, ab, 1)
+                local callback = GetFFD(minimap).circBorder
+                if callback and callback:IsShown() then
+                    callback._tex:SetVertexColor(ar, ag, ab, 1)
                 end
                 local tcb = GetFFD(minimap).texCircBorder
                 if tcb and tcb:IsShown() then
@@ -1120,10 +1120,10 @@ local function ApplyMinimap()
             local DIV_H = 10
             local DIV_PAD = 6
             local function MakeDivider()
-                local d = fpsBg:CreateTexture(nil, "OVERLAY")
-                d:SetColorTexture(1, 1, 1, 1)
-                d:SetSize(DIV_W, DIV_H)
-                return d
+                local skinData = fpsBg:CreateTexture(nil, "OVERLAY")
+                skinData:SetColorTexture(1, 1, 1, 1)
+                skinData:SetSize(DIV_W, DIV_H)
+                return skinData
             end
             -- One FontString per SEGMENT ("58 FPS"): number+suffix rasterize in a single
             -- pass, so spacing can never wobble sub-pixel like two separately snapped
@@ -1500,22 +1500,22 @@ end
 -- plain button only, every apply pass (Blizzard anchors it once, at load).
 function SKIN._ApplyExternalEventButton()
     local backdrop = _G.MinimapBackdrop
-    local btn = backdrop and backdrop.ExternalEventURLButton
-    if not (btn and Minimap) then
+    local button = backdrop and backdrop.ExternalEventURLButton
+    if not (button and Minimap) then
         return
     end
-    btn:ClearAllPoints()
+    button:ClearAllPoints()
     if SKIN._MinimapBlizz() and not SKIN._MinimapClassic() then
-        btn:SetScale(1)
+        button:SetScale(1)
         local s = (Minimap:GetWidth() or 198) / 198
-        btn:SetPoint("CENTER", Minimap, "CENTER", -101.5 * s, 0.5 * s)
+        button:SetPoint("CENTER", Minimap, "CENTER", -101.5 * s, 0.5 * s)
     else
         -- Forever Square steps it in past the heavy band, as the texts inside the map.
         local posX, posY = SKIN._FvInsideXY("top", 2, -2)
-        btn:SetScale(0.75)
-        btn:SetPoint("TOPLEFT", GetFFD(Minimap).layoutFrame or Minimap, "TOPLEFT", posX, posY)
+        button:SetScale(0.75)
+        button:SetPoint("TOPLEFT", GetFFD(Minimap).layoutFrame or Minimap, "TOPLEFT", posX, posY)
     end
-    btn:SetFrameLevel(Minimap:GetFrameLevel() + 11)
+    button:SetFrameLevel(Minimap:GetFrameLevel() + 11)
 end
 
 Inner.SetApplyMinimap(ApplyMinimap)

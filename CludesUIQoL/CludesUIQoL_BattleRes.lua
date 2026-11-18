@@ -177,8 +177,8 @@ end
 
 -- Custom-shape outline: the shape's mask grown by the border size and filled with
 -- the border colour behind the masked icon, leaving a ring exactly that thick.
-local function _applyShapeOutline(host, shape, bs, r, g, b, a)
-    local t = host._cuiOutline
+local function _applyShapeOutline(owner, shape, bs, region, g, b, a)
+    local t = owner._cuiOutline
     local maskPath = shape and CludesUI.SHAPE_MASKS[shape]
     local Pix = CludesUI and CludesUI.PP
     if not (maskPath and Pix) or bs <= 0 then
@@ -188,23 +188,23 @@ local function _applyShapeOutline(host, shape, bs, r, g, b, a)
         return
     end
     if not t then
-        t = host:CreateTexture(nil, "BACKGROUND", nil, 7)
-        host._cuiOutlineMask = host:CreateMaskTexture()
-        t:AddMaskTexture(host._cuiOutlineMask)
-        host._cuiOutline = t
+        t = owner:CreateTexture(nil, "BACKGROUND", nil, 7)
+        owner._cuiOutlineMask = owner:CreateMaskTexture()
+        t:AddMaskTexture(owner._cuiOutlineMask)
+        owner._cuiOutline = t
     end
-    local m = host._cuiOutlineMask
+    local m = owner._cuiOutlineMask
     -- The mask's opening is its middle (128 - 2 * inset) / 128: grow it by bs over
     -- that ratio so the outline reaches bs pixels past the icon's own edge.
     local inset = CludesUI.SHAPE_INSETS[shape] or 17
     local grow = _snapOff(Pix.FromPixels(bs * 128 / (128 - 2 * inset)))
     m:ClearAllPoints()
-    m:SetPoint("TOPLEFT", host, "TOPLEFT", -grow, grow)
-    m:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", grow, -grow)
+    m:SetPoint("TOPLEFT", owner, "TOPLEFT", -grow, grow)
+    m:SetPoint("BOTTOMRIGHT", owner, "BOTTOMRIGHT", grow, -grow)
     m:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
     t:ClearAllPoints()
     t:SetAllPoints(m)
-    t:SetColorTexture(r, g, b, a)
+    t:SetColorTexture(region, g, b, a)
     t:Show()
 end
 -- Shared with the Bloodlust tracker (this file loads first).
@@ -304,8 +304,8 @@ local function ApplyShape()
                 Pix.CreateBorder(widget, 0, 0, 0, 1, 1, "OVERLAY", 2)
             end
             if bs > 0 then
-                local r, g, b, a = _resolveBorderColor(p)
-                Pix.UpdateBorder(widget, bs, r, g, b, a)
+                local region, g, b, a = _resolveBorderColor(p)
+                Pix.UpdateBorder(widget, bs, region, g, b, a)
                 Pix.ShowBorder(widget)
             else
                 Pix.HideBorder(widget)
@@ -352,8 +352,8 @@ local function ApplyShape()
     end
 
     borderTex:Hide()
-    local r, g, b, a = _resolveBorderColor(p)
-    _applyShapeOutline(widget, shape, bs, r, g, b, a)
+    local region, g, b, a = _resolveBorderColor(p)
+    _applyShapeOutline(widget, shape, bs, region, g, b, a)
 end
 
 -------------------------------------------------------------------------------
@@ -709,8 +709,8 @@ end
 _G._CUI_BattleRes_UpdateVisibility = UpdateVisibility
 
 -- The options page hands us its frame on build; _previewActive() takes it from there.
-function _G._CUI_BattleRes_SetPreviewOwner(f)
-    _previewOwner = f
+function _G._CUI_BattleRes_SetPreviewOwner(frame)
+    _previewOwner = frame
     _previewExpiry = 0 -- every visit starts a fresh stand-in countdown
     UpdateVisibility()
 end

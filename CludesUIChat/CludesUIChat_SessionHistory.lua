@@ -149,8 +149,8 @@ local function IsCombatLogChatFrame(castFrame)
     end
     local func = _G.IsCombatLog
     if type(func) == "function" then
-        local success, r = pcall(func, castFrame)
-        if success and r then
+        local success, region = pcall(func, castFrame)
+        if success and region then
             return true
         end
     end
@@ -172,42 +172,42 @@ local function ShouldTrackFrame(castFrame)
 end
 
 local function GetSV()
-    local sv = _G[SV_NAME]
-    if type(sv) ~= "table" then
-        sv = { sessionLog = {} }
-        _G[SV_NAME] = sv
+    local savedVars = _G[SV_NAME]
+    if type(savedVars) ~= "table" then
+        savedVars = { sessionLog = {} }
+        _G[SV_NAME] = savedVars
     end
-    if type(sv.sessionLog) ~= "table" then
-        sv.sessionLog = {}
+    if type(savedVars.sessionLog) ~= "table" then
+        savedVars.sessionLog = {}
     end
-    if sv.byFrame then
-        sv.byFrame = nil
+    if savedVars.byFrame then
+        savedVars.byFrame = nil
     end
-    return sv
+    return savedVars
 end
 
-local function IsValidMessage(msg)
-    if msg == nil then
+local function IsValidMessage(message)
+    if message == nil then
         return false
     end
-    if issecretvalue and issecretvalue(msg) then
+    if issecretvalue and issecretvalue(message) then
         return false
     end
     local success, valid = pcall(function()
-        return type(msg) == "string" and msg ~= ""
+        return type(message) == "string" and message ~= ""
     end)
     return success and valid
 end
 
-local function MessageForStorage(msg)
-    if not IsValidMessage(msg) then
+local function MessageForStorage(message)
+    if not IsValidMessage(message) then
         return nil
     end
     local success, stored = pcall(function()
-        if #msg > MAX_TEXT_LEN then
-            return strsub(msg, 1, MAX_TEXT_LEN)
+        if #message > MAX_TEXT_LEN then
+            return strsub(message, 1, MAX_TEXT_LEN)
         end
-        return msg
+        return message
     end)
     if success then
         return stored
@@ -220,18 +220,18 @@ end
 -- Also cleans legacy saves that stored the prefix. The prefix is re-applied
 -- on restore from serverTime with whatever format is current.
 -- Matches: "12:34 ...", "12:34:56 ...", "1:23 AM ...", "12:34:56 PM ..."
-local function StripTimestampPrefix(msg)
-    if type(msg) ~= "string" then
-        return msg
+local function StripTimestampPrefix(message)
+    if type(message) ~= "string" then
+        return message
     end
-    local rest = msg:match("^%d%d?:%d%d:%d%d%s*[AP]M%s+(.+)$")
-        or msg:match("^%d%d?:%d%d:%d%d%s+(.+)$")
-        or msg:match("^%d%d?:%d%d%s*[AP]M%s+(.+)$")
-        or msg:match("^%d%d?:%d%d%s+(.+)$")
+    local rest = message:match("^%d%d?:%d%d:%d%d%s*[AP]M%s+(.+)$")
+        or message:match("^%d%d?:%d%d:%d%d%s+(.+)$")
+        or message:match("^%d%d?:%d%d%s*[AP]M%s+(.+)$")
+        or message:match("^%d%d?:%d%d%s+(.+)$")
     if rest and rest ~= "" then
         return rest
     end
-    return msg
+    return message
 end
 
 local function TimestampFormatFromDB()
@@ -255,9 +255,9 @@ local function EffectiveTimestampFormat()
         return fmt
     end
     if ChatFrameUtil and ChatFrameUtil.GetTimestampFormat then
-        local success, f = pcall(ChatFrameUtil.GetTimestampFormat)
-        if success and f then
-            return f
+        local success, frame = pcall(ChatFrameUtil.GetTimestampFormat)
+        if success and frame then
+            return frame
         end
     end
     if GetCVar then
@@ -294,8 +294,8 @@ local function RestoreDisplayMessage(record)
     return body
 end
 
-local function NormalizeForDedup(msg)
-    local textValue = StripTimestampPrefix(msg)
+local function NormalizeForDedup(message)
+    local textValue = StripTimestampPrefix(message)
     if not textValue then
         return nil
     end
@@ -312,8 +312,8 @@ local TrimLinesToMax = function(lines, maxN)
     end
     local result = {}
     local start = num - maxN + 1
-    for idx = start, num do
-        result[#result + 1] = lines[idx]
+    for index = start, num do
+        result[#result + 1] = lines[index]
     end
     return result
 end
@@ -337,21 +337,21 @@ local function SanitizeLineList(lines)
     local result = {}
     for _, L in ipairs(lines) do
         if type(L) == "table" then
-            local msg = MessageForStorage(L.message)
-            if msg then
-                msg = StripTimestampPrefix(msg)
+            local message = MessageForStorage(L.message)
+            if message then
+                message = StripTimestampPrefix(message)
             end
             -- Legacy stored lines can carry |K protected-name tokens from a
             -- DEAD session's mapping (captured before the capture-side
             -- substitution existed): unrecoverable and wrongly attributed on
             -- replay, so they are dropped -- this heals poisoned stores on
             -- the first sanitize after update.
-            if msg and msg:find("|K", 1, true) then
-                msg = nil
+            if message and message:find("|K", 1, true) then
+                message = nil
             end
-            if msg then
+            if message then
                 result[#result + 1] = {
-                    message = msg,
+                    message = message,
                     event = L.event,
                     r = (type(L.r) == "number" and L.r) or 1,
                     g = (type(L.g) == "number" and L.g) or 1,
@@ -368,12 +368,12 @@ local function SanitizeLineList(lines)
 end
 
 local function SanitizeSV()
-    local sv = GetSV()
-    local cleaned = SanitizeLineList(sv.sessionLog)
+    local savedVars = GetSV()
+    local cleaned = SanitizeLineList(savedVars.sessionLog)
     if cleaned and #cleaned > 0 then
-        sv.sessionLog = cleaned
+        savedVars.sessionLog = cleaned
     else
-        sv.sessionLog = {}
+        savedVars.sessionLog = {}
     end
 end
 
@@ -386,8 +386,8 @@ local function FrameShowsEvent(castFrame, evt)
     if type(entries) ~= "table" then
         return true
     end
-    for idx = 1, #entries do
-        if entries[idx] == chatType then
+    for index = 1, #entries do
+        if entries[index] == chatType then
             return true
         end
     end
@@ -395,21 +395,21 @@ local function FrameShowsEvent(castFrame, evt)
 end
 
 local function AppendLogEntry(record)
-    local sv = GetSV()
-    local log = sv.sessionLog
+    local savedVars = GetSV()
+    local log = savedVars.sessionLog
     local norm = NormalizeForDedup(record.message)
     if norm then
         -- The bridge tail fires once per window that displays the line, so
         -- the same message can arrive more than once back to back.
         local checkN = math.min(#log, 10)
-        for idx = #log, #log - checkN + 1, -1 do
-            if NormalizeForDedup(log[idx].message) == norm then
+        for index = #log, #log - checkN + 1, -1 do
+            if NormalizeForDedup(log[index].message) == norm then
                 return
             end
         end
     end
     log[#log + 1] = record
-    sv.sessionLog = TrimLinesToMax(log, MaxLines())
+    savedVars.sessionLog = TrimLinesToMax(log, MaxLines())
 end
 
 -------------------------------------------------------------------------------
@@ -438,8 +438,8 @@ local function ResolveBNetTokens(textValue)
     local map
     local numFriends = BNGetNumFriends and BNGetNumFriends()
     if numFriends and C_BattleNet and C_BattleNet.GetFriendAccountInfo then
-        for idx = 1, numFriends do
-            local acc = C_BattleNet.GetFriendAccountInfo(idx)
+        for index = 1, numFriends do
+            local acc = C_BattleNet.GetFriendAccountInfo(index)
             local tokenName = acc and acc.accountName
             local tag = acc and acc.battleTag
             if
@@ -468,7 +468,7 @@ local function ResolveBNetTokens(textValue)
     return textValue
 end
 
-local function OnBridgeLine(castFrame, msg, r, g, b, chatTypeID, evt)
+local function OnBridgeLine(castFrame, message, region, g, b, chatTypeID, evt)
     if not evt or not CAPTURE_EVENTS[evt] then
         return
     end
@@ -482,7 +482,7 @@ local function OnBridgeLine(castFrame, msg, r, g, b, chatTypeID, evt)
         return
     end
 
-    local body = MessageForStorage(msg)
+    local body = MessageForStorage(message)
     if not body then
         return
     end
@@ -499,7 +499,7 @@ local function OnBridgeLine(castFrame, msg, r, g, b, chatTypeID, evt)
     AppendLogEntry({
         event = evt,
         message = body,
-        r = (type(r) == "number" and r) or 1,
+        r = (type(region) == "number" and region) or 1,
         g = (type(g) == "number" and g) or 1,
         b = (type(b) == "number" and b) or 1,
         id = (type(chatTypeID) == "number" and chatTypeID) or 1,
@@ -564,8 +564,8 @@ local function BuildWindowMessageSet(castFrame)
     end
     local raw = {}
     CHAT.EngineGetMessageLines(castFrame, raw)
-    for idx = 1, #raw do
-        local stored = MessageForStorage(raw[idx])
+    for index = 1, #raw do
+        local stored = MessageForStorage(raw[index])
         if stored then
             local success, norm = pcall(NormalizeForDedup, stored)
             if success and norm then
@@ -601,8 +601,8 @@ local function RestoreWindow(castFrame, frameName, log)
     local pushed = 0
     -- Newest first: each BackFill lands above the previous push, so the final
     -- on-screen order is chronological, above whatever login produced.
-    for idx = #lines, 1, -1 do
-        local record = lines[idx]
+    for index = #lines, 1, -1 do
+        local record = lines[index]
         if record and record.event and record.message and FrameShowsEvent(castFrame, record.event) then
             local norm = NormalizeForDedup(record.message)
             if not (norm and existingSet[norm]) then
@@ -639,8 +639,8 @@ local function RunRestore(token)
     end
 
     local any = false
-    for idx = 1, 10 do
-        local name = "ChatFrame" .. idx
+    for index = 1, 10 do
+        local name = "ChatFrame" .. index
         local castFrame = _G[name]
         if castFrame and RestoreWindow(castFrame, name, log) then
             any = true

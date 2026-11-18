@@ -42,14 +42,14 @@ _itemDragFrame:SetScript("OnUpdate", function(self)
     -- Cursor into each button's OWN coordinate space: GetRect() is in effective-scale
     -- units, so divide by btn:GetEffectiveScale() (not UIParent's -- matches only at scale 1.0).
     local rawCx, rawCy = GetCursorPosition()
-    for _, btn in pairs(itemSlots) do
-        if btn:IsShown() and btn:GetParent():IsShown() then
-            local es = btn:GetEffectiveScale()
+    for _, button in pairs(itemSlots) do
+        if button:IsShown() and button:GetParent():IsShown() then
+            local es = button:GetEffectiveScale()
             local cx, cy = rawCx / es, rawCy / es
-            local l, b, wid, hgt = btn:GetRect()
+            local l, b, wid, hgt = button:GetRect()
             if l and b and cx >= l and cx <= l + wid and cy >= b and cy <= b + hgt then
-                local destBag = btn:GetParent():GetID()
-                local destSlot = btn:GetID()
+                local destBag = button:GetParent():GetID()
+                local destSlot = button:GetID()
                 if destSlot > 0 then
                     C_Container.PickupContainerItem(destBag, destSlot)
                 end
@@ -60,14 +60,14 @@ _itemDragFrame:SetScript("OnUpdate", function(self)
     local bankFrame = _G.CUI_BankFrame
     local bankSlots = bankFrame and bankFrame._bankSlots
     if bankSlots and bankFrame:IsVisible() then
-        for _, btn in pairs(bankSlots) do
-            if btn:IsShown() and btn:GetParent():IsShown() then
-                local es = btn:GetEffectiveScale()
+        for _, button in pairs(bankSlots) do
+            if button:IsShown() and button:GetParent():IsShown() then
+                local es = button:GetEffectiveScale()
                 local cx, cy = rawCx / es, rawCy / es
-                local l, b, wid, hgt = btn:GetRect()
+                local l, b, wid, hgt = button:GetRect()
                 if l and b and cx >= l and cx <= l + wid and cy >= b and cy <= b + hgt then
-                    local destBag = btn:GetParent():GetID()
-                    local destSlot = btn:GetID()
+                    local destBag = button:GetParent():GetID()
+                    local destSlot = button:GetID()
                     if destSlot > 0 then
                         C_Container.PickupContainerItem(destBag, destSlot)
                     end
@@ -197,111 +197,111 @@ local function GetOrCreateReagentSlot(position)
 
     local slotParent = CreateFrame("Frame", nil, CUI_BagsReagent)
     mod.SizeSlot(slotParent)
-    local btn = CreateFrame("ItemButton", nil, slotParent, "ContainerFrameItemButtonTemplate")
-    mod.PinItemButton(btn, CUI_BagsReagent)
-    btn:SetAllPoints(slotParent)
-    btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    btn:RegisterForDrag("LeftButton")
+    local button = CreateFrame("ItemButton", nil, slotParent, "ContainerFrameItemButtonTemplate")
+    mod.PinItemButton(button, CUI_BagsReagent)
+    button:SetAllPoints(slotParent)
+    button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    button:RegisterForDrag("LeftButton")
 
     -- Methods only: writing properties onto Blizzard template sub-objects taints
-    if btn.NewItemTexture then
-        btn.NewItemTexture:Hide()
-        btn.NewItemTexture:SetAlpha(0)
+    if button.NewItemTexture then
+        button.NewItemTexture:Hide()
+        button.NewItemTexture:SetAlpha(0)
     end
-    if btn.BattlepayItemTexture then
-        btn.BattlepayItemTexture:Hide()
-        btn.BattlepayItemTexture:SetAlpha(0)
+    if button.BattlepayItemTexture then
+        button.BattlepayItemTexture:Hide()
+        button.BattlepayItemTexture:SetAlpha(0)
     end
-    if btn.flash then
-        btn.flash:Hide()
-        btn.flash:SetAlpha(0)
+    if button.flash then
+        button.flash:Hide()
+        button.flash:SetAlpha(0)
     end
-    if btn.newitemglowAnim then
-        btn.newitemglowAnim:Stop()
+    if button.newitemglowAnim then
+        button.newitemglowAnim:Stop()
     end
 
-    mod.SizeSlot(btn)
-    if btn.icon then
+    mod.SizeSlot(button)
+    if button.icon then
         local z = BP().bagItemIconZoom or 0.08
-        btn.icon:SetTexCoord(z, 1 - z, z, 1 - z)
-        btn.icon:ClearAllPoints()
-        btn.icon:SetAllPoints(btn)
+        button.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+        button.icon:ClearAllPoints()
+        button.icon:SetAllPoints(button)
     end
 
-    local ht = btn:GetHighlightTexture()
+    local ht = button:GetHighlightTexture()
     if ht then
         ht:ClearAllPoints()
-        ht:SetAllPoints(btn)
+        ht:SetAllPoints(button)
     end
-    local pt = btn:GetPushedTexture()
+    local pt = button:GetPushedTexture()
     if pt then
         pt:SetAtlas(nil)
         pt:SetTexture("Interface\\AddOns\\CludesUIBags\\Media\\highlight-3.png")
         pt:SetTexCoord(0, 1, 0, 1)
         pt:ClearAllPoints()
-        pt:SetAllPoints(btn)
+        pt:SetAllPoints(button)
         pt:SetVertexColor(0.973, 0.839, 0.604, 1)
     end
 
-    if btn.NormalTexture then
-        btn.NormalTexture:SetAlpha(0)
+    if button.NormalTexture then
+        button.NormalTexture:SetAlpha(0)
     end
-    if btn.IconBorder then
-        btn.IconBorder:SetAlpha(0)
+    if button.IconBorder then
+        button.IconBorder:SetAlpha(0)
     end
 
-    if btn.icon and btn.IconMask then
-        btn.icon:RemoveMaskTexture(btn.IconMask)
-        btn.IconMask:Hide()
-        btn.IconMask:SetTexture(nil)
-        btn.IconMask:ClearAllPoints()
-        btn.IconMask:SetSize(0.001, 0.001)
+    if button.icon and button.IconMask then
+        button.icon:RemoveMaskTexture(button.IconMask)
+        button.IconMask:Hide()
+        button.IconMask:SetTexture(nil)
+        button.IconMask:ClearAllPoints()
+        button.IconMask:SetSize(0.001, 0.001)
     end
-    mod.UnmaskItemButton(btn)
+    mod.UnmaskItemButton(button)
 
-    if btn.Cooldown then
-        local cdText = btn.Cooldown:GetRegions()
+    if button.Cooldown then
+        local cdText = button.Cooldown:GetRegions()
         if cdText and cdText.SetFont then
             CludesUI.ApplyIconTextFont(cdText, GetFont(), 11, "bags")
         end
     end
 
-    CreateInsetBorder(btn, true)
-    SetInsetBorderColor(btn, 0.25, 0.25, 0.25, 1)
+    CreateInsetBorder(button, true)
+    SetInsetBorderColor(button, 0.25, 0.25, 0.25, 1)
 
     -- Text overlay: above the cooldown swipe, so counts and item levels stay visible
-    local textOverlay = CreateFrame("Frame", nil, btn)
+    local textOverlay = CreateFrame("Frame", nil, button)
     textOverlay:SetAllPoints()
-    textOverlay:SetFrameLevel(btn:GetFrameLevel() + 3)
-    btn._textOverlay = textOverlay
+    textOverlay:SetFrameLevel(button:GetFrameLevel() + 3)
+    button._textOverlay = textOverlay
 
-    local countFS = btn.Count
+    local countFS = button.Count
     if countFS then
         countFS:SetParent(textOverlay)
         CludesUI.ApplyIconTextFont(countFS, GetFont(), BP().bagCountFontSize or 11, "bags")
         countFS:ClearAllPoints()
-        countFS:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -2, 2)
+        countFS:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -2, 2)
     end
 
-    if not btn.ItemLevelText then
-        btn.ItemLevelText = textOverlay:CreateFontString(nil, "OVERLAY", nil, 7)
-        btn.ItemLevelText:SetPoint("TOPLEFT", btn, "TOPLEFT", 1, -1)
-        btn.ItemLevelText:SetTextColor(1, 1, 1, 1)
+    if not button.ItemLevelText then
+        button.ItemLevelText = textOverlay:CreateFontString(nil, "OVERLAY", nil, 7)
+        button.ItemLevelText:SetPoint("TOPLEFT", button, "TOPLEFT", 1, -1)
+        button.ItemLevelText:SetTextColor(1, 1, 1, 1)
     end
     local fontSize = BP().itemlevelFontSize or 12
-    btn.ItemLevelText:SetFont(
+    button.ItemLevelText:SetFont(
         STANDARD_TEXT_FONT,
         fontSize,
         (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     )
-    btn.ItemLevelText:SetText("")
+    button.ItemLevelText:SetText("")
 
-    btn:HookScript("PostClick", function(self)
+    button:HookScript("PostClick", function(self)
         CUI_Bags.ShowStackSplitter(self, mod.SplitTargetBags(5), CUI_BagsReagent)
     end)
 
-    reagentSlots[position] = btn
-    return btn
+    reagentSlots[position] = button
+    return button
 end
 
 -- Builds the secure item-button pools up to the current bag sizes (main pool = bags 0-5,
@@ -376,20 +376,20 @@ local function GetOrCreateBagSlot(position)
     end
     local slotParent = CreateFrame("Frame", nil, CUI_BagsWindow)
     mod.SizeSlot(slotParent)
-    local btn = CreateFrame("Button", nil, slotParent)
-    btn:SetAllPoints(slotParent)
-    btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    btn:RegisterForDrag("LeftButton")
-    btn.icon = btn:CreateTexture(nil, "ARTWORK")
+    local button = CreateFrame("Button", nil, slotParent)
+    button:SetAllPoints(slotParent)
+    button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    button:RegisterForDrag("LeftButton")
+    button.icon = button:CreateTexture(nil, "ARTWORK")
     local z = BP().bagItemIconZoom or 0.08
-    btn.icon:SetTexCoord(z, 1 - z, z, 1 - z)
-    btn.icon:SetAllPoints(btn)
-    btn.Count = btn:CreateFontString(nil, "OVERLAY")
-    CludesUI.ApplyIconTextFont(btn.Count, GetFont(), BP().bagCountFontSize or 11, "bags")
-    btn.Count:SetPoint("BOTTOMRIGHT", -2, 2)
-    btn.Count:SetTextColor(1, 1, 1)
-    CreateInsetBorder(btn, true)
-    SetInsetBorderColor(btn, 0.25, 0.25, 0.25, 1)
+    button.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+    button.icon:SetAllPoints(button)
+    button.Count = button:CreateFontString(nil, "OVERLAY")
+    CludesUI.ApplyIconTextFont(button.Count, GetFont(), BP().bagCountFontSize or 11, "bags")
+    button.Count:SetPoint("BOTTOMRIGHT", -2, 2)
+    button.Count:SetTextColor(1, 1, 1)
+    CreateInsetBorder(button, true)
+    SetInsetBorderColor(button, 0.25, 0.25, 0.25, 1)
 
     -- Drag-and-drop: equip a bag into this slot, or swap it with the
     -- equipped bag on the cursor
@@ -406,10 +406,10 @@ local function GetOrCreateBagSlot(position)
         end -- can't replace backpack
         PutItemInBag(C_Container.ContainerIDToInventoryID(bagID))
     end
-    btn:SetScript("OnReceiveDrag", TrySwapBag)
-    btn:HookScript("OnClick", TrySwapBag)
+    button:SetScript("OnReceiveDrag", TrySwapBag)
+    button:HookScript("OnClick", TrySwapBag)
     -- Drag an equipped bag out of its slot (drop it on another slot to swap)
-    btn:SetScript("OnDragStart", function(self)
+    button:SetScript("OnDragStart", function(self)
         if InCombatLockdown() then
             return
         end
@@ -421,7 +421,7 @@ local function GetOrCreateBagSlot(position)
     end)
 
     -- Tooltip: bag name + used/total slots (computed live on hover)
-    btn:SetScript("OnEnter", function(self)
+    button:SetScript("OnEnter", function(self)
         SetInsetBorderColor(self, 1, 1, 1, 1)
         local bagIdx = self:GetID()
         local bName
@@ -439,13 +439,13 @@ local function GetOrCreateBagSlot(position)
         end
         CUI.ShowWidgetTooltip(self, tipText)
     end)
-    btn:SetScript("OnLeave", function(self)
+    button:SetScript("OnLeave", function(self)
         SetInsetBorderColor(self, self._bdrR, self._bdrG, self._bdrB, 1)
         CUI.HideWidgetTooltip()
     end)
 
-    bagSlots[position] = btn
-    return btn
+    bagSlots[position] = button
+    return button
 end
 
 -------------------------------------------------------------------------------
@@ -456,52 +456,52 @@ local function RefreshTextSizes()
     local countSize = BP().bagCountFontSize or 11
     local ilvlSize = BP().itemlevelFontSize or 12
     local bindTypeSize = BP().bagBindTypeFontSize or 11
-    for _, btn in pairs(itemSlots) do
-        if btn.Count then
-            CludesUI.ApplyIconTextFont(btn.Count, fontFile, countSize, "bags")
+    for _, button in pairs(itemSlots) do
+        if button.Count then
+            CludesUI.ApplyIconTextFont(button.Count, fontFile, countSize, "bags")
         end
-        if btn.ItemLevelText then
-            btn.ItemLevelText:SetFont(
+        if button.ItemLevelText then
+            button.ItemLevelText:SetFont(
                 fontFile,
                 ilvlSize,
                 (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
             )
         end
-        if btn.KeystoneText then
-            btn.KeystoneText:SetFont(
+        if button.KeystoneText then
+            button.KeystoneText:SetFont(
                 fontFile,
                 countSize,
                 (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
             )
         end
-        if btn.KeystoneDungeonText then
-            btn.KeystoneDungeonText:SetFont(
+        if button.KeystoneDungeonText then
+            button.KeystoneDungeonText:SetFont(
                 fontFile,
                 math.max(countSize - 2, 7),
                 (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
             )
         end
-        if btn.BindTypeText then
-            btn.BindTypeText:SetFont(
+        if button.BindTypeText then
+            button.BindTypeText:SetFont(
                 fontFile,
                 bindTypeSize,
                 (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
             )
         end
-        if btn.SetNameText then
-            btn.SetNameText:SetFont(
+        if button.SetNameText then
+            button.SetNameText:SetFont(
                 fontFile,
                 BP().bagSetNameFontSize or 9,
                 (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
             )
         end
     end
-    for _, btn in pairs(reagentSlots) do
-        if btn.Count then
-            CludesUI.ApplyIconTextFont(btn.Count, fontFile, countSize, "bags")
+    for _, button in pairs(reagentSlots) do
+        if button.Count then
+            CludesUI.ApplyIconTextFont(button.Count, fontFile, countSize, "bags")
         end
-        if btn.ItemLevelText then
-            btn.ItemLevelText:SetFont(
+        if button.ItemLevelText then
+            button.ItemLevelText:SetFont(
                 STANDARD_TEXT_FONT,
                 ilvlSize,
                 (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
@@ -516,19 +516,19 @@ CUI_Bags.RefreshTextSizes = RefreshTextSizes
 -------------------------------------------------------------------------------
 local function RefreshIconZoom()
     local z = BP().bagItemIconZoom or 0.08
-    for _, btn in pairs(itemSlots) do
-        if btn.icon then
-            btn.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+    for _, button in pairs(itemSlots) do
+        if button.icon then
+            button.icon:SetTexCoord(z, 1 - z, z, 1 - z)
         end
     end
-    for _, btn in pairs(reagentSlots) do
-        if btn.icon then
-            btn.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+    for _, button in pairs(reagentSlots) do
+        if button.icon then
+            button.icon:SetTexCoord(z, 1 - z, z, 1 - z)
         end
     end
-    for _, btn in pairs(bagSlots) do
-        if btn.icon then
-            btn.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+    for _, button in pairs(bagSlots) do
+        if button.icon then
+            button.icon:SetTexCoord(z, 1 - z, z, 1 - z)
         end
     end
 end
@@ -618,9 +618,9 @@ do
                     toks[#toks + 1] = { k = "range", lo = tonumber(a), hi = tonumber(b) }
                     i = e
                 else
-                    local d = s:match("^%d+", i)
-                    toks[#toks + 1] = { k = "num", v = tonumber(d) }
-                    i = i + #d
+                    local skinData = s:match("^%d+", i)
+                    toks[#toks + 1] = { k = "num", v = tonumber(skinData) }
+                    i = i + #skinData
                 end
             elseif c:find("^%a") then
                 local wid = s:match("^%a+", i)
@@ -711,8 +711,8 @@ do
                 if toks[p].k == "and" then
                     p = p + 1
                 end
-                local r = ParseNot(depth)
-                l = r and { t = "and", a = l, b = r }
+                local region = ParseNot(depth)
+                l = region and { t = "and", a = l, b = region }
             end
             return l
         end
@@ -721,8 +721,8 @@ do
             local l = ParseAnd(depth)
             while l and toks[p] and toks[p].k == "or" do
                 p = p + 1
-                local r = ParseAnd(depth)
-                l = r and { t = "or", a = l, b = r }
+                local region = ParseAnd(depth)
+                l = region and { t = "or", a = l, b = region }
             end
             return l
         end
@@ -958,13 +958,13 @@ function CUI_Bags.UnregisterItemOverlayIcon(name)
     CUI_Bags.itemOverlayIcons[name] = nil
 end
 
-function CUI_Bags.RunItemOverlays(btn, payload)
+function CUI_Bags.RunItemOverlays(button, payload)
     local fns = CUI_Bags.itemOverlayIcons
     if next(fns) == nil then
         return
     end
     for _, func in pairs(fns) do
-        securecallfunction(func, btn, payload)
+        securecallfunction(func, button, payload)
     end
 end
 

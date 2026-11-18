@@ -140,12 +140,12 @@ function mod.ForeverBagSidebarInset(ownerFrame)
     return CUI.FOREVER_HEAVY.band * (ownerFrame._foreverBagFrameScale or 1)
 end
 
-function mod.AnchorBagSidebarIcon(icon, collapsed, leftX)
-    icon:ClearAllPoints()
+function mod.AnchorBagSidebarIcon(iconTex, collapsed, leftX)
+    iconTex:ClearAllPoints()
     if collapsed then
-        icon:SetPoint("CENTER")
+        iconTex:SetPoint("CENTER")
     else
-        icon:SetPoint("LEFT", leftX, 0)
+        iconTex:SetPoint("LEFT", leftX, 0)
     end
 end
 
@@ -163,32 +163,32 @@ end
 function mod.AddForeverBagPortrait(header, texturePath)
     local border = header:GetParent()._foreverBagPortraitFrame
     local art = border or header
-    local icon = art:CreateTexture(nil, "ARTWORK")
+    local iconTex = art:CreateTexture(nil, "ARTWORK")
     local size = border and 36 or 28
-    icon:SetSize(size, size)
-    icon:SetTexture(texturePath)
+    iconTex:SetSize(size, size)
+    iconTex:SetTexture(texturePath)
 
     local mask = art:CreateMaskTexture()
     if border then
-        icon:SetPoint("TOPLEFT", border, "TOPLEFT", -4, 1)
-        mask:SetPoint("TOPLEFT", icon, "TOPLEFT", 2, 0)
-        mask:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", -2, 4)
+        iconTex:SetPoint("TOPLEFT", border, "TOPLEFT", -4, 1)
+        mask:SetPoint("TOPLEFT", iconTex, "TOPLEFT", 2, 0)
+        mask:SetPoint("BOTTOMRIGHT", iconTex, "BOTTOMRIGHT", -2, 4)
     else
-        icon:SetPoint("CENTER", header, "TOPLEFT", 16, -18)
-        mask:SetAllPoints(icon)
+        iconTex:SetPoint("CENTER", header, "TOPLEFT", 16, -18)
+        mask:SetAllPoints(iconTex)
     end
     mask:SetTexture(
         "Interface\\CharacterFrame\\TempPortraitAlphaMask",
         "CLAMPTOBLACKADDITIVE",
         "CLAMPTOBLACKADDITIVE"
     )
-    icon:AddMaskTexture(mask)
+    iconTex:AddMaskTexture(mask)
 
     if not border and C_Texture.GetAtlasInfo("UI-Frame-Portrait") then
         local rim = header:CreateTexture(nil, "ARTWORK", nil, 1)
         rim:SetAtlas("UI-Frame-Portrait")
         rim:SetSize(40, 40)
-        rim:SetPoint("CENTER", icon)
+        rim:SetPoint("CENTER", iconTex)
     end
 end
 
@@ -241,15 +241,15 @@ function mod.SkinForeverBagSearch(search, backdrop, placeholder, clear)
         CUI.ForeverBorderPaint(border, 0.65, 0.60, 0.52, 1, true)
     end
 
-    local icon = search:CreateTexture(nil, "ARTWORK", nil, 2)
+    local iconTex = search:CreateTexture(nil, "ARTWORK", nil, 2)
     if getAtlas("common-search-magnifyingglass") then
-        icon:SetAtlas("common-search-magnifyingglass")
+        iconTex:SetAtlas("common-search-magnifyingglass")
     else
-        icon:SetTexture("Interface\\Common\\UI-Searchbox-Icon")
+        iconTex:SetTexture("Interface\\Common\\UI-Searchbox-Icon")
     end
-    icon:SetSize(10, 10)
-    icon:SetPoint("LEFT", 1, -1)
-    icon:SetVertexColor(0.6, 0.6, 0.6)
+    iconTex:SetSize(10, 10)
+    iconTex:SetPoint("LEFT", 1, -1)
+    iconTex:SetVertexColor(0.6, 0.6, 0.6)
     search:SetTextInsets(16, 20, 0, 0)
     placeholder:ClearAllPoints()
     placeholder:SetPoint("LEFT", search, "LEFT", 16, 0)

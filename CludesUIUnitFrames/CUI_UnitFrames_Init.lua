@@ -442,11 +442,11 @@ local function InitializeFrames()
     -- UIParent-parented bars).
     local _cpExpectedParent = nil
 
-    local function PositionClassPowerBar(bar)
-        if not bar or not frameList.player then
+    local function PositionClassPowerBar(barFrame)
+        if not barFrame or not frameList.player then
             return
         end
-        bar:ClearAllPoints()
+        barFrame:ClearAllPoints()
         -- Stock styles: the health bar keeps the kit's spot (the stock pass
         -- places it, and skips in combat), so only the pips move here.
         local stock = mod.UF_Blizz()
@@ -467,9 +467,9 @@ local function InitializeFrames()
             -- Above health bar, inside the frame -- pips stretch to fill health bar width
             -- Bottom of pips flush with top of health bar, top of pips flush with top of border
             _cpExpectedParent = frameList.player
-            bar:SetParent(frameList.player)
+            barFrame:SetParent(frameList.player)
             local anchorFrame = frameList.player.Health
-            local pipH = bar._pipH or 3
+            local pipH = barFrame._pipH or 3
             -- Resize frame/portrait BEFORE anchoring health bar so _xOffset is correct
             ResizeFrameForClassPower(pipH)
             local btbOff = 0
@@ -489,17 +489,17 @@ local function InitializeFrames()
                 )
                 anchorFrame:SetPoint("RIGHT", frameList.player, "RIGHT", -(anchorFrame._rightInset or 0), 0)
             end
-            Pix.Point(bar, "BOTTOMLEFT", anchorFrame, "TOPLEFT", 0, 0)
-            Pix.Point(bar, "BOTTOMRIGHT", anchorFrame, "TOPRIGHT", 0, 0)
+            Pix.Point(barFrame, "BOTTOMLEFT", anchorFrame, "TOPLEFT", 0, 0)
+            Pix.Point(barFrame, "BOTTOMRIGHT", anchorFrame, "TOPRIGHT", 0, 0)
             local fw = saved.profile.player.frameWidth or 181
-            if bar._repositionForWidth then
-                bar._repositionForWidth(fw)
+            if barFrame._repositionForWidth then
+                barFrame._repositionForWidth(fw)
             end
             -- Show 1px bottom border matching frame border color
-            if bar._bottomBdrFrame then
+            if barFrame._bottomBdrFrame then
                 local bdrC = saved.profile.player.borderColor or { r = 0, g = 0, b = 0 }
-                bar._bottomBdr:SetColorTexture(bdrC.r, bdrC.g, bdrC.b, 1)
-                bar._bottomBdrFrame:Show()
+                barFrame._bottomBdr:SetColorTexture(bdrC.r, bdrC.g, bdrC.b, 1)
+                barFrame._bottomBdrFrame:Show()
             end
             if mod.UF_Blizz() then
                 mod.UF_ApplyBlizzardLayout(frameList.player, "player")
@@ -507,7 +507,7 @@ local function InitializeFrames()
         elseif style == "modern" and position == "top" then
             -- "top" floats above the frame (like "bottom" floats below) -- does NOT become part of the frame
             _cpExpectedParent = frameList.player
-            bar:SetParent(frameList.player)
+            barFrame:SetParent(frameList.player)
             ResizeFrameForClassPower(0)
             -- Reset health bar to normal position
             if frameList.player.Health and not stock then
@@ -533,9 +533,9 @@ local function InitializeFrames()
                 )
             end
             -- Center on health bar (ignores portrait)
-            Pix.Point(bar, "BOTTOM", frameList.player.Health, "TOP", offsetX, offsetY)
-            if bar._bottomBdrFrame then
-                bar._bottomBdrFrame:Hide()
+            Pix.Point(barFrame, "BOTTOM", frameList.player.Health, "TOP", offsetX, offsetY)
+            if barFrame._bottomBdrFrame then
+                barFrame._bottomBdrFrame:Hide()
             end
             if mod.UF_Blizz() then
                 mod.UF_ApplyBlizzardLayout(frameList.player, "player")
@@ -565,16 +565,16 @@ local function InitializeFrames()
                 )
             end
             _cpExpectedParent = UIParent
-            bar:SetParent(UIParent)
+            barFrame:SetParent(UIParent)
             local place = saved.profile.positions.classPower
             if place then
-                Pix.Point(bar, place.point, UIParent, place.point, place.x, place.y)
+                Pix.Point(barFrame, place.point, UIParent, place.point, place.x, place.y)
             else
-                Pix.Point(bar, "CENTER", UIParent, "CENTER", 0, -220)
+                Pix.Point(barFrame, "CENTER", UIParent, "CENTER", 0, -220)
             end
             ResizeFrameForClassPower(0)
-            if bar._bottomBdrFrame then
-                bar._bottomBdrFrame:Hide()
+            if barFrame._bottomBdrFrame then
+                barFrame._bottomBdrFrame:Hide()
             end
             if mod.UF_Blizz() then
                 mod.UF_ApplyBlizzardLayout(frameList.player, "player")
@@ -605,12 +605,12 @@ local function InitializeFrames()
             end
             -- "bottom" position -- flush with bottom of frame; shifts below castbar when visible (unless user set Y offset)
             _cpExpectedParent = frameList.player
-            bar:SetParent(frameList.player)
-            if bar._bottomBdrFrame then
-                bar._bottomBdrFrame:Hide()
+            barFrame:SetParent(frameList.player)
+            if barFrame._bottomBdrFrame then
+                barFrame._bottomBdrFrame:Hide()
             end
             local function AnchorBottom()
-                bar:ClearAllPoints()
+                barFrame:ClearAllPoints()
                 local baseY = -1 + offsetY
                 if offsetY == 0 then
                     local castbarBg = frameList.player.Castbar and frameList.player.Castbar:GetParent()
@@ -626,7 +626,7 @@ local function InitializeFrames()
                         baseY = -1 - ch
                     end
                 end
-                Pix.Point(bar, "TOP", frameList.player, "BOTTOM", offsetX, baseY)
+                Pix.Point(barFrame, "TOP", frameList.player, "BOTTOM", offsetX, baseY)
             end
             AnchorBottom()
             -- Stock styles: the stock pass re-seats the kit.
@@ -642,15 +642,15 @@ local function InitializeFrames()
                 -- this closure, never on the bar (Blizzard's own frame under the
                 -- Blizzard style).
                 local watcher = mod._cpCastWatcher
-                if watcher:GetParent() ~= bar then
-                    watcher:SetParent(bar)
+                if watcher:GetParent() ~= barFrame then
+                    watcher:SetParent(barFrame)
                 end
                 local playerFrame = frameList.player
                 local lastCastVis
                 -- 10 Hz body on the shared anim ticker (see ns._cpWatchTick).
                 mod._cpWatchFn = function()
-                    local cb = playerFrame and playerFrame.Castbar
-                    local castbarBg = cb and cb:GetParent()
+                    local callback = playerFrame and playerFrame.Castbar
+                    local castbarBg = callback and callback:GetParent()
                     local nowVis = castbarBg
                         and castbarBg:IsShown()
                         and saved.profile.player.showPlayerCastbar
@@ -664,9 +664,9 @@ local function InitializeFrames()
             end
             ResizeFrameForClassPower(0)
         end
-        bar:SetFrameStrata(frameList.player:GetFrameStrata())
-        bar:SetFrameLevel(frameList.player:GetFrameLevel() + 5)
-        bar:Show()
+        barFrame:SetFrameStrata(frameList.player:GetFrameStrata())
+        barFrame:SetFrameLevel(frameList.player:GetFrameLevel() + 5)
+        barFrame:Show()
     end
 
     -- Hook Blizzard class power bar so form/spec changes can't steal it back. Hooks
@@ -983,8 +983,8 @@ local function InitializeFrames()
         if InCombatLockdown() then
             return
         end
-        for f in pairs(_suppressedChildren) do
-            f:Hide()
+        for frame in pairs(_suppressedChildren) do
+            frame:Hide()
         end
     end
     -- Deferred re-hide: OnShow fires inside whatever secure execution showed the parent
@@ -1326,8 +1326,8 @@ local function InitializeFrames()
             leaderEvents:RegisterEvent("PLAYER_TARGET_CHANGED")
             leaderEvents:RegisterEvent("PLAYER_ENTERING_WORLD")
             leaderEvents:SetScript("OnEvent", function()
-                for idx = 1, #_leaderUnits do
-                    _leaderRefresh(_leaderUnits[idx])
+                for index = 1, #_leaderUnits do
+                    _leaderRefresh(_leaderUnits[index])
                 end
             end)
         end
@@ -1410,8 +1410,8 @@ local function InitializeFrames()
         -- (zero cost while off) and re-armed from every settings apply.
         local function _eliteArmEvents()
             local on = false
-            for idx = 1, #_eliteFrames do
-                local s = _eliteFrames[idx]._eliteSettings
+            for index = 1, #_eliteFrames do
+                local s = _eliteFrames[index]._eliteSettings
                 if s and s.eliteIndicatorEnabled == true and not mod.UF_DragonLegacy(s) then
                     on = true
                     break
@@ -1421,8 +1421,8 @@ local function InitializeFrames()
                 if not eliteEvents then
                     eliteEvents = CreateFrame("Frame")
                     eliteEvents:SetScript("OnEvent", function()
-                        for idx = 1, #_eliteFrames do
-                            _eliteRefresh(_eliteFrames[idx])
+                        for index = 1, #_eliteFrames do
+                            _eliteRefresh(_eliteFrames[index])
                         end
                     end)
                 end
@@ -1496,8 +1496,8 @@ local function InitializeFrames()
                         dragon:Hide()
                         uf._eliteDragon = dragon
                     end
-                    local d = edge:GetHeight() * mod.UF_ELITE_DRAGON_SCALE
-                    dragon:SetSize(d, d)
+                    local skinData = edge:GetHeight() * mod.UF_ELITE_DRAGON_SCALE
+                    dragon:SetSize(skinData, skinData)
                 end
                 uf._eliteDragonOn = useDragon and true or false
                 _eliteArmEvents()
@@ -1617,8 +1617,8 @@ local function InitializeFrames()
         -- while off) and re-armed from every settings apply.
         local function _factionArmEvents()
             local on, targetOn = false, false
-            for idx = 1, #_factionFrames do
-                local uf = _factionFrames[idx]
+            for index = 1, #_factionFrames do
+                local uf = _factionFrames[index]
                 local s = uf._factionSettings
                 if s and (s.factionIndicatorMode or "off") ~= "off" then
                     on = true
@@ -1635,8 +1635,8 @@ local function InitializeFrames()
                     -- both (Opposite compares against the player's faction).
                     factionEvents:SetScript("OnEvent", function(_, evt, unitToken)
                         local all = evt == "PLAYER_ENTERING_WORLD" or unitToken == "player"
-                        for idx = 1, #_factionFrames do
-                            local uf = _factionFrames[idx]
+                        for index = 1, #_factionFrames do
+                            local uf = _factionFrames[index]
                             if all or uf._cuiBaseUnit == "target" then
                                 _factionRefresh(uf)
                             end
@@ -1764,9 +1764,9 @@ local function InitializeFrames()
 
         local spacing = mod.UF_BossSpacing()
         local bossStackDir = saved.profile.boss and saved.profile.boss.bossStackDirection or "down"
-        for idx = 1, 5 do
-            local bossUnit = "boss" .. idx
-            local bossFrame = mod.Engine.SpawnUnitFrame(bossUnit, "CludesUIUnitFrames_Boss" .. idx)
+        for index = 1, 5 do
+            local bossUnit = "boss" .. index
+            local bossFrame = mod.Engine.SpawnUnitFrame(bossUnit, "CludesUIUnitFrames_Boss" .. index)
             StyleBossFrame(bossFrame, bossUnit)
             mod.UF_AttachEngineFrame(bossFrame, bossUnit)
             frameList[bossUnit] = bossFrame
@@ -1774,7 +1774,7 @@ local function InitializeFrames()
             -- boss1 anchors to UIParent; boss2..5 chain off boss1 with spacing.
             -- This keeps the whole stack moving together when unlock mode drags
             -- boss1 -- the only draggable boss frame.
-            if idx == 1 then
+            if index == 1 then
                 if bossPos then
                     bossFrame:ClearAllPoints()
                     bossFrame:SetPoint(
@@ -1786,13 +1786,13 @@ local function InitializeFrames()
                     )
                 end
             else
-                local prev = frameList["boss" .. (idx - 1)]
-                if prev then
+                local previous = frameList["boss" .. (index - 1)]
+                if previous then
                     bossFrame:ClearAllPoints()
                     if bossStackDir == "up" then
-                        bossFrame:SetPoint("TOPLEFT", prev, "TOPLEFT", 0, spacing)
+                        bossFrame:SetPoint("TOPLEFT", previous, "TOPLEFT", 0, spacing)
                     else
-                        bossFrame:SetPoint("TOPLEFT", prev, "TOPLEFT", 0, -spacing)
+                        bossFrame:SetPoint("TOPLEFT", previous, "TOPLEFT", 0, -spacing)
                     end
                 end
             end
@@ -1809,8 +1809,8 @@ local function InitializeFrames()
     -- user wants them). For "cui" oUF already disabled them at spawn; this pass
     -- is belt-and-suspenders and also runs for "hidden".
     if bossFrameSource ~= "blizzard" then
-        for idx = 1, 5 do
-            local blizzBoss = _G["Boss" .. idx .. "TargetFrame"]
+        for index = 1, 5 do
+            local blizzBoss = _G["Boss" .. index .. "TargetFrame"]
             if blizzBoss then
                 blizzBoss:UnregisterAllEvents()
                 blizzBoss:Hide()
@@ -1907,25 +1907,25 @@ local function InitializeFrames()
     -- Leave the oUF HealthPrediction element enabled so events keep flowing
     -- and the calculator stays in sync.
     for _, uKey in ipairs({ "player", "target", "focus" }) do
-        local f = frameList[uKey]
-        if f and f.HealthPrediction and f.HealthPrediction.damageAbsorb then
+        local frame = frameList[uKey]
+        if frame and frame.HealthPrediction and frame.HealthPrediction.damageAbsorb then
             local absStyle = saved.profile[uKey] and saved.profile[uKey].showPlayerAbsorb
             if absStyle and absStyle ~= "none" then
-                ApplyAbsorbStyle(f.HealthPrediction.damageAbsorb, absStyle, saved.profile[uKey])
-                f.HealthPrediction.damageAbsorb:Show()
-                if f.HealthPrediction.damageAbsorb._forward then
-                    f.HealthPrediction.damageAbsorb._forward:Show()
+                ApplyAbsorbStyle(frame.HealthPrediction.damageAbsorb, absStyle, saved.profile[uKey])
+                frame.HealthPrediction.damageAbsorb:Show()
+                if frame.HealthPrediction.damageAbsorb._forward then
+                    frame.HealthPrediction.damageAbsorb._forward:Show()
                 end
             else
-                f.HealthPrediction.damageAbsorb:Hide()
-                if f.HealthPrediction.damageAbsorb._forward then
-                    f.HealthPrediction.damageAbsorb._forward:Hide()
+                frame.HealthPrediction.damageAbsorb:Hide()
+                if frame.HealthPrediction.damageAbsorb._forward then
+                    frame.HealthPrediction.damageAbsorb._forward:Hide()
                 end
             end
             -- Force oUF to re-run the HealthPrediction element so the new
             -- texture is visible immediately without waiting for a health event
-            if f.HealthPrediction and f.HealthPrediction.ForceUpdate then
-                f.HealthPrediction:ForceUpdate()
+            if frame.HealthPrediction and frame.HealthPrediction.ForceUpdate then
+                frame.HealthPrediction:ForceUpdate()
             end
         end
     end
@@ -1935,27 +1935,27 @@ local function InitializeFrames()
     do
         local bossOff = saved.profile.boss and saved.profile.boss.showAbsorbs == false
         local donor = saved.profile.target
-        for idx = 1, 5 do
-            local f = frameList["boss" .. idx]
-            if f and f.HealthPrediction and f.HealthPrediction.damageAbsorb then
+        for index = 1, 5 do
+            local frame = frameList["boss" .. index]
+            if frame and frame.HealthPrediction and frame.HealthPrediction.damageAbsorb then
                 local absStyle
                 if not bossOff and donor then
                     absStyle = donor.showPlayerAbsorb
                 end
                 if absStyle and absStyle ~= "none" then
-                    ApplyAbsorbStyle(f.HealthPrediction.damageAbsorb, absStyle, donor)
-                    f.HealthPrediction.damageAbsorb:Show()
-                    if f.HealthPrediction.damageAbsorb._forward then
-                        f.HealthPrediction.damageAbsorb._forward:Show()
+                    ApplyAbsorbStyle(frame.HealthPrediction.damageAbsorb, absStyle, donor)
+                    frame.HealthPrediction.damageAbsorb:Show()
+                    if frame.HealthPrediction.damageAbsorb._forward then
+                        frame.HealthPrediction.damageAbsorb._forward:Show()
                     end
                 else
-                    f.HealthPrediction.damageAbsorb:Hide()
-                    if f.HealthPrediction.damageAbsorb._forward then
-                        f.HealthPrediction.damageAbsorb._forward:Hide()
+                    frame.HealthPrediction.damageAbsorb:Hide()
+                    if frame.HealthPrediction.damageAbsorb._forward then
+                        frame.HealthPrediction.damageAbsorb._forward:Hide()
                     end
                 end
-                if f.HealthPrediction.ForceUpdate then
-                    f.HealthPrediction:ForceUpdate()
+                if frame.HealthPrediction.ForceUpdate then
+                    frame.HealthPrediction:ForceUpdate()
                 end
             end
         end
@@ -2511,19 +2511,19 @@ local function InitializeFrames()
     -- this is a cheap no-op unless the user enabled one. On ns for the 200-local cap.
     mod.UpdateBossTargetBorders = function()
         local s = saved.profile.boss
-        for idx = 1, 5 do
-            local bUnit = "boss" .. idx
-            local f = frameList[bUnit]
-            if f then
-                if f.unifiedBorder then
+        for index = 1, 5 do
+            local bUnit = "boss" .. index
+            local frame = frameList[bUnit]
+            if frame then
+                if frame.unifiedBorder then
                     local isT = UnitIsUnit(bUnit, "target")
-                    f._isTarget = (not issecretvalue(isT) and isT) and true or false
-                    mod.ApplyBossBorderState(f)
+                    frame._isTarget = (not issecretvalue(isT) and isT) and true or false
+                    mod.ApplyBossBorderState(frame)
                 end
                 if s then
-                    if f.LeftText and s.leftTextClassColor ~= nil then
+                    if frame.LeftText and s.leftTextClassColor ~= nil then
                         ApplyClassColor(
-                            f.LeftText,
+                            frame.LeftText,
                             bUnit,
                             s.leftTextClassColor,
                             s.leftTextColorR,
@@ -2531,9 +2531,9 @@ local function InitializeFrames()
                             s.leftTextColorB
                         )
                     end
-                    if f.RightText and s.rightTextClassColor ~= nil then
+                    if frame.RightText and s.rightTextClassColor ~= nil then
                         ApplyClassColor(
-                            f.RightText,
+                            frame.RightText,
                             bUnit,
                             s.rightTextClassColor,
                             s.rightTextColorR,
@@ -2541,9 +2541,9 @@ local function InitializeFrames()
                             s.rightTextColorB
                         )
                     end
-                    if f.CenterText and s.centerTextClassColor ~= nil then
+                    if frame.CenterText and s.centerTextClassColor ~= nil then
                         ApplyClassColor(
-                            f.CenterText,
+                            frame.CenterText,
                             bUnit,
                             s.centerTextClassColor,
                             s.centerTextColorR,
@@ -2592,8 +2592,8 @@ local function InitializeFrames()
                 end
             end
         end
-        for idx = 1, 5 do
-            local bf = frameList["boss" .. idx]
+        for index = 1, 5 do
+            local bf = frameList["boss" .. index]
             if bf and bf.Power and bf.Health then
                 local s = GetSettingsForUnit("boss")
                 if s then

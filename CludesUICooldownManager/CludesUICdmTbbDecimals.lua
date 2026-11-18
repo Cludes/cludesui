@@ -74,7 +74,7 @@ local function GetDecimalFormatter(thr)
     end
     local Nearest = Enum.NumericRuleFormatRounding.Nearest
     local Up = Enum.NumericRuleFormatRounding.Up
-    local f = C_StringUtil.CreateNumericRuleFormatter()
+    local frame = C_StringUtil.CreateNumericRuleFormatter()
     -- Shape of the field-proven threshold-text formatter: tenths Nearest below the
     -- threshold, whole seconds Up to the minute, then m:ss/h/d with boundaries offset
     -- just above the unit edge so UP-rounded input never flashes "60". step/rounding
@@ -117,13 +117,13 @@ local function GetDecimalFormatter(thr)
         step = 1,
         components = { { div = 86400 } },
     }
-    local success = pcall(f.SetBreakpoints, f, points)
+    local success = pcall(frame.SetBreakpoints, frame, points)
     if not success then
         formatterByThr[thr] = false
         return nil
     end
-    formatterByThr[thr] = f
-    return f
+    formatterByThr[thr] = frame
+    return frame
 end
 
 -- Variant expansion for one stored spell id: the live aura can come up under
@@ -193,7 +193,7 @@ local function AddCooldownInfoIDs(include, conf)
     end
 end
 
-local host -- shown 1px anchor for the container (alpha 0, mouse-off)
+local owner -- shown 1px anchor for the container (alpha 0, mouse-off)
 local boxHolder -- live AuraContainer, or nil
 local signature -- signature string of the live container's slot set
 local boundIndex = {} -- bar index -> slot button (rebuilt per container)
@@ -209,17 +209,17 @@ end
 
 local function UnmarkAll()
     for position in pairs(boundIndex) do
-        local bar = ns.GetTBBFrame and ns.GetTBBFrame(position)
-        if bar then
-            bar._tbbEngineText = nil
-            bar._tbbEngineFS = nil
+        local barFrame = ns.GetTBBFrame and ns.GetTBBFrame(position)
+        if barFrame then
+            barFrame._tbbEngineText = nil
+            barFrame._tbbEngineFS = nil
             -- The mirror gates the timer FS alpha from the secret aura
             -- presence; an unbound bar must never keep a stuck alpha-0 FS.
-            if bar._tbbAlphaGated then
-                if bar._timerText then
-                    bar._timerText:SetAlpha(1)
+            if barFrame._tbbAlphaGated then
+                if barFrame._timerText then
+                    barFrame._timerText:SetAlpha(1)
                 end
-                bar._tbbAlphaGated = nil
+                barFrame._tbbAlphaGated = nil
             end
         end
     end
@@ -316,17 +316,17 @@ local function CollectDesired()
 end
 
 local function BuildContainer(desired)
-    if not host then
+    if not owner then
         -- Shown but invisible: the engine only processes VISIBLE containers,
         -- and the noRegions slot buttons render nothing anyway. Alpha 0 on
         -- the host is belt-and-braces; it does not reach the bound timer
         -- FontStrings (they live on the TBB bars, not in this tree).
-        host = CreateFrame("Frame", nil, UIParent)
-        host:SetSize(1, 1)
-        host:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, 0)
-        host:SetFrameStrata("BACKGROUND")
-        host:SetAlpha(0)
-        host:EnableMouse(false)
+        owner = CreateFrame("Frame", nil, UIParent)
+        owner:SetSize(1, 1)
+        owner:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, 0)
+        owner:SetFrameStrata("BACKGROUND")
+        owner:SetAlpha(0)
+        owner:EnableMouse(false)
     end
 
     AK.styles.tbbDecimalText = AK.styles.tbbDecimalText or { width = 1, height = 1, noRegions = true }
@@ -347,8 +347,8 @@ local function BuildContainer(desired)
                 if not fmt then
                     return
                 end -- rejected: tick keeps its mirror
-                local bar = ns.GetTBBFrame and ns.GetTBBFrame(wanted.index)
-                if not (bar and bar._timerText) then
+                local barFrame = ns.GetTBBFrame and ns.GetTBBFrame(wanted.index)
+                if not (barFrame and barFrame._timerText) then
                     return
                 end -- unbound: tick keeps its mirror
                 -- The bound FS MUST be a descendant of the aura button (aspect
@@ -373,8 +373,8 @@ local function BuildContainer(desired)
                 AK.SetDurationTextSafe(btnFrame, fontStr, AK.BuildDurationTextOpts(fmt, nil, 0.05))
                 boundIndex[wanted.index] = btnFrame
                 boundThr[wanted.index] = wanted.thr
-                bar._tbbEngineText = btnFrame
-                bar._tbbEngineFS = fontStr
+                barFrame._tbbEngineText = btnFrame
+                barFrame._tbbEngineFS = fontStr
             end,
         }
     end
@@ -383,8 +383,8 @@ local function BuildContainer(desired)
     -- OnUpdate, and an unanchored container has no renderable rect -- it
     -- builds, binds slots, and then never processes a single aura (silent:
     -- the hidden FS stays empty and the tick falls back to whole seconds).
-    boxHolder = AK.CreateContainer(host, "player", {
-        point = { "BOTTOMLEFT", host, "BOTTOMLEFT", 0, 0 },
+    boxHolder = AK.CreateContainer(owner, "player", {
+        point = { "BOTTOMLEFT", owner, "BOTTOMLEFT", 0, 0 },
         slots = slots,
     })
 end
@@ -413,10 +413,10 @@ function ns.TBBDecimals_Sync()
         for num = 1, #desired do
             local wanted = desired[num]
             local btnFrame = boundIndex[wanted.index]
-            local bar = ns.GetTBBFrame and ns.GetTBBFrame(wanted.index)
-            if btnFrame and bar then
-                bar._tbbEngineText = btnFrame
-                if bar._tbbEngineFS and boundThr[wanted.index] ~= wanted.thr then
+            local barFrame = ns.GetTBBFrame and ns.GetTBBFrame(wanted.index)
+            if btnFrame and barFrame then
+                barFrame._tbbEngineText = btnFrame
+                if barFrame._tbbEngineFS and boundThr[wanted.index] ~= wanted.thr then
                     local fmt = GetDecimalFormatter(wanted.thr)
                     if fmt then
                         -- Stamp only on success: SetDurationTextSafe never throws
@@ -424,7 +424,7 @@ function ns.TBBDecimals_Sync()
                         -- stay unstamped so a later Sync retries it.
                         local success = AK.SetDurationTextSafe(
                             btnFrame,
-                            bar._tbbEngineFS,
+                            barFrame._tbbEngineFS,
                             AK.BuildDurationTextOpts(fmt, nil, 0.05)
                         )
                         if success then

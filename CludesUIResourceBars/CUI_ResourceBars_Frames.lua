@@ -56,10 +56,10 @@ do
     local num = 5
     mod.TakeShell = function()
         if num > 0 then
-            local f = pool[num]
+            local frame = pool[num]
             pool[num] = nil
             num = num - 1
-            return f
+            return frame
         end
         return CreateFrame("Frame")
     end
@@ -148,7 +148,7 @@ local empowerColorB = CreateColor(1, 0, 0, 1)
 local _gradColorA = CreateColor(1, 1, 1, 1)
 local _gradColorB = CreateColor(1, 1, 1, 1)
 
-local function ApplyBarGradient(ft, dir, br, backdrop, bb, ba, er, eg, eb, ea)
+local function ApplyBarGradient(ft, direction, br, backdrop, bb, ba, er, eg, eb, ea)
     -- Bar colour only changes on a config edit or threshold/band crossing, but this
     -- runs on every power/health event, so skip when inputs (plus the fill-opacity
     -- multiplier scaling the alphas below) are unchanged -- else four C calls
@@ -156,7 +156,7 @@ local function ApplyBarGradient(ft, dir, br, backdrop, bb, ba, er, eg, eb, ea)
     -- texture (already carries _erbSetVC/_erbFillOp).
     if
         ft._lgOn
-        and ft._lgDir == dir
+        and ft._lgDir == direction
         and ft._lgFop == ft._erbFillOp
         and ft._lgBr == br
         and ft._lgBg == backdrop
@@ -169,7 +169,7 @@ local function ApplyBarGradient(ft, dir, br, backdrop, bb, ba, er, eg, eb, ea)
     then
         return
     end
-    ft._lgOn, ft._lgDir, ft._lgFop = true, dir, ft._erbFillOp
+    ft._lgOn, ft._lgDir, ft._lgFop = true, direction, ft._erbFillOp
     ft._lgBr, ft._lgBg, ft._lgBb, ft._lgBa = br, backdrop, bb, ba
     ft._lgEr, ft._lgEg, ft._lgEb, ft._lgEa = er, eg, eb, ea
     ft._lfOn = nil -- a gradient invalidates any cached flat colour
@@ -186,19 +186,19 @@ local function ApplyBarGradient(ft, dir, br, backdrop, bb, ba, er, eg, eb, ea)
     end
     _gradColorA:SetRGBA(br, backdrop, bb, ba)
     _gradColorB:SetRGBA(er, eg, eb, ea)
-    ft:SetGradient(dir, _gradColorA, _gradColorB)
+    ft:SetGradient(direction, _gradColorA, _gradColorB)
 end
 
 -- Flat-color a bar fill (no gradient).
-local function ApplyBarFlat(ft, r, g, b, a)
+local function ApplyBarFlat(ft, region, g, b, a)
     -- As ApplyBarGradient: re-asserting an unchanged colour every event is waste.
     a = a or 1
-    if ft._lfOn and ft._lfR == r and ft._lfG == g and ft._lfB == b and ft._lfA == a then
+    if ft._lfOn and ft._lfR == region and ft._lfG == g and ft._lfB == b and ft._lfA == a then
         return
     end
-    ft._lfOn, ft._lfR, ft._lfG, ft._lfB, ft._lfA = true, r, g, b, a
+    ft._lfOn, ft._lfR, ft._lfG, ft._lfB, ft._lfA = true, region, g, b, a
     ft._lgOn = nil -- a flat fill invalidates any cached gradient
-    ft:SetVertexColor(r, g, b, a)
+    ft:SetVertexColor(region, g, b, a)
 end
 -- Shared with CUI_ResourceBars_SwingTimer.lua, which paints its rows the way the
 -- GCD bar paints its fill. Exported, not duplicated, so the change-gates stay one.
@@ -231,15 +231,15 @@ mod.AnchorBgToFillEdge = function(backdrop, texture, boxHolder, orientation)
     end
 end
 
-mod.ApplyFillOpacity = function(bar, orientation, fillOpacity)
+mod.ApplyFillOpacity = function(barFrame, orientation, fillOpacity)
     local op = fillOpacity or 100
-    local scrollBar, backdrop = bar._sb, bar._bg
+    local scrollBar, backdrop = barFrame._sb, barFrame._bg
     if not scrollBar or not backdrop then
         return
     end
     if op >= 100 then
-        if bar._fillOpApplied then
-            bar._fillOpApplied = nil
+        if barFrame._fillOpApplied then
+            barFrame._fillOpApplied = nil
             local texture = scrollBar:GetStatusBarTexture()
             if texture then
                 texture._erbFillOp = nil
@@ -260,7 +260,7 @@ mod.ApplyFillOpacity = function(bar, orientation, fillOpacity)
     if not texture then
         return
     end
-    bar._fillOpApplied = true
+    barFrame._fillOpApplied = true
     -- Alpha is UNIFIED on this client: SetAlpha and SetVertexColor's 4th arg write
     -- the same slot, so any runtime color writer (threshold curves, band colors,
     -- power-type recolors) would wipe a build-time alpha. Shadow SetVertexColor on
@@ -353,46 +353,46 @@ local function OrientedSize(wid, hgt, orientation)
     return wid, hgt
 end
 
-local function ApplyBarOrientation(bar, orientation)
-    if not bar then
+local function ApplyBarOrientation(barFrame, orientation)
+    if not barFrame then
         return
     end
     if orientation == "VERTICAL_UP" then
-        bar:SetOrientation("VERTICAL")
-        bar:SetRotatesTexture(true)
-        bar:SetReverseFill(false)
+        barFrame:SetOrientation("VERTICAL")
+        barFrame:SetRotatesTexture(true)
+        barFrame:SetReverseFill(false)
     elseif orientation == "VERTICAL_DOWN" then
-        bar:SetOrientation("VERTICAL")
-        bar:SetRotatesTexture(true)
-        bar:SetReverseFill(true)
+        barFrame:SetOrientation("VERTICAL")
+        barFrame:SetRotatesTexture(true)
+        barFrame:SetReverseFill(true)
     else
-        bar:SetOrientation("HORIZONTAL")
-        bar:SetRotatesTexture(false)
-        bar:SetReverseFill(false)
+        barFrame:SetOrientation("HORIZONTAL")
+        barFrame:SetRotatesTexture(false)
+        barFrame:SetReverseFill(false)
     end
 end
 
 -- Bar texture helper
-local function ApplyBarTexture(bar, texKey)
-    if not bar then
+local function ApplyBarTexture(barFrame, texKey)
+    if not barFrame then
         return
     end
     local filePath = CludesUI.ResolveTexturePath(_G._CURB_BarTextures, texKey, "Interface\\Buttons\\WHITE8x8")
-    bar:SetStatusBarTexture(filePath)
+    barFrame:SetStatusBarTexture(filePath)
     -- Blizzard Style: a path swap can mint a new fill object; re-seat the
     -- bar-shape mask on it (memoized per object, so a no-op otherwise).
-    if bar._blizzBarMask then
-        mod.ERB_SeatBlizzMask(bar)
+    if barFrame._blizzBarMask then
+        mod.ERB_SeatBlizzMask(barFrame)
     end
 end
 
 -- Textured Background: the bar's own texture on a background, tinted by the
 -- background colour. Callers repaint the flat colour around it; nil path clears
 -- the tint a texture left behind (SetColorTexture keeps it).
-function mod.ERB_BgTexture(backdrop, filePath, r, g, b, a)
+function mod.ERB_BgTexture(backdrop, filePath, region, g, b, a)
     if filePath then
         backdrop:SetTexture(filePath)
-        backdrop:SetVertexColor(r, g, b, a)
+        backdrop:SetVertexColor(region, g, b, a)
         backdrop._erbBgTex = true
     elseif backdrop._erbBgTex then
         backdrop._erbBgTex = nil
@@ -503,7 +503,7 @@ function mod.ERB_AnchorBorderHost(bf, hostFrame, topY, bottom, leftX, right)
     end
 end
 
-local function MakePixelBorder(hostFrame, r, g, b, a, size, textureKey, texOffset, texOffsetY, shiftX, shiftY)
+local function MakePixelBorder(hostFrame, region, g, b, a, size, textureKey, texOffset, texOffsetY, shiftX, shiftY)
     local alpha = a or 1
     local sz = size or 1
     local bf = CreateFrame("Frame", nil, hostFrame)
@@ -513,7 +513,7 @@ local function MakePixelBorder(hostFrame, r, g, b, a, size, textureKey, texOffse
     CludesUI.ApplyBorderStyle(
         bf,
         sz,
-        r,
+        region,
         g,
         b,
         alpha,
@@ -527,8 +527,8 @@ local function MakePixelBorder(hostFrame, r, g, b, a, size, textureKey, texOffse
     return {
         _frame = bf,
         edges = Pix.GetBorders(bf),
-        SetColor = function(self, cr, cg, cb, ca)
-            CludesUI.SetBorderStyleColor(bf, cr, cg, cb, ca or 1)
+        SetColor = function(self, cr, cg, callback, ca)
+            CludesUI.SetBorderStyleColor(bf, cr, cg, callback, ca or 1)
         end,
         SetSize = function(self, newSz)
             Pix.SetBorderSize(bf, newSz)
@@ -547,7 +547,7 @@ local function MakePixelBorder(hostFrame, r, g, b, a, size, textureKey, texOffse
             newSz,
             cr,
             cg,
-            cb,
+            callback,
             ca,
             texKey,
             texOff,
@@ -574,7 +574,7 @@ local function MakePixelBorder(hostFrame, r, g, b, a, size, textureKey, texOffse
                 newSz,
                 cr,
                 cg,
-                cb,
+                callback,
                 ca or 1,
                 texKey or "solid",
                 texOff,
@@ -593,63 +593,63 @@ end
 -- Bar creation helpers
 local function CreateStatusBar(hostFrame, name, wid, hgt, borderSize, borderR, borderG, borderB, borderA)
     -- Outer container: holds the border and text (never clipped).
-    local bar = CreateFrame("Frame", name, hostFrame)
-    bar:SetSize(wid, hgt)
-    bar:EnableMouse(false)
+    local barFrame = CreateFrame("Frame", name, hostFrame)
+    barFrame:SetSize(wid, hgt)
+    barFrame:EnableMouse(false)
 
     -- Inner StatusBar: clips its fill. Inset by a quarter of a physical pixel so
     -- the fill can never bleed past the border at any resolution. A quarter, not
     -- a half: an edge on a pixel centre hits the rasteriser's tie rule and the
     -- fill covers one more pixel on one side than the other.
-    local scrollBar = CreateFrame("StatusBar", nil, bar)
+    local scrollBar = CreateFrame("StatusBar", nil, barFrame)
     local clipInset = Pix.mult * 0.25
-    scrollBar:SetPoint("TOPLEFT", bar, "TOPLEFT", clipInset, -clipInset)
-    scrollBar:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", -clipInset, clipInset)
+    scrollBar:SetPoint("TOPLEFT", barFrame, "TOPLEFT", clipInset, -clipInset)
+    scrollBar:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", -clipInset, clipInset)
     scrollBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
     scrollBar:SetMinMaxValues(0, 1)
     scrollBar:SetValue(0)
     scrollBar:SetClipsChildren(true)
-    bar._sb = scrollBar
+    barFrame._sb = scrollBar
 
     -- Forward StatusBar methods to the inner bar so callers don't change
-    bar.SetMinMaxValues = function(_, ...)
+    barFrame.SetMinMaxValues = function(_, ...)
         scrollBar:SetMinMaxValues(...)
     end
-    bar.SetValue = function(_, val)
+    barFrame.SetValue = function(_, val)
         -- Native interpolation (opt-in "Smooth Bars"): _smoothing is set only on
         -- bars whose toggle is on; nil elsewhere, so every write lands at once.
         -- The toggle alone decides: callers pass the value only.
-        if bar._smoothing then
-            scrollBar:SetValue(val, bar._smoothing)
+        if barFrame._smoothing then
+            scrollBar:SetValue(val, barFrame._smoothing)
         else
             scrollBar:SetValue(val)
         end
     end
-    bar.GetValue = function(_)
+    barFrame.GetValue = function(_)
         return scrollBar:GetValue()
     end
-    bar.SetStatusBarTexture = function(_, ...)
+    barFrame.SetStatusBarTexture = function(_, ...)
         scrollBar:SetStatusBarTexture(...)
     end
-    bar.GetStatusBarTexture = function(_)
+    barFrame.GetStatusBarTexture = function(_)
         return scrollBar:GetStatusBarTexture()
     end
-    bar.SetStatusBarColor = function(_, ...)
+    barFrame.SetStatusBarColor = function(_, ...)
         scrollBar:SetStatusBarColor(...)
     end
-    bar.GetStatusBarColor = function(_)
+    barFrame.GetStatusBarColor = function(_)
         return scrollBar:GetStatusBarColor()
     end
-    bar.SetFillStyle = function(_, ...)
+    barFrame.SetFillStyle = function(_, ...)
         scrollBar:SetFillStyle(...)
     end
-    bar.SetOrientation = function(_, ...)
+    barFrame.SetOrientation = function(_, ...)
         scrollBar:SetOrientation(...)
     end
-    bar.SetRotatesTexture = function(_, ...)
+    barFrame.SetRotatesTexture = function(_, ...)
         scrollBar:SetRotatesTexture(...)
     end
-    bar.SetReverseFill = function(_, ...)
+    barFrame.SetReverseFill = function(_, ...)
         scrollBar:SetReverseFill(...)
     end
 
@@ -657,16 +657,16 @@ local function CreateStatusBar(hostFrame, name, wid, hgt, borderSize, borderR, b
     local backdrop = scrollBar:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0x11 / 255, 0x11 / 255, 0x11 / 255, 0.75)
-    bar._bg = backdrop
+    barFrame._bg = backdrop
 
     -- Pixel-perfect border (on outer container, not clipped)
     local bSz = borderSize or 1
-    bar._border = MakePixelBorder(bar, borderR or 0, borderG or 0, borderB or 0, borderA or 1, bSz)
+    barFrame._border = MakePixelBorder(barFrame, borderR or 0, borderG or 0, borderB or 0, borderA or 1, bSz)
 
     -- Border extensions: power bar only; nil elsewhere.
-    function bar:ApplyBorder(
+    function barFrame:ApplyBorder(
         sz,
-        r,
+        region,
         g,
         b,
         a,
@@ -692,7 +692,7 @@ local function CreateStatusBar(hostFrame, name, wid, hgt, borderSize, borderR, b
         end
         self._border:ApplyStyle(
             sz,
-            r,
+            region,
             g,
             b,
             a,
@@ -717,7 +717,7 @@ local function CreateStatusBar(hostFrame, name, wid, hgt, borderSize, borderR, b
     -- deeper in the tree, so it paints over the strips and Border Size/Color
     -- look like they do nothing. "Show Behind" is honored -- that border is
     -- meant to sit under the fill. Idempotent: safe to re-assert every update.
-    function bar:RaiseBorderAbove(coverLevel, behind)
+    function barFrame:RaiseBorderAbove(coverLevel, behind)
         local bf = self._border and self._border._frame
         if not bf then
             return
@@ -739,17 +739,17 @@ local function CreateStatusBar(hostFrame, name, wid, hgt, borderSize, borderR, b
     end
 
     -- Text overlay (above all bar borders)
-    local textFrame = CreateFrame("Frame", nil, bar)
-    textFrame:SetAllPoints(bar)
+    local textFrame = CreateFrame("Frame", nil, barFrame)
+    textFrame:SetAllPoints(barFrame)
     textFrame:SetFrameLevel(25)
     textFrame:EnableMouse(false)
     local textValue = textFrame:CreateFontString(nil, "OVERLAY")
     SetRBFont(textValue, GetRBFont(), 11)
     textValue:SetTextColor(1, 1, 1, 0.9)
     textValue:SetPoint("CENTER", textFrame, "CENTER")
-    bar._text = textValue
+    barFrame._text = textValue
 
-    return bar
+    return barFrame
 end
 
 -- Shared through I so the update chunk needs only one local for this feature.
@@ -788,16 +788,16 @@ function PipTextureHelpers.Configure(pip, x0, x1, span, orientation)
 end
 
 function PipTextureHelpers.Reset(pip)
-    local function Restore(bar)
-        if not (bar and bar._continuousClip) then
+    local function Restore(barFrame)
+        if not (barFrame and barFrame._continuousClip) then
             return
         end
-        bar._continuousClip:Hide()
-        local fill = bar:GetStatusBarTexture()
-        if fill then
-            fill:SetVertexColor(bar:GetStatusBarColor())
+        barFrame._continuousClip:Hide()
+        local fillTex = barFrame:GetStatusBarTexture()
+        if fillTex then
+            fillTex:SetVertexColor(barFrame:GetStatusBarColor())
             if pip._fillOp and pip._fillOp < 1 then
-                fill:SetAlpha(pip._fillOp)
+                fillTex:SetAlpha(pip._fillOp)
             end
         end
     end
@@ -817,17 +817,17 @@ end
 
 -- A native StatusBar rewrites its UVs on value changes. Clip a full pip slice
 -- to its moving fill instead; anchors accept secret geometry without reading it.
-function PipTextureHelpers.DrawFill(pip, bar)
-    if not (pip._continuousStart and bar and bar:IsShown()) then
+function PipTextureHelpers.DrawFill(pip, barFrame)
+    if not (pip._continuousStart and barFrame and barFrame:IsShown()) then
         return
     end
-    local fill = bar:GetStatusBarTexture()
-    if not fill then
+    local fillTex = barFrame:GetStatusBarTexture()
+    if not fillTex then
         return
     end
-    local clip = bar._continuousClip
+    local clip = barFrame._continuousClip
     if not clip then
-        clip = CreateFrame("Frame", nil, bar)
+        clip = CreateFrame("Frame", nil, barFrame)
         clip:SetClipsChildren(true)
         local canvas = CreateFrame("Frame", nil, clip)
         canvas:SetAllPoints(pip._fill)
@@ -836,14 +836,14 @@ function PipTextureHelpers.DrawFill(pip, bar)
         texture:SetSnapToPixelGrid(false)
         texture:SetTexelSnappingBias(0)
         clip._canvas, clip._fill = canvas, texture
-        bar._continuousClip = clip
+        barFrame._continuousClip = clip
     end
-    if clip._nativeFill ~= fill then
+    if clip._nativeFill ~= fillTex then
         clip:ClearAllPoints()
-        clip:SetAllPoints(fill)
-        clip._nativeFill = fill
+        clip:SetAllPoints(fillTex)
+        clip._nativeFill = fillTex
     end
-    local level = bar:GetFrameLevel()
+    local level = barFrame:GetFrameLevel()
     if clip._level ~= level then
         clip:SetFrameLevel(level)
         clip._canvas:SetFrameLevel(level)
@@ -863,14 +863,14 @@ function PipTextureHelpers.DrawFill(pip, bar)
         clip._first, clip._last, clip._orientation =
             pip._continuousStart, pip._continuousEnd, pip._continuousOrientation
     end
-    texture:SetVertexColor(bar:GetStatusBarColor())
+    texture:SetVertexColor(barFrame:GetStatusBarColor())
     if pip._fillOp and pip._fillOp < 1 then
         texture:SetAlpha(pip._fillOp)
     end
     if pip._blizzMask then
         mod.ERB_MaskTex(texture, pip._blizzMask)
     end
-    fill:SetAlpha(0)
+    fillTex:SetAlpha(0)
     clip:Show()
 end
 
@@ -884,10 +884,10 @@ local function CreatePip(hostFrame, wid, hgt, position, borderSize, borderR, bor
     backdrop:SetColorTexture(0.1, 0.1, 0.1, 0.5)
     pip._bg = backdrop
 
-    local fill = pip:CreateTexture(nil, "ARTWORK")
-    fill:SetAllPoints()
-    fill:SetColorTexture(1, 1, 1, 1)
-    pip._fill = fill
+    local fillTex = pip:CreateTexture(nil, "ARTWORK")
+    fillTex:SetAllPoints()
+    fillTex:SetColorTexture(1, 1, 1, 1)
+    pip._fill = fillTex
     pip._texKey = nil -- current bar texture key
 
     -- Pixel-perfect border with variable size
@@ -896,7 +896,7 @@ local function CreatePip(hostFrame, wid, hgt, position, borderSize, borderR, bor
 
     function pip:ApplyBorder(
         sz,
-        r,
+        region,
         g,
         b,
         a,
@@ -911,7 +911,7 @@ local function CreatePip(hostFrame, wid, hgt, position, borderSize, borderR, bor
     )
         self._border:ApplyStyle(
             sz,
-            r,
+            region,
             g,
             b,
             a,
@@ -943,10 +943,10 @@ local function CreatePip(hostFrame, wid, hgt, position, borderSize, borderR, bor
     pip._active = false
     pip._idx = position
 
-    function pip:SetActive(isActive, r, g, b, a)
+    function pip:SetActive(isActive, region, g, b, a)
         self._active = isActive
         if isActive then
-            self._fill:SetVertexColor(r, g, b, a or 1)
+            self._fill:SetVertexColor(region, g, b, a or 1)
             -- Fill Opacity on: re-assert fill alpha (unified channel, wiped by the
             -- SetVertexColor above) and hide bg so the translucent fill shows the
             -- world. _fillOp is nil unless below 100 (inert default). At
@@ -1005,10 +1005,10 @@ function ERB.PipBgColor(sp, force)
     if a <= 0 then
         return bbR, bbG, bbB, 0
     end
-    local r = (ovR * ovA + bbR * bbA * (1 - ovA)) / a
+    local region = (ovR * ovA + bbR * bbA * (1 - ovA)) / a
     local g = (ovG * ovA + bbG * bbA * (1 - ovA)) / a
     local b = (ovB * ovA + bbB * bbA * (1 - ovA)) / a
-    return r, g, b, a
+    return region, g, b, a
 end
 
 function ERB.ApplyGapFills(widget, slots, total, isVertical, isReversed, sp, pipBg)
@@ -1030,13 +1030,13 @@ function ERB.ApplyGapFills(widget, slots, total, isVertical, isReversed, sp, pip
         fills = {}
         widget._gapFills = fills
     end
-    local r, g, b, a
+    local region, g, b, a
     if sp.gapColorEnabled then
-        r, g, b, a = sp.gapR or 0, sp.gapG or 0, sp.gapB or 0, sp.gapA or 1
+        region, g, b, a = sp.gapR or 0, sp.gapG or 0, sp.gapB or 0, sp.gapA or 1
     elseif sp.darkTheme then
-        r, g, b, a = 0, 0, 0, 1
+        region, g, b, a = 0, 0, 0, 1
     else
-        r, g, b, a = sp.barBgR or 0, sp.barBgG or 0, sp.barBgB or 0, sp.barBgA or 0.5
+        region, g, b, a = sp.barBgR or 0, sp.barBgG or 0, sp.barBgB or 0, sp.barBgA or 0.5
     end
     local num = 0
     for i = 1, total - 1 do
@@ -1050,7 +1050,7 @@ function ERB.ApplyGapFills(widget, slots, total, isVertical, isReversed, sp, pip
                 texture = widget:CreateTexture(nil, "BACKGROUND", nil, 0) -- above _barBg (sublevel -1)
                 fills[num] = texture
             end
-            texture:SetColorTexture(r, g, b, a)
+            texture:SetColorTexture(region, g, b, a)
             texture:ClearAllPoints()
             if isVertical then
                 if isReversed then

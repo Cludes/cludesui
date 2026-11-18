@@ -92,7 +92,7 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
     local button = CreateFrame("Button", nil, contentFrame)
     button:EnableMouse(true)
     button:RegisterForClicks("AnyUp")
-    local icon = button:CreateTexture(nil, "OVERLAY")
+    local iconTex = button:CreateTexture(nil, "OVERLAY")
     local label = button:CreateFontString(nil, "OVERLAY")
     K.AttachTextOffset(inst, label)
 
@@ -158,19 +158,19 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
         end
         local c = object.iconCoords
         local coords = (type(c) == "table" and #c == 4) and table.concat(c, ",") or "full"
-        local r, g, b = IconTint(object)
-        return table.concat({ tostring(texture), coords, r, g, b }, "|")
+        local region, g, b = IconTint(object)
+        return table.concat({ tostring(texture), coords, region, g, b }, "|")
     end
 
     local function PaintText(placeholder)
         if placeholder then
             label:SetTextColor(0.55, 0.55, 0.55, 1)
         elseif hovered then
-            local r, g, b = mod.GetAccent()
-            label:SetTextColor(r, g, b, 1)
+            local region, g, b = mod.GetAccent()
+            label:SetTextColor(region, g, b, 1)
         else
-            local r, g, b = K.BlockColorOf(blockCfg)
-            label:SetTextColor(r, g, b, 1)
+            local region, g, b = K.BlockColorOf(blockCfg)
+            label:SetTextColor(region, g, b, 1)
         end
     end
 
@@ -204,19 +204,19 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
         local iconSize = 0
         if s.showIcon ~= false and texture then
             iconSize = fontSize + 2
-            icon:SetTexture(texture)
+            iconTex:SetTexture(texture)
             local c = object.iconCoords
             if type(c) == "table" and #c == 4 then
-                icon:SetTexCoord(c[1], c[2], c[3], c[4])
+                iconTex:SetTexCoord(c[1], c[2], c[3], c[4])
             else
-                icon:SetTexCoord(0, 1, 0, 1)
+                iconTex:SetTexCoord(0, 1, 0, 1)
             end
-            icon:SetSize(iconSize, iconSize)
-            local r, g, b = IconTint(object)
-            icon:SetVertexColor(r, g, b, 1)
-            icon:Show()
+            iconTex:SetSize(iconSize, iconSize)
+            local region, g, b = IconTint(object)
+            iconTex:SetVertexColor(region, g, b, 1)
+            iconTex:Show()
         else
-            icon:Hide()
+            iconTex:Hide()
         end
         -- The wheel is taken only for a plugin that uses it.
         button:EnableMouseWheel((object and object.OnMouseWheel) ~= nil)
@@ -228,15 +228,15 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
             local slotW = K.VSlotW(self)
             local height = 8
             if iconSize > 0 then
-                icon:ClearAllPoints()
-                icon:SetPoint("TOP", button, "TOP", 0, -4)
+                iconTex:ClearAllPoints()
+                iconTex:SetPoint("TOP", button, "TOP", 0, -4)
                 height = height + iconSize + 2
             end
             mod.SetWrappedText(label, max(24, slotW - 8), "CENTER")
             label:SetText(text)
             label:ClearAllPoints()
             if iconSize > 0 then
-                label:SetPoint("TOP", icon, "BOTTOM", 0, -2)
+                label:SetPoint("TOP", iconTex, "BOTTOM", 0, -2)
             else
                 label:SetPoint("TOP", button, "TOP", 0, -4)
             end
@@ -251,8 +251,8 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
             local lead = 0
             if iconSize > 0 then
                 lead = iconSize + K.ICON_GAP
-                icon:ClearAllPoints()
-                icon:SetPoint("LEFT", button, "LEFT", 0, 0)
+                iconTex:ClearAllPoints()
+                iconTex:SetPoint("LEFT", button, "LEFT", 0, 0)
             end
             label:ClearAllPoints()
             label:SetPoint("LEFT", button, "LEFT", lead, 0)
@@ -340,11 +340,11 @@ mod.BlockFactories.ldb = function(blockCfg, slot, contentFrame, barCtx)
         tipRoute = nil
         if not s.source then
             -- The placeholder is the whole block, so say where a plugin is picked.
-            local r, g, b = mod.GetAccent()
+            local region, g, b = mod.GetAccent()
             mod.Tip_Begin(button)
             mod.Tip_AddLine(L["SELECT_PLUGIN"], 1, 1, 1)
             mod.Tip_AddLine(" ")
-            mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_SETTINGS"], 1, 1, 1, r, g, b)
+            mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_SETTINGS"], 1, 1, 1, region, g, b)
             mod.Tip_Show()
             return
         end

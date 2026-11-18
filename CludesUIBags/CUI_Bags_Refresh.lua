@@ -77,31 +77,31 @@ local function GetOrCreateCatHeader(position)
     if _catHeaders[position] then
         return _catHeaders[position]
     end
-    local f = CreateFrame("Frame", nil, CUI_Bags)
-    f:SetHeight(20)
-    f._label = f:CreateFontString(nil, "OVERLAY")
-    SetBagFont(f._label, 11)
-    f._label:SetPoint("LEFT", f, "LEFT", 0, 0)
-    f._label:SetTextColor(0.7, 0.7, 0.7)
-    f._label:SetJustifyH("LEFT")
-    f._hint = f:CreateFontString(nil, "OVERLAY")
-    SetBagFont(f._hint, 10)
-    f._hint:SetPoint("LEFT", f._label, "RIGHT", 4, 0)
-    f._hint:SetTextColor(0.7, 0.7, 0.7, 0.9)
-    f._hint:SetJustifyH("LEFT")
-    f._hint:SetText("")
+    local frame = CreateFrame("Frame", nil, CUI_Bags)
+    frame:SetHeight(20)
+    frame._label = frame:CreateFontString(nil, "OVERLAY")
+    SetBagFont(frame._label, 11)
+    frame._label:SetPoint("LEFT", frame, "LEFT", 0, 0)
+    frame._label:SetTextColor(0.7, 0.7, 0.7)
+    frame._label:SetJustifyH("LEFT")
+    frame._hint = frame:CreateFontString(nil, "OVERLAY")
+    SetBagFont(frame._hint, 10)
+    frame._hint:SetPoint("LEFT", frame._label, "RIGHT", 4, 0)
+    frame._hint:SetTextColor(0.7, 0.7, 0.7, 0.9)
+    frame._hint:SetJustifyH("LEFT")
+    frame._hint:SetText("")
     local Pix = CUI and CUI.PP
     local px = (Pix and Pix.mult) or 1
-    f._line = f:CreateTexture(nil, "ARTWORK")
-    f._line:SetHeight(px)
-    f._line:SetPoint("LEFT", f._hint, "RIGHT", 6, 0)
-    f._line:SetPoint("RIGHT", f, "RIGHT", -SPACING, 0)
-    f._line:SetColorTexture(0.7, 0.7, 0.7, 0.2)
+    frame._line = frame:CreateTexture(nil, "ARTWORK")
+    frame._line:SetHeight(px)
+    frame._line:SetPoint("LEFT", frame._hint, "RIGHT", 6, 0)
+    frame._line:SetPoint("RIGHT", frame, "RIGHT", -SPACING, 0)
+    frame._line:SetColorTexture(0.7, 0.7, 0.7, 0.2)
     if mod.BagsForever() then
-        mod.SetForeverBagSectionColors(f._label, f._line)
+        mod.SetForeverBagSectionColors(frame._label, frame._line)
     end
-    _catHeaders[position] = f
-    return f
+    _catHeaders[position] = frame
+    return frame
 end
 
 -- A frame that takes mouse motion is still the mouse focus: it drops every
@@ -110,18 +110,18 @@ end
 -- protected (out of combat only): a frame made in combat takes no mouse until
 -- a later paint out of combat turns them on. Returns whether the frame passes
 -- clicks on. Shared with the Compact display's labels.
-function mod.PassClicks(f)
-    if f._passClicks or not f.SetPropagateMouseClicks then
+function mod.PassClicks(frame)
+    if frame._passClicks or not frame.SetPropagateMouseClicks then
         return true
     end
     if InCombatLockdown() then
         return false
     end
-    f:SetPropagateMouseClicks(true)
-    if f.SetPropagateMouseMotion then
-        f:SetPropagateMouseMotion(true)
+    frame:SetPropagateMouseClicks(true)
+    if frame.SetPropagateMouseMotion then
+        frame:SetPropagateMouseMotion(true)
     end
-    f._passClicks = true
+    frame._passClicks = true
     return true
 end
 
@@ -161,27 +161,27 @@ end
 -- like _hideBtn; hidden by the per-refresh header reset.
 local function ShowRecentClearButton(heading, hideBtn)
     if not heading._clearBtn then
-        local cb = CreateFrame("Button", nil, heading)
-        cb:SetSize(34, 16)
-        cb._fs = cb:CreateFontString(nil, "OVERLAY")
-        SetBagFont(cb._fs, 9)
-        cb._fs:SetAllPoints()
-        cb._fs:SetText(CludesUI.L("Clear"))
-        cb._fs:SetTextColor(0.5, 0.5, 0.5, 0.7)
-        cb:SetScript("OnEnter", function(self)
+        local callback = CreateFrame("Button", nil, heading)
+        callback:SetSize(34, 16)
+        callback._fs = callback:CreateFontString(nil, "OVERLAY")
+        SetBagFont(callback._fs, 9)
+        callback._fs:SetAllPoints()
+        callback._fs:SetText(CludesUI.L("Clear"))
+        callback._fs:SetTextColor(0.5, 0.5, 0.5, 0.7)
+        callback:SetScript("OnEnter", function(self)
             self._fs:SetTextColor(1, 1, 1, 0.9)
             CUI.ShowWidgetTooltip(self, "Clears the Recent Items list.")
         end)
-        cb:SetScript("OnLeave", function(self)
+        callback:SetScript("OnLeave", function(self)
             self._fs:SetTextColor(0.5, 0.5, 0.5, 0.7)
             CUI.HideWidgetTooltip()
         end)
-        cb:SetScript("OnClick", function()
+        callback:SetScript("OnClick", function()
             if CUI_Bags.ClearRecentItems then
                 CUI_Bags:ClearRecentItems()
             end
         end)
-        heading._clearBtn = cb
+        heading._clearBtn = callback
     end
     heading._clearBtn:ClearAllPoints()
     if hideBtn then
@@ -200,15 +200,15 @@ local function GetOrCreateExpSubHeader(position)
     if _expSubHeaders[position] then
         return _expSubHeaders[position]
     end
-    local f = CreateFrame("Frame", nil, CUI_Bags)
-    f:SetHeight(16)
-    f._label = f:CreateFontString(nil, "OVERLAY")
-    SetBagFont(f._label, 9)
-    f._label:SetPoint("LEFT", f, "LEFT", 0, 0)
-    f._label:SetTextColor(0.55, 0.55, 0.55)
-    f._label:SetJustifyH("LEFT")
-    _expSubHeaders[position] = f
-    return f
+    local frame = CreateFrame("Frame", nil, CUI_Bags)
+    frame:SetHeight(16)
+    frame._label = frame:CreateFontString(nil, "OVERLAY")
+    SetBagFont(frame._label, 9)
+    frame._label:SetPoint("LEFT", frame, "LEFT", 0, 0)
+    frame._label:SetTextColor(0.55, 0.55, 0.55)
+    frame._label:SetJustifyH("LEFT")
+    _expSubHeaders[position] = frame
+    return frame
 end
 
 -------------------------------------------------------------------------------
@@ -299,27 +299,27 @@ do
             GripStop(grip)
             return
         end
-        local d, conf = grip._drag, grip._cfg
+        local skinData, conf = grip._drag, grip._cfg
         local cx, cy = GetCursorPosition()
         local es = grip:GetParent():GetEffectiveScale()
         local step = conf.step
-        local dx = math.floor(cx / es - d.x + 0.5)
-        dx = math.max((conf.minCols - d.cols) * step, math.min((d.maxCols - d.cols) * step, dx))
-        local cols = d.cols + math.floor(dx / step)
+        local dx = math.floor(cx / es - skinData.x + 0.5)
+        dx = math.max((conf.minCols - skinData.cols) * step, math.min((skinData.maxCols - skinData.cols) * step, dx))
+        local cols = skinData.cols + math.floor(dx / step)
         local bucket = math.floor(dx / (conf.relayoutStep or step))
-        local hgt = math.floor(d.h + (d.y - cy / es) + 0.5)
-        hgt = math.max(conf.minH, math.min(d.maxH, hgt))
-        if dx == d.lastDX and hgt == d.lastH then
+        local hgt = math.floor(skinData.h + (skinData.y - cy / es) + 0.5)
+        hgt = math.max(conf.minH, math.min(skinData.maxH, hgt))
+        if dx == skinData.lastDX and hgt == skinData.lastH then
             return
         end
-        local relayout = bucket ~= d.lastBucket
-        d.lastDX, d.lastBucket, d.lastH = dx, bucket, hgt
+        local relayout = bucket ~= skinData.lastBucket
+        skinData.lastDX, skinData.lastBucket, skinData.lastH = dx, bucket, hgt
         conf.save(cols, hgt)
         if relayout then
             conf.finish()
         end
         -- After the refresh, which sets the snapped size
-        grip:GetParent():SetSize(d.frameW + dx, hgt)
+        grip:GetParent():SetSize(skinData.frameW + dx, hgt)
     end
 
     local function GripOnMouseDown(grip, btnFrame)
@@ -400,13 +400,13 @@ do
         local b = CreateFrame("Button", nil, widget)
         b:SetSize(wid, hgt)
         b:SetFrameLevel(widget:GetFrameLevel() + 50)
-        local tex = b:CreateTexture(nil, "ARTWORK")
-        tex:SetAllPoints()
-        tex:SetDesaturated(true)
+        local texture = b:CreateTexture(nil, "ARTWORK")
+        texture:SetAllPoints()
+        texture:SetDesaturated(true)
         if filePath then
-            tex:SetTexture(filePath)
+            texture:SetTexture(filePath)
         end
-        b._icon = tex
+        b._icon = texture
         b:SetAlpha(GR.A)
         return b
     end
@@ -751,11 +751,11 @@ function CUI_Bags:RefreshInventory()
                     regularUsed = regularUsed + 1
                 end
                 local itemLink = C_Container.GetContainerItemLink(bag, slot)
-                local d = AcquireSlotTable()
-                d.bag = bag
-                d.slot = slot
-                d.info = details
-                d.itemLink = itemLink
+                local skinData = AcquireSlotTable()
+                skinData.bag = bag
+                skinData.slot = slot
+                skinData.info = details
+                skinData.itemLink = itemLink
                 CUI_Bags.ApplyBindKeyword(details, bag, slot)
                 -- Pre-cache per-item data for RenderButton (zero API calls at render time)
                 if itemLink then
@@ -783,12 +783,12 @@ function CUI_Bags:RefreshInventory()
                     -- pre-cached here: GetArmorySlotBucket fetches them lazily, only
                     -- for gear items and only while Group Gear by Slot is on, so the
                     -- feature costs nothing on the refresh path when disabled.
-                    d._giQuality = q
-                    d._giBindType = bindType
+                    skinData._giQuality = q
+                    skinData._giBindType = bindType
                     -- Track rank + cooldown: only for types that need them
-                    d._isGear = isGear
+                    skinData._isGear = isGear
                     -- The List view's iLvl column always needs the real level
-                    d._giIlvl = isGear
+                    skinData._giIlvl = isGear
                             and (BP().showItemlevelInBags ~= false or CUI_Bags.IsListMode())
                             and GetItemLevelAtLocation(loc, itemLink)
                         or nil
@@ -809,54 +809,54 @@ function CUI_Bags:RefreshInventory()
                             end
                         end
                         if rankText and rankText ~= "" then
-                            d._giTrackRank = rankText
-                            d._giTrackColor = trackColor
+                            skinData._giTrackRank = rankText
+                            skinData._giTrackColor = trackColor
                         elseif
-                            d._giIlvl and not (BP().itemlevelUseCustomColor and BP().itemlevelCustomColor)
+                            skinData._giIlvl and not (BP().itemlevelUseCustomColor and BP().itemlevelCustomColor)
                         then
-                            d._giTrackColor = CUI.GetCraftedTrackColor(itemLink)
+                            skinData._giTrackColor = CUI.GetCraftedTrackColor(itemLink)
                         end
                     end
                     -- Warbound check (warbank dim overlay) + WuE bind check (gear only, when bind-type text is enabled).
                     if loc and C_Item.DoesItemExist(loc) then
                         if C_Bank and C_Bank.IsItemAllowedInBankType then
-                            d._isWarbound = C_Bank.IsItemAllowedInBankType(Enum.BankType.Account, loc)
+                            skinData._isWarbound = C_Bank.IsItemAllowedInBankType(Enum.BankType.Account, loc)
                         end
                         if isGear and not details.isBound and BP().bagDisplayBindType then
-                            d._isWuE = C_Item.IsBoundToAccountUntilEquip(loc)
+                            skinData._isWuE = C_Item.IsBoundToAccountUntilEquip(loc)
                         end
                     end
                     -- Keystone data (rare, fast string match gates the API calls)
                     if details.itemID == 180653 or itemLink:find("keystone:", 1, true) then
                         local ksMap, ksLvl = itemLink:match("keystone:[^:]*:(%d+):(%d+)")
                         if ksLvl then
-                            d._ksLevel = ksLvl
-                            d._ksAbbrev = AbbrevDungeon(tonumber(ksMap))
+                            skinData._ksLevel = ksLvl
+                            skinData._ksAbbrev = AbbrevDungeon(tonumber(ksMap))
                             local success, color =
                                 pcall(C_ChallengeMode.GetKeystoneLevelRarityColor, tonumber(ksLvl))
                             if success and color then
-                                d._ksR = color.r
-                                d._ksG = color.g
-                                d._ksB = color.b
+                                skinData._ksR = color.r
+                                skinData._ksG = color.g
+                                skinData._ksB = color.b
                             end
                         end
                     end
                     -- Cooldown (any item can have a cooldown: trinkets, consumables, toys, etc.)
                     local cdStart, cdDur, cdEnable = C_Container.GetContainerItemCooldown(bag, slot)
                     if cdEnable and cdEnable ~= 0 and cdStart > 0 and cdDur > 0 then
-                        d._cdStart = cdStart
-                        d._cdDuration = cdDur
+                        skinData._cdStart = cdStart
+                        skinData._cdDuration = cdDur
                     end
                     -- _isQuest (any quest item, incl. active objectives + starters) drives the gold
                     -- border; _isQuestStarter (questID set but inactive) is Blizzard's "!" and drives the corner marker.
-                    d._isQuest, d._isQuestStarter = mod.GetSlotQuestFlags(bag, slot)
+                    skinData._isQuest, skinData._isQuestStarter = mod.GetSlotQuestFlags(bag, slot)
                 end
-                tempItems[#tempItems + 1] = d
+                tempItems[#tempItems + 1] = skinData
             else
-                local d = AcquireSlotTable()
-                d.bag = bag
-                d.slot = slot
-                emptySlots[#emptySlots + 1] = d
+                local skinData = AcquireSlotTable()
+                skinData.bag = bag
+                skinData.slot = slot
+                emptySlots[#emptySlots + 1] = skinData
             end
         end
     end
@@ -1330,51 +1330,51 @@ function CUI_BagsReagent:RefreshInventory()
         end
     end
 
-    for _, btn in pairs(reagentSlots) do
-        btn:GetParent():Hide()
+    for _, button in pairs(reagentSlots) do
+        button:GetParent():Hide()
     end
 
     local startX, startY = 15, -45
     local REAGENT_COLUMNS = 4
     for i, payload in ipairs(tempItems) do
-        local btn = GetOrCreateReagentSlot(i)
-        if btn then -- nil during combat (avoids minting tainted secure buttons)
-            local hostFrame = btn:GetParent()
+        local button = GetOrCreateReagentSlot(i)
+        if button then -- nil during combat (avoids minting tainted secure buttons)
+            local hostFrame = button:GetParent()
             hostFrame:ClearAllPoints()
             hostFrame:Show()
-            btn:Show()
-            btn:SetID(payload.slot)
+            button:Show()
+            button:SetID(payload.slot)
             hostFrame:SetID(payload.bag)
             local itemLink = payload.info and C_Container.GetContainerItemLink(payload.bag, payload.slot)
 
             if not payload.info then
-                btn:SetItemButtonTexture(nil)
-                btn:SetItemButtonCount(0)
-                SetItemButtonDesaturated(btn, false)
-                if btn.icon then
-                    btn.icon:Hide()
+                button:SetItemButtonTexture(nil)
+                button:SetItemButtonCount(0)
+                SetItemButtonDesaturated(button, false)
+                if button.icon then
+                    button.icon:Hide()
                 end
-                if btn.ItemLevelText then
-                    btn.ItemLevelText:SetText("")
+                if button.ItemLevelText then
+                    button.ItemLevelText:SetText("")
                 end
-                SetInsetBorderColor(btn, 0.25, 0.25, 0.25, 1)
-                if btn._fvSlotBorder then
-                    mod.SetForeverSlotQuestBorder(btn, false)
+                SetInsetBorderColor(button, 0.25, 0.25, 0.25, 1)
+                if button._fvSlotBorder then
+                    mod.SetForeverSlotQuestBorder(button, false)
                 end
             else
-                if btn.icon then
-                    btn.icon:Show()
+                if button.icon then
+                    button.icon:Show()
                 end
-                mod.SetSlotIcon(btn, payload.info.iconFileID)
-                btn:SetItemButtonCount(payload.info.stackCount)
-                SetItemButtonDesaturated(btn, payload.info.isLocked)
+                mod.SetSlotIcon(button, payload.info.iconFileID)
+                button:SetItemButtonCount(payload.info.stackCount)
+                SetItemButtonDesaturated(button, payload.info.isLocked)
                 local filtered = payload.info.isFiltered
-                btn:SetAlpha(filtered and 0.2 or 1)
-                if btn._textOverlay then
-                    btn._textOverlay:SetAlpha(filtered and 0.2 or 1)
+                button:SetAlpha(filtered and 0.2 or 1)
+                if button._textOverlay then
+                    button._textOverlay:SetAlpha(filtered and 0.2 or 1)
                 end
 
-                if btn.ItemLevelText and payload.info.itemID then
+                if button.ItemLevelText and payload.info.itemID then
                     local showItemlevel = BP().showItemlevelInBags ~= false
                     if showItemlevel then
                         if itemLink then
@@ -1383,58 +1383,58 @@ function CUI_BagsReagent:RefreshInventory()
                                 local loc = ItemLocation:CreateFromBagAndSlot(payload.bag, payload.slot)
                                 local level = GetItemLevelAtLocation(loc, itemLink)
                                 local fontStr = BP().itemlevelFontSize or 12
-                                btn.ItemLevelText:SetFont(
+                                button.ItemLevelText:SetFont(
                                     STANDARD_TEXT_FONT,
                                     fontStr,
                                     (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
                                 )
-                                btn.ItemLevelText:SetText(level or "")
-                                local r, g, b
+                                button.ItemLevelText:SetText(level or "")
+                                local region, g, b
                                 if BP().itemlevelUseCustomColor and BP().itemlevelCustomColor then
-                                    r, g, b =
+                                    region, g, b =
                                         BP().itemlevelCustomColor.r,
                                         BP().itemlevelCustomColor.g,
                                         BP().itemlevelCustomColor.b
                                 else
-                                    r, g, b = GetItemQualityColor(quality or 1)
+                                    region, g, b = GetItemQualityColor(quality or 1)
                                 end
-                                btn.ItemLevelText:SetTextColor(r, g, b, 1)
+                                button.ItemLevelText:SetTextColor(region, g, b, 1)
                             else
-                                btn.ItemLevelText:SetText("")
+                                button.ItemLevelText:SetText("")
                             end
                         else
-                            btn.ItemLevelText:SetText("")
+                            button.ItemLevelText:SetText("")
                         end
                     else
-                        btn.ItemLevelText:SetText("")
+                        button.ItemLevelText:SetText("")
                     end
                 end
 
-                local r, g, b = mod.QualityBorderColor(payload.info.quality or 1)
-                SetInsetBorderColor(btn, r, g, b, 1)
-                if btn._fvSlotBorder then
-                    mod.SetForeverSlotQuestBorder(btn, mod.GetSlotQuestFlags(payload.bag, payload.slot))
+                local region, g, b = mod.QualityBorderColor(payload.info.quality or 1)
+                SetInsetBorderColor(button, region, g, b, 1)
+                if button._fvSlotBorder then
+                    mod.SetForeverSlotQuestBorder(button, mod.GetSlotQuestFlags(payload.bag, payload.slot))
                 end
             end
-            UpdatePawnArrow(btn, itemLink)
+            UpdatePawnArrow(button, itemLink)
             if next(CUI_Bags.itemOverlayIcons) ~= nil then
                 payload.itemLink = itemLink
-                CUI_Bags.RunItemOverlays(btn, payload)
+                CUI_Bags.RunItemOverlays(button, payload)
             end
             -- Tooltip requery after the slot re-assignment (see RenderButton).
-            if GameTooltip:IsOwned(btn) then
-                if payload.info and btn.UpdateTooltip then
-                    btn:UpdateTooltip()
+            if GameTooltip:IsOwned(button) then
+                if payload.info and button.UpdateTooltip then
+                    button:UpdateTooltip()
                 else
                     GameTooltip:Hide()
                 end
             end
 
-            local col = (i - 1) % REAGENT_COLUMNS
+            local colour = (i - 1) % REAGENT_COLUMNS
             local row = math.floor((i - 1) / REAGENT_COLUMNS)
             hostFrame:SetPoint(
                 "TOPLEFT",
-                startX + (col * (SLOT_SIZE + SPACING)),
+                startX + (colour * (SLOT_SIZE + SPACING)),
                 startY - (row * (SLOT_SIZE + SPACING))
             )
         end
@@ -1450,16 +1450,16 @@ function CUI_BagsWindow:RefreshBags()
     if not CUI_BagsWindow:IsVisible() then
         return
     end
-    for _, btn in pairs(bagSlots) do
-        btn:GetParent():Hide()
+    for _, button in pairs(bagSlots) do
+        button:GetParent():Hide()
     end
     local startX, startY = 10, -10
     local BAG_COLUMNS = 6
     for i = 0, 5 do
         local displayIdx = i + 1
-        local btn = GetOrCreateBagSlot(displayIdx)
-        local hostFrame = btn:GetParent()
-        btn:SetID(i)
+        local button = GetOrCreateBagSlot(displayIdx)
+        local hostFrame = button:GetParent()
+        button:SetID(i)
         hostFrame:Show()
         local invID = C_Container.ContainerIDToInventoryID(i)
         local texture = GetInventoryItemTexture("player", invID)
@@ -1467,24 +1467,24 @@ function CUI_BagsWindow:RefreshBags()
         local free = C_Container.GetContainerNumFreeSlots(i)
         local sum = C_Container.GetContainerNumSlots(i)
         if i == 0 then
-            btn.icon:SetTexture(133633)
+            button.icon:SetTexture(133633)
         elseif texture then
-            btn.icon:SetTexture(texture)
+            button.icon:SetTexture(texture)
         else
-            btn.icon:SetTexture("Interface\\PaperDoll\\UI-PaperDoll-Slot-Bag")
+            button.icon:SetTexture("Interface\\PaperDoll\\UI-PaperDoll-Slot-Bag")
         end
         if sum > 0 then
-            btn.Count:SetText(free)
-            btn.Count:Show()
+            button.Count:SetText(free)
+            button.Count:Show()
         else
-            btn.Count:Hide()
+            button.Count:Hide()
         end
         local bdrR, bdrG, bdrB = 0.25, 0.25, 0.25
         if quality > 0 then
             bdrR, bdrG, bdrB = mod.QualityBorderColor(quality)
         end
-        SetInsetBorderColor(btn, bdrR, bdrG, bdrB, 1)
-        btn._bdrR, btn._bdrG, btn._bdrB = bdrR, bdrG, bdrB
+        SetInsetBorderColor(button, bdrR, bdrG, bdrB, 1)
+        button._bdrR, button._bdrG, button._bdrB = bdrR, bdrG, bdrB
 
         -- Blizzard's bag bar order: backpack on the right, reagent bag on the left
         hostFrame:ClearAllPoints()

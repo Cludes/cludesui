@@ -123,8 +123,8 @@ do
         if C_PetBattles and C_PetBattles.IsInBattle and C_PetBattles.IsInBattle() then
             return -- back in a battle; its close transition owns the rest
         end
-        for f in pairs(p) do
-            EAB_VTABLE.ExtraBars.SetManagedBlizzOwnedSuppressed(f, "petbattle", false)
+        for frame in pairs(p) do
+            EAB_VTABLE.ExtraBars.SetManagedBlizzOwnedSuppressed(frame, "petbattle", false)
         end
     end
     EAB_VTABLE.ExtraBars.QueuePetBattleUnsuppress = function(widget)
@@ -356,8 +356,8 @@ end
 function ABAR._PadSync()
     local barList = ABAR.db.profile.bars
     local any = false
-    for idx = 1, #BAR_CONFIG do
-        local s = barList[BAR_CONFIG[idx].key]
+    for index = 1, #BAR_CONFIG do
+        local s = barList[BAR_CONFIG[index].key]
         if s and s.gamepadHideBar == true then
             any = true
             break
@@ -569,13 +569,13 @@ do
     -- before the mode string is even consulted. Iterating the live list means a
     -- future lane can never reopen this hole.
     local function MyslotEachVisField(func)
-        for _, f in ipairs(MYSLOT_VIS_FIELDS) do
-            func(f)
+        for _, frame in ipairs(MYSLOT_VIS_FIELDS) do
+            func(frame)
         end
         local optKeys = CludesUI and CludesUI.VIS_OPT_KEYS
         if optKeys then
-            for _, f in ipairs(optKeys) do
-                func(f)
+            for _, frame in ipairs(optKeys) do
+                func(frame)
             end
         end
     end
@@ -591,8 +591,8 @@ do
         for key, saved in pairs(backup) do
             local s = self.db.profile.bars[key]
             if s then
-                MyslotEachVisField(function(f)
-                    s[f] = saved[f]
+                MyslotEachVisField(function(frame)
+                    s[frame] = saved[frame]
                 end)
             end
         end
@@ -617,8 +617,8 @@ do
                 local s = self.db.profile.bars[details.key]
                 if s then
                     local saved = {}
-                    MyslotEachVisField(function(f)
-                        saved[f] = s[f]
+                    MyslotEachVisField(function(frame)
+                        saved[frame] = s[frame]
                     end)
                     backup[details.key] = saved
                 end
@@ -641,8 +641,8 @@ do
                     -- that overrides the forced "always" at the driver site.
                     local optKeys = CludesUI and CludesUI.VIS_OPT_KEYS
                     if optKeys then
-                        for _, f in ipairs(optKeys) do
-                            s[f] = nil
+                        for _, frame in ipairs(optKeys) do
+                            s[frame] = nil
                         end
                     end
                     s.alwaysHidden = false
@@ -840,12 +840,12 @@ function ABAR:RebuildVisToggleBindings()
     for _, button in ipairs(self._visToggleBtnPool) do
         ClearOverrideBindings(button)
     end
-    for idx, k in ipairs(keyList) do
-        local button = self._visToggleBtnPool[idx]
+    for index, k in ipairs(keyList) do
+        local button = self._visToggleBtnPool[index]
         if not button then
-            button = CreateFrame("Button", "CUIVisToggleKeyBtn" .. idx, UIParent)
+            button = CreateFrame("Button", "CUIVisToggleKeyBtn" .. index, UIParent)
             button:Hide()
-            self._visToggleBtnPool[idx] = button
+            self._visToggleBtnPool[index] = button
         end
         local thisKey = k
         button:SetScript("OnClick", function()
@@ -915,8 +915,8 @@ function ABAR:ApplyClickThroughForBar(barId)
     if details and details.isStance then
         showEmpty = false
     end
-    for idx = 1, #buttons do
-        local button = buttons[idx]
+    for index = 1, #buttons do
+        local button = buttons[index]
         if button then
             -- Don't re-enable mouse on invisible (parked) empty slots
             local isInvisible = not showEmpty and mod._eabParked(button)

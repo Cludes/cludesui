@@ -70,11 +70,11 @@ function CUI_Bags:FitHeaderText()
             end
         end
         local _, size = count:GetFont()
-        local r, g, b = count:GetTextColor()
+        local region, g, b = count:GetTextColor()
         for i = 1, 2 do
             local line = heading.slotLines[i]
             line:SetFont(count:GetFont())
-            line:SetTextColor(r, g, b, 1)
+            line:SetTextColor(region, g, b, 1)
             line:SetPoint("LEFT", title, "RIGHT", 8, i == 1 and size / 2 or -size / 2)
             line:SetText(i == 1 and first or second)
             line:SetWidth(math.max(math.min(line:GetUnboundedStringWidth() + 1, countRoom), 1))
@@ -267,25 +267,25 @@ local function CreateHeader()
         local FinishSort -- the run's end, below
         -- The run's waiting callbacks check their frame's token: cleared, they
         -- drop out. Either frame is made on first use.
-        local function StopWaiting(f)
-            if not f then
+        local function StopWaiting(frame)
+            if not frame then
                 return
             end
-            f._runToken = nil
-            f._wait = nil
-            f:UnregisterAllEvents()
-            f:SetScript("OnEvent", nil)
+            frame._runToken = nil
+            frame._wait = nil
+            frame:UnregisterAllEvents()
+            frame:SetScript("OnEvent", nil)
         end
         -- Fail-open backstop: a pass whose moves all fail (an item locked
         -- elsewhere: a mail attachment, the auction house, a trade) brings no
         -- bag update, and the run would wait for good, the bags frozen and the
         -- sound effects muted. A wait with no update SORT_STUCK_AFTER seconds
         -- on ends the run as finished; a sort cut short can simply run again.
-        local function ArmBackstop(f, token)
+        local function ArmBackstop(frame, token)
             local wait = {}
-            f._wait = wait
+            frame._wait = wait
             C_Timer.After(SORT_STUCK_AFTER, function()
-                if f._runToken ~= token or f._wait ~= wait then
+                if frame._runToken ~= token or frame._wait ~= wait then
                     return
                 end
                 StopWaiting(consolidateFrame)
@@ -483,8 +483,8 @@ local function CreateHeader()
             end
 
             PreCacheSortFields(itemList)
-            for _, d in ipairs(itemList) do
-                d._sectionOrder = sectionOrder[d.categoryIndex] or 9999
+            for _, skinData in ipairs(itemList) do
+                skinData._sectionOrder = sectionOrder[skinData.categoryIndex] or 9999
             end
             table.sort(itemList, function(a, b)
                 if a._sectionOrder ~= b._sectionOrder then
@@ -496,9 +496,9 @@ local function CreateHeader()
             -- Compute moves via selection sort on pre-computed data (zero API calls)
             local atPos = {}
             local whereIs = {}
-            for position, d in ipairs(itemList) do
-                atPos[d.pos] = position
-                whereIs[position] = d.pos
+            for position, skinData in ipairs(itemList) do
+                atPos[skinData.pos] = position
+                whereIs[position] = skinData.pos
             end
 
             -- Sorted item i targets slot i; Sort to Bottom offsets so the block lands in the LAST

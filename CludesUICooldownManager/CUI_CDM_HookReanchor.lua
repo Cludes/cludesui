@@ -538,12 +538,12 @@ local function CollectAndReanchor()
                                             -- dedup stay keyed on realSID/phIdent.
                                             local dispSID = ResolvePlaceholderIconSID(realSID, dedupKey)
                                             local _GetTex = C_Spell and C_Spell.GetSpellTexture
-                                            local icon = _GetTex and _GetTex(dispSID)
-                                            if not icon and _GetTex and dispSID ~= realSID then
-                                                icon = _GetTex(realSID)
+                                            local iconTex = _GetTex and _GetTex(dispSID)
+                                            if not iconTex and _GetTex and dispSID ~= realSID then
+                                                iconTex = _GetTex(realSID)
                                             end
                                             local ph =
-                                                GetOrCreatePlaceholderFrame(targetBar, dispSID, icon, phIdent)
+                                                GetOrCreatePlaceholderFrame(targetBar, dispSID, iconTex, phIdent)
                                             -- Per-spell missing-visibility mark (our own
                                             -- frame): "hidden" renders alpha-0 via the
                                             -- opacity passes while the slot stays
@@ -782,11 +782,11 @@ local function CollectAndReanchor()
                             if injectCustom then
                                 -- Active (live reverse swipe) or options-page preview
                                 -- (cleared): our own custom frame.
-                                local f = GetOrCreateCustomBuffFrame(injKey, spellRef)
+                                local frame = GetOrCreateCustomBuffFrame(injKey, spellRef)
                                 if isActive then
-                                    f._cooldown:SetCooldown(timer.start, timer.duration)
+                                    frame._cooldown:SetCooldown(timer.start, timer.duration)
                                 else
-                                    f._cooldown:Clear()
+                                    frame._cooldown:Clear()
                                 end
                                 -- Per-spell Threshold Text (buff bars): attach the engine
                                 -- countdown formatter so the custom buff's cast-timer countdown
@@ -798,18 +798,18 @@ local function CollectAndReanchor()
                                 if mod._cdmAnyThresholdText and mod.ApplyThresholdFormatter then
                                     local ssB = mod.ResolveThresholdTextSettings
                                         and mod.ResolveThresholdTextSettings(nil, spellRef, sdInj, injKey)
-                                    mod.ApplyThresholdFormatter(f._cooldown, ssB)
+                                    mod.ApplyThresholdFormatter(frame._cooldown, ssB)
                                 end
-                                f:Show()
-                                f.layoutIndex = 5000 + position
-                                local fc = FC(f)
+                                frame:Show()
+                                frame.layoutIndex = 5000 + position
+                                local fc = FC(frame)
                                 fc.barKey = injKey
                                 fc.spellID = spellRef
                                 if not barLists[injKey] then
                                     barLists[injKey] = {}
                                 end
                                 barLists[injKey][#barLists[injKey] + 1] =
-                                    AcquireEntry(f, spellRef, spellRef, f.layoutIndex)
+                                    AcquireEntry(frame, spellRef, spellRef, frame.layoutIndex)
                             elseif injectPlaceholder then
                                 -- A preset is our own buff, so this is the easy case:
                                 -- inject a placeholder through the SAME path Blizzard
@@ -818,10 +818,10 @@ local function CollectAndReanchor()
                                 -- alpha-0 it (Keep in Same Place) automatically. Keyed
                                 -- "s"..sid by the sort -- the same key the active preset
                                 -- frame uses -- so it holds its slot across proc/expire.
-                                local icon = C_Spell
+                                local iconTex = C_Spell
                                     and C_Spell.GetSpellTexture
                                     and C_Spell.GetSpellTexture(spellRef)
-                                local ph = GetOrCreatePlaceholderFrame(injKey, spellRef, icon)
+                                local ph = GetOrCreatePlaceholderFrame(injKey, spellRef, iconTex)
                                 -- A preset is never a viewer-tracked spell, so it must
                                 -- key by "s"..sid. Clear any cooldownID a shared pooled
                                 -- frame might carry from the Blizzard Always-Show path so
@@ -869,15 +869,15 @@ local function CollectAndReanchor()
                             and not mod._HealthstoneHiddenByPact(-spellRef)
                         then
                             local itemId = -spellRef
-                            local f = GetOrCreateItemPresetFrame(injKey, itemId)
-                            if f then
-                                _injectedCustomBuffFrames[f] = true
-                                f._ownerBarKey = injKey
-                                f.layoutIndex = 6000 + position
+                            local frame = GetOrCreateItemPresetFrame(injKey, itemId)
+                            if frame then
+                                _injectedCustomBuffFrames[frame] = true
+                                frame._ownerBarKey = injKey
+                                frame.layoutIndex = 6000 + position
                                 -- Pot presets: resolve the display variant here too
                                 -- (generation-gated, ~free when clean) so a rebuild
                                 -- or profile change restamps the icon immediately.
-                                local dispID = PotSwap.Ensure(f)
+                                local dispID = PotSwap.Ensure(frame)
                                 -- "Hide Items if Missing": mirror the CD/utility item
                                 -- path. When the bar opts in and the item (plus alts)
                                 -- isn't in bags, skip injection so it drops out of the
@@ -890,23 +890,23 @@ local function CollectAndReanchor()
                                 if edge.hideItemsIfMissing then
                                     local sum
                                     if dispID then
-                                        sum = f._displayCount or 0
+                                        sum = frame._displayCount or 0
                                     else
-                                        sum = mod._ReadItemPresetCount(f)
+                                        sum = mod._ReadItemPresetCount(frame)
                                     end
-                                    f._hidePresenceCached = (sum > 0)
+                                    frame._hidePresenceCached = (sum > 0)
                                     skipMissing = (sum == 0)
                                 else
-                                    f._hidePresenceCached = nil
+                                    frame._hidePresenceCached = nil
                                 end
                                 if skipMissing then
-                                    f:Hide()
+                                    frame:Hide()
                                 else
-                                    if f._cdStart and f._cdDur and (GetTime() < f._cdStart + f._cdDur) then
-                                        f._cooldown:SetCooldown(f._cdStart, f._cdDur)
+                                    if frame._cdStart and frame._cdDur and (GetTime() < frame._cdStart + frame._cdDur) then
+                                        frame._cooldown:SetCooldown(frame._cdStart, frame._cdDur)
                                     end
-                                    if f._lastDesat ~= nil and f._tex then
-                                        f._tex:SetDesaturated(f._lastDesat)
+                                    if frame._lastDesat ~= nil and frame._tex then
+                                        frame._tex:SetDesaturated(frame._lastDesat)
                                     elseif mod._MarkPresetCdDirty then
                                         -- Fresh frame (no cached desat yet): nudge the
                                         -- preset processor so the next BuffTicker pass
@@ -915,15 +915,15 @@ local function CollectAndReanchor()
                                         -- item saturated until /reload.
                                         mod._MarkPresetCdDirty()
                                     end
-                                    f:Show()
-                                    local fc = FC(f)
+                                    frame:Show()
+                                    local fc = FC(frame)
                                     fc.barKey = injKey
                                     fc.spellID = spellRef
                                     if not barLists[injKey] then
                                         barLists[injKey] = {}
                                     end
                                     barLists[injKey][#barLists[injKey] + 1] =
-                                        AcquireEntry(f, spellRef, spellRef, f.layoutIndex)
+                                        AcquireEntry(frame, spellRef, spellRef, frame.layoutIndex)
                                 end
                             end
                         end
@@ -1185,14 +1185,14 @@ local function CollectAndReanchor()
                 -- force-restores buff frames, so it stayed blank until the next
                 -- buff event. Mirrors the Phase 3 excess-clear guard.
                 for i = count + 1, #icons do
-                    local icon = icons[i]
-                    if icon and not usedFrames[icon] then
-                        local efd = hookFrameData[icon]
+                    local iconTex = icons[i]
+                    if iconTex and not usedFrames[iconTex] then
+                        local efd = hookFrameData[iconTex]
                         if efd then
                             efd._cdmAnchor = nil
                         end
-                        if icon.Cooldown and icon.Cooldown.SetDrawSwipe then
-                            icon.Cooldown:SetDrawSwipe(false)
+                        if iconTex.Cooldown and iconTex.Cooldown.SetDrawSwipe then
+                            iconTex.Cooldown:SetDrawSwipe(false)
                         end
                     end
                     icons[i] = nil
@@ -1352,8 +1352,8 @@ local function CollectAndReanchor()
     local _claimSet = _scratch_spellOrder -- reuse scratch for claim set (wiped per bar below)
     local _globalClaimSet = {}
     for _, flist in pairs(cdFrames) do
-        for _, f in ipairs(flist) do
-            local fc = _ecmeFC[f]
+        for _, frame in ipairs(flist) do
+            local fc = _ecmeFC[frame]
             if fc then
                 local fSid = fc.spellID
                 if fSid then
@@ -1618,9 +1618,9 @@ local function CollectAndReanchor()
                             -- push. Must be tested before the item-preset
                             -- branch: it is also <= -100.
                             if mod.EmptySlotTalentConditionsHold(barId, spellRef) then
-                                local f = GetOrCreateEmptySlotFrame(spellRef)
-                                frameList[#frameList + 1] = f
-                                local fc = FC(f)
+                                local frame = GetOrCreateEmptySlotFrame(spellRef)
+                                frameList[#frameList + 1] = frame
+                                local fc = FC(frame)
                                 fc.barKey = barId
                                 fc.spellID = spellRef
                             end
@@ -1640,19 +1640,19 @@ local function CollectAndReanchor()
                             -- row's slot alone: with the row gone it shows nothing,
                             -- never the preset's own icon.
                             local nativeOnly = sd and sd.nativeItems and sd.nativeItems[spellRef]
-                            local f = not _globalClaimSet[spellRef]
+                            local frame = not _globalClaimSet[spellRef]
                                 and not nativeOnly
                                 and not (slotEquippedItems and slotEquippedItems[itemId])
                                 and not mod._HealthstoneHiddenByPact(itemId)
                                 and GetOrCreateItemPresetFrame(barId, itemId)
-                            if f then
+                            if frame then
                                 -- Remember the bar that owns this frame so bag
                                 -- events can re-evaluate it even while hidden.
-                                f._ownerBarKey = barId
+                                frame._ownerBarKey = barId
                                 -- Pot presets: resolve the display variant here
                                 -- too (generation-gated, ~free when clean) so a
                                 -- rebuild or profile change restamps immediately.
-                                local dispID = PotSwap.Ensure(f)
+                                local dispID = PotSwap.Ensure(frame)
                                 -- "Hide Items if Missing": when the bar opts in
                                 -- and the item (plus its alts) isn't in bags,
                                 -- skip injection entirely so it drops out of the
@@ -1662,26 +1662,26 @@ local function CollectAndReanchor()
                                 if barInfo and barInfo.hideItemsIfMissing then
                                     local sum
                                     if dispID then
-                                        sum = f._displayCount or 0
+                                        sum = frame._displayCount or 0
                                     else
-                                        sum = mod._ReadItemPresetCount(f)
+                                        sum = mod._ReadItemPresetCount(frame)
                                     end
-                                    f._hidePresenceCached = (sum > 0)
+                                    frame._hidePresenceCached = (sum > 0)
                                     skipMissing = (sum == 0)
                                 else
-                                    f._hidePresenceCached = nil
+                                    frame._hidePresenceCached = nil
                                 end
                                 if skipMissing then
-                                    f:Hide()
+                                    frame:Hide()
                                 else
                                     -- CD state is maintained by ProcessPresetCooldowns
                                     -- at 10Hz. Here we just re-apply cached visuals
                                     -- (no API queries needed per reanchor).
-                                    if f._cdStart and f._cdDur and (GetTime() < f._cdStart + f._cdDur) then
-                                        f._cooldown:SetCooldown(f._cdStart, f._cdDur)
+                                    if frame._cdStart and frame._cdDur and (GetTime() < frame._cdStart + frame._cdDur) then
+                                        frame._cooldown:SetCooldown(frame._cdStart, frame._cdDur)
                                     end
-                                    if f._lastDesat ~= nil and f._tex then
-                                        f._tex:SetDesaturated(f._lastDesat)
+                                    if frame._lastDesat ~= nil and frame._tex then
+                                        frame._tex:SetDesaturated(frame._lastDesat)
                                     elseif mod._MarkPresetCdDirty then
                                         -- Fresh frame (no cached desat yet, e.g. after a full
                                         -- rebuild): its ownership/cooldown desaturation has not
@@ -1691,8 +1691,8 @@ local function CollectAndReanchor()
                                         -- leaves an unowned pot/healthstone saturated until /reload.
                                         mod._MarkPresetCdDirty()
                                     end
-                                    frameList[#frameList + 1] = f
-                                    local fc = FC(f)
+                                    frameList[#frameList + 1] = frame
+                                    local fc = FC(frame)
                                     fc.barKey = barId
                                     fc.spellID = spellRef
                                 end
@@ -1761,42 +1761,42 @@ local function CollectAndReanchor()
                                         .. (isRacial and "racial" or "custom")
                                         .. ":"
                                         .. spellRef
-                                    local f = _presetFrames[fkey]
-                                    if not f then
-                                        f = CreateFrame("Frame", nil, UIParent)
-                                        f:SetSize(36, 36)
-                                        f:Hide()
-                                        f:EnableMouse(true)
-                                        if f.SetMouseClickEnabled then
-                                            f:SetMouseClickEnabled(false)
+                                    local frame = _presetFrames[fkey]
+                                    if not frame then
+                                        frame = CreateFrame("Frame", nil, UIParent)
+                                        frame:SetSize(36, 36)
+                                        frame:Hide()
+                                        frame:EnableMouse(true)
+                                        if frame.SetMouseClickEnabled then
+                                            frame:SetMouseClickEnabled(false)
                                         end
-                                        local texture = f:CreateTexture(nil, "ARTWORK")
+                                        local texture = frame:CreateTexture(nil, "ARTWORK")
                                         texture:SetAllPoints()
                                         mod.CdmOwnIconCrop(texture)
-                                        f.Icon = texture
-                                        f._tex = texture
-                                        local cd = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
+                                        frame.Icon = texture
+                                        frame._tex = texture
+                                        local cd = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
                                         cd:SetAllPoints()
                                         cd:SetDrawEdge(false)
                                         cd:SetDrawBling(false)
                                         cd:SetHideCountdownNumbers(true)
                                         cd:SetScript("OnCooldownDone", function()
-                                            if f._tex then
-                                                f._tex:SetDesaturation(0)
+                                            if frame._tex then
+                                                frame._tex:SetDesaturation(0)
                                             end
                                         end)
-                                        f.Cooldown = cd
-                                        f._cooldown = cd
-                                        f._isRacialFrame = isRacial or nil
-                                        f._isCustomSpellFrame = not isRacial or nil
-                                        f.cooldownID = nil
-                                        f.cooldownInfo = nil
-                                        f.layoutIndex = 99999
-                                        f:EnableMouse(true)
-                                        if f.SetMouseClickEnabled then
-                                            f:SetMouseClickEnabled(false)
+                                        frame.Cooldown = cd
+                                        frame._cooldown = cd
+                                        frame._isRacialFrame = isRacial or nil
+                                        frame._isCustomSpellFrame = not isRacial or nil
+                                        frame.cooldownID = nil
+                                        frame.cooldownInfo = nil
+                                        frame.layoutIndex = 99999
+                                        frame:EnableMouse(true)
+                                        if frame.SetMouseClickEnabled then
+                                            frame:SetMouseClickEnabled(false)
                                         end
-                                        f:SetScript("OnEnter", function(self)
+                                        frame:SetScript("OnEnter", function(self)
                                             local ffc = _ecmeFC[self]
                                             local spid = ffc and ffc.spellID
                                             local bd2 = ffc and ffc.barKey and barDataByKey[ffc.barKey]
@@ -1822,34 +1822,34 @@ local function CollectAndReanchor()
                                                 GameTooltip:Show()
                                             end
                                         end)
-                                        f:SetScript("OnLeave", GameTooltip_Hide)
-                                        _presetFrames[fkey] = f
-                                        _RegisterPresetLive(f, fkey)
+                                        frame:SetScript("OnLeave", GameTooltip_Hide)
+                                        _presetFrames[fkey] = frame
+                                        _RegisterPresetLive(frame, fkey)
                                     end
                                     local spInfo = C_Spell
                                         and C_Spell.GetSpellInfo
                                         and C_Spell.GetSpellInfo(spellRef)
-                                    if spInfo and spInfo.iconID and f._tex then
-                                        f._tex:SetTexture(spInfo.iconID)
+                                    if spInfo and spInfo.iconID and frame._tex then
+                                        frame._tex:SetTexture(spInfo.iconID)
                                     end
-                                    if not f._cdSet or f._racialCdDirty then
+                                    if not frame._cdSet or frame._racialCdDirty then
                                         local durObj = C_Spell.GetSpellCooldownDuration
                                             and C_Spell.GetSpellCooldownDuration(spellRef)
-                                        if durObj and f._cooldown.SetCooldownFromDurationObject then
-                                            f._cooldown:SetCooldownFromDurationObject(durObj, true)
+                                        if durObj and frame._cooldown.SetCooldownFromDurationObject then
+                                            frame._cooldown:SetCooldownFromDurationObject(durObj, true)
                                         end
-                                        ApplySpellDesaturation(f, durObj)
+                                        ApplySpellDesaturation(frame, durObj)
                                         -- This push can land mid-GCD (a bar rebuild
                                         -- while a GCD is running), so it owns the
                                         -- swipe the same way the 10Hz pass does.
                                         -- barKey is passed explicitly: the frame's
                                         -- cache entry is only stamped further down.
-                                        ApplyPresetGCDSwipe(f, spellRef, nil, barId)
-                                        f._cdSet = true
-                                        f._racialCdDirty = false
+                                        ApplyPresetGCDSwipe(frame, spellRef, nil, barId)
+                                        frame._cdSet = true
+                                        frame._racialCdDirty = false
                                     end
-                                    frameList[#frameList + 1] = f
-                                    local fc = FC(f)
+                                    frameList[#frameList + 1] = frame
+                                    local fc = FC(frame)
                                     fc.barKey = barId
                                     fc.spellID = spellRef
                                 end
@@ -2153,12 +2153,12 @@ local function CollectAndReanchor()
     do
         local tagged = mod._cdmOverflowTagged
         if tagged then
-            for f in pairs(tagged) do
-                local fcT = _ecmeFC[f]
+            for frame in pairs(tagged) do
+                local fcT = _ecmeFC[frame]
                 if fcT then
                     fcT._overflowLayoutBar = nil
                 end
-                tagged[f] = nil
+                tagged[frame] = nil
             end
         end
         if mod._cdmAnyOverflowCfg then
@@ -2239,18 +2239,18 @@ local function CollectAndReanchor()
                 end
                 tagged = mod._cdmOverflowTagged
                 for i = 1, #moves, 2 do
-                    local f, tKey = moves[i], moves[i + 1]
+                    local frame, tKey = moves[i], moves[i + 1]
                     local tl = cdFrames[tKey]
                     if not tl then
                         tl = {}
                         cdFrames[tKey] = tl
                     end
-                    tl[#tl + 1] = f
-                    local fcM = _ecmeFC[f]
+                    tl[#tl + 1] = frame
+                    local fcM = _ecmeFC[frame]
                     if fcM then
                         fcM._overflowLayoutBar = tKey
                     end
-                    tagged[f] = true
+                    tagged[frame] = true
                 end
             end
         end

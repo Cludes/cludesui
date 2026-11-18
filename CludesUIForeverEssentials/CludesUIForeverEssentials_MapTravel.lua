@@ -68,8 +68,8 @@ local function PinOnEnter(self)
     local wid, hgt = canvas:GetSize()
     local cs = canvas:GetScale()
     local tipText = PinTip(self)
-    for idx = 1, used do
-        local p = pins[idx]
+    for index = 1, used do
+        local p = pins[index]
         if p ~= self then
             local reach = (p.size + self.size) / 2
             if math.abs(p.x - self.x) * wid * cs < reach and math.abs(p.y - self.y) * hgt * cs < reach then
@@ -104,7 +104,7 @@ end
 local hintedClick = false
 local function PrintLink(mapID, posX, posY, labelText, atlas)
     local CC = CludesUI.COLOR_CODES
-    local icon = atlas and not atlas:find("\\", 1, true) and ("|A:%s:16:16|a "):format(atlas) or ""
+    local iconTex = atlas and not atlas:find("\\", 1, true) and ("|A:%s:16:16|a "):format(atlas) or ""
     local itemLink = ("|cffffff00|Hworldmap:%d:%d:%d|h[%s]|h|r"):format(
         mapID,
         math.floor(posX * 10000 + 0.5),
@@ -116,7 +116,7 @@ local function PrintLink(mapID, posX, posY, labelText, atlas)
             .. "CludesUI:|r "
             .. itemLink
             .. " "
-            .. icon
+            .. iconTex
             .. CC.WHITE
             .. labelText
             .. "|r "
@@ -156,8 +156,8 @@ local function PinOnMouseUp(self, btnFrame)
 end
 
 local function Clear()
-    for idx = 1, used do
-        pins[idx]:Hide()
+    for index = 1, used do
+        pins[index]:Hide()
     end
     used = 0
     shownKey = nil
@@ -166,8 +166,8 @@ end
 -- Right clicks pass through every pin to the map. SetPassThroughButtons is
 -- protected in combat: set once per pin, a pin made in combat waits for its end.
 local function PassRightClicks()
-    for idx = 1, #pins do
-        local p = pins[idx]
+    for index = 1, #pins do
+        local p = pins[index]
         if not p.passes then
             p:SetPassThroughButtons("RightButton")
             p.passes = true
@@ -235,8 +235,8 @@ end
 
 -- A zoom: the same pins, rescaled (rebuilding them would drop the tooltip).
 local function Rescale()
-    for idx = 1, used do
-        Anchor(pins[idx])
+    for index = 1, used do
+        Anchor(pins[index])
     end
 end
 
@@ -265,21 +265,21 @@ local function TransportTip(t)
 end
 
 -- The instance's name, the entrance or wings it opens on, then its kind.
-local function InstanceTip(idx)
-    local tipText = GetRealZoneText(idx[3])
-    if idx[5] then
-        tipText = tipText .. "\n|cffffffff" .. CludesUI.L(idx[5]) .. "|r"
+local function InstanceTip(index)
+    local tipText = GetRealZoneText(index[3])
+    if index[5] then
+        tipText = tipText .. "\n|cffffffff" .. CludesUI.L(index[5]) .. "|r"
     end
-    return tipText .. "\n" .. (idx[4] and CludesUI.L("Raid") or CludesUI.L("Dungeon"))
+    return tipText .. "\n" .. (index[4] and CludesUI.L("Raid") or CludesUI.L("Dungeon"))
 end
 
 -- Its chat line: "Dungeon: The Deadmines (Main Entrance)".
-local function InstanceLink(idx)
-    local name = GetRealZoneText(idx[3])
-    if idx[5] then
-        name = name .. " (" .. CludesUI.L(idx[5]) .. ")"
+local function InstanceLink(index)
+    local name = GetRealZoneText(index[3])
+    if index[5] then
+        name = name .. " (" .. CludesUI.L(index[5]) .. ")"
     end
-    return idx[4] and CludesUI.Lf("Raid: %s", name) or CludesUI.Lf("Dungeon: %s", name)
+    return index[4] and CludesUI.Lf("Raid: %s", name) or CludesUI.Lf("Dungeon: %s", name)
 end
 
 -- The arrow's angle toward the destination zone's middle, read on the continent.
@@ -290,12 +290,12 @@ local function ExitRotation(zone, posX, posY, dest)
         return 0
     end
     local zl, zr, zt, zb = C_Map.GetMapRectOnMap(zone, continent)
-    local l, r, t, b = C_Map.GetMapRectOnMap(dest, continent)
+    local l, region, t, b = C_Map.GetMapRectOnMap(dest, continent)
     if not (zl and l) then
         return 0
     end
     local px, py = zl + posX * (zr - zl), zt + posY * (zb - zt)
-    local dx, dy = (l + r) / 2 - px, (t + b) / 2 - py
+    local dx, dy = (l + region) / 2 - px, (t + b) / 2 - py
     return math.atan2(-dx, -dy) -- the atlas points up; screen y grows down
 end
 
@@ -310,8 +310,8 @@ local function TransportGroups(zone)
     end
     groups = {}
     local entries = payload.transports[zone] or {}
-    for idx = 1, #entries do
-        local t = entries[idx]
+    for index = 1, #entries do
+        local t = entries[index]
         local g
         for jdx = 1, #groups do
             local hgt = groups[jdx]
@@ -345,16 +345,16 @@ end
 local function DrawZone(zone)
     if On("transports") then
         local groups = TransportGroups(zone)
-        for idx = 1, #groups do
-            local g = groups[idx]
+        for index = 1, #groups do
+            local g = groups[index]
             Place(g.x / 100, g.y / 100, g.atlas, PIN_SIZE, g.tip, nil, g.count, g.link)
         end
     end
     if On("instances") then
         local entries = payload.instances[zone]
         if entries then
-            for idx = 1, #entries do
-                local e = entries[idx]
+            for index = 1, #entries do
+                local e = entries[index]
                 Place(
                     e[1] / 100,
                     e[2] / 100,
@@ -371,8 +371,8 @@ local function DrawZone(zone)
     if On("exits") then
         local entries = payload.exits[zone]
         if entries then
-            for idx = 1, #entries do
-                local e = entries[idx]
+            for index = 1, #entries do
+                local e = entries[index]
                 local posX, posY = e[1] / 100, e[2] / 100
                 Place(
                     posX,
@@ -391,11 +391,11 @@ end
 
 -- A zone's point (0..1) on a wider map that holds it, or nil.
 local function OnWiderMap(zone, map, posX, posY)
-    local l, r, t, b = C_Map.GetMapRectOnMap(zone, map)
-    if not l or r <= l or b <= t then
+    local l, region, t, b = C_Map.GetMapRectOnMap(zone, map)
+    if not l or region <= l or b <= t then
         return nil
     end
-    posX, posY = l + posX * (r - l), t + posY * (b - t)
+    posX, posY = l + posX * (region - l), t + posY * (b - t)
     if posX < 0 or posX > 1 or posY < 0 or posY > 1 then
         return nil
     end
@@ -408,8 +408,8 @@ local function DrawWider(map, instances)
     if On("transports") then
         for zone in pairs(payload.transports) do
             local groups = TransportGroups(zone)
-            for idx = 1, #groups do
-                local g = groups[idx]
+            for index = 1, #groups do
+                local g = groups[index]
                 local posX, posY = OnWiderMap(zone, map, g.x / 100, g.y / 100)
                 if posX then
                     local p = Place(posX, posY, g.atlas, PIN_SIZE, g.tip, nil, g.count, g.link)
@@ -420,8 +420,8 @@ local function DrawWider(map, instances)
     end
     if instances and On("instances") then
         for zone, entries in pairs(payload.instances) do
-            for idx = 1, #entries do
-                local e = entries[idx]
+            for index = 1, #entries do
+                local e = entries[index]
                 local posX, posY = OnWiderMap(zone, map, e[1] / 100, e[2] / 100)
                 if posX then
                     local p = Place(
@@ -455,8 +455,8 @@ local function FlightNodes(mapID)
     local Faction = Enum.FlightPathFaction
     local mine = UnitFactionGroup("player") == "Horde" and Faction.Horde or Faction.Alliance
     local entries = {}
-    for idx = 1, #nodes do
-        local num = nodes[idx]
+    for index = 1, #nodes do
+        local num = nodes[index]
         local posX, posY = num.position.x, num.position.y
         if
             (num.faction == Faction.Neutral or num.faction == mine)
@@ -486,8 +486,8 @@ local function DrawFlights(mapID)
     if not entries then
         return
     end
-    for idx = 1, #entries do
-        local num = entries[idx]
+    for index = 1, #entries do
+        local num = entries[index]
         local tipText = num.note and (num.name .. "\n|cff808080" .. num.note .. "|r") or num.name
         Place(
             num.position.x,

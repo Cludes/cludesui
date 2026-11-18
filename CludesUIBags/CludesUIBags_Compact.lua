@@ -201,14 +201,14 @@ end
 
 -- The most rows of a block in the band i..j held to k rows
 local function BandRows(i, jdx, k)
-    local r = 0
+    local region = 0
     for m = i, jdx do
         local rowList = Rows(m, BandCols(m, k))
-        if rowList > r then
-            r = rowList
+        if rowList > region then
+            region = rowList
         end
     end
-    return r
+    return region
 end
 
 -- Holds the band i..j to k rows, then spends its spare width widening
@@ -287,16 +287,16 @@ local function FitBand(i, jdx, k)
             end
         end
     end
-    local r, awk = 0, 0
+    local region, awk = 0, 0
     for m = i, jdx do
         local c = fbCols[m]
         local rowList = Rows(m, c)
-        if rowList > r then
-            r = rowList
+        if rowList > region then
+            region = rowList
         end
         awk = awk + Awk(m, c)
     end
-    return pBand + r * PITCH, awk
+    return pBand + region * PITCH, awk
 end
 
 -- Adds the candidate plans that open with the band i..j held to k rows: one
@@ -305,12 +305,12 @@ local function Consider(i, jdx, k)
     local hgt, awk = FitBand(i, jdx, k)
     local at = keptAt[jdx + 1]
     for posX = at, at + keptN[jdx + 1] - 1 do
-        local r = kept[posX]
-        local sum = hgt + rH[r]
+        local region = kept[posX]
+        local sum = hgt + rH[region]
         candN = candN + 1
         candH[candN], candQ[candN] = sum, floor(sum * 2 + 0.5)
-        candA[candN], candW[candN] = awk + rA[r], (k - 1) + rW[r]
-        candJ[candN], candK[candN], candRest[candN] = jdx, k, r
+        candA[candN], candW[candN] = awk + rA[region], (k - 1) + rW[region]
+        candJ[candN], candK[candN], candRest[candN] = jdx, k, region
         candOrd[candN] = candN
     end
 end
@@ -423,10 +423,10 @@ local function Plan(num, result)
     -- Unroll the answer band by band
     local pCols, pWidth, pFirst, pLast, pRows =
         result._pCols, result._pWidth, result._pFirst, result._pLast, result._pRows
-    local r, i, nb = kept[keptAt[1] + keptN[1] - 1], 1, 0
-    while rJ[r] do
-        local jdx = rJ[r]
-        FitBand(i, jdx, rK[r])
+    local region, i, nb = kept[keptAt[1] + keptN[1] - 1], 1, 0
+    while rJ[region] do
+        local jdx = rJ[region]
+        FitBand(i, jdx, rK[region])
         nb = nb + 1
         pFirst[nb], pLast[nb] = i, jdx
         local most = 0
@@ -439,7 +439,7 @@ local function Plan(num, result)
             end
         end
         pRows[nb] = most
-        i, r = jdx + 1, rRest[r]
+        i, region = jdx + 1, rRest[region]
     end
     result._pBands = nb
 end
@@ -573,8 +573,8 @@ do
     local filePath = {}
     local function Join(lo, hi)
         local s
-        for d = lo, hi do
-            local p = filePath[d]
+        for skinData = lo, hi do
+            local p = filePath[skinData]
             if p then
                 s = s and (s .. ": " .. p) or p
             end
@@ -596,18 +596,18 @@ do
         for i = 1, sum do
             local e = layout[i]
             if e.isHeader then
-                local d = e.depth or 0
-                filePath[d] = e.name or e.label
-                for k = d + 1, maxDepth do
+                local skinData = e.depth or 0
+                filePath[skinData] = e.name or e.label
+                for k = skinData + 1, maxDepth do
                     filePath[k] = nil
                 end
-                if d > maxDepth then
-                    maxDepth = d
+                if skinData > maxDepth then
+                    maxDepth = skinData
                 end
-                if not freshMin or d < freshMin then
-                    freshMin = d
+                if not freshMin or skinData < freshMin then
+                    freshMin = skinData
                 end
-                curDepth, chainLast = d, e
+                curDepth, chainLast = skinData, e
             else
                 if chainLast then
                     num = num + 1
@@ -634,8 +634,8 @@ do
         for i = wid + 1, sum do
             layout[i] = nil
         end
-        for d = 0, maxDepth do
-            filePath[d] = nil
+        for skinData = 0, maxDepth do
+            filePath[skinData] = nil
         end
         return num
     end

@@ -198,20 +198,20 @@ end
 -------------------------------------------------------------------------------
 --  Bag reads and the list
 -------------------------------------------------------------------------------
-local function ReadSlot(r)
-    r.quality, r.pending, r.quest, r.inSet, r.total = nil, false, nil, nil, nil
-    local details = GetContainerItemInfo(r.bag, r.slot)
+local function ReadSlot(region)
+    region.quality, region.pending, region.quest, region.inSet, region.total = nil, false, nil, nil, nil
+    local details = GetContainerItemInfo(region.bag, region.slot)
     local ident = details and details.itemID
-    r.id = ident or false
+    region.id = ident or false
     if not ident then
         return
     end
-    r.count, r.icon, r.link = details.stackCount or 1, details.iconFileID, details.hyperlink
+    region.count, region.icon, region.link = details.stackCount or 1, details.iconFileID, details.hyperlink
     local q, sum = Classify(details)
     if q then
-        r.quality, r.vendor, r.bound = q, sum, details.isBound
+        region.quality, region.vendor, region.bound = q, sum, details.isBound
     elseif q == nil then
-        r.pending = true -- its GET_ITEM_INFO_RECEIVED re-reads the bag
+        region.pending = true -- its GET_ITEM_INFO_RECEIVED re-reads the bag
     end
 end
 
@@ -229,12 +229,12 @@ local function ReadBag(bag)
         recs[bag] = entries
     end
     for slot = 1, num do
-        local r = entries[slot]
-        if not r then
-            r = { bag = bag, slot = slot }
-            entries[slot] = r
+        local region = entries[slot]
+        if not region then
+            region = { bag = bag, slot = slot }
+            entries[slot] = region
         end
-        ReadSlot(r)
+        ReadSlot(region)
     end
 end
 
@@ -249,8 +249,8 @@ local function DirtyHolders(ident)
     for bag = 0, NUM_BAG_SLOTS do
         local entries = recs[bag]
         for slot = 1, scanSlots[bag] or 0 do
-            local r = entries[slot]
-            if r.pending and r.id == ident then
+            local region = entries[slot]
+            if region.pending and region.id == ident then
                 dirty[bag] = true
                 break
             end
@@ -269,9 +269,9 @@ local function Forget(key)
 end
 
 -- Soulbound stacks cannot be auctioned: they keep their vendor value.
-local function StackValue(r)
-    local each = auctionOn and not r.bound and r.link and module.AuctionPrice(r.link)
-    return each and each * r.count or r.vendor
+local function StackValue(region)
+    local each = auctionOn and not region.bound and region.link and module.AuctionPrice(region.link)
+    return each and each * region.count or region.vendor
 end
 
 -- Cheapest first; ties keep bag order.
@@ -286,18 +286,18 @@ local function Better(a, b)
 end
 
 -- Inserts r into the fixed best-N list holding n entries; returns the new count.
-local function Offer(r, num, limit)
+local function Offer(region, num, limit)
     if num < limit then
         num = num + 1
-    elseif not Better(r, best[num]) then
+    elseif not Better(region, best[num]) then
         return num
     end
-    local idx = num
-    while idx > 1 and Better(r, best[idx - 1]) do
-        best[idx] = best[idx - 1]
-        idx = idx - 1
+    local index = num
+    while index > 1 and Better(region, best[index - 1]) do
+        best[index] = best[index - 1]
+        index = index - 1
     end
-    best[idx] = r
+    best[index] = region
     return num
 end
 
@@ -313,32 +313,32 @@ local function Select(limit)
     for bag = 0, NUM_BAG_SLOTS do
         local entries = recs[bag]
         for slot = 1, scanSlots[bag] or 0 do
-            local r = entries[slot]
-            local ident, q = r.id, r.quality
-            if r.pending then
+            local region = entries[slot]
+            local ident, q = region.id, region.quality
+            if region.pending then
                 if not failed[ident] then
                     pending[ident] = true
                 end
             elseif q and not (ex and ex[ident]) and Listable(q, ident, maxQuality, cm) then
-                if r.quest == nil then
-                    r.quest = IsQuestSlot(bag, slot)
+                if region.quest == nil then
+                    region.quest = IsQuestSlot(bag, slot)
                 end
-                if not r.quest then
-                    if r.inSet == nil then
-                        r.inSet = InEquipmentSet(bag, slot)
+                if not region.quest then
+                    if region.inSet == nil then
+                        region.inSet = InEquipmentSet(bag, slot)
                     end
-                    if not r.inSet then
-                        if r.total == nil then
-                            r.total = StackValue(r)
+                    if not region.inSet then
+                        if region.total == nil then
+                            region.total = StackValue(region)
                         end
-                        num = Offer(r, num, limit)
+                        num = Offer(region, num, limit)
                     end
                 end
             end
         end
     end
-    for idx = num + 1, bestN do
-        best[idx] = nil
+    for index = num + 1, bestN do
+        best[index] = nil
     end
     bestN = num
 end
@@ -353,8 +353,8 @@ local function ClearSwapFlags()
     if swapCount == 0 then
         return
     end
-    for idx = 1, #cells do
-        cells[idx].swapped = nil
+    for index = 1, #cells do
+        cells[index].swapped = nil
     end
     swapCount = 0
     ctrlWatch:UnregisterEvent("MODIFIER_STATE_CHANGED")
@@ -607,8 +607,8 @@ local function OnCellLeave(self)
     end
 end
 
-local function AcquireCell(idx)
-    local b = cells[idx]
+local function AcquireCell(index)
+    local b = cells[index]
     if b then
         return b
     end
@@ -636,13 +636,13 @@ local function AcquireCell(idx)
 
     b._price = NewText(b, 10)
 
-    cells[idx] = b
+    cells[index] = b
     return b
 end
 
 -- Repaints one cell only where its stack changed.
-local function PaintCell(cell, r)
-    if not r then
+local function PaintCell(cell, region)
+    if not region then
         if cell.id then
             if armedCell == cell then
                 Disarm()
@@ -656,24 +656,24 @@ local function PaintCell(cell, r)
         end
         return
     end
-    local moved = r.id ~= cell.id or r.bag ~= cell.bag or r.slot ~= cell.slot
-    local changed = moved or r.count ~= cell.count
+    local moved = region.id ~= cell.id or region.bag ~= cell.bag or region.slot ~= cell.slot
+    local changed = moved or region.count ~= cell.count
     -- An armed stack that left the cell (or changed size) is not the one confirmed.
     if changed and armedCell == cell then
         Disarm()
     end
-    if r.count ~= cell.count then
-        cell._count:SetText(r.count > 1 and r.count or "")
+    if region.count ~= cell.count then
+        cell._count:SetText(region.count > 1 and region.count or "")
     end
-    if r.icon ~= cell.icon then
-        cell._icon:SetTexture(r.icon)
+    if region.icon ~= cell.icon then
+        cell._icon:SetTexture(region.icon)
     end
     -- A price wider than its slot shows its largest coin alone, so prices never collide.
-    if r.total ~= cell.total or cell.fitW ~= priceFitW then
+    if region.total ~= cell.total or cell.fitW ~= priceFitW then
         local fontStr = cell._price
-        fontStr:SetText(FormatValue(r.total))
+        fontStr:SetText(FormatValue(region.total))
         if fontStr:GetStringWidth() > priceFitW then
-            fontStr:SetText(FormatValue(r.total, true))
+            fontStr:SetText(FormatValue(region.total, true))
         end
         cell.fitW = priceFitW
     end
@@ -681,8 +681,8 @@ local function PaintCell(cell, r)
     if moved and cell.id and IsControlKeyDown() and cell:IsMouseOver() then
         FlagSwap(cell)
     end
-    cell.id, cell.bag, cell.slot, cell.count = r.id, r.bag, r.slot, r.count
-    cell.icon, cell.total, cell.quality, cell.link = r.icon, r.total, r.quality, r.link
+    cell.id, cell.bag, cell.slot, cell.count = region.id, region.bag, region.slot, region.count
+    cell.icon, cell.total, cell.quality, cell.link = region.icon, region.total, region.quality, region.link
     if not cell:IsShown() then
         cell:Show()
     end
@@ -750,11 +750,11 @@ local function Layout(limit)
     local x0 = math.floor((wid - rowW) / 2 + 0.5)
     local titleH = titled and TITLE_H or 0
     local y0 = -(titleH + (topY and (PRICE_H + 3) or 0))
-    for idx = 1, limit do
-        local cell = AcquireCell(idx)
+    for index = 1, limit do
+        local cell = AcquireCell(index)
         cell:SetSize(iconSz, iconSz)
         cell:ClearAllPoints()
-        cell:SetPoint("TOPLEFT", widget, "TOPLEFT", x0 + (idx - 1) * pitch, y0)
+        cell:SetPoint("TOPLEFT", widget, "TOPLEFT", x0 + (index - 1) * pitch, y0)
         cell._price:ClearAllPoints()
         if topY then
             cell._price:SetPoint("BOTTOM", cell, "TOP", 0, 3)
@@ -908,8 +908,8 @@ Refresh = function()
     local limit = Limit()
     Select(limit)
     Layout(limit)
-    for idx = 1, #cells do
-        PaintCell(cells[idx], best[idx])
+    for index = 1, #cells do
+        PaintCell(cells[index], best[index])
     end
     UpdateTitle()
     emptyFS:SetShown(bestN == 0)
@@ -950,8 +950,8 @@ local function SetActive(on)
     itemInfoOn = false
     wipe(pending)
     ClearSwapFlags()
-    for idx = 1, #cells do
-        if GameTooltip:IsOwned(cells[idx]) then
+    for index = 1, #cells do
+        if GameTooltip:IsOwned(cells[index]) then
             GameTooltip:Hide()
         end
     end
@@ -991,8 +991,8 @@ local function Apply()
         -- is measured again and every price fitted again.
         titleW = 0
         wipe(lay)
-        for idx = 1, #cells do
-            cells[idx].fitW = nil
+        for index = 1, #cells do
+            cells[index].fitW = nil
         end
         Layout(Limit())
         if not CludesUI._unlockActive then

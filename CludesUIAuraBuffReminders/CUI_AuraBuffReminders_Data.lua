@@ -598,15 +598,15 @@ local FLASK_ITEMS = {
 }
 local FLASK_BUFF_ID_SET = {}
 local FLASK_NAME_SET = {}
-for _, f in ipairs(FLASK_ITEMS) do
-    FLASK_BUFF_ID_SET[f.buffID] = true
+for _, frame in ipairs(FLASK_ITEMS) do
+    FLASK_BUFF_ID_SET[frame.buffID] = true
     -- Build name set from localized spell names (works in all languages)
-    local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(f.buffID)
+    local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(frame.buffID)
     local locName = details and details.name
     if locName then
         FLASK_NAME_SET[locName] = true
     end
-    FLASK_NAME_SET[f.name] = true -- English fallback
+    FLASK_NAME_SET[frame.name] = true -- English fallback
 end
 -- Every flask buff of the shared list, the PvP variants and the TWW flasks
 -- included (a player still on a TWW flask is not missing one).
@@ -1050,8 +1050,8 @@ local function FindFlaskItem(preferredKey, lastUsedItemID)
             return lastUsedItemID
         end
         -- Fallback: first flask found in bags
-        for _, f in ipairs(FLASK_ITEMS) do
-            for _, ident in ipairs(f.items) do
+        for _, frame in ipairs(FLASK_ITEMS) do
+            for _, ident in ipairs(frame.items) do
                 if CachedGetItemCount(ident) > 0 then
                     return ident
                 end
@@ -1059,9 +1059,9 @@ local function FindFlaskItem(preferredKey, lastUsedItemID)
         end
         return nil
     end
-    for _, f in ipairs(FLASK_ITEMS) do
-        if f.key == preferredKey then
-            for _, ident in ipairs(f.items) do
+    for _, frame in ipairs(FLASK_ITEMS) do
+        if frame.key == preferredKey then
+            for _, ident in ipairs(frame.items) do
                 if CachedGetItemCount(ident) > 0 then
                     return ident
                 end
@@ -1073,18 +1073,18 @@ end
 
 local function FindFoodItem(preferredKey, lastUsedItemID)
     if preferredKey ~= "last_used" then
-        for _, f in ipairs(FOOD_ITEMS) do
-            if f.key == preferredKey and CachedGetItemCount(f.itemID) > 0 then
-                return f.itemID
+        for _, frame in ipairs(FOOD_ITEMS) do
+            if frame.key == preferredKey and CachedGetItemCount(frame.itemID) > 0 then
+                return frame.itemID
             end
         end
         -- Preferred food out of stock: try the base variant of the same food
         -- (e.g. "hearty_royal_roast" -> "royal_roast") before giving up on it.
         local baseKey = preferredKey:gsub("^hearty_", "")
         if baseKey ~= preferredKey then
-            for _, f in ipairs(FOOD_ITEMS) do
-                if f.key == baseKey and CachedGetItemCount(f.itemID) > 0 then
-                    return f.itemID
+            for _, frame in ipairs(FOOD_ITEMS) do
+                if frame.key == baseKey and CachedGetItemCount(frame.itemID) > 0 then
+                    return frame.itemID
                 end
             end
         end
@@ -1095,17 +1095,17 @@ local function FindFoodItem(preferredKey, lastUsedItemID)
     -- stays clickable when the preferred/last food is gone but something
     -- edible remains. Runs only inside the resolve-on-change cache rebuild.
     local bestID, bestQ = nil, -1
-    for _, f in ipairs(FOOD_ITEMS) do
-        if CachedGetItemCount(f.itemID) > 0 then
+    for _, frame in ipairs(FOOD_ITEMS) do
+        if CachedGetItemCount(frame.itemID) > 0 then
             local q = 0
             if C_TradeSkillUI and C_TradeSkillUI.GetItemCraftedQualityByItemInfo then
-                local success, tier = pcall(C_TradeSkillUI.GetItemCraftedQualityByItemInfo, f.itemID)
+                local success, tier = pcall(C_TradeSkillUI.GetItemCraftedQualityByItemInfo, frame.itemID)
                 if success and tier then
                     q = tier
                 end
             end
             if q > bestQ then
-                bestID = f.itemID
+                bestID = frame.itemID
                 bestQ = q
             end
         end
@@ -1192,9 +1192,9 @@ function REMIND.ResolveConsumables()
         if popFrame == "last_used" then
             flaskItemID = luf
         else
-            for _, f in ipairs(FLASK_ITEMS) do
-                if f.key == popFrame then
-                    flaskItemID = f.items[1]
+            for _, frame in ipairs(FLASK_ITEMS) do
+                if frame.key == popFrame then
+                    flaskItemID = frame.items[1]
                     break
                 end
             end
@@ -1212,9 +1212,9 @@ function REMIND.ResolveConsumables()
         if pfd == "last_used" then
             foodItemID = lufd
         else
-            for _, f in ipairs(FOOD_ITEMS) do
-                if f.key == pfd then
-                    foodItemID = f.itemID
+            for _, frame in ipairs(FOOD_ITEMS) do
+                if frame.key == pfd then
+                    foodItemID = frame.itemID
                     break
                 end
             end
@@ -1229,9 +1229,9 @@ function REMIND.ResolveConsumables()
     R.food.isSubstitute = false
     if foodItemID and R.food.hasBags then
         local foodKey
-        for _, f in ipairs(FOOD_ITEMS) do
-            if f.itemID == foodItemID then
-                foodKey = f.key
+        for _, frame in ipairs(FOOD_ITEMS) do
+            if frame.itemID == foodItemID then
+                foodKey = frame.key
                 break
             end
         end
@@ -1244,11 +1244,11 @@ function REMIND.ResolveConsumables()
 
     -- Weapon enchant per slot: cat (equipped weapon type) gates the reminder in CollectConsumables and selects the item; resolves even out of stock (desaturated), same fallback order as inline code.
     for _, slot in ipairs({ 16, 17 }) do
-        local r = R.we[slot]
+        local region = R.we[slot]
         local category = GetWeaponCategory(slot)
-        r.cat = category
+        region.cat = category
         local bestItemID = FindWeaponEnchantItem(pwe, luwe, category)
-        r.hasBags = (bestItemID ~= nil)
+        region.hasBags = (bestItemID ~= nil)
         if not bestItemID then
             if pwe == "last_used" then
                 bestItemID = luwe
@@ -1274,7 +1274,7 @@ function REMIND.ResolveConsumables()
                 end
             end
         end
-        r.itemID = bestItemID
+        region.itemID = bestItemID
     end
 
     -- Inky Black Potion: constant item; only availability is bag-derived.

@@ -111,8 +111,8 @@ end
 -- Resolve a color table honoring the shared custom/accent/class mode keys.
 local function ResolveModeColor(mode, stored, fallback)
     if mode == "accent" and CUI.GetAccentColor then
-        local r, g, b = CUI.GetAccentColor()
-        return r, g, b, (stored and stored.a) or fallback.a or 1
+        local region, g, b = CUI.GetAccentColor()
+        return region, g, b, (stored and stored.a) or fallback.a or 1
     end
     if mode == "class" then
         local _, class = UnitClass("player")
@@ -354,8 +354,8 @@ end
 -------------------------------------------------------------------------------
 local function SuppressTabRegions(tab)
     local regions = { tab:GetRegions() }
-    for idx = 1, #regions do
-        local regionFrame = regions[idx]
+    for index = 1, #regions do
+        local regionFrame = regions[index]
         -- GetAlpha reads secret on chat-roleset widgets in lockdown; a
         -- secret skips the compare and re-asserts.
         local a = regionFrame and regionFrame.SetAlpha and regionFrame:GetAlpha()
@@ -375,8 +375,8 @@ end
 local stockTabRegionsOff = setmetatable({}, { __mode = "k" })
 local function StockHideTabRegions(tab)
     local regions = { tab:GetRegions() }
-    for idx = 1, #regions do
-        local regionFrame = regions[idx]
+    for index = 1, #regions do
+        local regionFrame = regions[index]
         local a = regionFrame and regionFrame.SetAlpha and regionFrame:GetAlpha()
         if a and not stockTabRegionsOff[regionFrame] and ((issecretvalue and issecretvalue(a)) or a ~= 0) then
             stockTabRegionsOff[regionFrame] = true
@@ -386,14 +386,14 @@ local function StockHideTabRegions(tab)
     end
 end
 local function StockRestoreTabRegions(tab)
-    local d = CFD(tab)
-    if not d.stockRegionsOff then
+    local skinData = CFD(tab)
+    if not skinData.stockRegionsOff then
         return
     end
-    d.stockRegionsOff = nil
+    skinData.stockRegionsOff = nil
     local regions = { tab:GetRegions() }
-    for idx = 1, #regions do
-        local regionFrame = regions[idx]
+    for index = 1, #regions do
+        local regionFrame = regions[index]
         if regionFrame and stockTabRegionsOff[regionFrame] then
             stockTabRegionsOff[regionFrame] = nil
             regionFrame:SetAlpha(1)
@@ -528,22 +528,22 @@ local function StyleGhost(g, isActive)
     -- Separator (extended mode): the 1px divider in Blizzard's inter-tab gap.
     local showSep = CHAT.ExtendBgBehindTabs(conf) and not conf.hideBorders
     if showSep then
-        local r, gg, b, a
+        local region, gg, b, a
         if conf.innerBorderColorMode == "accent" and CUI.GetAccentColor then
-            r, gg, b = CUI.GetAccentColor()
+            region, gg, b = CUI.GetAccentColor()
             a = (conf.innerBorderColor and conf.innerBorderColor.a) or 0.06
         else
             local c = conf.innerBorderColor or { r = 1, g = 1, b = 1, a = 0.06 }
-            r, gg, b, a = c.r or 1, c.g or 1, c.b or 1, c.a == nil and 0.06 or c.a
+            region, gg, b, a = c.r or 1, c.g or 1, c.b or 1, c.a == nil and 0.06 or c.a
         end
-        g._sep:SetColorTexture(r, gg, b, a)
+        g._sep:SetColorTexture(region, gg, b, a)
         g._sep:Show()
     else
         g._sep:Hide()
     end
 
     -- Per-tab border (only when tabs are visual islands outside the panel).
-    local host = g._borderHost
+    local owner = g._borderHost
     if CUI.ApplyBorderStyle then
         local showBorder = not CHAT.ExtendBgBehindTabs(conf)
         local sync = conf.syncTabBorder ~= false
@@ -574,7 +574,7 @@ local function StyleGhost(g, isActive)
             ba = ac.a == nil and ba or ac.a
         end
         CUI.ApplyBorderStyle(
-            host,
+            owner,
             showBorder and size or 0,
             br,
             bgr,
@@ -590,7 +590,7 @@ local function StyleGhost(g, isActive)
             nil,
             px
         )
-        host:SetShown(showBorder and size > 0)
+        owner:SetShown(showBorder and size > 0)
     end
 end
 
@@ -644,8 +644,8 @@ end
 local function RefreshFloatGhost(castFrame, height, fontFile, fontSize, padX, labelY, seen)
     local ident = castFrame:GetID()
     local tab = _G[castFrame:GetName() .. "Tab"]
-    local d = CFD(castFrame)
-    if not (tab and d and d.bg) then
+    local skinData = CFD(castFrame)
+    if not (tab and skinData and skinData.bg) then
         return
     end
     local g = floatGhosts[ident]
@@ -660,8 +660,8 @@ local function RefreshFloatGhost(castFrame, height, fontFile, fontSize, padX, la
             ArmGhostMouse(g)
         end
     end
-    if g:GetParent() ~= d.bg then
-        g:SetParent(d.bg)
+    if g:GetParent() ~= skinData.bg then
+        g:SetParent(skinData.bg)
     end
     local isTemp = castFrame.isTemporary and true or false
     local st = g.state
@@ -802,8 +802,8 @@ local function RefreshNow()
     -- Blizzard Style shows Blizzard's real docked tabs: no docked ghosts (the
     -- sweep below hides any left from the pool).
     if type(dockList) == "table" and not BlizzTabs() then
-        for idx = 1, #dockList do
-            local castFrame = dockList[idx]
+        for index = 1, #dockList do
+            local castFrame = dockList[index]
             local tab = castFrame and _G[castFrame:GetName() .. "Tab"]
             if tab then
                 total = total + 1
@@ -919,8 +919,8 @@ local function RefreshNow()
             end
         end
     end
-    for idx = total + 1, #ghosts do
-        local g = ghosts[idx]
+    for index = total + 1, #ghosts do
+        local g = ghosts[index]
         if g.state then
             g.state.cf = nil
         end
@@ -933,16 +933,16 @@ local function RefreshNow()
     -- state and fade. The tab itself stays fully live: native drag-to-redock,
     -- menu, tooltip.
     table.wipe(floatSeen)
-    for idx = 1, 10 do
-        local castFrame = _G["ChatFrame" .. idx]
+    for index = 1, 10 do
+        local castFrame = _G["ChatFrame" .. index]
         if castFrame and not castFrame.isDocked and castFrame:IsShown() then
             RefreshFloatGhost(castFrame, height, fontFile, fontSize, padX, labelY, floatSeen)
         end
     end
     local frameList = _G.CHAT_FRAMES
     if type(frameList) == "table" then
-        for idx = 11, #frameList do
-            local castFrame = _G[frameList[idx]]
+        for index = 11, #frameList do
+            local castFrame = _G[frameList[index]]
             if
                 castFrame
                 and castFrame.isTemporary
@@ -1056,8 +1056,8 @@ function CHAT.TabsSweepBlizzard()
     local wantOff = (mod._chatPassthrough or mod._chatStackHidden) and true or false
     local dockList = GENERAL_CHAT_DOCK and GENERAL_CHAT_DOCK.DOCKED_CHAT_FRAMES
     if type(dockList) == "table" then
-        for idx = 1, #dockList do
-            local castFrame = dockList[idx]
+        for index = 1, #dockList do
+            local castFrame = dockList[index]
             local tab = castFrame and _G[castFrame:GetName() .. "Tab"]
             if tab then
                 local isOff = CFD(tab).clickOff and true or false
@@ -1078,9 +1078,9 @@ function CHAT.TabsSweepBlizzard()
     -- Undocked windows: suppress their tabs' region pixels (ghosts paint
     -- instead; re-asserted every sweep in case a vertex-color path touches
     -- an art texture's alpha slot) and mirror the passthrough click-state.
-    for idx = 1, 20 do
-        local castFrame = _G["ChatFrame" .. idx]
-        local tab = castFrame and _G["ChatFrame" .. idx .. "Tab"]
+    for index = 1, 20 do
+        local castFrame = _G["ChatFrame" .. index]
+        local tab = castFrame and _G["ChatFrame" .. index .. "Tab"]
         if tab then
             -- Blizzard Style reveal: any tab still holding zeroed regions,
             -- docked or not (see StockHideTabRegions).
@@ -1138,8 +1138,8 @@ local FLASH_TYPES = {
 }
 
 local function GhostFor(castFrame)
-    for idx = 1, #ghosts do
-        local g = ghosts[idx]
+    for index = 1, #ghosts do
+        local g = ghosts[index]
         if g.state and g.state.cf == castFrame then
             return g
         end

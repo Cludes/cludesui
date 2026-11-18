@@ -136,16 +136,16 @@ end
 local conf = setmetatable({}, {
     __index = function(_, k)
         if FILTER_KEYS[k] then
-            local f = CharFilters()
-            return f and f[k]
+            local frame = CharFilters()
+            return frame and frame[k]
         end
         return Search()[k]
     end,
     __newindex = function(_, k, val)
         if FILTER_KEYS[k] then
-            local f = CharFilters()
-            if f then
-                f[k] = val
+            local frame = CharFilters()
+            if frame then
+                frame[k] = val
             end
             return
         end
@@ -259,9 +259,9 @@ function GF:OnEnable()
         Start()
         return
     end
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("ADDON_LOADED")
-    f:SetScript("OnEvent", function(self, _, name)
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("ADDON_LOADED")
+    frame:SetScript("OnEvent", function(self, _, name)
         if name == "Blizzard_GroupFinder" then
             self:UnregisterEvent("ADDON_LOADED")
             Start()

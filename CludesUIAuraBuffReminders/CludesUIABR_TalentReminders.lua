@@ -159,10 +159,10 @@ local function GetOrCreateIcon(index)
     button:SetFrameStrata("MEDIUM")
     button:SetFrameLevel(100)
     button:Hide()
-    local icon = button:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints()
-    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    button._icon = icon
+    local iconTex = button:CreateTexture(nil, "ARTWORK")
+    iconTex:SetAllPoints()
+    iconTex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    button._icon = iconTex
     local Pix = CludesUI and CludesUI.PP
     if Pix then
         Pix.CreateBorder(button, 0, 0, 0, 1, 1, "OVERLAY", 7)
@@ -207,11 +207,11 @@ local function LayoutIcons()
     local sz = ICON_SIZE
     local totalW = (total * sz) + ((total - 1) * spacing)
     local startX = -totalW / 2
-    for idx, button in ipairs(talentActiveIcons) do
+    for index, button in ipairs(talentActiveIcons) do
         button:SetSize(sz, sz)
         button:SetAlpha(1)
         button:ClearAllPoints()
-        button:SetPoint("TOPLEFT", talentIconAnchor, "TOP", startX + (idx - 1) * (sz + spacing), 0)
+        button:SetPoint("TOPLEFT", talentIconAnchor, "TOP", startX + (index - 1) * (sz + spacing), 0)
     end
 end
 
@@ -219,8 +219,8 @@ local function HideIcons()
     if InCombat() then
         return
     end
-    for idx = 1, #talentActiveIcons do
-        local button = talentActiveIcons[idx]
+    for index = 1, #talentActiveIcons do
+        local button = talentActiveIcons[index]
         if button then
             button._text:SetText("")
             button:Hide()
@@ -329,8 +329,8 @@ local function Collect()
             local zoneMatch = false
             local zns = reminder.zoneNames
             if zns and #zns > 0 then
-                for idx = 1, #zns do
-                    local zn = zns[idx]
+                for index = 1, #zns do
+                    local zn = zns[index]
                     if zn == idName or zn == mapName or zn == currentInstance then
                         zoneMatch = true
                         break
@@ -366,8 +366,8 @@ local function Collect()
     if _migStamped then
         _migStamped = false
         local stillNeeded = false
-        for _, r in ipairs(reminders) do
-            if not r.class then
+        for _, region in ipairs(reminders) do
+            if not region.class then
                 stillNeeded = true
                 break
             end
@@ -407,8 +407,8 @@ local function Refresh()
     Collect()
 
     if #_missing > 0 and talentIconAnchor then
-        for idx, m in ipairs(_missing) do
-            ShowIcon(idx, m)
+        for index, m in ipairs(_missing) do
+            ShowIcon(index, m)
         end
         LayoutIcons()
         CludesUI.SetElementVisibility(talentIconAnchor, true)
@@ -450,8 +450,8 @@ eventFrame:SetScript("OnEvent", function(_, evt, ...)
         -- Check if migration needed
         local reminders = GetReminders()
         if reminders then
-            for _, r in ipairs(reminders) do
-                if not r.class then
+            for _, region in ipairs(reminders) do
+                if not region.class then
                     _migNeeded = true
                     break
                 end

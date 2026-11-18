@@ -78,8 +78,8 @@ local function PVal(key)
     if p and p[key] ~= nil then
         return p[key]
     end
-    local d = mod.NP_GetDefaults and mod.NP_GetDefaults()
-    return d and d[key]
+    local skinData = mod.NP_GetDefaults and mod.NP_GetDefaults()
+    return skinData and skinData[key]
 end
 
 ------------------------------------------------------------------------------
@@ -137,8 +137,8 @@ local function ProfOnly(key)
     return prof and prof[key]
 end
 local function Dflt(key)
-    local d = mod.NP_GetDefaults and mod.NP_GetDefaults()
-    return d and d[key]
+    local skinData = mod.NP_GetDefaults and mod.NP_GetDefaults()
+    return skinData and skinData[key]
 end
 local function AuraDurCfg(kindKey)
     return {
@@ -180,70 +180,70 @@ local TEXT_POS = {
 }
 
 -- Text pass shared by the three styles; anchors/sizes carried per style.
-local function ApplyNPText(btnFrame, d, style)
+local function ApplyNPText(btnFrame, skinData, style)
     if btnFrame.SetMouseMotionEnabled then
         local motion = not style.noTooltips
-        if d.npMotion ~= motion then
-            d.npMotion = motion
+        if skinData.npMotion ~= motion then
+            skinData.npMotion = motion
             btnFrame:SetMouseMotionEnabled(motion)
         end
     end
     local filePath = (CludesUI.GetFontPath("nameplates")) or "Fonts\\FRIZQT__.TTF"
-    if d.duration then
+    if skinData.duration then
         local fontKey = filePath .. "|" .. (style.durSize or 11)
-        if d.npDurFont ~= fontKey then
-            d.npDurFont = fontKey
-            CludesUI.ApplyIconTextFont(d.duration, filePath, style.durSize or 11, "nameplates")
+        if skinData.npDurFont ~= fontKey then
+            skinData.npDurFont = fontKey
+            CludesUI.ApplyIconTextFont(skinData.duration, filePath, style.durSize or 11, "nameplates")
         end
         local c = style.durColor
-        d.duration:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
+        skinData.duration:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
         local m = TEXT_POS[style.durPos] or TEXT_POS.topleft
         -- Anchor change-guarded (stamp AFTER the calls): SetPoint with the
         -- button as the relative frame is policed by the 12.1 button access
         -- restriction while auras are secret; unchanged anchors must make
         -- zero button-involving calls so restyles stay live in-instance.
         local aKey = m.point .. "|" .. (m.nx + (style.durOffX or 0)) .. "|" .. (m.ny + (style.durOffY or 0))
-        if d.npDurAnchor ~= aKey then
-            d.duration:ClearAllPoints()
-            d.duration:SetPoint(
+        if skinData.npDurAnchor ~= aKey then
+            skinData.duration:ClearAllPoints()
+            skinData.duration:SetPoint(
                 m.point,
                 btnFrame,
                 m.point,
                 m.nx + (style.durOffX or 0),
                 m.ny + (style.durOffY or 0)
             )
-            d.npDurAnchor = aKey
+            skinData.npDurAnchor = aKey
         end
-        d.duration:SetJustifyH(m.justify)
-        d.duration:SetShown(not style.hideDurationText)
+        skinData.duration:SetJustifyH(m.justify)
+        skinData.duration:SetShown(not style.hideDurationText)
     end
-    if d.stack then
-        d.stack:SetShown(style.showStacks ~= false)
+    if skinData.stack then
+        skinData.stack:SetShown(style.showStacks ~= false)
         local fontKey = filePath .. "|" .. (style.stackSize or 11)
-        if d.npStackFont ~= fontKey then
-            d.npStackFont = fontKey
-            CludesUI.ApplyIconTextFont(d.stack, filePath, style.stackSize or 11, "nameplates")
+        if skinData.npStackFont ~= fontKey then
+            skinData.npStackFont = fontKey
+            CludesUI.ApplyIconTextFont(skinData.stack, filePath, style.stackSize or 11, "nameplates")
         end
         local sc = style.stackColor
-        d.stack:SetTextColor(sc and sc.r or 1, sc and sc.g or 1, sc and sc.b or 1)
+        skinData.stack:SetTextColor(sc and sc.r or 1, sc and sc.g or 1, sc and sc.b or 1)
         local m = TEXT_POS[style.stackPos] or TEXT_POS.bottomright
         local sKey = m.point
             .. "|"
             .. (m.nx + (style.stackOffX or 0))
             .. "|"
             .. (m.ny + (style.stackOffY or 0))
-        if d.npStackAnchor ~= sKey then
-            d.stack:ClearAllPoints()
-            d.stack:SetPoint(
+        if skinData.npStackAnchor ~= sKey then
+            skinData.stack:ClearAllPoints()
+            skinData.stack:SetPoint(
                 m.point,
                 btnFrame,
                 m.point,
                 m.nx + (style.stackOffX or 0),
                 m.ny + (style.stackOffY or 0)
             )
-            d.npStackAnchor = sKey
+            skinData.npStackAnchor = sKey
         end
-        d.stack:SetJustifyH(m.justify)
+        skinData.stack:SetJustifyH(m.justify)
     end
 end
 
@@ -358,26 +358,26 @@ end
 -- StartSpecGlow makes the regions of the style it draws, so a default host
 -- holds just the static border, and a later style makes its own. Made only on
 -- buttons that can ever show an aura (NPGlowable).
-local function NPGlowHost(btnFrame, d, key)
-    local host = d[key]
-    if host then
-        return host
+local function NPGlowHost(btnFrame, skinData, key)
+    local owner = skinData[key]
+    if owner then
+        return owner
     end
-    host = CreateFrame("Frame", nil, btnFrame)
-    host:SetAllPoints(btnFrame)
-    if d.stackCarrier then
-        host:SetFrameLevel(d.stackCarrier:GetFrameLevel() - 1)
+    owner = CreateFrame("Frame", nil, btnFrame)
+    owner:SetAllPoints(btnFrame)
+    if skinData.stackCarrier then
+        owner:SetFrameLevel(skinData.stackCarrier:GetFrameLevel() - 1)
     else
-        host:SetFrameLevel(btnFrame:GetFrameLevel() + 1)
+        owner:SetFrameLevel(btnFrame:GetFrameLevel() + 1)
     end
-    host:EnableMouse(false)
-    d[key] = host
+    owner:EnableMouse(false)
+    skinData[key] = owner
     -- NPB.bound: some button plays a glow itself, so a pooled bundle's
     -- buttons are worth releasing (NPB.ReleaseGlowButtons).
-    if CludesUI.Glows.BindEngineHost(host, btnFrame, d) then
+    if CludesUI.Glows.BindEngineHost(owner, btnFrame, skinData) then
         NPB.bound = true
     end
-    return host
+    return owner
 end
 
 -- Whether a button gets a glow at all: only the buttons that can ever show an
@@ -394,10 +394,10 @@ end
 -- Draws spec on the glow host, sized to the icon (the height follows cropped
 -- icons); unchanged, StartSpecGlow returns at once. Callers pass only glowable
 -- buttons; a bound host's button decides when the animations play.
-local function NPStartGlow(host, specInfo, style)
-    host:SetAlpha(1)
+local function NPStartGlow(owner, specInfo, style)
+    owner:SetAlpha(1)
     local sz = style.width or 24
-    CludesUI.Glows.StartSpecGlow(host, specInfo, sz, style.height or sz, "engine")
+    CludesUI.Glows.StartSpecGlow(owner, specInfo, sz, style.height or sz, "engine")
 end
 
 -- Dispel Glow on the buff row: every buff in the glow group is dispellable (the
@@ -405,16 +405,16 @@ end
 -- readback of per-aura state. purgeSpec is the dispel glow's full spec
 -- (ns.GetDispelGlowSpec), built once per style pass. The static Blizzard
 -- Border and Blizzard Pandemic Border render through the same call.
-local function ApplyNPBuffExtra(btnFrame, d, style)
-    ApplyNPText(btnFrame, d, style)
+local function ApplyNPBuffExtra(btnFrame, skinData, style)
+    ApplyNPText(btnFrame, skinData, style)
     if style.purgeGlow and style.purgeSpec and NPGlowable(btnFrame) then
-        NPStartGlow(NPGlowHost(btnFrame, d, "npGlowHost"), style.purgeSpec, style)
-    elseif d.npGlowHost then
-        local host = d.npGlowHost
-        if host._cuiGlowActive then
-            CludesUI.Glows.StopGlow(host)
+        NPStartGlow(NPGlowHost(btnFrame, skinData, "npGlowHost"), style.purgeSpec, style)
+    elseif skinData.npGlowHost then
+        local owner = skinData.npGlowHost
+        if owner._cuiGlowActive then
+            CludesUI.Glows.StopGlow(owner)
         end
-        host:SetAlpha(0)
+        owner:SetAlpha(0)
     end
 end
 
@@ -426,25 +426,25 @@ end
 -- cleared, so the button no longer checks the window. Blizzard's aura code
 -- runs in its own environment (no global mixin to test), so the button's own
 -- method is the one capability check.
-local function ApplyNPDebuffExtra(btnFrame, d, style)
-    ApplyNPText(btnFrame, d, style)
-    local host = d.npPanHost
+local function ApplyNPDebuffExtra(btnFrame, skinData, style)
+    ApplyNPText(btnFrame, skinData, style)
+    local owner = skinData.npPanHost
     if style.pandemicGlow and style.pandemicSpec and btnFrame.AddPandemicRegion and NPGlowable(btnFrame) then
-        host = NPGlowHost(btnFrame, d, "npPanHost")
-        if not d.npPanRegion then
-            btnFrame:AddPandemicRegion(host)
-            d.npPanRegion = true
+        owner = NPGlowHost(btnFrame, skinData, "npPanHost")
+        if not skinData.npPanRegion then
+            btnFrame:AddPandemicRegion(owner)
+            skinData.npPanRegion = true
         end
-        NPStartGlow(host, style.pandemicSpec, style)
-    elseif host then
-        if d.npPanRegion then
+        NPStartGlow(owner, style.pandemicSpec, style)
+    elseif owner then
+        if skinData.npPanRegion then
             btnFrame:ClearPandemicRegions()
-            d.npPanRegion = nil
+            skinData.npPanRegion = nil
         end
-        if host._cuiGlowActive then
-            CludesUI.Glows.StopGlow(host)
+        if owner._cuiGlowActive then
+            CludesUI.Glows.StopGlow(owner)
         end
-        host:SetAlpha(0)
+        owner:SetAlpha(0)
     end
 end
 
@@ -460,19 +460,19 @@ end
 -- eight-slice lane with the nameplate registry offsets (addonKey), its step (sizeKey)
 -- and exact px. Show Behind is not carried: behind the opaque icon it would vanish.
 local function NPCustomIconBorder()
-    local tex = PVal("customBorderTexture")
+    local texture = PVal("customBorderTexture")
     local sz = PVal("customBorderSize") or 1
-    local col = PVal("customBorderColor")
+    local colour = PVal("customBorderColor")
     local t = {
-        col.r,
-        col.g,
-        col.b,
+        colour.r,
+        colour.g,
+        colour.b,
         PVal("customBorderAlpha") or 1,
         size = sz,
-        edgePx = CludesUI.BorderPx(PVal("customBorderSizePx"), sz, tex),
+        edgePx = CludesUI.BorderPx(PVal("customBorderSizePx"), sz, texture),
     }
-    if tex and tex ~= "" and tex ~= "solid" then
-        t.texture, t.sizeKey, t.addonKey = tex, sz, "nameplates"
+    if texture and texture ~= "" and texture ~= "solid" then
+        t.texture, t.sizeKey, t.addonKey = texture, sz, "nameplates"
         t.offsetX, t.offsetY = PVal("customBorderOffset"), PVal("customBorderOffsetY")
         t.shiftX, t.shiftY = PVal("customBorderShiftX"), PVal("customBorderShiftY")
     end
@@ -640,17 +640,17 @@ local function NPF_Records(conf)
     if not conf or conf.all then
         return recs
     end
-    local f = conf.f or {}
+    local frame = conf.f or {}
     for i = 1, #NPF_ORDER do
         local category = NPF_ORDER[i]
-        if f[category] then
+        if frame[category] then
             local toks = {}
             for k = 1, #NPF_TOKENS[category] do
                 toks[#toks + 1] = NPF_TOKENS[category][k]
             end
             for jdx = 1, i - 1 do
                 local hc = NPF_ORDER[jdx]
-                if f[hc] then
+                if frame[hc] then
                     toks[#toks + 1] = NPF_NEG[hc]
                 end
             end
@@ -658,11 +658,11 @@ local function NPF_Records(conf)
         end
     end
     for category, boolField in pairs(NPF_BOOL) do
-        if f[category] then
+        if frame[category] then
             local toks = { "HARMFUL", "PLAYER", "INCLUDE_NAME_PLATE_ONLY", "!CROWD_CONTROL" }
             for i = 2, #NPF_ORDER do
                 local tc = NPF_ORDER[i]
-                if f[tc] then
+                if frame[tc] then
                     toks[#toks + 1] = NPF_NEG[tc]
                 end
             end
@@ -676,8 +676,8 @@ end
 -- enabled set. A filter edit that changes the chain declares the NEW
 -- variant and parks the old one at 0 (group filter strings are fixed).
 local function NPF_GKey(category, conf)
-    local f = conf.f or {}
-    return "npf:" .. category .. "|" .. (f.cc and 1 or 0)
+    local frame = conf.f or {}
+    return "npf:" .. category .. "|" .. (frame.cc and 1 or 0)
 end
 
 -- Filter-state fingerprint for the reload cfg pass. The per-kind compositions are
@@ -921,7 +921,7 @@ local function NPF_ApplyContainer(boxHolder, kindKey, styleKey, cap)
     if not conf then
         return
     end
-    local f = conf.f or {}
+    local frame = conf.f or {}
     -- List side: the cc container has its own lists; the debuff
     -- container (kinds debuffs/dcc) shares the debuff-side pair.
     local side = (kindKey == "cc") and "cc" or "debuff"
@@ -1047,7 +1047,7 @@ local function NPF_ApplyContainer(boxHolder, kindKey, styleKey, cap)
     end
     local npOn
     if kindKey == "cc" then
-        npOn = conf.all or f.cc or false
+        npOn = conf.all or frame.cc or false
     else
         npOn = conf.all or false
     end
@@ -1283,10 +1283,10 @@ function NPB.GlowSpec(position)
         style = styleKey,
         -- Purge glow: built on first paint so a button born while the glow
         -- is already on does not wait for the next style pass.
-        extraInit = function(btn, dropdown)
+        extraInit = function(button, dropdown)
             local style = AK.styles[styleKey]
             if style and style.purgeGlow then
-                ApplyNPBuffExtra(btn, dropdown, style)
+                ApplyNPBuffExtra(button, dropdown, style)
             end
         end,
         layout = { elementWidth = 24, elementHeight = 24, elementSpacing = 4, lineSpacing = 4 },
@@ -1599,17 +1599,17 @@ end
 -- the core's cast machinery (ShowCastLockout -- readable, cast-driven, no
 -- aura reads), rendered here since the legacy CC row is gone. The frame is
 -- OUR child of OUR plate object; positioned exactly at the CC slot pin.
-local function PositionLockout(backing, f, slotVal)
-    f:ClearAllPoints()
+local function PositionLockout(backing, frame, slotVal)
+    frame:ClearAllPoints()
     local xOff, yOff = mod.GetAuraSlotOffsets("ccSlot")
     if slotVal == "top" then
         local anchor, healthAnchored = TopAnchorFor(backing)
         local debuffY = (mod.GetDebuffYOffset and mod.GetDebuffYOffset()) or 2
         local cpPush = (healthAnchored and mod.NP_ClassPowerTopPush) and mod.NP_ClassPowerTopPush(backing)
             or 0
-        f:SetPoint("BOTTOM", anchor, "TOP", xOff, debuffY + cpPush + yOff)
+        frame:SetPoint("BOTTOM", anchor, "TOP", xOff, debuffY + cpPush + yOff)
     elseif slotVal == "bottom" then
-        f:SetPoint("TOP", backing.cast or backing.health, "BOTTOM", xOff, -2 + yOff)
+        frame:SetPoint("TOP", backing.cast or backing.health, "BOTTOM", xOff, -2 + yOff)
     elseif slotVal == "left" or slotVal == "right" then
         -- Classic WoW UI's border and the full-size spell icon push it out, as
         -- the containers above.
@@ -1617,16 +1617,16 @@ local function PositionLockout(backing, f, slotVal)
             + ((mod.NP_ClassicSide and mod.NP_ClassicSide(slotVal)) or 0)
             + mod.NP_FullIconPush(backing, slotVal, yOff, yOff + (NPHeight("cc", NPSize("cc"))))
         if slotVal == "left" then
-            f:SetPoint("BOTTOMRIGHT", backing.health, "BOTTOMLEFT", -sideOff + xOff, yOff)
+            frame:SetPoint("BOTTOMRIGHT", backing.health, "BOTTOMLEFT", -sideOff + xOff, yOff)
         else
-            f:SetPoint("BOTTOMLEFT", backing.health, "BOTTOMRIGHT", sideOff + xOff, yOff)
+            frame:SetPoint("BOTTOMLEFT", backing.health, "BOTTOMRIGHT", sideOff + xOff, yOff)
         end
     else -- topleft / topright (above the corner's text while it shows one)
         local debuffY = (mod.GetDebuffYOffset and mod.GetDebuffYOffset()) or 2
         local cpPush = mod.NP_ClassPowerTopPush and mod.NP_ClassPowerTopPush(backing) or 0
         local corner = (slotVal == "topleft") and "BOTTOMLEFT" or "BOTTOMRIGHT"
         local hc = (slotVal == "topleft") and "TOPLEFT" or "TOPRIGHT"
-        f:SetPoint(corner, backing.health, hc, xOff, debuffY + cpPush + mod.NP_TopCornerLift(slotVal) + yOff)
+        frame:SetPoint(corner, backing.health, hc, xOff, debuffY + cpPush + mod.NP_TopCornerLift(slotVal) + yOff)
     end
 end
 
@@ -1931,11 +1931,11 @@ end
 
 -- An icon keeps its own placement's units (PP.Point); a row or the lockout icon the
 -- containers' plain ones.
-local function ChainPoint(f, raw, point, rel, relPoint, posX, posY)
+local function ChainPoint(frame, raw, point, rel, relPoint, posX, posY)
     if raw then
-        f:SetPoint(point, rel, relPoint, posX, posY)
+        frame:SetPoint(point, rel, relPoint, posX, posY)
     else
-        Pix.Point(f, point, rel, relPoint, posX, posY)
+        Pix.Point(frame, point, rel, relPoint, posX, posY)
     end
 end
 
@@ -1944,7 +1944,7 @@ end
 -- Top and Bottom the two sharing their bottom (top) edge. A plain icon after a row keeps
 -- its own spot (no aspect host). The Crowd Control row then chains off its lockout icon,
 -- sp apart, in the same direction.
-local function ChainPlaceAfter(backing, place, i, jdx, prev, s, dir, sp)
+local function ChainPlaceAfter(backing, place, i, jdx, previous, s, direction, sp)
     local lead, c = Chain.lead[i], Chain.trail[i]
     local raw = Chain.row[i] or lead ~= c
     if Chain.row[jdx] and not backing.coreHost and (lead ~= c or not Chain.row[i]) then
@@ -1953,26 +1953,26 @@ local function ChainPlaceAfter(backing, place, i, jdx, prev, s, dir, sp)
     end
     local dy = Chain.base[i] - Chain.base[jdx]
     lead:ClearAllPoints()
-    if dir == "up" then
+    if direction == "up" then
         local side = (place == "topleft") and "LEFT" or "RIGHT"
-        ChainPoint(lead, raw, "BOTTOM" .. side, prev, "TOP" .. side, 0, s)
+        ChainPoint(lead, raw, "BOTTOM" .. side, previous, "TOP" .. side, 0, s)
     elseif place == "bottom" then
-        if dir == "left" then
-            ChainPoint(lead, raw, "TOPRIGHT", prev, "TOPLEFT", -s, 0)
+        if direction == "left" then
+            ChainPoint(lead, raw, "TOPRIGHT", previous, "TOPLEFT", -s, 0)
         else
-            ChainPoint(lead, raw, "TOPLEFT", prev, "TOPRIGHT", s, 0)
+            ChainPoint(lead, raw, "TOPLEFT", previous, "TOPRIGHT", s, 0)
         end
-    elseif dir == "left" then
-        ChainPoint(lead, raw, "BOTTOMRIGHT", prev, "BOTTOMLEFT", -s, dy)
+    elseif direction == "left" then
+        ChainPoint(lead, raw, "BOTTOMRIGHT", previous, "BOTTOMLEFT", -s, dy)
     else
-        ChainPoint(lead, raw, "BOTTOMLEFT", prev, "BOTTOMRIGHT", s, dy)
+        ChainPoint(lead, raw, "BOTTOMLEFT", previous, "BOTTOMRIGHT", s, dy)
     end
     if Chain.row[i] and c ~= lead then
         c:ClearAllPoints()
-        if dir == "up" then
+        if direction == "up" then
             local side = (place == "topleft") and "LEFT" or "RIGHT"
             c:SetPoint("BOTTOM" .. side, lead, "TOP" .. side, 0, sp)
-        elseif dir == "left" then
+        elseif direction == "left" then
             c:SetPoint("BOTTOMRIGHT", lead, "BOTTOMLEFT", -sp, 0)
         else
             c:SetPoint("BOTTOMLEFT", lead, "BOTTOMRIGHT", sp, 0)
@@ -1995,17 +1995,17 @@ local function ChainRun(backing, place, k)
     end
     local s = ChainSpacing(place)
     local sp = mod.GetAuraSpacing("ccs") or 4
-    local dir = ChainDir(place)
+    local direction = ChainDir(place)
     ChainPlaceOwn(backing, place, pivot)
     for i = pivot + 1, k do
-        ChainPlaceAfter(backing, place, i, i - 1, Chain.trail[i - 1], s, dir, sp)
+        ChainPlaceAfter(backing, place, i, i - 1, Chain.trail[i - 1], s, direction, sp)
     end
     if centred then
         -- Leftward from the pivot, whose left edge is its lead (its lockout icon, where the
         -- Crowd Control row is the pivot: the row chains rightward off it).
         for i = pivot - 1, 1, -1 do
-            local prev = (i + 1 == pivot) and Chain.lead[i + 1] or Chain.trail[i + 1]
-            ChainPlaceAfter(backing, place, i, i + 1, prev, s, "left", sp)
+            local previous = (i + 1 == pivot) and Chain.lead[i + 1] or Chain.trail[i + 1]
+            ChainPlaceAfter(backing, place, i, i + 1, previous, s, "left", sp)
         end
     end
 end
@@ -2040,49 +2040,49 @@ end
 -- skipped while its inputs (shown state, level, texture, size step, exact px, colour,
 -- alpha, offsets, shifts) are unchanged; the child turns off through
 -- ApplyBorderStyle(frame, 0) so the UI scale re-apply cannot bring it back.
-local function NPLockoutBorder(f)
+local function NPLockoutBorder(frame)
     local enabled = mod.GetIconBorderEnabled("ccs")
-    local cb = f._npCB
+    local callback = frame._npCB
     if enabled and NPIconCustomBorderOn() then
-        if not cb then
-            cb = CreateFrame("Frame", nil, f)
-            cb:SetAllPoints(f)
-            cb:EnableMouse(false)
-            f._npCB = cb
+        if not callback then
+            callback = CreateFrame("Frame", nil, frame)
+            callback:SetAllPoints(frame)
+            callback:EnableMouse(false)
+            frame._npCB = callback
         end
-        local tex = PVal("customBorderTexture")
+        local texture = PVal("customBorderTexture")
         local sz = PVal("customBorderSize") or 1
-        local px = CludesUI.BorderPx(PVal("customBorderSizePx"), sz, tex)
-        local col = PVal("customBorderColor")
+        local px = CludesUI.BorderPx(PVal("customBorderSizePx"), sz, texture)
+        local colour = PVal("customBorderColor")
         local a = PVal("customBorderAlpha") or 1
         local ox, oy = PVal("customBorderOffset"), PVal("customBorderOffsetY")
         local sx, sy = PVal("customBorderShiftX"), PVal("customBorderShiftY")
         -- Above the swipe, as AuraKit seats its aura borders.
-        local lvl = f.cd:GetFrameLevel() + 1
+        local lvl = frame.cd:GetFrameLevel() + 1
         if
-            not cb:IsShown()
-            or cb:GetFrameLevel() ~= lvl
-            or cb._sTex ~= tex
-            or cb._sSz ~= sz
-            or cb._sPx ~= px
-            or cb._sR ~= col.r
-            or cb._sG ~= col.g
-            or cb._sB ~= col.b
-            or cb._sA ~= a
-            or cb._sOX ~= ox
-            or cb._sOY ~= oy
-            or cb._sSX ~= sx
-            or cb._sSY ~= sy
+            not callback:IsShown()
+            or callback:GetFrameLevel() ~= lvl
+            or callback._sTex ~= texture
+            or callback._sSz ~= sz
+            or callback._sPx ~= px
+            or callback._sR ~= colour.r
+            or callback._sG ~= colour.g
+            or callback._sB ~= colour.b
+            or callback._sA ~= a
+            or callback._sOX ~= ox
+            or callback._sOY ~= oy
+            or callback._sSX ~= sx
+            or callback._sSY ~= sy
         then
-            cb:SetFrameLevel(lvl)
+            callback:SetFrameLevel(lvl)
             CludesUI.ApplyBorderStyle(
-                cb,
+                callback,
                 sz,
-                col.r,
-                col.g,
-                col.b,
+                colour.r,
+                colour.g,
+                colour.b,
                 a,
-                tex,
+                texture,
                 ox,
                 oy,
                 sx,
@@ -2093,35 +2093,35 @@ local function NPLockoutBorder(f)
                 px
             )
             local Pix = CludesUI.PP
-            if Pix.GetBorders(cb) then
-                Pix.CreateBorder(cb, nil, nil, nil, nil, nil, nil, nil, true)
+            if Pix.GetBorders(callback) then
+                Pix.CreateBorder(callback, nil, nil, nil, nil, nil, nil, nil, true)
             end
-            cb._sTex, cb._sSz, cb._sPx = tex, sz, px
-            cb._sR, cb._sG, cb._sB, cb._sA = col.r, col.g, col.b, a
-            cb._sOX, cb._sOY, cb._sSX, cb._sSY = ox, oy, sx, sy
+            callback._sTex, callback._sSz, callback._sPx = texture, sz, px
+            callback._sR, callback._sG, callback._sB, callback._sA = colour.r, colour.g, colour.b, a
+            callback._sOX, callback._sOY, callback._sSX, callback._sSY = ox, oy, sx, sy
         end
-        if not f._npCBInset0 then
-            f._npCBInset0 = true
-            f.icon:ClearAllPoints()
-            f.icon:SetPoint("TOPLEFT", f, "TOPLEFT", 0, 0)
-            f.icon:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 0)
+        if not frame._npCBInset0 then
+            frame._npCBInset0 = true
+            frame.icon:ClearAllPoints()
+            frame.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+            frame.icon:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
         end
-        mod.ApplyFrameIconBorder(f, false)
+        mod.ApplyFrameIconBorder(frame, false)
         return
     end
-    if cb and cb:IsShown() then
-        CludesUI.ApplyBorderStyle(cb, 0)
-        cb:Hide()
+    if callback and callback:IsShown() then
+        CludesUI.ApplyBorderStyle(callback, 0)
+        callback:Hide()
     end
-    if f._npCBInset0 then
+    if frame._npCBInset0 then
         -- Back to the creation inset (0 under the stock styles, else 1).
-        f._npCBInset0 = nil
+        frame._npCBInset0 = nil
         local px = mod.NP_Blizz() and 0 or 1
-        f.icon:ClearAllPoints()
-        f.icon:SetPoint("TOPLEFT", f, "TOPLEFT", px, -px)
-        f.icon:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -px, px)
+        frame.icon:ClearAllPoints()
+        frame.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", px, -px)
+        frame.icon:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -px, px)
     end
-    mod.ApplyFrameIconBorder(f, enabled)
+    mod.ApplyFrameIconBorder(frame, enabled)
 end
 
 function mod.NPC_UpdateLockout(backing)
@@ -2130,59 +2130,59 @@ function mod.NPC_UpdateLockout(backing)
     end
     local _, _, cs = mod.GetAuraSlots()
     local lockout = (cs and cs ~= "none") and mod.GetActiveCastLockout and mod.GetActiveCastLockout(backing)
-    local f = backing.npcLockout
+    local frame = backing.npcLockout
     if lockout and backing.health then
-        if not f then
+        if not frame then
             -- Born in the plate's aspect holder like the slot icons (PlatePool, coreHost),
             -- so a Core Positions chain can hang it off an aura row.
-            f = CreateFrame("Frame", nil, backing.coreHost or backing)
-            f:SetFrameStrata("MEDIUM")
-            f:SetFrameLevel(800)
-            f.icon = f:CreateTexture(nil, "ARTWORK")
+            frame = CreateFrame("Frame", nil, backing.coreHost or backing)
+            frame:SetFrameStrata("MEDIUM")
+            frame:SetFrameLevel(800)
+            frame.icon = frame:CreateTexture(nil, "ARTWORK")
             -- Stock styles: no border, so the icon fills the cell; Blizzard
             -- Style also takes the stock rounded swipe under its ring (the
             -- classic square icon keeps the default swipe).
             local px = mod.NP_Blizz() and 0 or 1
-            f.icon:SetPoint("TOPLEFT", f, "TOPLEFT", px, -px)
-            f.icon:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -px, px)
-            f.cd = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
-            f.cd:SetAllPoints(f)
-            f.cd:SetReverse(true)
-            f.cd:SetDrawEdge(false)
+            frame.icon:SetPoint("TOPLEFT", frame, "TOPLEFT", px, -px)
+            frame.icon:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -px, px)
+            frame.cd = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
+            frame.cd:SetAllPoints(frame)
+            frame.cd:SetReverse(true)
+            frame.cd:SetDrawEdge(false)
             local kit = AK or CludesUI.AuraKit
             local swipe = px == 0 and not mod.NP_Classic() and kit and kit.BLIZZ_ROUND_SWIPE
-            if swipe and f.cd.SetSwipeTexture then
-                f.cd:SetSwipeTexture(swipe)
+            if swipe and frame.cd.SetSwipeTexture then
+                frame.cd:SetSwipeTexture(swipe)
             end
             -- scaleGuard: a plate child, as every Basic nameplate border
-            CludesUI.PP.CreateBorder(f, 0, 0, 0, 1, 1, nil, nil, true)
-            NPLockoutBorder(f)
-            backing.npcLockout = f
+            CludesUI.PP.CreateBorder(frame, 0, 0, 0, 1, 1, nil, nil, true)
+            NPLockoutBorder(frame)
+            backing.npcLockout = frame
         end
         local size = NPSize("cc")
         local height, cropped = NPHeight("cc", size)
-        f:SetSize(size, height)
+        frame:SetSize(size, height)
         local blizz = mod.NP_Blizz()
         local tc = CropCoords(cropped, blizz and 0 or nil)
-        f.icon:SetTexture(lockout.icon)
-        f.icon:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
-        f.cd:SetCooldown(lockout.start, lockout.duration)
+        frame.icon:SetTexture(lockout.icon)
+        frame.icon:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
+        frame.cd:SetCooldown(lockout.start, lockout.duration)
         -- Blizzard Style: the stock rounded mask and ring, sized with the cell.
         -- Classic WoW UI: the stock debuff border round the square icon.
         if blizz then
             if mod.NP_Classic() then
                 if mod.NP_ApplyClassicIconArt then
-                    mod.NP_ApplyClassicIconArt(f, size, height)
+                    mod.NP_ApplyClassicIconArt(frame, size, height)
                 end
             elseif mod.NP_ApplyBlizzIconArt then
-                mod.NP_ApplyBlizzIconArt(f, f.icon, size, height)
+                mod.NP_ApplyBlizzIconArt(frame, frame.icon, size, height)
             end
         end
-        PositionLockout(backing, f, cs)
-        NPLockoutBorder(f)
-        f:Show()
-    elseif f then
-        f:Hide()
+        PositionLockout(backing, frame, cs)
+        NPLockoutBorder(frame)
+        frame:Show()
+    elseif frame then
+        frame:Hide()
     end
     -- Re-anchor the CC container: chains off the lockout while shown.
     local b = isActive[backing]
@@ -2508,14 +2508,14 @@ local function StyleFPFor(kind, position)
     -- in as exact strings, not FP's two-decimal numbers.
     local cbFP = "-"
     if NPIconCustomBorderOn() then
-        local col = PVal("customBorderColor")
+        local colour = PVal("customBorderColor")
         cbFP = FP(
             PVal("customBorderTexture"),
             PVal("customBorderSize"),
             tostring(PVal("customBorderSizePx")),
-            tostring(col.r),
-            tostring(col.g),
-            tostring(col.b),
+            tostring(colour.r),
+            tostring(colour.g),
+            tostring(colour.b),
             tostring(PVal("customBorderAlpha")),
             PVal("customBorderOffset"),
             PVal("customBorderOffsetY"),
@@ -2864,8 +2864,8 @@ do
         if r0 == nil then
             return
         end
-        local r, g, b = CludesUI.Glows.ResolveColor("class")
-        if r ~= r0 or g ~= NPB.ccG or b ~= NPB.ccB then
+        local region, g, b = CludesUI.Glows.ResolveColor("class")
+        if region ~= r0 or g ~= NPB.ccG or b ~= NPB.ccB then
             mod.NPC_ReloadAll()
         end
     end)
@@ -3010,14 +3010,14 @@ boot:SetScript("OnEvent", function(self, evt)
         -- two -- a full-pool ReanchorActive here re-drove the layout setters on every
         -- plate on every target swap (target churn is constant in combat).
         local ds, bs, cs = mod.GetAuraSlots()
-        local prev = lastTargetPlate
+        local previous = lastTargetPlate
         lastTargetPlate = nil
         for backing, b in pairs(isActive) do
             local isNew = backing.unit and UnitIsUnit(backing.unit, "target")
             if isNew then
                 lastTargetPlate = backing
             end
-            if isNew or backing == prev then
+            if isNew or backing == previous then
                 AnchorNPContainer(b.containers.debuffs, "debuffs", backing, ds)
                 AnchorNPContainer(b.containers.buffs, "buffs", backing, bs)
                 AnchorNPContainer(b.containers.cc, "cc", backing, cs)

@@ -48,14 +48,14 @@ local function GetTimeFormatter()
     end
     timeFmt = false
     if C_StringUtil and C_StringUtil.CreateNumericRuleFormatter and Enum.NumericRuleFormatRounding then
-        local f = C_StringUtil.CreateNumericRuleFormatter()
+        local frame = C_StringUtil.CreateNumericRuleFormatter()
         local Down = Enum.NumericRuleFormatRounding.Down
-        local success = pcall(f.SetBreakpoints, f, {
+        local success = pcall(frame.SetBreakpoints, frame, {
             { threshold = 0, format = "%.1f", step = 0.1, rounding = Down },
             { threshold = 60, format = "%dm", step = 1, rounding = Down, components = { { div = 60 } } },
         })
         if success then
-            timeFmt = f
+            timeFmt = frame
         end
     end
     if not timeFmt then
@@ -84,11 +84,11 @@ local function Build()
     -- flat or gradient per settings).
     local ft = rb.GetStatusBarTexture and rb:GetStatusBarTexture()
     local texPath = (ft and ft.GetTexture and ft:GetTexture()) or "Interface\\Buttons\\WHITE8x8"
-    local r, g, b, a = 1, 1, 1, 1
+    local region, g, b, a = 1, 1, 1, 1
     if pp.customColored and ft and ft.GetVertexColor then
-        r, g, b, a = ft:GetVertexColor()
+        region, g, b, a = ft:GetVertexColor()
     elseif pc then
-        r, g, b = pc[1] or 1, pc[2] or 1, pc[3] or 1
+        region, g, b = pc[1] or 1, pc[2] or 1, pc[3] or 1
     end
 
     -- Text bake source: the bar's own text FS (font + anchor), so the
@@ -130,10 +130,10 @@ local function Build()
                 btnFrame:SetMouseMotionEnabled(false)
             end
 
-            local bar = CreateFrame("StatusBar", nil, btnFrame)
-            bar:SetAllPoints(btnFrame)
-            bar:SetStatusBarTexture(texPath)
-            local bft = bar:GetStatusBarTexture()
+            local barFrame = CreateFrame("StatusBar", nil, btnFrame)
+            barFrame:SetAllPoints(btnFrame)
+            barFrame:SetStatusBarTexture(texPath)
+            local bft = barFrame:GetStatusBarTexture()
             if bft then
                 if pp.gradientEnabled and not pp.customColored and bft.SetGradient then
                     -- Mirrors the legacy gradient applier: white vertex,
@@ -141,16 +141,16 @@ local function Build()
                     bft:SetVertexColor(1, 1, 1, 1)
                     bft:SetGradient(
                         pp.gradientDir or "HORIZONTAL",
-                        CreateColor(r, g, b, 1),
+                        CreateColor(region, g, b, 1),
                         CreateColor(
-                            pp.gradientR or r,
+                            pp.gradientR or region,
                             pp.gradientG or g,
                             pp.gradientB or b,
                             pp.gradientA or 1
                         )
                     )
                 else
-                    bft:SetVertexColor(r, g, b, a or 1)
+                    bft:SetVertexColor(region, g, b, a or 1)
                 end
             end
             local options = {}
@@ -160,7 +160,7 @@ local function Build()
             if Enum.StatusBarTimerDirection then
                 options.direction = Enum.StatusBarTimerDirection.RemainingTime
             end
-            btnFrame:SetDurationBar(bar, options)
+            btnFrame:SetDurationBar(barFrame, options)
 
             if showText then
                 -- ARMORED: an uncaught error here aborts the engine's
@@ -169,7 +169,7 @@ local function Build()
                 local okFS, errFS = pcall(function()
                     local tc = CreateFrame("Frame", nil, btnFrame)
                     tc:SetAllPoints(btnFrame)
-                    tc:SetFrameLevel(bar:GetFrameLevel() + 5)
+                    tc:SetFrameLevel(barFrame:GetFrameLevel() + 5)
                     local fontStr = tc:CreateFontString(nil, "OVERLAY")
                     -- Font BEFORE registration (the engine SetText()s every
                     -- registered string; an unfonted FS hard-errors).
@@ -212,7 +212,7 @@ local function Build()
                 end
             end
 
-            S.btn, S.bar = btnFrame, bar
+            S.btn, S.bar = btnFrame, barFrame
         end,
     })
     AK.FinishContainer(boxHolder, "player")
@@ -263,20 +263,20 @@ end
 -- Called from UpdatePrimaryBar's Ebon Might branch with the live bar and
 -- resolved settings -- the build trigger AND the attach, race-free by
 -- construction. Repositioning is always proxy moves (our frame).
-function mod.EMB121_Sync(bar, pp, pc)
-    S.rbBar, S.pp, S.pc = bar, pp, pc
+function mod.EMB121_Sync(barFrame, pp, pc)
+    S.rbBar, S.pp, S.pc = barFrame, pp, pc
     S.armed = true
     if not S.built then
         EnsureBuilt()
         return
     end
-    S.proxy:SetParent(bar)
+    S.proxy:SetParent(barFrame)
     S.proxy:ClearAllPoints()
-    S.proxy:SetAllPoints(bar)
+    S.proxy:SetAllPoints(barFrame)
     S.proxy:Show()
     -- One container-level set lifts the whole engine subtree above the
     -- (empty) legacy fill.
-    local lvl = bar:GetFrameLevel() + 1
+    local lvl = barFrame:GetFrameLevel() + 1
     S.container:SetFrameLevel(lvl)
     -- ...which also lifts it above the bar's border strips (bar+2), so the
     -- fill -- a slot-button child two levels down, edge to edge over the whole
@@ -287,7 +287,7 @@ function mod.EMB121_Sync(bar, pp, pc)
     -- sits at fill+5, still above the border, as on the legacy path. Draw Above
     -- GCD Bar stamps its own cover on the bar (_erbGcdCover): the higher wins, so
     -- a power tick never lowers that lift.
-    if bar.RaiseBorderAbove then
-        bar:RaiseBorderAbove(math.max(lvl + 3, bar._erbGcdCover or 0), pp and pp.borderBehind)
+    if barFrame.RaiseBorderAbove then
+        barFrame:RaiseBorderAbove(math.max(lvl + 3, barFrame._erbGcdCover or 0), pp and pp.borderBehind)
     end
 end

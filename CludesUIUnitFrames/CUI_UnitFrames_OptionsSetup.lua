@@ -50,13 +50,13 @@ local function SetupOptionsPanel()
             return
         end
         for i = 1, 5 do
-            local f = frameList["boss" .. i]
-            if f then
+            local frame = frameList["boss" .. i]
+            if frame then
                 if on then
-                    RegisterUnitWatch(f)
+                    RegisterUnitWatch(frame)
                 else
-                    UnregisterUnitWatch(f)
-                    f:Hide()
+                    UnregisterUnitWatch(frame)
+                    frame:Hide()
                 end
             end
         end
@@ -330,9 +330,9 @@ local function SetupOptionsPanel()
             local iconFrame = icons[position]
             if not iconFrame then
                 iconFrame = CreateFrame("Frame", nil, holderFrame)
-                local icon = iconFrame:CreateTexture(nil, "ARTWORK")
-                icon:SetAllPoints()
-                iconFrame._icon = icon
+                local iconTex = iconFrame:CreateTexture(nil, "ARTWORK")
+                iconTex:SetAllPoints()
+                iconFrame._icon = iconTex
                 -- Static fake cooldown swipe: a huge duration parked at a fixed fraction so
                 -- the wedge never visibly moves. Native countdown numbers stay hidden; the
                 -- duration text below is a manual static FontString instead.
@@ -363,7 +363,7 @@ local function SetupOptionsPanel()
                 -- Border just above the icon; its PP container renders at border+1
                 -- (iconFrame+2), below the swipe and text host so both stay on top.
                 local border = CreateFrame("Frame", nil, iconFrame)
-                border:SetAllPoints(icon)
+                border:SetAllPoints(iconTex)
                 iconFrame._border = border
                 icons[position] = iconFrame
             end
@@ -375,12 +375,12 @@ local function SetupOptionsPanel()
                 iconFrame:SetPoint("RIGHT", holderFrame, "RIGHT", -(position - 1) * (iconSize + iconGap), 0)
             end
             iconFrame:SetFrameLevel(holderFrame:GetFrameLevel())
-            local icon = iconFrame._icon
+            local iconTex = iconFrame._icon
             local texture = GetSpellTexture and GetSpellTexture(spellId)
                 or (C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellId))
-            icon:SetTexture(texture)
+            iconTex:SetTexture(texture)
             local z = prefs.debuffIconZoom or 0.07
-            icon:SetTexCoord(z, 1 - z, z, 1 - z)
+            iconTex:SetTexCoord(z, 1 - z, z, 1 - z)
             -- Swipe sits above the border (border at +1, PP container at +2) so
             -- the layering matches the live boss aura buttons.
             local cd = iconFrame._cd
@@ -508,11 +508,11 @@ local function SetupOptionsPanel()
             local iconFrame = icons[position]
             if not iconFrame then
                 iconFrame = CreateFrame("Frame", nil, holderFrame)
-                local icon = iconFrame:CreateTexture(nil, "ARTWORK")
-                icon:SetAllPoints()
-                iconFrame._icon = icon
+                local iconTex = iconFrame:CreateTexture(nil, "ARTWORK")
+                iconTex:SetAllPoints()
+                iconFrame._icon = iconTex
                 local border = CreateFrame("Frame", nil, iconFrame)
-                border:SetAllPoints(icon)
+                border:SetAllPoints(iconTex)
                 iconFrame._border = border
                 icons[position] = iconFrame
             end
@@ -525,12 +525,12 @@ local function SetupOptionsPanel()
                 iconFrame:SetPoint("LEFT", holderFrame, "LEFT", (position - 1) * (iconSize + iconGap), 0)
             end
             iconFrame:SetFrameLevel(holderFrame:GetFrameLevel())
-            local icon = iconFrame._icon
+            local iconTex = iconFrame._icon
             local texture = GetSpellTexture and GetSpellTexture(spellId)
                 or (C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellId))
-            icon:SetTexture(texture)
+            iconTex:SetTexture(texture)
             local z = prefs.buffIconZoom or 0.07
-            icon:SetTexCoord(z, 1 - z, z, 1 - z)
+            iconTex:SetTexCoord(z, 1 - z, z, 1 - z)
             local border = iconFrame._border
             border:SetFrameLevel(iconFrame:GetFrameLevel() + 1)
             mod.BossPreviewAuraBorder(border, prefs)
@@ -634,13 +634,13 @@ local function SetupOptionsPanel()
             return
         end
         for i = 1, 3 do
-            local f = frameList["boss" .. i]
-            if f then
-                AttachFakeDebuffs(f)
-                AttachFakeBuffs(f)
+            local frame = frameList["boss" .. i]
+            if frame then
+                AttachFakeDebuffs(frame)
+                AttachFakeBuffs(frame)
                 -- Only the 2nd boss frame shows a sample cast bar.
                 if i == 2 then
-                    AttachFakeCastBar(f)
+                    AttachFakeCastBar(frame)
                 end
             end
         end
@@ -683,29 +683,29 @@ local function SetupOptionsPanel()
     -- Override the name fontstring with a fake boss name. Its text zone is
     -- parked so the engine's text painter stops overwriting it; SetText with a
     -- literal string is secret-safe. Restored on clear.
-    local function BossPreviewNameFS(f)
+    local function BossPreviewNameFS(frame)
         local s = saved.profile.boss
         local lc = (s and s.leftTextContent) or "name"
         local rc = (s and s.rightTextContent) or "perhp"
         local cc = (s and s.centerTextContent) or "none"
         if lc == "name" then
-            return f.LeftText
+            return frame.LeftText
         end
         if rc == "name" then
-            return f.RightText
+            return frame.RightText
         end
         if cc == "name" then
-            return f.CenterText
+            return frame.CenterText
         end
         return nil
     end
-    local function ApplyBossPreviewName(f, name)
-        local fontStr = BossPreviewNameFS(f)
+    local function ApplyBossPreviewName(frame, name)
+        local fontStr = BossPreviewNameFS(frame)
         if not fontStr then
             return
         end
-        f._previewNameFS = fontStr
-        local zones = f._cuiTextZones
+        frame._previewNameFS = fontStr
+        local zones = frame._cuiTextZones
         if zones and not fontStr._previewSavedZone then
             for i = #zones, 1, -1 do
                 if zones[i].fs == fontStr then
@@ -716,32 +716,32 @@ local function SetupOptionsPanel()
         end
         fontStr:SetText(name)
     end
-    local function ClearBossPreviewName(f)
-        local fontStr = f._previewNameFS
+    local function ClearBossPreviewName(frame)
+        local fontStr = frame._previewNameFS
         if not fontStr then
             return
         end
         if fontStr._previewSavedZone then
-            local zones = f._cuiTextZones
+            local zones = frame._cuiTextZones
             if not zones then
                 zones = {}
-                f._cuiTextZones = zones
+                frame._cuiTextZones = zones
             end
             zones[#zones + 1] = fontStr._previewSavedZone
             fontStr._previewSavedZone = nil
         end
-        f._previewNameFS = nil
+        frame._previewNameFS = nil
         if mod.UF_PaintText then
-            mod.UF_PaintText(f, f._cuiUnit)
+            mod.UF_PaintText(frame, frame._cuiUnit)
         end
     end
 
-    local function ApplyBossPreviewColor(f)
-        local hgt = f.Health
+    local function ApplyBossPreviewColor(frame)
+        local hgt = frame.Health
         if not hgt then
             return
         end
-        f._previewColorSaved = f._previewColorSaved
+        frame._previewColorSaved = frame._previewColorSaved
             or {
                 colorClass = hgt.colorClass,
                 colorReaction = hgt.colorReaction,
@@ -768,18 +768,18 @@ local function SetupOptionsPanel()
             end
         end
     end
-    local function ClearBossPreviewColor(f)
-        local hgt = f.Health
+    local function ClearBossPreviewColor(frame)
+        local hgt = frame.Health
         if not hgt then
             return
         end
-        local s = f._previewColorSaved
+        local s = frame._previewColorSaved
         if s then
             hgt.colorClass = s.colorClass
             hgt.colorReaction = s.colorReaction
             hgt.colorTapped = s.colorTapped
             hgt.colorDisconnected = s.colorDisconnected
-            f._previewColorSaved = nil
+            frame._previewColorSaved = nil
         end
         hgt.PostUpdateColor = nil
     end
@@ -789,9 +789,9 @@ local function SetupOptionsPanel()
     -- substitute. Called from the dark-mode refresher while the preview is active.
     mod._ReapplyBossPreviewColor = function()
         for i = 1, 3 do
-            local f = frameList["boss" .. i]
-            if f then
-                ApplyBossPreviewColor(f)
+            local frame = frameList["boss" .. i]
+            if frame then
+                ApplyBossPreviewColor(frame)
             end
         end
     end
@@ -809,41 +809,41 @@ local function SetupOptionsPanel()
             mod._bossPreviewNames = GenBossPreviewNames()
         end
         for i = 1, 3 do
-            local f = frameList["boss" .. i]
-            if f then
+            local frame = frameList["boss" .. i]
+            if frame then
                 if enabled then
-                    f:SetAttribute("unit", "player")
-                    f:Show()
-                    ApplyBossPreviewColor(f)
-                    if f.UpdateAllElements then
-                        f:UpdateAllElements("BossPreview")
+                    frame:SetAttribute("unit", "player")
+                    frame:Show()
+                    ApplyBossPreviewColor(frame)
+                    if frame.UpdateAllElements then
+                        frame:UpdateAllElements("BossPreview")
                     end
                     -- After UpdateAllElements re-tags the name, override it with a fake boss name.
                     ApplyBossPreviewName(
-                        f,
+                        frame,
                         (mod._bossPreviewNames and mod._bossPreviewNames[i])
                             or PREVIEW_BOSS_NAMES[i]
                             or "Boss"
                     )
-                    AttachFakeDebuffs(f)
-                    AttachFakeBuffs(f)
+                    AttachFakeDebuffs(frame)
+                    AttachFakeBuffs(frame)
                     -- Only the 2nd boss frame shows a sample cast bar.
                     if i == 2 then
-                        AttachFakeCastBar(f)
+                        AttachFakeCastBar(frame)
                     end
                 else
-                    ClearBossPreviewColor(f)
-                    ClearBossPreviewName(f)
-                    f:SetAttribute("unit", "boss" .. i)
+                    ClearBossPreviewColor(frame)
+                    ClearBossPreviewName(frame)
+                    frame:SetAttribute("unit", "boss" .. i)
                     if not UnitExists("boss" .. i) then
-                        f:Hide()
+                        frame:Hide()
                     end
-                    if f.UpdateAllElements then
-                        f:UpdateAllElements("BossPreview")
+                    if frame.UpdateAllElements then
+                        frame:UpdateAllElements("BossPreview")
                     end
-                    DetachFakeDebuffs(f)
-                    DetachFakeBuffs(f)
-                    DetachFakeCastBar(f)
+                    DetachFakeDebuffs(frame)
+                    DetachFakeBuffs(frame)
+                    DetachFakeCastBar(frame)
                 end
             end
         end

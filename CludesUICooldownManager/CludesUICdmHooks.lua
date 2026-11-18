@@ -47,8 +47,8 @@ mod._hookFrameData = hookFrameData
 -- glow directly. Zero cost unless a spell enables the toggle: no frames, no
 -- reads.
 do
-    local function StackGlowSize(icon)
-        local width, height = icon:GetWidth(), icon:GetHeight()
+    local function StackGlowSize(iconTex)
+        local width, height = iconTex:GetWidth(), iconTex:GetHeight()
         if not width or width < 5 then
             width = 36
         end
@@ -69,14 +69,14 @@ do
         end
     end
 
-    local function NewStackGlowGate(icon, pad)
-        local gate = CreateFrame("StatusBar", nil, icon)
-        gate:SetPoint("TOPLEFT", icon, "TOPLEFT", -pad, pad)
-        gate:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", pad, -pad)
+    local function NewStackGlowGate(iconTex, pad)
+        local gate = CreateFrame("StatusBar", nil, iconTex)
+        gate:SetPoint("TOPLEFT", iconTex, "TOPLEFT", -pad, pad)
+        gate:SetPoint("BOTTOMRIGHT", iconTex, "BOTTOMRIGHT", pad, -pad)
         gate:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-        local fill = gate:GetStatusBarTexture()
-        if fill then
-            fill:SetAlpha(0)
+        local fillTex = gate:GetStatusBarTexture()
+        if fillTex then
+            fillTex:SetAlpha(0)
         end
         gate:EnableMouse(false)
         local mask = gate:CreateMaskTexture()
@@ -86,7 +86,7 @@ do
             "CLAMPTOBLACKADDITIVE",
             "NEAREST"
         )
-        return gate, mask, fill
+        return gate, mask, fillTex
     end
 
     local function StackGlowMatches(value, operator, threshold)
@@ -182,8 +182,8 @@ do
         end
     end
 
-    local function StackGlowOnHide(icon)
-        local fd = hookFrameData[icon]
+    local function StackGlowOnHide(iconTex)
+        local fd = hookFrameData[iconTex]
         local st = fd and fd.stackGlow
         if st then
             StopStackGlow(st)
@@ -193,8 +193,8 @@ do
     -- (Re)configure or retire an icon's threshold controller. Called from
     -- RefreshCDMIconAppearance with everything pre-resolved; called with only
     -- the icon to tear down (toggle off, frame pooled onto a non-buff spell).
-    function mod.StackGlow_Configure(icon, threshold, operator, style, r, g, b, prefs)
-        local fd = icon and hookFrameData[icon]
+    function mod.StackGlow_Configure(iconTex, threshold, operator, style, region, g, b, prefs)
+        local fd = iconTex and hookFrameData[iconTex]
         if not fd then
             return
         end
@@ -230,18 +230,18 @@ do
         local bgB = background and (prefs.buffGlowBackgroundB or 0) or nil
 
         if not st then
-            st = { icon = icon }
+            st = { icon = iconTex }
             fd.stackGlow = st
             -- The gate oversizes the icon so a FULL fill (and therefore the
             -- open mask) covers the glow textures' overhang past the icon
             -- edges (flipbook/pixel padding); proportional so big icons keep
             -- their fringe too.
-            local pad = math.ceil(math.max(StackGlowSize(icon)) * 0.4)
+            local pad = math.ceil(math.max(StackGlowSize(iconTex)) * 0.4)
             if pad < 12 then
                 pad = 12
             end
             st.pad = pad
-            st.gate, st.mask, st.fill = NewStackGlowGate(icon, pad)
+            st.gate, st.mask, st.fill = NewStackGlowGate(iconTex, pad)
 
             -- The mask rides the (alpha-0) fill's edge at a FIXED
             -- gate-sized rect instead of shadowing the fill rect: at value =
@@ -250,18 +250,18 @@ do
             -- the comparison. Lower bounds park it left and open at max;
             -- upper bounds open at min and park it right. Equality intersects
             -- one of each. NEAREST avoids a leaking edge texel.
-            SizeStackGlowMask(st, StackGlowSize(icon))
+            SizeStackGlowMask(st, StackGlowSize(iconTex))
 
-            st.glow = CreateFrame("Frame", nil, icon)
-            st.glow:SetAllPoints(icon)
+            st.glow = CreateFrame("Frame", nil, iconTex)
+            st.glow:SetAllPoints(iconTex)
             st.glow:EnableMouse(false)
-            icon:HookScript("OnHide", StackGlowOnHide)
+            iconTex:HookScript("OnHide", StackGlowOnHide)
         end
 
         local changed = st.threshold ~= threshold
             or st.operator ~= operator
             or st.style ~= style
-            or st.r ~= r
+            or st.r ~= region
             or st.g ~= g
             or st.b ~= b
             or st.lines ~= lines
@@ -272,7 +272,7 @@ do
             or st.bgG ~= bgG
             or st.bgB ~= bgB
         st.threshold, st.operator, st.style = threshold, operator, style
-        st.r, st.g, st.b = r, g, b
+        st.r, st.g, st.b = region, g, b
         st.lines, st.thickness, st.speed = lines, thickness, speed
         st.background, st.bgR, st.bgG, st.bgB = background, bgR, bgG, bgB
         if changed then
@@ -286,8 +286,8 @@ do
             st.openValue = max and edge - 1 or edge
 
             if operator == "eq" and not st.gate2 then
-                st.gate2, st.mask2, st.fill2 = NewStackGlowGate(icon, st.pad)
-                SizeStackGlowMask(st, StackGlowSize(icon))
+                st.gate2, st.mask2, st.fill2 = NewStackGlowGate(iconTex, st.pad)
+                SizeStackGlowMask(st, StackGlowSize(iconTex))
             end
             if st.gate2 then
                 local equality = operator == "eq"
@@ -307,8 +307,8 @@ do
     -- Buff-tick feed for thresholded icons (the normal buff glow is suppressed
     -- for them). Plain counts decide in Lua; secret counts go straight to the
     -- gate and the engine's clamp + the mask decide what renders.
-    function mod.StackGlow_Feed(icon, isActive)
-        local fd = icon and hookFrameData[icon]
+    function mod.StackGlow_Feed(iconTex, isActive)
+        local fd = iconTex and hookFrameData[iconTex]
         local st = fd and fd.stackGlow
         if not (st and st.threshold) then
             return
@@ -317,7 +317,7 @@ do
             StopStackGlow(st)
             return
         end
-        local applications = ReadBuffApplications(icon)
+        local applications = ReadBuffApplications(iconTex)
         local secret = issecretvalue and issecretvalue(applications)
         if not secret then
             -- Unknown count on an active buff fails OPEN; known counts use the
@@ -333,8 +333,8 @@ do
         if st.gate2 then
             st.gate2:SetValue(st.operator == "eq" and applications or 1)
         end
-        st.glow:SetFrameLevel(icon:GetFrameLevel() + 16)
-        local width, height = StackGlowSize(icon)
+        st.glow:SetFrameLevel(iconTex:GetFrameLevel() + 16)
+        local width, height = StackGlowSize(iconTex)
         if
             not st.started
             or math.abs(width - (st.width or 0)) > 0.01
@@ -351,12 +351,12 @@ do
             if pad ~= st.pad then
                 st.pad = pad
                 st.gate:ClearAllPoints()
-                st.gate:SetPoint("TOPLEFT", icon, "TOPLEFT", -pad, pad)
-                st.gate:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", pad, -pad)
+                st.gate:SetPoint("TOPLEFT", iconTex, "TOPLEFT", -pad, pad)
+                st.gate:SetPoint("BOTTOMRIGHT", iconTex, "BOTTOMRIGHT", pad, -pad)
                 if st.gate2 then
                     st.gate2:ClearAllPoints()
-                    st.gate2:SetPoint("TOPLEFT", icon, "TOPLEFT", -pad, pad)
-                    st.gate2:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", pad, -pad)
+                    st.gate2:SetPoint("TOPLEFT", iconTex, "TOPLEFT", -pad, pad)
+                    st.gate2:SetPoint("BOTTOMRIGHT", iconTex, "BOTTOMRIGHT", pad, -pad)
                 end
             end
             SizeStackGlowMask(st, width, height)
@@ -669,14 +669,14 @@ local VIEWER_NAMES = {
 -- both loop all 4 often).
 local _viewerFrameCache = {}
 local function GetViewerFrame(vi)
-    local f = _viewerFrameCache[vi]
-    if not f then
-        f = _G[VIEWER_NAMES[vi]]
-        if f then
-            _viewerFrameCache[vi] = f
+    local frame = _viewerFrameCache[vi]
+    if not frame then
+        frame = _G[VIEWER_NAMES[vi]]
+        if frame then
+            _viewerFrameCache[vi] = frame
         end
     end
-    return f
+    return frame
 end
 
 local VIEWER_TO_BAR = {

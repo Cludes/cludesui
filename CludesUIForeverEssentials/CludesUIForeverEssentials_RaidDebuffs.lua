@@ -25,8 +25,8 @@ local _, module = ...
 
 local DEBUFFS = module.RAID_DEBUFFS or {}
 local DEFAULTS = { enabled = false, iconSize = 30, groupOnly = true }
-for _, d in ipairs(DEBUFFS) do
-    DEFAULTS["pick_" .. d.key] = d.default
+for _, skinData in ipairs(DEBUFFS) do
+    DEFAULTS["pick_" .. skinData.key] = skinData.default
 end
 local F = module.Feature("raidDebuffs", DEFAULTS, { point = "CENTER", relPoint = "CENTER", x = 0, y = 140 })
 local Get, Enabled = F.Get, F.Enabled
@@ -39,9 +39,9 @@ local built, pending = nil, false -- built = the picks key the current container
 
 local function Picked()
     local result = {}
-    for _, d in ipairs(DEBUFFS) do
-        if Get("pick_" .. d.key) then
-            result[#result + 1] = d
+    for _, skinData in ipairs(DEBUFFS) do
+        if Get("pick_" .. skinData.key) then
+            result[#result + 1] = skinData
         end
     end
     return result
@@ -49,14 +49,14 @@ end
 
 local function PickKey(entries)
     local keyList = { tostring(Get("iconSize")) }
-    for _, d in ipairs(entries) do
-        keyList[#keyList + 1] = d.key
+    for _, skinData in ipairs(entries) do
+        keyList[#keyList + 1] = skinData.key
     end
     return table.concat(keyList, ",")
 end
 
-local function Cell(idx)
-    local c = cells[idx]
+local function Cell(index)
+    local c = cells[index]
     if c then
         return c
     end
@@ -70,7 +70,7 @@ local function Cell(idx)
     border:SetPoint("TOPLEFT", -1, 1)
     border:SetPoint("BOTTOMRIGHT", 1, -1)
     border:SetColorTexture(0, 0, 0, 1)
-    cells[idx] = c
+    cells[index] = c
     return c
 end
 
@@ -102,16 +102,16 @@ local function Rebuild()
     end
     built = key
     local size = Get("iconSize")
-    for idx, d in ipairs(entries) do
-        local c = Cell(idx)
+    for index, skinData in ipairs(entries) do
+        local c = Cell(index)
         c:SetSize(size, size)
         c:ClearAllPoints()
-        c:SetPoint("LEFT", holderFrame, "LEFT", (idx - 1) * (size + GAP), 0)
-        c.missing:SetTexture(C_Spell.GetSpellTexture(d.ids[1]))
+        c:SetPoint("LEFT", holderFrame, "LEFT", (index - 1) * (size + GAP), 0)
+        c.missing:SetTexture(C_Spell.GetSpellTexture(skinData.ids[1]))
         c:Show()
     end
-    for idx = #entries + 1, #cells do
-        cells[idx]:Hide()
+    for index = #entries + 1, #cells do
+        cells[index]:Hide()
     end
     holderFrame:SetSize(math.max(1, #entries) * (size + GAP) - GAP, size)
     if #entries == 0 then
@@ -121,14 +121,14 @@ local function Rebuild()
     AK.styles[STYLE] = { width = size, height = size }
     local success, err = pcall(function()
         local cont = AK.CreateContainerShell(holderFrame, { point = { "TOPLEFT", holderFrame, "TOPLEFT" } })
-        for idx, d in ipairs(entries) do
+        for index, skinData in ipairs(entries) do
             local set = {}
-            for _, ident in ipairs(d.ids) do
+            for _, ident in ipairs(skinData.ids) do
                 set[ident] = true
             end
-            local cell = cells[idx]
+            local cell = cells[index]
             AK.AddSlotToContainer(cont, {
-                key = d.key,
+                key = skinData.key,
                 filter = { "HARMFUL" },
                 candidateFilters = { includeSpellIDs = set },
                 style = STYLE,

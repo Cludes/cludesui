@@ -25,10 +25,10 @@ local _, playerClassFile = UnitClass("player")
 -- WoW Forever's Dire Bear Form, 8) and Moonkin (31/35) each have their own; any
 -- other form, or none, is "Caster" ("mana").
 local function FormBucket()
-    local f = GetShapeshiftFormID()
-    return (f == 1) and "energy"
-        or (f == 5 or f == 8) and "rage"
-        or (f == 31 or f == 35) and "moonkin"
+    local frame = GetShapeshiftFormID()
+    return (frame == 1) and "energy"
+        or (frame == 5 or frame == 8) and "rage"
+        or (frame == 31 or frame == 35) and "moonkin"
         or "mana"
 end
 -- Druid "hide bar text per form", driven by cfg.textDisabledForms.

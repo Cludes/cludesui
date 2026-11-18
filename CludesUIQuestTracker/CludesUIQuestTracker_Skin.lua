@@ -368,8 +368,8 @@ local function EnsureAccentDivider(header)
     local es = header.GetEffectiveScale and header:GetEffectiveScale() or 1
     local onePixel = (es and es > 0) and (perfect / es) or (PP_SEC and PP_SEC.mult) or 1
     texture:SetHeight(onePixel)
-    local r, g, b = GetLineRGB()
-    texture:SetColorTexture(r, g, b, 1)
+    local region, g, b = GetLineRGB()
+    texture:SetColorTexture(region, g, b, 1)
     texture:Show()
     return texture
 end
@@ -475,9 +475,9 @@ local function SkinHeader(header, knownCollapsed)
             "Glow",
             "Stripe",
         }) do
-            local r = header[k]
-            if r and r.SetTexture then
-                r:SetTexture("")
+            local region = header[k]
+            if region and region.SetTexture then
+                region:SetTexture("")
             end
         end
 
@@ -507,7 +507,7 @@ local function SkinHeader(header, knownCollapsed)
         -- Tint the +/- minimize button with the header color. Desaturate
         -- first so the base atlas's built-in tint doesn't multiply with ours.
         if minBtn then
-            local r, g, b = GetHeaderRGB()
+            local region, g, b = GetHeaderRGB()
             local function tint(texture)
                 if not texture then
                     return
@@ -516,7 +516,7 @@ local function SkinHeader(header, knownCollapsed)
                     texture:SetDesaturated(true)
                 end
                 if texture.SetVertexColor then
-                    texture:SetVertexColor(r, g, b)
+                    texture:SetVertexColor(region, g, b)
                 end
             end
             tint(minBtn.GetNormalTexture and minBtn:GetNormalTexture())
@@ -542,8 +542,8 @@ local function SkinHeader(header, knownCollapsed)
         if not STOCK then
             local textValue = header.Text
             if textValue then
-                local r, g, b = GetHeaderRGB()
-                textValue:SetTextColor(r, g, b)
+                local region, g, b = GetHeaderRGB()
+                textValue:SetTextColor(region, g, b)
                 StyleHeaderFS(textValue)
             end
 
@@ -739,18 +739,18 @@ local function _refreshClassifyCache()
 end
 
 do
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("QUEST_LOG_UPDATE")
-    f:RegisterEvent("QUEST_ACCEPTED")
-    f:RegisterEvent("QUEST_REMOVED")
-    f:RegisterEvent("PLAYER_ENTERING_WORLD")
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("QUEST_LOG_UPDATE")
+    frame:RegisterEvent("QUEST_ACCEPTED")
+    frame:RegisterEvent("QUEST_REMOVED")
+    frame:RegisterEvent("PLAYER_ENTERING_WORLD")
     local _pending = false
     -- The cache only feeds our custom icons. The stock styles never draw them
     -- (latched for the session): InitSkin unregisters this frame and blanks
     -- its registration so ResumeQTEvents never brings it back. The Show Quest
     -- Icons toggle can flip mid-session (its reload prompt can be declined),
     -- so the cache stays warm on the CludesUI look either way.
-    f:SetScript("OnEvent", function()
+    frame:SetScript("OnEvent", function()
         if _pending or STOCK then
             return
         end
@@ -770,7 +770,7 @@ do
         EQT._eventRegistrations = {}
     end
     local position = #EQT._eventFrames + 1
-    EQT._eventFrames[position] = f
+    EQT._eventFrames[position] = frame
     EQT._eventRegistrations[position] =
         { "QUEST_LOG_UPDATE", "QUEST_ACCEPTED", "QUEST_REMOVED", "PLAYER_ENTERING_WORLD" }
     EQT._classifyFrameIdx = position
@@ -1004,22 +1004,22 @@ local function ApplyFocusHighlight(block)
     if IS_FOREVER and (isFocus or not diff) then
         StripTitleColorCodes(fontStr)
     end
-    local r, g, b
+    local region, g, b
     if isFocus then
-        r, g, b = GetFocusRGB()
+        region, g, b = GetFocusRGB()
     elseif isDone then
-        r, g, b = GetCompletedRGB()
+        region, g, b = GetCompletedRGB()
     else
         -- On: the quest's difficulty color, for a title Blizzard has not set
         -- again since the option came on (it carries no code yet).
         if diff and qID then
-            r, g, b = QuestDifficultyRGB(qID)
+            region, g, b = QuestDifficultyRGB(qID)
         end
-        if not r then
-            r, g, b = GetTitleRGB()
+        if not region then
+            region, g, b = GetTitleRGB()
         end
     end
-    fontStr:SetTextColor(r, g, b)
+    fontStr:SetTextColor(region, g, b)
 end
 
 -- Shared with the custom tracker (Custom.lua) and the options.
@@ -1289,21 +1289,21 @@ local _mouseOffSet = setmetatable({}, { __mode = "k" })
 -- Records WHICH half was on (1 = clicks, 2 = motion, 3 = both) so the
 -- restore puts back exactly that: an XML tooltip-only frame runs on motion
 -- alone, and handing it clicks would make it a click sink it never was.
-local function MouseOff(f)
-    if not (f and f.IsMouseEnabled) or _mouseOffSet[f] then
+local function MouseOff(frame)
+    if not (frame and frame.IsMouseEnabled) or _mouseOffSet[frame] then
         return
     end
     local mode
-    if f.IsMouseClickEnabled and f.IsMouseMotionEnabled then
-        mode = (f:IsMouseClickEnabled() and 1 or 0) + (f:IsMouseMotionEnabled() and 2 or 0)
+    if frame.IsMouseClickEnabled and frame.IsMouseMotionEnabled then
+        mode = (frame:IsMouseClickEnabled() and 1 or 0) + (frame:IsMouseMotionEnabled() and 2 or 0)
     else
-        mode = f:IsMouseEnabled() and 3 or 0
+        mode = frame:IsMouseEnabled() and 3 or 0
     end
     if mode == 0 then
         return
     end
-    _mouseOffSet[f] = mode
-    f:EnableMouse(false)
+    _mouseOffSet[frame] = mode
+    frame:EnableMouse(false)
 end
 -- For frames built while the tracker is hidden (the Forever filter toggle).
 EQT.MouseOff = MouseOff
@@ -1457,9 +1457,9 @@ local function SkinBlock(block)
         "ShineTop",
         "ShineBottom",
     }) do
-        local r = block[k]
-        if r and r.SetTexture then
-            r:SetTexture("")
+        local region = block[k]
+        if region and region.SetTexture then
+            region:SetTexture("")
         end
     end
 
@@ -1896,14 +1896,14 @@ EQT.ApplyTrackerMouse = function(enabled)
             return
         end
         EQT._trackerMouseOff = nil
-        for f, mode in pairs(_mouseOffSet) do
-            _mouseOffSet[f] = nil
-            if mode == 3 or not f.SetMouseClickEnabled then
-                f:EnableMouse(true)
+        for frame, mode in pairs(_mouseOffSet) do
+            _mouseOffSet[frame] = nil
+            if mode == 3 or not frame.SetMouseClickEnabled then
+                frame:EnableMouse(true)
             elseif mode == 1 then
-                pcall(f.SetMouseClickEnabled, f, true)
+                pcall(frame.SetMouseClickEnabled, frame, true)
             else
-                pcall(f.SetMouseMotionEnabled, f, true)
+                pcall(frame.SetMouseMotionEnabled, frame, true)
             end
         end
         -- The master minimize button follows its own hide rule again (a

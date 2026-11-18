@@ -29,13 +29,13 @@ end
 
 -- Weak-keyed external store for Blizzard bar FontString refs: never write custom properties onto Blizzard StatusBar frames (taint).
 local _blizzBarFS = setmetatable({}, { __mode = "k" })
-local function BBFS(bar)
-    local d = _blizzBarFS[bar]
-    if not d then
-        d = {}
-        _blizzBarFS[bar] = d
+local function BBFS(barFrame)
+    local skinData = _blizzBarFS[barFrame]
+    if not skinData then
+        skinData = {}
+        _blizzBarFS[barFrame] = skinData
     end
-    return d
+    return skinData
 end
 
 -------------------------------------------------------------------------------
@@ -72,12 +72,12 @@ local function SetTBBTextColor(fontStr, conf, prefixText)
     if not fontStr or not conf then
         return
     end
-    local r = conf[prefixText .. "TextR"]
+    local region = conf[prefixText .. "TextR"]
     local g = conf[prefixText .. "TextG"]
     local b = conf[prefixText .. "TextB"]
     local a = conf[prefixText .. "TextA"]
-    if r == nil then
-        r = 1
+    if region == nil then
+        region = 1
     end
     if g == nil then
         g = 1
@@ -88,7 +88,7 @@ local function SetTBBTextColor(fontStr, conf, prefixText)
     if a == nil then
         a = 0.9
     end
-    fontStr:SetTextColor(r, g, b, a)
+    fontStr:SetTextColor(region, g, b, a)
 end
 
 -------------------------------------------------------------------------------
@@ -175,9 +175,9 @@ end
 -- Pandemic fallback for auras Blizzard never flags (currently only Lifebloom).
 -- bar._isLifebloom is cached on our own frame; the call site skips entirely once a
 -- bar is known not to be Lifebloom, so only Lifebloom reaches the throttled scan.
-local function LifebloomPandemic(bar, blzChild)
+local function LifebloomPandemic(barFrame, blzChild)
     -- Resolve identity once. Spell data can be late-loading, so leave the flag nil (retry next frame) until both names resolve.
-    if bar._isLifebloom == nil then
+    if barFrame._isLifebloom == nil then
         if not _lbName then
             _lbName = C_Spell.GetSpellName(LIFEBLOOM_SPELL_ID)
         end
@@ -186,9 +186,9 @@ local function LifebloomPandemic(bar, blzChild)
         if not (_lbName and sName) then
             return false
         end
-        bar._isLifebloom = (_lbName == sName)
+        barFrame._isLifebloom = (_lbName == sName)
     end
-    if not bar._isLifebloom then
+    if not barFrame._isLifebloom then
         return false
     end
 
@@ -235,15 +235,15 @@ local function LifebloomPandemic(bar, blzChild)
     check("player")
     if not result then
         if IsInRaid() then
-            for idx = 1, GetNumGroupMembers() do
-                check("raid" .. idx)
+            for index = 1, GetNumGroupMembers() do
+                check("raid" .. index)
                 if result then
                     break
                 end
             end
         elseif IsInGroup() then
-            for idx = 1, GetNumGroupMembers() do
-                check("party" .. idx)
+            for index = 1, GetNumGroupMembers() do
+                check("party" .. index)
                 if result then
                     break
                 end

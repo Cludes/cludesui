@@ -36,9 +36,9 @@ hiddenParent:Hide()
 -- the button reports Hidden right away -- every caller already reparents or
 -- hides the button's bar ancestor first, which is what keeps it invisible
 -- in the meantime. On ns, not a file local.
-function mod.QuietlyHideBlizzButton(btn)
-    btn:UnregisterAllEvents()
-    btn:SetAttributeNoHandler("statehidden", true)
+function mod.QuietlyHideBlizzButton(button)
+    button:UnregisterAllEvents()
+    button:SetAttributeNoHandler("statehidden", true)
 end
 
 -- Re-hide a stock bar Blizzard just re-Show()'d, without calling Hide() or
@@ -50,8 +50,8 @@ end
 -- play. Reparenting under hiddenParent needs no protected call and achieves
 -- the same result: the bar stays effectively invisible regardless of its
 -- own Shown state. On ns, not a file local.
-function mod.ReassertHiddenOnShow(bar)
-    bar:HookScript("OnShow", function(self)
+function mod.ReassertHiddenOnShow(barFrame)
+    barFrame:HookScript("OnShow", function(self)
         if not InCombatLockdown() then
             self:SetParent(hiddenParent)
         end
@@ -306,14 +306,14 @@ do
             ) and not (unitToken and unitToken ~= "player")
         then
             C_Timer.After(0, function()
-                for idx = 1, 6 do
-                    local btn = _G["OverrideActionBarButton" .. idx]
-                    if btn then
+                for index = 1, 6 do
+                    local button = _G["OverrideActionBarButton" .. index]
+                    if button then
                         -- Cooldown-only refresh; avoids passing secret cooldown values through a tainted call.
-                        ForceCooldownPaint(btn)
-                        local hk = btn.HotKey
+                        ForceCooldownPaint(button)
+                        local hk = button.HotKey
                         if hk then
-                            local key1 = GetBindingKey("ACTIONBUTTON" .. idx)
+                            local key1 = GetBindingKey("ACTIONBUTTON" .. index)
                             if key1 then
                                 hk:SetText(FormatHotkeyText(key1))
                                 hk:Show()
@@ -342,24 +342,24 @@ do
     -- shown state, and these are ordinary QuickKeybindButtonTemplate buttons,
     -- so disabling mouse is unprotected, combat-safe, and enough. Nothing of
     -- ours clicks them -- CUI's paging arrows drive their own secure buttons.
-    local function KillPagerMouse(bar)
-        local pager = bar and bar.ActionBarPageNumber
+    local function KillPagerMouse(barFrame)
+        local pager = barFrame and barFrame.ActionBarPageNumber
         if not pager then
             return
         end
-        local function killOne(f)
-            if not f or type(f.IsMouseEnabled) ~= "function" then
+        local function killOne(frame)
+            if not frame or type(frame.IsMouseEnabled) ~= "function" then
                 return
             end
-            if not f:IsMouseEnabled() then
+            if not frame:IsMouseEnabled() then
                 return
             end -- no-op after first pass
-            f:EnableMouse(false)
-            if f.EnableMouseClicks then
-                f:EnableMouseClicks(false)
+            frame:EnableMouse(false)
+            if frame.EnableMouseClicks then
+                frame:EnableMouseClicks(false)
             end
-            if f.EnableMouseMotion then
-                f:EnableMouseMotion(false)
+            if frame.EnableMouseMotion then
+                frame:EnableMouseMotion(false)
             end
         end
         killOne(pager)
@@ -369,8 +369,8 @@ do
         -- Runs on every MainActionBar Show (form, stance and page flips), so
         -- it reads the live list instead of building a table.
         if type(pager.GetChildren) == "function" then
-            for idx = 1, pager:GetNumChildren() do
-                killOne((select(idx, pager:GetChildren())))
+            for index = 1, pager:GetNumChildren() do
+                killOne((select(index, pager:GetChildren())))
             end
         end
     end
@@ -435,14 +435,14 @@ do
                     -- shows itself and its selection overlay whenever Edit Mode opens
                     -- (the overlay ignores the bar's alpha). Silence both overlays like
                     -- the bar's own; Edit Mode's Show never resets alpha or mouse.
-                    local l, r = caps.LeftEndCap, caps.RightEndCap
+                    local l, region = caps.LeftEndCap, caps.RightEndCap
                     if l and l.Selection then
                         l.Selection:SetAlpha(0)
                         l.Selection:EnableMouse(false)
                     end
-                    if r and r.Selection then
-                        r.Selection:SetAlpha(0)
-                        r.Selection:EnableMouse(false)
+                    if region and region.Selection then
+                        region.Selection:SetAlpha(0)
+                        region.Selection:EnableMouse(false)
                     end
                 end
                 if widget.BorderArt then

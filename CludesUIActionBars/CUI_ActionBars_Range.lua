@@ -303,8 +303,8 @@ function ABAR:ApplyRangeColoring()
                 local mapClean = smap and not mod._slotBtnMapDirty
                 local hosts = mapClean and smap[slot] or nil
                 if hosts then
-                    for idx = 1, #hosts do
-                        local button = hosts[idx]
+                    for index = 1, #hosts do
+                        local button = hosts[index]
                         if GetButtonActionSlot(button) == slot then
                             local bInfo = buttonToBar[button]
                             local s = bInfo and barList[bInfo.barKey]
@@ -350,8 +350,8 @@ function ABAR:ApplyRangeColoring()
                         local mapClean2 = smap2 and not mod._slotBtnMapDirty
                         local hosts2 = mapClean2 and smap2[slot] or nil
                         if hosts2 then
-                            for idx = 1, #hosts2 do
-                                local btn2 = hosts2[idx]
+                            for index = 1, #hosts2 do
+                                local btn2 = hosts2[index]
                                 if GetButtonActionSlot(btn2) == slot then
                                     local bInfo2 = buttonToBar[btn2]
                                     local s2 = bInfo2 and bars2[bInfo2.barKey]

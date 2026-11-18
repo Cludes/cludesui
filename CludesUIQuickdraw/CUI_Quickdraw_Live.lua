@@ -376,7 +376,7 @@ end
 
 Inner.CreateLiveView, Inner.EnsureScrollCatcher = CreateLiveView, EnsureScrollCatcher
 Inner.EnsureSecureHeader, Inner.ReleaseEscape = EnsureSecureHeader, ReleaseEscape
-Inner.SetReleaseSecureState = function(f)
-    ReleaseSecureState = f
+Inner.SetReleaseSecureState = function(frame)
+    ReleaseSecureState = frame
 end
 Inner.broken = false

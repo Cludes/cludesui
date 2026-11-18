@@ -362,9 +362,9 @@ end
 -- unset: the tint it has without a colour of its own.
 local function SparkColor(conf, def, merged, unset)
     local k = def.key .. "Spark"
-    local r = not unset and conf[k .. "R"]
-    if r then
-        return r, conf[k .. "G"] or 1, conf[k .. "B"] or 1, conf[k .. "A"] or 1
+    local region = not unset and conf[k .. "R"]
+    if region then
+        return region, conf[k .. "G"] or 1, conf[k .. "B"] or 1, conf[k .. "A"] or 1
     end
     if merged then
         return RowColor(conf, def)
@@ -398,10 +398,10 @@ local function TimeFormatter()
         { { threshold = 0, format = "%.1f", rounding = Nearest } },
     }
     for i = 1, #tables do
-        local f = C_StringUtil.CreateNumericRuleFormatter()
-        if pcall(f.SetBreakpoints, f, tables[i]) then
-            timeFormatter = f
-            return f
+        local frame = C_StringUtil.CreateNumericRuleFormatter()
+        if pcall(frame.SetBreakpoints, frame, tables[i]) then
+            timeFormatter = frame
+            return frame
         end
     end
     return nil
@@ -418,7 +418,7 @@ local function CueFormatter()
     if not TimeFormatter() then
         return nil
     end
-    local f = C_StringUtil.CreateNumericRuleFormatter()
+    local frame = C_StringUtil.CreateNumericRuleFormatter()
     local rule = {
         {
             threshold = 0,
@@ -426,8 +426,8 @@ local function CueFormatter()
             rounding = Enum.NumericRuleFormatRounding.Nearest,
         },
     }
-    if pcall(f.SetBreakpoints, f, rule) then
-        cueFormatter = f
+    if pcall(frame.SetBreakpoints, frame, rule) then
+        cueFormatter = frame
     end
     return cueFormatter or nil
 end
@@ -457,18 +457,18 @@ local function BuildRow(def)
     clip:SetClipsChildren(true)
     row._clip = clip
 
-    local bar = CreateFrame("StatusBar", nil, clip)
-    bar:SetMinMaxValues(0, 1)
-    bar:SetValue(0)
-    row._bar = bar
+    local barFrame = CreateFrame("StatusBar", nil, clip)
+    barFrame:SetMinMaxValues(0, 1)
+    barFrame:SetValue(0)
+    row._bar = barFrame
     -- One duration object per row, re-set per swing and handed to the bar
     -- timer (the QoL timer's shape); never read back in Lua.
     row._durObj = C_DurationUtil.CreateDuration()
 
     -- Spark (same texture/approach as the cast and GCD bars)
     local sparkFrame = CreateFrame("Frame", nil, clip)
-    sparkFrame:SetAllPoints(bar)
-    sparkFrame:SetFrameLevel(bar:GetFrameLevel() + 2)
+    sparkFrame:SetAllPoints(barFrame)
+    sparkFrame:SetFrameLevel(barFrame:GetFrameLevel() + 2)
     local spark = sparkFrame:CreateTexture(nil, "OVERLAY", nil, 1)
     spark:SetTexture(mod.SPARK_TEX)
     spark:SetBlendMode("ADD")
@@ -478,7 +478,7 @@ local function BuildRow(def)
     -- Text above the fill; the tag on the left, the countdown on the right.
     local textFrame = CreateFrame("Frame", nil, row)
     textFrame:SetAllPoints(row)
-    textFrame:SetFrameLevel(bar:GetFrameLevel() + 3)
+    textFrame:SetFrameLevel(barFrame:GetFrameLevel() + 3)
     row._textFrame = textFrame
     -- Font before any SetText: a FontString with no font errors on SetText
     -- ("Font not set", seen on the Forever client). ApplyRowLook re-sizes it.
@@ -622,7 +622,7 @@ local function HideZones(row)
     end
 end
 
-local function StyleZone(row, key, on, texPath, r, g, b, a, backSub, frontSub)
+local function StyleZone(row, key, on, texPath, region, g, b, a, backSub, frontSub)
     local zones = row._zones
     local z = zones and zones[key]
     if not on or row._merged then
@@ -643,9 +643,9 @@ local function StyleZone(row, key, on, texPath, r, g, b, a, backSub, frontSub)
         zones[key] = z
     end
     z.back:SetTexture(texPath)
-    z.back:SetVertexColor(r, g, b, a)
+    z.back:SetVertexColor(region, g, b, a)
     z.front:SetTexture(texPath)
-    z.front:SetVertexColor(r, g, b, a)
+    z.front:SetVertexColor(region, g, b, a)
 end
 
 -- `deplete`: the phase ends on the left (its fill drains), else on the right.
@@ -955,19 +955,19 @@ function SyncTimeText(row, conf)
         row._timeBindOn = swingOn
         b:SetEnabled(swingOn)
     end
-    local cb = row._cueBind
+    local callback = row._cueBind
     local moveOn = phase == "move"
     if moveOn then
         row._cueObj:SetTimeFromStart(row._start, math.max(row._aimAt - row._start, 0.01))
     end
-    if cb and moveOn ~= row._cueBindOn then
+    if callback and moveOn ~= row._cueBindOn then
         row._cueBindOn = moveOn
-        cb:SetEnabled(moveOn)
+        callback:SetEnabled(moveOn)
     end
     if swingOn then
         b:UpdateFontString()
     elseif moveOn then
-        cb:UpdateFontString()
+        callback:UpdateFontString()
     elseif phase == "still" then
         row._time:SetText(CludesUI.L("Still"))
     elseif phase == "go" then
@@ -1139,9 +1139,9 @@ end
 -- under Attack State Full (each wins over the ones before). A combined
 -- off-hand row paints no fill: its bar keeps running under its spark, unseen.
 function ApplyRowFill(row, conf)
-    local fill = row._bar:GetStatusBarTexture()
+    local fillTex = row._bar:GetStatusBarTexture()
     if row._merged then
-        mod.ApplyBarFlat(fill, 0, 0, 0, 0)
+        mod.ApplyBarFlat(fillTex, 0, 0, 0, 0)
         return
     end
     local def = row._def
@@ -1172,7 +1172,7 @@ function ApplyRowFill(row, conf)
     end
     if conf.gradientEnabled and not (pend or aim or q or act) then
         mod.ApplyBarGradient(
-            fill,
+            fillTex,
             conf.gradientDir or "HORIZONTAL",
             fR,
             fG,
@@ -1184,7 +1184,7 @@ function ApplyRowFill(row, conf)
             conf.gradientA
         )
     else
-        mod.ApplyBarFlat(fill, fR, fG, fB, fA)
+        mod.ApplyBarFlat(fillTex, fR, fG, fB, fA)
     end
 end
 
@@ -1351,9 +1351,9 @@ end
 -- GO / STILL zones. A combined off-hand row is only a spark over the Main
 -- Hand row: its frame takes alpha 0 (ApplyRangeLook) and its bevel hides.
 local function StockChrome(row, conf, wid, hgt)
-    local bar = row._bar
+    local barFrame = row._bar
     if row._merged then
-        local sh = bar._blizzShadow
+        local sh = barFrame._blizzShadow
         if sh then
             for i = 1, 4 do
                 sh[i]:Hide()
@@ -1361,10 +1361,10 @@ local function StockChrome(row, conf, wid, hgt)
         end
         return
     end
-    mod.ERB_ApplyBlizzBarChrome(row, bar, wid, hgt, false, mod.ERB_ClassicFrameK(conf))
+    mod.ERB_ApplyBlizzBarChrome(row, barFrame, wid, hgt, false, mod.ERB_ClassicFrameK(conf))
     local mask = row._blizzBarMask
     if mask then
-        mod.ERB_SeatBlizzMask(row, bar)
+        mod.ERB_SeatBlizzMask(row, barFrame)
         local zones = row._zones
         if zones then
             for _, z in pairs(zones) do
@@ -1436,21 +1436,21 @@ local function ApplyRowLook(row, conf, wid, hgt)
 
     -- Clip + bar layout. The 1px inset keeps the fill from bleeding past the
     -- border; with no border there is nothing to clip to, so skip it.
-    local clip, bar = row._clip, row._bar
+    local clip, barFrame = row._clip, row._bar
     local inset = (bs > 0 and Pix and Pix.mult) or 0
     clip:ClearAllPoints()
     clip:SetPoint("TOPLEFT", row, "TOPLEFT", inset, -inset)
     clip:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -inset, inset)
     clip:SetFrameLevel(pl + 1)
-    bar:ClearAllPoints()
-    bar:SetAllPoints(clip)
+    barFrame:ClearAllPoints()
+    barFrame:SetAllPoints(clip)
 
     local texPath =
         CludesUI.ResolveTexturePath(_G._CURB_BarTextures, conf.texture, "Interface\\Buttons\\WHITE8x8")
-    bar:SetStatusBarTexture(texPath)
-    bar:SetOrientation("HORIZONTAL")
-    bar:SetRotatesTexture(false)
-    bar:SetReverseFill(false)
+    barFrame:SetStatusBarTexture(texPath)
+    barFrame:SetOrientation("HORIZONTAL")
+    barFrame:SetRotatesTexture(false)
+    barFrame:SetReverseFill(false)
     row._bg:SetTexture(nil)
     row._bg:SetColorTexture(conf.bgR or 0, conf.bgG or 0, conf.bgB or 0, conf.bgA or 0.7)
     StyleZones(row, conf, texPath)
@@ -1477,15 +1477,15 @@ local function ApplyRowLook(row, conf, wid, hgt)
         sc:ClearAllPoints()
         sc:SetPoint("TOPLEFT", clip, "TOPLEFT", 0, over)
         sc:SetPoint("BOTTOMRIGHT", clip, "BOTTOMRIGHT", 0, -over)
-        sc:SetFrameLevel(bar:GetFrameLevel() + 1)
+        sc:SetFrameLevel(barFrame:GetFrameLevel() + 1)
         sparkFrame:SetParent(sc)
     else
         sparkFrame:SetParent(clip)
     end
-    sparkFrame:SetFrameLevel(bar:GetFrameLevel() + 2)
+    sparkFrame:SetFrameLevel(barFrame:GetFrameLevel() + 2)
     spark:ClearAllPoints()
     spark:SetSize(conf.sparkWidth or 8, hgt + 2 * over)
-    spark:SetPoint("CENTER", bar:GetStatusBarTexture(), "RIGHT", 0, 0)
+    spark:SetPoint("CENTER", barFrame:GetStatusBarTexture(), "RIGHT", 0, 0)
     spark:SetVertexColor(SparkColor(conf, row._def, row._merged))
     UpdateSpark(row, conf)
 

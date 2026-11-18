@@ -247,8 +247,8 @@ local function ResolveSpellSettingsUncached(widget, sid2, sd2, barId)
             if not id or id <= 0 then
                 return
             end
-            for idx = 1, #ids do
-                if ids[idx] == id then
+            for index = 1, #ids do
+                if ids[index] == id then
                     return
                 end
             end
@@ -283,8 +283,8 @@ local function ResolveSpellSettingsUncached(widget, sid2, sd2, barId)
     end
 
     -- 1. Direct hit on any identity id.
-    for idx = 1, #ids do
-        local s = prefs[ids[idx]]
+    for index = 1, #ids do
+        local s = prefs[ids[index]]
         if s then
             ChainSettings(s, tier)
             return s
@@ -309,17 +309,17 @@ local function ResolveSpellSettingsUncached(widget, sid2, sd2, barId)
     local FindOvr = C_SpellBook and C_SpellBook.FindSpellOverrideByID
     if FindOvr and sd2 and sd2.assignedSpells then
         local idOvr = {}
-        for idx = 1, #ids do
-            local id = ids[idx]
+        for index = 1, #ids do
+            local id = ids[index]
             if type(id) == "number" and id > 0 then
-                idOvr[idx] = FindOvr(id)
+                idOvr[index] = FindOvr(id)
             end
         end
         for _, asid in ipairs(sd2.assignedSpells) do
             if asid and asid > 0 and prefs[asid] then
                 local asidOvr = FindOvr(asid)
-                for idx = 1, #ids do
-                    if asidOvr == ids[idx] or idOvr[idx] == asid then
+                for index = 1, #ids do
+                    if asidOvr == ids[index] or idOvr[index] == asid then
                         local s = prefs[asid]
                         ChainSettings(s, tier)
                         return s
@@ -695,13 +695,13 @@ local function _loadVariantBases()
     if _variantBaseSpec == specKey then
         return
     end
-    local sv = _variantBaseSV()
-    if not sv then
+    local savedVars = _variantBaseSV()
+    if not savedVars then
         return
     end
     wipe(_variantBaseLearned)
     _variantBaseSpec = specKey
-    local root = sv._variantBase
+    local root = savedVars._variantBase
     if type(root) == "table" then
         -- Pre-release test builds stored pairs flat, keyed by spellID, before
         -- spec scoping existed. Those answers cannot be attributed to a spec so
@@ -738,14 +738,14 @@ local function _learnVariantBase(variant, base)
     if not _variantBaseSpec then
         return
     end
-    local sv = _variantBaseSV()
-    if not sv then
+    local savedVars = _variantBaseSV()
+    if not savedVars then
         return
     end
-    local root = sv._variantBase
+    local root = savedVars._variantBase
     if type(root) ~= "table" then
         root = {}
-        sv._variantBase = root
+        savedVars._variantBase = root
     end
     local storage = root[_variantBaseSpec]
     if type(storage) ~= "table" then
@@ -761,9 +761,9 @@ end
 function mod.ResetVariantBaseStore()
     wipe(_variantBaseLearned)
     _variantBaseSpec = nil
-    local sv = _variantBaseSV()
-    if sv then
-        sv._variantBase = nil
+    local savedVars = _variantBaseSV()
+    if savedVars then
+        savedVars._variantBase = nil
     end
 end
 
@@ -1109,18 +1109,18 @@ function mod.RebuildSpellRouteMap()
         local byKey = mod.barDataByKey
         for category, keyList in pairs(nativeKeys) do
             local pick
-            for idx = 1, #keyList do
-                local bar = mod._divertedItemCD[keyList[idx]]
-                local bdK = bar and byKey and byKey[bar]
-                if bar and not (bdK and bdK.isGhostBar) then
-                    pick = keyList[idx]
+            for index = 1, #keyList do
+                local barFrame = mod._divertedItemCD[keyList[index]]
+                local bdK = barFrame and byKey and byKey[barFrame]
+                if barFrame and not (bdK and bdK.isGhostBar) then
+                    pick = keyList[index]
                     break
                 end
             end
             if not pick then
-                for idx = 1, #keyList do
-                    if mod._divertedItemCD[keyList[idx]] then
-                        pick = keyList[idx]
+                for index = 1, #keyList do
+                    if mod._divertedItemCD[keyList[index]] then
+                        pick = keyList[index]
                         break
                     end
                 end

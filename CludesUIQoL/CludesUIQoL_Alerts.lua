@@ -129,17 +129,17 @@ end
 
 local function NewLine(def)
     local line = { def = def }
-    local f = CreateFrame("Frame", nil, UIParent)
-    f:SetFrameStrata("HIGH")
-    f:SetFrameLevel(60)
-    f:EnableMouse(false)
-    f:Hide()
-    local fontStr = f:CreateFontString(nil, "OVERLAY")
+    local frame = CreateFrame("Frame", nil, UIParent)
+    frame:SetFrameStrata("HIGH")
+    frame:SetFrameLevel(60)
+    frame:EnableMouse(false)
+    frame:Hide()
+    local fontStr = frame:CreateFontString(nil, "OVERLAY")
     fontStr:SetPoint("CENTER")
-    line.frame, line.text = f, fontStr
+    line.frame, line.text = frame, fontStr
 
     -- Short: fade in, hold, fade out, then hide. Also used for previews.
-    local short = f:CreateAnimationGroup()
+    local short = frame:CreateAnimationGroup()
     local a1 = short:CreateAnimation("Alpha")
     a1:SetFromAlpha(0)
     a1:SetToAlpha(1)
@@ -156,19 +156,19 @@ local function NewLine(def)
     a3:SetDuration(0.5)
     a3:SetOrder(3)
     short:SetScript("OnFinished", function()
-        f:Hide()
+        frame:Hide()
     end)
 
     -- Persistent: fade in and stay.
-    local stay = f:CreateAnimationGroup()
+    local stay = frame:CreateAnimationGroup()
     local s1 = stay:CreateAnimation("Alpha")
     s1:SetFromAlpha(0)
     s1:SetToAlpha(1)
     s1:SetDuration(0.15)
     s1:SetOrder(1)
 
-    f:SetScript("OnShow", Layout)
-    f:SetScript("OnHide", function()
+    frame:SetScript("OnShow", Layout)
+    frame:SetScript("OnHide", function()
         short:Stop()
         stay:Stop()
         line.persistentShown = false
@@ -177,7 +177,7 @@ local function NewLine(def)
 
     -- preview: play the short animation even on a persistent line, and never
     -- disturb a real persistent alert that is already up.
-    function line.Show(textValue, r, g, b, preview)
+    function line.Show(textValue, region, g, b, preview)
         if CUI._unlockActive then
             return
         end
@@ -189,14 +189,14 @@ local function NewLine(def)
         PlaceAnchor()
         Style(line)
         fontStr:SetText(textValue)
-        fontStr:SetTextColor(r or 1, g or 1, b or 1)
+        fontStr:SetTextColor(region or 1, g or 1, b or 1)
         if real and line.persistentShown then
             return
         end -- already up: only the text changed
         short:Stop()
         stay:Stop()
-        f:SetAlpha(1)
-        f:Show()
+        frame:SetAlpha(1)
+        frame:Show()
         if real then
             line.persistentShown = true
             stay:Play()
@@ -206,11 +206,11 @@ local function NewLine(def)
     end
 
     function line.Hide()
-        f:Hide()
+        frame:Hide()
     end
 
     function line.Dismiss()
-        f:Hide()
+        frame:Hide()
         if line.onDismiss then
             line.onDismiss()
         end
@@ -355,8 +355,8 @@ do
 
     local function ShowAlert(preview)
         local D = Alerts.DEFAULTS.potionAlert
-        local r, g, b = Alerts.Color("potionAlert", D.color.r, D.color.g, D.color.b)
-        Alerts.Line("potion").Show(DB("potionAlertText") or D.text, r, g, b, preview)
+        local region, g, b = Alerts.Color("potionAlert", D.color.r, D.color.g, D.color.b)
+        Alerts.Line("potion").Show(DB("potionAlertText") or D.text, region, g, b, preview)
     end
 
     -- start, duration; nil if the item has no cooldown data.
@@ -604,8 +604,8 @@ do
 
     local function ShowAlert(preview)
         local D = Alerts.DEFAULTS.talentAlert
-        local r, g, b = Alerts.Color("talentAlert", D.color.r, D.color.g, D.color.b)
-        Line().Show(DB("talentAlertText") or D.text, r, g, b, preview)
+        local region, g, b = Alerts.Color("talentAlert", D.color.r, D.color.g, D.color.b)
+        Line().Show(DB("talentAlertText") or D.text, region, g, b, preview)
     end
 
     local function Evaluate()

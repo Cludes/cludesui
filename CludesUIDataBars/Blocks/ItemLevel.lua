@@ -66,7 +66,7 @@ mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
     button:SetAllPoints()
     button:EnableMouse(true)
     button:RegisterForClicks("AnyUp")
-    local icon = button:CreateTexture(nil, "OVERLAY")
+    local iconTex = button:CreateTexture(nil, "OVERLAY")
     local label = button:CreateFontString(nil, "OVERLAY")
     K.AttachTextOffset(inst, label)
 
@@ -125,8 +125,8 @@ mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
             mod.Tip_AddDouble(L["PVP_ITEM_LEVEL"], format("%.2f", pvp), 0.6, 0.6, 0.6, 1, 1, 1)
         end
         mod.Tip_AddLine(" ")
-        local r, g, b = mod.GetAccent()
-        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_CHARACTER"], 1, 1, 1, r, g, b)
+        local region, g, b = mod.GetAccent()
+        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_CHARACTER"], 1, 1, 1, region, g, b)
         mod.Tip_Show()
     end
 
@@ -197,9 +197,9 @@ mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
         shownText = text
         local prefixIcon = (Settings().prefix or "short") == "icon"
         local fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
-        K.SetBlockIcon(icon, blockCfg)
-        icon:SetVertexColor(K.IconColorOf(blockCfg))
-        icon:SetShown(prefixIcon)
+        K.SetBlockIcon(iconTex, blockCfg)
+        iconTex:SetVertexColor(K.IconColorOf(blockCfg))
+        iconTex:SetShown(prefixIcon)
         mod.SetFont(label, fontSize, barCtx.cfg)
         PaintText()
         -- In combat the bar is protected: the text changes, the layout waits.
@@ -215,15 +215,15 @@ mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
             label:SetText(text)
             local height = 8
             if iconSize > 0 then
-                icon:SetSize(iconSize, iconSize)
-                icon:ClearAllPoints()
-                icon:SetPoint("TOP", button, "TOP", 0, -4)
+                iconTex:SetSize(iconSize, iconSize)
+                iconTex:ClearAllPoints()
+                iconTex:SetPoint("TOP", button, "TOP", 0, -4)
                 height = height + iconSize + 2
             end
             mod.SetWrappedText(label, max(24, slotW - 8), "CENTER")
             label:ClearAllPoints()
             if iconSize > 0 then
-                label:SetPoint("TOP", icon, "BOTTOM", 0, -2)
+                label:SetPoint("TOP", iconTex, "BOTTOM", 0, -2)
             else
                 label:SetPoint("TOP", button, "TOP", 0, -4)
             end
@@ -237,9 +237,9 @@ mod.BlockFactories.ilvl = function(blockCfg, slot, contentFrame, barCtx)
             label:SetText(text)
             local x = 0
             if iconSize > 0 then
-                icon:SetSize(iconSize, iconSize)
-                icon:ClearAllPoints()
-                icon:SetPoint("LEFT", button, "LEFT", 0, 0)
+                iconTex:SetSize(iconSize, iconSize)
+                iconTex:ClearAllPoints()
+                iconTex:SetPoint("LEFT", button, "LEFT", 0, 0)
                 x = iconSize + K.ICON_GAP
             end
             label:ClearAllPoints()

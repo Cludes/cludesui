@@ -105,8 +105,8 @@ end
 
 -- The profile's quest tracker settings, if the database is ready.
 local function SavedSettings()
-    local d = Database()
-    return d and d.profile and d.profile.questTracker
+    local skinData = Database()
+    return skinData and skinData.profile and skinData.profile.questTracker
 end
 
 function EQT.DB()
@@ -313,13 +313,13 @@ local function SetShown(on)
 end
 
 SLASH_EQT1 = "/cqt"
-SlashCmdList.EQT = function(msg)
-    msg = (msg or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
-    if msg == "show" then
+SlashCmdList.EQT = function(message)
+    message = (message or ""):lower():gsub("^%s+", ""):gsub("%s+$", "")
+    if message == "show" then
         SetShown(true)
-    elseif msg == "hide" then
+    elseif message == "hide" then
         SetShown(false)
-    elseif msg == "toggle" then
+    elseif message == "toggle" then
         SetShown(not EQT.Cfg("enabled"))
     elseif not (InCombatLockdown and InCombatLockdown()) then
         CludesUI:ShowModule("CludesUIQuestTracker")

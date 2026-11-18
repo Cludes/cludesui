@@ -1027,16 +1027,16 @@ local function StopColour(stop)
 end
 
 -- The gradient at f (0 to 1) over Start, Mid and End.
-local function ProgressRGB(f)
+local function ProgressRGB(frame)
     local from, to
-    if f < 0.5 then
-        from, to, f = STOPS[1], STOPS[2], f * 2
+    if frame < 0.5 then
+        from, to, frame = STOPS[1], STOPS[2], frame * 2
     else
-        from, to, f = STOPS[2], STOPS[3], f * 2 - 1
+        from, to, frame = STOPS[2], STOPS[3], frame * 2 - 1
     end
     local r1, g1, b1 = StopColour(from)
     local r2, g2, b2 = StopColour(to)
-    return r1 + (r2 - r1) * f, g1 + (g2 - g1) * f, b1 + (b2 - b1) * f
+    return r1 + (r2 - r1) * frame, g1 + (g2 - g1) * frame, b1 + (b2 - b1) * frame
 end
 EQT.ProgressRGB = ProgressRGB
 
@@ -1105,19 +1105,19 @@ function EQT.ColorObjectiveLines(block)
         if text and o then
             if Stale(text, gen) then
                 local style = text.colorStyle
-                local r, g, b = 1, 1, 1
+                local region, g, b = 1, 1, 1
                 if style then
-                    r, g, b = style.r, style.g, style.b
+                    region, g, b = style.r, style.g, style.b
                 end
                 if gradient then
                     -- Finished lines take the End colour, not Blizzard's grey.
                     if o.finished then
-                        r, g, b = ProgressRGB(1)
+                        region, g, b = ProgressRGB(1)
                     elseif type(o.numRequired) == "number" and o.numRequired > 0 then
-                        r, g, b = ProgressRGB((o.numFulfilled or 0) / o.numRequired)
+                        region, g, b = ProgressRGB((o.numFulfilled or 0) / o.numRequired)
                     end
                 end
-                text:SetTextColor(r, g, b, (dim and o.finished) and alpha or 1)
+                text:SetTextColor(region, g, b, (dim and o.finished) and alpha or 1)
                 painted[text] = true
                 Stamp(text, gen)
             end

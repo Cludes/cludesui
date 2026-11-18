@@ -89,18 +89,18 @@ local ONE = {
 local KEYWORDS = { ["and"] = "and", ["or"] = "or", ["not"] = "not" }
 
 local function Tokens(source)
-    local result, idx, n = {}, 1, #source
-    while idx <= n do
-        local c = source:sub(idx, idx)
+    local result, index, n = {}, 1, #source
+    while index <= n do
+        local c = source:sub(index, index)
         if c:match("%s") then
-            idx = idx + 1
+            index = index + 1
         else
-            local num = source:match("^%d+%.?%d*", idx) or source:match("^%.%d+", idx)
-            local word = not num and source:match("^[%a_][%w_]*", idx)
-            local two = source:sub(idx, idx + 1)
+            local num = source:match("^%d+%.?%d*", index) or source:match("^%.%d+", index)
+            local word = not num and source:match("^[%a_][%w_]*", index)
+            local two = source:sub(index, index + 1)
             if num then
                 result[#result + 1] = { t = "num", v = tonumber(num) }
-                idx = idx + #num
+                index = index + #num
             elseif word then
                 local lw = word:lower()
                 if KEYWORDS[lw] then
@@ -112,13 +112,13 @@ local function Tokens(source)
                 else
                     return nil, CludesUI.Lf("unknown word: %1$s", word)
                 end
-                idx = idx + #word
+                index = index + #word
             elseif TWO[two] then
                 result[#result + 1] = { t = TWO[two] }
-                idx = idx + 2
+                index = index + 2
             elseif ONE[c] then
                 result[#result + 1] = { t = ONE[c] }
-                idx = idx + 1
+                index = index + 1
             else
                 return nil, CludesUI.Lf('can\'t use "%1$s"', c)
             end
@@ -174,56 +174,56 @@ local function Compile(source)
                 return val
             end
         elseif tk.t == "(" then
-            local f = Or()
+            local frame = Or()
             if take() == nil or toks[place - 1].t ~= ")" then
                 error(CludesUI.L("missing )"), 0)
             end
-            return f
+            return frame
         end
         error(CludesUI.Lf('unexpected "%1$s"', tk.t), 0)
     end
     local function Unary()
         if peek() == "-" then
             take()
-            local f = Unary()
+            local frame = Unary()
             return function(environ)
-                return -f(environ)
+                return -frame(environ)
             end
         end
         return Primary()
     end
     local function Mul()
-        local f = Unary()
+        local frame = Unary()
         while peek() == "*" or peek() == "/" do
-            local op, a, b = take().t, f, Unary()
+            local op, a, b = take().t, frame, Unary()
             if op == "*" then
-                f = function(environ)
+                frame = function(environ)
                     return a(environ) * b(environ)
                 end
             else
-                f = function(environ)
-                    local d = b(environ)
-                    return d == 0 and 0 or a(environ) / d
+                frame = function(environ)
+                    local skinData = b(environ)
+                    return skinData == 0 and 0 or a(environ) / skinData
                 end
             end
         end
-        return f
+        return frame
     end
     local function Add()
-        local f = Mul()
+        local frame = Mul()
         while peek() == "+" or peek() == "-" do
-            local op, a, b = take().t, f, Mul()
+            local op, a, b = take().t, frame, Mul()
             if op == "+" then
-                f = function(environ)
+                frame = function(environ)
                     return a(environ) + b(environ)
                 end
             else
-                f = function(environ)
+                frame = function(environ)
                     return a(environ) - b(environ)
                 end
             end
         end
-        return f
+        return frame
     end
     local CMP = {
         ["<"] = function(posX, posY)
@@ -246,58 +246,58 @@ local function Compile(source)
         end,
     }
     local function Cmp()
-        local f = Add()
+        local frame = Add()
         local test = CMP[peek() or ""]
         if test then
             take()
-            local a, b = f, Add()
-            f = function(environ)
+            local a, b = frame, Add()
+            frame = function(environ)
                 return test(a(environ), b(environ)) and 1 or 0
             end
         end
-        return f
+        return frame
     end
     local function Not()
         if peek() == "not" then
             take()
-            local f = Not()
+            local frame = Not()
             return function(environ)
-                return Truth(f(environ)) and 0 or 1
+                return Truth(frame(environ)) and 0 or 1
             end
         end
         return Cmp()
     end
     local function And()
-        local f = Not()
+        local frame = Not()
         while peek() == "and" do
             take()
-            local a, b = f, Not()
-            f = function(environ)
+            local a, b = frame, Not()
+            frame = function(environ)
                 return (Truth(a(environ)) and Truth(b(environ))) and 1 or 0
             end
         end
-        return f
+        return frame
     end
     Or = function()
-        local f = And()
+        local frame = And()
         while peek() == "or" do
             take()
-            local a, b = f, And()
-            f = function(environ)
+            local a, b = frame, And()
+            frame = function(environ)
                 return (Truth(a(environ)) or Truth(b(environ))) and 1 or 0
             end
         end
-        return f
+        return frame
     end
 
-    local success, f = pcall(Or)
+    local success, frame = pcall(Or)
     if not success then
-        return nil, f
+        return nil, frame
     end
     if place <= #toks then
         return nil, CludesUI.Lf('unexpected "%1$s"', toks[place].t)
     end
-    return f
+    return frame
 end
 
 -------------------------------------------------------------------------------
@@ -346,8 +346,8 @@ local function Fill(ident, details)
         for _, cls in pairs(CLASS_WORDS) do
             environ[cls] = 0
         end
-        for idx = 1, n do
-            local p = C_LFGList.GetSearchResultPlayerInfo(ident, idx)
+        for index = 1, n do
+            local p = C_LFGList.GetSearchResultPlayerInfo(ident, index)
             local cls = Readable(p) and p.classFilename
             if cls and not Secret(cls) then
                 environ[cls] = (environ[cls] or 0) + 1
@@ -388,12 +388,12 @@ local function Fill(ident, details)
 end
 
 GFNS.ExtraExprKeep = function(ident, details)
-    local f = Current()
-    if not f or not Readable(details) then
+    local frame = Current()
+    if not frame or not Readable(details) then
         return true
     end
     Fill(ident, details)
-    local success, val = pcall(f, environ)
+    local success, val = pcall(frame, environ)
     if not success then
         return true
     end -- a word this group hides: keep it
@@ -544,12 +544,12 @@ end
 local BAD_HEX = CludesUI.COLOR_CODES.BAD
 
 local function Colorize(textValue)
-    local result, idx, n = {}, 1, #textValue
-    while idx <= n do
-        local c = textValue:sub(idx, idx)
-        local word = textValue:match("^[%a_][%w_]*", idx)
-        local num = not word and (textValue:match("^%d+%.?%d*", idx) or textValue:match("^%.%d+", idx))
-        local two = textValue:sub(idx, idx + 1)
+    local result, index, n = {}, 1, #textValue
+    while index <= n do
+        local c = textValue:sub(index, index)
+        local word = textValue:match("^[%a_][%w_]*", index)
+        local num = not word and (textValue:match("^%d+%.?%d*", index) or textValue:match("^%.%d+", index))
+        local two = textValue:sub(index, index + 1)
         local piece, hue
         if word then
             piece = word
@@ -575,7 +575,7 @@ local function Colorize(textValue)
         else
             result[#result + 1] = isShown
         end
-        idx = idx + #piece
+        index = index + #piece
     end
     return table.concat(result)
 end
@@ -587,24 +587,24 @@ local VPAD, ROW_GAP = 6, 8 -- group padding, gap between untitled rows
 local function Tag(hostFrame, K, specInfo, color, onClick)
     local t = CreateFrame("Button", nil, hostFrame)
     t:SetHeight(TAG_H)
-    local r, g, b = color[1], color[2], color[3]
+    local region, g, b = color[1], color[2], color[3]
     t.fill = t:CreateTexture(nil, "BACKGROUND")
     t.fill:SetAllPoints()
-    t.fill:SetColorTexture(r, g, b, 0.14)
-    CM.MakeBorder(t, r, g, b, 0.45, CM.PanelPP)
+    t.fill:SetColorTexture(region, g, b, 0.14)
+    CM.MakeBorder(t, region, g, b, 0.45, CM.PanelPP)
     t.text = t:CreateFontString(nil, "OVERLAY")
     K.Font(t.text, 9)
     t.text:SetPoint("CENTER", 0, 0)
     t.text:SetText(specInfo[1])
-    t.text:SetTextColor(r, g, b, 1)
+    t.text:SetTextColor(region, g, b, 1)
     t.minW = math.ceil(t.text:GetStringWidth()) + TAG_PAD * 2
     t:SetWidth(t.minW)
     t:SetScript("OnEnter", function(self)
-        self.fill:SetColorTexture(r, g, b, 0.3)
+        self.fill:SetColorTexture(region, g, b, 0.3)
         K.Tip(self, specInfo[1], specInfo[2])
     end)
     t:SetScript("OnLeave", function(self)
-        self.fill:SetColorTexture(r, g, b, 0.14)
+        self.fill:SetColorTexture(region, g, b, 0.14)
         K.Untip()
     end)
     t:SetScript("OnClick", function()
@@ -695,11 +695,11 @@ local function BuildHelp(panelFrame, K, onClick)
         end
         if bx.cols then
             local cw = math.floor((wid - BOX_PAD * 2 - (bx.cols - 1) * TAG_GAP) / bx.cols)
-            local col, row = 0, 0
+            local colour, row = 0, 0
             for _, t in ipairs(bx.tags) do
                 local span = t.span and bx.cols or 1
-                if col > 0 and col + span > bx.cols then
-                    col, row = 0, row + 1
+                if colour > 0 and colour + span > bx.cols then
+                    colour, row = 0, row + 1
                 end
                 t:SetWidth(cw * span + TAG_GAP * (span - 1))
                 t:ClearAllPoints()
@@ -707,15 +707,15 @@ local function BuildHelp(panelFrame, K, onClick)
                     "TOPLEFT",
                     bx,
                     "TOPLEFT",
-                    BOX_PAD + col * (cw + TAG_GAP),
+                    BOX_PAD + colour * (cw + TAG_GAP),
                     -(topY + row * (TAG_H + TAG_GAP))
                 )
-                col = col + span
-                if col >= bx.cols then
-                    col, row = 0, row + 1
+                colour = colour + span
+                if colour >= bx.cols then
+                    colour, row = 0, row + 1
                 end
             end
-            if col == 0 then
+            if colour == 0 then
                 row = row - 1
             end
             return topY + (row + 1) * (TAG_H + TAG_GAP) - TAG_GAP + VPAD
@@ -734,7 +734,7 @@ local function BuildHelp(panelFrame, K, onClick)
     end
 
     -- the last row grows into the leftover height
-    function help.Layout(anchor, width, fill)
+    function help.Layout(anchor, width, fillTex)
         local posY = 0
         for si, S in ipairs(help.sections) do
             if S.title then
@@ -747,14 +747,14 @@ local function BuildHelp(panelFrame, K, onClick)
             local n = #S.boxes
             local bw = math.floor((width - (n - 1) * BOX_GAP) / n)
             local rowH = 0
-            for idx, bx in ipairs(S.boxes) do
+            for index, bx in ipairs(S.boxes) do
                 bx:SetWidth(bw)
                 rowH = math.max(rowH, FlowBox(bx, bw))
                 bx:ClearAllPoints()
-                bx:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", (idx - 1) * (bw + BOX_GAP), -posY)
+                bx:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", (index - 1) * (bw + BOX_GAP), -posY)
             end
-            if si == #help.sections and fill and fill > posY + rowH then
-                rowH = fill - posY
+            if si == #help.sections and fillTex and fillTex > posY + rowH then
+                rowH = fillTex - posY
             end
             for _, bx in ipairs(S.boxes) do
                 bx:SetHeight(rowH)
@@ -771,13 +771,13 @@ local function Paint(K)
     if not button then
         return
     end
-    local f, err = Current()
-    if f then
+    local frame, err = Current()
+    if frame then
         button.Glyph:SetVertexColor(K.Accent())
     else
         button.Glyph:SetVertexColor(K.GLYPH, K.GLYPH, K.GLYPH)
     end
-    button.activeEdge:SetShown(f ~= nil)
+    button.activeEdge:SetShown(frame ~= nil)
     if isShown and box then
         isShown:SetText(Colorize(box:GetText()))
     end
@@ -790,7 +790,7 @@ local function Paint(K)
     end
     if not textValue:find("%S") then
         status:SetText("")
-    elseif f then
+    elseif frame then
         status:SetText("|cff66dd66" .. CludesUI.L("Filtering with this expression.") .. "|r")
     else
         status:SetText(BAD_HEX .. (err or CludesUI.L("can't read that")) .. "|r")
@@ -1026,11 +1026,11 @@ local function Build(SP, K)
     end)
     button:SetScript("OnEnter", function(self)
         self.Glyph:SetAlpha(1)
-        local f = Current()
+        local frame = Current()
         K.Tip(
             self,
             CludesUI.L("Expressions"),
-            f and CludesUI.Lf("Active: %1$s", GFNS.Cfg().extraExpr)
+            frame and CludesUI.Lf("Active: %1$s", GFNS.Cfg().extraExpr)
                 or CludesUI.L("Filter groups with your own rules")
         )
     end)

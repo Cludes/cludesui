@@ -94,25 +94,25 @@ local function CharDB()
         CludesUIDB.questTrackerChars = all
     end
     local unitGuid = UnitGUID("player")
-    local sv = all[unitGuid]
-    if type(sv) ~= "table" then
-        sv = {}
-        all[unitGuid] = sv
+    local savedVars = all[unitGuid]
+    if type(savedVars) ~= "table" then
+        savedVars = {}
+        all[unitGuid] = savedVars
     end
-    if type(sv.ctUntracked) ~= "table" then
-        sv.ctUntracked = {}
+    if type(savedVars.ctUntracked) ~= "table" then
+        savedVars.ctUntracked = {}
     end
-    if type(sv.ctCollapsed) ~= "table" then
-        sv.ctCollapsed = {}
+    if type(savedVars.ctCollapsed) ~= "table" then
+        savedVars.ctCollapsed = {}
     end
-    if type(sv.ctDoneOpen) ~= "table" then
-        sv.ctDoneOpen = {}
+    if type(savedVars.ctDoneOpen) ~= "table" then
+        savedVars.ctDoneOpen = {}
     end
-    if type(sv.ctPinned) ~= "table" then
-        sv.ctPinned = {}
+    if type(savedVars.ctPinned) ~= "table" then
+        savedVars.ctPinned = {}
     end
-    charDB = sv
-    return sv
+    charDB = savedVars
+    return savedVars
 end
 
 -------------------------------------------------------------------------------
@@ -132,8 +132,8 @@ end
 -- Stable sort of order by listRank, lowest first.
 local function SortByRank()
     wipe(listPos)
-    for idx, questID in ipairs(sequence) do
-        listPos[questID] = idx
+    for index, questID in ipairs(sequence) do
+        listPos[questID] = index
     end
     table.sort(sequence, ByRank)
 end
@@ -145,8 +145,8 @@ local function BuildList()
     local saved = CharDB()
     local untracked, pinned = saved.ctUntracked, saved.ctPinned
     local watched = seen
-    for idx = 1, C_QuestLog.GetNumQuestWatches() do
-        local questID = C_QuestLog.GetQuestIDForQuestWatchIndex(idx)
+    for index = 1, C_QuestLog.GetNumQuestWatches() do
+        local questID = C_QuestLog.GetQuestIDForQuestWatchIndex(index)
         if questID then
             watched[questID] = true
             if not untracked[questID] then
@@ -177,9 +177,9 @@ local function BuildList()
             end
         end
     end
-    for idx = #sequence, 1, -1 do
-        if EQT.IsQuestFiltered(sequence[idx]) then
-            table.remove(sequence, idx)
+    for index = #sequence, 1, -1 do
+        if EQT.IsQuestFiltered(sequence[index]) then
+            table.remove(sequence, index)
         end
     end
     EQT.SortQuestList(sequence)
@@ -291,31 +291,31 @@ end
 
 -- Update flash: a white band that fades in and out behind the row.
 local function Flash(l)
-    local f = l.flash
-    if not f then
-        local tex = l:CreateTexture(nil, "BACKGROUND")
-        tex:SetPoint("TOPLEFT", -2, 1)
-        tex:SetPoint("BOTTOMRIGHT", 2, -1)
-        tex:SetColorTexture(1, 1, 1)
-        tex:SetBlendMode("ADD")
-        tex:SetAlpha(0)
-        f = l:CreateAnimationGroup()
-        local a = f:CreateAnimation("Alpha")
-        a:SetTarget(tex)
+    local frame = l.flash
+    if not frame then
+        local texture = l:CreateTexture(nil, "BACKGROUND")
+        texture:SetPoint("TOPLEFT", -2, 1)
+        texture:SetPoint("BOTTOMRIGHT", 2, -1)
+        texture:SetColorTexture(1, 1, 1)
+        texture:SetBlendMode("ADD")
+        texture:SetAlpha(0)
+        frame = l:CreateAnimationGroup()
+        local a = frame:CreateAnimation("Alpha")
+        a:SetTarget(texture)
         a:SetFromAlpha(0)
         a:SetToAlpha(0.3)
         a:SetDuration(0.15)
         a:SetOrder(1)
-        a = f:CreateAnimation("Alpha")
-        a:SetTarget(tex)
+        a = frame:CreateAnimation("Alpha")
+        a:SetTarget(texture)
         a:SetFromAlpha(0.3)
         a:SetToAlpha(0)
         a:SetDuration(0.85)
         a:SetOrder(2)
-        l.flash = f
+        l.flash = frame
     end
-    f:Stop()
-    f:Play()
+    frame:Stop()
+    frame:Play()
 end
 
 -------------------------------------------------------------------------------
@@ -333,9 +333,9 @@ local function TitleRGB(questID, complete)
     end
     -- Title Difficulty Colors: the game's own option (EQT.TitleDifficultyOn)
     if EQT.TitleDifficultyOn() then
-        local r, g, b = EQT.QuestDifficultyRGB(questID)
-        if r then
-            return r, g, b
+        local region, g, b = EQT.QuestDifficultyRGB(questID)
+        if region then
+            return region, g, b
         end
     end
     return EQT.GetTitleRGB()
@@ -348,8 +348,8 @@ local function ZoneRGB()
     local c = EQT.DB()
     local accent = c.customZoneUseAccent
     if accent == nil then
-        local r, g, b = EQT.GetHeaderRGB()
-        return r, g, b, not (c.headerShowClassColor or c.headerUseAccent == false)
+        local region, g, b = EQT.GetHeaderRGB()
+        return region, g, b, not (c.headerShowClassColor or c.headerUseAccent == false)
     end
     if accent then
         local a = CludesUI.CLUDES_GREEN
@@ -360,20 +360,20 @@ end
 EQT.CustomZoneRGB = ZoneRGB
 
 local function ObjectiveRGBA(object)
-    local r, g, b = OBJ_RGB.r, OBJ_RGB.g, OBJ_RGB.b
+    local region, g, b = OBJ_RGB.r, OBJ_RGB.g, OBJ_RGB.b
     if object.finished then
-        r, g, b = DONE_RGB.r, DONE_RGB.g, DONE_RGB.b
+        region, g, b = DONE_RGB.r, DONE_RGB.g, DONE_RGB.b
     end
     if Cfg("objProgressColor") then
         local req = object.numRequired
         if object.finished then
-            r, g, b = EQT.ProgressRGB(1)
+            region, g, b = EQT.ProgressRGB(1)
         elseif type(req) == "number" and req > 0 then
-            r, g, b = EQT.ProgressRGB(math.min((object.numFulfilled or 0) / req, 1))
+            region, g, b = EQT.ProgressRGB(math.min((object.numFulfilled or 0) / req, 1))
         end
     end
     local a = (object.finished and Cfg("objDimCompleted")) and (Cfg("objDimAlpha") or 45) / 100 or 1
-    return r, g, b, a
+    return region, g, b, a
 end
 
 -- "[12+] Title (Elite)", as Blizzard's Forever tracker writes it.
@@ -574,8 +574,8 @@ local function AddObjectives(questID, posY, width, posX)
             or C_QuestLog.GetNextWaypointText(questID)
             or QUEST_WATCH_QUEST_READY
         l, hgt = AcquireLine("obj", questID, "- " .. textValue, posX, posY, wid)
-        local r, g, b = EQT.GetCompletedRGB()
-        l.text:SetTextColor(r, g, b, 1)
+        local region, g, b = EQT.GetCompletedRGB()
+        l.text:SetTextColor(region, g, b, 1)
         return posY + hgt + gap
     end
     local objectives = C_QuestLog.GetQuestObjectives(questID)
@@ -583,24 +583,24 @@ local function AddObjectives(questID, posY, width, posX)
         return posY
     end
     -- First sight of a quest records its texts without flashing.
-    local prev = Cfg("customFlashUpdates") and prevObj[questID]
-    if Cfg("customFlashUpdates") and not prev then
-        prev = {}
-        prevObj[questID] = prev
+    local previous = Cfg("customFlashUpdates") and prevObj[questID]
+    if Cfg("customFlashUpdates") and not previous then
+        previous = {}
+        prevObj[questID] = previous
     end
-    for idx, object in ipairs(objectives) do
+    for index, object in ipairs(objectives) do
         local textValue = object.text
         if textValue and textValue ~= "" then
             if object.type == "progressbar" then
                 textValue = textValue .. " (" .. math.floor(GetQuestProgressBarPercent(questID) or 0) .. "%)"
             end
-            l, hgt = AcquireLine("obj", questID, "- " .. textValue, posX, posY, wid, questID * 100 + idx)
+            l, hgt = AcquireLine("obj", questID, "- " .. textValue, posX, posY, wid, questID * 100 + index)
             l.text:SetTextColor(ObjectiveRGBA(object))
-            if prev then
-                if prev[idx] and prev[idx] ~= textValue then
+            if previous then
+                if previous[index] and previous[index] ~= textValue then
                     Flash(l)
                 end
-                prev[idx] = textValue
+                previous[index] = textValue
             end
             posY = posY + hgt + gap
         end
@@ -641,20 +641,20 @@ end
 -- The bar under a timer line: a track in the shared pixel border, made once
 -- per line (AcquireLine hides it).
 local function TimerBar(l)
-    local bar = l.bar
-    if bar then
-        return bar
+    local barFrame = l.bar
+    if barFrame then
+        return barFrame
     end
-    bar = CreateFrame("StatusBar", nil, l)
-    bar:SetHeight(BAR_H)
-    bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    bar:SetMinMaxValues(0, 1)
-    local backdrop = bar:CreateTexture(nil, "BACKGROUND")
+    barFrame = CreateFrame("StatusBar", nil, l)
+    barFrame:SetHeight(BAR_H)
+    barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    barFrame:SetMinMaxValues(0, 1)
+    local backdrop = barFrame:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0.15, 0.15, 0.15, 0.8)
-    CludesUI.PP.CreateBorder(bar, 0, 0, 0, 0.9, 1, "OVERLAY", 1)
-    l.bar = bar
-    return bar
+    CludesUI.PP.CreateBorder(barFrame, 0, 0, 0, 0.9, 1, "OVERLAY", 1)
+    l.bar = barFrame
+    return barFrame
 end
 
 -- Repaints one timer line. False when its new text no longer fits the row it
@@ -675,12 +675,12 @@ local function PaintTimer(l, nowTime)
     local sum = l.timerTotal
     local pct = sum and math.min(leftX / sum, 1) or 1
     l.text:SetTextColor(TimerRGB(pct))
-    local bar = sum and l.bar
-    if bar then
-        bar:SetWidth(math.max(l.text:GetStringWidth() - l.dashW, 1))
-        bar:SetValue(pct)
+    local barFrame = sum and l.bar
+    if barFrame then
+        barFrame:SetWidth(math.max(l.text:GetStringWidth() - l.dashW, 1))
+        barFrame:SetValue(pct)
         local c = pct > 0.33 and TIMER_FILL or TIMER_LOW
-        bar:SetStatusBarColor(c[1], c[2], c[3])
+        barFrame:SetStatusBarColor(c[1], c[2], c[3])
     end
     return true
 end
@@ -692,8 +692,8 @@ local function ArmTick(nowTime)
         return
     end
     local wait = 1
-    for idx = 1, timerN do
-        local leftX = timerEnd[timerLines[idx].timerQuest] - nowTime
+    for index = 1, timerN do
+        local leftX = timerEnd[timerLines[index].timerQuest] - nowTime
         if leftX > 0 then
             local frac = leftX - math.floor(leftX)
             if frac < wait then
@@ -716,8 +716,8 @@ TimerTick = function()
         return
     end
     local nowTime = GetTime()
-    for idx = 1, timerN do
-        if not PaintTimer(timerLines[idx], nowTime) then
+    for index = 1, timerN do
+        if not PaintTimer(timerLines[index], nowTime) then
             Queue()
             return
         end
@@ -740,16 +740,16 @@ local function AddTimer(questID, posY, width, posX)
     timerN = timerN + 1
     timerLines[timerN] = l
     if l.timerTotal then
-        local bar = TimerBar(l)
+        local barFrame = TimerBar(l)
         if not l.dashW then
             -- The "- " prefix's width in the line's font: the bar starts under the text.
             l.text:SetText("- ")
             l.dashW = l.text:GetStringWidth()
             l.text:SetText(l.lastText)
         end
-        bar:ClearAllPoints()
-        bar:SetPoint("TOPLEFT", l, "BOTTOMLEFT", l.dashW, -1)
-        bar:Show()
+        barFrame:ClearAllPoints()
+        barFrame:SetPoint("TOPLEFT", l, "BOTTOMLEFT", l.dashW, -1)
+        barFrame:Show()
         posY = posY + BAR_H + 2
     end
     PaintTimer(l, nowTime)
@@ -775,23 +775,23 @@ local schematics = {} -- recipe id (negative: recraft) -> its schematic, until t
 -- One required reagent slot: "- 2/4 Linen Cloth". A reagent whose item name
 -- has not loaded is left out, asked for once; its load renders the list again.
 local function AddReagent(ident, slot, posY, width, posX)
-    local r = slot.reagents and slot.reagents[1]
-    if not r then
+    local region = slot.reagents and slot.reagents[1]
+    if not region then
         return posY
     end
     local name
     if ProfessionsUtil.IsReagentSlotBasicRequired(slot) then
-        if r.itemID then
-            name = C_Item.GetItemNameByID(r.itemID)
-            if not name and nameAsked[r.itemID] ~= false then
+        if region.itemID then
+            name = C_Item.GetItemNameByID(region.itemID)
+            if not name and nameAsked[region.itemID] ~= false then
                 nameWait = true
-                if not nameAsked[r.itemID] then
-                    nameAsked[r.itemID] = true
-                    C_Item.RequestLoadItemDataByID(r.itemID)
+                if not nameAsked[region.itemID] then
+                    nameAsked[region.itemID] = true
+                    C_Item.RequestLoadItemDataByID(region.itemID)
                 end
             end
-        elseif r.currencyID then
-            local details = C_CurrencyInfo.GetCurrencyInfo(r.currencyID)
+        elseif region.currencyID then
+            local details = C_CurrencyInfo.GetCurrencyInfo(region.currencyID)
             name = details and details.name
         end
     elseif ProfessionsUtil.IsReagentSlotModifyingRequired(slot) and slot.slotInfo then
@@ -801,11 +801,11 @@ local function AddReagent(ident, slot, posY, width, posX)
         return posY
     end
     local textValue
-    if slot:IsVariableQuantityReagent(r) then
-        textValue = PROFESSIONS_TRACKER_REAGENT_RANGE_FORMAT:format(slot:GetVariableQuantityRange(r))
+    if slot:IsVariableQuantityReagent(region) then
+        textValue = PROFESSIONS_TRACKER_REAGENT_RANGE_FORMAT:format(slot:GetVariableQuantityRange(region))
         reagentState.finished, reagentState.numRequired = false, 0
     else
-        local need = slot:GetQuantityRequired(r)
+        local need = slot:GetQuantityRequired(region)
         local have = ProfessionsUtil.AccumulateReagentsInPossession(slot.reagents)
         textValue = PROFESSIONS_TRACKER_REAGENT_COUNT_FORMAT:format(have, need)
         reagentState.finished, reagentState.numFulfilled, reagentState.numRequired = have >= need, have, need
@@ -937,8 +937,8 @@ local function UpdateItemCooldown(b)
     end
 end
 
-local function ItemButton(idx)
-    local b = itemList[idx]
+local function ItemButton(index)
+    local b = itemList[index]
     if b then
         return b
     end
@@ -971,7 +971,7 @@ local function ItemButton(idx)
         UpdateHover()
         GameTooltip:Hide()
     end)
-    itemList[idx] = b
+    itemList[index] = b
     return b
 end
 
@@ -987,8 +987,8 @@ function SyncItems()
     local num = 0
     local topY, bottom = scroll:GetTop(), scroll:GetBottom()
     if widget:IsVisible() and topY then
-        for idx = 1, itemN do
-            local wid = itemWant[idx]
+        for index = 1, itemN do
+            local wid = itemWant[index]
             local l = wid.line
             local lt, lr = l:GetTop(), l:GetRight()
             if lt and lt <= topY + 0.5 and lt - wid.size >= bottom - 0.5 then
@@ -1014,8 +1014,8 @@ function SyncItems()
             end
         end
     end
-    for idx = num + 1, #itemList do
-        itemList[idx]:Hide()
+    for index = num + 1, #itemList do
+        itemList[index]:Hide()
     end
 end
 
@@ -1031,14 +1031,14 @@ local function RunRowHooks(l, questID)
         slots = {}
         l.slots = slots
     end
-    for idx, hgt in ipairs(rowHooks) do
-        local s = slots[idx]
+    for index, hgt in ipairs(rowHooks) do
+        local s = slots[index]
         if not s then
             s = CreateFrame("Frame", nil, l)
             s:SetPoint("TOPLEFT", l, "TOPRIGHT", hgt.x, 0)
             s:SetPoint("BOTTOMLEFT", l, "BOTTOMRIGHT", hgt.x, 0)
             s:SetWidth(hgt.width)
-            slots[idx] = s
+            slots[index] = s
         end
         s:Show()
         local success, err = pcall(hgt.fn, s, questID, l.text)
@@ -1112,26 +1112,26 @@ local function Render()
             end
             if not (set and collapsed["z:" .. zone]) then
                 local complete = C_QuestLog.IsComplete(questID) == true
-                local item
+                local entry
                 if itemSize then
                     local logIndex = C_QuestLog.GetLogIndexForQuestID(questID)
-                    local itemLink, tex, charges, showDone
+                    local itemLink, texture, charges, showDone
                     if logIndex then
-                        itemLink, tex, charges, showDone = GetQuestLogSpecialItemInfo(logIndex)
+                        itemLink, texture, charges, showDone = GetQuestLogSpecialItemInfo(logIndex)
                     end
                     local itemId = itemLink and tonumber(itemLink:match("item:(%d+)"))
                     if itemId and (not complete or showDone) then
                         itemN = itemN + 1
-                        item = itemWant[itemN]
-                        if not item then
-                            item = {}
-                            itemWant[itemN] = item
+                        entry = itemWant[itemN]
+                        if not entry then
+                            entry = {}
+                            itemWant[itemN] = entry
                         end
-                        item.itemID, item.tex, item.charges = itemId, tex, charges
-                        item.questID, item.size = questID, itemSize
+                        entry.itemID, entry.tex, entry.charges = itemId, texture, charges
+                        entry.questID, entry.size = questID, itemSize
                     end
                 end
-                local itemW = item and itemSize + 8 or 0
+                local itemW = entry and itemSize + 8 or 0
                 if posY == 0 then
                     posY = focusRise
                 end
@@ -1153,8 +1153,8 @@ local function Render()
                 elseif l.focus then
                     l.focus:Hide()
                 end
-                if item then
-                    item.line = l
+                if entry then
+                    entry.line = l
                 end
                 posY = posY + hgt + 2
                 local shut
@@ -1167,7 +1167,7 @@ local function Render()
                     posY = AddObjectives(questID, posY, width, objX)
                 end
                 posY = AddTimer(questID, posY, width, objX)
-                if item then
+                if entry then
                     posY = math.max(posY, topY + itemSize + 2)
                 end
                 posY = posY + (Cfg("customQuestSpacing") or 4)
@@ -1175,8 +1175,8 @@ local function Render()
         end
         posY = AddRecipes(posY, width, titleX, objX, collapsed, zr, zg, zb)
     end
-    for idx = used + 1, #lines do
-        lines[idx]:Hide()
+    for index = used + 1, #lines do
+        lines[index]:Hide()
     end
 
     local _, numQuests = C_QuestLog.GetNumQuestLogEntries()
@@ -1547,22 +1547,22 @@ local function AddRewardLine(e, ownerFrame)
 end
 
 local function AddRewards(questID, ownerFrame)
-    local r = EQT.QuestRewards(questID)
-    if not r then
+    local region = EQT.QuestRewards(questID)
+    if not region then
         return
     end
     GameTooltip:AddLine(" ")
     GameTooltip:AddLine(QUEST_REWARDS, NORMAL_FONT_COLOR:GetRGB())
-    if r.xp > 0 then
-        GameTooltip:AddLine(BONUS_OBJECTIVE_EXPERIENCE_FORMAT:format(r.xp), 1, 1, 1)
+    if region.xp > 0 then
+        GameTooltip:AddLine(BONUS_OBJECTIVE_EXPERIENCE_FORMAT:format(region.xp), 1, 1, 1)
     end
-    if r.money > 0 then
-        GameTooltip:AddLine(GetMoneyString(r.money), 1, 1, 1)
+    if region.money > 0 then
+        GameTooltip:AddLine(GetMoneyString(region.money), 1, 1, 1)
     end
-    for _, e in ipairs(r.rewards) do
+    for _, e in ipairs(region.rewards) do
         AddRewardLine(e, ownerFrame)
     end
-    if #r.choices > 0 then
+    if #region.choices > 0 then
         GameTooltip:AddLine(
             REWARD_CHOICES,
             NORMAL_FONT_COLOR.r,
@@ -1570,7 +1570,7 @@ local function AddRewards(questID, ownerFrame)
             NORMAL_FONT_COLOR.b,
             true
         )
-        for _, e in ipairs(r.choices) do
+        for _, e in ipairs(region.choices) do
             AddRewardLine(e, ownerFrame)
         end
     end

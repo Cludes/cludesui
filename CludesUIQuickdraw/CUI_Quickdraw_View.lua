@@ -152,7 +152,7 @@ local function ApplySlotVisual(widget, selected, armed)
         return
     end
 
-    local r, g, b = SelectColor(widget.view:P())
+    local region, g, b = SelectColor(widget.view:P())
     -- The unusable tint MULTIPLIES whatever the selection state asked for, so
     -- an out-of-range entry the cursor is on still reads as the selected one.
     local tint = USABILITY_TINT[widget.usability or ""]
@@ -168,18 +168,18 @@ local function ApplySlotVisual(widget, selected, armed)
         widget:SetSize(base * z, base * z)
     end
     if armed then
-        local lr = r + (1 - r) * ARM_LIFT
+        local lr = region + (1 - region) * ARM_LIFT
         local lg = g + (1 - g) * ARM_LIFT
         local lb = b + (1 - b) * ARM_LIFT
         CludesUI.PP.UpdateBorder(widget.bhost, t, lr, lg, lb, 1)
-        widget.bg:SetVertexColor(r * 0.22, g * 0.22, b * 0.22, 0.9)
+        widget.bg:SetVertexColor(region * 0.22, g * 0.22, b * 0.22, 0.9)
         widget.icon:SetVertexColor(ur, ug, ub)
         widget.label:SetTextColor(lr, lg, lb)
     elseif selected then
-        CludesUI.PP.UpdateBorder(widget.bhost, t, r, g, b, 1)
-        widget.bg:SetVertexColor(r * 0.22, g * 0.22, b * 0.22, 0.9)
+        CludesUI.PP.UpdateBorder(widget.bhost, t, region, g, b, 1)
+        widget.bg:SetVertexColor(region * 0.22, g * 0.22, b * 0.22, 0.9)
         widget.icon:SetVertexColor(ur, ug, ub)
-        widget.label:SetTextColor(r, g, b)
+        widget.label:SetTextColor(region, g, b)
     else
         CludesUI.PP.UpdateBorder(widget.bhost, t, 0, 0, 0, 0.9)
         -- Plate opacity is FIXED -- 0.65 idle, 0.9 selected and armed above
@@ -247,8 +247,8 @@ local function AdoptFontString(fontStr, iconText)
 end
 
 local function RefreshFonts()
-    for idx = 1, #fontStrings do
-        ApplyModuleFont(fontStrings[idx])
+    for index = 1, #fontStrings do
+        ApplyModuleFont(fontStrings[index])
     end
 end
 
@@ -260,22 +260,22 @@ end
 -- the TEXTURE rather than the slot kind, so a nested menu entry borrowing
 -- its first child's marker icon stays whole too. Shared with the options
 -- picker's rows, which draw the same icons at list size.
-local function ApplyIconCrop(texture, icon)
+local function ApplyIconCrop(texture, iconTex)
     -- Atlas-backed icons already have their own UVs and should not be cropped.
-    if type(icon) == "table" and icon.atlas then
+    if type(iconTex) == "table" and iconTex.atlas then
         texture:SetTexCoord(0, 1, 0, 1)
         return
     end
 
     if
-        type(icon) == "string"
+        type(iconTex) == "string"
         and (
-            icon:find("RaidTargetingIcon", 1, true)
-            or icon:find("UI-GroupLoot-Pass-Up", 1, true)
+            iconTex:find("RaidTargetingIcon", 1, true)
+            or iconTex:find("UI-GroupLoot-Pass-Up", 1, true)
             -- The interface panel glyphs, which are drawn to the edge of their
             -- own square the way the marker textures are. The crop is sized
             -- for the border every spell icon carries and would cut into these.
-            or icon:find("micromenu", 1, true)
+            or iconTex:find("micromenu", 1, true)
         )
     then
         texture:SetTexCoord(0, 1, 0, 1)
@@ -289,11 +289,11 @@ mod.ApplyIconCrop = ApplyIconCrop
 -- at the Lua 5.1 200-local cap and this function was the 200th -- hosting it
 -- on ns restored the last slot of headroom. Paint-frequency callers; the ns
 -- lookup is free there.
-function mod.SetIconTexture(texture, icon)
-    if type(icon) == "table" and icon.atlas then
-        texture:SetAtlas(icon.atlas, true)
+function mod.SetIconTexture(texture, iconTex)
+    if type(iconTex) == "table" and iconTex.atlas then
+        texture:SetAtlas(iconTex.atlas, true)
     else
-        texture:SetTexture(icon or QUESTION_MARK)
+        texture:SetTexture(iconTex or QUESTION_MARK)
     end
 end
 
@@ -370,11 +370,11 @@ local function CreateSlotWidget(view, index)
     -- why the nest used to be previewed faintly instead -- and a preview drawn
     -- over the open nest's own children is what that cost.
     wid.nestDots = {}
-    for d = 1, 3 do
+    for skinData = 1, 3 do
         local t = wid:CreateTexture(nil, "OVERLAY", nil, 7)
         t:SetTexture("Interface\\Buttons\\WHITE8X8")
         t:Hide()
-        wid.nestDots[d] = t
+        wid.nestDots[skinData] = t
     end
 
     wid.label = wid:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")

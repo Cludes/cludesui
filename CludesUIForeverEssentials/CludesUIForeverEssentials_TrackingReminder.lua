@@ -61,13 +61,13 @@ end
 local function ActiveTracking()
     local on, listed = {}, {}
     local num = C_Minimap and C_Minimap.GetNumTrackingTypes and C_Minimap.GetNumTrackingTypes() or 0
-    for idx = 1, num do
-        local a, _, c, _, _, f = C_Minimap.GetTrackingInfo(idx)
+    for index = 1, num do
+        local a, _, c, _, _, frame = C_Minimap.GetTrackingInfo(index)
         local spellId, isActive
         if type(a) == "table" then
             spellId, isActive = a.spellID, a.active
         else
-            spellId, isActive = f, c
+            spellId, isActive = frame, c
         end
         if spellId then
             listed[spellId] = true
@@ -122,8 +122,8 @@ local function Build()
     return holderFrame
 end
 
-local function Button(idx)
-    local b = buttons[idx]
+local function Button(index)
+    local b = buttons[index]
     if b then
         return b
     end
@@ -149,7 +149,7 @@ local function Button(idx)
     b:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
-    buttons[idx] = b
+    buttons[index] = b
     return b
 end
 
@@ -165,19 +165,19 @@ local function Refresh()
     dirty = false
     local size = Get("iconSize")
     local entries = Enabled() and Missing() or {}
-    for idx, ident in ipairs(entries) do
-        local b = Button(idx)
+    for index, ident in ipairs(entries) do
+        local b = Button(index)
         b.spellID = ident
         b:SetAttribute("spell", ident)
         b.icon:SetTexture(C_Spell.GetSpellTexture(ident))
         b:SetSize(size, size)
         b:ClearAllPoints()
-        b:SetPoint("LEFT", holderFrame, "LEFT", (idx - 1) * (size + GAP), 0)
+        b:SetPoint("LEFT", holderFrame, "LEFT", (index - 1) * (size + GAP), 0)
         b:Show()
     end
-    for idx = #entries + 1, #buttons do
-        buttons[idx]:Hide()
-        buttons[idx].spellID = nil
+    for index = #entries + 1, #buttons do
+        buttons[index]:Hide()
+        buttons[index].spellID = nil
     end
     holderFrame:SetSize(math.max(1, #entries) * (size + GAP) - GAP, size)
 end

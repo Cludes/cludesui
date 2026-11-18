@@ -31,13 +31,13 @@ local coins = setmetatable({}, { __mode = "k" }) -- reward button -> our coin
 -- A choice button's item and count: its link, or its item ID while the client
 -- has no link for it yet (not cached), so it still counts as missing.
 local function ChoiceItem(btnFrame)
-    local idx = btnFrame:GetID()
+    local index = btnFrame:GetID()
     if QuestInfoFrame.questLog then
-        local _, _, total, _, _, itemId = GetQuestLogChoiceInfo(idx)
-        return GetQuestLogItemLink("choice", idx) or itemId, total or 1
+        local _, _, total, _, _, itemId = GetQuestLogChoiceInfo(index)
+        return GetQuestLogItemLink("choice", index) or itemId, total or 1
     end
-    local _, _, total, _, _, itemId = GetQuestItemInfo("choice", idx)
-    return GetQuestItemLink("choice", idx) or itemId, total or 1
+    local _, _, total, _, _, itemId = GetQuestItemInfo("choice", index)
+    return GetQuestItemLink("choice", index) or itemId, total or 1
 end
 
 local function Coin(btnFrame)
@@ -85,9 +85,9 @@ function Update()
     local best, bestValue, missing = nil, 0, false
     for _, btnFrame in ipairs(rewards.RewardButtons) do
         if btnFrame:IsShown() and btnFrame.type == "choice" and btnFrame.objectType == "item" then
-            local item, total = ChoiceItem(btnFrame)
-            if item then
-                local sellPrice = select(11, C_Item.GetItemInfo(item))
+            local entry, total = ChoiceItem(btnFrame)
+            if entry then
+                local sellPrice = select(11, C_Item.GetItemInfo(entry))
                 if not sellPrice then
                     missing = true
                 elseif sellPrice * total > bestValue then

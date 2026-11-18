@@ -85,13 +85,13 @@ local function ApplySATimerColor()
         return
     end
     local conf = DB()
-    local r, g, b = GetSATimerColor()
+    local region, g, b = GetSATimerColor()
     if conf.standaloneTimerDesatOOC and not (_inCombat or _needsFinalRefresh) then
         -- Luminance gray: desaturation keeps the configured color's brightness
-        local l = 0.299 * r + 0.587 * g + 0.114 * b
-        r, g, b = l, l, l
+        local l = 0.299 * region + 0.587 * g + 0.114 * b
+        region, g, b = l, l, l
     end
-    _saTimerFS:SetTextColor(r, g, b, 1)
+    _saTimerFS:SetTextColor(region, g, b, 1)
 end
 
 local function ApplySATimerStyle()

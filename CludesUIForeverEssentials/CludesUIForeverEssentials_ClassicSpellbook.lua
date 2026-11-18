@@ -131,8 +131,8 @@ local function NewSpellButton(i)
     local b = CreateFrame("Button", nil, book, "SecureActionButtonTemplate")
     b:SetSize(37, 37)
     -- Down the left column, then down the right one.
-    local col, row = math.floor((i - 1) / ROWS), (i - 1) % ROWS
-    b:SetPoint("TOPLEFT", book, "TOPLEFT", 34 + col * 157, -85 - row * 51)
+    local colour, row = math.floor((i - 1) / ROWS), (i - 1) % ROWS
+    b:SetPoint("TOPLEFT", book, "TOPLEFT", 34 + colour * 157, -85 - row * 51)
     b:RegisterForClicks("AnyUp", "AnyDown") -- the action fires on whichever the client's key-down setting picks
     b:RegisterForDrag("LeftButton")
 
@@ -268,10 +268,10 @@ local function NewTab(i)
     local tab = CreateFrame("CheckButton", nil, book, "SecureFrameTemplate")
     tab:SetSize(32, 32)
     tab:SetPoint("TOPLEFT", book, "TOPRIGHT", -32, -65 - (i - 1) * 49)
-    local bg = tab:CreateTexture(nil, "BACKGROUND")
-    bg:SetTexture("Interface\\SpellBook\\SpellBook-SkillLineTab")
-    bg:SetSize(64, 64)
-    bg:SetPoint("TOPLEFT", -3, 11)
+    local bgTex = tab:CreateTexture(nil, "BACKGROUND")
+    bgTex:SetTexture("Interface\\SpellBook\\SpellBook-SkillLineTab")
+    bgTex:SetSize(64, 64)
+    bgTex:SetPoint("TOPLEFT", -3, 11)
     tab:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
     tab:SetCheckedTexture("Interface\\Buttons\\CheckButtonHilight")
     tab:GetCheckedTexture():SetBlendMode("ADD")
@@ -283,15 +283,15 @@ local function NewTab(i)
 end
 
 -- A click turns step pages; AIM keeps the page inside the line.
-local function NewArrow(dir, x, step)
+local function NewArrow(direction, x, step)
     local b = CreateFrame("Button", nil, book, "SecureFrameTemplate")
     b:SetSize(32, 32)
     b:SetPoint("CENTER", book, "BOTTOMLEFT", x, 105)
-    local tex = "Interface\\Buttons\\UI-SpellbookIcon-" .. dir .. "Page-"
-    b.art = tex
-    b:SetNormalTexture(tex .. "Up")
-    b:SetPushedTexture(tex .. "Down")
-    b:SetDisabledTexture(tex .. "Disabled")
+    local texture = "Interface\\Buttons\\UI-SpellbookIcon-" .. direction .. "Page-"
+    b.art = texture
+    b:SetNormalTexture(texture .. "Up")
+    b:SetPushedTexture(texture .. "Down")
+    b:SetDisabledTexture(texture .. "Disabled")
     b:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
     b:SetScript("PostClick", TurnSound)
     book:WrapScript(b, "OnClick", ("PAGES[LINE] = (PAGES[LINE] or 1) + (%d)\n"):format(step) .. AIM)
@@ -516,10 +516,10 @@ local function Build()
         { "BotLeft", "BOTTOMLEFT", 256 },
         { "BotRight", "BOTTOMRIGHT", 128 },
     }) do
-        local tex = book:CreateTexture(nil, "ARTWORK")
-        tex:SetTexture(ART .. "UI-SpellbookPanel-" .. part[1])
-        tex:SetSize(part[3], 256)
-        tex:SetPoint(part[2])
+        local texture = book:CreateTexture(nil, "ARTWORK")
+        texture:SetTexture(ART .. "UI-SpellbookPanel-" .. part[1])
+        texture:SetSize(part[3], 256)
+        texture:SetPoint(part[2])
     end
     local title = book:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     title:SetPoint("CENTER", 6, 230)

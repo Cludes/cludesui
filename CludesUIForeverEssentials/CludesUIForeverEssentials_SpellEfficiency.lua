@@ -334,13 +334,13 @@ local decoratedAt = setmetatable({}, { __mode = "k" })
 local decoratedText = setmetatable({}, { __mode = "k" })
 
 local function AddLines(tooltip, spellId)
-    local r = module.SpellEfficiencyOf(spellId)
-    if not r then
+    local region = module.SpellEfficiencyOf(spellId)
+    if not region then
         return
     end
     local first
-    for idx = 1, r.count do
-        local textValue = Line(r[idx], r.area)
+    for index = 1, region.count do
+        local textValue = Line(region[index], region.area)
         if textValue then
             if not first then
                 -- The game can call the hook twice for one tooltip: add the line once.

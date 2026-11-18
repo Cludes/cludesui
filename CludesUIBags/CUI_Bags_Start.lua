@@ -345,8 +345,8 @@ local function StartAddon()
             return
         end
         if enabled then
-            local r, g, bl = GetAccentRGB()
-            SetInsetBorderColor(dropBorder, r, g, bl, 1)
+            local region, g, bl = GetAccentRGB()
+            SetInsetBorderColor(dropBorder, region, g, bl, 1)
         end
         dropBorder:SetShown(enabled and true or false)
     end
@@ -649,15 +649,15 @@ local function StartAddon()
         -- button keeps opening Blizzard's own keyring window: the one bag frame
         -- let back out of the hidden container while it shows.
         local KEYRING = CUI.IS_FOREVER and Enum.BagIndex and Enum.BagIndex.Keyring or nil
-        local function IsKeyringFrame(f)
-            return KEYRING ~= nil and f:IsShown() and f.MatchesBagID ~= nil and f:MatchesBagID(KEYRING)
+        local function IsKeyringFrame(frame)
+            return KEYRING ~= nil and frame:IsShown() and frame.MatchesBagID ~= nil and frame:MatchesBagID(KEYRING)
         end
 
         local function KillBlizzard()
             for i = 1, 13 do
-                local f = _G["ContainerFrame" .. i]
-                if f and not IsKeyringFrame(f) then
-                    f:SetParent(_blizzBagHidden)
+                local frame = _G["ContainerFrame" .. i]
+                if frame and not IsKeyringFrame(frame) then
+                    frame:SetParent(_blizzBagHidden)
                 end
             end
             if ContainerFrameCombinedBags then
@@ -670,15 +670,15 @@ local function StartAddon()
         hooksecurefunc("ToggleBag", function(ident)
             if KEYRING and ident == KEYRING then
                 -- Blizzard just opened or closed it; only an open one comes out.
-                local f = ContainerFrameUtil_GetShownFrameForID
+                local frame = ContainerFrameUtil_GetShownFrameForID
                     and ContainerFrameUtil_GetShownFrameForID(KEYRING)
-                if f then
-                    f:SetParent(ContainerFrameContainer or UIParent)
-                    if not keyringHooked[f] then
-                        keyringHooked[f] = true
+                if frame then
+                    frame:SetParent(ContainerFrameContainer or UIParent)
+                    if not keyringHooked[frame] then
+                        keyringHooked[frame] = true
                         -- The frames are shared: once closed (its own shown flag
                         -- clear, not just a hidden UI), any bag it shows next stays hidden.
-                        f:HookScript("OnHide", function(self)
+                        frame:HookScript("OnHide", function(self)
                             if not self:IsShown() then
                                 self:SetParent(_blizzBagHidden)
                             end

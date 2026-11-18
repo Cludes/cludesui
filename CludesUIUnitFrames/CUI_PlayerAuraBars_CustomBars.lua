@@ -95,22 +95,22 @@ end
 -- Applies bar.pos (or the default) to a custom bar's parent frame. Same SetPoint
 -- logic as ApplyBarPosition, kept separate only because custom bars key off bar.pos
 -- on the bar object, not a fixed s[BarPositionKey] slot. Same anchored rule too.
-local function ApplyCustomBarPosition(hostFrame, bar, barId, isBuff, grid)
+local function ApplyCustomBarPosition(hostFrame, barFrame, barId, isBuff, grid)
     local unlockKey = (isBuff and "PAB_CustomBuff_" or "PAB_CustomDebuff_") .. barId
     local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(unlockKey)
     if anchored and hostFrame:GetNumPoints() > 0 and CludesUI.ReapplyOwnAnchor then
         CludesUI.ReapplyOwnAnchor(unlockKey)
         return
     end
-    local place = bar.pos or DefaultCustomPos(barId)
-    local posX, posY = BarAnchorOffset(hostFrame, bar, grid or ComputeGrid(isBuff, bar), place)
+    local place = barFrame.pos or DefaultCustomPos(barId)
+    local posX, posY = BarAnchorOffset(hostFrame, barFrame, grid or ComputeGrid(isBuff, barFrame), place)
     hostFrame:ClearAllPoints()
     posX, posY = SnapBarPos(hostFrame, place.point, place.relPoint or place.point, posX, posY)
     hostFrame:SetPoint(place.point, UIParent, place.relPoint or place.point, posX, posY)
-    if bar.growDirection == "CENTER_HORIZONTAL" or bar.growDirection == "CENTER_VERTICAL" then
+    if barFrame.growDirection == "CENTER_HORIZONTAL" or barFrame.growDirection == "CENTER_VERTICAL" then
         local centeredPos = RebaseBarPositionToCenter(hostFrame, place)
-        if bar.pos or centeredPos ~= place then
-            bar.pos = centeredPos
+        if barFrame.pos or centeredPos ~= place then
+            barFrame.pos = centeredPos
         end
     end
     if anchored and CludesUI.ReapplyOwnAnchor then
@@ -143,13 +143,13 @@ local function RegisterPABCustomUnlock()
     local prevBuffKeys, prevDebuffKeys = pabRegisteredCustomBuffKeys, pabRegisteredCustomDebuffKeys
     pabRegisteredCustomBuffKeys, pabRegisteredCustomDebuffKeys = {}, {}
 
-    local function MakeCustomBarElement(barId, bar, sequence, isBuff, parents)
+    local function MakeCustomBarElement(barId, barFrame, sequence, isBuff, parents)
         local key = (isBuff and "PAB_CustomBuff_" or "PAB_CustomDebuff_") .. barId
         MapElementSettings(key, isBuff and "buff" or "debuff", barId)
         return key,
             MK({
                 key = key,
-                label = "PAB: " .. (bar.name or (isBuff and "Buff Bar" or "Debuff Bar")),
+                label = "PAB: " .. (barFrame.name or (isBuff and "Buff Bar" or "Debuff Bar")),
                 group = "Player Aura Bars",
                 order = sequence,
                 noResize = true,
@@ -249,18 +249,18 @@ local function RegisterPABCustomUnlock()
     local elements = {}
     local buffList = mod.PAB_CustomBuffBars()
     if buffList then
-        for idx = 1, #buffList do
-            local bar = buffList[idx]
-            local key, el = MakeCustomBarElement(bar.id, bar, 702, true, customBuffParents)
+        for index = 1, #buffList do
+            local barFrame = buffList[index]
+            local key, el = MakeCustomBarElement(barFrame.id, barFrame, 702, true, customBuffParents)
             elements[#elements + 1] = el
             pabRegisteredCustomBuffKeys[key] = true
         end
     end
     local debuffList = mod.PAB_CustomDebuffBars()
     if debuffList then
-        for idx = 1, #debuffList do
-            local bar = debuffList[idx]
-            local key, el = MakeCustomBarElement(bar.id, bar, 703, false, customDebuffParents)
+        for index = 1, #debuffList do
+            local barFrame = debuffList[index]
+            local key, el = MakeCustomBarElement(barFrame.id, barFrame, 703, false, customDebuffParents)
             elements[#elements + 1] = el
             pabRegisteredCustomDebuffKeys[key] = true
         end
@@ -274,18 +274,18 @@ local function RegisterPABCustomUnlock()
             for _, b in pairs(st) do
                 local bl = b.buffBars
                 if bl then
-                    for idx = 1, #bl do
-                        local bar = bl[idx]
-                        local key, el = MakeCustomBarElement(bar.id, bar, 702, true, customBuffParents)
+                    for index = 1, #bl do
+                        local barFrame = bl[index]
+                        local key, el = MakeCustomBarElement(barFrame.id, barFrame, 702, true, customBuffParents)
                         elements[#elements + 1] = el
                         pabRegisteredCustomBuffKeys[key] = true
                     end
                 end
                 local dl = b.debuffBars
                 if dl then
-                    for idx = 1, #dl do
-                        local bar = dl[idx]
-                        local key, el = MakeCustomBarElement(bar.id, bar, 703, false, customDebuffParents)
+                    for index = 1, #dl do
+                        local barFrame = dl[index]
+                        local key, el = MakeCustomBarElement(barFrame.id, barFrame, 703, false, customDebuffParents)
                         elements[#elements + 1] = el
                         pabRegisteredCustomDebuffKeys[key] = true
                     end
@@ -343,8 +343,8 @@ local function ReloadCustomBuffBarImpl(barId)
     if not AK then
         return
     end
-    local bar, barBucket = mod.PAB_GetCustomBuffBar(barId)
-    if not bar then
+    local barFrame, barBucket = mod.PAB_GetCustomBuffBar(barId)
+    if not barFrame then
         -- Deleted: release the container (frees its slot-button tracking; engine
         -- frames themselves are never destroyed) and hide the now-orphaned parent.
         if customBuffContainers[barId] then
@@ -360,13 +360,13 @@ local function ReloadCustomBuffBarImpl(barId)
     if
         DeferRestrictedApply("custom-buff-" .. barId, function()
             mod.PAB_ReloadCustomBuffBar(barId)
-        end, customBuffContainers[barId], bar.growDirection)
+        end, customBuffContainers[barId], barFrame.growDirection)
     then
         return
     end
 
     local styleKey = CustomBuffStyleKey(barId)
-    AK.styles[styleKey] = BuildStyle(true, bar)
+    AK.styles[styleKey] = BuildStyle(true, barFrame)
     -- Counterpart to RestyleBars' AK.RestyleSoon for the default bars. REQUIRED:
     -- writing AK.styles[styleKey] alone only affects buttons created after this point
     -- (MakeInitializer runs once per button), so a style-only edit on a bar whose
@@ -377,7 +377,7 @@ local function ReloadCustomBuffBarImpl(barId)
     AK.RestyleSoon(styleKey)
     SyncCancelCVar()
 
-    local grid = ComputeGrid(true, bar)
+    local grid = ComputeGrid(true, barFrame)
     local hostFrame = customBuffParents[barId]
     local fresh = false
     if not hostFrame then
@@ -398,12 +398,12 @@ local function ReloadCustomBuffBarImpl(barId)
             mod.PAB_ReloadCustomBuffBar(barId)
         end)
     else
-        ApplyCustomBarPosition(hostFrame, bar, barId, true, grid)
+        ApplyCustomBarPosition(hostFrame, barFrame, barId, true, grid)
     end
     -- Effective render verdict: the bar's own toggle AND its editing-spec
     -- bucket's applicability to the current spec AND this spec's per-spec
     -- disable of group bars. Inactive parks exactly like disabled.
-    local barActive = mod.PAB_BarActive(bar, barBucket)
+    local barActive = mod.PAB_BarActive(barFrame, barBucket)
     SetParentShownSafe("custom-buff-" .. barId, hostFrame, barActive, function()
         mod.PAB_ReloadCustomBuffBar(barId)
     end)
@@ -415,13 +415,13 @@ local function ReloadCustomBuffBarImpl(barId)
         hostFrame:SetSize(grid.width, grid.height)
     end
 
-    local spells = mod.PAB_ResolveSpells(bar)
+    local spells = mod.PAB_ResolveSpells(barFrame)
     local sig = CustomBuffSpellSignature(spells)
     -- Show All Buffs works on custom buff bars too: mirrors the default Buffs bar's
     -- catch-all group (BuildChain zero-classes, "all" key) via the same
     -- ApplyGroupConfig path custom debuff bars use for their category chain --
     -- ApplyGroupConfig is generic over any {key,tokens} chain.
-    local allChain = BuffBarChain(bar)
+    local allChain = BuffBarChain(barFrame)
 
     if customBuffContainers[barId] then
         -- Style/grid-only change (icon size, padding, grow direction, ...): container
@@ -429,7 +429,7 @@ local function ReloadCustomBuffBarImpl(barId)
         -- anchor/growth/rowWidth, the same fields ApplyLiveConfig live-updates for
         -- the default bars.
         local boxHolder = customBuffContainers[barId]
-        ApplyContainerAnchorAndGrowth(boxHolder, hostFrame, bar, grid)
+        ApplyContainerAnchorAndGrowth(boxHolder, hostFrame, barFrame, grid)
 
         if customBuffSig[barId] == sig then
             -- Spell list unchanged: still refresh the spells group's
@@ -437,18 +437,18 @@ local function ReloadCustomBuffBarImpl(barId)
             -- catch-all chain (ApplyGroupConfig is idempotent and self-zeroes it
             -- when Show All Buffs is off).
             if #spells > 0 then
-                local livePad = bar.padding or 5
+                local livePad = barFrame.padding or 5
                 CludesUI.AuraKit.SetGroupCap(boxHolder, "spells", grid.effectiveMax)
-                boxHolder:SetAuraGroupLayout("spells", BuildGroupLayout(bar, livePad, grid.rowGap))
+                boxHolder:SetAuraGroupLayout("spells", BuildGroupLayout(barFrame, livePad, grid.rowGap))
                 local liveIncludeMap = {}
-                for idx = 1, #spells do
-                    liveIncludeMap[spells[idx]] = true
+                for index = 1, #spells do
+                    liveIncludeMap[spells[index]] = true
                 end
                 boxHolder:SetAuraGroupCandidateFilters(
                     "spells",
-                    MergeCandidateFilters({ includeSpellIDs = liveIncludeMap }, BuffCandidateExtras(bar))
+                    MergeCandidateFilters({ includeSpellIDs = liveIncludeMap }, BuffCandidateExtras(barFrame))
                 )
-                local sortMethod, sortDirection = ResolveSortMethod(bar), ResolveSortDirection(bar)
+                local sortMethod, sortDirection = ResolveSortMethod(barFrame), ResolveSortDirection(barFrame)
                 if sortMethod ~= nil and sortDirection ~= nil then
                     boxHolder:SetAuraGroupSortMethod("spells", sortMethod, sortDirection)
                 end
@@ -460,10 +460,10 @@ local function ReloadCustomBuffBarImpl(barId)
                 customBuffDeclared[barId],
                 styleKey,
                 grid.effectiveMax,
-                bar.padding or 5,
+                barFrame.padding or 5,
                 grid.rowGap,
-                bar,
-                BuffCandidateExtras(bar)
+                barFrame,
+                BuffCandidateExtras(barFrame)
             )
             return -- nothing structural to rebuild
         end
@@ -471,11 +471,11 @@ local function ReloadCustomBuffBarImpl(barId)
         customBuffContainers[barId] = nil
     end
 
-    local _, specInfo = BuildContainerSpec(hostFrame, bar, grid)
-    local pad = bar.padding or 5
+    local _, specInfo = BuildContainerSpec(hostFrame, barFrame, grid)
+    local pad = barFrame.padding or 5
     AK.RequestContainer(hostFrame, "player", specInfo, function(boxHolder)
         customBuffContainers[barId] = boxHolder
-        ApplyContainerAnchorAndGrowth(boxHolder, hostFrame, bar, grid)
+        ApplyContainerAnchorAndGrowth(boxHolder, hostFrame, barFrame, grid)
         customBuffSig[barId] = sig
         customBuffDeclared[barId] = {}
         ApplyGroupConfig(
@@ -486,13 +486,13 @@ local function ReloadCustomBuffBarImpl(barId)
             grid.effectiveMax,
             pad,
             grid.rowGap,
-            bar,
-            BuffCandidateExtras(bar)
+            barFrame,
+            BuffCandidateExtras(barFrame)
         )
         if #spells > 0 then
             local includeMap = {}
-            for idx = 1, #spells do
-                includeMap[spells[idx]] = true
+            for index = 1, #spells do
+                includeMap[spells[index]] = true
             end
             AK.AddGroupToContainer(boxHolder, {
                 key = "spells",
@@ -501,11 +501,11 @@ local function ReloadCustomBuffBarImpl(barId)
                 maxFrameCount = grid.effectiveMax,
                 candidateFilters = MergeCandidateFilters(
                     { includeSpellIDs = includeMap },
-                    BuffCandidateExtras(bar)
+                    BuffCandidateExtras(barFrame)
                 ),
-                sortMethod = ResolveSortMethod(bar),
-                sortDirection = ResolveSortDirection(bar),
-                layout = BuildGroupLayout(bar, pad, grid.rowGap),
+                sortMethod = ResolveSortMethod(barFrame),
+                sortDirection = ResolveSortDirection(barFrame),
+                layout = BuildGroupLayout(barFrame, pad, grid.rowGap),
             })
         end
     end)
@@ -531,8 +531,8 @@ local function ReloadCustomDebuffBarImpl(barId)
     if not AK then
         return
     end
-    local bar, barBucket = mod.PAB_GetCustomDebuffBar(barId)
-    if not bar then
+    local barFrame, barBucket = mod.PAB_GetCustomDebuffBar(barId)
+    if not barFrame then
         if customDebuffContainers[barId] then
             RetireContainer(customDebuffContainers[barId], customDebuffDeclared[barId])
         end
@@ -546,17 +546,17 @@ local function ReloadCustomDebuffBarImpl(barId)
     if
         DeferRestrictedApply("custom-debuff-" .. barId, function()
             mod.PAB_ReloadCustomDebuffBar(barId)
-        end, customDebuffContainers[barId], bar.growDirection)
+        end, customDebuffContainers[barId], barFrame.growDirection)
     then
         return
     end
 
     local styleKey = CustomDebuffStyleKey(barId)
-    AK.styles[styleKey] = BuildStyle(false, bar)
+    AK.styles[styleKey] = BuildStyle(false, barFrame)
     -- Required for the same reason as ReloadCustomBuffBarImpl above.
     AK.RestyleSoon(styleKey)
 
-    local grid = ComputeGrid(false, bar)
+    local grid = ComputeGrid(false, barFrame)
     local hostFrame = customDebuffParents[barId]
     local fresh = false
     if not hostFrame then
@@ -573,10 +573,10 @@ local function ReloadCustomDebuffBarImpl(barId)
             mod.PAB_ReloadCustomDebuffBar(barId)
         end)
     else
-        ApplyCustomBarPosition(hostFrame, bar, barId, false, grid)
+        ApplyCustomBarPosition(hostFrame, barFrame, barId, false, grid)
     end
     -- Same effective-render verdict as the custom buff reload above.
-    local barActive = mod.PAB_BarActive(bar, barBucket)
+    local barActive = mod.PAB_BarActive(barFrame, barBucket)
     SetParentShownSafe("custom-debuff-" .. barId, hostFrame, barActive, function()
         mod.PAB_ReloadCustomDebuffBar(barId)
     end)
@@ -588,14 +588,14 @@ local function ReloadCustomDebuffBarImpl(barId)
         hostFrame:SetSize(grid.width, grid.height)
     end
 
-    local chain = DebuffChainFor(bar)
-    local _, specInfo = BuildContainerSpec(hostFrame, bar, grid)
-    local pad = bar.padding or 5
+    local chain = DebuffChainFor(barFrame)
+    local _, specInfo = BuildContainerSpec(hostFrame, barFrame, grid)
+    local pad = barFrame.padding or 5
 
     if not customDebuffContainers[barId] then
         AK.RequestContainer(hostFrame, "player", specInfo, function(boxHolder)
             customDebuffContainers[barId] = boxHolder
-            ApplyContainerAnchorAndGrowth(boxHolder, hostFrame, bar, grid)
+            ApplyContainerAnchorAndGrowth(boxHolder, hostFrame, barFrame, grid)
             customDebuffDeclared[barId] = {}
             ApplyGroupConfig(
                 boxHolder,
@@ -605,13 +605,13 @@ local function ReloadCustomDebuffBarImpl(barId)
                 grid.effectiveMax,
                 pad,
                 grid.rowGap,
-                bar,
-                DebuffCandidateExtras(bar)
+                barFrame,
+                DebuffCandidateExtras(barFrame)
             )
         end)
     else
         local boxHolder = customDebuffContainers[barId]
-        ApplyContainerAnchorAndGrowth(boxHolder, hostFrame, bar, grid)
+        ApplyContainerAnchorAndGrowth(boxHolder, hostFrame, barFrame, grid)
         ApplyGroupConfig(
             boxHolder,
             chain,
@@ -620,8 +620,8 @@ local function ReloadCustomDebuffBarImpl(barId)
             grid.effectiveMax,
             pad,
             grid.rowGap,
-            bar,
-            DebuffCandidateExtras(bar)
+            barFrame,
+            DebuffCandidateExtras(barFrame)
         )
     end
 end
@@ -644,16 +644,16 @@ local function ReloadAllCustomBarsImpl()
     local presentBuff, presentDebuff = {}, {}
     local buffList = mod.PAB_CustomBuffBars()
     if buffList then
-        for idx = 1, #buffList do
-            presentBuff[buffList[idx].id] = true
-            mod.PAB_ReloadCustomBuffBar(buffList[idx].id)
+        for index = 1, #buffList do
+            presentBuff[buffList[index].id] = true
+            mod.PAB_ReloadCustomBuffBar(buffList[index].id)
         end
     end
     local debuffList = mod.PAB_CustomDebuffBars()
     if debuffList then
-        for idx = 1, #debuffList do
-            presentDebuff[debuffList[idx].id] = true
-            mod.PAB_ReloadCustomDebuffBar(debuffList[idx].id)
+        for index = 1, #debuffList do
+            presentDebuff[debuffList[index].id] = true
+            mod.PAB_ReloadCustomDebuffBar(debuffList[index].id)
         end
     end
     local s = PAB()
@@ -662,16 +662,16 @@ local function ReloadAllCustomBarsImpl()
         for _, b in pairs(st) do
             local bl = b.buffBars
             if bl then
-                for idx = 1, #bl do
-                    presentBuff[bl[idx].id] = true
-                    mod.PAB_ReloadCustomBuffBar(bl[idx].id)
+                for index = 1, #bl do
+                    presentBuff[bl[index].id] = true
+                    mod.PAB_ReloadCustomBuffBar(bl[index].id)
                 end
             end
             local dl = b.debuffBars
             if dl then
-                for idx = 1, #dl do
-                    presentDebuff[dl[idx].id] = true
-                    mod.PAB_ReloadCustomDebuffBar(dl[idx].id)
+                for index = 1, #dl do
+                    presentDebuff[dl[index].id] = true
+                    mod.PAB_ReloadCustomDebuffBar(dl[index].id)
                 end
             end
         end

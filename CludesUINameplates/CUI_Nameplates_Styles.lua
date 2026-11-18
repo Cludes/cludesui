@@ -208,9 +208,9 @@ end
 -- One side of it ("left" | "right"), for the many places that gap a single
 -- element off one edge of the bar.
 function mod.NP_ClassicSide(side, k)
-    local l, r = mod.NP_ClassicBarReserve(k)
+    local l, region = mod.NP_ClassicBarReserve(k)
     if side == "right" then
-        return r
+        return region
     end
     return l
 end
@@ -226,14 +226,14 @@ function mod.NP_ClassicCastLayout(footprintW, kh, kc)
 end
 -- Three pieces of a sheet on `host` (its art cut at the window's two ends);
 -- created once, seated by NP_SeatClassicBorder.
-function mod.NP_ClassicBorderPieces(host, sheet)
+function mod.NP_ClassicBorderPieces(owner, sheet)
     local p = { sheet = sheet }
-    for idx = 1, 3 do
-        local t = host:CreateTexture(nil, "OVERLAY", nil, 0)
+    for index = 1, 3 do
+        local t = owner:CreateTexture(nil, "OVERLAY", nil, 0)
         t:SetTexture(sheet.file)
         t:SetSnapToPixelGrid(false)
         t:SetTexelSnappingBias(0)
-        p[idx] = t
+        p[index] = t
     end
     p[1]:SetTexCoord(sheet.l, sheet.c1, sheet.t, sheet.b)
     p[2]:SetTexCoord(sheet.c1, sheet.c2, sheet.t, sheet.b)
@@ -243,23 +243,23 @@ end
 -- Seats the pieces round `bar` at k (the bar's height): both plates keep
 -- the art's own proportion, the window stretches between them. Memoized;
 -- every layout pass may call it.
-function mod.NP_SeatClassicBorder(p, bar, k)
-    if p._k == k and p._bar == bar then
+function mod.NP_SeatClassicBorder(p, barFrame, k)
+    if p._k == k and p._bar == barFrame then
         return
     end
-    p._k, p._bar = k, bar
+    p._k, p._bar = k, barFrame
     local C = mod.NP_CLASSIC
     local sheet = p.sheet
-    local l, r = sheet.reachL * k, sheet.reachR * k
+    local l, region = sheet.reachL * k, sheet.reachR * k
     local t, b = C.top * k, C.bottom * k
-    for idx = 1, 3 do
-        p[idx]:ClearAllPoints()
+    for index = 1, 3 do
+        p[index]:ClearAllPoints()
     end
-    p[1]:SetPoint("TOPLEFT", bar, "TOPLEFT", -l, t)
-    p[1]:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", -l, -b)
+    p[1]:SetPoint("TOPLEFT", barFrame, "TOPLEFT", -l, t)
+    p[1]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", -l, -b)
     p[1]:SetWidth(sheet.capL * k)
-    p[3]:SetPoint("TOPRIGHT", bar, "TOPRIGHT", r, t)
-    p[3]:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", r, -b)
+    p[3]:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", region, t)
+    p[3]:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", region, -b)
     p[3]:SetWidth(sheet.capR * k)
     p[2]:SetPoint("TOPLEFT", p[1], "TOPRIGHT", 0, 0)
     p[2]:SetPoint("BOTTOMRIGHT", p[3], "BOTTOMLEFT", 0, 0)
@@ -274,15 +274,15 @@ function mod.NP_ApplyClassicHealthArt(backing, hgt)
         return
     end
     local C = mod.NP_CLASSIC
-    local host = backing._classicHealthHost
-    if not host then
-        host = CreateFrame("Frame", nil, health)
-        host:SetAllPoints(health)
-        host:EnableMouse(false)
-        backing._classicHealthHost = host
-        backing._classicHealthArt = mod.NP_ClassicBorderPieces(host, C.health)
+    local owner = backing._classicHealthHost
+    if not owner then
+        owner = CreateFrame("Frame", nil, health)
+        owner:SetAllPoints(health)
+        owner:EnableMouse(false)
+        backing._classicHealthHost = owner
+        backing._classicHealthArt = mod.NP_ClassicBorderPieces(owner, C.health)
     end
-    host:SetFrameLevel(health:GetFrameLevel() + 6)
+    owner:SetFrameLevel(health:GetFrameLevel() + 6)
     local k = hgt or health:GetHeight()
     mod.NP_SeatClassicBorder(backing._classicHealthArt, health, k)
     -- The art carries a level plate, so it must never render empty: a plate
@@ -297,7 +297,7 @@ function mod.NP_ApplyClassicHealthArt(backing, hgt)
             tf:EnableMouse(false)
             backing._classicLevelHost = tf
         end
-        tf:SetFrameLevel(host:GetFrameLevel() + 1)
+        tf:SetFrameLevel(owner:GetFrameLevel() + 1)
     end
     local fontStr, sk = backing._classicLevel, backing._classicSkull
     if not fontStr then
@@ -347,7 +347,7 @@ function mod.NP_UpdateClassicLevel(backing)
     fontStr:SetText(mod.GetUnitLevelText(unitToken))
     -- The stock yellow, and the difficulty colour only where difficulty means
     -- something: a unit you cannot attack is never colour-ranked.
-    local r, g, b = 1, 0.82, 0
+    local region, g, b = 1, 0.82, 0
     local canAttack = UnitCanAttack("player", unitToken)
     if issecretvalue and issecretvalue(canAttack) then
         canAttack = false
@@ -357,11 +357,11 @@ function mod.NP_UpdateClassicLevel(backing)
         if not (issecretvalue and issecretvalue(diff)) and GetDifficultyColor then
             local color = GetDifficultyColor(diff)
             if color then
-                r, g, b = color.r, color.g, color.b
+                region, g, b = color.r, color.g, color.b
             end
         end
     end
-    fontStr:SetTextColor(r, g, b, 1)
+    fontStr:SetTextColor(region, g, b, 1)
     fontStr:Show()
 end
 -- The vanilla cast border round a plate's cast bar, with the spell icon
@@ -377,15 +377,15 @@ function mod.NP_ApplyClassicCastArt(backing, castH)
     end
     local C = mod.NP_CLASSIC
     local k = castH or cast:GetHeight()
-    local host = backing._classicCastHost
-    if not host then
-        host = CreateFrame("Frame", nil, cast)
-        host:SetAllPoints(cast)
-        host:EnableMouse(false)
-        backing._classicCastHost = host
-        backing._classicCastArt = mod.NP_ClassicBorderPieces(host, C.cast)
+    local owner = backing._classicCastHost
+    if not owner then
+        owner = CreateFrame("Frame", nil, cast)
+        owner:SetAllPoints(cast)
+        owner:EnableMouse(false)
+        backing._classicCastHost = owner
+        backing._classicCastArt = mod.NP_ClassicBorderPieces(owner, C.cast)
     end
-    host:SetFrameLevel(cast:GetFrameLevel() + 2)
+    owner:SetFrameLevel(cast:GetFrameLevel() + 2)
     mod.NP_SeatClassicBorder(backing._classicCastArt, cast, k)
     -- The pool builds the cast bar BEFORE its icon frame, spark, shield and
     -- seam line, and lays the bar out in between, so the first pass through
@@ -411,7 +411,7 @@ function mod.NP_ApplyClassicCastArt(backing, castH)
     -- the cast bar is a plain child of the plate, so the host's own level
     -- alone would drop the icon below the health bar rather than lift it.
     backing.castIconFrame:SetFrameLevel(
-        math.max(host:GetFrameLevel() + 1, backing.health:GetFrameLevel() + 1)
+        math.max(owner:GetFrameLevel() + 1, backing.health:GetFrameLevel() + 1)
     )
     mod.NP_ClassicSpark(backing, k)
     backing.castShield:SetTexture(C.shield)
@@ -510,19 +510,19 @@ mod._npShadeClear = CreateColor(0, 0, 0, 0)
 mod._npShadeTop = CreateColor(0, 0, 0, 0.55)
 mod._npShadeBottom = CreateColor(0, 0, 0, 0.30)
 mod._npShadeEnd = CreateColor(0, 0, 0, 0.35)
-function mod.NP_BlizzBarShadow(bar, hgt, mask)
-    local sh = bar._blizzShadow
+function mod.NP_BlizzBarShadow(barFrame, hgt, mask)
+    local sh = barFrame._blizzShadow
     if not sh then
         sh = {}
-        bar._blizzShadow = sh
-        for idx = 1, 4 do
-            local texture = bar:CreateTexture(nil, "OVERLAY", nil, -3)
+        barFrame._blizzShadow = sh
+        for index = 1, 4 do
+            local texture = barFrame:CreateTexture(nil, "OVERLAY", nil, -3)
             texture:SetTexture("Interface\\Buttons\\WHITE8X8")
             if texture.SetSnapToPixelGrid then
                 texture:SetSnapToPixelGrid(false)
                 texture:SetTexelSnappingBias(0)
             end
-            sh[idx] = texture
+            sh[index] = texture
         end
         -- VERTICAL runs bottom -> top, HORIZONTAL left -> right.
         sh[1]:SetGradient("VERTICAL", mod._npShadeClear, mod._npShadeTop)
@@ -530,7 +530,7 @@ function mod.NP_BlizzBarShadow(bar, hgt, mask)
         sh[3]:SetGradient("HORIZONTAL", mod._npShadeEnd, mod._npShadeClear)
         sh[4]:SetGradient("HORIZONTAL", mod._npShadeClear, mod._npShadeEnd)
     end
-    hgt = hgt or bar:GetHeight() or 10
+    hgt = hgt or barFrame:GetHeight() or 10
     -- The strips hang off the bar's edges, so only the height sizes them:
     -- one compare per plate show once laid out (plates show constantly).
     if sh._h ~= hgt then
@@ -542,32 +542,32 @@ function mod.NP_BlizzBarShadow(bar, hgt, mask)
         -- The bottom strip sits on the fill's bottom edge (ns.NP_SeatBarMask).
         local lift = mod.NP_Forever() and mod.NP_FOREVER_FILL_LIFT or 0
         sh[1]:ClearAllPoints()
-        sh[1]:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
-        sh[1]:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
+        sh[1]:SetPoint("TOPLEFT", barFrame, "TOPLEFT", 0, 0)
+        sh[1]:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", 0, 0)
         sh[1]:SetHeight(topY)
         sh[2]:ClearAllPoints()
-        sh[2]:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, lift)
-        sh[2]:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, lift)
+        sh[2]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", 0, lift)
+        sh[2]:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", 0, lift)
         sh[2]:SetHeight(bottom)
         sh[3]:ClearAllPoints()
-        sh[3]:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
-        sh[3]:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
+        sh[3]:SetPoint("TOPLEFT", barFrame, "TOPLEFT", 0, 0)
+        sh[3]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", 0, 0)
         sh[3]:SetWidth(ends)
         sh[4]:ClearAllPoints()
-        sh[4]:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
-        sh[4]:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+        sh[4]:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", 0, 0)
+        sh[4]:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", 0, 0)
         sh[4]:SetWidth(ends)
-        for idx = 1, 4 do
-            sh[idx]:Show()
+        for index = 1, 4 do
+            sh[index]:Show()
         end
     end
     -- Bar-shape mask, seated once per mask object.
     if mask and sh._mask ~= mask then
-        for idx = 1, 4 do
+        for index = 1, 4 do
             if sh._mask then
-                pcall(sh[idx].RemoveMaskTexture, sh[idx], sh._mask)
+                pcall(sh[index].RemoveMaskTexture, sh[index], sh._mask)
             end
-            sh[idx]:AddMaskTexture(mask)
+            sh[index]:AddMaskTexture(mask)
         end
         sh._mask = mask
     end
@@ -616,11 +616,11 @@ function mod.NP_ApplyBlizzBarArt(backing)
         backing._blizzBarMask = mask
     end
     if mask then
-        local fill = health:GetStatusBarTexture()
-        if fill and backing._blizzMaskedFill ~= fill then
-            pcall(fill.RemoveMaskTexture, fill, mask)
-            fill:AddMaskTexture(mask)
-            backing._blizzMaskedFill = fill
+        local fillTex = health:GetStatusBarTexture()
+        if fillTex and backing._blizzMaskedFill ~= fillTex then
+            pcall(fillTex.RemoveMaskTexture, fillTex, mask)
+            fillTex:AddMaskTexture(mask)
+            backing._blizzMaskedFill = fillTex
         end
         if backing.highlight and not backing._blizzMaskedHover then
             backing.highlight:AddMaskTexture(mask)
@@ -644,8 +644,8 @@ end
 -- frame. Our own frames, so the state lives on them: one-time structure,
 -- size-memoized ring geometry. The engine cells get the same look through
 -- AuraKit's blizzRoundArt lane (CUI_Nameplates_AuraContainers BuildNPStyle).
-function mod.NP_ApplyBlizzIconArt(widget, icon, wid, hgt)
-    if not (widget and icon) then
+function mod.NP_ApplyBlizzIconArt(widget, iconTex, wid, hgt)
+    if not (widget and iconTex) then
         return
     end
     local B = mod.NP_BLIZZ
@@ -657,7 +657,7 @@ function mod.NP_ApplyBlizzIconArt(widget, icon, wid, hgt)
         local mask = widget:CreateMaskTexture()
         mask:SetAtlas(B.auraMask)
         mask:SetAllPoints(widget)
-        icon:AddMaskTexture(mask)
+        iconTex:AddMaskTexture(mask)
         widget._blizzIconMask = mask
         ring = widget:CreateTexture(nil, "OVERLAY", nil, 5)
         mod.NP_StockAtlas(ring, B.auraRing)
@@ -691,21 +691,21 @@ function mod.NP_ApplyClassicIconArt(widget, wid, hgt)
     if not mod.NP_AtlasOK(atlas) then
         return
     end
-    local host = widget._classicIconHost
+    local owner = widget._classicIconHost
     local border = widget._classicIconBorder
     if not border then
-        host = Pool.CreateFrame("Frame", nil, widget)
-        host:SetAllPoints(widget)
-        host:EnableMouse(false)
-        border = host:CreateTexture(nil, "OVERLAY", nil, 5)
+        owner = Pool.CreateFrame("Frame", nil, widget)
+        owner:SetAllPoints(widget)
+        owner:EnableMouse(false)
+        border = owner:CreateTexture(nil, "OVERLAY", nil, 5)
         border:SetAtlas(atlas)
         border:SetSnapToPixelGrid(false)
         border:SetTexelSnappingBias(0)
-        widget._classicIconHost = host
+        widget._classicIconHost = owner
         widget._classicIconBorder = border
     end
     -- Re-asserted each pass: the host follows any relevel of its frame.
-    host:SetFrameLevel(widget:GetFrameLevel() + 2)
+    owner:SetFrameLevel(widget:GetFrameLevel() + 2)
     wid = wid or widget:GetWidth()
     hgt = hgt or widget:GetHeight()
     if widget._classicIconW ~= wid or widget._classicIconH ~= hgt then
@@ -911,15 +911,15 @@ function mod.NP_UpdateForeverLevel(backing)
         sk:Show()
     else
         sk:Hide()
-        local r, g, b
+        local region, g, b
         if not secret then
-            r, g, b = CludesUI.GetLevelColor(unitToken, lvl)
+            region, g, b = CludesUI.GetLevelColor(unitToken, lvl)
         end
-        if not r then
-            r, g, b = 1, 0.82, 0
+        if not region then
+            region, g, b = 1, 0.82, 0
         end
         fontStr:SetText(lvl)
-        fontStr:SetTextColor(r, g, b, 1)
+        fontStr:SetTextColor(region, g, b, 1)
         fontStr:Show()
     end
     box:Show()
@@ -962,8 +962,8 @@ if CludesUI.IS_FOREVER == true then
     mod._npFvLevelEv = CreateFrame("Frame")
 end
 function mod.NP_ForeverWatchLevels()
-    local f = mod._npFvLevelEv
-    if not f then
+    local frame = mod._npFvLevelEv
+    if not frame then
         return false
     end
     local enabled = mod.NP_ForeverBoxOn()
@@ -972,15 +972,15 @@ function mod.NP_ForeverWatchLevels()
     end
     mod._npFvLevelArmed = enabled
     if not enabled then
-        f:UnregisterAllEvents()
+        frame:UnregisterAllEvents()
         return true
     end
-    f:RegisterEvent("UNIT_LEVEL")
-    f:RegisterEvent("PLAYER_LEVEL_CHANGED")
-    if f:GetScript("OnEvent") then
+    frame:RegisterEvent("UNIT_LEVEL")
+    frame:RegisterEvent("PLAYER_LEVEL_CHANGED")
+    if frame:GetScript("OnEvent") then
         return true
     end
-    f:SetScript("OnEvent", function(_, evt, unitToken)
+    frame:SetScript("OnEvent", function(_, evt, unitToken)
         if evt == "PLAYER_LEVEL_CHANGED" then
             mod.NP_ForeverSweepLevels()
             return
@@ -1253,15 +1253,15 @@ function mod.NP_ApplyRounding(backing, part, cornersOnly)
             and last.shape == shape
         if same then
             local lt, lr = last.tex, last.roots
-            for idx = 1, 9 do
-                if lt[idx] ~= HP_TEX[idx] then
+            for index = 1, 9 do
+                if lt[index] ~= HP_TEX[index] then
                     same = false
                     break
                 end
             end
             if same then
-                for idx = 1, 6 do
-                    if lr[idx] ~= HP_ROOTS[idx] then
+                for index = 1, 6 do
+                    if lr[index] ~= HP_ROOTS[index] then
                         same = false
                         break
                     end
@@ -1276,11 +1276,11 @@ function mod.NP_ApplyRounding(backing, part, cornersOnly)
             end
             last.radius, last.style, last.shape = radius, style, shape
             local lt, lr = last.tex, last.roots
-            for idx = 1, 9 do
-                lt[idx] = HP_TEX[idx]
+            for index = 1, 9 do
+                lt[index] = HP_TEX[index]
             end
-            for idx = 1, 6 do
-                lr[idx] = HP_ROOTS[idx]
+            for index = 1, 6 do
+                lr[index] = HP_ROOTS[index]
             end
         end
     end
@@ -1300,10 +1300,10 @@ end
 -- The Basic border's colour: its PP strips, plus the rounded ring that stands
 -- in for them while Corner Radius is on (the strips are masked out then). A
 -- hidden border still takes the colour, for its next show.
-function mod.NP_BasicBorderColor(backing, r, g, b, a)
-    CludesUI.PP.SetBorderColor(backing.health, r, g, b, a)
+function mod.NP_BasicBorderColor(backing, region, g, b, a)
+    CludesUI.PP.SetBorderColor(backing.health, region, g, b, a)
     if backing._npRounded then
-        CludesUI.RoundedBorderColor(backing.health, r, g, b, a)
+        CludesUI.RoundedBorderColor(backing.health, region, g, b, a)
     end
 end
 
@@ -1343,8 +1343,8 @@ end
 -- repaints keep it: paint these backgrounds only through SetColorTexture
 -- (SetTexture / SetAtlas go around it). Blizzard Style draws its stock art there.
 do
-    local function PaintTinted(self, r, g, b, a)
-        self:SetVertexColor(r, g, b, a)
+    local function PaintTinted(self, region, g, b, a)
+        self:SetVertexColor(region, g, b, a)
     end
     -- A background's texture path in settings s (nil = flat); the options
     -- preview shares it.
@@ -1359,10 +1359,10 @@ do
         )
     end
     -- One paint of a background that is never swapped (the options preview).
-    function mod.NP_TexBgPaint(texture, filePath, r, g, b, a)
+    function mod.NP_TexBgPaint(texture, filePath, region, g, b, a)
         if filePath then
             texture:SetTexture(filePath)
-            texture:SetVertexColor(r, g, b, a)
+            texture:SetVertexColor(region, g, b, a)
             texture._npTexBgPath = filePath
             return
         end
@@ -1370,7 +1370,7 @@ do
             texture._npTexBgPath = nil
             texture:SetVertexColor(1, 1, 1, 1)
         end
-        texture:SetColorTexture(r, g, b, a)
+        texture:SetColorTexture(region, g, b, a)
     end
     local function Paint(backdrop, filePath, c, a)
         if filePath then
@@ -1423,24 +1423,24 @@ function mod.ApplyAbsorbStyle(backing)
         alpha = mod.NP_ABSORB_STYLE_ALPHA[style] or 0.8
     end
     -- Tint applies to every style EXCEPT Blizzard, which keeps its own coloring.
-    local r, g, b = 1, 1, 1
+    local region, g, b = 1, 1, 1
     if style ~= "blizzard" then
         local c = (p and p.absorbColor) or defaultSet.absorbColor
         -- Per-component default: a partial colour table would throw downstream.
         if c then
-            r, g, b = c.r or 1, c.g or 1, c.b or 1
+            region, g, b = c.r or 1, c.g or 1, c.b or 1
         end
     end
     local mask = backing._absorbMask
-    for _, bar in ipairs({ backing.absorb, backing.absorbForward }) do
-        if bar then
-            bar:SetStatusBarTexture(texture)
-            bar:SetStatusBarColor(r, g, b, alpha)
-            local fill = bar:GetStatusBarTexture()
-            if fill then
-                fill:SetDrawLayer("ARTWORK", 1)
+    for _, barFrame in ipairs({ backing.absorb, backing.absorbForward }) do
+        if barFrame then
+            barFrame:SetStatusBarTexture(texture)
+            barFrame:SetStatusBarColor(region, g, b, alpha)
+            local fillTex = barFrame:GetStatusBarTexture()
+            if fillTex then
+                fillTex:SetDrawLayer("ARTWORK", 1)
                 if mask then
-                    fill:AddMaskTexture(mask)
+                    fillTex:AddMaskTexture(mask)
                 end
             end
         end
@@ -1493,15 +1493,15 @@ function mod.NP_BuildAbsorbBars(ownerFrame, health, mask)
     local fw = Pool.CreateFrame("StatusBar", nil, missClip)
     fw:SetReverseFill(false)
     local ab = Pool.CreateFrame("StatusBar", nil, curClip)
-    for _, bar in ipairs({ ab, fw }) do
-        bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-        local fill = bar:GetStatusBarTexture()
-        if fill and mask then
-            fill:AddMaskTexture(mask)
+    for _, barFrame in ipairs({ ab, fw }) do
+        barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+        local fillTex = barFrame:GetStatusBarTexture()
+        if fillTex and mask then
+            fillTex:AddMaskTexture(mask)
         end
-        bar:SetFrameLevel(lvl)
-        bar:SetMinMaxValues(0, 1)
-        bar:SetValue(0)
+        barFrame:SetFrameLevel(lvl)
+        barFrame:SetMinMaxValues(0, 1)
+        barFrame:SetValue(0)
     end
     -- The clips carry the visibility (the bars inside stay shown): hidden,
     -- their fill-edge anchors cost nothing on a plate with no shield.

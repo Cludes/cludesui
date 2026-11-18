@@ -45,28 +45,28 @@ mod.ApplyBossBorderState = function(self)
     if not s then
         return
     end
-    local r, g, b, a
+    local region, g, b, a
     if self._hovered and s.bossHoverBorderEnabled then
         local c = s.bossHoverBorderColor or { r = 1, g = 1, b = 1 }
-        r, g, b, a = c.r, c.g, c.b, s.bossHoverBorderAlpha or 1
+        region, g, b, a = c.r, c.g, c.b, s.bossHoverBorderAlpha or 1
     elseif self._isTarget and s.bossTargetBorderEnabled then
         local c = s.bossTargetBorderColor or { r = 1, g = 1, b = 1 }
-        r, g, b, a = c.r, c.g, c.b, s.bossTargetBorderAlpha or 1
+        region, g, b, a = c.r, c.g, c.b, s.bossTargetBorderAlpha or 1
     else
         -- The normal colour the reload sweep painted: the same settings table
         -- (the donor's while inheriting, never the unused boss copy).
         local bsrc = mod.UF_BossBorderSettings()
         local c = bsrc.borderColor or { r = 0, g = 0, b = 0 }
-        r, g, b, a = c.r, c.g, c.b, bsrc.borderAlpha or 1
+        region, g, b, a = c.r, c.g, c.b, bsrc.borderAlpha or 1
     end
-    CludesUI.SetBorderStyleColor(self.unifiedBorder, r, g, b, a)
+    CludesUI.SetBorderStyleColor(self.unifiedBorder, region, g, b, a)
     local seam = self.Power and self.Power._pbSeam
     if seam and seam:IsShown() then
-        seam._tex:SetVertexColor(r, g, b, a)
+        seam._tex:SetVertexColor(region, g, b, a)
     end
     local portraitSeam = self._portraitSeparator
     if portraitSeam and portraitSeam:IsShown() then
-        portraitSeam._tex:SetVertexColor(r, g, b, a)
+        portraitSeam._tex:SetVertexColor(region, g, b, a)
     end
 end
 
@@ -204,8 +204,8 @@ local AURA_CROP_HEIGHT = 0.80
 local AURA_ZOOM = 0.07
 -- zoom (optional) overrides the default AURA_ZOOM crop; per-unit/per-category
 -- Icon Zoom values flow in here, defaulting to AURA_ZOOM so unset = unchanged.
-local function SetAuraIconCrop(icon, cropped, wid, hgt, zoom)
-    if not icon then
+local function SetAuraIconCrop(iconTex, cropped, wid, hgt, zoom)
+    if not iconTex then
         return
     end
     local z = zoom or AURA_ZOOM
@@ -213,9 +213,9 @@ local function SetAuraIconCrop(icon, cropped, wid, hgt, zoom)
         local uSpan = 1 - 2 * z
         local vSpan = uSpan * (hgt / wid)
         local v0 = 0.5 - vSpan / 2
-        icon:SetTexCoord(z, 1 - z, v0, 1 - v0)
+        iconTex:SetTexCoord(z, 1 - z, v0, 1 - v0)
     else
-        icon:SetTexCoord(z, 1 - z, z, 1 - z)
+        iconTex:SetTexCoord(z, 1 - z, z, 1 - z)
     end
 end
 -- Exposed so the options live preview can apply the exact same crop math
@@ -963,11 +963,11 @@ local function StyleSimpleFrame(widget, unitToken)
     health:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     health:GetStatusBarTexture():SetHorizTile(false)
 
-    local bg = health:CreateTexture(nil, "BACKGROUND")
-    Pix.Point(bg, "TOPLEFT", health, "TOPLEFT", 0, 0)
-    Pix.Point(bg, "BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
-    bg:SetColorTexture(0, 0, 0, 0.5)
-    health.bg = bg
+    local bgTex = health:CreateTexture(nil, "BACKGROUND")
+    Pix.Point(bgTex, "TOPLEFT", health, "TOPLEFT", 0, 0)
+    Pix.Point(bgTex, "BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
+    bgTex:SetColorTexture(0, 0, 0, 0.5)
+    health.bg = bgTex
 
     if unitToken ~= "pet" then
         health.colorClass = true

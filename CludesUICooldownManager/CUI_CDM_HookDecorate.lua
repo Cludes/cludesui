@@ -568,9 +568,9 @@ local function DecorateFrame(widget, barInfo)
                 local swipeColor = widget.cooldownSwipeColor
                 local isActive = false
                 if swipeColor and type(swipeColor) ~= "number" and swipeColor.GetRGBA then
-                    local r = swipeColor:GetRGBA()
-                    if r and type(r) == "number" and not issecretvalue(r) then
-                        isActive = (r ~= 0)
+                    local region = swipeColor:GetRGBA()
+                    if region and type(region) == "number" and not issecretvalue(region) then
+                        isActive = (region ~= 0)
                     end
                 end
 
@@ -673,26 +673,26 @@ local function DecorateFrame(widget, barInfo)
                     end
                 elseif isActive then
                     -- Active: swipe color (custom, class, or default #FFC660).
-                    local cr, cg, cb, ca
+                    local cr, cg, callback, ca
                     if ss2 and ss2.activeSwipeClassColor then
                         local _, ct = UnitClass("player")
                         if ct then
                             local cc = RAID_CLASS_COLORS[ct]
                             if cc then
-                                cr, cg, cb = cc.r, cc.g, cc.b
+                                cr, cg, callback = cc.r, cc.g, cc.b
                             end
                         end
                     end
                     -- Blizzard Style: the viewer's own active swipe colour
                     -- unless a per-spell active colour is set.
                     if fd._blizzArt and not cr and not (ss2 and ss2.activeSwipeR) then
-                        cr, cg, cb = 1, 0.95, 0.57
+                        cr, cg, callback = 1, 0.95, 0.57
                     end
                     cr = cr or (ss2 and ss2.activeSwipeR) or 1
                     cg = cg or (ss2 and ss2.activeSwipeG) or 0.776
-                    cb = cb or (ss2 and ss2.activeSwipeB) or 0.376
+                    callback = callback or (ss2 and ss2.activeSwipeB) or 0.376
                     ca = (ss2 and ss2.activeSwipeA) or 0.7
-                    cd:SetSwipeColor(cr, cg, cb, ca)
+                    cd:SetSwipeColor(cr, cg, callback, ca)
                     if fd.tex then
                         fd.tex:SetDesaturated(false)
                         fd._desatNA = nil
@@ -1646,13 +1646,13 @@ local function DecorateFrame(widget, barInfo)
                         -- beside them) and records the glow as owed instead.
                         if fd.glowOverlay and not fd._cdStateGlowOn then
                             local style = mod.CdReadyGlowStyle(glow, ss2)
-                            local cr, cg, cb = mod.CdReadyGlowColor(style, ss2)
+                            local cr, cg, callback = mod.CdReadyGlowColor(style, ss2)
                             fd._cdStateGlowOn = mod.StartCdGlow(
                                 fd,
                                 style,
                                 cr,
                                 cg,
-                                cb,
+                                callback,
                                 mod.CdReadyGlowAlpha(ss2)
                             ) ~= nil
                         end
@@ -1737,13 +1737,13 @@ local function DecorateFrame(widget, barInfo)
                                 -- Blackout beside it.
                                 if fd.glowOverlay and not fd._cdStateGlowOn then
                                     local style = mod.CdReadyGlowStyle(self.cse, self.ss2)
-                                    local cr, cg, cb = mod.CdReadyGlowColor(style, self.ss2)
+                                    local cr, cg, callback = mod.CdReadyGlowColor(style, self.ss2)
                                     fd._cdStateGlowOn = mod.StartCdGlow(
                                         fd,
                                         style,
                                         cr,
                                         cg,
-                                        cb,
+                                        callback,
                                         mod.CdReadyGlowAlpha(self.ss2)
                                     ) ~= nil
                                 end
@@ -1799,9 +1799,9 @@ local function DecorateFrame(widget, barInfo)
                 local isAct = false
                 local sc = widget.cooldownSwipeColor
                 if sc and type(sc) ~= "number" and sc.GetRGBA then
-                    local r = sc:GetRGBA()
-                    if type(r) == "number" and not issecretvalue(r) then
-                        isAct = (r ~= 0)
+                    local region = sc:GetRGBA()
+                    if type(region) == "number" and not issecretvalue(region) then
+                        isAct = (region ~= 0)
                     end
                 end
                 if isAct then

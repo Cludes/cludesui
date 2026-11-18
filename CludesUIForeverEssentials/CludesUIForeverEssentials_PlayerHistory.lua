@@ -138,9 +138,9 @@ local function Record(guid, now)
     end
     if count >= MAX_PLAYERS then
         local oldest, at
-        for g, r in pairs(players) do
-            if not open[g] and not notes[g] and (not at or r.lastSeen < at) then
-                oldest, at = g, r.lastSeen
+        for g, region in pairs(players) do
+            if not open[g] and not notes[g] and (not at or region.lastSeen < at) then
+                oldest, at = g, region.lastSeen
             end
         end
         if not oldest then
@@ -189,16 +189,16 @@ local function Open(guid, unit, now, raid)
     Learn(rec, unit)
     rec.lastSeen = now
     local st = { at = now, raid = raid, dungeons = 0, raids = 0, extend = false }
-    local r = resume and resume[guid]
+    local region = resume and resume[guid]
     if resume then
         resume[guid] = nil
     end
-    if type(r) == "table" and resumeAt and now - resumeAt <= RESUME and r.at and r.at <= now then
-        st.at, st.raid = r.at, st.raid or r.raid
-        st.inst, st.place, st.instance = r.inst, r.place, r.instance
-        st.dungeons, st.raids = r.dungeons or 0, r.raids or 0
+    if type(region) == "table" and resumeAt and now - resumeAt <= RESUME and region.at and region.at <= now then
+        st.at, st.raid = region.at, st.raid or region.raid
+        st.inst, st.place, st.instance = region.inst, region.place, region.instance
+        st.dungeons, st.raids = region.dungeons or 0, region.raids or 0
         local lastS = rec.sessions[1]
-        st.extend = r.kept == true and lastS ~= nil and lastS.at == r.at
+        st.extend = region.kept == true and lastS ~= nil and lastS.at == region.at
     end
     open[guid] = st
     if curInst then
@@ -583,14 +583,14 @@ local function Refresh()
     end)
     rows = rows or {}
     for i, e in ipairs(list) do
-        local r = rows[i]
-        if not r then
-            r = content:CreateFontString(nil, "OVERLAY")
-            CludesUI.Kit.Font(r, 12, "essentials")
-            r:SetJustifyH("LEFT")
-            r:SetWidth(500)
-            r:SetWordWrap(false)
-            rows[i] = r
+        local region = rows[i]
+        if not region then
+            region = content:CreateFontString(nil, "OVERLAY")
+            CludesUI.Kit.Font(region, 12, "essentials")
+            region:SetJustifyH("LEFT")
+            region:SetWidth(500)
+            region:SetWordWrap(false)
+            rows[i] = region
         end
         local rec, note = e.rec, e.note
         local c = rec.classFile and RAID_CLASS_COLORS[rec.classFile]
@@ -599,8 +599,8 @@ local function Refresh()
             name = c:WrapTextInColorCode(name)
         end
         local tag = note and TAG[note.tag]
-        r:SetPoint("TOPLEFT", 0, -(i - 1) * 16)
-        r:SetText(
+        region:SetPoint("TOPLEFT", 0, -(i - 1) * 16)
+        region:SetText(
             ("%s  |cff9aa6b2%d groups, %d dungeons, %d raids, %s ago|r%s%s"):format(
                 name,
                 rec.groups or 0,
@@ -611,7 +611,7 @@ local function Refresh()
                 note and note.text and ("  |cffffffff" .. note.text .. "|r") or ""
             )
         )
-        r:Show()
+        region:Show()
     end
     for i = #list + 1, #rows do
         rows[i]:Hide()

@@ -265,15 +265,15 @@ do
     -- (the profile merge fills the key, so it is compared, not nil-tested)
     -- keeps Blizzard's own stealable art. Per-type colours always tint.
     mod.GetDispelBorderColor = function(dispelType)
-        local r, g, b = mod.GetDispelGlowColor(dispelType)
+        local region, g, b = mod.GetDispelGlowColor(dispelType)
         if dispelType and mod.GetDispelGlowUseTypeColor() then
-            return r, g, b
+            return region, g, b
         end
-        local d = defaultSet.dispelGlowColor
-        if r == nil or (d and r == d.r and g == d.g and b == d.b) then
+        local skinData = defaultSet.dispelGlowColor
+        if region == nil or (skinData and region == skinData.r and g == skinData.g and b == skinData.b) then
             return nil, nil, nil
         end
-        return r, g, b
+        return region, g, b
     end
 end
 local function GetCastBarHeight()
@@ -379,45 +379,45 @@ end
 -- square anchored to a cast BOTTOM corner (top flush with health top) with scale forced to 1
 -- to stay flush to both edges. Frame level fixed at creation (health+1), never touched here.
 function mod.LayoutCastIcon(backing, castH)
-    local icon = backing.castIconFrame
+    local iconTex = backing.castIconFrame
     local onRight = mod.GetCastIconOnRight()
     local xOff = (p and p.castIconOffsetX) or defaultSet.castIconOffsetX
     local yOff = (p and p.castIconOffsetY) or defaultSet.castIconOffsetY
-    icon:ClearAllPoints()
+    iconTex:ClearAllPoints()
     if mod.NP_Classic() then
         -- Classic WoW UI: the icon in the vanilla cast border's plate, a
         -- fixed square at the plate's centre (the border's middle sits half
         -- a sheet row under the bar's); the offsets still nudge it.
         local C = mod.NP_CLASSIC
         local ix, iy = mod.NP_ClassicIconOffset(castH)
-        icon:SetScale(1)
-        icon:SetSize(C.icon * castH, C.icon * castH)
-        icon:SetPoint("CENTER", backing.cast, "LEFT", ix + xOff, iy + yOff)
+        iconTex:SetScale(1)
+        iconTex:SetSize(C.icon * castH, C.icon * castH)
+        iconTex:SetPoint("CENTER", backing.cast, "LEFT", ix + xOff, iy + yOff)
         return
     end
     if mod.GetCastIconFullSize() then
         local side = GetHealthBarHeight() + castH
-        icon:SetScale(1)
+        iconTex:SetScale(1)
         -- Link the icon's three shared edges DIRECTLY to the bar edges (top=health top,
         -- bottom=cast bottom, inner side=bars' outer edge) instead of deriving from its own
         -- size: anchored to the same points the health/cast borders use, they pixel-snap
         -- together and shift as ONE unit instead of rounding independently. SetWidth keeps it
         -- square (height is fixed by the top/bottom anchors = side).
-        icon:SetWidth(side)
+        iconTex:SetWidth(side)
         if onRight then
-            icon:SetPoint("TOPLEFT", backing.health, "TOPRIGHT", xOff, yOff)
-            icon:SetPoint("BOTTOMLEFT", backing.cast, "BOTTOMRIGHT", xOff, yOff)
+            iconTex:SetPoint("TOPLEFT", backing.health, "TOPRIGHT", xOff, yOff)
+            iconTex:SetPoint("BOTTOMLEFT", backing.cast, "BOTTOMRIGHT", xOff, yOff)
         else
-            icon:SetPoint("TOPRIGHT", backing.health, "TOPLEFT", xOff, yOff)
-            icon:SetPoint("BOTTOMRIGHT", backing.cast, "BOTTOMLEFT", xOff, yOff)
+            iconTex:SetPoint("TOPRIGHT", backing.health, "TOPLEFT", xOff, yOff)
+            iconTex:SetPoint("BOTTOMRIGHT", backing.cast, "BOTTOMLEFT", xOff, yOff)
         end
     else
-        icon:SetScale(GetCastIconScale() or 1)
-        icon:SetSize(castH, castH)
+        iconTex:SetScale(GetCastIconScale() or 1)
+        iconTex:SetSize(castH, castH)
         if onRight then
-            icon:SetPoint("TOPLEFT", backing.cast, "TOPRIGHT", xOff, yOff)
+            iconTex:SetPoint("TOPLEFT", backing.cast, "TOPRIGHT", xOff, yOff)
         else
-            icon:SetPoint("TOPRIGHT", backing.cast, "TOPLEFT", xOff, yOff)
+            iconTex:SetPoint("TOPRIGHT", backing.cast, "TOPLEFT", xOff, yOff)
         end
     end
 end
@@ -796,7 +796,7 @@ do
         local saved = p or defaultSet
         for i = 1, #textSlotKeys do
             local s = textSlotKeys[i]
-            local k, f = SK[s], PARTS[s]
+            local k, frame = SK[s], PARTS[s]
             local nm, lv = "%s", "%s"
             if saved[k.nameOn] == true then
                 nm = CludesUI.HexColor(mod.NP_SlotPartColor(s, "name", saved)) .. "%s|r"
@@ -804,9 +804,9 @@ do
             if saved[k.lvlOn] == true then
                 lv = CludesUI.HexColor(mod.NP_SlotPartColor(s, "level", saved)) .. "%s|r"
             end
-            f.ln = lv .. " | " .. nm
-            f.nl = nm .. " | " .. lv
-            f.diff = mod.NP_SlotColorMode(s, saved) ~= "level" and mod.NP_SlotLevelDiff(s, saved)
+            frame.ln = lv .. " | " .. nm
+            frame.nl = nm .. " | " .. lv
+            frame.diff = mod.NP_SlotColorMode(s, saved) ~= "level" and mod.NP_SlotLevelDiff(s, saved)
         end
     end
     -- r, g, b for a readable level: the skull's colour below 0, else the difficulty
@@ -857,12 +857,12 @@ do
     -- of the text keeps the font string's colour.
     function mod.SetNameElementText(fontStr, element, name, unitToken, slotKey)
         if element == "levelName" or element == "nameLevel" then
-            local f = PARTS[slotKey or mod.FindNameSlot()] or PLAIN
-            local lvl = mod.GetUnitLevelText(unitToken, f.diff and "diff")
+            local frame = PARTS[slotKey or mod.FindNameSlot()] or PLAIN
+            local lvl = mod.GetUnitLevelText(unitToken, frame.diff and "diff")
             if element == "levelName" then
-                fontStr:SetFormattedText(f.ln, lvl, name)
+                fontStr:SetFormattedText(frame.ln, lvl, name)
             else
-                fontStr:SetFormattedText(f.nl, name, lvl)
+                fontStr:SetFormattedText(frame.nl, name, lvl)
             end
         elseif element == "level" then
             fontStr:SetFormattedText("%s", mod.GetUnitLevelText(unitToken))
@@ -1088,9 +1088,9 @@ do
     function mod.NP_BarRestWidth(slotKey, saved)
         saved = saved or p
         local wid = mod.GetHealthBarWidth()
-        local bar = mod._npBarTextKeys
-        for i = 1, #bar do
-            local key = bar[i]
+        local barFrame = mod._npBarTextKeys
+        for i = 1, #barFrame do
+            local key = barFrame[i]
             if key ~= slotKey then
                 local el = (saved and saved[key]) or defaultSet[key]
                 if el == "custom" then
@@ -1233,11 +1233,11 @@ do
     -- The last fallback of a slot size with no defaults entry.
     local SLOT_LAST = { rare = 20, quest = 20, faction = 20 }
 
-    local function ClassSlot(d)
-        return (d and d.classificationSlot) or defaultSet.classificationSlot
+    local function ClassSlot(skinData)
+        return (skinData and skinData.classificationSlot) or defaultSet.classificationSlot
     end
-    local function HideQuest(d)
-        local val = d and d.classificationHideQuest
+    local function HideQuest(skinData)
+        local val = skinData and skinData.classificationHideQuest
         if val == nil then
             val = defaultSet.classificationHideQuest
         end
@@ -1246,41 +1246,41 @@ do
     -- Quest Objective Text read from the legacy Replace Quest Icon with Objective key: no
     -- questTextSlot yet, Replace on and the Quest Indicator on in a slot. The text then
     -- takes the indicator's slot and the indicator reads off.
-    local function Legacy(d)
-        if d and d.questTextSlot ~= nil then
+    local function Legacy(skinData)
+        if skinData and skinData.questTextSlot ~= nil then
             return false
         end
-        local r = d and d.replaceQuestIconWithObjective
-        if r == nil then
-            r = defaultSet.replaceQuestIconWithObjective
+        local region = skinData and skinData.replaceQuestIconWithObjective
+        if region == nil then
+            region = defaultSet.replaceQuestIconWithObjective
         end
-        if r ~= true or ClassSlot(d) == "none" then
+        if region ~= true or ClassSlot(skinData) == "none" then
             return false
         end
-        return not HideQuest(d)
+        return not HideQuest(skinData)
     end
-    local function QuestTextSlot(d)
-        local val = d and d.questTextSlot
+    local function QuestTextSlot(skinData)
+        local val = skinData and skinData.questTextSlot
         if val ~= nil then
             return val
         end
-        if Legacy(d) then
-            return ClassSlot(d)
+        if Legacy(skinData) then
+            return ClassSlot(skinData)
         end
         return "none"
     end
-    local function ElementSlot(elem, d)
+    local function ElementSlot(elem, skinData)
         if elem == "questtext" then
-            return QuestTextSlot(d)
+            return QuestTextSlot(skinData)
         end
-        if elem == "faction" and d and d.classificationIncludeFaction then
-            return ClassSlot(d)
+        if elem == "faction" and skinData and skinData.classificationIncludeFaction then
+            return ClassSlot(skinData)
         end
         local key = SLOT_KEY[elem]
         if not key then
             return "none"
         end
-        return (d and d[key]) or defaultSet[key]
+        return (skinData and skinData[key]) or defaultSet[key]
     end
 
     function mod.NP_LegacyQuestText(saved)
@@ -1291,11 +1291,11 @@ do
     end
     -- The Quest Indicator half of the Rare/Quest element is on.
     function mod.NP_QuestIconOn(saved)
-        local d = saved or p
-        if ClassSlot(d) == "none" or HideQuest(d) then
+        local skinData = saved or p
+        if ClassSlot(skinData) == "none" or HideQuest(skinData) then
             return false
         end
-        return not Legacy(d)
+        return not Legacy(skinData)
     end
     function mod.NP_ElementSlot(elem, saved)
         return ElementSlot(elem, saved or p)
@@ -1303,27 +1303,27 @@ do
     -- An element's size: its own key, else the size of slot pos (default: its own slot),
     -- else that slot's default; while the slot is None, the element's own fallback.
     function mod.NP_ElementSize(elem, saved, place)
-        local d = saved or p
+        local skinData = saved or p
         local key = SIZE_KEY[elem]
-        local val = key and d and d[key]
+        local val = key and skinData and skinData[key]
         if type(val) == "number" then
             return val
         end
-        place = place or ElementSlot(elem, d)
+        place = place or ElementSlot(elem, skinData)
         if not place or place == "none" then
             local nk = NONE_KEY[elem]
             return (nk and defaultSet[nk]) or NONE_LAST[elem] or 24
         end
         local m = GetSlotKeys(place)
-        return (d and d[m.size]) or defaultSet[m.size] or SLOT_LAST[elem] or 24
+        return (skinData and skinData[m.size]) or defaultSet[m.size] or SLOT_LAST[elem] or 24
     end
     -- Show In Instances of kind "rare" / "quest" / "questtext".
     function mod.NP_ShowInInstances(kind, saved)
-        local d = saved or p
+        local skinData = saved or p
         local key = SII_KEY[kind]
-        local val = key and d and d[key]
+        local val = key and skinData and skinData[key]
         if val == nil then
-            val = d and d.classificationShowInInstances
+            val = skinData and skinData.classificationShowInInstances
             if val == nil then
                 val = defaultSet.classificationShowInInstances
             end
@@ -1331,8 +1331,8 @@ do
         return val and true or false
     end
     function mod.NP_QuestTextSize(saved)
-        local d = saved or p
-        return (d and d.questObjectiveTextSize) or defaultSet.questObjectiveTextSize or 14
+        local skinData = saved or p
+        return (skinData and skinData.questObjectiveTextSize) or defaultSet.questObjectiveTextSize or 14
     end
     -- Writes the Quest Objective Text view into the profile before a change of the
     -- Elite/Rare, Quest or Quest Objective Text boxes: questTextSlot takes its effective
@@ -1404,8 +1404,8 @@ do
     end
     -- Texcoord trim. Cropped scales the vertical span to the rectangle's aspect
     -- so the texture keeps its proportions; uncropped is the original square zoom.
-    function mod.SetAuraIconCrop(icon, cropped, wid, hgt)
-        if not icon then
+    function mod.SetAuraIconCrop(iconTex, cropped, wid, hgt)
+        if not iconTex then
             return
         end
         -- Stock styles draw the whole icon (zoom 0), as the engine cells do.
@@ -1414,9 +1414,9 @@ do
             local uSpan = 1 - 2 * z
             local vSpan = uSpan * (hgt / wid)
             local v0 = 0.5 - vSpan / 2
-            icon:SetTexCoord(z, 1 - z, v0, 1 - v0)
+            iconTex:SetTexCoord(z, 1 - z, v0, 1 - v0)
         else
-            icon:SetTexCoord(z, 1 - z, z, 1 - z)
+            iconTex:SetTexCoord(z, 1 - z, z, 1 - z)
         end
     end
 end
@@ -1685,7 +1685,7 @@ end
 -- Shared by live plates and the preview; the cast bar owns this lazy divider. It
 -- does not follow the target or threat tint, so the border-colour passes that land
 -- here (every threat repaint) change nothing: only a moved style input restyles it.
-function mod.NP_ApplyCastIconSeparator(cast, icon, saved, customOn, strata)
+function mod.NP_ApplyCastIconSeparator(cast, iconTex, saved, customOn, strata)
     local seam = cast._iconSeam
     if
         not (
@@ -1709,7 +1709,7 @@ function mod.NP_ApplyCastIconSeparator(cast, icon, saved, customOn, strata)
         cast._iconSeam = seam
     end
     local st = strata or cast:GetFrameStrata()
-    local lvl = icon:GetFrameLevel() + 5
+    local lvl = iconTex:GetFrameLevel() + 5
     local key = saved.customBorderTexture or defaultSet.customBorderTexture
     local size = saved.customBorderSize or defaultSet.customBorderSize
     local px = CludesUI.BorderPx(saved.customBorderSizePx, size, key)
@@ -1774,14 +1774,14 @@ end
 -- inputs restyle only when one moved; a colour change (Use Target Border Color on the
 -- target) is a plain tint. Off, this is the 1px edge call plus the opt-in gates.
 function mod.ApplyCastIconBorder(backing)
-    local icon = backing and backing.castIconFrame
-    if not icon then
+    local iconTex = backing and backing.castIconFrame
+    if not iconTex then
         return
     end
     if (p and p.castIconSeparator) or backing.cast._iconSeam then
         mod.NP_ApplyCastIconSeparator(
             backing.cast,
-            icon,
+            iconTex,
             p,
             mod.IsCustomBorderEnabled(),
             backing._castOverlayLifted and backing.cast:GetFrameStrata() or "MEDIUM"
@@ -1802,29 +1802,29 @@ function mod.ApplyCastIconBorder(backing)
             CludesUI.ApplyBorderStyle(bf, 0)
             bf:Hide()
         end
-        mod.ApplyFrameIconBorder(icon, mod.GetIconBorderEnabled("cast"))
+        mod.ApplyFrameIconBorder(iconTex, mod.GetIconBorderEnabled("cast"))
         return
     end
-    mod.ApplyFrameIconBorder(icon, false)
+    mod.ApplyFrameIconBorder(iconTex, false)
     if not bf then
         bf = CreateFrame("Frame", nil, backing.cast)
-        bf:SetAllPoints(icon)
+        bf:SetAllPoints(iconTex)
         bf:EnableMouse(false)
         backing._castIconBorder = bf
     end
     local texture = p.customBorderTexture or defaultSet.customBorderTexture
     local sz = p.customBorderSize or defaultSet.customBorderSize
     local px = CludesUI.BorderPx(p.customBorderSizePx, sz, texture)
-    local r, g, b, a
+    local region, g, b, a
     if p.castIconTargetBorder and backing._isTarget and mod.GetTargetGlowBorderColor() then
         local c = mod.GetTargetBorderColor()
-        r, g, b, a = c.r, c.g, c.b, 1
+        region, g, b, a = c.r, c.g, c.b, 1
     else
         local c = p.customBorderColor or defaultSet.customBorderColor
-        r, g, b, a = c.r, c.g, c.b, p.customBorderAlpha or defaultSet.customBorderAlpha or 1
+        region, g, b, a = c.r, c.g, c.b, p.customBorderAlpha or defaultSet.customBorderAlpha or 1
     end
     local strata = backing._castOverlayLifted and backing.cast:GetFrameStrata() or "MEDIUM"
-    local lvl = icon:GetFrameLevel() + 3
+    local lvl = iconTex:GetFrameLevel() + 3
     local offX, offY = p.customBorderOffset, p.customBorderOffsetY
     local shX, shY = p.customBorderShiftX, p.customBorderShiftY
     -- Restyle inputs: shown state, strata, level (a strata change resets it), texture,
@@ -1846,7 +1846,7 @@ function mod.ApplyCastIconBorder(backing)
         CludesUI.ApplyBorderStyle(
             bf,
             sz,
-            r,
+            region,
             g,
             b,
             a,
@@ -1866,7 +1866,7 @@ function mod.ApplyCastIconBorder(backing)
         bf._sTex, bf._sSz, bf._sPx = texture, sz, px
         bf._sOX, bf._sOY, bf._sSX, bf._sSY = offX, offY, shX, shY
     else
-        CludesUI.SetBorderStyleColor(bf, r, g, b, a)
+        CludesUI.SetBorderStyleColor(bf, region, g, b, a)
     end
 end
 local function GetBorderColor()
@@ -2110,9 +2110,9 @@ end
 -- Name copies, whose callers re-assert their strata and levels after parenting.
 mod.SlotTextHost = function(self, slotKey, strata)
     if slotKey == "textSlotTop" then
-        local f = self.topTextFrame
-        f:SetFrameStrata(strata)
-        return f
+        local frame = self.topTextFrame
+        frame:SetFrameStrata(strata)
+        return frame
     end
     if strata == "MEDIUM" then
         return self.healthTextFrame
@@ -2122,15 +2122,15 @@ mod.SlotTextHost = function(self, slotKey, strata)
         hosts = {}
         self._slotTextHosts = hosts
     end
-    local f = hosts[slotKey]
-    if not f then
-        f = CreateFrame("Frame", nil, self)
-        f:SetAllPoints(self.health)
-        f:SetFrameLevel(900)
-        hosts[slotKey] = f
+    local frame = hosts[slotKey]
+    if not frame then
+        frame = CreateFrame("Frame", nil, self)
+        frame:SetAllPoints(self.health)
+        frame:SetFrameLevel(900)
+        hosts[slotKey] = frame
     end
-    f:SetFrameStrata(strata)
-    return f
+    frame:SetFrameStrata(strata)
+    return frame
 end
 
 mod.DEFAULT_CAST_LOCKOUT_DURATION = 4
@@ -2226,9 +2226,9 @@ local function PlaceArrow(backing, arrow, side, extent, aw, ah)
         Pix.Point(arrow, "TOP", guest, edge, posX, ah / 2 - gy)
         Pix.Point(arrow, "BOTTOM", guest, edge, posX, -ah / 2 - gy)
     elseif row and ry < a1 and a0 < ry + rh then
-        local icon = mod.NP_FullIconPush(backing, side, a0, a1)
-        if icon > 0 and mod.NP_FullIconPush(backing, side, ry, ry + rh) == 0 then
-            posX = posX + icon
+        local iconTex = mod.NP_FullIconPush(backing, side, a0, a1)
+        if iconTex > 0 and mod.NP_FullIconPush(backing, side, ry, ry + rh) == 0 then
+            posX = posX + iconTex
         end
         local cy = barH / 2 - ry
         local corner = (side == "left") and "BOTTOMLEFT" or "BOTTOMRIGHT"
@@ -2271,11 +2271,11 @@ local function PositionArrowsOutsideAuras(backing)
     local rmPos = GetRaidMarkerPos()
     if (rmPos == "left" or rmPos == "right") and backing.raidFrame and backing.raidFrame:IsShown() then
         local rx, ry = GetAuraSlotOffsets("raidMarker")
-        local r = ArrowSideReach(backing, rmPos, ry, GetRaidMarkerSize(), rx, ah)
+        local region = ArrowSideReach(backing, rmPos, ry, GetRaidMarkerSize(), rx, ah)
         if rmPos == "left" then
-            leftExtent = math.max(leftExtent, r)
+            leftExtent = math.max(leftExtent, region)
         else
-            rightExtent = math.max(rightExtent, r)
+            rightExtent = math.max(rightExtent, region)
         end
     end
     -- The Rare/Quest icon at the size its update set (elite/rare mark or quest icon).
@@ -2283,11 +2283,11 @@ local function PositionArrowsOutsideAuras(backing)
     local castFrame = backing.classFrame
     if (clSlot == "left" or clSlot == "right") and castFrame and castFrame:IsShown() then
         local cx, cy = GetAuraSlotOffsets("classification")
-        local r = ArrowSideReach(backing, clSlot, cy, castFrame._npSz or GetRareEliteIconSize(), cx, ah)
+        local region = ArrowSideReach(backing, clSlot, cy, castFrame._npSz or GetRareEliteIconSize(), cx, ah)
         if clSlot == "left" then
-            leftExtent = math.max(leftExtent, r)
+            leftExtent = math.max(leftExtent, region)
         else
-            rightExtent = math.max(rightExtent, r)
+            rightExtent = math.max(rightExtent, region)
         end
     end
     -- The faction badge (its own, or Rare/Quest + Faction, stacked higher behind a showing
@@ -2302,11 +2302,11 @@ local function PositionArrowsOutsideAuras(backing)
         if p and p.classificationIncludeFaction and castFrame:IsShown() then
             fy = fy + math.floor((castFrame._npSz or GetRareEliteIconSize()) * 0.6 + 0.5)
         end
-        local r = ArrowSideReach(backing, fcSlot, fy, mod.NP_GetFactionIconSize(), fx, ah)
+        local region = ArrowSideReach(backing, fcSlot, fy, mod.NP_GetFactionIconSize(), fx, ah)
         if fcSlot == "left" then
-            leftExtent = math.max(leftExtent, r)
+            leftExtent = math.max(leftExtent, region)
         else
-            rightExtent = math.max(rightExtent, r)
+            rightExtent = math.max(rightExtent, region)
         end
     end
     -- The Quest Objective Text (its text, or the quest icon standing in for it).
@@ -2315,11 +2315,11 @@ local function PositionArrowsOutsideAuras(backing)
         local qtSlot = mod.NP_GetQuestTextSlot()
         if qtSlot == "left" or qtSlot == "right" then
             local qx, qy = GetSlotOffsets(qtSlot)
-            local r = ArrowSideReach(backing, qtSlot, qy, qf._npSz or 0, qx, ah, qf._npW)
+            local region = ArrowSideReach(backing, qtSlot, qy, qf._npSz or 0, qx, ah, qf._npW)
             if qtSlot == "left" then
-                leftExtent = math.max(leftExtent, r)
+                leftExtent = math.max(leftExtent, region)
             else
-                rightExtent = math.max(rightExtent, r)
+                rightExtent = math.max(rightExtent, region)
             end
         end
     end
@@ -2351,7 +2351,7 @@ Inner.IsBorderEnabled, Inner.IsComboHealthText = IsBorderEnabled, IsComboHealthT
 Inner.PANDEMIC_GLOW_STYLES = PANDEMIC_GLOW_STYLES
 Inner.PositionArrowsOutsideAuras = PositionArrowsOutsideAuras
 Inner.SetCombinedHealthText = SetCombinedHealthText
-Inner.SetClassPowerTopPush = function(f)
-    GetClassPowerTopPush = f
+Inner.SetClassPowerTopPush = function(frame)
+    GetClassPowerTopPush = frame
 end
 Inner.broken = false

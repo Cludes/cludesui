@@ -81,9 +81,9 @@ end
 
 -- Calls fn once an entry's item, not yet cached, has loaded.
 function EQT.OnRewardLoad(e, fn)
-    local item = e.itemID and Item:CreateFromItemID(e.itemID)
-    if item and not item:IsItemEmpty() and not item:IsItemDataCached() then
-        item:ContinueOnItemLoad(fn)
+    local entry = e.itemID and Item:CreateFromItemID(e.itemID)
+    if entry and not entry:IsItemEmpty() and not entry:IsItemDataCached() then
+        entry:ContinueOnItemLoad(fn)
     end
 end
 
@@ -117,7 +117,7 @@ end
 local INNER = WIDTH - PAD * 2
 
 -- Wrapped text at x, y in the scrolled content; returns its height.
-local function AddText(value, x, y, size, r, g, b, a)
+local function AddText(value, x, y, size, region, g, b, a)
     nTexts = nTexts + 1
     local text = texts[nTexts]
     if not text then
@@ -129,7 +129,7 @@ local function AddText(value, x, y, size, r, g, b, a)
     Style(text, size)
     text:SetSpacing(2)
     text:SetWidth(INNER - x)
-    text:SetTextColor(r, g, b, a or 1)
+    text:SetTextColor(region, g, b, a or 1)
     text:SetText(value)
     text:ClearAllPoints()
     text:SetPoint("TOPLEFT", content, "TOPLEFT", x, -y)
@@ -139,8 +139,8 @@ end
 
 -- A section heading: small capitals in the accent colour.
 local function AddHeading(value, y)
-    local r, g, b = Accent()
-    return AddText(value:upper(), 0, y, 11, r, g, b) + 6
+    local region, g, b = Accent()
+    return AddText(value:upper(), 0, y, 11, region, g, b) + 6
 end
 
 -- An objective's mark: a tick when done, else a small accent square.
@@ -158,8 +158,8 @@ local function AddMark(done, y)
         mark:SetSize(12, 12)
         mark:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -y)
     else
-        local r, g, b = Accent()
-        mark:SetColorTexture(r, g, b, 0.9)
+        local region, g, b = Accent()
+        mark:SetColorTexture(region, g, b, 0.9)
         mark:SetSize(4, 4)
         mark:SetPoint("TOPLEFT", content, "TOPLEFT", 4, -(y + 5))
     end
@@ -172,8 +172,8 @@ local function TileAtRest(tile)
 end
 
 local function TileEnter(self)
-    local r, g, b = Accent()
-    self.frame:SetColor(r, g, b, 0.6)
+    local region, g, b = Accent()
+    self.frame:SetColor(region, g, b, 0.6)
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     if self.entry.currency then
         GameTooltip:SetQuestLogCurrency(self.entry.type, self.entry.index, questID)
@@ -190,9 +190,9 @@ end
 
 local function NewTile()
     local tile = CreateFrame("Button", nil, content)
-    local bg = tile:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(TILE_BG[1], TILE_BG[2], TILE_BG[3], TILE_BG[4])
+    local bgTex = tile:CreateTexture(nil, "BACKGROUND")
+    bgTex:SetAllPoints()
+    bgTex:SetColorTexture(TILE_BG[1], TILE_BG[2], TILE_BG[3], TILE_BG[4])
     tile.frame = CludesUI.MakeBorder(tile, 1, 1, 1, 0.15)
     local holder = CreateFrame("Frame", nil, tile)
     holder:SetSize(TILE - 8, TILE - 8)
@@ -297,10 +297,10 @@ local function Read(logIndex)
     for _, o in ipairs(q.objectives) do
         parts[#parts + 1] = tostring(o.text) .. (o.finished and "+" or "-")
     end
-    local r = q.rewards
-    if r then
-        parts[#parts + 1] = r.xp .. "/" .. r.money
-        for _, list in ipairs({ r.rewards, r.choices }) do
+    local region = q.rewards
+    if region then
+        parts[#parts + 1] = region.xp .. "/" .. region.money
+        for _, list in ipairs({ region.rewards, region.choices }) do
             for _, e in ipairs(list) do
                 parts[#parts + 1] = table.concat(
                     { tostring(e.name), tostring(e.texture), tostring(e.count), tostring(e.quality) },
@@ -361,26 +361,26 @@ function Refresh(force)
         y = y + AddText(q.description, 0, y, 12, 0.9, 0.9, 0.9) + 16
     end
 
-    local r = q.rewards
-    if r then
+    local region = q.rewards
+    if region then
         y = y + AddHeading(QUEST_REWARDS, y)
-        if r.xp > 0 then
-            y = y + AddText(BONUS_OBJECTIVE_EXPERIENCE_FORMAT:format(r.xp), 0, y, 12, 1, 1, 1) + 4
+        if region.xp > 0 then
+            y = y + AddText(BONUS_OBJECTIVE_EXPERIENCE_FORMAT:format(region.xp), 0, y, 12, 1, 1, 1) + 4
         end
-        if r.money > 0 then
-            y = y + AddText(GetMoneyString(r.money), 0, y, 12, 1, 1, 1) + 4
+        if region.money > 0 then
+            y = y + AddText(GetMoneyString(region.money), 0, y, 12, 1, 1, 1) + 4
         end
-        if #r.rewards > 0 then
-            y = y + 4 + AddTiles(r.rewards, y + 4) + 4
+        if #region.rewards > 0 then
+            y = y + 4 + AddTiles(region.rewards, y + 4) + 4
         end
-        if #r.choices > 0 then
+        if #region.choices > 0 then
             y = y + 8
             y = y + AddText(REWARD_CHOICES, 0, y, 12, dr, dg, db, da) + 6
-            y = y + AddTiles(r.choices, y)
+            y = y + AddTiles(region.choices, y)
         end
         -- An item not cached yet: draw again when it loads, if still on this quest.
         local shownQuest = questID
-        for _, list in ipairs({ r.rewards, r.choices }) do
+        for _, list in ipairs({ region.rewards, region.choices }) do
             for _, e in ipairs(list) do
                 if not e.name then
                     EQT.OnRewardLoad(e, function()
@@ -463,9 +463,9 @@ local function Build()
     end)
     window:Hide()
 
-    local bg = window:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(PANEL_BG[1], PANEL_BG[2], PANEL_BG[3], PANEL_BG[4])
+    local bgTex = window:CreateTexture(nil, "BACKGROUND")
+    bgTex:SetAllPoints()
+    bgTex:SetColorTexture(PANEL_BG[1], PANEL_BG[2], PANEL_BG[3], PANEL_BG[4])
     local c = CludesUI.BORDER_COLOR
     CludesUI.MakeBorder(window, c.r, c.g, c.b, 0.15)
 

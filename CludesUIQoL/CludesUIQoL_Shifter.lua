@@ -278,9 +278,9 @@ end
 local function SavedPosOverlaps(widget, place, castFrame)
     local es, cs = widget:GetEffectiveScale() or 1, castFrame:GetEffectiveScale() or 1
     local ues = UIParent:GetEffectiveScale() or 1
-    local cl, cr, cb, ct =
+    local cl, cr, callback, ct =
         castFrame:GetLeft(), castFrame:GetRight(), castFrame:GetBottom(), castFrame:GetTop()
-    if not (cl and cr and cb and ct and place.point) then
+    if not (cl and cr and callback and ct and place.point) then
         return false
     end
     local wid, hgt = (widget:GetWidth() or 0) * es, (widget:GetHeight() or 0) * es
@@ -288,7 +288,7 @@ local function SavedPosOverlaps(widget, place, castFrame)
     local px, py = PointFrac(place.point)
     local leftX = rx * UIParent:GetWidth() * ues + (place.x or 0) * es - px * wid
     local bottom = ry * UIParent:GetHeight() * ues + (place.y or 0) * es - py * hgt
-    return leftX < cr * cs and leftX + wid > cl * cs and bottom < ct * cs and bottom + hgt > cb * cs
+    return leftX < cr * cs and leftX + wid > cl * cs and bottom < ct * cs and bottom + hgt > callback * cs
 end
 
 -- Offset from one point of a w x h box to another: a mover saves where one
@@ -498,8 +498,8 @@ wheelOverlay:SetFrameStrata("TOOLTIP")
 local WheelArm = { shown = 0 }
 
 local function FindWheelTarget()
-    for idx = 1, #hookedFrames do
-        local e = hookedFrames[idx]
+    for index = 1, #hookedFrames do
+        local e = hookedFrames[index]
         if e.frame:IsVisible() and e.frame:IsMouseOver() then
             return e.frame, e.name
         end
@@ -512,11 +512,11 @@ local function UpdateWheelOverlay()
         wheelOverlay:Hide()
         return
     end
-    local f, name = FindWheelTarget()
-    wheelTarget, wheelTargetName = f, name
+    local frame, name = FindWheelTarget()
+    wheelTarget, wheelTargetName = frame, name
     wheelOverlay:ClearAllPoints()
-    if f then
-        wheelOverlay:SetAllPoints(f)
+    if frame then
+        wheelOverlay:SetAllPoints(frame)
         wheelOverlay:EnableMouseWheel(true)
     else
         -- Parked but shown: the OnUpdate keeps polling so hovering onto a
@@ -680,8 +680,8 @@ end
 local dockedCompanions = {}
 
 local function RedockCompanions()
-    for idx = 1, #dockedCompanions do
-        local c = dockedCompanions[idx]
+    for index = 1, #dockedCompanions do
+        local c = dockedCompanions[index]
         if c.frame:IsShown() and c.shouldDock() then
             if c.liftStrata and not Secured(c.frame) then
                 c.frame:SetFrameStrata("DIALOG")
@@ -1287,8 +1287,8 @@ local function PlaceLootProxy(proxy, details)
     if place then
         proxy:SetPoint(place.point, UIParent, place.relPoint, place.x, place.y)
     elseif details.defPos then
-        local d = details.defPos
-        proxy:SetPoint(d[1], UIParent, d[2], d[3], d[4])
+        local skinData = details.defPos
+        proxy:SetPoint(skinData[1], UIParent, skinData[2], skinData[3], skinData[4])
     else
         proxy:SetPoint("BOTTOM", UIParent, "BOTTOM", 0, details.defY)
     end
@@ -1311,8 +1311,8 @@ end
 -- Each window by its own switch: claimed while it is on with a saved spot,
 -- released otherwise.
 local function InitLootWindows()
-    for idx = 1, #LOOT_WINDOWS do
-        SyncLootWindow(LOOT_WINDOWS[idx])
+    for index = 1, #LOOT_WINDOWS do
+        SyncLootWindow(LOOT_WINDOWS[index])
     end
 end
 
@@ -1322,8 +1322,8 @@ local function RegisterLootUnlockElements()
         return
     end
     local elements = {}
-    for idx = 1, #LOOT_WINDOWS do
-        local details = LOOT_WINDOWS[idx]
+    for index = 1, #LOOT_WINDOWS do
+        local details = LOOT_WINDOWS[index]
         elements[#elements + 1] = MK({
             key = details.key,
             label = details.label,
@@ -1694,12 +1694,12 @@ function CARRIER.PlaceProxy()
         CARRIER.proxy = proxy
     end
     local place = CARRIER.Pos()
-    local d = CARRIER.defPos
+    local skinData = CARRIER.defPos
     proxy:ClearAllPoints()
     if place then
         proxy:SetPoint(place.point, UIParent, place.relPoint, place.x, place.y)
     else
-        proxy:SetPoint(d[1], UIParent, d[2], d[3], d[4])
+        proxy:SetPoint(skinData[1], UIParent, skinData[2], skinData[3], skinData[4])
     end
     return proxy
 end
@@ -1787,13 +1787,13 @@ local function InitShifter()
     if CludesUI.PadGamepadUI() then
         return
     end
-    for idx = 1, #PRELOADED do
-        TryHook(PRELOADED[idx])
+    for index = 1, #PRELOADED do
+        TryHook(PRELOADED[index])
     end
     for addon, frameList in pairs(ADDON_FRAMES) do
         if C_AddOns.IsAddOnLoaded(addon) then
-            for idx = 1, #frameList do
-                TryHook(frameList[idx])
+            for index = 1, #frameList do
+                TryHook(frameList[index])
             end
         else
             pendingAddons[addon] = frameList
@@ -1833,8 +1833,8 @@ eventFrame:SetScript("OnEvent", function(self, evt, arg1)
         local frameList = pendingAddons[arg1]
         if frameList then
             pendingAddons[arg1] = nil
-            for idx = 1, #frameList do
-                TryHook(frameList[idx])
+            for index = 1, #frameList do
+                TryHook(frameList[index])
             end
             if not next(pendingAddons) then
                 self:UnregisterEvent("ADDON_LOADED")
@@ -1872,8 +1872,8 @@ function CludesUI._ResetShifterPositions()
     wipe(tempScale)
     -- No saved spots remain: the loot windows, the capture bars, the top bar
     -- and the flag carriers take Blizzard's own anchors back.
-    for idx = 1, #LOOT_WINDOWS do
-        ReleaseLootWindow(LOOT_WINDOWS[idx].name)
+    for index = 1, #LOOT_WINDOWS do
+        ReleaseLootWindow(LOOT_WINDOWS[index].name)
     end
     SyncTopBar()
     CARRIER.Sync()

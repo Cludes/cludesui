@@ -189,9 +189,9 @@ local function BlockColorOf(b)
         return mod.BlockTextDynamic(b.type)
     end
     if b.useClassColor then
-        local r, g, bl = ClassColour()
-        if r then
-            return r, g, bl
+        local region, g, bl = ClassColour()
+        if region then
+            return region, g, bl
         end
     elseif b.useAccentColor then
         return mod.GetAccent()
@@ -236,8 +236,8 @@ mod.CRESTS = CRESTS
 -- events that name some other currency (payload currencyType; nil = bulk).
 do
     local ids = {}
-    for idx = 1, #CRESTS do
-        ids[CRESTS[idx].id] = true
+    for index = 1, #CRESTS do
+        ids[CRESTS[index].id] = true
     end
     mod.CREST_IDS = ids
 end
@@ -311,32 +311,32 @@ function mod.BlockHasIconStyle(bType)
 end
 
 -- Crops a stock item/spell icon (Interface\Icons, fileID) off its baked-in border.
-function K.CropStockIcon(icon)
-    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+function K.CropStockIcon(iconTex)
+    iconTex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
 end
 
 -- Paints a block icon in its selected style. key defaults to the block type.
 -- Cheap to call from Refresh: the texture is only set when it changes.
-function K.SetBlockIcon(icon, blockCfg, key)
+function K.SetBlockIcon(iconTex, blockCfg, key)
     local art = ICON_ART[key or blockCfg.type]
     local s = blockCfg.settings
     local texture = art.wow and s and s.iconStyle == "wow" and art.wow
     local wanted = texture or art.custom
-    if icon._cuiIconArt == wanted then
+    if iconTex._cuiIconArt == wanted then
         return
     end
-    icon._cuiIconArt = wanted
+    iconTex._cuiIconArt = wanted
     if texture then
-        icon:SetTexture(texture)
+        iconTex:SetTexture(texture)
         local crop = type(texture) == "number" or texture:find("^Interface\\Icons\\")
         if crop then
-            K.CropStockIcon(icon)
+            K.CropStockIcon(iconTex)
         else
-            icon:SetTexCoord(0, 1, 0, 1)
+            iconTex:SetTexCoord(0, 1, 0, 1)
         end
     else
-        icon:SetTexture(art.custom)
-        icon:SetTexCoord(0, 1, 0, 1)
+        iconTex:SetTexture(art.custom)
+        iconTex:SetTexCoord(0, 1, 0, 1)
     end
 end
 
@@ -370,9 +370,9 @@ function mod.BlockIconDefault(bType, prefs)
         local gb = 0.35 + 0.65 * (t / 100)
         return 1, gb, gb
     end
-    local d = ICON_DEFAULTS[bType]
-    if d then
-        return d[1], d[2], d[3]
+    local skinData = ICON_DEFAULTS[bType]
+    if skinData then
+        return skinData[1], skinData[2], skinData[3]
     end
     return 1, 1, 1
 end
@@ -391,8 +391,8 @@ local TEXT_DYNAMIC = {
         if not lvl then
             return 1, 1, 1
         end
-        for idx = 1, #ILVL_BANDS do
-            local band = ILVL_BANDS[idx]
+        for index = 1, #ILVL_BANDS do
+            local band = ILVL_BANDS[index]
             if lvl >= band[1] then
                 local c = CRESTS[band[2]]
                 return c.r, c.g, c.b
@@ -417,9 +417,9 @@ local function IconColorOf(b)
         return mod.BlockIconDefault(b.type, b.settings)
     end
     if b.useIconClassColor then
-        local r, g, bl = ClassColour()
-        if r then
-            return r, g, bl
+        local region, g, bl = ClassColour()
+        if region then
+            return region, g, bl
         end
     elseif b.useIconAccentColor then
         return mod.GetAccent()

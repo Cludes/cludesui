@@ -103,7 +103,7 @@ end
 -- Usable-tint mirror for ForceButtonRefresh, a named function so pcall passes
 -- args instead of allocating a closure per call (runs in the
 -- ACTIONBAR_SLOT_CHANGED storm path). On ns.
-mod._TintUsableIcon = function(icon, action)
+mod._TintUsableIcon = function(iconTex, action)
     local isUsable, noMana
     if C_ActionBar and C_ActionBar.IsUsableAction then
         isUsable, noMana = C_ActionBar.IsUsableAction(action)
@@ -111,11 +111,11 @@ mod._TintUsableIcon = function(icon, action)
         isUsable, noMana = IsUsableAction(action)
     end
     if isUsable then
-        icon:SetVertexColor(1, 1, 1)
+        iconTex:SetVertexColor(1, 1, 1)
     elseif noMana then
-        icon:SetVertexColor(0.5, 0.5, 1.0)
+        iconTex:SetVertexColor(0.5, 0.5, 1.0)
     elseif isUsable ~= nil then
-        icon:SetVertexColor(0.4, 0.4, 0.4)
+        iconTex:SetVertexColor(0.4, 0.4, 0.4)
     end
 end
 
@@ -188,8 +188,8 @@ function mod.RepaintAssistIcons(suggestedSpell)
         if not details.isStance and not details.isPetBar then
             local buttons = barButtons[details.key]
             if buttons then
-                for idx = 1, #buttons do
-                    local button = buttons[idx]
+                for index = 1, #buttons do
+                    local button = buttons[index]
                     -- Raw read: only buttons that have ever hosted the
                     -- assist action carry a spinner entry.
                     local fd = button and mod._eabFD[button]
@@ -203,10 +203,10 @@ function mod.RepaintAssistIcons(suggestedSpell)
                             and C_ActionBar.IsAssistedCombatAction(action)
                         then
                             found = found + 1
-                            local icon = button.icon or button.Icon
-                            if icon then
-                                icon:SetTexture(texture or GetActionTexture(action))
-                                icon:SetShown(true)
+                            local iconTex = button.icon or button.Icon
+                            if iconTex then
+                                iconTex:SetTexture(texture or GetActionTexture(action))
+                                iconTex:SetShown(true)
                             end
                             -- This button's cooldown/charges mirror the suggested
                             -- spell: a suggestion change is content change for THIS
@@ -293,8 +293,8 @@ function mod.RefreshAssistCooldowns(suggestedSpell)
         if not details.isStance and not details.isPetBar then
             local buttons = barButtons[details.key]
             if buttons then
-                for idx = 1, #buttons do
-                    local button = buttons[idx]
+                for index = 1, #buttons do
+                    local button = buttons[index]
                     local fd = button and mod._eabFD[button]
                     if fd and fd.assistSpin then
                         local action = button.GetAttribute and button:GetAttribute("action") or button.action
@@ -325,8 +325,8 @@ function mod.RefreshAssistSpinners()
         if not details.isStance and not details.isPetBar then
             local buttons = barButtons[details.key]
             if buttons then
-                for idx = 1, #buttons do
-                    local button = buttons[idx]
+                for index = 1, #buttons do
+                    local button = buttons[index]
                     -- Raw read (not EFD()): no per-button state allocation
                     -- for buttons that never built a spinner.
                     local fd = button and mod._eabFD[button]
@@ -393,8 +393,8 @@ function mod.UpdateChargeNumbersVisibility(button, chargeCd, cdInfo, chargeInfo)
     -- secret falls to the isOnGCD term (NeverSecret per the docs).
     local zeroCharges = false
     if chargeInfo then
-        local cur = chargeInfo.currentCharges
-        if not (issecretvalue and issecretvalue(cur)) and cur == 0 then
+        local current = chargeInfo.currentCharges
+        if not (issecretvalue and issecretvalue(current)) and current == 0 then
             zeroCharges = true
         end
     end
@@ -433,8 +433,8 @@ function mod.ApplyCooldownNumbersHidden()
     for _, details in ipairs(BAR_CONFIG) do
         local btns = not details.isStance and not details.isPetBar and barButtons[details.key]
         if btns then
-            for idx = 1, #btns do
-                local button = btns[idx]
+            for index = 1, #btns do
+                local button = btns[index]
                 local cd = button.cooldown
                 if cd then
                     cd:SetHideCountdownNumbers(hide)
@@ -466,8 +466,8 @@ function EAB_VTABLE.ForceButtonRefresh(button, action)
     if not action then
         return
     end
-    local icon = button.icon or button.Icon
-    if icon then
+    local iconTex = button.icon or button.Icon
+    if iconTex then
         -- Stamp the icon texture-delta memo with what we actually paint:
         -- ns._cdIconHeal skips its repaint when the memo equals the live
         -- texture, so the memo must always match what is ON the icon. A
@@ -475,22 +475,22 @@ function EAB_VTABLE.ForceButtonRefresh(button, action)
         -- making this paint the BASE texture; left unstamped, the memo
         -- diverges and the SPELL_UPDATE_ICON heal wrong-skips the repaint.
         local texture = GetActionTexture(action)
-        icon:SetTexture(texture)
+        iconTex:SetTexture(texture)
         EFD(button).lastIconTex = texture
         -- Blizzard's Update() HIDES the icon region for empty slots and only
         -- re-Shows on fill, so painting onto a previously-empty slot renders
         -- nothing until hover runs Blizzard's Update. Gate on HasAction --
         -- the slot-filled boolean is the question being asked (the texture
         -- fileID is never secret, per the API docs on every client).
-        icon:SetShown(HasAction(action))
+        iconTex:SetShown(HasAction(action))
         -- Saturated baseline on every content change: desaturation is
         -- event/hover-managed and survives the slot emptying, so new content
         -- would inherit stale desat until mouseover; recompute below
         -- re-applies genuine on-CD desat when the feature is on.
-        if icon.SetDesaturation then
-            icon:SetDesaturation(0)
-        elseif icon.SetDesaturated then
-            icon:SetDesaturated(false)
+        if iconTex.SetDesaturation then
+            iconTex:SetDesaturation(0)
+        elseif iconTex.SetDesaturated then
+            iconTex:SetDesaturated(false)
         end
         -- Usable tint is a separate stale channel: grey from a zero-quantity
         -- item survives the content change, and usability events only fire
@@ -507,7 +507,7 @@ function EAB_VTABLE.ForceButtonRefresh(button, action)
         if rfd.rangeTinted then
             rfd.usableState = nil
         else
-            pcall(mod._TintUsableIcon, icon, action)
+            pcall(mod._TintUsableIcon, iconTex, action)
         end
     end
     if button.Count and C_ActionBar and C_ActionBar.GetActionDisplayCount then
@@ -622,8 +622,8 @@ mod.BarHasBoundKeys = function(details)
     if not prefixText then
         return false
     end
-    for idx = 1, details.count do
-        if GetBindingKey(prefixText .. idx) then
+    for index = 1, details.count do
+        if GetBindingKey(prefixText .. index) then
             return true
         end
     end
@@ -812,13 +812,13 @@ do
                 if (issecretvalue and issecretvalue(haste)) or type(haste) ~= "number" then
                     haste = 0
                 end
-                local len = 1.5 / (1 + haste / 100)
-                if len < 0.75 then
-                    len = 0.75
+                local length = 1.5 / (1 + haste / 100)
+                if length < 0.75 then
+                    length = 0.75
                 end -- engine floor
                 -- Rounded to a 0.05 grid so continuous haste drift does not
                 -- rebuild the curves every frame.
-                local step = floor((len + 0.15) * 20 + 0.5) / 20
+                local step = floor((length + 0.15) * 20 + 0.5) / 20
                 -- The threshold tracks haste NOW, but a running cooldown's
                 -- TOTAL was fixed by the haste in force when it started. A
                 -- haste GAIN mid-GCD (Bloodlust, a large proc) shortens the
@@ -916,8 +916,8 @@ do
             if not desatOn and not alphaOn then
                 return
             end
-            local icon = button.icon
-            if not icon then
+            local iconTex = button.icon
+            if not iconTex then
                 return
             end
             if not action then
@@ -952,15 +952,15 @@ do
             local banked = false
             if active then
                 if useRealCurve and chargeInfo then
-                    local cur = chargeInfo.currentCharges
-                    if not (issecretvalue and issecretvalue(cur)) and type(cur) == "number" and cur > 0 then
+                    local current = chargeInfo.currentCharges
+                    if not (issecretvalue and issecretvalue(current)) and type(current) == "number" and current > 0 then
                         banked = true
                     end
                 elseif not useRealCurve and GetActionCount and MountedNow() then
                     -- Mounted-only: the count shape exists only for vigor
                     -- abilities, so dismounted repaints skip the probe.
-                    local cnt = GetActionCount(action)
-                    if not (issecretvalue and issecretvalue(cnt)) and type(cnt) == "number" and cnt > 0 then
+                    local count = GetActionCount(action)
+                    if not (issecretvalue and issecretvalue(count)) and type(count) == "number" and count > 0 then
                         banked = true
                     end
                 end
@@ -1001,7 +1001,7 @@ do
                     end
                 end
                 -- val may be SECRET: never compare it; SetDesaturation accepts secret numbers.
-                icon:SetDesaturation(val or 0)
+                iconTex:SetDesaturation(val or 0)
             end
             if alphaOn then
                 local alphaSet = false
@@ -1009,20 +1009,20 @@ do
                     local curve = GetCdAlphaCurve(cdAlpha)
                     if curve and durObj.EvaluateTotalDuration then
                         if not useRealCurve or not cdInfo.isOnGCD then
-                            icon:SetAlpha(durObj:EvaluateTotalDuration(curve, 1) or 1)
+                            iconTex:SetAlpha(durObj:EvaluateTotalDuration(curve, 1) or 1)
                             alphaSet = true
                         end
-                    elseif icon.SetAlphaFromBoolean and durObj.IsZero and not cdInfo.isOnGCD then
+                    elseif iconTex.SetAlphaFromBoolean and durObj.IsZero and not cdInfo.isOnGCD then
                         -- Client without the total evaluator. IsZero() is a
                         -- secret boolean; SetAlphaFromBoolean consumes it
                         -- without any Lua comparison. This path has no GCD
                         -- threshold, so it leans on isOnGCD as before.
-                        icon:SetAlphaFromBoolean(durObj:IsZero(), 1, cdAlpha / 100)
+                        iconTex:SetAlphaFromBoolean(durObj:IsZero(), 1, cdAlpha / 100)
                         alphaSet = true
                     end
                 end
                 if not alphaSet then
-                    icon:SetAlpha(1)
+                    iconTex:SetAlpha(1)
                 end
             end
         end
@@ -1044,8 +1044,8 @@ do
             for _, details in ipairs(BAR_CONFIG) do
                 local btns = barButtons[details.key]
                 if btns then
-                    for idx = 1, #btns do
-                        local button = btns[idx]
+                    for index = 1, #btns do
+                        local button = btns[index]
                         if button then
                             if enabled then
                                 RefreshCooldownVisuals(button)
@@ -1222,10 +1222,10 @@ do
             -- secret-tolerant setters; cooldown swipes ride the COOLDOWN branch.
             local _, _, subType = GetActionInfo(action)
             if subType == "assistedcombat" then
-                local icon = button.icon or button.Icon -- same member resolution as ForceButtonRefresh
-                if icon then
-                    icon:SetTexture(GetActionTexture(action))
-                    icon:SetShown(HasAction(action))
+                local iconTex = button.icon or button.Icon -- same member resolution as ForceButtonRefresh
+                if iconTex then
+                    iconTex:SetTexture(GetActionTexture(action))
+                    iconTex:SetShown(HasAction(action))
                 end
             else
                 -- Slot CONTENTS changed while slot number stayed (spec swap,
@@ -1464,14 +1464,14 @@ do
                         local ustate = (isUsable and 1) or (notEnoughMana and 2) or 3
                         if ufd.usableState ~= ustate then
                             ufd.usableState = ustate
-                            local icon = button.icon
-                            if icon then
+                            local iconTex = button.icon
+                            if iconTex then
                                 if ustate == 1 then
-                                    icon:SetVertexColor(1.0, 1.0, 1.0)
+                                    iconTex:SetVertexColor(1.0, 1.0, 1.0)
                                 elseif ustate == 2 then
-                                    icon:SetVertexColor(0.5, 0.5, 1.0)
+                                    iconTex:SetVertexColor(0.5, 0.5, 1.0)
                                 else
-                                    icon:SetVertexColor(0.4, 0.4, 0.4)
+                                    iconTex:SetVertexColor(0.4, 0.4, 0.4)
                                 end
                             end
                         end
@@ -1709,8 +1709,8 @@ do
             local live = false
             wipe(_macCi)
             wipe(_macDur)
-            for idx = 1, #entries do
-                local button = entries[idx]
+            for index = 1, #entries do
+                local button = entries[index]
                 local a = button:GetAttribute("action")
                 local t, ident, sub
                 if a then
@@ -1766,8 +1766,8 @@ do
             elseif not GetSpellCd then
                 live = true
             end
-            for idx = 1, #g do
-                if PushButtonCooldown(g[idx], visOn, ci, gDur) then
+            for index = 1, #g do
+                if PushButtonCooldown(g[index], visOn, ci, gDur) then
                     live = true
                 end
             end
@@ -1817,8 +1817,8 @@ do
                 if ci and ci.isActive and GetSpellCdDur then
                     gDur = GetSpellCdDur(spellRef)
                 end
-                for idx = 1, #g do
-                    if PushButtonCooldown(g[idx], visOn, ci, gDur) then
+                for index = 1, #g do
+                    if PushButtonCooldown(g[index], visOn, ci, gDur) then
                         liveSeen = true
                     end
                 end
@@ -2042,8 +2042,8 @@ do
                         filled = mod._cdFilled
                     end
                     for _, entries in pairs(filled) do
-                        for idx = 1, #entries do
-                            PaintLoC(entries[idx])
+                        for index = 1, #entries do
+                            PaintLoC(entries[index])
                         end
                     end
                 end
@@ -2319,10 +2319,10 @@ do
                             mod._icoFlushFn = function()
                                 mod._icoFlushArmed = nil
                                 mod._icoWalkNext = 0
-                                local d = mod._cdDispatcher
-                                local hgt = d and d:GetScript("OnEvent")
+                                local skinData = mod._cdDispatcher
+                                local hgt = skinData and skinData:GetScript("OnEvent")
                                 if hgt then
-                                    hgt(d, "SPELL_UPDATE_ICON")
+                                    hgt(skinData, "SPELL_UPDATE_ICON")
                                 end
                             end
                         end
@@ -2375,35 +2375,35 @@ do
                     if g1 or g2 or g3 or g4 then
                         local heal = mod._cdIconHeal
                         if g1 then
-                            for idx = 1, #g1 do
-                                heal(g1[idx])
+                            for index = 1, #g1 do
+                                heal(g1[index])
                             end
                         end
                         if g2 then
-                            for idx = 1, #g2 do
-                                heal(g2[idx])
+                            for index = 1, #g2 do
+                                heal(g2[index])
                             end
                         end
                         if g3 then
-                            for idx = 1, #g3 do
-                                heal(g3[idx])
+                            for index = 1, #g3 do
+                                heal(g3[index])
                             end
                         end
                         if g4 then
-                            for idx = 1, #g4 do
-                                heal(g4[idx])
+                            for index = 1, #g4 do
+                                heal(g4[index])
                             end
                         end
                         local res = mod._cdResidual
                         if res then
-                            for idx = 1, #res do
-                                heal(res[idx])
+                            for index = 1, #res do
+                                heal(res[index])
                             end
                         end
                         local mf = mod._cdMacroFast
                         if mf then
-                            for idx = 1, #mf do
-                                heal(mf[idx])
+                            for index = 1, #mf do
+                                heal(mf[index])
                             end
                         end
                         return
@@ -2467,10 +2467,10 @@ do
                                 mod._cdFlushFn = function()
                                     mod._cdFlushArmed = nil
                                     mod._cdWalkNext = 0
-                                    local d = mod._cdDispatcher
-                                    local hgt = d and d:GetScript("OnEvent")
+                                    local skinData = mod._cdDispatcher
+                                    local hgt = skinData and skinData:GetScript("OnEvent")
                                     if hgt then
-                                        hgt(d, "ACTIONBAR_UPDATE_COOLDOWN")
+                                        hgt(skinData, "ACTIONBAR_UPDATE_COOLDOWN")
                                     end
                                 end
                             end
@@ -2541,11 +2541,11 @@ do
                         -- Secret payload fails open to the retire. The filled-list
                         -- dirty above still runs: tier groups key on the RESOLVED
                         -- spell, which this event flips.
-                        local cur = mod._cdCuratedMemo
+                        local current = mod._cdCuratedMemo
                         if issecretvalue and (issecretvalue(arg1) or issecretvalue(arg2)) then
                             mod._cdCuratedDirty = true
-                        elseif cur and arg1 and arg2 and cur[arg1] ~= nil and cur[arg2] == nil then
-                            cur[arg2] = cur[arg1]
+                        elseif current and arg1 and arg2 and current[arg1] ~= nil and current[arg2] == nil then
+                            current[arg2] = current[arg1]
                         end
                     elseif
                         evt == "COOLDOWN_VIEWER_DATA_LOADED"
@@ -2641,10 +2641,10 @@ do
                         C_Timer.After((at - nowTime) + 0.02, function()
                             pend[slot] = nil
                             nextAt[slot] = 0
-                            local d = mod._cdDispatcher
-                            local hgt = d and d:GetScript("OnEvent")
+                            local skinData = mod._cdDispatcher
+                            local hgt = skinData and skinData:GetScript("OnEvent")
                             if hgt then
-                                hgt(d, "ACTIONBAR_SLOT_CHANGED", slot)
+                                hgt(skinData, "ACTIONBAR_SLOT_CHANGED", slot)
                             end
                         end)
                     end
@@ -2882,10 +2882,10 @@ do
                                         mod._infreqFlushFn = function()
                                             mod._infreqFlushArmed = nil
                                             mod._infreqPassAt = nil
-                                            local d = mod._cdDispatcher
-                                            local hgt = d and d:GetScript("OnEvent")
+                                            local skinData = mod._cdDispatcher
+                                            local hgt = skinData and skinData:GetScript("OnEvent")
                                             if hgt then
-                                                hgt(d, mod._infreqFlushEvent)
+                                                hgt(skinData, mod._infreqFlushEvent)
                                             end
                                         end
                                     end
@@ -2969,14 +2969,14 @@ do
                                         local ustate = (isUsable and 1) or (notEnoughMana and 2) or 3
                                         if ufd.usableState ~= ustate then
                                             ufd.usableState = ustate
-                                            local icon = button.icon
-                                            if icon then
+                                            local iconTex = button.icon
+                                            if iconTex then
                                                 if ustate == 1 then
-                                                    icon:SetVertexColor(1.0, 1.0, 1.0)
+                                                    iconTex:SetVertexColor(1.0, 1.0, 1.0)
                                                 elseif ustate == 2 then
-                                                    icon:SetVertexColor(0.5, 0.5, 1.0)
+                                                    iconTex:SetVertexColor(0.5, 0.5, 1.0)
                                                 else
-                                                    icon:SetVertexColor(0.4, 0.4, 0.4)
+                                                    iconTex:SetVertexColor(0.4, 0.4, 0.4)
                                                 end
                                             end
                                         end
@@ -3051,8 +3051,8 @@ do
                         }
                         mod._abOverrideBtns = entries
                     end
-                    for idx = 1, #entries do
-                        ForceCooldownPaint(entries[idx])
+                    for index = 1, #entries do
+                        ForceCooldownPaint(entries[index])
                     end
                 end
             end

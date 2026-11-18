@@ -25,13 +25,13 @@ local ECME, FC, _ecmeFC, cdmBarFrames = Inner.ECME, Inner.FC, Inner._ecmeFC, Inn
 local function GetCDMFont()
     return CludesUI.GetFontPath("cdm")
 end
-local function SetBlizzCDMFont(fontStr, font, size, r, g, b)
+local function SetBlizzCDMFont(fontStr, font, size, region, g, b)
     if not (fontStr and fontStr.SetFont) then
         return
     end
     CludesUI.ApplyIconTextFont(fontStr, font, size, "cdm")
-    if r then
-        fontStr:SetTextColor(r, g, b)
+    if region then
+        fontStr:SetTextColor(region, g, b)
     end
 end
 
@@ -569,8 +569,8 @@ end)
 local lootL, lootB, lootR, lootT = {}, {}, {}, {}
 
 local function AnySecret(...)
-    for idx = 1, select("#", ...) do
-        if issecretvalue((select(idx, ...))) then
+    for index = 1, select("#", ...) do
+        if issecretvalue((select(index, ...))) then
             return true
         end
     end
@@ -579,9 +579,9 @@ end
 
 -- Stores f's screen rect as obstacle n + 1 when it is readable and not empty;
 -- returns the obstacle count.
-local function AddLootRect(f, num)
-    local l, b, wid, hgt = f:GetRect()
-    local s = f:GetEffectiveScale()
+local function AddLootRect(frame, num)
+    local l, b, wid, hgt = frame:GetRect()
+    local s = frame:GetEffectiveScale()
     if AnySecret(l, b, wid, hgt, s) or not l or wid <= 0 or hgt <= 0 then
         return num
     end
@@ -591,18 +591,18 @@ local function AddLootRect(f, num)
 end
 
 -- The same, for a shown frame only.
-local function AddLootObstacle(f, num)
-    local isShown = f:IsShown()
+local function AddLootObstacle(frame, num)
+    local isShown = frame:IsShown()
     if issecretvalue(isShown) or not isShown then
         return num
     end
-    return AddLootRect(f, num)
+    return AddLootRect(frame, num)
 end
 
 -- The column's layout children, except the rolls and the three viewers.
 local function AddLootColumnObstacles(num, skipA, skipB, skipC, skipD, ...)
-    for idx = 1, select("#", ...) do
-        local c = select(idx, ...)
+    for index = 1, select("#", ...) do
+        local c = select(index, ...)
         if not issecretvalue(c) and c ~= skipA and c ~= skipB and c ~= skipC and c ~= skipD then
             local forbidden = c:IsForbidden()
             if not issecretvalue(forbidden) and not forbidden and c.layoutIndex and not c.ignoreInLayout then
@@ -616,23 +616,23 @@ end
 -- Nil when the rolls are not in the column's own anchor; false (asked again
 -- after combat) when a geometry read is secret.
 local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, posX, posY)
-    local col = BottomManagedFrameContainer
-    if not col then
+    local colour = BottomManagedFrameContainer
+    if not colour then
         return nil
     end
     -- Only the column's own anchor: TOP of the rolls to the TOP of the column.
     local hostFrame = widget:GetParent()
     if
         issecretvalue(hostFrame)
-        or hostFrame ~= col
+        or hostFrame ~= colour
         or anchorPoint ~= "TOP"
         or relativePoint ~= "TOP"
-        or relativeTo ~= col
+        or relativeTo ~= colour
     then
         return nil
     end
-    local cs, s, us = col:GetEffectiveScale(), widget:GetEffectiveScale(), UIParent:GetEffectiveScale()
-    local colTop, colBottom, colL, colR = col:GetTop(), col:GetBottom(), col:GetLeft(), col:GetRight()
+    local cs, s, us = colour:GetEffectiveScale(), widget:GetEffectiveScale(), UIParent:GetEffectiveScale()
+    local colTop, colBottom, colL, colR = colour:GetTop(), colour:GetBottom(), colour:GetLeft(), colour:GetRight()
     local wid, hgt, uiTop = widget:GetWidth(), widget:GetHeight(), UIParent:GetTop()
     if AnySecret(cs, s, us, colTop, colBottom, colL, colR, wid, hgt, uiTop) then
         return false
@@ -655,15 +655,15 @@ local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, po
         _G[BLIZZ_CDM_FRAMES.cooldowns],
         _G[BLIZZ_CDM_FRAMES.utility],
         _G[BLIZZ_CDM_FRAMES.buffs],
-        col:GetChildren()
+        colour:GetChildren()
     )
     local p = ECME.db and ECME.db.profile
     local cdmBars = p and p.cdmBars
     local barList = cdmBars and cdmBars.bars
     if barList then
         local focusKick = mod.FOCUSKICK_BAR_KEY
-        for idx = 1, #barList do
-            local edge = barList[idx]
+        for index = 1, #barList do
+            local edge = barList[index]
             if
                 edge.enabled
                 and not edge.isGhostBar
@@ -672,9 +672,9 @@ local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, po
             then
                 -- A bar hidden by its visibility rules keeps its spot (it can
                 -- show while the rolls are up); a cursor bar holds none.
-                local f = cdmBarFrames[edge.key]
-                if f and not f._mouseTrack then
-                    num = AddLootObstacle(f, num)
+                local frame = cdmBarFrames[edge.key]
+                if frame and not frame._mouseTrack then
+                    num = AddLootObstacle(frame, num)
                 end
             end
         end
@@ -691,12 +691,12 @@ local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, po
         local tbb = getTBB and getBars and getBars()
         local cfgs = tbb and tbb.bars
         if cfgs then
-            for idx = 1, #cfgs do
-                local conf = cfgs[idx]
+            for index = 1, #cfgs do
+                local conf = cfgs[index]
                 if conf.enabled ~= false and conf.barVisibility ~= "never" then
-                    local f = getTBB(idx)
-                    if f then
-                        num = AddLootRect(f, num)
+                    local frame = getTBB(index)
+                    if frame then
+                        num = AddLootRect(frame, num)
                     end
                 end
             end
@@ -710,13 +710,13 @@ local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, po
     if abKeys then
         for key in pairs(abKeys) do
             local e = elems[key]
-            local f = e and e.getFrame and e.getFrame(key)
+            local frame = e and e.getFrame and e.getFrame(key)
             if
-                f
+                frame
                 and not (e.isHidden and e.isHidden())
                 and not (key == "StanceBar" and (GetNumShapeshiftForms() or 0) == 0)
             then
-                num = AddLootRect(f, num)
+                num = AddLootRect(frame, num)
             end
         end
     end
@@ -738,19 +738,19 @@ local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, po
     -- counts as covered too, so they never stop closer than that to one
     -- they jumped past. Each pass clears a higher top than the last, so n
     -- passes cover every rise, whatever the obstacles' order.
-    local gap = (col.spacing or 0) * cs
+    local gap = (colour.spacing or 0) * cs
     local reach = 0
     for _ = 1, num do
         local hi
-        for idx = 1, num do
+        for index = 1, num do
             if
-                leftX < lootR[idx]
-                and right > lootL[idx]
-                and topY - height < lootT[idx] + reach
-                and topY > lootB[idx]
-                and not (hi and hi >= lootT[idx])
+                leftX < lootR[index]
+                and right > lootL[index]
+                and topY - height < lootT[index] + reach
+                and topY > lootB[index]
+                and not (hi and hi >= lootT[index])
             then
-                hi = lootT[idx]
+                hi = lootT[index]
             end
         end
         if not hi then
@@ -762,7 +762,7 @@ local function PlaceLootRolls(widget, anchorPoint, relativeTo, relativePoint, po
     if topY > uiTop * us then
         topY = uiTop * us
     end
-    return anchorPoint, col, relativePoint, posX, (topY - colTop * cs) / s
+    return anchorPoint, colour, relativePoint, posX, (topY - colTop * cs) / s
 end
 
 -- Rolls already up follow a CDM bar or Tracking Bar that was rebuilt, moved
@@ -801,8 +801,8 @@ HideBlizzardCDM = function()
             local fc = FC(widget)
             if not fc.hidden then
                 fc.origPoints = {}
-                for idx = 1, widget:GetNumPoints() do
-                    fc.origPoints[idx] = { widget:GetPoint(idx) }
+                for index = 1, widget:GetNumPoints() do
+                    fc.origPoints[index] = { widget:GetPoint(index) }
                 end
                 fc.hidden = true
             end

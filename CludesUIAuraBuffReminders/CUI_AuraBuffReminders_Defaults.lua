@@ -315,15 +315,15 @@ function REMIND.ResolveReminderSound(dk)
 end
 
 function REMIND.HandleAppearSounds(missing)
-    local prev = REMIND._soundPrev or {}
+    local previous = REMIND._soundPrev or {}
     local current = REMIND._soundCur or {}
     wipe(current)
     local primed = REMIND._soundPrimed
-    for idx = 1, #missing do
-        local dk = missing[idx].dismissKey
+    for index = 1, #missing do
+        local dk = missing[index].dismissKey
         if dk and not _dismissedUntilLoad[dk] then
             current[dk] = true
-            if primed and not prev[dk] then
+            if primed and not previous[dk] then
                 local skey = REMIND.ResolveReminderSound(dk)
                 if skey and skey ~= "none" then
                     local paths = CludesUI._groupDeathSoundPaths
@@ -335,7 +335,7 @@ function REMIND.HandleAppearSounds(missing)
             end
         end
     end
-    REMIND._soundPrev, REMIND._soundCur, REMIND._soundPrimed = current, prev, true
+    REMIND._soundPrev, REMIND._soundCur, REMIND._soundPrimed = current, previous, true
 end
 
 Inner._dismissedUntilLoad, Inner.defaults, Inner.GLOW_VIEW = _dismissedUntilLoad, defaultSet, GLOW_VIEW

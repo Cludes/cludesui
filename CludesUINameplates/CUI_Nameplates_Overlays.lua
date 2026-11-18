@@ -164,8 +164,8 @@ do
         if not (scrollBar and scrollBar.IsSpellKnown) then
             return false
         end
-        for idx = 1, #ids do
-            if scrollBar.IsSpellKnown(ids[idx]) then
+        for index = 1, #ids do
+            if scrollBar.IsSpellKnown(ids[index]) then
                 return true
             end
         end
@@ -260,16 +260,16 @@ function mod.EnsureLowHpGlow(backing)
     if backing.lowHpGlowFrame then
         return
     end
-    local f = CreateFrame("Frame", nil, backing)
-    f:SetFrameStrata("BACKGROUND")
-    f:SetFrameLevel(1)
-    f:SetPoint("TOPLEFT", backing.health, "TOPLEFT", -GLOW_EXTEND, GLOW_EXTEND)
-    f:SetPoint("BOTTOMRIGHT", backing.health, "BOTTOMRIGHT", GLOW_EXTEND, -GLOW_EXTEND)
-    backing.lowHpGlowFrame = f
+    local frame = CreateFrame("Frame", nil, backing)
+    frame:SetFrameStrata("BACKGROUND")
+    frame:SetFrameLevel(1)
+    frame:SetPoint("TOPLEFT", backing.health, "TOPLEFT", -GLOW_EXTEND, GLOW_EXTEND)
+    frame:SetPoint("BOTTOMRIGHT", backing.health, "BOTTOMRIGHT", GLOW_EXTEND, -GLOW_EXTEND)
+    backing.lowHpGlowFrame = frame
     local texs = {}
     backing.lowHpGlowTextures = texs
     local function MkTex()
-        local t = f:CreateTexture(nil, "BACKGROUND")
+        local t = frame:CreateTexture(nil, "BACKGROUND")
         -- Dedicated art (not the shared target-glow texture) so brightness can be tuned without touching the target glow.
         t:SetTexture("Interface\\AddOns\\CludesUINameplates\\Media\\execute-glow.png")
         t:SetVertexColor(0, 0, 0, 1) -- black = invisible under ADD blend until the first health eval
@@ -319,7 +319,7 @@ function mod.EnsureLowHpGlow(backing)
     ctr:SetPoint("BOTTOMRIGHT", rgt, "BOTTOMLEFT")
     ctr:SetTexCoord(GLOW_MARGIN, 1 - GLOW_MARGIN, GLOW_MARGIN, 1 - GLOW_MARGIN)
     -- Pulse: C-side alpha loop on the frame; only advances while shown.
-    local ag = f:CreateAnimationGroup()
+    local ag = frame:CreateAnimationGroup()
     ag:SetLooping("BOUNCE")
     local a = ag:CreateAnimation("Alpha")
     a:SetFromAlpha(1)
@@ -359,15 +359,15 @@ function mod.EnsureNearAggroGlow(backing)
     if backing.naGlowFrame then
         return
     end
-    local f = CreateFrame("Frame", nil, backing)
-    f:SetFrameStrata("BACKGROUND")
-    f:SetFrameLevel(1)
-    f:SetPoint("TOPLEFT", backing.health, "TOPLEFT", -GLOW_EXTEND, GLOW_EXTEND)
-    f:SetPoint("BOTTOMRIGHT", backing.health, "BOTTOMRIGHT", GLOW_EXTEND, -GLOW_EXTEND)
-    f:Hide()
-    backing.naGlowFrame = f
+    local frame = CreateFrame("Frame", nil, backing)
+    frame:SetFrameStrata("BACKGROUND")
+    frame:SetFrameLevel(1)
+    frame:SetPoint("TOPLEFT", backing.health, "TOPLEFT", -GLOW_EXTEND, GLOW_EXTEND)
+    frame:SetPoint("BOTTOMRIGHT", backing.health, "BOTTOMRIGHT", GLOW_EXTEND, -GLOW_EXTEND)
+    frame:Hide()
+    backing.naGlowFrame = frame
     local function MkTex()
-        local t = f:CreateTexture(nil, "BACKGROUND")
+        local t = frame:CreateTexture(nil, "BACKGROUND")
         t:SetTexture("Interface\\AddOns\\CludesUINameplates\\Media\\execute-glow.png")
         t:SetVertexColor(1, 0, 0, 1) -- static execute red, full alpha
         t:SetBlendMode("ADD")
@@ -813,13 +813,13 @@ end
 -------------------------------------------------------------------------------
 do
     local RAID, PARTY = {}, { "pet" }
-    for idx = 1, 40 do
-        RAID[#RAID + 1] = "raid" .. idx
-        RAID[#RAID + 1] = "raidpet" .. idx
+    for index = 1, 40 do
+        RAID[#RAID + 1] = "raid" .. index
+        RAID[#RAID + 1] = "raidpet" .. index
     end
-    for idx = 1, 4 do
-        PARTY[#PARTY + 1] = "party" .. idx
-        PARTY[#PARTY + 1] = "partypet" .. idx
+    for index = 1, 4 do
+        PARTY[#PARTY + 1] = "party" .. index
+        PARTY[#PARTY + 1] = "partypet" .. index
     end
     local holderTok -- the group token that last held aggro on the target
     local flush, pending -- the once-per-frame repaint (built on first use) and its plate
@@ -863,45 +863,45 @@ do
         local other
         if isTanking then
             other = 0
-            for idx = 1, last do
-                local u = entries[idx]
+            for index = 1, last do
+                local u = entries[index]
                 if UnitExists(u) then
                     local me = UnitIsUnit(u, "player")
                     if issecretvalue(me) then
                         return false
                     end
                     if not me then
-                        local _, _, _, _, r = UnitDetailedThreatSituation(u, "target")
-                        if issecretvalue(r) then
+                        local _, _, _, _, region = UnitDetailedThreatSituation(u, "target")
+                        if issecretvalue(region) then
                             return false
                         end
-                        if r and r > other then
-                            other = r
+                        if region and region > other then
+                            other = region
                         end
                     end
                 end
             end
         else
             if holderTok then
-                local t, _, _, _, r = UnitDetailedThreatSituation(holderTok, "target")
-                if issecretvalue(t) or issecretvalue(r) then
+                local t, _, _, _, region = UnitDetailedThreatSituation(holderTok, "target")
+                if issecretvalue(t) or issecretvalue(region) then
                     return false
                 end
                 if t then
-                    other = r
+                    other = region
                 end
             end
             if not other then
                 holderTok = nil
-                for idx = 1, last do
-                    local u = entries[idx]
+                for index = 1, last do
+                    local u = entries[index]
                     if UnitExists(u) then
-                        local t, _, _, _, r = UnitDetailedThreatSituation(u, "target")
-                        if issecretvalue(t) or issecretvalue(r) then
+                        local t, _, _, _, region = UnitDetailedThreatSituation(u, "target")
+                        if issecretvalue(t) or issecretvalue(region) then
                             return false
                         end
                         if t then
-                            holderTok, other = u, r
+                            holderTok, other = u, region
                             break
                         end
                     end
@@ -1052,20 +1052,20 @@ local CAST_UNINT_KEYS = {
     Boss = "castingUnintBoss",
 }
 
-local function LayoutCastTint(t, fill, filePath)
+local function LayoutCastTint(t, fillTex, filePath)
     t:ClearAllPoints()
-    t:SetPoint("TOPLEFT", fill, "TOPLEFT", 0, 0)
-    t:SetPoint("BOTTOMRIGHT", fill, "BOTTOMRIGHT", 0, 0)
+    t:SetPoint("TOPLEFT", fillTex, "TOPLEFT", 0, 0)
+    t:SetPoint("BOTTOMRIGHT", fillTex, "BOTTOMRIGHT", 0, 0)
     t:SetTexture(filePath)
 end
 
 -- Anchors and texture follow the fill, which a health texture swap replaces.
 function mod.NP_LayoutCastTints(backing)
-    local fill = backing.health:GetStatusBarTexture()
+    local fillTex = backing.health:GetStatusBarTexture()
     local key = (p and p.healthBarTexture) or defaultSet.healthBarTexture
     local filePath = CludesUI.ResolveTexturePath(mod.healthBarTextures, key, "Interface\\Buttons\\WHITE8x8")
-    LayoutCastTint(backing.castTintUnint, fill, filePath)
-    LayoutCastTint(backing.castTintInt, fill, filePath)
+    LayoutCastTint(backing.castTintUnint, fillTex, filePath)
+    LayoutCastTint(backing.castTintInt, fillTex, filePath)
 end
 
 -- Bumped on settings changes (RefreshAllSettings, the options' RefreshAllPlates): each plate
@@ -1134,22 +1134,22 @@ function mod.NP_ApplyCastTints(backing, tier, lit, fold)
             local success = true
             if intOn then
                 local c = (p and p.castingIntColor) or defaultSet.castingIntColor
-                local r, g, b = MaybeDarken(c.r, c.g, c.b, lit)
+                local region, g, b = MaybeDarken(c.r, c.g, c.b, lit)
                 local okI
-                okI, r, g, b = mod.ComputeOffTankFold(backing.unit, r, g, b, otc.r, otc.g, otc.b)
+                okI, region, g, b = mod.ComputeOffTankFold(backing.unit, region, g, b, otc.r, otc.g, otc.b)
                 if okI then
-                    ti:SetVertexColor(r, g, b)
+                    ti:SetVertexColor(region, g, b)
                 else
                     success = false
                 end
             end
             if success and unintOn then
                 local c = (p and p.castingUnintColor) or defaultSet.castingUnintColor
-                local r, g, b = MaybeDarken(c.r, c.g, c.b, lit)
+                local region, g, b = MaybeDarken(c.r, c.g, c.b, lit)
                 local okU
-                okU, r, g, b = mod.ComputeOffTankFold(backing.unit, r, g, b, otc.r, otc.g, otc.b)
+                okU, region, g, b = mod.ComputeOffTankFold(backing.unit, region, g, b, otc.r, otc.g, otc.b)
                 if okU then
-                    tu:SetVertexColor(r, g, b)
+                    tu:SetVertexColor(region, g, b)
                 else
                     success = false
                 end

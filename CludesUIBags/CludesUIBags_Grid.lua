@@ -193,12 +193,12 @@ end
 -------------------------------------------------------------------------------
 --  RenderButton
 -------------------------------------------------------------------------------
-local function RenderButton(button, payload, _, col, row, startX, currentY, _, interactiveEmpties)
+local function RenderButton(button, payload, _, colour, row, startX, currentY, _, interactiveEmpties)
     local hostFrame = button:GetParent()
     hostFrame:ClearAllPoints()
     hostFrame:SetPoint(
         "TOPLEFT",
-        startX + (col * (SLOT_SIZE + SPACING)),
+        startX + (colour * (SLOT_SIZE + SPACING)),
         currentY - (row * (SLOT_SIZE + SPACING))
     )
     hostFrame:Show()
@@ -321,24 +321,24 @@ local function RenderButton(button, payload, _, col, row, startX, currentY, _, i
                 if showIlvl then
                     button.ItemLevelText:SetText(payload._giIlvl or "")
                     -- Track color + rank (pre-cached on data table)
-                    local r, g, b
+                    local region, g, b
                     local rankText = payload._giTrackRank or ""
                     local trackColor = payload._giTrackColor
                     if BP().itemlevelUseCustomColor and BP().itemlevelCustomColor then
-                        r, g, b =
+                        region, g, b =
                             BP().itemlevelCustomColor.r,
                             BP().itemlevelCustomColor.g,
                             BP().itemlevelCustomColor.b
                     elseif trackColor then
-                        r, g, b = trackColor.r, trackColor.g, trackColor.b
+                        region, g, b = trackColor.r, trackColor.g, trackColor.b
                     else
-                        r, g, b = GetItemQualityColor(payload._giQuality or 1)
+                        region, g, b = GetItemQualityColor(payload._giQuality or 1)
                     end
-                    button.ItemLevelText:SetTextColor(r, g, b, 1)
+                    button.ItemLevelText:SetTextColor(region, g, b, 1)
                     local countFS = button.Count
                     if countFS and BP().bagShowTrackRank and rankText ~= "" then
                         countFS:SetText(rankText:match("^(%d+)/") or rankText)
-                        countFS:SetTextColor(r, g, b, 1)
+                        countFS:SetTextColor(region, g, b, 1)
                         countFS:Show()
                     end
                 else
@@ -469,8 +469,8 @@ local function RenderButton(button, payload, _, col, row, startX, currentY, _, i
         -- thickness is re-set every render because buttons are pooled.
         local _bpx = (CUI and CUI.PP and CUI.PP.mult) or 1
         if button._fvSlotBorder then
-            local r, g, b = QualityBorderColor(quality)
-            SetInsetBorderColor(button, r, g, b, 1)
+            local region, g, b = QualityBorderColor(quality)
+            SetInsetBorderColor(button, region, g, b, 1)
             mod.SetForeverSlotQuestBorder(button, payload._isQuest, payload._isQuestStarter)
         elseif payload._isQuest then
             SetInsetBorderThickness(button, _bpx * 2)
@@ -483,8 +483,8 @@ local function RenderButton(button, payload, _, col, row, startX, currentY, _, i
             )
         else
             SetInsetBorderThickness(button, _bpx)
-            local r, g, b = QualityBorderColor(quality)
-            SetInsetBorderColor(button, r, g, b, filtered and 0.2 or 1)
+            local region, g, b = QualityBorderColor(quality)
+            SetInsetBorderColor(button, region, g, b, filtered and 0.2 or 1)
         end
         -- Quest marker atlas (lazy, reused). Only for items that START a quest you
         -- have not accepted; active-quest objective items get the border, no marker.
@@ -675,17 +675,17 @@ function mod.RenderGridView(
         if _emptyPads[position] then
             return _emptyPads[position]
         end
-        local f = CreateFrame("Frame", nil, CUI_Bags)
-        mod.SizeSlot(f)
-        f:EnableMouse(false)
-        f._bg = f:CreateTexture(nil, "BACKGROUND", nil, 1)
-        f._bg:SetAllPoints()
-        mod.SetSlotBackgroundTexture(f._bg, false)
-        f._bg:SetAlpha(0.35)
-        CreateInsetBorder(f, true)
-        SetInsetBorderColor(f, 0, 0, 0, 0.3)
-        _emptyPads[position] = f
-        return f
+        local frame = CreateFrame("Frame", nil, CUI_Bags)
+        mod.SizeSlot(frame)
+        frame:EnableMouse(false)
+        frame._bg = frame:CreateTexture(nil, "BACKGROUND", nil, 1)
+        frame._bg:SetAllPoints()
+        mod.SetSlotBackgroundTexture(frame._bg, false)
+        frame._bg:SetAlpha(0.35)
+        CreateInsetBorder(frame, true)
+        SetInsetBorderColor(frame, 0, 0, 0, 0.3)
+        _emptyPads[position] = frame
+        return frame
     end
 
     local function RenderEmptyPad(itemCount, padCount)
@@ -695,11 +695,11 @@ function mod.RenderGridView(
             pad:SetParent(childFrame)
             pad:ClearAllPoints()
             local totalIdx = itemCount + p
-            local col = (totalIdx - 1) % columns
+            local colour = (totalIdx - 1) % columns
             local row = math.floor((totalIdx - 1) / columns)
             pad:SetPoint(
                 "TOPLEFT",
-                startX + (col * (SLOT_SIZE + SPACING)),
+                startX + (colour * (SLOT_SIZE + SPACING)),
                 curY - (row * (SLOT_SIZE + SPACING))
             )
             mod.PaintSlotBackground(pad._bg, 0.35)
@@ -714,9 +714,9 @@ function mod.RenderGridView(
             local button = GetOrCreateSlot(slotIdx)
             if button then -- nil during combat (avoids minting tainted secure buttons)
                 button:GetParent():SetParent(childFrame)
-                local col = (jdx - 1) % columns
+                local colour = (jdx - 1) % columns
                 local row = math.floor((jdx - 1) / columns)
-                RenderButton(button, payload, slotIdx, col, row, startX, curY, columns)
+                RenderButton(button, payload, slotIdx, colour, row, startX, curY, columns)
             end
         end
         local remainder = num % columns
@@ -824,13 +824,13 @@ function mod.RenderGridView(
                     local button = GetOrCreateSlot(slotIdx)
                     if button then
                         button:GetParent():SetParent(childFrame)
-                        local col = (itemIndex - 1) % span
+                        local colour = (itemIndex - 1) % span
                         local row = math.floor((itemIndex - 1) / span)
                         RenderButton(
                             button,
                             payload,
                             slotIdx,
-                            col,
+                            colour,
                             row,
                             startX + startOffset,
                             rowTop - headerGap,
@@ -845,13 +845,13 @@ function mod.RenderGridView(
                     if assignSlot then
                         assignSlot:GetParent():SetParent(childFrame)
                         local itemIndex = #bucket.items + 1
-                        local col = (itemIndex - 1) % span
+                        local colour = (itemIndex - 1) % span
                         local row = math.floor((itemIndex - 1) / span)
                         RenderButton(
                             assignSlot,
                             { bag = 0, slot = 0 },
                             slotIdx,
-                            col,
+                            colour,
                             row,
                             startX + startOffset,
                             rowTop - headerGap,
@@ -960,9 +960,9 @@ function mod.RenderGridView(
         if showPinnedOneBag then
             local pinItems = {}
             if pinnedSet then
-                for _, d in ipairs(tempItems) do
-                    if d.info and d.info.itemID and IsItemPinned(pinnedSet, d.itemLink, d.info.itemID) then
-                        pinItems[#pinItems + 1] = d
+                for _, skinData in ipairs(tempItems) do
+                    if skinData.info and skinData.info.itemID and IsItemPinned(pinnedSet, skinData.itemLink, skinData.info.itemID) then
+                        pinItems[#pinItems + 1] = skinData
                     end
                 end
             end
@@ -997,9 +997,9 @@ function mod.RenderGridView(
                     local button = GetOrCreateSlot(slotIdx)
                     if button then -- nil during combat (avoids minting tainted secure buttons)
                         button:GetParent():SetParent(childFrame)
-                        local col = (jdx - 1) % columns
+                        local colour = (jdx - 1) % columns
                         local row = math.floor((jdx - 1) / columns)
-                        RenderButton(button, payload, slotIdx, col, row, startX, curY, columns)
+                        RenderButton(button, payload, slotIdx, colour, row, startX, curY, columns)
                     end
                 end
                 local pinItemCount = #pinItems
@@ -1009,9 +1009,9 @@ function mod.RenderGridView(
                     local pinSlot = GetOrCreateSlot(slotIdx)
                     if pinSlot then -- nil during combat (avoids minting tainted secure buttons)
                         pinSlot:GetParent():SetParent(childFrame)
-                        local col = (pinIdx - 1) % columns
+                        local colour = (pinIdx - 1) % columns
                         local row = math.floor((pinIdx - 1) / columns)
-                        RenderButton(pinSlot, { bag = 0, slot = 0 }, slotIdx, col, row, startX, curY, columns)
+                        RenderButton(pinSlot, { bag = 0, slot = 0 }, slotIdx, colour, row, startX, curY, columns)
                         local shade = GetOrCreatePinOverlay()
                         shade:SetParent(childFrame)
                         shade:ClearAllPoints()
@@ -1041,14 +1041,14 @@ function mod.RenderGridView(
         if showRecentOneBag and showRecent then
             local recentItems = {}
             if CUI_Bags._recentItems then
-                for _, d in ipairs(tempItems) do
+                for _, skinData in ipairs(tempItems) do
                     if
-                        not d._pinnedOnly
-                        and d.info
-                        and d.info.itemID
-                        and CUI_Bags._recentItems[d.info.itemID]
+                        not skinData._pinnedOnly
+                        and skinData.info
+                        and skinData.info.itemID
+                        and CUI_Bags._recentItems[skinData.info.itemID]
                     then
-                        recentItems[#recentItems + 1] = d
+                        recentItems[#recentItems + 1] = skinData
                     end
                 end
             end
@@ -1095,9 +1095,9 @@ function mod.RenderGridView(
                     local button = GetOrCreateSlot(slotIdx)
                     if button then -- nil during combat (avoids minting tainted secure buttons)
                         button:GetParent():SetParent(childFrame)
-                        local col = (jdx - 1) % columns
+                        local colour = (jdx - 1) % columns
                         local row = math.floor((jdx - 1) / columns)
-                        RenderButton(button, payload, slotIdx, col, row, startX, curY, columns)
+                        RenderButton(button, payload, slotIdx, colour, row, startX, curY, columns)
                     end
                 end
                 local recItemCount = #recentItems
@@ -1139,9 +1139,9 @@ function mod.RenderGridView(
                 local button = GetOrCreateSlot(slotIdx)
                 if button then -- nil during combat (avoids minting tainted secure buttons)
                     button:GetParent():SetParent(childFrame)
-                    local col = (i - 1) % columns
+                    local colour = (i - 1) % columns
                     local row = math.floor((i - 1) / columns)
-                    RenderButton(button, payload, slotIdx, col, row, startX, curY, columns, true)
+                    RenderButton(button, payload, slotIdx, colour, row, startX, curY, columns, true)
                 end
             end
             local rowList = math.ceil(#slotList / columns)
@@ -1154,15 +1154,15 @@ function mod.RenderGridView(
         local function RenderOneBag(bag)
             local bagList = {}
             local bagFilled = 0
-            for _, d in ipairs(tempItems) do
-                if d.bag == bag then
-                    bagList[#bagList + 1] = d
+            for _, skinData in ipairs(tempItems) do
+                if skinData.bag == bag then
+                    bagList[#bagList + 1] = skinData
                     bagFilled = bagFilled + 1
                 end
             end
-            for _, d in ipairs(emptySlots) do
-                if d.bag == bag then
-                    bagList[#bagList + 1] = d
+            for _, skinData in ipairs(emptySlots) do
+                if skinData.bag == bag then
+                    bagList[#bagList + 1] = skinData
                 end
             end
             if #bagList > 0 then
@@ -1179,15 +1179,15 @@ function mod.RenderGridView(
             local special = mod.SpecialBags()
             local mainSlots = {}
             local mainFilled = 0
-            for _, d in ipairs(tempItems) do
-                if d.bag ~= 5 and not (special and special[d.bag]) then
-                    mainSlots[#mainSlots + 1] = d
+            for _, skinData in ipairs(tempItems) do
+                if skinData.bag ~= 5 and not (special and special[skinData.bag]) then
+                    mainSlots[#mainSlots + 1] = skinData
                     mainFilled = mainFilled + 1
                 end
             end
-            for _, d in ipairs(emptySlots) do
-                if d.bag ~= 5 and not (special and special[d.bag]) then
-                    mainSlots[#mainSlots + 1] = d
+            for _, skinData in ipairs(emptySlots) do
+                if skinData.bag ~= 5 and not (special and special[skinData.bag]) then
+                    mainSlots[#mainSlots + 1] = skinData
                 end
             end
             table.sort(mainSlots, function(a, b)
@@ -1213,14 +1213,14 @@ function mod.RenderGridView(
 
         -- Reagent Bag (5): items + empties from bag 5
         local reagentSlotList = {}
-        for _, d in ipairs(tempItems) do
-            if d.bag == 5 then
-                reagentSlotList[#reagentSlotList + 1] = d
+        for _, skinData in ipairs(tempItems) do
+            if skinData.bag == 5 then
+                reagentSlotList[#reagentSlotList + 1] = skinData
             end
         end
-        for _, d in ipairs(emptySlots) do
-            if d.bag == 5 then
-                reagentSlotList[#reagentSlotList + 1] = d
+        for _, skinData in ipairs(emptySlots) do
+            if skinData.bag == 5 then
+                reagentSlotList[#reagentSlotList + 1] = skinData
             end
         end
         table.sort(reagentSlotList, function(a, b)
@@ -1229,8 +1229,8 @@ function mod.RenderGridView(
 
         if #reagentSlotList > 0 then
             local reagFilled = 0
-            for _, d in ipairs(reagentSlotList) do
-                if d.info then
+            for _, skinData in ipairs(reagentSlotList) do
+                if skinData.info then
                     reagFilled = reagFilled + 1
                 end
             end
@@ -1253,9 +1253,9 @@ function mod.RenderGridView(
                     local button = GetOrCreateSlot(slotIdx)
                     if button then -- nil during combat (avoids minting tainted secure buttons)
                         button:GetParent():SetParent(childFrame)
-                        local col = (i - 1) % columns
+                        local colour = (i - 1) % columns
                         local row = math.floor((i - 1) / columns)
-                        RenderButton(button, payload, slotIdx, col, row, startX, curY, columns, true)
+                        RenderButton(button, payload, slotIdx, colour, row, startX, curY, columns, true)
                     end
                 end
                 local reagRows = math.ceil(#reagentSlotList / columns)
@@ -1434,12 +1434,12 @@ function mod.RenderGridView(
                                     local aSlot = GetOrCreateSlot(slotIdx)
                                     if aSlot then
                                         aSlot:GetParent():SetParent(childFrame)
-                                        local col = remainder
+                                        local colour = remainder
                                         RenderButton(
                                             aSlot,
                                             { bag = 0, slot = 0 },
                                             slotIdx,
-                                            col,
+                                            colour,
                                             0,
                                             startX,
                                             curY,
@@ -1468,9 +1468,9 @@ function mod.RenderGridView(
                 local button = GetOrCreateSlot(slotIdx)
                 if button then
                     button:GetParent():SetParent(childFrame)
-                    local col = (jdx - 1) % columns
+                    local colour = (jdx - 1) % columns
                     local row = math.floor((jdx - 1) / columns)
-                    RenderButton(button, payload, slotIdx, col, row, startX, curY, columns)
+                    RenderButton(button, payload, slotIdx, colour, row, startX, curY, columns)
                 end
             end
 
@@ -1481,9 +1481,9 @@ function mod.RenderGridView(
                 local pinSlot = GetOrCreateSlot(slotIdx)
                 if pinSlot then
                     pinSlot:GetParent():SetParent(childFrame)
-                    local col = (pinIdx - 1) % columns
+                    local colour = (pinIdx - 1) % columns
                     local row = math.floor((pinIdx - 1) / columns)
-                    RenderButton(pinSlot, { bag = 0, slot = 0 }, slotIdx, col, row, startX, curY, columns)
+                    RenderButton(pinSlot, { bag = 0, slot = 0 }, slotIdx, colour, row, startX, curY, columns)
                     local shade = GetOrCreatePinOverlay()
                     shade:SetParent(childFrame)
                     shade:ClearAllPoints()
@@ -1508,9 +1508,9 @@ function mod.RenderGridView(
                     local aSlot = GetOrCreateSlot(slotIdx)
                     if aSlot then
                         aSlot:GetParent():SetParent(childFrame)
-                        local col = (aIdx - 1) % columns
+                        local colour = (aIdx - 1) % columns
                         local row = math.floor((aIdx - 1) / columns)
-                        RenderButton(aSlot, { bag = 0, slot = 0 }, slotIdx, col, row, startX, curY, columns)
+                        RenderButton(aSlot, { bag = 0, slot = 0 }, slotIdx, colour, row, startX, curY, columns)
                         local aOv = GetOrCreateAssignOverlay()
                         aOv._assignCatKey = aCat._defaultName
                         aOv:SetParent(childFrame)
@@ -1741,9 +1741,9 @@ function mod.RenderGridView(
                                 local button = GetOrCreateSlot(slotIdx)
                                 if button then
                                     button:GetParent():SetParent(childFrame)
-                                    local col = (jdx - 1) % columns
+                                    local colour = (jdx - 1) % columns
                                     local row = math.floor((jdx - 1) / columns)
-                                    RenderButton(button, payload, slotIdx, col, row, startX, curY, columns)
+                                    RenderButton(button, payload, slotIdx, colour, row, startX, curY, columns)
                                 end
                             end
 
@@ -1755,13 +1755,13 @@ function mod.RenderGridView(
                                 local aSlot = GetOrCreateSlot(slotIdx)
                                 if aSlot then -- nil during combat (avoids minting tainted secure buttons)
                                     aSlot:GetParent():SetParent(childFrame)
-                                    local col = (aIdx - 1) % columns
+                                    local colour = (aIdx - 1) % columns
                                     local row = math.floor((aIdx - 1) / columns)
                                     RenderButton(
                                         aSlot,
                                         { bag = 0, slot = 0 },
                                         slotIdx,
-                                        col,
+                                        colour,
                                         row,
                                         startX,
                                         curY,
@@ -1987,9 +1987,9 @@ function mod.RenderGridView(
                     local button = GetOrCreateSlot(slotIdx)
                     if button then
                         button:GetParent():SetParent(childFrame)
-                        local col = (i - 1) % columns
+                        local colour = (i - 1) % columns
                         local row = math.floor((i - 1) / columns)
-                        RenderButton(button, payload, slotIdx, col, row, startX, curY, columns)
+                        RenderButton(button, payload, slotIdx, colour, row, startX, curY, columns)
                     end
                 end
 

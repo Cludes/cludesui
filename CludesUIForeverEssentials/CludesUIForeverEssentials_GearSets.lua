@@ -41,9 +41,9 @@ end
 function module.GearSetList()
     local result = {}
     for _, ident in ipairs(C_EquipmentSet.GetEquipmentSetIDs() or {}) do
-        local name, icon, _, equipped = C_EquipmentSet.GetEquipmentSetInfo(ident)
+        local name, iconTex, _, equipped = C_EquipmentSet.GetEquipmentSetInfo(ident)
         if name then
-            result[#result + 1] = { id = ident, name = name, icon = icon, equipped = equipped }
+            result[#result + 1] = { id = ident, name = name, icon = iconTex, equipped = equipped }
         end
     end
     table.sort(result, function(a, b)
@@ -89,8 +89,8 @@ local function Paint()
     end
 end
 
-local function Button(idx)
-    local b = buttons[idx]
+local function Button(index)
+    local b = buttons[index]
     if b then
         return b
     end
@@ -129,7 +129,7 @@ local function Button(idx)
     b:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
-    buttons[idx] = b
+    buttons[index] = b
     return b
 end
 
@@ -139,19 +139,19 @@ local function Layout()
     end
     local size = Get("iconSize")
     local entries = Enabled() and module.GearSetList() or {}
-    for idx, s in ipairs(entries) do
-        local b = Button(idx)
+    for index, s in ipairs(entries) do
+        local b = Button(index)
         b.setID, b.setName = s.id, s.name
         b.icon:SetTexture(s.icon)
         b.name:SetText(s.name)
         b:SetSize(size, size)
         b:ClearAllPoints()
-        b:SetPoint("LEFT", holderFrame, "LEFT", (idx - 1) * (size + GAP), 0)
+        b:SetPoint("LEFT", holderFrame, "LEFT", (index - 1) * (size + GAP), 0)
         b:Show()
     end
-    for idx = #entries + 1, #buttons do
-        buttons[idx]:Hide()
-        buttons[idx].setID = nil
+    for index = #entries + 1, #buttons do
+        buttons[index]:Hide()
+        buttons[index].setID = nil
     end
     holderFrame:SetSize(math.max(1, #entries) * (size + GAP) - GAP, size)
     holderFrame:SetShown(Enabled() and (#entries > 0 or CludesUI._unlockActive) and true or false)

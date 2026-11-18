@@ -61,8 +61,8 @@ local function SnapshotPlayerAuras()
     if CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted() then
         return
     end
-    for idx = 1, AURA_SCAN_LIMIT do
-        local aura = C_UnitAuras.GetAuraDataByIndex("player", idx, "HELPFUL")
+    for index = 1, AURA_SCAN_LIMIT do
+        local aura = C_UnitAuras.GetAuraDataByIndex("player", index, "HELPFUL")
         if not aura then
             break
         end
@@ -118,8 +118,8 @@ function _AC.ensureNames()
     if CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted() then
         return
     end
-    for idx = 1, AURA_SCAN_LIMIT do
-        local aura = C_UnitAuras.GetAuraDataByIndex("player", idx, "HELPFUL")
+    for index = 1, AURA_SCAN_LIMIT do
+        local aura = C_UnitAuras.GetAuraDataByIndex("player", index, "HELPFUL")
         if not aura then
             break
         end
@@ -191,8 +191,8 @@ end
 -- Stances are shapeshift forms, not auras (GetPlayerAuraBySpellID can't see them); scan the stance bar instead. Returns (known-in-bar, currently-active).
 local function GetStanceState(stanceSpellID)
     local numForms = GetNumShapeshiftForms()
-    for idx = 1, numForms do
-        local _, isActive, _, spellID = GetShapeshiftFormInfo(idx)
+    for index = 1, numForms do
+        local _, isActive, _, spellID = GetShapeshiftFormInfo(index)
         if spellID == stanceSpellID then
             return true, isActive
         end
@@ -203,8 +203,8 @@ end
 -- Same idea, but checks a list of spellIDs instead of one fixed form index.
 local function IsAnyShapeshiftFormActive(spellIDs)
     local numForms = GetNumShapeshiftForms()
-    for idx = 1, numForms do
-        local _, isActive, _, spellID = GetShapeshiftFormInfo(idx)
+    for index = 1, numForms do
+        local _, isActive, _, spellID = GetShapeshiftFormInfo(index)
         if isActive then
             for _, ident in ipairs(spellIDs) do
                 if spellID == ident then
@@ -263,8 +263,8 @@ local function _unitHasBuff(u, spellIDs)
         and not UnitIsUnit(u, "player")
         and not (CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted())
     then
-        for idx = 1, AURA_SCAN_LIMIT do
-            local aura = C_UnitAuras.GetAuraDataByIndex(u, idx, "HELPFUL")
+        for index = 1, AURA_SCAN_LIMIT do
+            local aura = C_UnitAuras.GetAuraDataByIndex(u, index, "HELPFUL")
             if not aura then
                 break
             end
@@ -362,8 +362,8 @@ local function _unitHasBuffFromPlayer(u, spellIDs, strictSource)
             return false
         end
         if not inCombat and not restricted then
-            for idx = 1, AURA_SCAN_LIMIT do
-                local aura = C_UnitAuras.GetAuraDataByIndex("player", idx, "HELPFUL")
+            for index = 1, AURA_SCAN_LIMIT do
+                local aura = C_UnitAuras.GetAuraDataByIndex("player", index, "HELPFUL")
                 if not aura then
                     break
                 end
@@ -418,8 +418,8 @@ local function _unitHasBuffFromPlayer(u, spellIDs, strictSource)
         return false
     end
     -- Fallback: full scan for non-whitelisted IDs only
-    for idx = 1, AURA_SCAN_LIMIT do
-        local aura = C_UnitAuras.GetAuraDataByIndex(u, idx, "HELPFUL")
+    for index = 1, AURA_SCAN_LIMIT do
+        local aura = C_UnitAuras.GetAuraDataByIndex(u, index, "HELPFUL")
         if not aura then
             break
         end
@@ -459,15 +459,15 @@ SnapshotOwnOnRaidBuffs = function()
             end
             if not found then
                 if IsInRaid() then
-                    for idx = 1, GetNumGroupMembers() do
-                        if _unitHasBuffFromPlayer("raid" .. idx, _snapScratch) then
+                    for index = 1, GetNumGroupMembers() do
+                        if _unitHasBuffFromPlayer("raid" .. index, _snapScratch) then
                             found = true
                             break
                         end
                     end
                 elseif IsInGroup() then
-                    for idx = 1, GetNumSubgroupMembers() do
-                        if _unitHasBuffFromPlayer("party" .. idx, _snapScratch) then
+                    for index = 1, GetNumSubgroupMembers() do
+                        if _unitHasBuffFromPlayer("party" .. index, _snapScratch) then
                             found = true
                             break
                         end
@@ -545,8 +545,8 @@ local function CountGroupBuffCoverage(spellIDs, benefit)
         return have, sum
     end
     if IsInRaid() then
-        for idx = 1, GetNumGroupMembers() do
-            local u = "raid" .. idx
+        for index = 1, GetNumGroupMembers() do
+            local u = "raid" .. index
             if _unitOk(u) and UnitIsPlayer(u) and _unitInRange(u) then
                 if REMIND.UnitBenefits(u, benefit) then
                     sum = sum + 1
@@ -563,8 +563,8 @@ local function CountGroupBuffCoverage(spellIDs, benefit)
                 have = have + 1
             end
         end
-        for idx = 1, GetNumSubgroupMembers() do
-            local u = "party" .. idx
+        for index = 1, GetNumSubgroupMembers() do
+            local u = "party" .. index
             if _unitOk(u) and UnitIsPlayer(u) and _unitInRange(u) then
                 if REMIND.UnitBenefits(u, benefit) then
                     sum = sum + 1
@@ -584,14 +584,14 @@ local function BuffExistsOnAnyGroupMember(spellIDs)
         return true
     end
     if IsInRaid() then
-        for idx = 1, GetNumGroupMembers() do
-            if _unitHasBuff("raid" .. idx, spellIDs) then
+        for index = 1, GetNumGroupMembers() do
+            if _unitHasBuff("raid" .. index, spellIDs) then
                 return true
             end
         end
     elseif IsInGroup() then
-        for idx = 1, GetNumSubgroupMembers() do
-            if _unitHasBuff("party" .. idx, spellIDs) then
+        for index = 1, GetNumSubgroupMembers() do
+            if _unitHasBuff("party" .. index, spellIDs) then
                 return true
             end
         end
@@ -835,15 +835,15 @@ end
 -- buff reminder has nobody to go on otherwise.
 function REMIND.AnyReachableGroupMember()
     if IsInRaid() then
-        for idx = 1, GetNumGroupMembers() do
-            local u = "raid" .. idx
+        for index = 1, GetNumGroupMembers() do
+            local u = "raid" .. index
             if _unitOk(u) and not UnitIsUnit(u, "player") and _unitInRange(u) then
                 return true
             end
         end
     elseif IsInGroup() then
-        for idx = 1, GetNumSubgroupMembers() do
-            local u = "party" .. idx
+        for index = 1, GetNumSubgroupMembers() do
+            local u = "party" .. index
             if _unitOk(u) and _unitInRange(u) then
                 return true
             end
@@ -859,8 +859,8 @@ local function PlayerOwnBuffOnAnyGroupMember(spellIDs)
     end
     local anyInRangeWithoutBuff = false
     if IsInRaid() then
-        for idx = 1, GetNumGroupMembers() do
-            local u = "raid" .. idx
+        for index = 1, GetNumGroupMembers() do
+            local u = "raid" .. index
             if _unitOk(u) and not UnitIsUnit(u, "player") then
                 if _unitHasBuffFromPlayer(u, spellIDs) then
                     return true
@@ -871,8 +871,8 @@ local function PlayerOwnBuffOnAnyGroupMember(spellIDs)
             end
         end
     elseif IsInGroup() then
-        for idx = 1, GetNumSubgroupMembers() do
-            local u = "party" .. idx
+        for index = 1, GetNumSubgroupMembers() do
+            local u = "party" .. index
             if _unitOk(u) then
                 if _unitHasBuffFromPlayer(u, spellIDs) then
                     return true
@@ -896,8 +896,8 @@ function REMIND.PlayerOwnBuffOnGroupOrSelf(spellIDs)
         return true
     end
     if CludesUI.AuraKit and CludesUI.AuraKit.AurasRestricted() then
-        for idx = 1, #spellIDs do
-            if not NON_SECRET_SPELL_IDS[spellIDs[idx]] then
+        for index = 1, #spellIDs do
+            if not NON_SECRET_SPELL_IDS[spellIDs[index]] then
                 return nil
             end
         end
@@ -910,8 +910,8 @@ function REMIND.PlayerOwnBuffOnGroupOrSelf(spellIDs)
         uncertain = true
     end
     if IsInRaid() then
-        for idx = 1, GetNumGroupMembers() do
-            local u = "raid" .. idx
+        for index = 1, GetNumGroupMembers() do
+            local u = "raid" .. index
             if not UnitIsUnit(u, "player") and UnitExists(u) and UnitIsConnected(u) and UnitIsPlayer(u) then
                 status = _unitHasBuffFromPlayer(u, spellIDs, true)
                 if status == true then
@@ -922,8 +922,8 @@ function REMIND.PlayerOwnBuffOnGroupOrSelf(spellIDs)
             end
         end
     elseif IsInGroup() then
-        for idx = 1, GetNumSubgroupMembers() do
-            local u = "party" .. idx
+        for index = 1, GetNumSubgroupMembers() do
+            local u = "party" .. index
             if UnitExists(u) and UnitIsConnected(u) and UnitIsPlayer(u) then
                 status = _unitHasBuffFromPlayer(u, spellIDs, true)
                 if status == true then
@@ -948,8 +948,8 @@ do
     local W = (Enum and Enum.ItemWeaponSubclass) or {}
     local function setFrom(...)
         local t = {}
-        for idx = 1, select("#", ...) do
-            local val = select(idx, ...)
+        for index = 1, select("#", ...) do
+            local val = select(index, ...)
             if val ~= nil then
                 t[val] = true
             end
@@ -1058,8 +1058,8 @@ REMIND._groupClassSet = REMIND._groupClassSet or {}
 function REMIND.BuildGroupClassSet()
     local set = wipe(REMIND._groupClassSet)
     if IsInRaid() then
-        for idx = 1, GetNumGroupMembers() do
-            local u = "raid" .. idx
+        for index = 1, GetNumGroupMembers() do
+            local u = "raid" .. index
             if _unitOk(u) and UnitIsPlayer(u) and not UnitIsUnit(u, "player") and _unitInRange(u) then
                 local _, class = UnitClass(u)
                 if class ~= nil and not isSecret(class) then
@@ -1068,8 +1068,8 @@ function REMIND.BuildGroupClassSet()
             end
         end
     elseif IsInGroup() then
-        for idx = 1, GetNumSubgroupMembers() do
-            local u = "party" .. idx
+        for index = 1, GetNumSubgroupMembers() do
+            local u = "party" .. index
             if _unitOk(u) and UnitIsPlayer(u) and _unitInRange(u) then
                 local _, class = UnitClass(u)
                 if class ~= nil and not isSecret(class) then
@@ -1148,12 +1148,12 @@ function REMIND.GroupSpecFor(u)
     if UnitIsUnit(u, "player") then
         return GetSpecID()
     end
-    local num, r = UnitNameUnmodified(u)
+    local num, region = UnitNameUnmodified(u)
     if num == nil or isSecret(num) then
         return nil
     end
-    if r ~= nil and not isSecret(r) and r ~= "" then
-        num = num .. "-" .. r
+    if region ~= nil and not isSecret(region) and region ~= "" then
+        num = num .. "-" .. region
     end
     return REMIND._groupSpecs[num]
 end

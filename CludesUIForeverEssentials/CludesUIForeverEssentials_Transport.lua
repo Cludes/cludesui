@@ -97,9 +97,9 @@ function Times.Prune(nowTime)
 end
 
 function Times.RouteAt(key)
-    local d = docks[key]
-    if d then
-        return d.name, d.index
+    local skinData = docks[key]
+    if skinData then
+        return skinData.name, skinData.index
     end
 end
 
@@ -392,8 +392,8 @@ for name, route in pairs(Routes) do
     end
 end
 local base = #NAUTICUS_DIGITS
-for idx = 1, base do
-    digit[NAUTICUS_DIGITS:byte(idx)] = idx - 1
+for index = 1, base do
+    digit[NAUTICUS_DIGITS:byte(index)] = index - 1
 end
 
 local function Uncrunch(textValue)
@@ -401,8 +401,8 @@ local function Uncrunch(textValue)
         return nil
     end
     local number, place = 0, 1
-    for idx = 1, #textValue do
-        local value = digit[textValue:byte(idx)]
+    for index = 1, #textValue do
+        local value = digit[textValue:byte(index)]
         if not value then
             return nil
         end
@@ -421,11 +421,11 @@ local function Crunch(number)
 end
 local function Hash(textValue)
     local counter, length = 1, #textValue
-    for idx = 1, length, 3 do
+    for index = 1, length, 3 do
         counter = (counter * 8161) % 4294967279
-            + textValue:byte(idx) * 16776193
-            + (textValue:byte(idx + 1) or length - idx + 256) * 8372226
-            + (textValue:byte(idx + 2) or length - idx + 256) * 3932164
+            + textValue:byte(index) * 16776193
+            + (textValue:byte(index + 1) or length - index + 256) * 8372226
+            + (textValue:byte(index + 2) or length - index + 256) * 3932164
     end
     return counter % 4294967291
 end
@@ -438,8 +438,8 @@ do
         end
     end
     table.sort(ids)
-    for idx, ident in ipairs(ids) do
-        ids[idx] = Crunch(ident)
+    for index, ident in ipairs(ids) do
+        ids[index] = Crunch(ident)
     end
     local entries = table.concat(ids, ",")
     nauticusAsk = NAUTICUS_HEAD .. entries .. " " .. Crunch(Hash(entries))
@@ -538,17 +538,17 @@ local function Before(name, start, moment)
 end
 
 local shareEv = CreateFrame("Frame")
-shareEv:SetScript("OnEvent", function(_, evt, prefixText, msg, channel, sender)
+shareEv:SetScript("OnEvent", function(_, evt, prefixText, message, channel, sender)
     if evt == "CHAT_MSG_ADDON" then
-        if Secret(prefixText) or Secret(msg) or Secret(channel) or Secret(sender) then
+        if Secret(prefixText) or Secret(message) or Secret(channel) or Secret(sender) then
             return
         end
         local nowTime = GetServerTime()
         if prefixText == PREFIX and SHARE_CHANNELS[channel] then
-            if msg == ASK then
+            if message == ASK then
                 return AnswerSoon(channel)
             end
-            local unitGuid, at, period, name = msg:match(TIMING_PATTERN)
+            local unitGuid, at, period, name = message:match(TIMING_PATTERN)
             at, period = tonumber(at), tonumber(period)
             if
                 not unitGuid
@@ -568,7 +568,7 @@ shareEv:SetScript("OnEvent", function(_, evt, prefixText, msg, channel, sender)
                 end
             end
         elseif PEER_HEARD[channel] and prefixText == FOREVER_PREFIX then
-            local ident, index, arrival, observed = msg:match(FOREVER_TIMING)
+            local ident, index, arrival, observed = message:match(FOREVER_TIMING)
             local name = named[tonumber(ident)]
             local dock = name and Routes[name].docks[tonumber(index)]
             if dock then
@@ -580,7 +580,7 @@ shareEv:SetScript("OnEvent", function(_, evt, prefixText, msg, channel, sender)
                 )
             end
         elseif PEER_HEARD[channel] and prefixText == NAUTICUS_PREFIX then
-            local entries, hash = msg:match(NAUTICUS_TIMING)
+            local entries, hash = message:match(NAUTICUS_TIMING)
             if not entries or Uncrunch(hash) ~= Hash(entries) then
                 return
             end
@@ -673,9 +673,9 @@ local function Fit(self, mapID)
 end
 
 local function HideFrom(self, first)
-    for idx = first, #self.pins do
-        self.pins[idx]:Hide()
-        self.pins[idx].spot = nil
+    for index = first, #self.pins do
+        self.pins[index]:Hide()
+        self.pins[index].spot = nil
     end
 end
 
@@ -690,11 +690,11 @@ function Layer:Place()
     if not self.at or radius ~= self.radius or (wx - self.at[1]) ^ 2 + (wy - self.at[2]) ^ 2 > 1600 then
         self.at, self.radius = { wx, wy }, radius
         wipe(self.near)
-        for idx = 1, self.count do
-            local posX, posY = self.opts.xy(self.spots, idx)
+        for index = 1, self.count do
+            local posX, posY = self.opts.xy(self.spots, index)
             local dx, dy = (posX - px) * self.width, (py - posY) * self.height
             if dx * dx + dy * dy <= (radius * 2) ^ 2 then
-                self.near[#self.near + 1] = idx
+                self.near[#self.near + 1] = index
             end
         end
     end
@@ -703,11 +703,11 @@ function Layer:Place()
     local square = GetMinimapShape and GetMinimapShape() == "SQUARE"
     local scaleX, scaleY = Minimap:GetWidth() / 2 / radius, Minimap:GetHeight() / 2 / radius
     local num = 0
-    for _, idx in ipairs(self.near) do
+    for _, index in ipairs(self.near) do
         if num >= self.opts.max then
             break
         end
-        local posX, posY = self.opts.xy(self.spots, idx)
+        local posX, posY = self.opts.xy(self.spots, index)
         local dx, dy = (posX - px) * self.width, (py - posY) * self.height
         dx, dy = dx * cos + dy * sin, dy * cos - dx * sin
         local inside = square and (math.abs(dx) <= radius and math.abs(dy) <= radius)
@@ -716,9 +716,9 @@ function Layer:Place()
             num = num + 1
             local pin = self.pins[num] or self.opts.new(num)
             self.pins[num] = pin
-            if pin.spot ~= idx then
-                pin.spot = idx
-                self.opts.paint(pin, self.spots, idx)
+            if pin.spot ~= index then
+                pin.spot = index
+                self.opts.paint(pin, self.spots, index)
             end
             pin:ClearAllPoints()
             pin:SetPoint("CENTER", Minimap, "CENTER", dx * scaleX, dy * scaleY)
@@ -734,10 +734,10 @@ local function NewLayer(options)
     self.frame.since = 0
     local function Live()
         local live = self.count > 0 and (self.moving or C_CVar.GetCVarBool("rotateMinimap"))
-        self.frame:SetScript("OnUpdate", live and function(f, e)
-            f.since = f.since + e
-            if f.since >= 0.05 then
-                f.since = 0
+        self.frame:SetScript("OnUpdate", live and function(frame, e)
+            frame.since = frame.since + e
+            if frame.since >= 0.05 then
+                frame.since = 0
                 self:Place()
             end
         end or nil)
@@ -794,8 +794,8 @@ local function Colour(kind, seconds)
     return seconds > LEAVING_SOON and DOCKED or LEAVING
 end
 local function MS(seconds)
-    local r = math.ceil(seconds)
-    return math.floor(r / 60), r % 60
+    local region = math.ceil(seconds)
+    return math.floor(region / 60), region % 60
 end
 local function Countdown(seconds, kind)
     return ((kind == ARRIVAL) and "Arrives in %d:%02d" or "Departs in %d:%02d"):format(MS(seconds))
@@ -857,8 +857,8 @@ local function ShowTip(pin)
     else
         local routes = Data[pin.key].routes
         GameTooltip:SetText(routes[1], 1, 1, 1)
-        for idx = 2, #routes do
-            GameTooltip:AddLine(routes[idx], 1, 1, 1)
+        for index = 2, #routes do
+            GameTooltip:AddLine(routes[index], 1, 1, 1)
         end
         local textValue, c = TimeText(pin.key, nowTime)
         GameTooltip:AddLine(textValue, c[1], c[2], c[3])
@@ -898,8 +898,8 @@ local function NewPin()
     return pin
 end
 
-local function PaintPin(pin, entries, idx)
-    pin.key = entries[idx]
+local function PaintPin(pin, entries, index)
+    pin.key = entries[index]
     local route = Data[pin.key].routes[1] or ""
     pin.icon:SetAtlas(route:find("^Zeppelin") and "vehicle-air-horde" or "flightmasterferry")
 end
@@ -939,10 +939,10 @@ function module.TransportDrawZone()
         return
     end
     local nameList, times, nowTime = {}, {}, GetServerTime()
-    for idx, key in ipairs(zoneSpots) do
-        nameList[idx] = table.concat(Data[key].routes, " / ")
+    for index, key in ipairs(zoneSpots) do
+        nameList[index] = table.concat(Data[key].routes, " / ")
         local textValue, c = TimeText(key, nowTime)
-        times[idx] = Tinted(textValue, c)
+        times[index] = Tinted(textValue, c)
     end
     if #nameList == 0 then
         nameList[1], times[1] = "Boat to Booty Bay", Tinted("Departs in 0:42", DOCKED)
@@ -970,10 +970,10 @@ local function Refresh()
         for key, stop in pairs(Data) do
             if stop.map == same and stop.side:find(side, 1, true) then
                 if not stop.mapX then
-                    local _, pos =
+                    local _, position =
                         C_Map.GetMapPosFromWorldPos(stop.continent, CreateVector2D(stop.x, stop.y), map)
-                    if pos then
-                        stop.mapX, stop.mapY = pos:GetXY()
+                    if position then
+                        stop.mapX, stop.mapY = position:GetXY()
                     end
                 end
                 if stop.mapX then
@@ -997,8 +997,8 @@ local function Refresh()
             max = 3,
             new = NewPin,
             paint = PaintPin,
-            xy = function(entries, idx)
-                return Data[entries[idx]].mapX, Data[entries[idx]].mapY
+            xy = function(entries, index)
+                return Data[entries[index]].mapX, Data[entries[index]].mapY
             end,
         })
     layer:Set(map, spots, #spots)

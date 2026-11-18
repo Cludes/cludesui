@@ -58,7 +58,7 @@ mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
     button:SetAllPoints()
     button:EnableMouse(true)
     button:RegisterForClicks("AnyUp")
-    local icon = button:CreateTexture(nil, "OVERLAY")
+    local iconTex = button:CreateTexture(nil, "OVERLAY")
     local label = button:CreateFontString(nil, "OVERLAY")
     K.AttachTextOffset(inst, label)
 
@@ -115,9 +115,9 @@ mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
         -- +4: the size of the gold block's bag icon.
         local iconSize = s.showIcon ~= false and fontSize + 4 or 0
 
-        K.SetBlockIcon(icon, blockCfg)
-        icon:SetVertexColor(K.IconColorOf(blockCfg))
-        icon:SetShown(iconSize > 0)
+        K.SetBlockIcon(iconTex, blockCfg)
+        iconTex:SetVertexColor(K.IconColorOf(blockCfg))
+        iconTex:SetShown(iconSize > 0)
         mod.SetFont(label, fontSize, barCtx.cfg)
         PaintText()
         local text = (SHOW[s.value] or SHOW.free)(free, total)
@@ -128,15 +128,15 @@ mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
             label:SetText(text)
             local height = 8
             if iconSize > 0 then
-                icon:SetSize(iconSize, iconSize)
-                icon:ClearAllPoints()
-                icon:SetPoint("TOP", button, "TOP", 0, -4)
+                iconTex:SetSize(iconSize, iconSize)
+                iconTex:ClearAllPoints()
+                iconTex:SetPoint("TOP", button, "TOP", 0, -4)
                 height = height + iconSize + 2
             end
             mod.SetWrappedText(label, max(24, slotW - 8), "CENTER")
             label:ClearAllPoints()
             if iconSize > 0 then
-                label:SetPoint("TOP", icon, "BOTTOM", 0, -2)
+                label:SetPoint("TOP", iconTex, "BOTTOM", 0, -2)
             else
                 label:SetPoint("TOP", button, "TOP", 0, -4)
             end
@@ -150,9 +150,9 @@ mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
             label:SetText(text)
             local x = 0
             if iconSize > 0 then
-                icon:SetSize(iconSize, iconSize)
-                icon:ClearAllPoints()
-                icon:SetPoint("LEFT", button, "LEFT", 0, 0)
+                iconTex:SetSize(iconSize, iconSize)
+                iconTex:ClearAllPoints()
+                iconTex:SetPoint("LEFT", button, "LEFT", 0, 0)
                 x = iconSize + K.ICON_GAP - 2
             end
             label:ClearAllPoints()
@@ -197,8 +197,8 @@ mod.BlockFactories.bags = function(blockCfg, slot, contentFrame, barCtx)
         mod.Tip_AddLine(" ")
         mod.Tip_AddDouble(L["FREE"], free .. "/" .. total, 1, 1, 1, 1, 1, 1)
         mod.Tip_AddLine(" ")
-        local r, g, b = mod.GetAccent()
-        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_BAGS"], 1, 1, 1, r, g, b)
+        local region, g, b = mod.GetAccent()
+        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_BAGS"], 1, 1, 1, region, g, b)
         mod.Tip_Show()
     end
 

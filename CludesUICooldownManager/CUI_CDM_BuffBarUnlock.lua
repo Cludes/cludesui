@@ -52,12 +52,12 @@ function mod.RegisterTBBUnlockElements()
     for i, conf in ipairs(barList) do
         local position = i
         local posKey = tostring(position)
-        local bar = tbbFrames[position]
+        local barFrame = tbbFrames[position]
         local barGid = mod.TBBBarGroupID(conf)
         local isGroupMover = barGid ~= 0
             and position == mod.TBBGroupAnchorIndex(barGid)
             and mod.TBBGroupedCount(barGid) >= 2
-        if bar then
+        if barFrame then
             elements[#elements + 1] = MK({
                 key = "TBB_" .. posKey,
                 label = isGroupMover
@@ -154,7 +154,7 @@ function mod.RegisterTBBUnlockElements()
                     if not c then
                         return
                     end
-                    local f = tbbFrames[position]
+                    local frame = tbbFrames[position]
                     local PPt = CludesUI and CludesUI.PP
                     wid = PPt and PPt.Snap(wid) or math.floor(wid + 0.5)
                     -- Persist during unlock (manual) AND match propagation, so a width match TO
@@ -165,8 +165,8 @@ function mod.RegisterTBBUnlockElements()
                         -- (covers unlock drag-resize AND a width-MATCH on the group anchor, both routing through here).
                         mod.PropagateTBBGroupSize(position, "width", wid)
                     end
-                    if f then
-                        f:SetWidth(wid)
+                    if frame then
+                        frame:SetWidth(wid)
                     end
                 end,
                 setHeight = function(_, hgt)
@@ -177,14 +177,14 @@ function mod.RegisterTBBUnlockElements()
                     end
                     local PPt = CludesUI and CludesUI.PP
                     hgt = PPt and PPt.Snap(hgt) or math.floor(hgt + 0.5)
-                    local f = tbbFrames[position]
+                    local frame = tbbFrames[position]
                     -- Persist during unlock AND match propagation (see setWidth).
                     if CludesUI._unlockActive or CludesUI._propagatingMatch then
                         c.height = hgt
                         mod.PropagateTBBGroupSize(position, "height", hgt)
                     end
-                    if f then
-                        f:SetHeight(hgt)
+                    if frame then
+                        frame:SetHeight(hgt)
                     end
                 end,
                 savePos = function(_, anchorPoint, relPoint, posX, posY)
@@ -211,10 +211,10 @@ function mod.RegisterTBBUnlockElements()
                         end
                     end
                     if not CludesUI._unlockActive then
-                        local f = tbbFrames[position]
-                        if f then
-                            f:ClearAllPoints()
-                            f:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
+                        local frame = tbbFrames[position]
+                        if frame then
+                            frame:ClearAllPoints()
+                            frame:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
                         end
                         mod.BuildTrackedBuffBars()
                     end
@@ -332,13 +332,13 @@ function mod.RegisterTBBUnlockElements()
                     local PPt = CludesUI and CludesUI.PP
                     wid = PPt and PPt.Snap(wid) or math.floor(wid + 0.5)
                     if c then
-                        local f = tbbFrames[ai]
+                        local frame = tbbFrames[ai]
                         if CludesUI._unlockActive or CludesUI._propagatingMatch then
                             c.width = wid
                             mod.PropagateTBBGroupSize(ai, "width", wid)
                         end
-                        if f then
-                            f:SetWidth(wid)
+                        if frame then
+                            frame:SetWidth(wid)
                         end
                         return
                     end
@@ -371,13 +371,13 @@ function mod.RegisterTBBUnlockElements()
                     local PPt = CludesUI and CludesUI.PP
                     hgt = PPt and PPt.Snap(hgt) or math.floor(hgt + 0.5)
                     if c then
-                        local f = tbbFrames[ai]
+                        local frame = tbbFrames[ai]
                         if CludesUI._unlockActive or CludesUI._propagatingMatch then
                             c.height = hgt
                             mod.PropagateTBBGroupSize(ai, "height", hgt)
                         end
-                        if f then
-                            f:SetHeight(hgt)
+                        if frame then
+                            frame:SetHeight(hgt)
                         end
                         return
                     end

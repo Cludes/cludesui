@@ -76,13 +76,13 @@ function DC.SpellID(val)
     end
 end
 
-local function ParseColor(s, d)
-    local r, g, b = s:match("^([%d%.]+),([%d%.]+),([%d%.]+)$")
-    r, g, b = tonumber(r), tonumber(g), tonumber(b)
-    if not (r and g and b) then
-        return { r = d.r, g = d.g, b = d.b }
+local function ParseColor(s, skinData)
+    local region, g, b = s:match("^([%d%.]+),([%d%.]+),([%d%.]+)$")
+    region, g, b = tonumber(region), tonumber(g), tonumber(b)
+    if not (region and g and b) then
+        return { r = skinData.r, g = skinData.g, b = skinData.b }
     end
-    return { r = math.min(r, 1), g = math.min(g, 1), b = math.min(b, 1) }
+    return { r = math.min(region, 1), g = math.min(g, 1), b = math.min(b, 1) }
 end
 
 local function Num(val)
@@ -134,11 +134,11 @@ function DC.Encode(singles, combos)
         return nil
     end
     local s, c = {}, {}
-    for idx, e in ipairs(singles) do
-        s[idx] = (e.missing and "!" or "") .. e.spell .. ":" .. ColorText(e.color)
+    for index, e in ipairs(singles) do
+        s[index] = (e.missing and "!" or "") .. e.spell .. ":" .. ColorText(e.color)
     end
-    for idx, e in ipairs(combos) do
-        c[idx] = table.concat(e.spells, "+") .. ":" .. ColorText(e.color)
+    for index, e in ipairs(combos) do
+        c[index] = table.concat(e.spells, "+") .. ":" .. ColorText(e.color)
     end
     return table.concat(s, ";") .. "/" .. table.concat(c, ";")
 end
@@ -190,19 +190,19 @@ local function BorderSpec()
     end
     local s
     if mod.IsCustomBorderEnabled() then
-        local tex = Value("customBorderTexture")
+        local texture = Value("customBorderTexture")
         local size = Value("customBorderSize") or 0
         if size <= 0 then
             return nil
         end
-        local px = CludesUI.BorderPx(Value("customBorderSizePx"), size, tex)
+        local px = CludesUI.BorderPx(Value("customBorderSizePx"), size, texture)
         -- On MEDIUM strata. The border frame sits one level above the bar (one
         -- below it when drawn behind); a textured border draws on that frame,
         -- a Solid one on the pixel border's container one level higher. The
         -- color goes one level above whichever draws: up = levels above the
         -- border frame (MakeBorderInit places that frame's level).
         local behind = Value("customBorderBehind") == true
-        if not tex or tex == "" or tex == "solid" then
+        if not texture or texture == "" or texture == "solid" then
             s = {
                 kind = "strips",
                 px = (px or size) + ExtraBorderPx(),
@@ -211,14 +211,14 @@ local function BorderSpec()
                 up = 2,
             }
         else
-            local filePath = CludesUI.ResolveBorderTexture(tex)
+            local filePath = CludesUI.ResolveBorderTexture(texture)
             if not filePath then
                 return nil
             end
             s = {
                 kind = "slices",
                 path = filePath,
-                tex = tex,
+                tex = texture,
                 size = size,
                 px = px,
                 strata = "MEDIUM",
@@ -308,12 +308,12 @@ local function ReadConfig()
             end
         end
     end
-    for idx = #ranked, 1, -1 do
-        local e = ranked[idx]
+    for index = #ranked, 1, -1 do
+        local e = ranked[index]
         c.singles[#c.singles + 1] = {
             spell = e.spell,
             color = e.color,
-            sublevel = e.sublevel or (idx == 1 and 5) or 4,
+            sublevel = e.sublevel or (index == 1 and 5) or 4,
             missing = e.missing,
         }
         parts[#parts + 1] = (e.missing and "m" or "s") .. e.spell .. ":" .. ColorText(e.color)
@@ -321,11 +321,11 @@ local function ReadConfig()
             c.anyMissing = true
         end
     end
-    for idx = #combos, 1, -1 do
-        local spells = Distinct(combos[idx].spells)
+    for index = #combos, 1, -1 do
+        local spells = Distinct(combos[index].spells)
         if #spells >= 2 then
-            c.combos[#c.combos + 1] = { spells = spells, color = combos[idx].color }
-            parts[#parts + 1] = "c" .. table.concat(spells, "+") .. ":" .. ColorText(combos[idx].color)
+            c.combos[#c.combos + 1] = { spells = spells, color = combos[index].color }
+            parts[#parts + 1] = "c" .. table.concat(spells, "+") .. ":" .. ColorText(combos[index].color)
         end
     end
     -- Color Border on a plate with no border has nothing to show.
@@ -341,13 +341,13 @@ end
 -- so nothing draws in a different order. Each sharer saves a root slot and,
 -- on every mob carrying the shared debuff, a live nested container.
 local function GroupComboRuns(combos)
-    local runs, idx = {}, 1
-    while idx <= #combos do
+    local runs, index = {}, 1
+    while index <= #combos do
         local common = {}
-        for _, ident in ipairs(combos[idx].spells) do
+        for _, ident in ipairs(combos[index].spells) do
             common[ident] = true
         end
-        local jdx = idx
+        local jdx = index
         while jdx < #combos do
             local both, any = {}, false
             for _, ident in ipairs(combos[jdx + 1].spells) do
@@ -363,14 +363,14 @@ local function GroupComboRuns(combos)
         -- The run's first combo keeps its own spell order where it can, so a
         -- combo with no neighbour to share with builds exactly as saved.
         local first
-        for _, ident in ipairs(combos[idx].spells) do
+        for _, ident in ipairs(combos[index].spells) do
             if common[ident] then
                 first = ident
                 break
             end
         end
         local run = {}
-        for k = idx, jdx do
+        for k = index, jdx do
             local spells = { first }
             for _, ident in ipairs(combos[k].spells) do
                 if ident ~= first then
@@ -380,7 +380,7 @@ local function GroupComboRuns(combos)
             run[#run + 1] = { spells = spells, color = combos[k].color }
         end
         runs[#runs + 1] = run
-        idx = jdx + 1
+        index = jdx + 1
     end
     return runs
 end
@@ -409,11 +409,11 @@ local resync -- the roster re-check's one-shot frame (RequestResync)
 local function GroupTokens()
     if not groupTokens then
         groupTokens = { raid = {}, raidpet = {}, party = {}, partypet = {} }
-        for idx = 1, 40 do
-            groupTokens.raid[idx], groupTokens.raidpet[idx] = "raid" .. idx, "raidpet" .. idx
+        for index = 1, 40 do
+            groupTokens.raid[index], groupTokens.raidpet[index] = "raid" .. index, "raidpet" .. index
         end
-        for idx = 1, 4 do
-            groupTokens.party[idx], groupTokens.partypet[idx] = "party" .. idx, "partypet" .. idx
+        for index = 1, 4 do
+            groupTokens.party[index], groupTokens.partypet[index] = "party" .. index, "partypet" .. index
         end
     end
     return groupTokens
@@ -433,22 +433,22 @@ local function Engaged(unitToken)
         local tokens, raid = GroupTokens(), IsInRaid()
         local who = raid and tokens.raid or tokens.party
         local pets = raid and tokens.raidpet or tokens.partypet
-        for idx = 1, math.min(GetNumGroupMembers() - (raid and 0 or 1), #who) do
-            if not UnitIsUnit(who[idx], "player") then
+        for index = 1, math.min(GetNumGroupMembers() - (raid and 0 or 1), #who) do
+            if not UnitIsUnit(who[index], "player") then
                 num = num + 1
-                engagers[num] = who[idx]
-                if UnitExists(pets[idx]) then
+                engagers[num] = who[index]
+                if UnitExists(pets[index]) then
                     num = num + 1
-                    engagers[num] = pets[idx]
+                    engagers[num] = pets[index]
                 end
             end
         end
-        for idx = #engagers, num + 1, -1 do
-            engagers[idx] = nil
+        for index = #engagers, num + 1, -1 do
+            engagers[index] = nil
         end
     end
-    for idx = 1, #engagers do
-        if type(UnitThreatSituation(engagers[idx], unitToken)) ~= "nil" then
+    for index = 1, #engagers do
+        if type(UnitThreatSituation(engagers[index], unitToken)) ~= "nil" then
             return true
         end
     end
@@ -506,9 +506,9 @@ local function Kit(backing)
     hider:SetAllPoints(backing.health)
     hider:SetAlpha(0)
     hider:Hide()
-    local host = CreateFrame("Frame", nil, gate)
-    host:SetAllPoints(gate)
-    kit = { gate = gate, hider = hider, host = host, sensors = {}, looks = {}, used = 0 }
+    local owner = CreateFrame("Frame", nil, gate)
+    owner:SetAllPoints(gate)
+    kit = { gate = gate, hider = hider, host = owner, sensors = {}, looks = {}, used = 0 }
     gate:SetScript("OnEvent", function()
         SyncGate(kit)
     end)
@@ -618,10 +618,10 @@ local function BindBundle(b, unitToken)
     if b.unit ~= unitToken then
         b.unit = unitToken
         -- Binding a slot may initialize its nested container; re-read the count.
-        local idx = 1
-        while idx <= #b.containers do
-            b.containers[idx]:SetUnit(unitToken)
-            idx = idx + 1
+        local index = 1
+        while index <= #b.containers do
+            b.containers[index]:SetUnit(unitToken)
+            index = index + 1
         end
     end
     b.holder:Show()
@@ -691,32 +691,32 @@ end
 -- Missing row's; the pieces draw through a copy of it on their own frame (it
 -- may draw on another strata).
 local function NewBorderCopy(hostFrame, specInfo, sensorMask)
-    local f = CreateFrame("Frame", nil, hostFrame)
-    f:EnableMouse(false)
+    local frame = CreateFrame("Frame", nil, hostFrame)
+    frame:EnableMouse(false)
     if specInfo.strata then
-        f:SetFrameStrata(specInfo.strata)
+        frame:SetFrameStrata(specInfo.strata)
     end
     local mask
     if sensorMask then
-        mask = f:CreateMaskTexture()
+        mask = frame:CreateMaskTexture()
         mask:SetTexture(WHITE, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         mask:SetAllPoints(sensorMask)
     end
     local pieces = {}
     if specInfo.kind == "strips" then
-        f:SetIgnoreParentScale(true)
-        f:SetScale(1)
-        for idx = 1, 4 do
-            local tx = f:CreateTexture(nil, "OVERLAY")
+        frame:SetIgnoreParentScale(true)
+        frame:SetScale(1)
+        for index = 1, 4 do
+            local tx = frame:CreateTexture(nil, "OVERLAY")
             if tx.SetSnapToPixelGrid then
                 tx:SetSnapToPixelGrid(false)
                 tx:SetTexelSnappingBias(0)
             end
-            pieces[idx] = tx
+            pieces[index] = tx
         end
     else
         for key, coords in pairs(CludesUI.SECRET_BORDER_UV) do
-            local tx = f:CreateTexture(nil, "OVERLAY")
+            local tx = frame:CreateTexture(nil, "OVERLAY")
             tx:SetTexCoord(unpack(coords))
             pieces[key] = tx
         end
@@ -726,12 +726,12 @@ local function NewBorderCopy(hostFrame, specInfo, sensorMask)
             tx:AddMaskTexture(mask)
         end
     end
-    return f, pieces
+    return frame, pieces
 end
 
-local function LayStrip(tx, f, p1, y1, p2, y2, width, height)
-    tx:SetPoint(p1, f, p1, 0, y1)
-    tx:SetPoint(p2, f, p2, 0, y2)
+local function LayStrip(tx, frame, p1, y1, p2, y2, width, height)
+    tx:SetPoint(p1, frame, p1, 0, y1)
+    tx:SetPoint(p2, frame, p2, 0, y2)
     if width then
         tx:SetWidth(width)
     else
@@ -740,15 +740,15 @@ local function LayStrip(tx, f, p1, y1, p2, y2, width, height)
 end
 
 -- Colors a copy and lays it over owner (the bar's rect), on OVERLAY sublevel.
-local function DressBorderCopy(f, pieces, specInfo, ownerFrame, color, sublevel)
-    f:ClearAllPoints()
-    f:SetAllPoints(ownerFrame)
+local function DressBorderCopy(frame, pieces, specInfo, ownerFrame, color, sublevel)
+    frame:ClearAllPoints()
+    frame:SetAllPoints(ownerFrame)
     for _, tx in pairs(pieces) do
         tx:SetDrawLayer("OVERLAY", sublevel)
         tx:ClearAllPoints()
     end
     if specInfo.kind == "strips" then
-        local success, es = pcall(f.GetEffectiveScale, f)
+        local success, es = pcall(frame.GetEffectiveScale, frame)
         if not (success and es and es > 0) then
             es = 1
         end
@@ -757,17 +757,17 @@ local function DressBorderCopy(f, pieces, specInfo, ownerFrame, color, sublevel)
         for _, tx in ipairs(pieces) do
             tx:SetColorTexture(color.r, color.g, color.b, 1)
         end
-        LayStrip(pieces[1], f, "TOPLEFT", 0, "TOPRIGHT", 0, nil, t)
-        LayStrip(pieces[2], f, "BOTTOMLEFT", 0, "BOTTOMRIGHT", 0, nil, t)
-        LayStrip(pieces[3], f, "TOPLEFT", -t, "BOTTOMLEFT", t, t)
-        LayStrip(pieces[4], f, "TOPRIGHT", -t, "BOTTOMRIGHT", t, t)
+        LayStrip(pieces[1], frame, "TOPLEFT", 0, "TOPRIGHT", 0, nil, t)
+        LayStrip(pieces[2], frame, "BOTTOMLEFT", 0, "BOTTOMRIGHT", 0, nil, t)
+        LayStrip(pieces[3], frame, "TOPLEFT", -t, "BOTTOMLEFT", t, t)
+        LayStrip(pieces[4], frame, "TOPRIGHT", -t, "BOTTOMRIGHT", t, t)
     else
         for _, tx in pairs(pieces) do
             tx:SetTexture(specInfo.path, true, true)
             tx:SetVertexColor(color.r, color.g, color.b, 1)
         end
         local edge, aL, aT, aR, aB = CludesUI.SecretBorderGeometry(
-            f,
+            frame,
             specInfo.size,
             specInfo.tex,
             specInfo.offX,
@@ -779,7 +779,7 @@ local function DressBorderCopy(f, pieces, specInfo, ownerFrame, color, sublevel)
             nil,
             specInfo.px
         )
-        CludesUI.LayoutSecretBorderEdges(pieces, f, edge, aL, aT, aR, aB)
+        CludesUI.LayoutSecretBorderEdges(pieces, frame, edge, aL, aT, aR, aB)
     end
 end
 
@@ -799,9 +799,9 @@ local function MakeBorderInit(b, color, sublevel)
         btnFrame:SetFrameLevel(b.level)
         btnFrame:EnableMouse(false)
         local specInfo = b.config.border
-        local f, pieces = NewBorderCopy(btnFrame, specInfo)
-        f:SetFrameLevel(CopyLevel(b, specInfo, rank))
-        DressBorderCopy(f, pieces, specInfo, b.holder, color, sublevel)
+        local frame, pieces = NewBorderCopy(btnFrame, specInfo)
+        frame:SetFrameLevel(CopyLevel(b, specInfo, rank))
+        DressBorderCopy(frame, pieces, specInfo, b.holder, color, sublevel)
     end
 end
 
@@ -849,8 +849,8 @@ local function DressLook(b, sensor, color, sublevel)
     local style = specInfo.kind .. (specInfo.strata or "")
     local copy = look.copies[style]
     if not copy then
-        local f, pieces = NewBorderCopy(kit.host, specInfo, sensor.mask)
-        copy = { frame = f, pieces = pieces }
+        local frame, pieces = NewBorderCopy(kit.host, specInfo, sensor.mask)
+        copy = { frame = frame, pieces = pieces }
         look.copies[style] = copy
     end
     copy.frame:SetFrameLevel(CopyLevel(b, specInfo, rank) + num)
@@ -927,8 +927,8 @@ local function AddComboRun(b, boxHolder, key, run)
         key,
         run[1].spells[1],
         MakeNestInit(b, function(nested)
-            for idx, combo in ipairs(run) do
-                AddComboSlot(b, nested, key .. "_" .. idx, combo, 2)
+            for index, combo in ipairs(run) do
+                AddComboSlot(b, nested, key .. "_" .. index, combo, 2)
             end
         end)
     )
@@ -969,27 +969,27 @@ end
 
 -- Row i's chain: depth clips, each inside the last, the copy in the innermost.
 -- Pooled by index; a row that needs more clips adds them.
-local function Chain(nk, idx, depth, hostFrame)
-    local ch = nk.chains[idx]
+local function Chain(nk, index, depth, hostFrame)
+    local ch = nk.chains[index]
     if not ch then
         ch = { clips = {} }
-        nk.chains[idx] = ch
+        nk.chains[index] = ch
     end
     local clips = ch.clips
-    for d = 1, depth do
-        local wanted = (d == 1) and hostFrame or clips[d - 1]
-        local clip = clips[d]
+    for skinData = 1, depth do
+        local wanted = (skinData == 1) and hostFrame or clips[skinData - 1]
+        local clip = clips[skinData]
         if not clip then
             clip = CreateFrame("Frame", nil, wanted)
             clip:SetClipsChildren(true)
-            clips[d] = clip
+            clips[skinData] = clip
         elseif clip:GetParent() ~= wanted then
             clip:SetParent(wanted)
         end
         clip:Show()
     end
-    for d = depth + 1, #clips do
-        clips[d]:Hide()
+    for skinData = depth + 1, #clips do
+        clips[skinData]:Hide()
     end
     ch.depth = depth
     local inner = clips[depth]
@@ -1024,12 +1024,12 @@ local function LevelChains(nk)
     local strata, base = nk.root:GetFrameStrata(), nk.root:GetFrameLevel()
     nk.gated:SetFrameStrata(strata)
     nk.gated:SetFrameLevel(base)
-    for idx = 1, nk.used do
-        local ch = nk.chains[idx]
-        for d = 1, ch.depth do
-            local clip = ch.clips[d]
+    for index = 1, nk.used do
+        local ch = nk.chains[index]
+        for skinData = 1, ch.depth do
+            local clip = ch.clips[skinData]
             clip:SetFrameStrata(strata)
-            clip:SetFrameLevel(base + (idx - 1) * CHAIN_STEP + d)
+            clip:SetFrameLevel(base + (index - 1) * CHAIN_STEP + skinData)
         end
     end
 end
@@ -1057,12 +1057,12 @@ local function MirrorName(backing, shownOnly)
     end
     -- The host's own strata change (SlotTextHost) reaches its children, so the
     -- strata and levels are set again on every pass.
-    local host = name:GetParent()
-    if root:GetParent() ~= host then
-        root:SetParent(host)
+    local owner = name:GetParent()
+    if root:GetParent() ~= owner then
+        root:SetParent(owner)
     end
-    root:SetFrameStrata(host:GetFrameStrata())
-    root:SetFrameLevel(host:GetFrameLevel() + 1)
+    root:SetFrameStrata(owner:GetFrameStrata())
+    root:SetFrameLevel(owner:GetFrameLevel() + 1)
     LevelChains(nk)
     local fam = name:GetFontObject()
     if not (fam and CludesUI._fontFamilySet[fam]) then
@@ -1077,8 +1077,8 @@ local function MirrorName(backing, shownOnly)
     local jh, jv = name:GetJustifyH(), name:GetJustifyV()
     local wrap, nsWrap, lines = name:CanWordWrap(), name:CanNonSpaceWrap(), name:GetMaxLines()
     local textValue = name:GetText()
-    for idx = 1, nk.used do
-        local fontStr = nk.chains[idx].copy
+    for index = 1, nk.used do
+        local fontStr = nk.chains[index].copy
         if fam then
             if fontStr:GetFontObject() ~= fam then
                 fontStr:SetFontObject(fam)
@@ -1131,16 +1131,16 @@ local function CreateNameBundle(backing)
     local b = { config = config, kit = kit, nameKit = nk, containers = {} }
     kit.used = 0
     local sensorOf = {}
-    for idx, e in ipairs(config.nameEntries) do
-        local ch = Chain(nk, idx, #e.spells, e.missing and nk.gated or nk.root)
-        for d, spell in ipairs(e.spells) do
+    for index, e in ipairs(config.nameEntries) do
+        local ch = Chain(nk, index, #e.spells, e.missing and nk.gated or nk.root)
+        for skinData, spell in ipairs(e.spells) do
             local s = sensorOf[spell]
             if not s then
                 kit.used = kit.used + 1
                 s = PointSensor(kit, kit.used, spell)
                 sensorOf[spell] = s
             end
-            AnchorClip(ch.clips[d], s, e.missing)
+            AnchorClip(ch.clips[skinData], s, e.missing)
         end
         local fontStr = ch.copy
         fontStr:ClearAllPoints()
@@ -1148,8 +1148,8 @@ local function CreateNameBundle(backing)
         fontStr:SetTextColor(e.color.r, e.color.g, e.color.b, 1)
     end
     nk.used = #config.nameEntries
-    for idx = nk.used + 1, #nk.chains do
-        nk.chains[idx].clips[1]:Hide()
+    for index = nk.used + 1, #nk.chains do
+        nk.chains[index].clips[1]:Hide()
     end
     ParkSensors(kit)
     LevelChains(nk)
@@ -1185,7 +1185,7 @@ local function CreateBundle(backing)
         kit.host:SetFrameLevel(b.level)
         HideLooks(kit)
     end
-    for idx, single in ipairs(config.singles) do
+    for index, single in ipairs(config.singles) do
         if single.missing then
             kit.used = kit.used + 1
             DressLook(b, PointSensor(kit, kit.used, single.spell), single.color, single.sublevel)
@@ -1193,7 +1193,7 @@ local function CreateBundle(backing)
             AddTintSlot(
                 b,
                 root,
-                "CUI_DEBUFF_COLOR_" .. idx,
+                "CUI_DEBUFF_COLOR_" .. index,
                 single.spell,
                 ColorInit(b, single.color, single.sublevel)
             )
@@ -1202,8 +1202,8 @@ local function CreateBundle(backing)
     if kit then
         ParkSensors(kit)
     end
-    for idx, run in ipairs(config.comboRuns) do
-        AddComboRun(b, root, "CUI_DEBUFF_COMBO_" .. idx, run)
+    for index, run in ipairs(config.comboRuns) do
+        AddComboRun(b, root, "CUI_DEBUFF_COMBO_" .. index, run)
     end
     bundles[backing] = b
     return b

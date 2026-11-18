@@ -110,14 +110,14 @@ local PV_DISPEL_ICON_POINTS = {
 -- palette edit re-registers the border options (style.dispelColorFP).
 local function BuildDispelColorMap(conf)
     local map, fp = {}, {}
-    for idx = 1, #DISPEL_SLOTS do
-        local def = DISPEL_SLOTS[idx]
+    for index = 1, #DISPEL_SLOTS do
+        local def = DISPEL_SLOTS[index]
         local c = conf[def.colorKey]
-        local r = (c and c.r) or def.fallback[1]
+        local region = (c and c.r) or def.fallback[1]
         local g = (c and c.g) or def.fallback[2]
         local b = (c and c.b) or def.fallback[3]
-        map[def.token] = CreateColor(r, g, b, 1)
-        fp[#fp + 1] = string.format("%.3f,%.3f,%.3f", r, g, b)
+        map[def.token] = CreateColor(region, g, b, 1)
+        fp[#fp + 1] = string.format("%.3f,%.3f,%.3f", region, g, b)
     end
     return map, table.concat(fp, ";")
 end
@@ -149,7 +149,7 @@ end
 -- d.duration/d.stack are the FontStrings AK's own initializer creates. Adds what AK has
 -- no native field for: duration/stack text color and independent stack-text show/hide
 -- (AK's hideDurationText covers duration hide only, no native stack equivalent).
-local function PAB_ApplyExtraText(btnFrame, d, style)
+local function PAB_ApplyExtraText(btnFrame, skinData, style)
     -- Own text pipeline (style.noDefaultFonts): fonts ride the user's global/per-module
     -- Unit Frames font and the house icon-text outline rules, resolved once per style
     -- rebuild into style.fontPath/fontFlag (see BuildStyle). Font/anchor writes are
@@ -159,25 +159,25 @@ local function PAB_ApplyExtraText(btnFrame, d, style)
     -- in-instance.
     local filePath = style.fontPath or STANDARD_TEXT_FONT
     local flag = style.fontFlag or "OUTLINE"
-    if d.duration then
+    if skinData.duration then
         local fKey = filePath .. "|" .. (style.durationFontSize or 11) .. "|" .. flag
-        if d.pabDurFont ~= fKey then
-            d.pabDurFont = fKey
+        if skinData.pabDurFont ~= fKey then
+            skinData.pabDurFont = fKey
             -- Prime the shadow FontObject before SetFont; Drop Shadow mode (empty
             -- flag) keeps the text legible instead of flat.
-            CludesUI.PrimeFontShadow(d.duration, flag == "")
-            d.duration:SetFont(filePath, style.durationFontSize or 11, flag)
+            CludesUI.PrimeFontShadow(skinData.duration, flag == "")
+            skinData.duration:SetFont(filePath, style.durationFontSize or 11, flag)
         end
         local dp = style.durationPoint or "CENTER"
         local drp = style.durationRelPoint or "CENTER"
         local aKey = dp .. "|" .. drp .. "|" .. (style.durationX or 0) .. "|" .. (style.durationY or 0)
-        if d.pabDurAnchor ~= aKey then
-            d.duration:ClearAllPoints()
-            d.duration:SetPoint(dp, btnFrame, drp, style.durationX or 0, style.durationY or 0)
-            d.pabDurAnchor = aKey
+        if skinData.pabDurAnchor ~= aKey then
+            skinData.duration:ClearAllPoints()
+            skinData.duration:SetPoint(dp, btnFrame, drp, style.durationX or 0, style.durationY or 0)
+            skinData.pabDurAnchor = aKey
         end
         local c = style.durationColor
-        d.duration:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
+        skinData.duration:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
         -- "Show S for Seconds" rebind: duration opts land once at creation;
         -- re-register when the style's formatter choice changed. The nil
         -- gate skips the creation-time applyExtra pass (the creation block
@@ -187,36 +187,36 @@ local function PAB_ApplyExtraText(btnFrame, d, style)
         -- the next restyle retries.
         local wantFmt = (style.durationShowSeconds and "s" or "b")
             .. tostring(style.durationPrecisionThreshold or 0)
-        if d.durationFmtS ~= nil and d.durationFmtS ~= wantFmt then
+        if skinData.durationFmtS ~= nil and skinData.durationFmtS ~= wantFmt then
             local AK = CludesUI.AuraKit
             local durationOpts = AK.BuildDurationTextOpts(
                 AK.GetDurationFormatter(style.durationShowSeconds, style.durationPrecisionThreshold),
                 style.durationColorCurve,
                 style.durationUpdateInterval
             )
-            local success, full = AK.SetDurationTextSafe(btnFrame, d.duration, durationOpts)
+            local success, full = AK.SetDurationTextSafe(btnFrame, skinData.duration, durationOpts)
             if success and (full or not style.durationColorCurve) then
-                d.durationFmtS = wantFmt
+                skinData.durationFmtS = wantFmt
             end
         end
     end
-    if d.stack then
+    if skinData.stack then
         local fKey = filePath .. "|" .. (style.stackFontSize or 11) .. "|" .. flag
-        if d.pabStackFont ~= fKey then
-            d.pabStackFont = fKey
-            CludesUI.PrimeFontShadow(d.stack, flag == "")
-            d.stack:SetFont(filePath, style.stackFontSize or 11, flag)
+        if skinData.pabStackFont ~= fKey then
+            skinData.pabStackFont = fKey
+            CludesUI.PrimeFontShadow(skinData.stack, flag == "")
+            skinData.stack:SetFont(filePath, style.stackFontSize or 11, flag)
         end
         local sp = style.stackPoint or "BOTTOMRIGHT"
         local sKey = sp .. "|" .. (style.stackX or 0) .. "|" .. (style.stackY or 0)
-        if d.pabStackAnchor ~= sKey then
-            d.stack:ClearAllPoints()
-            d.stack:SetPoint(sp, btnFrame, sp, style.stackX or 0, style.stackY or 0)
-            d.pabStackAnchor = sKey
+        if skinData.pabStackAnchor ~= sKey then
+            skinData.stack:ClearAllPoints()
+            skinData.stack:SetPoint(sp, btnFrame, sp, style.stackX or 0, style.stackY or 0)
+            skinData.pabStackAnchor = sKey
         end
-        d.stack:SetShown(style.showStacks ~= false)
+        skinData.stack:SetShown(style.showStacks ~= false)
         local c = style.stackColor
-        d.stack:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
+        skinData.stack:SetTextColor(c and c.r or 1, c and c.g or 1, c and c.b or 1)
     end
 
     -- Duration swipe visibility. style.hideSwipe only runs through AK's
@@ -231,62 +231,62 @@ local function PAB_ApplyExtraText(btnFrame, d, style)
     --   2) frame alpha 0 -- Show()/Hide() never touch alpha, so it survives internal
     --      engine paths that re-show the frame outside the hooked Lua method
     --      (post-instance-change re-shows do this).
-    if d.cooldown then
-        d.pabHideSwipe = style.hideSwipe == true
+    if skinData.cooldown then
+        skinData.pabHideSwipe = style.hideSwipe == true
         -- Install lazily on the first apply that actually hides the swipe. The
         -- hook reads the live flag, so a later toggle back on still works, and a
         -- user who never turns the setting off never gets a closure or a secure
         -- hook on this cooldown's Show at all.
-        if d.pabHideSwipe and not d._pabSwipeHooked then
-            d._pabSwipeHooked = true
-            hooksecurefunc(d.cooldown, "Show", function()
-                if d.pabHideSwipe then
-                    d.cooldown:Hide()
+        if skinData.pabHideSwipe and not skinData._pabSwipeHooked then
+            skinData._pabSwipeHooked = true
+            hooksecurefunc(skinData.cooldown, "Show", function()
+                if skinData.pabHideSwipe then
+                    skinData.cooldown:Hide()
                 end
             end)
         end
-        local a = d.pabHideSwipe and 0 or 1
-        if d.pabSwipeAlpha ~= a then
-            d.pabSwipeAlpha = a
-            d.cooldown:SetAlpha(a)
+        local a = skinData.pabHideSwipe and 0 or 1
+        if skinData.pabSwipeAlpha ~= a then
+            skinData.pabSwipeAlpha = a
+            skinData.cooldown:SetAlpha(a)
         end
     end
 
     -- Icon Effects Per-Filter (debuffs only): flag-gated so buff buttons, which never
     -- carry style.fxList or fx overlay frames, pay zero cost.
-    if style.fxList or d.pabFxGlow or d.pabFxBdr then
-        PAB_ApplyDmFx(btnFrame, d, style)
+    if style.fxList or skinData.pabFxGlow or skinData.pabFxBdr then
+        PAB_ApplyDmFx(btnFrame, skinData, style)
     end
 
     -- Centered runs can have an odd content width/height, whose CENTER anchor is a
     -- half pixel. Let textures use Blizzard's normal pixel snapping so
     -- icon art cannot bleed over PP's one-pixel border. Edge-growing bars keep CUI's
     -- usual unsnapped rendering.
-    d.pabCenteredSnap = style.centeredGrowth == true
+    skinData.pabCenteredSnap = style.centeredGrowth == true
     -- Lazy install on the first centered apply: bars that never use centered
     -- growth never pay the closure. Once installed the hook reads the live
     -- flag, so switching back to edge growth costs one boolean per SetTexture.
-    if d.pabCenteredSnap and d.icon and not d.pabIconSnapHooked then
-        d.pabIconSnapHooked = true
-        hooksecurefunc(d.icon, "SetTexture", function(texture)
-            if d.pabCenteredSnap then
+    if skinData.pabCenteredSnap and skinData.icon and not skinData.pabIconSnapHooked then
+        skinData.pabIconSnapHooked = true
+        hooksecurefunc(skinData.icon, "SetTexture", function(texture)
+            if skinData.pabCenteredSnap then
                 SetTexturePixelSnap(texture, true)
             end
         end)
     end
-    SetTexturePixelSnap(d.icon, d.pabCenteredSnap)
-    local border = d.borderHost and CludesUI.PP.GetBorders(d.borderHost)
+    SetTexturePixelSnap(skinData.icon, skinData.pabCenteredSnap)
+    local border = skinData.borderHost and CludesUI.PP.GetBorders(skinData.borderHost)
     if border then
-        SetTexturePixelSnap(border._top, d.pabCenteredSnap)
-        SetTexturePixelSnap(border._bottom, d.pabCenteredSnap)
-        SetTexturePixelSnap(border._left, d.pabCenteredSnap)
-        SetTexturePixelSnap(border._right, d.pabCenteredSnap)
+        SetTexturePixelSnap(border._top, skinData.pabCenteredSnap)
+        SetTexturePixelSnap(border._bottom, skinData.pabCenteredSnap)
+        SetTexturePixelSnap(border._left, skinData.pabCenteredSnap)
+        SetTexturePixelSnap(border._right, skinData.pabCenteredSnap)
     end
     -- Textured borders use the secret-safe eight-slice renderer rather than PP.
     -- Keep its edge art on the same centered-growth snapping policy.
-    if d._secretBorderEdges then
-        for _, tex in pairs(d._secretBorderEdges) do
-            SetTexturePixelSnap(tex, d.pabCenteredSnap)
+    if skinData._secretBorderEdges then
+        for _, texture in pairs(skinData._secretBorderEdges) do
+            SetTexturePixelSnap(texture, skinData.pabCenteredSnap)
         end
     end
 end

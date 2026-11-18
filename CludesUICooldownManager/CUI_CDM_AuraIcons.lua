@@ -82,8 +82,8 @@ local function ReadAliases()
     if not mod._cdmDataLoaded then
         return
     end
-    for idx = #pendingAliases, 1, -1 do
-        local p = table.remove(pendingAliases, idx)
+    for index = #pendingAliases, 1, -1 do
+        local p = table.remove(pendingAliases, index)
         local ids = p.Aliases()
         if ids then
             for jdx = 1, #ids do
@@ -153,8 +153,8 @@ local function Entry(provider)
     E.proxy = proxy
     -- Creation window: the CDM look's own regions, then the button fills the
     -- proxy (two-point anchors size it by the proxy for good).
-    E.init = function(btnFrame, d)
-        _AC.InitExtra(btnFrame, d)
+    E.init = function(btnFrame, skinData)
+        _AC.InitExtra(btnFrame, skinData)
         btnFrame:SetAllPoints(proxy)
     end
     entries[provider.key] = E
@@ -167,11 +167,11 @@ end
 -- so the look is cut for the host rather than for the bar's Icon Size. nil
 -- before the first layout (the bar's Icon Size stands in).
 local function HostSize(E)
-    local host = E.host
-    if not host then
+    local owner = E.host
+    if not owner then
         return nil
     end
-    local wid, hgt = host:GetSize()
+    local wid, hgt = owner:GetSize()
     if
         type(wid) ~= "number"
         or type(hgt) ~= "number"
@@ -231,11 +231,11 @@ end
 -- Levels follow the host: DecorateFrame levels its regions off the frame's
 -- own level, which the reanchor's reparent moves.
 local function Level(E)
-    local host, boxHolder = E.host, E.container
-    if not (host and boxHolder) then
+    local owner, boxHolder = E.host, E.container
+    if not (owner and boxHolder) then
         return
     end
-    local lvl = host:GetFrameLevel() + SLOT_LEVEL
+    local lvl = owner:GetFrameLevel() + SLOT_LEVEL
     if E.level == lvl then
         return
     end
@@ -272,16 +272,16 @@ end
 
 -- The reanchor placed the entry's frame on a bar: the slot follows it, and is
 -- built (or built again for a new include set) on the AuraKit worker.
-local function Attach(E, f, barId)
-    E.host, E.hostBar = f, barId
-    hostEntry[f] = E
+local function Attach(E, frame, barId)
+    E.host, E.hostBar = frame, barId
+    hostEntry[frame] = E
     placed[E] = true
     Listen(true)
     local proxy = E.proxy
-    if proxy:GetParent() ~= f then
-        proxy:SetParent(f)
+    if proxy:GetParent() ~= frame then
+        proxy:SetParent(frame)
         proxy:ClearAllPoints()
-        proxy:SetAllPoints(f)
+        proxy:SetAllPoints(frame)
         E.level = nil
     end
     if not proxy:IsShown() then
@@ -338,67 +338,67 @@ end
 -- and every rebuild park it with the other injected frames.
 local function HostFrame(barId, key)
     local fkey = barId .. ":auraicon:" .. key
-    local f = _presetFrames[fkey]
-    if f then
-        return f
+    local frame = _presetFrames[fkey]
+    if frame then
+        return frame
     end
-    f = CreateFrame("Frame", nil, UIParent)
-    f:SetSize(36, 36)
-    f:Hide()
-    f:EnableMouse(true)
-    if f.SetMouseClickEnabled then
-        f:SetMouseClickEnabled(false)
+    frame = CreateFrame("Frame", nil, UIParent)
+    frame:SetSize(36, 36)
+    frame:Hide()
+    frame:EnableMouse(true)
+    if frame.SetMouseClickEnabled then
+        frame:SetMouseClickEnabled(false)
     end
-    local texture = f:CreateTexture(nil, "ARTWORK")
+    local texture = frame:CreateTexture(nil, "ARTWORK")
     texture:SetAllPoints()
     mod.CdmOwnIconCrop(texture)
-    f.Icon = texture
-    f._tex = texture
+    frame.Icon = texture
+    frame._tex = texture
     -- Never armed (the slot draws the aura's swipe); the decoration styles it
     -- like any icon's.
-    local cd = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
+    local cd = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
     cd:SetAllPoints()
     cd:SetDrawEdge(false)
     cd:SetDrawBling(false)
     cd:SetHideCountdownNumbers(true)
-    f.Cooldown = cd
-    f._cooldown = cd
-    f._isPresetFrame = true
-    f._isAuraIconFrame = true
-    f.cooldownID = nil
-    f.cooldownInfo = nil
-    f.layoutIndex = 99999
-    f:SetScript("OnEnter", OnEnter)
-    f:SetScript("OnLeave", GameTooltip_Hide)
-    f:SetScript("OnSizeChanged", OnHostSize)
-    _presetFrames[fkey] = f
-    return f
+    frame.Cooldown = cd
+    frame._cooldown = cd
+    frame._isPresetFrame = true
+    frame._isAuraIconFrame = true
+    frame.cooldownID = nil
+    frame.cooldownInfo = nil
+    frame.layoutIndex = 99999
+    frame:SetScript("OnEnter", OnEnter)
+    frame:SetScript("OnLeave", GameTooltip_Hide)
+    frame:SetScript("OnSizeChanged", OnHostSize)
+    _presetFrames[fkey] = frame
+    return frame
 end
 
-local function PaintIdle(f, provider)
+local function PaintIdle(frame, provider)
     local art = provider.Icon()
-    if art and f._auraIconArt ~= art then
-        f._auraIconArt = art
-        f._tex:SetTexture(art)
+    if art and frame._auraIconArt ~= art then
+        frame._auraIconArt = art
+        frame._tex:SetTexture(art)
     end
     local grey = provider.Desaturate() and true or false
-    if f._auraIconGrey ~= grey then
-        f._auraIconGrey = grey
-        f._tex:SetDesaturated(grey)
+    if frame._auraIconGrey ~= grey then
+        frame._auraIconGrey = grey
+        frame._tex:SetDesaturated(grey)
     end
-    f._auraIconTip = provider.tip
+    frame._auraIconTip = provider.tip
 end
 
 local function Place(barId, provider)
     if provider.Off and provider.Off() then
         return nil
     end
-    local f = HostFrame(barId, provider.key)
+    local frame = HostFrame(barId, provider.key)
     -- Attach first: the include read is what tells the idle paint whether
     -- the entry's spell is known.
-    Attach(Entry(provider), f, barId)
-    PaintIdle(f, provider)
-    return f
+    Attach(Entry(provider), frame, barId)
+    PaintIdle(frame, provider)
+    return frame
 end
 
 -------------------------------------------------------------------------------

@@ -37,12 +37,12 @@ local ev = CreateFrame("Frame")
 local started = false -- the first PLAYER_ENTERING_WORLD ran the initial sync
 local level = -1 -- 0 off, 1 option on but not Holy, 2 armed (Holy)
 local tankUnit -- cached out of the encounter; roles can read secret in M+
-local host, boxHolder, containerUnit
+local owner, boxHolder, containerUnit
 
 local function Enabled()
     local saved = _G._CUABR_AceDB
-    local d = saved and saved.profile and saved.profile.display
-    return d and d.beaconMPlus == true
+    local skinData = saved and saved.profile and saved.profile.display
+    return skinData and skinData.beaconMPlus == true
 end
 
 local function IsHoly()
@@ -51,8 +51,8 @@ local function IsHoly()
 end
 
 local function RefreshTank()
-    for idx = 1, 4 do
-        local u = PARTY[idx]
+    for index = 1, 4 do
+        local u = PARTY[index]
         if UnitExists(u) then
             local role = UnitGroupRolesAssigned(u)
             if issecretvalue and issecretvalue(role) then
@@ -71,8 +71,8 @@ local function FindIn(entries, unitToken)
     if not entries then
         return
     end
-    for idx = 1, #entries do
-        local b = entries[idx]
+    for index = 1, #entries do
+        local b = entries[index]
         if b and b:IsVisible() and b:GetAttribute("unit") == unitToken then
             return b
         end
@@ -93,11 +93,11 @@ end
 -- decorated: the aura icon, no mouse (the tank's frame keeps its clicks and
 -- mouseover casts), and the red glow on a child host, whose C-side animation
 -- runs the same in and out of restricted content.
-local function InitButton(btnFrame, d)
-    local icon = btnFrame:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints(btnFrame)
-    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    btnFrame:SetIcon(icon)
+local function InitButton(btnFrame, skinData)
+    local iconTex = btnFrame:CreateTexture(nil, "ARTWORK")
+    iconTex:SetAllPoints(btnFrame)
+    iconTex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    btnFrame:SetIcon(iconTex)
     pcall(btnFrame.EnableMouse, btnFrame, false)
     local glow = CreateFrame("Frame", nil, btnFrame)
     glow:SetAllPoints(btnFrame)
@@ -110,19 +110,19 @@ local function InitButton(btnFrame, d)
     -- to re-run its visibility). Without that API the animation plays while
     -- hidden too, and the group's cap is a fixed 1: only the one button it
     -- can ever show carries the glow.
-    if not Glows.BindEngineHost(glow, btnFrame, d, icon) and not CludesUI.AuraKit.ButtonCanShow(btnFrame) then
+    if not Glows.BindEngineHost(glow, btnFrame, skinData, iconTex) and not CludesUI.AuraKit.ButtonCanShow(btnFrame) then
         return
     end
     Glows.PrewarmEngineHost(glow, ICON_SIZE, ICON_SIZE, GLOW_NEED)
-    d.abrBeaconGlow = glow
+    skinData.abrBeaconGlow = glow
     Glows.StartSpecGlow(glow, GLOW_SPEC, ICON_SIZE, ICON_SIZE, "engine")
 end
 
 -- The style's restyle runs only when AuraKit deferred it to the restriction
 -- lift, after the button refused the glow's registration: it starts the glow
 -- again (an unchanged one returns at once).
-local function RetryGlow(btnFrame, d)
-    local glow = d.abrBeaconGlow
+local function RetryGlow(btnFrame, skinData)
+    local glow = skinData.abrBeaconGlow
     if glow then
         CludesUI.Glows.StartSpecGlow(glow, GLOW_SPEC, ICON_SIZE, ICON_SIZE, "engine")
     end
@@ -139,12 +139,12 @@ local function EnsureContainer(unitToken)
     local AK = CludesUI.AuraKit
     AK.styles[STYLE_KEY] = AK.styles[STYLE_KEY]
         or { noRegions = true, width = ICON_SIZE, height = ICON_SIZE, applyExtra = RetryGlow }
-    host = CreateFrame("Frame", nil, UIParent)
-    host:SetSize(ICON_SIZE, ICON_SIZE)
-    host:SetFrameStrata("HIGH")
-    host:Hide()
-    boxHolder = AK.CreateContainer(host, unitToken, {
-        point = { "CENTER", host, "CENTER" },
+    owner = CreateFrame("Frame", nil, UIParent)
+    owner:SetSize(ICON_SIZE, ICON_SIZE)
+    owner:SetFrameStrata("HIGH")
+    owner:Hide()
+    boxHolder = AK.CreateContainer(owner, unitToken, {
+        point = { "CENTER", owner, "CENTER" },
         layout = { anchorPoint = "CENTER" },
         groups = {
             {
@@ -169,14 +169,14 @@ local function PlaceOver(btnFrame)
         return false
     end
     local s = btnFrame:GetEffectiveScale() / UIParent:GetEffectiveScale()
-    host:ClearAllPoints()
-    host:SetPoint("CENTER", UIParent, "BOTTOMLEFT", posX * s, posY * s)
+    owner:ClearAllPoints()
+    owner:SetPoint("CENTER", UIParent, "BOTTOMLEFT", posX * s, posY * s)
     return true
 end
 
 local function Disarm()
-    if host then
-        host:Hide()
+    if owner then
+        owner:Hide()
     end
 end
 
@@ -212,7 +212,7 @@ local function Arm()
     end
     EnsureContainer(unitToken)
     if PlaceOver(btnFrame) then
-        host:Show()
+        owner:Show()
     end
 end
 

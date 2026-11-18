@@ -195,13 +195,13 @@ local function ApplyFsLook(phase, fontStr)
     local flags = GetASOutline()
     CludesUI.PrimeFontShadow(fontStr, flags == "")
     fontStr:SetFont(GetASFont(), TextSize(), flags)
-    local r, g, b
+    local region, g, b
     if phase == "soul" then
-        r, g, b = SoulColor()
+        region, g, b = SoulColor()
     else
-        r, g, b = PreColor()
+        region, g, b = PreColor()
     end
-    fontStr:SetTextColor(r, g, b, 1)
+    fontStr:SetTextColor(region, g, b, 1)
 end
 
 -------------------------------------------------------------------------------
@@ -218,19 +218,19 @@ end
 
 local function ReadLiveGcd()
     local cd = C_Spell and C_Spell.GetSpellCooldown and C_Spell.GetSpellCooldown(GCD_SPELL_ID)
-    local d = cd and cd.duration
-    if d == nil then
+    local skinData = cd and cd.duration
+    if skinData == nil then
         return nil
     end
-    if issecretvalue and issecretvalue(d) then
+    if issecretvalue and issecretvalue(skinData) then
         return nil
     end
-    if type(d) ~= "number" then
+    if type(skinData) ~= "number" then
         return nil
     end
     -- duration only means anything while the cooldown runs; idle it reports 0.
-    if d >= 0.7 and d <= 1.6 then
-        return d
+    if skinData >= 0.7 and skinData <= 1.6 then
+        return skinData
     end
     return nil
 end
@@ -251,31 +251,31 @@ end
 
 -- Reads only; GetGcdLen also records the result as the bound GCD.
 local function CalcGcdLen()
-    local success, len = pcall(ReadLiveGcd)
+    local success, length = pcall(ReadLiveGcd)
     if not success then
-        len = nil
+        length = nil
     end
-    if not len then
+    if not length then
         local ok2, hasted = pcall(ReadHasteGcd)
         if ok2 then
-            len = hasted
+            length = hasted
         end
     end
-    if not len then
-        len = S.gcdLen or 1.5
+    if not length then
+        length = S.gcdLen or 1.5
     end
-    if len < 0.75 then
-        len = 0.75
-    elseif len > 1.6 then
-        len = 1.6
+    if length < 0.75 then
+        length = 0.75
+    elseif length > 1.6 then
+        length = 1.6
     end -- engine floor / unhasted cap
-    return math.floor(len * 100 + 0.5) / 100 -- bounds the formatter and curve caches
+    return math.floor(length * 100 + 0.5) / 100 -- bounds the formatter and curve caches
 end
 
 local function GetGcdLen()
-    local len = CalcGcdLen()
-    S.gcdLen = len
-    return len
+    local length = CalcGcdLen()
+    S.gcdLen = length
+    return length
 end
 
 -------------------------------------------------------------------------------
@@ -303,11 +303,11 @@ local function NewFormatter(points)
     then
         return nil
     end
-    local f = C_StringUtil.CreateNumericRuleFormatter()
-    if not pcall(f.SetBreakpoints, f, points) then
+    local frame = C_StringUtil.CreateNumericRuleFormatter()
+    if not pcall(frame.SetBreakpoints, frame, points) then
         return nil
     end
-    return f
+    return frame
 end
 
 -- Whole-GCD counting is laid out as one explicit band per GCD rather than
@@ -390,10 +390,10 @@ local function SurgeFormatter(mode, thr, gcd)
             if hides[hgt] then
                 points[#points + 1] = { threshold = thr, format = hides[hgt] }
             end
-            local f = NewFormatter(points)
-            if f then
-                surgeFmtCache[key] = f
-                return f
+            local frame = NewFormatter(points)
+            if frame then
+                surgeFmtCache[key] = frame
+                return frame
             end
         end
     end
@@ -416,11 +416,11 @@ local function SoulFormatter(mode, gcd)
 
     local Up = Enum and Enum.NumericRuleFormatRounding and Enum.NumericRuleFormatRounding.Up
     local Down = Enum and Enum.NumericRuleFormatRounding and Enum.NumericRuleFormatRounding.Down
-    local f
+    local frame
     if mode == "gcd" then
         local lastText = CludesUI.L("LAST")
-        f = NewFormatter(GcdBandPoints("%d", gcd, SOUL_BAND_MAX_S, lastText))
-        if not f then
+        frame = NewFormatter(GcdBandPoints("%d", gcd, SOUL_BAND_MAX_S, lastText))
+        if not frame then
             -- Divisor fallback. If the literal-only "LAST" band is what was
             -- refused, the same ceil renders a "1" there instead -- still red,
             -- because the color flip rides the curve, not the text.
@@ -431,18 +431,18 @@ local function SoulFormatter(mode, gcd)
                 rounding = Up,
                 components = { { div = gcd } },
             }
-            f = NewFormatter({ { threshold = 0, format = lastText }, total })
+            frame = NewFormatter({ { threshold = 0, format = lastText }, total })
                 or NewFormatter({
                     { threshold = 0, format = "%d", step = 1, rounding = Up, components = { { div = gcd } } },
                     total,
                 })
         end
     end
-    if not f then
-        f = NewFormatter({ { threshold = 0, format = "%.1f", step = 0.1, rounding = Down } })
+    if not frame then
+        frame = NewFormatter({ { threshold = 0, format = "%.1f", step = 0.1, rounding = Down } })
     end
-    soulFmtCache[key] = f or false
-    return f
+    soulFmtCache[key] = frame or false
+    return frame
 end
 
 -------------------------------------------------------------------------------
@@ -494,9 +494,9 @@ end
 -- Visible below the threshold, alpha 0 above it: the second, independent hide
 -- for the pre-Soul text (the formatter's empty-format rule is the first).
 local function SurgeCurve(thr)
-    local r, g, b = PreColor()
-    local key = string.format("s|%d|%.3f|%.3f|%.3f", thr, r, g, b)
-    return StepCurve(key, { { 0, r, g, b, 1 }, { thr, r, g, b, 0 } })
+    local region, g, b = PreColor()
+    local key = string.format("s|%d|%.3f|%.3f|%.3f", thr, region, g, b)
+    return StepCurve(key, { { 0, region, g, b, 1 }, { thr, region, g, b, 0 } })
 end
 
 -- Seconds mode is one flat color; GCD mode flips to the Last color for the
@@ -525,8 +525,8 @@ end
 
 local function StampFor(phase, mode, thr, gcd)
     if phase == "surge" then
-        local r, g, b = PreColor()
-        return string.format("%s|%d|%.2f|%.3f|%.3f|%.3f", mode, thr, gcd or 0, r, g, b)
+        local region, g, b = PreColor()
+        return string.format("%s|%d|%.2f|%.3f|%.3f|%.3f", mode, thr, gcd or 0, region, g, b)
     end
     local sr, sg, scrollBar = SoulColor()
     local lr, lg, lb = LastColor()
@@ -793,13 +793,13 @@ local function ShowSample()
     EnsureProxy()
     local fontStr = S.sample
     if not fontStr then
-        local host = CreateFrame("Frame", nil, UIParent)
-        host:SetAllPoints(S.proxy)
-        host:SetFrameStrata(S.proxy:GetFrameStrata())
-        host:SetFrameLevel(S.proxy:GetFrameLevel() + 10)
-        S.sampleHost = host
-        fontStr = host:CreateFontString(nil, "OVERLAY")
-        fontStr:SetPoint("CENTER", host, "CENTER", 0, 0)
+        local owner = CreateFrame("Frame", nil, UIParent)
+        owner:SetAllPoints(S.proxy)
+        owner:SetFrameStrata(S.proxy:GetFrameStrata())
+        owner:SetFrameLevel(S.proxy:GetFrameLevel() + 10)
+        S.sampleHost = owner
+        fontStr = owner:CreateFontString(nil, "OVERLAY")
+        fontStr:SetPoint("CENTER", owner, "CENTER", 0, 0)
         S.sample = fontStr
     end
     StyleSample(fontStr)
@@ -841,7 +841,7 @@ local function DemoText(fontStr, t, gcd)
         fontStr:SetText("")
         return
     end
-    local r, g, b
+    local region, g, b
     if t < thr then
         -- The hide rule owns thr itself: the first visible value is below it.
         local leftX = math.min(thr - t, thr - 0.01)
@@ -850,24 +850,24 @@ local function DemoText(fontStr, t, gcd)
         else
             fontStr:SetFormattedText(CludesUI.L("Soul in %.1f"), math.floor(leftX * 10) / 10)
         end
-        r, g, b = PreColor()
+        region, g, b = PreColor()
     else
         local leftX = thr + SOUL_LEN - t
         if PhaseMode("soul") ~= "gcd" then
             fontStr:SetFormattedText("%.1f", math.floor(leftX * 10) / 10)
-            r, g, b = SoulColor()
+            region, g, b = SoulColor()
         else
             local num = DemoGcdCount(leftX, gcd)
             if num == 1 then
                 fontStr:SetText(CludesUI.L("LAST"))
-                r, g, b = LastColor()
+                region, g, b = LastColor()
             else
                 fontStr:SetFormattedText("%d", num)
-                r, g, b = SoulColor()
+                region, g, b = SoulColor()
             end
         end
     end
-    fontStr:SetTextColor(r, g, b, 1)
+    fontStr:SetTextColor(region, g, b, 1)
 end
 
 -- One step for a driver frame holding its font string in _fs. The GCD is the
@@ -1022,10 +1022,10 @@ local function OnGateEvent(_, evt, _, _, spellId)
         -- Rebind only on a genuine change: the deadband stops haste jitter from
         -- churning the formatter cache, and a denied rebind leaves the previous
         -- (still ticking) binding in place.
-        local prev = S.gcdLen
-        local len = GetGcdLen()
-        if prev and len >= prev - 0.02 and len <= prev + 0.02 then
-            S.gcdLen = prev
+        local previous = S.gcdLen
+        local length = GetGcdLen()
+        if previous and length >= previous - 0.02 and length <= previous + 0.02 then
+            S.gcdLen = previous
             return
         end
         BindPhase("surge")

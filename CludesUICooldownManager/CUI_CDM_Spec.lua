@@ -216,9 +216,9 @@ local function ResolveInfoSpellID(details)
     else
         local linked = details.linkedSpellIDs
         if linked then
-            for idx = 1, #linked do
-                if linked[idx] and linked[idx] > 0 then
-                    spellRef = linked[idx]
+            for index = 1, #linked do
+                if linked[index] and linked[index] > 0 then
+                    spellRef = linked[index]
                     break
                 end
             end
@@ -304,8 +304,8 @@ function mod.SaveCachedBarSizes()
         local icons = iconsByKey[key]
         if icons then
             local vis = 0
-            for _, icon in ipairs(icons) do
-                if icon:IsShown() then
+            for _, iconTex in ipairs(icons) do
+                if iconTex:IsShown() then
                     vis = vis + 1
                 end
             end

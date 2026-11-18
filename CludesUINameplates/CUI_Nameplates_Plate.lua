@@ -108,8 +108,8 @@ local function HideBlizzardFrame(nameplate, unitToken)
     -- indices already visited shift, so none is skipped. Runs twice per enemy plate add, so
     -- it reads the live list instead of building a table. A child is recorded once: an enemy
     -- re-acquire finds its children already parked, so the record never grows.
-    for idx = uf:GetNumChildren(), 1, -1 do
-        local childFrame = (select(idx, uf:GetChildren()))
+    for index = uf:GetNumChildren(), 1, -1 do
+        local childFrame = (select(index, uf:GetChildren()))
         if
             childFrame
             and childFrame ~= uf.WidgetContainer
@@ -165,10 +165,10 @@ local function HideBlizzardFrame(nameplate, unitToken)
         -- pooled UnitFrame's own current unit (the driver's SetUnit sets it before it
         -- shows the icon), never on where the icon hangs: the first Show of an add
         -- runs before we park or reclaim the frame. Every attackable unit is ours.
-        local icon = uf.SoftTargetFrame.Icon
-        if icon and not hookedSoftTargetIcons[icon] then
-            hookedSoftTargetIcons[icon] = uf
-            hooksecurefunc(icon, "Show", function(self)
+        local iconTex = uf.SoftTargetFrame.Icon
+        if iconTex and not hookedSoftTargetIcons[iconTex] then
+            hookedSoftTargetIcons[iconTex] = uf
+            hooksecurefunc(iconTex, "Show", function(self)
                 local ownerFrame = hookedSoftTargetIcons[self]
                 local ufUnit = ownerFrame and ownerFrame.unit
                 if not ufUnit then
@@ -246,8 +246,8 @@ function mod.NP_ReclaimBlizzardFrame(uf)
         return
     end
     -- Reverse park order, so the children return to uf in their original order.
-    for idx = #rec, 1, -1 do
-        local childFrame = rec[idx]
+    for index = #rec, 1, -1 do
+        local childFrame = rec[index]
         if storedParents[childFrame] == uf then
             storedParents[childFrame] = nil
             if childFrame:GetParent() == npOffscreenParent then
@@ -285,9 +285,9 @@ function mod.NP_HideBehindCameraIcon(uf)
         return
     end
     hiddenBehindCam[uf] = true
-    local icon = uf.behindCameraIcon
-    if icon then
-        icon:SetAlpha(0)
+    local iconTex = uf.behindCameraIcon
+    if iconTex then
+        iconTex:SetAlpha(0)
     end
 end
 mod.HideBlizzardFrame = HideBlizzardFrame
@@ -733,9 +733,9 @@ function NameplateFrame:UpdateToT()
     if type(tok) ~= "nil" then
         if issecretvalue(tok) then
             -- Same order as the slot painter: the restricted-unit palette, then Blizzard's.
-            local success, r, g, b = CludesUI.GetClassColorForRestrictedUnit(tu, tok)
+            local success, region, g, b = CludesUI.GetClassColorForRestrictedUnit(tu, tok)
             if success then
-                fontStr:SetTextColor(r, g, b, 1)
+                fontStr:SetTextColor(region, g, b, 1)
                 return
             end
             local c = C_ClassColor.GetClassColor(tok)
@@ -917,8 +917,8 @@ function NameplateFrame:PaintCustomTexts(what)
         return
     end
     local cu = ca._cu
-    for idx = 1, ca._cuN or 0 do
-        local e = cu[idx]
+    for index = 1, ca._cuN or 0 do
+        local e = cu[index]
         if not what or e[what] then
             mod.NP_PaintCustom(e.fs, e.c, unitToken, e.slot)
         end
@@ -934,8 +934,8 @@ function NameplateFrame:ApplyHealthTextAppearance()
     if self.totText then
         self.totText:Hide()
     end
-    for idx = 1, #mod.textSlotKeys do
-        local fontStr = self[mod.NP_CustomFSKey[mod.textSlotKeys[idx]]]
+    for index = 1, #mod.textSlotKeys do
+        local fontStr = self[mod.NP_CustomFSKey[mod.textSlotKeys[index]]]
         if fontStr then
             fontStr:Hide()
         end
@@ -1102,8 +1102,8 @@ function NameplateFrame:ApplyHealthTextAppearance()
     -- per entry + an _anyDecimal flag, so the per-tick render in UpdateHealthValues stays lean.
     local barW = GetHealthBarWidth()
     local anyDec = false
-    for idx = 1, ci do
-        local e = ca[idx]
+    for index = 1, ci do
+        local e = ca[index]
         local el = e.element
         if el == "healthPercent" or el == "healthPercentNoSign" or IsComboHealthText(el) then
             local dec = (p and e.slotKey and p[e.slotKey .. "PctDecimal"]) and true or false
@@ -1332,8 +1332,8 @@ function NameplateFrame:ClearUnit()
     local ca = self._cachedHealthSlots
     local cu = ca and ca._cu
     if cu then
-        for idx = 1, ca._cuN or 0 do
-            cu[idx].fs:SetText("")
+        for index = 1, ca._cuN or 0 do
+            cu[index].fs:SetText("")
         end
     end
     -- Release this plate's aura-container bundle back to the pool.
@@ -1444,7 +1444,7 @@ end
 
 Inner._fallbackPlates, Inner.castFallbackFrame = _fallbackPlates, castFallbackFrame
 Inner.NameplateFrame = NameplateFrame
-Inner.SetRawSetTex = function(f)
-    RawSetTex = f
+Inner.SetRawSetTex = function(frame)
+    RawSetTex = frame
 end
 Inner.broken = false

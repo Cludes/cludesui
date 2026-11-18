@@ -373,10 +373,10 @@ function Calc:ScanItemLink(itemLink)
     local foundTrack, foundRank, foundVoid = apiTrack, apiRank, false
     ForEachTooltipLine(lines, function(textValue)
         if not foundTrack and textValue:find("Upgrade Level") then
-            local t, r = textValue:match("Upgrade Level:%s+(%a+)%s+(%d+)/%d+")
+            local t, region = textValue:match("Upgrade Level:%s+(%a+)%s+(%d+)/%d+")
             if t then
                 foundTrack = t
-                foundRank = tonumber(r)
+                foundRank = tonumber(region)
             end
         end
         -- enUS-only: no API exposes the Voidforged modifier. On other locales
@@ -438,8 +438,8 @@ end
 
 -- Returns: trackName (string|nil), rank (number|nil), maxRank (number|nil).
 function Calc:GetItemTrackAndRank(itemLink)
-    local r = self:ScanItemLink(itemLink)
-    return r and r.track, r and r.rank, r and r.maxRank
+    local region = self:ScanItemLink(itemLink)
+    return region and region.track, region and region.rank, region and region.maxRank
 end
 
 -- Number of ranks in a track: the API's maxLevel when we have it, otherwise the
@@ -465,19 +465,19 @@ end
 
 -- Returns: isCrafted, band, tier, maxIlvl.
 function Calc:GetCraftedInfo(itemLink, ilvl)
-    local r = self:ScanItemLink(itemLink)
-    if not r or not r.isCrafted then
+    local region = self:ScanItemLink(itemLink)
+    if not region or not region.isCrafted then
         return false
     end
-    local band, maxIlvl = r.craftBand or "None", r.craftMaxIlvl or Data.craftedBandByName.None.maxIlvl
+    local band, maxIlvl = region.craftBand or "None", region.craftMaxIlvl or Data.craftedBandByName.None.maxIlvl
 
     -- If tooltip gave no band keywords, fall back to ilvl thresholds via shared helper.
     -- (See CraftedBandFromIlvl above for the SEASON UPDATE note.)
-    if r.craftBand == "None" then
+    if region.craftBand == "None" then
         band, maxIlvl = CraftedBandFromIlvl(ilvl)
     end
 
-    local ascendant = r.ascendant
+    local ascendant = region.ascendant
     if ascendant and canaccessallvalues(ilvl) and ilvl and ilvl > 0 then
         if ilvl == ascendant.Hero then
             band = "Hero"
@@ -492,9 +492,9 @@ function Calc:GetCraftedInfo(itemLink, ilvl)
         local steps = Data.craftedTierSteps
         local best, bestDist = 1, math.huge
         for i, s in ipairs(steps) do
-            local d = math.abs(ilvl - s)
-            if d < bestDist then
-                bestDist = d
+            local skinData = math.abs(ilvl - s)
+            if skinData < bestDist then
+                bestDist = skinData
                 best = i
             end
         end
@@ -507,8 +507,8 @@ end
 -- SEASON UPDATE: if the Voidforged modifier is renamed or replaced, update the
 -- search string below to match the new tooltip text.
 function Calc:IsVoidforged(itemLink)
-    local r = self:ScanItemLink(itemLink)
-    return r and r.isVoidforged or false
+    local region = self:ScanItemLink(itemLink)
+    return region and region.isVoidforged or false
 end
 
 -- Returns a table mapping crestName -> { quantity, cap, earned } for each track.
@@ -532,14 +532,14 @@ end
 -- Returns detailed cost info for a single item.
 -- Non-crafted: trackName, rank, crestCost, maxIlvl
 -- Crafted:     "Crafted", nil, nil, maxIlvl, tierLabel, band
-function Calc:GetItemUpgradeCost(item)
-    if not canaccessallvalues(item.ilvl) then
+function Calc:GetItemUpgradeCost(entry)
+    if not canaccessallvalues(entry.ilvl) then
         return nil
     end
-    local track, rank, maxRank = self:GetItemTrackAndRank(item.link)
+    local track, rank, maxRank = self:GetItemTrackAndRank(entry.link)
 
     if not track then
-        local isCrafted, band, tier, maxIlvl = self:GetCraftedInfo(item.link, item.ilvl)
+        local isCrafted, band, tier, maxIlvl = self:GetCraftedInfo(entry.link, entry.ilvl)
         if isCrafted then
             local labelText = (band == "Hero" and "Hero Craft")
                 or (band == "Myth" and "Myth Craft")
@@ -557,12 +557,12 @@ function Calc:GetItemUpgradeCost(item)
 
     local saved = DB()
 
-    local _, expectedMax = self:GetItemUpgradeRange(item.link, track, rank, maxRank, item.ilvl)
-    expectedMax = expectedMax or math.max(td.ranks[#td.ranks], item.ilvl)
+    local _, expectedMax = self:GetItemUpgradeRange(entry.link, track, rank, maxRank, entry.ilvl)
+    expectedMax = expectedMax or math.max(td.ranks[#td.ranks], entry.ilvl)
 
     -- Priority 1: exact costs from Upgrader NPC API (calibrated).
-    local slotCache = saved.calibrated and saved.cache.slots[item.slot]
-    if slotCache and slotCache.crestAmounts and slotCache.link == item.link then
+    local slotCache = saved.calibrated and saved.cache.slots[entry.slot]
+    if slotCache and slotCache.crestAmounts and slotCache.link == entry.link then
         local exactCrests = 0
         for _, val in pairs(slotCache.crestAmounts) do
             exactCrests = exactCrests + val
@@ -771,15 +771,15 @@ end
 --  UI
 -------------------------------------------------------------------------------
 
-local function SolidTex(p, l, r, g, b, a)
-    return CUI.SolidTex(p, l, r, g, b, a)
+local function SolidTex(p, l, region, g, b, a)
+    return CUI.SolidTex(p, l, region, g, b, a)
 end
 
-local function MFont(p, s, _, r, g, b, a)
+local function MFont(p, s, _, region, g, b, a)
     local fontStr = p:CreateFontString(nil, "OVERLAY")
     CludesUI.ApplyModuleFont(fontStr, nil, s, "extras")
-    if r then
-        fontStr:SetTextColor(r, g or 1, b or 1, a or 1)
+    if region then
+        fontStr:SetTextColor(region, g or 1, b or 1, a or 1)
     end
     return fontStr
 end
@@ -807,13 +807,13 @@ local TRACK_RGB = {
     Voidforged = { 0.55, 0.0, 1.0 },
 }
 
-local f = CreateFrame("Frame", "CUIUpgCalcFrame", UIParent)
-Pix.Size(f, FRAME_W, FRAME_H)
-f:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 20, -40)
-f:SetFrameStrata("DIALOG")
-f:SetMovable(true)
-f:EnableMouse(true)
-f:RegisterForDrag("LeftButton")
+local frame = CreateFrame("Frame", "CUIUpgCalcFrame", UIParent)
+Pix.Size(frame, FRAME_W, FRAME_H)
+frame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 20, -40)
+frame:SetFrameStrata("DIALOG")
+frame:SetMovable(true)
+frame:EnableMouse(true)
+frame:RegisterForDrag("LeftButton")
 
 -- Session snap: dock beside CharacterFrame on each open until the user drags.
 local _sessionUnpinned = false
@@ -834,9 +834,9 @@ local function DockToCharacterFrame()
     end
     local margin = 4
     local cs = castFrame:GetEffectiveScale() or 1
-    local es = f:GetEffectiveScale() or 1
+    local es = frame:GetEffectiveScale() or 1
     local ues = UIParent:GetEffectiveScale() or 1
-    local wAbs = (f:GetWidth() or 0) * es
+    local wAbs = (frame:GetWidth() or 0) * es
     local leftRoom = (castFrame:GetLeft() or 0) * cs
     local rightRoom = (GetScreenWidth() or 0) * ues - (castFrame:GetRight() or 0) * cs
     local minRoom = wAbs + margin * es
@@ -850,16 +850,16 @@ local function DockToCharacterFrame()
     else
         dockLeft = leftRoom >= rightRoom
     end
-    f:ClearAllPoints()
+    frame:ClearAllPoints()
     if dockLeft then
-        f:SetPoint("TOPRIGHT", castFrame, "TOPLEFT", -margin, 0)
+        frame:SetPoint("TOPRIGHT", castFrame, "TOPLEFT", -margin, 0)
     else
-        f:SetPoint("TOPLEFT", castFrame, "TOPRIGHT", margin, 0)
+        frame:SetPoint("TOPLEFT", castFrame, "TOPRIGHT", margin, 0)
     end
 end
 
 local function TrySnapToCharacterFrame()
-    if f:IsShown() and ShouldSnapToCharacterFrame() then
+    if frame:IsShown() and ShouldSnapToCharacterFrame() then
         DockToCharacterFrame()
     end
 end
@@ -882,21 +882,21 @@ local function InstallCharacterFrameSnapHooks()
     end)
 end
 
-f:SetScript("OnDragStart", function(self)
+frame:SetScript("OnDragStart", function(self)
     _sessionUnpinned = true
     self:StartMoving()
 end)
-f:SetScript("OnDragStop", function(self)
+frame:SetScript("OnDragStop", function(self)
     self:StopMovingOrSizing()
 end)
-f:Hide()
+frame:Hide()
 
-local fBg = f:CreateTexture(nil, "BACKGROUND", nil, 0)
-fBg:SetAllPoints(f)
+local fBg = frame:CreateTexture(nil, "BACKGROUND", nil, 0)
+fBg:SetAllPoints(frame)
 fBg:SetTexture("Interface\\AddOns\\CludesUI\\media\\modern_blizz.png")
 fBg:SetTexCoord(0.25, 1, 0, 0.75)
-local fBgOverlay = f:CreateTexture(nil, "BACKGROUND", nil, 1)
-fBgOverlay:SetAllPoints(f)
+local fBgOverlay = frame:CreateTexture(nil, "BACKGROUND", nil, 1)
+fBgOverlay:SetAllPoints(frame)
 fBgOverlay:SetColorTexture(0, 0, 0, 0.5)
 
 function Calc.ApplyBgOpacity()
@@ -914,23 +914,23 @@ function Calc.ApplyScale()
     if scale == nil then
         scale = 100
     end
-    f:SetScale(scale / 100)
+    frame:SetScale(scale / 100)
 end
 
 if CUI and CUI.PanelPP then
-    CUI.PanelPP.CreateBorder(f, 0.1, 0.1, 0.1, 1, 1, "OVERLAY", 7)
+    CUI.PanelPP.CreateBorder(frame, 0.1, 0.1, 0.1, 1, 1, "OVERLAY", 7)
 end
 
-local titleBg = SolidTex(f, "BORDER", 0, 0, 0, 0.25)
-Pix.Point(titleBg, "TOPLEFT", f, "TOPLEFT", 1, -1)
-Pix.Point(titleBg, "TOPRIGHT", f, "TOPRIGHT", -1, 0)
+local titleBg = SolidTex(frame, "BORDER", 0, 0, 0, 0.25)
+Pix.Point(titleBg, "TOPLEFT", frame, "TOPLEFT", 1, -1)
+Pix.Point(titleBg, "TOPRIGHT", frame, "TOPRIGHT", -1, 0)
 Pix.Height(titleBg, 32)
 
-local titleTxt = MFont(f, 13, "OUTLINE", 1, 1, 1, 1)
-Pix.Point(titleTxt, "TOPLEFT", f, "TOPLEFT", 10, -10)
+local titleTxt = MFont(frame, 13, "OUTLINE", 1, 1, 1, 1)
+Pix.Point(titleTxt, "TOPLEFT", frame, "TOPLEFT", 10, -10)
 titleTxt:SetText(CUI.L("Upgrade Calculator"))
 
-local closeBtn = CreateFrame("Button", nil, f)
+local closeBtn = CreateFrame("Button", nil, frame)
 Pix.Size(closeBtn, 24, 24)
 closeBtn:SetPoint("RIGHT", titleBg, "RIGHT", -5, 5)
 local closeTxt = MFont(closeBtn, 16, "", 1, 1, 1, 0.75)
@@ -943,7 +943,7 @@ closeBtn:SetScript("OnLeave", function()
     closeTxt:SetTextColor(1, 1, 1, 0.75)
 end)
 closeBtn:SetScript("OnClick", function()
-    f:Hide()
+    frame:Hide()
 end)
 
 -- RegisterEscapeClose is created at PLAYER_LOGIN; deferred in _firstRunEvt below.
@@ -962,12 +962,12 @@ local function MakeRow(hostFrame, cols, yOffset, isAlt)
         Pix.Height(backdrop, ROW_H)
         row.altBg = backdrop -- stored so PopulateGear can reposition and hide/show it
     end
-    for _, col in ipairs(cols) do
+    for _, colour in ipairs(cols) do
         local cell = MFont(hostFrame, 11, nil, 0.85, 0.85, 0.85, 1)
-        Pix.Point(cell, "TOPLEFT", hostFrame, "TOPLEFT", col.x + 4, yOffset - 2)
-        Pix.Width(cell, col.w - 8)
-        cell:SetJustifyH(col.align)
-        row[col.key] = cell
+        Pix.Point(cell, "TOPLEFT", hostFrame, "TOPLEFT", colour.x + 4, yOffset - 2)
+        Pix.Width(cell, colour.w - 8)
+        cell:SetJustifyH(colour.align)
+        row[colour.key] = cell
     end
     return row
 end
@@ -996,31 +996,31 @@ local function MakeButton(hostFrame, labelText, wid, hgt, yOff, xOff)
 end
 
 -- Character Pane ──────────────────────────────────────────────────────────────
-f.charPane = CreateFrame("Frame", nil, f)
-f.charPane:SetAllPoints(f)
+frame.charPane = CreateFrame("Frame", nil, frame)
+frame.charPane:SetAllPoints(frame)
 
-local ilvlStatLbl = MFont(f.charPane, 12, "OUTLINE", 1, 1, 1, 1)
-Pix.Point(ilvlStatLbl, "TOPLEFT", f.charPane, "TOPLEFT", 10, tabY - 11)
+local ilvlStatLbl = MFont(frame.charPane, 12, "OUTLINE", 1, 1, 1, 1)
+Pix.Point(ilvlStatLbl, "TOPLEFT", frame.charPane, "TOPLEFT", 10, tabY - 11)
 ilvlStatLbl:SetText(CUI.L("Current iLvl: -   Max Possible: -"))
-local ilvlEstLbl = MFont(f.charPane, 10, "OUTLINE", 0.53, 0.53, 0.53, 1)
+local ilvlEstLbl = MFont(frame.charPane, 10, "OUTLINE", 0.53, 0.53, 0.53, 1)
 Pix.Point(ilvlEstLbl, "LEFT", ilvlStatLbl, "RIGHT", 4, 0)
 ilvlEstLbl:SetText(CUI.L(""))
 
-local cc = CreateFrame("Frame", nil, f.charPane)
-Pix.Point(cc, "TOPLEFT", f.charPane, "TOPLEFT", 10, tabY - 30)
-Pix.Point(cc, "TOPRIGHT", f.charPane, "TOPRIGHT", -10, tabY - 30)
+local cc = CreateFrame("Frame", nil, frame.charPane)
+Pix.Point(cc, "TOPLEFT", frame.charPane, "TOPLEFT", 10, tabY - 30)
+Pix.Point(cc, "TOPRIGHT", frame.charPane, "TOPRIGHT", -10, tabY - 30)
 Pix.Height(cc, FRAME_H - 100)
 
 -- ── iLvl Timeline bar ──────────────────────────────────────────────────────────
 -- iLvl timeline bar: same line as the stat label, starts after "(estimated)"
-local tlTrack = SolidTex(f.charPane, "BACKGROUND", 0, 0, 0, 0.3)
+local tlTrack = SolidTex(frame.charPane, "BACKGROUND", 0, 0, 0, 0.3)
 Pix.Point(tlTrack, "LEFT", ilvlEstLbl, "RIGHT", 10, 0)
 Pix.Height(tlTrack, 10)
 -- Right edge aligns with tile row right edge (cc x=10 + TILE_ROW_W)
-tlTrack:SetPoint("RIGHT", f.charPane, "LEFT", 10 + TILE_ROW_W, 0)
+tlTrack:SetPoint("RIGHT", frame.charPane, "LEFT", 10 + TILE_ROW_W, 0)
 
 -- Fill lives inside a clip frame so it can't overflow the track
-local tlClip = CreateFrame("Frame", nil, f.charPane)
+local tlClip = CreateFrame("Frame", nil, frame.charPane)
 tlClip:SetPoint("TOPLEFT", tlTrack, "TOPLEFT", 0, 0)
 tlClip:SetPoint("BOTTOMRIGHT", tlTrack, "BOTTOMRIGHT", 0, 0)
 tlClip:SetClipsChildren(true)
@@ -1529,17 +1529,17 @@ PopulateGear = function()
     -- Running this first also warms _tipCache so the display loop below pays no
     -- extra tooltip scanning cost.
     local maxTotal = 0
-    for _, item in ipairs(gear) do
-        local pOk, _, _, _, _, maxIlvl = pcall(Calc.GetItemUpgradeCost, Calc, item)
+    for _, entry in ipairs(gear) do
+        local pOk, _, _, _, _, maxIlvl = pcall(Calc.GetItemUpgradeCost, Calc, entry)
         if pOk and type(maxIlvl) == "number" then
             maxTotal = maxTotal + maxIlvl
-        elseif Calc:IsVoidforged(item.link) then
-            maxTotal = maxTotal + item.ilvl
-        elseif item.ilvl >= 200 then
-            local _, maxI = CraftedBandFromIlvl(item.ilvl)
+        elseif Calc:IsVoidforged(entry.link) then
+            maxTotal = maxTotal + entry.ilvl
+        elseif entry.ilvl >= 200 then
+            local _, maxI = CraftedBandFromIlvl(entry.ilvl)
             maxTotal = maxTotal + maxI
         else
-            maxTotal = maxTotal + item.ilvl
+            maxTotal = maxTotal + entry.ilvl
         end
     end
 
@@ -1576,11 +1576,11 @@ PopulateGear = function()
     local showWeeklyRemaining = options.showWeeklyRemaining
 
     -- Build per-slot data
-    for _, item in ipairs(gear) do
-        local grp = Data.slotToGroup[item.slot]
+    for _, entry in ipairs(gear) do
+        local grp = Data.slotToGroup[entry.slot]
         if not (slotFilter and grp and slotFilter[grp] == false) then
-            local sn = Data.slotNames[item.slot] or ("Slot " .. item.slot)
-            local pOk, pa, pb, pc, pd, pe, popFrame = pcall(Calc.GetItemUpgradeCost, Calc, item)
+            local sn = Data.slotNames[entry.slot] or ("Slot " .. entry.slot)
+            local pOk, pa, pb, pc, pd, pe, popFrame = pcall(Calc.GetItemUpgradeCost, Calc, entry)
             local track, rank, crestCost, maxIlvl, craftLabel
             if pOk then
                 track, rank, crestCost, maxIlvl, craftLabel = pa, pb, pc, pd, pe
@@ -1593,16 +1593,16 @@ PopulateGear = function()
                     shouldAdd = false
                 else
                     dt = craftLabel or "Crafted"
-                    dm = maxIlvl or item.ilvl
+                    dm = maxIlvl or entry.ilvl
                     isAtMax = true
                     du = "Crafted"
                 end
             elseif track then
                 local td = Data.tracks[track]
-                local scan = Calc:ScanItemLink(item.link)
+                local scan = Calc:ScanItemLink(entry.link)
                 local maxRank = TrackMaxRank(td, scan and scan.maxRank)
                 totalMissing = totalMissing + math.max(0, maxRank - (rank or 0))
-                local cn_map = slotCrestMap[item.slot]
+                local cn_map = slotCrestMap[entry.slot]
                 if cn_map then
                     for cn, amt in pairs(cn_map) do
                         crestNeeds[cn] = (crestNeeds[cn] or 0) + amt
@@ -1611,27 +1611,27 @@ PopulateGear = function()
                     crestNeeds[td.crestName] = (crestNeeds[td.crestName] or 0) + crestCost
                 end
                 dt = track
-                dm = maxIlvl or item.ilvl
+                dm = maxIlvl or entry.ilvl
                 du = rank and (rank .. "/" .. maxRank) or "-"
                 isAtMax = (rank == maxRank)
             else
-                if Calc:IsVoidforged(item.link) then
+                if Calc:IsVoidforged(entry.link) then
                     dt = "Voidforged"
-                    dm = item.ilvl
+                    dm = entry.ilvl
                     du = "Max"
                     isAtMax = true
-                elseif item.ilvl >= 200 then
+                elseif entry.ilvl >= 200 then
                     -- Use the shared helper so thresholds stay in one place.
-                    local band, maxI = CraftedBandFromIlvl(item.ilvl)
+                    local band, maxI = CraftedBandFromIlvl(entry.ilvl)
                     local labelText = band == "Myth" and "Myth Craft"
                         or band == "Hero" and "Hero Craft"
                         or "Crafted"
                     dt = labelText
                     dm = maxI
-                    du = item.ilvl >= maxI and "Max" or "-"
-                    isAtMax = item.ilvl >= maxI
+                    du = entry.ilvl >= maxI and "Max" or "-"
+                    isAtMax = entry.ilvl >= maxI
                 else
-                    dm = item.ilvl
+                    dm = entry.ilvl
                     isAtMax = true
                 end
             end
@@ -1639,8 +1639,8 @@ PopulateGear = function()
             if shouldAdd then
                 tileEntries[#tileEntries + 1] = {
                     slotName = sn,
-                    slotID = item.slot,
-                    ilvl = item.ilvl,
+                    slotID = entry.slot,
+                    ilvl = entry.ilvl,
                     max = dm,
                     upgrade = du,
                     trackName = dt,
@@ -1778,8 +1778,8 @@ PopulateGear = function()
     -- Position and fill tile frames
     local function getTilePos(group_start_y, local_idx)
         local row = math.floor(local_idx / TILE_COLS)
-        local col = local_idx % TILE_COLS
-        return col * (TILE_W + TILE_GAP), group_start_y - row * TILE_STEP
+        local colour = local_idx % TILE_COLS
+        return colour * (TILE_W + TILE_GAP), group_start_y - row * TILE_STEP
     end
 
     local needsStartY = -28 -- below section header(~18) + gap
@@ -1948,7 +1948,7 @@ PopulateGear = function()
     local contentH = math.abs(crestY) + crestSectionH
     local queueH = 22 + #queueItems * Q_ROW_STEP + (#queueItems > 0 and 50 or 0)
     local newFrameH = math.max(contentH, queueH) + CC_TOP + 10
-    Pix.Size(f, FRAME_W, newFrameH)
+    Pix.Size(frame, FRAME_W, newFrameH)
     Pix.Size(queuePane, QUEUE_W, newFrameH - CC_TOP - 10)
 
     -- Sync queue panel text to match restored/refreshed queue state.
@@ -2016,8 +2016,8 @@ local equipListener = CreateFrame("Frame")
 equipListener:SetScript("OnEvent", function(_, evt, slotID)
     if evt == "PLAYER_REGEN_DISABLED" then
         -- Combat started: close the frame silently
-        if f:IsShown() then
-            f:Hide()
+        if frame:IsShown() then
+            frame:Hide()
         end
         return
     end
@@ -2030,7 +2030,7 @@ equipListener:SetScript("OnEvent", function(_, evt, slotID)
     else
         Calc._tipCache = {}
     end
-    if not f:IsShown() then
+    if not frame:IsShown() then
         return
     end
     -- If the Upgrader NPC is open and we have a valid slot ID, rescan just that
@@ -2043,7 +2043,7 @@ equipListener:SetScript("OnEvent", function(_, evt, slotID)
             saved.cache.slots[slotID] = nil
         end
         Calc:RescanSlot(slotID, function()
-            if f:IsShown() then
+            if frame:IsShown() then
                 PopulateGear()
             end
         end)
@@ -2056,7 +2056,7 @@ equipListener:SetScript("OnEvent", function(_, evt, slotID)
     end
     _equipDebounce = C_Timer.NewTimer(0.3, function()
         _equipDebounce = nil
-        if f:IsShown() then
+        if frame:IsShown() then
             PopulateGear()
         end
     end)
@@ -2064,9 +2064,9 @@ end)
 
 -- Show / Hide
 
-f:SetScript("OnShow", function()
+frame:SetScript("OnShow", function()
     if IsLocked() then
-        f:Hide()
+        frame:Hide()
         return
     end
     Calc.ApplyBgOpacity()
@@ -2083,7 +2083,7 @@ f:SetScript("OnShow", function()
     equipListener:RegisterEvent("PLAYER_REGEN_DISABLED")
     PopulateGear()
 end)
-f:SetScript("OnHide", function()
+frame:SetScript("OnHide", function()
     equipListener:UnregisterAllEvents()
     _sessionUnpinned = false
     -- Cancel any pending equipment-change debounce.
@@ -2104,10 +2104,10 @@ SlashCmdList["CUIUPGCALC"] = function()
     if IsLocked() then
         return
     end
-    if f:IsShown() then
-        f:Hide()
+    if frame:IsShown() then
+        frame:Hide()
     else
-        f:Show()
+        frame:Show()
     end
 end
 
@@ -2124,7 +2124,7 @@ _firstRunEvt:SetScript("OnEvent", function(self)
     self:UnregisterAllEvents()
     -- Register with the escape proxy system (available after PLAYER_LOGIN)
     if CUI.RegisterEscapeClose then
-        CUI.RegisterEscapeClose(f)
+        CUI.RegisterEscapeClose(frame)
     end
     -- Register with the profile system; this MUST happen before Opts()/DB() are
     -- called so data is read from / written to the correct persistent location.
@@ -2186,10 +2186,10 @@ _firstRunEvt:SetScript("OnEvent", function(self)
         for _, slotID in ipairs(Data.equipSlots) do
             local itemLink = GetInventoryItemLink("player", slotID)
             if itemLink then
-                local r = Calc:ScanItemLink(itemLink)
-                local td = r and r.track and Data.tracks[r.track]
-                if td and (r.rank or 0) < TrackMaxRank(td, r.maxRank) then
-                    tracksNeeded[r.track] = true
+                local region = Calc:ScanItemLink(itemLink)
+                local td = region and region.track and Data.tracks[region.track]
+                if td and (region.rank or 0) < TrackMaxRank(td, region.maxRank) then
+                    tracksNeeded[region.track] = true
                 end
             end
         end

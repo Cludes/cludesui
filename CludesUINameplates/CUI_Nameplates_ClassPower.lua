@@ -296,16 +296,16 @@ local function EnsureClassPowerBar(backing)
     if backing._cpBar then
         return
     end
-    local bar = CreateFrame("StatusBar", nil, backing)
-    bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    bar:SetFrameLevel(backing:GetFrameLevel() + 5)
-    bar:Hide()
+    local barFrame = CreateFrame("StatusBar", nil, backing)
+    barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    barFrame:SetFrameLevel(backing:GetFrameLevel() + 5)
+    barFrame:Hide()
     -- Background texture behind the bar
-    local backdrop = bar:CreateTexture(nil, "BACKGROUND")
+    local backdrop = barFrame:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0.082, 0.082, 0.082, 1)
-    bar._bg = backdrop
-    backing._cpBar = bar
+    barFrame._bg = backdrop
+    backing._cpBar = barFrame
 end
 
 -- Update pip display on a plate (or hide if plate is nil)
@@ -369,7 +369,7 @@ local function UpdateClassPowerOnPlate(backing)
             end
         end
         EnsureClassPowerBar(backing)
-        local bar = backing._cpBar
+        local barFrame = backing._cpBar
         local staggerCur = UnitStagger("player")
         local staggerMax = UnitHealthMax("player")
         local isSecretVal = issecretvalue and (issecretvalue(staggerCur) or issecretvalue(staggerMax))
@@ -382,11 +382,11 @@ local function UpdateClassPowerOnPlate(backing)
 
         local scaledW = CP_PIP_W * cpScale * 6 -- bar width: ~6 pips wide
         local scaledH = CP_PIP_H * cpScale
-        bar:ClearAllPoints()
-        bar:SetSize(scaledW, scaledH)
-        bar:SetPoint(anchorPoint, anchor, anchorRelPoint, cpXOff, yDir * cpYOff)
-        bar:SetMinMaxValues(0, staggerMax)
-        bar:SetValue(staggerCur)
+        barFrame:ClearAllPoints()
+        barFrame:SetSize(scaledW, scaledH)
+        barFrame:SetPoint(anchorPoint, anchor, anchorRelPoint, cpXOff, yDir * cpYOff)
+        barFrame:SetMinMaxValues(0, staggerMax)
+        barFrame:SetValue(staggerCur)
 
         -- Stagger color thresholds: green < 30%, yellow 30-60%, red > 60%
         if isSecretVal then
@@ -396,20 +396,20 @@ local function UpdateClassPowerOnPlate(backing)
                 local cc = GetClassPowerCustomColor()
                 cpColor = { cc.r, cc.g, cc.b }
             end
-            bar:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
+            barFrame:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
         else
             local pct = staggerCur / staggerMax
             if pct >= 0.6 then
-                bar:SetStatusBarColor(1.0, 0.2, 0.2, 1) -- red (heavy)
+                barFrame:SetStatusBarColor(1.0, 0.2, 0.2, 1) -- red (heavy)
             elseif pct >= 0.3 then
-                bar:SetStatusBarColor(1.0, 0.85, 0.2, 1) -- yellow (moderate)
+                barFrame:SetStatusBarColor(1.0, 0.85, 0.2, 1) -- yellow (moderate)
             else
-                bar:SetStatusBarColor(0.2, 0.8, 0.2, 1) -- green (light)
+                barFrame:SetStatusBarColor(0.2, 0.8, 0.2, 1) -- green (light)
             end
         end
 
-        bar._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
-        bar:Show()
+        barFrame._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
+        barFrame:Show()
         return
     end
 
@@ -425,7 +425,7 @@ local function UpdateClassPowerOnPlate(backing)
             end
         end
         EnsureClassPowerBar(backing)
-        local bar = backing._cpBar
+        local barFrame = backing._cpBar
         local current = UnitPower("player", 13) or 0 -- Enum.PowerType.Insanity = 13
         local maxI = UnitPowerMax("player", 13) or 100
         if issecretvalue and issecretvalue(maxI) then
@@ -437,21 +437,21 @@ local function UpdateClassPowerOnPlate(backing)
 
         local scaledW = CP_PIP_W * cpScale * 6
         local scaledH = CP_PIP_H * cpScale
-        bar:ClearAllPoints()
-        bar:SetSize(scaledW, scaledH)
-        bar:SetPoint(anchorPoint, anchor, anchorRelPoint, cpXOff, yDir * cpYOff)
-        bar:SetMinMaxValues(0, maxI)
-        bar:SetValue(current)
+        barFrame:ClearAllPoints()
+        barFrame:SetSize(scaledW, scaledH)
+        barFrame:SetPoint(anchorPoint, anchor, anchorRelPoint, cpXOff, yDir * cpYOff)
+        barFrame:SetMinMaxValues(0, maxI)
+        barFrame:SetValue(current)
 
         local cpColor = GetClassPipColor(PLAYER_CLASS, "INSANITY_BAR")
         if not GetClassPowerClassColors() then
             local cc = GetClassPowerCustomColor()
             cpColor = { cc.r, cc.g, cc.b }
         end
-        bar:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
+        barFrame:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
 
-        bar._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
-        bar:Show()
+        barFrame._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
+        barFrame:Show()
         return
     end
 
@@ -467,7 +467,7 @@ local function UpdateClassPowerOnPlate(backing)
             end
         end
         EnsureClassPowerBar(backing)
-        local bar = backing._cpBar
+        local barFrame = backing._cpBar
         local current = UnitPower("player", 2) or 0 -- Enum.PowerType.Focus = 2
         local maxF = UnitPowerMax("player", 2) or 100
         if issecretvalue and issecretvalue(maxF) then
@@ -479,21 +479,21 @@ local function UpdateClassPowerOnPlate(backing)
 
         local scaledW = CP_PIP_W * cpScale * 6
         local scaledH = CP_PIP_H * cpScale
-        bar:ClearAllPoints()
-        bar:SetSize(scaledW, scaledH)
-        bar:SetPoint(anchorPoint, anchor, anchorRelPoint, cpXOff, yDir * cpYOff)
-        bar:SetMinMaxValues(0, maxF)
-        bar:SetValue(current)
+        barFrame:ClearAllPoints()
+        barFrame:SetSize(scaledW, scaledH)
+        barFrame:SetPoint(anchorPoint, anchor, anchorRelPoint, cpXOff, yDir * cpYOff)
+        barFrame:SetMinMaxValues(0, maxF)
+        barFrame:SetValue(current)
 
         local cpColor = GetClassPipColor(PLAYER_CLASS, "FOCUS_BAR")
         if not GetClassPowerClassColors() then
             local cc = GetClassPowerCustomColor()
             cpColor = { cc.r, cc.g, cc.b }
         end
-        bar:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
+        barFrame:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
 
-        bar._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
-        bar:Show()
+        barFrame._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
+        barFrame:Show()
         return
     end
 
@@ -509,7 +509,7 @@ local function UpdateClassPowerOnPlate(backing)
             end
         end
         EnsureClassPowerBar(backing)
-        local bar = backing._cpBar
+        local barFrame = backing._cpBar
         local current, maxC = 0, 50
         if CludesUI and CludesUI.GetSoulFragments then
             current, maxC = CludesUI.GetSoulFragments()
@@ -520,21 +520,21 @@ local function UpdateClassPowerOnPlate(backing)
 
         local scaledW = CP_PIP_W * cpScale * 6
         local scaledH = CP_PIP_H * cpScale
-        bar:ClearAllPoints()
-        bar:SetSize(scaledW, scaledH)
-        bar:SetPoint(anchorPoint, anchor, anchorRelPoint, cpXOff, yDir * cpYOff)
-        bar:SetMinMaxValues(0, maxC)
-        bar:SetValue(current or 0)
+        barFrame:ClearAllPoints()
+        barFrame:SetSize(scaledW, scaledH)
+        barFrame:SetPoint(anchorPoint, anchor, anchorRelPoint, cpXOff, yDir * cpYOff)
+        barFrame:SetMinMaxValues(0, maxC)
+        barFrame:SetValue(current or 0)
 
         local cpColor = GetClassPipColor(PLAYER_CLASS)
         if not GetClassPowerClassColors() then
             local cc = GetClassPowerCustomColor()
             cpColor = { cc.r, cc.g, cc.b }
         end
-        bar:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
+        barFrame:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
 
-        bar._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
-        bar:Show()
+        barFrame._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
+        barFrame:Show()
         return
     end
 
@@ -1191,23 +1191,23 @@ ApplyClassPowerSetting = function()
 end
 mod.ApplyClassPowerSetting = ApplyClassPowerSetting
 mod.RefreshClassPower = RefreshClassPowerFull
-local function DarkenColor(r, g, b, factor)
+local function DarkenColor(region, g, b, factor)
     factor = factor or 0.60
-    return r * factor, g * factor, b * factor
+    return region * factor, g * factor, b * factor
 end
 -- Out-of-combat darkening, gated by "Modify Out of Combat". On (default): enemies
 -- confirmed in combat (clean boolean) keep full colour, out-of-combat/secret states darken --
 -- or, with "Change Color", take the flat Out of Combat Color rather than dimming.
-local function MaybeDarken(r, g, b, inCombat)
+local function MaybeDarken(region, g, b, inCombat)
     local enabled = (p and p.darkenEnemiesOOC)
     if enabled == nil then
         enabled = defaultSet.darkenEnemiesOOC
     end
     if not enabled then
-        return r, g, b
+        return region, g, b
     end
     if type(inCombat) == "boolean" and inCombat then
-        return r, g, b
+        return region, g, b
     end
     local recolor = (p and p.darkenOOCRecolor)
     if recolor == nil then
@@ -1217,7 +1217,7 @@ local function MaybeDarken(r, g, b, inCombat)
         local c = (p and p.darkenOOCColor) or defaultSet.darkenOOCColor
         return c.r, c.g, c.b
     end
-    return DarkenColor(r, g, b)
+    return DarkenColor(region, g, b)
 end
 
 Inner.ApplyClassPowerSetting, Inner.EnsureClassPowerPips = ApplyClassPowerSetting, EnsureClassPowerPips

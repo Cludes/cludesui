@@ -34,15 +34,15 @@ CludesUI._ModuleNS["CludesUICooldownManager"] = mod -- LOD options files read th
 do
     local pool = {}
     local num = 47 -- keep above every shell this module takes, with spare
-    for idx = 1, num do
-        pool[idx] = CreateFrame("Frame")
+    for index = 1, num do
+        pool[index] = CreateFrame("Frame")
     end
     mod.TakeShell = function()
         if num > 0 then
-            local f = pool[num]
+            local frame = pool[num]
             pool[num] = nil
             num = num - 1
-            return f
+            return frame
         end
         -- Pool exhausted (not expected): falls back to CreateFrame (bills the parent). Bump n above if this ever happens.
         return CreateFrame("Frame")
@@ -296,12 +296,12 @@ mod.EffectiveBarAlpha = EffectiveBarAlpha
 -- (Blizzard hides its own inactive items instead, so those slots hold no frame
 -- at all). Single predicate so the alpha passes and the mouse passes can never
 -- disagree. Off-by-default flags first: non-users stop at the first field.
-local function IsPlaceholderRenderHidden(icon, barInfo)
-    if not icon then
+local function IsPlaceholderRenderHidden(iconTex, barInfo)
+    if not iconTex then
         return false
     end
-    return ((barInfo and barInfo.hidePlaceholderIcon) or icon._missingHidden)
-            and icon._isPlaceholderFrame
+    return ((barInfo and barInfo.hidePlaceholderIcon) or iconTex._missingHidden)
+            and iconTex._isPlaceholderFrame
             and true
         or false
 end
@@ -321,11 +321,11 @@ local _cdmViewerNames = {
 -- External cache keyed by Blizzard frame ref (never custom keys on Blizzard frame
 -- tables -- taints them). Weak-keyed so entries GC when frames are recycled.
 local _ecmeFC = setmetatable({}, { __mode = "k" })
-local function FC(f)
-    local c = _ecmeFC[f]
+local function FC(frame)
+    local c = _ecmeFC[frame]
     if not c then
         c = {}
-        _ecmeFC[f] = c
+        _ecmeFC[frame] = c
     end
     return c
 end
@@ -335,8 +335,8 @@ end
 local _cdmMouseState = setmetatable({}, { __mode = "k" })
 
 -- Decoration data stored externally by CludesUICdmHooks.lua (loads later).
-local function _getFD(f)
-    return mod._hookFrameData and mod._hookFrameData[f]
+local function _getFD(frame)
+    return mod._hookFrameData and mod._hookFrameData[frame]
 end
 
 -- Racial ability data
@@ -520,12 +520,12 @@ mod.BUFF_BAR_PRESETS = BUFF_BAR_PRESETS
 function mod.RefreshLustPresetFaction()
     local alliance = UnitFactionGroup("player") == "Alliance"
     local name = alliance and "Heroism" or "Bloodlust"
-    local icon = alliance and "Interface\\Icons\\ability_shaman_heroism"
+    local iconTex = alliance and "Interface\\Icons\\ability_shaman_heroism"
         or "Interface\\Icons\\spell_nature_bloodlust"
     mod._lustPresetSpellID = alliance and 32182 or 2825
     for _, p in ipairs(BUFF_BAR_PRESETS) do
         if p.key == "bloodlust" then
-            p.name, p.icon = name, icon
+            p.name, p.icon = name, iconTex
             -- This character's id leads: everything that stores a preset takes
             -- spellIDs[1], while the membership tests read the whole list.
             p.spellIDs[1] = mod._lustPresetSpellID
@@ -537,7 +537,7 @@ function mod.RefreshLustPresetFaction()
     -- same table), and is built after this file, so it is absent on the first call.
     for _, e in ipairs(mod.TBB_POPULAR_BUFFS or {}) do
         if e.key == "bloodlust" then
-            e.name, e.icon = name, icon
+            e.name, e.icon = name, iconTex
             break
         end
     end
@@ -685,9 +685,9 @@ if CludesUI.IS_FOREVER then
         demonic_healthstone = true,
     }
     for _, entries in ipairs({ BUFF_BAR_PRESETS, CDM_ITEM_PRESETS }) do
-        for idx = #entries, 1, -1 do
-            if drop[entries[idx].key] then
-                table.remove(entries, idx)
+        for index = #entries, 1, -1 do
+            if drop[entries[index].key] then
+                table.remove(entries, index)
             end
         end
     end

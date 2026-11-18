@@ -125,20 +125,20 @@ end
 -- at Bottom.
 -- The Core Positions chain (ns.NP_CoreChain) places the first shown element of a shared
 -- slot with it too.
-local function PlaceSlotIcon(backing, f, place, xOff, yOff, lift, sz)
+local function PlaceSlotIcon(backing, frame, place, xOff, yOff, lift, sz)
     local cpPush = GetClassPowerTopPush(backing)
-    f:ClearAllPoints()
+    frame:ClearAllPoints()
     if place == "top" then
-        Pix.Point(f, "BOTTOM", backing.health, "TOP", xOff, GetDebuffYOffset() + cpPush + yOff)
+        Pix.Point(frame, "BOTTOM", backing.health, "TOP", xOff, GetDebuffYOffset() + cpPush + yOff)
     elseif place == "left" then
         local iconPush = mod.NP_SideIconPush(backing, "left", yOff, sz)
-        Pix.Point(f, "RIGHT", backing.health, "LEFT", -GetSideAuraXOffset() - iconPush + xOff, yOff)
+        Pix.Point(frame, "RIGHT", backing.health, "LEFT", -GetSideAuraXOffset() - iconPush + xOff, yOff)
     elseif place == "right" then
         local iconPush = mod.NP_SideIconPush(backing, "right", yOff, sz)
-        Pix.Point(f, "LEFT", backing.health, "RIGHT", GetSideAuraXOffset() + iconPush + xOff, yOff)
+        Pix.Point(frame, "LEFT", backing.health, "RIGHT", GetSideAuraXOffset() + iconPush + xOff, yOff)
     elseif place == "topleft" then
         Pix.Point(
-            f,
+            frame,
             "BOTTOMLEFT",
             backing.health,
             "TOPLEFT",
@@ -147,7 +147,7 @@ local function PlaceSlotIcon(backing, f, place, xOff, yOff, lift, sz)
         )
     elseif place == "topright" then
         Pix.Point(
-            f,
+            frame,
             "BOTTOMRIGHT",
             backing.health,
             "TOPRIGHT",
@@ -156,7 +156,7 @@ local function PlaceSlotIcon(backing, f, place, xOff, yOff, lift, sz)
         )
     elseif place == "bottom" then
         -- Below the cast bar, centered (the aura slots' "bottom" convention).
-        Pix.Point(f, "TOP", backing.cast, "BOTTOM", xOff, -2 + yOff)
+        Pix.Point(frame, "TOP", backing.cast, "BOTTOM", xOff, -2 + yOff)
     end
 end
 mod.NP_PlaceSlotIcon = PlaceSlotIcon
@@ -259,9 +259,9 @@ local QT = {}
 local function QuestTextMeasure(textValue, size, font, outline)
     local fontStr = QT.fs
     if not fontStr then
-        local host = CreateFrame("Frame", nil, UIParent)
-        host:Hide()
-        fontStr = host:CreateFontString(nil, "OVERLAY")
+        local owner = CreateFrame("Frame", nil, UIParent)
+        owner:Hide()
+        fontStr = owner:CreateFontString(nil, "OVERLAY")
         QT.fs = fontStr
     end
     if QT.size ~= size or QT.font ~= font or QT.outline ~= outline then
@@ -279,15 +279,15 @@ local function QuestTextMeasure(textValue, size, font, outline)
     return math.ceil(wid), math.ceil(hgt)
 end
 local function QuestTextTypeIconHide(self)
-    local f = self.questTextFrame
-    local icon = self.questTextTypeIcon
-    if icon and icon:IsShown() then
-        icon:Hide()
+    local frame = self.questTextFrame
+    local iconTex = self.questTextTypeIcon
+    if iconTex and iconTex:IsShown() then
+        iconTex:Hide()
     end
-    if f and f._qtTypeIconOn then
+    if frame and frame._qtTypeIconOn then
         self.questText:ClearAllPoints()
-        self.questText:SetPoint("CENTER", f, "CENTER", 0, 0)
-        f._qtTypeIconOn = nil
+        self.questText:SetPoint("CENTER", frame, "CENTER", 0, 0)
+        frame._qtTypeIconOn = nil
     end
 end
 -- The objective type icon beside the count: its size follows the text size and Icon Scale, 2 px
@@ -308,11 +308,11 @@ local function QuestTextHide(self, chainedBy)
     if self.questTextTypeIcon then
         QuestTextTypeIconHide(self)
     end
-    local f = self.questTextFrame
-    if not (f and f:IsShown()) then
+    local frame = self.questTextFrame
+    if not (frame and frame:IsShown()) then
         return
     end
-    f:Hide()
+    frame:Hide()
     local last = self._qtSlot
     self:UpdateNameWidth()
     if last == "left" or last == "right" then
@@ -343,25 +343,25 @@ function NameplateFrame:UpdateQuestText(chainedBy)
         end
         iconSz = mod.NP_ElementSize("quest", nil, slot)
     end
-    local f = self.questTextFrame
-    if not f then
+    local frame = self.questTextFrame
+    if not frame then
         -- The faction badge's tier, born in the plate's aspect holder like the other slot
         -- icons (PlatePool, coreHost), so a Core Positions chain can anchor it to an aura row.
-        f = CreateFrame("Frame", nil, self.coreHost or self)
-        f:SetFrameStrata(mod.GetSlotRaiseStrata(slot) and "HIGH" or "MEDIUM")
-        f:SetFrameLevel(self.health:GetFrameLevel() + 2)
-        f:Hide()
-        local fontStr = f:CreateFontString(nil, "OVERLAY")
-        fontStr:SetPoint("CENTER", f, "CENTER", 0, 0)
+        frame = CreateFrame("Frame", nil, self.coreHost or self)
+        frame:SetFrameStrata(mod.GetSlotRaiseStrata(slot) and "HIGH" or "MEDIUM")
+        frame:SetFrameLevel(self.health:GetFrameLevel() + 2)
+        frame:Hide()
+        local fontStr = frame:CreateFontString(nil, "OVERLAY")
+        fontStr:SetPoint("CENTER", frame, "CENTER", 0, 0)
         fontStr:SetJustifyH("CENTER")
         fontStr:SetJustifyV("MIDDLE")
         fontStr:SetWordWrap(false)
         fontStr:SetTextColor(1, 1, 1, 1)
-        local icon = f:CreateTexture(nil, "ARTWORK")
-        icon:SetAllPoints()
-        icon:SetAtlas("Crosshair_Quest_64")
-        icon:Hide()
-        self.questText, self.questTextIcon, self.questTextFrame = fontStr, icon, f
+        local iconTex = frame:CreateTexture(nil, "ARTWORK")
+        iconTex:SetAllPoints()
+        iconTex:SetAtlas("Crosshair_Quest_64")
+        iconTex:Hide()
+        self.questText, self.questTextIcon, self.questTextFrame = fontStr, iconTex, frame
     end
     local wid, hgt
     if textValue then
@@ -369,24 +369,24 @@ function NameplateFrame:UpdateQuestText(chainedBy)
         local fontStr = self.questText
         -- Paint and measure only when the text or its font moved (the text is a verified
         -- plain string: SetFormattedText's "%s" is the secret-safe text path all the same).
-        if f._qtText ~= textValue or f._qtSize ~= size or f._qtFont ~= font or f._qtOutline ~= outline then
+        if frame._qtText ~= textValue or frame._qtSize ~= size or frame._qtFont ~= font or frame._qtOutline ~= outline then
             SetFSFont(fontStr, size, outline)
             fontStr:SetFormattedText("%s", textValue)
-            f._qtW, f._qtH = QuestTextMeasure(textValue, size, font, outline)
-            f._qtText, f._qtSize, f._qtFont, f._qtOutline = textValue, size, font, outline
+            frame._qtW, frame._qtH = QuestTextMeasure(textValue, size, font, outline)
+            frame._qtText, frame._qtSize, frame._qtFont, frame._qtOutline = textValue, size, font, outline
         end
-        wid, hgt = f._qtW, f._qtH
+        wid, hgt = frame._qtW, frame._qtH
         if p and p.showQuestObjectiveTypeIcon == true then
             local typeIcon = self.questTextTypeIcon
             if not typeIcon then
-                typeIcon = f:CreateTexture(nil, "ARTWORK")
+                typeIcon = frame:CreateTexture(nil, "ARTWORK")
                 typeIcon:SetAtlas("Crosshair_Quest_64")
                 self.questTextTypeIcon = typeIcon
             end
             local objectiveType = mod.GetQuestObjectiveType(unitToken)
             local art = objectiveType == "monster" and "monster"
                 or (objectiveType == "item" and "item" or "generic")
-            if f._qtTypeIconArt ~= art then
+            if frame._qtTypeIconArt ~= art then
                 if art == "monster" then
                     typeIcon:SetTexture("Interface\\Icons\\INV_Sword_04")
                 elseif art == "item" then
@@ -394,19 +394,19 @@ function NameplateFrame:UpdateQuestText(chainedBy)
                 else
                     typeIcon:SetAtlas("Crosshair_Quest_64")
                 end
-                f._qtTypeIconArt = art
+                frame._qtTypeIconArt = art
             end
             local fullW, fullH, textX, iconX, iconSize =
-                mod.NP_QuestTypeIconLayout(f._qtW, f._qtH, size, p.questObjectiveTypeIconScale or 100)
+                mod.NP_QuestTypeIconLayout(frame._qtW, frame._qtH, size, p.questObjectiveTypeIconScale or 100)
             -- Laid out again only when the count's width or the icon's size moved.
-            if not f._qtTypeIconOn or f._qtTypeIconCounterW ~= f._qtW or f._qtTypeIconW ~= iconSize then
+            if not frame._qtTypeIconOn or frame._qtTypeIconCounterW ~= frame._qtW or frame._qtTypeIconW ~= iconSize then
                 fontStr:ClearAllPoints()
-                fontStr:SetPoint("CENTER", f, "CENTER", textX, 0)
+                fontStr:SetPoint("CENTER", frame, "CENTER", textX, 0)
                 typeIcon:ClearAllPoints()
                 typeIcon:SetSize(iconSize, iconSize)
-                typeIcon:SetPoint("LEFT", f, "CENTER", iconX, 0)
-                f._qtTypeIconOn = true
-                f._qtTypeIconCounterW, f._qtTypeIconW = f._qtW, iconSize
+                typeIcon:SetPoint("LEFT", frame, "CENTER", iconX, 0)
+                frame._qtTypeIconOn = true
+                frame._qtTypeIconCounterW, frame._qtTypeIconW = frame._qtW, iconSize
             end
             typeIcon:Show()
             wid, hgt = fullW, fullH
@@ -423,13 +423,13 @@ function NameplateFrame:UpdateQuestText(chainedBy)
         self.questText:Hide()
         self.questTextIcon:Show()
     end
-    local lastW, lastSlot, wasShown = f._npW, self._qtSlot, f:IsShown()
-    f._npW, f._npSz = wid, hgt
-    Pix.Size(f, wid, hgt)
+    local lastW, lastSlot, wasShown = frame._npW, self._qtSlot, frame:IsShown()
+    frame._npW, frame._npSz = wid, hgt
+    Pix.Size(frame, wid, hgt)
     local xOff, yOff = GetSlotOffsets(slot)
-    PlaceSlotIcon(self, f, slot, xOff, yOff, 2, hgt)
+    PlaceSlotIcon(self, frame, slot, xOff, yOff, 2, hgt)
     self._qtSlot = slot
-    f:Show()
+    frame:Show()
     if not wasShown or lastW ~= wid then
         self:UpdateNameWidth()
     end
@@ -471,13 +471,13 @@ function NameplateFrame:UpdateFaction(artOnly)
             -- a stacked Rare/Quest + Faction pair draws Rare/Quest on top. Born in the
             -- plate's aspect holder like the other slot icons (PlatePool, coreHost), so a
             -- Core Positions chain can anchor it to an aura row.
-            local f = CreateFrame("Frame", nil, self.coreHost or self)
-            f:SetFrameStrata(mod.GetSlotRaiseStrata(slot) and "HIGH" or "MEDIUM")
-            f:SetFrameLevel(self.health:GetFrameLevel() + 2)
-            f:Hide()
-            self.faction = f:CreateTexture(nil, "ARTWORK")
+            local frame = CreateFrame("Frame", nil, self.coreHost or self)
+            frame:SetFrameStrata(mod.GetSlotRaiseStrata(slot) and "HIGH" or "MEDIUM")
+            frame:SetFrameLevel(self.health:GetFrameLevel() + 2)
+            frame:Hide()
+            self.faction = frame:CreateTexture(nil, "ARTWORK")
             self.faction:SetAllPoints()
-            self.factionFrame = f
+            self.factionFrame = frame
         end
     elseif self._factionEv then
         self:UnregisterEvent("UNIT_FACTION")

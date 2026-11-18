@@ -249,9 +249,9 @@ end
 --  tree. Colour and alpha from bgR/G/B/Alpha; a 1px accent line on top.
 -------------------------------------------------------------------------------
 -- Anchors f's top-left and top-right to the tracker's top (see BackgroundTop).
-local function PinTop(f, anchor, side)
-    f:SetPoint("TOPLEFT", anchor, side .. "LEFT", BackgroundLeft(), 0)
-    f:SetPoint("TOPRIGHT", anchor, side .. "RIGHT", 11, 0)
+local function PinTop(frame, anchor, side)
+    frame:SetPoint("TOPLEFT", anchor, side .. "LEFT", BackgroundLeft(), 0)
+    frame:SetPoint("TOPRIGHT", anchor, side .. "RIGHT", 11, 0)
 end
 
 local function MakeBackground()
@@ -274,9 +274,9 @@ local function MakeBackground()
     -- 30px tall until there is content; the resize anchors the bottom.
     background:SetPoint("TOPLEFT", anchor, side .. "LEFT", BackgroundLeft(), 0)
     background:SetPoint("BOTTOMRIGHT", anchor, side .. "RIGHT", 11, -30)
-    local fill = background:CreateTexture(nil, "BACKGROUND")
-    fill:SetAllPoints()
-    background._tex = fill
+    local fillTex = background:CreateTexture(nil, "BACKGROUND")
+    fillTex:SetAllPoints()
+    background._tex = fillTex
     -- The top line spans the tracker's width whatever the background's padding.
     local line = background:CreateTexture(nil, "OVERLAY")
     PinTop(line, anchor, side)

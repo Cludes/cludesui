@@ -866,7 +866,7 @@ function SKIN._ClassicRingButton(button, crop, ...)
                 local atlas = texture:GetAtlas()
                 local details = atlas and C_Texture.GetAtlasInfo(atlas)
                 if details and (details.file or details.filename) then
-                    local r, g, b, a = texture:GetVertexColor()
+                    local region, g, b, a = texture:GetVertexColor()
                     texture:SetTexture(details.file or details.filename)
                     local l, rt, t, bt =
                         details.leftTexCoord,
@@ -875,7 +875,7 @@ function SKIN._ClassicRingButton(button, crop, ...)
                         details.bottomTexCoord
                     local dw, dh = (rt - l) * crop, (bt - t) * crop
                     texture:SetTexCoord(l + dw, rt - dw, t + dh, bt - dh)
-                    texture:SetVertexColor(r, g, b, a)
+                    texture:SetVertexColor(region, g, b, a)
                 end
             end
             if not texture._classicMasked then
@@ -903,14 +903,14 @@ function SKIN._RingInsets(button)
         if ring == nil then
             ring = false
             for i = 1, select("#", button:GetRegions()) do
-                local r = select(i, button:GetRegions())
-                if r:IsObjectType("Texture") then
-                    local texture = r:GetTexture()
+                local region = select(i, button:GetRegions())
+                if region:IsObjectType("Texture") then
+                    local texture = region:GetTexture()
                     if
-                        (r.GetTextureFileID and r:GetTextureFileID()) == 136430
+                        (region.GetTextureFileID and region:GetTextureFileID()) == 136430
                         or (type(texture) == "string" and texture:find("MiniMap%-TrackingBorder"))
                     then
-                        ring = r
+                        ring = region
                         break
                     end
                 end
@@ -960,15 +960,15 @@ end
 -- pass nudges it (INDICATOR_ATLAS_*), so the art sits as it does in the box.
 -- Re-applied per pass: the indicator pass sizes the icon for the box first.
 function SKIN._RingIndicator(button)
-    local icon, up = button._icon, button._upAtlas
-    SKIN._ClassicRingButton(button, nil, icon)
-    local ratio = icon and up and INDICATOR_ATLAS_RATIO[up]
+    local iconTex, up = button._icon, button._upAtlas
+    SKIN._ClassicRingButton(button, nil, iconTex)
+    local ratio = iconTex and up and INDICATOR_ATLAS_RATIO[up]
     if ratio then
         local s = INDICATOR_ATLAS_SCALE[up] or 1
         local off = INDICATOR_ATLAS_OFFSET[button._indicatorKey]
-        icon:SetSize(16 * ratio * s, 16 * s)
-        icon:ClearAllPoints()
-        icon:SetPoint(
+        iconTex:SetSize(16 * ratio * s, 16 * s)
+        iconTex:ClearAllPoints()
+        iconTex:SetPoint(
             "CENTER",
             button,
             "TOPLEFT",
@@ -1004,10 +1004,10 @@ function SKIN._FvHeaderIndicator(button, key, s)
         button._bg:Hide()
     end
     button._upAtlas, button._overAtlas, button._downAtlas = atlas, atlas, atlas
-    local icon = button._icon
-    icon:ClearAllPoints()
-    icon:SetAllPoints(button)
-    icon:SetAtlas(atlas)
+    local iconTex = button._icon
+    iconTex:ClearAllPoints()
+    iconTex:SetAllPoints(button)
+    iconTex:SetAtlas(atlas)
     local highlight = button._fvHeaderHL
     if not highlight then
         highlight = button:CreateTexture(nil, "HIGHLIGHT")
@@ -1302,9 +1302,9 @@ local function LayoutIndicatorFrames(minimap, p, circleMode)
             local adv = (rowMode.dirX ~= 0) and button:GetWidth() or button:GetHeight()
             local ox, oy = 0, 0
             if fvRings then
-                local l, t, r, b = SKIN._RingInsets(button)
-                adv = adv - ((rowMode.dirX ~= 0) and (l + r) or (t + b)) + ringGap
-                ox = Pix.SnapForES(ptRight and r or -l, elES)
+                local l, t, region, b = SKIN._RingInsets(button)
+                adv = adv - ((rowMode.dirX ~= 0) and (l + region) or (t + b)) + ringGap
+                ox = Pix.SnapForES(ptRight and region or -l, elES)
                 oy = Pix.SnapForES(ptTop and t or -b, elES)
             end
             button:ClearAllPoints()
@@ -1397,9 +1397,9 @@ local function LayoutIndicatorFrames(minimap, p, circleMode)
             local adv = (rowMode.dirX ~= 0) and button:GetWidth() or button:GetHeight()
             local ox, oy = 0, 0
             if fvRings then
-                local l, t, r, b = SKIN._RingInsets(button)
-                adv = adv - ((rowMode.dirX ~= 0) and (l + r) or (t + b)) + ringGap
-                ox = Pix.SnapForES(ptRight and r or -l, rowES)
+                local l, t, region, b = SKIN._RingInsets(button)
+                adv = adv - ((rowMode.dirX ~= 0) and (l + region) or (t + b)) + ringGap
+                ox = Pix.SnapForES(ptRight and region or -l, rowES)
                 oy = Pix.SnapForES(ptTop and t or -b, rowES)
             end
             adv = math.floor(adv / rowPx + 0.001) * rowPx + rowGap
@@ -1454,7 +1454,7 @@ local function LayoutIndicatorFrames(minimap, p, circleMode)
         table.sort(ungrouped, function(a, b)
             return a.order < b.order
         end)
-        for idx, record in ipairs(ungrouped) do
+        for index, record in ipairs(ungrouped) do
             local button = record.btn
             -- Restore from flyout if needed
             if flyoutSavedParents[button] then
@@ -1490,8 +1490,8 @@ local function LayoutIndicatorFrames(minimap, p, circleMode)
             button:SetScript("OnDragStart", nil)
             button:SetScript("OnDragStop", nil)
             if rowBoxes then
-                local icon = button.icon or button.Icon
-                if not icon then
+                local iconTex = button.icon or button.Icon
+                if not iconTex then
                     for _, regionFrame in ipairs({ button:GetRegions() }) do
                         if
                             regionFrame:IsObjectType("Texture")
@@ -1500,19 +1500,19 @@ local function LayoutIndicatorFrames(minimap, p, circleMode)
                             and not IsJunkTexture(regionFrame)
                             and regionFrame ~= GetFFD(button).ungroupBg
                         then
-                            icon = regionFrame
+                            iconTex = regionFrame
                             break
                         end
                     end
                 end
-                if icon then
-                    icon:ClearAllPoints()
-                    icon:SetPoint("TOPLEFT", button, "TOPLEFT", 3, -3)
-                    icon:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -3, 3)
-                    pcall(icon.SetTexCoord, icon, 0.05, 0.95, 0.05, 0.95)
+                if iconTex then
+                    iconTex:ClearAllPoints()
+                    iconTex:SetPoint("TOPLEFT", button, "TOPLEFT", 3, -3)
+                    iconTex:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -3, 3)
+                    pcall(iconTex.SetTexCoord, iconTex, 0.05, 0.95, 0.05, 0.95)
                     -- Foreign icon: no global SetTexCoord snap hook, so disable once.
                     if CludesUI.PP then
-                        CludesUI.PP.DisablePixelSnap(icon)
+                        CludesUI.PP.DisablePixelSnap(iconTex)
                     end
                 end
                 SKIN._ShowAddonBtnBox(button)

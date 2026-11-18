@@ -185,8 +185,8 @@ local function CastOnEnter(self)
     end
     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
     GameTooltip:SetBagItem(self.bag, self.slot)
-    local r, g, b = CUI.GetAccentColor()
-    GameTooltip:AddLine(CludesUI.Lf("Click: %s", C_Spell.GetSpellName(self.spell) or ""), r, g, b)
+    local region, g, b = CUI.GetAccentColor()
+    GameTooltip:AddLine(CludesUI.Lf("Click: %s", C_Spell.GetSpellName(self.spell) or ""), region, g, b)
     GameTooltip:Show()
 end
 
@@ -274,16 +274,16 @@ local function Marks(button)
     if m then
         return m
     end
-    local host = button._textOverlay
+    local owner = button._textOverlay
     m = {}
-    m.shade = host:CreateTexture(nil, "OVERLAY", nil, 6)
-    m.shade:SetAllPoints(host)
+    m.shade = owner:CreateTexture(nil, "OVERLAY", nil, 6)
+    m.shade:SetAllPoints(owner)
     m.shade:SetColorTexture(0, 0, 0, SHADE_ALPHA)
-    m.spell = host:CreateTexture(nil, "OVERLAY", nil, 7)
+    m.spell = owner:CreateTexture(nil, "OVERLAY", nil, 7)
     -- The item's top-right quarter: 16 px on a grid slot, smaller on a List
     -- row's icon, which it would otherwise cover.
-    m.spell:SetPoint("TOPRIGHT", host, "TOPRIGHT", -1, -1)
-    m.spell:SetPoint("BOTTOMLEFT", host, "CENTER")
+    m.spell:SetPoint("TOPRIGHT", owner, "TOPRIGHT", -1, -1)
+    m.spell:SetPoint("BOTTOMLEFT", owner, "CENTER")
     m.spell:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     marks[button] = m
     return m
@@ -434,7 +434,7 @@ end
 
 -- Called by CUI_Bags:SyncHeaderIcons: places the icon left of prev while the
 -- Quick Actions Icon is on, and returns it then.
-function mod.SyncQuickActionsIcon(prev, gap)
+function mod.SyncQuickActionsIcon(previous, gap)
     local on = BP().bagShowQuickIcon == true
     SyncEnabled(on)
     if on and not CUI_Bags._quickBtn then
@@ -445,7 +445,7 @@ function mod.SyncQuickActionsIcon(prev, gap)
         return nil
     end
     b:ClearAllPoints()
-    b:SetPoint("RIGHT", prev, "LEFT", -gap, 0)
+    b:SetPoint("RIGHT", previous, "LEFT", -gap, 0)
     b:SetShown(on)
     return on and b or nil
 end

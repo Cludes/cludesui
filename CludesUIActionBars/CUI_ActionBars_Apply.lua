@@ -60,13 +60,13 @@ function ABAR:ApplyBordersForBar(barId)
     local c = s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
     local sz, px = ResolveBorderThickness(s)
     local enabled = sz > 0
-    local cr, cg, cb, ca = c.r, c.g, c.b, c.a or 1
+    local cr, cg, callback, ca = c.r, c.g, c.b, c.a or 1
     if s.borderClassColor then
         local _, classToken = UnitClass("player")
         if classToken then
             local cc = RAID_CLASS_COLORS[classToken]
             if cc then
-                cr, cg, cb = cc.r, cc.g, cc.b
+                cr, cg, callback = cc.r, cc.g, cc.b
             end
         end
     end
@@ -83,8 +83,8 @@ function ABAR:ApplyBordersForBar(barId)
     if not buttons then
         return
     end
-    for idx = 1, #buttons do
-        local button = buttons[idx]
+    for index = 1, #buttons do
+        local button = buttons[index]
         if button then
             EFD(button).barKey = barId
             ApplyButtonBorders(
@@ -92,7 +92,7 @@ function ABAR:ApplyBordersForBar(barId)
                 enabled,
                 cr,
                 cg,
-                cb,
+                callback,
                 ca,
                 sz,
                 zoom,
@@ -156,8 +156,8 @@ function ABAR:ApplyShapesForBar(barId)
     if not buttons then
         return
     end
-    for idx = 1, #buttons do
-        local button = buttons[idx]
+    for index = 1, #buttons do
+        local button = buttons[index]
         if button then
             ApplyShapeToButton(button, shape, brdOn, brdR, brdG, brdB, brdA, brdSz, zoom)
         end
@@ -269,12 +269,12 @@ function ABAR:SetOrientationForBar(barId, isHorizontal)
     self:LayoutAnchoredBarsFrom(barId, 0)
 end
 
-function ABAR:SetGrowDirectionForBar(barId, dir)
+function ABAR:SetGrowDirectionForBar(barId, direction)
     local s = self.db.profile.bars[barId]
     if not s then
         return
     end
-    s.growDirection = dir or "up"
+    s.growDirection = direction or "up"
     LayoutBar(barId)
     self:LayoutAnchoredBarsFrom(barId, 0)
 end
@@ -411,8 +411,8 @@ function ABAR:ApplyFontsForBar(barId)
     local macroAnchor = s.macroAnchor
     local RANGE_INDICATOR = RANGE_INDICATOR or "\226\128\162"
 
-    for idx = 1, #buttons do
-        local button = buttons[idx]
+    for index = 1, #buttons do
+        local button = buttons[index]
         if not button then
             break
         end
@@ -429,17 +429,17 @@ function ABAR:ApplyFontsForBar(barId)
                 local details = BAR_LOOKUP[barId]
                 if details and not details.isStance and not details.isPetBar then
                     if barId == "MainBar" then
-                        bindingAction = "ACTIONBUTTON" .. idx
+                        bindingAction = "ACTIONBUTTON" .. index
                     else
                         local bindPrefix = BINDING_MAP[barId]
                         if bindPrefix then
-                            bindingAction = bindPrefix .. idx
+                            bindingAction = bindPrefix .. index
                         end
                     end
                 elseif details and details.isStance then
-                    bindingAction = "SHAPESHIFTBUTTON" .. idx
+                    bindingAction = "SHAPESHIFTBUTTON" .. index
                 elseif details and details.isPetBar then
-                    bindingAction = "BONUSACTIONBUTTON" .. idx
+                    bindingAction = "BONUSACTIONBUTTON" .. index
                 end
 
                 local key1 = bindingAction and GetBindingKey(bindingAction)
@@ -517,8 +517,8 @@ function ABAR:ReapplyHotkeyColors()
         local s = barList[barId]
         local c = s and not s.hideKeybind and s.keybindFontColor
         if c and (c.r ~= 1 or c.g ~= 1 or c.b ~= 1) then
-            for idx = 1, #buttons do
-                local hk = buttons[idx] and buttons[idx].HotKey
+            for index = 1, #buttons do
+                local hk = buttons[index] and buttons[index].HotKey
                 if hk then
                     hk:SetTextColor(c.r, c.g, c.b)
                 end
@@ -567,11 +567,11 @@ function EAB_VTABLE.CooldownFonts.EffectiveSize(cdFrame, cdSize, cdFit)
     if not cdFit then
         return cdSize
     end
-    local host = cdFrame and (cdFrame:GetParent() or cdFrame)
-    if not (host and host.GetWidth and host.GetHeight) then
+    local owner = cdFrame and (cdFrame:GetParent() or cdFrame)
+    if not (owner and owner.GetWidth and owner.GetHeight) then
         return cdSize
     end
-    local wid, hgt = host:GetWidth(), host:GetHeight()
+    local wid, hgt = owner:GetWidth(), owner:GetHeight()
     if not wid or not hgt or wid <= 0 or hgt <= 0 then
         return cdSize -- not laid out yet; re-applied on the next layout pass
     end
@@ -599,7 +599,7 @@ function EAB_VTABLE.CooldownFonts.ApplyToFrame(cdFrame, fontFile, cdSize, cdOX, 
     -- Skip if these exact settings were already applied to this frame
     local cdfd = EFD(cdFrame)
     local stamp = cdfd.cdFontStamp
-    local cr, cg, cb = cdColor.r, cdColor.g, cdColor.b
+    local cr, cg, callback = cdColor.r, cdColor.g, cdColor.b
     if
         stamp
         and stamp[1] == fontFile
@@ -608,7 +608,7 @@ function EAB_VTABLE.CooldownFonts.ApplyToFrame(cdFrame, fontFile, cdSize, cdOX, 
         and stamp[4] == cdOY
         and stamp[5] == cr
         and stamp[6] == cg
-        and stamp[7] == cb
+        and stamp[7] == callback
     then
         return true
     end
@@ -618,10 +618,10 @@ function EAB_VTABLE.CooldownFonts.ApplyToFrame(cdFrame, fontFile, cdSize, cdOX, 
         local regionFrame = regions[ri]
         if regionFrame and regionFrame.GetObjectType and regionFrame:GetObjectType() == "FontString" then
             CludesUI.ApplyIconTextFont(regionFrame, fontFile, eff, "actionBars")
-            regionFrame:SetTextColor(cr, cg, cb)
+            regionFrame:SetTextColor(cr, cg, callback)
             regionFrame:ClearAllPoints()
             regionFrame:SetPoint("CENTER", cdFrame, "CENTER", cdOX, cdOY)
-            cdfd.cdFontStamp = { fontFile, eff, cdOX, cdOY, cr, cg, cb }
+            cdfd.cdFontStamp = { fontFile, eff, cdOX, cdOY, cr, cg, callback }
             return true
         end
     end
@@ -681,8 +681,8 @@ function ABAR:ApplyCooldownFontsForBar(barId)
     local fontFile, cdSize, cdOX, cdOY, cdColor, cdFit = EAB_VTABLE.CooldownFonts.GetSettings(s)
 
     C_Timer.After(0, function()
-        for idx = 1, #buttons do
-            local button = buttons[idx]
+        for index = 1, #buttons do
+            local button = buttons[index]
             if not button then
                 break
             end
@@ -789,9 +789,9 @@ function ABAR:ApplyCDAlphaAll()
             local btns = barButtons[details.key]
             if btns then
                 for _, button in ipairs(btns) do
-                    local icon = button and button.icon
-                    if icon then
-                        icon:SetAlpha(1)
+                    local iconTex = button and button.icon
+                    if iconTex then
+                        iconTex:SetAlpha(1)
                         if enabled and ABAR._RefreshCooldownVisuals then
                             ABAR._RefreshCooldownVisuals(button)
                         end
@@ -879,11 +879,11 @@ function ABAR:ApplyBackgroundForBar(barId)
 
     local background = barBackgrounds[barId]
     if not background then
-        local fill = widget:CreateTexture(nil, "BACKGROUND", nil, -1)
+        local fillTex = widget:CreateTexture(nil, "BACKGROUND", nil, -1)
         local border = CreateFrame("Frame", nil, widget, "BackdropTemplate")
         border:EnableMouse(false)
         border:SetFrameLevel(math.max(0, widget:GetFrameLevel()))
-        background = { fill = fill, border = border }
+        background = { fill = fillTex, border = border }
         barBackgrounds[barId] = background
     end
 
@@ -971,8 +971,8 @@ function ABAR:ApplyIconBackgroundForBar(barId)
     local alpha = pr.blizzIconBgAlpha or 1
     local blizzStyle = mod.AB_Style() ~= "cui"
     local inset = blizzStyle and 0 or 4
-    for idx = 1, #buttons do
-        local button = buttons[idx]
+    for index = 1, #buttons do
+        local button = buttons[index]
         if not button then
             break
         end
@@ -1143,8 +1143,8 @@ function ABAR:ApplyAlwaysShowButtons(barId)
         mod._eabPetLayoutSig = nil
     end
     local lastVisible = 0
-    for idx = 1, numIcons do
-        local button = buttons[idx]
+    for index = 1, numIcons do
+        local button = buttons[index]
         if button then
             if details.nativeMainBar then
                 EAB_VTABLE.MainBarPageSync.SetButtonConfig(button, true, showEmpty)
@@ -1207,13 +1207,13 @@ function ABAR:ApplyAlwaysShowButtons(barId)
                 else
                     SafeEnableMouse(button, false)
                 end
-                lastVisible = idx
+                lastVisible = index
             end
         end
     end
     -- Hide buttons beyond cutoff
-    for idx = numIcons + 1, #buttons do
-        local button = buttons[idx]
+    for index = numIcons + 1, #buttons do
+        local button = buttons[index]
         if button then
             if details.nativeMainBar then
                 EAB_VTABLE.MainBarPageSync.SetButtonConfig(button, false, showEmpty)

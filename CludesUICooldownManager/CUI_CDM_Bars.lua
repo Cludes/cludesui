@@ -938,18 +938,18 @@ end
 -- Blizzard Style unit frames) matches by its visible art, converted into the
 -- bar's scale, as the unlock-mode match does. nil for every other target (the
 -- raw frame read stands).
-function mod.CdmMatchInsetSize(targetKey, targetFrame, bar)
+function mod.CdmMatchInsetSize(targetKey, targetFrame, barFrame)
     local elems = CludesUI._unlockRegisteredElements
     local elem = elems and elems[targetKey]
     if not (elem and elem.getInsets) then
         return nil
     end
-    local l, r, t, b = elem.getInsets(targetKey)
+    local l, region, t, b = elem.getInsets(targetKey)
     if not l then
         return nil
     end
-    local k = targetFrame:GetEffectiveScale() / bar:GetEffectiveScale()
-    return (targetFrame:GetWidth() - l - r) * k, (targetFrame:GetHeight() - t - b) * k
+    local k = targetFrame:GetEffectiveScale() / barFrame:GetEffectiveScale()
+    return (targetFrame:GetWidth() - l - region) * k, (targetFrame:GetHeight() - t - b) * k
 end
 
 -- "CDM_" .. barKey, built once per bar key, so the layout and pad paths look a
@@ -973,8 +973,8 @@ mod._cdmUKey = setmetatable({}, {
 -- border that draws nothing outside. Reads settings and scales only.
 function mod.CdmBarMatchPad(barId)
     local edge = barDataByKey[barId]
-    local f = cdmBarFrames[barId]
-    if not edge or not f or not CludesUI.BorderMatchPad then
+    local frame = cdmBarFrames[barId]
+    if not edge or not frame or not CludesUI.BorderMatchPad then
         return nil
     end
     local texture = edge.borderTexture or "solid"
@@ -991,7 +991,7 @@ function mod.CdmBarMatchPad(barId)
     if shape ~= "none" and shape ~= "cropped" then
         return nil
     end
-    local es, uiES = f:GetEffectiveScale(), UIParent:GetEffectiveScale()
+    local es, uiES = frame:GetEffectiveScale(), UIParent:GetEffectiveScale()
     local ratio = 1
     if es and es > 0.01 and uiES and uiES > 0 then
         ratio = uiES / es
@@ -1081,17 +1081,17 @@ LayoutCDMBar = function(barId)
     -- bars without either pay one field read per icon and never build the filtered table. Skipped frames keep their last point at alpha 0.
     do
         local filtered
-        for idx = 1, #icons do
-            local sfc = _ecmeFC[icons[idx]]
+        for index = 1, #icons do
+            local sfc = _ecmeFC[icons[index]]
             if sfc and (sfc._cdStateShiftHidden or sfc._missingActiveHidden) then
                 if not filtered then
                     filtered = {}
-                    for jdx = 1, idx - 1 do
+                    for jdx = 1, index - 1 do
                         filtered[jdx] = icons[jdx]
                     end
                 end
             elseif filtered then
-                filtered[#filtered + 1] = icons[idx]
+                filtered[#filtered + 1] = icons[index]
             end
         end
         if filtered then
@@ -1130,13 +1130,13 @@ LayoutCDMBar = function(barId)
     local heightMatchIconHPx = nil
     -- Width-axis dim (icons spanning the width). Effective row count, so a not-yet-populated second row doesn't widen the match math.
     local function CurWidthDim()
-        local s, r = ComputeTopRowStride(barInfo, #icons)
-        return isHoriz and s or r
+        local s, region = ComputeTopRowStride(barInfo, #icons)
+        return isHoriz and s or region
     end
     -- Height-axis dim (icons spanning the height)
     local function CurHeightDim()
-        local s, r = ComputeTopRowStride(barInfo, #icons)
-        return isHoriz and r or s
+        local s, region = ComputeTopRowStride(barInfo, #icons)
+        return isHoriz and region or s
     end
     -- Resolve a width/height match target unlock key to a live frame. The match DB stores keys like "CDM_cooldowns" or "MainBar"; the registered unlock element provides a getFrame() callback.
     local function GetMatchTargetFrame(targetKey)
@@ -1479,32 +1479,32 @@ LayoutCDMBar = function(barId)
         -- centered along the growth axis; the perpendicular axis stacks the two bands. No match extras -- gated off when matched.
         local isMouseBar = barInfo.anchorTo == "mouse"
         local topN = customTopCount
-        for idx, icon in ipairs(visibleIcons) do
-            local iconScale = icon:GetScale() or 1
+        for index, iconTex in ipairs(visibleIcons) do
+            local iconScale = iconTex:GetScale() or 1
             if iconScale < 0.01 then
                 iconScale = 1
             end
             local iS = 1 / iconScale
 
-            local rowIdx = (idx <= topN) and 1 or 2 -- 1 = top, 2 = bottom
-            local idxInRow = (rowIdx == 1) and (idx - 1) or (idx - topN - 1)
+            local rowIdx = (index <= topN) and 1 or 2 -- 1 = top, 2 = bottom
+            local idxInRow = (rowIdx == 1) and (index - 1) or (index - topN - 1)
             local rowN = (rowIdx == 1) and topN or (sizeCount - topN)
             local wPx, hPx = rowWPx[rowIdx], rowHPx[rowIdx]
 
-            FC(icon).matchExpanded = nil
-            icon:SetSize(wPx * onePx * iS, hPx * onePx * iS)
+            FC(iconTex).matchExpanded = nil
+            iconTex:SetSize(wPx * onePx * iS, hPx * onePx * iS)
             if blizzIcons then
-                mod.CdmApplyBlizzIconArt(icon)
+                mod.CdmApplyBlizzIconArt(iconTex)
             end
 
             if isMouseBar then
-                icon:SetFrameStrata("TOOLTIP")
-                icon:SetFrameLevel(9980 + idx)
+                iconTex:SetFrameStrata("TOOLTIP")
+                iconTex:SetFrameLevel(9980 + index)
             else
-                icon:SetFrameStrata(barInfo.barStrata or "MEDIUM")
-                icon:SetFrameLevel(5 + idx)
+                iconTex:SetFrameStrata(barInfo.barStrata or "MEDIUM")
+                iconTex:SetFrameLevel(5 + index)
             end
-            icon:ClearAllPoints()
+            iconTex:ClearAllPoints()
 
             local anchorX, anchorY
             if isHoriz then
@@ -1539,11 +1539,11 @@ LayoutCDMBar = function(barId)
                 anchorY = -(yPx * onePx) * iS
             end
 
-            local fd = _getFD(icon)
+            local fd = _getFD(iconTex)
             if fd then
                 fd._cdmAnchor = { "TOPLEFT", widget, "TOPLEFT", anchorX, anchorY }
             end
-            icon:SetPoint("TOPLEFT", widget, "TOPLEFT", anchorX, anchorY)
+            iconTex:SetPoint("TOPLEFT", widget, "TOPLEFT", anchorX, anchorY)
         end
     else
         -- Uniform icon size: every bar except the 2-row per-row-size case above.
@@ -1581,22 +1581,22 @@ LayoutCDMBar = function(barId)
         -- the PERPENDICULAR axis (row index).
         local growthW = isHoriz and extraPixels or extraPixelsH
         local growthH = isHoriz and extraPixelsH or extraPixels
-        for idx, icon in ipairs(visibleIcons) do
+        for index, iconTex in ipairs(visibleIcons) do
             -- Compensate for Blizzard's per-icon scale so visual size matches.
-            local iconScale = icon:GetScale() or 1
+            local iconScale = iconTex:GetScale() or 1
             if iconScale < 0.01 then
                 iconScale = 1
             end
             local iS = 1 / iconScale
 
             -- Sequential index -> bottom-up grid position. Icons 1..topRowCount fill the top row (visual row 0); the rest fill rows 1..effRows-1.
-            local col, row
-            if idx <= topRowCount then
-                col = idx - 1
+            local colour, row
+            if index <= topRowCount then
+                colour = index - 1
                 row = 0
             else
-                local bottomIdx = idx - topRowCount - 1
-                col = bottomIdx % stride
+                local bottomIdx = index - topRowCount - 1
+                colour = bottomIdx % stride
                 row = 1 + math.floor(bottomIdx / stride)
             end
             -- Visual row == data row unless row growth reverses the visual order (data row 0 renders on the pinned trailing edge). Data-row logic below (RowIconCount, expansion flags) keeps `row`.
@@ -1605,7 +1605,7 @@ LayoutCDMBar = function(barId)
             -- +1 physical pixel on expanded icons: horizontal bars expand the WIDTH axis (iconW),
             -- vertical bars (col = height-axis) expand HEIGHT (iconH). Keeps icons square on the perpendicular axis.
             local onePx = Pix.mult
-            local expandedCol = (growthW > 0 and col < growthW)
+            local expandedCol = (growthW > 0 and colour < growthW)
             local expandedRow = (growthH > 0 and row < growthH)
             local thisIconW, thisIconH
             if isHoriz then
@@ -1616,17 +1616,17 @@ LayoutCDMBar = function(barId)
                 thisIconH = expandedCol and (iconH + onePx) or iconH
                 thisIconW = expandedRow and (iconW + onePx) or iconW
             end
-            FC(icon).matchExpanded = (expandedCol or expandedRow) or nil
-            icon:SetSize(thisIconW * iS, thisIconH * iS)
+            FC(iconTex).matchExpanded = (expandedCol or expandedRow) or nil
+            iconTex:SetSize(thisIconW * iS, thisIconH * iS)
             if blizzIcons then
-                mod.CdmApplyBlizzIconArt(icon)
+                mod.CdmApplyBlizzIconArt(iconTex)
             end
 
             -- Cumulative offsets: each prior expanded icon shifts later icons by 1 physical pixel on
             -- the same axis (extraBefore = growth axis/col; extraBeforeR = perpendicular axis/row).
             -- extraBeforeR counts expanded rows VISUALLY before this one: expanded rows are data rows
             -- < growthH, so normal order has min(row, growthH) above, and reversed order has data rows in (row, effRows-1] above, of which max(0, min(growthH, effRows) - row - 1) are expanded.
-            local extraBefore = math.min(col, growthW) * onePx
+            local extraBefore = math.min(colour, growthW) * onePx
             local extraBeforeR
             if rowsReversed then
                 extraBeforeR = math.max(0, math.min(growthH, effRows) - row - 1) * onePx
@@ -1635,19 +1635,19 @@ LayoutCDMBar = function(barId)
             end
 
             if isMouseBar then
-                icon:SetFrameStrata("TOOLTIP")
-                icon:SetFrameLevel(9980 + idx)
+                iconTex:SetFrameStrata("TOOLTIP")
+                iconTex:SetFrameLevel(9980 + index)
             else
-                icon:SetFrameStrata(barInfo.barStrata or "MEDIUM")
-                icon:SetFrameLevel(5 + idx)
+                iconTex:SetFrameStrata(barInfo.barStrata or "MEDIUM")
+                iconTex:SetFrameLevel(5 + index)
             end
-            icon:ClearAllPoints()
+            iconTex:ClearAllPoints()
 
             local rowCount = RowIconCount(row)
             local rowHasLess = (rowCount > 0 and rowCount < stride)
 
             -- Offsets as absolute parent-space integers, divided by iconScale for SetPoint. NO per-position snapping: dividing integers by the same constant produces mathematically uniform gaps.
-            local posX = col * stepW + extraBefore
+            local posX = colour * stepW + extraBefore
             local posY = vRow * stepH
 
             -- Resolve anchor params first, then stamp fd._cdmAnchor BEFORE SetPoint: the SetPoint hook
@@ -1669,16 +1669,16 @@ LayoutCDMBar = function(barId)
                 end
                 anchorPt, anchorRelPt = "TOPLEFT", "TOPLEFT"
                 anchorX = (vRow * stepW + extraBeforeR) * iS
-                anchorY = -(col * stepH + extraBefore + rowOffset + padOffset) * iS
+                anchorY = -(colour * stepH + extraBefore + rowOffset + padOffset) * iS
             end
 
             if anchorPt then
                 -- Stamp BEFORE SetPoint so the synchronous hook sees the new anchor and treats our own SetPoint as a no-op.
-                local fd = _getFD(icon)
+                local fd = _getFD(iconTex)
                 if fd then
                     fd._cdmAnchor = { anchorPt, widget, anchorRelPt, anchorX, anchorY }
                 end
-                icon:SetPoint(anchorPt, widget, anchorRelPt, anchorX, anchorY)
+                iconTex:SetPoint(anchorPt, widget, anchorRelPt, anchorX, anchorY)
             end
         end
     end -- perRowActive vs uniform layout branch
@@ -1696,8 +1696,8 @@ LayoutCDMBar = function(barId)
         if CludesUIDB and CludesUIDB.unlockAnchors and CludesUIDB.unlockAnchors[unlockKey] then
             local success, c1, c2 = pcall(widget.GetCenter, widget)
             if success and c1 and c2 then
-                local r = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
-                oldCX, oldCY = c1 * r, c2 * r
+                local region = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
+                oldCX, oldCY = c1 * region, c2 * region
             end
         end
         CludesUI._layoutBarResizing = unlockKey
@@ -1862,14 +1862,14 @@ function mod.QueueShiftLayout(bk)
             else
                 newEdge = widget:GetTop()
             end
-            local d = newEdge and (newEdge - fixedEdge)
-            if d and (d > 0.25 or d < -0.25) then
+            local skinData = newEdge and (newEdge - fixedEdge)
+            if skinData and (skinData > 0.25 or skinData < -0.25) then
                 local anchorPoint, relTo, relPoint, x, y = widget:GetPoint(1)
                 if anchorPoint then
                     if grow == "LEFT" or grow == "RIGHT" then
-                        x = (x or 0) - d
+                        x = (x or 0) - skinData
                     else
-                        y = (y or 0) - d
+                        y = (y or 0) - skinData
                     end
                     widget:SetPoint(anchorPoint, relTo or widget:GetParent(), relPoint, x, y)
                 end
@@ -1934,8 +1934,8 @@ local function ApplyCDMTooltipState(barId)
             or false
         local icons = cdmBarIcons[barId]
         if icons then
-            for idx = 1, #icons do
-                local ic = icons[idx]
+            for index = 1, #icons do
+                local ic = icons[index]
                 if ic and ic.EnableMouseMotion then
                     -- Invisible placeholders, Empty Slots and Show When Missing
                     -- icons hidden while active are excluded even with tooltips

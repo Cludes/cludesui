@@ -171,8 +171,8 @@ local function OddsColor(skill, need)
     return 0.5, 0.5, 0.5
 end
 
-local function Hex(r, g, b)
-    return ("|cff%02x%02x%02x"):format(r * 255, g * 255, b * 255)
+local function Hex(region, g, b)
+    return ("|cff%02x%02x%02x"):format(region * 255, g * 255, b * 255)
 end
 
 -- A minimap tooltip line rewritten: one name per line inside it (several
@@ -203,8 +203,8 @@ local function OnMinimapTooltip(tooltip)
         Build()
     end
     local changed
-    for idx = 1, tooltip:NumLines() do
-        local fontStr = _G["GameTooltipTextLeft" .. idx]
+    for index = 1, tooltip:NumLines() do
+        local fontStr = _G["GameTooltipTextLeft" .. index]
         local textValue = fontStr and fontStr:GetText()
         if textValue and not issecretvalue(textValue) then
             local new = memo[textValue]
@@ -247,8 +247,8 @@ local function OnObjectTooltip(tooltip, payload)
     if not skillName then
         return
     end
-    for idx = 2, tooltip:NumLines() do
-        local fontStr = _G["GameTooltipTextLeft" .. idx]
+    for index = 2, tooltip:NumLines() do
+        local fontStr = _G["GameTooltipTextLeft" .. index]
         local textValue = fontStr and fontStr:GetText()
         if textValue and not issecretvalue(textValue) and textValue:find(skillName, 1, true) then
             fontStr:SetText(("%s (%d)"):format(textValue, node[2]))

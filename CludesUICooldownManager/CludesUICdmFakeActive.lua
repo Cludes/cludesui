@@ -227,26 +227,26 @@ GetOverlay = function(iconFrame)
     o = {}
     local lvl = (iconFrame:GetFrameLevel() or 0) + 20
 
-    local f = CreateFrame("Frame", nil, iconFrame)
-    f:SetAllPoints(iconFrame)
-    f:SetFrameLevel(lvl)
-    f:SetAlpha(0)
-    o.frame = f
+    local frame = CreateFrame("Frame", nil, iconFrame)
+    frame:SetAllPoints(iconFrame)
+    frame:SetFrameLevel(lvl)
+    frame:SetAlpha(0)
+    o.frame = frame
 
-    local icon = f:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints(f)
-    o.icon = icon
+    local iconTex = frame:CreateTexture(nil, "ARTWORK")
+    iconTex:SetAllPoints(frame)
+    o.icon = iconTex
     -- Blizzard Style: the copy rounds off with the art it copies (the
     -- viewer's mask on pooled frames, ours on own frames).
     if mod.CdmBlizzIcons and mod.CdmBlizzIcons() and mod.CdmBlizzIconMask then
         local m = mod.CdmBlizzIconMask(iconFrame)
         if m then
-            pcall(icon.AddMaskTexture, icon, m)
+            pcall(iconTex.AddMaskTexture, iconTex, m)
         end
     end
 
-    local cd = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
-    cd:SetAllPoints(f)
+    local cd = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
+    cd:SetAllPoints(frame)
     cd:SetFrameLevel(lvl + 1)
     cd:SetDrawEdge(false)
     cd:SetDrawBling(false)
@@ -256,8 +256,8 @@ GetOverlay = function(iconFrame)
 
     -- Own glow frame for ns.ApplyActiveOverlays (never collides with the real
     -- active-state path's fd.glowOverlay).
-    local glow = CreateFrame("Frame", nil, f)
-    glow:SetAllPoints(f)
+    local glow = CreateFrame("Frame", nil, frame)
+    glow:SetAllPoints(frame)
     glow:SetFrameLevel(lvl + 4)
     glow:SetAlpha(0)
     o.glowOverlay = glow
@@ -308,21 +308,21 @@ end
 
 -- Active swipe colour: class, custom, or default gold. Drives our own swipe.
 ResolveSwipeColor = function(ss)
-    local cr, cg, cb
+    local cr, cg, callback
     if ss and ss.activeSwipeClassColor then
         local _, ct = UnitClass("player")
         if ct then
             local cc = RAID_CLASS_COLORS[ct]
             if cc then
-                cr, cg, cb = cc.r, cc.g, cc.b
+                cr, cg, callback = cc.r, cc.g, cc.b
             end
         end
     end
     cr = cr or (ss and ss.activeSwipeR) or 1
     cg = cg or (ss and ss.activeSwipeG) or 0.776
-    cb = cb or (ss and ss.activeSwipeB) or 0.376
+    callback = callback or (ss and ss.activeSwipeB) or 0.376
     local ca = (ss and ss.activeSwipeA) or 0.7
-    return cr, cg, cb, ca
+    return cr, cg, callback, ca
 end
 
 -- Copy the underlying icon's texture + crop so the overlay looks identical
@@ -435,8 +435,8 @@ ApplyToFrame = function(iconFrame, rule, window)
         end
         RaiseOverlayBorders(iconFrame, o, edge)
         o.icon:SetDesaturated(false)
-        local cr, cg, cb, ca = ResolveSwipeColor(ss)
-        o.cd:SetSwipeColor(cr, cg, cb, ca)
+        local cr, cg, callback, ca = ResolveSwipeColor(ss)
+        o.cd:SetSwipeColor(cr, cg, callback, ca)
         -- Per-spell Reverse Swipe: flip our active swipe's fill direction, the
         -- same setting the underlying icon honors (ss covers both sources: the
         -- resolved per-spell block for built-in rules, the customActiveStates
@@ -508,20 +508,20 @@ end
 -- clears its customSpellIDs tag but preserves its profile-level settings for
 -- moves between bars. Those settings must not decorate a native viewer icon
 -- when the spell is later added through normal CDM tracking.
-local function IsInjectedFrame(f)
+local function IsInjectedFrame(frame)
     if
-        f._isCustomSpellFrame
-        or f._isRacialFrame
-        or f._isPresetFrame
-        or f._isItemPresetFrame
-        or f._isTrinketFrame
+        frame._isCustomSpellFrame
+        or frame._isRacialFrame
+        or frame._isPresetFrame
+        or frame._isItemPresetFrame
+        or frame._isTrinketFrame
     then
         return true
     end
     -- Blizzard's own potion / healthstone row claimed under an item preset key
     -- (CUI_CDM_HookReanchor.lua, Phase 1) renders as that preset: its settings
     -- are the preset menu's, like a racial Blizzard tracks natively.
-    local fc = mod._ecmeFC and mod._ecmeFC[f]
+    local fc = mod._ecmeFC and mod._ecmeFC[frame]
     return mod.IsItemPresetKey(fc and fc.spellID)
 end
 mod.CdmIsInjectedFrame = IsInjectedFrame
@@ -548,19 +548,19 @@ ApplyRule = function(rule, window)
     end
     local spellRef = rule.spellID
     for _, entries in pairs(icons) do
-        for idx = 1, #entries do
-            local f = entries[idx]
-            local fc = f and FCt[f]
+        for index = 1, #entries do
+            local frame = entries[index]
+            local fc = frame and FCt[frame]
             local barScopeOK
             if rule.barKey then
                 barScopeOK = fc and fc.barKey == rule.barKey
             elseif rule.user then
-                barScopeOK = fc ~= nil and IsInjectedFrame(f)
+                barScopeOK = fc ~= nil and IsInjectedFrame(frame)
             else
                 barScopeOK = fc and fc.barKey and NATIVE_VIEWER_BARKEYS[fc.barKey]
             end
             if barScopeOK and KeyMatches(spellRef, fc.spellID) then
-                ApplyToFrame(f, rule, window)
+                ApplyToFrame(frame, rule, window)
                 if mod._fakeActiveDebug then
                     print(
                         ("|cff4cc9f0CUI FakeActive|r %s sid=%s"):format(
@@ -692,9 +692,9 @@ local function Build(rule, st)
         local icons, FCt = mod.cdmBarIcons, mod._ecmeFC
         if icons and FCt then
             for _, entries in pairs(icons) do
-                for idx = 1, #entries do
-                    local f = entries[idx]
-                    local fc = f and FCt[f]
+                for index = 1, #entries do
+                    local frame = entries[index]
+                    local fc = frame and FCt[frame]
                     -- Native-bars-only, same scope as ApplyRule's built-in
                     -- arm: this walk only ever runs for built-in engine-slot
                     -- rules, and a stale cached spellID on a reused custom-
@@ -710,13 +710,13 @@ local function Build(rule, st)
                         ss = rule.cas
                         if not ss and mod.ResolveSpellSettings then
                             local sd = barId and mod.GetBarSpellData and mod.GetBarSpellData(barId)
-                            ss = mod.ResolveSpellSettings(f, rule.spellID, sd, barId)
+                            ss = mod.ResolveSpellSettings(frame, rule.spellID, sd, barId)
                         end
-                        scale = f:GetScale() or 1
+                        scale = frame:GetScale() or 1
                         -- Bake the underlying icon's crop for the engine
                         -- icon (and remember the frame for shape masks).
-                        st.srcFrame = f
-                        local source = f.Icon or f._tex
+                        st.srcFrame = frame
+                        local source = frame.Icon or frame._tex
                         if source and source.GetTexCoord then
                             local ok, a1, a2, a3, a4, a5, a6, a7, a8 = pcall(source.GetTexCoord, source)
                             if ok and a1 then
@@ -780,8 +780,8 @@ local function Build(rule, st)
             cd:SetHideCountdownNumbers(false)
             cd:SetSwipeTexture("Interface\\AddOns\\CludesUI\\media\\white-square.png")
             cd:SetFrameLevel(btnFrame:GetFrameLevel() + 1)
-            local cr, cg, cb, ca = ResolveSwipeColor(ss)
-            cd:SetSwipeColor(cr, cg, cb, ca)
+            local cr, cg, callback, ca = ResolveSwipeColor(ss)
+            cd:SetSwipeColor(cr, cg, callback, ca)
             if ss and ss.reverseSwipe then
                 cd:SetReverse(true)
             end
@@ -1008,8 +1008,8 @@ EnsureTicker = function()
             self._acc = 0
             local nowTime = GetTime()
             local anyOpen = false
-            for idx = 1, #_rules do
-                local rule = _rules[idx]
+            for index = 1, #_rules do
+                local rule = _rules[index]
                 local window = _windows[rule]
                 if window then
                     if nowTime >= window.expiry then
@@ -1039,8 +1039,8 @@ CloseWindow = function(rule)
 end
 
 CloseAll = function()
-    for idx = 1, #_rules do
-        local rule = _rules[idx]
+    for index = 1, #_rules do
+        local rule = _rules[index]
         if _windows[rule] ~= nil then
             _windows[rule] = nil
             ApplyRule(rule, nil)
@@ -1081,20 +1081,20 @@ EvalCustom = function(rule)
     _api.now = GetTime()
     _api.lastCast = _lastCast
     _api.GetPlayerAura = GetPlayerAuraBySpellID
-    local ok, r = pcall(rule.trigger, _api)
+    local ok, region = pcall(rule.trigger, _api)
     if not ok then
         return
     end
     local nowTime = GetTime()
     local window
-    if r == true then
+    if region == true then
         local dur = rule.duration or 0
         if dur > 0 then
             window = { start = nowTime, dur = dur, expiry = nowTime + dur }
         end
-    elseif type(r) == "number" and r > nowTime then
-        local dur = rule.duration or (r - nowTime)
-        window = { start = r - dur, dur = dur, expiry = r }
+    elseif type(region) == "number" and region > nowTime then
+        local dur = rule.duration or (region - nowTime)
+        window = { start = region - dur, dur = dur, expiry = region }
     end
     if window then
         OpenWindow(rule, window)
@@ -1104,11 +1104,11 @@ EvalCustom = function(rule)
 end
 
 InitialStamp = function()
-    for idx = 1, #_auraRules do
-        OpenFromAura(_auraRules[idx])
+    for index = 1, #_auraRules do
+        OpenFromAura(_auraRules[index])
     end
-    for idx = 1, #_customRules do
-        EvalCustom(_customRules[idx])
+    for index = 1, #_customRules do
+        EvalCustom(_customRules[index])
     end
 end
 
@@ -1119,11 +1119,11 @@ OnEvent = function(self, evt, unitToken, updateInfo, spellId)
         -- Registered for aura rules, or for form rules: a powershift's return,
         -- and the exception auras a form rule can hang on
         if _needAura then
-            for idx = 1, #_auraRules do
-                OpenFromAura(_auraRules[idx])
+            for index = 1, #_auraRules do
+                OpenFromAura(_auraRules[index])
             end
-            for idx = 1, #_customRules do
-                EvalCustom(_customRules[idx])
+            for index = 1, #_customRules do
+                EvalCustom(_customRules[index])
             end
         end
         if _needForms then
@@ -1142,15 +1142,15 @@ OnEvent = function(self, evt, unitToken, updateInfo, spellId)
         _lastCast = spellId
         local hits = spellId and _castMap[spellId]
         if hits then
-            for idx = 1, #hits do
-                local window = CastWindow(hits[idx])
+            for index = 1, #hits do
+                local window = CastWindow(hits[index])
                 if window then
-                    OpenWindow(hits[idx], window)
+                    OpenWindow(hits[index], window)
                 end
             end
         end
-        for idx = 1, #_customRules do
-            EvalCustom(_customRules[idx])
+        for index = 1, #_customRules do
+            EvalCustom(_customRules[index])
         end
     elseif evt == "PLAYER_EQUIPMENT_CHANGED" then
         -- The key map covers every equipment slot, so ANY swap can stale it --
@@ -1333,8 +1333,8 @@ ResolveCastSpells = function(key)
             -- an on-use spell, hence the dedupe.
             local chain = mod.GetPresetPotChain and mod.GetPresetPotChain(itemId)
             if chain then
-                for idx = 1, #chain do
-                    ItemSpell(chain[idx])
+                for index = 1, #chain do
+                    ItemSpell(chain[index])
                 end
             else
                 ItemSpell(itemId)
@@ -1342,8 +1342,8 @@ ResolveCastSpells = function(key)
                 -- on-use spell too (Demonic Healthstone, other mana pot ranks).
                 local alts = PresetAltItemIDs(itemId)
                 if alts then
-                    for idx = 1, #alts do
-                        ItemSpell(alts[idx])
+                    for index = 1, #alts do
+                        ItemSpell(alts[index])
                     end
                 end
             end
@@ -1431,8 +1431,8 @@ PresetOnCD = function(key)
         -- cooldown. Everything else keeps the legacy primary-then-alts walk.
         local chain = mod.GetPresetPotChain and mod.GetPresetPotChain(itemId)
         if chain then
-            for idx = 1, #chain do
-                start, dur = ReadItemCD(chain[idx])
+            for index = 1, #chain do
+                start, dur = ReadItemCD(chain[index])
                 if start and dur and dur > 1.5 then
                     break
                 end
@@ -1445,8 +1445,8 @@ PresetOnCD = function(key)
             if not (start and dur and dur > 1.5) then
                 local alts = PresetAltItemIDs(itemId)
                 if alts then
-                    for idx = 1, #alts do
-                        start, dur = ReadItemCD(alts[idx])
+                    for index = 1, #alts do
+                        start, dur = ReadItemCD(alts[index])
                         if start and dur and dur > 1.5 then
                             break
                         end
@@ -1613,8 +1613,8 @@ ApplyCdState = function(widget, fc, cas, hide, glow, hideCD, onCD, ready)
         -- proc or active-state glow keeps the shared overlay (ns.StartCdGlow
         -- returns nil), and the memo stays off until a later pass lights it.
         if not fd._presetCdGlowOn or not (shade and shade._glowActive) then
-            local cr, cg, cb = mod.CdReadyGlowColor(style, cas)
-            fd._presetCdGlowOn = mod.StartCdGlow(fd, style, cr, cg, cb, mod.CdReadyGlowAlpha(cas)) ~= nil
+            local cr, cg, callback = mod.CdReadyGlowColor(style, cas)
+            fd._presetCdGlowOn = mod.StartCdGlow(fd, style, cr, cg, callback, mod.CdReadyGlowAlpha(cas)) ~= nil
         end
     elseif fd._presetCdGlowOn then
         mod.StopCdGlow(fd)
@@ -1631,12 +1631,12 @@ RestoreAllCdState = function()
         return
     end
     for _, entries in pairs(icons) do
-        for idx = 1, #entries do
-            local f = entries[idx]
-            local fd = mod._hookFrameData and mod._hookFrameData[f]
+        for index = 1, #entries do
+            local frame = entries[index]
+            local fd = mod._hookFrameData and mod._hookFrameData[frame]
             if fd and fd._presetCdTouched then
-                local fc = FCt[f]
-                f:SetAlpha(FrameBaseAlpha(fc))
+                local fc = FCt[frame]
+                frame:SetAlpha(FrameBaseAlpha(fc))
                 if fc then
                     fc._cdStateHidden = false
                     if mod.SetCdStateShiftHidden then
@@ -1688,14 +1688,14 @@ mod.FakeActive_QueueCdStateEval = QueueCdStateEval
 -- pushes with ignoreGCD -- so OnCooldownDone is the true ready edge with no
 -- GCD confusion, and it fires under combat secrecy (the engine animates
 -- durations Lua cannot read) and at alpha 0 (cd-state hides never Hide()).
-local function WireCdStateFrame(f)
+local function WireCdStateFrame(frame)
     -- The wired mark lives in the frame's decoration data, never on the frame:
     -- a natively tracked racial's icon is Blizzard's own pooled viewer frame.
-    local wfd = mod._hookFrameData and mod._hookFrameData[f]
+    local wfd = mod._hookFrameData and mod._hookFrameData[frame]
     if not wfd or wfd._cdsWired then
         return
     end
-    local cd = f.cd or f.Cooldown
+    local cd = frame.cd or frame.Cooldown
     if not cd then
         return
     end
@@ -1766,9 +1766,9 @@ local function EvalCdStateRule(rule, icons, FCt)
         -- Sound only fires while the ability's icon is present on a bar.
         local hasIcon = false
         for _, entries in pairs(icons) do
-            for idx = 1, #entries do
-                local f = entries[idx]
-                local fc = f and FCt[f]
+            for index = 1, #entries do
+                local frame = entries[index]
+                local fc = frame and FCt[frame]
                 -- rule.user rules come from the profile store; built-in rules
                 -- (FAKE_ACTIVE_RULES) deliberately decorate Blizzard icons and
                 -- keep their reach. Racials are also let through natively-tracked
@@ -1780,14 +1780,14 @@ local function EvalCdStateRule(rule, icons, FCt)
                     and KeyMatches(spellRef, fc.spellID)
                     and (
                         not rule.user
-                        or IsInjectedFrame(f)
+                        or IsInjectedFrame(frame)
                         or (mod._myRacialsSet and mod._myRacialsSet[spellRef])
                     )
                 then
                     hasIcon = true
-                    WireCdStateFrame(f)
+                    WireCdStateFrame(frame)
                     if hide or glow then
-                        ApplyCdState(f, fc, cas, hide, glow, hideCD, onCD, ready)
+                        ApplyCdState(frame, fc, cas, hide, glow, hideCD, onCD, ready)
                     end
                 end
             end
@@ -1824,8 +1824,8 @@ EvalCdStateNow = function()
     if not icons or not FCt then
         return
     end
-    for r = 1, #_cdStateRules do
-        EvalCdStateRule(_cdStateRules[r], icons, FCt)
+    for region = 1, #_cdStateRules do
+        EvalCdStateRule(_cdStateRules[region], icons, FCt)
     end
 end
 
@@ -1841,8 +1841,8 @@ local function RunFormAuraEval()
     if not icons or not FCt then
         return
     end
-    for r = 1, #_formAuraRules do
-        EvalCdStateRule(_formAuraRules[r], icons, FCt)
+    for region = 1, #_formAuraRules do
+        EvalCdStateRule(_formAuraRules[region], icons, FCt)
     end
 end
 
@@ -1857,8 +1857,8 @@ end
 local function MapCast(rule)
     local spells, pending = ResolveCastSpells(rule.triggerSpellID or rule.spellID)
     _pendingCastRules[rule] = pending and next(pending) and pending or nil
-    for idx = 1, #spells do
-        local sp = spells[idx]
+    for index = 1, #spells do
+        local sp = spells[index]
         local entries = _castMap[sp]
         if not entries then
             entries = {}
@@ -2010,8 +2010,8 @@ end
 -- answers (ns.CdmWipeFormCache), since a talent can teach or drop one.
 local function SyncFormAuraRules()
     wipe(_formAuraRules)
-    for r = 1, #_cdStateRules do
-        local rule = _cdStateRules[r]
+    for region = 1, #_cdStateRules do
+        local rule = _cdStateRules[region]
         local hide = rule.cas and mod.CdStateHideOf(rule.cas)
         local m = hide and mod.CD_STATE_HIDE[hide]
         if m and m.form and mod.CdmFormNeedsAura(rule.spellID) then
@@ -2048,8 +2048,8 @@ function mod.FakeActive_Rearm()
     -- 1. Built-in rules (class/spec gated).
     local _, class = UnitClass("player")
     local specIdx = GetSpecialization()
-    for idx = 1, #FAKE_ACTIVE_RULES do
-        local rule = FAKE_ACTIVE_RULES[idx]
+    for index = 1, #FAKE_ACTIVE_RULES do
+        local rule = FAKE_ACTIVE_RULES[index]
         if (not rule.class or rule.class == class) and (not rule.spec or rule.spec == specIdx) then
             if FA121 and rule.trigger == "aura" then
                 -- 12.1: aura rules ride the engine slot, never the numeric
@@ -2241,9 +2241,9 @@ end
 -- Re-arm is idempotent, so this costs one rebuild of a small rule set.
 do
     local rearmed = false
-    local f = mod.TakeShell()
-    f:RegisterEvent("PLAYER_ENTERING_WORLD")
-    f:SetScript("OnEvent", function(self)
+    local frame = mod.TakeShell()
+    frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    frame:SetScript("OnEvent", function(self)
         if rearmed then
             return
         end
@@ -2276,8 +2276,8 @@ if CludesUI then
         -- its trigger resolved to a cast spell at all, and whether any live icon
         -- carries its key -- the two independent ways a rule goes inert.
         local FCt, icons = mod._ecmeFC, mod.cdmBarIcons
-        for idx = 1, #_rules do
-            local rule = _rules[idx]
+        for index = 1, #_rules do
+            local rule = _rules[index]
             local triggers = {}
             for sp, entries in pairs(_castMap) do
                 for jdx = 1, #entries do
@@ -2290,8 +2290,8 @@ if CludesUI then
             if FCt and icons then
                 for _, entries in pairs(icons) do
                     for jdx = 1, #entries do
-                        local f = entries[jdx]
-                        local fc = f and FCt[f]
+                        local frame = entries[jdx]
+                        local fc = frame and FCt[frame]
                         if fc and KeyMatches(rule.spellID, fc.spellID) then
                             matched = matched + 1
                         end
@@ -2300,7 +2300,7 @@ if CludesUI then
             end
             print(
                 ("  rule%d key=%s src=%s dur=%s trigger=%s casts=[%s] frames=%d%s"):format(
-                    idx,
+                    index,
                     tostring(rule.spellID),
                     tostring(rule.srcKey),
                     tostring(rule.duration),

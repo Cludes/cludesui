@@ -92,14 +92,14 @@ local function BuildStatRules()
     prefixRules = {}
     -- label text -> hue, for the short lines
     statLabels = {}
-    for _, f in ipairs({
+    for _, frame in ipairs({
         { ITEM_SET_BONUS, "set" },
         { ITEM_SET_BONUS_GRAY, "set", true },
         { ENCHANTED_TOOLTIP_LINE, "enchant" },
     }) do
-        local pat = PrefixPattern(f[1])
+        local pat = PrefixPattern(frame[1])
         if pat then
-            prefixRules[#prefixRules + 1] = { pat = pat, kind = f[2], gray = f[3] }
+            prefixRules[#prefixRules + 1] = { pat = pat, kind = frame[2], gray = frame[3] }
         end
     end
     -- The "Equip: " every stat format starts with; set bonuses carry the rest.
@@ -113,16 +113,16 @@ local function BuildStatRules()
             return
         end
         local labels = {}
-        for idx, o in ipairs(outs) do
+        for index, o in ipairs(outs) do
             local labelText = _G[o[3]]
             if type(labelText) ~= "string" then
                 return
             end
-            labels[idx] = labelText
+            labels[index] = labelText
         end
         -- comparison delta lines ("+12 Spell Damage") use these labels too
-        for idx, o in ipairs(outs) do
-            statLabels[labels[idx]] = o[4]
+        for index, o in ipairs(outs) do
+            statLabels[labels[index]] = o[4]
         end
         local pat, slot = StatPattern(fmt)
         local barePat
@@ -140,12 +140,12 @@ local function BuildStatRules()
         }
     end
     local function Pair(key, labelText, hex, label2, hex2)
-        for _, d in ipairs({ { "+", "_INCREASE" }, { "-", "_DECREASE" } }) do
-            local outs = { { 1, d[1], labelText, hex } }
+        for _, skinData in ipairs({ { "+", "_INCREASE" }, { "-", "_DECREASE" } }) do
+            local outs = { { 1, skinData[1], labelText, hex } }
             if label2 then
-                outs[2] = { 1, d[1], label2, hex2 }
+                outs[2] = { 1, skinData[1], label2, hex2 }
             end
-            Rule(key .. d[2], outs, label2 ~= nil)
+            Rule(key .. skinData[2], outs, label2 ~= nil)
         end
     end
     -- One figure for damage and healing: Spell Damage + Spell Healing, or one
@@ -155,10 +155,10 @@ local function BuildStatRules()
     Pair("SPELL_HEALING", "ITEM_MOD_SPELL_HEALING_DONE_SHORT", HEAL)
     -- "healing done by up to %1$d and damage done by up to %2$d"
     for _, hgt in ipairs({ { "+", "INCREASE" }, { "-", "DECREASE" } }) do
-        for _, d in ipairs({ { "+", "INCREASE" }, { "-", "DECREASE" } }) do
-            Rule("SPELL_HEALING_" .. hgt[2] .. "_DAMAGE_" .. d[2], {
+        for _, skinData in ipairs({ { "+", "INCREASE" }, { "-", "DECREASE" } }) do
+            Rule("SPELL_HEALING_" .. hgt[2] .. "_DAMAGE_" .. skinData[2], {
                 { 1, hgt[1], "ITEM_MOD_SPELL_HEALING_DONE_SHORT", HEAL },
-                { 2, d[1], "ITEM_MOD_SPELL_DAMAGE_DONE_SHORT", SP },
+                { 2, skinData[1], "ITEM_MOD_SPELL_DAMAGE_DONE_SHORT", SP },
             }, true)
         end
     end
@@ -230,8 +230,8 @@ local function BuildStatRules()
         if type(fmt) ~= "string" then
             return
         end
-        local f = fmt:gsub("%%%d%$", "%%"):gsub("%%c", "")
-        local success, sample = pcall(string.format, f, 0, ...)
+        local frame = fmt:gsub("%%%d%$", "%%"):gsub("%%c", "")
+        local success, sample = pcall(string.format, frame, 0, ...)
         if not success then
             return
         end
@@ -250,9 +250,9 @@ local function BuildStatRules()
         Label(_G["ITEM_MOD_" .. a[1]], a[2])
     end
     -- RESISTANCE<i>_NAME and SPELL_SCHOOL<i>_CAP share indices 1-6
-    for idx, hex in ipairs({ HUE.holy, HUE.fire, HUE.nature, HUE.frost, HUE.shadow, HUE.arcane }) do
-        Name(_G["RESISTANCE" .. idx .. "_NAME"], hex)
-        Label(ITEM_RESIST_SINGLE, hex, _G["SPELL_SCHOOL" .. idx .. "_CAP"])
+    for index, hex in ipairs({ HUE.holy, HUE.fire, HUE.nature, HUE.frost, HUE.shadow, HUE.arcane }) do
+        Name(_G["RESISTANCE" .. index .. "_NAME"], hex)
+        Label(ITEM_RESIST_SINGLE, hex, _G["SPELL_SCHOOL" .. index .. "_CAP"])
     end
     Label(ITEM_RESIST_ALL, HUE.spen)
     Label(TOOLTIP_ITEM_STAT_SPELL_RESISTANCE_ALL_SCHOOLS_INCREASE, HUE.spen)
@@ -294,8 +294,8 @@ end
 -- The simplified text for one tooltip line, or nil when no rule matches.
 -- bare: the text has no "Equip: " (a set bonus).
 local function SimplifyStatLine(textValue, bare)
-    for _, r in ipairs(statRules) do
-        local pat = bare and r.barePat or (not bare and r.pat)
+    for _, region in ipairs(statRules) do
+        local pat = bare and region.barePat or (not bare and region.pat)
         -- At most two figures per format (the healing + damage lines).
         local c1, c2
         if pat then
@@ -303,14 +303,14 @@ local function SimplifyStatLine(textValue, bare)
         end
         if c1 then
             local result = {}
-            for idx, o in ipairs(r.outs) do
-                result[idx] = o[2] .. ((r.slot[o[1]] == 2) and c2 or c1) .. r.pct
+            for index, o in ipairs(region.outs) do
+                result[index] = o[2] .. ((region.slot[o[1]] == 2) and c2 or c1) .. region.pct
             end
-            if mergeOn and r.merge and result[1] == result[2] then
+            if mergeOn and region.merge and result[1] == result[2] then
                 return Stat(result[1], ITEM_MOD_SPELL_POWER_SHORT, HUE.sp)
             end
-            for idx, o in ipairs(r.outs) do
-                result[idx] = Stat(result[idx], r.labels[idx], o[4])
+            for index, o in ipairs(region.outs) do
+                result[index] = Stat(result[index], region.labels[index], o[4])
             end
             return table.concat(result, "\n")
         end
@@ -396,8 +396,8 @@ local function SimplifyStatsHook(tooltip)
         mShorten, mColors, mMerge, mNum = shortenOn, colorOn, mergeOn, numMode
     end
     local changed
-    for idx = 2, tooltip:NumLines() do
-        local fontStr = _G[name .. "TextLeft" .. idx]
+    for index = 2, tooltip:NumLines() do
+        local fontStr = _G[name .. "TextLeft" .. index]
         local textValue = fontStr and fontStr:GetText()
         if textValue and not issecretvalue(textValue) then
             local isEquip = textValue:find(equip, 1, true) == 1

@@ -185,25 +185,25 @@ do
 end
 
 function ABAR:ApplyVehicleBarVisibility()
-    local bar = OverrideActionBar
-    if not bar then
+    local barFrame = OverrideActionBar
+    if not barFrame then
         return
     end
     local hide = self.db and self.db.profile and self.db.profile.hideBlizzardVehicleBar
     if hide then
         self:ReclaimMicroMenu()
-        bar:SetAlpha(0)
+        barFrame:SetAlpha(0)
         -- Guarded: the restore below may only undo OUR disable, never switch
         -- on mouse Blizzard had off for its own reasons.
         if not self._eabVehMouseOff then
             self._eabVehMouseOff = true
-            SafeEnableMouse(bar, false)
+            SafeEnableMouse(barFrame, false)
         end
     else
-        bar:SetAlpha(1)
+        barFrame:SetAlpha(1)
         if self._eabVehMouseOff then
             self._eabVehMouseOff = nil
-            SafeEnableMouse(bar, true)
+            SafeEnableMouse(barFrame, true)
         end
     end
 end
@@ -214,23 +214,23 @@ end
 -- disabling unregisters the events.
 function ABAR:UpdateVehicleBarWatch()
     local on = self.db and self.db.profile and self.db.profile.hideBlizzardVehicleBar
-    local f = self._eabVehWatch
+    local frame = self._eabVehWatch
     if not on then
-        if f then
-            f:UnregisterAllEvents()
+        if frame then
+            frame:UnregisterAllEvents()
         end
         self:ApplyVehicleBarVisibility()
         return
     end
-    if not f then
-        f = mod.TakeShell()
-        f:SetScript("OnEvent", function()
+    if not frame then
+        frame = mod.TakeShell()
+        frame:SetScript("OnEvent", function()
             ABAR:CacheMicroMenuHome()
             ABAR:ApplyVehicleBarVisibility()
         end)
-        self._eabVehWatch = f
+        self._eabVehWatch = frame
     end
-    f:RegisterEvent("PLAYER_ENTERING_WORLD")
+    frame:RegisterEvent("PLAYER_ENTERING_WORLD")
     -- The bar's own OnShow is the deterministic edge; one deferred re-assert
     -- follows because the micro menu dock can land later in the same frame.
     if not self._eabVehShowHooked and OverrideActionBar then
@@ -277,11 +277,11 @@ do
         -- Blizzard's SetChecked/UpdateState manages checked visuals normally.
         local isSpecialPage = (page > 6)
 
-        for idx, button in ipairs(buttons) do
+        for index, button in ipairs(buttons) do
             if button then
                 local ct = button.CheckedTexture
                 if isSpecialPage then
-                    local slot = idx + (page - 1) * NUM_ACTIONBAR_BUTTONS
+                    local slot = index + (page - 1) * NUM_ACTIONBAR_BUTTONS
                     if not HasAction(slot) then
                         -- SetChecked might be protected during combat; pcall.
                         -- Also hide CheckedTexture as a visual fallback.
@@ -409,8 +409,8 @@ local function OnGridChange()
             if numIcons < 1 then
                 numIcons = 1
             end
-            for idx = 1, numIcons do
-                local button = buttons[idx]
+            for index = 1, numIcons do
+                local button = buttons[index]
                 if button then
                     -- Clear statehidden so the secure UpdateShown snippet
                     -- allows the button to stay visible during drag.
@@ -579,13 +579,13 @@ do
         if hooked[name] then
             return true
         end
-        local f = _G[name]
-        if not f then
+        local frame = _G[name]
+        if not frame then
             return false
         end
         hooked[name] = true
-        f:HookScript("OnShow", OnPanelToggle)
-        f:HookScript("OnHide", OnPanelToggle)
+        frame:HookScript("OnShow", OnPanelToggle)
+        frame:HookScript("OnHide", OnPanelToggle)
         return true
     end
     local ev = CreateFrame("Frame")

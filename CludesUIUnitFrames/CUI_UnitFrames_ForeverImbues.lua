@@ -145,11 +145,11 @@ local function Scan()
                 isShown[num] = s
             end
             s.inv = INV[ws]
-            local icon = found.enchantIconID
-            if not (enchantIcon and Readable(icon) and icon ~= 0) then
-                icon = GetInventoryItemTexture("player", s.inv) or 134400
+            local iconTex = found.enchantIconID
+            if not (enchantIcon and Readable(iconTex) and iconTex ~= 0) then
+                iconTex = GetInventoryItemTexture("player", s.inv) or 134400
             end
-            s.icon = icon
+            s.icon = iconTex
             s.charges = Readable(found.charges) and found.charges or 0
             s.endTime, s.total = endTime, t.total
         else
@@ -181,8 +181,8 @@ local function CellLeave()
     GameTooltip:Hide()
 end
 
-local function Cell(idx, hostFrame)
-    local c = cells[idx]
+local function Cell(index, hostFrame)
+    local c = cells[index]
     if c then
         if c.f:GetParent() ~= hostFrame then
             c.f:SetParent(hostFrame)
@@ -192,22 +192,22 @@ local function Cell(idx, hostFrame)
     local AK = CludesUI.AuraKit
     -- The weapon-enchant init: Blizzard Style rings these cells like the
     -- engine's own weapon-enchant cells.
-    local f, d = AK.CreateStyledCell(hostFrame, STYLE, AK.EnchantCellInit)
+    local frame, skinData = AK.CreateStyledCell(hostFrame, STYLE, AK.EnchantCellInit)
     -- Hover shows the weapon's tooltip; clicks pass through (removing an
     -- imbue is a protected call).
-    f:EnableMouse(true)
-    f:SetMouseClickEnabled(false)
-    f:SetScript("OnEnter", CellEnter)
-    f:SetScript("OnLeave", CellLeave)
-    c = { f = f, d = d }
+    frame:EnableMouse(true)
+    frame:SetMouseClickEnabled(false)
+    frame:SetScript("OnEnter", CellEnter)
+    frame:SetScript("OnLeave", CellLeave)
+    c = { f = frame, d = skinData }
     if C_DurationUtil and C_DurationUtil.CreateDurationTextBinding then
         c.dur = C_DurationUtil.CreateDuration()
         c.binding = C_DurationUtil.CreateDurationTextBinding()
-        c.binding:SetFontString(d.duration)
+        c.binding:SetFontString(skinData.duration)
         c.binding:SetDuration(c.dur)
     end
-    f.fvImbue = c
-    cells[idx] = c
+    frame.fvImbue = c
+    cells[index] = c
     return c
 end
 
@@ -215,11 +215,11 @@ end
 local function Paint(c, s)
     local AK = CludesUI.AuraKit
     local style = AK.styles[STYLE] or {}
-    local d = c.d
+    local skinData = c.d
     c.inv = s.inv
-    d.icon:SetTexture(s.icon)
-    d.stack:SetText(s.charges > 0 and tostring(s.charges) or "")
-    d.cooldown:SetCooldown(s.endTime - s.total, s.total)
+    skinData.icon:SetTexture(s.icon)
+    skinData.stack:SetText(s.charges > 0 and tostring(s.charges) or "")
+    skinData.cooldown:SetCooldown(s.endTime - s.total, s.total)
     local b = c.binding
     if b then
         c.dur:SetTimeFromEnd(s.endTime, s.total)
@@ -241,8 +241,8 @@ local function Paint(c, s)
 end
 
 local function HideFrom(first)
-    for idx = first, #cells do
-        local c = cells[idx]
+    for index = first, #cells do
+        local c = cells[index]
         c.f:Hide()
         if c.binding then
             c.binding:SetEnabled(false)
@@ -261,35 +261,35 @@ function mod.PAB_FvImbueLayout(boxHolder, hostFrame, conf, grid, layout, anchor)
     Scan()
     numLaidFrom = numShown
     local num = math.min(numShown, grid.enchSlots or 0)
-    local dir = conf.growDirection or "LEFT"
+    local direction = conf.growDirection or "LEFT"
     -- A column steps by the cell's height (a Cropped icon is shorter than wide).
-    local vertical = dir == "UP" or dir == "DOWN" or dir == "CENTER_VERTICAL"
+    local vertical = direction == "UP" or direction == "DOWN" or direction == "CENTER_VERTICAL"
     local step = (vertical and layout.elementHeight or layout.elementWidth) + layout.elementSpacing
     local lineGap = layout.lineSpacing or layout.elementSpacing
     local dx, dy = 0, 0
-    if dir == "LEFT" then
+    if direction == "LEFT" then
         dx = -step
-    elseif dir == "RIGHT" then
+    elseif direction == "RIGHT" then
         dx = step
-    elseif dir == "DOWN" then
+    elseif direction == "DOWN" then
         dy = -step
-    elseif dir == "UP" then
+    elseif direction == "UP" then
         dy = step
     end
     local centered = dx == 0 and dy == 0
-    for idx = 1, num do
-        local c = Cell(idx, hostFrame)
-        local f = c.f
-        f:ClearAllPoints()
+    for index = 1, num do
+        local c = Cell(index, hostFrame)
+        local frame = c.f
+        frame:ClearAllPoints()
         if not centered then
-            f:SetPoint(anchor, hostFrame, anchor, (idx - 1) * dx, (idx - 1) * dy)
-        elseif dir == "CENTER_VERTICAL" then
-            f:SetPoint("RIGHT", hostFrame, "LEFT", -lineGap, ((num + 1) / 2 - idx) * step)
+            frame:SetPoint(anchor, hostFrame, anchor, (index - 1) * dx, (index - 1) * dy)
+        elseif direction == "CENTER_VERTICAL" then
+            frame:SetPoint("RIGHT", hostFrame, "LEFT", -lineGap, ((num + 1) / 2 - index) * step)
         else
-            f:SetPoint("BOTTOM", hostFrame, "TOP", (idx - (num + 1) / 2) * step, lineGap)
+            frame:SetPoint("BOTTOM", hostFrame, "TOP", (index - (num + 1) / 2) * step, lineGap)
         end
-        Paint(c, isShown[idx])
-        f:Show()
+        Paint(c, isShown[index])
+        frame:Show()
     end
     HideFrom(num + 1)
     numLaid = num
@@ -319,8 +319,8 @@ local function OnEvent()
     end
     -- Same cells, new content (a re-cast, a weapon swap between imbued
     -- weapons, charges): repaint in place.
-    for idx = 1, numLaid do
-        Paint(cells[idx], isShown[idx])
+    for index = 1, numLaid do
+        Paint(cells[index], isShown[index])
     end
 end
 

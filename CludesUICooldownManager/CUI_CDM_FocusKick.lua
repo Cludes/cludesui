@@ -36,9 +36,9 @@ local function EnsureFocusKickBar()
     -- Desired position: directly after the "buffs" default bar and before any custom bars (skipping ghost bars).
     local barList = p.cdmBars.bars
     local targetIdx
-    for idx, b in ipairs(barList) do
+    for index, b in ipairs(barList) do
         if b.key == "buffs" then
-            targetIdx = idx + 1
+            targetIdx = index + 1
             break
         end
     end
@@ -46,9 +46,9 @@ local function EnsureFocusKickBar()
         targetIdx = #barList + 1
     end
     local existingIdx
-    for idx, b in ipairs(barList) do
+    for index, b in ipairs(barList) do
         if b.key == FOCUSKICK_BAR_KEY then
-            existingIdx = idx
+            existingIdx = index
             break
         end
     end
@@ -166,9 +166,9 @@ local function SetFocusKickAlpha(a)
     end
     local icons = cdmBarIcons and cdmBarIcons[FOCUSKICK_BAR_KEY]
     if icons then
-        for idx = 1, #icons do
-            if icons[idx] then
-                icons[idx]:SetAlpha(a)
+        for index = 1, #icons do
+            if icons[index] then
+                icons[index]:SetAlpha(a)
             end
         end
     end
@@ -183,8 +183,8 @@ local function GetScaledPlateHealth(backing)
         return nil
     end
     local children = { backing:GetChildren() }
-    for idx = 1, #children do
-        local c = children[idx]
+    for index = 1, #children do
+        local c = children[index]
         if c and c._mixedIn and c.health then
             return c.health, c
         end
@@ -577,22 +577,22 @@ do
     -- shadow the bar's own). A bar with a sound on its other edge only keeps
     -- this edge silent (false), so the Buffs bar is not asked either. A buff
     -- icon frame asks the tracking bars last.
-    local function PickBuffSoundKey(ss, spellRef, field, f)
+    local function PickBuffSoundKey(ss, spellRef, field, frame)
         local k = ss and ss[field]
         if not k then
             local tbbOn = mod._tbbAnyBuffSound
-            local bv = tbbOn and f and _G.BuffBarCooldownViewer
-            local bar = bv and f.viewerFrame == bv
+            local bv = tbbOn and frame and _G.BuffBarCooldownViewer
+            local barFrame = bv and frame.viewerFrame == bv
             local owned
-            if bar then
-                k = mod.FindTBBSoundKey(f, spellRef, field)
+            if barFrame then
+                k = mod.FindTBBSoundKey(frame, spellRef, field)
                 owned = k == false
             end
             if not k and not owned then
                 k = mod.FindBuffSoundKey(spellRef, field)
             end
-            if not k and tbbOn and not bar then
-                k = mod.FindTBBSoundKey(f, spellRef, field)
+            if not k and tbbOn and not barFrame then
+                k = mod.FindTBBSoundKey(frame, spellRef, field)
             end
         end
         if not k or k == "none" then
@@ -661,13 +661,13 @@ do
     end
 
     -- Record one edge for the end-of-frame flush. gainEdge picks the side.
-    local function RecordBuffEdge(f, gainEdge)
+    local function RecordBuffEdge(frame, gainEdge)
         -- Loading screen / login settle: buffs re-apply and viewer frames re-show
         -- across a zone/login, firing phantom apply/remove alerts. Drop them.
         if mod._cdmSoundSuppressed and mod._cdmSoundSuppressed() then
             return
         end
-        local spellRef = mod.GetCanonicalSpellIDForFrame and mod.GetCanonicalSpellIDForFrame(f)
+        local spellRef = mod.GetCanonicalSpellIDForFrame and mod.GetCanonicalSpellIDForFrame(frame)
         if not spellRef then
             return
         end
@@ -676,18 +676,18 @@ do
         -- FIRST gain after login, whose alert fires before DecorateFrame populates
         -- _ecmeFC -- keying off that context dropped the very first cue.
         local ss
-        local fc = _ecmeFC[f]
+        local fc = _ecmeFC[frame]
         local barId = fc and fc.barKey
         if barId then
             local sd = mod.GetBarSpellData and mod.GetBarSpellData(barId)
-            ss = mod.ResolveSpellSettings and mod.ResolveSpellSettings(f, spellRef, sd, barId)
+            ss = mod.ResolveSpellSettings and mod.ResolveSpellSettings(frame, spellRef, sd, barId)
         end
         -- A silent edge still has to be recorded so it can cancel its partner, but only
         -- when the OTHER edge has a cue -- so the second lookup runs only on that path.
-        local key = PickBuffSoundKey(ss, spellRef, gainEdge and "buffActiveSoundKey" or "buffLostSoundKey", f)
+        local key = PickBuffSoundKey(ss, spellRef, gainEdge and "buffActiveSoundKey" or "buffLostSoundKey", frame)
         if
             not key
-            and not PickBuffSoundKey(ss, spellRef, gainEdge and "buffLostSoundKey" or "buffActiveSoundKey", f)
+            and not PickBuffSoundKey(ss, spellRef, gainEdge and "buffLostSoundKey" or "buffActiveSoundKey", frame)
         then
             return
         end
@@ -720,13 +720,13 @@ do
             return
         end
         _soundHooked[widget] = true
-        hooksecurefunc(widget, "TriggerAuraAppliedAlert", function(f)
-            RecordBuffEdge(f, true)
+        hooksecurefunc(widget, "TriggerAuraAppliedAlert", function(frame)
+            RecordBuffEdge(frame, true)
         end)
         -- Loss edge: Blizzard fires TriggerAuraRemovedAlert when the buff drops.
         if type(widget.TriggerAuraRemovedAlert) == "function" then
-            hooksecurefunc(widget, "TriggerAuraRemovedAlert", function(f)
-                RecordBuffEdge(f, false)
+            hooksecurefunc(widget, "TriggerAuraRemovedAlert", function(frame)
+                RecordBuffEdge(frame, false)
             end)
         end
     end
@@ -775,9 +775,9 @@ local function FRGlobalFont()
 end
 local function FROutlineFlag()
     if CludesUI and CludesUI.GetFontOutlineFlag then
-        local f = CludesUI.GetFontOutlineFlag("cdm")
-        if f and f ~= "" then
-            return f
+        local frame = CludesUI.GetFontOutlineFlag("cdm")
+        if frame and frame ~= "" then
+            return frame
         end
     end
     return "NONE"
@@ -947,20 +947,20 @@ local function ShowFocusReminder(token)
     end
 
     -- Color: accent mode reads the live CLUDES_GREEN; custom mode reads the stored RGB. Re-SetTextColor only if the resolved color changed.
-    local r, g, b
+    local region, g, b
     if edge.focusReminderUseAccent then
         local eg = CludesUI.CLUDES_GREEN
-        r = (eg and eg.r) or 0.298
+        region = (eg and eg.r) or 0.298
         g = (eg and eg.g) or 0.788
         b = (eg and eg.b) or 0.941
     else
-        r = edge.focusReminderR or 1
+        region = edge.focusReminderR or 1
         g = edge.focusReminderG or 1
         b = edge.focusReminderB or 1
     end
-    if fontStr._lastR ~= r or fontStr._lastG ~= g or fontStr._lastB ~= b then
-        fontStr:SetTextColor(r, g, b)
-        fontStr._lastR, fontStr._lastG, fontStr._lastB = r, g, b
+    if fontStr._lastR ~= region or fontStr._lastG ~= g or fontStr._lastB ~= b then
+        fontStr:SetTextColor(region, g, b)
+        fontStr._lastR, fontStr._lastG, fontStr._lastB = region, g, b
     end
 
     if not fontStr:IsShown() then
@@ -985,8 +985,8 @@ local function RefreshFocusReminders()
     if not edge or edge.focusReminderEnabled ~= true then
         return
     end
-    for idx = 1, 40 do
-        local token = "nameplate" .. idx
+    for index = 1, 40 do
+        local token = "nameplate" .. index
         if UnitExists(token) then
             ShowFocusReminder(token)
         end

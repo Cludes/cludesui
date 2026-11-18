@@ -30,15 +30,15 @@ module.Journal = J
 J.factions = {}
 
 --- Called by JournalData.lua for each faction (reputation and PvP).
-function J.AddFaction(key, f)
-    f.key, f.faction = key, true
-    J.factions[#J.factions + 1] = f
+function J.AddFaction(key, frame)
+    frame.key, frame.faction = key, true
+    J.factions[#J.factions + 1] = frame
 end
 
-function J.AddDungeon(key, d)
-    d.key = key
-    J.dungeons[#J.dungeons + 1] = d
-    J.byKey[key] = d
+function J.AddDungeon(key, skinData)
+    skinData.key = key
+    J.dungeons[#J.dungeons + 1] = skinData
+    J.byKey[key] = skinData
 end
 
 local QUEST_ID, QUEST_NAME, QUEST_LEVEL, QUEST_SIDE, QUEST_SHARE, QUEST_WHERE = 1, 2, 3, 4, 5, 6
@@ -62,9 +62,9 @@ local function Prepare()
         end
         byName[q.name] = q
     end
-    for _, d in ipairs(J.dungeons) do
-        d.questInfo = (d.instance and byMap[d.instance]) or byName[d.name]
-        d.levels = d.questInfo and d.questInfo.levels
+    for _, skinData in ipairs(J.dungeons) do
+        skinData.questInfo = (skinData.instance and byMap[skinData.instance]) or byName[skinData.name]
+        skinData.levels = skinData.questInfo and skinData.questInfo.levels
     end
     table.sort(J.dungeons, function(a, b)
         local la, lb = a.levels and a.levels[1] or 99, b.levels and b.levels[1] or 99
@@ -75,8 +75,8 @@ local function Prepare()
     end)
 end
 
-local function LevelText(d)
-    local lv = d.levels
+local function LevelText(skinData)
+    local lv = skinData.levels
     if not lv then
         return ""
     end
@@ -96,16 +96,16 @@ local function Suggested()
     local inside, kind = IsInInstance()
     if inside and (kind == "party" or kind == "raid") then
         local name, _, _, _, _, _, _, id = GetInstanceInfo()
-        for _, d in ipairs(J.dungeons) do
-            if d.instance == id or d.name == name then
-                return d
+        for _, skinData in ipairs(J.dungeons) do
+            if skinData.instance == id or skinData.name == name then
+                return skinData
             end
         end
     end
     local level = UnitLevel("player")
-    for _, d in ipairs(J.dungeons) do
-        if d.levels and level >= d.levels[1] and level <= d.levels[2] then
-            return d
+    for _, skinData in ipairs(J.dungeons) do
+        if skinData.levels and level >= skinData.levels[1] and level <= skinData.levels[2] then
+            return skinData
         end
     end
     return J.dungeons[1]
@@ -121,13 +121,13 @@ local current
 local Show
 
 local function Text(parent, size, colour)
-    local fs = parent:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(fs, size, "essentials")
-    fs:SetJustifyH("LEFT")
+    local fontString = parent:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(fontString, size, "essentials")
+    fontString:SetJustifyH("LEFT")
     if colour then
-        fs:SetTextColor(unpack(colour))
+        fontString:SetTextColor(unpack(colour))
     end
-    return fs
+    return fontString
 end
 
 local function Build()
@@ -180,19 +180,19 @@ local function FillList()
     local y = 0
     -- Dungeons, then a Reputation heading and the factions (sorted by name).
     local entries = {}
-    for _, d in ipairs(J.dungeons) do
-        entries[#entries + 1] = d
+    for _, skinData in ipairs(J.dungeons) do
+        entries[#entries + 1] = skinData
     end
     if #J.factions > 0 then
         table.sort(J.factions, function(a, b)
             return a.name < b.name
         end)
         entries[#entries + 1] = { heading = "Reputation" }
-        for _, f in ipairs(J.factions) do
-            entries[#entries + 1] = f
+        for _, frame in ipairs(J.factions) do
+            entries[#entries + 1] = frame
         end
     end
-    for i, d in ipairs(entries) do
+    for i, skinData in ipairs(entries) do
         local b = listButtons[i]
         if not b then
             b = CreateFrame("Button", nil, list.child)
@@ -207,33 +207,33 @@ local function FillList()
             b.sel:SetAllPoints()
             local ar, ag, ab = CludesUI.Kit.Accent()
             b.sel:SetColorTexture(ar, ag, ab, 0.18)
-            local hl = b:CreateTexture(nil, "HIGHLIGHT")
-            hl:SetAllPoints()
-            hl:SetColorTexture(1, 1, 1, 0.06)
+            local highlight = b:CreateTexture(nil, "HIGHLIGHT")
+            highlight:SetAllPoints()
+            highlight:SetColorTexture(1, 1, 1, 0.06)
             b:SetScript("OnClick", function(self)
                 Show(self.dungeon)
             end)
             listButtons[i] = b
         end
-        b.dungeon = not d.heading and d or nil
-        b:EnableMouse(not d.heading)
-        if d.heading then
-            b.text:SetText(CludesUI.Kit.AccentHex() .. d.heading .. "|r")
+        b.dungeon = not skinData.heading and skinData or nil
+        b:EnableMouse(not skinData.heading)
+        if skinData.heading then
+            b.text:SetText(CludesUI.Kit.AccentHex() .. skinData.heading .. "|r")
             b.lv:SetText("")
-        elseif d.faction then
-            b.text:SetText(d.name .. (d.tab == "pvp" and " |cff9aa6b2(PvP)|r" or ""))
+        elseif skinData.faction then
+            b.text:SetText(skinData.name .. (skinData.tab == "pvp" and " |cff9aa6b2(PvP)|r" or ""))
             b.lv:SetText("")
         else
             b.text:SetText(
-                (d.raid and "|cffffb040" or "")
-                    .. d.name
-                    .. (d.raid and "|r" or "")
-                    .. (d.closed and " |cff9aa6b2(closed)|r" or "")
+                (skinData.raid and "|cffffb040" or "")
+                    .. skinData.name
+                    .. (skinData.raid and "|r" or "")
+                    .. (skinData.closed and " |cff9aa6b2(closed)|r" or "")
             )
-            b.lv:SetText(LevelText(d))
+            b.lv:SetText(LevelText(skinData))
         end
         b:SetPoint("TOPLEFT", 0, -y)
-        b.sel:SetShown(d == current)
+        b.sel:SetShown(skinData == current)
         b:Show()
         y = y + 20
     end
@@ -243,17 +243,17 @@ end
 -- Pooled row frames for the detail pane.
 local function Acquire()
     used = used + 1
-    local r = pool[used]
-    if not r then
-        r = CreateFrame("Button", nil, content)
-        r.icon = r:CreateTexture(nil, "ARTWORK")
-        r.icon:SetSize(18, 18)
-        r.icon:SetPoint("LEFT", 14, 0)
-        r.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        r.text = Text(r, 12)
-        r.text:SetWordWrap(true)
-        r:RegisterForClicks("AnyUp")
-        r:SetScript("OnEnter", function(self)
+    local region = pool[used]
+    if not region then
+        region = CreateFrame("Button", nil, content)
+        region.icon = region:CreateTexture(nil, "ARTWORK")
+        region.icon:SetSize(18, 18)
+        region.icon:SetPoint("LEFT", 14, 0)
+        region.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        region.text = Text(region, 12)
+        region.text:SetWordWrap(true)
+        region:RegisterForClicks("AnyUp")
+        region:SetScript("OnEnter", function(self)
             if not self.itemID then
                 return
             end
@@ -261,10 +261,10 @@ local function Acquire()
             GameTooltip:SetItemByID(self.itemID)
             GameTooltip:Show()
         end)
-        r:SetScript("OnLeave", function()
+        region:SetScript("OnLeave", function()
             GameTooltip:Hide()
         end)
-        r:SetScript("OnClick", function(self)
+        region:SetScript("OnClick", function(self)
             if not self.itemID then
                 return
             end
@@ -280,42 +280,42 @@ local function Acquire()
                 end
             end
         end)
-        pool[used] = r
+        pool[used] = region
     end
-    r.itemID = nil
-    r:ClearAllPoints()
-    r.icon:Hide()
-    r.text:ClearAllPoints()
-    r:Show()
-    return r
+    region.itemID = nil
+    region:ClearAllPoints()
+    region.icon:Hide()
+    region.text:ClearAllPoints()
+    region:Show()
+    return region
 end
 
 local y
 local function Line(text, size, indent, colour)
-    local r = Acquire()
-    CludesUI.Kit.Font(r.text, size or 12, "essentials")
-    r.text:SetTextColor(unpack(colour or { 1, 1, 1 }))
-    r.text:SetPoint("TOPLEFT", r, "TOPLEFT", indent or 0, 0)
-    r.text:SetWidth(content:GetWidth() - (indent or 0) - 8)
-    r.text:SetText(text)
-    local h = math.max(16, r.text:GetStringHeight() + 4)
-    r:SetSize(content:GetWidth(), h)
-    r:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -y)
+    local region = Acquire()
+    CludesUI.Kit.Font(region.text, size or 12, "essentials")
+    region.text:SetTextColor(unpack(colour or { 1, 1, 1 }))
+    region.text:SetPoint("TOPLEFT", region, "TOPLEFT", indent or 0, 0)
+    region.text:SetWidth(content:GetWidth() - (indent or 0) - 8)
+    region.text:SetText(text)
+    local h = math.max(16, region.text:GetStringHeight() + 4)
+    region:SetSize(content:GetWidth(), h)
+    region:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -y)
     y = y + h
-    return r
+    return region
 end
 
 local function ItemLine(id, chance)
-    local r = Acquire()
-    r.itemID = id
+    local region = Acquire()
+    region.itemID = id
     local name, link, quality = C_Item.GetItemInfo(id)
     local notYet = J.NotYet and J.NotYet[id]
     if not name and C_Item.RequestLoadItemDataByID then
         C_Item.RequestLoadItemDataByID(id)
     end
-    local icon = C_Item.GetItemIconByID(id) or (notYet and notYet[NOTYET_ICON])
-    r.icon:SetTexture(icon)
-    r.icon:Show()
+    local iconTex = C_Item.GetItemIconByID(id) or (notYet and notYet[NOTYET_ICON])
+    region.icon:SetTexture(iconTex)
+    region.icon:Show()
     local label = link
         or (notYet and ("|cff9aa6b2" .. notYet[NOTYET_NAME] .. " (not in the game yet)|r"))
         or ("item " .. id)
@@ -329,13 +329,13 @@ local function ItemLine(id, chance)
         extra[#extra + 1] = (module.Owned and module.Owned(id)) and "|cffff9933*|r |cff60d080BiS, yours|r"
             or "|cffff9933* BiS|r"
     end
-    CludesUI.Kit.Font(r.text, 12, "essentials")
-    r.text:SetTextColor(1, 1, 1)
-    r.text:SetPoint("LEFT", r.icon, "RIGHT", 6, 0)
-    r.text:SetWidth(content:GetWidth() - 50)
-    r.text:SetText(label .. "  " .. table.concat(extra, "  "))
-    r:SetSize(content:GetWidth(), 20)
-    r:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -y)
+    CludesUI.Kit.Font(region.text, 12, "essentials")
+    region.text:SetTextColor(1, 1, 1)
+    region.text:SetPoint("LEFT", region.icon, "RIGHT", 6, 0)
+    region.text:SetWidth(content:GetWidth() - 50)
+    region.text:SetText(label .. "  " .. table.concat(extra, "  "))
+    region:SetSize(content:GetWidth(), 20)
+    region:SetPoint("TOPLEFT", content, "TOPLEFT", 0, -y)
     y = y + 20
 end
 
@@ -364,8 +364,8 @@ local function BossKey(boss)
 end
 
 local function Walked(map, n)
-    for i, f in ipairs(map.order or {}) do
-        if f == n then
+    for i, frame in ipairs(map.order or {}) do
+        if frame == n then
             return i
         end
     end
@@ -376,11 +376,11 @@ local function FloorName(map, n)
     return map.names and map.names[n] or ("Floor %d"):format(Walked(map, n))
 end
 
-local function Round(frame, tex)
+local function Round(frame, texture)
     local mask = frame:CreateMaskTexture()
-    mask:SetAllPoints(tex)
+    mask:SetAllPoints(texture)
     mask:SetTexture(ROUND_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-    tex:AddMaskTexture(mask)
+    texture:AddMaskTexture(mask)
 end
 
 local function PinEnter(pin)
@@ -432,8 +432,8 @@ local function MapBuild()
     v.bar:SetSize(width, 22)
     local function Step(by)
         local at = 1
-        for i, f in ipairs(v.floors) do
-            if f == v.floor then
+        for i, frame in ipairs(v.floors) do
+            if frame == v.floor then
                 at = i
             end
         end
@@ -566,14 +566,14 @@ local function MapHide()
 end
 
 -- The map at y in the detail pane; returns the new y.
-local function MapShow(d, at)
-    if not (J.Maps and J.Maps[d.key]) then
+local function MapShow(skinData, at)
+    if not (J.Maps and J.Maps[skinData.key]) then
         MapHide()
         return at
     end
     local v = MapBuild()
-    if v.dungeon ~= d then
-        v:Open(d)
+    if v.dungeon ~= skinData then
+        v:Open(skinData)
     end
     v:Draw()
     if v.bar:IsShown() then
@@ -589,10 +589,10 @@ end
 
 local SIDE = { Alliance = "A", Horde = "H" }
 
-Show = function(d)
+Show = function(skinData)
     Build()
     Prepare()
-    current = d or current or Suggested()
+    current = skinData or current or Suggested()
     win:Show()
     FillList()
     for i = 1, used do
@@ -767,12 +767,12 @@ Show = function(d)
     content:SetHeight(y + 10)
 end
 
-function module.ShowJournal(d)
-    if win and win:IsShown() and not d then
+function module.ShowJournal(skinData)
+    if win and win:IsShown() and not skinData then
         win:Hide()
         return
     end
-    Show(d)
+    Show(skinData)
 end
 
 -- Item names arrive after the window asks for them: repaint once they settle.

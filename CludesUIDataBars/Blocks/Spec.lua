@@ -134,10 +134,10 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
     local function BuildSpecCache()
         specCache = {}
         numSpecs = GetNumSpecializations() or 0
-        for idx = 1, numSpecs do
-            local ident, name, _, icon, role = C_SpecializationInfo.GetSpecializationInfo(idx)
+        for index = 1, numSpecs do
+            local ident, name, _, iconTex, role = C_SpecializationInfo.GetSpecializationInfo(index)
             if ident then
-                specCache[idx] = { id = ident, name = name, icon = icon, role = role }
+                specCache[index] = { id = ident, name = name, icon = iconTex, role = role }
             end
         end
     end
@@ -181,9 +181,9 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     local function GetBarDisplayText()
-        local d = D()
+        local skinData = D()
         local textValue
-        if d.showLoadout ~= false then
+        if skinData.showLoadout ~= false then
             textValue = GetCurrentLoadoutName()
         end
         if not textValue then
@@ -195,7 +195,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
             textValue = ""
         end
         -- Opt-in only (default off): never force-capitalize.
-        if d.useUppercase == true then
+        if skinData.useUppercase == true then
             return textValue:upper()
         end
         return textValue
@@ -270,85 +270,85 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
 
         local rowBtns = {}
         for _, record in ipairs(entries) do
-            local btn = pool:Acquire()
-            btn:SetParent(dialog)
+            local button = pool:Acquire()
+            button:SetParent(dialog)
             -- 2px band above/below the content, matching the shared tip's clickable rows.
-            btn:SetHeight(iconSz + 4)
-            btn:SetPoint("TOPLEFT", dialog, "TOPLEFT", PAD, -yOff)
-            btn:EnableMouse(true)
-            btn:RegisterForClicks("AnyUp")
+            button:SetHeight(iconSz + 4)
+            button:SetPoint("TOPLEFT", dialog, "TOPLEFT", PAD, -yOff)
+            button:EnableMouse(true)
+            button:RegisterForClicks("AnyUp")
             -- Full-row white hover wash (house style 0.10), same as the shared tip's
             -- clickable rows; HIGHLIGHT layer needs no scripts. Color RE-ASSERTED every
             -- build: the pool resetter nils the highlight texture on every release.
-            if not btn._hl then
-                btn._hl = btn:CreateTexture(nil, "HIGHLIGHT")
-                btn._hl:SetAllPoints()
+            if not button._hl then
+                button._hl = button:CreateTexture(nil, "HIGHLIGHT")
+                button._hl:SetAllPoints()
             end
-            btn._hl:SetColorTexture(1, 1, 1, 0.10)
+            button._hl:SetColorTexture(1, 1, 1, 0.10)
 
-            if not btn._icon then
-                btn._icon = btn:CreateTexture(nil, "OVERLAY")
+            if not button._icon then
+                button._icon = button:CreateTexture(nil, "OVERLAY")
             end
-            btn._icon:SetSize(iconSz, iconSz)
-            btn._icon:ClearAllPoints()
-            btn._icon:SetPoint("LEFT")
+            button._icon:SetSize(iconSz, iconSz)
+            button._icon:ClearAllPoints()
+            button._icon:SetPoint("LEFT")
 
-            if not btn._label then
-                btn._label = btn:CreateFontString(nil, "OVERLAY")
+            if not button._label then
+                button._label = button:CreateFontString(nil, "OVERLAY")
             end
-            btn:Show()
-            mod.SetFont(btn._label, fontSize)
-            btn._label:SetText(record.name)
-            btn._label:Show()
-            btn._label:ClearAllPoints()
+            button:Show()
+            mod.SetFont(button._label, fontSize)
+            button._label:SetText(record.name)
+            button._label:Show()
+            button._label:ClearAllPoints()
             if record.icon then
-                btn._icon:SetTexture(record.icon)
-                btn._icon:SetTexCoord(4 / 64, 60 / 64, 4 / 64, 60 / 64)
-                btn._icon:Show()
-                btn._label:SetPoint("LEFT", btn._icon, "RIGHT", 4, 0)
+                button._icon:SetTexture(record.icon)
+                button._icon:SetTexCoord(4 / 64, 60 / 64, 4 / 64, 60 / 64)
+                button._icon:Show()
+                button._label:SetPoint("LEFT", button._icon, "RIGHT", 4, 0)
             else
                 -- Icon-less rows (loadouts): flush left -- anchoring to the hidden icon's stale rect left a phantom indent.
-                btn._icon:Hide()
-                btn._label:SetPoint("LEFT", btn, "LEFT", 0, 0)
+                button._icon:Hide()
+                button._label:SetPoint("LEFT", button, "LEFT", 0, 0)
             end
 
             if record.isActive then
-                btn._label:SetTextColor(ar, ag, ab, 1)
+                button._label:SetTextColor(ar, ag, ab, 1)
             else
-                btn._label:SetTextColor(1, 1, 1, 1)
+                button._label:SetTextColor(1, 1, 1, 1)
             end
 
             -- Right-edge arrow (entry.arrow): the active spec row uses it to signal its loadout subnav.
             if record.arrow then
-                if not btn._arrow then
-                    btn._arrow = btn:CreateTexture(nil, "OVERLAY")
+                if not button._arrow then
+                    button._arrow = button:CreateTexture(nil, "OVERLAY")
                 end
                 -- FULL re-assert every build: the pool resetter hides and strips regions on release, so creation-only setup does not survive.
-                btn._arrow:SetSize(10, 10)
-                btn._arrow:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-right.png")
-                btn._arrow:ClearAllPoints()
-                btn._arrow:SetPoint("RIGHT", btn, "RIGHT", -2, 0)
-                btn._arrow:SetVertexColor(ar, ag, ab, 0.9)
-                btn._arrow:Show()
-            elseif btn._arrow then
-                btn._arrow:Hide()
+                button._arrow:SetSize(10, 10)
+                button._arrow:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-arrow-right.png")
+                button._arrow:ClearAllPoints()
+                button._arrow:SetPoint("RIGHT", button, "RIGHT", -2, 0)
+                button._arrow:SetVertexColor(ar, ag, ab, 0.9)
+                button._arrow:Show()
+            elseif button._arrow then
+                button._arrow:Hide()
             end
 
-            btn:SetScript("OnEnter", function()
-                btn._label:SetTextColor(ar, ag, ab, 1)
+            button:SetScript("OnEnter", function()
+                button._label:SetTextColor(ar, ag, ab, 1)
                 -- Row hover callback (spec popup: open/close the loadout subnav depending on which row the cursor is on).
                 if record.onHover then
-                    record.onHover(btn)
+                    record.onHover(button)
                 end
             end)
-            btn:SetScript("OnLeave", function()
+            button:SetScript("OnLeave", function()
                 if record.isActive then
-                    btn._label:SetTextColor(ar, ag, ab, 1)
+                    button._label:SetTextColor(ar, ag, ab, 1)
                 else
-                    btn._label:SetTextColor(1, 1, 1, 1)
+                    button._label:SetTextColor(1, 1, 1, 1)
                 end
             end)
-            btn:SetScript("OnClick", function(_, mb)
+            button:SetScript("OnClick", function(_, mb)
                 -- entry.noClick: informational row (the active spec opens a subnav instead of re-selecting itself).
                 if record.noClick then
                     return
@@ -361,18 +361,18 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
             end)
 
             local iconExtra = 0
-            if btn._icon:IsShown() then
+            if button._icon:IsShown() then
                 iconExtra = iconSz + 4
             end
-            local bw = iconExtra + btn._label:GetStringWidth()
+            local bw = iconExtra + button._label:GetStringWidth()
             if record.arrow then
                 bw = bw + 16
             end
             if bw > maxW then
                 maxW = bw
             end
-            btn:SetWidth(bw)
-            rowBtns[#rowBtns + 1] = btn
+            button:SetWidth(bw)
+            rowBtns[#rowBtns + 1] = button
             yOff = yOff + (iconSz + 4) + 3
         end
         -- Trim the last row's trailing gap so the bottom padding stays PAD.
@@ -387,20 +387,20 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
         local footCount = footerLines and #footerLines or 0
         if footCount > 0 then
             yOff = yOff + 8
-            for idx = 1, footCount do
-                local fl = dialog._foot[idx]
+            for index = 1, footCount do
+                local fl = dialog._foot[index]
                 if not fl then
                     fl = {
                         l = dialog:CreateFontString(nil, "OVERLAY"),
                         r = dialog:CreateFontString(nil, "OVERLAY"),
                     }
-                    dialog._foot[idx] = fl
+                    dialog._foot[index] = fl
                 end
                 mod.SetFont(fl.l, fontSize)
                 mod.SetFont(fl.r, fontSize)
-                fl.l:SetText(CludesUI.L(footerLines[idx][1]))
+                fl.l:SetText(CludesUI.L(footerLines[index][1]))
                 fl.l:SetTextColor(1, 1, 1, 1)
-                fl.r:SetText(CludesUI.L(footerLines[idx][2]))
+                fl.r:SetText(CludesUI.L(footerLines[index][2]))
                 fl.r:SetTextColor(1, 1, 1, 1)
                 fl.l:ClearAllPoints()
                 fl.l:SetPoint("TOPLEFT", dialog, "TOPLEFT", PAD, -yOff)
@@ -416,15 +416,15 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
             end
             yOff = yOff - 4
         end
-        for idx = footCount + 1, #dialog._foot do
-            dialog._foot[idx].l:Hide()
-            dialog._foot[idx].r:Hide()
+        for index = footCount + 1, #dialog._foot do
+            dialog._foot[index].l:Hide()
+            dialog._foot[index].r:Hide()
         end
 
         dialog:SetSize(maxW + PAD * 2, yOff + PAD)
         -- Stretch every row to the popup's inner width: the wash and the click target span the full row, not just the text.
-        for idx = 1, #rowBtns do
-            rowBtns[idx]:SetWidth(maxW)
+        for index = 1, #rowBtns do
+            rowBtns[index]:SetWidth(maxW)
         end
         dialog:ClearAllPoints()
         if barCtx.IsVertical() then
@@ -537,15 +537,15 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
         -- Any path that hides the spec popup takes the loadout subnav with it.
         specPool._onHide = CloseLoadoutSubnav
         local entries = {}
-        for idx = 1, numSpecs do
-            local details = specCache[idx]
+        for index = 1, numSpecs do
+            local details = specCache[index]
             if details then
-                local isActive = (idx == currentSpecIdx)
+                local isActive = (index == currentSpecIdx)
                 entries[#entries + 1] = {
                     name = details.name,
                     icon = details.icon,
                     isActive = isActive,
-                    specIndex = idx,
+                    specIndex = index,
                     -- Active spec: not clickable; hover opens the loadout subnav (arrow marks it), any other row closes it.
                     noClick = isActive,
                     arrow = isActive,
@@ -591,14 +591,14 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
                 specIndex = 0,
             },
         }
-        for idx = 1, numSpecs do
-            local details = specCache[idx]
+        for index = 1, numSpecs do
+            local details = specCache[index]
             if details then
                 entries[#entries + 1] = {
                     name = details.name,
                     icon = details.icon,
                     isActive = (details.id == currentLootSpecID),
-                    specIndex = idx,
+                    specIndex = index,
                 }
             end
         end
@@ -686,29 +686,29 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
     -- Everything the block shows, as one string: equal = nothing to redraw.
     local drawn
     local function Fingerprint()
-        local d = D()
+        local skinData = D()
         local current = currentSpecIdx and specCache[currentSpecIdx]
         return table.concat({
             GetBarDisplayText(),
             tostring(GetLootSpecName()),
             tostring(currentSpecIdx),
             tostring(current and current.icon),
-            tostring(d.showIcon),
-            tostring(d.iconStyle),
-            tostring(d.useUppercase),
+            tostring(skinData.showIcon),
+            tostring(skinData.iconStyle),
+            tostring(skinData.useUppercase),
         }, "|")
     end
 
     -- Text and icon colours (the accent on hover).
     local function Paint()
         if mouseOver then
-            local r, g, b = mod.GetAccent()
-            specText:SetTextColor(r, g, b, 1)
-            specIcon:SetVertexColor(r, g, b, 1)
+            local region, g, b = mod.GetAccent()
+            specText:SetTextColor(region, g, b, 1)
+            specIcon:SetVertexColor(region, g, b, 1)
         else
-            local r, g, b = BlockColorOf(blockCfg)
+            local region, g, b = BlockColorOf(blockCfg)
             local ir, ig, ib = IconColorOf(blockCfg)
-            specText:SetTextColor(r, g, b, 1)
+            specText:SetTextColor(region, g, b, 1)
             specIcon:SetVertexColor(ir, ig, ib, 1)
         end
     end
@@ -717,7 +717,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
         -- No combat gate: only our own insecure frames (text, textures, sizes),
         -- and an in-combat loot spec change must repaint at once.
         UpdateCurrentSpec()
-        local d = D()
+        local skinData = D()
         local barCfg = BC()
         local barH = barCtx.GetThickness()
         local fontSize = max(9, floor(CONTENT_BASE * 0.4333 + 0.5))
@@ -756,7 +756,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
             activeSpecName = specCache[currentSpecIdx].name
         end
         if lootName and lootName ~= activeSpecName then
-            if d.useUppercase ~= false then
+            if skinData.useUppercase ~= false then
                 infoText:SetText("(" .. lootName:upper() .. ")")
             else
                 infoText:SetText("(" .. lootName .. ")")
@@ -768,7 +768,7 @@ mod.BlockFactories.spec = function(blockCfg, slot, contentFrame, barCtx)
         end
 
         -- Show Icon (default ON): hidden drops the icon width and gap entirely.
-        local showIcon = d.showIcon ~= false
+        local showIcon = skinData.showIcon ~= false
         if showIcon then
             specIcon:Show()
         else

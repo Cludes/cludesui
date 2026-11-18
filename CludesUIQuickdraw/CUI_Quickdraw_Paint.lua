@@ -97,11 +97,11 @@ local function PaintCell(
     -- left open should follow it. ApplySlotVisual turns this into a colour.
     wid.usability = (showUsability and not placeholder) and SlotUsability(slot) or nil
 
-    local icon, name = SlotDisplay(slot)
-    mod.SetIconTexture(wid.icon, icon)
+    local iconTex, name = SlotDisplay(slot)
+    mod.SetIconTexture(wid.icon, iconTex)
     -- Per paint: the widget is pooled, and the marker textures take the full
     -- rect where everything else takes the crop.
-    ApplyIconCrop(wid.icon, icon)
+    ApplyIconCrop(wid.icon, iconTex)
     wid.icon:SetShown(not placeholder)
     wid.plus:SetShown(placeholder)
 
@@ -148,11 +148,11 @@ local function PaintCell(
     if wid.nestDots then
         local px = CludesUI.PP and CludesUI.PP.mult or 1
         local dot = max(px, floor((iconSize or 40) * 0.055 / px + 0.5) * px)
-        for d = 1, 3 do
-            local t = wid.nestDots[d]
+        for skinData = 1, 3 do
+            local t = wid.nestDots[skinData]
             t:SetSize(dot, dot)
             t:ClearAllPoints()
-            t:SetPoint("BOTTOMLEFT", wid, "BOTTOMLEFT", dot + (d - 1) * dot * 2, dot)
+            t:SetPoint("BOTTOMLEFT", wid, "BOTTOMLEFT", dot + (skinData - 1) * dot * 2, dot)
             t:SetVertexColor(1, 1, 1, 0.85)
             t:SetShown(nests and true or false)
         end
@@ -338,8 +338,8 @@ function PaletteView:Layout(paletteIndex)
         mountCells[key] = nil
     end
 
-    for idx = 1, isShown do
-        local wid = self.widgets[idx]
+    for index = 1, isShown do
+        local wid = self.widgets[index]
         -- Switching modes leaves the other mode's depth cues behind.
         wid:SetAlpha(1)
         wid:SetScale(1)
@@ -347,7 +347,7 @@ function PaletteView:Layout(paletteIndex)
         -- publishes its own, entry by entry, in the geometry passes below.
         wid.baseSize = iconSize
         if not fan then
-            local a = arcStart + (idx - 1) * step
+            local a = arcStart + (index - 1) * step
             wid:ClearAllPoints()
             wid:SetPoint("CENTER", widget, "CENTER", radius * sin(a), radius * cos(a))
             wid:SetSize(iconSize, iconSize)
@@ -361,8 +361,8 @@ function PaletteView:Layout(paletteIndex)
         -- can be fired -- is already named on the hub.
         PaintCell(
             wid,
-            slots[idx],
-            slots[idx] == nil,
+            slots[index],
+            slots[index] == nil,
             showLabels,
             showCooldowns,
             not fan,
@@ -372,14 +372,14 @@ function PaletteView:Layout(paletteIndex)
         -- slots, not palette.slots: the same list the cell was just painted
         -- from. Once Hide Unavailable Actions filters anything the two part
         -- company, and testing the stored array would collect the wrong cells.
-        if HasLiveIcon(slots[idx]) then
-            liveCells[#liveCells + 1] = idx
+        if HasLiveIcon(slots[index]) then
+            liveCells[#liveCells + 1] = index
         end
-        if mod.WarmSlot(slots[idx]) then
-            pending[#pending + 1] = idx
+        if mod.WarmSlot(slots[index]) then
+            pending[#pending + 1] = index
         end
-        if showUsability and HasMountTint(slots[idx]) then
-            mountCells[#mountCells + 1] = idx
+        if showUsability and HasMountTint(slots[index]) then
+            mountCells[#mountCells + 1] = index
         end
         wid:Show()
     end
@@ -404,8 +404,8 @@ function PaletteView:Layout(paletteIndex)
                     -- view that never steers -- a static frame -- shows.
                     wid:SetPoint("CENTER", widget, "CENTER", c.cells[jdx].x, c.cells[jdx].y)
                 else
-                    local r, a = self:ChildRingPos(c, jdx)
-                    wid:SetPoint("CENTER", widget, "CENTER", r * sin(a), r * cos(a))
+                    local region, a = self:ChildRingPos(c, jdx)
+                    wid:SetPoint("CENTER", widget, "CENTER", region * sin(a), region * cos(a))
                 end
                 wid:SetSize(c.icon, c.icon)
                 wid:EnableMouse(false)
@@ -454,9 +454,9 @@ function PaletteView:Layout(paletteIndex)
         end
     end
 
-    for idx = cells + 1, #self.widgets do
-        self.widgets[idx]:Hide()
-        self.widgets[idx]:EnableMouse(false)
+    for index = cells + 1, #self.widgets do
+        self.widgets[index]:Hide()
+        self.widgets[index]:EnableMouse(false)
     end
 
     -- The ARC editor's centred add button, painted after the sweep above
@@ -561,8 +561,8 @@ function PaletteView:Layout(paletteIndex)
         -- Tinted like the connector line (SelectColor), at full alpha in the
         -- same call -- a texture's vertex alpha and SetAlpha share one slot,
         -- so this single write owns both.
-        local r, g, b = SelectColor(p)
-        hub.logo:SetVertexColor(r, g, b, 1)
+        local region, g, b = SelectColor(p)
+        hub.logo:SetVertexColor(region, g, b, 1)
         -- The size the slam-open scales up to (AdvanceSlam).
         self._slamLogoSize = sz
     end
@@ -681,14 +681,14 @@ function PaletteView:MarkerPip(wid, slot, iconSize)
     -- alone (see above); the pip itself is shown for every marker entry. The
     -- host is made the first time this widget holds a marker entry, at the
     -- default child level: under the border host, where the pip always drew.
-    local host = wid.markerPipHost
-    if not host then
-        host = CreateFrame("Frame", nil, wid)
-        host:SetAllPoints(wid)
-        wid.markerPipHost = host
-        pip:SetParent(host)
+    local owner = wid.markerPipHost
+    if not owner then
+        owner = CreateFrame("Frame", nil, wid)
+        owner:SetAllPoints(wid)
+        wid.markerPipHost = owner
+        pip:SetParent(owner)
     end
-    host:SetAlphaFromBoolean(IsRaidMarkerActive(WORLD_MARKER_ENGINE[ident]), 1, 0)
+    owner:SetAlphaFromBoolean(IsRaidMarkerActive(WORLD_MARKER_ENGINE[ident]), 1, 0)
     pip:Show()
 end
 
@@ -701,15 +701,15 @@ function PaletteView:RefreshMarkerPips()
     if not num then
         return
     end
-    for idx = 1, num do
-        local wid = self.widgets[idx]
+    for index = 1, num do
+        local wid = self.widgets[index]
         if wid then
             -- Through a local, NOT straight into the call: CellSlot answers a
             -- nested cell with slot, claim, subIndex, and in final argument
             -- position all three would expand -- landing the claim table in
             -- MarkerPip's iconSize, which the size arithmetic there then
             -- multiplies. Top-level cells return one value and hid this.
-            local slot = self:CellSlot(idx)
+            local slot = self:CellSlot(index)
             self:MarkerPip(wid, slot)
         end
     end
@@ -731,9 +731,9 @@ function PaletteView:AdvanceLiveIcons()
         local wid = self.widgets[index]
         local slot = self:CellSlot(index)
         if wid and slot then
-            local icon = SlotDisplay(slot)
-            mod.SetIconTexture(wid.icon, icon)
-            ApplyIconCrop(wid.icon, icon)
+            local iconTex = SlotDisplay(slot)
+            mod.SetIconTexture(wid.icon, iconTex)
+            ApplyIconCrop(wid.icon, iconTex)
         end
     end
 end
@@ -783,9 +783,9 @@ function PaletteView:AdvancePendingIcons()
         if mod.SlotDataReady(slot) then
             local wid = self.widgets[index]
             if wid then
-                local icon = SlotDisplay(slot)
-                mod.SetIconTexture(wid.icon, icon)
-                ApplyIconCrop(wid.icon, icon)
+                local iconTex = SlotDisplay(slot)
+                mod.SetIconTexture(wid.icon, iconTex)
+                ApplyIconCrop(wid.icon, iconTex)
             end
             tremove(cells, key)
         end
@@ -985,7 +985,7 @@ function PaletteView:SetSelection(index)
         if self._hubNameOnly then
             local slot, claim = self:CellSlot(index)
             local _, name = SlotDisplay(slot)
-            local r, g, b = SelectColor(self:P())
+            local region, g, b = SelectColor(self:P())
             if claim then
                 local _, parentName = SlotDisplay(self:CellSlot(claim.parent))
                 if parentName and name then
@@ -997,7 +997,7 @@ function PaletteView:SetSelection(index)
                     or (wid.isPlaceholder and CludesUI.L("Add Action"))
                     or ("Slot " .. index)
             )
-            hub.text:SetTextColor(r, g, b)
+            hub.text:SetTextColor(region, g, b)
 
             local aw = widgets[claim and claim.parent or index]
             if aw then

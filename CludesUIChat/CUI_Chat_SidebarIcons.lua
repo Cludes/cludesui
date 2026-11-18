@@ -82,10 +82,10 @@ function CHAT.ApplySidebarIcons()
     local anchor, prevPadB = nil, 0
     for _, key in ipairs(chainOrder) do
         local refs = CHAIN_REFS[key]
-        local btn = refs and sbd[refs.btn]
-        if btn then
+        local button = refs and sbd[refs.btn]
+        if button then
             local isShown = conf[key] ~= false and not sbHidden
-            btn:SetShown(isShown)
+            button:SetShown(isShown)
             local tail = refs.tail and sbd[refs.tail]
             if tail then
                 tail:SetShown(isShown)
@@ -93,19 +93,19 @@ function CHAT.ApplySidebarIcons()
             if isShown then
                 -- Pads are nil on the CludesUI look (the maths there is
                 -- unchanged); the stock column starts at the sidebar's top.
-                local padT = btn._sbPadT or 0
-                btn:ClearAllPoints()
+                local padT = button._sbPadT or 0
+                button:ClearAllPoints()
                 if anchor then
-                    btn:SetPoint("TOP", anchor, "BOTTOM", 0, -(ICON_GAP - prevPadB - padT))
+                    button:SetPoint("TOP", anchor, "BOTTOM", 0, -(ICON_GAP - prevPadB - padT))
                 elseif kit then
-                    btn:SetPoint("TOP", scrollBar, "TOP", 0, 0)
+                    button:SetPoint("TOP", scrollBar, "TOP", 0, 0)
                 else
-                    btn:SetPoint("TOP", scrollBar, "TOP", 0, -ICON_GAP + iconTopShift)
+                    button:SetPoint("TOP", scrollBar, "TOP", 0, -ICON_GAP + iconTopShift)
                 end
-                if tail and not btn._sbTailInside then
+                if tail and not button._sbTailInside then
                     anchor, prevPadB = tail, 0
                 else
-                    anchor, prevPadB = btn, (btn._sbPadB or 0)
+                    anchor, prevPadB = button, (button._sbPadB or 0)
                 end
             end
         end
@@ -165,9 +165,9 @@ local SIDEBAR_CHAIN_KEYS = {
 -- built there either): the M+ Portals icon leaves the chain, which also drops
 -- it from creation and from the options icon list. Every button reader guards.
 if CludesUI.IS_FOREVER then
-    for idx = #SIDEBAR_CHAIN_KEYS, 1, -1 do
-        if SIDEBAR_CHAIN_KEYS[idx] == "showPortals" then
-            table.remove(SIDEBAR_CHAIN_KEYS, idx)
+    for index = #SIDEBAR_CHAIN_KEYS, 1, -1 do
+        if SIDEBAR_CHAIN_KEYS[index] == "showPortals" then
+            table.remove(SIDEBAR_CHAIN_KEYS, index)
         end
     end
 end
@@ -211,11 +211,11 @@ function CHAT.ResolveSidebarIconOrder()
     local keyIndex = {}
     local keyList = {}
     local padOff = ChatMenuPadOff()
-    for idx = 1, #SIDEBAR_CHAIN_KEYS do
-        local key = SIDEBAR_CHAIN_KEYS[idx]
+    for index = 1, #SIDEBAR_CHAIN_KEYS do
+        local key = SIDEBAR_CHAIN_KEYS[index]
         if not (padOff and key == "showChatMenu") then
             keyList[#keyList + 1] = key
-            keyIndex[key] = idx
+            keyIndex[key] = index
         end
     end
     local function OrderOf(key)
@@ -270,50 +270,50 @@ end
 -------------------------------------------------------------------------------
 CHAT.CHAT_MENU_GLYPH = "Interface\\AddOns\\CludesUI\\media\\micromenu\\menu-options.png"
 do
-    local host -- our sidebar icon, once attached
+    local owner -- our sidebar icon, once attached
 
     local function Fwd(evt, ...)
-        if host:GetScript(evt) then
-            ExecuteFrameScript(host, evt, ...)
+        if owner:GetScript(evt) then
+            ExecuteFrameScript(owner, evt, ...)
         end
     end
     local function OnEnter(_, motion)
-        host:LockHighlight()
+        owner:LockHighlight()
         Fwd("OnEnter", motion)
     end
     local function OnLeave(_, motion)
-        host:UnlockHighlight()
+        owner:UnlockHighlight()
         Fwd("OnLeave", motion)
     end
     local function OnMouseDown(_, btnFrame)
         if btnFrame == "LeftButton" then
-            host:SetButtonState("PUSHED")
+            owner:SetButtonState("PUSHED")
         end
         Fwd("OnMouseDown", btnFrame)
     end
     local function OnMouseUp(_, btnFrame)
-        host:SetButtonState("NORMAL")
+        owner:SetButtonState("NORMAL")
         Fwd("OnMouseUp", btnFrame)
     end
 
     -- Called once, as the icon is built (only with Chat Menu on at login).
-    function CHAT.AttachChatMenu(btn)
+    function CHAT.AttachChatMenu(button)
         local mb = _G.ChatFrameMenuButton
-        if host or not mb then
+        if owner or not mb then
             return
         end
-        host = btn
+        owner = button
         mb:HookScript("OnEnter", OnEnter)
         mb:HookScript("OnLeave", OnLeave)
         mb:HookScript("OnMouseDown", OnMouseDown)
         mb:HookScript("OnMouseUp", OnMouseUp)
-        btn:HookScript("OnShow", function()
+        button:HookScript("OnShow", function()
             mb:EnableMouse(true)
         end)
-        btn:HookScript("OnHide", function()
+        button:HookScript("OnHide", function()
             mb:EnableMouse(false)
-            btn:UnlockHighlight()
-            btn:SetButtonState("NORMAL")
+            button:UnlockHighlight()
+            button:SetButtonState("NORMAL")
         end)
         CHAT.SeatChatMenu()
     end
@@ -324,16 +324,16 @@ do
     -- Re-run after the login pass that hides Blizzard's chat buttons.
     function CHAT.SeatChatMenu()
         local mb = _G.ChatFrameMenuButton
-        if not (host and mb) then
+        if not (owner and mb) then
             return
         end
         mb:ClearAllPoints()
-        mb:SetAllPoints(host)
-        mb:SetFrameStrata(host:GetFrameStrata())
+        mb:SetAllPoints(owner)
+        mb:SetFrameStrata(owner:GetFrameStrata())
         mb:SetFixedFrameStrata(true)
-        mb:SetFrameLevel(host:GetFrameLevel() + 2)
+        mb:SetFrameLevel(owner:GetFrameLevel() + 2)
         mb:SetFixedFrameLevel(true)
-        mb:EnableMouse(host:IsVisible())
+        mb:EnableMouse(owner:IsVisible())
     end
 end
 

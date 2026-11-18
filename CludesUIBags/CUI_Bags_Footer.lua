@@ -27,14 +27,14 @@ local BP, CurrencyOrder, SetBagFont, FOOTER_H =
 local GoldLedger = CludesUI.GetGoldLedger()
 
 local function FormatNumberWithCommas(num)
-    local str = tostring(math.floor(num))
+    local text = tostring(math.floor(num))
     local result = ""
     local total = 0
-    for i = #str, 1, -1 do
+    for i = #text, 1, -1 do
         if total > 0 and total % 3 == 0 then
             result = "," .. result
         end
-        result = str:sub(i, i) .. result
+        result = text:sub(i, i) .. result
         total = total + 1
     end
     return result
@@ -89,75 +89,75 @@ local function GetGoldTooltip()
     if _goldTT then
         return _goldTT
     end
-    local f = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    f:SetBackdrop({
+    local frame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+    frame:SetBackdrop({
         bgFile = "Interface\\ChatFrame\\ChatFrameBackground",
         edgeFile = "Interface\\ChatFrame\\ChatFrameBackground",
         edgeSize = 1,
     })
-    f:SetBackdropColor(0.06, 0.06, 0.06, 0.90)
-    f:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
-    f:SetFrameStrata("TOOLTIP")
-    f:Hide()
+    frame:SetBackdropColor(0.06, 0.06, 0.06, 0.90)
+    frame:SetBackdropBorderColor(0.25, 0.25, 0.25, 1)
+    frame:SetFrameStrata("TOOLTIP")
+    frame:Hide()
 
-    local fadeInAG = f:CreateAnimationGroup()
+    local fadeInAG = frame:CreateAnimationGroup()
     local fadeIn = fadeInAG:CreateAnimation("Alpha")
     fadeIn:SetDuration(0.25)
     fadeIn:SetSmoothing("OUT")
     fadeInAG:SetScript("OnFinished", function()
-        f:SetAlpha(1)
+        frame:SetAlpha(1)
     end)
-    f._fadeInAG = fadeInAG
-    f._fadeIn = fadeIn
+    frame._fadeInAG = fadeInAG
+    frame._fadeIn = fadeIn
 
-    local fadeOutAG = f:CreateAnimationGroup()
+    local fadeOutAG = frame:CreateAnimationGroup()
     local fadeOut = fadeOutAG:CreateAnimation("Alpha")
     fadeOut:SetDuration(0.25)
     fadeOut:SetSmoothing("IN")
     fadeOutAG:SetScript("OnFinished", function()
-        f:SetAlpha(0)
-        f:Hide()
+        frame:SetAlpha(0)
+        frame:Hide()
     end)
-    f._fadeOutAG = fadeOutAG
-    f._fadeOut = fadeOut
+    frame._fadeOutAG = fadeOutAG
+    frame._fadeOut = fadeOut
 
-    local title = f:CreateFontString(nil, "OVERLAY")
+    local title = frame:CreateFontString(nil, "OVERLAY")
     title:SetFont("Fonts\\FRIZQT__.TTF", 11, "")
     title:SetTextColor(0.80, 0.80, 0.80, 1)
-    title:SetPoint("TOP", f, "TOP", 0, -GOLD_PAD)
+    title:SetPoint("TOP", frame, "TOP", 0, -GOLD_PAD)
     title:SetText(CludesUI.L("Gold Summary"))
-    f._title = title
+    frame._title = title
 
-    local hint = f:CreateFontString(nil, "OVERLAY")
+    local hint = frame:CreateFontString(nil, "OVERLAY")
     hint:SetFont("Fonts\\FRIZQT__.TTF", 10, "")
     hint:SetTextColor(1, 0.4, 0.4, 1)
     hint:SetText(CludesUI.L("Ctrl + Right-Click: Reset all data"))
-    f._hint = hint
+    frame._hint = hint
 
-    _goldTT = f
-    return f
+    _goldTT = frame
+    return frame
 end
 
 local function EnsureGoldRows(total)
     local fontFile = (CludesUI.GetFontPath("bags")) or "Fonts\\FRIZQT__.TTF"
     local fontFlags = (CludesUI.GetFontOutlineFlag("bags")) or ""
-    local tt = GetGoldTooltip()
+    local tooltip = GetGoldTooltip()
     for i = 1, total do
         if not _goldTTRows[i] then
             _goldTTRows[i] = {}
-            for col = 0, 1 do
-                local fontStr = tt:CreateFontString(nil, "OVERLAY")
+            for colour = 0, 1 do
+                local fontStr = tooltip:CreateFontString(nil, "OVERLAY")
                 fontStr:SetFont(fontFile, 11, fontFlags)
-                fontStr:SetJustifyH(col == 0 and "LEFT" or "RIGHT")
-                _goldTTRows[i][col] = fontStr
+                fontStr:SetJustifyH(colour == 0 and "LEFT" or "RIGHT")
+                _goldTTRows[i][colour] = fontStr
             end
         end
     end
-    tt._title:SetFont(fontFile, 11, fontFlags)
-    tt._hint:SetFont(fontFile, 10, fontFlags)
+    tooltip._title:SetFont(fontFile, 11, fontFlags)
+    tooltip._hint:SetFont(fontFile, 10, fontFlags)
     for i = 1, total do
-        for col = 0, 1 do
-            _goldTTRows[i][col]:SetFont(fontFile, 11, fontFlags)
+        for colour = 0, 1 do
+            _goldTTRows[i][colour]:SetFont(fontFile, 11, fontFlags)
         end
     end
 end
@@ -205,12 +205,12 @@ local function ShowGoldTooltip(anchor)
         rowCount = rowCount + 1
     end
     EnsureGoldRows(rowCount)
-    local tt = GetGoldTooltip()
+    local tooltip = GetGoldTooltip()
 
     local colWidths = { 0, 0 }
-    for r, record in ipairs(charList) do
-        local nameFS = _goldTTRows[r][0]
-        local goldFS = _goldTTRows[r][1]
+    for region, record in ipairs(charList) do
+        local nameFS = _goldTTRows[region][0]
+        local goldFS = _goldTTRows[region][1]
         local cc = RAID_CLASS_COLORS[record.data.class] or { r = 1, g = 1, b = 1 }
         local hex = string.format("%02x%02x%02x", cc.r * 255, cc.g * 255, cc.b * 255)
         nameFS:SetText("|cff" .. hex .. StripRealm(record.data.name or record.id) .. "|r")
@@ -269,43 +269,43 @@ local function ShowGoldTooltip(anchor)
         _goldTTRows[i][1]:Hide()
     end
 
-    local titleTop = GOLD_PAD + (tt._title:GetStringHeight() or 14) + 6
+    local titleTop = GOLD_PAD + (tooltip._title:GetStringHeight() or 14) + 6
     local col1X = GOLD_PAD
     local col2X = col1X + colWidths[1] + GOLD_COL_GAP
     local totalW = col2X + colWidths[2] + GOLD_PAD
 
-    for r = 1, rowCount do
-        local posY = -(titleTop + (r - 1) * GOLD_ROW_H)
+    for region = 1, rowCount do
+        local posY = -(titleTop + (region - 1) * GOLD_ROW_H)
         -- Add gap before total row
-        if r == totalRow then
+        if region == totalRow then
             posY = posY - 4
         end
-        _goldTTRows[r][0]:ClearAllPoints()
-        _goldTTRows[r][0]:SetPoint("TOPLEFT", tt, "TOPLEFT", col1X, posY)
-        _goldTTRows[r][1]:ClearAllPoints()
-        _goldTTRows[r][1]:SetPoint("TOPRIGHT", tt, "TOPRIGHT", -GOLD_PAD, posY)
+        _goldTTRows[region][0]:ClearAllPoints()
+        _goldTTRows[region][0]:SetPoint("TOPLEFT", tooltip, "TOPLEFT", col1X, posY)
+        _goldTTRows[region][1]:ClearAllPoints()
+        _goldTTRows[region][1]:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -GOLD_PAD, posY)
     end
 
     local lastRowY = titleTop + (rowCount - 1) * GOLD_ROW_H + 4 + GOLD_ROW_H + 6
-    tt._hint:ClearAllPoints()
-    tt._hint:SetPoint("TOPLEFT", tt, "TOPLEFT", GOLD_PAD, -lastRowY)
-    local hintW = (tt._hint:GetStringWidth() or 0) + GOLD_PAD * 2
+    tooltip._hint:ClearAllPoints()
+    tooltip._hint:SetPoint("TOPLEFT", tooltip, "TOPLEFT", GOLD_PAD, -lastRowY)
+    local hintW = (tooltip._hint:GetStringWidth() or 0) + GOLD_PAD * 2
     if hintW > totalW then
         totalW = hintW
     end
-    local totalH = lastRowY + (tt._hint:GetStringHeight() or 10) + GOLD_PAD
+    local totalH = lastRowY + (tooltip._hint:GetStringHeight() or 10) + GOLD_PAD
 
-    tt:SetSize(totalW, totalH)
-    tt:ClearAllPoints()
-    tt:SetPoint("BOTTOMRIGHT", anchor, "TOPRIGHT", 0, 4)
+    tooltip:SetSize(totalW, totalH)
+    tooltip:ClearAllPoints()
+    tooltip:SetPoint("BOTTOMRIGHT", anchor, "TOPRIGHT", 0, 4)
 
-    tt._fadeOutAG:Stop()
-    tt._fadeInAG:Stop()
-    tt:SetAlpha(0)
-    tt:Show()
-    tt._fadeIn:SetFromAlpha(0)
-    tt._fadeIn:SetToAlpha(1)
-    tt._fadeInAG:Play()
+    tooltip._fadeOutAG:Stop()
+    tooltip._fadeInAG:Stop()
+    tooltip:SetAlpha(0)
+    tooltip:Show()
+    tooltip._fadeIn:SetFromAlpha(0)
+    tooltip._fadeIn:SetToAlpha(1)
+    tooltip._fadeInAG:Play()
 end
 
 local function HideGoldTooltip()
@@ -353,9 +353,9 @@ local function CreateFooter()
     MoneyFrame_SetType(money, "PLAYER")
 
     for _, suffix in ipairs({ "GoldButton", "SilverButton", "CopperButton" }) do
-        local btn = _G["CUI_BagMoneyFrame" .. suffix]
-        if btn then
-            local txt = btn:GetFontString()
+        local button = _G["CUI_BagMoneyFrame" .. suffix]
+        if button then
+            local txt = button:GetFontString()
             if txt then
                 SetBagFont(txt, 11)
             end
@@ -413,8 +413,8 @@ local function UpdateCurrencyDisplays(footerWidth)
     end
     local footer = CUI_Bags.Footer
 
-    for _, d in ipairs(pool.displays) do
-        d:Hide()
+    for _, skinData in ipairs(pool.displays) do
+        skinData:Hide()
     end
     for _, hgt in ipairs(pool.hitboxes) do
         hgt:Hide()
@@ -475,12 +475,12 @@ local function UpdateCurrencyDisplays(footerWidth)
     for i, details in ipairs(tracked) do
         local display = pool.displays[i]
         local fullInfo = C_CurrencyInfo.GetCurrencyInfo(details.currencyTypesID)
-        local icon = fullInfo and fullInfo.iconFileID or details.iconFileID
+        local iconTex = fullInfo and fullInfo.iconFileID or details.iconFileID
         local quantity = fullInfo and fullInfo.quantity or 0
         local discovered = fullInfo and fullInfo.discovered
         local name = fullInfo and fullInfo.name or ""
-        if icon and (discovered ~= false) then
-            display:SetText("|T" .. tostring(icon) .. ":17:17:0:0:64:64:5:59:5:59|t " .. quantity)
+        if iconTex and (discovered ~= false) then
+            display:SetText("|T" .. tostring(iconTex) .. ":17:17:0:0:64:64:5:59:5:59|t " .. quantity)
             local itemWidth = display:GetStringWidth() + padding
             if currentX + itemWidth > leftOffset + availableWidth and currentX > leftOffset then
                 currentRow = currentRow + 1
@@ -527,15 +527,15 @@ end
 
 -- Re-lay-out the currency footer and grow/shrink the bag frame by the height delta (grow-only running max under Auto-Size and on WoW Forever); reads the previous height BEFORE UpdateCurrencyDisplays stamps the new one.
 local function SyncBagFrameToFooter()
-    local prev = CUI_Bags._footerH or FOOTER_H
+    local previous = CUI_Bags._footerH or FOOTER_H
     local footerH = UpdateCurrencyDisplays() or FOOTER_H
-    if footerH == prev then
+    if footerH == previous then
         return
     end
     if not CUI_Bags:IsVisible() then
         return
     end
-    local delta = footerH - prev
+    local delta = footerH - previous
     if CUI_Bags.AutoSizeOn() or (CUI.IS_FOREVER and not BP().bagHeight) then
         CUI_Bags._asMaxH =
             math.max(CUI_Bags._asMaxH or CUI_Bags:GetHeight() or 0, CUI_Bags:GetHeight() + delta)

@@ -366,12 +366,12 @@ if CludesUI.SpellCostPrediction then
         -- own alpha stays at 1 while a gradient carries the opacity.
         Color = function()
             local s = GetSettingsForUnit("player")
-            local r, g, b = mod.UF_PowerCostColor(s)
+            local region, g, b = mod.UF_PowerCostColor(s)
             local op = (s and s.powerBarOpacity) or 100
             if op <= 1.0 then
                 op = op * 100
             end
-            return r, g, b, op / 100
+            return region, g, b, op / 100
         end,
         Mask = function(power)
             return power._blizzMasked and power._blizzMask or nil
@@ -407,8 +407,8 @@ function mod.UF_PowerValSync(widget)
         enabled = (s and mod.UF_PowerBarDraws(s)) or false
         local zones = widget._cuiTextZones
         if not enabled and zones then
-            for idx = 1, #zones do
-                if zones[idx].power then
+            for index = 1, #zones do
+                if zones[index].power then
                     enabled = true
                     break
                 end
@@ -435,8 +435,8 @@ function mod.UF_PowerElementSync(widget)
     if not wanted then
         local zones = widget._cuiTextZones
         if zones then
-            for idx = 1, #zones do
-                if zones[idx].power then
+            for index = 1, #zones do
+                if zones[index].power then
                     wanted = true
                     break
                 end
@@ -638,8 +638,8 @@ local function CreatePowerBar(widget, unitToken, prefs)
         if s2.powerBgPowerColored and self.bg then
             local pr, pg, pb = CludesUI.ResolveUnitPowerColor(unitToken)
             if pr then
-                local f = CludesUI.GetPowerBgDarkenFactor()
-                self.bg:SetColorTexture(pr * f, pg * f, pb * f, 1)
+                local frame = CludesUI.GetPowerBgDarkenFactor()
+                self.bg:SetColorTexture(pr * frame, pg * frame, pb * frame, 1)
             end
         end
         -- Keep power-percent text color in sync with THIS unit (fires on target/focus
@@ -686,9 +686,9 @@ local function CreatePowerBar(widget, unitToken, prefs)
         if s.powerPercentTextPowerColor then
             -- Secret-safe per-unit color: player keeps the exact token color,
             -- non-player recovers it from the clean integer power type.
-            local r, g, b = CludesUI.ResolveUnitPowerColor(unitToken)
-            if r then
-                ppFS:SetTextColor(r, g, b)
+            local region, g, b = CludesUI.ResolveUnitPowerColor(unitToken)
+            if region then
+                ppFS:SetTextColor(region, g, b)
             else
                 ppFS:SetTextColor(1, 1, 1)
             end
@@ -831,8 +831,8 @@ local function CreatePowerBar(widget, unitToken, prefs)
                 -- PostUpdateColor keeps it tracking thereafter.
                 local pr, pg, pb = CludesUI.ResolveUnitPowerColor(u)
                 if pr then
-                    local f = CludesUI.GetPowerBgDarkenFactor()
-                    self.bg:SetColorTexture(pr * f, pg * f, pb * f, 1)
+                    local frame = CludesUI.GetPowerBgDarkenFactor()
+                    self.bg:SetColorTexture(pr * frame, pg * frame, pb * frame, 1)
                 else
                     self.bg:SetColorTexture(17 / 255, 17 / 255, 17 / 255, 1)
                 end

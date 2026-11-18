@@ -101,15 +101,15 @@ function CHAT.ApplyIconColor()
     if CHAT.SB_KIT then
         return
     end
-    local r, g, b
+    local region, g, b
     if conf.iconUseAccent and CludesUI.GetAccentColor then
-        r, g, b = CludesUI.GetAccentColor()
+        region, g, b = CludesUI.GetAccentColor()
     else
-        r, g, b = conf.iconR or 1, conf.iconG or 1, conf.iconB or 1
+        region, g, b = conf.iconR or 1, conf.iconG or 1, conf.iconB or 1
     end
     local ICON_ALPHA = 0.4
     local ICON_HOVER_ALPHA = 0.9
-    local d = CFD(cf1)
+    local skinData = CFD(cf1)
     local ICON_LABELS = {
         friendsBtn = "Friends",
         guildBtn = "Guild",
@@ -121,9 +121,9 @@ function CHAT.ApplyIconColor()
         settingsBtn = "Settings",
         scrollBtn = "Scroll to Bottom",
     }
-    local fc = d.friendsCount
-    local gc = d.guildCount
-    local dp = d.durabilityPct
+    local fc = skinData.friendsCount
+    local gc = skinData.guildCount
+    local dp = skinData.durabilityPct
     for _, key in ipairs({
         "friendsBtn",
         "guildBtn",
@@ -135,61 +135,61 @@ function CHAT.ApplyIconColor()
         "settingsBtn",
         "scrollBtn",
     }) do
-        local btn = CFD(cf1)[key]
-        if btn and btn._icon then
-            btn._icon:SetVertexColor(r, g, b, ICON_ALPHA)
+        local button = CFD(cf1)[key]
+        if button and button._icon then
+            button._icon:SetVertexColor(region, g, b, ICON_ALPHA)
             local labelText = ICON_LABELS[key]
             if key == "friendsBtn" and fc then
-                fc:SetTextColor(r, g, b, 0.5)
-                btn:SetScript("OnEnter", function(self)
-                    btn._icon:SetVertexColor(r, g, b, ICON_HOVER_ALPHA)
-                    fc:SetTextColor(r, g, b, 0.9)
+                fc:SetTextColor(region, g, b, 0.5)
+                button:SetScript("OnEnter", function(self)
+                    button._icon:SetVertexColor(region, g, b, ICON_HOVER_ALPHA)
+                    fc:SetTextColor(region, g, b, 0.9)
                     if not self._freeMoveJustDragged then
                         ShowSidebarIconTooltip(self, labelText)
                     end
                 end)
-                btn:SetScript("OnLeave", function(self)
-                    btn._icon:SetVertexColor(r, g, b, ICON_ALPHA)
-                    fc:SetTextColor(r, g, b, 0.5)
+                button:SetScript("OnLeave", function(self)
+                    button._icon:SetVertexColor(region, g, b, ICON_ALPHA)
+                    fc:SetTextColor(region, g, b, 0.5)
                     HideSidebarIconTooltip(self)
                 end)
             elseif key == "guildBtn" and gc then
-                gc:SetTextColor(r, g, b, 0.5)
-                btn:SetScript("OnEnter", function(self)
-                    btn._icon:SetVertexColor(r, g, b, ICON_HOVER_ALPHA)
-                    gc:SetTextColor(r, g, b, 0.9)
+                gc:SetTextColor(region, g, b, 0.5)
+                button:SetScript("OnEnter", function(self)
+                    button._icon:SetVertexColor(region, g, b, ICON_HOVER_ALPHA)
+                    gc:SetTextColor(region, g, b, 0.9)
                     if not self._freeMoveJustDragged then
                         ShowSidebarIconTooltip(self, labelText)
                     end
                 end)
-                btn:SetScript("OnLeave", function(self)
-                    btn._icon:SetVertexColor(r, g, b, ICON_ALPHA)
-                    gc:SetTextColor(r, g, b, 0.5)
+                button:SetScript("OnLeave", function(self)
+                    button._icon:SetVertexColor(region, g, b, ICON_ALPHA)
+                    gc:SetTextColor(region, g, b, 0.5)
                     HideSidebarIconTooltip(self)
                 end)
             elseif key == "durabilityBtn" and dp then
-                dp:SetTextColor(r, g, b, 0.5)
-                btn:SetScript("OnEnter", function(self)
-                    btn._icon:SetVertexColor(r, g, b, ICON_HOVER_ALPHA)
-                    dp:SetTextColor(r, g, b, 0.9)
+                dp:SetTextColor(region, g, b, 0.5)
+                button:SetScript("OnEnter", function(self)
+                    button._icon:SetVertexColor(region, g, b, ICON_HOVER_ALPHA)
+                    dp:SetTextColor(region, g, b, 0.9)
                     if not self._freeMoveJustDragged then
                         ShowSidebarIconTooltip(self, labelText)
                     end
                 end)
-                btn:SetScript("OnLeave", function(self)
-                    btn._icon:SetVertexColor(r, g, b, ICON_ALPHA)
-                    dp:SetTextColor(r, g, b, 0.5)
+                button:SetScript("OnLeave", function(self)
+                    button._icon:SetVertexColor(region, g, b, ICON_ALPHA)
+                    dp:SetTextColor(region, g, b, 0.5)
                     HideSidebarIconTooltip(self)
                 end)
             else
-                btn:SetScript("OnEnter", function(self)
-                    btn._icon:SetVertexColor(r, g, b, ICON_HOVER_ALPHA)
+                button:SetScript("OnEnter", function(self)
+                    button._icon:SetVertexColor(region, g, b, ICON_HOVER_ALPHA)
                     if not self._freeMoveJustDragged then
                         ShowSidebarIconTooltip(self, labelText)
                     end
                 end)
-                btn:SetScript("OnLeave", function(self)
-                    btn._icon:SetVertexColor(r, g, b, ICON_ALPHA)
+                button:SetScript("OnLeave", function(self)
+                    button._icon:SetVertexColor(region, g, b, ICON_ALPHA)
                     HideSidebarIconTooltip(self)
                 end)
             end
@@ -259,10 +259,10 @@ function CHAT.ApplySidebarIconScale()
         "settingsBtn",
         "scrollBtn",
     }) do
-        local btn = CFD(cf1)[key]
-        if btn then
-            btn:SetSize(BASE_ICON * scale, BASE_ICON * scale)
-            btn._freeMoveH = BASE_ICON * scale
+        local button = CFD(cf1)[key]
+        if button then
+            button:SetSize(BASE_ICON * scale, BASE_ICON * scale)
+            button._freeMoveH = BASE_ICON * scale
         end
     end
     if CFD(cf1).friendsBtn then
@@ -348,59 +348,59 @@ end
 
 -- Capture each icon's natural sidebar-EDGE offset (TOP/BOTTOM) once, so
 -- re-applies never read live geometry and offsets never compound.
-local function CaptureNatural(btn, scrollBar)
+local function CaptureNatural(button, scrollBar)
     -- Stock sidebar kits: a hidden icon was never laid out by the kit's
     -- chain (a hidden sidebar skips re-anchoring), so its anchors are still
     -- the build-time ones; the pass that first shows it captures from the
     -- real layout. The CludesUI look captures as it always has (saved
     -- offsets are relative to that baseline).
-    if btn._freeMoveNat or (CHAT.SB_KIT and not btn:IsShown()) then
+    if button._freeMoveNat or (CHAT.SB_KIT and not button:IsShown()) then
         return
     end
-    local anchorPoint = btn:GetPoint(1)
+    local anchorPoint = button:GetPoint(1)
     if not anchorPoint then
         return
     end
     if anchorPoint:find("BOTTOM") then
-        local _, _, _, _, dy = btn:GetPoint(1)
-        btn._freeMoveNat = { edge = "BOTTOM", y = dy or 0 }
+        local _, _, _, _, dy = button:GetPoint(1)
+        button._freeMoveNat = { edge = "BOTTOM", y = dy or 0 }
     else
-        btn._freeMoveNat = { edge = "TOP", y = TopYFromSidebarTop(btn, scrollBar, 0) }
+        button._freeMoveNat = { edge = "TOP", y = TopYFromSidebarTop(button, scrollBar, 0) }
     end
 end
 
 -- Re-anchor an icon DIRECTLY to its sidebar edge at natural + saved offset, so
 -- each icon moves independently (no chain, no compounding).
-local function ApplyIconOffset(btn, scrollBar)
-    if not btn or not scrollBar or not btn:IsShown() then
+local function ApplyIconOffset(button, scrollBar)
+    if not button or not scrollBar or not button:IsShown() then
         return
     end
-    local nat = btn._freeMoveNat
+    local nat = button._freeMoveNat
     if not nat then
         return
     end
-    local ox, oy = GetIconOffset(btn._freeMoveKey)
-    btn:ClearAllPoints()
-    btn:SetPoint(nat.edge, scrollBar, nat.edge, ox, nat.y + oy)
+    local ox, oy = GetIconOffset(button._freeMoveKey)
+    button:ClearAllPoints()
+    button:SetPoint(nat.edge, scrollBar, nat.edge, ox, nat.y + oy)
 end
 
-local function EnableIconFreeMove(btn)
-    if not btn or _freeMoveIconHooked[btn] then
+local function EnableIconFreeMove(button)
+    if not button or _freeMoveIconHooked[button] then
         return
     end
-    _freeMoveIconHooked[btn] = true
+    _freeMoveIconHooked[button] = true
 
-    local key = btn._freeMoveKey
+    local key = button._freeMoveKey
     if not key then
         return
     end
 
-    btn:SetMovable(true)
-    btn:SetClampedToScreen(true)
+    button:SetMovable(true)
+    button:SetClampedToScreen(true)
 
-    local origClick = btn:GetScript("OnClick")
+    local origClick = button:GetScript("OnClick")
     if origClick then
-        btn:SetScript("OnClick", function(self, ...)
+        button:SetScript("OnClick", function(self, ...)
             if self._freeMoveJustDragged then
                 return
             end
@@ -434,7 +434,7 @@ local function EnableIconFreeMove(btn)
         SaveIconOffset(key, nx, ny)
     end
 
-    btn:HookScript("OnMouseDown", function(self, btnFrame)
+    button:HookScript("OnMouseDown", function(self, btnFrame)
         if btnFrame ~= "LeftButton" or not IsShiftKeyDown() then
             return
         end
@@ -450,7 +450,7 @@ local function EnableIconFreeMove(btn)
         self:SetScript("OnUpdate", FreeMoveOnUpdate)
     end)
 
-    btn:HookScript("OnMouseUp", function(self)
+    button:HookScript("OnMouseUp", function(self)
         self:SetScript("OnUpdate", nil)
         C_Timer.After(0, function()
             self._freeMoveJustDragged = nil
@@ -494,28 +494,28 @@ function CHAT.ApplyIconFreeMove()
     -- would let a later icon's chain-walk read an earlier icon's already-applied offset
     -- and bake it into its "natural" position -- drift on every reload.
     for _, details in ipairs(btns) do
-        local btn = CFD(cf1)[details.ref]
+        local button = CFD(cf1)[details.ref]
         -- The chat-anchored scroll button is outside the sidebar chain; free
         -- move must not capture or re-anchor it.
         if details.ref == "scrollBtn" and conf.scrollButtonOnChat then
-            btn = nil
+            button = nil
         end
-        if btn then
-            btn._freeMoveKey = details.key
-            CaptureNatural(btn, scrollBar)
-            EnableIconFreeMove(btn)
+        if button then
+            button._freeMoveKey = details.key
+            CaptureNatural(button, scrollBar)
+            EnableIconFreeMove(button)
         end
     end
 
     -- PHASE 2 -- re-anchor each icon to its sidebar edge at natural + saved
     -- offset, so icons move independently.
     for _, details in ipairs(btns) do
-        local btn = CFD(cf1)[details.ref]
+        local button = CFD(cf1)[details.ref]
         if details.ref == "scrollBtn" and conf.scrollButtonOnChat then
-            btn = nil
+            button = nil
         end
-        if btn then
-            ApplyIconOffset(btn, scrollBar)
+        if button then
+            ApplyIconOffset(button, scrollBar)
         end
     end
 end
@@ -659,8 +659,8 @@ end
 -- message frame is touched. The divider marks the input's edge and would cut
 -- across a message once the strip is released, so it follows the same state.
 function CHAT.ApplyInputTopStrip(castFrame)
-    local d = CFD(castFrame)
-    if not d.bg then
+    local skinData = CFD(castFrame)
+    if not skinData.bg then
         return
     end
     local conf = CHAT.DB()
@@ -668,13 +668,13 @@ function CHAT.ApplyInputTopStrip(castFrame)
     -- The strip reaches INPUT_TOP_DROP further than the box is tall, since the
     -- box starts that far down from cf's top edge.
     local wanted = isActive and (GetEditBoxHeight() + 4 + INPUT_TOP_DROP) or nil
-    local changed = d._smfTopExtra ~= wanted
-    d._smfTopExtra = wanted
+    local changed = skinData._smfTopExtra ~= wanted
+    skinData._smfTopExtra = wanted
     -- The `not cfg.inputOnTop` arm is load-bearing, not redundant: bottom mode
     -- leaves the divider to ApplyBorders, and the toggle-off pass reaches here
     -- without ever calling it -- dropping the arm strands the divider hidden.
-    if d.inputDiv then
-        d.inputDiv:SetShown(not CHAT.BordersHidden(conf) and (not CHAT.InputOnTop(conf) or isActive))
+    if skinData.inputDiv then
+        skinData.inputDiv:SetShown(not CHAT.BordersHidden(conf) and (not CHAT.InputOnTop(conf) or isActive))
     end
     -- IM Style: with its strip released, an idle box still lies over the top
     -- lines of the text, invisible, so it lets clicks through (links there stay
@@ -788,8 +788,8 @@ function CHAT.ApplyInputPosition()
                     -- rect. Anchoring here would put our frame back into
                     -- Blizzard's rect chain -- the whole bug. Only the vertical
                     -- edge may expand; horizontal geometry stays independent.
-                    local d = CFD(castFrame)
-                    d._bgIns = {
+                    local skinData = CFD(castFrame)
+                    skinData._bgIns = {
                         l = -10,
                         r = 10,
                         t = 3,

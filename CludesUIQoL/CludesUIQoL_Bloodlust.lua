@@ -201,39 +201,39 @@ local _applyShapeOutline = mod.QoL_ApplyShapeOutline
 -- shape-matching atlas (shapeTex) otherwise. Applied to the debuff icon AND to
 -- the 40s buff overlay, whose opaque icon would otherwise cover the debuff
 -- icon's border. level pins the PP strip container (see CreateBloodlustFrame).
-local function _applyBorder(host, shapeTex, level)
+local function _applyBorder(owner, shapeTex, level)
     local Pix = CludesUI and CludesUI.PP
     local shape = EP("shape") or "none"
     local bs = BORDER_PX[EP("borderSize") or "thin"] or 1
 
     if shape == "none" or shape == "cropped" then
         shapeTex:Hide()
-        _applyShapeOutline(host, nil, 0)
+        _applyShapeOutline(owner, nil, 0)
         if Pix then
-            if not Pix.GetBorders(host) then
-                Pix.CreateBorder(host, 0, 0, 0, 1, 1, "OVERLAY", 2)
+            if not Pix.GetBorders(owner) then
+                Pix.CreateBorder(owner, 0, 0, 0, 1, 1, "OVERLAY", 2)
             end
-            local brd = Pix.GetBorders(host)
+            local brd = Pix.GetBorders(owner)
             if brd then
                 brd:SetFrameLevel(level)
             end
             if bs > 0 then
-                local r, g, b, a = _resolveBorderColor()
-                Pix.UpdateBorder(host, bs, r, g, b, a)
-                Pix.ShowBorder(host)
+                local region, g, b, a = _resolveBorderColor()
+                Pix.UpdateBorder(owner, bs, region, g, b, a)
+                Pix.ShowBorder(owner)
             else
-                Pix.HideBorder(host)
+                Pix.HideBorder(owner)
             end
         end
         return
     end
 
-    if Pix and Pix.GetBorders(host) then
-        Pix.HideBorder(host)
+    if Pix and Pix.GetBorders(owner) then
+        Pix.HideBorder(owner)
     end
     shapeTex:Hide()
-    local r, g, b, a = _resolveBorderColor()
-    _applyShapeOutline(host, shape, bs, r, g, b, a)
+    local region, g, b, a = _resolveBorderColor()
+    _applyShapeOutline(owner, shape, bs, region, g, b, a)
 end
 
 -- Configure the buff overlay (texture coords + optional shape mask) so it
@@ -511,8 +511,8 @@ local function _findSated()
     if not (C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID) then
         return nil
     end
-    for idx = 1, #SATED_DEBUFFS do
-        local spellRef = SATED_DEBUFFS[idx]
+    for index = 1, #SATED_DEBUFFS do
+        local spellRef = SATED_DEBUFFS[index]
         -- Known-spellId query works mid-fight ONLY because Sated-class ids are
         -- field-proven unflagged: GetPlayerAuraBySpellID is RequiresNonSecretAura
         -- and returns ZERO VALUES for a restriction-FLAGGED spell while its aura
@@ -604,8 +604,8 @@ local function _lustBuffIcon()
     if _lustIconResolved then
         return _lustIconCache
     end
-    for idx = 1, #LUST_SPELLS do
-        local spellRef = LUST_SPELLS[idx]
+    for index = 1, #LUST_SPELLS do
+        local spellRef = LUST_SPELLS[index]
         local known = (IsPlayerSpell and IsPlayerSpell(spellRef)) or (IsSpellKnown and IsSpellKnown(spellRef))
         if known then
             local texture = C_Spell and C_Spell.GetSpellTexture and C_Spell.GetSpellTexture(spellRef)
@@ -922,8 +922,8 @@ end
 _G._CUI_Bloodlust_UpdateVisibility = UpdateVisibility
 
 -- The options page hands us its frame on build; _previewActive() takes it from there.
-function _G._CUI_Bloodlust_SetPreviewOwner(f)
-    _previewOwner = f
+function _G._CUI_Bloodlust_SetPreviewOwner(frame)
+    _previewOwner = frame
     _previewExpiry = 0 -- every visit starts a fresh stand-in countdown
     UpdateVisibility()
 end
@@ -1249,12 +1249,12 @@ boot:SetScript("OnEvent", function(self)
             return
         end
         local getDB = _G._CUI_BattleRes_DB
-        local d = getDB and getDB()
-        if not d then
+        local skinData = getDB and getDB()
+        if not skinData then
             C_Timer.After(0.2, init) -- BattleRes DB not ready yet
             return
         end
-        saved = d
+        saved = skinData
         _G._CUI_Bloodlust_DB = function()
             return saved
         end

@@ -128,11 +128,11 @@ local function PlaceContainer()
     if not container then
         return
     end
-    local cfg = Cfg()
-    local pos = cfg and cfg.barPos
+    local settings = Cfg()
+    local position = settings and settings.barPos
     container:ClearAllPoints()
-    if pos and pos.centerX and pos.centerY then
-        container:SetPoint("CENTER", UIParent, "CENTER", pos.centerX, pos.centerY)
+    if position and position.centerX and position.centerY then
+        container:SetPoint("CENTER", UIParent, "CENTER", position.centerX, position.centerY)
     else
         container:SetPoint("CENTER", UIParent, "CENTER", DEFAULT_X, DEFAULT_Y)
     end
@@ -210,41 +210,41 @@ end
 --  Style: size, texture, border, fonts, text layout. Once per settings change
 --  per row.
 --------------------------------------------------------------------------------
-local function Style(row, cfg)
-    local width, height = cfg.barWidth or 200, cfg.barHeight or 22
+local function Style(row, settings)
+    local width, height = settings.barWidth or 200, settings.barHeight or 22
     row:SetSize(width, height)
 
-    local withIcon = cfg.barShowIcon ~= false
-    local iconRight = withIcon and cfg.barIconOnRight == true
-    local icon = row.iconFrame
-    icon:ClearAllPoints()
+    local withIcon = settings.barShowIcon ~= false
+    local iconRight = withIcon and settings.barIconOnRight == true
+    local iconTex = row.iconFrame
+    iconTex:ClearAllPoints()
     if iconRight then
-        icon:SetPoint("TOPRIGHT", row, "TOPRIGHT", 0, 0)
-        icon:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
+        iconTex:SetPoint("TOPRIGHT", row, "TOPRIGHT", 0, 0)
+        iconTex:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
     else
-        icon:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
-        icon:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 0, 0)
+        iconTex:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+        iconTex:SetPoint("BOTTOMLEFT", row, "BOTTOMLEFT", 0, 0)
     end
-    icon:SetWidth(withIcon and height or 0.001)
-    icon:SetShown(withIcon)
+    iconTex:SetWidth(withIcon and height or 0.001)
+    iconTex:SetShown(withIcon)
 
-    local bar = row.sb
-    bar:ClearAllPoints()
+    local barFrame = row.sb
+    barFrame:ClearAllPoints()
     if iconRight then
-        bar:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
-        bar:SetPoint("BOTTOMRIGHT", icon, "BOTTOMLEFT", 0, 0)
+        barFrame:SetPoint("TOPLEFT", row, "TOPLEFT", 0, 0)
+        barFrame:SetPoint("BOTTOMRIGHT", iconTex, "BOTTOMLEFT", 0, 0)
     else
-        bar:SetPoint("TOPLEFT", icon, "TOPRIGHT", 0, 0)
-        bar:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
+        barFrame:SetPoint("TOPLEFT", iconTex, "TOPRIGHT", 0, 0)
+        barFrame:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
     end
-    bar:SetStatusBarTexture(
-        CludesUI.ResolveTexturePath(ns.barTextures, cfg.texture or "none", WHITE) or WHITE
+    barFrame:SetStatusBarTexture(
+        CludesUI.ResolveTexturePath(ns.barTextures, settings.texture or "none", WHITE) or WHITE
     )
-    PP.DisablePixelSnap(bar:GetStatusBarTexture())
+    PP.DisablePixelSnap(barFrame:GetStatusBarTexture())
 
     -- A black border on the row; size 0 removes it. The slider stores UI
     -- units, the border takes physical pixels.
-    local border = PP.ToPixels(cfg.barBorderSize or 0)
+    local border = PP.ToPixels(settings.barBorderSize or 0)
     if border > 0 then
         if not row.border then
             -- Kept: a layer sets its frame level with the rest of its row.
@@ -257,17 +257,17 @@ local function Style(row, cfg)
         PP.HideBorder(row)
     end
 
-    local timerSize = cfg.barTimerSize or 11
-    Font(row.name, cfg.barNameSize or 11)
+    local timerSize = settings.barTimerSize or 11
+    Font(row.name, settings.barNameSize or 11)
     Font(row.timer, timerSize)
-    local withTimer = cfg.barShowTimer ~= false
+    local withTimer = settings.barShowTimer ~= false
     local timerRoom = withTimer and timerSize * 2.4 or 0
     row.name:ClearAllPoints()
-    row.name:SetPoint("LEFT", bar, "LEFT", 4, 0)
+    row.name:SetPoint("LEFT", barFrame, "LEFT", 4, 0)
     row.name:SetWidth(math.max(1, (withIcon and (width - height) or width) - 8 - timerRoom))
     row.timer:ClearAllPoints()
-    row.timer:SetPoint("RIGHT", bar, "RIGHT", -3, 0)
-    row.name:SetShown(cfg.barShowName ~= false)
+    row.timer:SetPoint("RIGHT", barFrame, "RIGHT", -3, 0)
+    row.name:SetShown(settings.barShowName ~= false)
     row.timer:SetShown(withTimer)
 
     -- The raid marker beside the row, at the end away from the icon.
@@ -279,7 +279,7 @@ local function Style(row, cfg)
     else
         row.marker:SetPoint("LEFT", row, "RIGHT", MARKER_GAP, 0)
     end
-    row.showMarker = cfg.barShowMarker ~= false
+    row.showMarker = settings.barShowMarker ~= false
     -- How far the row reaches past its right edge (a layer's gate ends there).
     row.rightReach = iconRight and 0 or (MARKER_GAP + size)
 
@@ -287,11 +287,11 @@ local function Style(row, cfg)
 end
 
 -- The row's place in the group, under `anchor` (the container by default).
-local function Place(row, slot, cfg, anchor)
+local function Place(row, slot, settings, anchor)
     anchor = anchor or container
     row:ClearAllPoints()
-    local offset = (slot - 1) * ((cfg.barHeight or 22) + (cfg.barSpacing or 2))
-    if cfg.barGrowUp then
+    local offset = (slot - 1) * ((settings.barHeight or 22) + (settings.barSpacing or 2))
+    if settings.barGrowUp then
         row:SetPoint("BOTTOMLEFT", anchor, "BOTTOMLEFT", 0, offset)
     else
         row:SetPoint("TOPLEFT", anchor, "TOPLEFT", 0, -offset)
@@ -304,29 +304,29 @@ end
 -- The member: their interrupt's icon, name and class colour; the background
 -- a darker class colour or the chosen one. A layer's row also paints its
 -- backing: the background's colour, opaque.
-local function PaintMember(row, cfg, class, kick, name)
+local function PaintMember(row, settings, class, kick, name)
     row.icon:SetTexture(kick and C_Spell.GetSpellTexture(kick) or WHITE)
     row.name:SetText(name or "")
     local color = class and C_ClassColor.GetClassColor(class)
-    local r, g, b = 0.6, 0.6, 0.6
+    local region, g, b = 0.6, 0.6, 0.6
     if color then
-        r, g, b = color:GetRGB()
+        region, g, b = color:GetRGB()
     end
-    row.sb:SetStatusBarColor(r, g, b)
-    local br, bg, bb, ba
-    if cfg.barBgMode == "custom" then
-        local c = cfg.barBgColor
+    row.sb:SetStatusBarColor(region, g, b)
+    local br, bgTex, bb, ba
+    if settings.barBgMode == "custom" then
+        local c = settings.barBgColor
         if c then
-            br, bg, bb, ba = c.r, c.g, c.b, c.a or 0.45
+            br, bgTex, bb, ba = c.r, c.g, c.b, c.a or 0.45
         else
-            br, bg, bb, ba = 0, 0, 0, 0.45
+            br, bgTex, bb, ba = 0, 0, 0, 0.45
         end
     else
-        br, bg, bb, ba = r * DARK_SHARE, g * DARK_SHARE, b * DARK_SHARE, DARK_ALPHA
+        br, bgTex, bb, ba = region * DARK_SHARE, g * DARK_SHARE, b * DARK_SHARE, DARK_ALPHA
     end
-    row.bg:SetColorTexture(br, bg, bb, ba)
+    row.bg:SetColorTexture(br, bgTex, bb, ba)
     if row.cover then
-        row.cover:SetColorTexture(br, bg, bb, 1)
+        row.cover:SetColorTexture(br, bgTex, bb, 1)
     end
 end
 
@@ -405,11 +405,11 @@ local function NewLayer()
     gate:EnableMouse(false)
     gate:SetStatusBarTexture(WHITE)
     gate:SetAlpha(0)
-    local fill = gate:GetStatusBarTexture()
-    fill:SetVertexColor(0, 0, 0, 0)
-    if fill.SetSnapToPixelGrid then
-        fill:SetSnapToPixelGrid(false)
-        fill:SetTexelSnappingBias(0)
+    local fillTex = gate:GetStatusBarTexture()
+    fillTex:SetVertexColor(0, 0, 0, 0)
+    if fillTex.SetSnapToPixelGrid then
+        fillTex:SetSnapToPixelGrid(false)
+        fillTex:SetTexelSnappingBias(0)
     end
     local clip = CreateFrame("Frame", nil, layer)
     clip:SetClipsChildren(true)
@@ -420,7 +420,7 @@ local function NewLayer()
     row.cover = row:CreateTexture(nil, "BACKGROUND", nil, -8)
     row.cover:SetAllPoints(row)
     row:Show()
-    layer.gate, layer.fill, layer.clip, layer.row = gate, fill, clip, row
+    layer.gate, layer.fill, layer.clip, layer.row = gate, fillTex, clip, row
     return layer
 end
 
@@ -429,12 +429,12 @@ end
 -- the engine does not run for a moved fill: left edge on the fill's right
 -- edge, right edge the gate's.
 local function Feed(layer)
-    local gate, fill, clip = layer.gate, layer.fill, layer.clip
+    local gate, fillTex, clip = layer.gate, layer.fill, layer.clip
     gate:SetMinMaxValues(0, layer.after)
     gate:SetValue(layer.before)
     clip:ClearAllPoints()
-    clip:SetPoint("TOPLEFT", fill, "TOPRIGHT", 0, 0)
-    clip:SetPoint("BOTTOMLEFT", fill, "BOTTOMRIGHT", 0, 0)
+    clip:SetPoint("TOPLEFT", fillTex, "TOPRIGHT", 0, 0)
+    clip:SetPoint("BOTTOMLEFT", fillTex, "BOTTOMRIGHT", 0, 0)
     clip:SetPoint("TOPRIGHT", gate, "TOPRIGHT", 0, 0)
     clip:SetPoint("BOTTOMRIGHT", gate, "BOTTOMRIGHT", 0, 0)
     layer.feed = nil
@@ -466,17 +466,17 @@ end
 -- when the marker is on the right). A count that rose shortens the fill by
 -- at least one content width, opening the clip over the row; one that did
 -- not leaves the fill whole and the clip empty.
-local function Lay(layer, under, cfg, depth)
+local function Lay(layer, under, settings, depth)
     local row = layer.row
     if row.styleGen ~= styleGen then
-        Style(row, cfg)
+        Style(row, settings)
     end
     layer:ClearAllPoints()
     layer:SetAllPoints(under)
     row:ClearAllPoints()
     row:SetAllPoints(under)
     local gate = layer.gate
-    local width, height = cfg.barWidth or 200, cfg.barHeight or 22
+    local width, height = settings.barWidth or 200, settings.barHeight or 22
     gate:SetSize(GATE_SPAN * (width + MARKER_GAP + MARKER_MAX + GATE_PAD), height + GATE_TALL)
     gate:ClearAllPoints()
     gate:SetPoint("RIGHT", under, "RIGHT", (row.rightReach or 0) + GATE_EDGE, 0)
@@ -602,14 +602,14 @@ end
 --  Layout: a row per member with an interrupt (or the samples), in roster
 --  order; spare rows hide; the container takes the group's size.
 --------------------------------------------------------------------------------
-local function ShowRow(slot, cfg, class, kick, name, start, dur, unit, marker)
+local function ShowRow(slot, settings, class, kick, name, start, dur, unit, marker)
     local row = LiveRow(slot)
     if row.styleGen ~= styleGen then
-        Style(row, cfg)
+        Style(row, settings)
     end
-    Place(row, slot, cfg)
+    Place(row, slot, settings)
     row.unit, row.markerIdx = unit, marker
-    PaintMember(row, cfg, class, kick, name)
+    PaintMember(row, settings, class, kick, name)
     PaintCooldown(row, start, dur)
     row:Show()
     return row
@@ -632,7 +632,7 @@ end
 -- whose slot now holds someone else follows its member to their new token,
 -- placed by its kick's time; one whose member has no row goes. The moves are
 -- collected first, so no list is made while the lists are walked.
-local function Relay(cfg)
+local function Relay(settings)
     for unit, list in pairs(layersOf) do
         if #list > 0 then
             local member = rowOf[unit] and KE.Member(unit)
@@ -670,8 +670,8 @@ local function Relay(cfg)
             local under, member = rowOf[unit], KE.Member(unit)
             local name = UnitName(unit)
             for i, layer in ipairs(list) do
-                Lay(layer, under, cfg, i - 1)
-                PaintMember(layer.row, cfg, member.class, member.kick, name)
+                Lay(layer, under, settings, i - 1)
+                PaintMember(layer.row, settings, member.class, member.kick, name)
                 PaintMarker(layer.row)
                 Feed(layer)
                 layer.feed = true
@@ -683,15 +683,15 @@ end
 -- The group's frame: the size of the sample rows, which the player places.
 -- Rows grow from its top or bottom edge and may run past it, so that edge
 -- stays put whatever the live count.
-local function GroupSize(cfg)
-    local height, spacing = cfg and cfg.barHeight or 22, cfg and cfg.barSpacing or 2
+local function GroupSize(settings)
+    local height, spacing = settings and settings.barHeight or 22, settings and settings.barSpacing or 2
     local n = #SAMPLES
-    return (cfg and cfg.barWidth) or 200, n * height + (n - 1) * spacing
+    return (settings and settings.barWidth) or 200, n * height + (n - 1) * spacing
 end
 
 local function Layout()
-    local cfg = Cfg()
-    if not cfg then
+    local settings = Cfg()
+    if not settings then
         return
     end
     Container()
@@ -706,7 +706,7 @@ local function Layout()
             n = n + 1
             ShowRow(
                 n,
-                cfg,
+                settings,
                 sample[1],
                 sample[2],
                 SampleName(sample),
@@ -717,7 +717,7 @@ local function Layout()
             )
         end
     elseif mode == LIVE then
-        local withSelf = cfg.barIncludeSelf ~= false
+        local withSelf = settings.barIncludeSelf ~= false
         for _, unit in ipairs(KE.GROUP_UNITS) do
             local member = KE.Member(unit)
             if member and member.guid and member.kick and (withSelf or unit ~= "player") then
@@ -730,7 +730,7 @@ local function Layout()
                 end
                 n = n + 1
                 rowOf[unit] =
-                    ShowRow(n, cfg, member.class, member.kick, UnitName(unit), start, dur, unit, marker)
+                    ShowRow(n, settings, member.class, member.kick, UnitName(unit), start, dur, unit, marker)
             end
         end
     end
@@ -741,8 +741,8 @@ local function Layout()
         row.marker:Hide()
     end
     inUse = n
-    Relay(cfg)
-    container:SetSize(GroupSize(cfg))
+    Relay(settings)
+    container:SetSize(GroupSize(settings))
     container:SetShown(n > 0 or mode == PREVIEW_MODE)
 end
 
@@ -819,8 +819,8 @@ local function OnGate(t, units, before, after, plates, platesOnly)
         end
         return
     end
-    local cfg = Cfg()
-    if not cfg then
+    local settings = Cfg()
+    if not settings then
         return
     end
     local now = GetTime()
@@ -838,8 +838,8 @@ local function OnGate(t, units, before, after, plates, platesOnly)
             local layer = table.remove(freeLayers) or NewLayer()
             list[#list + 1] = layer
             layer.t, layer.unit, layer.guid, layer.before, layer.after = t, unit, member.guid, b, a
-            Lay(layer, under, cfg, #list - 1)
-            PaintMember(layer.row, cfg, member.class, member.kick, UnitName(unit))
+            Lay(layer, under, settings, #list - 1)
+            PaintMember(layer.row, settings, member.class, member.kick, UnitName(unit))
             layer.row.unit, layer.row.markerIdx = nil, index
             Feed(layer)
             PaintCooldown(layer.row, t, dur)
@@ -884,20 +884,20 @@ local function SetMode(to)
     Layout()
 end
 
-local function Enabled(cfg)
-    return cfg and cfg.enabled == true and cfg.showBars ~= false
+local function Enabled(settings)
+    return settings and settings.enabled == true and settings.showBars ~= false
 end
 
 -- The preview owns the display while on: no Where to Show filter, no
 -- engine. Leaving it applies the filter again.
 local function Sync()
-    local cfg = Cfg()
-    if not Enabled(cfg) then
+    local settings = Cfg()
+    if not Enabled(settings) then
         previewOn = false
         SetMode(OFF)
     elseif previewOn then
         SetMode(PREVIEW_MODE)
-    elseif KE.Allowed() and MTWhere.Shows(cfg.whereToShow, WHERE_KEYS) then
+    elseif KE.Allowed() and MTWhere.Shows(settings.whereToShow, WHERE_KEYS) then
         SetMode(LIVE)
     else
         SetMode(OFF)
@@ -941,45 +941,45 @@ local function RegisterUnlock()
                 return GroupSize(Cfg())
             end,
             setWidth = function(_, w)
-                local cfg = Cfg()
-                if cfg then
-                    cfg.barWidth = floor(w + 0.5)
+                local settings = Cfg()
+                if settings then
+                    settings.barWidth = floor(w + 0.5)
                     ns.KTB_Refresh()
                 end
             end,
             setHeight = function(_, h)
-                local cfg = Cfg()
-                if not cfg then
+                local settings = Cfg()
+                if not settings then
                     return
                 end
                 -- A row's share of the group's height.
                 local n = #SAMPLES
-                cfg.barHeight = math.max(6, floor((h - (n - 1) * (cfg.barSpacing or 2)) / n + 0.5))
+                settings.barHeight = math.max(6, floor((h - (n - 1) * (settings.barSpacing or 2)) / n + 0.5))
                 ns.KTB_Refresh()
             end,
             savePos = function(_, _, _, x, y)
                 -- Unlock mode hands over CENTER offsets; on Cancel the frame is
                 -- still where it was dragged, so the live position is never read.
-                local cfg = Cfg()
-                if cfg and x and y then
-                    cfg.barPos = { centerX = x, centerY = y }
+                local settings = Cfg()
+                if settings and x and y then
+                    settings.barPos = { centerX = x, centerY = y }
                     if not CludesUI._unlockActive then
                         PlaceContainer()
                     end
                 end
             end,
             loadPos = function()
-                local cfg = Cfg()
-                local pos = cfg and cfg.barPos
-                if pos and pos.centerX and pos.centerY then
-                    return { point = "CENTER", relPoint = "CENTER", x = pos.centerX, y = pos.centerY }
+                local settings = Cfg()
+                local position = settings and settings.barPos
+                if position and position.centerX and position.centerY then
+                    return { point = "CENTER", relPoint = "CENTER", x = position.centerX, y = position.centerY }
                 end
                 return nil
             end,
             clearPos = function()
-                local cfg = Cfg()
-                if cfg then
-                    cfg.barPos = nil
+                local settings = Cfg()
+                if settings then
+                    settings.barPos = nil
                 end
             end,
             applyPos = PlaceContainer,
@@ -1035,9 +1035,9 @@ end
 -- (never the timer or ticker, so they cost nothing while hidden). Returns
 -- the group's width and height, or nil with no settings. These rows are kept
 -- out of `rows`, so the layout, ticker and modes never see them.
-function ns.KTB_PaintSample(host, n)
-    local cfg = Cfg()
-    if not cfg then
+function ns.KTB_PaintSample(owner, n)
+    local settings = Cfg()
+    if not settings then
         return nil
     end
     n = math.min(n or SAMPLE_COUNT, #SAMPLES)
@@ -1045,15 +1045,15 @@ function ns.KTB_PaintSample(host, n)
     for i = 1, n do
         local row = sampleRows[i]
         if not row then
-            row = NewRow(host)
+            row = NewRow(owner)
             sampleRows[i] = row
         end
-        row:SetParent(host)
+        row:SetParent(owner)
         row.styleGen = nil
-        Style(row, cfg)
-        Place(row, i, cfg, host)
+        Style(row, settings)
+        Place(row, i, settings, owner)
         local sample = SAMPLES[i]
-        PaintMember(row, cfg, sample[1], sample[2], SampleName(sample))
+        PaintMember(row, settings, sample[1], sample[2], SampleName(sample))
         -- The cooldown as a still; readyAt stands for "cooling" (PaintMarker).
         local left = sample[4]
         local _, cd = KD.Cooldown(sample[2])
@@ -1076,8 +1076,8 @@ function ns.KTB_PaintSample(host, n)
     for i = n + 1, #sampleRows do
         sampleRows[i]:Hide()
     end
-    local height, spacing = cfg.barHeight or 22, cfg.barSpacing or 2
-    return cfg.barWidth or 200, n * height + (n - 1) * spacing
+    local height, spacing = settings.barHeight or 22, settings.barSpacing or 2
+    return settings.barWidth or 200, n * height + (n - 1) * spacing
 end
 
 -- Called from ns.KT_OnEnable with the module's settings handle.

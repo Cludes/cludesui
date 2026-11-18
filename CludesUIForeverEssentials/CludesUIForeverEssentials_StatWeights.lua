@@ -168,18 +168,18 @@ local function ReadTalents()
     end
     local groups = C_Traits.GetGroupDisplayInfoByTreeID(treeID) or {}
     local ids, spent = {}, {}
-    for idx, g in ipairs(groups) do
-        ids[idx] = g.groupID
+    for index, g in ipairs(groups) do
+        ids[index] = g.groupID
     end
     for _, details in ipairs(C_Traits.GetGroupCurrencyInfo(configID, ids) or {}) do
         local c = details.currencyInfos and details.currencyInfos[1]
         spent[details.traitNodeGroupID] = c and c.spent or 0
     end
     local best, most = nil, 0
-    for idx, g in ipairs(groups) do
+    for index, g in ipairs(groups) do
         local num = spent[g.groupID] or 0
         if num > most then
-            best, most = trees[idx], num
+            best, most = trees[index], num
         end
     end
     return best
@@ -293,20 +293,20 @@ forget:SetScript("OnEvent", function()
     lastMain, lastOff = nil, nil
 end)
 
-local function Stats(item)
-    local s = statsOf[item]
+local function Stats(entry)
+    local s = statsOf[entry]
     if s then
         return s
     end
-    if type(item) == "number" and not C_Item.IsItemDataCachedByID(item) then
+    if type(entry) == "number" and not C_Item.IsItemDataCachedByID(entry) then
         return nil
     end
-    s = C_Item.GetItemStats(type(item) == "number" and ("item:" .. item) or item) or {}
+    s = C_Item.GetItemStats(type(entry) == "number" and ("item:" .. entry) or entry) or {}
     if cached >= CACHE_MAX then
         wipe(statsOf)
         cached = 0
     end
-    statsOf[item], cached = s, cached + 1
+    statsOf[entry], cached = s, cached + 1
     return s
 end
 
@@ -323,8 +323,8 @@ local function Worth(stats, weights, dpsShare, skipPrimary)
             value = value / per
         end
         if type(mine) == "table" then
-            for idx = 1, #mine do
-                worth = worth + (weights[mine[idx]] or 0) * value
+            for index = 1, #mine do
+                worth = worth + (weights[mine[index]] or 0) * value
             end
         elseif mine == "dps" then
             worth = worth + (weights.dps or 0) * value * (dpsShare or 0)
@@ -351,8 +351,8 @@ local function Power(weights)
         return lastPower[weights]
     end
     local power = 0
-    for idx, key in ipairs(PRIMARY) do
-        local _, effective = UnitStat("player", idx)
+    for index, key in ipairs(PRIMARY) do
+        local _, effective = UnitStat("player", index)
         if type(effective) == "number" and not Secret(effective) then
             power = power + (weights[key] or 0) * effective
         end
@@ -368,11 +368,11 @@ local function Power(weights)
     return power
 end
 
-local function Gain(item, slot, weights, power, also)
+local function Gain(entry, slot, weights, power, also)
     if not (weights and power and power > 0) then
         return nil
     end
-    local s = Stats(item)
+    local s = Stats(entry)
     local worn = WornWorth(slot, weights)
     local other = also and WornWorth(also, weights) or 0
     if not (s and worn and other) then

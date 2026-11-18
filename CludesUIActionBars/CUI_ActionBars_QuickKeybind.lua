@@ -41,27 +41,27 @@ end
 --  only know about their own named bar buttons, so only EAB-owned buttons
 --  and the custom paging arrows need an explicit mode toggle here.
 -------------------------------------------------------------------------------
-local function EAB_SetQuickKeybindEffects(btn, show)
-    if not btn or btn:IsForbidden() then
+local function EAB_SetQuickKeybindEffects(button, show)
+    if not button or button:IsForbidden() then
         return
     end
-    if btn.DoModeChange then
-        btn:DoModeChange(show)
-    elseif btn.QuickKeybindHighlightTexture then
-        btn.QuickKeybindHighlightTexture:SetShown(show)
+    if button.DoModeChange then
+        button:DoModeChange(show)
+    elseif button.QuickKeybindHighlightTexture then
+        button.QuickKeybindHighlightTexture:SetShown(show)
     end
     -- Suppress/restore the secure action so spells don't fire during QKB.
     -- Only action buttons (those with an action attr) need this.
-    if not InCombatLockdown() and btn.commandName and btn:GetAttribute("action") then
+    if not InCombatLockdown() and button.commandName and button:GetAttribute("action") then
         if show then
-            btn:SetAttribute("type", nil)
+            button:SetAttribute("type", nil)
         else
-            btn:SetAttribute("type", "action")
+            button:SetAttribute("type", "action")
         end
     end
-    _quickKeybindState.art.ApplyButtonHighlightAlpha(btn, show)
-    if btn.UpdateMouseWheelHandler then
-        btn:UpdateMouseWheelHandler()
+    _quickKeybindState.art.ApplyButtonHighlightAlpha(button, show)
+    if button.UpdateMouseWheelHandler then
+        button:UpdateMouseWheelHandler()
     end
 end
 
@@ -69,9 +69,9 @@ EAB_UpdateQuickKeybindButtons = function(show)
     for _, details in ipairs(BAR_CONFIG) do
         local buttons = barButtons[details.key]
         if buttons then
-            for _, btn in ipairs(buttons) do
-                if btn and btn.commandName then
-                    EAB_SetQuickKeybindEffects(btn, show)
+            for _, button in ipairs(buttons) do
+                if button and button.commandName then
+                    EAB_SetQuickKeybindEffects(button, show)
                 end
             end
         end
@@ -477,26 +477,26 @@ local function EAB_UpdateQuickKeybindVisibility(show)
 
         local buttons = barButtons[key]
         if buttons then
-            for _, btn in ipairs(buttons) do
-                if btn then
-                    _quickKeybindState.art.ApplyButtonHighlightAlpha(btn, show)
+            for _, button in ipairs(buttons) do
+                if button then
+                    _quickKeybindState.art.ApplyButtonHighlightAlpha(button, show)
                 end
             end
         end
 
         if not details.isStance and not details.isPetBar then
             if buttons then
-                for _, btn in ipairs(buttons) do
-                    if btn then
-                        SetShowGridInsecure(btn, show, SHOWGRID.KEYBOUND)
+                for _, button in ipairs(buttons) do
+                    if button then
+                        SetShowGridInsecure(button, show, SHOWGRID.KEYBOUND)
                     end
                 end
             end
         end
     end
 
-    _quickKeybindState.art.ForEachSpecialButton(function(btn)
-        _quickKeybindState.art.ApplyButtonHighlightAlpha(btn, show)
+    _quickKeybindState.art.ForEachSpecialButton(function(button)
+        _quickKeybindState.art.ApplyButtonHighlightAlpha(button, show)
     end)
 
     if show then
@@ -569,18 +569,18 @@ _quickKeybindState.InitButtons = function()
         if not details.isStance and not details.isPetBar then
             local buttons = barButtons[details.key]
             if buttons then
-                for _, btn in ipairs(buttons) do
-                    if btn and btn.commandName then
-                        if not btn.QuickKeybindButtonOnClick then
-                            Mixin(btn, QuickKeybindButtonTemplateMixin)
+                for _, button in ipairs(buttons) do
+                    if button and button.commandName then
+                        if not button.QuickKeybindButtonOnClick then
+                            Mixin(button, QuickKeybindButtonTemplateMixin)
                         end
-                        local fd = EFD(btn)
-                        if not fd.qkbClickHooked and btn.QuickKeybindButtonOnClick then
-                            btn:HookScript("OnClick", btn.QuickKeybindButtonOnClick)
-                            btn:HookScript("OnEnter", btn.QuickKeybindButtonOnEnter)
-                            btn:HookScript("OnLeave", btn.QuickKeybindButtonOnLeave)
+                        local fd = EFD(button)
+                        if not fd.qkbClickHooked and button.QuickKeybindButtonOnClick then
+                            button:HookScript("OnClick", button.QuickKeybindButtonOnClick)
+                            button:HookScript("OnEnter", button.QuickKeybindButtonOnEnter)
+                            button:HookScript("OnLeave", button.QuickKeybindButtonOnLeave)
                             -- Accent border + highlight color on hover during QKB
-                            btn:HookScript("OnEnter", function(self)
+                            button:HookScript("OnEnter", function(self)
                                 if not _quickKeybindState.open then
                                     return
                                 end
@@ -598,7 +598,7 @@ _quickKeybindState.InitButtons = function()
                                 end
                                 fd.qkbHoverActive = true
                             end)
-                            btn:HookScript("OnLeave", function(self)
+                            button:HookScript("OnLeave", function(self)
                                 local fd = EFD(self)
                                 if not fd.qkbHoverActive then
                                     return
@@ -633,12 +633,12 @@ _quickKeybindState.InitButtons = function()
                                     and ABAR.db.profile.bars[bk]
                                 if s and Pix then
                                     local c = s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
-                                    local cr, cg, cb, ca = c.r, c.g, c.b, c.a or 1
+                                    local cr, cg, callback, ca = c.r, c.g, c.b, c.a or 1
                                     if s.borderClassColor then
                                         local _, ct = UnitClass("player")
                                         local cc = ct and RAID_CLASS_COLORS[ct]
                                         if cc then
-                                            cr, cg, cb = cc.r, cc.g, cc.b
+                                            cr, cg, callback = cc.r, cc.g, cc.b
                                         end
                                     end
                                     local sz, px = ResolveBorderThickness(s)
@@ -648,7 +648,7 @@ _quickKeybindState.InitButtons = function()
                                         sz = px
                                     end
                                     if sz > 0 then
-                                        Pix.UpdateBorder(self, sz, cr, cg, cb, ca)
+                                        Pix.UpdateBorder(self, sz, cr, cg, callback, ca)
                                     else
                                         Pix.HideBorder(self)
                                     end
@@ -860,11 +860,11 @@ end)--  Swiftmend by matching icon file ID. Re-scans on slot changes so bar
             return
         end
         for slot = 1, 180 do
-            local btn = _G["EABButton" .. slot]
-            if btn and btn.icon then
-                local t = btn.icon:GetTexture()
+            local button = _G["EABButton" .. slot]
+            if button and button.icon then
+                local t = button.icon:GetTexture()
                 if not issecretvalue(t) and t == iconID then
-                    hook(btn.icon)
+                    hook(button.icon)
                 end
             end
         end
@@ -876,9 +876,9 @@ end)--  Swiftmend by matching icon file ID. Re-scans on slot changes so bar
     if _playerCls ~= "DRUID" then
         return
     end
-    local f = mod.TakeShell()
-    f:RegisterEvent("PLAYER_ENTERING_WORLD")
-    f:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
+    local frame = mod.TakeShell()
+    frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    frame:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
     -- Coalesced: one 0.5s rescan window at a time. ACTIONBAR_SLOT_CHANGED can
     -- storm (mouseover-conditional macros re-resolving on every flip);
     -- scheduling a timer per event ran the full scan dozens of times/sec.
@@ -887,7 +887,7 @@ end)--  Swiftmend by matching icon file ID. Re-scans on slot changes so bar
         _smPending = false
         ScanABSwiftmend()
     end
-    f:SetScript("OnEvent", function()
+    frame:SetScript("OnEvent", function()
         if not _smPending then
             _smPending = true
             C_Timer.After(0.5, SwiftmendRescan)

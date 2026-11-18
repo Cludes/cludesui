@@ -179,28 +179,28 @@ local function ItemName(ident)
 end
 
 local function KnownReagent(family)
-    local item
+    local entry
     for _, rank in ipairs(family) do
         if Known(rank[1]) then
-            item = rank[2]
+            entry = rank[2]
         end
     end
-    return item
+    return entry
 end
 
 local function CarriedAmmo()
     if THROWN_CLASSES[CLASS] then
-        local item = GetInventoryItemID("player", RANGED_SLOT)
-        if item then
-            local _, _, _, _, _, classID, subID = C_Item.GetItemInfoInstant(item)
+        local entry = GetInventoryItemID("player", RANGED_SLOT)
+        if entry then
+            local _, _, _, _, _, classID, subID = C_Item.GetItemInfoInstant(entry)
             if classID == WEAPON_CLASS and subID == THROWN_SUBCLASS then
-                local stack = select(8, C_Item.GetItemInfo(item))
+                local stack = select(8, C_Item.GetItemInfo(entry))
                 if not stack then
-                    RequestItem(item)
+                    RequestItem(entry)
                     return
                 end
                 if stack > 1 then
-                    return item
+                    return entry
                 end
                 return
             end
@@ -212,10 +212,10 @@ end
 local function Wanted()
     local wanted = {}
     if R.Get("reagents") then
-        for _, f in ipairs(FAMILIES) do
-            local item = f.class == CLASS and KnownReagent(f)
-            if item and Target(item) > 0 then
-                wanted[item] = Target(item)
+        for _, frame in ipairs(FAMILIES) do
+            local entry = frame.class == CLASS and KnownReagent(frame)
+            if entry and Target(entry) > 0 then
+                wanted[entry] = Target(entry)
             end
         end
     end
@@ -500,13 +500,13 @@ end
 --- This class's reagents, for the options page: { {item, name, target}, ... }.
 local function ClassReagents()
     local result, seen = {}, {}
-    for _, f in ipairs(FAMILIES) do
-        if f.class == CLASS then
-            for _, rank in ipairs(f) do
-                local item = rank[2]
-                if not seen[item] then
-                    seen[item] = true
-                    result[#result + 1] = { item = item, name = ItemName(item) }
+    for _, frame in ipairs(FAMILIES) do
+        if frame.class == CLASS then
+            for _, rank in ipairs(frame) do
+                local entry = rank[2]
+                if not seen[entry] then
+                    seen[entry] = true
+                    result[#result + 1] = { item = entry, name = ItemName(entry) }
                 end
             end
         end
@@ -593,15 +593,15 @@ if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
         if not lockName then
             ReadSkill()
         end
-        local r, g, b
+        local region, g, b
         if not lockSkill then
-            r, g, b = 1, 0.8, 0.2
+            region, g, b = 1, 0.8, 0.2
         elseif lockSkill < need then
-            r, g, b = 1, 0.3, 0.3
+            region, g, b = 1, 0.3, 0.3
         else
-            r, g, b = 0.4, 0.9, 0.5
+            region, g, b = 0.4, 0.9, 0.5
         end
-        tooltip:AddLine(ITEM_MIN_SKILL:format(lockName, need), r, g, b)
+        tooltip:AddLine(ITEM_MIN_SKILL:format(lockName, need), region, g, b)
     end)
 end
 L.Start(function()
@@ -651,8 +651,8 @@ local function WornHere(wid, here)
 end
 
 local GUpdate
-local function Icon(idx)
-    local b = gIcons[idx]
+local function Icon(index)
+    local b = gIcons[index]
     if b then
         return b
     end
@@ -679,7 +679,7 @@ local function Icon(idx)
             GUpdate()
         end
     end)
-    gIcons[idx] = b
+    gIcons[index] = b
     return b
 end
 
@@ -718,8 +718,8 @@ GUpdate = function()
             b:Show()
         end
     end
-    for idx = isShown + 1, #gIcons do
-        gIcons[idx]:Hide()
+    for index = isShown + 1, #gIcons do
+        gIcons[index]:Hide()
     end
     gFrame:SetSize(math.max(isShown, 1) * (size + 4) - 4, size)
 end

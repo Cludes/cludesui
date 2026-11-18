@@ -760,12 +760,12 @@ local function TrackerOnEvent(self, evt, unitToken, ...)
         self._cuiResettle = true
         C_Timer.After(0, function()
             self._cuiResettle = nil
-            local f = self._cuiFrame
-            if not f or not f:IsShown() then
+            local frame = self._cuiFrame
+            if not frame or not frame:IsShown() then
                 return
             end
             for i = 1, #chans do
-                Paint(f, chans[i], "Resettle")
+                Paint(frame, chans[i], "Resettle")
             end
         end)
     end
@@ -796,8 +796,8 @@ function Engine.Attach(widget, unit, channels)
     -- skip dispatch), so a freshly shown frame repaints in full.
     if not widget._cuiEngineShowHook then
         widget._cuiEngineShowHook = true
-        widget:HookScript("OnShow", function(f)
-            Engine.RepaintAll(f, "Show")
+        widget:HookScript("OnShow", function(frame)
+            Engine.RepaintAll(frame, "Show")
         end)
     end
     local secondary = SECONDARY_TOKEN[unit]
@@ -971,9 +971,9 @@ function Engine.AttachPolled(widget, unit, channels)
     -- The polled-frame marker settings code checks (portrait art heal, text
     -- class-color reapply).
     widget.__eventless = true
-    widget:HookScript("OnShow", function(f)
-        f._cuiLastGuid = nil
-        Engine.RepaintAll(f, "Show")
+    widget:HookScript("OnShow", function(frame)
+        frame._cuiLastGuid = nil
+        Engine.RepaintAll(frame, "Show")
         PollVisibilityChanged()
     end)
     widget:HookScript("OnHide", PollVisibilityChanged)
@@ -1216,9 +1216,9 @@ globalFrame:RegisterEvent("PORTRAITS_UPDATED")
 globalFrame:RegisterUnitEvent("UNIT_TARGET", "target", "focus")
 globalFrame:SetScript("OnEvent", function(self, evt, unit)
     if evt == "PLAYER_TARGET_CHANGED" then
-        local f = unitFrames.target
-        if f then
-            Engine.RepaintAll(f, evt)
+        local frame = unitFrames.target
+        if frame then
+            Engine.RepaintAll(frame, evt)
         end
         local tot = unitFrames.targettarget
         if tot then
@@ -1226,9 +1226,9 @@ globalFrame:SetScript("OnEvent", function(self, evt, unit)
             pollAccum = POLL_INTERVAL
         end
     elseif evt == "PLAYER_FOCUS_CHANGED" then
-        local f = unitFrames.focus
-        if f then
-            Engine.RepaintAll(f, evt)
+        local frame = unitFrames.focus
+        if frame then
+            Engine.RepaintAll(frame, evt)
         end
         local fot = unitFrames.focustarget
         if fot then
@@ -1236,23 +1236,23 @@ globalFrame:SetScript("OnEvent", function(self, evt, unit)
             pollAccum = POLL_INTERVAL
         end
     elseif evt == "UNIT_TARGET" then
-        local f = (unit == "target" and unitFrames.targettarget)
+        local frame = (unit == "target" and unitFrames.targettarget)
             or (unit == "focus" and unitFrames.focustarget)
             or nil
-        if f and f:IsShown() and UnitExists(f._cuiUnit) then
+        if frame and frame:IsShown() and UnitExists(frame._cuiUnit) then
             -- The whole occupant changed, so the repaint is an identity one
             -- (the text painter paints only its target zones for the event
             -- name itself, which would leave the old name under the new
             -- colour). The poll's GUID memo takes the new occupant, so its
             -- next tick does not repeat this paint.
-            f._cuiLastGuid = UnitGUID(f._cuiUnit)
-            Engine.RepaintAll(f, "UnitChanged")
+            frame._cuiLastGuid = UnitGUID(frame._cuiUnit)
+            Engine.RepaintAll(frame, "UnitChanged")
         end
     elseif evt == "INSTANCE_ENCOUNTER_ENGAGE_UNIT" then
         for i = 1, 5 do
-            local f = unitFrames["boss" .. i]
-            if f and f:IsShown() then
-                Engine.RepaintAll(f, evt)
+            local frame = unitFrames["boss" .. i]
+            if frame and frame:IsShown() then
+                Engine.RepaintAll(frame, evt)
             end
         end
         -- The slots can still be settling when the event lands (one occupant
@@ -1263,9 +1263,9 @@ globalFrame:SetScript("OnEvent", function(self, evt, unit)
             C_Timer.After(0, function()
                 self._cuiBossSettle = nil
                 for i = 1, 5 do
-                    local f = unitFrames["boss" .. i]
-                    if f and f:IsShown() then
-                        Engine.RepaintAll(f, "UnitChanged")
+                    local frame = unitFrames["boss" .. i]
+                    if frame and frame:IsShown() then
+                        Engine.RepaintAll(frame, "UnitChanged")
                     end
                 end
             end)

@@ -80,8 +80,8 @@ local function EMChatFindSystem(layout, sysChat)
     if type(systems) ~= "table" then
         return nil
     end
-    for idx = 1, #systems do
-        local s = systems[idx]
+    for index = 1, #systems do
+        local s = systems[index]
         if type(s) == "table" and s.system == sysChat then
             return s
         end
@@ -93,8 +93,8 @@ local function EMChatSettingRow(sys, settingID)
     if type(st) ~= "table" then
         return nil
     end
-    for idx = 1, #st do
-        local row = st[idx]
+    for index = 1, #st do
+        local row = st[index]
         if type(row) == "table" and row.setting == settingID then
             return row
         end
@@ -231,14 +231,14 @@ local function ChatAnchorTarget(conf, cf1)
         -- and BOTTOM across, LEFT and RIGHT up) snaps against the dimension
         -- the rect carries, the saved size once there is one, so both edges
         -- land on pixels; an edge offset snaps to whole pixels.
-        local f = POINT_FRAC[place.point]
+        local frame = POINT_FRAC[place.point]
         local size = conf.chatSize
-        if f and f[1] == 0.5 then
+        if frame and frame[1] == 0.5 then
             px = PPa.SnapCenterForDim(px, size and size.w or cf1:GetWidth() or 0, es)
         else
             px = PPa.SnapForES(px, es)
         end
-        if f and f[2] == 0.5 then
+        if frame and frame[2] == 0.5 then
             py = PPa.SnapCenterForDim(py, size and size.h or cf1:GetHeight() or 0, es)
         else
             py = PPa.SnapForES(py, es)
@@ -461,8 +461,8 @@ end
 -- The anchors ApplyChatPosition places: one, or two while the saved size
 -- rides a second corner. Reused across passes.
 local chatTarget = { {}, {} }
-local function SetChatTarget(idx, anchorPoint, relPoint, posX, posY)
-    local t = chatTarget[idx]
+local function SetChatTarget(index, anchorPoint, relPoint, posX, posY)
+    local t = chatTarget[index]
     t.point, t.relPoint, t.x, t.y = anchorPoint, relPoint, posX, posY
 end
 
@@ -485,8 +485,8 @@ local function ChatAtTarget(cf1, n)
     if (issecret and issecret(num)) or num ~= n then
         return false
     end
-    for idx = 1, n do
-        local anchorPoint, rel, relPoint, posX, posY = cf1:GetPoint(idx)
+    for index = 1, n do
+        local anchorPoint, rel, relPoint, posX, posY = cf1:GetPoint(index)
         if
             issecret
             and (
@@ -592,8 +592,8 @@ local function ApplyChatPosition()
     if mod._chatReanchor or not ChatAtTarget(cf1, n) then
         mod._chatReanchor = nil
         ClearFramePoints(cf1)
-        for idx = 1, n do
-            local t = chatTarget[idx]
+        for index = 1, n do
+            local t = chatTarget[index]
             SetFramePoint(cf1, t.point, UIParent, t.relPoint, t.x, t.y)
         end
     end
@@ -661,24 +661,24 @@ CanonicalizeChatPosition = function()
         return
     end
     mod._chatCanonLaps = nil
-    local l, b, r, t = cf1:GetLeft(), cf1:GetBottom(), cf1:GetRight(), cf1:GetTop()
+    local l, b, region, t = cf1:GetLeft(), cf1:GetBottom(), cf1:GetRight(), cf1:GetTop()
     local issecret = _G.issecretvalue
     if
-        not (l and b and r and t)
-        or (issecret and (issecret(l) or issecret(b) or issecret(r) or issecret(t)))
+        not (l and b and region and t)
+        or (issecret and (issecret(l) or issecret(b) or issecret(region) or issecret(t)))
     then
         return
     end
     -- The frame's point at its spot, measured from the same point of the
     -- screen (BOTTOMLEFT: the rect's own left and bottom).
     local target = ChatScreenChoice(cfg2) or "BOTTOMLEFT"
-    local f = POINT_FRAC[target]
+    local frame = POINT_FRAC[target]
     local sw, sh = ChatScreenSize(cf1)
     cfg2.chatPosition = {
         point = target,
         relPoint = target,
-        x = l + f[1] * (r - l - sw),
-        y = b + f[2] * (t - b - sh),
+        x = l + frame[1] * (region - l - sw),
+        y = b + frame[2] * (t - b - sh),
     }
     ApplyChatPosition()
 end
@@ -869,11 +869,11 @@ local function InstallChatAnchorGuard()
     if not cf1 or not cf1.ApplySystemAnchor then
         return
     end
-    local d = CFD(cf1)
-    if d.anchorGuarded then
+    local skinData = CFD(cf1)
+    if skinData.anchorGuarded then
         return
     end
-    d.anchorGuarded = true
+    skinData.anchorGuarded = true
     hooksecurefunc(cf1, "ApplySystemAnchor", function()
         local conf = CHAT.DB()
         if conf and conf.chatPosition then
@@ -943,12 +943,12 @@ CHAT.ApplyChatSize = ApplyChatSize
 -- the second corner anchor by ApplyChatPosition -- Blizzard's saved-
 -- dimensions restore explicitly skips the main window.
 local function BuildMainChatResizeGrip(castFrame)
-    local d = CFD(castFrame)
-    if d.resizeGrip or not d.bg then
+    local skinData = CFD(castFrame)
+    if skinData.resizeGrip or not skinData.bg then
         return
     end
-    local grip = CreateFrame("Button", nil, d.bg)
-    d.resizeGrip = grip
+    local grip = CreateFrame("Button", nil, skinData.bg)
+    skinData.resizeGrip = grip
     grip:SetSize(18, 18)
     -- Anchored to the chat frame like the undocked buttons, so the icon
     -- hugs the true resize corner regardless of panel insets; nudged out
@@ -1201,10 +1201,10 @@ mod._KeepMainChatSizeCorner = KeepMainChatSizeCorner
 function CHAT.ApplyLockChatSize()
     local conf = CHAT.DB()
     local locked = conf and conf.lockChatSize == true
-    local btn = _G.ChatFrame1ResizeButton
-    if btn then
-        btn:SetAlpha(0)
-        btn:EnableMouse(false)
+    local button = _G.ChatFrame1ResizeButton
+    if button then
+        button:SetAlpha(0)
+        button:EnableMouse(false)
     end
     local cf1 = _G.ChatFrame1
     local grip = cf1 and CFD(cf1).resizeGrip

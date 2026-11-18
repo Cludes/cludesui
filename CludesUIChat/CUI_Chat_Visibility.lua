@@ -67,13 +67,13 @@ function CHAT.InvalidateAlphaCache()
 end
 local function _BuildAlphaCache()
     _alphaFrames = {}
-    for idx = 1, 20 do
-        local castFrame = _G["ChatFrame" .. idx]
+    for index = 1, 20 do
+        local castFrame = _G["ChatFrame" .. index]
         local cfd = castFrame and CFD(castFrame)
         if castFrame and cfd.bg then
             _alphaFrames[#_alphaFrames + 1] = {
                 cf = castFrame,
-                eb = _G["ChatFrame" .. idx .. "EditBox"],
+                eb = _G["ChatFrame" .. index .. "EditBox"],
                 bg = cfd.bg,
                 resizeGrip = cfd.resizeGrip,
             }
@@ -108,17 +108,17 @@ local _chatPassthrough = false
 -- COMBINED-channel APIs, chat widgets run split states (click-only line frames,
 -- motion-only containers), and a combined restore flips the wrong channel -- e.g.
 -- re-arming clicks on a natively motion-only frame after one passthrough cycle.
-local function GetMouseChannels(f)
+local function GetMouseChannels(frame)
     local click
-    if f.IsMouseClickEnabled then
-        click = f:IsMouseClickEnabled()
+    if frame.IsMouseClickEnabled then
+        click = frame:IsMouseClickEnabled()
     else
-        click = f:IsMouseEnabled()
+        click = frame:IsMouseEnabled()
     end
     if issecretvalue and issecretvalue(click) then
         click = false
     end
-    local motion = f.IsMouseMotionEnabled and f:IsMouseMotionEnabled()
+    local motion = frame.IsMouseMotionEnabled and frame:IsMouseMotionEnabled()
     if issecretvalue and issecretvalue(motion) then
         motion = false
     end
@@ -140,62 +140,62 @@ local ArmChatPMRegen
 -- pcall -- the refusal itself is the detection -- and the function returns
 -- false so the caller arms the regen re-apply. Out of combat every write
 -- is direct, exactly as before.
-local function SetMouseChannels(f, click, motion)
+local function SetMouseChannels(frame, click, motion)
     click = click and true or false
     motion = motion and true or false
-    local curClick, curMotion = GetMouseChannels(f)
+    local curClick, curMotion = GetMouseChannels(frame)
     local success = true
     if curClick ~= click then
-        local func = f.SetMouseClickEnabled or f.EnableMouse
+        local func = frame.SetMouseClickEnabled or frame.EnableMouse
         if InCombatLockdown() then
-            if not pcall(func, f, click) then
+            if not pcall(func, frame, click) then
                 success = false
             end
         else
-            func(f, click)
+            func(frame, click)
         end
     end
     if curMotion ~= motion then
-        local func = f.SetMouseMotionEnabled or f.EnableMouseMotion
+        local func = frame.SetMouseMotionEnabled or frame.EnableMouseMotion
         if func then
             if InCombatLockdown() then
-                if not pcall(func, f, motion) then
+                if not pcall(func, frame, motion) then
                     success = false
                 end
             else
-                func(f, motion)
+                func(frame, motion)
             end
         end
     end
     return success
 end
 
-local function PMOff(d, key, f)
-    if not f then
+local function PMOff(skinData, key, frame)
+    if not frame then
         return
     end
     -- Capture on first sight only, but ASSERT the disable every sweep:
     -- Blizzard's message pipeline re-enables click on chat widgets while we
     -- are engaged, and a skipped re-disable leaves an invisible click zombie.
-    if d[key] == nil then
-        local click, motion = GetMouseChannels(f)
-        d[key] = click
-        d[key .. "M"] = motion
+    if skinData[key] == nil then
+        local click, motion = GetMouseChannels(frame)
+        skinData[key] = click
+        skinData[key .. "M"] = motion
     end
-    if not SetMouseChannels(f, false, false) then
+    if not SetMouseChannels(frame, false, false) then
         ArmChatPMRegen()
     end
 end
-local function PMOn(d, key, f)
-    if f and d[key] ~= nil then
-        if not SetMouseChannels(f, d[key], d[key .. "M"]) then
+local function PMOn(skinData, key, frame)
+    if frame and skinData[key] ~= nil then
+        if not SetMouseChannels(frame, skinData[key], skinData[key .. "M"]) then
             -- Keep the capture: the regen re-apply restores from it.
             ArmChatPMRegen()
             return
         end
     end
-    d[key] = nil
-    d[key .. "M"] = nil
+    skinData[key] = nil
+    skinData[key .. "M"] = nil
 end
 
 -- The SMF's per-line hit-test frames are children of FontStringContainer
@@ -203,18 +203,18 @@ end
 -- the container alone does not release them. ONE bounded generation -- direct
 -- children only, NEVER recursive -- with per-child state captured on first
 -- sight in a weak side store and restored exactly from it.
-local function PMOffChildren(d, key, hostFrame)
+local function PMOffChildren(skinData, key, hostFrame)
     if not hostFrame then
         return
     end
-    local storage = d[key]
+    local storage = skinData[key]
     if not storage then
         storage = setmetatable({}, { __mode = "k" })
-        d[key] = storage
+        skinData[key] = storage
     end
     local kids = { hostFrame:GetChildren() }
-    for idx = 1, #kids do
-        local c = kids[idx]
+    for index = 1, #kids do
+        local c = kids[index]
         -- Capture first sight only; assert the disable every sweep -- the SMF
         -- re-enables click on its line frames as messages render, and these
         -- shape the dead zone.
@@ -227,14 +227,14 @@ local function PMOffChildren(d, key, hostFrame)
         end
     end
 end
-local function PMOnChildren(d, key, hostFrame)
-    local storage = d[key]
+local function PMOnChildren(skinData, key, hostFrame)
+    local storage = skinData[key]
     if not storage or not hostFrame then
         return
     end
     local kids = { hostFrame:GetChildren() }
-    for idx = 1, #kids do
-        local c = kids[idx]
+    for index = 1, #kids do
+        local c = kids[index]
         local st = storage[c]
         if st then
             if SetMouseChannels(c, st[1], st[2]) then
@@ -254,26 +254,26 @@ end
 -- hit-zones in each FontStringContainer, and the chat frame itself -- get
 -- the capture-exact PMOff/PMOn treatment.
 local function PassthroughFrames(enabled)
-    for idx = 1, 10 do
-        local castFrame = _G["ChatFrame" .. idx]
-        local d = castFrame and CFD(castFrame)
-        if d and d.bg then
-            local eb = _G["ChatFrame" .. idx .. "EditBox"]
+    for index = 1, 10 do
+        local castFrame = _G["ChatFrame" .. index]
+        local skinData = castFrame and CFD(castFrame)
+        if skinData and skinData.bg then
+            local eb = _G["ChatFrame" .. index .. "EditBox"]
             if enabled then
-                PMOff(d, "pmCf", castFrame)
+                PMOff(skinData, "pmCf", castFrame)
                 -- FontStringContainer is a separate mouse surface (hyperlink
                 -- hit-testing) not covered by the chat frame's own state; its
                 -- line-pool children each carry their own too.
-                PMOff(d, "pmFsc", castFrame.FontStringContainer)
-                PMOffChildren(d, "pmFscKids", castFrame.FontStringContainer)
-                PMOff(d, "pmEb", eb)
-                PMOff(d, "pmGrip", d.resizeGrip)
+                PMOff(skinData, "pmFsc", castFrame.FontStringContainer)
+                PMOffChildren(skinData, "pmFscKids", castFrame.FontStringContainer)
+                PMOff(skinData, "pmEb", eb)
+                PMOff(skinData, "pmGrip", skinData.resizeGrip)
             else
-                PMOn(d, "pmCf", castFrame)
-                PMOn(d, "pmFsc", castFrame.FontStringContainer)
-                PMOnChildren(d, "pmFscKids", castFrame.FontStringContainer)
-                PMOn(d, "pmEb", eb)
-                PMOn(d, "pmGrip", d.resizeGrip)
+                PMOn(skinData, "pmCf", castFrame)
+                PMOn(skinData, "pmFsc", castFrame.FontStringContainer)
+                PMOnChildren(skinData, "pmFscKids", castFrame.FontStringContainer)
+                PMOn(skinData, "pmEb", eb)
+                PMOn(skinData, "pmGrip", skinData.resizeGrip)
             end
         end
     end
@@ -334,18 +334,18 @@ local function SetChatStackShown(isShown)
     -- Gate for SyncChatFrameState: the panels' shown-follow must not undo
     -- this hide (the Blizzard frames stay shown, so the follow would).
     mod._chatStackHidden = not isShown
-    for idx = 1, 20 do
-        local castFrame = _G["ChatFrame" .. idx]
-        local d = castFrame and CFD(castFrame)
-        if d and d.bg then
+    for index = 1, 20 do
+        local castFrame = _G["ChatFrame" .. index]
+        local skinData = castFrame and CFD(castFrame)
+        if skinData and skinData.bg then
             if not isShown then
-                if d.bg:IsShown() then
-                    d.pmWasShown = true
-                    d.bg:Hide()
+                if skinData.bg:IsShown() then
+                    skinData.pmWasShown = true
+                    skinData.bg:Hide()
                 end
-            elseif d.pmWasShown then
-                d.pmWasShown = nil
-                d.bg:Show()
+            elseif skinData.pmWasShown then
+                skinData.pmWasShown = nil
+                skinData.bg:Show()
             end
         end
     end
@@ -386,20 +386,20 @@ local function SetChatStackShown(isShown)
     _chromeList[4] = mod._chatTabStrip
     _chromeList[5] = mod._chatHoverOverlay
     _chromeList[6] = cf1 and CFD(cf1).sidebar or nil
-    for idx = 1, 6 do
-        local f = _chromeList[idx]
-        if f then
+    for index = 1, 6 do
+        local frame = _chromeList[index]
+        if frame then
             if not isShown then
-                if f:IsShown() then
-                    _chromeWasShown[f] = true
-                    f:Hide()
+                if frame:IsShown() then
+                    _chromeWasShown[frame] = true
+                    frame:Hide()
                 end
-            elseif _chromeWasShown[f] then
-                _chromeWasShown[f] = nil
-                f:Show()
+            elseif _chromeWasShown[frame] then
+                _chromeWasShown[frame] = nil
+                frame:Show()
             end
         end
-        _chromeList[idx] = nil
+        _chromeList[index] = nil
     end
 end
 
@@ -522,8 +522,8 @@ local function _ApplyAlpha(alpha)
             gdm:SetAlpha(alpha)
         end
     end
-    for idx = 1, #_alphaFrames do
-        local af = _alphaFrames[idx]
+    for index = 1, #_alphaFrames do
+        local af = _alphaFrames[index]
         local castFrame = af.cf
         if castFrame:IsShown() or af.bg:IsShown() then
             castFrame:SetAlpha(alpha)
@@ -576,8 +576,8 @@ end
 -- bottom-right corner. The button is ours, so reparenting is safe.
 function CHAT.ApplyScrollButtonPosition()
     local cf1 = _G.ChatFrame1
-    local d = cf1 and CFD(cf1)
-    local button = d and d.scrollBtn
+    local skinData = cf1 and CFD(cf1)
+    local button = skinData and skinData.scrollBtn
     if not button then
         return
     end
@@ -585,13 +585,13 @@ function CHAT.ApplyScrollButtonPosition()
     -- Seat memo: this runs on every icon-layout pass (including sidebar hover
     -- edges); an unchanged seat needs no re-anchor and no alpha invalidation.
     local seat = conf.scrollButtonOnChat and "chat" or "sidebar"
-    if d.scrollSeat == seat then
+    if skinData.scrollSeat == seat then
         return
     end
-    d.scrollSeat = seat
-    local scrollBar = d.sidebar
+    skinData.scrollSeat = seat
+    local scrollBar = skinData.sidebar
     button:ClearAllPoints()
-    if conf.scrollButtonOnChat and d.bg then
+    if conf.scrollButtonOnChat and skinData.bg then
         button:SetParent(UIParent)
         -- Stock styles: the panel's strata, above Blizzard's revealed chat
         -- background (see SyncChatFrameState).
@@ -614,7 +614,7 @@ function CHAT.ApplyScrollButtonPosition()
     -- Stock kits: each seat wears the art the stock UI shows there.
     if CHAT.SB_KIT then
         CHAT.SB_DressScroll(button, seat)
-        CHAT.SB_ApplyScale(d, CHAT.DB().sidebarIconScale or 1, true)
+        CHAT.SB_ApplyScale(skinData, CHAT.DB().sidebarIconScale or 1, true)
     end
     -- Parent changed: the alpha cache decides whether to fade it directly.
     _alphaFrames = nil

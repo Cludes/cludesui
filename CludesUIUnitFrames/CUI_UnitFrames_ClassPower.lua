@@ -257,21 +257,21 @@ local function CreateCustomClassPower(playerFrame, style)
     cpBdrOverlay:Hide() -- shown only when position is "above"
 
     local useClassColor = saved.profile.player.classPowerClassColor ~= false
-    local cr, cg, cb
+    local cr, cg, callback
     if not useClassColor then
         local cc = saved.profile.player.classPowerCustomColor or { r = 1, g = 0.82, b = 0 }
-        cr, cg, cb = cc.r, cc.g, cc.b
+        cr, cg, callback = cc.r, cc.g, cc.b
     else
         -- Pull from CUI global color system: resource color > class color
         local rc = CludesUI.GetResourceColor(playerClass)
         if rc then
-            cr, cg, cb = rc.r, rc.g, rc.b
+            cr, cg, callback = rc.r, rc.g, rc.b
         else
             local cc = CludesUI.GetClassColor(playerClass)
             if cc then
-                cr, cg, cb = cc.r, cc.g, cc.b
+                cr, cg, callback = cc.r, cc.g, cc.b
             else
-                cr, cg, cb = 1, 1, 1
+                cr, cg, callback = 1, 1, 1
             end
         end
     end
@@ -308,9 +308,9 @@ local function CreateCustomClassPower(playerFrame, style)
         local pipFill = pip._fill
         if isCircle then
             pipFill:SetTexture("Interface\\COMMON\\Indicator-Gray")
-            pipFill:SetVertexColor(cr, cg, cb, 1)
+            pipFill:SetVertexColor(cr, cg, callback, 1)
         else
-            pipFill:SetColorTexture(cr, cg, cb, 1)
+            pipFill:SetColorTexture(cr, cg, callback, 1)
             pipFill:SetVertexColor(1, 1, 1, 1)
         end
         pipFill:Show()
@@ -542,13 +542,13 @@ local function CreateCustomClassPower(playerFrame, style)
                         local scrollBar = CreateFrame("StatusBar", nil, pips[i])
                         scrollBar:SetAllPoints(pips[i]._fill or pips[i])
                         scrollBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-                        scrollBar:SetStatusBarColor(cr, cg, cb, 1)
+                        scrollBar:SetStatusBarColor(cr, cg, callback, 1)
                         scrollBar:SetFrameLevel(pips[i]:GetFrameLevel() + 1)
                         pips[i]._secretBar = scrollBar
                     end
                     pips[i]._secretBar:SetMinMaxValues(i - 1, i)
                     pips[i]._secretBar:SetValue(current)
-                    pips[i]._secretBar:SetStatusBarColor(cr, cg, cb, 1)
+                    pips[i]._secretBar:SetStatusBarColor(cr, cg, callback, 1)
                     pips[i]._secretBar:Show()
                     -- Hide normal fill; StatusBar replaces it
                     if pips[i]._fill then
@@ -673,7 +673,7 @@ local function CreateCustomClassPower(playerFrame, style)
     -- never re-derives them.
     boxHolder._powerType = powerType
     boxHolder._style = style
-    boxHolder._cpR, boxHolder._cpG, boxHolder._cpB = cr, cg, cb
+    boxHolder._cpR, boxHolder._cpG, boxHolder._cpB = cr, cg, callback
     boxHolder._emptyCol = emptyCol
     boxHolder._sepCol = bgCol
 
@@ -771,12 +771,12 @@ local function ApplyEnemyColors()
         return
     end
     local ec = (saved and saved.profile and saved.profile.enemyColors) or {}
-    local function setIdx(idx, custom)
-        local f = FACTION_BAR_COLORS[idx]
-        local r = (custom and custom.r) or (f and f.r) or 1
-        local g = (custom and custom.g) or (f and f.g) or 1
-        local b = (custom and custom.b) or (f and f.b) or 1
-        mod.Colors.reaction[idx] = CreateColor(r, g, b)
+    local function setIdx(index, custom)
+        local frame = FACTION_BAR_COLORS[index]
+        local region = (custom and custom.r) or (frame and frame.r) or 1
+        local g = (custom and custom.g) or (frame and frame.g) or 1
+        local b = (custom and custom.b) or (frame and frame.b) or 1
+        mod.Colors.reaction[index] = CreateColor(region, g, b)
     end
     for i = 1, 3 do
         setIdx(i, ec.hostile)

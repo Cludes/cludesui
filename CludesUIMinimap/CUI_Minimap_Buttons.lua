@@ -267,22 +267,22 @@ end
 -- Persistently hide a minimap button via Show hook
 local addonButtonHooks = {}
 
-local function HideMinimapChild(btn)
+local function HideMinimapChild(button)
     SKIN._suppressVisTrack = true
     -- Hide() on a protected frame is blocked inside lockdown for ANY insecure caller,
     -- taint or not, and the block is silent (no Lua error) -- so the SetAlpha below
     -- still ran and the button just went invisible-but-shown. Skip only the blocked
     -- call and queue the re-apply, which performs the real Hide() on PLAYER_REGEN_ENABLED.
-    if InCombatLockdown() and btn:IsProtected() then
+    if InCombatLockdown() and button:IsProtected() then
         QueueApplyAll()
     else
-        btn:Hide()
+        button:Hide()
     end
-    btn:SetAlpha(0)
+    button:SetAlpha(0)
     SKIN._suppressVisTrack = false
-    if not addonButtonHooks[btn] then
+    if not addonButtonHooks[button] then
         -- Track addon-intended visibility via Show/Hide hooks
-        hooksecurefunc(btn, "Show", function(self)
+        hooksecurefunc(button, "Show", function(self)
             if not SKIN._suppressVisTrack then
                 -- Don't track addon Show() while the flyout is open: the button is
                 -- visible in our grid and a later Hide() would mark it unwanted.
@@ -309,7 +309,7 @@ local function HideMinimapChild(btn)
                 self:SetAlpha(0)
             end
         end)
-        hooksecurefunc(btn, "Hide", function(self)
+        hooksecurefunc(button, "Hide", function(self)
             if not SKIN._suppressVisTrack then
                 -- Freeze tracking while open: addon refresh Hide() calls would otherwise
                 -- blank buttons from the grid.
@@ -321,7 +321,7 @@ local function HideMinimapChild(btn)
                 InvalidateFlyout()
             end
         end)
-        addonButtonHooks[btn] = true
+        addonButtonHooks[button] = true
     end
 end
 
@@ -354,19 +354,19 @@ end
 -- its tooltip follows Grow Tooltip/Popup -- by then the addon owned/anchored/shown it, so re-pointing wins. Namespace-scoped.
 do
     local hooked = {}
-    local function repoint(tt, btn)
-        if tt and tt:IsShown() and tt:GetOwner() == btn then
+    local function repoint(tooltip, button)
+        if tooltip and tooltip:IsShown() and tooltip:GetOwner() == button then
             local gpt = SKIN._Grow.edge[SKIN._Grow.Dir()] or SKIN._Grow.edge.left
-            tt:ClearAllPoints()
-            tt:SetPoint(gpt[1], btn, gpt[2], gpt[3], gpt[4])
+            tooltip:ClearAllPoints()
+            tooltip:SetPoint(gpt[1], button, gpt[2], gpt[3], gpt[4])
         end
     end
-    function SKIN._HookAddonBtnTT(btn)
-        if hooked[btn] then
+    function SKIN._HookAddonBtnTT(button)
+        if hooked[button] then
             return
         end
-        hooked[btn] = true
-        btn:HookScript("OnEnter", function(self)
+        hooked[button] = true
+        button:HookScript("OnEnter", function(self)
             repoint(_G.GameTooltip, self)
             repoint(_G.LibDBIconTooltip, self)
         end)
@@ -419,10 +419,10 @@ local function GatherMinimapButtons()
     -- they ungroup all but one. A second button ends the solo state on the
     -- next scan.
     local solo, total = nil, 0
-    for _, btn in ipairs(cachedAddonButtons) do
-        if _addonVisible[btn] ~= false then
+    for _, button in ipairs(cachedAddonButtons) do
+        if _addonVisible[button] ~= false then
             total = total + 1
-            solo = btn
+            solo = button
         end
     end
     SKIN._soloAddonButton = (total == 1) and solo or nil
@@ -438,12 +438,12 @@ _G._CUBS_AddonVisible = _addonVisible
 local function HideAllMinimapButtons()
     GatherMinimapButtons()
     local flyoutOpen = flyoutPanel and flyoutPanel:IsShown()
-    for _, btn in ipairs(cachedAddonButtons) do
-        if not IsUngrouped(btn) then
-            if flyoutOpen and btn:GetParent() == flyoutPanel then
+    for _, button in ipairs(cachedAddonButtons) do
+        if not IsUngrouped(button) then
+            if flyoutOpen and button:GetParent() == flyoutPanel then
                 -- Button is visible in the flyout grid; leave it alone
             else
-                HideMinimapChild(btn)
+                HideMinimapChild(button)
             end
         end
     end

@@ -81,8 +81,8 @@ mod.RefreshNames = function()
     for _, wid in ipairs(_windows) do
         local pool = wid.rowPool
         if pool then
-            for idx = 1, #pool do
-                pool[idx]._cachedSrcName = nil
+            for index = 1, #pool do
+                pool[index]._cachedSrcName = nil
             end
         end
         wid._stickyNameCache = nil
@@ -94,9 +94,9 @@ mod.ApplyBorder = function()
     mod.DMInvalidateAppearance()
     for _, wid in ipairs(_windows) do
         if wid.rowPool then
-            for _, bar in ipairs(wid.rowPool) do
-                if bar.ApplyBorder then
-                    bar.ApplyBorder()
+            for _, barFrame in ipairs(wid.rowPool) do
+                if barFrame.ApplyBorder then
+                    barFrame.ApplyBorder()
                 end
             end
         end
@@ -110,9 +110,9 @@ end
 mod.ApplyBarBg = function()
     for _, wid in ipairs(_windows) do
         if wid.rowPool then
-            for _, bar in ipairs(wid.rowPool) do
-                if bar.ApplyBg then
-                    bar.ApplyBg()
+            for _, barFrame in ipairs(wid.rowPool) do
+                if barFrame.ApplyBg then
+                    barFrame.ApplyBg()
                 end
             end
         end
@@ -125,9 +125,9 @@ end
 mod.ApplyBarTextOffsets = function()
     for _, wid in ipairs(_windows) do
         if wid.rowPool then
-            for _, bar in ipairs(wid.rowPool) do
-                if bar.ApplyTextOffsets then
-                    bar.ApplyTextOffsets()
+            for _, barFrame in ipairs(wid.rowPool) do
+                if barFrame.ApplyTextOffsets then
+                    barFrame.ApplyTextOffsets()
                 end
             end
         end
@@ -139,13 +139,13 @@ end
 
 mod.ApplyBackground = function()
     local conf = DB()
-    local r, g, b, a = conf.bgR or 0, conf.bgG or 0, conf.bgB or 0, conf.bgAlpha or 0.75
+    local region, g, b, a = conf.bgR or 0, conf.bgG or 0, conf.bgB or 0, conf.bgAlpha or 0.75
     for _, wid in ipairs(_windows) do
         if wid.frame and wid.frame._bg then
-            mod.DMPaintWindowBg(wid.frame._bg, r, g, b, a, true, conf.bgTexture)
+            mod.DMPaintWindowBg(wid.frame._bg, region, g, b, a, true, conf.bgTexture)
         end
         if wid.sourceFrame and wid.sourceFrame._bg then
-            mod.DMPaintWindowBg(wid.sourceFrame._bg, r, g, b, a, nil, conf.bgTexture)
+            mod.DMPaintWindowBg(wid.sourceFrame._bg, region, g, b, a, nil, conf.bgTexture)
         end
     end
     -- Under Classic WoW UI the header tint is shaded from the window colour.
@@ -164,7 +164,7 @@ mod.ApplyWindowBorder = function()
     -- Exact size (nil = the legacy step path); a stock style forces size 0, no px.
     local px = size > 0 and CUI.BorderPx(conf.windowBorderSizePx, size, texture) or nil
     local color = conf.windowBorderColor or {}
-    local r, g, b, a = color.r or 0, color.g or 0, color.b or 0, color.a or 1
+    local region, g, b, a = color.r or 0, color.g or 0, color.b or 0, color.a or 1
     local includeHeader = conf.windowBorderIncludeHeader ~= false
     local offsetX = texture ~= "solid" and (tonumber(conf.windowBorderOffsetX) or 0) or 0
     local offsetY = texture ~= "solid" and (tonumber(conf.windowBorderOffsetY) or 0) or 0
@@ -181,7 +181,7 @@ mod.ApplyWindowBorder = function()
             end
             target:SetPoint("BOTTOMRIGHT", wid.frame, "BOTTOMRIGHT", offsetX, -offsetY)
             -- Offsets are represented by the target geometry itself, which also makes them work for the solid four-strip border implementation
-            CUI.ApplyBorderStyle(target, size, r, g, b, a, texture, nil, nil, nil, nil, nil, nil, nil, px)
+            CUI.ApplyBorderStyle(target, size, region, g, b, a, texture, nil, nil, nil, nil, nil, nil, nil, px)
             if conf.hdrBottomSeparator or wid._headerSeparator then
                 mod.DMApplyHeaderSeparator(wid)
             end
@@ -194,8 +194,8 @@ mod.ApplyWindowBorder = function()
     -- Border reach counts in size matching (each window's getMatchPad reads
     -- these settings): re-push a window's matches when it moved (deferred).
     if CUI.MatchPadChanged then
-        for idx = 1, #_windows do
-            CUI.MatchPadChanged("EDM_Win" .. idx)
+        for index = 1, #_windows do
+            CUI.MatchPadChanged("EDM_Win" .. index)
         end
     end
 end
@@ -275,20 +275,20 @@ end
 
 mod.ApplyIconColor = function()
     local conf = DB()
-    local r, g, b
+    local region, g, b
     if conf.iconColorUseAccent then
-        r, g, b = GetAccentRGB()
+        region, g, b = GetAccentRGB()
     else
         local c = conf.iconColor
-        r = c and c.r or 1
+        region = c and c.r or 1
         g = c and c.g or 1
         b = c and c.b or 1
     end
     for _, wid in ipairs(_windows) do
-        for _, icon in ipairs(wid.hdrIcons) do
+        for _, iconTex in ipairs(wid.hdrIcons) do
             -- Stock-style art carries its own colours.
-            if not icon._hdrArt then
-                icon:SetVertexColor(r, g, b, ICON_ALPHA)
+            if not iconTex._hdrArt then
+                iconTex:SetVertexColor(region, g, b, ICON_ALPHA)
             end
         end
     end
@@ -297,9 +297,9 @@ end
 mod.ApplyIconBorder = function()
     for _, wid in ipairs(_windows) do
         if wid.rowPool then
-            for _, bar in ipairs(wid.rowPool) do
-                if bar.ApplyIconBorder then
-                    bar.ApplyIconBorder()
+            for _, barFrame in ipairs(wid.rowPool) do
+                if barFrame.ApplyIconBorder then
+                    barFrame.ApplyIconBorder()
                 end
             end
         end

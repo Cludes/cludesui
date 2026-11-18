@@ -813,11 +813,11 @@ function mod.UF_WinglessArt(texture, atlas, mirrored)
     -- The atlas's file with its coordinates, not SetAtlas: after SetAtlas,
     -- SetTexCoord crops within the atlas region instead of the file.
     texture:SetTexture(details.file or details.filename)
-    local l, r = details.leftTexCoord, details.rightTexCoord
+    local l, region = details.leftTexCoord, details.rightTexCoord
     if mirrored then
-        l, r = r, l
+        l, region = region, l
     end
-    texture:SetTexCoord(l, r, details.topTexCoord, details.bottomTexCoord)
+    texture:SetTexCoord(l, region, details.topTexCoord, details.bottomTexCoord)
     texture._wAtlas, texture._wFlip = atlas, mirrored
     return true
 end
@@ -825,14 +825,14 @@ end
 -- Lays the dragon out on host (size from its height, scale percent around its
 -- centre, x/y shift, class tint) and repaints its art; the caller shows it.
 -- False, hidden, when the atlas is missing.
-function mod.UF_PlaceWinglessDragon(texture, host, atlas, mirrored, classColor, scale, posX, posY)
+function mod.UF_PlaceWinglessDragon(texture, owner, atlas, mirrored, classColor, scale, posX, posY)
     texture._wAtlas = nil
     if not mod.UF_WinglessArt(texture, atlas, mirrored) then
         texture:Hide()
         return false
     end
     local details = mod.UF_WinglessInfo(atlas)
-    local hgt = host:GetHeight()
+    local hgt = owner:GetHeight()
     if not Pix.IsNum(hgt) or hgt < 1 then
         hgt = 46
     end
@@ -845,7 +845,7 @@ function mod.UF_PlaceWinglessDragon(texture, host, atlas, mirrored, classColor, 
     local s = (Pix.IsNum(scale) and scale or 100) / 100
     texture:SetSize(wid * s, th * s)
     texture:ClearAllPoints()
-    texture:SetPoint("CENTER", host, "CENTER", cx * s + (posX or 0), cy * s + (posY or 0))
+    texture:SetPoint("CENTER", owner, "CENTER", cx * s + (posX or 0), cy * s + (posY or 0))
     local cc
     if classColor then
         local _, tok = UnitClass("player")
@@ -862,9 +862,9 @@ end
 
 -- Raises a dragon holder over its portrait backdrop: strata nil, false or
 -- "inherit" follows the backdrop; level is added to the backdrop's, at least 1.
-function mod.UF_LiftDragonHolder(holderFrame, host, strata, level)
-    holderFrame:SetFrameStrata((not strata or strata == "inherit") and host:GetFrameStrata() or strata)
-    holderFrame:SetFrameLevel(host:GetFrameLevel() + math_max(1, level or 1))
+function mod.UF_LiftDragonHolder(holderFrame, owner, strata, level)
+    holderFrame:SetFrameStrata((not strata or strata == "inherit") and owner:GetFrameStrata() or strata)
+    holderFrame:SetFrameLevel(owner:GetFrameLevel() + math_max(1, level or 1))
 end
 
 -- Portrait Dragon: the boss dragon curled round the player, target and focus
@@ -941,15 +941,15 @@ end
 -- on a live backdrop lifts while it shows (an Inside portrait is a 3D
 -- model, which ignores the clip anyway). Returns the texture for the
 -- caller to paint and show, or nil (hidden, or no art).
-function mod.UF_PortraitDragon(host, e, mirrored)
-    local holderFrame = host._winglessHolder
+function mod.UF_PortraitDragon(owner, e, mirrored)
+    local holderFrame = owner._winglessHolder
     if not e then
         if holderFrame then
             holderFrame:Hide()
             if holderFrame._unclipped then
                 holderFrame._unclipped = nil
-                if host._isInside then
-                    host:SetClipsChildren(true)
+                if owner._isInside then
+                    owner:SetClipsChildren(true)
                 end
             end
         end
@@ -958,19 +958,19 @@ function mod.UF_PortraitDragon(host, e, mirrored)
     if not holderFrame then
         -- Through the options frame pool: a real frame for a live portrait,
         -- handed back by the pool on the options preview's next build.
-        holderFrame = POOL.CreateFrame("Frame", nil, host)
-        holderFrame:SetAllPoints(host)
-        host._winglessHolder = holderFrame
-        host._winglessDragon = holderFrame:CreateTexture(nil, "OVERLAY")
+        holderFrame = POOL.CreateFrame("Frame", nil, owner)
+        holderFrame:SetAllPoints(owner)
+        owner._winglessHolder = holderFrame
+        owner._winglessDragon = holderFrame:CreateTexture(nil, "OVERLAY")
     end
     -- The options preview sits in a DIALOG window, so a lower strata would hide it.
-    mod.UF_LiftDragonHolder(holderFrame, host, not host._isPreview and e.strata, e.level)
+    mod.UF_LiftDragonHolder(holderFrame, owner, not owner._isPreview and e.strata, e.level)
     holderFrame:Show()
-    local texture = host._winglessDragon
+    local texture = owner._winglessDragon
     if
         not mod.UF_PlaceWinglessDragon(
             texture,
-            host,
+            owner,
             mod.UF_WINGLESS_GOLD,
             mirrored,
             e.classColor,
@@ -984,8 +984,8 @@ function mod.UF_PortraitDragon(host, e, mirrored)
     -- Lift the clip on every live show: Inside clips on purpose, and a
     -- backdrop that left Inside this session keeps that clip (the reload
     -- pass resets it only for attached portraits).
-    if not host._isPreview then
-        host:SetClipsChildren(false)
+    if not owner._isPreview then
+        owner:SetClipsChildren(false)
         holderFrame._unclipped = true
     end
     return texture
@@ -1089,12 +1089,12 @@ function mod.UF_ArmPortraitDragonEvents()
     local tb = tf and tf.Portrait and tf.Portrait.backdrop
     local fb = ff and ff.Portrait and ff.Portrait.backdrop
     local t = tb and tb._winglessHolder and tb._winglessHolder._on
-    local f = fb and fb._winglessHolder and fb._winglessHolder._on
+    local frame = fb and fb._winglessHolder and fb._winglessHolder._on
     local ev = mod._ufDragonEvents
     if ev then
         ev:UnregisterAllEvents()
     end
-    if not (t or f) then
+    if not (t or frame) then
         return
     end
     if not ev then
@@ -1106,10 +1106,10 @@ function mod.UF_ArmPortraitDragonEvents()
     if t then
         ev:RegisterEvent("PLAYER_TARGET_CHANGED")
     end
-    if f then
+    if frame then
         ev:RegisterEvent("PLAYER_FOCUS_CHANGED")
     end
-    if t and f then
+    if t and frame then
         ev:RegisterUnitEvent("UNIT_CLASSIFICATION_CHANGED", "target", "focus")
     else
         ev:RegisterUnitEvent("UNIT_CLASSIFICATION_CHANGED", t and "target" or "focus")
@@ -1157,14 +1157,14 @@ end
 -- Border Style, ring size, host width and height, pixel grid) and its tint on
 -- the colour (border r, g, b, alpha), so the per-target class-colour re-run
 -- only compares. The Portrait Dragon is its own pass (ns.UF_PortraitDragon).
-function mod.UF_PortraitExtras(host, s, shape)
+function mod.UF_PortraitExtras(owner, s, shape)
     local round = s and mod.UF_ROUND_SHAPES[shape]
     local ringKey = (round and s.detachedPortraitOuterRing) or "none"
-    local ring = host._outerRing
+    local ring = owner._outerRing
     if ringKey ~= "none" then
         local texKey = s.borderTexture or "solid"
         local scale = s.detachedPortraitOuterRingScale or 118
-        local wid, hgt = host:GetWidth(), host:GetHeight()
+        local wid, hgt = owner:GetWidth(), owner:GetHeight()
         if wid < 1 then
             wid = 46
         end
@@ -1173,8 +1173,8 @@ function mod.UF_PortraitExtras(host, s, shape)
         end
         local mult = Pix.mult
         if not ring then
-            ring = host:CreateTexture(nil, "OVERLAY", nil, 1)
-            host._outerRing = ring
+            ring = owner:CreateTexture(nil, "OVERLAY", nil, 1)
+            owner._outerRing = ring
         end
         if
             ring._key ~= ringKey
@@ -1193,20 +1193,20 @@ function mod.UF_PortraitExtras(host, s, shape)
                 local ext = (scale - 100) / 200
                 local ox, oy = wid * ext - 4, hgt * ext - 4
                 ring:ClearAllPoints()
-                Pix.Point(ring, "TOPLEFT", host, "TOPLEFT", -ox, oy)
-                Pix.Point(ring, "BOTTOMRIGHT", host, "BOTTOMRIGHT", ox, -oy)
+                Pix.Point(ring, "TOPLEFT", owner, "TOPLEFT", -ox, oy)
+                Pix.Point(ring, "BOTTOMRIGHT", owner, "BOTTOMRIGHT", ox, -oy)
             end
         end
         if ring._path then
             local bc = s.borderColor
-            local r, g, b = 0, 0, 0
+            local region, g, b = 0, 0, 0
             if bc then
-                r, g, b = bc.r, bc.g, bc.b
+                region, g, b = bc.r, bc.g, bc.b
             end
             local a = s.borderAlpha or 1
-            if ring._r ~= r or ring._g ~= g or ring._b ~= b or ring._a ~= a then
-                ring._r, ring._g, ring._b, ring._a = r, g, b, a
-                ring:SetVertexColor(r, g, b, a)
+            if ring._r ~= region or ring._g ~= g or ring._b ~= b or ring._a ~= a then
+                ring._r, ring._g, ring._b, ring._a = region, g, b, a
+                ring:SetVertexColor(region, g, b, a)
             end
             ring:Show()
         else
@@ -1216,16 +1216,16 @@ function mod.UF_PortraitExtras(host, s, shape)
         ring:Hide()
     end
 
-    local shadow = host._innerShadow
+    local shadow = owner._innerShadow
     if round and s.detachedPortraitInnerShadow then
         if not shadow then
             -- Over the masked portrait art (ARTWORK), under the shape ring.
-            shadow = host:CreateTexture(nil, "ARTWORK", nil, 7)
+            shadow = owner:CreateTexture(nil, "ARTWORK", nil, 7)
             shadow:SetTexture(mod.UF_PORTRAIT_INNER_SHADOW)
-            shadow:SetAllPoints(host)
-            host._innerShadow = shadow
+            shadow:SetAllPoints(owner)
+            owner._innerShadow = shadow
         end
-        local mask = host._shapeMask
+        local mask = owner._shapeMask
         if mask and shadow._mask ~= mask then
             shadow:AddMaskTexture(mask)
             shadow._mask = mask
@@ -1238,11 +1238,11 @@ end
 
 -- Scale class art around its center, retaining the existing inset and mask fill
 -- at 100%. Shared with the preview; sprite coordinates and borders stay intact.
-function mod.UF_SetClassPortraitPoints(texture, host, zoom, insetX, insetY)
+function mod.UF_SetClassPortraitPoints(texture, owner, zoom, insetX, insetY)
     local clip = false
     if zoom and zoom ~= 100 and not mod.UF_Blizz() then
         local scale = zoom / 100
-        local wid, hgt = host:GetWidth(), host:GetHeight()
+        local wid, hgt = owner:GetWidth(), owner:GetHeight()
         if wid < 1 then
             wid = 46
         end
@@ -1259,8 +1259,8 @@ function mod.UF_SetClassPortraitPoints(texture, host, zoom, insetX, insetY)
     local mask = texture._classZoomMask
     if clip then
         if not mask then
-            mask = host:CreateMaskTexture()
-            mask:SetAllPoints(host)
+            mask = owner:CreateMaskTexture()
+            mask:SetAllPoints(owner)
             -- NEAREST: a bilinear 8x8 mask fades the outer 1/16 into a dark band.
             mask:SetTexture(
                 "Interface\\Buttons\\WHITE8X8",
@@ -1281,8 +1281,8 @@ function mod.UF_SetClassPortraitPoints(texture, host, zoom, insetX, insetY)
         texture._classZoomMasked = nil
     end
     texture:ClearAllPoints()
-    Pix.Point(texture, "TOPLEFT", host, "TOPLEFT", insetX, -insetY)
-    Pix.Point(texture, "BOTTOMRIGHT", host, "BOTTOMRIGHT", -insetX, insetY)
+    Pix.Point(texture, "TOPLEFT", owner, "TOPLEFT", insetX, -insetY)
+    Pix.Point(texture, "BOTTOMRIGHT", owner, "BOTTOMRIGHT", -insetX, insetY)
 end
 
 -- A 3D portrait in a detached shape. The model is a child frame of the
@@ -1300,27 +1300,27 @@ end
 -- default): the ring stays on the host and the model fills the host, drawing
 -- over the ring. host = the live backdrop or the options preview frame; model
 -- may be nil.
-local function ShapeModelEdge(len, shape, size)
+local function ShapeModelEdge(length, shape, size)
     local exp = 7 - size
     local unmasked = mod.UF_UNMASKED_RING[shape]
     local inner
     if unmasked then
         local ri = unmasked - exp
-        inner = ri + 9 / 128 * (len - 2 * ri)
+        inner = ri + 9 / 128 * (length - 2 * ri)
     else
-        inner = -exp + (MASK_INSETS[shape] or 17) / 128 * (len + 2 * exp)
+        inner = -exp + (MASK_INSETS[shape] or 17) / 128 * (length + 2 * exp)
     end
     local mi = (size >= 1) and 1 or 0
-    local open = mi + 12 / 128 * (len - 2 * mi)
+    local open = mi + 12 / 128 * (length - 2 * mi)
     if inner - 1 > open then
         return inner - 1
     end
     return open
 end
-local function LayShapeModel(host, model, fit, shape, size)
+local function LayShapeModel(owner, model, fit, shape, size)
     local ix, iy = 0, 0
     if fit then
-        local wid, hgt = host:GetWidth(), host:GetHeight()
+        local wid, hgt = owner:GetWidth(), owner:GetHeight()
         if wid < 1 then
             wid = 46
         end
@@ -1330,57 +1330,57 @@ local function LayShapeModel(host, model, fit, shape, size)
         ix, iy = ShapeModelEdge(wid, shape, size), ShapeModelEdge(hgt, shape, size)
     end
     model:ClearAllPoints()
-    Pix.Point(model, "TOPLEFT", host, "TOPLEFT", ix, -iy)
-    Pix.Point(model, "BOTTOMRIGHT", host, "BOTTOMRIGHT", -ix, iy)
+    Pix.Point(model, "TOPLEFT", owner, "TOPLEFT", ix, -iy)
+    Pix.Point(model, "BOTTOMRIGHT", owner, "BOTTOMRIGHT", -ix, iy)
 end
 -- The holder's OnSizeChanged: a host resized outside the shape pass. A hidden
 -- ring means the shape or the detached mode went away (those passes lay the
 -- model out themselves).
 local function ShapeModelResized(holderFrame)
-    local host = holderFrame._host
-    local ring = host and host._shapeBorderTex
+    local owner = holderFrame._host
+    local ring = owner and owner._shapeBorderTex
     if holderFrame._fit and ring and ring:IsShown() then
-        LayShapeModel(host, holderFrame._model, true, holderFrame._shape, holderFrame._size)
+        LayShapeModel(owner, holderFrame._model, true, holderFrame._shape, holderFrame._size)
     end
 end
-function mod.UF_PortraitShapeModel(host, ring, model, fit, shape, size)
+function mod.UF_PortraitShapeModel(owner, ring, model, fit, shape, size)
     fit = (fit and model and ring) and true or false
-    local holderFrame = host._ringLift
+    local holderFrame = owner._ringLift
     if fit and not holderFrame then
-        holderFrame = POOL.CreateFrame("Frame", nil, host)
-        holderFrame:SetAllPoints(host)
-        host._ringLift = holderFrame
+        holderFrame = POOL.CreateFrame("Frame", nil, owner)
+        holderFrame:SetAllPoints(owner)
+        owner._ringLift = holderFrame
     end
-    local home = host
+    local home = owner
     if holderFrame then
         holderFrame._fit = fit or nil
         if fit then
             holderFrame._host, holderFrame._model, holderFrame._shape, holderFrame._size =
-                host, model, shape, size
+                owner, model, shape, size
             if holderFrame:GetScript("OnSizeChanged") ~= ShapeModelResized then
                 holderFrame:SetScript("OnSizeChanged", ShapeModelResized)
             end
-            local strata = host:GetFrameStrata()
+            local strata = owner:GetFrameStrata()
             if holderFrame:GetFrameStrata() ~= strata then
                 holderFrame:SetFrameStrata(strata)
             end
-            local lvl = host:GetFrameLevel() + 2
+            local lvl = owner:GetFrameLevel() + 2
             if holderFrame:GetFrameLevel() ~= lvl then
                 holderFrame:SetFrameLevel(lvl)
             end
             home = holderFrame
         end
     end
-    host._ringHome = (home ~= host) and home or nil
+    owner._ringHome = (home ~= owner) and home or nil
     if ring then
         local at = ring:GetParent()
-        local castOverlay = host._castIconOverlay
+        local castOverlay = owner._castIconOverlay
         if at ~= home and not (castOverlay and at == castOverlay) then
             ring:SetParent(home)
         end
     end
     if model then
-        LayShapeModel(host, model, fit, shape, size)
+        LayShapeModel(owner, model, fit, shape, size)
     end
 end
 

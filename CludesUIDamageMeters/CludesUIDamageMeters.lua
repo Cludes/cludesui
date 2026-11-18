@@ -27,8 +27,8 @@ local CUI = CludesUI
 -- Constants
 local BAR_POOL_SIZE = 40
 local RANK_STRINGS = {}
-for idx = 1, 40 do
-    RANK_STRINGS[idx] = idx .. "."
+for index = 1, 40 do
+    RANK_STRINGS[index] = index .. "."
 end
 local MIN_W, MIN_H = 150, 50
 local TICK_COMBAT = 1
@@ -223,9 +223,9 @@ local function EnsureDB()
     -- until their next login). Skipped for a profile with unsafeRefreshRate
     -- on; the hard floor still applies regardless, so a corrupt/imported
     -- value can't reach the ticker as 0 or negative.
-    local sv = _G.CludesUIDamageMetersDB
-    if type(sv) == "table" and type(sv.profiles) == "table" then
-        for _, p in pairs(sv.profiles) do
+    local savedVars = _G.CludesUIDamageMetersDB
+    if type(savedVars) == "table" and type(savedVars.profiles) == "table" then
+        for _, p in pairs(savedVars.profiles) do
             local dm = type(p) == "table" and p.dm
             if type(dm) == "table" and type(dm.refreshRate) == "number" then
                 local floor = dm.unsafeRefreshRate and REFRESH_RATE_HARD_FLOOR or REFRESH_RATE_FLOOR
@@ -240,9 +240,9 @@ end
 
 mod.EDM = {}
 mod.EDM.DB = function()
-    local d = _G._CUDM_DB
-    if d and d.profile and d.profile.dm then
-        return d.profile.dm
+    local skinData = _G._CUDM_DB
+    if skinData and skinData.profile and skinData.profile.dm then
+        return skinData.profile.dm
     end
     return {}
 end

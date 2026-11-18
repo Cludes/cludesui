@@ -44,8 +44,8 @@ XF.EMPTY = {}
 -- plain tooltip, extra lines dimmed
 function XF.Tip(ownerFrame, title, ...)
     local textValue = title
-    for idx = 1, select("#", ...) do
-        local line = select(idx, ...)
+    for index = 1, select("#", ...) do
+        local line = select(index, ...)
         if line then
             if line:sub(1, 2) == "|c" then
                 textValue = textValue .. "\n" .. line
@@ -156,11 +156,11 @@ local function ThemeBorder()
 end
 mod.Skin, mod.ThemeBorder = Skin, ThemeBorder
 -- an unpicked square's edge: the theme's, or none on blizzard's rounded button
-function XF.RestBorder(f)
+function XF.RestBorder(frame)
     if XF.SkinOn() then
-        CM.PanelPP.SetBorderColor(f, ThemeBorder())
+        CM.PanelPP.SetBorderColor(frame, ThemeBorder())
     else
-        CM.PanelPP.SetBorderColor(f, 0, 0, 0, 0)
+        CM.PanelPP.SetBorderColor(frame, 0, 0, 0, 0)
     end
 end
 -- a picked square: a white edge, or blizzard's highlight held on
@@ -181,8 +181,8 @@ function XF.PickBorder(sq, edge, on)
     end
 end
 mod.BOTTOM_Y = BOTTOM_Y
-local function SetBorderColor(widget, r, g, b, a)
-    CM.PanelPP.SetBorderColor(widget, r, g, b, a)
+local function SetBorderColor(widget, region, g, b, a)
+    CM.PanelPP.SetBorderColor(widget, region, g, b, a)
 end
 
 -------------------------------------------------------------------------------
@@ -253,32 +253,32 @@ function XF.Dungeons()
 end
 
 local function Contains(entries, val)
-    for idx = 1, #entries do
-        if entries[idx] == val then
-            return idx
+    for index = 1, #entries do
+        if entries[index] == val then
+            return index
         end
     end
     return nil
 end
 
 -- no dungeon restriction: none or all picked
-local function DungeonsDefault(f)
-    local acts = f.activities or {}
+local function DungeonsDefault(frame)
+    local acts = frame.activities or {}
     if #acts == 0 or not dungeons then
         return true
     end
-    for _, d in ipairs(dungeons) do
-        if not Contains(acts, d.groupID) then
+    for _, skinData in ipairs(dungeons) do
+        if not Contains(acts, skinData.groupID) then
             return false
         end
     end
     return true
 end
 
-local function DiffAllOrNone(f)
+local function DiffAllOrNone(frame)
     local n = 0
-    for _, d in ipairs(DIFFS) do
-        if f[d.key] then
+    for _, skinData in ipairs(DIFFS) do
+        if frame[skinData.key] then
             n = n + 1
         end
     end
@@ -312,53 +312,53 @@ local function DimOn()
     return mod.OwnListGet and mod.OwnListGet("visibility") == "dimmed"
 end
 
-local function Picks(f)
+local function Picks(frame)
     local p = {}
     for _, k in ipairs(PICK_KEYS) do
-        p[k] = f[k]
+        p[k] = frame[k]
     end
     return p
 end
 
-local function Widen(f)
-    f.activities = AllDungeonGroups()
-    f.minimumRating = 0
-    f.hasTank, f.hasHealer = false, false
-    f.needsTank, f.needsHealer, f.needsDamage, f.needsMyClass = false, false, false, false
-    for _, d in ipairs(DIFFS) do
-        f[d.key] = true
+local function Widen(frame)
+    frame.activities = AllDungeonGroups()
+    frame.minimumRating = 0
+    frame.hasTank, frame.hasHealer = false, false
+    frame.needsTank, frame.needsHealer, frame.needsDamage, frame.needsMyClass = false, false, false, false
+    for _, skinData in ipairs(DIFFS) do
+        frame[skinData.key] = true
     end
-    for idx = 1, 4 do
-        f["generalPlaystyle" .. idx] = true
+    for index = 1, 4 do
+        frame["generalPlaystyle" .. index] = true
     end
 end
 
 -- keep this character's picks so another character's don't carry over
-function XF.Remember(f)
-    if f then
-        mod.SetCharBlizzFilter(Picks(f))
+function XF.Remember(frame)
+    if frame then
+        mod.SetCharBlizzFilter(Picks(frame))
     end
 end
 
 function XF.GetFilter()
-    local f = C_LFGList.GetAdvancedFilter()
-    local p = f and DimOn() and Cfg().dimPicks
+    local frame = C_LFGList.GetAdvancedFilter()
+    local p = frame and DimOn() and Cfg().dimPicks
     if type(p) == "table" then
         for _, k in ipairs(PICK_KEYS) do
-            f[k] = p[k]
+            frame[k] = p[k]
         end
     end
-    return f
+    return frame
 end
 
 -- filter changes only save, the search waits for search again
-local function Apply(f)
+local function Apply(frame)
     if DimOn() then
-        Cfg().dimPicks = Picks(f)
-        Widen(f)
+        Cfg().dimPicks = Picks(frame)
+        Widen(frame)
     end
-    C_LFGList.SaveAdvancedFilter(f)
-    XF.Remember(f)
+    C_LFGList.SaveAdvancedFilter(frame)
+    XF.Remember(frame)
     pending = true
     Paint()
     PaintRefresh()
@@ -372,14 +372,14 @@ function XF.RestoreCharFilter()
     if XF.filterRestored then
         return
     end
-    local f = C_LFGList.GetAdvancedFilter()
-    if not f then
+    local frame = C_LFGList.GetAdvancedFilter()
+    if not frame then
         return
     end
     local saved = mod.CharBlizzFilter()
     if type(saved) == "table" then
         for _, k in ipairs(PICK_KEYS) do
-            f[k] = saved[k]
+            frame[k] = saved[k]
         end
     end
     XF.filterRestored = true
@@ -387,60 +387,60 @@ function XF.RestoreCharFilter()
     local c = Cfg()
     if DimOn() then
         if type(c.dimPicks) ~= "table" then
-            c.dimPicks = Picks(f)
+            c.dimPicks = Picks(frame)
         end
-        Widen(f)
+        Widen(frame)
     elseif type(c.dimPicks) == "table" then
         for _, k in ipairs(PICK_KEYS) do
-            f[k] = c.dimPicks[k]
+            frame[k] = c.dimPicks[k]
         end
         c.dimPicks = nil
     end
-    C_LFGList.SaveAdvancedFilter(f)
-    XF.Remember(f)
+    C_LFGList.SaveAdvancedFilter(frame)
+    XF.Remember(frame)
 end
 
 local function ToggleDungeon(groupId)
-    local f = XF.GetFilter()
-    if DungeonsDefault(f) then
-        f.activities = { groupId }
+    local frame = XF.GetFilter()
+    if DungeonsDefault(frame) then
+        frame.activities = { groupId }
     else
-        local acts = f.activities
+        local acts = frame.activities
         local at = Contains(acts, groupId)
         if at then
             table.remove(acts, at)
         else
             acts[#acts + 1] = groupId
         end
-        if #acts == 0 or DungeonsDefault(f) then
-            f.activities = AllDungeonGroups()
+        if #acts == 0 or DungeonsDefault(frame) then
+            frame.activities = AllDungeonGroups()
         end
     end
-    Apply(f)
+    Apply(frame)
 end
 
 local function SetDifficulty(key, on)
-    local f = XF.GetFilter()
-    local _, n = DiffAllOrNone(f)
+    local frame = XF.GetFilter()
+    local _, n = DiffAllOrNone(frame)
     if n == 0 then
-        for _, d in ipairs(DIFFS) do
-            f[d.key] = true
+        for _, skinData in ipairs(DIFFS) do
+            frame[skinData.key] = true
         end
     end
     if key then
-        f[key] = on
+        frame[key] = on
     else
-        for _, d in ipairs(DIFFS) do
-            f[d.key] = true
+        for _, skinData in ipairs(DIFFS) do
+            frame[skinData.key] = true
         end
     end
-    local _, after = DiffAllOrNone(f)
+    local _, after = DiffAllOrNone(frame)
     if after == 0 then
-        for _, d in ipairs(DIFFS) do
-            f[d.key] = true
+        for _, skinData in ipairs(DIFFS) do
+            frame[skinData.key] = true
         end
     end
-    Apply(f)
+    Apply(frame)
 end
 
 -------------------------------------------------------------------------------
@@ -462,13 +462,13 @@ local function ChosenRegions()
 end
 
 local function RegionFilterActive()
-    local r = RegionsAvailable() and ChosenRegions()
-    if not r then
+    local region = RegionsAvailable() and ChosenRegions()
+    if not region then
         return false
     end
     local n = 0
-    for _, d in ipairs(Regions()) do
-        if r[d.key] then
+    for _, skinData in ipairs(Regions()) do
+        if region[skinData.key] then
             n = n + 1
         end
     end
@@ -549,8 +549,8 @@ local function Abbrev(name)
         return table.concat(result)
     end
     local result = {}
-    for idx = 1, math.min(3, #initials) do
-        result[idx] = firstChar(initials[idx]):upper()
+    for index = 1, math.min(3, #initials) do
+        result[index] = firstChar(initials[index]):upper()
     end
     return table.concat(result)
 end
@@ -640,8 +640,8 @@ local function ScanBountiful()
         return
     end
     local season = {}
-    for _, d in ipairs(delves or {}) do
-        season[d.name] = true
+    for _, skinData in ipairs(delves or {}) do
+        season[skinData.name] = true
     end
     if not next(season) then
         return
@@ -679,8 +679,8 @@ local function ChosenTiers()
         return nil
     end
     local n = 0
-    for idx = 1, MAX_TIER do
-        if t[idx] then
+    for index = 1, MAX_TIER do
+        if t[index] then
             n = n + 1
         end
     end
@@ -695,16 +695,16 @@ end
 local function DelveKeep(details)
     local acts = details and details.activityIDs
     local act = type(acts) == "table" and not IsSecret(acts) and acts[1]
-    local d = act and not IsSecret(act) and delveByActivity and delveByActivity[act]
-    if not d then
+    local skinData = act and not IsSecret(act) and delveByActivity and delveByActivity[act]
+    if not skinData then
         return true
     end
     local chosen = ChosenDelves()
-    if chosen and not chosen[d.groupID] then
+    if chosen and not chosen[skinData.groupID] then
         return false
     end
     local tiers = ChosenTiers()
-    if tiers and d.tier and not tiers[d.tier] then
+    if tiers and skinData.tier and not tiers[skinData.tier] then
         return false
     end
     return true
@@ -714,11 +714,11 @@ end
 -- raid bosses: a square per boss with its journal portrait.
 -------------------------------------------------------------------------------
 local function RaidsCurrent()
-    local f = SP and SP.filters
+    local frame = SP and SP.filters
     return SP
             and SP.categoryID == RAIDS
-            and type(f) == "number"
-            and bit.band(f, Enum.LFGListFilter.Recommended) ~= 0
+            and type(frame) == "number"
+            and bit.band(frame, Enum.LFGListFilter.Recommended) ~= 0
         or false
 end
 
@@ -728,17 +728,17 @@ local function JournalRaidsByName()
     if not (EJ_GetNumTiers and EJ_SelectTier and EJ_GetInstanceByIndex) then
         return result
     end
-    local prev = EJ_GetCurrentTier and EJ_GetCurrentTier()
+    local previous = EJ_GetCurrentTier and EJ_GetCurrentTier()
     EJ_SelectTier(EJ_GetNumTiers())
-    for idx = 1, 20 do
-        local jid, name = EJ_GetInstanceByIndex(idx, true)
+    for index = 1, 20 do
+        local jid, name = EJ_GetInstanceByIndex(index, true)
         if not jid then
             break
         end
         result[name] = jid
     end
-    if prev then
-        EJ_SelectTier(prev)
+    if previous then
+        EJ_SelectTier(previous)
     end
     return result
 end
@@ -778,13 +778,13 @@ local function Encounters(jid)
             break
         end
     end
-    for idx = 1, 30 do
-        local name, _, encID = EJ_GetEncounterInfoByIndex(idx)
+    for index = 1, 30 do
+        local name, _, encID = EJ_GetEncounterInfoByIndex(index)
         if not name then
             break
         end
-        local icon = EJ_GetCreatureInfo and select(5, EJ_GetCreatureInfo(1, encID))
-        result[#result + 1] = { key = encID, name = name, icon = icon }
+        local iconTex = EJ_GetCreatureInfo and select(5, EJ_GetCreatureInfo(1, encID))
+        result[#result + 1] = { key = encID, name = name, icon = iconTex }
     end
     if prevInst then
         EJ_SelectInstance(prevInst)
@@ -808,17 +808,17 @@ function XF.SeasonRaidSets()
     end
     local tier = {}
     if EJ_GetNumTiers and EJ_SelectTier and EJ_GetInstanceByIndex then
-        local prev = EJ_GetCurrentTier and EJ_GetCurrentTier()
+        local previous = EJ_GetCurrentTier and EJ_GetCurrentTier()
         EJ_SelectTier(EJ_GetNumTiers())
-        for idx = 1, 20 do
-            local jid = EJ_GetInstanceByIndex(idx, true)
+        for index = 1, 20 do
+            local jid = EJ_GetInstanceByIndex(index, true)
             if not jid then
                 break
             end
             tier[jid] = true
         end
-        if prev then
-            EJ_SelectTier(prev)
+        if previous then
+            EJ_SelectTier(previous)
         end
     end
     return groups, tier
@@ -979,8 +979,8 @@ local function ChosenRaidDiffs()
         return nil, 0
     end
     local n = 0
-    for _, d in ipairs(RAID_DIFFS_MENU) do
-        if t[d.key] then
+    for _, skinData in ipairs(RAID_DIFFS_MENU) do
+        if t[skinData.key] then
             n = n + 1
         end
     end
@@ -1005,8 +1005,8 @@ local function ChosenRaidPlaystyles()
         return nil, 0
     end
     local n = 0
-    for idx = 1, #PLAYSTYLES do
-        if t[idx] then
+    for index = 1, #PLAYSTYLES do
+        if t[index] then
             n = n + 1
         end
     end
@@ -1014,14 +1014,14 @@ local function ChosenRaidPlaystyles()
 end
 
 -- dungeon playstyles from the advanced filter; nil when all or none.
-local function DungeonPlaystyles(f)
+local function DungeonPlaystyles(frame)
     local n = 0
-    for idx = 1, #PLAYSTYLES do
-        if f["generalPlaystyle" .. idx] then
+    for index = 1, #PLAYSTYLES do
+        if frame["generalPlaystyle" .. index] then
             n = n + 1
         end
     end
-    return (n > 0 and n < #PLAYSTYLES) and f or nil, n
+    return (n > 0 and n < #PLAYSTYLES) and frame or nil, n
 end
 
 -- roles (the advanced filter's needs* keys).
@@ -1036,13 +1036,13 @@ local function ChosenRaidRoles()
     return type(t) == "table" and next(t) and t or nil
 end
 
-local function DungeonRolesSet(f)
-    for _, r in ipairs(ROLES) do
-        if f[r.key] then
+local function DungeonRolesSet(frame)
+    for _, region in ipairs(ROLES) do
+        if frame[region.key] then
             return true
         end
     end
-    return (f.needsMyClass or f.hasTank or f.hasHealer) and true or false
+    return (frame.needsMyClass or frame.hasTank or frame.hasHealer) and true or false
 end
 
 local function RaidListFilterActive()
@@ -1171,10 +1171,10 @@ XF.PARTY = { "party1", "party2", "party3", "party4" }
 
 function XF.CountRule(role)
     local t = Cfg().roleCounts
-    local r = type(t) == "table" and t[role]
-    local n = type(r) == "table" and r.on and tonumber(r.n)
+    local region = type(t) == "table" and t[role]
+    local n = type(region) == "table" and region.on and tonumber(region.n)
     if n then
-        return r.op or "lt", n
+        return region.op or "lt", n
     end
     return nil
 end
@@ -1193,8 +1193,8 @@ function XF.ExtraFilterActive()
     if mod.ExtraExprActive and mod.ExtraExprActive() then
         return true
     end
-    for _, r in ipairs(XF.COUNT_ROLES) do
-        if XF.CountRule(r.key) then
+    for _, region in ipairs(XF.COUNT_ROLES) do
+        if XF.CountRule(region.key) then
             return true
         end
     end
@@ -1219,8 +1219,8 @@ end
 function XF.PartyNeeds(need)
     need.TANK, need.HEALER, need.DAMAGER = 0, 0, 0
     local members = IsInRaid() and 0 or GetNumSubgroupMembers()
-    for idx = 0, math.min(members, #XF.PARTY) do
-        local role, secret = CM.UnitEffectiveRole(idx == 0 and "player" or XF.PARTY[idx])
+    for index = 0, math.min(members, #XF.PARTY) do
+        local role, secret = CM.UnitEffectiveRole(index == 0 and "player" or XF.PARTY[index])
         if secret then
             return nil
         end
@@ -1252,9 +1252,9 @@ function XF.ExtraKeep(ident, details, need)
         -- match any role
         local any = mod.ExtraRolesAny and mod.ExtraRolesAny()
         local anySet, anyHit = false, false
-        for _, r in ipairs(XF.COUNT_ROLES) do
-            local op, n = XF.CountRule(r.key)
-            local have = op and num(counts, r.key)
+        for _, region in ipairs(XF.COUNT_ROLES) do
+            local op, n = XF.CountRule(region.key)
+            local have = op and num(counts, region.key)
             if have then
                 local success = (op == "lt" and have < n)
                     or (op == "gt" and have > n)
@@ -1283,8 +1283,8 @@ function XF.ExtraKeep(ident, details, need)
         local n = details and details.numMembers
         if type(n) == "number" and not IsSecret(n) then
             local lust, brez = false, false
-            for idx = 1, n do
-                local p = C_LFGList.GetSearchResultPlayerInfo(ident, idx)
+            for index = 1, n do
+                local p = C_LFGList.GetSearchResultPlayerInfo(ident, index)
                 local cls = p and p.classFilename
                 if cls and not IsSecret(cls) then
                     if XF.LUST_CLASSES[cls] then
@@ -1432,8 +1432,8 @@ function XF.DimKeep(ident, details)
         if p.needsMyClass then
             local _, mine = UnitClass("player")
             local n = details.numMembers
-            for idx = 1, (type(n) == "number" and not IsSecret(n)) and n or 0 do
-                local m = C_LFGList.GetSearchResultPlayerInfo(ident, idx)
+            for index = 1, (type(n) == "number" and not IsSecret(n)) and n or 0 do
+                local m = C_LFGList.GetSearchResultPlayerInfo(ident, index)
                 local cls = m and m.classFilename
                 if cls and not IsSecret(cls) and cls == mine then
                     return false
@@ -1449,25 +1449,25 @@ function mod.DimFiltersChanged()
     if not SP then
         return
     end
-    local f = C_LFGList.GetAdvancedFilter()
-    if not f then
+    local frame = C_LFGList.GetAdvancedFilter()
+    if not frame then
         return
     end
     local c = Cfg()
     if DimOn() then
-        c.dimPicks = Picks(f)
-        Widen(f)
+        c.dimPicks = Picks(frame)
+        Widen(frame)
     else
         local p = c.dimPicks
         if type(p) == "table" then
             for _, k in ipairs(PICK_KEYS) do
-                f[k] = p[k]
+                frame[k] = p[k]
             end
         end
         c.dimPicks = nil
     end
-    C_LFGList.SaveAdvancedFilter(f)
-    XF.Remember(f)
+    C_LFGList.SaveAdvancedFilter(frame)
+    XF.Remember(frame)
     pending = true
     Paint()
     PaintRefresh()
@@ -1576,13 +1576,13 @@ local function SpecIcon(classFile, specName)
             if file and classID then
                 specIcon[file] = {}
                 for sx = 1, 5 do
-                    local ident, name, _, icon = GetSpecializationInfoForClassID(classID, sx)
+                    local ident, name, _, iconTex = GetSpecializationInfoForClassID(classID, sx)
                     if not ident then
                         break
                     end
                     if name then
-                        specIcon[file][name] = icon
-                        specIconAny[name] = specIconAny[name] or icon
+                        specIcon[file][name] = iconTex
+                        specIconAny[name] = specIconAny[name] or iconTex
                     end
                 end
             end
@@ -1596,8 +1596,8 @@ local function LockedOut(ai, resultID)
     if not (ai and ai.mapID and GetNumSavedInstances) then
         return false
     end
-    for idx = 1, GetNumSavedInstances() do
-        local _, _, _, diffID, locked, _, _, _, _, _, numBosses, _, _, instanceID = GetSavedInstanceInfo(idx)
+    for index = 1, GetNumSavedInstances() do
+        local _, _, _, diffID, locked, _, _, _, _, _, numBosses, _, _, instanceID = GetSavedInstanceInfo(index)
         if locked and instanceID == ai.mapID and diffID == ai.difficultyID then
             local perBoss = (ai.maxNumPlayers or 5) > 5 and diffID ~= 16
             if not perBoss then
@@ -1619,7 +1619,7 @@ local function LockedOut(ai, resultID)
             end
             local anyAlive = false
             for jdx = 1, (tonumber(numBosses) or 0) do
-                local boss, _, killed = GetSavedInstanceEncounterInfo(idx, jdx)
+                local boss, _, killed = GetSavedInstanceEncounterInfo(index, jdx)
                 if boss and not dead[boss] then
                     anyAlive = true
                     if not killed then
@@ -1640,9 +1640,9 @@ local function RatingColor(score)
         rioApi = _G.RaiderIO or false
     end
     if Opt("rioRatingColors") and rioApi and rioApi.GetScoreColor then
-        local success, r, g, b = pcall(rioApi.GetScoreColor, score)
-        if success and type(r) == "number" then
-            return r, g, b
+        local success, region, g, b = pcall(rioApi.GetScoreColor, score)
+        if success and type(region) == "number" then
+            return region, g, b
         end
     end
     local c = C_ChallengeMode
@@ -1677,30 +1677,30 @@ local MISSING_ATLAS = {
 }
 
 -- our own drawing over one of blizzard's role icons.
-local function IconLayer(icon)
-    local d = FFD[icon]
-    if d then
-        return d
+local function IconLayer(iconTex)
+    local skinData = FFD[iconTex]
+    if skinData then
+        return skinData
     end
-    d = {}
-    FFD[icon] = d
-    local f = CreateFrame("Frame", nil, icon)
-    f:SetAllPoints(icon)
-    f:SetFrameLevel(icon:GetFrameLevel() + 2)
-    f:EnableMouse(false)
-    d.frame = f
-    d.circle = f:CreateTexture(nil, "ARTWORK", nil, 1)
-    d.circle:SetSize(16, 16)
-    d.circle:SetPoint("CENTER")
-    d.ring = f:CreateTexture(nil, "ARTWORK", nil, 1)
-    d.ring:SetSize(18, 18)
-    d.ring:SetPoint("CENTER")
-    d.spec = f:CreateTexture(nil, "ARTWORK", nil, 2)
-    d.spec:SetSize(16, 16)
-    d.spec:SetPoint("CENTER")
-    d.spec:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- past the icon art's own border
-    for _, texture in ipairs({ d.ring, d.spec }) do
-        local mask = f.CreateMaskTexture and f:CreateMaskTexture()
+    skinData = {}
+    FFD[iconTex] = skinData
+    local frame = CreateFrame("Frame", nil, iconTex)
+    frame:SetAllPoints(iconTex)
+    frame:SetFrameLevel(iconTex:GetFrameLevel() + 2)
+    frame:EnableMouse(false)
+    skinData.frame = frame
+    skinData.circle = frame:CreateTexture(nil, "ARTWORK", nil, 1)
+    skinData.circle:SetSize(16, 16)
+    skinData.circle:SetPoint("CENTER")
+    skinData.ring = frame:CreateTexture(nil, "ARTWORK", nil, 1)
+    skinData.ring:SetSize(18, 18)
+    skinData.ring:SetPoint("CENTER")
+    skinData.spec = frame:CreateTexture(nil, "ARTWORK", nil, 2)
+    skinData.spec:SetSize(16, 16)
+    skinData.spec:SetPoint("CENTER")
+    skinData.spec:SetTexCoord(0.08, 0.92, 0.08, 0.92) -- past the icon art's own border
+    for _, texture in ipairs({ skinData.ring, skinData.spec }) do
+        local mask = frame.CreateMaskTexture and frame:CreateMaskTexture()
         if mask then
             mask:SetTexture(
                 "Interface\\CharacterFrame\\TempPortraitAlphaMask",
@@ -1711,31 +1711,31 @@ local function IconLayer(icon)
             texture:AddMaskTexture(mask)
         end
     end
-    d.role = f:CreateTexture(nil, "ARTWORK", nil, 3)
-    d.role:SetSize(12, 12)
-    d.role:SetPoint("CENTER")
-    d.full = f:CreateTexture(nil, "ARTWORK", nil, 1)
-    d.full:SetAllPoints(f)
-    d.crown = f:CreateTexture(nil, "OVERLAY")
-    d.crown:SetAtlas("groupfinder-icon-leader", false)
-    d.crown:SetSize(10, 6)
-    d.crown:SetPoint("BOTTOM", icon, "TOP", 0, 1)
+    skinData.role = frame:CreateTexture(nil, "ARTWORK", nil, 3)
+    skinData.role:SetSize(12, 12)
+    skinData.role:SetPoint("CENTER")
+    skinData.full = frame:CreateTexture(nil, "ARTWORK", nil, 1)
+    skinData.full:SetAllPoints(frame)
+    skinData.crown = frame:CreateTexture(nil, "OVERLAY")
+    skinData.crown:SetAtlas("groupfinder-icon-leader", false)
+    skinData.crown:SetSize(10, 6)
+    skinData.crown:SetPoint("BOTTOM", iconTex, "TOP", 0, 1)
     -- blizzard's leaver mark is under our layer, so it's drawn again up here
-    d.leaver = f:CreateTexture(nil, "OVERLAY", nil, 1)
-    d.leaver:SetAtlas("groupfinder-icon-leaver", false)
-    d.leaver:SetSize(12, 12)
-    d.leaver:SetPoint("TOPRIGHT", icon, "TOPRIGHT", 4, 2)
-    return d
+    skinData.leaver = frame:CreateTexture(nil, "OVERLAY", nil, 1)
+    skinData.leaver:SetAtlas("groupfinder-icon-leaver", false)
+    skinData.leaver:SetSize(12, 12)
+    skinData.leaver:SetPoint("TOPRIGHT", iconTex, "TOPRIGHT", 4, 2)
+    return skinData
 end
 
-local function ClearLayer(d)
-    d.circle:Hide()
-    d.ring:Hide()
-    d.spec:Hide()
-    d.role:Hide()
-    d.full:Hide()
-    d.crown:Hide()
-    d.leaver:Hide()
+local function ClearLayer(skinData)
+    skinData.circle:Hide()
+    skinData.ring:Hide()
+    skinData.spec:Hide()
+    skinData.role:Hide()
+    skinData.full:Hide()
+    skinData.crown:Hide()
+    skinData.leaver:Hide()
 end
 
 -- clear our layers on rows we skip (recycled rows keep old art)
@@ -1745,10 +1745,10 @@ function XF.ClearIcons(record)
     if not icons then
         return
     end
-    for idx = 1, #icons do
-        local d = FFD[icons[idx]]
-        if d then
-            ClearLayer(d)
+    for index = 1, #icons do
+        local skinData = FFD[icons[index]]
+        if skinData then
+            ClearLayer(skinData)
         end
     end
 end
@@ -1776,8 +1776,8 @@ local function DecorateIcons(record, resultID, details, ai)
     local members = wipe(XF.members)
     local n = details.numMembers
     if isShown and (crownOn or specOn) and type(n) == "number" and not IsSecret(n) then
-        for idx = 1, n do
-            local p = C_LFGList.GetSearchResultPlayerInfo(resultID, idx)
+        for index = 1, n do
+            local p = C_LFGList.GetSearchResultPlayerInfo(resultID, index)
             if p and not IsSecret(p.classFilename) and not IsSecret(p.assignedRole) then
                 members[#members + 1] = p
             end
@@ -1805,12 +1805,12 @@ local function DecorateIcons(record, resultID, details, ai)
     end
     local used, mi = wipe(XF.used), 0
     -- right to left like blizzard; empty slots end up leftmost.
-    for idx = #icons, 1, -1 do
-        local icon = icons[idx]
-        local d = IconLayer(icon)
-        ClearLayer(d)
-        local live = isShown and icon:IsShown()
-        local cc, ri, backdrop = icon.ClassCircle, icon.RoleIcon, icon.RoleIconWithBackground
+    for index = #icons, 1, -1 do
+        local iconTex = icons[index]
+        local skinData = IconLayer(iconTex)
+        ClearLayer(skinData)
+        local live = isShown and iconTex:IsShown()
+        local cc, ri, backdrop = iconTex.ClassCircle, iconTex.RoleIcon, iconTex.RoleIconWithBackground
         local ccAtlas = live and cc and cc:IsShown() and cc:GetAtlas()
         local riAtlas = live and ri and ri:IsShown() and ri:GetAtlas()
         local bgAtlas = live and backdrop and backdrop:IsShown() and backdrop:GetAtlas()
@@ -1840,15 +1840,15 @@ local function DecorateIcons(record, resultID, details, ai)
                 mi = mi + 1
                 local role = missing and missing[mi]
                 if role then
-                    d.role:SetAtlas(MISSING_ATLAS[role], false)
-                    d.role:SetDesaturated(true)
-                    d.role:SetAlpha(0.6)
-                    d.role:Show()
+                    skinData.role:SetAtlas(MISSING_ATLAS[role], false)
+                    skinData.role:SetDesaturated(true)
+                    skinData.role:SetAlpha(0.6)
+                    skinData.role:Show()
                 else
-                    d.full:SetAtlas(bgAtlas, false)
-                    d.full:SetDesaturated(disabled)
-                    d.full:SetAlpha(disabled and 0.5 or 1)
-                    d.full:Show()
+                    skinData.full:SetAtlas(bgAtlas, false)
+                    skinData.full:SetDesaturated(disabled)
+                    skinData.full:SetAlpha(disabled and 0.5 or 1)
+                    skinData.full:Show()
                 end
             else
                 local role, class
@@ -1908,53 +1908,53 @@ local function DecorateIcons(record, resultID, details, ai)
                         and not IsSecret(m.specName)
                         and SpecIcon(m.classFilename, m.specName)
                     if ccAtlas then
-                        d.circle:SetAtlas(ccAtlas, false)
-                        d.circle:SetDesaturated(disabled)
-                        d.circle:SetAlpha(disabled and 0.5 or 1)
-                        d.circle:Show()
+                        skinData.circle:SetAtlas(ccAtlas, false)
+                        skinData.circle:SetDesaturated(disabled)
+                        skinData.circle:SetAlpha(disabled and 0.5 or 1)
+                        skinData.circle:Show()
                         if specInfo then
-                            d.circle:Hide()
-                            local r, g, b = ThemeBorder()
-                            d.ring:SetColorTexture(r, g, b, disabled and 0.5 or 1)
-                            d.ring:Show()
-                            d.spec:SetTexture(specInfo)
-                            d.spec:SetDesaturated(disabled)
-                            d.spec:SetAlpha(disabled and 0.5 or 1)
-                            d.spec:Show()
+                            skinData.circle:Hide()
+                            local region, g, b = ThemeBorder()
+                            skinData.ring:SetColorTexture(region, g, b, disabled and 0.5 or 1)
+                            skinData.ring:Show()
+                            skinData.spec:SetTexture(specInfo)
+                            skinData.spec:SetDesaturated(disabled)
+                            skinData.spec:SetAlpha(disabled and 0.5 or 1)
+                            skinData.spec:Show()
                         elseif riAtlas then
-                            d.role:SetAtlas(riAtlas, false)
-                            d.role:SetDesaturated(disabled)
-                            d.role:SetAlpha(disabled and 0.5 or 1)
-                            d.role:Show()
+                            skinData.role:SetAtlas(riAtlas, false)
+                            skinData.role:SetDesaturated(disabled)
+                            skinData.role:SetAlpha(disabled and 0.5 or 1)
+                            skinData.role:Show()
                         end
                     elseif bgAtlas then
                         if specInfo then
-                            d.circle:Hide()
-                            local r, g, b = ThemeBorder()
-                            d.ring:SetColorTexture(r, g, b, disabled and 0.5 or 1)
-                            d.ring:Show()
-                            d.spec:SetTexture(specInfo)
-                            d.spec:SetDesaturated(disabled)
-                            d.spec:SetAlpha(disabled and 0.5 or 1)
-                            d.spec:Show()
+                            skinData.circle:Hide()
+                            local region, g, b = ThemeBorder()
+                            skinData.ring:SetColorTexture(region, g, b, disabled and 0.5 or 1)
+                            skinData.ring:Show()
+                            skinData.spec:SetTexture(specInfo)
+                            skinData.spec:SetDesaturated(disabled)
+                            skinData.spec:SetAlpha(disabled and 0.5 or 1)
+                            skinData.spec:Show()
                         else
-                            d.full:SetAtlas(bgAtlas, false)
-                            d.full:SetDesaturated(disabled)
-                            d.full:SetAlpha(disabled and 0.5 or 1)
-                            d.full:Show()
+                            skinData.full:SetAtlas(bgAtlas, false)
+                            skinData.full:SetDesaturated(disabled)
+                            skinData.full:SetAlpha(disabled and 0.5 or 1)
+                            skinData.full:Show()
                         end
                     end
-                    local lv = icon.LeaverIcon
+                    local lv = iconTex.LeaverIcon
                     local leaver = lv and lv:IsShown()
                     if not IsSecret(leaver) and leaver then
-                        d.leaver:SetDesaturated(disabled)
-                        d.leaver:SetAlpha(disabled and 0.5 or 1)
-                        d.leaver:Show()
+                        skinData.leaver:SetDesaturated(disabled)
+                        skinData.leaver:SetAlpha(disabled and 0.5 or 1)
+                        skinData.leaver:Show()
                     end
                 end
                 if m and crownOn and not IsSecret(m.isLeader) and m.isLeader then
-                    d.crown:SetDesaturated(disabled)
-                    d.crown:Show()
+                    skinData.crown:SetDesaturated(disabled)
+                    skinData.crown:Show()
                 end
             end
         end
@@ -2019,11 +2019,11 @@ local function DecorateEntry(record)
     if not fd then
         fd = {}
         FFD[record] = fd
-        local f = CreateFrame("Frame", nil, record)
-        f:SetAllPoints(record)
-        f:SetFrameLevel(record:GetFrameLevel() + 3)
-        f:EnableMouse(false)
-        fd.rating = f:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        local frame = CreateFrame("Frame", nil, record)
+        frame:SetAllPoints(record)
+        frame:SetFrameLevel(record:GetFrameLevel() + 3)
+        frame:EnableMouse(false)
+        fd.rating = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         fd.rating:SetJustifyH("RIGHT")
         record:HookScript("OnClick", function(self, btnFrame)
             if btnFrame ~= "LeftButton" or not XF.ShouldCancelOldest(self.resultID) then
@@ -2220,8 +2220,8 @@ local function AddClassesByRole(tooltip, resultID)
         return
     end
     local players = {}
-    for idx = 1, n do
-        players[idx] = C_LFGList.GetSearchResultPlayerInfo(resultID, idx) or false
+    for index = 1, n do
+        players[index] = C_LFGList.GetSearchResultPlayerInfo(resultID, index) or false
     end
     local DT = Enum.LFGListDisplayType
     XF.AddMembers(
@@ -2248,9 +2248,9 @@ function XF.AddMembers(tooltip, players, enumerate)
             for _, p in ipairs(byRole[role]) do
                 local name = p.name and not IsSecret(p.name) and p.name
                 if name then
-                    local col = RAID_CLASS_COLORS[p.classFilename]
-                    nameList[#nameList + 1] = (col and col.colorStr)
-                            and ("|c" .. col.colorStr .. name .. "|r")
+                    local colour = RAID_CLASS_COLORS[p.classFilename]
+                    nameList[#nameList + 1] = (colour and colour.colorStr)
+                            and ("|c" .. colour.colorStr .. name .. "|r")
                         or name
                 end
             end
@@ -2276,18 +2276,18 @@ function XF.AddMembers(tooltip, players, enumerate)
                 tooltip:AddLine(" ")
                 added = true
             end
-            local col = RAID_CLASS_COLORS[p.classFilename] or NORMAL_FONT_COLOR
+            local colour = RAID_CLASS_COLORS[p.classFilename] or NORMAL_FONT_COLOR
             local className = (not IsSecret(p.className) and p.className)
                 or (LOCALIZED_CLASS_NAMES_MALE and LOCALIZED_CLASS_NAMES_MALE[p.classFilename])
                 or p.classFilename
             local specInfo = p.specName and not IsSecret(p.specName) and p.specName
-            local icon = CreateAtlasMarkup and CreateAtlasMarkup(ROLE_ICON[role], 12, 12) or ""
+            local iconTex = CreateAtlasMarkup and CreateAtlasMarkup(ROLE_ICON[role], 12, 12) or ""
             local crown = (p.isLeader and CreateAtlasMarkup)
                     and (" " .. CreateAtlasMarkup("groupfinder-icon-leader", 12, 8))
                 or ""
-            local leftX = icon .. " " .. (specInfo and (specInfo .. " ") or "") .. className .. crown
+            local leftX = iconTex .. " " .. (specInfo and (specInfo .. " ") or "") .. className .. crown
             local name = p.name and not IsSecret(p.name) and p.name or ""
-            tooltip:AddDoubleLine(leftX, name, col.r, col.g, col.b, col.r, col.g, col.b)
+            tooltip:AddDoubleLine(leftX, name, colour.r, colour.g, colour.b, colour.r, colour.g, colour.b)
         end
     end
     if added then
@@ -2308,57 +2308,57 @@ local function ThemeFill()
 end
 
 local function MenuItem(hostFrame, posY, textValue, onClick)
-    local item = CreateFrame("Button", nil, hostFrame)
-    item:SetHeight(ITEM_H)
-    item:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", 1, -posY)
-    item:SetPoint("TOPRIGHT", hostFrame, "TOPRIGHT", -1, -posY)
-    local cb = CreateFrame("Frame", nil, item)
-    cb:SetSize(CHECK_SZ, CHECK_SZ)
-    cb:SetPoint("LEFT", item, "LEFT", 8, 0)
-    local cbBg = cb:CreateTexture(nil, "BACKGROUND")
+    local entry = CreateFrame("Button", nil, hostFrame)
+    entry:SetHeight(ITEM_H)
+    entry:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", 1, -posY)
+    entry:SetPoint("TOPRIGHT", hostFrame, "TOPRIGHT", -1, -posY)
+    local callback = CreateFrame("Frame", nil, entry)
+    callback:SetSize(CHECK_SZ, CHECK_SZ)
+    callback:SetPoint("LEFT", entry, "LEFT", 8, 0)
+    local cbBg = callback:CreateTexture(nil, "BACKGROUND")
     cbBg:SetAllPoints()
     cbBg:SetColorTexture(0.12, 0.12, 0.12, 1)
-    item.ring = CM.MakeBorder(cb, 0.25, 0.25, 0.25, 0.6, CM.PanelPP)
-    item.fill = cb:CreateTexture(nil, "ARTWORK")
-    item.fill:SetPoint("TOPLEFT", cb, "TOPLEFT", 3, -3)
-    item.fill:SetPoint("BOTTOMRIGHT", cb, "BOTTOMRIGHT", -3, 3)
+    entry.ring = CM.MakeBorder(callback, 0.25, 0.25, 0.25, 0.6, CM.PanelPP)
+    entry.fill = callback:CreateTexture(nil, "ARTWORK")
+    entry.fill:SetPoint("TOPLEFT", callback, "TOPLEFT", 3, -3)
+    entry.fill:SetPoint("BOTTOMRIGHT", callback, "BOTTOMRIGHT", -3, 3)
     local tR, tG, tB, tA = CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A
-    item.label = item:CreateFontString(nil, "OVERLAY")
-    XF.Font(item.label, ITEM_FONT)
-    item.label:SetPoint("LEFT", cb, "RIGHT", 7, 0)
-    item.label:SetPoint("RIGHT", item, "RIGHT", -4, 0)
-    item.label:SetJustifyH("LEFT")
-    item.label:SetWordWrap(false)
-    item.label:SetText(textValue)
-    item.label:SetTextColor(tR, tG, tB, tA)
-    local highlight = item:CreateTexture(nil, "ARTWORK", nil, -1)
+    entry.label = entry:CreateFontString(nil, "OVERLAY")
+    XF.Font(entry.label, ITEM_FONT)
+    entry.label:SetPoint("LEFT", callback, "RIGHT", 7, 0)
+    entry.label:SetPoint("RIGHT", entry, "RIGHT", -4, 0)
+    entry.label:SetJustifyH("LEFT")
+    entry.label:SetWordWrap(false)
+    entry.label:SetText(textValue)
+    entry.label:SetTextColor(tR, tG, tB, tA)
+    local highlight = entry:CreateTexture(nil, "ARTWORK", nil, -1)
     highlight:SetAllPoints()
     highlight:SetColorTexture(1, 1, 1, 0)
-    item:SetScript("OnEnter", function()
-        item.label:SetTextColor(1, 1, 1, 1)
+    entry:SetScript("OnEnter", function()
+        entry.label:SetTextColor(1, 1, 1, 1)
         highlight:SetColorTexture(1, 1, 1, CM.DD_ITEM_HL_A)
     end)
-    item:SetScript("OnLeave", function()
-        item.label:SetTextColor(tR, tG, tB, tA)
+    entry:SetScript("OnLeave", function()
+        entry.label:SetTextColor(tR, tG, tB, tA)
         highlight:SetColorTexture(1, 1, 1, 0)
     end)
-    item:SetScript("OnClick", onClick)
+    entry:SetScript("OnClick", onClick)
     -- dimmed + unclickable
-    function item:SetDimmed(off)
+    function entry:SetDimmed(off)
         self:EnableMouse(not off)
         self:SetAlpha(off and 0.35 or 1)
     end
-    function item:SetChecked(on)
-        local r, g, b = Accent()
-        self.fill:SetColorTexture(r, g, b, 1)
+    function entry:SetChecked(on)
+        local region, g, b = Accent()
+        self.fill:SetColorTexture(region, g, b, 1)
         self.fill:SetShown(on)
         if on then
-            self.ring:SetColor(r, g, b, 0.8)
+            self.ring:SetColor(region, g, b, 0.8)
         else
             self.ring:SetColor(0.25, 0.25, 0.25, 0.6)
         end
     end
-    return item
+    return entry
 end
 
 -- section title, with a divider above all but the first.
@@ -2411,14 +2411,14 @@ end
 -- playstyles: dungeons apply on search again, raids right away
 local function AddPlaystyleItems(m, posY, raids)
     posY = AddSection(m, posY, CludesUI.L("Playstyle"))
-    for idx, labelText in ipairs(PLAYSTYLES) do
-        m.items["style_" .. idx] = MenuItem(m, posY, labelText, function()
+    for index, labelText in ipairs(PLAYSTYLES) do
+        m.items["style_" .. index] = MenuItem(m, posY, labelText, function()
             if raids then
                 local c = Cfg()
                 if type(c.raidPlaystyles) ~= "table" then
                     c.raidPlaystyles = {}
                 end
-                c.raidPlaystyles[idx] = (not c.raidPlaystyles[idx]) or nil
+                c.raidPlaystyles[index] = (not c.raidPlaystyles[index]) or nil
                 local _, n = ChosenRaidPlaystyles()
                 if n == #PLAYSTYLES then
                     wipe(c.raidPlaystyles)
@@ -2426,22 +2426,22 @@ local function AddPlaystyleItems(m, posY, raids)
                 Refilter()
                 Paint()
             else
-                local f = XF.GetFilter()
-                local key = "generalPlaystyle" .. idx
-                if DungeonPlaystyles(f) == nil then
+                local frame = XF.GetFilter()
+                local key = "generalPlaystyle" .. index
+                if DungeonPlaystyles(frame) == nil then
                     for k = 1, #PLAYSTYLES do
-                        f["generalPlaystyle" .. k] = (k == idx)
+                        frame["generalPlaystyle" .. k] = (k == index)
                     end
                 else
-                    f[key] = not f[key]
-                    local _, n = DungeonPlaystyles(f)
+                    frame[key] = not frame[key]
+                    local _, n = DungeonPlaystyles(frame)
                     if n == 0 or n == #PLAYSTYLES then
                         for k = 1, #PLAYSTYLES do
-                            f["generalPlaystyle" .. k] = true
+                            frame["generalPlaystyle" .. k] = true
                         end
                     end
                 end
-                Apply(f)
+                Apply(frame)
             end
         end)
         posY = posY + ITEM_H
@@ -2456,16 +2456,16 @@ local function PaintPlaystyleItems(m, raids)
     else
         chosen = DungeonPlaystyles(XF.GetFilter())
     end
-    for idx = 1, #PLAYSTYLES do
-        local item = m.items["style_" .. idx]
-        if item then
+    for index = 1, #PLAYSTYLES do
+        local entry = m.items["style_" .. index]
+        if entry then
             local on
             if raids then
-                on = chosen ~= nil and chosen[idx] == true
+                on = chosen ~= nil and chosen[index] == true
             else
-                on = chosen ~= nil and chosen["generalPlaystyle" .. idx] == true
+                on = chosen ~= nil and chosen["generalPlaystyle" .. index] == true
             end
-            item:SetChecked(on)
+            entry:SetChecked(on)
         end
     end
 end
@@ -2499,9 +2499,9 @@ local function AddRoleItems(m, posY, raids)
                 return XF.opList and XF.opList:IsShown() and XF.opList:IsMouseOver() or false
             end,
         }
-    for _, r in ipairs(ROLES) do
-        local key = r.key
-        m.items["role_" .. key] = MenuItem(m, posY, r.label, function()
+    for _, region in ipairs(ROLES) do
+        local key = region.key
+        m.items["role_" .. key] = MenuItem(m, posY, region.label, function()
             if raids then
                 local c = Cfg()
                 if type(c.raidRoles) ~= "table" then
@@ -2511,9 +2511,9 @@ local function AddRoleItems(m, posY, raids)
                 Refilter()
                 Paint()
             else
-                local f = XF.GetFilter()
-                f[key] = not f[key]
-                Apply(f)
+                local frame = XF.GetFilter()
+                frame[key] = not frame[key]
+                Apply(frame)
             end
         end)
         posY = posY + ITEM_H
@@ -2542,15 +2542,15 @@ local function AddRoleItems(m, posY, raids)
     if K and mod.ExtraRoleCounts then
         posY = mod.ExtraRoleCounts(m, posY, K)
     else
-        for _, r in ipairs(XF.COUNT_ROLES) do
-            posY = XF.AddCountRow(m, posY, r.key, r.label)
+        for _, region in ipairs(XF.COUNT_ROLES) do
+            posY = XF.AddCountRow(m, posY, region.key, region.label)
         end
     end
     return posY
 end
 
 -- shared less than / more than / equal to list.
-function XF.OpenOpList(btn, role)
+function XF.OpenOpList(button, role)
     local L = XF.opList
     if not L then
         L = CreateFrame("Frame", nil, SP)
@@ -2565,11 +2565,11 @@ function XF.OpenOpList(btn, role)
         backdrop:SetColorTexture(0, 0, 0, 1)
         CM.MakeBorder(L, ThemeBorder())
         L.items = {}
-        for idx, o in ipairs(XF.COUNT_OPS) do
+        for index, o in ipairs(XF.COUNT_OPS) do
             local it = CreateFrame("Button", nil, L)
             it:SetHeight(ITEM_H)
-            it:SetPoint("TOPLEFT", L, "TOPLEFT", 1, -(2 + (idx - 1) * ITEM_H))
-            it:SetPoint("TOPRIGHT", L, "TOPRIGHT", -1, -(2 + (idx - 1) * ITEM_H))
+            it:SetPoint("TOPLEFT", L, "TOPLEFT", 1, -(2 + (index - 1) * ITEM_H))
+            it:SetPoint("TOPRIGHT", L, "TOPRIGHT", -1, -(2 + (index - 1) * ITEM_H))
             it.text = it:CreateFontString(nil, "OVERLAY")
             XF.Font(it.text, ITEM_FONT)
             it.text:SetPoint("LEFT", it, "LEFT", 8, 0)
@@ -2583,14 +2583,14 @@ function XF.OpenOpList(btn, role)
                 if type(c.roleCounts) ~= "table" then
                     c.roleCounts = {}
                 end
-                local r = c.roleCounts[L.role] or {}
-                r.op = o.key
-                c.roleCounts[L.role] = r
+                local region = c.roleCounts[L.role] or {}
+                region.op = o.key
+                c.roleCounts[L.role] = region
                 L:Hide()
                 Refilter()
                 Paint()
             end)
-            L.items[idx] = it
+            L.items[index] = it
         end
         L:SetHeight(4 + #XF.COUNT_OPS * ITEM_H)
         XF.ClickOff(L, function(self)
@@ -2598,24 +2598,24 @@ function XF.OpenOpList(btn, role)
         end)
         L:Hide()
     end
-    if L:IsShown() and L.owner == btn then
+    if L:IsShown() and L.owner == button then
         L:Hide()
         return
     end
-    L.owner, L.role = btn, role
+    L.owner, L.role = button, role
     local rule = (Cfg().roleCounts or XF.EMPTY)[role]
-    local cur = (type(rule) == "table" and rule.op) or "lt"
+    local current = (type(rule) == "table" and rule.op) or "lt"
     local ar, ag, ab = Accent()
     local tR, tG, tB, tA = CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A
     for _, it in ipairs(L.items) do
-        if it.opKey == cur then
+        if it.opKey == current then
             it.text:SetTextColor(ar, ag, ab, 1)
         else
             it.text:SetTextColor(tR, tG, tB, tA)
         end
     end
     L:ClearAllPoints()
-    L:SetPoint("TOPLEFT", btn, "BOTTOMLEFT", 0, -2)
+    L:SetPoint("TOPLEFT", button, "BOTTOMLEFT", 0, -2)
     L:Show()
 end
 
@@ -2649,9 +2649,9 @@ function XF.AddCountRow(m, posY, role, textValue)
         if type(c.roleCounts) ~= "table" then
             c.roleCounts = {}
         end
-        local r = c.roleCounts[role] or {}
-        c.roleCounts[role] = r
-        return r
+        local region = c.roleCounts[role] or {}
+        c.roleCounts[role] = region
+        return region
     end
     local rowF = CreateFrame("Frame", nil, m)
     rowF:SetHeight(ITEM_H + 2)
@@ -2668,12 +2668,12 @@ function XF.AddCountRow(m, posY, role, textValue)
     sw.fill:SetPoint("TOPLEFT", sw, "TOPLEFT", 3, -3)
     sw.fill:SetPoint("BOTTOMRIGHT", sw, "BOTTOMRIGHT", -3, 3)
     sw:SetScript("OnClick", function()
-        local r = Rule()
-        r.on = (not r.on) or nil
+        local region = Rule()
+        region.on = (not region.on) or nil
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
         Refilter()
         Paint()
-        if r.on and m.counts and m.counts[role] then
+        if region.on and m.counts and m.counts[role] then
             m.counts[role].box:SetFocus()
         end
     end)
@@ -2715,10 +2715,10 @@ function XF.AddCountRow(m, posY, role, textValue)
 end
 
 function XF.PaintCountRows(m)
-    for _, r in ipairs(XF.COUNT_ROLES) do
-        local row = m.counts and m.counts[r.key]
+    for _, region in ipairs(XF.COUNT_ROLES) do
+        local row = m.counts and m.counts[region.key]
         if row then
-            local rule = (Cfg().roleCounts or XF.EMPTY)[r.key]
+            local rule = (Cfg().roleCounts or XF.EMPTY)[region.key]
             local on = type(rule) == "table" and rule.on == true
             row.op.text:SetText(XF.COUNT_OP_LABEL[(type(rule) == "table" and rule.op) or "lt"])
             if not row.box:HasFocus() then
@@ -2748,22 +2748,22 @@ end
 
 -- toggles both menus share
 function XF.AddFlagItem(m, posY, key, textValue, tipText)
-    local item = MenuItem(m, posY, textValue, function()
+    local entry = MenuItem(m, posY, textValue, function()
         local c = Cfg()
         c[key] = (not c[key]) or nil
         Refilter()
         Paint()
     end)
-    m.items["flag_" .. key] = item
+    m.items["flag_" .. key] = entry
     if tipText then
-        item:HookScript("OnEnter", function(self)
+        entry:HookScript("OnEnter", function(self)
             if type(tipText) == "table" then
                 XF.Tip(self, textValue, unpack(tipText))
             else
                 XF.Tip(self, textValue, tipText)
             end
         end)
-        item:HookScript("OnLeave", XF.Untip)
+        entry:HookScript("OnLeave", XF.Untip)
     end
     return posY + ITEM_H
 end
@@ -2772,19 +2772,19 @@ XF.FLAG_KEYS = { "partyFit", "notDeclined", "hasLust", "hasBrez" }
 function XF.PaintFlagItems(m)
     local c = Cfg()
     for _, key in ipairs(XF.FLAG_KEYS) do
-        local item = m.items["flag_" .. key]
-        if item then
-            item:SetChecked(c[key] == true)
+        local entry = m.items["flag_" .. key]
+        if entry then
+            entry:SetChecked(c[key] == true)
         end
     end
 end
 
 local function PaintRoleItems(m, raids)
     local source = raids and (ChosenRaidRoles() or XF.EMPTY) or XF.GetFilter()
-    for _, r in ipairs(ROLES) do
-        local item = m.items["role_" .. r.key]
-        if item then
-            item:SetChecked(source[r.key] == true)
+    for _, region in ipairs(ROLES) do
+        local entry = m.items["role_" .. region.key]
+        if entry then
+            entry:SetChecked(source[region.key] == true)
         end
     end
     XF.PaintFlagItems(m)
@@ -2796,10 +2796,10 @@ local function AddRatingRow(m, posY)
     local function Send()
         local c = Cfg()
         local val = c.ratingOn and (tonumber(c.ratingValue) or 0) or 0
-        local f = XF.GetFilter()
-        if (f.minimumRating or 0) ~= val then
-            f.minimumRating = val
-            Apply(f)
+        local frame = XF.GetFilter()
+        if (frame.minimumRating or 0) ~= val then
+            frame.minimumRating = val
+            Apply(frame)
         end
     end
     local rowF = CreateFrame("Frame", nil, m)
@@ -2815,21 +2815,21 @@ local function AddRatingRow(m, posY)
         XF.Tip(self, RATING, RATING_TIP)
     end)
     rowF:SetScript("OnLeave", XF.Untip)
-    local cb = CreateFrame("Button", nil, rowF)
-    cb:SetSize(CHECK_SZ, CHECK_SZ)
-    cb:SetPoint("LEFT", rowF, "LEFT", 8, 0)
-    cb:SetScript("OnEnter", function(self)
+    local callback = CreateFrame("Button", nil, rowF)
+    callback:SetSize(CHECK_SZ, CHECK_SZ)
+    callback:SetPoint("LEFT", rowF, "LEFT", 8, 0)
+    callback:SetScript("OnEnter", function(self)
         XF.Tip(self, RATING, RATING_TIP)
     end)
-    cb:SetScript("OnLeave", XF.Untip)
-    local cbg = cb:CreateTexture(nil, "BACKGROUND")
+    callback:SetScript("OnLeave", XF.Untip)
+    local cbg = callback:CreateTexture(nil, "BACKGROUND")
     cbg:SetAllPoints()
     cbg:SetColorTexture(0.12, 0.12, 0.12, 1)
-    cb.ring = CM.MakeBorder(cb, 0.25, 0.25, 0.25, 0.6, CM.PanelPP)
-    cb.fill = cb:CreateTexture(nil, "ARTWORK")
-    cb.fill:SetPoint("TOPLEFT", cb, "TOPLEFT", 3, -3)
-    cb.fill:SetPoint("BOTTOMRIGHT", cb, "BOTTOMRIGHT", -3, 3)
-    cb:SetScript("OnClick", function()
+    callback.ring = CM.MakeBorder(callback, 0.25, 0.25, 0.25, 0.6, CM.PanelPP)
+    callback.fill = callback:CreateTexture(nil, "ARTWORK")
+    callback.fill:SetPoint("TOPLEFT", callback, "TOPLEFT", 3, -3)
+    callback.fill:SetPoint("BOTTOMRIGHT", callback, "BOTTOMRIGHT", -3, 3)
+    callback:SetScript("OnClick", function()
         local c = Cfg()
         c.ratingOn = (not c.ratingOn) or nil
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
@@ -2842,7 +2842,7 @@ local function AddRatingRow(m, posY)
     local labelText = rowF:CreateFontString(nil, "OVERLAY")
     XF.Font(labelText, ITEM_FONT)
     labelText:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
-    labelText:SetPoint("LEFT", cb, "RIGHT", 7, 0)
+    labelText:SetPoint("LEFT", callback, "RIGHT", 7, 0)
     labelText:SetText(RATING)
     local box = XF.MenuBox(rowF, 44, 4)
     box:SetPoint("RIGHT", rowF, "RIGHT", -7, 0)
@@ -2851,7 +2851,7 @@ local function AddRatingRow(m, posY)
         Send()
         Paint()
     end)
-    m.rating = { box = box, cb = cb, label = labelText }
+    m.rating = { box = box, cb = callback, label = labelText }
     return posY + ITEM_H
 end
 
@@ -2861,39 +2861,39 @@ function XF.AdoptRating()
     if c.ratingOn ~= nil or c.ratingValue ~= nil then
         return
     end
-    local f = XF.GetFilter()
-    local val = f and tonumber(f.minimumRating) or 0
+    local frame = XF.GetFilter()
+    local val = frame and tonumber(frame.minimumRating) or 0
     if val > 0 then
         c.ratingOn, c.ratingValue = true, val
     end
 end
 
 function XF.PaintRating(m)
-    local r = m and m.rating
-    if not r then
+    local region = m and m.rating
+    if not region then
         return
     end
     local c = Cfg()
     local on = c.ratingOn == true
     local ar, ag, ab = Accent()
-    r.cb.fill:SetColorTexture(ar, ag, ab, 1)
-    r.cb.fill:SetShown(on)
+    region.cb.fill:SetColorTexture(ar, ag, ab, 1)
+    region.cb.fill:SetShown(on)
     if on then
-        r.cb.ring:SetColor(ar, ag, ab, 0.8)
+        region.cb.ring:SetColor(ar, ag, ab, 0.8)
     else
-        r.cb.ring:SetColor(0.25, 0.25, 0.25, 0.6)
+        region.cb.ring:SetColor(0.25, 0.25, 0.25, 0.6)
     end
-    if not r.box:HasFocus() then
+    if not region.box:HasFocus() then
         local val = tonumber(c.ratingValue)
-        r.box:SetText(val and val > 0 and tostring(val) or "")
+        region.box:SetText(val and val > 0 and tostring(val) or "")
     end
     local a = on and 1 or 0.4
-    r.label:SetAlpha(a)
-    r.box:SetAlpha(a)
-    if not on and r.box:HasFocus() then
-        r.box:ClearFocus()
+    region.label:SetAlpha(a)
+    region.box:SetAlpha(a)
+    if not on and region.box:HasFocus() then
+        region.box:ClearFocus()
     end
-    r.box:SetEnabled(on)
+    region.box:SetEnabled(on)
 end
 
 local function AddRegionItems(m, posY)
@@ -2903,9 +2903,9 @@ local function AddRegionItems(m, posY)
     -- eu lists languages, short names in two columns
     local lang = mod.RegionIsLanguage()
     posY = AddSection(m, posY, lang and CludesUI.L("Language") or CludesUI.L("Region"))
-    for idx, r in ipairs(Regions()) do
-        local key = r.key
-        local item = MenuItem(m, posY, lang and r.tag or r.label, function()
+    for index, region in ipairs(Regions()) do
+        local key = region.key
+        local entry = MenuItem(m, posY, lang and region.tag or region.label, function()
             local c = Cfg()
             if type(c.regions) ~= "table" then
                 c.regions = {}
@@ -2923,17 +2923,17 @@ local function AddRegionItems(m, posY)
             Refilter()
             Paint()
         end)
-        m.items["region_" .. key] = item
+        m.items["region_" .. key] = entry
         if lang then
-            item:ClearAllPoints()
-            if idx % 2 == 1 then
-                item:SetPoint("TOPLEFT", m, "TOPLEFT", 1, -posY)
-                item:SetPoint("TOPRIGHT", m, "TOP", 0, -posY)
+            entry:ClearAllPoints()
+            if index % 2 == 1 then
+                entry:SetPoint("TOPLEFT", m, "TOPLEFT", 1, -posY)
+                entry:SetPoint("TOPRIGHT", m, "TOP", 0, -posY)
             else
-                item:SetPoint("TOPLEFT", m, "TOP", 0, -posY)
-                item:SetPoint("TOPRIGHT", m, "TOPRIGHT", -1, -posY)
+                entry:SetPoint("TOPLEFT", m, "TOP", 0, -posY)
+                entry:SetPoint("TOPRIGHT", m, "TOPRIGHT", -1, -posY)
             end
-            if idx % 2 == 0 or idx == #Regions() then
+            if index % 2 == 0 or index == #Regions() then
                 posY = posY + ITEM_H
             end
         else
@@ -2945,10 +2945,10 @@ end
 
 local function PaintRegionItems(m)
     local chosen = RegionFilterActive() and ChosenRegions()
-    for _, r in ipairs(Regions()) do
-        local item = m.items["region_" .. r.key]
-        if item then
-            item:SetChecked(chosen and chosen[r.key] == true or false)
+    for _, region in ipairs(Regions()) do
+        local entry = m.items["region_" .. region.key]
+        if entry then
+            entry:SetChecked(chosen and chosen[region.key] == true or false)
         end
     end
 end
@@ -2956,8 +2956,8 @@ end
 local function PaintMenu()
     if raidDiffMenu and raidDiffMenu:IsShown() then
         local chosen = ChosenRaidDiffs()
-        for _, d in ipairs(RAID_DIFFS_MENU) do
-            raidDiffMenu.items[d.key]:SetChecked(chosen ~= nil and chosen[d.key] == true)
+        for _, skinData in ipairs(RAID_DIFFS_MENU) do
+            raidDiffMenu.items[skinData.key]:SetChecked(chosen ~= nil and chosen[skinData.key] == true)
         end
         PaintRoleItems(raidDiffMenu, true)
         XF.PaintFlagItems(raidDiffMenu.side)
@@ -2967,10 +2967,10 @@ local function PaintMenu()
     if not (dropMenu and dropMenu:IsShown()) then
         return
     end
-    local f = XF.GetFilter()
-    local all = DiffAllOrNone(f)
-    for _, d in ipairs(DIFFS) do
-        dropMenu.items[d.key]:SetChecked(not all and f[d.key] == true)
+    local frame = XF.GetFilter()
+    local all = DiffAllOrNone(frame)
+    for _, skinData in ipairs(DIFFS) do
+        dropMenu.items[skinData.key]:SetChecked(not all and frame[skinData.key] == true)
     end
     XF.PaintRating(dropMenu.side)
     PaintRoleItems(dropMenu, false)
@@ -3011,8 +3011,8 @@ local function BuildSidePanel(m, raids)
     side:SetPoint("TOPRIGHT", m, "TOPLEFT", 0, 0)
     local backdrop = side:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
-    local r, g, b = ThemeFill()
-    backdrop:SetColorTexture(r, g, b, 0.98)
+    local region, g, b = ThemeFill()
+    backdrop:SetColorTexture(region, g, b, 0.98)
     side.items = {}
     local posY = 3
     posY = AddRegionItems(side, posY)
@@ -3089,23 +3089,23 @@ local function BuildMenu()
     dropMenu:SetClampedToScreen(true)
     local backdrop = dropMenu:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
-    local r, g, b = ThemeFill()
-    backdrop:SetColorTexture(r, g, b, 0.98)
+    local region, g, b = ThemeFill()
+    backdrop:SetColorTexture(region, g, b, 0.98)
     dropMenu.items = {}
     local posY = 3
     posY = AddSection(dropMenu, posY, CludesUI.L("Difficulty"))
-    for _, d in ipairs(DIFFS) do
-        local key = d.key
-        dropMenu.items[key] = MenuItem(dropMenu, posY, d.label, function()
-            local f = XF.GetFilter()
-            local all = DiffAllOrNone(f)
+    for _, skinData in ipairs(DIFFS) do
+        local key = skinData.key
+        dropMenu.items[key] = MenuItem(dropMenu, posY, skinData.label, function()
+            local frame = XF.GetFilter()
+            local all = DiffAllOrNone(frame)
             if all then
                 for _, o in ipairs(DIFFS) do
-                    f[o.key] = (o.key == key)
+                    frame[o.key] = (o.key == key)
                 end
-                Apply(f)
+                Apply(frame)
             else
-                SetDifficulty(key, not f[key])
+                SetDifficulty(key, not frame[key])
             end
         end)
         posY = posY + ITEM_H
@@ -3129,8 +3129,8 @@ local function BuildRaidDiffMenu()
     m:SetClampedToScreen(true)
     local backdrop = m:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
-    local r, g, b = ThemeFill()
-    backdrop:SetColorTexture(r, g, b, 0.98)
+    local region, g, b = ThemeFill()
+    backdrop:SetColorTexture(region, g, b, 0.98)
     local function Diffs()
         local c = Cfg()
         if type(c.raidDiffs) ~= "table" then
@@ -3141,9 +3141,9 @@ local function BuildRaidDiffMenu()
     m.items = {}
     local posY = 3
     posY = AddSection(m, posY, CludesUI.L("Difficulty"))
-    for _, d in ipairs(RAID_DIFFS_MENU) do
-        local key = d.key
-        m.items[key] = MenuItem(m, posY, d.label, function()
+    for _, skinData in ipairs(RAID_DIFFS_MENU) do
+        local key = skinData.key
+        m.items[key] = MenuItem(m, posY, skinData.label, function()
             local t = Diffs()
             t[key] = (not t[key]) or nil
             local _, n = ChosenRaidDiffs()
@@ -3239,13 +3239,13 @@ local function SkinnedButton(hostFrame, wid, hgt, keepKeys, decorate)
 end
 
 local function DropButton(hostFrame, wid, hgt)
-    local b = SkinnedButton(hostFrame, wid, hgt, { "Arrow" }, function(btn)
-        btn.Arrow = btn:CreateTexture(nil, "OVERLAY")
-        btn.Arrow:SetAtlas("Azerite-PointingArrow")
-        btn.Arrow:SetDesaturated(true)
-        btn.Arrow:SetVertexColor(1, 1, 1, 0.8)
-        btn.Arrow:SetSize(11, 8)
-        btn.Arrow:SetPoint("RIGHT", btn, "RIGHT", -8, 0)
+    local b = SkinnedButton(hostFrame, wid, hgt, { "Arrow" }, function(button)
+        button.Arrow = button:CreateTexture(nil, "OVERLAY")
+        button.Arrow:SetAtlas("Azerite-PointingArrow")
+        button.Arrow:SetDesaturated(true)
+        button.Arrow:SetVertexColor(1, 1, 1, 0.8)
+        button.Arrow:SetSize(11, 8)
+        button.Arrow:SetPoint("RIGHT", button, "RIGHT", -8, 0)
     end)
     local fontStr = b:GetFontString()
     fontStr:ClearAllPoints()
@@ -3259,59 +3259,59 @@ end
 
 -- square glyph button; atlas = true means tex is an atlas.
 local function GlyphButton(hostFrame, size, texture, atlas)
-    return SkinnedButton(hostFrame, size, size, { "Glyph" }, function(btn)
-        btn:SetText("")
-        btn.Glyph = btn:CreateTexture(nil, "OVERLAY")
+    return SkinnedButton(hostFrame, size, size, { "Glyph" }, function(button)
+        button:SetText("")
+        button.Glyph = button:CreateTexture(nil, "OVERLAY")
         if atlas then
-            btn.Glyph:SetAtlas(texture, false)
-            btn.Glyph:SetDesaturated(true)
+            button.Glyph:SetAtlas(texture, false)
+            button.Glyph:SetDesaturated(true)
         else
-            btn.Glyph:SetTexture(texture)
+            button.Glyph:SetTexture(texture)
         end
-        btn.Glyph:SetPoint("CENTER")
-        btn.Glyph:SetAlpha(0.8)
+        button.Glyph:SetPoint("CENTER")
+        button.Glyph:SetAlpha(0.8)
     end)
 end
 
 -- blizzard's cancel x restyled, its button still gets the click
 function XF.CancelLook(record)
-    local cb = record and record.CancelButton
-    if type(cb) ~= "table" or not cb.GetRegions or not XF.SkinOn() then
+    local callback = record and record.CancelButton
+    if type(callback) ~= "table" or not callback.GetRegions or not XF.SkinOn() then
         return
     end
-    local d = FFD[cb]
-    if not d then
-        d = {}
-        FFD[cb] = d
-        for _, r in ipairs({ cb:GetRegions() }) do
-            r:SetAlpha(0)
+    local skinData = FFD[callback]
+    if not skinData then
+        skinData = {}
+        FFD[callback] = skinData
+        for _, region in ipairs({ callback:GetRegions() }) do
+            region:SetAlpha(0)
         end
-        local highlight = cb.GetHighlightTexture and cb:GetHighlightTexture()
+        local highlight = callback.GetHighlightTexture and callback:GetHighlightTexture()
         if highlight then
             highlight:SetAlpha(0)
         end
-        local look = GlyphButton(cb, ROW1_H - 4, X_TEX)
+        local look = GlyphButton(callback, ROW1_H - 4, X_TEX)
         look:EnableMouse(false)
-        look:SetPoint("CENTER", cb, "CENTER", 0, 0)
-        look:SetFrameLevel(cb:GetFrameLevel() + 1)
+        look:SetPoint("CENTER", callback, "CENTER", 0, 0)
+        look:SetFrameLevel(callback:GetFrameLevel() + 1)
         look.Glyph:SetSize(11, 11)
         look.Glyph:SetVertexColor(XF.GLYPH, XF.GLYPH, XF.GLYPH, 1)
-        d.look = look
-        cb:HookScript("OnEnter", function(self)
+        skinData.look = look
+        callback:HookScript("OnEnter", function(self)
             if not self:IsEnabled() then
                 return
             end
-            SetBorderColor(d.look, 1, 0.15, 0.15, 1)
-            d.look.Glyph:SetVertexColor(1, 0.15, 0.15, 1)
-            d.look.Glyph:SetAlpha(1)
+            SetBorderColor(skinData.look, 1, 0.15, 0.15, 1)
+            skinData.look.Glyph:SetVertexColor(1, 0.15, 0.15, 1)
+            skinData.look.Glyph:SetAlpha(1)
         end)
-        cb:HookScript("OnLeave", function(self)
-            SetBorderColor(d.look, ThemeBorder())
-            d.look.Glyph:SetVertexColor(XF.GLYPH, XF.GLYPH, XF.GLYPH, 1)
-            d.look.Glyph:SetAlpha(self:IsEnabled() and 0.8 or 0.35)
+        callback:HookScript("OnLeave", function(self)
+            SetBorderColor(skinData.look, ThemeBorder())
+            skinData.look.Glyph:SetVertexColor(XF.GLYPH, XF.GLYPH, XF.GLYPH, 1)
+            skinData.look.Glyph:SetAlpha(self:IsEnabled() and 0.8 or 0.35)
         end)
     end
-    d.look.Glyph:SetAlpha(cb:IsEnabled() and 0.8 or 0.35)
+    skinData.look.Glyph:SetAlpha(callback:IsEnabled() and 0.8 or 0.35)
 end
 
 mod.GlyphButton = GlyphButton
@@ -3319,30 +3319,30 @@ mod.GLYPH = XF.GLYPH
 mod.Redecorate = XF.Redecorate -- for the settings page
 
 local function SquareEnter(self)
-    local d = self.dungeon
-    if not d then
+    local skinData = self.dungeon
+    if not skinData then
         return
     end
-    XF.Tip(self, d.name or "?", CludesUI.L("Click to toggle"))
+    XF.Tip(self, skinData.name or "?", CludesUI.L("Click to toggle"))
 end
 
 -- dungeon square: a skinned button with the icon inset 1px.
 local function MakeSquare(hostFrame)
     local px = XF.SkinOn() and CM.PP.mult or 3 -- blizzard's button: its black inside
-    local b = SkinnedButton(hostFrame, BTN, BTN, { "Icon" }, function(btn)
-        btn:SetText("")
-        btn.Icon = btn:CreateTexture(nil, "ARTWORK")
-        btn.Icon:SetPoint("TOPLEFT", btn, "TOPLEFT", px, -px)
-        btn.Icon:SetPoint("BOTTOMRIGHT", btn, "BOTTOMRIGHT", -px, px)
-        btn.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    local b = SkinnedButton(hostFrame, BTN, BTN, { "Icon" }, function(button)
+        button:SetText("")
+        button.Icon = button:CreateTexture(nil, "ARTWORK")
+        button.Icon:SetPoint("TOPLEFT", button, "TOPLEFT", px, -px)
+        button.Icon:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -px, px)
+        button.Icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         if not XF.SkinOn() then
             -- rounded corners, to sit inside blizzard's rounded button
-            local mask = btn:CreateMaskTexture()
+            local mask = button:CreateMaskTexture()
             mask:SetAtlas("UI-HUD-ActionBar-IconFrame-Mask")
             -- the mask's own clear margin sits outside the icon, so the icon keeps its size
-            mask:SetPoint("TOPLEFT", btn.Icon, "TOPLEFT", -3, 3)
-            mask:SetPoint("BOTTOMRIGHT", btn.Icon, "BOTTOMRIGHT", 3, -3)
-            btn.Icon:AddMaskTexture(mask)
+            mask:SetPoint("TOPLEFT", button.Icon, "TOPLEFT", -3, 3)
+            mask:SetPoint("BOTTOMRIGHT", button.Icon, "BOTTOMRIGHT", 3, -3)
+            button.Icon:AddMaskTexture(mask)
         end
     end)
     b.icon = b.Icon
@@ -3360,33 +3360,33 @@ local function MakeSquare(hostFrame)
 end
 
 local function DelveEnter(self)
-    local d = self.delve
-    if not d then
+    local skinData = self.delve
+    if not skinData then
         return
     end
     XF.Tip(
         self,
-        d.name or "?",
-        bountiful[d.name] and (XF.GOLD_HEX .. CludesUI.L("Bountiful today") .. "|r") or nil,
+        skinData.name or "?",
+        bountiful[skinData.name] and (XF.GOLD_HEX .. CludesUI.L("Bountiful today") .. "|r") or nil,
         CludesUI.L("Click to toggle")
     )
 end
 
 -- delve square: same button with the short name.
 local function MakeDelveSquare(hostFrame)
-    local b = SkinnedButton(hostFrame, BTN, BTN, nil, function(btn)
-        btn:SetText("")
+    local b = SkinnedButton(hostFrame, BTN, BTN, nil, function(button)
+        button:SetText("")
     end)
     local fontStr = b:GetFontString()
     fontStr:ClearAllPoints()
     fontStr:SetPoint("CENTER")
     fontStr:SetWordWrap(false)
     local function Layer(level)
-        local f = CreateFrame("Frame", nil, b)
-        f:SetAllPoints(b)
-        f:SetFrameLevel(b:GetFrameLevel() + level)
-        f:EnableMouse(false)
-        return f
+        local frame = CreateFrame("Frame", nil, b)
+        frame:SetAllPoints(b)
+        frame:SetFrameLevel(b:GetFrameLevel() + level)
+        frame:EnableMouse(false)
+        return frame
     end
     b.gold = Layer(2)
     b.edge = Layer(3)
@@ -3396,22 +3396,22 @@ local function MakeDelveSquare(hostFrame)
     line:SetPoint("TOPRIGHT", fontStr, "BOTTOMRIGHT", 0, -1)
     line:SetHeight(2)
     if XF.SkinOn() then
-        local r, g, bl, a = ThemeBorder()
-        CM.PanelPP.CreateBorder(b.edge, r, g, bl, a, 1, "OVERLAY", 7)
+        local region, g, bl, a = ThemeBorder()
+        CM.PanelPP.CreateBorder(b.edge, region, g, bl, a, 1, "OVERLAY", 7)
     end
     b.gold:Hide()
     b:SetScript("OnEnter", DelveEnter)
     b:SetScript("OnLeave", XF.Untip)
     b:SetScript("OnClick", function(self)
-        local d = self.delve
-        if not d then
+        local skinData = self.delve
+        if not skinData then
             return
         end
         local c = Cfg()
         if type(c.delves) ~= "table" then
             c.delves = {}
         end
-        c.delves[d.groupID] = (not c.delves[d.groupID]) or nil
+        c.delves[skinData.groupID] = (not c.delves[skinData.groupID]) or nil
         local n = 0
         for _, o in ipairs(delves or {}) do
             if c.delves[o.groupID] then
@@ -3431,16 +3431,16 @@ local function MakeDelveSquare(hostFrame)
 end
 
 -- grid slot i after the reset, right-aligned, wrapping.
-local function PlaceGrid(entries, idx, size, after, cols, slots)
-    local sq = entries[idx]
+local function PlaceGrid(entries, index, size, after, cols, slots)
+    local sq = entries[index]
     sq:SetSize(size, size)
     sq:ClearAllPoints()
-    if idx == 1 then
+    if index == 1 then
         sq:SetPoint("LEFT", after, "RIGHT", SQ_GAP + (slots - cols) * (size + SQ_GAP), 0)
-    elseif (idx - 1) % cols == 0 then
-        sq:SetPoint("TOPLEFT", entries[idx - cols], "BOTTOMLEFT", 0, -SQ_GAP)
+    elseif (index - 1) % cols == 0 then
+        sq:SetPoint("TOPLEFT", entries[index - cols], "BOTTOMLEFT", 0, -SQ_GAP)
     else
-        sq:SetPoint("LEFT", entries[idx - 1], "RIGHT", SQ_GAP, 0)
+        sq:SetPoint("LEFT", entries[index - 1], "RIGHT", SQ_GAP, 0)
     end
     sq:Show()
 end
@@ -3450,10 +3450,10 @@ local function LayoutDelves(size, after, show, cols, slots)
     local font = gfFont or "GameFontHighlight"
     -- one scrolling line, like the raid bosses
     if mod.ExtraDelveStrip then
-        mod.GFDressDelve = function(sq, d)
+        mod.GFDressDelve = function(sq, skinData)
             sq:SetNormalFontObject(font)
             sq:SetHighlightFontObject(font)
-            sq:SetText(d.abbr)
+            sq:SetText(skinData.abbr)
         end
         return mod.ExtraDelveStrip(
             entries,
@@ -3473,19 +3473,19 @@ local function LayoutDelves(size, after, show, cols, slots)
             end
         )
     end
-    for idx = 1, math.max(#entries, #delveSquares) do
-        local d = entries[idx]
-        local sq = delveSquares[idx]
-        if d and show then
+    for index = 1, math.max(#entries, #delveSquares) do
+        local skinData = entries[index]
+        local sq = delveSquares[index]
+        if skinData and show then
             if not sq then
                 sq = MakeDelveSquare(row)
-                delveSquares[idx] = sq
+                delveSquares[index] = sq
             end
-            sq.delve = d
+            sq.delve = skinData
             sq:SetNormalFontObject(font)
             sq:SetHighlightFontObject(font)
-            sq:SetText(d.abbr)
-            PlaceGrid(delveSquares, idx, size, after, cols, slots)
+            sq:SetText(skinData.abbr)
+            PlaceGrid(delveSquares, index, size, after, cols, slots)
         elseif sq then
             sq.delve = nil
             sq:Hide()
@@ -3544,11 +3544,11 @@ local function BossPickList()
     entries:EnableMouse(true)
     local backdrop = entries:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
-    local r, g, b = ThemeFill()
-    backdrop:SetColorTexture(r, g, b, 0.98)
+    local region, g, b = ThemeFill()
+    backdrop:SetColorTexture(region, g, b, 0.98)
     CM.MakeBorder(entries, ThemeBorder())
     entries.rows = {}
-    for idx, p in ipairs(BOSS_PICKS) do
+    for index, p in ipairs(BOSS_PICKS) do
         local it = CreateFrame("Button", nil, entries)
         it.Icon = it:CreateTexture(nil, "ARTWORK")
         it.Icon:SetTexture(p.tex)
@@ -3565,20 +3565,20 @@ local function BossPickList()
         end)
         it:SetScript("OnLeave", XF.Untip)
         it:SetScript("OnClick", function()
-            local d = entries.owner and entries.owner.boss
+            local skinData = entries.owner and entries.owner.boss
             entries:Hide()
-            if not d then
+            if not skinData then
                 return
             end
             local c = Cfg()
             if type(c.bosses) ~= "table" then
                 c.bosses = {}
             end
-            c.bosses[d.key] = p.value
+            c.bosses[skinData.key] = p.value
             Refilter()
             Paint()
         end)
-        entries.rows[idx] = it
+        entries.rows[index] = it
     end
     XF.ClickOff(entries, function(self)
         return self:IsMouseOver() or (self.owner and self.owner:IsMouseOver())
@@ -3602,16 +3602,16 @@ local function OpenBossPick(sq)
     XF.Untip()
     entries.owner = sq
     local wid = sq:GetWidth()
-    local icon = math.floor(wid * 0.6 + 0.5)
+    local iconTex = math.floor(wid * 0.6 + 0.5)
     local c = Cfg()
-    local cur = type(c.bosses) == "table" and sq.boss and c.bosses[sq.boss.key] or nil
-    for idx, it in ipairs(entries.rows) do
+    local current = type(c.bosses) == "table" and sq.boss and c.bosses[sq.boss.key] or nil
+    for index, it in ipairs(entries.rows) do
         it:SetSize(wid, wid)
         it:ClearAllPoints()
-        it:SetPoint("TOP", entries, "TOP", 0, -(idx - 1) * wid)
-        it.Icon:SetSize(icon, icon)
+        it:SetPoint("TOP", entries, "TOP", 0, -(index - 1) * wid)
+        it.Icon:SetSize(iconTex, iconTex)
         -- a light wash behind the current pick
-        it.cur:SetShown(BOSS_PICKS[idx].value == cur)
+        it.cur:SetShown(BOSS_PICKS[index].value == current)
     end
     entries:SetSize(wid, wid * #BOSS_PICKS)
     entries:ClearAllPoints()
@@ -3668,17 +3668,17 @@ local function LayoutBosses(size, after, show, cols, slots)
             end
         )
     end
-    for idx = 1, math.max(#entries, #bossSquares) do
-        local d = entries[idx]
-        local sq = bossSquares[idx]
-        if d and show then
+    for index = 1, math.max(#entries, #bossSquares) do
+        local skinData = entries[index]
+        local sq = bossSquares[index]
+        if skinData and show then
             if not sq then
                 sq = MakeBossSquare(row)
-                bossSquares[idx] = sq
+                bossSquares[index] = sq
             end
-            sq.boss = d
-            sq.icon:SetTexture(d.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
-            PlaceGrid(bossSquares, idx, size, after, cols, slots)
+            sq.boss = skinData
+            sq.icon:SetTexture(skinData.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
+            PlaceGrid(bossSquares, index, size, after, cols, slots)
         elseif sq then
             sq.boss = nil
             sq:Hide()
@@ -3697,8 +3697,8 @@ local function BuildRaidMenu()
     raidMenu:SetWidth(190)
     local backdrop = raidMenu:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
-    local r, g, b = ThemeFill()
-    backdrop:SetColorTexture(r, g, b, 0.98)
+    local region, g, b = ThemeFill()
+    backdrop:SetColorTexture(region, g, b, 0.98)
     local S = Skin()
     if S and S.AddBorder then
         S.AddBorder(raidMenu)
@@ -3785,10 +3785,10 @@ local function PaintRaidMenu()
         return
     end
     for _, raid in ipairs(raidList or {}) do
-        local item = raidMenu.items[raid.jid]
-        if item then
-            item:SetChecked(RaidShown(raid.jid))
-            item:SetDimmed(not XF.RaidEligible(raid.jid))
+        local entry = raidMenu.items[raid.jid]
+        if entry then
+            entry:SetChecked(RaidShown(raid.jid))
+            entry:SetDimmed(not XF.RaidEligible(raid.jid))
         end
     end
     if raidMenu.items.season then
@@ -3822,8 +3822,8 @@ local function BuildTierMenu()
     tierMenu:SetClampedToScreen(true)
     local backdrop = tierMenu:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
-    local r, g, b = ThemeFill()
-    backdrop:SetColorTexture(r, g, b, 0.98)
+    local region, g, b = ThemeFill()
+    backdrop:SetColorTexture(region, g, b, 0.98)
     local S = Skin()
     if S and S.AddBorder then
         S.AddBorder(tierMenu)
@@ -3931,11 +3931,11 @@ local function BuildRow()
 end
 
 -- a drop button's label color from its last paint
-function XF.PaintLabel(btn)
-    if btn.active then
-        btn.label:SetTextColor(Accent())
+function XF.PaintLabel(button)
+    if button.active then
+        button.label:SetTextColor(Accent())
     else
-        btn.label:SetTextColor(1, 1, 1, 1)
+        button.label:SetTextColor(1, 1, 1, 1)
     end
 end
 
@@ -3944,8 +3944,8 @@ Paint = function()
     if not SP then
         return
     end
-    local f = XF.GetFilter()
-    if not f then
+    local frame = XF.GetFilter()
+    if not frame then
         return
     end
     if diffBtn then
@@ -3953,10 +3953,10 @@ Paint = function()
         if SP.categoryID == RAIDS then
             isActive = ChosenRaidDiffs() or ChosenRaidPlaystyles() or ChosenRaidRoles()
         else
-            isActive = not DiffAllOrNone(f)
-                or DungeonPlaystyles(f)
-                or DungeonRolesSet(f)
-                or (f.minimumRating or 0) ~= 0
+            isActive = not DiffAllOrNone(frame)
+                or DungeonPlaystyles(frame)
+                or DungeonRolesSet(frame)
+                or (frame.minimumRating or 0) ~= 0
         end
         diffBtn.active = (isActive or RegionFilterActive() or XF.ExtraFilterActive()) and true or false
         -- green edge while a filter's on, same as the expressions button
@@ -3977,9 +3977,9 @@ Paint = function()
         if chosen then
             local textValue = CludesUI.Lf("Tier (%d)", n)
             if n == 1 then
-                for idx = 1, MAX_TIER do
-                    if chosen[idx] then
-                        textValue = XF.TierLabel(idx)
+                for index = 1, MAX_TIER do
+                    if chosen[index] then
+                        textValue = XF.TierLabel(index)
                     end
                 end
             end
@@ -4045,10 +4045,10 @@ Paint = function()
             end
         end
     end
-    local def = DungeonsDefault(f)
+    local def = DungeonsDefault(frame)
     for _, sq in ipairs(squares) do
         if sq:IsShown() and sq.dungeon then
-            local on = not def and Contains(f.activities, sq.dungeon.groupID) ~= nil
+            local on = not def and Contains(frame.activities, sq.dungeon.groupID) ~= nil
             sq.on = on
             sq.icon:SetDesaturated(not def and not on)
             sq.icon:SetAlpha((def or on) and 1 or 0.45)
@@ -4058,10 +4058,10 @@ Paint = function()
     local filter = SP.FilterButton
     local fd = filter and FFD[filter]
     if fd then
-        local cb = filter.isDefaultCallback
+        local callback = filter.isDefaultCallback
         local isDefault = true
-        if cb then
-            local success, val = pcall(cb)
+        if callback then
+            local success, val = pcall(callback)
             isDefault = (not success) or (val and true or false)
         end
         if XF.DimActive() then
@@ -4123,48 +4123,48 @@ end
 -------------------------------------------------------------------------------
 -- the top-row settings button as seen
 function XF.FilterFace()
-    local f = SP and SP.FilterButton
-    local d = f and FFD[f]
-    return d and d.face or f
+    local frame = SP and SP.FilterButton
+    local skinData = frame and FFD[frame]
+    return skinData and skinData.face or frame
 end
 mod.GFFilterFace = XF.FilterFace
 
 -- blizzard's filter dropdown becomes our settings cog.
-local function CogFilterButton(btn)
-    if not btn or FFD[btn] then
+local function CogFilterButton(button)
+    if not button or FFD[button] then
         return
     end
-    local d = { size = BTN }
-    FFD[btn] = d
-    if btn.Text then
-        btn.Text:SetAlpha(0)
+    local skinData = { size = BTN }
+    FFD[button] = skinData
+    if button.Text then
+        button.Text:SetAlpha(0)
     end
-    if btn.Background then
-        btn.Background:SetAlpha(0)
+    if button.Background then
+        button.Background:SetAlpha(0)
     end
     -- our own fixed-size face. blizzard's button grows with its text and
     -- only shrinks out of combat, so the row anchors to this
-    btn:SetAlpha(0)
-    d.face = SkinnedButton(SP, BTN, BTN)
-    d.face:EnableMouse(false) -- the catcher takes clicks
-    d.face:SetFrameLevel(row:GetFrameLevel() + 3)
-    d.cogFrame = CreateFrame("Frame", nil, d.face)
-    d.cogFrame:SetAllPoints(d.face)
-    d.cogFrame:SetFrameLevel(d.face:GetFrameLevel() + 3)
-    d.cogFrame:EnableMouse(false)
-    d.cog = d.cogFrame:CreateTexture(nil, "OVERLAY")
-    d.cog:SetTexture(COG_TEX)
-    d.cog:SetSize(14, 14)
-    d.cog:SetDesaturated(true)
-    d.cog:SetVertexColor(XF.GLYPH, XF.GLYPH, XF.GLYPH)
-    d.cog:SetPoint("CENTER")
-    d.cog:SetAlpha(0.8)
-    if btn.ResetButton then
-        btn.ResetButton:SetAlpha(0)
-        btn.ResetButton:EnableMouse(false)
+    button:SetAlpha(0)
+    skinData.face = SkinnedButton(SP, BTN, BTN)
+    skinData.face:EnableMouse(false) -- the catcher takes clicks
+    skinData.face:SetFrameLevel(row:GetFrameLevel() + 3)
+    skinData.cogFrame = CreateFrame("Frame", nil, skinData.face)
+    skinData.cogFrame:SetAllPoints(skinData.face)
+    skinData.cogFrame:SetFrameLevel(skinData.face:GetFrameLevel() + 3)
+    skinData.cogFrame:EnableMouse(false)
+    skinData.cog = skinData.cogFrame:CreateTexture(nil, "OVERLAY")
+    skinData.cog:SetTexture(COG_TEX)
+    skinData.cog:SetSize(14, 14)
+    skinData.cog:SetDesaturated(true)
+    skinData.cog:SetVertexColor(XF.GLYPH, XF.GLYPH, XF.GLYPH)
+    skinData.cog:SetPoint("CENTER")
+    skinData.cog:SetAlpha(0.8)
+    if button.ResetButton then
+        button.ResetButton:SetAlpha(0)
+        button.ResetButton:EnableMouse(false)
     end
     -- blizzard resizes it with its text; size it back (after combat if in it).
-    hooksecurefunc(btn, "UpdateText", function(self)
+    hooksecurefunc(button, "UpdateText", function(self)
         local fd = FFD[self]
         if not fd then
             return
@@ -4176,19 +4176,19 @@ local function CogFilterButton(btn)
         self:SetSize(fd.size, fd.size)
     end)
     -- opens the group finder settings: a click catcher sits over it
-    btn:EnableMouse(false)
+    button:EnableMouse(false)
     local catcher = CreateFrame("Button", nil, row)
-    catcher:SetAllPoints(d.face)
-    catcher:SetFrameLevel(d.face:GetFrameLevel() + 6)
+    catcher:SetAllPoints(skinData.face)
+    catcher:SetFrameLevel(skinData.face:GetFrameLevel() + 6)
     local wash = catcher:CreateTexture(nil, "HIGHLIGHT")
     wash:SetAllPoints()
     wash:SetColorTexture(1, 1, 1, 0.1)
     catcher:SetScript("OnEnter", function(self)
-        d.cog:SetAlpha(1)
+        skinData.cog:SetAlpha(1)
         XF.Tip(self, CludesUI.L("Group Filters Settings"))
     end)
     catcher:SetScript("OnLeave", function()
-        d.cog:SetAlpha(0.8)
+        skinData.cog:SetAlpha(0.8)
         XF.Untip()
     end)
     catcher:SetScript("OnClick", function()
@@ -4199,24 +4199,24 @@ local function CogFilterButton(btn)
         end
         CM:ShowModule(ADDON_NAME)
     end)
-    d.catcher = catcher
+    skinData.catcher = catcher
 
     -- reset uses blizzard's own defaults.
     resetBtn = GlyphButton(row, BTN, X_TEX)
     resetBtn.Glyph:SetVertexColor(XF.GLYPH, XF.GLYPH, XF.GLYPH)
     resetBtn:SetScript("OnClick", function()
-        local f = XF.GetFilter()
-        f.needsTank, f.needsHealer, f.needsDamage, f.needsMyClass = false, false, false, false
-        f.hasTank, f.hasHealer = false, false
-        f.minimumRating = 0
+        local frame = XF.GetFilter()
+        frame.needsTank, frame.needsHealer, frame.needsDamage, frame.needsMyClass = false, false, false, false
+        frame.hasTank, frame.hasHealer = false, false
+        frame.minimumRating = 0
         Cfg().ratingOn = nil
-        for idx = 1, 4 do
-            f["generalPlaystyle" .. idx] = true
+        for index = 1, 4 do
+            frame["generalPlaystyle" .. index] = true
         end
-        for _, d in ipairs(DIFFS) do
-            f[d.key] = true
+        for _, skinData in ipairs(DIFFS) do
+            frame[skinData.key] = true
         end
-        f.activities = AllDungeonGroups()
+        frame.activities = AllDungeonGroups()
         local c = Cfg()
         if type(c.regions) == "table" then
             wipe(c.regions)
@@ -4248,7 +4248,7 @@ local function CogFilterButton(btn)
             wipe(c.roleCounts)
         end
         PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
-        Apply(f)
+        Apply(frame)
         Refilter()
     end)
     resetBtn:SetScript("OnEnter", function(self)
@@ -4324,20 +4324,20 @@ mod.GFShortName = XF.ShortName
 
 -- text layer over a square, above its border
 function XF.SquareOverlay(sq)
-    local f = sq.overlay
-    if not f then
-        f = CreateFrame("Frame", nil, sq)
-        f:SetAllPoints(sq)
-        f:SetFrameLevel(sq:GetFrameLevel() + 3)
-        f:EnableMouse(false)
-        sq.overlay = f
+    local frame = sq.overlay
+    if not frame then
+        frame = CreateFrame("Frame", nil, sq)
+        frame:SetAllPoints(sq)
+        frame:SetFrameLevel(sq:GetFrameLevel() + 3)
+        frame:EnableMouse(false)
+        sq.overlay = frame
     end
-    return f
+    return frame
 end
 
 -- short name on a square: at the top when keystone level shows too
-function XF.SquareAbbr(sq, d, size)
-    local on = Cfg().dungeonAbbr == true and d ~= nil
+function XF.SquareAbbr(sq, skinData, size)
+    local on = Cfg().dungeonAbbr == true and skinData ~= nil
     if on and not sq.abbr then
         sq.abbr = XF.SquareOverlay(sq):CreateFontString(nil, "OVERLAY")
         sq.abbr:SetJustifyH("CENTER")
@@ -4360,7 +4360,7 @@ function XF.SquareAbbr(sq, d, size)
         end
         local fontStr = math.max(8, math.floor(size * 0.36))
         XF.Font(sq.abbr, fontStr, "OUTLINE")
-        sq.abbr:SetText(XF.ShortName(d.name))
+        sq.abbr:SetText(XF.ShortName(skinData.name))
         while
             fontStr > 8
             and ((sq.abbr.GetUnboundedStringWidth and sq.abbr:GetUnboundedStringWidth()) or 0) > size - 4
@@ -4374,10 +4374,10 @@ function XF.SquareAbbr(sq, d, size)
 end
 
 -- best keystone level on a square, colored by its score
-function XF.SquareScore(sq, d, size)
+function XF.SquareScore(sq, skinData, size)
     local best
-    if Cfg().dungeonScore == true and d ~= nil then
-        local intime, overtime = C_MythicPlus.GetSeasonBestForMap(d.cmID)
+    if Cfg().dungeonScore == true and skinData ~= nil then
+        local intime, overtime = C_MythicPlus.GetSeasonBestForMap(skinData.cmID)
         best = intime
         if overtime and (not best or overtime.dungeonScore >= best.dungeonScore) then
             best = overtime
@@ -4395,7 +4395,7 @@ function XF.SquareScore(sq, d, size)
         return
     end
     if best then
-        local _, overall = C_MythicPlus.GetSeasonBestAffixScoreInfoForMap(d.cmID)
+        local _, overall = C_MythicPlus.GetSeasonBestAffixScoreInfoForMap(skinData.cmID)
         local color = C_ChallengeMode.GetSpecificDungeonOverallScoreRarityColor(overall or best.dungeonScore)
         XF.Font(fontStr, math.max(8, math.floor(size * 0.42)), "")
         fontStr:ClearAllPoints()
@@ -4416,24 +4416,24 @@ end
 
 local function LayoutSquares(size, after, show)
     local entries = dungeons or {}
-    local prev = after
-    for idx = 1, math.max(#entries, #squares) do
-        local d = entries[idx]
-        local sq = squares[idx]
-        if d and show then
+    local previous = after
+    for index = 1, math.max(#entries, #squares) do
+        local skinData = entries[index]
+        local sq = squares[index]
+        if skinData and show then
             if not sq then
                 sq = MakeSquare(row)
-                squares[idx] = sq
+                squares[index] = sq
             end
-            sq.dungeon = d
+            sq.dungeon = skinData
             sq:SetSize(size, size)
             sq:ClearAllPoints()
-            sq:SetPoint("LEFT", prev, "RIGHT", SQ_GAP, 0)
-            sq.icon:SetTexture(d.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
-            XF.SquareScore(sq, d, size)
-            XF.SquareAbbr(sq, d, size)
+            sq:SetPoint("LEFT", previous, "RIGHT", SQ_GAP, 0)
+            sq.icon:SetTexture(skinData.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
+            XF.SquareScore(sq, skinData, size)
+            XF.SquareAbbr(sq, skinData, size)
             sq:Show()
-            prev = sq
+            previous = sq
         elseif sq then
             sq.dungeon = nil
             sq:Hide()
@@ -4716,11 +4716,11 @@ local function Layout()
     local ROW_INSET = 3
     local topY = ROW2_Y - lines * size - (lines - 1) * SQ_GAP - SQ_GAP
     local bottom = BOTTOM_Y + 22 + SQ_GAP
-    local scroll, bar, inset = SP.ScrollBox, SP.ScrollBar, SP.ResultsInset
-    if bar then
-        bar:ClearAllPoints()
-        bar:SetPoint("TOP", SP, "TOPRIGHT", -pad / 2, topY)
-        bar:SetPoint("BOTTOM", SP, "BOTTOMRIGHT", -pad / 2, bottom)
+    local scroll, barFrame, inset = SP.ScrollBox, SP.ScrollBar, SP.ResultsInset
+    if barFrame then
+        barFrame:ClearAllPoints()
+        barFrame:SetPoint("TOP", SP, "TOPRIGHT", -pad / 2, topY)
+        barFrame:SetPoint("BOTTOM", SP, "BOTTOMRIGHT", -pad / 2, bottom)
     end
     if scroll then
         scroll:ClearAllPoints()
@@ -4796,15 +4796,15 @@ local function LayoutCategoryList()
         return
     end
     local pad = tonumber(c.padding) or 12
-    for idx, b in ipairs(CS.CategoryButtons) do
+    for index, b in ipairs(CS.CategoryButtons) do
         b:ClearAllPoints()
-        if idx == 1 then
+        if index == 1 then
             b:SetPoint("TOPLEFT", CS, "TOPLEFT", pad, -77)
             b:SetPoint("TOPRIGHT", CS, "TOPRIGHT", -pad, -77)
         else
-            local prev = CS.CategoryButtons[idx - 1]
-            b:SetPoint("TOPLEFT", prev, "BOTTOMLEFT", 0, -3)
-            b:SetPoint("TOPRIGHT", prev, "BOTTOMRIGHT", 0, -3)
+            local previous = CS.CategoryButtons[index - 1]
+            b:SetPoint("TOPLEFT", previous, "BOTTOMLEFT", 0, -3)
+            b:SetPoint("TOPRIGHT", previous, "BOTTOMRIGHT", 0, -3)
         end
     end
 end
@@ -4838,13 +4838,13 @@ local function StyleEntryDropdown(dropdown)
         labelText:SetPoint("RIGHT", dropdown, "RIGHT", -24, 0)
         labelText:SetJustifyH("LEFT")
     end
-    for _, r in ipairs({ dropdown:GetRegions() }) do
-        if r.GetAtlas and r:GetAtlas() == "Azerite-PointingArrow" then
-            r:SetDesaturated(true)
-            r:SetVertexColor(1, 1, 1, 0.8)
-            r:SetSize(11, 8)
-            r:ClearAllPoints()
-            r:SetPoint("RIGHT", dropdown, "RIGHT", -8, 0)
+    for _, region in ipairs({ dropdown:GetRegions() }) do
+        if region.GetAtlas and region:GetAtlas() == "Azerite-PointingArrow" then
+            region:SetDesaturated(true)
+            region:SetVertexColor(1, 1, 1, 0.8)
+            region:SetSize(11, 8)
+            region:ClearAllPoints()
+            region:SetPoint("RIGHT", dropdown, "RIGHT", -8, 0)
         end
     end
 end
@@ -4960,11 +4960,11 @@ local function LayoutEntryFields()
 end
 
 -- the switch's width, or blizzard's check box with the skin off
-function XF.CheckW(cb)
+function XF.CheckW(callback)
     if XF.SkinOn() then
         return 30
     end
-    local wid = cb:GetWidth()
+    local wid = callback:GetWidth()
     return (type(wid) == "number" and wid > 0) and wid or 22
 end
 
@@ -5007,14 +5007,14 @@ function XF.AlignEntryRows()
     local sl = style:GetLeft()
     for _, k in ipairs(XF.ENTRY_CHECK_ROWS) do
         local row = EC[k]
-        local cb = type(row) == "table" and row.CheckButton
+        local callback = type(row) == "table" and row.CheckButton
         local rl = type(row) == "table" and row.GetLeft and row:GetLeft()
-        if type(cb) == "table" and sl and rl then
-            cb:ClearAllPoints()
-            cb:SetPoint("LEFT", row, "LEFT", sl - rl, 0)
+        if type(callback) == "table" and sl and rl then
+            callback:ClearAllPoints()
+            callback:SetPoint("LEFT", row, "LEFT", sl - rl, 0)
             if row.Label then
                 row.Label:ClearAllPoints()
-                row.Label:SetPoint("LEFT", cb, "LEFT", XF.CheckW(cb) + 6, 0)
+                row.Label:SetPoint("LEFT", callback, "LEFT", XF.CheckW(callback) + 6, 0)
             end
         end
     end
@@ -5040,24 +5040,24 @@ local SW_W, SW_H, SW_PAD = 30, 16, 2
 
 -- checked state; it can be secret (e.g. editing a listing mid-encounter), then
 -- returns nil, true.
-local function CheckedState(cb)
-    local val = cb:GetChecked()
+local function CheckedState(callback)
+    local val = callback:GetChecked()
     if IsSecret(val) then
         return nil, true
     end
     return val and true or false, false
 end
 
-local function PaintSwitch(cb)
-    local d = FFD[cb]
-    if not d then
+local function PaintSwitch(callback)
+    local skinData = FFD[callback]
+    if not skinData then
         return
     end
-    local raw = cb:GetChecked()
-    local enabled = cb:IsEnabled()
-    local sw = d.switch
-    local r, g, b = Accent()
-    sw.trackOn:SetColorTexture(r, g, b, 0.75)
+    local raw = callback:GetChecked()
+    local enabled = callback:IsEnabled()
+    local sw = skinData.switch
+    local region, g, b = Accent()
+    sw.trackOn:SetColorTexture(region, g, b, 0.75)
     if IsSecret(raw) then
         -- secret: draw both looks and let the value pick one.
         sw.trackOn:SetAlphaFromBoolean(raw, 1, 0)
@@ -5073,7 +5073,7 @@ local function PaintSwitch(cb)
     sw.trackOff:SetAlpha(on and 0 or 1)
     sw.knobOff:SetAlpha(on and 0 or 1)
     sw:SetAlpha(enabled and 1 or 0.4)
-    local row = d.row
+    local row = skinData.row
     local dim = (on and enabled) and 1 or 0.45
     if row and row.Label then
         row.Label:SetAlpha(dim)
@@ -5095,20 +5095,20 @@ local function SwitchCheckbox(row)
     if type(row) ~= "table" then
         return
     end
-    local cb = row.CheckButton
-    if type(cb) ~= "table" then
+    local callback = row.CheckButton
+    if type(callback) ~= "table" then
         return
     end
-    if not FFD[cb] then
-        local d = { row = row }
-        FFD[cb] = d
-        for _, childFrame in ipairs({ cb:GetChildren() }) do
+    if not FFD[callback] then
+        local skinData = { row = row }
+        FFD[callback] = skinData
+        for _, childFrame in ipairs({ callback:GetChildren() }) do
             childFrame:SetAlpha(0)
         end
-        local sw = CreateFrame("Frame", nil, cb)
+        local sw = CreateFrame("Frame", nil, callback)
         sw:SetSize(SW_W, SW_H)
-        sw:SetPoint("LEFT", cb, "LEFT", 0, 0)
-        sw:SetFrameLevel(cb:GetFrameLevel() + 3)
+        sw:SetPoint("LEFT", callback, "LEFT", 0, 0)
+        sw:SetFrameLevel(callback:GetFrameLevel() + 3)
         sw:EnableMouse(false)
         sw.trackOff = sw:CreateTexture(nil, "BACKGROUND")
         sw.trackOff:SetAllPoints()
@@ -5123,13 +5123,13 @@ local function SwitchCheckbox(row)
         sw.knobOn:SetSize(SW_H - SW_PAD * 2, SW_H - SW_PAD * 2)
         sw.knobOn:SetPoint("RIGHT", sw, "RIGHT", -SW_PAD, 0)
         sw.knobOn:SetColorTexture(1, 1, 1, 1)
-        d.switch = sw
+        skinData.switch = sw
         if row.Label then
             row.Label:ClearAllPoints()
             row.Label:SetPoint("LEFT", row, "LEFT", SW_W + 6, 0)
         end
-        d.curOn = CheckedState(cb)
-        hooksecurefunc(cb, "SetChecked", function(self, val)
+        skinData.curOn = CheckedState(callback)
+        hooksecurefunc(callback, "SetChecked", function(self, val)
             local fd = FFD[self]
             if fd then
                 -- don't remember secret values.
@@ -5141,10 +5141,10 @@ local function SwitchCheckbox(row)
             end
             PaintSwitch(self)
         end)
-        if cb.SetEnabled then
-            hooksecurefunc(cb, "SetEnabled", PaintSwitch)
+        if callback.SetEnabled then
+            hooksecurefunc(callback, "SetEnabled", PaintSwitch)
         end
-        cb:HookScript("OnClick", function(self)
+        callback:HookScript("OnClick", function(self)
             local fd = FFD[self]
             local on = CheckedState(self)
             if fd then
@@ -5160,28 +5160,28 @@ local function SwitchCheckbox(row)
         if row.EditBox and row.EditBox.HookScript then
             -- blizzard re-enables these, so refuse focus while off
             row.EditBox:HookScript("OnEditFocusGained", function(box)
-                if CheckedState(cb) == false then
+                if CheckedState(callback) == false then
                     box:ClearFocus()
                 end
             end)
             if row.EditBox.SetEnabled then
                 hooksecurefunc(row.EditBox, "SetEnabled", function(box, val)
-                    if not IsSecret(val) and val and CheckedState(cb) == false and not FFD[cb].reEnable then
-                        FFD[cb].reEnable = true
+                    if not IsSecret(val) and val and CheckedState(callback) == false and not FFD[callback].reEnable then
+                        FFD[callback].reEnable = true
                         box:SetEnabled(false)
-                        FFD[cb].reEnable = nil
+                        FFD[callback].reEnable = nil
                     end
                 end)
             end
             row.EditBox:HookScript("OnEditFocusLost", function()
-                local fd = FFD[cb]
+                local fd = FFD[callback]
                 if fd and fd.prevOn and fd.curOn == false and fd.setAt == GetTime() then
-                    cb:SetChecked(true)
+                    callback:SetChecked(true)
                 end
             end)
         end
     end
-    PaintSwitch(cb)
+    PaintSwitch(callback)
 end
 
 -- option check buttons as switches
@@ -5392,8 +5392,8 @@ local function Init()
         if SP.searching or type(res) ~= "table" or not SP:IsVisible() then
             return
         end
-        for idx = 1, #res do
-            local ident = res[idx]
+        for index = 1, #res do
+            local ident = res[index]
             if not IsSecret(ident) then
                 seenResults[ident] = true
             end
@@ -5444,9 +5444,9 @@ function mod.Search_OnEnable()
         Init()
         return
     end
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("ADDON_LOADED")
-    f:SetScript("OnEvent", function(self, _, name)
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("ADDON_LOADED")
+    frame:SetScript("OnEvent", function(self, _, name)
         if name == "Blizzard_GroupFinder" then
             self:UnregisterEvent("ADDON_LOADED")
             Init()

@@ -56,22 +56,22 @@ local _AC = { bars = {}, syncPending = {} }
 -- container point (set at build) mirrors these anchors so the engine flows
 -- away from the bar / centers under it.
 function _AC.Anchor(barId, rec)
-    local bar = cdmBarFrames[barId]
+    local barFrame = cdmBarFrames[barId]
     local holderFrame = rec and rec.holder
-    if not (bar and holderFrame) then
+    if not (barFrame and holderFrame) then
         return
     end
-    holderFrame:SetShown(bar:IsShown())
+    holderFrame:SetShown(barFrame:IsShown())
     -- Visibility rules and bar opacity hide the bar through ALPHA on the bar
     -- frame and its own icons; this holder is UIParent-parented and inherits
     -- none of it, so mirror the bar's effective alpha here: 0 while the bar
     -- is visibility-hidden, else its opacity / out-of-combat fade.
     local bdA = (mod.barDataByKey and mod.barDataByKey[barId]) or rec.bdRef
     holderFrame:SetAlpha(
-        bar._visHidden and 0 or ((mod.EffectiveBarAlpha and mod.EffectiveBarAlpha(bdA)) or 1)
+        barFrame._visHidden and 0 or ((mod.EffectiveBarAlpha and mod.EffectiveBarAlpha(bdA)) or 1)
     )
     holderFrame:ClearAllPoints()
-    local success, bl, bb, bw, bh = pcall(bar.GetRect, bar)
+    local success, bl, bb, bw, bh = pcall(barFrame.GetRect, barFrame)
     if not (success and bl) then
         holderFrame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", -10000, -10000)
         return
@@ -90,7 +90,7 @@ function _AC.Anchor(barId, rec)
     -- point flips to CENTER so the engine centers it); directional bars
     -- seat it at the FIXED growth edge -- exactly where the first real
     -- buff would render.
-    local empty = (bar._acLiveW ~= nil and bar._acLiveW <= 0.5)
+    local empty = (barFrame._acLiveW ~= nil and barFrame._acLiveW <= 0.5)
     local wantPt = (empty and grow == "CENTER") and "CENTER" or rec.pt
     if rec.container and wantPt and rec.curPt ~= wantPt then
         rec.curPt = wantPt
@@ -186,33 +186,33 @@ do
     -- order), else the resource dim (not the power part under Ignore Resource
     -- Cost). The range tint is written RGBA as Blizzard writes it; the dim
     -- keeps its 3-arg writes.
-    local function PaintTint(f, spellRef, onRealCD)
-        local texture = f._tex
+    local function PaintTint(frame, spellRef, onRealCD)
+        local texture = frame._tex
         if not texture then
             return
         end
-        if f._rangeOut then
+        if frame._rangeOut then
             -- Out of range the icon is range-driven: the dim memo goes (left set, it
             -- would hold the drain unsettled after the spell turned usable) and the
             -- tint write is edge-gated. PaintTint is the only colour writer here.
-            f._lastVertexDim = nil
-            if not f._rangeTinted then
+            frame._lastVertexDim = nil
+            if not frame._rangeTinted then
                 local c = CooldownViewerConstants and CooldownViewerConstants.ITEM_NOT_IN_RANGE_COLOR
                 if c then
                     texture:SetVertexColor(c:GetRGBA())
-                    f._rangeTinted = true
+                    frame._rangeTinted = true
                 end
             end
             return
         end
         -- Leaving the range tint needs a white write even when the dim memo is clean.
-        local wasTinted = f._rangeTinted
+        local wasTinted = frame._rangeTinted
         if wasTinted then
-            f._rangeTinted = nil
+            frame._rangeTinted = nil
         end
         if not onRealCD then
             local isUsable, notEnoughMana = C_Spell.IsSpellUsable(spellRef)
-            if notEnoughMana and mod.PresetIgnoresResourceTint(f) then
+            if notEnoughMana and mod.PresetIgnoresResourceTint(frame) then
                 -- Short on power reads as usable; other reasons keep their grey.
                 isUsable, notEnoughMana = true, false
             end
@@ -220,13 +220,13 @@ do
                 texture:SetVertexColor(0.5, 0.5, 1.0)
             elseif not isUsable then
                 texture:SetVertexColor(0.4, 0.4, 0.4)
-            elseif f._lastVertexDim or wasTinted then
+            elseif frame._lastVertexDim or wasTinted then
                 texture:SetVertexColor(1, 1, 1)
             end
-            f._lastVertexDim = (not isUsable) or nil
-        elseif f._lastVertexDim or wasTinted then
+            frame._lastVertexDim = (not isUsable) or nil
+        elseif frame._lastVertexDim or wasTinted then
             texture:SetVertexColor(1, 1, 1)
-            f._lastVertexDim = nil
+            frame._lastVertexDim = nil
         end
     end
     mod.PaintCustomSpellTint = PaintTint
@@ -234,8 +234,8 @@ do
     -- Out of range is a readable false only: nil (no target) and a secret answer
     -- both read as in range.
     local function ReadOut(ident)
-        local r = C_Spell.IsSpellInRange(ident)
-        if not (issecretvalue and issecretvalue(r)) and r == false then
+        local region = C_Spell.IsSpellInRange(ident)
+        if not (issecretvalue and issecretvalue(region)) and region == false then
             return true
         end
         return nil
@@ -245,15 +245,15 @@ do
     -- range event, override edge, options). A repaint that lands dimmed wakes
     -- the drain: the write happened outside the pass, and a dim is only polled
     -- for its usable edge while the drain is awake.
-    local function SetRangeOut(f, result)
-        if f._rangeOut == result then
+    local function SetRangeOut(frame, result)
+        if frame._rangeOut == result then
             return
         end
-        f._rangeOut = result
-        local spellRef = f._cachedPresetSID
+        frame._rangeOut = result
+        local spellRef = frame._cachedPresetSID
         if spellRef then
-            PaintTint(f, spellRef, f._lastOnRealCD)
-            if f._lastVertexDim then
+            PaintTint(frame, spellRef, frame._lastOnRealCD)
+            if frame._lastVertexDim then
                 mod._MarkPresetCdDirty()
             end
         end
@@ -269,10 +269,10 @@ do
             if named and not refs[spellId] then
                 return
             end
-            for f in pairs(_pcActive) do
-                local armed = f._rangeArmedSID
+            for frame in pairs(_pcActive) do
+                local armed = frame._rangeArmedSID
                 if armed and (not named or armed == spellId) then
-                    SetRangeOut(f, ReadOut(armed))
+                    SetRangeOut(frame, ReadOut(armed))
                 end
             end
             return
@@ -280,9 +280,9 @@ do
         -- Override edges re-point the opted icons at their live form. The icon
         -- and override events name the base spell (nil = every spell);
         -- SPELLS_CHANGED names none.
-        for f in pairs(_pcActive) do
-            if f._rangeOpted and (not named or f._cachedPresetSID == spellId) then
-                mod.SyncCustomSpellRange(f)
+        for frame in pairs(_pcActive) do
+            if frame._rangeOpted and (not named or frame._cachedPresetSID == spellId) then
+                mod.SyncCustomSpellRange(frame)
             end
         end
     end
@@ -291,10 +291,10 @@ do
     -- arm, nil while that form has no range: an opted frame stays on the
     -- override edges either way, so a form that gains a range arms. The range
     -- event itself is held only while some id is armed.
-    local function SetArm(f, ident, opted)
+    local function SetArm(frame, ident, opted)
         opted = opted or nil
-        if f._rangeOpted ~= opted then
-            f._rangeOpted = opted
+        if frame._rangeOpted ~= opted then
+            frame._rangeOpted = opted
             armCount = armCount + (opted and 1 or -1)
             if opted and armCount == 1 then
                 if not listener then
@@ -308,27 +308,27 @@ do
                 listener:UnregisterAllEvents()
             end
         end
-        local prev = f._rangeArmedSID
-        if prev == ident then
+        local previous = frame._rangeArmedSID
+        if previous == ident then
             return
         end
         local hadArm = next(refs) ~= nil
-        f._rangeArmedSID = ident
-        if prev then
-            local num = (refs[prev] or 1) - 1
-            refs[prev] = (num > 0) and num or nil
-            if not refs[prev] and not mod.BlizzardArmsRange(prev) then
+        frame._rangeArmedSID = ident
+        if previous then
+            local num = (refs[previous] or 1) - 1
+            refs[previous] = (num > 0) and num or nil
+            if not refs[previous] and not mod.BlizzardArmsRange(previous) then
                 local held = false
                 if mod._oorArmed then
                     for _, shade in pairs(mod._oorArmed) do
-                        if shade == prev then
+                        if shade == previous then
                             held = true
                             break
                         end
                     end
                 end
                 if not held then
-                    C_Spell.EnableSpellRangeCheck(prev, false)
+                    C_Spell.EnableSpellRangeCheck(previous, false)
                 end
             end
         end
@@ -351,12 +351,12 @@ do
     -- Resolve one custom-spell frame: hold or drop its opt-in, arm, re-point
     -- (live override) or release its range check, then read range once.
     -- Called on edges only: Show, override edges and the options toggle.
-    function mod.SyncCustomSpellRange(f)
-        local spellRef = f._cachedPresetSID
+    function mod.SyncCustomSpellRange(frame)
+        local spellRef = frame._cachedPresetSID
         if not spellRef then
-            local m = f._pfKey and f._pfKey:match(":(%d+)$")
+            local m = frame._pfKey and frame._pfKey:match(":(%d+)$")
             spellRef = m and tonumber(m)
-            f._cachedPresetSID = spellRef
+            frame._cachedPresetSID = spellRef
         end
         local wanted, opted
         local cas = spellRef and mod._cdmAnyCustomRangeColor and mod.GetEffectiveCustomActiveState(spellRef)
@@ -368,28 +368,28 @@ do
                 wanted = live
             end
         end
-        SetArm(f, wanted, opted)
-        SetRangeOut(f, wanted and ReadOut(wanted) or nil)
+        SetArm(frame, wanted, opted)
+        SetRangeOut(frame, wanted and ReadOut(wanted) or nil)
     end
 
-    function mod.ReleaseCustomSpellRange(f)
-        SetArm(f, nil, nil)
+    function mod.ReleaseCustomSpellRange(frame)
+        SetArm(frame, nil, nil)
     end
 
     -- Options toggle (and the gate latching on): re-resolve every shown
     -- custom-spell icon right away.
     function mod.RefreshCustomSpellRange()
-        for f in pairs(_pcActive) do
-            if f._isCustomSpellFrame and not f._isCustomBuffFrame then
-                mod.SyncCustomSpellRange(f)
+        for frame in pairs(_pcActive) do
+            if frame._isCustomSpellFrame and not frame._isCustomBuffFrame then
+                mod.SyncCustomSpellRange(frame)
             end
         end
     end
 end
 
-local function _RegisterPresetLive(f, fkey)
-    f._pfKey = fkey
-    f:HookScript("OnShow", function(self)
+local function _RegisterPresetLive(frame, fkey)
+    frame._pfKey = fkey
+    frame:HookScript("OnShow", function(self)
         _pcActive[self] = true
         -- Show is a state edge (events may have fired while hidden):
         -- re-read and re-push everything on the next pass.
@@ -406,15 +406,15 @@ local function _RegisterPresetLive(f, fkey)
             mod._MarkPresetCdDirty()
         end
     end)
-    f:HookScript("OnHide", function(self)
+    frame:HookScript("OnHide", function(self)
         _pcActive[self] = nil
         -- A hidden icon holds no range registration; its Show re-arms it.
         if self._rangeOpted then
             mod.ReleaseCustomSpellRange(self)
         end
     end)
-    if f:IsShown() then
-        _pcActive[f] = true
+    if frame:IsShown() then
+        _pcActive[frame] = true
     end
 end
 
@@ -433,9 +433,9 @@ mod._placeholderFrames = _placeholderFrames
 -- pass then re-shows only the placeholders it injects, so a placeholder whose
 -- buff went active, or whose bar was toggled off/disabled, ends up hidden.
 local function HideAllPlaceholders()
-    for _, f in pairs(_placeholderFrames) do
-        if f:IsShown() then
-            f:Hide()
+    for _, frame in pairs(_placeholderFrames) do
+        if frame:IsShown() then
+            frame:Hide()
         end
     end
 end
@@ -448,9 +448,9 @@ mod.HideAllPlaceholders = HideAllPlaceholders
 -- need their own hide pass or an inactive/expired/orphaned one would linger.
 local _injectedCustomBuffFrames = setmetatable({}, { __mode = "k" })
 local function HideAllInjectedCustomBuffs()
-    for f in pairs(_injectedCustomBuffFrames) do
-        if f:IsShown() then
-            f:Hide()
+    for frame in pairs(_injectedCustomBuffFrames) do
+        if frame:IsShown() then
+            frame:Hide()
         end
     end
 end
@@ -472,8 +472,8 @@ local function EnsureBookNameMap()
         local built = {}
         local success = pcall(function()
             local nLines = C_SpellBook.GetNumSpellBookSkillLines()
-            for idx = 1, (nLines or 0) do
-                local li = C_SpellBook.GetSpellBookSkillLineInfo(idx)
+            for index = 1, (nLines or 0) do
+                local li = C_SpellBook.GetSpellBookSkillLineInfo(index)
                 if li and li.itemIndexOffset and li.numSpellBookItems then
                     for jdx = li.itemIndexOffset + 1, li.itemIndexOffset + li.numSpellBookItems do
                         local it = C_SpellBook.GetSpellBookItemInfo(jdx, Enum.SpellBookSpellBank.Player)
@@ -613,21 +613,21 @@ mod.ResolvePlaceholderIconSID = ResolvePlaceholderIconSID
 -- share a single pooled frame (see the collision note at the call site).
 local function GetOrCreatePlaceholderFrame(barId, spellId, iconID, identKey)
     local fkey = barId .. ":ph:" .. tostring(identKey or spellId)
-    local f = _placeholderFrames[fkey]
-    if not f then
-        f = CreateFrame("Frame", nil, UIParent)
-        f:SetSize(36, 36)
-        f:Hide()
-        f:EnableMouse(true)
-        if f.SetMouseClickEnabled then
-            f:SetMouseClickEnabled(false)
+    local frame = _placeholderFrames[fkey]
+    if not frame then
+        frame = CreateFrame("Frame", nil, UIParent)
+        frame:SetSize(36, 36)
+        frame:Hide()
+        frame:EnableMouse(true)
+        if frame.SetMouseClickEnabled then
+            frame:SetMouseClickEnabled(false)
         end
-        local texture = f:CreateTexture(nil, "ARTWORK")
+        local texture = frame:CreateTexture(nil, "ARTWORK")
         texture:SetAllPoints()
         mod.CdmOwnIconCrop(texture)
-        f.Icon = texture
-        f._tex = texture
-        local cd = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
+        frame.Icon = texture
+        frame._tex = texture
+        local cd = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
         cd:SetAllPoints()
         cd:SetDrawEdge(false)
         cd:SetDrawBling(false)
@@ -640,16 +640,16 @@ local function GetOrCreatePlaceholderFrame(barId, spellId, iconID, identKey)
             cd:SetMouseMotionEnabled(false)
         end
         cd:Clear() -- permanent placeholder: never arm a 0-duration swipe (strobe)
-        f.Cooldown = cd
-        f._cooldown = cd
-        f._isPlaceholderFrame = true
-        f._phSpellID = spellId
+        frame.Cooldown = cd
+        frame._cooldown = cd
+        frame._isPlaceholderFrame = true
+        frame._phSpellID = spellId
         -- Never claimed/routed like a Blizzard frame; carries no live aura state.
-        f.cooldownID = nil
-        f.cooldownInfo = nil
-        f.auraInstanceID = nil
-        f.wasSetFromAura = nil
-        f:SetScript("OnEnter", function(self)
+        frame.cooldownID = nil
+        frame.cooldownInfo = nil
+        frame.auraInstanceID = nil
+        frame.wasSetFromAura = nil
+        frame:SetScript("OnEnter", function(self)
             local ffc = _ecmeFC[self]
             local bd2 = ffc and ffc.barKey and barDataByKey[ffc.barKey]
             if not bd2 or not bd2.showTooltip then
@@ -682,17 +682,17 @@ local function GetOrCreatePlaceholderFrame(barId, spellId, iconID, identKey)
             end
             GameTooltip:Show()
         end)
-        f:SetScript("OnLeave", GameTooltip_Hide)
-        _placeholderFrames[fkey] = f
+        frame:SetScript("OnLeave", GameTooltip_Hide)
+        _placeholderFrames[fkey] = frame
     end
     -- Re-assert on reuse: a pooled frame outlives a talent swap, so the id it
     -- was created with can name the pre-talent spell (its tooltip would still
     -- read Immolate on a Hellcaller Wither slot).
-    f._phSpellID = spellId
+    frame._phSpellID = spellId
     if iconID then
-        f._tex:SetTexture(iconID)
+        frame._tex:SetTexture(iconID)
     end
-    return f
+    return frame
 end
 
 -- Own-frame for a custom/preset buff (cast-timer driven) on a buff-family bar.
@@ -702,28 +702,28 @@ end
 -- OnCooldownDone queues a reanchor so the expired buff drops out of the layout.
 local function GetOrCreateCustomBuffFrame(barId, spellRef)
     local fkey = barId .. ":custombuff:" .. spellRef
-    local f = _presetFrames[fkey]
-    if not f then
-        f = CreateFrame("Frame", nil, UIParent)
-        f:SetSize(36, 36)
-        f:Hide()
-        f:EnableMouse(false)
-        local texture = f:CreateTexture(nil, "ARTWORK")
+    local frame = _presetFrames[fkey]
+    if not frame then
+        frame = CreateFrame("Frame", nil, UIParent)
+        frame:SetSize(36, 36)
+        frame:Hide()
+        frame:EnableMouse(false)
+        local texture = frame:CreateTexture(nil, "ARTWORK")
         texture:SetAllPoints()
         mod.CdmOwnIconCrop(texture)
-        f.Icon = texture
-        f._tex = texture
-        local cd = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
+        frame.Icon = texture
+        frame._tex = texture
+        local cd = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
         cd:SetAllPoints()
         cd:SetDrawEdge(false)
         cd:SetDrawBling(false)
         cd:SetReverse(true)
-        f.Cooldown = cd
-        f._cooldown = cd
-        f._isCustomSpellFrame = true
-        f._isCustomBuffFrame = true
-        f.cooldownID = nil
-        f.cooldownInfo = nil
+        frame.Cooldown = cd
+        frame._cooldown = cd
+        frame._isCustomSpellFrame = true
+        frame._isCustomBuffFrame = true
+        frame.cooldownID = nil
+        frame.cooldownInfo = nil
         cd:HookScript("OnCooldownDone", function()
             -- Re-lay-out the bar so the expired buff is removed. Also poke the
             -- legacy custom_buff updater (harmless for buff bars).
@@ -736,13 +736,13 @@ local function GetOrCreateCustomBuffFrame(barId, spellRef)
         end)
         local iconSID = mod.LustPresetIconSpellID and mod.LustPresetIconSpellID(spellRef) or spellRef
         local spInfo = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(iconSID)
-        if spInfo and spInfo.iconID and f._tex then
-            f._tex:SetTexture(spInfo.iconID)
+        if spInfo and spInfo.iconID and frame._tex then
+            frame._tex:SetTexture(spInfo.iconID)
         end
-        _presetFrames[fkey] = f
-        _injectedCustomBuffFrames[f] = true
+        _presetFrames[fkey] = frame
+        _injectedCustomBuffFrames[frame] = true
     end
-    return f
+    return frame
 end
 mod.GetOrCreateCustomBuffFrame = GetOrCreateCustomBuffFrame
 
@@ -752,9 +752,9 @@ mod.GetOrCreateCustomBuffFrame = GetOrCreateCustomBuffFrame
 -- arbitrary user-added IDs. Returns nil if the icon isn't loaded yet.
 local function GetOrCreateItemPresetFrame(barId, itemId)
     local fkey = barId .. ":item:" .. itemId
-    local f = _presetFrames[fkey]
-    if f then
-        return f
+    local frame = _presetFrames[fkey]
+    if frame then
+        return frame
     end
 
     local itemPresets = mod.CDM_ITEM_PRESETS
@@ -775,26 +775,26 @@ local function GetOrCreateItemPresetFrame(barId, itemId)
             end
         end
     end
-    local icon = preset and preset.icon or C_Item.GetItemIconByID(itemId)
-    if not icon then
+    local iconTex = preset and preset.icon or C_Item.GetItemIconByID(itemId)
+    if not iconTex then
         return nil
     end
 
-    f = CreateFrame("Frame", nil, UIParent)
-    f:SetSize(36, 36)
-    f:Hide()
+    frame = CreateFrame("Frame", nil, UIParent)
+    frame:SetSize(36, 36)
+    frame:Hide()
     -- Enable mouse motion (OnEnter/OnLeave) for tooltips but pass through clicks.
-    f:EnableMouse(true)
-    if f.SetMouseClickEnabled then
-        f:SetMouseClickEnabled(false)
+    frame:EnableMouse(true)
+    if frame.SetMouseClickEnabled then
+        frame:SetMouseClickEnabled(false)
     end
-    local texture = f:CreateTexture(nil, "ARTWORK")
+    local texture = frame:CreateTexture(nil, "ARTWORK")
     texture:SetAllPoints()
-    texture:SetTexture(icon)
+    texture:SetTexture(iconTex)
     mod.CdmOwnIconCrop(texture)
-    f.Icon = texture
-    f._tex = texture
-    local cd = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
+    frame.Icon = texture
+    frame._tex = texture
+    local cd = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
     cd:SetAllPoints()
     cd:SetDrawEdge(false)
     cd:SetDrawBling(false)
@@ -818,19 +818,19 @@ local function GetOrCreateItemPresetFrame(barId, itemId)
             mod._MarkPresetCdDirty()
         end
     end)
-    f.Cooldown = cd
-    f._cooldown = cd
-    f._isItemPresetFrame = true
-    f._presetItemID = itemId
-    f._presetData = preset
-    f.cooldownID = nil
-    f.cooldownInfo = nil
-    f.layoutIndex = 99999
-    local countFS = f:CreateFontString(nil, "OVERLAY")
+    frame.Cooldown = cd
+    frame._cooldown = cd
+    frame._isItemPresetFrame = true
+    frame._presetItemID = itemId
+    frame._presetData = preset
+    frame.cooldownID = nil
+    frame.cooldownInfo = nil
+    frame.layoutIndex = 99999
+    local countFS = frame:CreateFontString(nil, "OVERLAY")
     CludesUI.ApplyIconTextFont(countFS, GetCDMFont(), 11, "cdm")
-    countFS:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", 0, 2)
-    f._itemCountText = countFS
-    f:SetScript("OnEnter", function(self)
+    countFS:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 2)
+    frame._itemCountText = countFS
+    frame:SetScript("OnEnter", function(self)
         if not self._presetItemID then
             return
         end
@@ -866,10 +866,10 @@ local function GetOrCreateItemPresetFrame(barId, itemId)
         end
         GameTooltip:Show()
     end)
-    f:SetScript("OnLeave", GameTooltip_Hide)
-    _presetFrames[fkey] = f
-    _RegisterPresetLive(f, fkey)
-    return f
+    frame:SetScript("OnLeave", GameTooltip_Hide)
+    _presetFrames[fkey] = frame
+    _RegisterPresetLive(frame, fkey)
+    return frame
 end
 mod.GetOrCreateItemPresetFrame = GetOrCreateItemPresetFrame
 
@@ -883,21 +883,21 @@ mod.GetOrCreateItemPresetFrame = GetOrCreateItemPresetFrame
 -------------------------------------------------------------------------------
 local function GetOrCreateEmptySlotFrame(marker)
     local fkey = "emptyslot:" .. marker
-    local f = _presetFrames[fkey]
-    if f then
-        return f
+    local frame = _presetFrames[fkey]
+    if frame then
+        return frame
     end
 
-    f = CreateFrame("Frame", nil, UIParent)
-    f:SetSize(36, 36)
-    f:Hide()
-    f:EnableMouse(false)
-    f._isEmptySlotFrame = true
-    f.cooldownID = nil
-    f.cooldownInfo = nil
-    f.layoutIndex = 99999
-    _presetFrames[fkey] = f
-    return f
+    frame = CreateFrame("Frame", nil, UIParent)
+    frame:SetSize(36, 36)
+    frame:Hide()
+    frame:EnableMouse(false)
+    frame._isEmptySlotFrame = true
+    frame.cooldownID = nil
+    frame.cooldownInfo = nil
+    frame.layoutIndex = 99999
+    _presetFrames[fkey] = frame
+    return frame
 end
 mod.GetOrCreateEmptySlotFrame = GetOrCreateEmptySlotFrame
 
@@ -930,29 +930,29 @@ local function CdmQualityAtlasFor(q)
         "Professions-Icon-Quality-Tier" .. q .. "-Small",
         "Professions-Icon-Quality-Tier" .. q,
     }
-    for idx = 1, #nameList do
-        if probe and probe(nameList[idx]) then
-            _cdmQualityAtlas[q] = nameList[idx]
-            return nameList[idx]
+    for index = 1, #nameList do
+        if probe and probe(nameList[index]) then
+            _cdmQualityAtlas[q] = nameList[index]
+            return nameList[index]
         end
     end
     _cdmQualityAtlas[q] = false
     return nil
 end
 
-local function ApplyItemQualityPip(f, itemId, enabled)
+local function ApplyItemQualityPip(frame, itemId, enabled)
     if not enabled then
-        if f._qualityHolder then
-            f._qualityHolder:Hide()
+        if frame._qualityHolder then
+            frame._qualityHolder:Hide()
         end
-        f._qualityItemID, f._qualityAtlas = nil, nil
+        frame._qualityItemID, frame._qualityAtlas = nil, nil
         return
     end
     if not itemId then
         return
     end
     -- Resolved already for this exact item (false = resolved as "no quality").
-    if f._qualityItemID == itemId and f._qualityAtlas ~= nil then
+    if frame._qualityItemID == itemId and frame._qualityAtlas ~= nil then
         return
     end
 
@@ -987,41 +987,41 @@ local function ApplyItemQualityPip(f, itemId, enabled)
         end
     end
     if not atlas then
-        if f._qualityHolder then
-            f._qualityHolder:Hide()
+        if frame._qualityHolder then
+            frame._qualityHolder:Hide()
         end
         -- Only settle on "no quality" once the item is actually known.
         if itemLink then
-            f._qualityItemID, f._qualityAtlas = itemId, false
+            frame._qualityItemID, frame._qualityAtlas = itemId, false
         end
         return
     end
-    f._qualityItemID, f._qualityAtlas = itemId, atlas
+    frame._qualityItemID, frame._qualityAtlas = itemId, atlas
 
-    local holderFrame = f._qualityHolder
+    local holderFrame = frame._qualityHolder
     if not holderFrame then
         -- Own holder frame rather than a texture on f: the item frame's
         -- Cooldown is a CHILD frame, and a child draws above every texture of
         -- its parent whatever the draw layer, so a pip parented to f sits under
         -- the swipe. This is why the item count text is reparented to a text
         -- overlay too, and what the action bars' rank icon does.
-        holderFrame = CreateFrame("Frame", nil, f)
-        holderFrame:SetAllPoints(f)
-        holderFrame:SetFrameLevel((f:GetFrameLevel() or 1) + 18)
+        holderFrame = CreateFrame("Frame", nil, frame)
+        holderFrame:SetAllPoints(frame)
+        holderFrame:SetFrameLevel((frame:GetFrameLevel() or 1) + 18)
         holderFrame:EnableMouse(false)
-        f._qualityHolder = holderFrame
-        f._qualityTex = holderFrame:CreateTexture(nil, "OVERLAY", nil, 7)
+        frame._qualityHolder = holderFrame
+        frame._qualityTex = holderFrame:CreateTexture(nil, "OVERLAY", nil, 7)
     end
-    local texture = f._qualityTex
+    local texture = frame._qualityTex
     -- Unknown atlas reads as no pip, never as an error.
     if not pcall(texture.SetAtlas, texture, atlas, true) then
-        f._qualityAtlas = false
+        frame._qualityAtlas = false
         holderFrame:Hide()
         return
     end
     -- Same proportion the action bars use (Blizzard centers the overlay 14,-14
     -- from the TOPLEFT of a 45px button), scaled to whatever size the bar runs.
-    local sc = (f:GetWidth() or 36) / 36
+    local sc = (frame:GetWidth() or 36) / 36
     texture:ClearAllPoints()
     texture:SetPoint("CENTER", holderFrame, "TOPLEFT", 11 * sc, -11 * sc)
     texture:SetScale(sc)

@@ -112,10 +112,10 @@ local function Build()
         if #entries == 0 then
             GameTooltip:AddLine(CludesUI.L("Nothing a vendor buys."), 0.6, 0.6, 0.6)
         end
-        for idx = 1, math.min(CHEAPEST, #entries) do
+        for index = 1, math.min(CHEAPEST, #entries) do
             GameTooltip:AddDoubleLine(
-                entries[idx].link,
-                GetCoinTextureString(entries[idx].value),
+                entries[index].link,
+                GetCoinTextureString(entries[index].value),
                 1,
                 1,
                 1,

@@ -266,9 +266,9 @@ local function ApplyClassColor(fontStr, unitToken, useClassColor, customR, custo
         -- Class color for players (and AI party members), reaction color for NPCs,
         -- matching the health bar and the custom Enemy Colors override. Shared
         -- with the cui-tgtname tag via ns.ResolveUnitNameColor.
-        local r, g, b = mod.ResolveUnitNameColor(unitToken)
-        if r then
-            fontStr:SetTextColor(r, g, b)
+        local region, g, b = mod.ResolveUnitNameColor(unitToken)
+        if region then
+            fontStr:SetTextColor(region, g, b)
             return
         end
         -- ResolveUnitNameColor returns nil for a SECRET class token (identity-restricted
@@ -425,10 +425,10 @@ local function CreateBottomTextBar(widget, unitToken, prefs, anchor, xOffset, ov
 
     local bgc = prefs.btbBgColor or { r = 0.2, g = 0.2, b = 0.2 }
     local bga = prefs.btbBgOpacity or 1.0
-    local bg = btb:CreateTexture(nil, "BACKGROUND")
-    bg:SetAllPoints()
-    bg:SetColorTexture(bgc.r, bgc.g, bgc.b, bga)
-    btb.bg = bg
+    local bgTex = btb:CreateTexture(nil, "BACKGROUND")
+    bgTex:SetAllPoints()
+    bgTex:SetColorTexture(bgc.r, bgc.g, bgc.b, bga)
+    btb.bg = bgTex
 
     -- Text overlay, above the unified border at frame+10.
     local textOvr = CreateFrame("Frame", nil, btb)
@@ -476,9 +476,9 @@ local function CreateBottomTextBar(widget, unitToken, prefs, anchor, xOffset, ov
             -- Secret-safe per-unit power color: player resolves via the clean
             -- string token; non-player units recover it from the clean integer
             -- power type instead of falling back to white.
-            local r, g, b = CludesUI.ResolveUnitPowerColor(unitToken)
-            if r then
-                fontStr:SetTextColor(r, g, b)
+            local region, g, b = CludesUI.ResolveUnitPowerColor(unitToken)
+            if region then
+                fontStr:SetTextColor(region, g, b)
             else
                 fontStr:SetTextColor(1, 1, 1)
             end
@@ -1065,27 +1065,27 @@ end
 -- axes and already read correctly at any bar shape, so rotating them fights the tiling
 -- and must NOT happen. Tiling is read back off the live fill texture rather than passed
 -- in, so this stays correct no matter which style function last touched the bar.
-function mod.ApplyFillRotation(bar)
-    if not (bar and bar.SetRotatesTexture) then
+function mod.ApplyFillRotation(barFrame)
+    if not (barFrame and barFrame.SetRotatesTexture) then
         return
     end
-    local vert = bar.GetOrientation and bar:GetOrientation() == "VERTICAL"
-    local fill = bar.GetStatusBarTexture and bar:GetStatusBarTexture()
-    local tiled = fill
-        and ((fill.GetHorizTile and fill:GetHorizTile()) or (fill.GetVertTile and fill:GetVertTile()))
-    bar:SetRotatesTexture((vert and not tiled) and true or false)
+    local vert = barFrame.GetOrientation and barFrame:GetOrientation() == "VERTICAL"
+    local fillTex = barFrame.GetStatusBarTexture and barFrame:GetStatusBarTexture()
+    local tiled = fillTex
+        and ((fillTex.GetHorizTile and fillTex:GetHorizTile()) or (fillTex.GetVertTile and fillTex:GetVertTile()))
+    barFrame:SetRotatesTexture((vert and not tiled) and true or false)
 end
 
 -- Vertical health fill. SetOrientation drives the fill AXIS; healthReverseFill still
 -- flips direction WITHIN that axis (horizontal: left-right/right-left; vertical:
 -- bottom-top/top-bottom). On ns so the options preview paints the same way.
-function mod.ApplyHealthOrientation(bar, prefs)
-    if not bar then
+function mod.ApplyHealthOrientation(barFrame, prefs)
+    if not barFrame then
         return
     end
     local vert = (prefs and prefs.healthVerticalFill) and true or false
-    bar:SetOrientation(vert and "VERTICAL" or "HORIZONTAL")
-    mod.ApplyFillRotation(bar)
+    barFrame:SetOrientation(vert and "VERTICAL" or "HORIZONTAL")
+    mod.ApplyFillRotation(barFrame)
     return vert
 end
 
@@ -1112,11 +1112,11 @@ local function CreateHealthBar(widget, unitToken, height, xOffset, prefs, rightI
     health:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     health:GetStatusBarTexture():SetHorizTile(false)
 
-    local bg = health:CreateTexture(nil, "BACKGROUND")
-    Pix.Point(bg, "TOPLEFT", health, "TOPLEFT", 0, 0)
-    Pix.Point(bg, "BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
-    bg:SetColorTexture(0, 0, 0, 0.5)
-    health.bg = bg
+    local bgTex = health:CreateTexture(nil, "BACKGROUND")
+    Pix.Point(bgTex, "TOPLEFT", health, "TOPLEFT", 0, 0)
+    Pix.Point(bgTex, "BOTTOMRIGHT", health, "BOTTOMRIGHT", 0, 0)
+    bgTex:SetColorTexture(0, 0, 0, 0.5)
+    health.bg = bgTex
 
     health.colorClass = true
     health.colorReaction = true

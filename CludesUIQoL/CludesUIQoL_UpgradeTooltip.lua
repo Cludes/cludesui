@@ -82,7 +82,7 @@ local function LineFor(calc, link, afterItemLevel, data)
     if not quality then
         return false
     end
-    local r, g, b = C_Item.GetItemQualityColor(quality)
+    local region, g, b = C_Item.GetItemQualityColor(quality)
     local range = CUI.COLOR_CODES.WHITE .. "(" .. low .. "-" .. high .. ")|r"
     local text = CludesUI.Lf("%1$d/%2$d %3$s %4$s", shownRank, shownMax, trackName, range)
 
@@ -100,7 +100,7 @@ local function LineFor(calc, link, afterItemLevel, data)
             end
         end
     end
-    return { text = text, r = r, g = g, b = b, crest = crest }
+    return { text = text, r = region, g = g, b = b, crest = crest }
 end
 
 -- Both hooks: draws the line, and (as the pre-hook) returns true so the

@@ -32,28 +32,28 @@ local selectionTakenAway -- we made Edit Mode's selection box inert
 
 -- Until its Edit Mode layout applies, the right-side container places it.
 local function Held()
-    local f = Tracker()
-    return not f:IsInitialized() or f:IsInDefaultPosition()
+    local frame = Tracker()
+    return not frame:IsInitialized() or frame:IsInDefaultPosition()
 end
 
 -- The container puts a held tracker back in its slot on every update, so an
 -- unlock session moves a stand-in of the tracker's size instead.
 local function UnlockFrame()
-    local f = Tracker()
+    local frame = Tracker()
     if not (CludesUI._unlockActive and Held()) then
-        return f
+        return frame
     end
     if not standInPlaced then
         standInPlaced = true
         local conf = EQT.DB()
         standIn = standIn or CreateFrame("Frame", nil, UIParent)
-        standIn:SetSize(f:GetWidth(), conf.height or f.editModeHeight or 800)
+        standIn:SetSize(frame:GetWidth(), conf.height or frame.editModeHeight or 800)
         standIn:ClearAllPoints()
         local spot = conf.position
         if spot then
             standIn:SetPoint(spot.point, UIParent, spot.relPoint or spot.point, spot.x, spot.y)
-        elseif f:GetLeft() then
-            standIn:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", f:GetLeft(), f:GetTop())
+        elseif frame:GetLeft() then
+            standIn:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", frame:GetLeft(), frame:GetTop())
         end
     end
     return standIn
@@ -63,8 +63,8 @@ end
 -- layout is one of Blizzard's read-only presets. Nothing while Edit Mode is
 -- open or before its layouts have applied.
 local function ActiveEntry()
-    local f = Tracker()
-    if not (f and f:IsInitialized()) or CludesUI.EditModeOpen() then
+    local frame = Tracker()
+    if not (frame and frame:IsInitialized()) or CludesUI.EditModeOpen() then
         return nil
     end
     local layouts, presetCount = CludesUI.EditModeLayoutsForSave()
@@ -238,19 +238,19 @@ function EQT.SyncPosition()
         end
         return
     end
-    local f = Tracker()
-    if not f:IsInitialized() then
+    local frame = Tracker()
+    if not frame:IsInitialized() then
         return
     end
     EditModeCanSelect(false)
     -- Edit Mode has not applied the written spot or height yet.
-    if f:IsInDefaultPosition() or (conf.height and f.editModeHeight ~= conf.height) then
+    if frame:IsInDefaultPosition() or (conf.height and frame.editModeHeight ~= conf.height) then
         AskReload()
         return
     end
     local spot = conf.position
-    CludesUI.ClearFramePoints(f)
-    CludesUI.SetFramePoint(f, spot.point, UIParent, spot.relPoint or spot.point, spot.x, spot.y)
+    CludesUI.ClearFramePoints(frame)
+    CludesUI.SetFramePoint(frame, spot.point, UIParent, spot.relPoint or spot.point, spot.x, spot.y)
     -- The login anchor pass may have run while the tracker was still held.
     CludesUI.ReapplyUnlockAnchor("EQT_Tracker")
 end
@@ -289,8 +289,8 @@ function EQT.InitPosition()
             order = 560,
             getFrame = UnlockFrame,
             getSize = function()
-                local f = UnlockFrame()
-                return f:GetWidth(), EQT.DB().height or f:GetHeight()
+                local frame = UnlockFrame()
+                return frame:GetWidth(), EQT.DB().height or frame:GetHeight()
             end,
             isHidden = function()
                 return not EQT.Cfg("enabled")

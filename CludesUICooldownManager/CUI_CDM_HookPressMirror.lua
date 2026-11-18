@@ -72,13 +72,13 @@ do
         if p then
             local pType = p.pushedTextureType or 2
             local c = p.pushedCustomColor or { r = 0.973, g = 0.839, b = 0.604 }
-            local cr, cg, cb = c.r, c.g, c.b
+            local cr, cg, callback = c.r, c.g, c.b
             if p.pushedUseClassColor then
                 local _, ct = UnitClass("player")
                 if ct then
                     local cc = RAID_CLASS_COLORS[ct]
                     if cc then
-                        cr, cg, cb = cc.r, cc.g, cc.b
+                        cr, cg, callback = cc.r, cc.g, cc.b
                     end
                 end
             end
@@ -106,15 +106,15 @@ do
                 return false
             elseif pType == 5 then
                 texture:SetAlpha(0)
-                return "border", cr, cg, cb, p.pushedBorderSize or 4
+                return "border", cr, cg, callback, p.pushedBorderSize or 4
             end
             texture:SetAlpha(1)
             if pType <= 3 then
                 texture:SetAtlas(nil)
                 texture:SetTexture(AB_HIGHLIGHT[pType] or AB_HIGHLIGHT[2])
-                texture:SetVertexColor(cr, cg, cb, 1)
+                texture:SetVertexColor(cr, cg, callback, 1)
             elseif pType == 4 then
-                texture:SetColorTexture(cr, cg, cb, 0.35)
+                texture:SetColorTexture(cr, cg, callback, 0.35)
             end
             return true
         end
@@ -182,8 +182,8 @@ do
     -- screen-space and the overlay covers the same rect -- exactly like the
     -- fake-active overlay does (ns.ApplyShapeToOverlay). none/cropped return
     -- nil: their icon art fills the frame rect, so a square press is correct.
-    local function IconShape(icon)
-        local ifc = _ecmeFC and _ecmeFC[icon]
+    local function IconShape(iconTex)
+        local ifc = _ecmeFC and _ecmeFC[iconTex]
         if not (ifc and ifc.shapeApplied and ifc.shapeMask) then
             return nil
         end
@@ -213,22 +213,22 @@ do
     -- One overlay per icon in `store`, `level` above the icon (above the
     -- cooldown swipe), fitted to the icon's shape and styled by `style`, which
     -- returns false (nothing to show), "border" + r, g, b, size, or true.
-    local function ShowOverlay(icon, storage, level, style)
-        local shade = storage[icon]
+    local function ShowOverlay(iconTex, storage, level, style)
+        local shade = storage[iconTex]
         if not shade then
-            shade = CreateFrame("Frame", nil, icon)
-            shade:SetFrameLevel(icon:GetFrameLevel() + level)
+            shade = CreateFrame("Frame", nil, iconTex)
+            shade:SetFrameLevel(iconTex:GetFrameLevel() + level)
             shade:Hide()
             local texture = shade:CreateTexture(nil, "OVERLAY")
             texture:SetAllPoints(shade)
             shade._tex = texture
-            storage[icon] = shade
+            storage[iconTex] = shade
         end
         -- Re-sync the shape mask on every press: the shape can change or be
         -- cleared between presses, and a cleared shapeMask is emptied + hidden
         -- rather than destroyed -- left attached it would blank the overlay.
         -- A shape swap keeps the same mask object (re-textured), so it stays.
-        local shape, mask = IconShape(icon)
+        local shape, mask = IconShape(iconTex)
         if shade._shapeMask and shade._shapeMask ~= mask then
             pcall(shade._tex.RemoveMaskTexture, shade._tex, shade._shapeMask)
             shade._shapeMask = nil
@@ -239,13 +239,13 @@ do
         end
         -- Blizzard Style: the flash rounds off with the icon's viewer mask.
         if mod.CdmBlizzIcons() then
-            local bm = mod.CdmBlizzIconMask(icon)
+            local bm = mod.CdmBlizzIconMask(iconTex)
             if bm and shade._blizzMask ~= bm then
                 pcall(shade._tex.AddMaskTexture, shade._tex, bm)
                 shade._blizzMask = bm
             end
         end
-        local result, cr, cg, cb, bsz = style(shade._tex)
+        local result, cr, cg, callback, bsz = style(shade._tex)
         if not result then
             shade:Hide()
             return nil
@@ -253,7 +253,7 @@ do
         -- Shaped icons expand their icon texture past the frame (and expand the
         -- texcoords to match), so anchor to the frame itself -- the rect the
         -- shapeMask covers -- rather than to the oversized texture.
-        local regionFrame = (shape and icon) or icon.Icon or icon
+        local regionFrame = (shape and iconTex) or iconTex.Icon or iconTex
         shade:ClearAllPoints()
         shade:SetPoint("TOPLEFT", regionFrame, "TOPLEFT", 0, 0)
         shade:SetPoint("BOTTOMRIGHT", regionFrame, "BOTTOMRIGHT", 0, 0)
@@ -267,7 +267,7 @@ do
             end
             local ring = EnsureShapeRing(shade)
             ring:SetTexture(ringTex)
-            ring:SetVertexColor(cr, cg, cb, 1)
+            ring:SetVertexColor(cr, cg, callback, 1)
             ring:ClearAllPoints()
             ring:SetAllPoints(shade)
             ring:Show()
@@ -278,7 +278,7 @@ do
             end
             local edges = EnsureBorderEdges(shade)
             for jdx = 1, 4 do
-                edges[jdx]:SetVertexColor(cr, cg, cb, 1)
+                edges[jdx]:SetVertexColor(cr, cg, callback, 1)
             end
             edges[1]:ClearAllPoints()
             edges[1]:SetPoint("TOPLEFT", shade)
@@ -315,8 +315,8 @@ do
         return shade
     end
 
-    local function ShowPush(icon)
-        return ShowOverlay(icon, _pushOverlay, 15, StylePush)
+    local function ShowPush(iconTex)
+        return ShowOverlay(iconTex, _pushOverlay, 15, StylePush)
     end
 
     ---------------------------------------------------------------------------
@@ -350,9 +350,9 @@ do
         if c then
             t[c] = true
         end
-        local d = safeNum(FindSpellOverrideByID, ident)
-        if d then
-            t[d] = true
+        local skinData = safeNum(FindSpellOverrideByID, ident)
+        if skinData then
+            t[skinData] = true
         end
         return t
     end
@@ -392,13 +392,13 @@ do
         return _presetPrimaryByAltID[itemId]
     end
 
-    local function IconSpellID(icon)
-        local fc = _ecmeFC and _ecmeFC[icon]
+    local function IconSpellID(iconTex)
+        local fc = _ecmeFC and _ecmeFC[iconTex]
         local spellRef = fc and fc.spellID
         if spellRef then
             return spellRef
         end
-        local cdID = icon.cooldownID
+        local cdID = iconTex.cooldownID
         if cdID and C_CooldownViewer and C_CooldownViewer.GetCooldownViewerCooldownInfo then
             local details = C_CooldownViewer.GetCooldownViewerCooldownInfo(cdID)
             if details then
@@ -414,8 +414,8 @@ do
     ---------------------------------------------------------------------------
     local function ReleaseEntry(button, record)
         local ovs = record.overlays
-        for idx = 1, #ovs do
-            ovs[idx]:Hide()
+        for index = 1, #ovs do
+            ovs[index]:Hide()
         end
         _held[button] = nil
         _heldN = _heldN - 1
@@ -440,8 +440,8 @@ do
                 local anyDown = false
                 local keyList = record.keys
                 if keyList then
-                    for idx = 1, #keyList do
-                        if keyList[idx] and IsKeyDown(keyList[idx]) then
+                    for index = 1, #keyList do
+                        if keyList[index] and IsKeyDown(keyList[index]) then
                             anyDown = true
                             break
                         end
@@ -564,12 +564,12 @@ do
             for barId, entries in pairs(cdmBarIcons) do
                 local edge = barDataByKey and barDataByKey[barId]
                 if edge and edge.pressMirror and not mod.IsBarBuffFamily(edge) then
-                    for idx = 1, #entries do
-                        local icon = entries[idx]
-                        if icon and icon:IsShown() then
-                            local isid = IconSpellID(icon)
+                    for index = 1, #entries do
+                        local iconTex = entries[index]
+                        if iconTex and iconTex:IsShown() then
+                            local isid = IconSpellID(iconTex)
                             if isid and IconMatches(pressedSet, isid) then
-                                local shade = ShowPush(icon)
+                                local shade = ShowPush(iconTex)
                                 if shade then
                                     overlays = overlays or {}
                                     overlays[#overlays + 1] = shade
@@ -605,8 +605,8 @@ do
     function mod.ClearCdmPressPush()
         for _, record in pairs(_held) do
             local ovs = record.overlays
-            for idx = 1, #ovs do
-                ovs[idx]:Hide()
+            for index = 1, #ovs do
+                ovs[index]:Hide()
             end
         end
         wipe(_held)
@@ -689,10 +689,10 @@ do
     _queueFlush:SetScript("OnUpdate", function(self)
         self:Hide()
         local name = false
-        for idx = 1, #_queueNames do
-            local current = C_Spell.IsCurrentSpell(_queueNames[idx])
+        for index = 1, #_queueNames do
+            local current = C_Spell.IsCurrentSpell(_queueNames[index])
             if not issecretvalue(current) and current then
-                name = _queueNames[idx]
+                name = _queueNames[index]
                 break
             end
         end
@@ -700,9 +700,9 @@ do
             return
         end
         _queued = name
-        for idx = #_lit, 1, -1 do
-            _lit[idx]:Hide()
-            _lit[idx] = nil
+        for index = #_lit, 1, -1 do
+            _lit[index]:Hide()
+            _lit[index] = nil
         end
         if not (name and cdmBarIcons) then
             return
@@ -710,16 +710,16 @@ do
         for barId, entries in pairs(cdmBarIcons) do
             local edge = barDataByKey and barDataByKey[barId]
             if edge and not mod.IsBarBuffFamily(edge) then
-                for idx = 1, #entries do
-                    local icon = entries[idx]
-                    if icon and icon:IsShown() then
-                        local spellRef = IconSpellID(icon)
+                for index = 1, #entries do
+                    local iconTex = entries[index]
+                    if iconTex and iconTex:IsShown() then
+                        local spellRef = IconSpellID(iconTex)
                         if
                             not issecretvalue(spellRef)
                             and spellRef
                             and C_Spell.GetSpellName(spellRef) == name
                         then
-                            local shade = ShowOverlay(icon, _checkOverlay, 14, StyleChecked)
+                            local shade = ShowOverlay(iconTex, _checkOverlay, 14, StyleChecked)
                             if shade then
                                 _lit[#_lit + 1] = shade
                             end
@@ -745,8 +745,8 @@ do
             return
         end
         _queueNames = {}
-        for idx = 1, #ids do
-            local num = C_Spell.GetSpellName(ids[idx])
+        for index = 1, #ids do
+            local num = C_Spell.GetSpellName(ids[index])
             if not issecretvalue(num) and num then
                 _queueNames[#_queueNames + 1] = num
             end

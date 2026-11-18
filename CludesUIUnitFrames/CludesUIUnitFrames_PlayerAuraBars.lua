@@ -50,9 +50,9 @@ local function VisibleTokenClasses()
         return nil
     end
     local result = {}
-    for idx = 1, #uf do
-        if not HIDDEN_CLASSES[uf[idx].key] then
-            result[#result + 1] = uf[idx]
+    for index = 1, #uf do
+        if not HIDDEN_CLASSES[uf[index].key] then
+            result[#result + 1] = uf[index]
         end
     end
     return result
@@ -143,17 +143,17 @@ local DEBUFF_FILTER_ORDER = {
 local function ClassByKey(key)
     local uf = mod.UF_TokenClasses
     if uf then
-        for idx = 1, #uf do
-            if uf[idx].key == key then
-                return uf[idx]
+        for index = 1, #uf do
+            if uf[index].key == key then
+                return uf[index]
             end
         end
     end
     local cc = mod.UF_CandidateClasses
     if cc then
-        for idx = 1, #cc do
-            if cc[idx].key == key then
-                return cc[idx]
+        for index = 1, #cc do
+            if cc[index].key == key then
+                return cc[index]
             end
         end
     end
@@ -162,8 +162,8 @@ end
 function mod.PAB_ClassItems(isBuff)
     if not isBuff then
         local itemList = {}
-        for idx = 1, #DEBUFF_FILTER_ORDER do
-            local key = DEBUFF_FILTER_ORDER[idx]
+        for index = 1, #DEBUFF_FILTER_ORDER do
+            local key = DEBUFF_FILTER_ORDER[index]
             if key == "__less" then
                 itemList[#itemList + 1] = { isHeader = true, label = "Less Common Filters" }
             else
@@ -190,8 +190,8 @@ function mod.PAB_ClassItems(isBuff)
         return itemList
     end
     local function AddAll(entries)
-        for idx = 1, #entries do
-            local class = entries[idx]
+        for index = 1, #entries do
+            local class = entries[index]
             -- isBuff is always true here (false returned above), so polarity
             -- exclusion reduces to just debuffOnly.
             if not class.debuffOnly then
@@ -233,10 +233,10 @@ local function PAB_FxListView(entries)
         return nil
     end
     local result
-    for idx = 1, #entries do
-        if PAB_FxEntryActive(entries[idx]) then
+    for index = 1, #entries do
+        if PAB_FxEntryActive(entries[index]) then
             result = result or {}
-            result[#result + 1] = entries[idx]
+            result[#result + 1] = entries[index]
         end
     end
     return result
@@ -250,17 +250,17 @@ local function PAB_FxBlockFor(entries, category)
         return nil
     end
     local many = type(category) == "table"
-    for idx = 1, #entries do
-        local f = entries[idx].filters
-        if f then
+    for index = 1, #entries do
+        local frame = entries[index].filters
+        if frame then
             if many then
                 for jdx = 1, #category do
-                    if f[category[jdx]] then
-                        return entries[idx]
+                    if frame[category[jdx]] then
+                        return entries[index]
                     end
                 end
-            elseif f[category] then
-                return entries[idx]
+            elseif frame[category] then
+                return entries[index]
             end
         end
     end
@@ -274,21 +274,21 @@ local function PAB_FxSizeFor(entries, category)
         return nil
     end
     local many = type(category) == "table"
-    for idx = 1, #entries do
-        local e = entries[idx]
+    for index = 1, #entries do
+        local e = entries[index]
         if PAB_FxEntryActive(e) then
-            local f = e.filters
+            local frame = e.filters
             local hit = false
-            if f then
+            if frame then
                 if many then
                     for jdx = 1, #category do
-                        if f[category[jdx]] then
+                        if frame[category[jdx]] then
                             hit = true
                             break
                         end
                     end
                 else
-                    hit = f[category] and true or false
+                    hit = frame[category] and true or false
                 end
             end
             if hit then
@@ -312,8 +312,8 @@ local function PAB_FxWantsCategory(entries, key)
     if not (entries and key) then
         return false
     end
-    for idx = 1, #entries do
-        local e = entries[idx]
+    for index = 1, #entries do
+        local e = entries[index]
         if PAB_FxEntryActive(e) and e.filters and e.filters[key] then
             return true
         end
@@ -345,8 +345,8 @@ end
 -- catch-all "all" entry, matching Raid Frames' TILE_FILTER_ITEMS.
 function mod.PAB_FxClassItems()
     local itemList = {}
-    for idx = 1, #DEBUFF_FILTER_ORDER do
-        local class = ClassByKey(DEBUFF_FILTER_ORDER[idx])
+    for index = 1, #DEBUFF_FILTER_ORDER do
+        local class = ClassByKey(DEBUFF_FILTER_ORDER[index])
         if class then
             local meta = CLASS_LABELS[class.skey]
             itemList[#itemList + 1] = {
@@ -421,8 +421,8 @@ end
 -- the flipbooks, no Blizzard Border), so a prewarm builds only those.
 mod.PAB_GLOW_SPEC = {}
 mod.PAB_GLOW_NEED = { ants = true, flip = true }
-local function PAB_ApplyDmFx(btnFrame, d, style, arming)
-    local category = d.dmCat
+local function PAB_ApplyDmFx(btnFrame, skinData, style, arming)
+    local category = skinData.dmCat
     local e = style.fxList and PAB_FxBlockFor(style.fxList, category) or nil
 
     local Glows = CludesUI.Glows
@@ -439,17 +439,17 @@ local function PAB_ApplyDmFx(btnFrame, d, style, arming)
     -- frame to the secure engine button is not guaranteed legal (same reasoning as
     -- AuraKit's dispelHolder). Pre-making it keeps a later glow toggle to Show/Hide +
     -- StartGlow/StopGlow, which is always legal.
-    local gov = d.pabFxGlow
+    local gov = skinData.pabFxGlow
     if not gov then
         gov = CreateFrame("Frame", nil, btnFrame)
         gov:SetAllPoints(btnFrame)
         -- Level ladder: base border(+1) < fx border(+2) < glow(+3) < dispel ring(+4)
         -- < text(+5). The glow gets its own level, never shared with the fx border's.
-        local base = (d.borderHost and d.borderHost:GetFrameLevel()) or (btnFrame:GetFrameLevel() + 1)
+        local base = (skinData.borderHost and skinData.borderHost:GetFrameLevel()) or (btnFrame:GetFrameLevel() + 1)
         gov:SetFrameLevel(base + 3)
         gov:EnableMouse(false)
         gov:Hide()
-        d.pabFxGlow = gov
+        skinData.pabFxGlow = gov
     end
     -- The extraInit call (arming) is the button's creation window. While any
     -- Icon Effect of this style carries a glow, the button's glow regions are
@@ -458,8 +458,8 @@ local function PAB_ApplyDmFx(btnFrame, d, style, arming)
     -- Icon Glow keep the one empty frame.
     if arming and style.fxList then
         local fx = style.fxList
-        for idx = 1, #fx do
-            if (fx[idx].glowType or 0) > 0 then
+        for index = 1, #fx do
+            if (fx[index].glowType or 0) > 0 then
                 Glows.PrewarmEngineHost(gov, sz, style.height or sz, mod.PAB_GLOW_NEED)
                 break
             end
@@ -472,10 +472,10 @@ local function PAB_ApplyDmFx(btnFrame, d, style, arming)
     -- window or at a later restyle out of restriction (a glow block added
     -- later). Bound, every button carries the glow. Unbound, the animation
     -- plays while hidden too, so only buttons the group can ever show run one.
-    if specInfo and d.pabFxBound == nil then
-        d.pabFxBound = Glows.BindEngineHost(gov, btnFrame, d)
+    if specInfo and skinData.pabFxBound == nil then
+        skinData.pabFxBound = Glows.BindEngineHost(gov, btnFrame, skinData)
     end
-    if specInfo and (d.pabFxBound or CludesUI.AuraKit.ButtonCanShow(btnFrame)) then
+    if specInfo and (skinData.pabFxBound or CludesUI.AuraKit.ButtonCanShow(btnFrame)) then
         gov:Show()
         Glows.StartSpecGlow(gov, specInfo, sz, style.height or sz, "engine")
     else
@@ -489,22 +489,22 @@ local function PAB_ApplyDmFx(btnFrame, d, style, arming)
     -- container is created lazily below (non-shaped branch only) -- a shaped bar
     -- uses PP.ApplyMaskedShapeBorder instead, which owns its own child texture.
     local bSize = (e and e.borderSize) or 0
-    local host = d.pabFxBdr
-    if not host and Pix then
-        host = CreateFrame("Frame", nil, btnFrame)
-        host:SetAllPoints(btnFrame)
-        local base = (d.borderHost and d.borderHost:GetFrameLevel()) or (btnFrame:GetFrameLevel() + 1)
-        host:SetFrameLevel(base + 1)
-        host:EnableMouse(false)
-        host:Hide()
-        d.pabFxBdr = host
+    local owner = skinData.pabFxBdr
+    if not owner and Pix then
+        owner = CreateFrame("Frame", nil, btnFrame)
+        owner:SetAllPoints(btnFrame)
+        local base = (skinData.borderHost and skinData.borderHost:GetFrameLevel()) or (btnFrame:GetFrameLevel() + 1)
+        owner:SetFrameLevel(base + 1)
+        owner:EnableMouse(false)
+        owner:Hide()
+        skinData.pabFxBdr = owner
     end
-    if bSize > 0 and host and Pix then
+    if bSize > 0 and owner and Pix then
         local bc = e.borderColor or { r = 0, g = 0, b = 0 }
-        if style.iconShape and style.iconShape ~= "none" and style.shapeBorderPath and d.shapeMask then
+        if style.iconShape and style.iconShape ~= "none" and style.shapeBorderPath and skinData.shapeMask then
             Pix:ApplyMaskedShapeBorder(
-                host,
-                d.shapeMask,
+                owner,
+                skinData.shapeMask,
                 style.shapeBorderPath,
                 PabShapeBorderSize(bSize),
                 bc.r or 0,
@@ -513,13 +513,13 @@ local function PAB_ApplyDmFx(btnFrame, d, style, arming)
                 1
             )
         else
-            Pix:HideMaskedShapeBorder(host)
-            Pix.CreateBorder(host, 0, 0, 0, 1, 1)
-            Pix.UpdateBorder(host, bSize, bc.r or 0, bc.g or 0, bc.b or 0, 1)
+            Pix:HideMaskedShapeBorder(owner)
+            Pix.CreateBorder(owner, 0, 0, 0, 1, 1)
+            Pix.UpdateBorder(owner, bSize, bc.r or 0, bc.g or 0, bc.b or 0, 1)
         end
-        host:Show()
-    elseif host then
-        host:Hide()
+        owner:Show()
+    elseif owner then
+        owner:Hide()
     end
 end
 
@@ -565,9 +565,9 @@ local function ExpandFamily(set, ident, blocked)
     if not fam then
         return
     end
-    for idx = 1, #fam do
-        if not (blocked and blocked[fam[idx]] == false) then
-            set[fam[idx]] = true
+    for index = 1, #fam do
+        if not (blocked and blocked[fam[index]] == false) then
+            set[fam[index]] = true
         end
     end
 end
@@ -601,13 +601,13 @@ local function BuffBarChain(conf)
     if conf.negFilters then
         local ex
         for filterId in pairs(conf.negFilters) do
-            local f = mod.PAB_GetFilter and mod.PAB_GetFilter(filterId)
-            if f and f.spells then
-                for ident, enabled in pairs(f.spells) do
-                    if enabled and not mod.PAB_OtherClientSpell(f, ident) then
+            local frame = mod.PAB_GetFilter and mod.PAB_GetFilter(filterId)
+            if frame and frame.spells then
+                for ident, enabled in pairs(frame.spells) do
+                    if enabled and not mod.PAB_OtherClientSpell(frame, ident) then
                         ex = ex or {}
                         ex[ident] = true
-                        ExpandFamily(ex, ident, f.spells)
+                        ExpandFamily(ex, ident, frame.spells)
                     end
                 end
             end
@@ -700,8 +700,8 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
     local npFlip, flipTypes, flipBools
     do
         local npShown, prShown, types, bools
-        for idx = 1, #candidateClasses do
-            local class = candidateClasses[idx]
+        for index = 1, #candidateClasses do
+            local class = candidateClasses[index]
             local cc = class.cand
             if cc and classEnabledFn(class) then
                 local bk = OwnedBool(cc)
@@ -823,8 +823,8 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
         -- negation machinery enabling a class does, never a re-tokened catch-all.
         -- An fx-forced class stays visible (effect wins) and is emitted by the
         -- positive pass instead.
-        for idx = 1, #tokenClasses do
-            local class = tokenClasses[idx]
+        for index = 1, #tokenClasses do
+            local class = tokenClasses[index]
             if subtractFn(class) and not classEnabledFn(class) then
                 local tokens = { base, class.token }
                 for num = 1, #negations do
@@ -839,8 +839,8 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                 negations[#negations + 1] = class.neg or ("!" .. class.token)
             end
         end
-        for idx = 1, #candidateClasses do
-            local class = candidateClasses[idx]
+        for index = 1, #candidateClasses do
+            local class = candidateClasses[index]
             local cc = class.cand
             if cc and subtractFn(class) and not classEnabledFn(class) then
                 -- Forward-capable candidate classes (dispeltyped's include map,
@@ -874,8 +874,8 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
             end
         end
         -- POSITIVE PASS -- the legacy loop shape; negations arrive pre-seeded.
-        for idx = 1, #tokenClasses do
-            local class = tokenClasses[idx]
+        for index = 1, #tokenClasses do
+            local class = tokenClasses[index]
             if classEnabledFn(class) then
                 local tokens = { base, class.token }
                 for num = 1, #negations do
@@ -885,8 +885,8 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
                 negations[#negations + 1] = class.neg or ("!" .. class.token)
             end
         end
-        for idx = 1, #candidateClasses do
-            local class = candidateClasses[idx]
+        for index = 1, #candidateClasses do
+            local class = candidateClasses[index]
             local cc = class.cand
             if cc and classEnabledFn(class) then
                 local tokens = { base }
@@ -923,8 +923,8 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
     -- otherwise enabled) join as HIDDEN links in vocabulary order: the group
     -- parks at 0 frames while its negations/forward excludes still remove it
     -- from the catch-all. An fx-forced class stays visible (effect wins).
-    for idx = 1, #tokenClasses do
-        local class = tokenClasses[idx]
+    for index = 1, #tokenClasses do
+        local class = tokenClasses[index]
         local en = classEnabledFn(class)
         local sub = subtractFn and subtractFn(class) or false
         if en or sub then
@@ -941,8 +941,8 @@ local function BuildChain(base, classEnabledFn, includeCatchAll, subtractFn)
             negations[#negations + 1] = class.neg or ("!" .. class.token)
         end
     end
-    for idx = 1, #candidateClasses do
-        local class = candidateClasses[idx]
+    for index = 1, #candidateClasses do
+        local class = candidateClasses[index]
         local en = classEnabledFn(class)
         local sub = subtractFn and subtractFn(class) or false
         local cc = class.cand

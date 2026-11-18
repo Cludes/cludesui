@@ -96,8 +96,8 @@ function mod.TalentCondFilterPass(cdFrames)
     end
     local configID -- read once, on the first frame that carries conditions (false = none)
     for bk, frameList in pairs(cdFrames) do
-        for idx = #frameList, 1, -1 do
-            local widget = frameList[idx]
+        for index = #frameList, 1, -1 do
+            local widget = frameList[index]
             local fc = _ecmeFC[widget]
             if fc then
                 local conds
@@ -125,7 +125,7 @@ function mod.TalentCondFilterPass(cdFrames)
                     hide = not Hold(conds, configID)
                 end
                 if hide then
-                    tremove(frameList, idx)
+                    tremove(frameList, index)
                     local spellRef = fc.spellID
                     if spellRef then
                         local set = _hiddenSets[bk]

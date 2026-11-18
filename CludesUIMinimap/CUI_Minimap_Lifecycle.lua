@@ -100,11 +100,11 @@ function SKIN._ApplyMinimapIconScale()
     if not (Minimap and Minimap.SetIconScale) then
         return
     end
-    local d = GetFFD(Minimap)
+    local skinData = GetFFD(Minimap)
     if not val then
         -- Unset after a value (a profile swap): hand the map back Edit Mode's.
-        if d.iconScaleSet then
-            d.iconScaleSet = nil
+        if skinData.iconScaleSet then
+            skinData.iconScaleSet = nil
             local ev = SKIN._EditModeIconScale()
             if ev then
                 Minimap:SetIconScale(ev / 100)
@@ -113,9 +113,9 @@ function SKIN._ApplyMinimapIconScale()
         return
     end
     Minimap:SetIconScale(val / 100)
-    d.iconScaleSet = true
-    if not d.iconScaleHooked and MinimapCluster and MinimapCluster.SetIconScale then
-        d.iconScaleHooked = true
+    skinData.iconScaleSet = true
+    if not skinData.iconScaleHooked and MinimapCluster and MinimapCluster.SetIconScale then
+        skinData.iconScaleHooked = true
         hooksecurefunc(MinimapCluster, "SetIconScale", function()
             local m = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
             if m and m.iconScale then
@@ -134,11 +134,11 @@ function SKIN._SuppressMinimapSelection()
     if not sel then
         return
     end
-    local d = GetFFD(sel)
-    if d.suppressed then
+    local skinData = GetFFD(sel)
+    if skinData.suppressed then
         return
     end
-    d.suppressed = true
+    skinData.suppressed = true
     sel:SetAlpha(0)
     sel:EnableMouse(false)
 end
@@ -357,15 +357,15 @@ do
         end)
 
         local posY = -PADDING
-        for _, item in ipairs(menuItems) do
-            if item.divider then
+        for _, entry in ipairs(menuItems) do
+            if entry.divider then
                 local div = menuFrame:CreateTexture(nil, "ARTWORK")
                 div:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 8, posY - 4)
                 div:SetPoint("TOPRIGHT", menuFrame, "TOPRIGHT", -8, posY - 4)
                 div:SetHeight(1)
                 div:SetColorTexture(0.3, 0.3, 0.3, 0.6)
                 posY = posY - DIVIDER_H
-            elseif item.fn then
+            elseif entry.fn then
                 -- Plain button (no secure template needed)
                 local button = CreateFrame("Button", nil, menuFrame)
                 button:SetPoint("TOPLEFT", menuFrame, "TOPLEFT", 1, posY)
@@ -381,9 +381,9 @@ do
                 labelText:SetFont((CludesUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF", 11, "")
                 labelText:SetPoint("LEFT", button, "LEFT", 10, 0)
                 labelText:SetTextColor(0.9, 0.9, 0.9)
-                labelText:SetText(CludesUI.L(item.text))
+                labelText:SetText(CludesUI.L(entry.text))
 
-                local itemFn = item.fn
+                local itemFn = entry.fn
                 button:SetScript("OnClick", function()
                     SetMenuVisible(false)
                     itemFn()
@@ -392,8 +392,8 @@ do
                 posY = posY - BUTTON_H
             else
                 -- Secure click passthrough to a Blizzard MicroButton
-                local microRef = item.microButton and _G[item.microButton]
-                local btnName = "CUI_MicroMenu_" .. item.text:gsub("%s", "")
+                local microRef = entry.microButton and _G[entry.microButton]
+                local btnName = "CUI_MicroMenu_" .. entry.text:gsub("%s", "")
                 local button = CreateFrame(
                     "Button",
                     btnName,
@@ -408,7 +408,7 @@ do
                 -- crashes on a Blizzard typo (SecureTemplates:564); MicroButtons are globally named so the macro reaches them directly.
                 local secureType = "macro"
                 if microRef then
-                    button:SetAttribute("*macrotext1", "/click " .. item.microButton)
+                    button:SetAttribute("*macrotext1", "/click " .. entry.microButton)
                 end
                 button:SetAttribute("useOnKeyDown", false)
                 button:SetAttribute("*type1", secureType)
@@ -441,7 +441,7 @@ do
                 labelText:SetFont((CludesUI.GetFontPath("minimap")) or "Fonts\\FRIZQT__.TTF", 11, "")
                 labelText:SetPoint("LEFT", button, "LEFT", 10, 0)
                 labelText:SetTextColor(0.9, 0.9, 0.9)
-                labelText:SetText(CludesUI.L(item.text))
+                labelText:SetText(CludesUI.L(entry.text))
 
                 button:HookScript("OnClick", function()
                     C_Timer.After(0, function()
@@ -505,12 +505,12 @@ end
 local prevExtent = CludesUI._GetAnchorTargetExtent
 CludesUI._GetAnchorTargetExtent = function(targetKey, side)
     if targetKey == "EBS_Minimap" and Minimap and Minimap:GetLeft() then
-        local l, r, t, b = MoverInsets()
+        local l, region, t, b = MoverInsets()
         local ratio = Minimap:GetEffectiveScale() / UIParent:GetEffectiveScale()
         if side == "LEFT" then
             return (Minimap:GetLeft() + l) * ratio
         elseif side == "RIGHT" then
-            return (Minimap:GetRight() - r) * ratio
+            return (Minimap:GetRight() - region) * ratio
         elseif side == "TOP" then
             return (Minimap:GetTop() - t) * ratio
         elseif side == "BOTTOM" then
@@ -529,11 +529,11 @@ end
 -- minimap follow a change.
 local extL, extR, extT, extB
 function SKIN._NotifyMinimapExtent()
-    local l, r, t, b = MoverInsets()
-    if l == extL and r == extR and t == extT and b == extB then
+    local l, region, t, b = MoverInsets()
+    if l == extL and region == extR and t == extT and b == extB then
         return
     end
-    extL, extR, extT, extB = l, r, t, b
+    extL, extR, extT, extB = l, region, t, b
     if not CludesUI._unlockActive and CludesUI.PropagateAnchorChain then
         CludesUI.PropagateAnchorChain("EBS_Minimap")
     end
@@ -658,8 +658,8 @@ function SKIN:OnEnable()
                     return Minimap
                 end,
                 getSize = function()
-                    local l, r, t, b = MoverInsets()
-                    return Minimap:GetWidth() - l - r, Minimap:GetHeight() - t - b
+                    local l, region, t, b = MoverInsets()
+                    return Minimap:GetWidth() - l - region, Minimap:GetHeight() - t - b
                 end,
                 getInsets = MoverInsets,
                 isHidden = function()
@@ -748,9 +748,9 @@ do
             end
 
             -- Square border host (solid strips or textured backdrop)
-            local host = GetFFD(Minimap).borderHost
-            if host then
-                host:SetAlpha(alpha)
+            local owner = GetFFD(Minimap).borderHost
+            if owner then
+                owner:SetAlpha(alpha)
             end
 
             -- WoW Forever look's Forever Square frame (the apply pass never sets

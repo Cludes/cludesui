@@ -39,8 +39,8 @@ end
 --  Unlock Mode
 -------------------------------------------------------------------------------
 -- Nominal two-icon row width from settings alone: the nil-position grow edge and the converter's empty-row width.
-function REMIND.NominalRowW(d)
-    return 2 * floor(ICON_SIZE * (d.scale or 1.0) + 0.5) + (d.iconSpacing or 8)
+function REMIND.NominalRowW(skinData)
+    return 2 * floor(ICON_SIZE * (skinData.scale or 1.0) + 0.5) + (skinData.iconSpacing or 8)
 end
 
 local function ApplyUnlockPos()
@@ -75,27 +75,27 @@ local function ApplyUnlockPos()
         -- No saved position: the row sits at the configured offset from screen center, anchored by its grow edge.
         -- Grow Right/Left place that edge half a nominal two-icon row out (settings only, never the live width) so
         -- it never follows the icon count; LayoutIcons hangs the icons off the same edge and owns the anchor's size.
-        local d = saved.profile.display
-        local growDir = d.growDirection
+        local skinData = saved.profile.display
+        local growDir = skinData.growDirection
         iconAnchor:ClearAllPoints()
         if growDir == "RIGHT" then
             iconAnchor:SetPoint(
                 "LEFT",
                 UIParent,
                 "CENTER",
-                (d.xOffset or 0) - REMIND.NominalRowW(d) / 2,
-                d.yOffset or 0
+                (skinData.xOffset or 0) - REMIND.NominalRowW(skinData) / 2,
+                skinData.yOffset or 0
             )
         elseif growDir == "LEFT" then
             iconAnchor:SetPoint(
                 "RIGHT",
                 UIParent,
                 "CENTER",
-                (d.xOffset or 0) + REMIND.NominalRowW(d) / 2,
-                d.yOffset or 0
+                (skinData.xOffset or 0) + REMIND.NominalRowW(skinData) / 2,
+                skinData.yOffset or 0
             )
         else
-            iconAnchor:SetPoint("CENTER", UIParent, "CENTER", d.xOffset or 0, d.yOffset or 0)
+            iconAnchor:SetPoint("CENTER", UIParent, "CENTER", skinData.xOffset or 0, skinData.yOffset or 0)
         end
     end
 end
@@ -139,8 +139,8 @@ function REMIND.UpdateUnlockPosForGrowDir(newGrowDir)
 end
 
 function CludesUI.GetAuraBuffGrowDir()
-    local d = saved and saved.profile and saved.profile.display
-    return d and d.growDirection or "CENTER"
+    local skinData = saved and saved.profile and saved.profile.display
+    return skinData and skinData.growDirection or "CENTER"
 end
 
 function CludesUI.SetAuraBuffGrowDir(val)

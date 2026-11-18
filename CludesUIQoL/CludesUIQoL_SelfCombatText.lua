@@ -116,8 +116,8 @@ local function ReadSettings()
     elseif font ~= "__combat" then
         S.font = CludesUI.ResolveFontName(font)
     else
-        local f = _G.CombatTextFont
-        S.font = f and f:GetFont() or STANDARD_TEXT_FONT
+        local frame = _G.CombatTextFont
+        S.font = frame and frame:GetFont() or STANDARD_TEXT_FONT
     end
     local outline = Get("outline")
     if outline == "OUTLINE" then
@@ -146,10 +146,10 @@ local function Place()
     if not box then
         return
     end
-    local pos = Get("pos")
+    local position = Get("pos")
     box:ClearAllPoints()
-    if pos then
-        box:SetPoint(pos.point, UIParent, pos.relPoint or pos.point, pos.x, pos.y)
+    if position then
+        box:SetPoint(position.point, UIParent, position.relPoint or position.point, position.x, position.y)
         return
     end
     local player = _G.CludesUIUnitFrames_Player
@@ -187,9 +187,9 @@ local function AddToLayoutMode()
                 end
             end,
             loadPos = function()
-                local pos = Get("pos")
-                if pos then
-                    return { point = pos.point, relPoint = pos.relPoint or pos.point, x = pos.x, y = pos.y }
+                local position = Get("pos")
+                if position then
+                    return { point = position.point, relPoint = position.relPoint or position.point, x = position.x, y = position.y }
                 end
             end,
             clearPos = function()
@@ -284,13 +284,13 @@ end
 -- always starts at the box; static stacks the same way.
 local function MakeRoom(lane, h)
     local now, time, dy = GetTime(), S.duration, S.dy
-    local dir = dy < 0 and -1 or 1
+    local direction = dy < 0 and -1 or 1
     local nearest, distance
     for _, m in ipairs(messages) do
         if m.live and m.lane == lane and now - m.t0 < time then
-            local d = dir * (m.y0 + dy * Progress(m, now))
-            if not distance or d < distance then
-                nearest, distance = m, d
+            local skinData = direction * (m.y0 + dy * Progress(m, now))
+            if not distance or skinData < distance then
+                nearest, distance = m, skinData
             end
         end
     end
@@ -299,13 +299,13 @@ local function MakeRoom(lane, h)
     end
     -- Rising, the new one's top must clear the nearest's bottom; falling, the
     -- nearest's top must clear the box.
-    local need = (dir > 0 and h or nearest.h) + GAP - distance
+    local need = (direction > 0 and h or nearest.h) + GAP - distance
     if need <= 0 then
         return
     end
     for _, m in ipairs(messages) do
         if m.live and m.lane == lane and now - m.t0 < time then
-            m.y0 = m.y0 + dir * need
+            m.y0 = m.y0 + direction * need
             m:SetPoint("BOTTOM", box, "BOTTOM", 0, m.y0)
         end
     end

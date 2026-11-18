@@ -89,11 +89,11 @@ end
 -- on roster, role and spec events too, so the plates are walked only when ns._inDungeon flips.
 local lastInDungeon
 function mod.NP_RefreshTypeScale()
-    local d = mod._inDungeon
-    if d == lastInDungeon then
+    local skinData = mod._inDungeon
+    if skinData == lastInDungeon then
         return
     end
-    lastInDungeon = d
+    lastInDungeon = skinData
     if not mod._typeScaleOn or nonEliteScale == 1 then
         return
     end
@@ -552,7 +552,7 @@ function NameplateFrame:ApplyCastColor(uninterruptible)
             kickReadyTint = sc
         end
     end
-    local cr, cg, cb = ComputeCastBarTint(kickReadyTint, normalCastTint)
+    local cr, cg, callback = ComputeCastBarTint(kickReadyTint, normalCastTint)
 
     -- Match the base cast fill to uninterruptible casts so plate opacity
     -- doesn't reveal the interruptible color underneath the overlay.
@@ -571,9 +571,9 @@ function NameplateFrame:ApplyCastColor(uninterruptible)
         local ev = C_CurveUtil.EvaluateColorValueFromBoolean
         cr = ev(isUnint, unintColor.r, cr)
         cg = ev(isUnint, unintColor.g, cg)
-        cb = ev(isUnint, unintColor.b, cb)
+        callback = ev(isUnint, unintColor.b, callback)
     end
-    self.cast:GetStatusBarTexture():SetVertexColor(cr, cg, cb)
+    self.cast:GetStatusBarTexture():SetVertexColor(cr, cg, callback)
     -- Shield icon is opt-out: when disabled it never shows, even on uninterruptible casts. The
     -- setting is a clean boolean, so it gates the (possibly SECRET) flag without evaluating it.
     local showShield = true

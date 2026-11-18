@@ -71,8 +71,8 @@ function mod.TrainingPlan()
     local sequence, sold = {}, {}
     for lvl, rowList in pairs(payload) do
         sequence[#sequence + 1] = lvl
-        for _, r in ipairs(rowList) do
-            sold[r[1]] = true
+        for _, region in ipairs(rowList) do
+            sold[region[1]] = true
         end
     end
     table.sort(sequence)
@@ -88,11 +88,11 @@ function mod.TrainingPlan()
         local changed = true
         while changed do -- a rank can wait on one listed after it at the same level
             changed = false
-            for _, r in ipairs(payload[lvl]) do
-                local ident = r[1]
+            for _, region in ipairs(payload[lvl]) do
+                local ident = region[1]
                 if not Known(ident) and not ready[ident] and not later[ident] then
                     local success = true
-                    for _, need in ipairs(r[3] or {}) do
+                    for _, need in ipairs(region[3] or {}) do
                         if not Have(need, lvl) then
                             success = false
                             break
@@ -118,9 +118,9 @@ function mod.TrainingPlan()
         end
         seen[ident] = true
         for lvl, rowList in pairs(payload) do
-            for _, r in ipairs(rowList) do
-                if r[1] == ident then
-                    for _, need in ipairs(r[3] or {}) do
+            for _, region in ipairs(rowList) do
+                if region[1] == ident then
+                    for _, need in ipairs(region[3] or {}) do
                         if not Known(need) and not ready[need] and not later[need] then
                             if not sold[need] then
                                 return need
@@ -137,10 +137,10 @@ function mod.TrainingPlan()
     end
 
     for _, lvl in ipairs(sequence) do
-        for _, r in ipairs(payload[lvl]) do
-            local ident = r[1]
+        for _, region in ipairs(payload[lvl]) do
+            local ident = region[1]
             if not Known(ident) then
-                local record = { id = ident, cost = r[2], level = lvl, skillLevel = r[5] }
+                local record = { id = ident, cost = region[2], level = lvl, skillLevel = region[5] }
                 if not ready[ident] and not later[ident] then
                     blockedBy[ident] = Root(ident)
                     record.needs = blockedBy[ident]

@@ -68,8 +68,8 @@ local function ReadActiveChatText()
             return ""
         end
         local num = castFrame:GetNumMessages()
-        for idx = 1, num do
-            local success, textValue = pcall(castFrame.GetMessageInfo, castFrame, idx)
+        for index = 1, num do
+            local success, textValue = pcall(castFrame.GetMessageInfo, castFrame, index)
             if success then
                 raw[#raw + 1] = textValue
             end
@@ -79,8 +79,8 @@ local function ReadActiveChatText()
         return "(No chat history)"
     end
     local lines = {}
-    for idx = 1, #raw do
-        local textValue = raw[idx]
+    for index = 1, #raw do
+        local textValue = raw[index]
         if textValue and not (issecretvalue and issecretvalue(textValue)) then
             local sok, stripped = pcall(StripUIEscapes, textValue)
             if sok and stripped then

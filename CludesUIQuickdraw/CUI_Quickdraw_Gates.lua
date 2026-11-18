@@ -649,10 +649,10 @@ do
 
             pool.pgate[key] = pgate
             pool.rgate[key] = {}
-            for r = 1, REGION_MAX do
+            for region = 1, REGION_MAX do
                 local rgate = CreateFrame(
                     "Frame",
-                    "CUIQuickdrawButton" .. index .. "RGate" .. key .. "_" .. r,
+                    "CUIQuickdrawButton" .. index .. "RGate" .. key .. "_" .. region,
                     UIParent,
                     "SecureHandlerEnterLeaveTemplate"
                 )
@@ -675,8 +675,8 @@ do
                 SecureHandlerWrapScript(rgate, "OnEnter", EnsureSecureHeader(), EnterSnippet(key, true))
                 SecureHandlerWrapScript(rgate, "OnLeave", EnsureSecureHeader(), LeaveSnippet(key, true))
 
-                SecureHandlerSetFrameRef(button, "rgate" .. key .. "_" .. r, rgate)
-                pool.rgate[key][r] = rgate
+                SecureHandlerSetFrameRef(button, "rgate" .. key .. "_" .. region, rgate)
+                pool.rgate[key][region] = rgate
             end
             pool.built = key
         end
@@ -695,7 +695,7 @@ do
     -- no gate at all, which is the sticky reach. No region gates and no floor:
     -- the release only fires a child while the pointer is inside its cell, so a
     -- claim left armed costs a release nothing anywhere else.
-    local function LatticeSnippet(d)
+    local function LatticeSnippet(skinData)
         return (
             ([==[
         local btn = self:GetFrameRef("btn")
@@ -709,7 +709,7 @@ do
         local slot = ((t - 1 + (__D__)) % n) + 1
         btn:SetAttribute("eqdArmed",
             tonumber(btn:GetAttribute("eqdClaimAt" .. slot)))
-    ]==]):gsub("__D__", tostring(d))
+    ]==]):gsub("__D__", tostring(skinData))
         )
     end
 
@@ -723,13 +723,13 @@ do
             return
         end
         pool.lattice = {}
-        for d = -MAX_LATTICE, MAX_LATTICE do
+        for skinData = -MAX_LATTICE, MAX_LATTICE do
             -- Named by 0-based position rather than by the signed offset, so the
             -- global name carries no minus sign; the frame REFS keep the signed
             -- offset, which is what the snippets loop.
             local g = CreateFrame(
                 "Frame",
-                "CUIQuickdrawButton" .. index .. "LGate" .. (d + MAX_LATTICE),
+                "CUIQuickdrawButton" .. index .. "LGate" .. (skinData + MAX_LATTICE),
                 UIParent,
                 "SecureHandlerEnterLeaveTemplate"
             )
@@ -743,9 +743,9 @@ do
             -- retains, per the sticky -- so there is no OnLeave body and the
             -- "_wrapentered" precondition the region gates work around never
             -- comes up.
-            SecureHandlerWrapScript(g, "OnEnter", EnsureSecureHeader(), LatticeSnippet(d))
-            SecureHandlerSetFrameRef(button, "lgate" .. d, g)
-            pool.lattice[d] = g
+            SecureHandlerWrapScript(g, "OnEnter", EnsureSecureHeader(), LatticeSnippet(skinData))
+            SecureHandlerSetFrameRef(button, "lgate" .. skinData, g)
+            pool.lattice[skinData] = g
         end
     end
 end

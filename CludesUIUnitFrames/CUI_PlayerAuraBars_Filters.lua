@@ -126,12 +126,12 @@ function mod.PAB_GetFilter(ident)
         return nil
     end
     for i = 1, #entries do
-        local f = entries[i]
-        if f.id == ident then
-            if mod.PAB_OtherClientPreset(f) then
+        local frame = entries[i]
+        if frame.id == ident then
+            if mod.PAB_OtherClientPreset(frame) then
                 return nil
             end
-            return f
+            return frame
         end
     end
 end
@@ -140,8 +140,8 @@ end
 -- other client offers stays stored untouched (bars and states intact for the
 -- next visit there) but is hidden here. Seeded filters carry the catalogue's
 -- preset name, so the name identifies the preset.
-function mod.PAB_OtherClientPreset(f)
-    return f.preset and mod.PAB_OTHER_ONLY_PRESETS[f.name] or false
+function mod.PAB_OtherClientPreset(frame)
+    return frame.preset and mod.PAB_OTHER_ONLY_PRESETS[frame.name] or false
 end
 
 -- An id a preset filter keeps only for the other client: never shown or
@@ -150,8 +150,8 @@ end
 -- it is an id the Forever seed added (f.foreverSeeded, see
 -- ns.PAB_ImportBM2Filters) that retail does not curate there: a retail user
 -- may add such an id by hand, so only the seed's own note tells them apart.
-function mod.PAB_OtherClientSpell(f, ident)
-    local key = f.preset and mod.PAB_PRESET_KEY[f.name]
+function mod.PAB_OtherClientSpell(frame, ident)
+    local key = frame.preset and mod.PAB_PRESET_KEY[frame.name]
     if not key then
         return false
     end
@@ -163,7 +163,7 @@ function mod.PAB_OtherClientSpell(f, ident)
         local other = CludesUI.BUFF_PRESET_OTHER_IDS[key]
         return (other and other[ident]) == true
     end
-    local m = f.foreverSeeded
+    local m = frame.foreverSeeded
     return (m and m[ident]) == true
 end
 
@@ -194,16 +194,16 @@ function mod.PAB_AddFilter(name)
         return nil
     end
     local storage = FilterStore(s)
-    local f = { id = storage.nextId, name = name or "New Filter", spells = {} }
+    local frame = { id = storage.nextId, name = name or "New Filter", spells = {} }
     storage.nextId = storage.nextId + 1
-    storage.list[#storage.list + 1] = f
-    return f
+    storage.list[#storage.list + 1] = frame
+    return frame
 end
 
 function mod.PAB_RenameFilter(ident, name)
-    local f = mod.PAB_GetFilter(ident)
-    if f and name and name ~= "" then
-        f.name = name
+    local frame = mod.PAB_GetFilter(ident)
+    if frame and name and name ~= "" then
+        frame.name = name
     end
 end
 
@@ -222,19 +222,19 @@ function mod.PAB_DeleteFilter(ident)
             table.remove(entries, i)
         end
     end
-    local function Strip(bar, isDefault)
-        if bar.filters then
-            bar.filters[ident] = nil
+    local function Strip(barFrame, isDefault)
+        if barFrame.filters then
+            barFrame.filters[ident] = nil
         end
-        if bar.negFilters then
-            bar.negFilters[ident] = nil
+        if barFrame.negFilters then
+            barFrame.negFilters[ident] = nil
         end
         -- No-empty rule: deleting an ENABLED bar's last content source falls
         -- back to All Buffs, same as unchecking it in the Filters dropdown
         -- would. Disabled bars keep their stored state untouched (the
         -- EnsureBarEnable invariant).
-        if bar.enabled ~= false and not BuffBarHasContent(bar, isDefault) then
-            bar.showAllBuffs = nil
+        if barFrame.enabled ~= false and not BuffBarHasContent(barFrame, isDefault) then
+            barFrame.showAllBuffs = nil
         end
     end
     if s.defaultBuffs then
@@ -294,15 +294,15 @@ end
 -- Ids kept only for the other client (ns.PAB_OtherClientSpell) are never
 -- rewritten from here.
 function mod.PAB_SetSpellState(filterId, spellId, status)
-    local f = mod.PAB_GetFilter(filterId)
-    if not f then
+    local frame = mod.PAB_GetFilter(filterId)
+    if not frame then
         return
     end
     local function Write(ident)
         if status == nil then
-            f.spells[ident] = nil
+            frame.spells[ident] = nil
         else
-            f.spells[ident] = status and true or false
+            frame.spells[ident] = status and true or false
         end
     end
     Write(spellId)
@@ -313,17 +313,17 @@ function mod.PAB_SetSpellState(filterId, spellId, status)
     local fam = mod.PAB_SPELL_FAMILY and mod.PAB_SPELL_FAMILY[spellId]
     if fam then
         for i = 1, #fam do
-            if fam[i] ~= spellId and f.spells[fam[i]] ~= nil and not mod.PAB_OtherClientSpell(f, fam[i]) then
+            if fam[i] ~= spellId and frame.spells[fam[i]] ~= nil and not mod.PAB_OtherClientSpell(frame, fam[i]) then
                 Write(fam[i])
             end
         end
     end
     local name = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spellId)
     if name then
-        for ident in pairs(f.spells) do
+        for ident in pairs(frame.spells) do
             if
                 ident ~= spellId
-                and not mod.PAB_OtherClientSpell(f, ident)
+                and not mod.PAB_OtherClientSpell(frame, ident)
                 and C_Spell.GetSpellName(ident) == name
             then
                 Write(ident)
@@ -336,18 +336,18 @@ end
 -- counts as absent, and every add drops the id's seed note (one can outlive
 -- its id after a delete): the added id is an ordinary row on both clients.
 function mod.PAB_AddSpellToFilter(filterId, spellId)
-    local f = mod.PAB_GetFilter(filterId)
-    if not (f and spellId and spellId > 0) then
+    local frame = mod.PAB_GetFilter(filterId)
+    if not (frame and spellId and spellId > 0) then
         return false
     end
-    local m = CludesUI.IS_FOREVER ~= true and f.foreverSeeded or nil
-    if f.spells[spellId] ~= nil and not (m and mod.PAB_OtherClientSpell(f, spellId)) then
+    local m = CludesUI.IS_FOREVER ~= true and frame.foreverSeeded or nil
+    if frame.spells[spellId] ~= nil and not (m and mod.PAB_OtherClientSpell(frame, spellId)) then
         return false -- already present
     end
     if m then
         m[spellId] = nil
     end
-    f.spells[spellId] = true
+    frame.spells[spellId] = true
     return true
 end
 
@@ -375,12 +375,12 @@ function mod.PAB_ResolveSpells(conf)
     local filters = addMode and conf.filters or nil
     if filters then
         for filterId in pairs(filters) do
-            local f = mod.PAB_GetFilter(filterId)
-            if f then
-                for ident, on in pairs(f.spells) do
-                    if on and not mod.PAB_OtherClientSpell(f, ident) then
+            local frame = mod.PAB_GetFilter(filterId)
+            if frame then
+                for ident, on in pairs(frame.spells) do
+                    if on and not mod.PAB_OtherClientSpell(frame, ident) then
                         set[ident] = true
-                        ExpandFamily(set, ident, f.spells)
+                        ExpandFamily(set, ident, frame.spells)
                     end
                 end
             end
@@ -390,12 +390,12 @@ function mod.PAB_ResolveSpells(conf)
     if negFilters then
         local hide = {}
         for filterId in pairs(negFilters) do
-            local f = mod.PAB_GetFilter(filterId)
-            if f then
-                for ident, on in pairs(f.spells) do
-                    if on and not mod.PAB_OtherClientSpell(f, ident) then
+            local frame = mod.PAB_GetFilter(filterId)
+            if frame then
+                for ident, on in pairs(frame.spells) do
+                    if on and not mod.PAB_OtherClientSpell(frame, ident) then
                         hide[ident] = true
-                        ExpandFamily(hide, ident, f.spells)
+                        ExpandFamily(hide, ident, frame.spells)
                     end
                 end
             end
@@ -427,9 +427,9 @@ end
 local function NameToId(entries)
     local m = {}
     for i = 1, #entries do
-        local f = entries[i]
-        if m[f.name] == nil then
-            m[f.name] = f.id
+        local frame = entries[i]
+        if m[frame.name] == nil then
+            m[frame.name] = frame.id
         end
     end
     return m
@@ -727,7 +727,7 @@ function mod.PAB_ImportBM2Filters()
     -- retail keeps it inert when the profile goes back there
     -- (ns.PAB_OtherClientSpell). Nothing is noted on retail.
     local retailIds = CludesUI.IS_FOREVER == true and CludesUI.BUFF_PRESET_OTHER_IDS or nil
-    local function NoteSeed(f, key, ident)
+    local function NoteSeed(frame, key, ident)
         if not retailIds then
             return
         end
@@ -735,10 +735,10 @@ function mod.PAB_ImportBM2Filters()
         if current and current[ident] then
             return
         end
-        local m = f.foreverSeeded
+        local m = frame.foreverSeeded
         if not m then
             m = {}
-            f.foreverSeeded = m
+            frame.foreverSeeded = m
         end
         m[ident] = true
     end
@@ -746,22 +746,22 @@ function mod.PAB_ImportBM2Filters()
     local created = 0
     for i = 1, #BM2_FILTER_SEED do
         local seed = BM2_FILTER_SEED[i]
-        local f = byName[seed.name]
-        if not f then
-            f = mod.PAB_AddFilter(seed.name)
-            if f then
+        local frame = byName[seed.name]
+        if not frame then
+            frame = mod.PAB_AddFilter(seed.name)
+            if frame then
                 for jdx = 1, #seed.enabled do
-                    f.spells[seed.enabled[jdx]] = true
+                    frame.spells[seed.enabled[jdx]] = true
                 end
                 for jdx = 1, #seed.disabled do
-                    f.spells[seed.disabled[jdx]] = false
+                    frame.spells[seed.disabled[jdx]] = false
                 end
                 if retailIds then
                     for jdx = 1, #seed.enabled do
-                        NoteSeed(f, seed.key, seed.enabled[jdx])
+                        NoteSeed(frame, seed.key, seed.enabled[jdx])
                     end
                     for jdx = 1, #seed.disabled do
-                        NoteSeed(f, seed.key, seed.disabled[jdx])
+                        NoteSeed(frame, seed.key, seed.disabled[jdx])
                     end
                 end
                 created = created + 1
@@ -769,8 +769,8 @@ function mod.PAB_ImportBM2Filters()
         end
         -- Runs every call, not just on fresh creation, so filters the idempotent-by-name
         -- skip would otherwise leave unflagged forever still get the protection flag.
-        if f then
-            f.preset = true
+        if frame then
+            frame.preset = true
             -- Additive curation merge (mirrors BM2's EnsureFilters): curated ids
             -- NEW since this filter was created join it with their seed state;
             -- ids the user already has (either state) are never overwritten.
@@ -778,16 +778,16 @@ function mod.PAB_ImportBM2Filters()
             -- removing non-seed ids would delete user additions.
             for jdx = 1, #seed.enabled do
                 local ident = seed.enabled[jdx]
-                if f.spells[ident] == nil then
-                    f.spells[ident] = true
-                    NoteSeed(f, seed.key, ident)
+                if frame.spells[ident] == nil then
+                    frame.spells[ident] = true
+                    NoteSeed(frame, seed.key, ident)
                 end
             end
             for jdx = 1, #seed.disabled do
                 local ident = seed.disabled[jdx]
-                if f.spells[ident] == nil then
-                    f.spells[ident] = false
-                    NoteSeed(f, seed.key, ident)
+                if frame.spells[ident] == nil then
+                    frame.spells[ident] = false
+                    NoteSeed(frame, seed.key, ident)
                 end
             end
             -- Family heal: a checked PRIMARY whose curated alternates were left
@@ -795,10 +795,10 @@ function mod.PAB_ImportBM2Filters()
             -- its alternates up. Enable-only, primary->alt only, curated
             -- families only: never disables, never touches user-added ids.
             for primary, alts in pairs(PRESET_ALTS) do
-                if f.spells[primary] == true then
+                if frame.spells[primary] == true then
                     for k = 1, #alts do
-                        if f.spells[alts[k]] == false then
-                            f.spells[alts[k]] = true
+                        if frame.spells[alts[k]] == false then
+                            frame.spells[alts[k]] = true
                         end
                     end
                 end
@@ -881,7 +881,7 @@ function mod.PAB_AddCustomBuffBar(name, bucketKey)
         return nil
     end
     s.customBuffBars = s.customBuffBars or {}
-    local bar = {
+    local barFrame = {
         id = NextBarId(s),
         name = name or "New Buff Bar",
         enabled = true,
@@ -899,8 +899,8 @@ function mod.PAB_AddCustomBuffBar(name, bucketKey)
     -- The edited editing-spec bucket owns the new bar; ids come from the ONE
     -- shared counter regardless of bucket.
     local target = mod.PAB_BucketBars(true, bucketKey, true) or s.customBuffBars
-    target[#target + 1] = bar
-    return bar
+    target[#target + 1] = barFrame
+    return barFrame
 end
 
 function mod.PAB_AddCustomDebuffBar(name, bucketKey)
@@ -909,7 +909,7 @@ function mod.PAB_AddCustomDebuffBar(name, bucketKey)
         return nil
     end
     s.customDebuffBars = s.customDebuffBars or {}
-    local bar = {
+    local barFrame = {
         id = NextBarId(s),
         name = name or "New Debuff Bar",
         enabled = true,
@@ -921,8 +921,8 @@ function mod.PAB_AddCustomDebuffBar(name, bucketKey)
         maxTotal = 8,
     }
     local target = mod.PAB_BucketBars(false, bucketKey, true) or s.customDebuffBars
-    target[#target + 1] = bar
-    return bar
+    target[#target + 1] = barFrame
+    return barFrame
 end
 
 -- Deletion only strips the DB entry; it deliberately does NOT remove the bar's
@@ -941,10 +941,10 @@ function mod.PAB_CopyCustomBar(isBuff, source, bucketKey)
     if not target then
         return nil
     end
-    local bar = CopyTable(source)
-    bar.id = NextBarId(s)
-    target[#target + 1] = bar
-    return bar
+    local barFrame = CopyTable(source)
+    barFrame.id = NextBarId(s)
+    target[#target + 1] = barFrame
+    return barFrame
 end
 
 -- Shared by both deletes: strip the id from every editing-spec bucket and
@@ -1235,8 +1235,8 @@ end
 -- lingering), the bar's own toggle is on, its owning bucket applies to the
 -- CURRENT spec, and (group buckets, All Specs included) this spec hasn't
 -- per-spec disabled it. bucketKey nil = legacy = "allspecs".
-function mod.PAB_BarActive(bar, bucketKey)
-    if not bar or bar.enabled == false then
+function mod.PAB_BarActive(barFrame, bucketKey)
+    if not barFrame or barFrame.enabled == false then
         return false
     end
     local sMaster = PAB()
@@ -1251,7 +1251,7 @@ function mod.PAB_BarActive(bar, bucketKey)
     if not isOwn and spellRef then
         local s = PAB()
         local con = s and s.pabSpecBars and s.pabSpecBars["spec" .. spellRef]
-        if con and con.inhDis and con.inhDis[bar.id] then
+        if con and con.inhDis and con.inhDis[barFrame.id] then
             return false
         end
     end

@@ -47,17 +47,17 @@ end
 function CludesUI.GetTotemGrowDir()
     local tb = GetTotemSettings()
     local vertical = tb and tb.orientation == "VERTICAL"
-    local dir = (tb and tb.growDirection or (vertical and "DOWN" or "RIGHT")):upper()
+    local direction = (tb and tb.growDirection or (vertical and "DOWN" or "RIGHT")):upper()
     if vertical then
-        if dir ~= "UP" and dir ~= "DOWN" and dir ~= "CENTER" then
-            dir = "DOWN"
+        if direction ~= "UP" and direction ~= "DOWN" and direction ~= "CENTER" then
+            direction = "DOWN"
         end
     else
-        if dir ~= "LEFT" and dir ~= "RIGHT" and dir ~= "CENTER" then
-            dir = "RIGHT"
+        if direction ~= "LEFT" and direction ~= "RIGHT" and direction ~= "CENTER" then
+            direction = "RIGHT"
         end
     end
-    return dir, vertical
+    return direction, vertical
 end
 
 -- Cached layout state to avoid redundant work on every Update hook
@@ -149,8 +149,8 @@ local function LayoutTotemBar()
         end
     end
     -- Trim stale entries
-    for idx = count + 1, #buttons do
-        buttons[idx] = nil
+    for index = count + 1, #buttons do
+        buttons[index] = nil
     end
 
     -- CENTER grow: re-anchor TotemFrame so the icon group is centred. `total` is
@@ -178,11 +178,11 @@ local function LayoutTotemBar()
     local outlineMode = CludesUI.GetFontOutlineFlag("resourceBars")
 
     wipe(_totemActiveSet)
-    for idx, button in ipairs(buttons) do
+    for index, button in ipairs(buttons) do
         _totemActiveSet[button] = true
 
         button:ClearAllPoints()
-        if idx == 1 then
+        if index == 1 then
             if vertical then
                 local a = (_growDir == "UP") and "BOTTOM" or "TOP"
                 button:SetPoint(a, TotemFrame, a, 0, 0)
@@ -192,14 +192,14 @@ local function LayoutTotemBar()
             end
         elseif vertical then
             if _growDir == "UP" then
-                button:SetPoint("BOTTOM", buttons[idx - 1], "TOP", 0, scaledSpacing)
+                button:SetPoint("BOTTOM", buttons[index - 1], "TOP", 0, scaledSpacing)
             else
-                button:SetPoint("TOP", buttons[idx - 1], "BOTTOM", 0, -scaledSpacing)
+                button:SetPoint("TOP", buttons[index - 1], "BOTTOM", 0, -scaledSpacing)
             end
         elseif _growDir == "LEFT" then
-            button:SetPoint("RIGHT", buttons[idx - 1], "LEFT", -scaledSpacing, 0)
+            button:SetPoint("RIGHT", buttons[index - 1], "LEFT", -scaledSpacing, 0)
         else
-            button:SetPoint("LEFT", buttons[idx - 1], "RIGHT", scaledSpacing, 0)
+            button:SetPoint("LEFT", buttons[index - 1], "RIGHT", scaledSpacing, 0)
         end
 
         -- Hide Blizzard's circular border

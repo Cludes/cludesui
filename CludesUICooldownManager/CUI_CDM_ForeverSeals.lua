@@ -111,8 +111,8 @@ local function Aliases()
                         ids[#ids + 1] = b
                     end
                     if type(details.linkedSpellIDs) == "table" then
-                        for idx = 1, #details.linkedSpellIDs do
-                            linked[#linked + 1] = details.linkedSpellIDs[idx]
+                        for index = 1, #details.linkedSpellIDs do
+                            linked[#linked + 1] = details.linkedSpellIDs[index]
                         end
                     end
                 end
@@ -138,13 +138,13 @@ end
 -- spell (each rank is its own spell on Forever) sharing their names.
 local function Include()
     local set, nameList = {}, {}
-    for idx = 1, #SEAL_SEEDS do
-        AddID(set, nameList, SEAL_SEEDS[idx])
+    for index = 1, #SEAL_SEEDS do
+        AddID(set, nameList, SEAL_SEEDS[index])
     end
     local linked = S.linked
     if linked then
-        for idx = 1, #linked do
-            AddID(set, nameList, linked[idx])
+        for index = 1, #linked do
+            AddID(set, nameList, linked[index])
         end
     end
     local known = false
@@ -180,11 +180,11 @@ end
 local function Icon()
     if not S.art then
         S.art = C_Spell.GetSpellTexture(SEALS)
-        for idx = 1, #SEAL_SEEDS do
+        for index = 1, #SEAL_SEEDS do
             if S.art then
                 break
             end
-            S.art = C_Spell.GetSpellTexture(SEAL_SEEDS[idx])
+            S.art = C_Spell.GetSpellTexture(SEAL_SEEDS[index])
         end
     end
     return S.art
@@ -202,9 +202,9 @@ local function Placed()
         return
     end
     for _, entries in pairs(icons) do
-        for idx = 1, #entries do
-            local f = entries[idx]
-            if f and not f._isPresetFrame and not f._isPlaceholderFrame and IsSealsCd(f.cooldownID) then
+        for index = 1, #entries do
+            local frame = entries[index]
+            if frame and not frame._isPresetFrame and not frame._isPlaceholderFrame and IsSealsCd(frame.cooldownID) then
                 S.native = true
                 if mod.QueueReanchor then
                     mod.QueueReanchor()

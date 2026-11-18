@@ -40,11 +40,11 @@ end
 
 -- Latency in three bands (ms), in the client's own green / yellow / red.
 local LAT_GOOD, LAT_FAIR = 100, 250
-local function FontColour(color, r, g, b)
+local function FontColour(color, region, g, b)
     if color and color.GetRGB then
         return color:GetRGB()
     end
-    return r, g, b
+    return region, g, b
 end
 local function LatencyColour(ms)
     if ms <= LAT_GOOD then
@@ -83,10 +83,10 @@ local function SingleValueBlock(blockCfg, slot, contentFrame, barCtx, spec)
     widget:SetSize(60, 20)
     widget:EnableMouse(true)
     widget:RegisterForClicks("AnyUp")
-    local icon
+    local iconTex
     if spec.hasIcon then
-        icon = widget:CreateTexture(nil, "OVERLAY")
-        icon:SetPoint("LEFT")
+        iconTex = widget:CreateTexture(nil, "OVERLAY")
+        iconTex:SetPoint("LEFT")
     end
     local label = widget:CreateFontString(nil, "OVERLAY")
     K.AttachTextOffset(inst, label)
@@ -96,18 +96,18 @@ local function SingleValueBlock(blockCfg, slot, contentFrame, barCtx, spec)
     ruler:Hide()
 
     local function Paint()
-        local r, g, b
+        local region, g, b
         if hovered then
-            r, g, b = mod.GetAccent()
+            region, g, b = mod.GetAccent()
         else
-            r, g, b = K.BlockColorOf(blockCfg)
+            region, g, b = K.BlockColorOf(blockCfg)
         end
-        label:SetTextColor(r, g, b, 1)
-        if icon then
+        label:SetTextColor(region, g, b, 1)
+        if iconTex then
             if not hovered then
-                r, g, b = K.IconColorOf(blockCfg)
+                region, g, b = K.IconColorOf(blockCfg)
             end
-            icon:SetVertexColor(r, g, b, 1)
+            iconTex:SetVertexColor(region, g, b, 1)
         end
     end
 
@@ -124,8 +124,8 @@ local function SingleValueBlock(blockCfg, slot, contentFrame, barCtx, spec)
             value = spec.sample()
         end
         local iconSize = 0
-        if icon then
-            K.SetBlockIcon(icon, blockCfg)
+        if iconTex then
+            K.SetBlockIcon(iconTex, blockCfg)
             if s.showIcon ~= false then
                 iconSize = fontSize + (spec.iconExtra or 0)
             end
@@ -134,10 +134,10 @@ local function SingleValueBlock(blockCfg, slot, contentFrame, barCtx, spec)
         label:SetText(value .. spec.suffix())
         Paint()
         if iconSize > 0 then
-            icon:SetSize(iconSize, iconSize)
-            icon:Show()
-        elseif icon then
-            icon:Hide()
+            iconTex:SetSize(iconSize, iconSize)
+            iconTex:Show()
+        elseif iconTex then
+            iconTex:Hide()
         end
         -- In combat the layout waits (the next full pass places it).
         if InCombatLockdown() then
@@ -153,9 +153,9 @@ local function SingleValueBlock(blockCfg, slot, contentFrame, barCtx, spec)
             widget:SetPoint("CENTER", contentFrame, "CENTER", 0, 0)
             label:ClearAllPoints()
             if iconSize > 0 then
-                icon:ClearAllPoints()
-                icon:SetPoint("LEFT", widget, "LEFT", 0, 0)
-                label:SetPoint("LEFT", icon, "RIGHT", K.ICON_GAP, 0)
+                iconTex:ClearAllPoints()
+                iconTex:SetPoint("LEFT", widget, "LEFT", 0, 0)
+                label:SetPoint("LEFT", iconTex, "RIGHT", K.ICON_GAP, 0)
                 mod.SetWrappedText(label, max(16, inner - iconSize - K.ICON_GAP - 2), "LEFT")
             else
                 label:SetPoint("CENTER", widget, "CENTER", 0, 0)
@@ -168,8 +168,8 @@ local function SingleValueBlock(blockCfg, slot, contentFrame, barCtx, spec)
             local lead = 0
             if iconSize > 0 then
                 lead = iconSize + K.ICON_GAP
-                icon:ClearAllPoints()
-                icon:SetPoint("LEFT", widget, "LEFT", 0, 0)
+                iconTex:ClearAllPoints()
+                iconTex:SetPoint("LEFT", widget, "LEFT", 0, 0)
             end
             label:ClearAllPoints()
             label:SetPoint("LEFT", widget, "LEFT", lead, 0)
@@ -350,8 +350,8 @@ mod.BlockFactories.fps = function(blockCfg, slot, contentFrame, barCtx)
     local function Tooltip(_, fromTick)
         mod.Tip_Begin(contentFrame)
         local fps = floor(GetFramerate())
-        local r, g, b = FPSColour(fps)
-        mod.Tip_AddDouble(L["FPS"], fps .. mod.GetFPSSuffix(), 0.6, 0.6, 0.6, r, g, b)
+        local region, g, b = FPSColour(fps)
+        mod.Tip_AddDouble(L["FPS"], fps .. mod.GetFPSSuffix(), 0.6, 0.6, 0.6, region, g, b)
         if not fromTick then
             ScanMemory()
         end
@@ -437,16 +437,16 @@ mod.BlockFactories.ms = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     local function Paint()
-        local r, g, b, ir, ig, ib
+        local region, g, b, ir, ig, ib
         if hovered then
-            r, g, b = mod.GetAccent()
-            ir, ig, ib = r, g, b
+            region, g, b = mod.GetAccent()
+            ir, ig, ib = region, g, b
         else
-            r, g, b = K.BlockColorOf(blockCfg)
+            region, g, b = K.BlockColorOf(blockCfg)
             ir, ig, ib = K.IconColorOf(blockCfg)
         end
         for i = 1, 2 do
-            parts[i].text:SetTextColor(r, g, b, 1)
+            parts[i].text:SetTextColor(region, g, b, 1)
             parts[i].icon:SetVertexColor(ir, ig, ib, 1)
         end
     end

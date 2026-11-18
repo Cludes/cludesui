@@ -70,11 +70,11 @@ function mod.ComputeOffTankFold(unitToken, br, backdrop, bb, otr, otg, otb)
             prefixText, total = "party", GetNumGroupMembers() - 1
         end
         if prefixText then
-            for idx = 1, total do
+            for index = 1, total do
                 if num >= 3 then
                     break
                 end
-                local tok = prefixText .. idx
+                local tok = prefixText .. index
                 if not UnitIsUnit(tok, "player") and UnitGroupRolesAssigned(tok) == "TANK" then
                     num = num + 1
                     t[num] = tok
@@ -88,23 +88,23 @@ function mod.ComputeOffTankFold(unitToken, br, backdrop, bb, otr, otg, otb)
     end
     -- All colors arrive from the caller: the _C accessor is declared far BELOW
     -- this function, so resolving colors here read a nil global (field crash).
-    local r, g, b, a = br, backdrop, bb, 0
-    if not (r and otr) then
+    local region, g, b, a = br, backdrop, bb, 0
+    if not (region and otr) then
         return false
     end
-    for idx = 1, #toks do
-        local isTanking = UnitDetailedThreatSituation(toks[idx], unitToken)
+    for index = 1, #toks do
+        local isTanking = UnitDetailedThreatSituation(toks[index], unitToken)
         -- type() is legal on secrets and reports the underlying type, so one
         -- check admits both plain and secret booleans; a refused call (nil)
         -- skips and the accumulator keeps the safe tankNoAggro color.
         if type(isTanking) == "boolean" then
-            r = eval(isTanking, otr, r)
+            region = eval(isTanking, otr, region)
             g = eval(isTanking, otg, g)
             b = eval(isTanking, otb, b)
             a = eval(isTanking, 1, a)
         end
     end
-    return true, r, g, b, a
+    return true, region, g, b, a
 end
 
 -- A damage dealer's or healer's threat colors mean something only while someone else can
@@ -207,8 +207,8 @@ local function FvFuryProbe(details)
     end
     local added = details.addedAuras
     if not issecretvalue(added) and added then
-        for idx = 1, #added do
-            local a = added[idx]
+        for index = 1, #added do
+            local a = added[index]
             if not issecretvalue(a) then
                 local spellRef = a.spellId
                 if not issecretvalue(spellRef) and spellRef == FV_FURY then
@@ -222,8 +222,8 @@ local function FvFuryProbe(details)
     end
     local removed = details.removedAuraInstanceIDs
     if fvFuryInst and not issecretvalue(removed) and removed then
-        for idx = 1, #removed do
-            local iid = removed[idx]
+        for index = 1, #removed do
+            local iid = removed[index]
             if not issecretvalue(iid) and iid == fvFuryInst then
                 fvFury, fvFuryInst = false, nil
                 return true
@@ -709,8 +709,8 @@ do
     }
     local ownerFrame, ownerSlot, lastIdx = {}, {}, {}
     local COLOR_KEY = {} -- slot -> its colour key (prebuilt for UpdateToT and the painter)
-    for idx = 1, #SLOTS do
-        COLOR_KEY[SLOTS[idx]] = SLOTS[idx] .. "Color"
+    for index = 1, #SLOTS do
+        COLOR_KEY[SLOTS[index]] = SLOTS[index] .. "Color"
     end
     -- The plate font string key an element renders on (nil for None). slot: the slot
     -- showing it, which picks a custom text's own font string.
@@ -749,8 +749,8 @@ do
         -- The name is placed in FindNameSlot's slot (the first holding one), the
         -- other shared font strings by the last slot writing them.
         local nameSlot = mod.FindNameSlot()
-        for idx = 1, #SLOTS do
-            local s = SLOTS[idx]
+        for index = 1, #SLOTS do
+            local s = SLOTS[index]
             local el = GetTextSlot(s)
             local key = mod.NP_ElementFSKey(el, s)
             if el == "custom" and not mod._npCustomTgt then
@@ -766,13 +766,13 @@ do
                 ownerSlot[key] = s
             end
             if key then
-                lastIdx[key] = idx
+                lastIdx[key] = index
             end
-            if idx == 4 or idx == 5 then
-                B[idx - 3] = key or false
+            if index == 4 or index == 5 then
+                B[index - 3] = key or false
             end
-            if idx == 6 or idx == 7 then
-                T[idx - 5] = key or false
+            if index == 6 or index == 7 then
+                T[index - 5] = key or false
             end
         end
         for b = 1, 2 do
@@ -859,8 +859,8 @@ function mod.NP_PaintSlotClassColors(backing, unitToken, skipName)
             end
             if success then
                 painted = true
-                for idx = 1, #L do
-                    local key = L[idx]
+                for index = 1, #L do
+                    local key = L[index]
                     local e = m[key]
                     if e then
                         e[1] = nil
@@ -875,18 +875,18 @@ function mod.NP_PaintSlotClassColors(backing, unitToken, skipName)
             end
         end
         if not painted then
-            local r, g, b
+            local region, g, b
             if tok and tok ~= true then
                 local c = CludesUI.GetClassColor(tok)
-                r, g, b = c.r, c.g, c.b
+                region, g, b = c.r, c.g, c.b
             elseif UnitIsTapDenied(unitToken) then
                 local c = (p and p.enemyNameTappedColor) or _C("tapped")
-                r, g, b = c.r, c.g, c.b
+                region, g, b = c.r, c.g, c.b
             else
-                r, g, b = GetEnemyNameReactionColor(unitToken)
+                region, g, b = GetEnemyNameReactionColor(unitToken)
             end
-            for idx = 1, #L do
-                local key = L[idx]
+            for index = 1, #L do
+                local key = L[index]
                 local e = m[key]
                 if not e then
                     e = {}
@@ -894,11 +894,11 @@ function mod.NP_PaintSlotClassColors(backing, unitToken, skipName)
                 end
                 if skipName and key == "name" then
                     e[1] = nil
-                elseif e[1] ~= r or e[2] ~= g or e[3] ~= b then
-                    e[1], e[2], e[3] = r, g, b
+                elseif e[1] ~= region or e[2] ~= g or e[3] ~= b then
+                    e[1], e[2], e[3] = region, g, b
                     local fontStr = backing[key]
                     if fontStr then
-                        fontStr:SetTextColor(r, g, b, 1)
+                        fontStr:SetTextColor(region, g, b, 1)
                     end
                 end
             end
@@ -906,9 +906,9 @@ function mod.NP_PaintSlotClassColors(backing, unitToken, skipName)
     end
     local V = mod._npSlotLevelFS
     if V[1] then
-        local r, g, b = mod.NP_UnitLevelColor(unitToken)
-        for idx = 1, #V do
-            local key = V[idx]
+        local region, g, b = mod.NP_UnitLevelColor(unitToken)
+        for index = 1, #V do
+            local key = V[index]
             local e = m[key]
             if not e then
                 e = {}
@@ -916,21 +916,21 @@ function mod.NP_PaintSlotClassColors(backing, unitToken, skipName)
             end
             if skipName and key == "name" then
                 e[1] = nil
-            elseif not r then
+            elseif not region then
                 if e[1] ~= false then
                     e[1] = false
-                    local ck = mod._npSlotLevelCK[idx]
+                    local ck = mod._npSlotLevelCK[index]
                     local c = (p and p[ck]) or defaultSet[ck]
                     local fontStr = backing[key]
                     if fontStr then
                         fontStr:SetTextColor(c.r, c.g, c.b, 1)
                     end
                 end
-            elseif e[1] ~= r or e[2] ~= g or e[3] ~= b then
-                e[1], e[2], e[3] = r, g, b
+            elseif e[1] ~= region or e[2] ~= g or e[3] ~= b then
+                e[1], e[2], e[3] = region, g, b
                 local fontStr = backing[key]
                 if fontStr then
-                    fontStr:SetTextColor(r, g, b, 1)
+                    fontStr:SetTextColor(region, g, b, 1)
                 end
             end
         end
@@ -1056,11 +1056,11 @@ function mod.ResolveThreatColor(unitToken, status)
     local targetRole, roleSecret = "NONE", false
     local unitTarget = unitToken .. "target"
     if UnitExists(unitTarget) then
-        local r = UnitGroupRolesAssigned(unitTarget)
-        if issecretvalue(r) then
+        local region = UnitGroupRolesAssigned(unitTarget)
+        if issecretvalue(region) then
             roleSecret = true
-        elseif r then
-            targetRole = r
+        elseif region then
+            targetRole = region
         end
     end
     if otE and roleSecret then
@@ -1201,11 +1201,11 @@ local function GetReactionColor(unitToken, castSeen)
                     local targetRole = "NONE"
                     local roleSecret = false
                     if UnitExists(unitTarget) then
-                        local r = UnitGroupRolesAssigned(unitTarget)
-                        if issecretvalue(r) then
+                        local region = UnitGroupRolesAssigned(unitTarget)
+                        if issecretvalue(region) then
                             roleSecret = true
-                        elseif r then
-                            targetRole = r
+                        elseif region then
+                            targetRole = region
                         end
                     end
                     -- Role unreadable (identity restriction): the plain path

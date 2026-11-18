@@ -147,8 +147,8 @@ do
             end
             -- A rank list (Forever) answers with the first rank in the book.
             if type(ident) == "table" then
-                for idx = 1, #ident do
-                    local hit = Known(ident[idx])
+                for index = 1, #ident do
+                    local hit = Known(ident[index])
                     if hit then
                         return hit
                     end
@@ -445,8 +445,8 @@ do
         end
         local all = p and p.hideUnusable == false
         local result
-        for idx = 1, #slots do
-            local slot = slots[idx]
+        for index = 1, #slots do
+            local slot = slots[index]
             local keep
             if slot.kind == "palette" then
                 local childFrame = ChildIndex(slot)
@@ -457,7 +457,7 @@ do
             if not keep then
                 if not result then
                     result = {}
-                    for jdx = 1, idx - 1 do
+                    for jdx = 1, index - 1 do
                         result[jdx] = slots[jdx]
                     end
                 end
@@ -791,9 +791,9 @@ local function MacroIcon(nameOrIndex)
     if GetMacroItem then
         local _, itemLink = GetMacroItem(index)
         if itemLink then
-            local _, _, _, _, icon = C_Item.GetItemInfoInstant(itemLink)
-            if icon then
-                return icon
+            local _, _, _, _, iconTex = C_Item.GetItemInfoInstant(itemLink)
+            if iconTex then
+                return iconTex
             end
         end
     end
@@ -834,43 +834,43 @@ local function SlotDisplay(slot)
         if type(slot.id) ~= "number" then
             return QUESTION_MARK, slot.name
         end
-        local _, _, _, _, icon = C_Item.GetItemInfoInstant(slot.id)
+        local _, _, _, _, iconTex = C_Item.GetItemInfoInstant(slot.id)
         local name = C_Item.GetItemInfo(slot.id)
-        return icon or QUESTION_MARK, name or slot.name
+        return iconTex or QUESTION_MARK, name or slot.name
     elseif key == "toy" then
         if type(slot.id) ~= "number" then
             return QUESTION_MARK, slot.name
         end
-        local _, name, icon = C_ToyBox.GetToyInfo(slot.id)
-        return icon or QUESTION_MARK, name or slot.name
+        local _, name, iconTex = C_ToyBox.GetToyInfo(slot.id)
+        return iconTex or QUESTION_MARK, name or slot.name
     elseif key == "randomhearth" then
         -- The hearthstone this open rolled, like the last-mount entry draws
         -- the mount it would summon. The entry's own name stands in until the
         -- toy's data has loaded.
         local kind, ident = Hearth.Current()
         if kind == "toy" then
-            local _, name, icon = C_ToyBox.GetToyInfo(ident)
-            return icon or QUESTION_MARK, name or "Random Hearthstone"
+            local _, name, iconTex = C_ToyBox.GetToyInfo(ident)
+            return iconTex or QUESTION_MARK, name or "Random Hearthstone"
         end
-        local _, _, _, _, icon = C_Item.GetItemInfoInstant(ident)
-        return icon or QUESTION_MARK, C_Item.GetItemInfo(ident) or "Random Hearthstone"
+        local _, _, _, _, iconTex = C_Item.GetItemInfoInstant(ident)
+        return iconTex or QUESTION_MARK, C_Item.GetItemInfo(ident) or "Random Hearthstone"
     elseif key == "outfit" then
         local details = mod.OutfitInfo(slot)
         return mod.OutfitIcon(details) or mod.OutfitIcon(slot) or QUESTION_MARK,
             (details and details.name) or slot.name or "Outfit"
     elseif key == "equipmentset" then
-        local name, icon = mod.EquipmentSetInfo(slot)
-        return icon or slot.icon or QUESTION_MARK, name or slot.name or "Equipment Set"
+        local name, iconTex = mod.EquipmentSetInfo(slot)
+        return iconTex or slot.icon or QUESTION_MARK, name or slot.name or "Equipment Set"
     elseif key == "macro" then
         local nameOrIndex = slot.name or slot.id
-        local name, icon = GetMacroInfo(nameOrIndex)
+        local name, iconTex = GetMacroInfo(nameOrIndex)
         -- A question mark here means the macro carries no icon of its own, so
         -- what it is about to fire is the only thing left to draw. Anything else
         -- is an icon the player picked, and it stands. See MacroIcon.
-        if icon == nil or icon == QUESTION_MARK or icon == QUESTION_MARK_ID then
-            icon = MacroIcon(nameOrIndex) or icon
+        if iconTex == nil or iconTex == QUESTION_MARK or iconTex == QUESTION_MARK_ID then
+            iconTex = MacroIcon(nameOrIndex) or iconTex
         end
-        return icon or QUESTION_MARK, name or slot.name
+        return iconTex or QUESTION_MARK, name or slot.name
     elseif key == "macrotext" then
         -- slot.icon may be a { atlas = ... } table (the Pings preset stores
         -- one verbatim); SetIconTexture/ApplyIconCrop render both forms.
@@ -892,8 +892,8 @@ local function SlotDisplay(slot)
         if type(slot.id) ~= "number" then
             return QUESTION_MARK, slot.name
         end
-        local name, _, icon = C_MountJournal.GetMountInfoByID(slot.id)
-        return icon or QUESTION_MARK, name or slot.name
+        local name, _, iconTex = C_MountJournal.GetMountInfoByID(slot.id)
+        return iconTex or QUESTION_MARK, name or slot.name
     elseif key == "lastmount" then
         -- Whatever is tracked right now, so the entry shows the mount it would
         -- actually summon. Before anything is tracked it shows what it would
@@ -903,9 +903,9 @@ local function SlotDisplay(slot)
         local popFrame = P()
         local ident = popFrame and popFrame.lastMountID
         if type(ident) == "number" then
-            local name, _, icon = C_MountJournal.GetMountInfoByID(ident)
+            local name, _, iconTex = C_MountJournal.GetMountInfoByID(ident)
             if name then
-                return icon or QUESTION_MARK, name
+                return iconTex or QUESTION_MARK, name
             end
         end
         local details = C_Spell.GetSpellInfo(RANDOM_FAVORITE_MOUNT)
@@ -925,8 +925,8 @@ local function SlotDisplay(slot)
             -- is the whole point of the dynamic one: the icon and the name are
             -- this character's, so a palette carried to another class arrives
             -- showing that class's specs rather than the owner's.
-            local _, name, _, icon = C_SpecializationInfo.GetSpecializationInfo(index)
-            return icon or QUESTION_MARK, name or slot.name
+            local _, name, _, iconTex = C_SpecializationInfo.GetSpecializationInfo(index)
+            return iconTex or QUESTION_MARK, name or slot.name
         end
         if key == "dynamicspec" then
             -- A position this class has not got: four on anything but a
@@ -939,9 +939,9 @@ local function SlotDisplay(slot)
         -- unfiltered menu draw the real specialization, not a placeholder.
         local wanted = tonumber(slot.specID)
         if wanted and GetSpecializationInfoByID then
-            local _, name, _, icon = GetSpecializationInfoByID(wanted)
-            if icon or name then
-                return icon or QUESTION_MARK, name or slot.name
+            local _, name, _, iconTex = GetSpecializationInfoByID(wanted)
+            if iconTex or name then
+                return iconTex or QUESTION_MARK, name or slot.name
             end
         end
         return QUESTION_MARK, slot.name
@@ -961,8 +961,8 @@ local function SlotDisplay(slot)
             if bookIndex then
                 -- The profession's own name and icon, not the opener
                 -- spell's -- the same skill icon its spellbook entry shows.
-                local name, icon = GetProfessionInfo(bookIndex)
-                return icon or QUESTION_MARK, name or slot.name
+                local name, iconTex = GetProfessionInfo(bookIndex)
+                return iconTex or QUESTION_MARK, name or slot.name
             end
         end
         -- An unavailable position, native extra, or specialization ability.
@@ -973,8 +973,8 @@ local function SlotDisplay(slot)
         if type(slot.guid) ~= "string" then
             return QUESTION_MARK, slot.name
         end
-        local _, _, _, _, _, _, _, name, icon = C_PetJournal.GetPetInfoByPetID(slot.guid)
-        return icon or QUESTION_MARK, name or slot.name
+        local _, _, _, _, _, _, _, name, iconTex = C_PetJournal.GetPetInfoByPetID(slot.guid)
+        return iconTex or QUESTION_MARK, name or slot.name
     elseif key == "raidtarget" then
         local ident = tonumber(slot.id) or 0
         if ident < 1 or ident > 8 then
@@ -1016,12 +1016,12 @@ local function SlotDisplay(slot)
         -- looks like a mount without anyone having to pick an icon for it.
         -- Only one level down: a first entry that is itself a palette would
         -- send this round its own loop.
-        local icon = slot.icon
+        local iconTex = slot.icon
         local first = palette and palette.slots[1]
-        if not icon and first and first.kind ~= "palette" then
-            icon = SlotDisplay(first)
+        if not iconTex and first and first.kind ~= "palette" then
+            iconTex = SlotDisplay(first)
         end
-        return icon or QUESTION_MARK, slot.name or (palette and palette.name) or "Action Menu"
+        return iconTex or QUESTION_MARK, slot.name or (palette and palette.name) or "Action Menu"
     end
 
     return QUESTION_MARK, slot.name

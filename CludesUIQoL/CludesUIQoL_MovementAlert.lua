@@ -475,8 +475,8 @@ local function FireTrackerAlert(prefixText, abilityName)
         -- The Movement Cooldown Alert always speaks the ability name (or its
         -- per-spell Custom Text) -- there is no message setting for it. The
         -- other trackers speak their fixed configured message.
-        local msg = abilityName or ma[prefixText .. "TtsMessage"]
-        SpeakAlertText(ma[prefixText .. "TtsVoiceID"], msg, ma[prefixText .. "TtsVolume"])
+        local message = abilityName or ma[prefixText .. "TtsMessage"]
+        SpeakAlertText(ma[prefixText .. "TtsVoiceID"], message, ma[prefixText .. "TtsVolume"])
     else
         PlayAlertSound(ma[prefixText .. "SoundKey"])
     end
@@ -635,15 +635,15 @@ end
 
 local function LayoutDisplaySlots(count)
     local frameW, frameH = movementFrame:GetWidth(), movementFrame:GetHeight()
-    for idx = 1, count do
-        local slot = displayPool[idx]
+    for index = 1, count do
+        local slot = displayPool[index]
         if slot then
             slot:ClearAllPoints()
             slot:SetSize(frameW, frameH)
-            if idx == 1 then
+            if index == 1 then
                 slot:SetPoint("BOTTOM", movementFrame, "BOTTOM", 0, 0)
             else
-                slot:SetPoint("BOTTOM", displayPool[idx - 1], "TOP", 0, 2)
+                slot:SetPoint("BOTTOM", displayPool[index - 1], "TOP", 0, 2)
             end
         end
     end
@@ -909,8 +909,8 @@ local function SafeGetChargeInfo(spellId)
         return false, 1, 0
     end
     local m = chargeInfo.maxCharges or 1
-    local r = chargeInfo.cooldownDuration or 0
-    if IsSecret(m) or IsSecret(r) then
+    local region = chargeInfo.cooldownDuration or 0
+    if IsSecret(m) or IsSecret(region) then
         local cached = knownChargeSpells[spellId]
         if cached then
             return true, cached.maxCh, cached.rechDur
@@ -918,14 +918,14 @@ local function SafeGetChargeInfo(spellId)
         return false, 1, 0
     end
     if m > 1 then
-        knownChargeSpells[spellId] = { maxCh = m, rechDur = r }
-        return true, m, r
+        knownChargeSpells[spellId] = { maxCh = m, rechDur = region }
+        return true, m, region
     end
     local cached = knownChargeSpells[spellId]
     if cached then
         return true, cached.maxCh, cached.rechDur
     end
-    return false, m, r
+    return false, m, region
 end
 
 local function SafeGetBaseDuration(spellId)
@@ -950,9 +950,9 @@ local function SafeGetBaseDuration(spellId)
     end
     local cdInfo = C_Spell.GetSpellCooldown(spellId)
     if cdInfo and cdInfo.duration then
-        local d = cdInfo.duration
-        if not IsSecret(d) and d > 1.5 then
-            return d
+        local skinData = cdInfo.duration
+        if not IsSecret(skinData) and skinData > 1.5 then
+            return skinData
         end
     end
     return 0
@@ -1007,8 +1007,8 @@ do
             local skip = { [781] = true }
             local classAbilities = MOVEMENT_ABILITIES[playerClassToken]
             local ids = classAbilities and CludesUI.ForeverClassSpecIDs(playerClassToken)
-            for idx = 1, (ids and #ids or 0) do
-                local specList = classAbilities[ids[idx]]
+            for index = 1, (ids and #ids or 0) do
+                local specList = classAbilities[ids[index]]
                 for jdx = 1, (specList and #specList or 0) do
                     local spellRef, dup = specList[jdx], false
                     for k = 1, #merged do
@@ -1553,8 +1553,8 @@ local function ShowMovementSlot(index, cdInfo, spellEntry, duration)
             local rechDur = spellEntry.rechargeDuration or 0
             slot.bar:SetMinMaxValues(0, rechDur)
             slot.bar:SetValue(recov)
-            local r, g, b = ResolveAlertColor("textColor", "textColorUseClass")
-            slot.bar:SetStatusBarColor(r, g, b)
+            local region, g, b = ResolveAlertColor("textColor", "textColorUseClass")
+            slot.bar:SetStatusBarColor(region, g, b)
             slot.bar.text:SetShown(ma.barShowDuration ~= false)
             if ma.barShowDuration ~= false then
                 slot.bar.text:SetFormattedText(PREC_FMT[precision], recov)
@@ -1600,16 +1600,16 @@ local function ShowMovementSlot(index, cdInfo, spellEntry, duration)
     end
 
     if not cdRemaining and cdInfo then
-        local s, d, m = cdInfo.startTime or 0, cdInfo.duration or 0, cdInfo.modRate or 1
-        if IsSecret(s) or IsSecret(d) then
+        local s, skinData, m = cdInfo.startTime or 0, cdInfo.duration or 0, cdInfo.modRate or 1
+        if IsSecret(s) or IsSecret(skinData) then
             hasSecretDuration = true
-            cdStart, cdDuration, cdModRate, cdRemaining = s, d, m, true
+            cdStart, cdDuration, cdModRate, cdRemaining = s, skinData, m, true
         -- This fallback never had the duration-object branch's own GCD floor,
         -- so anything the branch above rejected as too short landed here and
         -- rendered anyway.
-        elseif d > 0 and not IsLockoutWindow(spellEntry, d) then
-            cdStart, cdDuration, cdModRate = s, d, m
-            cdRemaining = math.max(0, (s + d) - GetTime())
+        elseif skinData > 0 and not IsLockoutWindow(spellEntry, skinData) then
+            cdStart, cdDuration, cdModRate = s, skinData, m
+            cdRemaining = math.max(0, (s + skinData) - GetTime())
         end
     end
 
@@ -1680,8 +1680,8 @@ local function ShowMovementSlot(index, cdInfo, spellEntry, duration)
             slot.text:Show()
         end
     elseif displayMode == "bar" then
-        local r, g, b = ResolveAlertColor("textColor", "textColorUseClass")
-        slot.bar:SetStatusBarColor(r, g, b)
+        local region, g, b = ResolveAlertColor("textColor", "textColorUseClass")
+        slot.bar:SetStatusBarColor(region, g, b)
         if type(cdRemaining) == "boolean" then
             -- Only the sentinel leaves nothing to scale the fill with: show a
             -- full bar so the alert still reads as "unavailable" instead of an
@@ -1782,38 +1782,38 @@ end
 -------------------------------------------------------------------------------
 local BUFF_ALERT_STYLE = "qol:movealert"
 
-local function BuffAlertApplyExtra(btnFrame, d, style)
+local function BuffAlertApplyExtra(btnFrame, skinData, style)
     local ma = MA()
     local mode = ma.displayMode or "text"
-    if not d.maText then
-        d.maText = btnFrame:CreateFontString(nil, "OVERLAY")
+    if not skinData.maText then
+        skinData.maText = btnFrame:CreateFontString(nil, "OVERLAY")
     end
     local record = style.maEntry
     local labelText = (record and (record.customText or record.spellName)) or "Active!"
-    local r, g, b = ResolveAlertColor("textColor", "textColorUseClass")
+    local region, g, b = ResolveAlertColor("textColor", "textColorUseClass")
     -- same font, outline and size as the other alerts
     local fp, outline = AlertFontPath(), AlertFontOutline()
     local size = math.max(8, math.min(72, ma.textSize or 24))
-    if not d.maText:SetFont(fp, size, outline) then
-        d.maText:SetFont(FALLBACK_FONT, size, outline)
+    if not skinData.maText:SetFont(fp, size, outline) then
+        skinData.maText:SetFont(FALLBACK_FONT, size, outline)
     end
-    d.maText:SetTextColor(r, g, b)
-    d.maText:ClearAllPoints()
+    skinData.maText:SetTextColor(region, g, b)
+    skinData.maText:ClearAllPoints()
     if mode == "icon" then
-        if d.icon then
-            d.icon:SetAlpha(1)
+        if skinData.icon then
+            skinData.icon:SetAlpha(1)
         end
-        d.maText:Hide()
+        skinData.maText:Hide()
     else
         -- text AND bar modes render as the plain label: a permanent toggle
         -- buff has no duration for a bar to add, and the engine button is the
         -- only restriction-safe visibility carrier either way.
-        if d.icon then
-            d.icon:SetAlpha(0)
+        if skinData.icon then
+            skinData.icon:SetAlpha(0)
         end
-        d.maText:SetPoint("CENTER", btnFrame, "CENTER", 0, 0)
-        d.maText:SetText(labelText)
-        d.maText:Show()
+        skinData.maText:SetPoint("CENTER", btnFrame, "CENTER", 0, 0)
+        skinData.maText:SetText(labelText)
+        skinData.maText:Show()
     end
 end
 
@@ -2098,8 +2098,8 @@ end
 -- False once a countdown has run out or a start-recovery window has dropped
 -- under its lockout threshold: the caller runs a full check instead.
 local function RepaintMovementSlots(nowTime)
-    for idx = 1, activeSlotCount do
-        local slot = displayPool[idx]
+    for index = 1, activeSlotCount do
+        local slot = displayPool[index]
         local kind = slot._maKind
         if kind == "num" then
             local rem = slot._maEnd - nowTime
@@ -2131,8 +2131,8 @@ end
 local function ArmMovementRepaint(count)
     local nowTime = GetTime()
     local tick, untimed = false, false
-    for idx = 1, count do
-        local kind = displayPool[idx]._maKind
+    for index = 1, count do
+        local kind = displayPool[index]._maKind
         if kind == "num" or kind == "fill" then
             tick = true
         end
@@ -2264,8 +2264,8 @@ CheckMovementCooldown = function()
     end
     readyAlertShown, readyAlertScratch = nowShownReady, readyAlertShown
 
-    for idx = count + 1, activeSlotCount do
-        local slot = displayPool[idx]
+    for index = count + 1, activeSlotCount do
+        local slot = displayPool[index]
         if slot then
             slot.text:Hide()
             slot.icon:Hide()
@@ -2398,8 +2398,8 @@ local function PreviewTick()
     end
     previewCdInfo.startTime = previewEnds - PREVIEW_CD
     if ShowMovementSlot(1, previewCdInfo, previewEntry) then
-        for idx = 2, activeSlotCount do
-            local slot = displayPool[idx]
+        for index = 2, activeSlotCount do
+            local slot = displayPool[index]
             if slot then
                 slot.text:Hide()
                 slot.icon:Hide()
@@ -2620,8 +2620,8 @@ local function ApplyTimeSpiralFrame()
     if not timeSpiralText:SetFont(fontFile, fontSize, outline) then
         timeSpiralText:SetFont(FALLBACK_FONT, fontSize, outline)
     end
-    local r, g, b = ResolveAlertColor("tsColor", "tsColorUseClass")
-    timeSpiralText:SetTextColor(r, g, b)
+    local region, g, b = ResolveAlertColor("tsColor", "tsColorUseClass")
+    timeSpiralText:SetTextColor(region, g, b)
 end
 CludesUI._applyTimeSpiral = ApplyTimeSpiralFrame
 
@@ -2739,8 +2739,8 @@ local function ApplyGatewayFrame()
     if not gatewayText:SetFont(fontFile, fontSize, outline) then
         gatewayText:SetFont(FALLBACK_FONT, fontSize, outline)
     end
-    local r, g, b = ResolveAlertColor("gwColor", "gwColorUseClass")
-    gatewayText:SetTextColor(r, g, b)
+    local region, g, b = ResolveAlertColor("gwColor", "gwColorUseClass")
+    gatewayText:SetTextColor(region, g, b)
     if not ma.gwEnabled then
         StopGatewayPolling()
         gatewayFrame:Hide()

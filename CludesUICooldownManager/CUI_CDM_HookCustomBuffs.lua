@@ -182,11 +182,11 @@ function _AC.DurationFormatter()
         return nil
     end
     local Down = Enum.NumericRuleFormatRounding.Down
-    local f = C_StringUtil.CreateNumericRuleFormatter()
+    local frame = C_StringUtil.CreateNumericRuleFormatter()
     -- Thresholds sit ON each unit boundary: a floored value never crosses one,
     -- so none of the "just above the boundary" offsets the up-rounding
     -- formatters need apply here.
-    local success = pcall(f.SetBreakpoints, f, {
+    local success = pcall(frame.SetBreakpoints, frame, {
         { threshold = 0, format = "%d", step = 1, rounding = Down },
         { threshold = 60, format = "%dm", step = 1, rounding = Down, components = { { div = 60 } } },
         { threshold = 3600, format = "%dh", step = 1, rounding = Down, components = { { div = 3600 } } },
@@ -195,8 +195,8 @@ function _AC.DurationFormatter()
     if not success then
         return nil
     end
-    _AC.durFmt = f
-    return f
+    _AC.durFmt = frame
+    return frame
 end
 
 -- Round to the nearest whole physical pixel -- the formula LayoutCDMBar uses for
@@ -350,26 +350,26 @@ end
 -- Regions the CDM look needs that AuraKit does not build. Runs in the button's
 -- creation window -- the only place a region may be parented to an engine aura
 -- button. Everything here is ours, so _AC.ApplyExtra can write it under secrecy.
-function _AC.InitExtra(btnFrame, d)
-    d.cdmBg = btnFrame:CreateTexture(nil, "BACKGROUND")
-    d.cdmBg:SetAllPoints(btnFrame)
-    d.cdmMask = btnFrame:CreateMaskTexture()
-    d.cdmMask:SetAllPoints(btnFrame)
-    d.cdmMask:Hide()
+function _AC.InitExtra(btnFrame, skinData)
+    skinData.cdmBg = btnFrame:CreateTexture(nil, "BACKGROUND")
+    skinData.cdmBg:SetAllPoints(btnFrame)
+    skinData.cdmMask = btnFrame:CreateMaskTexture()
+    skinData.cdmMask:SetAllPoints(btnFrame)
+    skinData.cdmMask:Hide()
     -- Shape ring draws over the swipe, below the dispel ring and text carrier.
     -- Levelled off the cooldown (always the button's own level) rather than the
     -- border host, whose level a "Show Behind" border drops below the button.
-    d.cdmRingHost = CreateFrame("Frame", nil, btnFrame)
-    d.cdmRingHost:SetAllPoints(btnFrame)
-    d.cdmRingHost:EnableMouse(false)
-    d.cdmRingHost:SetFrameLevel(d.cooldown:GetFrameLevel() + 2)
-    d.cdmRing = d.cdmRingHost:CreateTexture(nil, "OVERLAY", nil, 6)
-    d.cdmRing:SetAllPoints(d.cdmRingHost)
-    d.cdmRing:SetSnapToPixelGrid(false)
-    d.cdmRing:SetTexelSnappingBias(0)
-    d.cdmRing:Hide()
+    skinData.cdmRingHost = CreateFrame("Frame", nil, btnFrame)
+    skinData.cdmRingHost:SetAllPoints(btnFrame)
+    skinData.cdmRingHost:EnableMouse(false)
+    skinData.cdmRingHost:SetFrameLevel(skinData.cooldown:GetFrameLevel() + 2)
+    skinData.cdmRing = skinData.cdmRingHost:CreateTexture(nil, "OVERLAY", nil, 6)
+    skinData.cdmRing:SetAllPoints(skinData.cdmRingHost)
+    skinData.cdmRing:SetSnapToPixelGrid(false)
+    skinData.cdmRing:SetTexelSnappingBias(0)
+    skinData.cdmRing:Hide()
     local AK = CludesUI.AuraKit
-    local style = AK and d.styleKey and AK.styles[d.styleKey]
+    local style = AK and skinData.styleKey and AK.styles[skinData.styleKey]
     -- Custom Icon art gets a texture of its own instead of a SetTexture on d.icon:
     -- the engine re-stamps the aura's art onto its registered icon on every update,
     -- so ApplyExtra hides d.icon and this takes its place. Anchored to d.icon so it
@@ -377,9 +377,9 @@ function _AC.InitExtra(btnFrame, d)
     -- Creation time is enough: whether a spell has a Custom Icon is part of the
     -- structural signature, so a group's style never gains or loses fixedIcon
     -- without a rebuild. Only its value changes in place, and ApplyExtra re-reads it.
-    if style and style.cdm and style.cdm.fixedIcon and d.icon then
-        d.cdmFixedIcon = btnFrame:CreateTexture(nil, "ARTWORK", nil, 1)
-        d.cdmFixedIcon:SetAllPoints(d.icon)
+    if style and style.cdm and style.cdm.fixedIcon and skinData.icon then
+        skinData.cdmFixedIcon = btnFrame:CreateTexture(nil, "ARTWORK", nil, 1)
+        skinData.cdmFixedIcon:SetAllPoints(skinData.icon)
     end
     -- Stock style regions: the ring overlay (on the ring host, above the
     -- swipe) and, under Blizzard Style, the viewer's rounded mask (Classic
@@ -387,23 +387,23 @@ function _AC.InitExtra(btnFrame, d)
     -- profile flag, so it is fixed for the button's whole life.
     if style and style.cdm and style.cdm.blizz then
         if not style.cdm.classic then
-            d.cdmBlizzMask = btnFrame:CreateMaskTexture()
-            d.cdmBlizzMask:SetAtlas(mod.CDM_BLIZZ_MASK)
-            d.cdmBlizzMask:SetAllPoints(btnFrame)
+            skinData.cdmBlizzMask = btnFrame:CreateMaskTexture()
+            skinData.cdmBlizzMask:SetAtlas(mod.CDM_BLIZZ_MASK)
+            skinData.cdmBlizzMask:SetAllPoints(btnFrame)
         end
-        d.cdmBlizzOverlay = d.cdmRingHost:CreateTexture(nil, "OVERLAY", nil, 5)
+        skinData.cdmBlizzOverlay = skinData.cdmRingHost:CreateTexture(nil, "OVERLAY", nil, 5)
         if style.cdm.classic then
-            d.cdmBlizzOverlay:SetTexture(mod.CDM_CLASSIC_RING)
+            skinData.cdmBlizzOverlay:SetTexture(mod.CDM_CLASSIC_RING)
         else
-            mod.CdmStockAtlas(d.cdmBlizzOverlay, mod.CDM_BLIZZ_OVERLAY)
+            mod.CdmStockAtlas(skinData.cdmBlizzOverlay, mod.CDM_BLIZZ_OVERLAY)
         end
-        d.cdmBlizzOverlay:SetSnapToPixelGrid(false)
-        d.cdmBlizzOverlay:SetTexelSnappingBias(0)
+        skinData.cdmBlizzOverlay:SetSnapToPixelGrid(false)
+        skinData.cdmBlizzOverlay:SetTexelSnappingBias(0)
     end
     -- AuraKit runs applyExtra BEFORE this creation hook, so the pass that draws
     -- these regions has to run once more now that they exist.
     if style then
-        _AC.ApplyExtra(btnFrame, d, style)
+        _AC.ApplyExtra(btnFrame, skinData, style)
     end
 end
 
@@ -423,7 +423,7 @@ end
 -- d.borderHost (created SetAllPoints(button) in the creation window) rather than
 -- the button: a SetPoint whose relative frame is the button is denied while
 -- auras are secret, which is exactly when a settings change must still land.
-function _AC.ApplyExtra(btnFrame, d, style)
+function _AC.ApplyExtra(btnFrame, skinData, style)
     local c = style.cdm
     if not c then
         return
@@ -435,20 +435,20 @@ function _AC.ApplyExtra(btnFrame, d, style)
     -- a texture's alpha and its vertex color share one slot on this client.
     -- A Custom Icon group hides the engine's art the same way and shows its own
     -- texture (d.cdmFixedIcon, see InitExtra) in its place.
-    local fixed = c.fixedIcon and d.cdmFixedIcon
+    local fixed = c.fixedIcon and skinData.cdmFixedIcon
     local artOn = not c.onlyNumbers
     local engineArtOn = artOn and not fixed
-    if d.icon then
-        d.icon:SetAlpha(engineArtOn and 1 or 0)
-        d.icon:SetShown(engineArtOn)
+    if skinData.icon then
+        skinData.icon:SetAlpha(engineArtOn and 1 or 0)
+        skinData.icon:SetShown(engineArtOn)
         -- Cropped samples a heavy vertical slice, and a snapped image edge can
         -- round to a different physical pixel than the unsnapped swipe (the 1px
         -- split ApplyShapeToCDMIcon disables snapping for). Restored otherwise.
-        if d.icon.SetSnapToPixelGrid then
-            d.icon:SetSnapToPixelGrid(c.shape ~= "cropped")
+        if skinData.icon.SetSnapToPixelGrid then
+            skinData.icon:SetSnapToPixelGrid(c.shape ~= "cropped")
         end
-        if c.shape == "cropped" and d.icon.SetTexelSnappingBias then
-            d.icon:SetTexelSnappingBias(0)
+        if c.shape == "cropped" and skinData.icon.SetTexelSnappingBias then
+            skinData.icon:SetTexelSnappingBias(0)
         end
     end
     if fixed then
@@ -472,34 +472,34 @@ function _AC.ApplyExtra(btnFrame, d, style)
         fixed:SetAlpha(artOn and 1 or 0)
         fixed:SetShown(artOn)
     end
-    if d.cdmBg then
+    if skinData.cdmBg then
         -- Blizzard Style has no CUI background (hidden once below, never
         -- shown here first).
         if c.onlyNumbers or c.blizz then
-            d.cdmBg:Hide()
+            skinData.cdmBg:Hide()
         else
-            d.cdmBg:SetColorTexture(c.bgR, c.bgG, c.bgB, c.bgA)
-            d.cdmBg:Show()
+            skinData.cdmBg:SetColorTexture(c.bgR, c.bgG, c.bgB, c.bgA)
+            skinData.cdmBg:Show()
         end
     end
-    if d.cooldown then
-        d.cooldown:SetSwipeColor(0, 0, 0, c.swipeAlpha)
+    if skinData.cooldown then
+        skinData.cooldown:SetSwipeColor(0, 0, 0, c.swipeAlpha)
     end
 
     -- Custom shape: mask on icon/background/swipe plus the shape's own ring,
     -- mirroring ApplyShapeToCDMIcon so both renderers land on the same geometry.
     local SH = mod.CDM_SHAPES
-    local mask, ring = d.cdmMask, d.cdmRing
+    local mask, ring = skinData.cdmMask, skinData.cdmRing
     local maskPath = (c.customShape and SH and not c.onlyNumbers) and SH.masks[c.shape] or nil
     local shapeKey = maskPath and (c.shape .. "|" .. c.zoom .. "|" .. c.brdSize .. "|" .. c.size) or ""
-    if d.cdmShapeKey ~= shapeKey and mask then
+    if skinData.cdmShapeKey ~= shapeKey and mask then
         if maskPath then
             mask:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
             mask:Show()
-            _AC.SetMask(d.icon, mask, true)
-            _AC.SetMask(d.cdmFixedIcon, mask, true)
-            _AC.SetMask(d.cdmBg, mask, true)
-            _AC.SetMask(d.cooldown, mask, true)
+            _AC.SetMask(skinData.icon, mask, true)
+            _AC.SetMask(skinData.cdmFixedIcon, mask, true)
+            _AC.SetMask(skinData.cdmBg, mask, true)
+            _AC.SetMask(skinData.cooldown, mask, true)
             local exp = SH.iconExpand
                 + (SH.iconExpandOffsets[c.shape] or 0)
                 + ((c.zoom - (SH.zoomDefaults[c.shape] or 0.06)) * 200)
@@ -507,56 +507,56 @@ function _AC.ApplyExtra(btnFrame, d, style)
                 exp = 0
             end
             local half = exp / 2
-            if d.icon then
-                d.icon:ClearAllPoints()
-                Pix.Point(d.icon, "TOPLEFT", d.borderHost, "TOPLEFT", -half, half)
-                Pix.Point(d.icon, "BOTTOMRIGHT", d.borderHost, "BOTTOMRIGHT", half, -half)
+            if skinData.icon then
+                skinData.icon:ClearAllPoints()
+                Pix.Point(skinData.icon, "TOPLEFT", skinData.borderHost, "TOPLEFT", -half, half)
+                Pix.Point(skinData.icon, "BOTTOMRIGHT", skinData.borderHost, "BOTTOMRIGHT", half, -half)
             end
             mask:ClearAllPoints()
             if c.brdSize >= 1 then
-                Pix.Point(mask, "TOPLEFT", d.borderHost, "TOPLEFT", 1, -1)
-                Pix.Point(mask, "BOTTOMRIGHT", d.borderHost, "BOTTOMRIGHT", -1, 1)
+                Pix.Point(mask, "TOPLEFT", skinData.borderHost, "TOPLEFT", 1, -1)
+                Pix.Point(mask, "BOTTOMRIGHT", skinData.borderHost, "BOTTOMRIGHT", -1, 1)
             else
-                mask:SetAllPoints(d.borderHost)
+                mask:SetAllPoints(skinData.borderHost)
             end
-            if d.cooldown then
-                pcall(d.cooldown.SetSwipeTexture, d.cooldown, maskPath)
-                if d.cooldown.SetUseCircularEdge then
+            if skinData.cooldown then
+                pcall(skinData.cooldown.SetSwipeTexture, skinData.cooldown, maskPath)
+                if skinData.cooldown.SetUseCircularEdge then
                     pcall(
-                        d.cooldown.SetUseCircularEdge,
-                        d.cooldown,
+                        skinData.cooldown.SetUseCircularEdge,
+                        skinData.cooldown,
                         c.shape ~= "square" and c.shape ~= "csquare"
                     )
                 end
-                if d.cooldown.SetEdgeScale then
-                    pcall(d.cooldown.SetEdgeScale, d.cooldown, SH.edgeScales[c.shape] or 0.60)
+                if skinData.cooldown.SetEdgeScale then
+                    pcall(skinData.cooldown.SetEdgeScale, skinData.cooldown, SH.edgeScales[c.shape] or 0.60)
                 end
             end
         else
-            _AC.SetMask(d.icon, mask)
-            _AC.SetMask(d.cdmFixedIcon, mask)
-            _AC.SetMask(d.cdmBg, mask)
-            _AC.SetMask(d.cooldown, mask)
+            _AC.SetMask(skinData.icon, mask)
+            _AC.SetMask(skinData.cdmFixedIcon, mask)
+            _AC.SetMask(skinData.cdmBg, mask)
+            _AC.SetMask(skinData.cooldown, mask)
             mask:SetTexture(nil)
             mask:ClearAllPoints()
             mask:SetSize(0.001, 0.001)
             mask:Hide()
-            if d.icon then
-                d.icon:ClearAllPoints()
-                d.icon:SetAllPoints(d.borderHost)
+            if skinData.icon then
+                skinData.icon:ClearAllPoints()
+                skinData.icon:SetAllPoints(skinData.borderHost)
             end
-            if d.cooldown then
+            if skinData.cooldown then
                 pcall(
-                    d.cooldown.SetSwipeTexture,
-                    d.cooldown,
+                    skinData.cooldown.SetSwipeTexture,
+                    skinData.cooldown,
                     "Interface\\AddOns\\CludesUI\\media\\white-square.png"
                 )
-                if d.cooldown.SetUseCircularEdge then
-                    pcall(d.cooldown.SetUseCircularEdge, d.cooldown, false)
+                if skinData.cooldown.SetUseCircularEdge then
+                    pcall(skinData.cooldown.SetUseCircularEdge, skinData.cooldown, false)
                 end
             end
         end
-        d.cdmShapeKey = shapeKey
+        skinData.cdmShapeKey = shapeKey
     end
     -- Ring color follows the border color on every pass, so a color-only change
     -- lands without re-running the geometry above. Border Size 0 drops the ring,
@@ -578,24 +578,24 @@ function _AC.ApplyExtra(btnFrame, d, style)
     -- (Classic WoW UI keeps the square art and swipe). Anchored to
     -- d.borderHost like the shape geometry above (button-relative points are
     -- denied under secrecy). Geometry is memoized on the button size.
-    if c.blizz and d.cdmBlizzOverlay then
-        if d.cdmBg then
-            d.cdmBg:Hide()
+    if c.blizz and skinData.cdmBlizzOverlay then
+        if skinData.cdmBg then
+            skinData.cdmBg:Hide()
         end
         local bKey = "blizz|" .. c.size
-        if d.cdmBlizzKey ~= bKey then
-            d.cdmBlizzKey = bKey
-            local shade = d.cdmBlizzOverlay
+        if skinData.cdmBlizzKey ~= bKey then
+            skinData.cdmBlizzKey = bKey
+            local shade = skinData.cdmBlizzOverlay
             if c.classic then
-                mod.CdmPlaceClassicRing(shade, d.borderHost, c.size, c.size)
+                mod.CdmPlaceClassicRing(shade, skinData.borderHost, c.size, c.size)
             else
-                _AC.SetMask(d.icon, d.cdmBlizzMask, true)
-                _AC.SetMask(d.cdmFixedIcon, d.cdmBlizzMask, true)
+                _AC.SetMask(skinData.icon, skinData.cdmBlizzMask, true)
+                _AC.SetMask(skinData.cdmFixedIcon, skinData.cdmBlizzMask, true)
                 shade:ClearAllPoints()
                 Pix.Point(
                     shade,
                     "TOPLEFT",
-                    d.borderHost,
+                    skinData.borderHost,
                     "TOPLEFT",
                     -c.size * mod.CDM_BLIZZ_RING_X,
                     c.size * mod.CDM_BLIZZ_RING_Y
@@ -603,50 +603,50 @@ function _AC.ApplyExtra(btnFrame, d, style)
                 Pix.Point(
                     shade,
                     "BOTTOMRIGHT",
-                    d.borderHost,
+                    skinData.borderHost,
                     "BOTTOMRIGHT",
                     c.size * mod.CDM_BLIZZ_RING_X,
                     -c.size * mod.CDM_BLIZZ_RING_Y
                 )
-                if d.cooldown then
-                    pcall(d.cooldown.SetSwipeTexture, d.cooldown, mod.CDM_BLIZZ_SWIPE)
+                if skinData.cooldown then
+                    pcall(skinData.cooldown.SetSwipeTexture, skinData.cooldown, mod.CDM_BLIZZ_SWIPE)
                 end
             end
         end
-        d.cdmBlizzOverlay:SetShown(artOn)
+        skinData.cdmBlizzOverlay:SetShown(artOn)
     end
 
-    if d.duration then
+    if skinData.duration then
         local fKey = c.font .. "|" .. c.durSize
-        if d.cdmDurFont ~= fKey then
-            d.cdmDurFont = fKey
-            CludesUI.ApplyIconTextFont(d.duration, c.font, c.durSize, "cdm")
+        if skinData.cdmDurFont ~= fKey then
+            skinData.cdmDurFont = fKey
+            CludesUI.ApplyIconTextFont(skinData.duration, c.font, c.durSize, "cdm")
         end
         local aKey = c.durPos .. "|" .. c.durX .. "|" .. c.durY
-        if d.cdmDurAnchor ~= aKey then
-            d.cdmDurAnchor = aKey
-            mod.AnchorCooldownText(d.duration, d.borderHost, c.durPos, c.durX, c.durY)
+        if skinData.cdmDurAnchor ~= aKey then
+            skinData.cdmDurAnchor = aKey
+            mod.AnchorCooldownText(skinData.duration, skinData.borderHost, c.durPos, c.durX, c.durY)
         end
-        d.duration:SetTextColor(c.durR, c.durG, c.durB)
+        skinData.duration:SetTextColor(c.durR, c.durG, c.durB)
     end
 
-    if d.stack then
+    if skinData.stack then
         local fKey = c.font .. "|" .. c.stackSize
-        if d.cdmStackFont ~= fKey then
-            d.cdmStackFont = fKey
-            CludesUI.ApplyIconTextFont(d.stack, c.font, c.stackSize, "cdm")
+        if skinData.cdmStackFont ~= fKey then
+            skinData.cdmStackFont = fKey
+            CludesUI.ApplyIconTextFont(skinData.stack, c.font, c.stackSize, "cdm")
         end
         local aKey = c.stackPos .. "|" .. c.stackX .. "|" .. c.stackY
-        if d.cdmStackAnchor ~= aKey then
-            d.cdmStackAnchor = aKey
+        if skinData.cdmStackAnchor ~= aKey then
+            skinData.cdmStackAnchor = aKey
             local pt, posY = mod.CdmStackAnchorPoint(c.stackPos, c.stackY)
-            d.stack:ClearAllPoints()
-            d.stack:SetPoint(pt, d.borderHost, pt, c.stackX, posY)
+            skinData.stack:ClearAllPoints()
+            skinData.stack:SetPoint(pt, skinData.borderHost, pt, c.stackX, posY)
         end
-        d.stack:SetTextColor(c.stackR, c.stackG, c.stackB)
+        skinData.stack:SetTextColor(c.stackR, c.stackG, c.stackB)
         -- Alpha, not Hide: the engine re-shows this font string whenever the
         -- slot's application count refreshes.
-        d.stack:SetAlpha(c.stackOn and 1 or 0)
+        skinData.stack:SetAlpha(c.stackOn and 1 or 0)
     end
 end
 
@@ -699,10 +699,10 @@ end
 -- cis: optional sid -> Custom Icon fileID for the entries that carry one.
 function _AC.Build(rec, barId, edge, sids, sig, cis)
     local AK = CludesUI.AuraKit
-    local bar = cdmBarFrames[barId]
+    local barFrame = cdmBarFrames[barId]
     -- Bar not built yet (login race): bail WITHOUT stamping the signature;
     -- the next tracking sync re-queues the build.
-    if not (AK and AK.CreateContainerShell and AK.AddGroupToContainer and bar) then
+    if not (AK and AK.CreateContainerShell and AK.AddGroupToContainer and barFrame) then
         return
     end
     local styleKey = "cdm:aurabuff:" .. barId
@@ -729,8 +729,8 @@ function _AC.Build(rec, barId, edge, sids, sig, cis)
     -- dedup rules that out, but overrides move with talents) renders once.
     local includeMap, nShared = {}, 0
     local ciGroups, claimed
-    for idx = 1, #sids do
-        local spellRef = sids[idx]
+    for index = 1, #sids do
+        local spellRef = sids[index]
         local ci = cis and cis[spellRef]
         if ci then
             local forms = _AC.AddSpellForms({}, spellRef)
@@ -794,8 +794,8 @@ function _AC.Build(rec, barId, edge, sids, sig, cis)
     local ciStyles
     if ciGroups then
         ciStyles = {}
-        for idx = 1, #ciGroups do
-            local g = ciGroups[idx]
+        for index = 1, #ciGroups do
+            local g = ciGroups[index]
             local ciStyleKey = _AC.FixedIconStyleKey(barId, g.sid)
             AK.styles[ciStyleKey] = _AC.BuildStyle(edge, g.ci)
             ciStyles[ciStyleKey] = g.ci
@@ -838,8 +838,8 @@ function _AC.Build(rec, barId, edge, sids, sig, cis)
             groupSpacing = gapPx,
             groupLineSpacing = gapPx,
         }
-        for idx = 1, #groupKeys do
-            boxHolder:SetAuraGroupLayout(groupKeys[idx], layout)
+        for index = 1, #groupKeys do
+            boxHolder:SetAuraGroupLayout(groupKeys[index], layout)
         end
     end
     AK.FinishContainer(boxHolder, "player")
@@ -849,15 +849,15 @@ function _AC.Build(rec, barId, edge, sids, sig, cis)
     -- Follow the bar's rect from OUR frame's own change signals (post-hook
     -- + scripts): the holder re-derives its position one coalesced frame
     -- after any bar move/resize/visibility change.
-    if rec.hookedBar ~= bar then
-        rec.hookedBar = bar
+    if rec.hookedBar ~= barFrame then
+        rec.hookedBar = barFrame
         local function poke()
             _AC.MarkSync(barId)
         end
-        hooksecurefunc(bar, "SetPoint", poke)
-        bar:HookScript("OnSizeChanged", poke)
-        bar:HookScript("OnShow", poke)
-        bar:HookScript("OnHide", poke)
+        hooksecurefunc(barFrame, "SetPoint", poke)
+        barFrame:HookScript("OnSizeChanged", poke)
+        barFrame:HookScript("OnShow", poke)
+        barFrame:HookScript("OnHide", poke)
     end
     _AC.Anchor(barId, rec)
 end
@@ -918,31 +918,31 @@ local function UpdateCustomBuffBars()
 
                             if isActive or cdmPageOpen then
                                 local fkey = barId .. ":custombuff:" .. spellRef
-                                local f = _presetFrames[fkey]
-                                if not f then
-                                    f = CreateFrame("Frame", nil, UIParent)
-                                    f:SetSize(36, 36)
-                                    f:Hide()
-                                    f:EnableMouse(false)
-                                    local tex = f:CreateTexture(nil, "ARTWORK")
-                                    tex:SetAllPoints()
-                                    mod.CdmOwnIconCrop(tex)
-                                    f.Icon = tex
-                                    f._tex = tex
-                                    local cd = CreateFrame("Cooldown", nil, f, "CooldownFrameTemplate")
+                                local frame = _presetFrames[fkey]
+                                if not frame then
+                                    frame = CreateFrame("Frame", nil, UIParent)
+                                    frame:SetSize(36, 36)
+                                    frame:Hide()
+                                    frame:EnableMouse(false)
+                                    local texture = frame:CreateTexture(nil, "ARTWORK")
+                                    texture:SetAllPoints()
+                                    mod.CdmOwnIconCrop(texture)
+                                    frame.Icon = texture
+                                    frame._tex = texture
+                                    local cd = CreateFrame("Cooldown", nil, frame, "CooldownFrameTemplate")
                                     cd:SetAllPoints()
                                     cd:SetDrawEdge(false)
                                     cd:SetDrawBling(false)
                                     cd:SetHideCountdownNumbers(not mod.CdmDurationTextOn(barInfo))
                                     cd:SetReverse(true)
-                                    f.Cooldown = cd
-                                    f._cooldown = cd
-                                    f._isCustomSpellFrame = true
-                                    f._isCustomBuffFrame = true
-                                    f.cooldownID = nil
-                                    f.cooldownInfo = nil
-                                    f.layoutIndex = 99999
-                                    _presetFrames[fkey] = f
+                                    frame.Cooldown = cd
+                                    frame._cooldown = cd
+                                    frame._isCustomSpellFrame = true
+                                    frame._isCustomBuffFrame = true
+                                    frame.cooldownID = nil
+                                    frame.cooldownInfo = nil
+                                    frame.layoutIndex = 99999
+                                    _presetFrames[fkey] = frame
                                     cd:HookScript("OnCooldownDone", function()
                                         C_Timer.After(0, QueueCustomBuffUpdate)
                                     end)
@@ -952,36 +952,36 @@ local function UpdateCustomBuffBars()
                                     local spInfo = C_Spell
                                         and C_Spell.GetSpellInfo
                                         and C_Spell.GetSpellInfo(iconSID)
-                                    if spInfo and spInfo.iconID and f._tex then
-                                        f._tex:SetTexture(spInfo.iconID)
+                                    if spInfo and spInfo.iconID and frame._tex then
+                                        frame._tex:SetTexture(spInfo.iconID)
                                     end
                                 end
                                 if isActive and timer then
-                                    f._cooldown:SetCooldown(timer.start, timer.duration)
+                                    frame._cooldown:SetCooldown(timer.start, timer.duration)
                                 else
-                                    f._cooldown:Clear()
+                                    frame._cooldown:Clear()
                                 end
-                                DecorateFrame(f, barInfo)
-                                f:Show()
+                                DecorateFrame(frame, barInfo)
+                                frame:Show()
                                 -- A frame (re)shown while its bar is visibility-hidden must not
                                 -- come back at its last alpha: only listed icons get the hide
                                 -- pass, and this one may have been unlisted (inactive) then.
-                                f:SetAlpha(
+                                frame:SetAlpha(
                                     boxHolder._visHidden and 0
                                         or ((mod.EffectiveBarAlpha and mod.EffectiveBarAlpha(barInfo)) or 1)
                                 )
-                                f:EnableMouse(false)
-                                if f.Cooldown and f.Cooldown.SetDrawSwipe then
+                                frame:EnableMouse(false)
+                                if frame.Cooldown and frame.Cooldown.SetDrawSwipe then
                                     -- Only Show Numbers hides the swipe with the icon art.
-                                    f.Cooldown:SetDrawSwipe(not barInfo.onlyShowNumbers)
+                                    frame.Cooldown:SetDrawSwipe(not barInfo.onlyShowNumbers)
                                 end
                                 total = total + 1
-                                icons[total] = f
+                                icons[total] = frame
                             else
                                 local fkey = barId .. ":custombuff:" .. spellRef
-                                local f = _presetFrames[fkey]
-                                if f then
-                                    f:Hide()
+                                local frame = _presetFrames[fkey]
+                                if frame then
+                                    frame:Hide()
                                 end
                                 if timer and not isActive then
                                     _customAuraTimers[timerKey] = nil
@@ -991,11 +991,11 @@ local function UpdateCustomBuffBars()
                     end
                 end
 
-                for idx = total + 1, #icons do
-                    if icons[idx] then
-                        icons[idx]:Hide()
+                for index = total + 1, #icons do
+                    if icons[index] then
+                        icons[index]:Hide()
                     end
-                    icons[idx] = nil
+                    icons[index] = nil
                 end
 
                 -- Custom aura bars are display-only, never clickable
@@ -1103,8 +1103,8 @@ function mod.UpdateCustomBuffAuraTracking()
                         -- keeps the exact signature they had and pays nothing for it.
                         local cis, ciSig
                         if mod._cdmAnyCustomIcon then
-                            for idx = 1, #sids do
-                                local spellRef = sids[idx]
+                            for index = 1, #sids do
+                                local spellRef = sids[index]
                                 local ss = ResolveSpellSettings(nil, spellRef, sd, edge.key)
                                 local ci = ss and ss.customIcon
                                 if type(ci) == "number" and ci > 0 then

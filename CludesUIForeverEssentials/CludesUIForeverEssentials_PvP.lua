@@ -182,7 +182,7 @@ end
 --  Alerts
 -------------------------------------------------------------------------------
 local alertFrame
-local function Warn(text, r, g, b, alarm)
+local function Warn(text, region, g, b, alarm)
     if not alertFrame then
         alertFrame = CreateFrame("Frame", "CludesUIPvPAlert", UIParent)
         alertFrame:SetSize(400, 40)
@@ -207,7 +207,7 @@ local function Warn(text, r, g, b, alarm)
         alertFrame.ag = ag
     end
     alertFrame.text:SetText(text)
-    alertFrame.text:SetTextColor(r, g, b)
+    alertFrame.text:SetTextColor(region, g, b)
     alertFrame.ag:Stop()
     alertFrame:SetAlpha(1)
     alertFrame:Show()
@@ -240,20 +240,20 @@ local function Share(name)
     end
     local zone, sub = Here()
     local level = (p.level and not p.guess) and p.level or ""
-    local msg = table.concat(
+    local message = table.concat(
         { SPY_VERSION, name, p.class or "", level, p.race or "", zone, sub, "", "", p.guild or "", "" },
         "|"
     )
-    if #msg >= 240 then
+    if #message >= 240 then
         return
     end
     if IsInRaid() then
-        C_ChatInfo.SendAddonMessage(PREFIX, msg, "RAID")
+        C_ChatInfo.SendAddonMessage(PREFIX, message, "RAID")
     elseif IsInGroup() then
-        C_ChatInfo.SendAddonMessage(PREFIX, msg, "PARTY")
+        C_ChatInfo.SendAddonMessage(PREFIX, message, "PARTY")
     end
     if IsInGuild() and not IsInInstance() then
-        C_ChatInfo.SendAddonMessage(PREFIX, msg, "GUILD")
+        C_ChatInfo.SendAddonMessage(PREFIX, message, "GUILD")
     end
 end
 
@@ -659,18 +659,18 @@ local function OnDeath()
     end)
 end
 
-local function OnShared(msg, sender)
+local function OnShared(message, sender)
     if not Get("useShared") or not Live() then
         return
     end
-    if type(msg) ~= "string" or Secret(msg) or Secret(sender) then
+    if type(message) ~= "string" or Secret(message) or Secret(sender) then
         return
     end
     local me = UnitName("player")
     if Ambiguate(sender, "none") == me then
         return
     end
-    local _, name, class, level, race, zone, _, _, _, guild = strsplit("|", msg)
+    local _, name, class, level, race, zone, _, _, _, guild = strsplit("|", message)
     if not name or name == "" or #name > 40 then
         return
     end
@@ -820,18 +820,18 @@ local function RowMenu(owner, name)
         end)
         if s.kos[name] then
             local reasons = root:CreateButton("Kill on Sight Reasons")
-            for _, r in ipairs({
+            for _, region in ipairs({
                 "Ganked me",
                 "Camped me",
                 "Killed a low level",
                 "Griefed a quest",
                 "Ninja looted",
             }) do
-                reasons:CreateCheckbox(r, function()
-                    return s.reasons[name] and s.reasons[name][r]
+                reasons:CreateCheckbox(region, function()
+                    return s.reasons[name] and s.reasons[name][region]
                 end, function()
                     s.reasons[name] = s.reasons[name] or {}
-                    s.reasons[name][r] = not s.reasons[name][r] or nil
+                    s.reasons[name][region] = not s.reasons[name][region] or nil
                 end)
             end
         end
@@ -858,26 +858,26 @@ local function RowMenu(owner, name)
 end
 
 local function Row(i)
-    local r = rows[i]
-    if r then
-        return r
+    local region = rows[i]
+    if region then
+        return region
     end
-    r = CreateFrame("Button", nil, win, "SecureActionButtonTemplate")
-    r:SetSize(W - 12, ROW_H)
-    r:RegisterForClicks("AnyUp")
-    r:SetAttribute("type1", "macro")
-    r.bg = r:CreateTexture(nil, "BACKGROUND")
-    r.bg:SetAllPoints()
-    r.text = r:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(r.text, 12, "essentials")
-    r.text:SetPoint("LEFT", 4, 0)
-    r.text:SetWidth(W - 60)
-    r.text:SetJustifyH("LEFT")
-    r.text:SetWordWrap(false)
-    r.right = r:CreateFontString(nil, "OVERLAY")
-    CludesUI.Kit.Font(r.right, 11, "essentials")
-    r.right:SetPoint("RIGHT", -4, 0)
-    r:SetScript("PostClick", function(self, button)
+    region = CreateFrame("Button", nil, win, "SecureActionButtonTemplate")
+    region:SetSize(W - 12, ROW_H)
+    region:RegisterForClicks("AnyUp")
+    region:SetAttribute("type1", "macro")
+    region.bg = region:CreateTexture(nil, "BACKGROUND")
+    region.bg:SetAllPoints()
+    region.text = region:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(region.text, 12, "essentials")
+    region.text:SetPoint("LEFT", 4, 0)
+    region.text:SetWidth(W - 60)
+    region.text:SetJustifyH("LEFT")
+    region.text:SetWordWrap(false)
+    region.right = region:CreateFontString(nil, "OVERLAY")
+    CludesUI.Kit.Font(region.right, 11, "essentials")
+    region.right:SetPoint("RIGHT", -4, 0)
+    region:SetScript("PostClick", function(self, button)
         if not self.player then
             return
         end
@@ -889,7 +889,7 @@ local function Row(i)
             module.PvPToggleKoS(self.player)
         end
     end)
-    r:SetScript("OnEnter", function(self)
+    region:SetScript("OnEnter", function(self)
         local p = self.player and Data(self.player)
         if not p then
             return
@@ -937,11 +937,11 @@ local function Row(i)
         )
         GameTooltip:Show()
     end)
-    r:SetScript("OnLeave", function()
+    region:SetScript("OnLeave", function()
         GameTooltip:Hide()
     end)
-    rows[i] = r
-    return r
+    rows[i] = region
+    return region
 end
 
 local function Entries()
@@ -1008,26 +1008,26 @@ Refresh = function()
     local s = Store()
     for i = 1, n do
         local e = list[i]
-        local r = Row(i)
-        r.player = e.name
-        r:SetAttribute("macrotext1", TargetMacro(e.name))
-        r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", win, "TOPLEFT", 6, -26 - (i - 1) * ROW_H)
+        local region = Row(i)
+        region.player = e.name
+        region:SetAttribute("macrotext1", TargetMacro(e.name))
+        region:ClearAllPoints()
+        region:SetPoint("TOPLEFT", win, "TOPLEFT", 6, -26 - (i - 1) * ROW_H)
         local p = Data(e.name) or {}
-        r.text:SetText(
+        region.text:SetText(
             Label(e.name)
                 .. (p.level and ("  |cff9aa6b2" .. (p.guess and "~" or "") .. p.level .. "|r") or "")
         )
         local when = tab == 1 and (GetTime() - e.at) or (time() - e.at)
-        r.right:SetText("|cff9aa6b2" .. Ago(when) .. "|r")
+        region.right:SetText("|cff9aa6b2" .. Ago(when) .. "|r")
         if s.kos[e.name] then
-            r.bg:SetColorTexture(1, 0.35, 0.35, 0.22)
+            region.bg:SetColorTexture(1, 0.35, 0.35, 0.22)
         elseif tab == 1 and e.act == 1 then
-            r.bg:SetColorTexture(ar, ag, ab, 0.22)
+            region.bg:SetColorTexture(ar, ag, ab, 0.22)
         else
-            r.bg:SetColorTexture(1, 1, 1, 0.03)
+            region.bg:SetColorTexture(1, 1, 1, 0.03)
         end
-        r:Show()
+        region:Show()
     end
     for i = n + 1, #rows do
         rows[i]:Hide()
@@ -1142,18 +1142,18 @@ local function StatsRefresh()
         return (a.p.last or 0) > (b.p.last or 0)
     end)
     for i, e in ipairs(list) do
-        local r = statRows[i]
-        if not r then
-            r = statContent:CreateFontString(nil, "OVERLAY")
-            CludesUI.Kit.Font(r, 12, "essentials")
-            r:SetJustifyH("LEFT")
-            r:SetWidth(440)
-            r:SetWordWrap(false)
-            statRows[i] = r
+        local region = statRows[i]
+        if not region then
+            region = statContent:CreateFontString(nil, "OVERLAY")
+            CludesUI.Kit.Font(region, 12, "essentials")
+            region:SetJustifyH("LEFT")
+            region:SetWidth(440)
+            region:SetWordWrap(false)
+            statRows[i] = region
         end
         local p = e.p
-        r:SetPoint("TOPLEFT", 0, -(i - 1) * 16)
-        r:SetText(
+        region:SetPoint("TOPLEFT", 0, -(i - 1) * 16)
+        region:SetText(
             ("%s%s  |cff9aa6b2%s%s|r  |cff60d080W %d|r |cffff6060L %d|r  |cff9aa6b2%s ago|r"):format(
                 s.kos[e.name] and "|cffff5959KoS|r " or "",
                 Label(e.name),
@@ -1164,7 +1164,7 @@ local function StatsRefresh()
                 Ago(time() - (p.last or time()))
             )
         )
-        r:Show()
+        region:Show()
     end
     for i = #list + 1, #statRows do
         statRows[i]:Hide()
@@ -1264,8 +1264,8 @@ local function DecorateMinimapTip()
     if not (Enabled() and Get("minimapTip")) or GameTooltip:GetOwner() ~= Minimap then
         return
     end
-    local fs = GameTooltipTextLeft1
-    local text = fs and fs:GetText()
+    local fontString = GameTooltipTextLeft1
+    local text = fontString and fontString:GetText()
     if not text or Secret(text) or text == lastTip then
         return
     end
@@ -1291,7 +1291,7 @@ local function DecorateMinimapTip()
     end
     if changed then
         lastTip = table.concat(out, "\n")
-        fs:SetText(lastTip)
+        fontString:SetText(lastTip)
         GameTooltip:Show()
     end
 end
@@ -1462,11 +1462,11 @@ function module.PvPPosition()
     if type(mapID) ~= "number" then
         return nil
     end
-    local pos = C_Map.GetPlayerMapPosition(mapID, "player")
-    if not pos or Secret(pos) then
+    local position = C_Map.GetPlayerMapPosition(mapID, "player")
+    if not position or Secret(position) then
         return nil
     end
-    local x, y = pos:GetXY()
+    local x, y = position:GetXY()
     if not (R(x) and R(y)) then
         return nil
     end
@@ -1488,8 +1488,8 @@ local function DrawFights()
     local w, h = mapLayer:GetWidth(), mapLayer:GetHeight()
     local scale = 1 / math.max(WorldMapFrame:GetCanvasScale() or 1, 0.1)
     local n = 0
-    for _, f in ipairs(Store().fights) do
-        if f.map == mapID then
+    for _, frame in ipairs(Store().fights) do
+        if frame.map == mapID then
             n = n + 1
             local pin = mapPins[n]
             if not pin then
@@ -1512,15 +1512,15 @@ local function DrawFights()
                 end)
                 mapPins[n] = pin
             end
-            pin.fight = f
+            pin.fight = frame
             pin:SetSize(16 * scale, 16 * scale)
-            if f.result == "W" then
+            if frame.result == "W" then
                 pin.tex:SetVertexColor(0.3, 1, 0.3)
             else
                 pin.tex:SetVertexColor(1, 0.3, 0.3)
             end
             pin:ClearAllPoints()
-            pin:SetPoint("CENTER", mapLayer, "TOPLEFT", f.x * w, -f.y * h)
+            pin:SetPoint("CENTER", mapLayer, "TOPLEFT", frame.x * w, -frame.y * h)
             pin:Show()
         end
     end
@@ -1749,8 +1749,8 @@ CludesUI._PvP = {
 }
 
 SLASH_CUIPVP1 = "/cpvp"
-SlashCmdList.CUIPVP = function(msg)
-    local cmd, rest = (msg or ""):match("^%s*(%S*)%s*(.-)%s*$")
+SlashCmdList.CUIPVP = function(message)
+    local cmd, rest = (message or ""):match("^%s*(%S*)%s*(.-)%s*$")
     cmd = cmd:lower()
     if cmd == "stats" then
         module.ShowPvPStats()

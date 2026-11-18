@@ -29,15 +29,15 @@ end
 -- comes from GetClassColor, the same source as its CLASS_COLORS memo.
 local function FillColor(sp, powerKey)
     if sp.darkTheme and CludesUI.GetDarkModeFill then
-        local r, g, b = CludesUI.GetDarkModeFill()
-        return r or 1, g or 1, b or 1, 1
+        local region, g, b = CludesUI.GetDarkModeFill()
+        return region or 1, g or 1, b or 1, 1
     end
     local ERB = mod.ERB
     if sp.resourceColored then
         if ERB and ERB.ResolveSecondaryResourceColor then
-            local r, g, b = ERB.ResolveSecondaryResourceColor(powerKey)
-            if r then
-                return r, g, b, 1
+            local region, g, b = ERB.ResolveSecondaryResourceColor(powerKey)
+            if region then
+                return region, g, b, 1
             end
         end
     elseif sp.classColored == false then
@@ -60,19 +60,19 @@ function mod.WC_EngineOn(powerKey)
     return (ewc and ewc.EngineOn("erb", powerKey)) or false
 end
 
-function mod.WC_Recolor(powerKey, r, g, b, a)
+function mod.WC_Recolor(powerKey, region, g, b, a)
     local ewc = _G._EWC
     if ewc then
-        ewc.Recolor("erb", powerKey, r, g, b, a)
+        ewc.Recolor("erb", powerKey, region, g, b, a)
     end
 end
 
 -- Threshold/band inputs, handed raw each paint pass; the core change-gates
 -- with alloc-free compares and renders them as engine-masked range strips.
-function mod.WC_Thresholds(powerKey, mode, total, r, g, b, a, bandOn, bands, bandReverse, reverse)
+function mod.WC_Thresholds(powerKey, mode, total, region, g, b, a, bandOn, bands, bandReverse, reverse)
     local ewc = _G._EWC
     if ewc and ewc.Thresholds then
-        ewc.Thresholds("erb", powerKey, mode, total, r, g, b, a, bandOn, bands, bandReverse, reverse)
+        ewc.Thresholds("erb", powerKey, mode, total, region, g, b, a, bandOn, bands, bandReverse, reverse)
     end
 end
 

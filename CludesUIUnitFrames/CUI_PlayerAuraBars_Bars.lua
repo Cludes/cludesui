@@ -92,9 +92,9 @@ local restrictionHooked = false
 -- the cinematic/faction/vehicle recovery lane DEPENDS on them running inside
 -- instanced combat -- a blanket defer would leave restored bars showing
 -- degraded content until the combat edge.
-local function DeferRestrictedApply(key, func, boxHolder, dir)
+local function DeferRestrictedApply(key, func, boxHolder, direction)
     local applied = boxHolder and containerDirections[boxHolder]
-    if not (applied and applied ~= (dir or "LEFT")) then
+    if not (applied and applied ~= (direction or "LEFT")) then
         return false
     end
     if not AK then
@@ -282,11 +282,11 @@ end
 -- container's own SetPoint against its parent) and `vertical` (AK.SetContainerAxis is
 -- a separate call from AK.ApplyContainerLayout -- axis is not part of the layout table).
 local function BuildContainerSpec(hostFrame, conf, grid)
-    local dir = conf.growDirection or "LEFT"
+    local direction = conf.growDirection or "LEFT"
     local wrap = conf.iconWrapDirection or "LEFT"
-    local vertical = (dir == "UP" or dir == "DOWN" or dir == "CENTER_VERTICAL")
-    local layoutAnchor = dir == "CENTER_HORIZONTAL" and "LEFT" or CornerFor(dir, wrap)
-    local containerAnchor = (dir == "CENTER_HORIZONTAL" or dir == "CENTER_VERTICAL") and "CENTER"
+    local vertical = (direction == "UP" or direction == "DOWN" or direction == "CENTER_VERTICAL")
+    local layoutAnchor = direction == "CENTER_HORIZONTAL" and "LEFT" or CornerFor(direction, wrap)
+    local containerAnchor = (direction == "CENTER_HORIZONTAL" or direction == "CENTER_VERTICAL") and "CENTER"
         or layoutAnchor
     return containerAnchor,
         {
@@ -295,8 +295,8 @@ local function BuildContainerSpec(hostFrame, conf, grid)
                 anchorPoint = layoutAnchor,
                 padding = { 0, 0, 0, 0 },
                 rowWidth = grid.rowWidth,
-                growthH = ToGrowthH(dir, wrap),
-                growthV = ToGrowthV(dir, wrap),
+                growthH = ToGrowthH(direction, wrap),
+                growthV = ToGrowthV(direction, wrap),
             },
         },
         vertical
@@ -403,9 +403,9 @@ do
         TOPRIGHT = 1,
     }
     function OriginShift(conf, point, dw, dh)
-        local dir = conf.growDirection or "LEFT"
-        local origin = (dir == "CENTER_HORIZONTAL" or dir == "CENTER_VERTICAL") and "CENTER"
-            or CornerFor(dir, conf.iconWrapDirection or "LEFT")
+        local direction = conf.growDirection or "LEFT"
+        local origin = (direction == "CENTER_HORIZONTAL" or direction == "CENTER_VERTICAL") and "CENTER"
+            or CornerFor(direction, conf.iconWrapDirection or "LEFT")
         point = point or "CENTER"
         return (FRAC_X[origin] - (FRAC_X[point] or 0.5)) * dw, (FRAC_Y[origin] - (FRAC_Y[point] or 0.5)) * dh
     end
@@ -637,8 +637,8 @@ do
             return 0
         end
         local num = 0
-        for idx = 1, math.min(slots or 0, #ENCH_INV_SLOTS) do
-            local details = api(ENCH_INV_SLOTS[idx])
+        for index = 1, math.min(slots or 0, #ENCH_INV_SLOTS) do
+            local details = api(ENCH_INV_SLOTS[index])
             if details and details.hasExpirationTime then
                 num = num + 1
             end
@@ -913,8 +913,8 @@ local function CreateBars()
         )
         if #buffSpells > 0 then
             local includeMap = {}
-            for idx = 1, #buffSpells do
-                includeMap[buffSpells[idx]] = true
+            for index = 1, #buffSpells do
+                includeMap[buffSpells[index]] = true
             end
             AK.AddGroupToContainer(boxHolder, {
                 key = "spells",
@@ -980,13 +980,13 @@ local function MapElementSettings(key, kind, barId)
             -- Owning bucket resolved at click time, not baked in at registration:
             -- the tile's "Add To" menu can move a bar to another editing-spec
             -- bucket long after its key was mapped.
-            local bar, bucket
+            local barFrame, bucket
             if kind == "buff" then
-                bar, bucket = mod.PAB_GetCustomBuffBar(barId)
+                barFrame, bucket = mod.PAB_GetCustomBuffBar(barId)
             else
-                bar, bucket = mod.PAB_GetCustomDebuffBar(barId)
+                barFrame, bucket = mod.PAB_GetCustomDebuffBar(barId)
             end
-            if bar then
+            if barFrame then
                 CludesUI._setPABSelection(kind, barId, bucket)
             end
         end,
@@ -1204,9 +1204,9 @@ local function AnyRightClickCancelActive(s)
     end
     local customBuffBars = s.customBuffBars
     if customBuffBars then
-        for idx = 1, #customBuffBars do
-            local bar = customBuffBars[idx]
-            if bar.enabled ~= false and bar.rightClickCancel ~= false then
+        for index = 1, #customBuffBars do
+            local barFrame = customBuffBars[index]
+            if barFrame.enabled ~= false and barFrame.rightClickCancel ~= false then
                 return true
             end
         end
@@ -1218,9 +1218,9 @@ local function AnyRightClickCancelActive(s)
         for _, b in pairs(s.pabSpecBars) do
             local bl = b.buffBars
             if bl then
-                for idx = 1, #bl do
-                    local bar = bl[idx]
-                    if bar.enabled ~= false and bar.rightClickCancel ~= false then
+                for index = 1, #bl do
+                    local barFrame = bl[index]
+                    if barFrame.enabled ~= false and barFrame.rightClickCancel ~= false then
                         return true
                     end
                 end
@@ -1297,7 +1297,7 @@ local function ApplyLiveConfig(isBuff)
     end
     local grid = ComputeGrid(isBuff, conf)
     local sizeKey = isBuff and "buffs" or "debuffs"
-    local prev = lastSize[sizeKey]
+    local previous = lastSize[sizeKey]
 
     -- Edge-growing containers use a fixed parent corner, so move a CENTER-saved parent
     -- by half the size delta to keep that corner fixed. Centered growth deliberately
@@ -1318,13 +1318,13 @@ local function ApplyLiveConfig(isBuff)
     -- and the stored pos is not mutated for a resize that never landed.
     if InCombatLockdown() then
         local sizeChanged = not (
-            prev
-            and prev.w == grid.width
-            and prev.h == grid.height
-            and prev.dw == grid.designWidth
-            and prev.dh == grid.designHeight
-            and prev.gd == conf.growDirection
-            and prev.wd == conf.iconWrapDirection
+            previous
+            and previous.w == grid.width
+            and previous.h == grid.height
+            and previous.dw == grid.designWidth
+            and previous.dh == grid.designHeight
+            and previous.gd == conf.growDirection
+            and previous.wd == conf.iconWrapDirection
         )
         local rebasePending = centered
             and not (place and place.point == "CENTER" and (place.relPoint or place.point) == "CENTER")
@@ -1339,12 +1339,12 @@ local function ApplyLiveConfig(isBuff)
             s[posKey] = place
         end
         local resized = not centered
-            and prev
+            and previous
             and (
-                prev.w ~= grid.width
-                or prev.h ~= grid.height
-                or prev.dw ~= grid.designWidth
-                or prev.dh ~= grid.designHeight
+                previous.w ~= grid.width
+                or previous.h ~= grid.height
+                or previous.dw ~= grid.designWidth
+                or previous.dh ~= grid.designHeight
             )
         if resized and place and place.point == "CENTER" then
             -- The stored center belongs to its reference frame (design or legacy, see
@@ -1353,15 +1353,15 @@ local function ApplyLiveConfig(isBuff)
             local dx, dy
             if place.design then
                 dx, dy =
-                    OriginShift(conf, place.point, prev.dw - grid.designWidth, prev.dh - grid.designHeight)
+                    OriginShift(conf, place.point, previous.dw - grid.designWidth, previous.dh - grid.designHeight)
             else
                 dx, dy =
-                    OriginShift(conf, place.point, prev.lw - grid.legacyWidth, prev.lh - grid.legacyHeight)
+                    OriginShift(conf, place.point, previous.lw - grid.legacyWidth, previous.lh - grid.legacyHeight)
             end
             place.x = place.x + dx
             place.y = place.y + dy
         end
-        local turned = prev and (prev.gd ~= conf.growDirection or prev.wd ~= conf.iconWrapDirection)
+        local turned = previous and (previous.gd ~= conf.growDirection or previous.wd ~= conf.iconWrapDirection)
         lastSize[sizeKey] = {
             w = grid.width,
             h = grid.height,
@@ -1431,8 +1431,8 @@ local function ApplyLiveConfig(isBuff)
                 )
                 if #spells > 0 then
                     local includeMap = {}
-                    for idx = 1, #spells do
-                        includeMap[spells[idx]] = true
+                    for index = 1, #spells do
+                        includeMap[spells[index]] = true
                     end
                     AK.AddGroupToContainer(newContainer, {
                         key = "spells",
@@ -1477,8 +1477,8 @@ local function ApplyLiveConfig(isBuff)
                 CludesUI.AuraKit.SetGroupCap(boxHolder, "spells", BuffAuraMax(grid))
                 boxHolder:SetAuraGroupLayout("spells", BuildGroupLayout(conf, pad, grid.rowGap))
                 local liveIncludeMap = {}
-                for idx = 1, #spells do
-                    liveIncludeMap[spells[idx]] = true
+                for index = 1, #spells do
+                    liveIncludeMap[spells[index]] = true
                 end
                 boxHolder:SetAuraGroupCandidateFilters(
                     "spells",
@@ -1533,48 +1533,48 @@ function mod.PAB_GetGrowDirection(barKey)
     end
     local buffId = barKey:match("^PAB_CustomBuff_(%d+)$")
     if buffId then
-        local bar = mod.PAB_GetCustomBuffBar(tonumber(buffId))
-        return bar and (bar.growDirection or "LEFT") or "LEFT"
+        local barFrame = mod.PAB_GetCustomBuffBar(tonumber(buffId))
+        return barFrame and (barFrame.growDirection or "LEFT") or "LEFT"
     end
     local debuffId = barKey:match("^PAB_CustomDebuff_(%d+)$")
     if debuffId then
-        local bar = mod.PAB_GetCustomDebuffBar(tonumber(debuffId))
-        return bar and (bar.growDirection or "LEFT") or "LEFT"
+        local barFrame = mod.PAB_GetCustomDebuffBar(tonumber(debuffId))
+        return barFrame and (barFrame.growDirection or "LEFT") or "LEFT"
     end
     return "LEFT"
 end
 
-function mod.PAB_SetGrowDirection(barKey, dir)
+function mod.PAB_SetGrowDirection(barKey, direction)
     local s = PAB()
     if not s then
         return
     end
     if barKey == "PAB_Buffs" then
-        DefaultBuffsCfg(s).growDirection = dir
+        DefaultBuffsCfg(s).growDirection = direction
         RestyleBars()
         ApplyLiveConfig(true)
         return
     elseif barKey == "PAB_Debuffs" then
-        DefaultDebuffsCfg(s).growDirection = dir
+        DefaultDebuffsCfg(s).growDirection = direction
         RestyleBars()
         ApplyLiveConfig(false)
         return
     end
     local buffId = barKey:match("^PAB_CustomBuff_(%d+)$")
     if buffId then
-        local bar = mod.PAB_GetCustomBuffBar(tonumber(buffId))
-        if bar then
-            bar.growDirection = dir
-            mod.PAB_ReloadCustomBuffBar(bar.id)
+        local barFrame = mod.PAB_GetCustomBuffBar(tonumber(buffId))
+        if barFrame then
+            barFrame.growDirection = direction
+            mod.PAB_ReloadCustomBuffBar(barFrame.id)
         end
         return
     end
     local debuffId = barKey:match("^PAB_CustomDebuff_(%d+)$")
     if debuffId then
-        local bar = mod.PAB_GetCustomDebuffBar(tonumber(debuffId))
-        if bar then
-            bar.growDirection = dir
-            mod.PAB_ReloadCustomDebuffBar(bar.id)
+        local barFrame = mod.PAB_GetCustomDebuffBar(tonumber(debuffId))
+        if barFrame then
+            barFrame.growDirection = direction
+            mod.PAB_ReloadCustomDebuffBar(barFrame.id)
         end
         return
     end

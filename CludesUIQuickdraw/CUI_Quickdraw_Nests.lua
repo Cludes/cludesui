@@ -136,11 +136,11 @@ function PaletteView:GridDims(shownOverride)
 end
 
 -- Centre-relative position of slot i, in the frame's own units.
-function PaletteView:GridBase(idx, cols, rowList, pitch, shownOverride)
-    local r = floor((idx - 1) / cols)
-    local c = (idx - 1) % cols
-    local inRow = min(cols, (shownOverride or self.shownCount) - r * cols)
-    return (c - (inRow - 1) * 0.5) * pitch, -(r - (rowList - 1) * 0.5) * pitch
+function PaletteView:GridBase(index, cols, rowList, pitch, shownOverride)
+    local region = floor((index - 1) / cols)
+    local c = (index - 1) % cols
+    local inRow = min(cols, (shownOverride or self.shownCount) - region * cols)
+    return (c - (inRow - 1) * 0.5) * pitch, -(region - (rowList - 1) * 0.5) * pitch
 end
 
 -------------------------------------------------------------------------------
@@ -330,7 +330,7 @@ local function PerimeterNearest(px, py, HX, HY, R, positive, axisOnly)
     local far = L * 2
     local acrossX = (not axisOnly) or axisOnly == "X"
     local acrossY = (not axisOnly) or axisOnly == "Y"
-    local d = {
+    local skinData = {
         acrossX and (HY - py) or far,
         acrossY and (HX - px) or far,
         acrossX and (py + HY) or far,
@@ -352,10 +352,10 @@ local function PerimeterNearest(px, py, HX, HY, R, positive, axisOnly)
     -- Exact wherever it decides anything -- every cell of a row stands the same
     -- distance off the edge it is on -- but compared with a tolerance anyway,
     -- the two distances arriving by different arithmetic.
-    local best = min(d[1], d[2], d[3], d[4])
+    local best = min(skinData[1], skinData[2], skinData[3], skinData[4])
     local tie = {}
     for si = 1, 4 do
-        tie[si] = (d[si] - best) <= 1e-4
+        tie[si] = (skinData[si] - best) <= 1e-4
     end
 
     if tie[1] and tie[2] and tie[3] and tie[4] then
@@ -501,8 +501,8 @@ function PaletteView:PerimeterNest(claims, isShown, m)
     -- for a caller that arrives here anyway.
     local axisOnly = (m.rows <= 1 and "X") or (m.cols <= 1 and "Y") or nil
 
-    for idx = 1, #claims do
-        local c = claims[idx]
+    for index = 1, #claims do
+        local c = claims[index]
         local bx, by = self:GridBase(c.parent, m.cols, m.rows, m.pitch, isShown)
         -- c.icon is not set here: what this style may draw a child at depends
         -- on how tightly that run ends up packed, which is not known until its
@@ -537,8 +537,8 @@ function PaletteView:PerimeterNest(claims, isShown, m)
     -- L is the bound that remains, and it is a real one: a run longer than the
     -- lane would wrap past its own first cell and put two children on the same
     -- ground.
-    for idx = 1, #claims do
-        local c = claims[idx]
+    for index = 1, #claims do
+        local c = claims[index]
         -- A crowded nest EXTENDS along the perimeter first, as far as the lane
         -- goes: wrapping further round the block costs the user nothing, and one
         -- long run is the shape this style is for. Only a nest whose children do
@@ -667,14 +667,14 @@ function PaletteView:HaloNest(claims, isShown, m)
     -- Small enough that a full-size parent still has clear ground around it,
     -- which is the whole read of this style -- children AROUND an entry, not
     -- crowding it.
-    local icon = min(m.childIcon, hp * 0.62)
-    for idx = 1, #claims do
-        local c = claims[idx]
+    local iconTex = min(m.childIcon, hp * 0.62)
+    for index = 1, #claims do
+        local c = claims[index]
         local bx, by = self:GridBase(c.parent, m.cols, m.rows, m.pitch, isShown)
         -- No axis and no side: a halo surrounds its parent rather than coming
         -- out of one edge of the block, so there is no "other side" for the hub
         -- caption to move to and it keeps the placement it would have had.
-        c.icon, c.dim = icon, true
+        c.icon, c.dim = iconTex, true
         -- The parent draws back to leave the ring somewhere to be. It keeps its
         -- full colour, unlike the rest of the block: it is what the ring is
         -- about, and dimming it would leave nothing saying which entry opened.
@@ -684,8 +684,8 @@ function PaletteView:HaloNest(claims, isShown, m)
         c.label = false
         c.cells = {}
         for jdx = 1, min(c.n, #HALO_DIRS) do
-            local d = HALO_DIRS[jdx]
-            c.cells[jdx] = { x = bx + d[1] * hp, y = by + d[2] * hp, hw = hp * 0.5, hh = hp * 0.5 }
+            local skinData = HALO_DIRS[jdx]
+            c.cells[jdx] = { x = bx + skinData[1] * hp, y = by + skinData[2] * hp, hw = hp * 0.5, hh = hp * 0.5 }
         end
         -- The centre is left to the parent, which fires nothing: a pointer that
         -- comes to rest back on the entry it opened does nothing, rather than
@@ -710,8 +710,8 @@ function PaletteView:StripCellNest(claims, isShown, m)
     local sign = m.positive and 1 or -1
     local result = m.icon * 0.5 + m.band + m.childIcon * 0.5
 
-    for idx = 1, #claims do
-        local c = claims[idx]
+    for index = 1, #claims do
+        local c = claims[index]
         local bx, by = self:GridBase(c.parent, m.cols, m.rows, m.pitch, isShown)
         c.icon = m.childIcon
         -- Packed at child pitch like every other nest style's captions, a run
@@ -725,8 +725,8 @@ function PaletteView:StripCellNest(claims, isShown, m)
         c.t0 = (axis == "X") and bx or by
     end
 
-    for idx = 1, #claims do
-        local c = claims[idx]
+    for index = 1, #claims do
+        local c = claims[index]
         -- Half the room this claim's block may spread into along the strip:
         -- out to the midpoint with the nearest OTHER nest's own parent. A
         -- strip is a straight line, not PERIMETER's closed loop, so this is a
@@ -736,7 +736,7 @@ function PaletteView:StripCellNest(claims, isShown, m)
         -- neighbour.
         local room = math.huge
         for jdx = 1, #claims do
-            if jdx ~= idx then
+            if jdx ~= index then
                 room = min(room, abs(claims[jdx].t0 - c.t0) * 0.5)
             end
         end
@@ -751,12 +751,12 @@ function PaletteView:StripCellNest(claims, isShown, m)
             local cc = (jdx - 1) % ccols
             local row = min(ccols, c.n - cr * ccols)
             local a = (cc - (row - 1) * 0.5) * m.childPitch
-            local d = result + cr * m.childPitch
+            local skinData = result + cr * m.childPitch
             local posX, posY
             if axis == "X" then
-                posX, posY = c._bx + a, c._by + sign * d
+                posX, posY = c._bx + a, c._by + sign * skinData
             else
-                posX, posY = c._bx + sign * d, c._by + a
+                posX, posY = c._bx + sign * skinData, c._by + a
             end
             c.cells[jdx] = { x = posX, y = posY, hw = m.childPitch * 0.5, hh = m.childPitch * 0.5 }
         end
@@ -786,8 +786,8 @@ function PaletteView:StripNest(claims, isShown)
     local sign = m.positive and 1 or -1
     local result = m.icon * 0.5 + m.band + m.childIcon * 0.5
 
-    for idx = 1, #claims do
-        local c = claims[idx]
+    for index = 1, #claims do
+        local c = claims[index]
         c.icon = m.childIcon
         c.axis, c.sign = axis, sign
         -- Unlabelled, like the strip's own entries: at strip spacing the
@@ -864,15 +864,15 @@ function PaletteView:CellChildGeom(claims, isShown)
     -- Every parent cell first: the regions below take the OTHER claims' cells
     -- out of their own coverage (see ParentHoles), so they all have to exist
     -- before the first of them is built.
-    for idx = 1, #claims do
-        local c = claims[idx]
+    for index = 1, #claims do
+        local c = claims[index]
         local bx, by = self:GridBase(c.parent, m.cols, m.rows, m.pitch, isShown)
         c.parentBox = { x = bx, y = by, hw = m.pitch * 0.5, hh = m.pitch * 0.5 }
     end
 
-    for idx = 1, #claims do
-        local c = claims[idx]
-        local holes = ParentHoles(claims, idx)
+    for index = 1, #claims do
+        local c = claims[index]
+        local holes = ParentHoles(claims, index)
 
         if c.axis then
             -- How far a claim's ground reaches past its own edges. c.standoff

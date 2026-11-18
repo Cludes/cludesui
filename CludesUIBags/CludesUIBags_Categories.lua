@@ -283,11 +283,11 @@ function CategoryManager:InitCategories()
         end
     end
     orderedDefs = {}
-    for _, d in ipairs(pinned) do
-        orderedDefs[#orderedDefs + 1] = d
+    for _, skinData in ipairs(pinned) do
+        orderedDefs[#orderedDefs + 1] = skinData
     end
-    for _, d in ipairs(rest) do
-        orderedDefs[#orderedDefs + 1] = d
+    for _, skinData in ipairs(rest) do
+        orderedDefs[#orderedDefs + 1] = skinData
     end
     -- Junk goes last, and exists only while the Junk Marker is on (its marks
     -- stay saved meanwhile).
@@ -1248,11 +1248,11 @@ function CategoryManager:RemoveCustomCategory(catIndex)
             end
         end
     end
-    local prev = CludesUIDB and CludesUIDB.bagJunkPrev
-    if prev then
-        for itemId, pKey in pairs(prev) do
+    local previous = CludesUIDB and CludesUIDB.bagJunkPrev
+    if previous then
+        for itemId, pKey in pairs(previous) do
             if pKey == key then
-                prev[itemId] = nil
+                previous[itemId] = nil
             end
         end
     end
@@ -1275,15 +1275,15 @@ end
 -- A Junk mark remembers the category the item was filed in (nil: none), kept
 -- only while the item stays marked: CludesUIDB.bagJunkPrev[itemID].
 local function SetJunkPrev(itemId, key)
-    local prev = CludesUIDB.bagJunkPrev
+    local previous = CludesUIDB.bagJunkPrev
     if key then
-        if not prev then
-            prev = {}
-            CludesUIDB.bagJunkPrev = prev
+        if not previous then
+            previous = {}
+            CludesUIDB.bagJunkPrev = previous
         end
-        prev[itemId] = key
-    elseif prev then
-        prev[itemId] = nil
+        previous[itemId] = key
+    elseif previous then
+        previous[itemId] = nil
     end
 end
 
@@ -1333,8 +1333,8 @@ function CategoryManager:UnassignItem(itemId)
     local wasJunk = assignments[itemId] == self.JUNK_KEY
     local back
     if wasJunk then
-        local prev = CludesUIDB.bagJunkPrev
-        back = prev and prev[itemId]
+        local previous = CludesUIDB.bagJunkPrev
+        back = previous and previous[itemId]
         if back then
             local found
             for _, category in ipairs(self:GetCategories()) do

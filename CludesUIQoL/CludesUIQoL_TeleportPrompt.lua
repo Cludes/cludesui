@@ -86,13 +86,13 @@ end
 local function ResolveOutline()
     return (CUI.GetFontOutlineFlag("extras")) or ""
 end
-local function MakeLabel(hostFrame, size, r, g, b, a)
+local function MakeLabel(hostFrame, size, region, g, b, a)
     local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
     local flags = ResolveOutline()
     CUI.PrimeFontShadow(fontStr, flags == "")
     fontStr:SetFont(ResolveFont(), size, flags)
-    if r then
-        fontStr:SetTextColor(r, g or 1, b or 1, a or 1)
+    if region then
+        fontStr:SetTextColor(region, g or 1, b or 1, a or 1)
     end
     return fontStr
 end
@@ -229,14 +229,14 @@ BuildPopup = function()
         Pix.CreateBorder(secureBtn, 0, 0, 0, 1, 1, "OVERLAY", 7)
     end
 
-    local icon = secureBtn:CreateTexture(nil, "ARTWORK")
-    icon:SetSize(40, 40)
-    icon:SetPoint("LEFT", 8, 0)
-    icon:SetTexCoord(6 / 64, 58 / 64, 6 / 64, 58 / 64)
-    secureBtn._icon = icon
+    local iconTex = secureBtn:CreateTexture(nil, "ARTWORK")
+    iconTex:SetSize(40, 40)
+    iconTex:SetPoint("LEFT", 8, 0)
+    iconTex:SetTexCoord(6 / 64, 58 / 64, 6 / 64, 58 / 64)
+    secureBtn._icon = iconTex
 
     local btnLabel = MakeLabel(secureBtn, 12, 1, 1, 1, 1)
-    btnLabel:SetPoint("LEFT", icon, "RIGHT", 8, 0)
+    btnLabel:SetPoint("LEFT", iconTex, "RIGHT", 8, 0)
     btnLabel:SetPoint("RIGHT", -6, 0)
     btnLabel:SetJustifyH("LEFT")
     btnLabel:SetWordWrap(false)

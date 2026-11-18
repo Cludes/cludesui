@@ -181,8 +181,8 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
             if mod.IsCustomBorderEnabled() then
                 mod.ApplyCustomBorderColor(backing)
             else
-                local cr, cg, cb = GetBorderColor()
-                mod.NP_BasicBorderColor(backing, cr, cg, cb, 1)
+                local cr, cg, callback = GetBorderColor()
+                mod.NP_BasicBorderColor(backing, cr, cg, callback, 1)
             end
         end
         -- ...and border colour edits and the target tint's restore (a tint only), on the
@@ -321,8 +321,8 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
                 Pix.SetBorderSize(backing.cast, sz)
                 Pix.ShowBorder(backing.cast)
             else
-                local cr, cg, cb = mod.NP_CastBorderColor()
-                Pix.CreateBorder(backing.cast, cr, cg, cb, 1, sz, "OVERLAY", 7, true) -- scaleGuard: NP frame
+                local cr, cg, callback = mod.NP_CastBorderColor()
+                Pix.CreateBorder(backing.cast, cr, cg, callback, 1, sz, "OVERLAY", 7, true) -- scaleGuard: NP frame
             end
         elseif Pix.GetBorders(backing.cast) then
             Pix.HideBorder(backing.cast)
@@ -333,8 +333,8 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
         if not Pix or not Pix.GetBorders or not Pix.GetBorders(backing.cast) then
             return
         end
-        local cr, cg, cb = mod.NP_CastBorderColor()
-        Pix.SetBorderColor(backing.cast, cr, cg, cb, 1)
+        local cr, cg, callback = mod.NP_CastBorderColor()
+        Pix.SetBorderColor(backing.cast, cr, cg, callback, 1)
     end
     -- "Wrap Border Around Castbar" (opt-in). While cast bar shown + feature on, health + cast
     -- get ONE continuous border from two pieces: the REAL health border (top+sides, untouched
@@ -376,10 +376,10 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
                         sz = tbsz
                     end
                 end
-                local col = hb._bdColor
-                local r, g, b, a = 0, 0, 0, 1
-                if col then
-                    r, g, b, a = col[1], col[2], col[3], col[4] or 1
+                local colour = hb._bdColor
+                local region, g, b, a = 0, 0, 0, 1
+                if colour then
+                    region, g, b, a = colour[1], colour[2], colour[3], colour[4] or 1
                 end
                 -- Threat Colors "Border" tint on the health border: _bdColor keeps only the
                 -- last CLEAN colour (PP leaves a secret off-tank fold out of it), so the
@@ -409,7 +409,7 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
                     regionFrame:SetFrameLevel(backing.castIconFrame:GetFrameLevel() + 2)
                 end
                 if not Pix.GetBorders(regionFrame) then
-                    Pix.CreateBorder(regionFrame, r, g, b, a, sz, "OVERLAY", 7, true) -- scaleGuard: NP frame
+                    Pix.CreateBorder(regionFrame, region, g, b, a, sz, "OVERLAY", 7, true) -- scaleGuard: NP frame
                 end
                 -- Seam flags go on the containers BEFORE (re)snapping so SnapBorderTextures
                 -- hides the two touching edges AND runs the side strips to the seam (no edge
@@ -430,7 +430,7 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
                         1
                     )
                 else
-                    Pix.SetBorderColor(regionFrame, r, g, b, a)
+                    Pix.SetBorderColor(regionFrame, region, g, b, a)
                 end
                 Pix.ShowBorder(regionFrame)
                 Pix.SetBorderSize(backing.health, sz)
@@ -462,7 +462,7 @@ local frameCache = CreateFramePool("Frame", UIParent, nil, nil, false, function(
                         and UnitIsUnit(backing.unit, "target")
                         and mod.GetTargetGlowBorderColor()
                     then
-                        Pix.SetBorderColor(backing.castIconFrame, r, g, b, a)
+                        Pix.SetBorderColor(backing.castIconFrame, region, g, b, a)
                     else
                         Pix.SetBorderColor(backing.castIconFrame, 0, 0, 0, 1)
                     end
@@ -753,8 +753,8 @@ do
             ticker = C_Timer.NewTicker(0.1, function()
                 made = made + 1
                 if made > target then
-                    for idx = 1, #held do
-                        frameCache:Release(held[idx])
+                    for index = 1, #held do
+                        frameCache:Release(held[index])
                     end
                     ticker:Cancel()
                     return
@@ -984,9 +984,9 @@ function mod._ApplyHitboxOverlay(backing)
         local shade = backing.hitboxOverlay
         if not shade then
             shade = CreateFrame("Frame", nil, np)
-            local fill = shade:CreateTexture(nil, "BACKGROUND")
-            fill:SetAllPoints()
-            fill:SetColorTexture(0.298, 0.788, 0.941, 0.18)
+            local fillTex = shade:CreateTexture(nil, "BACKGROUND")
+            fillTex:SetAllPoints()
+            fillTex:SetColorTexture(0.298, 0.788, 0.941, 0.18)
             local function Edge()
                 local t = shade:CreateTexture(nil, "BORDER")
                 t:SetColorTexture(0.298, 0.788, 0.941, 0.85)

@@ -65,7 +65,7 @@ local buffIDs -- [spell id] = true, built the first time it is needed
 local buffIcon, buffInstance
 local buffDirty = true
 
-local widget, tex, border
+local widget, texture, border
 local eventFrame = CreateFrame("Frame")
 local active = false -- shown, with its events registered
 local visRegistered = false -- on the shared visibility dispatcher
@@ -77,8 +77,8 @@ local function BuildBuffIDs()
         return
     end
     buffIDs = {}
-    for idx = 1, #buffSpells do
-        local ids = buffSpells[idx]
+    for index = 1, #buffSpells do
+        local ids = buffSpells[index]
         for jdx = 1, #ids do
             buffIDs[ids[jdx]] = true
         end
@@ -99,8 +99,8 @@ local function BuffIcon()
     BuildBuffIDs()
     buffDirty = false
     buffIcon, buffInstance = nil, nil
-    for idx = 1, 40 do
-        local aura = C_UnitAuras.GetAuraDataByIndex("player", idx, "HELPFUL|PLAYER")
+    for index = 1, 40 do
+        local aura = C_UnitAuras.GetAuraDataByIndex("player", index, "HELPFUL|PLAYER")
         if not aura then
             break
         end
@@ -136,8 +136,8 @@ local function AuraChangeMatters(details)
         if IsSecret(added) then
             return true
         end
-        for idx = 1, #added do
-            local aura = added[idx]
+        for index = 1, #added do
+            local aura = added[index]
             if aura == nil or IsSecret(aura) then
                 return true
             end
@@ -152,8 +152,8 @@ local function AuraChangeMatters(details)
         if IsSecret(removed) then
             return true
         end
-        for idx = 1, #removed do
-            local iid = removed[idx]
+        for index = 1, #removed do
+            local iid = removed[index]
             if not IsSecret(iid) and iid == buffInstance then
                 return true
             end
@@ -170,16 +170,16 @@ local function CurrentIcon()
     if IsSecret(num) then
         return false
     end
-    for idx = 1, num do
-        local icon, isActive, _, spellID = GetShapeshiftFormInfo(idx)
+    for index = 1, num do
+        local iconTex, isActive, _, spellID = GetShapeshiftFormInfo(index)
         if IsSecret(isActive) then
             return false
         end
         if isActive then
             if spellID and not IsSecret(spellID) then
-                return C_Spell.GetSpellTexture(spellID) or icon
+                return C_Spell.GetSpellTexture(spellID) or iconTex
             end
-            return icon
+            return iconTex
         end
     end
     return buffSpells and BuffIcon() or nil
@@ -189,18 +189,18 @@ local function Refresh()
     if not active then
         return
     end
-    local icon = CurrentIcon()
+    local iconTex = CurrentIcon()
     -- A secret icon still paints (the texture takes it); it cannot be tested.
-    if IsSecret(icon) then
-        tex:SetTexture(icon)
+    if IsSecret(iconTex) then
+        texture:SetTexture(iconTex)
         widget:Show()
         return
     end
-    if icon == false then
+    if iconTex == false then
         return
     end
-    if icon then
-        tex:SetTexture(icon)
+    if iconTex then
+        texture:SetTexture(iconTex)
         widget:Show()
     else
         widget:Hide()
@@ -240,7 +240,7 @@ end
 local function Style()
     widget:SetSize(SnappedSize(), SnappedSize())
     local z = Get("zoom") / 100
-    tex:SetTexCoord(z, 1 - z, z, 1 - z)
+    texture:SetTexCoord(z, 1 - z, z, 1 - z)
     local step, texture = Get("borderSize"), Get("borderTexture")
     CludesUI.ApplyBorderStyle(
         border,
@@ -270,8 +270,8 @@ local function BuildFrame()
     widget:SetClampedToScreen(true)
     widget:EnableMouse(false)
     widget:Hide()
-    tex = widget:CreateTexture(nil, "ARTWORK")
-    tex:SetAllPoints()
+    texture = widget:CreateTexture(nil, "ARTWORK")
+    texture:SetAllPoints()
     border = CreateFrame("Frame", nil, widget)
     border:SetAllPoints()
     border:EnableMouse(false)

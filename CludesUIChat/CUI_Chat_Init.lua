@@ -93,8 +93,8 @@ initFrame:SetScript("OnEvent", function(self)
     --     (Blizzard text suppressed, AddMessage bridge installed, our windows
     --     built and backfilled with everything already in Blizzard's buffers).
     ---------------------------------------------------------------------------
-    for idx = 1, 20 do
-        local castFrame = _G["ChatFrame" .. idx]
+    for index = 1, 20 do
+        local castFrame = _G["ChatFrame" .. index]
         if castFrame then
             SkinChatFrame(castFrame)
         end
@@ -154,11 +154,11 @@ initFrame:SetScript("OnEvent", function(self)
         "CHAT_MSG_BN_WHISPER_INFORM",
         "CHAT_MSG_CHANNEL",
     }
-    local function UrlFilter(self, evt, msg, ...)
-        if not msg or not ContainsURL(msg) then
+    local function UrlFilter(self, evt, message, ...)
+        if not message or not ContainsURL(message) then
             return false
         end
-        return false, WrapURLs(msg), ...
+        return false, WrapURLs(message), ...
     end
     for _, ev in ipairs(URL_EVENTS) do
         ChatFrame_AddMessageEventFilter(ev, UrlFilter)
@@ -174,8 +174,8 @@ initFrame:SetScript("OnEvent", function(self)
     local function SkinPass()
         local wantFont = GetFont()
         local wantOutline = GetOutlineFlag()
-        for idx = 1, 20 do
-            local castFrame = _G["ChatFrame" .. idx]
+        for index = 1, 20 do
+            local castFrame = _G["ChatFrame" .. index]
             -- New frames (SkinChatFrame handles the panel + edit box)
             if castFrame and not _skinned[castFrame] then
                 SkinChatFrame(castFrame)
@@ -626,8 +626,8 @@ initFrame:SetScript("OnEvent", function(self)
         CHAT._RegisterEditBoxFocusGained("CUI_Chat_IdleFade", function()
             OnActiveMessage()
         end)
-        for idx = 1, 10 do
-            local eb = _G["ChatFrame" .. idx .. "EditBox"]
+        for index = 1, 10 do
+            local eb = _G["ChatFrame" .. index .. "EditBox"]
             if eb then
                 eb:HookScript("OnChar", function(...)
                     OnActiveMessage(...)
@@ -884,12 +884,12 @@ initFrame:SetScript("OnEvent", function(self)
         if fmt == "none" then
             fmt = nil
         elseif fmt == "__blizzard" then
-            local success, f = pcall(function()
+            local success, frame = pcall(function()
                 return ChatFrameUtil
                     and ChatFrameUtil.GetTimestampFormat
                     and ChatFrameUtil.GetTimestampFormat()
             end)
-            fmt = (success and type(f) == "string" and f ~= "" and f ~= "none") and f or nil
+            fmt = (success and type(frame) == "string" and frame ~= "" and frame ~= "none") and frame or nil
         end
         CHAT.EngineSetStampAll(conf.timestampAll == true and fmt ~= nil, fmt)
     end
@@ -932,8 +932,8 @@ initFrame:SetScript("OnEvent", function(self)
                 -- input box is placed like the CludesUI look's.
                 if mod.ChatStockArt() then
                     CHAT._stockSeatArmed = true
-                    for idx = 1, 20 do
-                        local castFrame = _G["ChatFrame" .. idx]
+                    for index = 1, 20 do
+                        local castFrame = _G["ChatFrame" .. index]
                         if castFrame then
                             CHAT.SeatStockBackground(castFrame)
                         end
@@ -1328,10 +1328,10 @@ initFrame:SetScript("OnEvent", function(self)
         "ChatFrameToggleVoiceDeafenButton",
         "ChatFrameToggleVoiceMuteButton",
     }) do
-        local f = _G[frameName]
-        if f then
-            f:SetAlpha(0)
-            f:EnableMouse(false)
+        local frame = _G[frameName]
+        if frame then
+            frame:SetAlpha(0)
+            frame:EnableMouse(false)
         end
     end
     -- Chat Menu: the menu button back over its icon, mouse on while shown.

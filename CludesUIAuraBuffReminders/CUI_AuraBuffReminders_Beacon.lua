@@ -49,13 +49,13 @@ end
 local TrackItemUse
 do
     local flaskSet, foodSet, weSet = {}, {}, {}
-    for _, f in ipairs(FLASK_ITEMS) do
-        for _, ident in ipairs(f.items) do
+    for _, frame in ipairs(FLASK_ITEMS) do
+        for _, ident in ipairs(frame.items) do
             flaskSet[ident] = true
         end
     end
-    for _, f in ipairs(FOOD_ITEMS) do
-        foodSet[f.itemID] = true
+    for _, frame in ipairs(FOOD_ITEMS) do
+        foodSet[frame.itemID] = true
     end
     for _, we in ipairs(WEAPON_ENCHANT_ITEMS) do
         weSet[we.itemID] = true
@@ -136,24 +136,24 @@ local function BeaconUpdateOverlayEvents()
 end
 
 local function BeaconMakeIcon(spellId)
-    local f = CreateFrame("Frame", nil, UIParent)
-    f:SetSize(ICON_SIZE, ICON_SIZE)
-    f:SetFrameStrata("HIGH")
-    f:SetFrameLevel(120)
-    f:Hide()
-    local icon = f:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints()
-    icon:SetTexture(Tex(spellId))
-    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    f._icon = icon
-    f._spellID = spellId
-    REMIND.ApplyIconBorder(f, false)
-    local textValue = REMIND.GetIconTextOverlay(f):CreateFontString(nil, "OVERLAY")
-    textValue:SetPoint("TOP", f, "BOTTOM", 0, -2)
+    local frame = CreateFrame("Frame", nil, UIParent)
+    frame:SetSize(ICON_SIZE, ICON_SIZE)
+    frame:SetFrameStrata("HIGH")
+    frame:SetFrameLevel(120)
+    frame:Hide()
+    local iconTex = frame:CreateTexture(nil, "ARTWORK")
+    iconTex:SetAllPoints()
+    iconTex:SetTexture(Tex(spellId))
+    iconTex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    frame._icon = iconTex
+    frame._spellID = spellId
+    REMIND.ApplyIconBorder(frame, false)
+    local textValue = REMIND.GetIconTextOverlay(frame):CreateFontString(nil, "OVERLAY")
+    textValue:SetPoint("TOP", frame, "BOTTOM", 0, -2)
     SetABRFont(textValue, ResolveFontPath(), 11)
     textValue:SetTextColor(1, 1, 1, 1)
-    f._text = textValue
-    return f
+    frame._text = textValue
+    return frame
 end
 
 local function BeaconLayoutIcons()
@@ -184,18 +184,18 @@ local function BeaconLayoutIcons()
             end
             local totalW = (#visIcons * sz) + ((#visIcons - 1) * spacing)
             local startX = -(totalW / 2) + (sz / 2)
-            for idx, f in ipairs(visIcons) do
-                f:SetSize(sz, iconH)
-                f:SetAlpha(p.opacity or 1.0)
-                f:SetFrameStrata("TOOLTIP")
-                f:SetFrameLevel(9980)
-                REMIND.ApplyIconBorder(f, false)
-                f:ClearAllPoints()
-                f:SetPoint(
+            for index, frame in ipairs(visIcons) do
+                frame:SetSize(sz, iconH)
+                frame:SetAlpha(p.opacity or 1.0)
+                frame:SetFrameStrata("TOOLTIP")
+                frame:SetFrameLevel(9980)
+                REMIND.ApplyIconBorder(frame, false)
+                frame:ClearAllPoints()
+                frame:SetPoint(
                     "CENTER",
                     cursorAnchor,
                     "CENTER",
-                    startX + (idx - 1) * (sz + spacing),
+                    startX + (index - 1) * (sz + spacing),
                     -(iconH + 8)
                 )
             end
@@ -220,25 +220,25 @@ local function BeaconLayoutIcons()
     ReleaseCursorAnchor()
 end
 
-local function BeaconApplyGlow(f, show)
+local function BeaconApplyGlow(frame, show)
     if show then
         local p = saved and saved.profile.display
         local glowType = p and p.glowType or 0
         if glowType > 0 then
             local baseScale = p and p.scale or 1.0
             local sz = floor(ICON_SIZE * baseScale + 0.5)
-            ApplyGlow(f, p, sz)
+            ApplyGlow(frame, p, sz)
         end
-        _B.glowState[f._spellID] = true
+        _B.glowState[frame._spellID] = true
     else
-        if _B.glowState[f._spellID] then
-            RemoveGlow(f)
-            _B.glowState[f._spellID] = false
+        if _B.glowState[frame._spellID] then
+            RemoveGlow(frame)
+            _B.glowState[frame._spellID] = false
         end
     end
 end
 
-local function BeaconApplyText(f)
+local function BeaconApplyText(frame)
     local p = saved and saved.profile.display
     if p and p.showText then
         local tc = p.textColor or DEFAULT_TEXT_COLOR
@@ -246,38 +246,38 @@ local function BeaconApplyText(f)
         local textSize = p.textSize or 11
         local xOff = p.textXOffset or 0
         local yOff = p.textYOffset or -2
-        SetABRFont(f._text, fontFile, textSize)
-        f._text:ClearAllPoints()
+        SetABRFont(frame._text, fontFile, textSize)
+        frame._text:ClearAllPoints()
         local tp, ip = GetTextAnchorPoints(p)
-        f._text:SetPoint(tp, f, ip, xOff, yOff)
-        f._text:SetTextColor(tc.r, tc.g, tc.b, 1)
-        f._text:SetText(ShortLabel(f._spellID == _B.BOL and "Beacon of Light" or "Beacon of Faith"))
-        f._text:Show()
+        frame._text:SetPoint(tp, frame, ip, xOff, yOff)
+        frame._text:SetTextColor(tc.r, tc.g, tc.b, 1)
+        frame._text:SetText(ShortLabel(frame._spellID == _B.BOL and "Beacon of Light" or "Beacon of Faith"))
+        frame._text:Show()
     else
-        f._text:SetText("")
-        f._text:Hide()
+        frame._text:SetText("")
+        frame._text:Hide()
     end
 end
 
 local function BeaconSetVisible(spellId, show)
-    local f = _B.icons[spellId]
-    if not f then
+    local frame = _B.icons[spellId]
+    if not frame then
         return
     end
     local changed = false
     if show then
         if not _B.iconState[spellId] then
-            BeaconApplyText(f)
-            f:Show()
+            BeaconApplyText(frame)
+            frame:Show()
             _B.iconState[spellId] = true
-            BeaconApplyGlow(f, true)
+            BeaconApplyGlow(frame, true)
             changed = true
         end
     else
         if _B.iconState[spellId] then
-            BeaconApplyGlow(f, false)
-            f._text:SetText("")
-            f:Hide()
+            BeaconApplyGlow(frame, false)
+            frame._text:SetText("")
+            frame:Hide()
             _B.iconState[spellId] = false
             changed = true
         end
@@ -412,11 +412,11 @@ _B.frame:SetScript("OnEvent", function(_, e, ident)
             texCache[_B.BOF] = nil
         end
         for _, spellRef in ipairs(_B.ALL) do
-            local f = _B.icons[spellRef]
-            if f and f._icon then
+            local frame = _B.icons[spellRef]
+            if frame and frame._icon then
                 local t = Tex(spellRef)
                 if t then
-                    f._icon:SetTexture(t)
+                    frame._icon:SetTexture(t)
                 end
             end
         end

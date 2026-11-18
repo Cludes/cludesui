@@ -21,7 +21,7 @@ end
 -- RotationSpellsUpdated). A form change resets the manager's last value
 -- before its next read, so a change to no recommendation fires nothing
 -- there: UPDATE_SHAPESHIFT_FORM stays.
-local widget, icon, textOverlay, keybind, gcd, driver
+local widget, iconTex, textOverlay, keybind, gcd, driver
 local isActive, live, watching, preview, inCombat = false, false, false, false, false
 local gcdArmed, gcdStamp = false, nil
 -- Paint stamps: the texture and label on screen (nil / false = repaint).
@@ -109,7 +109,7 @@ local function ArmGCD(on)
     end
     if not gcd then
         gcd = CreateFrame("Cooldown", nil, widget, "CooldownFrameTemplate")
-        gcd:SetAllPoints(icon)
+        gcd:SetAllPoints(iconTex)
         gcd:SetFrameLevel(widget:GetFrameLevel() + 1)
         gcd:EnableMouse(false)
         gcd:SetDrawSwipe(true)
@@ -138,16 +138,16 @@ local function SetWatch(on)
     end
     watching = on
     if on then
-        for idx = 1, #watchEvents do
-            driver:RegisterEvent(watchEvents[idx])
+        for index = 1, #watchEvents do
+            driver:RegisterEvent(watchEvents[index])
         end
         EventRegistry:RegisterCallback(CB_SPELL, Queue, driver)
         EventRegistry:RegisterCallback(CB_ROTATION, Queue, driver)
         mod.UpdateRotationAssistIconKeybind = Queue
         return
     end
-    for idx = 1, #watchEvents do
-        driver:UnregisterEvent(watchEvents[idx])
+    for index = 1, #watchEvents do
+        driver:UnregisterEvent(watchEvents[index])
     end
     EventRegistry:UnregisterCallback(CB_SPELL, driver)
     EventRegistry:UnregisterCallback(CB_ROTATION, driver)
@@ -189,7 +189,7 @@ local function Update()
     end
     if texture ~= paintedTexture then
         paintedTexture = texture
-        icon:SetTexture(texture)
+        iconTex:SetTexture(texture)
     end
     local key = conf.showKeybind and spellId and mod.ResolveCDMKeybind(spellId) or nil
     if key ~= paintedKey then
@@ -302,8 +302,8 @@ local function SetLive(on)
     live = on
     if on then
         inCombat = (InCombatLockdown() or UnitAffectingCombat("player")) and true or false
-        for idx = 1, #edgeEvents do
-            driver:RegisterEvent(edgeEvents[idx])
+        for index = 1, #edgeEvents do
+            driver:RegisterEvent(edgeEvents[index])
         end
         RegisterMover()
         return
@@ -328,9 +328,9 @@ local function CreateIcon()
     widget:SetFrameStrata("MEDIUM")
     widget:Hide()
     local level = widget:GetFrameLevel()
-    icon = widget:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints()
-    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    iconTex = widget:CreateTexture(nil, "ARTWORK")
+    iconTex:SetAllPoints()
+    iconTex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     -- Levels above the icon: GCD swipe +1, the 1px black rim +2 (its pixel
     -- border +3), the keybind badge +4/+5 (StyleCDMKeybind), the label +6.
     local rim = CreateFrame("Frame", nil, widget)

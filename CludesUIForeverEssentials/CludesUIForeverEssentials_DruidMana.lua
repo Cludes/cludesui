@@ -22,7 +22,7 @@ local MANA = Enum.PowerType.Mana
 local RULE = 5
 local LINE_H = 3
 
-local holderFrame, bar, line, textValue
+local holderFrame, barFrame, line, textValue
 local lastMana, ruleEnds
 
 local function Font()
@@ -54,22 +54,22 @@ local function Build()
         return holderFrame
     end
     holderFrame = CreateFrame("Frame", "CludesUIManaBar", UIParent)
-    bar = CreateFrame("StatusBar", nil, holderFrame)
-    bar:SetPoint("TOPLEFT")
-    bar:SetPoint("TOPRIGHT")
-    bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    barFrame = CreateFrame("StatusBar", nil, holderFrame)
+    barFrame:SetPoint("TOPLEFT")
+    barFrame:SetPoint("TOPRIGHT")
+    barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     local c = PowerBarColor and PowerBarColor.MANA or { r = 0, g = 0.55, b = 1 }
-    bar:GetStatusBarTexture():SetVertexColor(c.r, c.g, c.b)
-    CludesUI.Kit.Panel(bar, 0.85)
-    textValue = bar:CreateFontString(nil, "OVERLAY")
+    barFrame:GetStatusBarTexture():SetVertexColor(c.r, c.g, c.b)
+    CludesUI.Kit.Panel(barFrame, 0.85)
+    textValue = barFrame:CreateFontString(nil, "OVERLAY")
     CludesUI.Kit.Font(textValue, 10, "essentials")
     textValue:SetPoint("CENTER")
     line = CreateFrame("StatusBar", nil, holderFrame)
     line:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     line:GetStatusBarTexture():SetVertexColor(1, 1, 1, 0.9)
     line:SetMinMaxValues(0, RULE)
-    line:SetPoint("TOPLEFT", bar, "BOTTOMLEFT", 0, -1)
-    line:SetPoint("TOPRIGHT", bar, "BOTTOMRIGHT", 0, -1)
+    line:SetPoint("TOPLEFT", barFrame, "BOTTOMLEFT", 0, -1)
+    line:SetPoint("TOPRIGHT", barFrame, "BOTTOMRIGHT", 0, -1)
     line:SetHeight(LINE_H)
     line:Hide()
     return holderFrame
@@ -80,7 +80,7 @@ local function Layout()
         return
     end
     holderFrame:SetSize(Get("width"), Get("height") + LINE_H + 1)
-    bar:SetHeight(Get("height"))
+    barFrame:SetHeight(Get("height"))
 end
 
 local function UpdateMana()
@@ -93,8 +93,8 @@ local function UpdateMana()
     end
     holderFrame:Show()
     local current, max = UnitPower("player", MANA), UnitPowerMax("player", MANA)
-    bar:SetMinMaxValues(0, max)
-    bar:SetValue(current)
+    barFrame:SetMinMaxValues(0, max)
+    barFrame:SetValue(current)
     if Secret(current) or Secret(max) then
         textValue:SetText("")
         lastMana = nil

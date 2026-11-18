@@ -95,16 +95,16 @@ local function StripButtonDecorations(button)
                 { region = highlight, alpha = highlight:GetAlpha(), shown = highlight:IsShown() }
         end
         -- Snapshot icon anchors/texcoord/size for RestoreButtonDecorations.
-        local icon = button.icon or button.Icon
-        if icon then
-            local nPts = icon:GetNumPoints()
+        local iconTex = button.icon or button.Icon
+        if iconTex then
+            local nPts = iconTex:GetNumPoints()
             local pts = {}
-            for idx = 1, nPts do
-                pts[idx] = { icon:GetPoint(idx) }
+            for index = 1, nPts do
+                pts[index] = { iconTex:GetPoint(index) }
             end
-            saved.icon = icon
+            saved.icon = iconTex
             saved.iconPoints = pts
-            saved.iconTC = { icon:GetTexCoord() }
+            saved.iconTC = { iconTex:GetTexCoord() }
         end
         saved.btnW, saved.btnH = button:GetWidth(), button:GetHeight()
         flyoutSavedRegions[button] = saved
@@ -187,15 +187,15 @@ end
 -- the flyout's child loop lifts every child above the button, which would bury the icon.
 -- EBS field, not local.
 function SKIN._ShowAddonBtnBox(button)
-    local d = GetFFD(button)
-    if not d.ungroupBg then
+    local skinData = GetFFD(button)
+    if not skinData.ungroupBg then
         local ubg = CreateFrame("Frame", nil, button, "BackdropTemplate")
         ubg:SetBackdrop({ bgFile = "Interface\\ChatFrame\\ChatFrameBackground" })
         ubg:SetBackdropColor(0, 0, 0, 0.8)
         ubg:SetAllPoints(button)
-        d.ungroupBg = ubg
+        skinData.ungroupBg = ubg
     end
-    local ubg = d.ungroupBg
+    local ubg = skinData.ungroupBg
     ubg:SetFrameStrata(button:GetFrameStrata())
     ubg:SetFrameLevel(button:GetFrameLevel() - 1)
     ubg:Show()
@@ -251,8 +251,8 @@ local function LayoutFlyoutButtons()
     -- call, so compacting it in place is safe.
     if InCombatLockdown() then
         local kept = 0
-        for idx = 1, #buttons do
-            local button = buttons[idx]
+        for index = 1, #buttons do
+            local button = buttons[index]
             if button:IsProtected() then
                 QueueApplyAll()
             else
@@ -260,8 +260,8 @@ local function LayoutFlyoutButtons()
                 buttons[kept] = button
             end
         end
-        for idx = #buttons, kept + 1, -1 do
-            buttons[idx] = nil
+        for index = #buttons, kept + 1, -1 do
+            buttons[index] = nil
         end
     end
     local total = #buttons
@@ -285,7 +285,7 @@ local function LayoutFlyoutButtons()
     local ph = margin * 2 + rowList * btnSize + (rowList - 1) * FLYOUT_PADDING
     flyoutPanel:SetSize(pw, ph)
 
-    for idx, button in ipairs(buttons) do
+    for index, button in ipairs(buttons) do
         if not flyoutSavedParents[button] then
             local p1, rel, p2, ox, oy = button:GetPoint(1)
             flyoutSavedParents[button] = {
@@ -299,9 +299,9 @@ local function LayoutFlyoutButtons()
             }
         end
 
-        local col = (idx - 1) % cols
-        local row = math.floor((idx - 1) / cols)
-        local xOff = margin + col * (btnSize + FLYOUT_PADDING)
+        local colour = (index - 1) % cols
+        local row = math.floor((index - 1) / cols)
+        local xOff = margin + colour * (btnSize + FLYOUT_PADDING)
         local yOff = -(margin + row * (btnSize + FLYOUT_PADDING))
 
         button:SetParent(flyoutPanel)
@@ -349,8 +349,8 @@ local function LayoutFlyoutButtons()
                 button:HookScript("OnClick", SKIN._RaiseLateFlyoutChildren)
             end
         end
-        local icon = button.icon or button.Icon
-        if not icon then
+        local iconTex = button.icon or button.Icon
+        if not iconTex then
             for _, regionFrame in ipairs({ button:GetRegions() }) do
                 if
                     regionFrame:IsObjectType("Texture")
@@ -358,21 +358,21 @@ local function LayoutFlyoutButtons()
                     and regionFrame:GetAlpha() > 0
                     and not IsJunkTexture(regionFrame)
                 then
-                    icon = regionFrame
+                    iconTex = regionFrame
                     break
                 end
             end
         end
-        if icon then
+        if iconTex then
             -- Same inset as the row: 3px inside the box, 2px inside the ring
             local inset = boxes and 3 or 2
-            icon:ClearAllPoints()
-            icon:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
-            icon:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
-            pcall(icon.SetTexCoord, icon, 0.05, 0.95, 0.05, 0.95)
+            iconTex:ClearAllPoints()
+            iconTex:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
+            iconTex:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
+            pcall(iconTex.SetTexCoord, iconTex, 0.05, 0.95, 0.05, 0.95)
             -- Foreign icon: no global SetTexCoord snap hook, so disable snap once here.
             if CludesUI.PP then
-                CludesUI.PP.DisablePixelSnap(icon)
+                CludesUI.PP.DisablePixelSnap(iconTex)
             end
         end
         if boxes then
@@ -520,13 +520,13 @@ end
 local function ShowFlyoutPanel()
     EnsureFlyoutPanel()
     -- Re-anchor per Grow Tooltip/Popup on every open (setting or Auto's row position can change). Left/right keep the toggle's bottom edge, up/down its left; 2px gap.
-    local dir = SKIN._Grow.Dir()
+    local direction = SKIN._Grow.Dir()
     flyoutPanel:ClearAllPoints()
-    if dir == "right" then
+    if direction == "right" then
         flyoutPanel:SetPoint("BOTTOMLEFT", flyoutToggle, "BOTTOMRIGHT", 2, 0)
-    elseif dir == "up" then
+    elseif direction == "up" then
         flyoutPanel:SetPoint("BOTTOMLEFT", flyoutToggle, "TOPLEFT", 0, 2)
-    elseif dir == "down" then
+    elseif direction == "down" then
         flyoutPanel:SetPoint("TOPLEFT", flyoutToggle, "BOTTOMLEFT", 0, -2)
     else
         flyoutPanel:SetPoint("BOTTOMRIGHT", flyoutToggle, "BOTTOMLEFT", -2, 0)
@@ -667,8 +667,8 @@ end
 -- Icon Spacing is applied per link at placement. Forever Square's rows hang
 -- from the frame's outer edge and start EBS.FV_ROW_AIR clear of it.
 local function GetRowBase(mode, distance)
-    local d = (distance or 0) + (SKIN._fvSquare and SKIN.FV_ROW_AIR or 0)
-    return d * mode.awayX, d * mode.awayY
+    local skinData = (distance or 0) + (SKIN._fvSquare and SKIN.FV_ROW_AIR or 0)
+    return skinData * mode.awayX, skinData * mode.awayY
 end
 
 -- Scale for the custom tooltips on the unique minimap buttons (vault, friends,

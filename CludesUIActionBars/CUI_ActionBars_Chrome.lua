@@ -175,25 +175,25 @@ function mod.AB_CapsSides(key)
     if not s then
         return false, false
     end
-    local l, r = s.endCapLeft, s.endCapRight
-    if l == nil or r == nil then
+    local l, region = s.endCapLeft, s.endCapRight
+    if l == nil or region == nil then
         local sl, sr = p.endCapSpanLeft, p.endCapSpanRight
         local dl, dr = false, false
         if key == "MainBar" then
-            local d = mod.AB_CapsMainDefault(p)
-            dl, dr = d and sl == nil, d and sr == nil
+            local skinData = mod.AB_CapsMainDefault(p)
+            dl, dr = skinData and sl == nil, skinData and sr == nil
         elseif sl == key or sr == key then
-            local d = mod.AB_CapsMainDefault(p)
-            dl, dr = d and sl == key, d and sr == key
+            local skinData = mod.AB_CapsMainDefault(p)
+            dl, dr = skinData and sl == key, skinData and sr == key
         end
         if l == nil then
             l = dl
         end
-        if r == nil then
-            r = dr
+        if region == nil then
+            region = dr
         end
     end
-    return l and true or false, r and true or false
+    return l and true or false, region and true or false
 end
 
 -- The art the CludesUI style draws on a bar's caps: its End Caps cog
@@ -211,8 +211,8 @@ end
 -- Blizzard Style's and Classic WoW UI's own, and under the CludesUI style
 -- the art the player picks.
 function mod.AB_CapsLook(key)
-    local l, r = mod.AB_CapsSides(key)
-    if not (l or r) then
+    local l, region = mod.AB_CapsSides(key)
+    if not (l or region) then
         return nil
     end
     local style
@@ -224,7 +224,7 @@ function mod.AB_CapsLook(key)
             style = mod.AB_CapsArt(key)
         end
     end
-    return style, l, r
+    return style, l, region
 end
 
 -- A bar's end cap tweaks (the End Caps cog): the size as a fraction of the
@@ -239,7 +239,7 @@ end
 -- Every chrome input of a bar in one string, for LayoutBar's stamp (the
 -- tweaks only while a cap shows; "-" for a bar with no chrome).
 function mod.AB_ChromeStamp(key)
-    local style, l, r = mod.AB_CapsLook(key)
+    local style, l, region = mod.AB_CapsLook(key)
     local fv = mod.AB_ForeverBg(key)
     if not style then
         return fv and "fv" or "-"
@@ -247,7 +247,7 @@ function mod.AB_ChromeStamp(key)
     local _, dx, dy, sc = mod.AB_CapsTweak(key)
     return style
         .. (l and "L" or "")
-        .. (r and "R" or "")
+        .. (region and "R" or "")
         .. (fv and ",fv," or ",")
         .. sc
         .. ","
@@ -338,21 +338,21 @@ function mod.AB_PaintCaps(st, ownerFrame, ox, oy, wid, hgt, btnW, style, multi, 
     local c = style and mod.AB_CAPS[style]
     st.capsOn = (c and (sideL or sideR) and (c.any or mod.AB_AtlasOK(c.art.Alliance[1]))) and true or false
     st.capSideL, st.capSideR = sideL and true or false, sideR and true or false
-    local host = st.capHost
+    local owner = st.capHost
     if not st.capsOn then
-        if host then
-            host:Hide()
+        if owner then
+            owner:Hide()
         end
         return
     end
-    if not host then
+    if not owner then
         -- Through the options page pool: the options preview builds its chrome on a
         -- frame of that pool, which hands it to the preview's next build; on a
         -- live bar this is CreateFrame.
-        host = POOL.CreateFrame("Frame", nil, ownerFrame)
-        st.capL = host:CreateTexture(nil, "OVERLAY", nil, 5)
-        st.capR = host:CreateTexture(nil, "OVERLAY", nil, 5)
-        st.capHost = host
+        owner = POOL.CreateFrame("Frame", nil, ownerFrame)
+        st.capL = owner:CreateTexture(nil, "OVERLAY", nil, 5)
+        st.capR = owner:CreateTexture(nil, "OVERLAY", nil, 5)
+        st.capHost = owner
     end
     local sc, dx, dy = mod.AB_CapsTweak(key)
     local kc = btnW / c.unit
@@ -369,19 +369,19 @@ function mod.AB_PaintCaps(st, ownerFrame, ox, oy, wid, hgt, btnW, style, multi, 
         capR:SetSize(c.w, c.h)
         capL:ClearAllPoints()
         capR:ClearAllPoints()
-        capL:SetPoint(g[1], host, g[2], g[3] - dx, g[4] + dy)
-        capR:SetPoint(g[5], host, g[6], g[7] + dx, g[8] + dy)
+        capL:SetPoint(g[1], owner, g[2], g[3] - dx, g[4] + dy)
+        capR:SetPoint(g[5], owner, g[6], g[7] + dx, g[8] + dy)
         if st.capLook ~= style then
             st.capSet = nil
         end
         st.capLook, st.capGeo, st.capDX, st.capDY = style, g, dx, dy
     end
-    host:SetFrameLevel(ownerFrame:GetFrameLevel() + c.lvl)
-    host:SetScale(kc)
-    host:ClearAllPoints()
-    host:SetPoint("TOPLEFT", ownerFrame, "TOPLEFT", ox / kc, oy / kc)
-    host:SetSize(wid / kc, hgt / kc)
-    host:Show()
+    owner:SetFrameLevel(ownerFrame:GetFrameLevel() + c.lvl)
+    owner:SetScale(kc)
+    owner:ClearAllPoints()
+    owner:SetPoint("TOPLEFT", ownerFrame, "TOPLEFT", ox / kc, oy / kc)
+    owner:SetSize(wid / kc, hgt / kc)
+    owner:Show()
 end
 
 function mod.AB_HideBarChrome(st)
@@ -440,24 +440,24 @@ function mod.AB_PaintForeverChrome(st, ownerFrame, ox, oy, wid, hgt, k, vertical
         num = 0
     end
     local divs = st.divs
-    for idx = 1, num - 1 do
-        local d = divs[idx]
-        if not d then
-            d = {
+    for index = 1, num - 1 do
+        local skinData = divs[index]
+        if not skinData then
+            skinData = {
                 under:CreateTexture(nil, "BACKGROUND", nil, -2),
                 under:CreateTexture(nil, "BACKGROUND", nil, -2),
                 under:CreateTexture(nil, "BACKGROUND", nil, -2),
             }
-            divs[idx] = d
+            divs[index] = skinData
         end
-        local a, b, c = d[1], d[2], d[3]
-        if d.set ~= set then
+        local a, b, c = skinData[1], skinData[2], skinData[3]
+        if skinData.set ~= set then
             a:SetAtlas(set[1])
             b:SetAtlas(set[2])
             c:SetAtlas(set[3])
-            d.set = set
+            skinData.set = set
         end
-        local at = (idx * step + (idx < extra and idx or extra) * onePx) / k
+        local at = (index * step + (index < extra and index or extra) * onePx) / k
         a:ClearAllPoints()
         b:ClearAllPoints()
         c:ClearAllPoints()
@@ -480,11 +480,11 @@ function mod.AB_PaintForeverChrome(st, ownerFrame, ox, oy, wid, hgt, k, vertical
         b:Show()
         c:Show()
     end
-    for idx = (num > 1 and num or 1), #divs do
-        local d = divs[idx]
-        d[1]:Hide()
-        d[2]:Hide()
-        d[3]:Hide()
+    for index = (num > 1 and num or 1), #divs do
+        local skinData = divs[index]
+        skinData[1]:Hide()
+        skinData[2]:Hide()
+        skinData[3]:Hide()
     end
 end
 
@@ -663,14 +663,14 @@ end
 
 -- Edit Mode laid the bar out vertically: no caps (as a vertical action bar).
 function mod.AB_ExtraCapsVertical(key)
-    local f = mod.AB_ExtraCapsBase(key)
-    return f ~= nil and f.isHorizontal == false
+    local frame = mod.AB_ExtraCapsBase(key)
+    return frame ~= nil and frame.isHorizontal == false
 end
 
 function mod.AB_ExtraCapsShown(key)
     local st = mod._abChrome and mod._abChrome[key]
-    local host = st and st.capHost
-    if not host then
+    local owner = st and st.capHost
+    if not owner then
         return
     end
     local bf = _G[BAR_LOOKUP[key].frameName]
@@ -680,7 +680,7 @@ function mod.AB_ExtraCapsShown(key)
         local m = _G.MicroMenu
         enabled = m ~= nil and m:GetParent() == bf and m:IsShown()
     end
-    host:SetShown(enabled and true or false)
+    owner:SetShown(enabled and true or false)
 end
 
 -- After EAB itself hid or showed one of the two Blizzard frames.
@@ -761,15 +761,15 @@ end
 -- Forever hides that arrow, so its bar never collapses.
 function mod.AB_BagEdge(b, hs, highlight, minL, maxR)
     if b and b:IsShown() then
-        local l, r = b:GetLeft(), b:GetRight()
-        if l and r then
+        local l, region = b:GetLeft(), b:GetRight()
+        if l and region then
             local k = b:GetEffectiveScale() / hs
-            l, r = l * k - highlight, r * k - highlight
+            l, region = l * k - highlight, region * k - highlight
             if not minL or l < minL then
                 minL = l
             end
-            if not maxR or r > maxR then
-                maxR = r
+            if not maxR or region > maxR then
+                maxR = region
             end
         end
     end
@@ -947,10 +947,10 @@ function mod.AB_CapsSpanApply()
     if not p then
         return
     end
-    local l, r = p.endCapSpanLeft, p.endCapSpanRight
-    for idx = 1, 2 do
-        local k = (idx == 1) and l or r
-        if k and not (idx == 2 and k == l) then
+    local l, region = p.endCapSpanLeft, p.endCapSpanRight
+    for index = 1, 2 do
+        local k = (index == 1) and l or region
+        if k and not (index == 2 and k == l) then
             if mod.AB_CAP_EXTRAS[k] then
                 mod.AB_ExtraCaps(k)
             else

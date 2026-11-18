@@ -22,9 +22,9 @@ function mod.WhenGroupFinder(func)
         func()
         return
     end
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("ADDON_LOADED")
-    f:SetScript("OnEvent", function(self, _, name)
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("ADDON_LOADED")
+    frame:SetScript("OnEvent", function(self, _, name)
         if name ~= "Blizzard_GroupFinder" then
             return
         end
@@ -63,8 +63,8 @@ local ARROW = "Interface\\AddOns\\" .. FOLDER .. "\\media\\icons\\cui-arrow.png"
 -- our dropdowns can hang outside the menu: clicks in them keep it open
 local pops = {}
 GFNS.ExtraInside = function()
-    for _, f in ipairs(pops) do
-        if f:IsShown() and f:IsMouseOver() then
+    for _, frame in ipairs(pops) do
+        if frame:IsShown() and frame:IsMouseOver() then
             return true
         end
     end
@@ -74,22 +74,22 @@ end
 local MASK = "Interface\\AddOns\\" .. FOLDER .. "\\media\\masks\\rounded.png"
 
 -- an atlas name, or a spell's texture (cropped to lose its built-in border)
-local function PaintIcon(ic, icon)
-    if type(icon) == "number" then
-        ic:SetTexture(icon)
+local function PaintIcon(ic, iconTex)
+    if type(iconTex) == "number" then
+        ic:SetTexture(iconTex)
         ic:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     else
-        ic:SetAtlas(icon)
+        ic:SetAtlas(iconTex)
     end
 end
 
 -- rounded icon after the text
-local function RoundIcon(hostFrame, icon, after)
+local function RoundIcon(hostFrame, iconTex, after)
     local ic = hostFrame:CreateTexture(nil, "OVERLAY")
     ic:SetSize(12, 12)
     ic:SetPoint("LEFT", after, "RIGHT", 4, 0)
-    if icon then
-        PaintIcon(ic, icon)
+    if iconTex then
+        PaintIcon(ic, iconTex)
     end
     local mask = hostFrame:CreateMaskTexture()
     mask:SetTexture(MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
@@ -101,50 +101,50 @@ end
 
 -- skinned dropdown button: label, grey hint, arrow
 local function ArrowButton(ownerFrame, K)
-    local btn = CreateFrame("Button", nil, ownerFrame)
-    btn:SetNormalFontObject("GameFontHighlight")
-    btn:SetText(" ")
-    btn.Arrow = btn:CreateTexture(nil, "OVERLAY")
-    btn.Arrow:SetTexture(ARROW)
-    btn.Arrow:SetSize(13, 13) -- how it looks in the settings
-    btn.Arrow:SetPoint("CENTER", btn, "RIGHT", -10, 0)
-    btn.Label, btn.Hint = TwoPart(btn, K)
-    btn.Label:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
+    local button = CreateFrame("Button", nil, ownerFrame)
+    button:SetNormalFontObject("GameFontHighlight")
+    button:SetText(" ")
+    button.Arrow = button:CreateTexture(nil, "OVERLAY")
+    button.Arrow:SetTexture(ARROW)
+    button.Arrow:SetSize(13, 13) -- how it looks in the settings
+    button.Arrow:SetPoint("CENTER", button, "RIGHT", -10, 0)
+    button.Label, button.Hint = TwoPart(button, K)
+    button.Label:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
     -- icon room, made before the skin so it survives
-    btn.Icon = RoundIcon(btn, nil, btn.Label)
-    btn.IconMask = btn.Icon.mask
-    btn.Icon:Hide()
+    button.Icon = RoundIcon(button, nil, button.Label)
+    button.IconMask = button.Icon.mask
+    button.Icon:Hide()
     local skin = CM._ModuleNS and CM._ModuleNS.CludesUIBlizzardSkin
     local S = skin and skin.WSkin
     if S and S.Button then
-        S.Button(btn, { "Arrow", "Label", "Hint", "Icon", "IconMask" })
+        S.Button(button, { "Arrow", "Label", "Hint", "Icon", "IconMask" })
     else
-        local backdrop = btn:CreateTexture(nil, "BACKGROUND")
+        local backdrop = button:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0.06, 0.06, 0.06, 0.95)
-        CM.MakeBorder(btn, K.ThemeBorder())
-        local highlight = btn:CreateTexture(nil, "HIGHLIGHT")
+        CM.MakeBorder(button, K.ThemeBorder())
+        local highlight = button:CreateTexture(nil, "HIGHLIGHT")
         highlight:SetAllPoints()
         highlight:SetColorTexture(1, 1, 1, 0.1)
     end
-    return btn
+    return button
 end
 
 -- under the button, or above it if it'd hang off the menu
-local function OpenNear(pop, btn, bounds, pad)
+local function OpenNear(pop, button, bounds, pad)
     pad = pad or 0
     pop:ClearAllPoints()
-    local bb, mb = btn:GetBottom(), bounds and bounds:GetBottom()
+    local bb, mb = button:GetBottom(), bounds and bounds:GetBottom()
     if
         bb
         and mb
-        and (bb - 2 - pop:GetHeight()) * btn:GetEffectiveScale() < mb * bounds:GetEffectiveScale()
+        and (bb - 2 - pop:GetHeight()) * button:GetEffectiveScale() < mb * bounds:GetEffectiveScale()
     then
-        pop:SetPoint("BOTTOMLEFT", btn, "TOPLEFT", -pad, 2)
-        pop:SetPoint("BOTTOMRIGHT", btn, "TOPRIGHT", pad, 2)
+        pop:SetPoint("BOTTOMLEFT", button, "TOPLEFT", -pad, 2)
+        pop:SetPoint("BOTTOMRIGHT", button, "TOPRIGHT", pad, 2)
     else
-        pop:SetPoint("TOPLEFT", btn, "BOTTOMLEFT", -pad, -2)
-        pop:SetPoint("TOPRIGHT", btn, "BOTTOMRIGHT", pad, -2)
+        pop:SetPoint("TOPLEFT", button, "BOTTOMLEFT", -pad, -2)
+        pop:SetPoint("TOPRIGHT", button, "BOTTOMRIGHT", pad, -2)
     end
     pop:Show()
 end
@@ -152,8 +152,8 @@ end
 -- arrow button + its list. modes = { label, hint, icon }, get() = index,
 -- set(i) on pick, up opens it above the button. caller places it
 local function Dropdown(ownerFrame, K, modes, Get, Set, up)
-    local btn = ArrowButton(ownerFrame, K)
-    function btn:ShowMode()
+    local button = ArrowButton(ownerFrame, K)
+    function button:ShowMode()
         local mode = modes[Get()] or modes[1]
         self.Label:SetText(mode.button or mode.label)
         if mode.button then
@@ -169,7 +169,7 @@ local function Dropdown(ownerFrame, K, modes, Get, Set, up)
             self.Icon:Hide()
         end
     end
-    btn:ShowMode()
+    button:ShowMode()
 
     local entries = CreateFrame("Frame", nil, K.parent or ownerFrame)
     entries:SetFrameStrata("FULLSCREEN_DIALOG")
@@ -181,11 +181,11 @@ local function Dropdown(ownerFrame, K, modes, Get, Set, up)
     lbg:SetColorTexture(0, 0, 0, 1)
     CM.MakeBorder(entries, K.ThemeBorder())
     entries.items = {}
-    for idx, mode in ipairs(modes) do
+    for index, mode in ipairs(modes) do
         local it = CreateFrame("Button", nil, entries)
         it:SetHeight(K.ITEM_H)
-        it:SetPoint("TOPLEFT", entries, "TOPLEFT", 1, -(2 + (idx - 1) * K.ITEM_H))
-        it:SetPoint("TOPRIGHT", entries, "TOPRIGHT", -1, -(2 + (idx - 1) * K.ITEM_H))
+        it:SetPoint("TOPLEFT", entries, "TOPLEFT", 1, -(2 + (index - 1) * K.ITEM_H))
+        it:SetPoint("TOPRIGHT", entries, "TOPRIGHT", -1, -(2 + (index - 1) * K.ITEM_H))
         it.text, it.hint = TwoPart(it, K)
         it.text:SetText(mode.label)
         it.hint:SetText(mode.hint or "")
@@ -196,23 +196,23 @@ local function Dropdown(ownerFrame, K, modes, Get, Set, up)
         ihl:SetAllPoints()
         ihl:SetColorTexture(1, 1, 1, CM.DD_ITEM_HL_A or 0.08)
         it:SetScript("OnClick", function()
-            Set(idx)
-            btn:ShowMode()
+            Set(index)
+            button:ShowMode()
             entries:Hide()
             K.Refilter()
             K.Paint()
         end)
-        entries.items[idx] = it
+        entries.items[index] = it
     end
     entries:SetHeight(4 + #modes * K.ITEM_H)
-    btn.list = entries
+    button.list = entries
     pops[#pops + 1] = entries
     K.ClickOff(entries, function(self)
-        return self:IsMouseOver() or btn:IsMouseOver()
+        return self:IsMouseOver() or button:IsMouseOver()
     end)
     entries:Hide()
 
-    btn:SetScript("OnClick", function()
+    button:SetScript("OnClick", function()
         if entries:IsShown() then
             entries:Hide()
             return
@@ -220,8 +220,8 @@ local function Dropdown(ownerFrame, K, modes, Get, Set, up)
         K.Untip()
         -- picked one in the accent color
         local ar, ag, ab = K.Accent()
-        for idx, it in ipairs(entries.items) do
-            if idx == Get() then
+        for index, it in ipairs(entries.items) do
+            if index == Get() then
                 it.text:SetTextColor(ar, ag, ab, 1)
             else
                 it.text:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
@@ -229,22 +229,22 @@ local function Dropdown(ownerFrame, K, modes, Get, Set, up)
         end
         entries:ClearAllPoints()
         if up then
-            entries:SetPoint("BOTTOMLEFT", btn, "TOPLEFT", 0, 2)
-            entries:SetPoint("BOTTOMRIGHT", btn, "TOPRIGHT", 0, 2)
+            entries:SetPoint("BOTTOMLEFT", button, "TOPLEFT", 0, 2)
+            entries:SetPoint("BOTTOMRIGHT", button, "TOPRIGHT", 0, 2)
         else
-            entries:SetPoint("TOPLEFT", btn, "BOTTOMLEFT", 0, -2)
-            entries:SetPoint("TOPRIGHT", btn, "BOTTOMRIGHT", 0, -2)
+            entries:SetPoint("TOPLEFT", button, "BOTTOMLEFT", 0, -2)
+            entries:SetPoint("TOPRIGHT", button, "BOTTOMRIGHT", 0, -2)
         end
         entries:Show()
     end)
-    btn:SetScript("OnHide", function()
+    button:SetScript("OnHide", function()
         entries:Hide()
     end)
-    btn:SetScript("OnShow", function(self)
+    button:SetScript("OnShow", function(self)
         self:ShowMode()
     end)
-    btn:SetScript("OnLeave", K.Untip)
-    return btn
+    button:SetScript("OnLeave", K.Untip)
+    return button
 end
 
 local function Divider(m, posY)
@@ -264,16 +264,16 @@ end
 --  specific roles: a dropdown with match exact / any and the role count rows
 -------------------------------------------------------------------------------
 local function Block(m, posY)
-    local f = CreateFrame("Frame", nil, m)
-    f:SetPoint("TOPLEFT", m, "TOPLEFT", 0, -posY)
-    f:SetPoint("TOPRIGHT", m, "TOPRIGHT", 0, -posY)
-    return f
+    local frame = CreateFrame("Frame", nil, m)
+    frame:SetPoint("TOPLEFT", m, "TOPLEFT", 0, -posY)
+    frame:SetPoint("TOPRIGHT", m, "TOPRIGHT", 0, -posY)
+    return frame
 end
 
-local function PlaceBlock(f, m, posY)
-    f:ClearAllPoints()
-    f:SetPoint("TOPLEFT", m, "TOPLEFT", 0, -posY)
-    f:SetPoint("TOPRIGHT", m, "TOPRIGHT", 0, -posY)
+local function PlaceBlock(frame, m, posY)
+    frame:ClearAllPoints()
+    frame:SetPoint("TOPLEFT", m, "TOPLEFT", 0, -posY)
+    frame:SetPoint("TOPRIGHT", m, "TOPRIGHT", 0, -posY)
 end
 
 local MATCH = {
@@ -305,11 +305,11 @@ GFNS.ExtraRoleCounts = function(m, posY, K)
     local sg = Block(m, posY)
     sg:SetHeight(K.ITEM_H)
     m.extraSpecGrp = sg
-    local btn = ArrowButton(sg, K)
-    btn:SetHeight(K.ITEM_H - 2)
-    btn:SetPoint("TOPLEFT", sg, "TOPLEFT", 9, -1)
-    btn:SetPoint("TOPRIGHT", sg, "TOPRIGHT", -9, -1)
-    btn.Label:SetText(CludesUI.L("Specific Roles"))
+    local button = ArrowButton(sg, K)
+    button:SetHeight(K.ITEM_H - 2)
+    button:SetPoint("TOPLEFT", sg, "TOPLEFT", 9, -1)
+    button:SetPoint("TOPRIGHT", sg, "TOPRIGHT", -9, -1)
+    button.Label:SetText(CludesUI.L("Specific Roles"))
 
     local pop = CreateFrame("Frame", nil, K.parent or m)
     pop:SetFrameStrata("FULLSCREEN_DIALOG")
@@ -347,9 +347,9 @@ GFNS.ExtraRoleCounts = function(m, posY, K)
             K.Paint()
         end)
         t.any = mode.any
-        local _, cb = t.label:GetPoint(1)
+        local _, callback = t.label:GetPoint(1)
         t.label:ClearAllPoints()
-        t.label:SetPoint("LEFT", cb, "RIGHT", 7, 0)
+        t.label:SetPoint("LEFT", callback, "RIGHT", 7, 0)
         local hint = t:CreateFontString(nil, "OVERLAY")
         K.Font(hint, K.ITEM_FONT)
         hint:SetPoint("LEFT", t.label, "RIGHT", 3, 0)
@@ -366,19 +366,19 @@ GFNS.ExtraRoleCounts = function(m, posY, K)
     -- count rows go in m.counts so the menu paints them
     m.counts = m.counts or {}
     pop.counts = m.counts
-    for _, r in ipairs(K.COUNT_ROLES) do
-        py = K.AddCountRow(pop, py, r.key, r.label)
+    for _, region in ipairs(K.COUNT_ROLES) do
+        py = K.AddCountRow(pop, py, region.key, region.label)
     end
     pop:SetHeight(py + 2)
     K.ClickOff(pop, function(self)
-        return self:IsMouseOver() or btn:IsMouseOver() or (K.OpListOver and K.OpListOver()) or false
+        return self:IsMouseOver() or button:IsMouseOver() or (K.OpListOver and K.OpListOver()) or false
     end)
     pop:Hide()
 
     -- "(2 active)" so ticked rows aren't forgotten
     local function ShowHint()
         local num = CountsOn(K.Cfg())
-        btn.Hint:SetText(num > 0 and CludesUI.Lf("(%1$d active)", num) or "")
+        button.Hint:SetText(num > 0 and CludesUI.Lf("(%1$d active)", num) or "")
     end
     local sgLevel = sg:GetFrameLevel()
     pop:HookScript("OnShow", function()
@@ -394,15 +394,15 @@ GFNS.ExtraRoleCounts = function(m, posY, K)
         sg:SetFrameLevel(sgLevel)
         ShowHint()
     end)
-    btn:SetScript("OnClick", function()
+    button:SetScript("OnClick", function()
         if pop:IsShown() then
             pop:Hide()
             return
         end
-        OpenNear(pop, btn, m)
+        OpenNear(pop, button, m)
     end)
-    btn:SetScript("OnShow", ShowHint)
-    btn:SetScript("OnHide", function()
+    button:SetScript("OnShow", ShowHint)
+    button:SetScript("OnHide", function()
         pop:Hide()
     end)
     ShowHint()
@@ -426,10 +426,10 @@ local function PlaceStrip(s)
     local maxOff = math.max(0, #s.list - full)
     s.offset = math.max(0, math.min(s.offset, maxOff))
     local shift = -s.offset * per
-    for idx, sq in ipairs(s.squares) do
-        local d = s.list[idx]
-        if d then
-            local posX = (idx - 1) * per + shift
+    for index, sq in ipairs(s.squares) do
+        local skinData = s.list[index]
+        if skinData then
+            local posX = (index - 1) * per + shift
             sq:ClearAllPoints()
             sq:SetPoint("LEFT", s.clip, "LEFT", posX, 0)
             -- hidden off-window so they can't be clicked
@@ -476,7 +476,7 @@ local function StripArrow(s, row, file, step)
 end
 
 -- one strip. key = the square's data field, fill dresses a square
-local function NewStrip(key, fill)
+local function NewStrip(key, fillTex)
     local s = { offset = 0 }
     return function(entries, squares, Make, size, after, show, cols, slots, row, gap, paint)
         s.paint = paint
@@ -532,22 +532,22 @@ local function NewStrip(key, fill)
             clipW = room + 4 - 2 * (ARROW_W + gap)
         end
         s.clip:Show()
-        for idx, d in ipairs(entries) do
-            local sq = squares[idx]
+        for index, skinData in ipairs(entries) do
+            local sq = squares[index]
             if not sq then
                 sq = Make()
-                squares[idx] = sq
+                squares[index] = sq
             end
             if sq:GetParent() ~= s.clip then
                 sq:SetParent(s.clip)
             end
-            sq[key] = d
-            fill(sq, d)
+            sq[key] = skinData
+            fillTex(sq, skinData)
             sq:SetSize(size, size)
         end
-        for idx = #entries + 1, #squares do
-            squares[idx][key] = nil
-            squares[idx]:Hide()
+        for index = #entries + 1, #squares do
+            squares[index][key] = nil
+            squares[index]:Hide()
         end
         s.list, s.squares, s.size, s.gap, s.clipW = entries, squares, size, gap, clipW
         PlaceStrip(s)
@@ -555,13 +555,13 @@ local function NewStrip(key, fill)
     end
 end
 
-GFNS.ExtraBossStrip = NewStrip("boss", function(sq, d)
-    sq.icon:SetTexture(d.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
+GFNS.ExtraBossStrip = NewStrip("boss", function(sq, skinData)
+    sq.icon:SetTexture(skinData.icon or "Interface\\Icons\\INV_Misc_QuestionMark")
 end)
 -- delves: the module dresses its squares
-GFNS.ExtraDelveStrip = NewStrip("delve", function(sq, d)
+GFNS.ExtraDelveStrip = NewStrip("delve", function(sq, skinData)
     if GFNS.GFDressDelve then
-        GFNS.GFDressDelve(sq, d)
+        GFNS.GFDressDelve(sq, skinData)
     end
 end)
 
@@ -699,7 +699,7 @@ GFNS.ExtraClassRows = function(m, posY, K)
         local key, pick = Keys(row, raids)
         local has, missing = row.has, row.missing
         local hasBtn, missingBtn
-        local icon = row.spell and C_Spell.GetSpellTexture(row.spell)
+        local iconTex = row.spell and C_Spell.GetSpellTexture(row.spell)
         if inRoles then
             local name, file = MyClass()
             local cls = (name and file) and K.ClassLine(file, name) or name or CludesUI.L("Class")
@@ -707,33 +707,33 @@ GFNS.ExtraClassRows = function(m, posY, K)
             -- full alpha so the class color shows, has / no greyed by hand
             hasBtn, missingBtn =
                 DIM_HEX .. CludesUI.L("Has") .. "|r " .. cls, DIM_HEX .. CludesUI.L("No") .. "|r " .. cls
-            icon = file and ("classicon-" .. file:lower())
+            iconTex = file and ("classicon-" .. file:lower())
         end
-        local item = K.MenuItem(inRoles and roleG or miscG, inRoles and ry or my, "", function()
+        local entry = K.MenuItem(inRoles and roleG or miscG, inRoles and ry or my, "", function()
             local c = K.Cfg()
             c[key] = (not c[key]) or nil
             K.Refilter()
             K.Paint()
         end)
-        m.items["flag_" .. key] = item
-        item.label:Hide()
-        local btn = Dropdown(item, K, {
-            { label = has, button = hasBtn, icon = icon },
-            { label = missing, button = missingBtn, icon = icon },
+        m.items["flag_" .. key] = entry
+        entry.label:Hide()
+        local button = Dropdown(entry, K, {
+            { label = has, button = hasBtn, icon = iconTex },
+            { label = missing, button = missingBtn, icon = iconTex },
         }, function()
             return Missing(K.Cfg(), row, raids) and 2 or 1
-        end, function(idx)
+        end, function(index)
             -- picking turns the class row on; lust / brez leave the box alone
             local c = K.Cfg()
-            c[pick] = (idx == 2)
+            c[pick] = (index == 2)
             if inRoles then
                 c[key] = true
             end
         end)
-        btn:SetHeight(K.ITEM_H - 2)
-        btn:SetPoint("LEFT", item, "LEFT", 8 + K.CHECK_SZ + 7, 0)
-        btn:SetPoint("RIGHT", item, "RIGHT", -8, 0)
-        btn:SetScript("OnEnter", ShowTip)
+        button:SetHeight(K.ITEM_H - 2)
+        button:SetPoint("LEFT", entry, "LEFT", 8 + K.CHECK_SZ + 7, 0)
+        button:SetPoint("RIGHT", entry, "RIGHT", -8, 0)
+        button:SetScript("OnEnter", ShowTip)
         if inRoles then
             ry = ry + K.ITEM_H
         else
@@ -757,8 +757,8 @@ GFNS.ExtraClassKeep = function(ident, details, c, raids)
     end
     local _, mine = MyClass()
     local have = { hasLust = false, hasBrez = false, extraMyClass = false }
-    for idx = 1, num do
-        local p = C_LFGList.GetSearchResultPlayerInfo(ident, idx)
+    for index = 1, num do
+        local p = C_LFGList.GetSearchResultPlayerInfo(ident, index)
         if p and (Secret(p) or (canaccesstable and not canaccesstable(p))) then
             p = nil
         end
@@ -814,9 +814,9 @@ function mod.RegionTagOf(resultID)
     if not TagsOn() then
         return nil
     end
-    local d = mod.RegionInfo(RegionOf(resultID))
-    if d then
-        return d.tag, d.r, d.g, d.b, d.flag
+    local skinData = mod.RegionInfo(RegionOf(resultID))
+    if skinData then
+        return skinData.tag, skinData.r, skinData.g, skinData.b, skinData.flag
     end
 end
 
@@ -829,9 +829,9 @@ function mod.RegionTagOfName(name)
     if not realm or Secret(realm) then
         return nil
     end
-    local d = mod.RegionInfo(mod.RegionOfRealm(realm))
-    if d then
-        return d.tag, d.r, d.g, d.b, d.flag
+    local skinData = mod.RegionInfo(mod.RegionOfRealm(realm))
+    if skinData then
+        return skinData.tag, skinData.r, skinData.g, skinData.b, skinData.flag
     end
 end
 
@@ -841,14 +841,14 @@ local function Parts(record)
     if p then
         return p
     end
-    local f = CreateFrame("Frame", nil, record)
-    f:SetAllPoints(record)
-    f:SetFrameLevel(record:GetFrameLevel() + 4)
-    f:EnableMouse(false)
+    local frame = CreateFrame("Frame", nil, record)
+    frame:SetAllPoints(record)
+    frame:SetFrameLevel(record:GetFrameLevel() + 4)
+    frame:EnableMouse(false)
     p = {
-        sep = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall"),
-        tag = f:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall"),
-        flag = f:CreateTexture(nil, "OVERLAY"),
+        sep = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall"),
+        tag = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall"),
+        flag = frame:CreateTexture(nil, "OVERLAY"),
     }
     p.sep:SetText("||") -- escaped pipe draws one |
     p.sep:SetTextColor(0.35, 0.35, 0.35, 1)
@@ -973,8 +973,8 @@ local function TagEntry(record)
     if not (TagsOn() and record.resultID) then
         return
     end
-    local d = mod.RegionInfo(RegionOf(record.resultID))
-    if not d then
+    local skinData = mod.RegionInfo(RegionOf(record.resultID))
+    if not skinData then
         return
     end
     local play = record.Playstyle
@@ -1000,10 +1000,10 @@ local function TagEntry(record)
     else
         p.tag:SetPoint("LEFT", play, "LEFT", 0, 0)
     end
-    p.tag:SetText(d.tag)
-    p.tag:SetTextColor(d.r, d.g, d.b, 1)
+    p.tag:SetText(skinData.tag)
+    p.tag:SetTextColor(skinData.r, skinData.g, skinData.b, 1)
     p.tag:Show()
-    local art = d.flag
+    local art = skinData.flag
     if art then
         p.flag:SetTexture(art)
         p.flag:SetSize(math.floor(size * 4 / 3 + 0.5), size)
@@ -1045,37 +1045,37 @@ mod.SORT_MODES = {
 }
 
 -- a menu row: label + dropdown
-local function ChoiceItem(col, posY, specInfo, G, up)
-    local item = CreateFrame("Frame", nil, col)
-    item:SetHeight(G.ITEM_H)
-    item:SetPoint("TOPLEFT", col, "TOPLEFT", 1, -posY)
-    item:SetPoint("TOPRIGHT", col, "TOPRIGHT", -1, -posY)
-    item.label = item:CreateFontString(nil, "OVERLAY")
-    G.Font(item.label, G.ITEM_FONT)
-    item.label:SetPoint("LEFT", item, "LEFT", 9, 0)
-    item.label:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
-    item.label:SetText(specInfo.label)
+local function ChoiceItem(colour, posY, specInfo, G, up)
+    local entry = CreateFrame("Frame", nil, colour)
+    entry:SetHeight(G.ITEM_H)
+    entry:SetPoint("TOPLEFT", colour, "TOPLEFT", 1, -posY)
+    entry:SetPoint("TOPRIGHT", colour, "TOPRIGHT", -1, -posY)
+    entry.label = entry:CreateFontString(nil, "OVERLAY")
+    G.Font(entry.label, G.ITEM_FONT)
+    entry.label:SetPoint("LEFT", entry, "LEFT", 9, 0)
+    entry.label:SetTextColor(CM.TEXT_DIM_R, CM.TEXT_DIM_G, CM.TEXT_DIM_B, CM.TEXT_DIM_A)
+    entry.label:SetText(specInfo.label)
     local modes = specInfo.choice
     local function Get()
         local val = G.Cfg()[specInfo.key]
-        for idx, mode in ipairs(modes) do
+        for index, mode in ipairs(modes) do
             if mode.key == val then
-                return idx
+                return index
             end
         end
         return 1
     end
-    local btn = Dropdown(item, G, modes, Get, function(idx)
-        G.Cfg()[specInfo.key] = modes[idx].key
+    local button = Dropdown(entry, G, modes, Get, function(index)
+        G.Cfg()[specInfo.key] = modes[index].key
     end, up)
-    btn:SetHeight(G.ITEM_H - 2)
-    btn:SetPoint("LEFT", item.label, "RIGHT", 10, 0)
-    btn:SetPoint("RIGHT", item, "RIGHT", -8, 0)
-    item.btn = btn
-    function item:Paint()
+    button:SetHeight(G.ITEM_H - 2)
+    button:SetPoint("LEFT", entry.label, "RIGHT", 10, 0)
+    button:SetPoint("RIGHT", entry, "RIGHT", -8, 0)
+    entry.btn = button
+    function entry:Paint()
         self.btn:ShowMode()
     end
-    return item
+    return entry
 end
 
 -------------------------------------------------------------------------------
@@ -1085,8 +1085,8 @@ local ROLE_DIR = "Interface\\AddOns\\CludesUIRaidFrames\\media\\"
 -- same art for the results list's open slots
 local ROLE_FILE = { TANK = "tank.png", HEALER = "healer.png", DAMAGER = "dps.png" }
 function mod.RoleIconTex(role)
-    local f = ROLE_FILE[role]
-    return f and (ROLE_DIR .. f)
+    local frame = ROLE_FILE[role]
+    return frame and (ROLE_DIR .. frame)
 end
 local ICONS = {
     role_needsTank = { ROLE_DIR .. "tank.png", 12, 12 },
@@ -1094,8 +1094,8 @@ local ICONS = {
     role_needsDamage = { ROLE_DIR .. "dps.png", 12, 12 },
 }
 -- the region filter's flags, whichever region you're in
-for _, d in ipairs(mod.RegionList() or {}) do
-    ICONS["region_" .. d.key] = { d.flag, 13, 10 }
+for _, skinData in ipairs(mod.RegionList() or {}) do
+    ICONS["region_" .. skinData.key] = { skinData.flag, 13, 10 }
 end
 
 -- misc in two columns, lined up with the side panel
@@ -1149,18 +1149,18 @@ GFNS.ExtraDecorateMenu = function(dropMenu, side)
         local itemList = ownerFrame and ownerFrame.items
         if itemList then
             for key, art in pairs(ICONS) do
-                local item = itemList[key]
-                if item and item.label and not item.extraIcon then
-                    local _, cb = item.label:GetPoint(1)
-                    if cb then
-                        local texture = item:CreateTexture(nil, "OVERLAY")
+                local entry = itemList[key]
+                if entry and entry.label and not entry.extraIcon then
+                    local _, callback = entry.label:GetPoint(1)
+                    if callback then
+                        local texture = entry:CreateTexture(nil, "OVERLAY")
                         texture:SetTexture(art[1])
                         texture:SetSize(art[2], art[3])
-                        texture:SetPoint("LEFT", cb, "RIGHT", 6, 0)
-                        item.label:ClearAllPoints()
-                        item.label:SetPoint("LEFT", texture, "RIGHT", 5, 0)
-                        item.label:SetPoint("RIGHT", item, "RIGHT", -4, 0)
-                        item.extraIcon = texture
+                        texture:SetPoint("LEFT", callback, "RIGHT", 6, 0)
+                        entry.label:ClearAllPoints()
+                        entry.label:SetPoint("LEFT", texture, "RIGHT", 5, 0)
+                        entry.label:SetPoint("RIGHT", entry, "RIGHT", -4, 0)
+                        entry.extraIcon = texture
                     end
                 end
             end

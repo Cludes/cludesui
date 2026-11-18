@@ -308,11 +308,11 @@ function REMIND:OnEnable()
         for _, button in pairs(iconPool) do
             button:SetFrameStrata(strata)
         end
-        for _, f in pairs(combatIconPool) do
-            f:SetFrameStrata(strata)
+        for _, frame in pairs(combatIconPool) do
+            frame:SetFrameStrata(strata)
         end
-        for _, f in pairs(receiverIconPool) do
-            f:SetFrameStrata(strata)
+        for _, frame in pairs(receiverIconPool) do
+            frame:SetFrameStrata(strata)
         end
         if REMIND._providerCastBtn and not InCombatLockdown() then
             REMIND._providerCastBtn:SetFrameStrata(strata)
@@ -504,11 +504,11 @@ function REMIND:OnEnable()
     -- Pre-build unit token strings to avoid per-poll allocations
     local _raidTokens = {}
     local _partyTokens = {}
-    for idx = 1, 40 do
-        _raidTokens[idx] = "raid" .. idx
+    for index = 1, 40 do
+        _raidTokens[index] = "raid" .. index
     end
-    for idx = 1, 4 do
-        _partyTokens[idx] = "party" .. idx
+    for index = 1, 4 do
+        _partyTokens[index] = "party" .. index
     end
 
     local rangeFrame = CreateFrame("Frame")
@@ -532,14 +532,14 @@ function REMIND:OnEnable()
     local function _checkAllRangeUnits()
         local changed = false
         if IsInRaid() then
-            for idx = 1, GetNumGroupMembers() do
-                if _checkUnit(_raidTokens[idx]) then
+            for index = 1, GetNumGroupMembers() do
+                if _checkUnit(_raidTokens[index]) then
                     changed = true
                 end
             end
         elseif IsInGroup() then
-            for idx = 1, GetNumSubgroupMembers() do
-                if _checkUnit(_partyTokens[idx]) then
+            for index = 1, GetNumSubgroupMembers() do
+                if _checkUnit(_partyTokens[index]) then
                     changed = true
                 end
             end
@@ -581,12 +581,12 @@ function REMIND:OnEnable()
         _clearRangeTrackers()
         wipe(_lastRangeSet)
         if IsInRaid() then
-            for idx = 1, GetNumGroupMembers() do
-                _trackRangeUnit(_raidTokens[idx])
+            for index = 1, GetNumGroupMembers() do
+                _trackRangeUnit(_raidTokens[index])
             end
         elseif IsInGroup() then
-            for idx = 1, GetNumSubgroupMembers() do
-                _trackRangeUnit(_partyTokens[idx])
+            for index = 1, GetNumSubgroupMembers() do
+                _trackRangeUnit(_partyTokens[index])
             end
         end
         if _checkAllRangeUnits() then
@@ -883,10 +883,10 @@ end
 
 -- Item-use tracking serves the consumable pickers; WoW Forever has no consumable reminders.
 if not REMIND.FOREVER then
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("BAG_UPDATE_DELAYED")
-    f:RegisterEvent("PLAYER_LOGIN")
-    f:SetScript("OnEvent", function(_, ev)
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("BAG_UPDATE_DELAYED")
+    frame:RegisterEvent("PLAYER_LOGIN")
+    frame:SetScript("OnEvent", function(_, ev)
         if ev == "PLAYER_LOGIN" then
             C_Timer.After(1, function()
                 RebuildBagCounts()

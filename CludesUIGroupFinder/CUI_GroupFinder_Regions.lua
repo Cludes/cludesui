@@ -252,13 +252,13 @@ local function Set()
     set = SETS[mod.RegionID()] or false
     if set then
         byKey, realmOf = {}, {}
-        for _, d in ipairs(set.list) do
-            d.flag = FLAG_DIR .. d.key .. ".png"
-            byKey[d.key] = d
+        for _, skinData in ipairs(set.list) do
+            skinData.flag = FLAG_DIR .. skinData.key .. ".png"
+            byKey[skinData.key] = skinData
         end
         for k, realms in pairs(set.realms) do
-            for _, r in ipairs(realms) do
-                realmOf[r] = k
+            for _, region in ipairs(realms) do
+                realmOf[region] = k
             end
         end
     end

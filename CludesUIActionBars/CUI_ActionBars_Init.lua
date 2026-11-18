@@ -48,8 +48,8 @@ function ABAR:OnInitialize()
     -- Mark whether we need to capture Blizzard layout on first install; the capture
     -- itself is deferred to PLAYER_ENTERING_WORLD, when Edit Mode has fully applied bar
     -- positions/sizes. Per-install flag on the SV root, not per-profile.
-    local sv = self.db.sv
-    self._needsCapture = not sv._capturedOnce_EAB
+    local savedVars = self.db.sv
+    self._needsCapture = not savedVars._capturedOnce_EAB
 
     -- Expose apply hook for PP scale change re-apply
     _G._CUAB_RecalcFlyouts = function()
@@ -133,10 +133,10 @@ function ABAR:OnInitialize()
                 "Professions-Icon-Quality-Tier" .. q .. "-Small",
                 "Professions-Icon-Quality-Tier" .. q,
             }
-            for idx = 1, #nameList do
-                if probe and probe(nameList[idx]) then
-                    _rankAtlas[q] = nameList[idx]
-                    return nameList[idx]
+            for index = 1, #nameList do
+                if probe and probe(nameList[index]) then
+                    _rankAtlas[q] = nameList[index]
+                    return nameList[index]
                 end
             end
             _rankAtlas[q] = false
@@ -327,12 +327,12 @@ function ABAR:OnInitialize()
     end
 
     SLASH_CLUDESACTIONBARS1 = "/cab"
-    SlashCmdList["CLUDESACTIONBARS"] = function(msg)
+    SlashCmdList["CLUDESACTIONBARS"] = function(message)
         CludesUI:ShowModule("CludesUIActionBars")
     end
 
     SLASH_EABQUICKKEYBIND1 = "/kb"
-    SlashCmdList["EABQUICKKEYBIND"] = function(msg)
+    SlashCmdList["EABQUICKKEYBIND"] = function(message)
         if InCombatLockdown() then
             return
         end
@@ -465,11 +465,11 @@ function ABAR:OnFirstLogin()
     -- them. Only while the containers and the bar sit where Edit Mode puts them.
     if CludesUI.IS_FOREVER and self.db.profile.useBlizzardDataBars then
         local mainC, secC = _G.MainStatusTrackingBarContainer, _G.SecondaryStatusTrackingBarContainer
-        local function AtDefault(f)
-            if not f.IsInDefaultPosition then
+        local function AtDefault(frame)
+            if not frame.IsInDefaultPosition then
                 return true
             end
-            local success, val = pcall(f.IsInDefaultPosition, f)
+            local success, val = pcall(frame.IsInDefaultPosition, frame)
             return not success or val ~= false
         end
         if mainC and secC and AtDefault(mainC) and AtDefault(secC) then

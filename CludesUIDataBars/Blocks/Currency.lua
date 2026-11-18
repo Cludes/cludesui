@@ -39,7 +39,7 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
     button:SetAllPoints()
     button:EnableMouse(true)
     button:RegisterForClicks("AnyUp")
-    local icon = button:CreateTexture(nil, "OVERLAY")
+    local iconTex = button:CreateTexture(nil, "OVERLAY")
     local label = button:CreateFontString(nil, "OVERLAY")
     K.AttachTextOffset(inst, label)
 
@@ -49,9 +49,9 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
         if not (id and C_CurrencyInfo and C_CurrencyInfo.GetCurrencyInfo) then
             return nil
         end
-        local d = C_CurrencyInfo.GetCurrencyInfo(id)
-        if d and d.discovered ~= false then
-            return d
+        local skinData = C_CurrencyInfo.GetCurrencyInfo(id)
+        if skinData and skinData.discovered ~= false then
+            return skinData
         end
     end
 
@@ -62,17 +62,17 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
         if not Settings().currencyId then
             label:SetTextColor(0.55, 0.55, 0.55, 1)
         elseif hovered then
-            local r, g, b = mod.GetAccent()
-            label:SetTextColor(r, g, b, 1)
+            local region, g, b = mod.GetAccent()
+            label:SetTextColor(region, g, b, 1)
         else
-            local r, g, b = K.BlockColorOf(blockCfg)
-            label:SetTextColor(r, g, b, 1)
+            local region, g, b = K.BlockColorOf(blockCfg)
+            label:SetTextColor(region, g, b, 1)
         end
     end
 
     function inst:Refresh()
         local s = Settings()
-        local d = Details()
+        local skinData = Details()
         local barH = barCtx.GetThickness()
         local fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
         local text
@@ -80,23 +80,23 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
             -- Bar text is set directly, not through the tooltip helpers that
             -- translate, so it is translated here.
             text = CludesUI.L(L["SELECT_CURRENCY"])
-        elseif d then
-            text = Number(d.quantity)
+        elseif skinData then
+            text = Number(skinData.quantity)
         else
             text = "-"
         end
 
         local iconSize = 0
-        if s.showIcon ~= false and d and d.iconFileID then
+        if s.showIcon ~= false and skinData and skinData.iconFileID then
             iconSize = fontSize + 2
-            icon:SetTexture(d.iconFileID)
-            icon:SetTexCoord(TRIM, 1 - TRIM, TRIM, 1 - TRIM)
-            icon:Show()
+            iconTex:SetTexture(skinData.iconFileID)
+            iconTex:SetTexCoord(TRIM, 1 - TRIM, TRIM, 1 - TRIM)
+            iconTex:Show()
         else
-            icon:Hide()
+            iconTex:Hide()
         end
-        local r, g, b = K.IconColorOf(blockCfg)
-        icon:SetVertexColor(r, g, b, 1)
+        local region, g, b = K.IconColorOf(blockCfg)
+        iconTex:SetVertexColor(region, g, b, 1)
         mod.SetFont(label, fontSize, barCtx.cfg)
 
         if barCtx.IsVertical() then
@@ -105,15 +105,15 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
             label:SetText(text)
             local height = 8
             if iconSize > 0 then
-                icon:SetSize(iconSize, iconSize)
-                icon:ClearAllPoints()
-                icon:SetPoint("TOP", button, "TOP", 0, -4)
+                iconTex:SetSize(iconSize, iconSize)
+                iconTex:ClearAllPoints()
+                iconTex:SetPoint("TOP", button, "TOP", 0, -4)
                 height = height + iconSize + 2
             end
             mod.SetWrappedText(label, max(24, slotW - 8), "CENTER")
             label:ClearAllPoints()
             if iconSize > 0 then
-                label:SetPoint("TOP", icon, "BOTTOM", 0, -2)
+                label:SetPoint("TOP", iconTex, "BOTTOM", 0, -2)
             else
                 label:SetPoint("TOP", button, "TOP", 0, -4)
             end
@@ -127,9 +127,9 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
             label:SetText(text)
             local x = 0
             if iconSize > 0 then
-                icon:SetSize(iconSize, iconSize)
-                icon:ClearAllPoints()
-                icon:SetPoint("LEFT", button, "LEFT", 0, 0)
+                iconTex:SetSize(iconSize, iconSize)
+                iconTex:ClearAllPoints()
+                iconTex:SetPoint("LEFT", button, "LEFT", 0, 0)
                 x = iconSize + K.ICON_GAP
             end
             label:ClearAllPoints()
@@ -155,26 +155,26 @@ mod.BlockFactories.currency = function(blockCfg, slot, contentFrame, barCtx)
             mod.Tip_Show()
             return
         end
-        local d = C_CurrencyInfo
+        local skinData = C_CurrencyInfo
             and C_CurrencyInfo.GetCurrencyInfo
             and C_CurrencyInfo.GetCurrencyInfo(s.currencyId)
-        if not d then
+        if not skinData then
             return
         end
         mod.Tip_Begin(button)
-        local q = d.quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[d.quality]
-        mod.Tip_AddLine(d.name or "?", q and q.r or 1, q and q.g or 1, q and q.b or 1)
+        local q = skinData.quality and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[skinData.quality]
+        mod.Tip_AddLine(skinData.name or "?", q and q.r or 1, q and q.g or 1, q and q.b or 1)
         -- Some descriptions run to paragraphs; the setting drops just the text.
-        if s.showDescription ~= false and d.description and d.description ~= "" then
+        if s.showDescription ~= false and skinData.description and skinData.description ~= "" then
             mod.Tip_AddLine(" ")
-            mod.Tip_AddWrappedLine(d.description, 280, 0.8, 0.8, 0.8)
+            mod.Tip_AddWrappedLine(skinData.description, 280, 0.8, 0.8, 0.8)
         end
         mod.Tip_AddLine(" ")
-        local total = Number(d.quantity)
-        local cap = d.maxQuantity
-        if cap and cap > 0 and d.useTotalEarnedForMaxQty then
+        local total = Number(skinData.quantity)
+        local cap = skinData.maxQuantity
+        if cap and cap > 0 and skinData.useTotalEarnedForMaxQty then
             -- A season cap (crests) limits what was EARNED, not what is held.
-            total = total .. " |cffaaaaaa(" .. Number(d.totalEarned) .. "/" .. Number(cap) .. ")|r"
+            total = total .. " |cffaaaaaa(" .. Number(skinData.totalEarned) .. "/" .. Number(cap) .. ")|r"
         elseif cap and cap > 0 then
             total = total .. " / " .. Number(cap)
         end

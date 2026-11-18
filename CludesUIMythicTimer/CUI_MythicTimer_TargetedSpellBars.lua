@@ -542,16 +542,16 @@ local function ApplyCastColor(e, conf, offCd)
         impScratch.b = ev(imp, ic.b, base.b)
         base = impScratch
     end
-    local cr, cg, cb = base.r, base.g, base.b
+    local cr, cg, callback = base.r, base.g, base.b
     local ready = conf.interruptReady or { r = 0.92, g = 0.35, b = 0.20 }
     if type(offCd) ~= "nil" and ev then
         cr = ev(offCd, base.r, ready.r)
         cg = ev(offCd, base.g, ready.g)
-        cb = ev(offCd, base.b, ready.b)
+        callback = ev(offCd, base.b, ready.b)
     elseif ComputeCastBarTint then
-        cr, cg, cb = ComputeCastBarTint(ready, base)
+        cr, cg, callback = ComputeCastBarTint(ready, base)
     end
-    holderFrame.sb:GetStatusBarTexture():SetVertexColor(cr, cg, cb)
+    holderFrame.sb:GetStatusBarTexture():SetVertexColor(cr, cg, callback)
 end
 
 --------------------------------------------------------------------------------
@@ -632,19 +632,19 @@ end
 local function GetDurationObj(e)
     local kind = e.durKind
     if kind == "cast" then
-        local d = UnitCastingDuration(e.unit)
-        if d then
-            return d
+        local skinData = UnitCastingDuration(e.unit)
+        if skinData then
+            return skinData
         end
     elseif kind == "empowered" then
-        local d = UnitEmpoweredChannelDuration and UnitEmpoweredChannelDuration(e.unit, true)
-        if d then
-            return d
+        local skinData = UnitEmpoweredChannelDuration and UnitEmpoweredChannelDuration(e.unit, true)
+        if skinData then
+            return skinData
         end
     elseif kind == "channel" then
-        local d = UnitChannelDuration and UnitChannelDuration(e.unit)
-        if d then
-            return d
+        local skinData = UnitChannelDuration and UnitChannelDuration(e.unit)
+        if skinData then
+            return skinData
         end
     end
     return UnitCastingDuration(e.unit)
@@ -792,9 +792,9 @@ local function PaintTarget(e, conf)
         return
     end
     if conf.targetClassColor ~= false and type(spellTargetClass) ~= "nil" and C_ClassColor then
-        local col = C_ClassColor.GetClassColor(spellTargetClass)
-        if col then
-            fontStr:SetTextColor(col:GetRGB())
+        local colour = C_ClassColor.GetClassColor(spellTargetClass)
+        if colour then
+            fontStr:SetTextColor(colour:GetRGB())
         else
             fontStr:SetTextColor(1, 1, 1, 1)
         end
@@ -1281,9 +1281,9 @@ local function PaintSampleRow(e, conf, sample, slot, anchor)
         if conf.targetClassColor ~= false and C_ClassColor and UnitClassBase then
             -- Class token only: UnitClassBase also returns the class ID, which
             -- would land in GetClassColor's optional tint color argument.
-            local col = C_ClassColor.GetClassColor((UnitClassBase("player")))
-            if col then
-                e.bar.target:SetTextColor(col:GetRGB())
+            local colour = C_ClassColor.GetClassColor((UnitClassBase("player")))
+            if colour then
+                e.bar.target:SetTextColor(colour:GetRGB())
             end
         elseif tc then
             e.bar.target:SetTextColor(tc.r, tc.g, tc.b, 1)
@@ -1370,18 +1370,18 @@ local sampleEntry = { unit = "sample", preview = true }
 
 -- Hangs the sample at the host's TOPLEFT and returns its size (width, height
 -- in the host's units); nil before the settings exist.
-function mod.TSB_PaintSample(host)
+function mod.TSB_PaintSample(owner)
     local conf = Cfg()
     if not conf then
         return nil
     end
     if not sampleBar then
-        sampleBar = BuildBar(host)
+        sampleBar = BuildBar(owner)
     end
     sampleEntry.bar = sampleBar
-    sampleBar:SetParent(host)
+    sampleBar:SetParent(owner)
     sampleBar._styleGen = nil
-    PaintSampleRow(sampleEntry, conf, PREVIEW_ROWS[1], 1, host)
+    PaintSampleRow(sampleEntry, conf, PREVIEW_ROWS[1], 1, owner)
     return conf.width or 240, conf.height or 20
 end
 

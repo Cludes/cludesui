@@ -324,7 +324,7 @@ mod.RegisterDMUnlock = function()
                     return nil
                 end
                 local color = conf.windowBorderColor
-                local l, r, t, b = CUI.BorderReach(
+                local l, region, t, b = CUI.BorderReach(
                     size,
                     texture,
                     nil,
@@ -342,13 +342,13 @@ mod.RegisterDMUnlock = function()
                 end
                 local ox = tonumber(conf.windowBorderOffsetX) or 0
                 local oy = tonumber(conf.windowBorderOffsetY) or 0
-                l, r, b = l + ox, r + ox, b + oy
+                l, region, b = l + ox, region + ox, b + oy
                 if conf.windowBorderIncludeHeader ~= false then
                     t = t + oy
                 else
                     t = t + oy - GetHeaderH()
                 end
-                local pw = (l > 0 and l or 0) + (r > 0 and r or 0)
+                local pw = (l > 0 and l or 0) + (region > 0 and region or 0)
                 local ph = (t > 0 and t or 0) + (b > 0 and b or 0)
                 if pw <= 0 and ph <= 0 then
                     return nil
@@ -533,10 +533,10 @@ end
 local function GetCurrentViewDuration()
     if _inCombat or _needsFinalRefresh then
         if C_DamageMeter and C_DamageMeter.GetSessionDurationSeconds then
-            local d = C_DamageMeter.GetSessionDurationSeconds(Enum.DamageMeterSessionType.Current)
-            if type(d) == "number" and not (issecretvalue and issecretvalue(d)) then
-                _curViewFrozenDur = d -- keep the pin warm with the last live value
-                return d
+            local skinData = C_DamageMeter.GetSessionDurationSeconds(Enum.DamageMeterSessionType.Current)
+            if type(skinData) == "number" and not (issecretvalue and issecretvalue(skinData)) then
+                _curViewFrozenDur = skinData -- keep the pin warm with the last live value
+                return skinData
             end
         end
         return _curViewFrozenDur or 0
@@ -546,9 +546,9 @@ local function GetCurrentViewDuration()
         return _curViewFrozenDur
     end
     if C_DamageMeter and C_DamageMeter.GetSessionDurationSeconds then
-        local d = C_DamageMeter.GetSessionDurationSeconds(Enum.DamageMeterSessionType.Current)
-        if type(d) == "number" and not (issecretvalue and issecretvalue(d)) then
-            return d
+        local skinData = C_DamageMeter.GetSessionDurationSeconds(Enum.DamageMeterSessionType.Current)
+        if type(skinData) == "number" and not (issecretvalue and issecretvalue(skinData)) then
+            return skinData
         end
     end
     return 0
@@ -559,13 +559,13 @@ end
 local function FreezeCombat(ts)
     SetCombatEndTime(ts or GetTime())
     if C_DamageMeter and C_DamageMeter.GetSessionDurationSeconds then
-        local d = C_DamageMeter.GetSessionDurationSeconds(Enum.DamageMeterSessionType.Current)
+        local skinData = C_DamageMeter.GetSessionDurationSeconds(Enum.DamageMeterSessionType.Current)
         if
-            type(d) == "number"
-            and not (issecretvalue and issecretvalue(d))
-            and d >= (_curViewFrozenDur or 0)
+            type(skinData) == "number"
+            and not (issecretvalue and issecretvalue(skinData))
+            and skinData >= (_curViewFrozenDur or 0)
         then
-            SetCurViewFrozenDur(d)
+            SetCurViewFrozenDur(skinData)
         end
     end
 end

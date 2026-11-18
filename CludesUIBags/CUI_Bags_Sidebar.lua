@@ -188,8 +188,8 @@ local function ComputeDropTarget()
     local lastVisibleCatIdx = 1
     for i = 1, #cats do
         local isVisible = false
-        for _, btn in ipairs(_sidebarBtns) do
-            if btn:IsShown() and btn._catIdx == i then
+        for _, button in ipairs(_sidebarBtns) do
+            if button:IsShown() and button._catIdx == i then
                 isVisible = true
                 break
             end
@@ -220,36 +220,36 @@ local function ComputeDropZone()
     local GROUP_ZONE = 4 -- pixels from center that count as "group" zone
 
     -- Walk visible sidebar buttons to find which one cursor is over
-    for _, btn in ipairs(_sidebarBtns) do
-        if btn:IsShown() and btn._catIdx and btn._catIdx > 0 then
-            local topY = btn:GetTop()
-            local bot = btn:GetBottom()
+    for _, button in ipairs(_sidebarBtns) do
+        if button:IsShown() and button._catIdx and button._catIdx > 0 then
+            local topY = button:GetTop()
+            local bot = button:GetBottom()
             if topY and bot and cursorY <= topY and cursorY >= bot then
                 local mid = (topY + bot) / 2
                 local distFromMid = math.abs(cursorY - mid)
                 if distFromMid <= GROUP_ZONE then
-                    return btn._catIdx, "group", btn
+                    return button._catIdx, "group", button
                 elseif cursorY > mid then
-                    return btn._catIdx, "above", btn
+                    return button._catIdx, "above", button
                 else
-                    return btn._catIdx, "below", btn
+                    return button._catIdx, "below", button
                 end
             end
         end
     end
     -- Fallback: find nearest category button by Y distance
     local bestIdx, bestDist, bestBtn, bestMode = 1, math.huge, nil, "above"
-    for _, btn in ipairs(_sidebarBtns) do
-        if btn:IsShown() and btn._catIdx and btn._catIdx > 0 then
-            local topY = btn:GetTop()
-            local bot = btn:GetBottom()
+    for _, button in ipairs(_sidebarBtns) do
+        if button:IsShown() and button._catIdx and button._catIdx > 0 then
+            local topY = button:GetTop()
+            local bot = button:GetBottom()
             if topY and bot then
                 local mid = (topY + bot) / 2
                 local dist = math.abs(cursorY - mid)
                 if dist < bestDist then
                     bestDist = dist
-                    bestIdx = btn._catIdx
-                    bestBtn = btn
+                    bestIdx = button._catIdx
+                    bestBtn = button
                     bestMode = cursorY > mid and "above" or "below"
                 end
             end
@@ -266,8 +266,8 @@ local function GetInsertLineY(targetCatIdx)
     local cats = CUI_CategoryManager:GetCategories()
     for i = 1, #cats do
         local isVisible = false
-        for _, btn in ipairs(_sidebarBtns) do
-            if btn:IsShown() and btn._catIdx == i then
+        for _, button in ipairs(_sidebarBtns) do
+            if button:IsShown() and button._catIdx == i then
                 isVisible = true
                 break
             end
@@ -289,17 +289,17 @@ local _sidebarDragDetect = CreateFrame("Frame")
 _sidebarDragDetect:Hide()
 _sidebarDragDetect._btn = nil
 _sidebarDragDetect:SetScript("OnUpdate", function(self)
-    local btn = self._btn
-    if not btn or not btn._dragPending then
+    local button = self._btn
+    if not button or not button._dragPending then
         self:Hide()
         return
     end
     local _, cy = GetCursorPosition()
-    if math.abs(cy - (btn._dragStartY or cy)) > 4 then
-        btn._dragPending = false
-        btn._didDrag = true
+    if math.abs(cy - (button._dragStartY or cy)) > 4 then
+        button._dragPending = false
+        button._didDrag = true
         self:Hide()
-        StartSidebarDrag(btn, btn._catIdx, btn._catName, btn._catIcon, btn._catIsAtlas)
+        StartSidebarDrag(button, button._catIdx, button._catName, button._catIcon, button._catIsAtlas)
     end
 end)
 
@@ -631,8 +631,8 @@ local function StopSidebarDrag()
                         removed[#removed + 1] = table.remove(cats, members[m])
                     end
                     local ordered = {}
-                    for r = #removed, 1, -1 do
-                        ordered[#ordered + 1] = removed[r]
+                    for region = #removed, 1, -1 do
+                        ordered[#ordered + 1] = removed[region]
                     end
                     local insertAt
                     if rawTarget > minIdx then
@@ -1011,7 +1011,7 @@ end
 -- use the category menu also offers unpinning, removing assigned items and
 -- moving the entry one place up or down. A move runs the drag's own drop
 -- path (StopSidebarDrag) with the neighbour the sidebar shows.
-local function PadCategoryEntries(root, btn, category, catIdx, isGroupHeader, isGroupMember)
+local function PadCategoryEntries(root, button, category, catIdx, isGroupHeader, isGroupMember)
     local rowList = {}
 
     -- Pinned Items: every pinned item in the bags, once per pin key.
@@ -1072,7 +1072,7 @@ local function PadCategoryEntries(root, btn, category, catIdx, isGroupHeader, is
     -- Move Up / Move Down against the neighbouring sidebar rows.
     local me
     for i = 1, #_sidebarBtns do
-        if _sidebarBtns[i] == btn and btn:IsShown() then
+        if _sidebarBtns[i] == button and button:IsShown() then
             me = i
             break
         end
@@ -1085,7 +1085,7 @@ local function PadCategoryEntries(root, btn, category, catIdx, isGroupHeader, is
     end
     local upTarget, downTarget, moveGroup
     -- Junk stays last: it never moves (ReorderCategory keeps the rest above it)
-    if me and not category.noMove and not btn._noMove and not category.isJunk then
+    if me and not category.noMove and not button._noMove and not category.isJunk then
         local set = category.groupName
         if isGroupMember and set then
             -- Within its own group only (set children are skipped).
@@ -1148,14 +1148,14 @@ local function PadCategoryEntries(root, btn, category, catIdx, isGroupHeader, is
         -- when the same row still shows the same category.
         if
             CUI_CategoryManager:GetCategories()[catIdx] ~= category
-            or btn._catIdx ~= catIdx
-            or not btn:IsShown()
-            or (btn._isGroupHeader or false) ~= (isGroupHeader or false)
+            or button._catIdx ~= catIdx
+            or not button:IsShown()
+            or (button._isGroupHeader or false) ~= (isGroupHeader or false)
         then
             return
         end
         _dragFromCatIdx = catIdx
-        _dragSourceBtn = btn
+        _dragSourceBtn = button
         _dragDropMode = "insert"
         _dragDropTarget = target
         _dragInsertGroup = moveGroup
@@ -1183,14 +1183,14 @@ local function PadCategoryEntries(root, btn, category, catIdx, isGroupHeader, is
         if #rowList > 20 then
             sub:SetScrollMode(20 * 20)
         end
-        for _, r in ipairs(rowList) do
-            sub:CreateButton(r.text, r.fn)
+        for _, region in ipairs(rowList) do
+            sub:CreateButton(region.text, region.fn)
         end
     end
 end
 
 -- Show context menu for grouping categories
-local function ShowCategoryContextMenu(btn, catIdx, isGroupHeader, isGroupMember)
+local function ShowCategoryContextMenu(button, catIdx, isGroupHeader, isGroupMember)
     local cats = CUI_CategoryManager:GetCategories()
     local category = cats[catIdx]
     if not category then
@@ -1201,7 +1201,7 @@ local function ShowCategoryContextMenu(btn, catIdx, isGroupHeader, isGroupMember
         return
     end
 
-    MenuUtil.CreateContextMenu(btn, function(_, rootDescription)
+    MenuUtil.CreateContextMenu(button, function(_, rootDescription)
         local myGroup = category.groupName
 
         if not BP().bagHiddenInAllItems then
@@ -1344,7 +1344,7 @@ local function ShowCategoryContextMenu(btn, catIdx, isGroupHeader, isGroupMember
 
         -- Controller cursor: unpin / remove / move entries (no middle click or drag on a pad).
         if CUI.PadInUse() then
-            PadCategoryEntries(rootDescription, btn, category, catIdx, isGroupHeader, isGroupMember)
+            PadCategoryEntries(rootDescription, button, category, catIdx, isGroupHeader, isGroupMember)
         end
     end)
 end
@@ -1565,33 +1565,33 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
 
     for i = 1, #displayList do
         if not _sidebarBtns[i] then
-            local btn = CreateFrame("Button", nil, CUI_Bags._sidebarChild or sidebar)
-            btn:SetHeight(SIDEBAR_BTN_H)
-            btn._indicator = btn:CreateTexture(nil, "OVERLAY")
+            local button = CreateFrame("Button", nil, CUI_Bags._sidebarChild or sidebar)
+            button:SetHeight(SIDEBAR_BTN_H)
+            button._indicator = button:CreateTexture(nil, "OVERLAY")
             local Pix = CUI and CUI.PP
             local px = (Pix and Pix.mult) or 1
-            btn._indicator:SetWidth(px * 2)
-            btn._indicator:SetPoint("TOPLEFT", btn, "TOPLEFT", 0, 0)
-            btn._indicator:SetPoint("BOTTOMLEFT", btn, "BOTTOMLEFT", 0, 0)
-            btn._bg = btn:CreateTexture(nil, "BACKGROUND", nil, 2)
-            btn._bg:SetAllPoints()
-            btn._bg:SetColorTexture(1, 1, 1, 0)
-            btn._icon = btn:CreateTexture(nil, "ARTWORK")
-            btn._icon:SetSize(SIDEBAR_ICON_SIZE, SIDEBAR_ICON_SIZE)
-            btn._icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-            btn._label = btn:CreateFontString(nil, "OVERLAY")
-            SetBagFont(btn._label, 11)
-            btn._label:SetJustifyH("LEFT")
-            btn._label:SetWordWrap(false)
-            btn._label:SetPoint("LEFT", btn._icon, "RIGHT", 6, 0)
-            btn._label:SetPoint("RIGHT", btn, "RIGHT", -30, 0)
-            btn._count = btn:CreateFontString(nil, "OVERLAY")
-            SetBagFont(btn._count, 10)
-            btn._count:SetJustifyH("RIGHT")
-            btn._count:SetTextColor(0.5, 0.5, 0.5)
-            btn._count:SetPoint("RIGHT", btn, "RIGHT", -6, 0)
+            button._indicator:SetWidth(px * 2)
+            button._indicator:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
+            button._indicator:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 0, 0)
+            button._bg = button:CreateTexture(nil, "BACKGROUND", nil, 2)
+            button._bg:SetAllPoints()
+            button._bg:SetColorTexture(1, 1, 1, 0)
+            button._icon = button:CreateTexture(nil, "ARTWORK")
+            button._icon:SetSize(SIDEBAR_ICON_SIZE, SIDEBAR_ICON_SIZE)
+            button._icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            button._label = button:CreateFontString(nil, "OVERLAY")
+            SetBagFont(button._label, 11)
+            button._label:SetJustifyH("LEFT")
+            button._label:SetWordWrap(false)
+            button._label:SetPoint("LEFT", button._icon, "RIGHT", 6, 0)
+            button._label:SetPoint("RIGHT", button, "RIGHT", -30, 0)
+            button._count = button:CreateFontString(nil, "OVERLAY")
+            SetBagFont(button._count, 10)
+            button._count:SetJustifyH("RIGHT")
+            button._count:SetTextColor(0.5, 0.5, 0.5)
+            button._count:SetPoint("RIGHT", button, "RIGHT", -6, 0)
 
-            btn:SetScript("OnEnter", function(self)
+            button:SetScript("OnEnter", function(self)
                 if _dragFromCatIdx then
                     return
                 end
@@ -1611,7 +1611,7 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                     )
                 end
             end)
-            btn:SetScript("OnLeave", function(self)
+            button:SetScript("OnLeave", function(self)
                 local isSel = (self._isGroupHeader and self._groupName == selectedGroupName)
                     or (
                         not self._isGroupHeader
@@ -1623,8 +1623,8 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                 end
                 CUI.HideWidgetTooltip()
             end)
-            btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-            btn:SetScript("OnClick", function(self, btnFrame)
+            button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+            button:SetScript("OnClick", function(self, btnFrame)
                 if btnFrame == "RightButton" then
                     if self._catIdx > 0 then
                         ShowCategoryContextMenu(self, self._catIdx, self._isGroupHeader, self._isGroupMember)
@@ -1666,7 +1666,7 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                 end
                 CUI_Bags:RefreshInventory()
             end)
-            btn:SetScript("OnMouseDown", function(self, btnFrame)
+            button:SetScript("OnMouseDown", function(self, btnFrame)
                 if btnFrame ~= "LeftButton" then
                     return
                 end
@@ -1685,7 +1685,7 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                 _sidebarDragDetect._btn = self
                 _sidebarDragDetect:Show()
             end)
-            btn:SetScript("OnMouseUp", function(self, btnFrame)
+            button:SetScript("OnMouseUp", function(self, btnFrame)
                 if btnFrame ~= "LeftButton" then
                     return
                 end
@@ -1696,7 +1696,7 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                 end
             end)
 
-            _sidebarBtns[i] = btn
+            _sidebarBtns[i] = button
         end
     end
 
@@ -1725,7 +1725,7 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
     local INDENT = SIDEBAR_INDENT
 
     for i, record in ipairs(displayList) do
-        local btn = _sidebarBtns[i]
+        local button = _sidebarBtns[i]
         local isSelected
         if record.isGroupHeader then
             isSelected = (record.groupName == selectedGroupName)
@@ -1733,66 +1733,66 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
             isSelected = (not selectedGroupName and record.catIdx == selectedCategoryIndex)
         end
 
-        btn._catIdx = record.catIdx
-        btn._catName = record.name
-        btn._catIcon = record.icon
-        btn._catIsAtlas = record.isAtlas
-        btn._catCount = record.count
-        btn._isGroupHeader = record.isGroupHeader or false
-        btn._isGroupMember = record.isGroupMember or false
-        btn._groupName = record.groupName
-        btn._noMove = record.noMove or false
-        btn._isEquipSet = record.isEquipSet or false
-        btn._isPinned = record.isPinned or false
+        button._catIdx = record.catIdx
+        button._catName = record.name
+        button._catIcon = record.icon
+        button._catIsAtlas = record.isAtlas
+        button._catCount = record.count
+        button._isGroupHeader = record.isGroupHeader or false
+        button._isGroupMember = record.isGroupMember or false
+        button._groupName = record.groupName
+        button._noMove = record.noMove or false
+        button._isEquipSet = record.isEquipSet or false
+        button._isPinned = record.isPinned or false
 
-        btn:SetParent(sidebarChild or sidebar)
-        btn:ClearAllPoints()
-        btn:SetPoint("TOPLEFT", sidebarChild or sidebar, "TOPLEFT", 0, posY)
-        btn:SetWidth(sidebarW)
+        button:SetParent(sidebarChild or sidebar)
+        button:ClearAllPoints()
+        button:SetPoint("TOPLEFT", sidebarChild or sidebar, "TOPLEFT", 0, posY)
+        button:SetWidth(sidebarW)
 
         -- entry.indent: true = 1 level (legacy group members), or a number of levels
         local indentLv = (record.indent == true and 1) or record.indent or 0
         local leftPad = (indentLv ~= 0 and not collapsed) and (8 + INDENT * indentLv) or 8
-        mod.AnchorBagSidebarIcon(btn._icon, collapsed, leftPad)
+        mod.AnchorBagSidebarIcon(button._icon, collapsed, leftPad)
         if record.isAtlas then
-            btn._icon:SetAtlas(record.icon)
-            btn._icon:SetTexCoord(0, 1, 0, 1)
+            button._icon:SetAtlas(record.icon)
+            button._icon:SetTexCoord(0, 1, 0, 1)
         else
             -- Through the client icon map: a default the Forever client
             -- cannot draw takes its vanilla-era stand-in there.
-            btn._icon:SetTexture(CludesUI.ClientIcon(record.icon))
-            btn._icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            button._icon:SetTexture(CludesUI.ClientIcon(record.icon))
+            button._icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
         end
-        btn._icon:SetAlpha(isSelected and 1 or 0.75)
+        button._icon:SetAlpha(isSelected and 1 or 0.75)
         -- Smaller icon for indented members
         if record.indent then
-            btn._icon:SetSize(SIDEBAR_ICON_SIZE - 2, SIDEBAR_ICON_SIZE - 2)
+            button._icon:SetSize(SIDEBAR_ICON_SIZE - 2, SIDEBAR_ICON_SIZE - 2)
         else
-            btn._icon:SetSize(SIDEBAR_ICON_SIZE, SIDEBAR_ICON_SIZE)
+            button._icon:SetSize(SIDEBAR_ICON_SIZE, SIDEBAR_ICON_SIZE)
         end
 
         if collapsed then
-            btn._label:Hide()
-            btn._count:Hide()
+            button._label:Hide()
+            button._count:Hide()
         else
-            btn._label:Show()
-            btn._label:SetText(record.name)
-            btn._label:SetTextColor(1, 1, 1, isSelected and 1 or 0.75)
+            button._label:Show()
+            button._label:SetText(record.name)
+            button._label:SetTextColor(1, 1, 1, isSelected and 1 or 0.75)
 
-            btn._count:Show()
-            btn._count:SetText(record.count and tostring(record.count) or "")
+            button._count:Show()
+            button._count:SetText(record.count and tostring(record.count) or "")
         end
 
         if isSelected then
-            btn._indicator:SetColorTexture(ar, ag, ab, 1)
-            btn._indicator:Show()
-            btn._bg:SetColorTexture(ar, ag, ab, 0.1)
+            button._indicator:SetColorTexture(ar, ag, ab, 1)
+            button._indicator:Show()
+            button._bg:SetColorTexture(ar, ag, ab, 0.1)
         else
-            btn._indicator:Hide()
-            btn._bg:SetColorTexture(1, 1, 1, 0)
+            button._indicator:Hide()
+            button._bg:SetColorTexture(1, 1, 1, 0)
         end
 
-        btn:Show()
+        button:Show()
         posY = posY - SIDEBAR_BTN_H - SIDEBAR_PAD
 
         -- Divider after the last special entry (Pinned or Recent)
@@ -1816,36 +1816,36 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
     local hideAddCat = BP().bagHideAddCategory
     if not collapsed and not hideAddCat then
         if not sidebar._addCatBtn then
-            local btn = CreateFrame("Button", nil, sidebarChild or sidebar)
-            btn:SetHeight(SIDEBAR_BTN_H)
-            btn._bg = btn:CreateTexture(nil, "BACKGROUND", nil, 2)
-            btn._bg:SetAllPoints()
-            btn._bg:SetColorTexture(1, 1, 1, 0)
-            btn._icon = btn:CreateTexture(nil, "ARTWORK")
-            btn._icon:SetSize(SIDEBAR_ICON_SIZE, SIDEBAR_ICON_SIZE)
-            btn._icon:SetPoint("LEFT", btn, "LEFT", 8, 0)
-            btn._icon:SetTexture(134400)
-            btn._icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-            btn._icon:SetAlpha(0.5)
-            btn._label = btn:CreateFontString(nil, "OVERLAY")
-            SetBagFont(btn._label, 11)
-            btn._label:SetJustifyH("LEFT")
-            btn._label:SetWordWrap(false)
-            btn._label:SetPoint("LEFT", btn._icon, "RIGHT", 6, 0)
-            btn._label:SetPoint("RIGHT", btn, "RIGHT", -6, 0)
-            btn._label:SetText(CludesUI.L("Add Category"))
-            btn._label:SetTextColor(1, 1, 1, 0.4)
-            btn:SetScript("OnEnter", function(self)
+            local button = CreateFrame("Button", nil, sidebarChild or sidebar)
+            button:SetHeight(SIDEBAR_BTN_H)
+            button._bg = button:CreateTexture(nil, "BACKGROUND", nil, 2)
+            button._bg:SetAllPoints()
+            button._bg:SetColorTexture(1, 1, 1, 0)
+            button._icon = button:CreateTexture(nil, "ARTWORK")
+            button._icon:SetSize(SIDEBAR_ICON_SIZE, SIDEBAR_ICON_SIZE)
+            button._icon:SetPoint("LEFT", button, "LEFT", 8, 0)
+            button._icon:SetTexture(134400)
+            button._icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            button._icon:SetAlpha(0.5)
+            button._label = button:CreateFontString(nil, "OVERLAY")
+            SetBagFont(button._label, 11)
+            button._label:SetJustifyH("LEFT")
+            button._label:SetWordWrap(false)
+            button._label:SetPoint("LEFT", button._icon, "RIGHT", 6, 0)
+            button._label:SetPoint("RIGHT", button, "RIGHT", -6, 0)
+            button._label:SetText(CludesUI.L("Add Category"))
+            button._label:SetTextColor(1, 1, 1, 0.4)
+            button:SetScript("OnEnter", function(self)
                 self._bg:SetColorTexture(1, 1, 1, 0.06)
                 self._label:SetTextColor(1, 1, 1, 0.8)
                 self._icon:SetAlpha(0.8)
             end)
-            btn:SetScript("OnLeave", function(self)
+            button:SetScript("OnLeave", function(self)
                 self._bg:SetColorTexture(1, 1, 1, 0)
                 self._label:SetTextColor(1, 1, 1, 0.4)
                 self._icon:SetAlpha(0.5)
             end)
-            btn:SetScript("OnClick", function(self)
+            button:SetScript("OnClick", function(self)
                 local dialog = CUI_Bags._newCatPopup
                 if dialog and dialog:IsShown() then
                     dialog:Hide()
@@ -1971,13 +1971,13 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                     for position, iconID in ipairs(ICON_IDS) do
                         local ib = CreateFrame("Button", nil, dialog)
                         ib:SetSize(ICON_SZ, ICON_SZ)
-                        local col = (position - 1) % ICONS_PER_ROW
+                        local colour = (position - 1) % ICONS_PER_ROW
                         local row = math.floor((position - 1) / ICONS_PER_ROW)
                         ib:SetPoint(
                             "TOPLEFT",
                             iconLbl,
                             "BOTTOMLEFT",
-                            col * (ICON_SZ + ICON_PAD),
+                            colour * (ICON_SZ + ICON_PAD),
                             -(4 + row * (ICON_SZ + ICON_PAD))
                         )
                         local texture = ib:CreateTexture(nil, "ARTWORK")
@@ -2203,12 +2203,12 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                             dialog._nameEB:SetFocus()
                             return
                         end
-                        local icon = dialog._selectedIcon or 134400
+                        local iconTex = dialog._selectedIcon or 134400
                         local position = CUI_CategoryManager:AddCustomCategory(name)
                         if position then
                             local cats = CUI_CategoryManager:GetCategories()
                             if cats[position] then
-                                cats[position].icon = icon
+                                cats[position].icon = iconTex
                                 cats[position].isAtlas = nil
                             end
                             CUI_CategoryManager:SaveState()
@@ -2253,7 +2253,7 @@ local function BuildSidebarButtons(categoryCounts, totalCount)
                 dialog:Show()
                 dialog._nameEB:SetFocus()
             end)
-            sidebar._addCatBtn = btn
+            sidebar._addCatBtn = button
         end
         local addBtn = sidebar._addCatBtn
         addBtn:SetParent(sidebarChild or sidebar)

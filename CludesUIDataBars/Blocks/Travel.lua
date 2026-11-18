@@ -339,11 +339,11 @@ local function TravelHouseName(hgt)
 end
 
 local function TravelCanReturnHome()
-    local f = C_HousingNeighborhood and C_HousingNeighborhood.CanReturnAfterVisitingHouse
-    if not f then
+    local frame = C_HousingNeighborhood and C_HousingNeighborhood.CanReturnAfterVisitingHouse
+    if not frame then
         return false
     end
-    local success, can = pcall(f)
+    local success, can = pcall(frame)
     return success and can == true
 end
 
@@ -390,8 +390,8 @@ local function TravelGetAvailableHearthstones()
             _hearthList[_hearthListCount] = ident
         end
     end
-    for idx = _hearthListCount + 1, #_hearthList do
-        _hearthList[idx] = nil
+    for index = _hearthListCount + 1, #_hearthList do
+        _hearthList[index] = nil
     end
     return _hearthList
 end
@@ -583,8 +583,8 @@ local function TravelAddAltRows(ar, ag, ab, onRemoved)
             _altKeyOf[e] = key
         end
     end
-    for idx = num + 1, #_altBuf do
-        _altBuf[idx] = nil
+    for index = num + 1, #_altBuf do
+        _altBuf[index] = nil
     end
     if num == 0 then
         return 0
@@ -593,12 +593,12 @@ local function TravelAddAltRows(ar, ag, ab, onRemoved)
     mod.Tip_AddLine(" ")
     mod.Tip_AddLine(L["OTHER_CHARACTERS"], ar, ag, ab)
     local nowTime = time()
-    for idx = 1, num do
-        local e = _altBuf[idx]
+    for index = 1, num do
+        local e = _altBuf[index]
         local cc = e.class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[e.class]
-        local cr, cg, cb = 1, 1, 1
+        local cr, cg, callback = 1, 1, 1
         if cc then
-            cr, cg, cb = cc.r, cc.g, cc.b
+            cr, cg, callback = cc.r, cc.g, cc.b
         end
         local rem = (e.readyAt or 0) - nowTime
         local cdStr, rr, rg, rb = L["READY"], 0, 1, 0
@@ -621,7 +621,7 @@ local function TravelAddAltRows(ar, ag, ab, onRemoved)
             if onRemoved then
                 onRemoved()
             end
-        end, cr, cg, cb, rr, rg, rb)
+        end, cr, cg, callback, rr, rg, rb)
     end
     return num
 end
@@ -667,10 +667,10 @@ local function TravelBarDestination(choice, tagHouses)
         if not tagHouses then
             return CludesUI.L(L["HOME"])
         end
-        local f = C_Housing.GetUIMapIDForNeighborhood
+        local frame = C_Housing.GetUIMapIDForNeighborhood
         local success, mapID = false, nil
-        if f then
-            success, mapID = pcall(f, hgt.neighborhoodGUID)
+        if frame then
+            success, mapID = pcall(frame, hgt.neighborhoodGUID)
         end
         local key = success and HOUSE_ZONE_LABELS[mapID]
         if key then
@@ -679,8 +679,8 @@ local function TravelBarDestination(choice, tagHouses)
         return CludesUI.L(TravelHouseName(hgt))
     end
     if TRAVEL_EXTRA_SET[choice] and TravelExtraKind(choice) then
-        local d = TRAVEL_DESTINATIONS[choice]
-        local name = d and ((d.global and _G[d.global]) or (d.key and CludesUI.L(L[d.key])))
+        local skinData = TRAVEL_DESTINATIONS[choice]
+        local name = skinData and ((skinData.global and _G[skinData.global]) or (skinData.key and CludesUI.L(L[skinData.key])))
         if name then
             return name
         end
@@ -781,8 +781,8 @@ local function TravelBarText(dt, bind, plain)
                 end
             end
             local dup = false
-            for idx = 1, num do
-                if _textRaw[idx] == part then
+            for index = 1, num do
+                if _textRaw[index] == part then
                     dup = true
                     break
                 end
@@ -794,9 +794,9 @@ local function TravelBarText(dt, bind, plain)
             end
         end
     end
-    for idx = num + 1, #_textParts do
-        _textParts[idx] = nil
-        _textRaw[idx] = nil
+    for index = num + 1, #_textParts do
+        _textParts[index] = nil
+        _textRaw[index] = nil
     end
     local iconDim
     if shownMask == 0 then
@@ -859,8 +859,8 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
 
     -- Pre-allocated tooltip line buffers (no per-show garbage). `spellId` is the static teleport spell ID (click overlay attribute), not the shown `name`.
     local _mythicLinesBuf = {}
-    for idx = 1, #SEASON_TELEPORTS do
-        _mythicLinesBuf[idx] = { name = "", cd = 0, cdKnown = true, spellId = nil }
+    for index = 1, #SEASON_TELEPORTS do
+        _mythicLinesBuf[index] = { name = "", cd = 0, cdKnown = true, spellId = nil }
     end
     local _mythicLineCount = 0
 
@@ -1062,8 +1062,8 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
             mod.Tip_AddLine(" ")
             mod.Tip_AddLine(L["MYTHIC_TELEPORTS"], ar, ag, ab)
             -- Insertion sort on active entries only (max ~8)
-            for idx = 2, _mythicLineCount do
-                local jdx = idx
+            for index = 2, _mythicLineCount do
+                local jdx = index
                 while jdx > 1 and _mythicLinesBuf[jdx].name < _mythicLinesBuf[jdx - 1].name do
                     _mythicLinesBuf[jdx].name, _mythicLinesBuf[jdx - 1].name =
                         _mythicLinesBuf[jdx - 1].name, _mythicLinesBuf[jdx].name
@@ -1078,8 +1078,8 @@ mod.BlockFactories.travel = function(blockCfg, slot, contentFrame, barCtx)
             end
             -- Ready rows are always click-to-teleport (not configurable). On-cooldown teleports share one group, collapsing into one "On Cooldown" line (soonest remaining).
             local cdMin, cdUnknown
-            for idx = 1, _mythicLineCount do
-                local e = _mythicLinesBuf[idx]
+            for index = 1, _mythicLineCount do
+                local e = _mythicLinesBuf[index]
                 if not e.cdKnown then
                     -- Secret cooldown (restricted combat): state unknowable,
                     -- fold into the collapsed On Cooldown line below.

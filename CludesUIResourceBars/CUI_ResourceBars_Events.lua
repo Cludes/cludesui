@@ -131,14 +131,14 @@ do
             return nil
         end
         local entries
-        local function add(s, f)
+        local function add(s, frame)
             -- "mouse" is the LIVE Anchor to Cursor setting (BuildCursorAnchorRow),
             -- not a retired legacy frame anchor -- migrating it froze the bar at
             -- its momentary position and nil'd the setting on every login, so
             -- cursor anchoring never survived a reload.
             if s and s.anchorTo and s.anchorTo ~= "none" and s.anchorTo ~= "mouse" then
                 entries = entries or {}
-                entries[#entries + 1] = { cfg = s, frame = f }
+                entries[#entries + 1] = { cfg = s, frame = frame }
             end
         end
         add(p.health, health)
@@ -169,20 +169,20 @@ do
             local uiW, uiH = UIParent:GetWidth(), UIParent:GetHeight()
             local cleared = false
             for _, e in ipairs(entries) do
-                local s, f = e.cfg, e.frame
+                local s, frame = e.cfg, e.frame
                 -- Plain multi-value assignment: wrapping GetCenter in "f and"
                 -- would truncate it to one value and leave cy always nil.
                 local cx, cy
-                if f then
-                    cx, cy = f:GetCenter()
+                if frame then
+                    cx, cy = frame:GetCenter()
                 end
                 if cx and cy then
-                    local r = f:GetEffectiveScale() / uiS
+                    local region = frame:GetEffectiveScale() / uiS
                     s.unlockPos = {
                         point = "CENTER",
                         relPoint = "CENTER",
-                        x = cx * r - uiW * 0.5,
-                        y = cy * r - uiH * 0.5,
+                        x = cx * region - uiW * 0.5,
+                        y = cy * region - uiH * 0.5,
                     }
                 end
                 -- Clear even without geometry (bar never laid out): defaults
@@ -222,21 +222,21 @@ end
 -- receiver only ever names the player, whose GUID is never secret-content, so the
 -- securecopy that hard-errors on a restricted unit has nothing to choke on.
 local function ApplyPingReceivers()
-    for _, bar in ipairs({ health, primaryBar }) do
-        if bar and not bar._erbPingOn then
-            bar._erbPingOn = true
-            bar:SetAttribute("ping-receiver", true)
+    for _, barFrame in ipairs({ health, primaryBar }) do
+        if barFrame and not barFrame._erbPingOn then
+            barFrame._erbPingOn = true
+            barFrame:SetAttribute("ping-receiver", true)
             -- Always pingable: a receiver that answers false is treated as BLOCKING UI
             -- and kills the ping outright with PING_FAILED_GENERIC, which is strictly
             -- worse than the fall-through this replaces.
-            bar.GetIsPingable = function()
+            barFrame.GetIsPingable = function()
                 return true
             end
             -- Contextual ping only, matching Blizzard over its own player resources.
-            bar.GetAllowRadialWheel = function()
+            barFrame.GetAllowRadialWheel = function()
                 return false
             end
-            bar.GetTargetInfo = function()
+            barFrame.GetTargetInfo = function()
                 return { guid = UnitGUID("player"), isPlayerResource = true }
             end
         end
@@ -292,9 +292,9 @@ function ERB:ApplyAll()
     if totemBarFrame then
         totemBarFrame:SetFrameStrata(tb and tb.frameStrata or "MEDIUM")
     end
-    local cb = ERB.db.profile.castBar
+    local callback = ERB.db.profile.castBar
     if castBarFrame then
-        castBarFrame:SetFrameStrata(cb and cb.frameStrata or "MEDIUM")
+        castBarFrame:SetFrameStrata(callback and callback.frameStrata or "MEDIUM")
     end
     local gb = ERB.db.profile.gcdBar
     if gcdBarFrame then
@@ -354,8 +354,8 @@ function ERB:ApplyAll()
     -- re-pushes only a bar whose pad actually moved (one deferred pass).
     if CludesUI.MatchPadChanged then
         local keyList = mod._erbPadKeys
-        for idx = 1, #keyList do
-            CludesUI.MatchPadChanged(keyList[idx])
+        for index = 1, #keyList do
+            CludesUI.MatchPadChanged(keyList[index])
         end
     end
 end
@@ -889,20 +889,20 @@ function ERB:OnInitialize()
                 return 0
             end
             if targetKey == "ERB_ClassResource" then
-                local dir = ResolveShiftDir()
-                if dir == 0 then
+                local direction = ResolveShiftDir()
+                if direction == 0 then
                     return 0
                 end
                 local sp = ERB.db and ERB.db.profile and ERB.db.profile.secondary
-                return dir, (sp and sp.shiftElementsIfNoResourceExtraY) or 0
+                return direction, (sp and sp.shiftElementsIfNoResourceExtraY) or 0
             end
             if targetKey == "ERB_Power" then
-                local dir = ResolveShiftDirPower()
-                if dir == 0 then
+                local direction = ResolveShiftDirPower()
+                if direction == 0 then
                     return 0
                 end
                 local pp = ERB.db and ERB.db.profile and ERB.db.profile.primary
-                return dir, (pp and pp.shiftElementsIfNoPowerExtraY) or 0
+                return direction, (pp and pp.shiftElementsIfNoPowerExtraY) or 0
             end
             return 0
         end,
@@ -976,28 +976,28 @@ function ERB:OnEnable()
         local function RegisterBarHover(barId, frameGetter)
             local proxy = {}
             proxy.GetRect = function()
-                local f = frameGetter()
-                if f then
-                    return f:GetRect()
+                local frame = frameGetter()
+                if frame then
+                    return frame:GetRect()
                 end
                 return nil
             end
             proxy.GetEffectiveScale = function()
-                local f = frameGetter()
-                return f and f:GetEffectiveScale() or 1
+                local frame = frameGetter()
+                return frame and frame:GetEffectiveScale() or 1
             end
             proxy.SetAlpha = function() end
             proxy.EnableMouse = function() end
             proxy.Show = function()
-                local f = frameGetter()
-                if f then
-                    CludesUI.SetElementVisibility(f, true)
+                local frame = frameGetter()
+                if frame then
+                    CludesUI.SetElementVisibility(frame, true)
                 end
             end
             proxy.Hide = function()
-                local f = frameGetter()
-                if f then
-                    CludesUI.SetElementVisibility(f, false)
+                local frame = frameGetter()
+                if frame then
+                    CludesUI.SetElementVisibility(frame, false)
                 end
             end
             CludesUI.RegisterMouseoverTarget(proxy, function()
@@ -1067,11 +1067,11 @@ function ERB:OnEnable()
     -- unseeded one keeps its own texture in the CludesUI slot first, so a
     -- switch back restores it.
     if mod.ERB_CastBlizz() then
-        local cb = self.db.profile.castBar
-        if cb and not cb.stockTextureSeeded and CludesUI.BankEuiStyleSlot then
-            CludesUI.BankEuiStyleSlot(cb, mod._erbCastSlotKeys)
+        local callback = self.db.profile.castBar
+        if callback and not callback.stockTextureSeeded and CludesUI.BankEuiStyleSlot then
+            CludesUI.BankEuiStyleSlot(callback, mod._erbCastSlotKeys)
         end
-        mod.ERB_SeedStockCast(cb)
+        mod.ERB_SeedStockCast(callback)
     end
     -- The same for the bars: an unseeded profile keeps its own values in the
     -- CludesUI slot before the Classic seed writes over them.
@@ -1140,8 +1140,8 @@ end
 -- Slash commands
 SLASH_ERB1 = "/crb"
 SLASH_ERB2 = "/cludesresource"
-SlashCmdList.ERB = function(msg)
-    if msg == "lock" or msg == "unlock" then
+SlashCmdList.ERB = function(message)
+    if message == "lock" or message == "unlock" then
         -- Unlock mode is now handled by the shared CludesUI system
         if CludesUI and CludesUI.ToggleUnlockMode then
             CludesUI:ToggleUnlockMode()
@@ -1194,16 +1194,16 @@ end ----------------------------------------------------------------------------
                 wipe(resGroups)
                 wipe(resList)
                 if secondaryFrame and not mod._erbArtOn then
-                    for idx = 1, #pips do
-                        local p = pips[idx]
+                    for index = 1, #pips do
+                        local p = pips[index]
                         if p and p:IsShown() then
                             resList[#resList + 1] = p
                         end
                     end
-                    for idx = 1, #runeFrames do
-                        local r = runeFrames[idx]
-                        if r and r:IsShown() then
-                            resList[#resList + 1] = r
+                    for index = 1, #runeFrames do
+                        local region = runeFrames[index]
+                        if region and region:IsShown() then
+                            resList[#resList + 1] = region
                         end
                     end
                     resGroup.pivot = secondaryFrame
@@ -1218,15 +1218,15 @@ end ----------------------------------------------------------------------------
                 Fade(secondaryFrame._barBg)
                 local gf = secondaryFrame._gapFills
                 if gf then
-                    for idx = 1, #gf do
-                        Fade(gf[idx])
+                    for index = 1, #gf do
+                        Fade(gf[index])
                     end
                 end
-                for idx = 1, #secondaryPipTicks do
-                    Fade(secondaryPipTicks[idx])
+                for index = 1, #secondaryPipTicks do
+                    Fade(secondaryPipTicks[index])
                 end
-                for idx = 1, #resList do
-                    Back(resList[idx])
+                for index = 1, #resList do
+                    Back(resList[index])
                 end
             end,
             onRestore = function()

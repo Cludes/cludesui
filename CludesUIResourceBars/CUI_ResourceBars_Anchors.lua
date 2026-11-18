@@ -79,18 +79,18 @@ function CludesUI.ERB_PlayerStackBars()
         return nil
     end
     local barList, num = nil, 0
-    local function add(f)
-        if not (f and f:IsShown()) then
+    local function add(frame)
+        if not (frame and frame:IsShown()) then
             return
         end
-        local fb, ft = f:GetBottom(), f:GetTop()
+        local fb, ft = frame:GetBottom(), frame:GetTop()
         if not (fb and ft) then
             return
         end
-        local s = f:GetEffectiveScale() or 1
+        local s = frame:GetEffectiveScale() or 1
         barList = barList or {}
         num = num + 1
-        barList[num] = { l = (f:GetLeft() or 0) * s, r = (f:GetRight() or 0) * s, t = ft * s, b = fb * s }
+        barList[num] = { l = (frame:GetLeft() or 0) * s, r = (frame:GetRight() or 0) * s, t = ft * s, b = fb * s }
     end
     if not IsPowerBarHidden() then
         add(primaryBar)
@@ -129,10 +129,10 @@ local function RegisterUnlockElements()
             local s = getSettings()
             s.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
             if not CludesUI._unlockActive then
-                local f = frame_fn()
-                if f then
-                    f:ClearAllPoints()
-                    f:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
+                local frame = frame_fn()
+                if frame then
+                    frame:ClearAllPoints()
+                    frame:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
                 end
             end
             mod.ERB_GroupDirty()
@@ -170,8 +170,8 @@ local function RegisterUnlockElements()
             if not place then
                 return
             end
-            local f = frame_fn()
-            if f then
+            local frame = frame_fn()
+            if frame then
                 local pt = place.point
                 local px, py = place.x, place.y
                 if centerShiftY and pt == "CENTER" and py then
@@ -179,7 +179,7 @@ local function RegisterUnlockElements()
                 end
                 local PPa = CludesUI and CludesUI.PP
                 if PPa and px and py then
-                    local es = f:GetEffectiveScale()
+                    local es = frame:GetEffectiveScale()
                     -- CENTER anchor with stored CENTER offsets: SnapCenterForDim with
                     -- the frame's actual size gives odd-pixel-dim frames the +0.5
                     -- center offset that lands edges on whole pixels. Plain SnapForES
@@ -187,15 +187,15 @@ local function RegisterUnlockElements()
                     local isCenterAnchor = (pt == "CENTER")
                         and (place.relPoint == "CENTER" or place.relPoint == nil)
                     if isCenterAnchor and PPa.SnapCenterForDim then
-                        px = PPa.SnapCenterForDim(px, f:GetWidth() or 0, es)
-                        py = PPa.SnapCenterForDim(py, f:GetHeight() or 0, es)
+                        px = PPa.SnapCenterForDim(px, frame:GetWidth() or 0, es)
+                        py = PPa.SnapCenterForDim(py, frame:GetHeight() or 0, es)
                     elseif PPa.SnapForES then
                         px = PPa.SnapForES(px, es)
                         py = PPa.SnapForES(py, es)
                     end
                 end
-                f:ClearAllPoints()
-                f:SetPoint(pt, UIParent, place.relPoint or pt, px, py)
+                frame:ClearAllPoints()
+                frame:SetPoint(pt, UIParent, place.relPoint or pt, px, py)
             end
         end
         return savePos, loadPos, clearPos, applyPos
@@ -520,8 +520,8 @@ local function RegisterUnlockElements()
             if not anchorPoint then
                 return
             end
-            local cb = S()
-            cb.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
+            local callback = S()
+            callback.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
             if not CludesUI._unlockActive and castBarFrame then
                 castBarFrame:ClearAllPoints()
                 castBarFrame:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
@@ -536,10 +536,10 @@ local function RegisterUnlockElements()
             return { point = pt, relPoint = place.relPoint or pt, x = place.x, y = place.y }
         end
         local function castClear()
-            local cb = S()
-            cb.unlockPos = nil
-            cb.anchorX = 0
-            cb.anchorY = -54
+            local callback = S()
+            callback.unlockPos = nil
+            callback.anchorX = 0
+            callback.anchorY = -54
         end
         local function castApply()
             local place = S().unlockPos
@@ -563,8 +563,8 @@ local function RegisterUnlockElements()
                 return castBarFrame
             end,
             getSize = function()
-                local cb = S()
-                return cb.width + mod.ERB_CastIconW(cb), cb.height
+                local callback = S()
+                return callback.width + mod.ERB_CastIconW(callback), callback.height
             end,
             -- Stock styles: the frame outside the bar. Classic WoW UI: the
             -- vanilla frame, icon included (it wraps bar and icon together).
@@ -589,10 +589,10 @@ local function RegisterUnlockElements()
             -- hang 13px below the bar; the mover wraps them. Classic WoW UI
             -- has no text box.
             getBottomExtra = function()
-                local cb = S()
+                local callback = S()
                 if
                     mod.ERB_CastStyle() == "blizzard"
-                    and cb.showSpellText
+                    and callback.showSpellText
                     and mod.ERB_BlizzAtlas("textbox")
                 then
                     return 13
@@ -600,8 +600,8 @@ local function RegisterUnlockElements()
                 return 0
             end,
             setWidth = function(_, wid)
-                local cb = S()
-                SetDim(cb, "width", Pix.Snap(math.max(wid - mod.ERB_CastIconW(cb), 10)))
+                local callback = S()
+                SetDim(callback, "width", Pix.Snap(math.max(wid - mod.ERB_CastIconW(callback), 10)))
             end,
             setHeight = function(_, hgt)
                 SetDim(S(), "height", Pix.Snap(hgt))

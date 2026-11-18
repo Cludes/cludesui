@@ -57,11 +57,11 @@ end
 
 local function Position()
     local mapID = C_Map and C_Map.GetBestMapForUnit and C_Map.GetBestMapForUnit("player")
-    local pos = mapID and C_Map.GetPlayerMapPosition(mapID, "player")
-    if not pos then
+    local position = mapID and C_Map.GetPlayerMapPosition(mapID, "player")
+    if not position then
         return nil
     end
-    local x, y = pos:GetXY()
+    local x, y = position:GetXY()
     -- Places with no player map report 0, 0 rather than nothing.
     if not (x and y) or (x == 0 and y == 0) then
         return nil
@@ -114,7 +114,7 @@ end
 
 -- One tooltip for both: they name the same place.
 local function ShowTooltip(owner)
-    local r, g, b = mod.GetAccent()
+    local region, g, b = mod.GetAccent()
     mod.Tip_Begin(owner)
     mod.Tip_AddDouble(ZONE, PlaceName(true), 0.6, 0.6, 0.6, 1, 1, 1)
     local continent = Continent()
@@ -124,7 +124,7 @@ local function ShowTooltip(owner)
     local sr, sg, sb = K.ZoneReactionColor()
     mod.Tip_AddDouble(STATUS, Status(), 0.6, 0.6, 0.6, sr, sg, sb)
     mod.Tip_AddLine(" ")
-    mod.Tip_AddDouble(L["LEFT_CLICK"], L["TOGGLE_WORLD_MAP"], 1, 1, 1, r, g, b)
+    mod.Tip_AddDouble(L["LEFT_CLICK"], L["TOGGLE_WORLD_MAP"], 1, 1, 1, region, g, b)
     mod.Tip_Show()
 end
 
@@ -146,8 +146,8 @@ local function TextBlock(blockCfg, slot, contentFrame, barCtx, spec)
     widget:SetSize(60, 20)
     widget:EnableMouse(true)
     widget:RegisterForClicks("AnyUp")
-    local icon = widget:CreateTexture(nil, "OVERLAY")
-    icon:SetPoint("LEFT")
+    local iconTex = widget:CreateTexture(nil, "OVERLAY")
+    iconTex:SetPoint("LEFT")
     local label = widget:CreateFontString(nil, "OVERLAY")
     K.AttachTextOffset(inst, label)
     label:SetPoint("LEFT")
@@ -158,17 +158,17 @@ local function TextBlock(blockCfg, slot, contentFrame, barCtx, spec)
     end
 
     local function Paint()
-        local r, g, b
+        local region, g, b
         if hovered then
-            r, g, b = mod.GetAccent()
+            region, g, b = mod.GetAccent()
         else
-            r, g, b = K.BlockColorOf(blockCfg)
+            region, g, b = K.BlockColorOf(blockCfg)
         end
-        label:SetTextColor(r, g, b, 1)
+        label:SetTextColor(region, g, b, 1)
         if not hovered then
-            r, g, b = K.IconColorOf(blockCfg)
+            region, g, b = K.IconColorOf(blockCfg)
         end
-        icon:SetVertexColor(r, g, b, 1)
+        iconTex:SetVertexColor(region, g, b, 1)
     end
 
     local function Enter()
@@ -259,14 +259,14 @@ local function TextBlock(blockCfg, slot, contentFrame, barCtx, spec)
         mod.SetFont(label, fontSize, barCtx.cfg)
         label:SetText(text)
         Paint()
-        K.SetBlockIcon(icon, blockCfg)
+        K.SetBlockIcon(iconTex, blockCfg)
         local iconSize = 0
         if s.showIcon ~= false then
             iconSize = fontSize + ICON_EXTRA
-            icon:SetSize(iconSize, iconSize)
-            icon:Show()
+            iconTex:SetSize(iconSize, iconSize)
+            iconTex:Show()
         else
-            icon:Hide()
+            iconTex:Hide()
         end
         if InCombatLockdown() then
             owed = true
@@ -279,9 +279,9 @@ local function TextBlock(blockCfg, slot, contentFrame, barCtx, spec)
             local inner = max(36, slotW - 8)
             label:ClearAllPoints()
             if iconSize > 0 then
-                icon:ClearAllPoints()
-                icon:SetPoint("LEFT", widget, "LEFT", 0, 0)
-                label:SetPoint("LEFT", icon, "RIGHT", K.ICON_GAP, 0)
+                iconTex:ClearAllPoints()
+                iconTex:SetPoint("LEFT", widget, "LEFT", 0, 0)
+                label:SetPoint("LEFT", iconTex, "RIGHT", K.ICON_GAP, 0)
                 mod.SetWrappedText(label, max(16, inner - iconSize - K.ICON_GAP - 2), "LEFT")
             else
                 label:SetPoint("CENTER", widget, "CENTER", 0, 0)
@@ -299,8 +299,8 @@ local function TextBlock(blockCfg, slot, contentFrame, barCtx, spec)
             local lead = 0
             if iconSize > 0 then
                 lead = iconSize + K.ICON_GAP
-                icon:ClearAllPoints()
-                icon:SetPoint("LEFT", widget, "LEFT", 0, 0)
+                iconTex:ClearAllPoints()
+                iconTex:SetPoint("LEFT", widget, "LEFT", 0, 0)
             end
             label:ClearAllPoints()
             label:SetPoint("LEFT", widget, "LEFT", lead, 0)

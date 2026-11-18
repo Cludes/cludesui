@@ -60,10 +60,10 @@ local function FindCDMButtonByCooldownID(cooldownID)
         return nil
     end
     for _, icons in pairs(mod.cdmBarIcons) do
-        for idx = 1, #icons do
-            local icon = icons[idx]
-            if icon and icon.cooldownID == cooldownID then
-                return icon
+        for index = 1, #icons do
+            local iconTex = icons[index]
+            if iconTex and iconTex.cooldownID == cooldownID then
+                return iconTex
             end
         end
     end
@@ -132,9 +132,9 @@ function mod.GetAllCDMBuffSpells()
     local trackedSet = {}
     local trackedOrder = {}
 
-    for _, bar in ipairs(p.cdmBars.bars) do
-        if mod.IsBarBuffFamily(bar) then
-            local spells = mod.GetCDMSpellsForBar and mod.GetCDMSpellsForBar(bar.key)
+    for _, barFrame in ipairs(p.cdmBars.bars) do
+        if mod.IsBarBuffFamily(barFrame) then
+            local spells = mod.GetCDMSpellsForBar and mod.GetCDMSpellsForBar(barFrame.key)
             if spells then
                 for _, sp in ipairs(spells) do
                     if sp.isKnown and sp.spellID and sp.spellID > 0 and not trackedSet[sp.spellID] then
@@ -143,8 +143,8 @@ function mod.GetAllCDMBuffSpells()
                             cdID = sp.cdID,
                             name = sp.name,
                             icon = sp.icon,
-                            barKey = bar.key,
-                            barName = bar.name or bar.key,
+                            barKey = barFrame.key,
+                            barName = barFrame.name or barFrame.key,
                         }
                         trackedSet[sp.spellID] = record
                         trackedOrder[#trackedOrder + 1] = record
@@ -205,14 +205,14 @@ local function NewStackGate(overlayFrame, pad)
     gate:SetPoint("TOPLEFT", overlayFrame, "TOPLEFT", -pad, pad)
     gate:SetPoint("BOTTOMRIGHT", overlayFrame, "BOTTOMRIGHT", pad, -pad)
     gate:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-    local fill = gate:GetStatusBarTexture()
-    if fill then
-        fill:SetAlpha(0)
+    local fillTex = gate:GetStatusBarTexture()
+    if fillTex then
+        fillTex:SetAlpha(0)
     end
     gate:EnableMouse(false)
     local mask = gate:CreateMaskTexture()
     mask:SetTexture("Interface\\Buttons\\WHITE8x8", "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE", "NEAREST")
-    return gate, mask, fill
+    return gate, mask, fillTex
 end
 
 local function SizeStackGateMasks(st, width, height)
@@ -298,8 +298,8 @@ local function EntryHasSid(details, sids)
     end
     local linked = details.linkedSpellIDs
     if linked then
-        for idx = 1, #linked do
-            if sids[linked[idx]] then
+        for index = 1, #linked do
+            if sids[linked[index]] then
                 return true
             end
         end
@@ -318,8 +318,8 @@ local function EntryOnOtherUnit(details, harmful)
     end
     local linked = details.linkedSpellIDs
     if harmful and linked then
-        for idx = 1, #linked do
-            if linked[idx] and harmful(linked[idx]) then
+        for index = 1, #linked do
+            if linked[index] and harmful(linked[index]) then
                 return true
             end
         end
@@ -540,9 +540,9 @@ local function MigrateAbilityKeys(backdrop)
         end
         dst[#dst + 1] = e
         local source = backdrop.assignments[old]
-        for idx = #source, 1, -1 do
-            if source[idx] == e then
-                table.remove(source, idx)
+        for index = #source, 1, -1 do
+            if source[index] == e then
+                table.remove(source, index)
                 break
             end
         end
@@ -632,8 +632,8 @@ local function BindOverlays(backdrop)
             if targets then
                 for _, target in ipairs(targets) do
                     local button = target.btn
-                    for idx, record in ipairs(buffList) do
-                        local key = assignKey .. "_" .. idx .. (target.tag and ("_" .. target.tag) or "")
+                    for index, record in ipairs(buffList) do
+                        local key = assignKey .. "_" .. index .. (target.tag and ("_" .. target.tag) or "")
                         local overlayFrame = overlayFrames[key]
                         if not overlayFrame then
                             overlayFrame = CreateFrame("Frame", "ECME_Glow_" .. key, button)
@@ -897,14 +897,14 @@ UpdateOverlayVisuals = function()
                     then
                         style = 2
                     end
-                    local cr, cg, cb
+                    local cr, cg, callback
                     if record.colorMode == "class" then
                         local cc = CludesUI.GetClassColor(CludesUI._playerClass)
-                        cr, cg, cb = cc.r, cc.g, cc.b
+                        cr, cg, callback = cc.r, cc.g, cc.b
                     elseif record.colorMode == "custom" and record.glowColor then
                         cr = record.glowColor.r or 1
                         cg = record.glowColor.g or 0.788
-                        cb = record.glowColor.b or 0.137
+                        callback = record.glowColor.b or 0.137
                     end
                     -- Blackout on a CDM icon sits BELOW its cooldown swipe/countdown,
                     -- at the per-icon Blackout's level (+12): under the border (+13)
@@ -923,7 +923,7 @@ UpdateOverlayVisuals = function()
                         -- Combat replay restarts from the recorded opts, so a mask
                         -- bound out here would be missing on every texture that
                         -- replay creates fresh.
-                        StartNativeGlow(overlayFrame, style, cr, cg, cb, {
+                        StartNativeGlow(overlayFrame, style, cr, cg, callback, {
                             maskWith = gateSt.mask,
                             maskWith2 = gateSt.mask2,
                             alpha = isFill and record.glowAlpha or nil,
@@ -934,7 +934,7 @@ UpdateOverlayVisuals = function()
                             style,
                             cr,
                             cg,
-                            cb,
+                            callback,
                             isFill and { alpha = record.glowAlpha } or nil
                         )
                     end

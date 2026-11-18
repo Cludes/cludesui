@@ -155,19 +155,19 @@ do
     local cache = {}
     local cacheCount = 0
     PreCacheSortFields = function(items)
-        for _, d in ipairs(items) do
-            if d.itemLink and not d._sortCached then
-                local c = cache[d.itemLink]
+        for _, skinData in ipairs(items) do
+            if skinData.itemLink and not skinData._sortCached then
+                local c = cache[skinData.itemLink]
                 if not c then
-                    local name, _, quality, ilvl, _, itemType = GetItemInfo(d.itemLink)
+                    local name, _, quality, ilvl, _, itemType = GetItemInfo(skinData.itemLink)
                     local rank = 0
                     if GetUpgradeTrack and _trackRank then
-                        local _, color = GetUpgradeTrack(d.itemLink)
+                        local _, color = GetUpgradeTrack(skinData.itemLink)
                         rank = color and _trackRank[color] or 0
-                        local craftedColor = CUI.GetCraftedTrackColor(d.itemLink)
+                        local craftedColor = CUI.GetCraftedTrackColor(skinData.itemLink)
                         if craftedColor then
                             rank = _trackRank[craftedColor]
-                            ilvl = C_Item.GetDetailedItemLevelInfo(d.itemLink) or ilvl
+                            ilvl = C_Item.GetDetailedItemLevelInfo(skinData.itemLink) or ilvl
                         end
                     end
                     c = {
@@ -185,18 +185,18 @@ do
                             wipe(cache)
                             cacheCount = 0
                         end
-                        cache[d.itemLink] = c
+                        cache[skinData.itemLink] = c
                         cacheCount = cacheCount + 1
                     end
                 end
-                d._sortName = c.name
-                d._sortQuality = c.quality
-                d._sortIlvl = c.ilvl
-                d._sortType = c.itemType
-                d._sortTrackRank = c.rank
-                d._sortGear = d.categoryIndex and IsGearCategory(d.categoryIndex) or false
+                skinData._sortName = c.name
+                skinData._sortQuality = c.quality
+                skinData._sortIlvl = c.ilvl
+                skinData._sortType = c.itemType
+                skinData._sortTrackRank = c.rank
+                skinData._sortGear = skinData.categoryIndex and IsGearCategory(skinData.categoryIndex) or false
                 if c.complete then
-                    d._sortCached = true
+                    skinData._sortCached = true
                 end
             end
         end
@@ -554,22 +554,22 @@ local function MergeDuplicates(items)
         if key and not IsGearCategory(payload.categoryIndex or 0) and not (unmerged and unmerged[key]) then
             local position = seen[key]
             if position then
-                local prev = result[position]
-                if not prev._mergedCount then
+                local previous = result[position]
+                if not previous._mergedCount then
                     -- First duplicate for this key: swap the winner out for a copy.
                     -- The aggregate cannot live on the winner itself, because the
                     -- OneBag/MultiBag bag grid paints those same slot tables with no
                     -- merge pass of its own and would show one slot's count inflated
                     -- by its twins. data.info stays shared by reference on purpose.
                     local proxy = AcquireSlotTable()
-                    for k, val in pairs(prev) do
+                    for k, val in pairs(previous) do
                         proxy[k] = val
                     end
-                    proxy._mergedCount = prev.info.stackCount or 1
+                    proxy._mergedCount = previous.info.stackCount or 1
                     result[position] = proxy
-                    prev = proxy
+                    previous = proxy
                 end
-                prev._mergedCount = prev._mergedCount + (payload.info.stackCount or 1)
+                previous._mergedCount = previous._mergedCount + (payload.info.stackCount or 1)
             else
                 result[#result + 1] = payload
                 seen[key] = #result
@@ -667,9 +667,9 @@ local _bagSnapshot = {}
 
 local function TakeBagSnapshot(tempItems)
     wipe(_bagSnapshot)
-    for _, d in ipairs(tempItems) do
-        if d.info and d.info.itemID then
-            _bagSnapshot[d.bag * 1000 + d.slot] = d.info.itemID
+    for _, skinData in ipairs(tempItems) do
+        if skinData.info and skinData.info.itemID then
+            _bagSnapshot[skinData.bag * 1000 + skinData.slot] = skinData.info.itemID
         end
     end
 end
@@ -681,9 +681,9 @@ local function DetectAndApplySwaps(tempItems, applySwap)
     end
 
     local current = {}
-    for _, d in ipairs(tempItems) do
-        if d.info and d.info.itemID then
-            current[d.bag * 1000 + d.slot] = d.info.itemID
+    for _, skinData in ipairs(tempItems) do
+        if skinData.info and skinData.info.itemID then
+            current[skinData.bag * 1000 + skinData.slot] = skinData.info.itemID
         end
     end
 

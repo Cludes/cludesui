@@ -247,14 +247,14 @@ end
 -- tables: the sort swaps references, so they survive to be refilled.
 local rows, rowCount, byShort = {}, 0, {}
 
-local function AddRow(name, dungeon, level, r, g, b)
+local function AddRow(name, dungeon, level, region, g, b)
     rowCount = rowCount + 1
     local row = rows[rowCount]
     if not row then
         row = {}
         rows[rowCount] = row
     end
-    row.name, row.dungeon, row.level, row.r, row.g, row.b = name, dungeon, level, r, g, b
+    row.name, row.dungeon, row.level, row.r, row.g, row.b = name, dungeon, level, region, g, b
 end
 
 local function Before(a, b)
@@ -335,8 +335,8 @@ mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
     button:SetAllPoints()
     button:EnableMouse(true)
     button:RegisterForClicks("AnyUp")
-    local icon = button:CreateTexture(nil, "OVERLAY")
-    K.SetBlockIcon(icon, blockCfg)
+    local iconTex = button:CreateTexture(nil, "OVERLAY")
+    K.SetBlockIcon(iconTex, blockCfg)
     local label = button:CreateFontString(nil, "OVERLAY")
     K.AttachTextOffset(inst, label)
 
@@ -345,14 +345,14 @@ mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
     -- Text and icon colours (both the accent on hover).
     local function Paint()
         if hovered then
-            local r, g, b = mod.GetAccent()
-            label:SetTextColor(r, g, b, 1)
-            icon:SetVertexColor(r, g, b, 1)
+            local region, g, b = mod.GetAccent()
+            label:SetTextColor(region, g, b, 1)
+            iconTex:SetVertexColor(region, g, b, 1)
         else
-            local r, g, b = K.BlockColorOf(blockCfg)
-            label:SetTextColor(r, g, b, 1)
+            local region, g, b = K.BlockColorOf(blockCfg)
+            label:SetTextColor(region, g, b, 1)
             local ir, ig, ib = K.IconColorOf(blockCfg)
-            icon:SetVertexColor(ir, ig, ib, 1)
+            iconTex:SetVertexColor(ir, ig, ib, 1)
         end
     end
 
@@ -363,15 +363,15 @@ mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
         -- The core translator: these words share entries with the minimap's vault tooltip.
         local text = CludesUI.L("Great Vault")
         mod.SetFont(label, fontSize, barCtx.cfg)
-        icon:SetSize(iconSize, iconSize)
-        icon:ClearAllPoints()
+        iconTex:SetSize(iconSize, iconSize)
+        iconTex:ClearAllPoints()
         if barCtx.IsVertical() then
             local slotW = K.VSlotW(self)
             label:SetText(text)
-            icon:SetPoint("TOP", button, "TOP", 0, -4)
+            iconTex:SetPoint("TOP", button, "TOP", 0, -4)
             mod.SetWrappedText(label, max(24, slotW - 8), "CENTER")
             label:ClearAllPoints()
-            label:SetPoint("TOP", icon, "BOTTOM", 0, -2)
+            label:SetPoint("TOP", iconTex, "BOTTOM", 0, -2)
             local height = max(8 + iconSize + 2 + mod.SnapToPixelGrid(label:GetStringHeight()) + 4, barH)
             contentFrame:SetSize(slotW, height)
             button:SetSize(slotW, height)
@@ -379,7 +379,7 @@ mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
             local budget = K.HBudget(self, 120)
             mod.ResetInlineText(label, "LEFT")
             label:SetText(text)
-            icon:SetPoint("LEFT", button, "LEFT", 0, 0)
+            iconTex:SetPoint("LEFT", button, "LEFT", 0, 0)
             label:ClearAllPoints()
             label:SetPoint("LEFT", button, "LEFT", iconSize + K.ICON_GAP, 0)
             local width = min(budget, iconSize + K.ICON_GAP + mod.SnapToPixelGrid(label:GetStringWidth()) + 4)
@@ -392,9 +392,9 @@ mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
 
     -- Returns how many party rows it showed.
     local function ShowTooltip()
-        local r, g, b = mod.GetAccent()
+        local region, g, b = mod.GetAccent()
         mod.Tip_Begin(button)
-        mod.Tip_AddLine("|cFFFFFFFF[|r" .. CludesUI.L("Great Vault") .. "|cFFFFFFFF]|r", r, g, b)
+        mod.Tip_AddLine("|cFFFFFFFF[|r" .. CludesUI.L("Great Vault") .. "|cFFFFFFFF]|r", region, g, b)
         mod.Tip_AddLine(" ")
         mod.Tip_AddColumns(CludesUI.L("Raids"), RewardCells(RAID, true), 0.8, 0.8, 0.8)
         mod.Tip_AddColumns(CludesUI.L("Mythic+"), RewardCells(MPLUS, false), 0.8, 0.8, 0.8)
@@ -402,13 +402,13 @@ mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
         local dungeon, level = MyKeystone()
         if dungeon then
             mod.Tip_AddLine(" ")
-            mod.Tip_AddLine(CludesUI.L("Your Keystone"), r, g, b)
+            mod.Tip_AddLine(CludesUI.L("Your Keystone"), region, g, b)
             mod.Tip_AddDouble(dungeon, "+" .. level, 0.8, 0.8, 0.8, 1, 1, 1)
         end
         local count = PartyRows()
         if count > 0 then
             mod.Tip_AddLine(" ")
-            mod.Tip_AddLine(CludesUI.L("Party Keystones"), r, g, b)
+            mod.Tip_AddLine(CludesUI.L("Party Keystones"), region, g, b)
             for i = 1, count do
                 local row = rows[i]
                 local right = row.dungeon .. " |cffffffff+" .. row.level .. "|r"
@@ -416,7 +416,7 @@ mod.BlockFactories.greatvault = function(blockCfg, slot, contentFrame, barCtx)
             end
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["LEFT_CLICK"], CludesUI.L("Open Great Vault"), 1, 1, 1, r, g, b)
+        mod.Tip_AddDouble(L["LEFT_CLICK"], CludesUI.L("Open Great Vault"), 1, 1, 1, region, g, b)
         mod.Tip_Show()
         return count
     end

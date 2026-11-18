@@ -119,15 +119,15 @@ local function LayoutIcons()
         if saved and CursorAttachActive(saved.profile.display) and cursorAnchor then
             return
         end
-        local idx = g.fixed
+        local index = g.fixed
         for _, ident in ipairs(_B.ALL or {}) do
-            local f = _B.iconState and _B.iconState[ident] and _B.icons[ident]
-            if f then
-                idx = idx + 1
-                f:SetSize(g.sz, g.iconH or g.sz)
-                f:SetAlpha(g.alpha)
-                f:ClearAllPoints()
-                f:SetPoint(g.pt, iconAnchor, g.pt, g.startX + (idx - 1) * (g.sz + g.spacing), g.yOff)
+            local frame = _B.iconState and _B.iconState[ident] and _B.icons[ident]
+            if frame then
+                index = index + 1
+                frame:SetSize(g.sz, g.iconH or g.sz)
+                frame:SetAlpha(g.alpha)
+                frame:ClearAllPoints()
+                frame:SetPoint(g.pt, iconAnchor, g.pt, g.startX + (index - 1) * (g.sz + g.spacing), g.yOff)
             end
         end
         return
@@ -187,7 +187,7 @@ local function LayoutIcons()
     elseif g.iconH then
         g.iconH = nil
     end
-    for idx, button in ipairs(allIcons) do
+    for index, button in ipairs(allIcons) do
         button:SetSize(sz, iconH)
         button:SetAlpha(p.opacity or 1.0)
         -- This layout is OOC-only, so treating every entry as protected also
@@ -196,7 +196,7 @@ local function LayoutIcons()
         REMIND.SizeIconQuality(button, sz)
         REMIND.SizeIconBagCount(button, sz)
         button:ClearAllPoints()
-        button:SetPoint(pt, iconAnchor, pt, startX + (idx - 1) * (sz + spacing), yOff)
+        button:SetPoint(pt, iconAnchor, pt, startX + (index - 1) * (sz + spacing), yOff)
     end
     -- Size the anchor to the row so the unlock mode overlay covers it.
     ResizeAnchorCentered(totalW, iconH + textH)
@@ -539,17 +539,17 @@ end
 -- passes -- the enchant summary API is combat-safe. Hung on EABR.
 function REMIND.EmitWeaponEnchantReminders(missing, co)
     local hasMH, mhExpire, _, _, hasOH, ohExpire = REMIND.WeaponEnchants()
-    for idx = 1, 2 do
+    for index = 1, 2 do
         local slot, has, expire
         -- Plain if/else, not "cond and a or b": that idiom silently falls
         -- through to b whenever a (hasMH) is false, corrupting slot 16.
-        if idx == 1 then
+        if index == 1 then
             slot, has, expire = 16, hasMH, mhExpire
         else
             slot, has, expire = 17, hasOH, ohExpire
         end
-        local r = REMIND._resolved.we[slot]
-        local category = r.cat
+        local region = REMIND._resolved.we[slot]
+        local category = region.cat
         local shouldRemind = false
         if category and not has then
             shouldRemind = true
@@ -559,8 +559,8 @@ function REMIND.EmitWeaponEnchantReminders(missing, co)
                 shouldRemind = true
             end
         end
-        if shouldRemind and r.itemID and (co.showWithoutItem ~= false or r.hasBags) then
-            local bestItemID = r.itemID
+        if shouldRemind and region.itemID and (co.showWithoutItem ~= false or region.hasBags) then
+            local bestItemID = region.itemID
             local e = AcquireEntry()
             e.mode = "macro"
             e.macro = "/use item:" .. bestItemID .. "\n/use " .. slot
@@ -570,7 +570,7 @@ function REMIND.EmitWeaponEnchantReminders(missing, co)
             e.tooltipItem = bestItemID
             e.qualityAtlas = REMIND.GetItemQualityAtlas(bestItemID)
             e.bagCount = CachedGetItemCount(bestItemID)
-            e.desaturated = not r.hasBags
+            e.desaturated = not region.hasBags
             e.cat = "consumable"
             e.dismissKey = "consumable:weapon_enchant_" .. slot
             missing[#missing + 1] = e
@@ -600,24 +600,24 @@ local function InkyMapWatch(wanted)
         return
     end
     inkyMap.on = wanted
-    local f = inkyMap.frame
+    local frame = inkyMap.frame
     if not wanted then
-        f:UnregisterAllEvents()
+        frame:UnregisterAllEvents()
         return
     end
-    if not f then
-        f = CreateFrame("Frame")
-        f:SetScript("OnEvent", function(_, evt, _, newMapID)
+    if not frame then
+        frame = CreateFrame("Frame")
+        frame:SetScript("OnEvent", function(_, evt, _, newMapID)
             if evt == "PLAYER_MAP_CHANGED" then
                 InkyMapRead(newMapID)
             else
                 InkyMapRead(C_Map.GetBestMapForUnit("player"))
             end
         end)
-        inkyMap.frame = f
+        inkyMap.frame = frame
     end
-    f:RegisterEvent("PLAYER_MAP_CHANGED")
-    f:RegisterEvent("PLAYER_ENTERING_WORLD")
+    frame:RegisterEvent("PLAYER_MAP_CHANGED")
+    frame:RegisterEvent("PLAYER_ENTERING_WORLD")
     inkyMap.key = tostring(C_Map.GetBestMapForUnit("player") or 0)
 end
 
@@ -1022,8 +1022,8 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
             -- Only remind if a Warlock is in the group
             local hasWarlock = false
             if IsInRaid() then
-                for idx = 1, GetNumGroupMembers() do
-                    local _, cls = UnitClass("raid" .. idx)
+                for index = 1, GetNumGroupMembers() do
+                    local _, cls = UnitClass("raid" .. index)
                     if cls ~= nil and not isSecret(cls) and cls == "WARLOCK" then
                         hasWarlock = true
                         break
@@ -1033,8 +1033,8 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
                 if GetPlayerClass() == "WARLOCK" then
                     hasWarlock = true
                 else
-                    for idx = 1, GetNumSubgroupMembers() do
-                        local _, cls = UnitClass("party" .. idx)
+                    for index = 1, GetNumSubgroupMembers() do
+                        local _, cls = UnitClass("party" .. index)
                         if cls ~= nil and not isSecret(cls) and cls == "WARLOCK" then
                             hasWarlock = true
                             break
@@ -1093,8 +1093,8 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
         local co3 = saved.profile.consumables
         if co3 and co3.enabled and co3.enabled.runeforge ~= false then
             local needsRune = false
-            for idx = 1, 2 do
-                local slot = (idx == 1) and 16 or 17
+            for index = 1, 2 do
+                local slot = (index == 1) and 16 or 17
                 local itemLink = GetInventoryItemLink("player", slot)
                 if itemLink then
                     local ench = itemLink:match("item:%d+:(-?%d+):")

@@ -106,8 +106,8 @@ CUI._ShellLooks.lfg = function()
     if not mod.Enabled() then
         return nil
     end
-    local d = DB()
-    return d.windowBgColor, d.windowBgOpacity
+    local skinData = DB()
+    return skinData.windowBgColor, skinData.windowBgOpacity
 end
 -- no list rebuild, the color picker fires every frame while dragging
 function mod.SetWindowLook(k, val)
@@ -198,9 +198,9 @@ end
 
 -- blizzard's sign up checks, read-only. returns ok, why not
 local function SignUpState(ident)
-    local msg = LFGListUtil_GetActiveQueueMessage and LFGListUtil_GetActiveQueueMessage(true)
-    if msg then
-        return false, msg
+    local message = LFGListUtil_GetActiveQueueMessage and LFGListUtil_GetActiveQueueMessage(true)
+    if message then
+        return false, message
     end
     if LFGListUtil_IsAppEmpowered and not LFGListUtil_IsAppEmpowered() then
         return false, LFG_LIST_APP_UNEMPOWERED
@@ -220,8 +220,8 @@ local function SignUpState(ident)
     if GetNumGroupMembers(LE_PARTY_CATEGORY_HOME) > (MAX_PARTY_MEMBERS or 4) + 1 then
         return false, LFG_LIST_MAX_MEMBERS
     end
-    local t, hgt, d = C_LFGList.GetAvailableRoles()
-    if not (t or hgt or d) then
+    local t, hgt, skinData = C_LFGList.GetAvailableRoles()
+    if not (t or hgt or skinData) then
         return false, LFG_LIST_MUST_CHOOSE_SPEC
     end
     if GroupHasOfflineMember and GroupHasOfflineMember(LE_PARTY_CATEGORY_HOME) then
@@ -499,7 +499,7 @@ local PERSON_TEX = "Interface\\AddOns\\CludesUI\\media\\icons\\cui-person.png"
 local PLAYERS_COLOR = { 0.4, 0.4, 0.42 }
 -- a count circle's border, the same as the member icons get (ring when round,
 -- border style when square)
-local function CircleEdge(p, round, px, cr, cg, cb, texture, key)
+local function CircleEdge(p, round, px, cr, cg, callback, texture, key)
     p.ring:Hide()
     p.edge:Hide()
     if px <= 0 then
@@ -509,12 +509,12 @@ local function CircleEdge(p, round, px, cr, cg, cb, texture, key)
         p.ring:ClearAllPoints()
         p.ring:SetPoint("TOPLEFT", p.bg, "TOPLEFT", -px, px)
         p.ring:SetPoint("BOTTOMRIGHT", p.bg, "BOTTOMRIGHT", px, -px)
-        p.ring:SetColorTexture(cr, cg, cb, 1)
+        p.ring:SetColorTexture(cr, cg, callback, 1)
         p.ring:Show()
     else
         if p.edge._key ~= key then
             p.edge._key = key
-            CUI.ApplyBorderStyle(p.edge, px, cr, cg, cb, 1, texture)
+            CUI.ApplyBorderStyle(p.edge, px, cr, cg, callback, 1, texture)
         end
         p.edge:Show()
     end
@@ -598,102 +598,102 @@ local LINE_OF = {
 
 -- parent: the settings preview's, else the list's (only the list's go in rows)
 local function MakeRow(i, hostFrame)
-    local r = CreateFrame("Button", nil, hostFrame or body)
-    r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    local region = CreateFrame("Button", nil, hostFrame or body)
+    region:RegisterForClicks("LeftButtonUp", "RightButtonUp")
     local stock = not Skinned()
-    r.stock = stock
-    r.bg = r:CreateTexture(nil, "BACKGROUND")
-    r.bg:SetAllPoints()
-    r.bg:SetColorTexture(1, 1, 1, stock and 0.04 or 0.03)
-    r.sel = r:CreateTexture(nil, "BORDER")
-    r.sel:SetAllPoints()
+    region.stock = stock
+    region.bg = region:CreateTexture(nil, "BACKGROUND")
+    region.bg:SetAllPoints()
+    region.bg:SetColorTexture(1, 1, 1, stock and 0.04 or 0.03)
+    region.sel = region:CreateTexture(nil, "BORDER")
+    region.sel:SetAllPoints()
     if stock then
-        r.sel:SetAtlas("groupfinder-highlightbar-yellow")
-        r.sel:SetBlendMode("ADD")
-        r.sel:Hide()
+        region.sel:SetAtlas("groupfinder-highlightbar-yellow")
+        region.sel:SetBlendMode("ADD")
+        region.sel:Hide()
     end
     -- status underline
-    r.under = r:CreateTexture(nil, "ARTWORK", nil, 7)
-    r.under:SetPoint("BOTTOMLEFT", r, "BOTTOMLEFT", 0, 0)
-    r.under:SetPoint("BOTTOMRIGHT", r, "BOTTOMRIGHT", 0, 0)
-    r.under:SetHeight(2)
-    r.under:Hide()
+    region.under = region:CreateTexture(nil, "ARTWORK", nil, 7)
+    region.under:SetPoint("BOTTOMLEFT", region, "BOTTOMLEFT", 0, 0)
+    region.under:SetPoint("BOTTOMRIGHT", region, "BOTTOMRIGHT", 0, 0)
+    region.under:SetHeight(2)
+    region.under:Hide()
     -- status highlight across the row, under the selection
-    r.stat = r:CreateTexture(nil, "BACKGROUND", nil, 1)
-    r.stat:SetAllPoints()
-    r.stat:Hide()
-    r.hl = r:CreateTexture(nil, "HIGHLIGHT")
-    r.hl:SetAllPoints()
+    region.stat = region:CreateTexture(nil, "BACKGROUND", nil, 1)
+    region.stat:SetAllPoints()
+    region.stat:Hide()
+    region.hl = region:CreateTexture(nil, "HIGHLIGHT")
+    region.hl:SetAllPoints()
     if stock then
-        r.hl:SetAtlas("groupfinder-highlightbar-blue")
-        r.hl:SetBlendMode("ADD")
+        region.hl:SetAtlas("groupfinder-highlightbar-blue")
+        region.hl:SetBlendMode("ADD")
     else
-        r.hl:SetColorTexture(1, 1, 1, 0.06)
+        region.hl:SetColorTexture(1, 1, 1, 0.06)
     end
     -- the row without its note: icons and counts centre on it
-    r.mid = r:CreateTexture(nil, "BACKGROUND")
-    r.mid:SetPoint("TOPLEFT", r, "TOPLEFT", 0, 0)
-    r.mid:SetPoint("TOPRIGHT", r, "TOPRIGHT", 0, 0)
+    region.mid = region:CreateTexture(nil, "BACKGROUND")
+    region.mid:SetPoint("TOPLEFT", region, "TOPLEFT", 0, 0)
+    region.mid:SetPoint("TOPRIGHT", region, "TOPRIGHT", 0, 0)
     -- the group's note, one line under the row
-    r.note = r:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    r.note:SetJustifyH("LEFT")
-    r.note:SetWordWrap(false)
-    r.note:SetMaxLines(1)
-    r.note:Hide()
-    r.name = r:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    r.name:SetJustifyH("LEFT")
-    r.name:SetWordWrap(false)
-    r.act = r:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    r.act:SetJustifyH("LEFT")
-    r.act:SetWordWrap(false)
+    region.note = region:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    region.note:SetJustifyH("LEFT")
+    region.note:SetWordWrap(false)
+    region.note:SetMaxLines(1)
+    region.note:Hide()
+    region.name = region:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    region.name:SetJustifyH("LEFT")
+    region.name:SetWordWrap(false)
+    region.act = region:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    region.act:SetJustifyH("LEFT")
+    region.act:SetWordWrap(false)
     -- short dungeon name before the title
-    r.short = r:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    r.short:Hide()
+    region.short = region:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    region.short:Hide()
     -- line three bits
-    r.sep1 = r:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    r.sep1:SetText("||")
-    r.style = r:CreateFontString(nil, "OVERLAY", "GameFontGreenSmall")
-    r.sep2 = r:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    r.sep2:SetText("||")
-    r.tag = r:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    r.flag = r:CreateTexture(nil, "OVERLAY")
-    r.flag:SetSize(13, 10)
-    r.sep3 = r:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
-    r.sep3:SetText("||")
-    r.timer = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    region.sep1 = region:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    region.sep1:SetText("||")
+    region.style = region:CreateFontString(nil, "OVERLAY", "GameFontGreenSmall")
+    region.sep2 = region:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    region.sep2:SetText("||")
+    region.tag = region:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    region.flag = region:CreateTexture(nil, "OVERLAY")
+    region.flag:SetSize(13, 10)
+    region.sep3 = region:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
+    region.sep3:SetText("||")
+    region.timer = region:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
     -- kept for every paint of this row: line three's parts, the sized ones,
     -- the line layout, the members and the open roles
-    r.line3 = { r.sep1, r.style, r.sep2, r.tag, r.flag, r.sep3, r.timer }
-    r.lineFS = { r.sep1, r.style, r.sep2, r.tag, r.sep3, r.timer }
-    r.lineH, r.lineY = {}, {}
-    r.members, r.mpool, r.needs = {}, {}, {}
+    region.line3 = { region.sep1, region.style, region.sep2, region.tag, region.flag, region.sep3, region.timer }
+    region.lineFS = { region.sep1, region.style, region.sep2, region.tag, region.sep3, region.timer }
+    region.lineH, region.lineY = {}, {}
+    region.members, region.mpool, region.needs = {}, {}, {}
     -- cancel button
     if stock then
         -- blizzard's red x button
-        r.cancel = CreateFrame("Button", nil, r, "UIMenuButtonStretchTemplate")
-        r.cancel.tex = r.cancel:CreateTexture(nil, "ARTWORK")
-        r.cancel.tex:SetAtlas("groupfinder-icon-redx")
-        r.cancel.tex:SetPoint("CENTER")
-        r.cancel:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
+        region.cancel = CreateFrame("Button", nil, region, "UIMenuButtonStretchTemplate")
+        region.cancel.tex = region.cancel:CreateTexture(nil, "ARTWORK")
+        region.cancel.tex:SetAtlas("groupfinder-icon-redx")
+        region.cancel.tex:SetPoint("CENTER")
+        region.cancel:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
         -- the template's highlight is inset and cropped; the whole glow, on the whole button
-        local highlight = r.cancel:GetHighlightTexture()
+        local highlight = region.cancel:GetHighlightTexture()
         if highlight then
             highlight:ClearAllPoints()
             highlight:SetAllPoints()
             highlight:SetTexCoord(0, 1, 0, 1)
         end
     else
-        r.cancel = CreateFrame("Button", nil, r)
-        r.cancel.bg = r.cancel:CreateTexture(nil, "BACKGROUND")
-        r.cancel.bg:SetAllPoints()
-        r.cancel.bg:SetColorTexture(0.06, 0.06, 0.06, 0.95)
-        r.cancel.edge = CUI.MakeBorder(r.cancel, 0.25, 0.25, 0.25, 1, CUI.PanelPP)
-        r.cancel.tex = r.cancel:CreateTexture(nil, "OVERLAY")
-        r.cancel.tex:SetTexture(X_TEX)
-        r.cancel.tex:SetPoint("CENTER")
-        r.cancel.tex:SetVertexColor(0.8, 0.8, 0.8, 1)
+        region.cancel = CreateFrame("Button", nil, region)
+        region.cancel.bg = region.cancel:CreateTexture(nil, "BACKGROUND")
+        region.cancel.bg:SetAllPoints()
+        region.cancel.bg:SetColorTexture(0.06, 0.06, 0.06, 0.95)
+        region.cancel.edge = CUI.MakeBorder(region.cancel, 0.25, 0.25, 0.25, 1, CUI.PanelPP)
+        region.cancel.tex = region.cancel:CreateTexture(nil, "OVERLAY")
+        region.cancel.tex:SetTexture(X_TEX)
+        region.cancel.tex:SetPoint("CENTER")
+        region.cancel.tex:SetVertexColor(0.8, 0.8, 0.8, 1)
     end
-    r.cancel:SetScript("OnEnter", function(self)
+    region.cancel:SetScript("OnEnter", function(self)
         if not stock then
             self.tex:SetVertexColor(1, 0.3, 0.3, 1)
             if self.edge and self.edge.SetColor then
@@ -702,7 +702,7 @@ local function MakeRow(i, hostFrame)
         end
         CUI.ShowWidgetTooltip(self, CANCEL_SIGN_UP or "Cancel Sign Up")
     end)
-    r.cancel:SetScript("OnLeave", function(self)
+    region.cancel:SetScript("OnLeave", function(self)
         if not stock then
             self.tex:SetVertexColor(0.8, 0.8, 0.8, 1)
             if self.edge and self.edge.SetColor then
@@ -711,7 +711,7 @@ local function MakeRow(i, hostFrame)
         end
         CUI.HideWidgetTooltip()
     end)
-    r.cancel:SetScript("OnClick", function(self)
+    region.cancel:SetScript("OnClick", function(self)
         if self:GetParent().preview then
             return
         end
@@ -720,21 +720,21 @@ local function MakeRow(i, hostFrame)
             C_LFGList.CancelApplication(ident)
         end
     end)
-    r.status = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    r.status:SetJustifyH("RIGHT")
-    r.score = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-    r.score:SetJustifyH("RIGHT")
-    r.icons, r.crowns, r.rings, r.roles = {}, {}, {}, {}
+    region.status = region:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    region.status:SetJustifyH("RIGHT")
+    region.score = region:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+    region.score:SetJustifyH("RIGHT")
+    region.icons, region.crowns, region.rings, region.roles = {}, {}, {}, {}
     for k = 1, 5 do
-        local t = r:CreateTexture(nil, "ARTWORK", nil, 2)
-        r.icons[k] = t
+        local t = region:CreateTexture(nil, "ARTWORK", nil, 2)
+        region.icons[k] = t
         -- ring behind round spec icons
-        local ring = r:CreateTexture(nil, "ARTWORK", nil, 1)
+        local ring = region:CreateTexture(nil, "ARTWORK", nil, 1)
         ring:SetPoint("TOPLEFT", t, "TOPLEFT", -1, 1)
         ring:SetPoint("BOTTOMRIGHT", t, "BOTTOMRIGHT", 1, -1)
         ring:Hide()
-        r.rings[k] = ring
-        local m1 = r:CreateMaskTexture()
+        region.rings[k] = ring
+        local m1 = region:CreateMaskTexture()
         m1:SetTexture(
             "Interface\\CharacterFrame\\TempPortraitAlphaMask",
             "CLAMPTOBLACKADDITIVE",
@@ -742,52 +742,52 @@ local function MakeRow(i, hostFrame)
         )
         m1:SetAllPoints(ring)
         ring:AddMaskTexture(m1)
-        local m2 = r:CreateMaskTexture()
+        local m2 = region:CreateMaskTexture()
         m2:SetTexture(
             "Interface\\CharacterFrame\\TempPortraitAlphaMask",
             "CLAMPTOBLACKADDITIVE",
             "CLAMPTOBLACKADDITIVE"
         )
         m2:SetAllPoints(t)
-        r.masks = r.masks or {}
-        r.masks[k] = m2
+        region.masks = region.masks or {}
+        region.masks[k] = m2
         -- role mark on top
-        local role = r:CreateTexture(nil, "ARTWORK", nil, 3)
+        local role = region:CreateTexture(nil, "ARTWORK", nil, 3)
         role:SetPoint("CENTER", t)
         role:Hide()
-        r.roles[k] = role
+        region.roles[k] = role
         -- holds the square border
-        local bf = CreateFrame("Frame", nil, r)
+        local bf = CreateFrame("Frame", nil, region)
         bf:SetAllPoints(t)
         bf:EnableMouse(false)
         bf:Hide()
-        r.borders = r.borders or {}
-        r.borders[k] = bf
+        region.borders = region.borders or {}
+        region.borders[k] = bf
         -- leader crown
-        local c = r:CreateTexture(nil, "OVERLAY")
+        local c = region:CreateTexture(nil, "OVERLAY")
         c:SetAtlas("groupfinder-icon-leader")
         c:SetPoint("BOTTOM", t, "TOP", 0, 2)
         c:Hide()
-        r.crowns[k] = c
+        region.crowns[k] = c
     end
     -- raid role counts, and a 4th circle for a player count
-    r.rr = {}
+    region.rr = {}
     for k = 1, 4 do
-        local backdrop = r:CreateTexture(nil, "ARTWORK", nil, 1)
-        local mask = r:CreateMaskTexture()
+        local backdrop = region:CreateTexture(nil, "ARTWORK", nil, 1)
+        local mask = region:CreateMaskTexture()
         mask:SetTexture(
             "Interface\\CharacterFrame\\TempPortraitAlphaMask",
             "CLAMPTOBLACKADDITIVE",
             "CLAMPTOBLACKADDITIVE"
         )
         mask:SetAllPoints(backdrop)
-        local t = r:CreateTexture(nil, "ARTWORK", nil, 3)
+        local t = region:CreateTexture(nil, "ARTWORK", nil, 3)
         t:SetPoint("CENTER", backdrop)
-        local c = r:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        local c = region:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
         c:SetJustifyH("CENTER")
         -- the member icons' borders: a ring behind round ones, a border frame on square ones
-        local ring = r:CreateTexture(nil, "ARTWORK", nil, 0)
-        local rm = r:CreateMaskTexture()
+        local ring = region:CreateTexture(nil, "ARTWORK", nil, 0)
+        local rm = region:CreateMaskTexture()
         rm:SetTexture(
             "Interface\\CharacterFrame\\TempPortraitAlphaMask",
             "CLAMPTOBLACKADDITIVE",
@@ -795,7 +795,7 @@ local function MakeRow(i, hostFrame)
         )
         rm:SetAllPoints(ring)
         ring:AddMaskTexture(rm)
-        local edge = CreateFrame("Frame", nil, r)
+        local edge = CreateFrame("Frame", nil, region)
         edge:SetAllPoints(backdrop)
         edge:EnableMouse(false)
         backdrop:Hide()
@@ -803,19 +803,19 @@ local function MakeRow(i, hostFrame)
         c:Hide()
         ring:Hide()
         edge:Hide()
-        r.rr[k] = { bg = backdrop, mask = mask, icon = t, count = c, ring = ring, edge = edge }
+        region.rr[k] = { bg = backdrop, mask = mask, icon = t, count = c, ring = ring, edge = edge }
     end
     -- row art
-    r.art = r:CreateTexture(nil, "BACKGROUND", nil, 7)
+    region.art = region:CreateTexture(nil, "BACKGROUND", nil, 7)
     if mod.ROW_ART then
-        r.art:SetAlpha(mod.ROW_ART.alpha)
-        local m = r:CreateMaskTexture()
+        region.art:SetAlpha(mod.ROW_ART.alpha)
+        local m = region:CreateMaskTexture()
         m:SetTexture(mod.ROW_ART.mask, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        m:SetAllPoints(r.art)
-        r.art:AddMaskTexture(m)
+        m:SetAllPoints(region.art)
+        region.art:AddMaskTexture(m)
     end
-    r.art:Hide()
-    r:SetScript("OnClick", function(self, btnFrame)
+    region.art:Hide()
+    region:SetScript("OnClick", function(self, btnFrame)
         if self.preview then
             return
         end
@@ -853,7 +853,7 @@ local function MakeRow(i, hostFrame)
             SignUp(ident)
         end
     end)
-    r:SetScript("OnEnter", function(self)
+    region:SetScript("OnEnter", function(self)
         if self.preview then
             if mod.OwnListPreviewTip then
                 mod.OwnListPreviewTip(self)
@@ -867,11 +867,11 @@ local function MakeRow(i, hostFrame)
         LFGListUtil_SetSearchEntryTooltip(GameTooltip, self.resultID)
         GameTooltip:Show()
     end)
-    r:SetScript("OnLeave", GameTooltip_Hide)
+    region:SetScript("OnLeave", GameTooltip_Hide)
     if i then
-        rowList[i] = r
+        rowList[i] = region
     end
-    return r
+    return region
 end
 
 local function SetSize(fontStr, size)
@@ -935,24 +935,24 @@ end
 mod.OwnListIconSize = IconSize
 
 -- a row's layout: again only for a new row height or a display change (styleGen)
-local function Layout(r, hgt)
-    if r.layH == hgt and r.layGen == styleGen then
+local function Layout(region, hgt)
+    if region.layH == hgt and region.layGen == styleGen then
         return
     end
-    r.layH, r.layGen = hgt, styleGen
-    r.mid:SetHeight(hgt)
+    region.layH, region.layGen = hgt, styleGen
+    region.mid:SetHeight(hgt)
     local pad = 6
     local tS, nS, lS = mod.OwnListSize("titleSize"), mod.OwnListSize("nameSize"), mod.OwnListSize("lineSize")
-    mod.OwnListNameFont(r.name, tS)
-    SetSize(r.act, nS)
-    local sized = r.lineFS
+    mod.OwnListNameFont(region.name, tS)
+    SetSize(region.act, nS)
+    local sized = region.lineFS
     for i = 1, #sized do
         SetSize(sized[i], lS)
     end
-    mod.OwnListNameFont(r.note, lS)
+    mod.OwnListNameFont(region.note, lS)
     -- title always fits, then the dungeon, then line three
     local room = hgt - 4
-    local lines = r.lineH
+    local lines = region.lineH
     wipe(lines)
     lines[1] = tS + 2
     if room >= tS + nS + 6 then
@@ -970,23 +970,23 @@ local function Layout(r, hgt)
     end
     sum = sum + (#lines - 1) * 2
     local posY = math.floor((hgt - sum) / 2)
-    local lineY = r.lineY
+    local lineY = region.lineY
     wipe(lineY)
     for i = 1, #lines do
         lineY[i] = posY
         posY = posY + lines[i] + 2
     end
-    r.name:ClearAllPoints()
-    r.name:SetPoint("TOPLEFT", r, "TOPLEFT", pad, -r.lineY[1])
-    r.act:ClearAllPoints()
+    region.name:ClearAllPoints()
+    region.name:SetPoint("TOPLEFT", region, "TOPLEFT", pad, -region.lineY[1])
+    region.act:ClearAllPoints()
     if lines[2] then
-        r.act:SetPoint("TOPLEFT", r, "TOPLEFT", pad, -r.lineY[2])
-        r.act:Show()
+        region.act:SetPoint("TOPLEFT", region, "TOPLEFT", pad, -region.lineY[2])
+        region.act:Show()
     else
-        r.act:Hide()
+        region.act:Hide()
     end
-    r.lines = #lines
-    r.pad = pad
+    region.lines = #lines
+    region.pad = pad
 
     local isz = IconSize(hgt)
     local bpx = tonumber(mod.OwnListGet("borderSize")) or 0
@@ -994,43 +994,43 @@ local function Layout(r, hgt)
     local cw = math.max(8, math.floor(isz * 0.6 + 0.5))
     -- cancel square left of the text, about two lines tall (placed in fill)
     local cs = math.max(CANCEL_H, math.min(hgt - 8, tS + nS + 6))
-    r.cancel:SetSize(cs, cs)
-    local xs = math.floor(cs * (r.stock and 0.6 or 0.45) + 0.5)
-    r.cancel.tex:SetSize(xs, xs)
-    r.cancelSize = cs
-    r.cancel:SetFrameLevel(r:GetFrameLevel() + 5)
-    SetSize(r.score, mod.OwnListSize("scoreSize"))
+    region.cancel:SetSize(cs, cs)
+    local xs = math.floor(cs * (region.stock and 0.6 or 0.45) + 0.5)
+    region.cancel.tex:SetSize(xs, xs)
+    region.cancelSize = cs
+    region.cancel:SetFrameLevel(region:GetFrameLevel() + 5)
+    SetSize(region.score, mod.OwnListSize("scoreSize"))
     local posX = -pad - ((mod.OwnListGet("iconShape") ~= "square") and bpx or 0)
     for k = 5, 1, -1 do
-        local t = r.icons[k]
+        local t = region.icons[k]
         t:SetSize(isz, isz)
-        r.roles[k]:SetSize(math.floor(isz * 0.7 + 0.5), math.floor(isz * 0.7 + 0.5))
-        r.crowns[k]:SetSize(cw, math.floor(cw * 0.6 + 0.5))
+        region.roles[k]:SetSize(math.floor(isz * 0.7 + 0.5), math.floor(isz * 0.7 + 0.5))
+        region.crowns[k]:SetSize(cw, math.floor(cw * 0.6 + 0.5))
         t:ClearAllPoints()
-        t:SetPoint("RIGHT", r.mid, "RIGHT", posX, 0)
+        t:SetPoint("RIGHT", region.mid, "RIGHT", posX, 0)
         posX = posX - isz - gap
     end
-    r.scoreX = posX - 4 -- a raid's role counts move the score; the next group puts it back
-    r.scoreRaid = nil
-    r.score:ClearAllPoints()
-    r.score:SetPoint("RIGHT", r.mid, "RIGHT", r.scoreX, 0)
-    r.status:ClearAllPoints()
-    r.status:SetPoint("RIGHT", r.score, "LEFT", -8, 0)
-    r.name:SetPoint("RIGHT", r.status, "LEFT", -8, 0)
-    r.act:SetPoint("RIGHT", r.status, "LEFT", -8, 0)
+    region.scoreX = posX - 4 -- a raid's role counts move the score; the next group puts it back
+    region.scoreRaid = nil
+    region.score:ClearAllPoints()
+    region.score:SetPoint("RIGHT", region.mid, "RIGHT", region.scoreX, 0)
+    region.status:ClearAllPoints()
+    region.status:SetPoint("RIGHT", region.score, "LEFT", -8, 0)
+    region.name:SetPoint("RIGHT", region.status, "LEFT", -8, 0)
+    region.act:SetPoint("RIGHT", region.status, "LEFT", -8, 0)
 end
 
 -- line three's next part, after the one placed before it (r.l3prev)
-local function Put(r, p, gap)
+local function Put(region, p, gap)
     p:ClearAllPoints()
-    local prev = r.l3prev
-    if prev then
-        p:SetPoint("LEFT", prev, "RIGHT", gap or 0, 0)
+    local previous = region.l3prev
+    if previous then
+        p:SetPoint("LEFT", previous, "RIGHT", gap or 0, 0)
     else
-        p:SetPoint("TOPLEFT", r, "TOPLEFT", r.textX or r.pad, -r.lineY[3])
+        p:SetPoint("TOPLEFT", region, "TOPLEFT", region.textX or region.pad, -region.lineY[3])
     end
     p:Show()
-    r.l3prev = p
+    region.l3prev = p
 end
 
 -- where a row reads its group from: the game's results, or the settings
@@ -1066,14 +1066,14 @@ local LIVE = {
 }
 
 -- line three: playstyle | region | time since you signed up
-local function LineThree(r, ident, details, source)
-    local parts = r.line3
+local function LineThree(region, ident, details, source)
+    local parts = region.line3
     for i = 1, #parts do
         parts[i]:Hide()
     end
-    r.signedAt = nil
-    r.l3prev = nil
-    if (r.lines or 0) < 3 then
+    region.signedAt = nil
+    region.l3prev = nil
+    if (region.lines or 0) < 3 then
         return
     end
     local style = ""
@@ -1085,44 +1085,44 @@ local function LineThree(r, ident, details, source)
     local tag, tr, tg, tb, flag
     tag, tr, tg, tb, flag = source.region(ident)
     if style ~= "" then
-        r.style:SetText(style)
-        Put(r, r.style)
+        region.style:SetText(style)
+        Put(region, region.style)
     end
     if tag then
-        if r.l3prev then
-            Put(r, r.sep2, 4)
+        if region.l3prev then
+            Put(region, region.sep2, 4)
         end
-        r.tag:SetText(tag)
-        r.tag:SetTextColor(tr, tg, tb, 1)
-        Put(r, r.tag, 4)
+        region.tag:SetText(tag)
+        region.tag:SetTextColor(tr, tg, tb, 1)
+        Put(region, region.tag, 4)
         if flag then
             local fh = math.max(8, mod.OwnListSize("lineSize"))
-            r.flag:SetSize(math.floor(fh * 4 / 3 + 0.5), fh)
-            r.flag:SetTexture(flag)
-            Put(r, r.flag, 4)
+            region.flag:SetSize(math.floor(fh * 4 / 3 + 0.5), fh)
+            region.flag:SetTexture(flag)
+            Put(region, region.flag, 4)
         end
     end
     local at = source.signedAt(ident)
     if at then
-        if r.l3prev then
-            Put(r, r.sep3, 4)
+        if region.l3prev then
+            Put(region, region.sep3, 4)
         end
-        r.timer:SetText(TimeLeft(at))
-        Put(r, r.timer, 4)
-        r.signedAt = at
+        region.timer:SetText(TimeLeft(at))
+        Put(region, region.timer, 4)
+        region.signedAt = at
     end
 end
 
-local function Fill(r, ident, source)
+local function Fill(region, ident, source)
     source = source or LIVE
-    r.resultID = ident
+    region.resultID = ident
     local details = source.info(ident)
     if not Readable(details) then
-        r:Hide()
+        region:Hide()
         return
     end
     -- protected text, straight to the font string
-    r.name:SetText(details.name)
+    region.name:SetText(details.name)
     local acts = details.activityIDs
     local act = type(acts) == "table" and not Secret(acts) and acts[1]
     local ai = act and not Secret(act) and source.activity(act)
@@ -1136,73 +1136,73 @@ local function Fill(r, ident, source)
         nr, ng, nb = FriendColor(details)
     end
     if nr then
-        r.name:SetTextColor(nr, ng, nb)
+        region.name:SetTextColor(nr, ng, nb)
     else
-        r.name:SetTextColor(1, 0.82, 0)
+        region.name:SetTextColor(1, 0.82, 0)
     end
-    r.act:SetText(ai and ai.fullName or "")
+    region.act:SetText(ai and ai.fullName or "")
     -- the note, only where the list left room for it (protected text, straight to the font string)
-    local note = r.noteRoom and NoteText(details)
+    local note = region.noteRoom and NoteText(details)
     if note then
-        r.note:ClearAllPoints()
-        r.note:SetPoint("TOPLEFT", r.mid, "BOTTOMLEFT", r.pad or 6, 0)
-        r.note:SetPoint("TOPRIGHT", r.mid, "BOTTOMRIGHT", -(r.pad or 6), 0)
-        r.note:SetText(string.format(LFG_LIST_COMMENT_FORMAT or "%s", note))
+        region.note:ClearAllPoints()
+        region.note:SetPoint("TOPLEFT", region.mid, "BOTTOMLEFT", region.pad or 6, 0)
+        region.note:SetPoint("TOPRIGHT", region.mid, "BOTTOMRIGHT", -(region.pad or 6), 0)
+        region.note:SetText(string.format(LFG_LIST_COMMENT_FORMAT or "%s", note))
         local fc = LFG_LIST_COMMENT_FONT_COLOR
         if fc then
-            r.note:SetTextColor(fc.r, fc.g, fc.b)
+            region.note:SetTextColor(fc.r, fc.g, fc.b)
         else
-            r.note:SetTextColor(0.6, 0.6, 0.6)
+            region.note:SetTextColor(0.6, 0.6, 0.6)
         end
     end
-    r.note:SetShown(note and true or false)
+    region.note:SetShown(note and true or false)
     -- signed up: the cancel square sits left of the text, which moves over for it
     local appStatus = source.appStatus(ident)
     local canCancel = appStatus == "applied"
-    local x0 = r.pad or 6
-    r.cancel:ClearAllPoints()
+    local x0 = region.pad or 6
+    region.cancel:ClearAllPoints()
     if canCancel then
-        r.cancel:SetPoint("LEFT", r.mid, "LEFT", x0, 0)
-        x0 = x0 + (r.cancelSize or CANCEL_H) + 6
+        region.cancel:SetPoint("LEFT", region.mid, "LEFT", x0, 0)
+        x0 = x0 + (region.cancelSize or CANCEL_H) + 6
     end
-    r.cancel:SetShown(canCancel)
-    r.textX = x0
-    if r.act:IsShown() then
-        r.act:SetPoint("TOPLEFT", r, "TOPLEFT", x0, -(r.lineY and r.lineY[2] or 0))
+    region.cancel:SetShown(canCancel)
+    region.textX = x0
+    if region.act:IsShown() then
+        region.act:SetPoint("TOPLEFT", region, "TOPLEFT", x0, -(region.lineY and region.lineY[2] or 0))
     end
-    local short = (r.lines or 0) < 2 and ai and mod.GFShortName(ai.fullName)
+    local short = (region.lines or 0) < 2 and ai and mod.GFShortName(ai.fullName)
     if short and short ~= "" then
         -- the title's face, size and outline (the title is on a family, so they
         -- come from what it was given, never read back from it)
-        local filePath = famFace[r.name]
+        local filePath = famFace[region.name]
         if filePath then
-            r.short:SetFont(filePath, mod.OwnListSize("titleSize"), famFlags[r.name])
+            region.short:SetFont(filePath, mod.OwnListSize("titleSize"), famFlags[region.name])
         end
-        r.short:SetTextColor(r.act:GetTextColor())
-        r.short:SetText(short)
-        r.short:ClearAllPoints()
-        r.short:SetPoint("TOPLEFT", r, "TOPLEFT", x0, -(r.lineY and r.lineY[1] or 0))
-        r.short:Show()
-        r.name:SetPoint("TOPLEFT", r.short, "TOPRIGHT", 4, 0)
+        region.short:SetTextColor(region.act:GetTextColor())
+        region.short:SetText(short)
+        region.short:ClearAllPoints()
+        region.short:SetPoint("TOPLEFT", region, "TOPLEFT", x0, -(region.lineY and region.lineY[1] or 0))
+        region.short:Show()
+        region.name:SetPoint("TOPLEFT", region.short, "TOPRIGHT", 4, 0)
     else
-        r.short:Hide()
-        r.name:SetPoint("TOPLEFT", r, "TOPLEFT", x0, -(r.lineY and r.lineY[1] or 0))
+        region.short:Hide()
+        region.name:SetPoint("TOPLEFT", region, "TOPLEFT", x0, -(region.lineY and region.lineY[1] or 0))
     end
-    LineThree(r, ident, details, source)
+    LineThree(region, ident, details, source)
     local Opt = mod.GFOpt or function()
         return true
     end
     local score = details.leaderOverallDungeonScore
     if Opt("leaderRating") and type(score) == "number" and not Secret(score) and score > 0 then
         -- raider.io or game colors
-        local cr, cg, cb = 1, 1, 1
+        local cr, cg, callback = 1, 1, 1
         if mod.GFRatingColor then
-            cr, cg, cb = mod.GFRatingColor(score)
+            cr, cg, callback = mod.GFRatingColor(score)
         end
-        r.score:SetText(score)
-        r.score:SetTextColor(cr, cg, cb)
+        region.score:SetText(score)
+        region.score:SetTextColor(cr, cg, callback)
     else
-        r.score:SetText("")
+        region.score:SetText("")
     end
     local st = appStatus and STATUS[appStatus]
     local delisted = details.isDelisted
@@ -1210,16 +1210,16 @@ local function Fill(r, ident, source)
         st = STATUS.declined_delisted
     end -- secret check first
     if st then
-        r.status:SetText(st[1])
+        region.status:SetText(st[1])
         -- same color as the status effect
         local sl = LINE_OF[st]
         if sl then
-            r.status:SetTextColor(StatusColor(sl))
+            region.status:SetTextColor(StatusColor(sl))
         else
-            r.status:SetTextColor(st[2], st[3], st[4], 1)
+            region.status:SetTextColor(st[2], st[3], st[4], 1)
         end
     else
-        r.status:SetText("")
+        region.status:SetText("")
     end
     -- status effect: an underline, or the whole row tinted
     local line = st and LINE_OF[st]
@@ -1229,29 +1229,29 @@ local function Fill(r, ident, source)
         local lr, lg, lb = StatusColor(line)
         -- solid, so it reads the same over any window background (the preview's is darker)
         if rowFx then
-            r.stat:SetColorTexture(lr * 0.15 + 0.045, lg * 0.15 + 0.045, lb * 0.15 + 0.045, 1)
+            region.stat:SetColorTexture(lr * 0.15 + 0.045, lg * 0.15 + 0.045, lb * 0.15 + 0.045, 1)
         else
-            r.under:SetColorTexture(lr, lg, lb, 0.9)
+            region.under:SetColorTexture(lr, lg, lb, 0.9)
         end
     end
-    r.under:SetShown(enabled and not rowFx)
-    r.stat:SetShown(rowFx)
+    region.under:SetShown(enabled and not rowFx)
+    region.stat:SetShown(rowFx)
     -- row art
     local art = source.art(ident)
     if art and mod.ROW_ART then
-        local wid = r:GetWidth() or 0
-        r.art:SetTexture(art)
-        r.art:SetTexCoord(unpack(mod.ROW_ART.crop))
-        r.art:ClearAllPoints()
-        r.art:SetPoint("TOPLEFT", r, "TOPLEFT", 0, 0)
-        r.art:SetPoint("BOTTOMLEFT", r.mid, "BOTTOMLEFT", 0, 0)
-        r.art:SetWidth(math.max(1, math.floor(wid * mod.ROW_ART.share)))
-        r.art:Show()
+        local wid = region:GetWidth() or 0
+        region.art:SetTexture(art)
+        region.art:SetTexCoord(unpack(mod.ROW_ART.crop))
+        region.art:ClearAllPoints()
+        region.art:SetPoint("TOPLEFT", region, "TOPLEFT", 0, 0)
+        region.art:SetPoint("BOTTOMLEFT", region.mid, "BOTTOMLEFT", 0, 0)
+        region.art:SetWidth(math.max(1, math.floor(wid * mod.ROW_ART.share)))
+        region.art:Show()
     else
-        r.art:Hide()
+        region.art:Hide()
     end
     -- members, tanks first (the row's own tables, refilled)
-    local members, pool = r.members, r.mpool
+    local members, pool = region.members, region.mpool
     wipe(members)
     local n = details.numMembers
     if type(n) == "number" and not Secret(n) then
@@ -1284,7 +1284,7 @@ local function Fill(r, ident, source)
     local cap = ai and ai.maxNumPlayers or 5
     local mode = MemberMode(ai, cap)
     -- open roles for the empty slots
-    local needs = r.needs
+    local needs = region.needs
     wipe(needs)
     if mod.OwnListGet("missingIcons") ~= "none" and mode == "icons" and cap == 5 then
         local counts = source.counts(ident)
@@ -1302,7 +1302,7 @@ local function Fill(r, ident, source)
     end
     local specOn = Opt("specIcons")
     -- the crown goes with the activity line when the row's too short for it
-    local crownOn = Opt("leaderCrown") and (r.lines or 0) >= 2
+    local crownOn = Opt("leaderCrown") and (region.lines or 0) >= 2
     local square = mod.OwnListGet("iconShape") == "square"
     local bpx = tonumber(mod.OwnListGet("borderSize")) or 0
     local btex = mod.OwnListGet("borderTexture") or "solid"
@@ -1320,15 +1320,15 @@ local function Fill(r, ident, source)
     local blizzMissing = mod.OwnListGet("missingIcons") ~= "cludes"
     local nextNeed = 1
     for k = 1, 5 do
-        local t, m, role, bf = r.icons[k], members[k], r.roles[k], r.borders[k]
-        r.crowns[k]:Hide()
-        r.rings[k]:Hide()
+        local t, m, role, bf = region.icons[k], members[k], region.roles[k], region.borders[k]
+        region.crowns[k]:Hide()
+        region.rings[k]:Hide()
         role:Hide()
         role:SetDesaturated(false)
         role:SetAlpha(1)
         bf:Hide()
         if t._masked then
-            t:RemoveMaskTexture(r.masks[k])
+            t:RemoveMaskTexture(region.masks[k])
             t._masked = nil
         end
         t:SetTexCoord(0, 1, 0, 1)
@@ -1336,9 +1336,9 @@ local function Fill(r, ident, source)
         if mode ~= "icons" then
             t:Hide()
         elseif m then
-            local icon = specOn and m.spec and mod.GFSpecIcon and mod.GFSpecIcon(m.cls, m.spec)
-            if icon then
-                t:SetTexture(icon)
+            local iconTex = specOn and m.spec and mod.GFSpecIcon and mod.GFSpecIcon(m.cls, m.spec)
+            if iconTex then
+                t:SetTexture(iconTex)
                 t:SetTexCoord(0.08, 0.92, 0.08, 0.92)
             elseif square then
                 -- square: class color tile
@@ -1352,7 +1352,7 @@ local function Fill(r, ident, source)
                 -- the game's class circle
                 t:SetAtlas("groupfinder-icon-class-color-" .. m.cls)
             end
-            if not icon and NEED_ATLAS[m.role] then
+            if not iconTex and NEED_ATLAS[m.role] then
                 role:SetAtlas(NEED_ATLAS[m.role])
                 role:Show()
             end
@@ -1364,12 +1364,12 @@ local function Fill(r, ident, source)
                     end
                     bf:Show()
                 end
-            elseif icon then
+            elseif iconTex then
                 -- round spec icon + ring
-                t:AddMaskTexture(r.masks[k])
+                t:AddMaskTexture(region.masks[k])
                 t._masked = true
                 if bpx > 0 then
-                    local ring = r.rings[k]
+                    local ring = region.rings[k]
                     ring:ClearAllPoints()
                     ring:SetPoint("TOPLEFT", t, "TOPLEFT", -bpx, bpx)
                     ring:SetPoint("BOTTOMRIGHT", t, "BOTTOMRIGHT", bpx, -bpx)
@@ -1380,7 +1380,7 @@ local function Fill(r, ident, source)
             t:SetAlpha(1)
             t:Show()
             if crownOn and m.lead then
-                r.crowns[k]:Show()
+                region.crowns[k]:Show()
             end
         elseif k <= cap then
             local need = needs[nextNeed]
@@ -1416,13 +1416,13 @@ local function Fill(r, ident, source)
     local ellIcons = mod.OwnListGet("missingIcons") == "cludes"
     local round = mod.OwnListGet("iconShape") ~= "square"
     -- round rings sit outside the circle, so the first one steps in like the member icons
-    local posX = -(r.pad or 6) - (round and bpx or 0)
-    local isz = r.icons[1]:GetWidth() or 16
+    local posX = -(region.pad or 6) - (round and bpx or 0)
+    local isz = region.icons[1]:GetWidth() or 16
     local fsz = mod.OwnListSize("scoreSize")
     -- a number above a centred circle needs its height on top: else it goes on the circle
-    local inside = (r.layH or isz) < isz + 2 * (fsz + 1)
+    local inside = (region.layH or isz) < isz + 2 * (fsz + 1)
     for k = 3, 1, -1 do
-        local p = r.rr[k]
+        local p = region.rr[k]
         local role = RR_ROLES[k]
         local num = counts and counts[role]
         if counts and type(num) == "number" and not Secret(num) then
@@ -1438,7 +1438,7 @@ local function Fill(r, ident, source)
             end
             p.bg:SetSize(isz, isz)
             p.bg:ClearAllPoints()
-            p.bg:SetPoint("RIGHT", r.mid, "RIGHT", posX, 0)
+            p.bg:SetPoint("RIGHT", region.mid, "RIGHT", posX, 0)
             p.bg:Show()
             CircleEdge(p, round, bpx, br, backdrop, bb, btex, bkey)
             local texture = ellIcons and mod.RoleIconTex and mod.RoleIconTex(role)
@@ -1460,7 +1460,7 @@ local function Fill(r, ident, source)
     end
     -- player count: a grey circle with a person, the number above, like the role counts
     local players = mode == "players" and n
-    local pc = r.rr[4]
+    local pc = region.rr[4]
     if type(players) == "number" and not Secret(players) then
         pc.bg:SetColorTexture(PLAYERS_COLOR[1], PLAYERS_COLOR[2], PLAYERS_COLOR[3], 1)
         if round and not pc.masked then
@@ -1472,7 +1472,7 @@ local function Fill(r, ident, source)
         end
         pc.bg:SetSize(isz, isz)
         pc.bg:ClearAllPoints()
-        pc.bg:SetPoint("RIGHT", r.mid, "RIGHT", posX, 0)
+        pc.bg:SetPoint("RIGHT", region.mid, "RIGHT", posX, 0)
         pc.bg:Show()
         CircleEdge(pc, round, bpx, br, backdrop, bb, btex, bkey)
         local gsz = math.floor(isz * 0.7 + 0.5)
@@ -1488,27 +1488,27 @@ local function Fill(r, ident, source)
         pc.edge:Hide()
     end
     if counts or players then
-        r.score:ClearAllPoints()
-        r.score:SetPoint("RIGHT", r.mid, "RIGHT", posX - 6, 0)
-        r.scoreRaid = true
-    elseif r.scoreRaid then
+        region.score:ClearAllPoints()
+        region.score:SetPoint("RIGHT", region.mid, "RIGHT", posX - 6, 0)
+        region.scoreRaid = true
+    elseif region.scoreRaid then
         -- the slot showed a raid before: the score goes back beside the icons
-        r.scoreRaid = nil
-        r.score:ClearAllPoints()
-        r.score:SetPoint("RIGHT", r.mid, "RIGHT", r.scoreX or -6, 0)
+        region.scoreRaid = nil
+        region.score:ClearAllPoints()
+        region.score:SetPoint("RIGHT", region.mid, "RIGHT", region.scoreX or -6, 0)
     end
-    if r.stock then
-        r.sel:SetShown(selected == ident)
+    if region.stock then
+        region.sel:SetShown(selected == ident)
     else
         local ar, ag, ab = Accent()
-        r.sel:SetColorTexture(ar, ag, ab, selected == ident and 0.18 or 0)
+        region.sel:SetColorTexture(ar, ag, ab, selected == ident and 0.18 or 0)
     end
     if dimmed[ident] then
-        r:SetAlpha(0.35)
+        region:SetAlpha(0.35)
     else
-        r:SetAlpha((st and st ~= STATUS.applied and st ~= STATUS.invited) and 0.5 or 1)
+        region:SetAlpha((st and st ~= STATUS.applied and st ~= STATUS.invited) and 0.5 or 1)
     end
-    r:Show()
+    region:Show()
 end
 
 -------------------------------------------------------------------------------
@@ -1707,12 +1707,12 @@ local PREVIEW = {
         local g = PV[PV_ACT[act]]
         local DT = Enum.LFGListDisplayType
         if g.dungeon then
-            local d = PvDungeon(g.dungeon)
+            local skinData = PvDungeon(g.dungeon)
             return {
-                fullName = d.full,
+                fullName = skinData.full,
                 maxNumPlayers = 5,
                 displayType = DT and DT.RoleEnumerate,
-                mapID = d.mapID,
+                mapID = skinData.mapID,
             }
         end
         return {
@@ -1754,15 +1754,15 @@ local PREVIEW = {
     end,
     art = function(ident)
         local g = PV[ident]
-        local d = g.dungeon and PvDungeon(g.dungeon)
-        return d and d.mapID and mod.RowArtForMap and mod.RowArtForMap(d.mapID)
+        local skinData = g.dungeon and PvDungeon(g.dungeon)
+        return skinData and skinData.mapID and mod.RowArtForMap and mod.RowArtForMap(skinData.mapID)
     end,
 }
 
 -- lays the rows out and fills them; the header height for it
 local function PvFit()
-    local f, view = pv.frame, pv.view
-    local heading = f:GetParent()
+    local frame, view = pv.frame, pv.view
+    local heading = frame:GetParent()
     local hgt = mod.OwnListRowHeight()
     local mode = pv.mode or "groups"
     pv.title:SetText(PV_TITLES[mode])
@@ -1780,29 +1780,29 @@ local function PvFit()
     -- the heights first: the scroll stops at the last group
     local sum = -GAP
     for i, ident in ipairs(PV_IDS) do
-        local r = pv.rows[i]
-        r.noteRoom = NoteText(PREVIEW.info(ident)) and true or nil
-        r.pvH = hgt + (r.noteRoom and nH or 0)
-        sum = sum + r.pvH + GAP
+        local region = pv.rows[i]
+        region.noteRoom = NoteText(PREVIEW.info(ident)) and true or nil
+        region.pvH = hgt + (region.noteRoom and nH or 0)
+        sum = sum + region.pvH + GAP
     end
     pv.maxScroll = math.max(0, sum - PV_VIEW_H)
     pv.scroll = math.max(0, math.min(pv.scroll or 0, pv.maxScroll))
     local posY = -pv.scroll
     for i, ident in ipairs(PV_IDS) do
-        local r = pv.rows[i]
-        local rh = r.pvH
+        local region = pv.rows[i]
+        local rh = region.pvH
         -- rows outside the window aren't drawn at all
         if posY + rh > 0 and posY < PV_VIEW_H then
-            r:SetSize(rw, rh)
-            r:ClearAllPoints()
-            r:SetPoint("TOPLEFT", view, "TOPLEFT", 0, -posY)
-            r.layH = nil -- every paint lays out again
-            Layout(r, hgt)
-            Fill(r, ident, PREVIEW)
-            r:Show()
+            region:SetSize(rw, rh)
+            region:ClearAllPoints()
+            region:SetPoint("TOPLEFT", view, "TOPLEFT", 0, -posY)
+            region.layH = nil -- every paint lays out again
+            Layout(region, hgt)
+            Fill(region, ident, PREVIEW)
+            region:Show()
         else
-            r.resultID = nil
-            r:Hide()
+            region.resultID = nil
+            region:Hide()
         end
         posY = posY + rh + GAP
     end
@@ -1819,7 +1819,7 @@ local function PvFit()
         th:Hide()
     end
     local fw, fh = rw + PV_PAD * 2, PV_PAD + PV_TITLE + PV_VIEW_H + PV_PAD
-    f:SetSize(fw, fh)
+    frame:SetSize(fw, fh)
     -- the ui's own scale and then some, grown or shrunk with the settings
     -- window's scale, and shrunk only if the panel is narrower
     local hw = heading:GetWidth() or 0
@@ -1832,9 +1832,9 @@ local function PvFit()
     if fw * s > avail then
         s = avail / fw
     end
-    f:SetScale(s)
-    f:ClearAllPoints()
-    f:SetPoint("CENTER", heading, "CENTER", 0, 0)
+    frame:SetScale(s)
+    frame:ClearAllPoints()
+    frame:SetPoint("CENTER", heading, "CENTER", 0, 0)
     return math.ceil(fh * s) + PV_MARGIN * 2
 end
 
@@ -1877,8 +1877,8 @@ local function PvPlayers(ident)
 end
 
 -- a group tooltip from the sample data, its member lines as the list adds them
-function mod.OwnListPreviewTip(r)
-    local ident = r.resultID
+function mod.OwnListPreviewTip(region)
+    local ident = region.resultID
     if not ident then
         return
     end
@@ -1888,7 +1888,7 @@ function mod.OwnListPreviewTip(r)
     local enumerate = DT and ai.displayType == DT.RoleEnumerate
     local players = PvPlayers(ident)
     local tipText = GameTooltip
-    tipText:SetOwner(r, "ANCHOR_RIGHT", 25, 0)
+    tipText:SetOwner(region, "ANCHOR_RIGHT", 25, 0)
     tipText:SetText(details.name, 1, 1, 1, 1, true)
     tipText:AddLine(ai.fullName)
     local ps = _G["GROUP_FINDER_GENERAL_PLAYSTYLE" .. details.generalPlaystyle]
@@ -1911,9 +1911,9 @@ function mod.OwnListPreviewTip(r)
         tipText:AddLine(string.format(LFG_LIST_TOOLTIP_LEADER or "Leader: %s", leader))
     end
     local score = details.leaderOverallDungeonScore
-    local col = C_ChallengeMode.GetDungeonScoreRarityColor
+    local colour = C_ChallengeMode.GetDungeonScoreRarityColor
         and C_ChallengeMode.GetDungeonScoreRarityColor(score)
-    local scoreText = col and col:WrapTextInColorCode(score) or tostring(score)
+    local scoreText = colour and colour:WrapTextInColorCode(score) or tostring(score)
     tipText:AddLine(string.format(DUNGEON_SCORE_LEADER or "Leader's Mythic+ Rating: %s", scoreText))
     tipText:AddLine(string.format(LFG_LIST_TOOLTIP_AGE or "Created %s ago", SecondsToTime(PV[ident].age)))
     tipText:AddLine(" ")
@@ -1952,21 +1952,21 @@ end
 
 -- the settings page's content header
 function mod.OwnListPreviewBuild(heading, hdrW)
-    local f = pv.frame
-    if not f then
-        f = CreateFrame("Frame", nil, heading)
-        pv.frame = f
-        local backdrop = f:CreateTexture(nil, "BACKGROUND")
+    local frame = pv.frame
+    if not frame then
+        frame = CreateFrame("Frame", nil, heading)
+        pv.frame = frame
+        local backdrop = frame:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0.05, 0.05, 0.05, 0.9)
-        CUI.MakeBorder(f, 0.2, 0.2, 0.2, 1, CUI.PanelPP)
+        CUI.MakeBorder(frame, 0.2, 0.2, 0.2, 1, CUI.PanelPP)
         -- a title like the raid frames' overlay preview
-        local title = CUI.MakeFont(f, 13, nil, 1, 1, 1, 0.9)
-        title:SetPoint("TOP", f, "TOP", 0, -7)
+        local title = CUI.MakeFont(frame, 13, nil, 1, 1, 1, 0.9)
+        title:SetPoint("TOP", frame, "TOP", 0, -7)
         pv.title = title
         -- the rows' window: what doesn't fit is cut off
-        local view = CreateFrame("Frame", nil, f)
-        view:SetPoint("TOPLEFT", f, "TOPLEFT", PV_PAD, -(PV_PAD + PV_TITLE))
+        local view = CreateFrame("Frame", nil, frame)
+        view:SetPoint("TOPLEFT", frame, "TOPLEFT", PV_PAD, -(PV_PAD + PV_TITLE))
         view:SetClipsChildren(true)
         pv.view = view
         -- the wheel scrolls part of a row at a time: it's drawn larger than the list
@@ -1988,7 +1988,7 @@ function mod.OwnListPreviewBuild(heading, hdrW)
         pv.thumb:SetColorTexture(1, 1, 1, 0.25)
         pv.thumb:Hide()
         -- the applicant samples' window, in the same spot
-        pv.appHost = CreateFrame("Frame", nil, f)
+        pv.appHost = CreateFrame("Frame", nil, frame)
         pv.appHost:SetPoint("TOPLEFT", view, "TOPLEFT", 0, 0)
         pv.appHost:SetClipsChildren(true)
         pv.appHost:Hide()
@@ -2009,13 +2009,13 @@ function mod.OwnListPreviewBuild(heading, hdrW)
                 mod.OwnListPreviewPaint()
             end
         )
-        dropdown:SetPoint("LEFT", f, "RIGHT", PV_DD_GAP, 0)
+        dropdown:SetPoint("LEFT", frame, "RIGHT", PV_DD_GAP, 0)
         pv.dd = dropdown
         pv.rows = {}
         for i = 1, #PV_IDS do
-            local r = MakeRow(nil, view)
-            r.preview = true
-            pv.rows[i] = r
+            local region = MakeRow(nil, view)
+            region.preview = true
+            pv.rows[i] = region
         end
         -- the settings window's scale changed: size it again
         if not CUI._onScaleChanged then
@@ -2023,28 +2023,28 @@ function mod.OwnListPreviewBuild(heading, hdrW)
         end
         CUI._onScaleChanged[#CUI._onScaleChanged + 1] = mod.OwnListPreviewPaint
     else
-        f:SetParent(heading)
+        frame:SetParent(heading)
         if pv.dd then
             pv.dd:SetParent(heading)
         end
     end
     -- a rebuilt page detaches it first, which can leave it under the window's
     -- drag area, and that would take the hover
-    f:SetFrameLevel(heading:GetFrameLevel() + 2)
+    frame:SetFrameLevel(heading:GetFrameLevel() + 2)
     if pv.dd then
         pv.dd:SetFrameLevel(heading:GetFrameLevel() + 3)
         pv.dd:Show()
     end
     pv.hdrW = hdrW
-    f:Show()
+    frame:Show()
     pv.h = PvFit()
     return pv.h
 end
 
 -- a display setting changed: draw again (the height only moves with the ui scale)
 function mod.OwnListPreviewPaint()
-    local f = pv.frame
-    if not (f and f:IsVisible()) then
+    local frame = pv.frame
+    if not (frame and frame:IsVisible()) then
         return
     end
     local hgt = PvFit()
@@ -2067,8 +2067,8 @@ local function SyncTicker()
     local any = false
     if isActive then
         for i = 1, #rowList do
-            local r = rowList[i]
-            if r.signedAt and r:IsShown() then
+            local region = rowList[i]
+            if region.signedAt and region:IsShown() then
                 any = true
                 break
             end
@@ -2104,15 +2104,15 @@ function Paint() -- forward-declared up top
             break
         end
         used = used + 1
-        local r = rowList[used] or MakeRow(used)
+        local region = rowList[used] or MakeRow(used)
         local ident = isShown[position]
-        r.noteRoom = noteOf[ident]
-        r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", body, "TOPLEFT", 0, -posY)
-        r:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, -posY)
-        r:SetHeight(hgt + (r.noteRoom and nH or 0))
-        Layout(r, hgt)
-        Fill(r, ident)
+        region.noteRoom = noteOf[ident]
+        region:ClearAllPoints()
+        region:SetPoint("TOPLEFT", body, "TOPLEFT", 0, -posY)
+        region:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, -posY)
+        region:SetHeight(hgt + (region.noteRoom and nH or 0))
+        Layout(region, hgt)
+        Fill(region, ident)
     end
     for i = used + 1, #rowList do
         rowList[i].resultID = nil
@@ -2145,12 +2145,12 @@ function Paint() -- forward-declared up top
 end
 
 -- keep blizzard's list hidden while ours shows
-local function HoldHidden(f, a)
+local function HoldHidden(frame, a)
     if guard or not isActive or a == 0 then
         return
     end
     guard = true
-    f:SetAlpha(0)
+    frame:SetAlpha(0)
     guard = false
 end
 
@@ -2172,9 +2172,9 @@ end
 
 local function RowFor(ident)
     for i = 1, #rowList do
-        local r = rowList[i]
-        if r.resultID == ident and r:IsShown() then
-            return r
+        local region = rowList[i]
+        if region.resultID == ident and region:IsShown() then
+            return region
         end
     end
 end
@@ -2230,9 +2230,9 @@ local function Flush()
         return
     end
     for ident in pairs(dirty) do
-        local r = RowFor(ident)
-        if r then
-            Fill(r, ident)
+        local region = RowFor(ident)
+        if region then
+            Fill(region, ident)
         end
     end
     wipe(dirty)
@@ -2341,9 +2341,9 @@ local function Build()
         end
         tick = 0
         for i = 1, #rowList do
-            local r = rowList[i]
-            if r.signedAt and r:IsShown() then
-                r.timer:SetText(TimeLeft(r.signedAt))
+            local region = rowList[i]
+            if region.signedAt and region:IsShown() then
+                region.timer:SetText(TimeLeft(region.signedAt))
             end
         end
     end)

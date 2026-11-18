@@ -114,9 +114,9 @@ local function RegisterUFUnlockElements()
                     -- Blizzard Style: sizes (and so size matches) are the
                     -- visible art, not the stock box's transparent padding.
                     if mod.UF_Blizz() then
-                        local l, r, t, b = mod.UF_BlizzVis((k == "boss") and frameList.boss1 or frameList[k])
+                        local l, region, t, b = mod.UF_BlizzVis((k == "boss") and frameList.boss1 or frameList[k])
                         if l then
-                            return wid - l - r, hgt - t - b
+                            return wid - l - region, hgt - t - b
                         end
                     end
                     return wid, hgt
@@ -291,15 +291,15 @@ local function RegisterUFUnlockElements()
                                 mod.UF_ScaledOffsets(frameList.boss1, posX, posY)
                             )
                         end
-                        for idx = 2, 5 do
-                            local bf = frameList["boss" .. idx]
-                            local prev = frameList["boss" .. (idx - 1)]
-                            if bf and prev then
+                        for index = 2, 5 do
+                            local bf = frameList["boss" .. index]
+                            local previous = frameList["boss" .. (index - 1)]
+                            if bf and previous then
                                 bf:ClearAllPoints()
                                 if bossStackDir == "up" then
-                                    bf:SetPoint("TOPLEFT", prev, "TOPLEFT", 0, spacing)
+                                    bf:SetPoint("TOPLEFT", previous, "TOPLEFT", 0, spacing)
                                 else
-                                    bf:SetPoint("TOPLEFT", prev, "TOPLEFT", 0, -spacing)
+                                    bf:SetPoint("TOPLEFT", previous, "TOPLEFT", 0, -spacing)
                                 end
                             end
                         end
@@ -363,15 +363,15 @@ local function RegisterUFUnlockElements()
                             frameList.boss1:ClearAllPoints()
                             frameList.boss1:SetPoint(pt, UIParent, rpt, bx, by)
                         end
-                        for idx = 2, 5 do
-                            local bf = frameList["boss" .. idx]
-                            local prev = frameList["boss" .. (idx - 1)]
-                            if bf and prev then
+                        for index = 2, 5 do
+                            local bf = frameList["boss" .. index]
+                            local previous = frameList["boss" .. (index - 1)]
+                            if bf and previous then
                                 bf:ClearAllPoints()
                                 if bossStackDir == "up" then
-                                    bf:SetPoint("TOPLEFT", prev, "TOPLEFT", 0, spacing)
+                                    bf:SetPoint("TOPLEFT", previous, "TOPLEFT", 0, spacing)
                                 else
-                                    bf:SetPoint("TOPLEFT", prev, "TOPLEFT", 0, -spacing)
+                                    bf:SetPoint("TOPLEFT", previous, "TOPLEFT", 0, -spacing)
                                 end
                             end
                         end
@@ -517,11 +517,11 @@ local function RegisterUFUnlockElements()
                     end
                     local newW = math.max(Pix.Snap(wid), 30)
                     s[GetWidthKey()] = newW
-                    local f = GetCBFrame()
+                    local frame = GetCBFrame()
                     -- Stored height, not the live one: a holder on the Blizzard
                     -- Style aura block reads back a secret rect.
-                    if f then
-                        Pix.Size(f, newW, s[GetHeightKey()] or 14)
+                    if frame then
+                        Pix.Size(frame, newW, s[GetHeightKey()] or 14)
                     end
                 end,
                 setHeight = function(_, hgt)
@@ -534,9 +534,9 @@ local function RegisterUFUnlockElements()
                     end
                     local newH = math.max(Pix.Snap(hgt), 5)
                     s[GetHeightKey()] = newH
-                    local f = GetCBFrame()
-                    if f then
-                        Pix.Size(f, s[GetWidthKey()] or 181, newH)
+                    local frame = GetCBFrame()
+                    if frame then
+                        Pix.Size(frame, s[GetWidthKey()] or 181, newH)
                     end
                     local uf = frameList[unitKey]
                     local cbar = uf and uf.Castbar
@@ -571,10 +571,10 @@ local function RegisterUFUnlockElements()
                     if CludesUI._unlockActive then
                         return
                     end
-                    local f = GetCBFrame()
-                    if f then
-                        f:ClearAllPoints()
-                        f:SetPoint(anchorPoint, UIParent, relPoint, posX, posY)
+                    local frame = GetCBFrame()
+                    if frame then
+                        frame:ClearAllPoints()
+                        frame:SetPoint(anchorPoint, UIParent, relPoint, posX, posY)
                     end
                 end,
                 clearPos = function()
@@ -585,32 +585,32 @@ local function RegisterUFUnlockElements()
                     if not place then
                         return
                     end
-                    local f = GetCBFrame()
-                    if not f then
+                    local frame = GetCBFrame()
+                    if not frame then
                         return
                     end
                     -- Unlock-anchored castbars: the anchor system owns the
                     -- position (castbars are anchored to their unit frame by
                     -- default). Only bootstrap while the frame has no bounds.
-                    if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(cbKey) and f:GetLeft() then
+                    if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(cbKey) and frame:GetLeft() then
                         return
                     end
                     local pt, rpt = place.point, place.relPoint or place.point
                     local px, py = place.x, place.y
                     local PPa = CludesUI and CludesUI.PP
                     if PPa and px and py then
-                        local es = f:GetEffectiveScale()
+                        local es = frame:GetEffectiveScale()
                         local isCenterAnchor = (pt == "CENTER") and (rpt == "CENTER")
                         if isCenterAnchor and PPa.SnapCenterForDim then
-                            px = PPa.SnapCenterForDim(px, f:GetWidth() or 0, es)
-                            py = PPa.SnapCenterForDim(py, f:GetHeight() or 0, es)
+                            px = PPa.SnapCenterForDim(px, frame:GetWidth() or 0, es)
+                            py = PPa.SnapCenterForDim(py, frame:GetHeight() or 0, es)
                         elseif PPa.SnapForES then
                             px = PPa.SnapForES(px, es)
                             py = PPa.SnapForES(py, es)
                         end
                     end
-                    f:ClearAllPoints()
-                    f:SetPoint(pt, UIParent, rpt, px or 0, py or 0)
+                    frame:ClearAllPoints()
+                    frame:SetPoint(pt, UIParent, rpt, px or 0, py or 0)
                 end,
             })
         end
@@ -637,8 +637,8 @@ local function RegisterUFUnlockElements()
         -- login would only be recorded, never re-pushed.
         if CludesUI.MatchPadChanged then
             local padKeys = mod.UF_PAD_KEYS
-            for idx = 1, #padKeys do
-                CludesUI.MatchPadChanged(padKeys[idx])
+            for index = 1, #padKeys do
+                CludesUI.MatchPadChanged(padKeys[index])
             end
         end
 

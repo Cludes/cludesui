@@ -21,8 +21,8 @@ local HUE = CludesUI.FOREVER_STAT_HUES
 -- hand back nil (drawn as "?") rather than error.
 local function Sum(...)
     local sum = 0
-    for idx = 1, select("#", ...) do
-        local val = select(idx, ...)
+    for index = 1, select("#", ...) do
+        local val = select(index, ...)
         if issecretvalue(val) then
             return nil
         end
@@ -30,14 +30,14 @@ local function Sum(...)
     end
     return sum
 end
-local function SchoolPower(idx)
+local function SchoolPower(index)
     return function()
-        return GetSpellBonusDamage(idx)
+        return GetSpellBonusDamage(index)
     end
 end
-local function Resist(idx)
+local function Resist(index)
     return function()
-        return (select(2, UnitResistance("player", idx)))
+        return (select(2, UnitResistance("player", index)))
     end
 end
 
@@ -81,8 +81,8 @@ local GROUPS = {
             -- The highest school's bonus, so school-specific gear counts.
             S("sp", "Spell Power", "SP", HUE.sp, NUM, function()
                 local best = 0
-                for idx = 2, 7 do
-                    local val = GetSpellBonusDamage(idx)
+                for index = 2, 7 do
+                    local val = GetSpellBonusDamage(index)
                     if issecretvalue(val) then
                         return nil
                     end

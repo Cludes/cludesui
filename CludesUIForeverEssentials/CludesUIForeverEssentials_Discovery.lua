@@ -49,8 +49,8 @@ local READY = { 0.38, 0.85, 0.5 }
 local function Font()
     return CludesUI.GetFontPath("essentials")
 end
-local function Print(msg)
-    CludesUI.Print("|cff4cc9f0Discovery:|r " .. msg)
+local function Print(message)
+    CludesUI.Print("|cff4cc9f0Discovery:|r " .. message)
 end
 local function Muted(textValue)
     return "|cff9aa6b2" .. textValue .. "|r"
@@ -252,9 +252,9 @@ function Bag.StepDone(step)
     return Done(step.done)
 end
 function Bag.Current()
-    for idx, step in ipairs(Bag.Steps()) do
+    for index, step in ipairs(Bag.Steps()) do
         if not Bag.StepDone(step) then
-            return step, idx
+            return step, index
         end
     end
 end
@@ -402,9 +402,9 @@ function Field.Rank(skill)
     if not skill then
         return nil
     end
-    for idx, cap in ipairs(RANK_CAPS) do
+    for index, cap in ipairs(RANK_CAPS) do
         if skill <= cap then
-            return idx
+            return index
         end
     end
     return #RANK_CAPS + 1
@@ -414,10 +414,10 @@ local function FieldZones(record, withChance)
     local nameList = {}
     local zones = record.zones or {}
     local stride = withChance and 2 or 1
-    for idx = 1, #zones, stride do
-        local name = ZoneName(zones[idx])
+    for index = 1, #zones, stride do
+        local name = ZoneName(zones[index])
         if withChance then
-            name = ("%s %d%%"):format(name, math.max(1, math.floor(zones[idx + 1] + 0.5)))
+            name = ("%s %d%%"):format(name, math.max(1, math.floor(zones[index + 1] + 0.5)))
         end
         nameList[#nameList + 1] = name
     end
@@ -490,16 +490,16 @@ local function LootOpened()
     local known = Lookup()
     for slot = 1, GetNumLootItems() do
         local itemLink = GetLootSlotLink(slot)
-        local item = itemLink and Plain(itemLink) and C_Item.GetItemInfoInstant(itemLink) or nil
+        local entry = itemLink and Plain(itemLink) and C_Item.GetItemInfoInstant(itemLink) or nil
         local page
-        if item and fishing and known.fish[item] then
+        if entry and fishing and known.fish[entry] then
             page = "fish"
-        elseif item and not fishing and known.herbs[item] and FromNode(GetLootSourceInfo(slot)) then
+        elseif entry and not fishing and known.herbs[entry] and FromNode(GetLootSourceInfo(slot)) then
             page = "herbs"
         end
         local _, _, quantity = GetLootSlotInfo(slot)
         if page and Plain(quantity) and quantity and quantity > 0 then
-            lootPage[slot], lootItem[slot], lootQty[slot] = page, item, quantity
+            lootPage[slot], lootItem[slot], lootQty[slot] = page, entry, quantity
         end
     end
 end
@@ -553,8 +553,8 @@ local nearEvents = CreateFrame("Frame")
 local alerted = {}
 
 local function WorldPos(mapID, posX, posY)
-    local _, pos = C_Map.GetWorldPosFromMapPos(mapID, CreateVector2D(posX, posY))
-    return pos
+    local _, position = C_Map.GetWorldPosFromMapPos(mapID, CreateVector2D(posX, posY))
+    return position
 end
 
 local function NearCheck()
@@ -612,11 +612,11 @@ local function NearRefresh()
     end
     local ident = PlayerZone()
     local entries = {}
-    for _, item in ipairs(Library.Spots(ident, "find")) do
-        local spot = item[2]
-        local pos = WorldPos(ident, spot[SPOT_X] / 100, spot[SPOT_Y] / 100)
-        if pos then
-            entries[#entries + 1] = { item[1], spot, pos }
+    for _, entry in ipairs(Library.Spots(ident, "find")) do
+        local spot = entry[2]
+        local position = WorldPos(ident, spot[SPOT_X] / 100, spot[SPOT_Y] / 100)
+        if position then
+            entries[#entries + 1] = { entry[1], spot, position }
         end
     end
     if #entries == 0 then
@@ -656,26 +656,26 @@ local function NewRows(contentFrame)
 
     local function Acquire()
         R.used = R.used + 1
-        local r = R.pool[R.used]
-        if not r then
-            r = CreateFrame("Button", nil, contentFrame)
-            r:RegisterForClicks("AnyUp")
-            r.icon = r:CreateTexture(nil, "ARTWORK")
-            r.icon:SetSize(18, 18)
-            r.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-            r.text = r:CreateFontString(nil, "OVERLAY")
-            r.text:SetJustifyH("LEFT")
-            r.text:SetWordWrap(true)
-            r.right = r:CreateFontString(nil, "OVERLAY")
-            r.right:SetJustifyH("RIGHT")
+        local region = R.pool[R.used]
+        if not region then
+            region = CreateFrame("Button", nil, contentFrame)
+            region:RegisterForClicks("AnyUp")
+            region.icon = region:CreateTexture(nil, "ARTWORK")
+            region.icon:SetSize(18, 18)
+            region.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+            region.text = region:CreateFontString(nil, "OVERLAY")
+            region.text:SetJustifyH("LEFT")
+            region.text:SetWordWrap(true)
+            region.right = region:CreateFontString(nil, "OVERLAY")
+            region.right:SetJustifyH("RIGHT")
             -- Fonts now: Acquire clears the right text before Line sizes it,
             -- and the client refuses text on a FontString without a font.
-            CludesUI.Kit.Font(r.text, 12, "essentials")
-            CludesUI.Kit.Font(r.right, 11, "essentials")
-            r.hl = r:CreateTexture(nil, "HIGHLIGHT")
-            r.hl:SetAllPoints()
-            r.hl:SetColorTexture(1, 1, 1, 0.05)
-            r:SetScript("OnEnter", function(self)
+            CludesUI.Kit.Font(region.text, 12, "essentials")
+            CludesUI.Kit.Font(region.right, 11, "essentials")
+            region.hl = region:CreateTexture(nil, "HIGHLIGHT")
+            region.hl:SetAllPoints()
+            region.hl:SetColorTexture(1, 1, 1, 0.05)
+            region:SetScript("OnEnter", function(self)
                 if not self.tip then
                     return
                 end
@@ -683,28 +683,28 @@ local function NewRows(contentFrame)
                 self.tip(GameTooltip)
                 GameTooltip:Show()
             end)
-            r:SetScript("OnLeave", function()
+            region:SetScript("OnLeave", function()
                 GameTooltip:Hide()
             end)
-            r:SetScript("OnClick", function(self, btnFrame)
+            region:SetScript("OnClick", function(self, btnFrame)
                 if self.onClick then
                     self.onClick(btnFrame)
                 end
             end)
-            R.pool[R.used] = r
+            R.pool[R.used] = region
         end
-        r.tip, r.onClick = nil, nil
-        r:ClearAllPoints()
-        r.icon:Hide()
-        r.text:ClearAllPoints()
-        r.right:SetText("")
-        r:Show()
-        return r
+        region.tip, region.onClick = nil, nil
+        region:ClearAllPoints()
+        region.icon:Hide()
+        region.text:ClearAllPoints()
+        region.right:SetText("")
+        region:Show()
+        return region
     end
 
     function R:Reset()
-        for idx = 1, self.used do
-            self.pool[idx]:Hide()
+        for index = 1, self.used do
+            self.pool[index]:Hide()
         end
         self.used, self.y = 0, 0
     end
@@ -712,39 +712,39 @@ local function NewRows(contentFrame)
     -- A line of text; opts: size, colour, indent, icon, right, onClick, tip.
     function R:Line(textValue, options)
         options = options or {}
-        local r = Acquire()
+        local region = Acquire()
         local width = contentFrame:GetWidth()
         local indent = options.indent or 0
         local size = options.size or 12
-        CludesUI.Kit.Font(r.text, size, "essentials")
-        r.text:SetTextColor(unpack(options.colour or { 1, 1, 1 }))
+        CludesUI.Kit.Font(region.text, size, "essentials")
+        region.text:SetTextColor(unpack(options.colour or { 1, 1, 1 }))
         local leftX = indent
         if options.icon then
-            r.icon:SetTexture(options.icon)
-            r.icon:ClearAllPoints()
-            r.icon:SetPoint("TOPLEFT", r, "TOPLEFT", indent, -1)
-            r.icon:Show()
+            region.icon:SetTexture(options.icon)
+            region.icon:ClearAllPoints()
+            region.icon:SetPoint("TOPLEFT", region, "TOPLEFT", indent, -1)
+            region.icon:Show()
             leftX = indent + 24
         end
-        r.text:SetPoint("TOPLEFT", r, "TOPLEFT", leftX, -2)
+        region.text:SetPoint("TOPLEFT", region, "TOPLEFT", leftX, -2)
         local rightW = 0
         if options.right then
-            CludesUI.Kit.Font(r.right, 11, "essentials")
-            r.right:SetTextColor(unpack(options.rightColour or MUTED))
-            r.right:SetText(options.right)
-            r.right:ClearAllPoints()
-            r.right:SetPoint("TOPRIGHT", r, "TOPRIGHT", -4, -3)
-            rightW = r.right:GetStringWidth() + 10
+            CludesUI.Kit.Font(region.right, 11, "essentials")
+            region.right:SetTextColor(unpack(options.rightColour or MUTED))
+            region.right:SetText(options.right)
+            region.right:ClearAllPoints()
+            region.right:SetPoint("TOPRIGHT", region, "TOPRIGHT", -4, -3)
+            rightW = region.right:GetStringWidth() + 10
         end
-        r.text:SetWidth(math.max(40, width - leftX - rightW - 6))
-        r.text:SetText(textValue)
-        local hgt = math.max(options.icon and 22 or 16, r.text:GetStringHeight() + 5)
-        r:SetSize(width, hgt)
-        r:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", 0, -self.y)
-        r.tip, r.onClick = options.tip, options.onClick
-        r:EnableMouse(options.tip ~= nil or options.onClick ~= nil)
+        region.text:SetWidth(math.max(40, width - leftX - rightW - 6))
+        region.text:SetText(textValue)
+        local hgt = math.max(options.icon and 22 or 16, region.text:GetStringHeight() + 5)
+        region:SetSize(width, hgt)
+        region:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", 0, -self.y)
+        region.tip, region.onClick = options.tip, options.onClick
+        region:EnableMouse(options.tip ~= nil or options.onClick ~= nil)
         self.y = self.y + hgt
-        return r
+        return region
     end
 
     function R:Gap(num)
@@ -817,12 +817,12 @@ end
 
 local function PaintTabs()
     local posX = 0
-    for idx, tab in ipairs(TabOrder()) do
-        local b = tabButtons[idx]
+    for index, tab in ipairs(TabOrder()) do
+        local b = tabButtons[index]
         if not b then
             b = CludesUI.Kit.Button(window.tabBar, "", 90, 22, nil, { key = "essentials" })
             b:SetHeight(22)
-            tabButtons[idx] = b
+            tabButtons[index] = b
         end
         b:SetText(tab.label)
         b:SetWidth(math.max(80, b:GetTextWidth() + 24))
@@ -979,12 +979,12 @@ local function DrawBooks(R)
                 or stored == "bank" and "in your bank"
                 or nil
             local spot = book.spots[1]
-            local icon = C_Item.GetItemIconByID(book.item) or 134400
+            local iconTex = C_Item.GetItemIconByID(book.item) or 134400
             local where = book.unplaced and "Not found on Forever yet"
                 or spot and (ZoneName(spot[SPOT_MAP]) .. ", " .. Library.Where(spot))
                 or ""
             R:Line(Library.Title(book) .. "\n" .. Muted(where), {
-                icon = icon,
+                icon = iconTex,
                 right = right,
                 rightColour = right == "handed in" and MUTED or GOLD,
                 tip = BookTip(book, spot),
@@ -992,8 +992,8 @@ local function DrawBooks(R)
                     Library.LinkBook(book, spot)
                 end,
             })
-            for idx = 2, #book.spots do
-                local other = book.spots[idx]
+            for index = 2, #book.spots do
+                local other = book.spots[index]
                 R:Line(Muted("or " .. ZoneName(other[SPOT_MAP]) .. ", " .. Library.Where(other)), {
                     indent = 24,
                     tip = BookTip(book, other),
@@ -1021,10 +1021,10 @@ local function DrawBag(R)
         { colour = MUTED }
     )
     R:Gap(4)
-    for idx, step in ipairs(Bag.Steps()) do
+    for index, step in ipairs(Bag.Steps()) do
         local done = Bag.StepDone(step)
         local nowTime = step == current
-        local name = (done and (CHECK .. " ") or (idx .. ". ")) .. Bag.Name(step)
+        local name = (done and (CHECK .. " ") or (index .. ". ")) .. Bag.Name(step)
         R:Line(done and Muted(name) or name, {
             size = 13,
             colour = nowTime and GOLD or { 1, 1, 1 },
@@ -1241,8 +1241,8 @@ local function FillTracker(zone)
                     end,
                 })
             end
-            for _, item in ipairs(find) do
-                local book, spot = item[1], item[2]
+            for _, entry in ipairs(find) do
+                local book, spot = entry[1], entry[2]
                 R:Line(
                     book.name
                         .. "\n"
@@ -1259,12 +1259,12 @@ local function FillTracker(zone)
         end
     end
     if Get("bagTracker") and Bag.Level() and not Bag.Owned() then
-        local step, idx = Bag.Current()
+        local step, index = Bag.Current()
         if step then
             any = true
             R:Gap(4)
             R:Line(
-                ("Sleeping Bag  %s"):format(Muted(("step %d of %d"):format(idx, #Bag.Steps()))),
+                ("Sleeping Bag  %s"):format(Muted(("step %d of %d"):format(index, #Bag.Steps()))),
                 { colour = GOLD }
             )
             R:Line(Bag.Name(step) .. "\n" .. Muted(Bag.Where(step)), {
@@ -1347,13 +1347,13 @@ local function Anchor(p)
 end
 
 local function ClearPins()
-    for idx = 1, pinsUsed do
-        pins[idx]:Hide()
+    for index = 1, pinsUsed do
+        pins[index]:Hide()
     end
     pinsUsed = 0
 end
 
-local function Pin(posX, posY, icon, tipText, onClick)
+local function Pin(posX, posY, iconTex, tipText, onClick)
     pinsUsed = pinsUsed + 1
     local p = pins[pinsUsed]
     if not p then
@@ -1388,7 +1388,7 @@ local function Pin(posX, posY, icon, tipText, onClick)
     local size = Get("pinSize")
     p:SetSize(size, size)
     p.x, p.y = posX / 100, posY / 100
-    p.icon:SetTexture(icon)
+    p.icon:SetTexture(iconTex)
     p.tip, p.onClick = tipText, onClick
     Anchor(p)
     p:Show()
@@ -1404,8 +1404,8 @@ local function DrawPins()
         return
     end
     if Get("mapPins") then
-        for _, item in ipairs(Library.Spots(mapID, "find")) do
-            local book, spot = item[1], item[2]
+        for _, entry in ipairs(Library.Spots(mapID, "find")) do
+            local book, spot = entry[1], entry[2]
             Pin(
                 spot[SPOT_X],
                 spot[SPOT_Y],
@@ -1459,8 +1459,8 @@ local function DrawPins()
 end
 
 local function RescalePins()
-    for idx = 1, pinsUsed do
-        Anchor(pins[idx])
+    for index = 1, pinsUsed do
+        Anchor(pins[index])
     end
 end
 
@@ -1553,17 +1553,17 @@ local function Apply()
 end
 
 SLASH_CUIDISCOVERY1 = "/cdiscovery"
-SlashCmdList.CUIDISCOVERY = function(msg)
+SlashCmdList.CUIDISCOVERY = function(message)
     if not On() then
         Print("turn on Discovery in CludesUI Forever Tools first.")
         return
     end
-    msg = (msg or ""):lower()
-    if window and window:IsShown() and msg == "" then
+    message = (message or ""):lower()
+    if window and window:IsShown() and message == "" then
         window:Hide()
         return
     end
-    OpenWindow(tabs[msg] and msg or nil)
+    OpenWindow(tabs[message] and message or nil)
 end
 
 CludesUI._Discovery = { Get = Get, Cfg = F.Cfg, Apply = Apply, Open = OpenWindow }

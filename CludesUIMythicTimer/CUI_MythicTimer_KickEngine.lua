@@ -199,10 +199,10 @@ local function IconSpecs(classID, class)
     specOfIcon[class] = t
     local num = C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0
     for i = 1, num do
-        local ident, _, _, icon = GetSpecializationInfoForClassID(classID, i)
-        if ident and icon then
-            t[icon] = ident
-            specIconOf[ident] = icon
+        local ident, _, _, iconTex = GetSpecializationInfoForClassID(classID, i)
+        if ident and iconTex then
+            t[iconTex] = ident
+            specIconOf[ident] = iconTex
         end
     end
     return t
@@ -460,8 +460,8 @@ end
 
 -- Whether the player's own inspect window, or the talent view it opens, is up.
 local function InspectWindowUp()
-    local f = InspectFrame
-    if f and f:IsShown() then
+    local frame = InspectFrame
+    if frame and frame:IsShown() then
         return true
     end
     local ps = PlayerSpellsFrame
@@ -670,11 +670,11 @@ end
 -- fight), fetched by their readable group GUID.
 -- The key naming a row ("CLASS:icon", "*" for you): one string per
 -- combination, built the first time it is seen.
-local function RowKey(cls, icon, loc)
+local function RowKey(cls, iconTex, loc)
     -- An enemy's or a pet's row carries no class and no spec icon: "-" for
     -- each, since a nil cannot index the memo.
     local c = Secret(cls) and "?" or (cls == nil and "-" or tostring(cls))
-    local ic = Secret(icon) and "?" or (icon == nil and "-" or icon)
+    local ic = Secret(iconTex) and "?" or (iconTex == nil and "-" or iconTex)
     local own = (not Secret(loc) and loc == true) and true or false
     local byCls = keyMemo[c]
     if not byCls then
@@ -709,11 +709,11 @@ end
 -- One source's breakdown by its readable GUID: its entry count (plain) and
 -- its interrupt count (hidden in combat; only ever handed on), or nil.
 local function ReadSource(g)
-    local success, d = pcall(DM.GetCombatSessionSourceFromType, CUR, INT, g)
-    if success and type(d) == "table" and not Secret(d) then
-        local sp = d.combatSpells
+    local success, skinData = pcall(DM.GetCombatSessionSourceFromType, CUR, INT, g)
+    if success and type(skinData) == "table" and not Secret(skinData) then
+        local sp = skinData.combatSpells
         if type(sp) == "table" and not Secret(sp) then
-            return #sp, d.totalAmount
+            return #sp, skinData.totalAmount
         end
     end
     return nil, nil
@@ -754,13 +754,13 @@ local function ReadRows(keyList, nmap, amap, gmap)
         local source = s.combatSources
         if type(source) == "table" and not Secret(source) then
             for i = 1, #source do
-                local r = source[i]
-                if type(r) == "table" and not Secret(r) then
-                    local k = RowKey(r.classFilename, r.specIconID, r.isLocalPlayer)
+                local region = source[i]
+                if type(region) == "table" and not Secret(region) then
+                    local k = RowKey(region.classFilename, region.specIconID, region.isLocalPlayer)
                     keyList[i] = k
                     if k == "WARLOCK:-" then
                         demonRows = demonRows + 1
-                        demonRowAmt = r.totalAmount
+                        demonRowAmt = region.totalAmount
                     end
                 else
                     keyList[i] = "?"
@@ -822,13 +822,13 @@ local function SyncLists(nmap, prevN)
                 m.known, m.holes = {}, num
                 m.lo, m.hi = 0, (num > 0) and INF or 0
             else
-                local prev = prevN[u] or 0
-                if num < prev then
+                local previous = prevN[u] or 0
+                if num < previous then
                     wipe(m.known)
                     m.holes = num
                     m.lo, m.hi = 0, (num > 0) and INF or 0
-                elseif num > prev then
-                    m.holes = m.holes + (num - prev)
+                elseif num > previous then
+                    m.holes = m.holes + (num - previous)
                 end
             end
         end
@@ -866,10 +866,10 @@ local function ListsMoved(keyList, nmap, prevKeys, prevN)
     local shrank, rose = #keyList < #prevKeys, #keyList > #prevKeys
     for i = 1, #GROUP_UNITS do
         local u = GROUP_UNITS[i]
-        local num, prev = nmap[u] or 0, prevN[u] or 0
-        if num < prev then
+        local num, previous = nmap[u] or 0, prevN[u] or 0
+        if num < previous then
             shrank = true
-        elseif num > prev then
+        elseif num > previous then
             rose = true
         end
     end
@@ -932,22 +932,22 @@ local function LearnSpecs()
                 local source = sess.combatSources
                 if type(source) == "table" and not Secret(source) then
                     for i = 1, #source do
-                        local r = source[i]
-                        if type(r) == "table" and not Secret(r) then
-                            local unitToken = UnitOfGUID(r.sourceGUID)
-                            local icon = r.specIconID
+                        local region = source[i]
+                        if type(region) == "table" and not Secret(region) then
+                            local unitToken = UnitOfGUID(region.sourceGUID)
+                            local iconTex = region.specIconID
                             local m = unitToken and roster[unitToken]
                             if
                                 m
                                 and unitToken ~= "player"
                                 and m.specSrc ~= "inspect"
-                                and type(icon) == "number"
-                                and not Secret(icon)
+                                and type(iconTex) == "number"
+                                and not Secret(iconTex)
                             then
                                 local map = m.class and m.classID and IconSpecs(m.classID, m.class)
-                                local specInfo = map and map[icon]
-                                if m.specIcon ~= icon or m.specID ~= specInfo then
-                                    m.specIcon, m.specID, m.specSrc = icon, specInfo, "meter"
+                                local specInfo = map and map[iconTex]
+                                if m.specIcon ~= iconTex or m.specID ~= specInfo then
+                                    m.specIcon, m.specID, m.specSrc = iconTex, specInfo, "meter"
                                     if ResolveKick(m) then
                                         changed = true
                                     end
@@ -976,8 +976,8 @@ local function KeyUnits(key, result)
         result[1] = "player"
         return result
     end
-    local cls, icon = key:match("^([^:]+):([^:%*]+)")
-    icon = tonumber(icon)
+    local cls, iconTex = key:match("^([^:]+):([^:%*]+)")
+    iconTex = tonumber(iconTex)
     for i = 2, #GROUP_UNITS do
         local m = roster[GROUP_UNITS[i]]
         if
@@ -985,7 +985,7 @@ local function KeyUnits(key, result)
             and m.guid
             and m.kick
             and m.class == cls
-            and (icon == nil or m.specIcon == nil or m.specIcon == icon)
+            and (iconTex == nil or m.specIcon == nil or m.specIcon == iconTex)
         then
             result[#result + 1] = GROUP_UNITS[i]
         end
@@ -1001,13 +1001,13 @@ local function LearnRow(m, key, T)
     if not m or m.specSrc == "inspect" or m.specIcon ~= nil then
         return
     end
-    local cls, icon = key:match("^([^:]+):([^:%*]+)")
-    icon = tonumber(icon)
-    if not icon or cls ~= m.class then
+    local cls, iconTex = key:match("^([^:]+):([^:%*]+)")
+    iconTex = tonumber(iconTex)
+    if not iconTex or cls ~= m.class then
         return
     end
     local map = m.classID and IconSpecs(m.classID, m.class)
-    m.specIcon, m.specID, m.specSrc = icon, map and map[icon] or nil, "row"
+    m.specIcon, m.specID, m.specSrc = iconTex, map and map[iconTex] or nil, "row"
     ResolveKick(m)
     Dispatch("roster", T)
 end
@@ -1102,12 +1102,12 @@ end
 
 -- The member landed `d` kicks for sure; `exact` while the count rose by no
 -- more than that.
-local function Count(m, d, exact)
+local function Count(m, skinData, exact)
     if not (m and m.lo) then
         return
     end
-    m.lo = m.lo + d
-    m.hi = exact and (m.hi + d) or INF
+    m.lo = m.lo + skinData
+    m.hi = exact and (m.hi + skinData) or INF
 end
 
 -- The members of `list` with entries: a kick that changed nothing cannot be
@@ -1523,11 +1523,11 @@ local function Attribute()
     wipe(growth)
     local grewBy = 0
     for u, num in pairs(nmap) do
-        local d = num - (prevN[u] or 0)
-        if d > 0 then
+        local skinData = num - (prevN[u] or 0)
+        if skinData > 0 then
             grew[#grew + 1] = u
-            growth[u] = d
-            grewBy = d
+            growth[u] = skinData
+            grewBy = skinData
         end
     end
     -- One member's list grew: by one entry, the plate paired with this

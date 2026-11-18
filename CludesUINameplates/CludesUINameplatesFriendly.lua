@@ -742,9 +742,9 @@ local function ClassRGB(unitToken, plainOnly)
         if plainOnly then
             return false
         end
-        local success, r, g, b = CludesUI.GetClassColorForRestrictedUnit(unitToken, tok)
+        local success, region, g, b = CludesUI.GetClassColorForRestrictedUnit(unitToken, tok)
         if success then
-            return true, r, g, b
+            return true, region, g, b
         end
         local c = C_ClassColor.GetClassColor(tok)
         if c then
@@ -768,19 +768,19 @@ local function PaintFriendlyColors(backing, unitToken, fp)
     if UnitIsPlayer(unitToken) then
         local useClass = not fp or fp.classColorFriendly ~= false
         local nameClass = fp and fp.friendlyNameClassColor
-        local success, r, g, b
+        local success, region, g, b
         if useClass or nameClass then
-            success, r, g, b = ClassRGB(unitToken)
+            success, region, g, b = ClassRGB(unitToken)
         end
         if success or not useClass then
             if useClass then
-                backing.health:SetStatusBarColor(r, g, b)
+                backing.health:SetStatusBarColor(region, g, b)
             else
                 local bc = (fp and fp.friendlyBarColor) or mod.defaults.friendlyBarColor
                 backing.health:SetStatusBarColor(bc.r, bc.g, bc.b)
             end
             if nameClass and success then
-                backing.name:SetTextColor(r, g, b)
+                backing.name:SetTextColor(region, g, b)
             else
                 backing.name:SetTextColor(1, 1, 1)
             end
@@ -803,9 +803,9 @@ local SUB_TEXT_R, SUB_TEXT_G, SUB_TEXT_B = 0.8, 0.8, 0.8
 local function GetSubTextColor(unitToken)
     local fp = FP()
     if fp and fp.friendlyBelowNameClassColor then
-        local success, r, g, b = ClassRGB(unitToken, true)
+        local success, region, g, b = ClassRGB(unitToken, true)
         if success then
-            return r, g, b
+            return region, g, b
         end
     end
     local c = fp and fp.friendlyBelowNameColor
@@ -997,8 +997,8 @@ local function ApplySubText(fontStr, unitToken)
     -- "<GuildName>" by default; the Subtitle Text cog can drop the brackets.
     local fp = FP()
     fontStr:SetFormattedText((not fp or fp.friendlyBelowNameGuildBrackets ~= false) and "<%s>" or "%s", guild)
-    local r, g, b = GetSubTextColor(unitToken)
-    fontStr:SetTextColor(r, g, b)
+    local region, g, b = GetSubTextColor(unitToken)
+    fontStr:SetTextColor(region, g, b)
     return 1
 end
 
@@ -1089,7 +1089,7 @@ local function UpdateNameOnlyText(nameFS)
         -- Second line via an explicit newline. The guild is only ever a
         -- SetFormattedText argument (display sinks accept secrets); the
         -- colour escape and brackets are literals built from our own values.
-        local r, g, b = GetSubTextColor(unitToken)
+        local region, g, b = GetSubTextColor(unitToken)
         local fp = FP()
         local body = (not fp or fp.friendlyBelowNameGuildBrackets ~= false) and "<%s>" or "%s"
         -- Word wrap MUST be on for the explicit newline to break a line --
@@ -1102,7 +1102,7 @@ local function UpdateNameOnlyText(nameFS)
             "%s\n"
                 .. string.format(
                     "|cff%02x%02x%02x",
-                    math.floor(r * 255 + 0.5),
+                    math.floor(region * 255 + 0.5),
                     math.floor(g * 255 + 0.5),
                     math.floor(b * 255 + 0.5)
                 )
@@ -1464,10 +1464,10 @@ local friendlyFrameCache = CreateFramePool("Frame", UIParent, nil, nil, false, f
     -- renders above the mouseover highlight (OVERLAY sublevel 6) and the health fill.
     local Pix = CludesUI and CludesUI.PP
     if Pix and Pix.CreateBorder then
-        local cr, cg, cb = mod.GetBorderColor()
+        local cr, cg, callback = mod.GetBorderColor()
         -- The classic plate's fixed 1px edge, else the friendly profile's own size.
         local sz = mod.NP_Classic() and 1 or ((FP() and FP().borderSize) or mod.defaults.borderSize)
-        Pix.CreateBorder(backing.health, cr, cg, cb, 1, sz, "OVERLAY", 7, true) -- scaleGuard: NP frame
+        Pix.CreateBorder(backing.health, cr, cg, callback, 1, sz, "OVERLAY", 7, true) -- scaleGuard: NP frame
         if not mod.IsBorderEnabled() or mod.NP_Classic() then
             Pix.HideBorder(backing.health)
         end
@@ -1514,8 +1514,8 @@ local friendlyFrameCache = CreateFramePool("Frame", UIParent, nil, nil, false, f
         if mod.IsCustomBorderEnabled() then
             mod.ApplyCustomBorderColor(backing)
         else
-            local cr, cg, cb = mod.GetBorderColor()
-            mod.NP_BasicBorderColor(backing, cr, cg, cb, 1)
+            local cr, cg, callback = mod.GetBorderColor()
+            mod.NP_BasicBorderColor(backing, cr, cg, callback, 1)
         end
     end
 

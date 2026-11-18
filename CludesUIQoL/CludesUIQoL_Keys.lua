@@ -119,8 +119,8 @@ local function BuildClassColorMap()
     -- Guild roster first so group/player entries below win on name collisions
     if IsInGuild() and GetNumGuildMembers then
         local sum = GetNumGuildMembers()
-        for idx = 1, sum do
-            local gName, _, _, _, _, _, _, _, _, _, class = GetGuildRosterInfo(idx)
+        for index = 1, sum do
+            local gName, _, _, _, _, _, _, _, _, _, class = GetGuildRosterInfo(index)
             if gName and class then
                 local gShort = Ambiguate and Ambiguate(gName, "short") or gName:match("^([^%-]+)")
                 if gShort then
@@ -138,8 +138,8 @@ local function BuildClassColorMap()
         prefixText, count = nil, 0
     end
     if prefixText then
-        for idx = 1, count do
-            local unitToken = prefixText .. idx
+        for index = 1, count do
+            local unitToken = prefixText .. index
             local uName = UnitName(unitToken)
             if uName then
                 local _, class = UnitClass(unitToken)
@@ -237,7 +237,7 @@ end
 
 -- family: a text that shows a player's name takes the font as a font family,
 -- which draws the scripts the font lacks
-local function MakeLabel(hostFrame, size, _, r, g, b, a, family)
+local function MakeLabel(hostFrame, size, _, region, g, b, a, family)
     local fontStr = hostFrame:CreateFontString(nil, "OVERLAY")
     local flags = ResolveOutline()
     if family then
@@ -246,15 +246,15 @@ local function MakeLabel(hostFrame, size, _, r, g, b, a, family)
         CludesUI.PrimeFontShadow(fontStr, flags == "")
         fontStr:SetFont(ResolveFont(), size, flags)
     end
-    if r then
-        fontStr:SetTextColor(r, g or 1, b or 1, a or 1)
+    if region then
+        fontStr:SetTextColor(region, g or 1, b or 1, a or 1)
     end
     return fontStr
 end
 
-local function MakeSolid(hostFrame, layer, r, g, b, a, sub)
+local function MakeSolid(hostFrame, layer, region, g, b, a, sub)
     local t = hostFrame:CreateTexture(nil, layer, nil, sub or 0)
-    t:SetColorTexture(r, g, b, a)
+    t:SetColorTexture(region, g, b, a)
     return t
 end
 
@@ -387,42 +387,42 @@ local function BuildPopup()
     return dialog
 end
 
-local function AcquireRow(idx)
-    if rowFrames[idx] then
-        return rowFrames[idx]
+local function AcquireRow(index)
+    if rowFrames[index] then
+        return rowFrames[index]
     end
     local p = BuildPopup()
-    local r = CreateFrame("Frame", nil, p._body)
-    r:SetHeight(ROW_H)
+    local region = CreateFrame("Frame", nil, p._body)
+    region:SetHeight(ROW_H)
 
-    if idx % 2 == 0 then
-        local alt = MakeSolid(r, "BACKGROUND", 0, 0, 0, 0.15)
+    if index % 2 == 0 then
+        local alt = MakeSolid(region, "BACKGROUND", 0, 0, 0, 0.15)
         alt:SetAllPoints()
     end
 
-    r._nameFS = MakeLabel(r, 11, nil, 1, 1, 1, 0.85, true)
-    r._nameFS:SetPoint("LEFT", 2, 0)
-    r._nameFS:SetWidth(80)
-    r._nameFS:SetJustifyH("LEFT")
-    r._nameFS:SetWordWrap(false)
+    region._nameFS = MakeLabel(region, 11, nil, 1, 1, 1, 0.85, true)
+    region._nameFS:SetPoint("LEFT", 2, 0)
+    region._nameFS:SetWidth(80)
+    region._nameFS:SetJustifyH("LEFT")
+    region._nameFS:SetWordWrap(false)
 
-    r._ratingFS = MakeLabel(r, 10, nil, 0.6, 0.6, 0.6, 1)
-    r._ratingFS:SetPoint("LEFT", r._nameFS, "RIGHT", 4, 0)
-    r._ratingFS:SetWidth(40)
-    r._ratingFS:SetJustifyH("LEFT")
+    region._ratingFS = MakeLabel(region, 10, nil, 0.6, 0.6, 0.6, 1)
+    region._ratingFS:SetPoint("LEFT", region._nameFS, "RIGHT", 4, 0)
+    region._ratingFS:SetWidth(40)
+    region._ratingFS:SetJustifyH("LEFT")
 
-    r._dungeonFS = MakeLabel(r, 11, nil, 0.7, 0.7, 0.7, 1)
-    r._dungeonFS:SetPoint("LEFT", r._ratingFS, "RIGHT", 4, 0)
-    r._dungeonFS:SetWidth(130)
-    r._dungeonFS:SetJustifyH("LEFT")
-    r._dungeonFS:SetWordWrap(false)
+    region._dungeonFS = MakeLabel(region, 11, nil, 0.7, 0.7, 0.7, 1)
+    region._dungeonFS:SetPoint("LEFT", region._ratingFS, "RIGHT", 4, 0)
+    region._dungeonFS:SetWidth(130)
+    region._dungeonFS:SetJustifyH("LEFT")
+    region._dungeonFS:SetWordWrap(false)
 
     -- Teleport button overlaying the dungeon name
-    local tpBtn = CreateFrame("Button", nil, r, "InsecureActionButtonTemplate")
-    tpBtn:SetPoint("TOPLEFT", r._dungeonFS, "TOPLEFT", 0, 0)
-    tpBtn:SetPoint("BOTTOMLEFT", r._dungeonFS, "BOTTOMLEFT", 0, 0)
+    local tpBtn = CreateFrame("Button", nil, region, "InsecureActionButtonTemplate")
+    tpBtn:SetPoint("TOPLEFT", region._dungeonFS, "TOPLEFT", 0, 0)
+    tpBtn:SetPoint("BOTTOMLEFT", region._dungeonFS, "BOTTOMLEFT", 0, 0)
     tpBtn:SetWidth(130)
-    tpBtn:SetFrameLevel(r:GetFrameLevel() + 5)
+    tpBtn:SetFrameLevel(region:GetFrameLevel() + 5)
     tpBtn:RegisterForClicks("AnyUp", "AnyDown")
     tpBtn:SetAttribute("type", "spell")
     local ACC = CludesUI.CLUDES_GREEN
@@ -434,7 +434,7 @@ local function AcquireRow(idx)
         local known = IsPlayerSpell(spellRef)
         if known then
             if ACC then
-                r._dungeonFS:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
+                region._dungeonFS:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
             end
             local cdInfo = C_Spell.GetSpellCooldown(spellRef)
             if cdInfo and cdInfo.duration and cdInfo.duration > 0 then
@@ -443,17 +443,17 @@ local function AcquireRow(idx)
         end
     end)
     tpBtn:SetScript("OnLeave", function()
-        r._dungeonFS:SetTextColor(0.7, 0.7, 0.7, 1)
+        region._dungeonFS:SetTextColor(0.7, 0.7, 0.7, 1)
         CludesUI.HideWidgetTooltip()
     end)
     tpBtn:Hide()
-    r._tpBtn = tpBtn
+    region._tpBtn = tpBtn
 
-    r._levelFS = MakeLabel(r, 11, "OUTLINE", 1, 1, 1, 1)
-    r._levelFS:SetPoint("RIGHT", -2, 0)
-    r._levelFS:SetJustifyH("RIGHT")
+    region._levelFS = MakeLabel(region, 11, "OUTLINE", 1, 1, 1, 1)
+    region._levelFS:SetPoint("RIGHT", -2, 0)
+    region._levelFS:SetJustifyH("RIGHT")
 
-    local sep = r:CreateTexture(nil, "ARTWORK")
+    local sep = region:CreateTexture(nil, "ARTWORK")
     sep:SetColorTexture(1, 1, 1, 0.10)
     if Pix and Pix.DisablePixelSnap then
         Pix.DisablePixelSnap(sep)
@@ -463,15 +463,15 @@ local function AcquireRow(idx)
     sep:SetPoint("BOTTOMLEFT", 0, gapMid)
     sep:SetPoint("BOTTOMRIGHT", 0, gapMid)
 
-    rowFrames[idx] = r
-    return r
+    rowFrames[index] = region
+    return region
 end
 
 -- Section header pool
 local secHeaders = {}
-local function AcquireSecHeader(idx)
-    if secHeaders[idx] then
-        return secHeaders[idx]
+local function AcquireSecHeader(index)
+    if secHeaders[index] then
+        return secHeaders[index]
     end
     local p = BuildPopup()
     local hgt = CreateFrame("Frame", nil, p._body)
@@ -479,7 +479,7 @@ local function AcquireSecHeader(idx)
     hgt._label = MakeLabel(hgt, 10, "OUTLINE", 1, 1, 1, 0.56)
     hgt._label:SetPoint("LEFT", 0, 0)
     hgt._label:SetJustifyH("LEFT")
-    secHeaders[idx] = hgt
+    secHeaders[index] = hgt
     return hgt
 end
 
@@ -488,20 +488,20 @@ local function GetTextSize()
     return conf and conf.textSize or 11
 end
 
-local function ApplyRowFontSize(r)
+local function ApplyRowFontSize(region)
     local sz = GetTextSize()
     local font = ResolveFont()
     local flags = ResolveOutline()
-    CludesUI.SetFontFamily(r._nameFS, font, sz, flags, flags == "")
-    r._ratingFS:SetFont(font, sz - 1, flags)
-    r._dungeonFS:SetFont(font, sz, flags)
-    r._levelFS:SetFont(font, sz, flags)
+    CludesUI.SetFontFamily(region._nameFS, font, sz, flags, flags == "")
+    region._ratingFS:SetFont(font, sz - 1, flags)
+    region._dungeonFS:SetFont(font, sz, flags)
+    region._levelFS:SetFont(font, sz, flags)
 end
 
-local function PopulateRow(r, e, ccMap)
-    ApplyRowFontSize(r)
-    r._nameFS:SetText(StripRealm(e.name))
-    r._nameFS:SetWidth(80)
+local function PopulateRow(region, e, ccMap)
+    ApplyRowFontSize(region)
+    region._nameFS:SetText(StripRealm(e.name))
+    region._nameFS:SetWidth(80)
     -- Cheap paths first: the entry's own classFile, then the per-rebuild map
     local castFrame = e.classFile
     if not castFrame and ccMap then
@@ -509,42 +509,42 @@ local function PopulateRow(r, e, ccMap)
     end
     local cc = castFrame and RAID_CLASS_COLORS[castFrame]
     if cc then
-        r._nameFS:SetTextColor(cc.r, cc.g, cc.b, 1)
+        region._nameFS:SetTextColor(cc.r, cc.g, cc.b, 1)
     else
-        r._nameFS:SetTextColor(1, 1, 1, 0.85)
+        region._nameFS:SetTextColor(1, 1, 1, 0.85)
     end
-    r._ratingFS:SetText(e.rating and e.rating > 0 and tostring(e.rating) or "")
+    region._ratingFS:SetText(e.rating and e.rating > 0 and tostring(e.rating) or "")
     if e.dungeonName then
-        r._dungeonFS:SetText(e.dungeonName)
-        r._dungeonFS:SetTextColor(0.7, 0.7, 0.7, 1)
-        r._levelFS:SetText("+" .. e.lvl)
+        region._dungeonFS:SetText(e.dungeonName)
+        region._dungeonFS:SetTextColor(0.7, 0.7, 0.7, 1)
+        region._levelFS:SetText("+" .. e.lvl)
         if e.lvl >= 12 then
-            r._levelFS:SetTextColor(1, 0.5, 0, 1)
+            region._levelFS:SetTextColor(1, 0.5, 0, 1)
         elseif e.lvl >= 10 then
-            r._levelFS:SetTextColor(0.63, 0.2, 0.93, 1)
+            region._levelFS:SetTextColor(0.63, 0.2, 0.93, 1)
         elseif e.lvl >= 7 then
-            r._levelFS:SetTextColor(0, 0.44, 0.87, 1)
+            region._levelFS:SetTextColor(0, 0.44, 0.87, 1)
         elseif e.lvl >= 4 then
-            r._levelFS:SetTextColor(0.12, 1, 0, 1)
+            region._levelFS:SetTextColor(0.12, 1, 0, 1)
         else
-            r._levelFS:SetTextColor(1, 1, 1, 1)
+            region._levelFS:SetTextColor(1, 1, 1, 1)
         end
         -- Teleport button
         local spellId = e.mapID and MAP_TELEPORT_SPELLS[e.mapID]
-        if spellId and r._tpBtn then
-            r._tpBtn._spellID = spellId
-            r._tpBtn:SetAttribute("spell", spellId)
-            r._tpBtn:Show()
-        elseif r._tpBtn then
-            r._tpBtn._spellID = nil
-            r._tpBtn:Hide()
+        if spellId and region._tpBtn then
+            region._tpBtn._spellID = spellId
+            region._tpBtn:SetAttribute("spell", spellId)
+            region._tpBtn:Show()
+        elseif region._tpBtn then
+            region._tpBtn._spellID = nil
+            region._tpBtn:Hide()
         end
     else
-        r._dungeonFS:SetText("No keystone")
-        r._dungeonFS:SetTextColor(0.5, 0.5, 0.5, 0.7)
-        r._levelFS:SetText("")
-        if r._tpBtn then
-            r._tpBtn:Hide()
+        region._dungeonFS:SetText("No keystone")
+        region._dungeonFS:SetTextColor(0.5, 0.5, 0.5, 0.7)
+        region._levelFS:SetText("")
+        if region._tpBtn then
+            region._tpBtn:Hide()
         end
     end
 end
@@ -564,8 +564,8 @@ ShowKeystonePopup = function()
     if IsInGroup() then
         local prefixText = IsInRaid() and "raid" or "party"
         local count = GetNumGroupMembers()
-        for idx = 1, (IsInRaid() and count or count - 1) do
-            local name = PlayerName(prefixText .. idx)
+        for index = 1, (IsInRaid() and count or count - 1) do
+            local name = PlayerName(prefixText .. index)
             if name then
                 currentMembers[name] = true
             end
@@ -640,11 +640,11 @@ ShowKeystonePopup = function()
     end
 
     -- Hide all pooled frames
-    for idx = 1, #rowFrames do
-        rowFrames[idx]:Hide()
+    for index = 1, #rowFrames do
+        rowFrames[index]:Hide()
     end
-    for idx = 1, #secHeaders do
-        secHeaders[idx]:Hide()
+    for index = 1, #secHeaders do
+        secHeaders[index]:Hide()
     end
 
     local curY = 0
@@ -663,27 +663,27 @@ ShowKeystonePopup = function()
 
     if #partyEntries == 0 then
         rowIdx = rowIdx + 1
-        local r = AcquireRow(rowIdx)
-        r._nameFS:SetText("No keystones found")
-        r._nameFS:SetWidth(contentW)
-        r._nameFS:SetTextColor(0.5, 0.5, 0.5, 0.7)
-        r._ratingFS:SetText("")
-        r._dungeonFS:SetText("")
-        r._levelFS:SetText("")
-        r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
-        r:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
-        r:Show()
+        local region = AcquireRow(rowIdx)
+        region._nameFS:SetText("No keystones found")
+        region._nameFS:SetWidth(contentW)
+        region._nameFS:SetTextColor(0.5, 0.5, 0.5, 0.7)
+        region._ratingFS:SetText("")
+        region._dungeonFS:SetText("")
+        region._levelFS:SetText("")
+        region:ClearAllPoints()
+        region:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
+        region:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
+        region:Show()
         curY = curY - ROW_H
     else
         for _, e in ipairs(partyEntries) do
             rowIdx = rowIdx + 1
-            local r = AcquireRow(rowIdx)
-            PopulateRow(r, e, ccMap)
-            r:ClearAllPoints()
-            r:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
-            r:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
-            r:Show()
+            local region = AcquireRow(rowIdx)
+            PopulateRow(region, e, ccMap)
+            region:ClearAllPoints()
+            region:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
+            region:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
+            region:Show()
             curY = curY - (ROW_H + ROW_GAP)
         end
         curY = curY + ROW_GAP -- remove trailing gap
@@ -702,27 +702,27 @@ ShowKeystonePopup = function()
 
     if #guildEntries == 0 then
         rowIdx = rowIdx + 1
-        local r = AcquireRow(rowIdx)
-        r._nameFS:SetText("Waiting for data...")
-        r._nameFS:SetWidth(contentW)
-        r._nameFS:SetTextColor(0.5, 0.5, 0.5, 0.5)
-        r._ratingFS:SetText("")
-        r._dungeonFS:SetText("")
-        r._levelFS:SetText("")
-        r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
-        r:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
-        r:Show()
+        local region = AcquireRow(rowIdx)
+        region._nameFS:SetText("Waiting for data...")
+        region._nameFS:SetWidth(contentW)
+        region._nameFS:SetTextColor(0.5, 0.5, 0.5, 0.5)
+        region._ratingFS:SetText("")
+        region._dungeonFS:SetText("")
+        region._levelFS:SetText("")
+        region:ClearAllPoints()
+        region:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
+        region:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
+        region:Show()
         curY = curY - ROW_H
     else
         for _, e in ipairs(guildEntries) do
             rowIdx = rowIdx + 1
-            local r = AcquireRow(rowIdx)
-            PopulateRow(r, e, ccMap)
-            r:ClearAllPoints()
-            r:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
-            r:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
-            r:Show()
+            local region = AcquireRow(rowIdx)
+            PopulateRow(region, e, ccMap)
+            region:ClearAllPoints()
+            region:SetPoint("TOPLEFT", body, "TOPLEFT", 0, curY)
+            region:SetPoint("TOPRIGHT", body, "TOPRIGHT", 0, curY)
+            region:Show()
             curY = curY - (ROW_H + ROW_GAP)
         end
         curY = curY + ROW_GAP
@@ -777,8 +777,8 @@ do
             if not playerName then
                 return
             end
-            local tbl = (channel == "GUILD") and guildKeys or partyKeys
-            tbl[playerName] = { dungeon = keyMapID, keyLevel = keyLevel, rating = playerRating }
+            local list = (channel == "GUILD") and guildKeys or partyKeys
+            list[playerName] = { dungeon = keyMapID, keyLevel = keyLevel, rating = playerRating }
             RefreshPopupIfOpen()
         end)
     end

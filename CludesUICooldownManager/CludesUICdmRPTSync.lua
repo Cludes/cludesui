@@ -82,8 +82,8 @@ function mod.GetCDMSpecInfo()
         return result
     end
     local numSpecs = GetNumSpecializations and GetNumSpecializations() or 0
-    for idx = 1, numSpecs do
-        local specID, sName, _, sIcon = C_SpecializationInfo.GetSpecializationInfo(idx)
+    for index = 1, numSpecs do
+        local specID, sName, _, sIcon = C_SpecializationInfo.GetSpecializationInfo(index)
         if specID then
             local key = tostring(specID)
             local prof = sp and sp[key]
@@ -398,8 +398,8 @@ local function ApplyRPT(specProfiles, sourceSpecKey, targetSpecKey)
     for barId, sd in pairs(tgtProf.barSpells) do
         if barId ~= "__ghost_cd" and type(sd.assignedSpells) == "table" then
             local wid = 1
-            for r = 1, #sd.assignedSpells do
-                local ident = sd.assignedSpells[r]
+            for region = 1, #sd.assignedSpells do
+                local ident = sd.assignedSpells[region]
                 if IsRPTId(ident) and srcBarOf[ident] and srcBarOf[ident] ~= barId then
                     -- Bar move only: per-spell settings live in the family
                     -- stores now and travel with the id -- nothing to clear.
@@ -408,8 +408,8 @@ local function ApplyRPT(specProfiles, sourceSpecKey, targetSpecKey)
                     wid = wid + 1
                 end
             end
-            for idx = wid, #sd.assignedSpells do
-                sd.assignedSpells[idx] = nil
+            for index = wid, #sd.assignedSpells do
+                sd.assignedSpells[index] = nil
             end
         end
     end

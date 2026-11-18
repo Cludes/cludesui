@@ -154,9 +154,9 @@ RegisterCDMUnlockElements = function()
                         return cdmBarFrames[key]
                     end,
                     getSize = function()
-                        local f = cdmBarFrames[key]
+                        local frame = cdmBarFrames[key]
                         local bd2 = barDataByKey[key]
-                        return GetStableCDMBarSize(key, f, bd2)
+                        return GetStableCDMBarSize(key, frame, bd2)
                     end,
                     linkedDimensions = true,
                     setWidth = function(_, newW)
@@ -337,8 +337,8 @@ do
         if not barList then
             return false
         end
-        for idx = 1, #barList do
-            local edge = barList[idx]
+        for index = 1, #barList do
+            local edge = barList[index]
             if edge.enabled and ((edge.addOffsetX or 0) ~= 0 or (edge.addOffsetY or 0) ~= 0) then
                 return true
             end
@@ -365,8 +365,8 @@ do
             if not barList then
                 return
             end
-            for idx = 1, #barList do
-                local edge = barList[idx]
+            for index = 1, #barList do
+                local edge = barList[index]
                 if
                     edge.enabled
                     and ((edge.addOffsetX or 0) ~= 0 or (edge.addOffsetY or 0) ~= 0)
@@ -390,8 +390,8 @@ do
                 local p = ECME and ECME.db and ECME.db.profile
                 local barList = p and p.cdmBars and p.cdmBars.bars
                 if barList then
-                    for idx = 1, #barList do
-                        local edge = barList[idx]
+                    for index = 1, #barList do
+                        local edge = barList[index]
                         if
                             edge.enabled
                             and ((edge.addOffsetX or 0) ~= 0 or (edge.addOffsetY or 0) ~= 0)
@@ -424,8 +424,8 @@ mod.CDMReapplyBarPositions = function()
     if not barList or InCombatLockdown() or CludesUI._unlockActive then
         return
     end
-    for idx = 1, #barList do
-        local edge = barList[idx]
+    for index = 1, #barList do
+        local edge = barList[index]
         if edge.enabled and (edge.anchorTo or "none") == "none" then
             local ukey = "CDM_" .. edge.key
             if CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(ukey) then
@@ -726,7 +726,7 @@ function ECME:CDMFinishSetup()
             local cache = CludesUIDB.cdmCachedBarSizes
             local counts = cache and cache[charKey] and cache[charKey][specKey]
             if counts then
-                for idx, barInfo in ipairs(p.cdmBars.bars) do
+                for index, barInfo in ipairs(p.cdmBars.bars) do
                     if barInfo.enabled then
                         local cachedCount = counts[barInfo.key]
                         if cachedCount and cachedCount > 0 then
@@ -750,7 +750,7 @@ function ECME:CDMFinishSetup()
                                     widget:EnableMouseMotion(false)
                                 end
                                 widget._barKey = key
-                                widget._barIndex = idx
+                                widget._barIndex = index
                                 cdmBarFrames[key] = widget
                                 cdmBarIcons[key] = {}
                             end

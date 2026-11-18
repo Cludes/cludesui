@@ -161,11 +161,11 @@ end
 
 local Get
 
-local function Triplet(r, g, b)
-    if r == nil then
+local function Triplet(region, g, b)
+    if region == nil then
         return nil
     end
-    return { r = r, g = g or 0, b = b or 0 }
+    return { r = region, g = g or 0, b = b or 0 }
 end
 
 -- Earlier versions saved these settings under other names (and scales). A
@@ -599,25 +599,25 @@ end
 -- The window border takes the plain border defaults (as the Damage Meters
 -- window does), the bars this meter's own. A stock look draws neither.
 local function Border(targetUnit, dm, window)
-    local dim, texture, exact, r, g, b, a
+    local dim, texture, exact, region, g, b, a
     if window then
         local color = dm.windowBorderColor
         dim, texture, exact = dm.windowBorderSize, dm.windowBorderTexture, dm.windowBorderSizePx
-        r, g, b, a = color.r or 0, color.g or 0, color.b or 0, color.a or 1
+        region, g, b, a = color.r or 0, color.g or 0, color.b or 0, color.a or 1
     else
         dim, texture, exact = dm.borderSize, dm.borderTexture, dm.borderSizePx
-        r, g, b, a = dm.borderR, dm.borderG, dm.borderB, dm.borderA
+        region, g, b, a = dm.borderR, dm.borderG, dm.borderB, dm.borderA
     end
     dim = (Look.stock or (not window and dm.barSeparatorsOn)) and 0 or (dim or 0)
     local px = dim > 0 and CUI.BorderPx(exact, dim, texture) or nil
     if window then
-        CUI.ApplyBorderStyle(targetUnit, dim, r, g, b, a, texture, nil, nil, nil, nil, nil, nil, nil, px)
+        CUI.ApplyBorderStyle(targetUnit, dim, region, g, b, a, texture, nil, nil, nil, nil, nil, nil, nil, px)
         return
     end
     CUI.ApplyBorderStyle(
         targetUnit,
         dim,
-        r,
+        region,
         g,
         b,
         a,
@@ -643,23 +643,23 @@ end
 local function PlaceSeparators(hostRegion)
     local s, dm = hostRegion.surface, hostRegion.style
     local Pix, es = CUI.PP, hostRegion:GetEffectiveScale()
-    local function Place(tex, key, dim, exact, posY, r, g, b, a)
+    local function Place(texture, key, dim, exact, posY, region, g, b, a)
         local px = CUI.BorderPx(exact, dim, key)
         local thick = CUI.BorderCompanionThickness(key, dim, px, es)
         local lead = Pix.SnapForES(thick * 2 / CUI.GetBorderCompanion(key, "sepSize"), es)
         local bottom = Pix.SnapForES(posY - lead, es)
         if bottom <= -s:GetHeight() + dm.inset then
-            tex:Hide()
+            texture:Hide()
             return
         end
-        tex:SetTexture(CUI.GetBorderCompanion(key, "sepH"))
-        tex:SetTexCoord(0, 1, 1, 0)
-        tex:SetVertexColor(r, g, b, a)
-        tex:ClearAllPoints()
-        tex:SetPoint("BOTTOMLEFT", s, "TOPLEFT", dm.inset, bottom)
-        tex:SetPoint("BOTTOMRIGHT", s, "TOPRIGHT", -dm.inset, bottom)
-        tex:SetHeight(thick)
-        tex:Show()
+        texture:SetTexture(CUI.GetBorderCompanion(key, "sepH"))
+        texture:SetTexCoord(0, 1, 1, 0)
+        texture:SetVertexColor(region, g, b, a)
+        texture:ClearAllPoints()
+        texture:SetPoint("BOTTOMLEFT", s, "TOPLEFT", dm.inset, bottom)
+        texture:SetPoint("BOTTOMRIGHT", s, "TOPRIGHT", -dm.inset, bottom)
+        texture:SetHeight(thick)
+        texture:Show()
     end
     if dm.headerSeparatorOn then
         if not hostRegion.headerLine then
@@ -682,16 +682,16 @@ local function PlaceSeparators(hostRegion)
         hostRegion.headerLine:Hide()
     end
     local num = dm.barSeparatorsOn and hostRegion.count or 0
-    for idx = 1, num do
-        local tex = hostRegion.lines[idx]
-        if not tex then
-            tex = hostRegion.art:CreateTexture(nil, "OVERLAY")
-            Pix.DisablePixelSnap(tex)
-            hostRegion.lines[idx] = tex
+    for index = 1, num do
+        local texture = hostRegion.lines[index]
+        if not texture then
+            texture = hostRegion.art:CreateTexture(nil, "OVERLAY")
+            Pix.DisablePixelSnap(texture)
+            hostRegion.lines[index] = texture
         end
-        local posY = -dm.inset - dm.headerHeight - idx * (dm.barHeight + dm.barSpacing) + dm.barSpacing / 2
+        local posY = -dm.inset - dm.headerHeight - index * (dm.barHeight + dm.barSpacing) + dm.barSpacing / 2
         Place(
-            tex,
+            texture,
             dm.borderTexture,
             dm.borderSize,
             dm.borderSizePx,
@@ -702,20 +702,20 @@ local function PlaceSeparators(hostRegion)
             dm.borderA
         )
     end
-    for idx = num + 1, #hostRegion.lines do
-        hostRegion.lines[idx]:Hide()
+    for index = num + 1, #hostRegion.lines do
+        hostRegion.lines[index]:Hide()
     end
     num = dm.iconSeparatorOn and hostRegion.count or 0
-    for idx = 1, num do
-        local rowFrame, tex = s.rows[idx], hostRegion.iconLines[idx]
-        if not tex then
-            tex = hostRegion.art:CreateTexture(nil, "OVERLAY", nil, 1)
-            Pix.DisablePixelSnap(tex)
-            hostRegion.iconLines[idx] = tex
+    for index = 1, num do
+        local rowFrame, texture = s.rows[index], hostRegion.iconLines[index]
+        if not texture then
+            texture = hostRegion.art:CreateTexture(nil, "OVERLAY", nil, 1)
+            Pix.DisablePixelSnap(texture)
+            hostRegion.iconLines[index] = texture
         end
         if rowFrame._iconWidth and rowFrame._iconWidth > 0 then
             CUI.PlaceBorderDividerV(
-                tex,
+                texture,
                 rowFrame.fill,
                 false,
                 false,
@@ -724,7 +724,7 @@ local function PlaceSeparators(hostRegion)
                 CUI.BorderPx(dm.borderSizePx, dm.borderSize, dm.borderTexture),
                 es
             )
-            local slotIndex = dm.growUp and (hostRegion.count - idx + 1) or idx
+            local slotIndex = dm.growUp and (hostRegion.count - index + 1) or index
             local above = slotIndex == 1 and hostRegion.headerLine or hostRegion.lines[slotIndex - 1]
             local below = hostRegion.lines[slotIndex]
             local topY, bottom = 0, 0
@@ -740,22 +740,22 @@ local function PlaceSeparators(hostRegion)
             end
             topY = topY - Pix.perfect / es
             if topY + bottom >= dm.barHeight then
-                tex:Hide()
+                texture:Hide()
             else
                 local lead = Pix.SnapForES(
-                    tex:GetWidth() * 2 / CUI.GetBorderCompanion(dm.borderTexture, "sepSize"),
+                    texture:GetWidth() * 2 / CUI.GetBorderCompanion(dm.borderTexture, "sepSize"),
                     es
                 )
-                tex:SetPoint("TOPLEFT", rowFrame.fill, "TOPLEFT", -lead, -topY)
-                tex:SetPoint("BOTTOMLEFT", rowFrame.fill, "BOTTOMLEFT", -lead, bottom)
+                texture:SetPoint("TOPLEFT", rowFrame.fill, "TOPLEFT", -lead, -topY)
+                texture:SetPoint("BOTTOMLEFT", rowFrame.fill, "BOTTOMLEFT", -lead, bottom)
             end
-            tex:SetVertexColor(dm.borderR, dm.borderG, dm.borderB, dm.borderA)
+            texture:SetVertexColor(dm.borderR, dm.borderG, dm.borderB, dm.borderA)
         else
-            tex:Hide()
+            texture:Hide()
         end
     end
-    for idx = num + 1, #hostRegion.iconLines do
-        hostRegion.iconLines[idx]:Hide()
+    for index = num + 1, #hostRegion.iconLines do
+        hostRegion.iconLines[index]:Hide()
     end
 end
 
@@ -930,7 +930,7 @@ local function CreateSurface(hostFrame, name, live)
     return surface
 end
 
-local function MakeRow(idx, surface, rowList)
+local function MakeRow(index, surface, rowList)
     -- Inside the look's row clip when it has one (placed on the surface all
     -- the same).
     local rowFrame = CreateFrame("Frame", nil, surface.rowArea or surface)
@@ -960,7 +960,7 @@ local function MakeRow(idx, surface, rowList)
     rowFrame.self:SetPoint("BOTTOMLEFT")
     rowFrame.self:SetWidth(2)
     rowFrame.self:SetColorTexture(1, 1, 1, 0.95)
-    rowList[idx] = rowFrame
+    rowList[index] = rowFrame
     return rowFrame
 end
 
@@ -1166,9 +1166,9 @@ local function RenderRows(s, entries, first, total, dm, topY)
     local rowList, gen = s.rows, mod.rosterGen
     local step, inset = dm.barHeight + dm.barSpacing, dm.inset
     local iconsChanged
-    for idx = 1, total do
-        local rowFrame = rowList[idx] or MakeRow(idx, s, rowList)
-        local slotPos = dm.growUp and (total - idx) or (idx - 1)
+    for index = 1, total do
+        local rowFrame = rowList[index] or MakeRow(index, s, rowList)
+        local slotPos = dm.growUp and (total - index) or (index - 1)
         local posY = -inset - dm.headerHeight - slotPos * step
         if rowFrame._y ~= posY or rowFrame._style ~= dm then
             -- Both anchors share the top edge: a vertical-centre anchor to the
@@ -1180,17 +1180,17 @@ local function RenderRows(s, entries, first, total, dm, topY)
             rowFrame._y = posY
         end
         local iconWidth = rowFrame._iconWidth
-        PaintRow(rowFrame, entries[idx + first], dm, topY, gen)
+        PaintRow(rowFrame, entries[index + first], dm, topY, gen)
         if iconWidth ~= rowFrame._iconWidth then
             iconsChanged = true
         end
     end
     local isShown = s._count or #rowList
-    for idx = total + 1, isShown do
-        rowList[idx]:Hide()
+    for index = total + 1, isShown do
+        rowList[index]:Hide()
     end
-    for idx = isShown + 1, total do
-        rowList[idx]:Show()
+    for index = isShown + 1, total do
+        rowList[index]:Show()
     end
     s._count = total
     SyncSeparators(s, dm, total, iconsChanged)
@@ -1214,11 +1214,11 @@ local DEMO = {
 local demoList, demoEntries, demoPull = {}, {}, {}
 local demoPets, demoPullBar
 
-local function DemoEntry(idx, s)
+local function DemoEntry(index, s)
     local e = {
         key = s,
         raw = s.raw,
-        order = idx,
+        order = index,
         pull = false,
         isPet = s.isPet == true,
         own = s.own == true,
@@ -1248,12 +1248,12 @@ local function DemoList()
     demoPets, demoPullBar = pets, pullBar
     wipe(demoList)
     local me
-    for idx, s in ipairs(DEMO) do
+    for index, s in ipairs(DEMO) do
         if pets or not s.isPet then
-            local e = demoEntries[idx]
+            local e = demoEntries[index]
             if not e then
-                e = DemoEntry(idx, s)
-                demoEntries[idx] = e
+                e = DemoEntry(index, s)
+                demoEntries[index] = e
             end
             if e.own then
                 me = e
@@ -2002,7 +2002,7 @@ local function WindowBorderPad()
         return nil
     end
     local color = mod.GetStyleValue("borders", "windowBorderColor")
-    local l, r, t, b = CUI.BorderReach(
+    local l, region, t, b = CUI.BorderReach(
         dim,
         texture,
         nil,
@@ -2021,7 +2021,7 @@ local function WindowBorderPad()
     if mod.GetStyleValue("borders", "windowBorderIncludeHeader") == false and Get("showHeader") then
         t = t - mod.GetStyleValue("header", "hdrHeight")
     end
-    local pw = (l > 0 and l or 0) + (r > 0 and r or 0)
+    local pw = (l > 0 and l or 0) + (region > 0 and region or 0)
     local ph = (t > 0 and t or 0) + (b > 0 and b or 0)
     if pw <= 0 and ph <= 0 then
         return nil
@@ -2149,11 +2149,11 @@ end)
 --  /cuitm
 -------------------------------------------------------------------------------
 -- Chat feedback; nothing prints in combat.
-local function Say(msg)
+local function Say(message)
     if InCombatLockdown() then
         return
     end
-    CUI.Print(CUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. msg)
+    CUI.Print(CUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. message)
 end
 
 SLASH_CLUDESUITHREAT1 = "/cuitm"

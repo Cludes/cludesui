@@ -50,22 +50,22 @@ local function ReadStackApplications(blzChild)
     local auraInstID = blzChild.auraInstanceID
     local auraUnit = blzChild.auraDataUnit
     if auraInstID and auraUnit and not issecretvalue(auraInstID) then
-        local success, d = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, auraUnit, auraInstID)
-        if success and d and d.applications then
-            return d.applications
+        local success, skinData = pcall(C_UnitAuras.GetAuraDataByAuraInstanceID, auraUnit, auraInstID)
+        if success and skinData and skinData.applications then
+            return skinData.applications
         end
     end
     return nil
 end
 
-local function UpdateStacks(bar, blzChild, conf)
+local function UpdateStacks(barFrame, blzChild, conf)
     -- Stack-based fill needs a live count even when Blizzard renders no Applications text
     -- (hidden at 1 stack), plus a restricted marker so the fill site fails open instead of an empty bar.
     local stackFill = conf
         and conf.stackBasedBar
         and conf.trackType ~= "cooldown"
         and conf.stackThresholdMaxEnabled
-    bar._stackUnreadable = nil
+    barFrame._stackUnreadable = nil
     if stackFill and blzChild then
         -- Stack-based bar: skip the Blizzard text mirror (blank below 2 stacks) and drive
         -- fill/text from the aura data. This helper only runs for active frames, so the aura is
@@ -75,21 +75,21 @@ local function UpdateStacks(bar, blzChild, conf)
             if not issecretvalue(apps) and apps < 1 then
                 apps = 1
             end
-            bar._stackCount = apps
-            if bar._stacksText then
-                if bar._stacksHidden then
-                    bar._stacksText:Hide()
+            barFrame._stackCount = apps
+            if barFrame._stacksText then
+                if barFrame._stacksHidden then
+                    barFrame._stacksText:Hide()
                 else
-                    bar._stacksText:SetText(apps)
-                    bar._stacksText:Show()
+                    barFrame._stacksText:SetText(apps)
+                    barFrame._stacksText:Show()
                 end
             end
         else
             -- No cached aura table and no readable instance id: count is unknowable, so the fill site fails open.
-            bar._stackCount = 0
-            bar._stackUnreadable = true
-            if bar._stacksText then
-                bar._stacksText:Hide()
+            barFrame._stackCount = 0
+            barFrame._stackUnreadable = true
+            if barFrame._stacksText then
+                barFrame._stacksText:Hide()
             end
         end
         return
@@ -103,15 +103,15 @@ local function UpdateStacks(bar, blzChild, conf)
             -- this helper runs for EVERY active bar once ANY bar wants stacks
             -- (_anyStacks is a global gate), so an unguarded show here painted
             -- stacks onto bars that disabled them.
-            if bar._stacksText and not bar._stacksHidden then
-                bar._stacksText:SetText(txt)
-                bar._stacksText:Show()
-            elseif bar._stacksText then
-                bar._stacksText:Hide()
+            if barFrame._stacksText and not barFrame._stacksHidden then
+                barFrame._stacksText:SetText(txt)
+                barFrame._stacksText:Show()
+            elseif barFrame._stacksText then
+                barFrame._stacksText:Hide()
             end
             -- Stack count for the threshold overlay: applications can be a secret number we
             -- cannot compare, but the overlay consumes it via SetValue (FeedTBBThresholdOverlay), which accepts secrets.
-            bar._stackCount = ReadStackApplications(blzChild) or 0
+            barFrame._stackCount = ReadStackApplications(blzChild) or 0
             return
         end
     end
@@ -121,38 +121,38 @@ local function UpdateStacks(bar, blzChild, conf)
         if appsText then
             local success, txt = pcall(appsText.GetText, appsText)
             if success and txt and (issecretvalue(txt) or txt ~= "") then
-                if bar._stacksText and not bar._stacksHidden then
-                    bar._stacksText:SetText(txt)
-                    bar._stacksText:Show()
+                if barFrame._stacksText and not barFrame._stacksHidden then
+                    barFrame._stacksText:SetText(txt)
+                    barFrame._stacksText:Show()
                 end
-                bar._stackCount = ReadStackApplications(blzChild) or 0
+                barFrame._stackCount = ReadStackApplications(blzChild) or 0
                 return
             end
         end
     end
     -- No stacks text
-    if bar._stacksText then
-        bar._stacksText:Hide()
+    if barFrame._stacksText then
+        barFrame._stacksText:Hide()
     end
-    bar._stackCount = 0
+    barFrame._stackCount = 0
 end
 
 -------------------------------------------------------------------------------
 --  Pandemic Glow Helpers
 -------------------------------------------------------------------------------
-local function ClearPandemic(bar)
-    if bar._pandemicGlowTarget then
-        StopGlow(bar._pandemicGlowTarget)
+local function ClearPandemic(barFrame)
+    if barFrame._pandemicGlowTarget then
+        StopGlow(barFrame._pandemicGlowTarget)
     end
-    bar._pandemicGlowActive = false
-    bar._pandemicGlowStyleIdx = nil
-    bar._pandemicGlowTarget = nil
+    barFrame._pandemicGlowActive = false
+    barFrame._pandemicGlowStyleIdx = nil
+    barFrame._pandemicGlowTarget = nil
 end
 
 --- Start or update the pandemic glow on a bar. Caller checks the threshold and drives alpha from the tick (smooth fade on remaining%).
-local function UpdatePandemic(bar, conf)
+local function UpdatePandemic(barFrame, conf)
     -- Glow always wraps the whole bar: the overlay covers the entire wrapFrame footprint, so an enabled icon is included rather than glowed alone.
-    local glowTarget = bar._pandemicGlowOverlay
+    local glowTarget = barFrame._pandemicGlowOverlay
 
     -- Bar rectangle: Pixel Glow or Auto-Cast Shine only (texture styles stretch);
     -- any other stored style, and Blizzard Default (-1), render as Pixel Glow.
@@ -160,12 +160,12 @@ local function UpdatePandemic(bar, conf)
 
     -- Start/restart glow on style or target change
     if
-        not bar._pandemicGlowActive
-        or bar._pandemicGlowStyleIdx ~= style
-        or bar._pandemicGlowTarget ~= glowTarget
+        not barFrame._pandemicGlowActive
+        or barFrame._pandemicGlowStyleIdx ~= style
+        or barFrame._pandemicGlowTarget ~= glowTarget
     then
-        if bar._pandemicGlowActive and bar._pandemicGlowTarget and bar._pandemicGlowTarget ~= glowTarget then
-            StopGlow(bar._pandemicGlowTarget)
+        if barFrame._pandemicGlowActive and barFrame._pandemicGlowTarget and barFrame._pandemicGlowTarget ~= glowTarget then
+            StopGlow(barFrame._pandemicGlowTarget)
         end
         local c
         if conf.pandemicGlowMode == "class" then
@@ -191,9 +191,9 @@ local function UpdatePandemic(bar, conf)
                 }
             or nil
         StartGlow(glowTarget, style, c and c.r, c and c.g, c and c.b, glowOpts)
-        bar._pandemicGlowActive = true
-        bar._pandemicGlowStyleIdx = style
-        bar._pandemicGlowTarget = glowTarget
+        barFrame._pandemicGlowActive = true
+        barFrame._pandemicGlowStyleIdx = style
+        barFrame._pandemicGlowTarget = glowTarget
     end
 end
 
@@ -224,9 +224,9 @@ local function GetBlizzBarFontStrings(blizzBar)
         end
     end
     -- External cache (false = "searched, not found"), never on the Blizzard frame
-    local d = BBFS(blizzBar)
-    d.nameFS = nameFS or false
-    d.timerFS = timerFS or false
+    local skinData = BBFS(blizzBar)
+    skinData.nameFS = nameFS or false
+    skinData.timerFS = timerFS or false
     return nameFS, timerFS
 end
 
@@ -282,13 +282,13 @@ end
 -- only when a string was written AND the alpha gate applied (failure degrades
 -- precision, never accuracy); bar._tbbAlphaGated tracks the gate so the fallback
 -- path never inherits a stuck alpha-0 FS.
-local function MirrorEngineTimer(bar, conf)
-    local engBtn = bar._tbbEngineText
+local function MirrorEngineTimer(barFrame, conf)
+    local engBtn = barFrame._tbbEngineText
     if not engBtn then
         return false
     end
-    local result = bar._timerText
-    local engFS = bar._tbbEngineFS
+    local result = barFrame._timerText
+    local engFS = barFrame._tbbEngineFS
     local wrote = false
     if conf.showTimer and result and engFS then
         local success, txt = pcall(engFS.GetText, engFS)
@@ -300,12 +300,12 @@ local function MirrorEngineTimer(bar, conf)
     -- (viewer isActive/a live aura read), so a missing setter must not disable the mirror itself.
     if wrote and result.SetAlphaFromBoolean then
         pcall(result.SetAlphaFromBoolean, result, engBtn:IsShown(), 1, 0)
-        bar._tbbAlphaGated = true
-    elseif bar._tbbAlphaGated then
+        barFrame._tbbAlphaGated = true
+    elseif barFrame._tbbAlphaGated then
         if result then
             result:SetAlpha(1)
         end
-        bar._tbbAlphaGated = nil
+        barFrame._tbbAlphaGated = nil
     end
     return wrote
 end
@@ -330,10 +330,10 @@ local function _playerHasSated()
     if not (C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID) then
         return false
     end
-    for idx = 1, #SATED_DEBUFFS do
+    for index = 1, #SATED_DEBUFFS do
         -- Querying a KNOWN spellID returns the aura even when its fields are secret in
         -- combat, so the edge is detected mid-fight; the (possibly secret) spellID is never read back.
-        if C_UnitAuras.GetPlayerAuraBySpellID(SATED_DEBUFFS[idx]) then
+        if C_UnitAuras.GetPlayerAuraBySpellID(SATED_DEBUFFS[index]) then
             return true
         end
     end
@@ -461,20 +461,20 @@ _tbbWake._smoothBuffs, _tbbWake._smoothCooldowns = true, false
 -- Self-driven display for an event-armed, self-timed preset bar (Bloodlust 40s, Time Spiral
 -- 10s): fill+timer come from our own countdown, not a Blizzard frame (name/icon are set in
 -- BuildTrackedBuffBars). `expiry` = GetTime() the window ends at; `duration` = full window length.
-local function _UpdateSelfTimedBar(bar, conf, expiry, duration)
+local function _UpdateSelfTimedBar(barFrame, conf, expiry, duration)
     local remaining = expiry - GetTime()
     if remaining <= 0 then
         -- The loss cue comes from the preset's latch in the tick, shown or not.
-        if bar:IsShown() then
-            bar:Hide()
+        if barFrame:IsShown() then
+            barFrame:Hide()
         end
         return
     end
-    local wasShown = bar:IsShown()
+    local wasShown = barFrame:IsShown()
     if not wasShown then
-        bar:Show()
+        barFrame:Show()
     end
-    local scrollBar = bar._bar
+    local scrollBar = barFrame._bar
     if scrollBar then
         scrollBar:SetMinMaxValues(0, duration)
         -- Smooth fill is baseline for tracking bars: they move one direction at a known rate
@@ -490,11 +490,11 @@ local function _UpdateSelfTimedBar(bar, conf, expiry, duration)
         else
             scrollBar:SetValue(remaining)
         end
-        if conf.showSpark and bar._spark then
-            bar._spark:Show()
+        if conf.showSpark and barFrame._spark then
+            barFrame._spark:Show()
         end
     end
-    if conf.showTimer and bar._timerText then
+    if conf.showTimer and barFrame._timerText then
         -- The string changes only when its displayed bucket does (rounded tenths
         -- under 10s, whole seconds above), so stamp the bucket and skip the
         -- per-tick format + SetText otherwise. A fresh appearance always writes
@@ -506,22 +506,22 @@ local function _UpdateSelfTimedBar(bar, conf, expiry, duration)
         else
             key = math.floor(remaining)
         end
-        if not wasShown or bar._stTxtKey ~= key then
-            bar._stTxtKey = key
+        if not wasShown or barFrame._stTxtKey ~= key then
+            barFrame._stTxtKey = key
             if remaining < 10 then
-                bar._timerText:SetText(string.format("%.1f", remaining))
+                barFrame._timerText:SetText(string.format("%.1f", remaining))
             else
-                bar._timerText:SetText(string.format("%d", remaining))
+                barFrame._timerText:SetText(string.format("%d", remaining))
             end
         end
-        bar._timerText:Show()
-    elseif bar._timerText then
-        bar._timerText:Hide()
+        barFrame._timerText:Show()
+    elseif barFrame._timerText then
+        barFrame._timerText:Hide()
     end
     return true -- window active: keep the tick awake
 end
-local function UpdateLustBar(bar, conf)
-    return _UpdateSelfTimedBar(bar, conf, _lustExpiry, 40)
+local function UpdateLustBar(barFrame, conf)
+    return _UpdateSelfTimedBar(barFrame, conf, _lustExpiry, 40)
 end
 
 -------------------------------------------------------------------------------

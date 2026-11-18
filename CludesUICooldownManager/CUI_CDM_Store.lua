@@ -288,8 +288,8 @@ function mod.ListHasHostedMarker(entries, spellId)
         return false
     end
     local marker = -(mod.HOSTED_BUFF_MARKER_BASE + spellId)
-    for idx = 1, #entries do
-        if entries[idx] == marker then
+    for index = 1, #entries do
+        if entries[index] == marker then
             return true
         end
     end
@@ -750,9 +750,9 @@ function mod.RemoveCustomSpellFromSpecs(spellId, specKeys)
                 for _, bs in pairs(prof.barSpells) do
                     if type(bs) == "table" and type(bs.assignedSpells) == "table" then
                         local hitHere = false
-                        for idx = #bs.assignedSpells, 1, -1 do
-                            if bs.assignedSpells[idx] == spellId then
-                                table.remove(bs.assignedSpells, idx)
+                        for index = #bs.assignedSpells, 1, -1 do
+                            if bs.assignedSpells[index] == spellId then
+                                table.remove(bs.assignedSpells, index)
                                 hitHere = true
                                 didRemove = true
                             end
@@ -1084,9 +1084,9 @@ end
 -- CD Ready glow color: the icon's pick, else white for the drawn styles (their
 -- long-standing look) and nil for FlipBooks (the atlas's own untinted look).
 function mod.CdReadyGlowColor(style, prefs)
-    local r, g, b = mod.ResolveGlowColor(prefs)
-    if r then
-        return r, g, b
+    local region, g, b = mod.ResolveGlowColor(prefs)
+    if region then
+        return region, g, b
     end
     local e = mod.GLOW_STYLES[style]
     if e and not (e.procedural or e.buttonGlow or e.autocast or e.shapeGlow) then

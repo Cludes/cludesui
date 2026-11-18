@@ -141,7 +141,7 @@ local function UpdateFlipbook(button)
     -- spec overrides carry only the flag); the mode key tells Default from
     -- Custom. The options getter reads the same rule.
     local c = p.procGlowColor or { r = 1, g = 0.776, b = 0.376 }
-    local cr, cg, cb = _G_Glows.ResolveColor(
+    local cr, cg, callback = _G_Glows.ResolveColor(
         p.procGlowUseClassColor and "class" or (p.procGlowColorMode == "default" and "default" or "custom"),
         c.r,
         c.g,
@@ -168,8 +168,8 @@ local function UpdateFlipbook(button)
         cr == nil
         and (loopEntry.procedural or loopEntry.buttonGlow or loopEntry.autocast or loopEntry.shapeGlow)
     then
-        local d = _G_Glows.DEFAULT_COLOR
-        cr, cg, cb = d.r, d.g, d.b
+        local skinData = _G_Glows.DEFAULT_COLOR
+        cr, cg, callback = skinData.r, skinData.g, skinData.b
     end
 
     if not fd.glowWrapper then
@@ -225,7 +225,7 @@ local function UpdateFlipbook(button)
                 lineLen,
                 cr,
                 cg,
-                cb,
+                callback,
                 bW,
                 bH,
                 bgOn and (bgc and bgc.r or 0) or nil,
@@ -234,13 +234,13 @@ local function UpdateFlipbook(button)
                 bgOn and 1 or nil
             )
         elseif loopEntry.buttonGlow then
-            _G_Glows.StartButtonGlow(wrapper, bW, cr, cg, cb, nil, bH)
+            _G_Glows.StartButtonGlow(wrapper, bW, cr, cg, callback, nil, bH)
         elseif loopEntry.autocast then
-            _G_Glows.StartAutoCastShine(wrapper, bW, cr, cg, cb, 1.0, bH)
+            _G_Glows.StartAutoCastShine(wrapper, bW, cr, cg, callback, 1.0, bH)
         elseif loopEntry.shapeGlow then
             local maskPath = fd.shapeMaskPath or SHAPE_MASKS[fd.shapeName or ""]
             local borderPath = SHAPE_BORDERS[fd.shapeName or ""]
-            _G_Glows.StartShapeGlow(wrapper, min(bW, bH), cr, cg, cb, 1.20, {
+            _G_Glows.StartShapeGlow(wrapper, min(bW, bH), cr, cg, callback, 1.20, {
                 maskPath = maskPath,
                 borderPath = borderPath,
                 shapeMask = fd.shapeMask,
@@ -260,7 +260,7 @@ local function UpdateFlipbook(button)
 
         _G_Glows.StopAllGlows(wrapper)
         wrapper:Show()
-        _G_Glows.StartFlipBookGlow(wrapper, _ufBtnW, loopEntry, cr, cg, cb, _ufBtnH)
+        _G_Glows.StartFlipBookGlow(wrapper, _ufBtnW, loopEntry, cr, cg, callback, _ufBtnH)
         if wfd.ownMask then
             MaskFrameTextures(wrapper, wfd.ownMask)
         end
@@ -441,8 +441,8 @@ function ABAR:HookProcGlow()
                 end
             end
             if toHide then
-                for idx = 1, #toHide do
-                    HideGlow(toHide[idx])
+                for index = 1, #toHide do
+                    HideGlow(toHide[index])
                 end
             end
         else
@@ -564,7 +564,7 @@ do
         end
     end
 
-    mod._AssistCustomGlowStart = function(button, loopIdx, cr, cg, cb, bW, bH)
+    mod._AssistCustomGlowStart = function(button, loopIdx, cr, cg, callback, bW, bH)
         local loopEntry = LOOP_GLOW_TYPES[loopIdx]
         if not loopEntry then
             mod._AssistCustomGlowStop(button)
@@ -600,7 +600,7 @@ do
         _G_Glows.StopAllGlows(wrapper)
         wrapper:Show()
 
-        _G_Glows.StartSpecGlow(wrapper, { style = loopIdx, r = cr, g = cg, b = cb }, bW, bH, "icon", {
+        _G_Glows.StartSpecGlow(wrapper, { style = loopIdx, r = cr, g = cg, b = callback }, bW, bH, "icon", {
             maskWith = wfd.ownMask and wfd.ownMask:IsShown() and wfd.ownMask or nil,
             maskPath = fd.shapeMaskPath or SHAPE_MASKS[fd.shapeName or ""],
             borderPath = SHAPE_BORDERS[fd.shapeName or ""],
@@ -835,7 +835,7 @@ do
                 bf:SetAlpha(0)
             end
 
-            local cr, cg, cb = mod._AssistCustomGlowColor()
+            local cr, cg, callback = mod._AssistCustomGlowColor()
             local bW, bH = button:GetWidth() or 45, button:GetHeight() or 45
             if
                 fd.assistCustomActive
@@ -846,20 +846,20 @@ do
                 and fd.assistCustomShapeMask == fd.shapeMask
                 and fd.assistCustomR == cr
                 and fd.assistCustomG == cg
-                and fd.assistCustomB == cb
+                and fd.assistCustomB == callback
                 and fd.assistGlowWrapper
                 and fd.assistGlowWrapper:IsShown()
             then
                 return
             end
 
-            if mod._AssistCustomGlowStart(button, customType, cr, cg, cb, bW, bH) then
+            if mod._AssistCustomGlowStart(button, customType, cr, cg, callback, bW, bH) then
                 fd.assistCustomActive = true
                 fd.assistCustomType = customType
                 fd.assistCustomW, fd.assistCustomH = bW, bH
                 fd.assistCustomMask = fd.shapeMaskPath
                 fd.assistCustomShapeMask = fd.shapeMask
-                fd.assistCustomR, fd.assistCustomG, fd.assistCustomB = cr, cg, cb
+                fd.assistCustomR, fd.assistCustomG, fd.assistCustomB = cr, cg, callback
             end
             return
         end
@@ -976,8 +976,8 @@ do
                 if not details.isStance and not details.isPetBar then
                     local buttons = barButtons[details.key]
                     if buttons then
-                        for idx = 1, #buttons do
-                            local button = buttons[idx]
+                        for index = 1, #buttons do
+                            local button = buttons[index]
                             if button and button:IsShown() then
                                 local spellRef = ButtonSpell(button)
                                 if spellRef then
@@ -1110,8 +1110,8 @@ function ABAR:RefreshProcGlows()
     for _, details in ipairs(BAR_CONFIG) do
         local buttons = barButtons[details.key]
         if buttons then
-            for idx = 1, #buttons do
-                local button = buttons[idx]
+            for index = 1, #buttons do
+                local button = buttons[index]
                 if button and _procState.active[button] then
                     UpdateFlipbook(button)
                 end
@@ -1127,8 +1127,8 @@ function ABAR:ScanExistingProcs()
     for _, details in ipairs(BAR_CONFIG) do
         local buttons = barButtons[details.key]
         if buttons then
-            for idx = 1, #buttons do
-                local button = buttons[idx]
+            for index = 1, #buttons do
+                local button = buttons[index]
                 if button and (EFD(button).squared or blizz) then
                     sum = sum + 1
                     local spellId = _procState.GetButtonSpellID(button)
@@ -1172,15 +1172,15 @@ end
 
 local function ResolveCooldownEdgeColor(p)
     if p.cooldownEdgeUseClassColor then
-        local cr, cg, cb = GetClassColor()
+        local cr, cg, callback = GetClassColor()
         local c = p.cooldownEdgeColor or { a = 1 }
-        return cr, cg, cb, c.a or 1
+        return cr, cg, callback, c.a or 1
     end
     local c = p.cooldownEdgeColor or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
     return c.r, c.g, c.b, c.a
 end
 
-local function ApplySingleCooldownEdge(cdFrame, edgeSize, cr, cg, cb, ca)
+local function ApplySingleCooldownEdge(cdFrame, edgeSize, cr, cg, callback, ca)
     if not cdFrame then
         return
     end
@@ -1194,7 +1194,7 @@ local function ApplySingleCooldownEdge(cdFrame, edgeSize, cr, cg, cb, ca)
         cdFrame:SetEdgeScale(edgeSize)
     end
     if cdFrame.SetEdgeColor then
-        cdFrame:SetEdgeColor(cr, cg, cb, ca)
+        cdFrame:SetEdgeColor(cr, cg, callback, ca)
     end
 end
 
@@ -1230,7 +1230,7 @@ local function EnforceShapeEdge(button)
     EnforceShapeEdgeSingle(button.chargeCooldown, edgeScale, useCircular)
 end
 
-local function ApplyButtonCooldownEdge(button, edgeSize, cr, cg, cb, ca)
+local function ApplyButtonCooldownEdge(button, edgeSize, cr, cg, callback, ca)
     -- Square/csquare use the user's edge size; other shapes force 1.0
     -- since EnforceShapeEdge will override with per-shape scale anyway.
     local efd = EFD(button)
@@ -1239,8 +1239,8 @@ local function ApplyButtonCooldownEdge(button, edgeSize, cr, cg, cb, ca)
     if sn and sn ~= "square" and sn ~= "csquare" then
         sz = 1.0
     end
-    ApplySingleCooldownEdge(button.cooldown, sz, cr, cg, cb, ca)
-    ApplySingleCooldownEdge(button.chargeCooldown, sz, cr, cg, cb, ca)
+    ApplySingleCooldownEdge(button.cooldown, sz, cr, cg, callback, ca)
+    ApplySingleCooldownEdge(button.chargeCooldown, sz, cr, cg, callback, ca)
     EnforceShapeEdge(button)
 end
 
@@ -1262,7 +1262,7 @@ local function _FlushCDPatch()
         _cdEdge.pendingCount = 0
         return
     end
-    local cr, cg, cb, ca = ResolveCooldownEdgeColor(p)
+    local cr, cg, callback, ca = ResolveCooldownEdgeColor(p)
     local baseSz = p.cooldownEdgeSize or 2.1
     for cdFrame, button in pairs(_cdEdge.pending) do
         if cdFrame and not cdFrame:IsForbidden() then
@@ -1272,7 +1272,7 @@ local function _FlushCDPatch()
             if sn and sn ~= "square" and sn ~= "csquare" then
                 sz = 1.0
             end
-            ApplySingleCooldownEdge(cdFrame, sz, cr, cg, cb, ca)
+            ApplySingleCooldownEdge(cdFrame, sz, cr, cg, callback, ca)
             if bfd.shapeMaskPath and bfd.shapeApplied then
                 local mask = bfd.shapeMask
                 if mask then
@@ -1390,8 +1390,8 @@ local function HookCooldownEdge()
     for _, details in ipairs(BAR_CONFIG) do
         local buttons = barButtons[details.key]
         if buttons then
-            for idx = 1, #buttons do
-                local button = buttons[idx]
+            for index = 1, #buttons do
+                local button = buttons[index]
                 if button and EFD(button).squared then
                     HookButtonCooldownEdge(button)
                 end
@@ -1406,13 +1406,13 @@ function ABAR:ApplyCooldownEdge()
     end
     HookCooldownEdge()
     local p = self.db.profile
-    local cr, cg, cb, ca = ResolveCooldownEdgeColor(p)
+    local cr, cg, callback, ca = ResolveCooldownEdgeColor(p)
     local sz = p.cooldownEdgeSize or 2.1
     for _, details in ipairs(BAR_CONFIG) do
         local buttons = barButtons[details.key]
         if buttons then
-            for idx = 1, #buttons do
-                local button = buttons[idx]
+            for index = 1, #buttons do
+                local button = buttons[index]
                 if button and EFD(button).squared then
                     -- Clear edge cache so the hook re-applies on next cooldown
                     if button.cooldown then
@@ -1421,7 +1421,7 @@ function ABAR:ApplyCooldownEdge()
                     if button.chargeCooldown then
                         EFD(button.chargeCooldown).edgeDone = nil
                     end
-                    ApplyButtonCooldownEdge(button, sz, cr, cg, cb, ca)
+                    ApplyButtonCooldownEdge(button, sz, cr, cg, callback, ca)
                 end
             end
         end
@@ -1432,8 +1432,8 @@ function EAB_VTABLE.CooldownFonts.HookAll()
     for _, details in ipairs(BAR_CONFIG) do
         local buttons = barButtons[details.key]
         if buttons then
-            for idx = 1, #buttons do
-                local button = buttons[idx]
+            for index = 1, #buttons do
+                local button = buttons[index]
                 if button then
                     EAB_VTABLE.CooldownFonts.HookButton(button)
                 end
@@ -1450,28 +1450,28 @@ function ABAR:ApplyMiscTextures()
     -- hard-coded textures the user can't individually customize.
     local useCC = p.pushedUseClassColor
     local customC = p.pushedCustomColor or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
-    local cr, cg, cb, ca = customC.r, customC.g, customC.b, customC.a or 1
+    local cr, cg, callback, ca = customC.r, customC.g, customC.b, customC.a or 1
     if useCC then
         local _, ct = UnitClass("player")
         if ct then
             local cc = RAID_CLASS_COLORS[ct]
             if cc then
-                cr, cg, cb = cc.r, cc.g, cc.b
+                cr, cg, callback = cc.r, cc.g, cc.b
             end
         end
     end
     for _, details in ipairs(BAR_CONFIG) do
         local buttons = barButtons[details.key]
         if buttons then
-            for idx = 1, #buttons do
-                local button = buttons[idx]
+            for index = 1, #buttons do
+                local button = buttons[index]
                 if button and EFD(button).squared then
                     -- Do NOT color CheckedTexture or Border Blizzard uses
                     -- these for item rarity borders (green/blue/purple) on
                     -- active trinkets / equipped items.
                     if button.NewActionTexture then
                         button.NewActionTexture:SetDesaturated(true)
-                        button.NewActionTexture:SetVertexColor(cr, cg, cb, ca)
+                        button.NewActionTexture:SetVertexColor(cr, cg, callback, ca)
                     end
                 end
             end
@@ -1513,8 +1513,8 @@ function ABAR:ApplyCheckedTextures()
             -- Eligibility first: GetCheckedAlpha reads it.
             local ixBar = ixOn and mod._ixBarEligible(details.key)
             local a = self:GetCheckedAlpha(details.key)
-            for idx = 1, #buttons do
-                local button = buttons[idx]
+            for index = 1, #buttons do
+                local button = buttons[index]
                 if button and button.CheckedTexture then
                     button.CheckedTexture:SetAlpha(a)
                 end

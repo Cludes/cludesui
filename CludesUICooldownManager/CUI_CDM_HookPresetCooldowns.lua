@@ -135,8 +135,8 @@ do
         local chain = chains[sig]
         if not chain then
             chain = {}
-            for idx = 1, (swap and #keyList or math.min(1, #keyList)) do
-                local fam = famByKey[keyList[idx]]
+            for index = 1, (swap and #keyList or math.min(1, #keyList)) do
+                local fam = famByKey[keyList[index]]
                 local entries = fam and fam.preset.displayOrder
                 if entries then
                     for jdx = 1, #entries do
@@ -161,41 +161,41 @@ do
     -- variant's item id gets that literal item, never the dynamic display.
     -- Nothing owned anywhere in the chain falls back to the primary item at
     -- count 0, so the icon keeps its slot (greyed) instead of vanishing.
-    function PotSwap.Ensure(f)
-        local preset = f._presetData
-        if not (preset and preset.displayOrder and f._presetItemID == preset.itemID) then
+    function PotSwap.Ensure(frame)
+        local preset = frame._presetData
+        if not (preset and preset.displayOrder and frame._presetItemID == preset.itemID) then
             return nil
         end
-        local swap, orderStr = PotSwap.Settings(f._presetItemID)
+        local swap, orderStr = PotSwap.Settings(frame._presetItemID)
         if
-            f._potResolveGen == PotSwap.gen
-            and f._potResolveSwap == swap
-            and f._potResolveOrder == orderStr
+            frame._potResolveGen == PotSwap.gen
+            and frame._potResolveSwap == swap
+            and frame._potResolveOrder == orderStr
         then
-            return f._displayItemID
+            return frame._displayItemID
         end
-        f._potResolveGen, f._potResolveSwap, f._potResolveOrder = PotSwap.gen, swap, orderStr
-        local chain = PotSwap.Chain(preset, f._presetItemID)
+        frame._potResolveGen, frame._potResolveSwap, frame._potResolveOrder = PotSwap.gen, swap, orderStr
+        local chain = PotSwap.Chain(preset, frame._presetItemID)
         local ident, count
-        for idx = 1, #chain do
-            local c = C_Item.GetItemCount(chain[idx], false, true) or 0
+        for index = 1, #chain do
+            local c = C_Item.GetItemCount(chain[index], false, true) or 0
             if c > 0 then
-                ident, count = chain[idx], c
+                ident, count = chain[index], c
                 break
             end
         end
         if not ident then
             ident, count = preset.itemID, 0
         end
-        f._displayCount = count
-        if f._displayItemID ~= ident then
-            f._displayItemID = ident
+        frame._displayCount = count
+        if frame._displayItemID ~= ident then
+            frame._displayItemID = ident
             -- preset.icon is PICKER-ONLY art (the current-tier pot): every resolved
             -- variant, the primary included, paints its own item art so the icon
             -- always matches the counted/tooltipped variant.
-            local icon = (C_Item.GetItemIconByID and C_Item.GetItemIconByID(ident)) or preset.icon
-            if f._tex then
-                f._tex:SetTexture(icon)
+            local iconTex = (C_Item.GetItemIconByID and C_Item.GetItemIconByID(ident)) or preset.icon
+            if frame._tex then
+                frame._tex:SetTexture(iconTex)
             end
         end
         return ident
@@ -225,14 +225,14 @@ function mod.ItemEntryPreview(barId, key)
     local itemId = -key
     local icons = barId and mod.cdmBarIcons and mod.cdmBarIcons[barId]
     if icons then
-        for idx = 1, #icons do
-            local f = icons[idx]
-            local fc = f and _ecmeFC[f]
+        for index = 1, #icons do
+            local frame = icons[index]
+            local fc = frame and _ecmeFC[frame]
             if fc and fc.spellID == key then
-                local texture = f._tex or f.Icon
+                local texture = frame._tex or frame.Icon
                 local art = texture and texture.GetTexture and texture:GetTexture()
                 if art then
-                    return art, f._displayItemID or itemId
+                    return art, frame._displayItemID or itemId
                 end
                 break
             end
@@ -241,9 +241,9 @@ function mod.ItemEntryPreview(barId, key)
     local pr = PotSwap.ByPrimary(itemId)
     if pr then
         local chain = PotSwap.Chain(pr, itemId)
-        for idx = 1, #chain do
-            if (C_Item.GetItemCount(chain[idx], false, true) or 0) > 0 then
-                return C_Item.GetItemIconByID(chain[idx]) or C_Item.GetItemIconByID(itemId), chain[idx]
+        for index = 1, #chain do
+            if (C_Item.GetItemCount(chain[index], false, true) or 0) > 0 then
+                return C_Item.GetItemIconByID(chain[index]) or C_Item.GetItemIconByID(itemId), chain[index]
             end
         end
     end
@@ -279,8 +279,8 @@ function mod._ItemPresetCount(pd, itemId)
 end
 
 -- That count for a non-pot item preset frame. On ns: 200-local cap.
-function mod._ReadItemPresetCount(f)
-    return mod._ItemPresetCount(f._presetData, f._presetItemID)
+function mod._ReadItemPresetCount(frame)
+    return mod._ItemPresetCount(frame._presetData, frame._presetItemID)
 end
 
 -- Pact of Gluttony (386689) decides which stone the player conjures: with it only
@@ -421,13 +421,13 @@ end
 --  lookup twice); barKey must be passed by callers running BEFORE the frame's
 --  cache entry is stamped.
 -------------------------------------------------------------------------------
-local function ApplyPresetGCDSwipe(f, spellRef, cdInfo, barId)
-    local cdF = f and f._cooldown
+local function ApplyPresetGCDSwipe(frame, spellRef, cdInfo, barId)
+    local cdF = frame and frame._cooldown
     if not (spellRef and cdF and cdF.SetSwipeColor) then
         return
     end
     if not barId then
-        local fc = _ecmeFC[f]
+        local fc = _ecmeFC[frame]
         barId = fc and fc.barKey
     end
     local edge = barId and barDataByKey[barId]
@@ -435,7 +435,7 @@ local function ApplyPresetGCDSwipe(f, spellRef, cdInfo, barId)
     -- no-op); session-gated so unused installs never pay the resolve.
     local suppress = (edge and edge.suppressGCD) or false
     if not suppress and mod._cdmAnySuppressGcd then
-        local ss = mod._ResolveCdmSS and mod._ResolveCdmSS(f)
+        local ss = mod._ResolveCdmSS and mod._ResolveCdmSS(frame)
         suppress = (ss and ss.suppressGCD) or false
     end
     local hide = false
@@ -453,7 +453,7 @@ local function ApplyPresetGCDSwipe(f, spellRef, cdInfo, barId)
             -- the hook's answer; preset frames are ours rather than
             -- CooldownViewer items, so it falls back to the spellbook
             -- resolution for them.
-            local ci = CdmChargeInfoFor(f, spellRef)
+            local ci = CdmChargeInfoFor(frame, spellRef)
             hide = not (ci and (ci.maxCharges or 0) > 1 and ci.isActive == true)
         end
     end
@@ -462,14 +462,14 @@ local function ApplyPresetGCDSwipe(f, spellRef, cdInfo, barId)
     -- un-hide it until the next state change. The restore arm fires on the
     -- falling edge alone, so a frame we never suppressed keeps its own paint
     -- and nothing else is fought for ownership of the colour.
-    local fd = FD(f)
+    local fd = FD(frame)
     if hide then
-        f._gcdSwipeHidden = true
+        frame._gcdSwipeHidden = true
         fd._isProcessingOverride = true
         cdF:SetSwipeColor(0, 0, 0, 0)
         fd._isProcessingOverride = false
-    elseif f._gcdSwipeHidden then
-        f._gcdSwipeHidden = nil
+    elseif frame._gcdSwipeHidden then
+        frame._gcdSwipeHidden = nil
         fd._isProcessingOverride = true
         cdF:SetSwipeColor(0, 0, 0, (edge and edge.swipeAlpha) or 0.7)
         fd._isProcessingOverride = false
@@ -504,15 +504,15 @@ local function ProcessPresetCooldowns()
     -- Iterate the LIVE set (shown drain-relevant frames only), not the
     -- session-cumulative _presetFrames reuse map -- see _RegisterPresetLive. The
     -- IsShown() belt is redundant by construction but costs one call per LIVE frame.
-    for f in pairs(_pcActive) do
-        if f:IsShown() then
-            if (f._isRacialFrame or f._isCustomSpellFrame) and not f._isCustomBuffFrame then
+    for frame in pairs(_pcActive) do
+        if frame:IsShown() then
+            if (frame._isRacialFrame or frame._isCustomSpellFrame) and not frame._isCustomBuffFrame then
                 -- Cache extracted spellID on the frame to avoid regex every tick
-                local spellRef = f._cachedPresetSID
+                local spellRef = frame._cachedPresetSID
                 if not spellRef then
-                    local m = f._pfKey and f._pfKey:match(":(%d+)$")
+                    local m = frame._pfKey and frame._pfKey:match(":(%d+)$")
                     spellRef = m and tonumber(m)
-                    f._cachedPresetSID = spellRef
+                    frame._cachedPresetSID = spellRef
                 end
                 -- Read-skip: a READY frame with no pending arm cannot have
                 -- changed state -- every start edge arms it (cast/named/wave lanes
@@ -528,14 +528,14 @@ local function ProcessPresetCooldowns()
                     spellRef
                     and (
                         fullSweep
-                        or f._cdPushArm
-                        or f._cdEvalArm
-                        or f._lastOnRealCD ~= false
-                        or f._lastVertexDim
+                        or frame._cdPushArm
+                        or frame._cdEvalArm
+                        or frame._lastOnRealCD ~= false
+                        or frame._lastVertexDim
                     )
                 then
-                    local textArm = (fullSweep or f._cdPushArm or f._cdEvalArm) and true or nil
-                    f._cdEvalArm = nil
+                    local textArm = (fullSweep or frame._cdPushArm or frame._cdEvalArm) and true or nil
+                    frame._cdEvalArm = nil
                     local cdInfo = C_Spell.GetSpellCooldown and C_Spell.GetSpellCooldown(spellRef)
                     local onRealCD = (cdInfo and cdInfo.isActive and not cdInfo.isOnGCD) and true or false
                     -- Push-on-edge: the swipe widget animates itself once armed,
@@ -543,17 +543,17 @@ local function ProcessPresetCooldowns()
                     -- lane armed it (cast, named/wave cooldown event, rebuild).
                     -- Belt: a state flip the lanes missed re-arms on this tick
                     -- (the old unconditional push had the same 10Hz latency).
-                    if f._lastOnRealCD ~= onRealCD then
-                        f._lastOnRealCD = onRealCD
-                        f._cdPushArm = true
+                    if frame._lastOnRealCD ~= onRealCD then
+                        frame._lastOnRealCD = onRealCD
+                        frame._cdPushArm = true
                         textArm = true
                     end
-                    if f._cdPushArm then
-                        f._cdPushArm = false
+                    if frame._cdPushArm then
+                        frame._cdPushArm = false
                         local durObj = C_Spell.GetSpellCooldownDuration
                             and C_Spell.GetSpellCooldownDuration(spellRef)
-                        if durObj and f._cooldown and f._cooldown.SetCooldownFromDurationObject then
-                            f._cooldown:SetCooldownFromDurationObject(durObj, true)
+                        if durObj and frame._cooldown and frame._cooldown.SetCooldownFromDurationObject then
+                            frame._cooldown:SetCooldownFromDurationObject(durObj, true)
                         end
                     end
                     if onRealCD then
@@ -564,22 +564,22 @@ local function ProcessPresetCooldowns()
                     -- reduces to (onRealCD and 1 or 0). GCD-only stays saturated,
                     -- keep-color presets stay at 0, write is edge-gated;
                     -- ApplySpellDesaturation nils the memo on out-of-band writes (frame create/dirty path).
-                    local desat = (onRealCD and not PresetKeepsColor(f)) and 1 or 0
-                    if f._tex and f._lastDesatVal ~= desat then
-                        f._lastDesatVal = desat
-                        f._tex:SetDesaturation(desat)
+                    local desat = (onRealCD and not PresetKeepsColor(frame)) and 1 or 0
+                    if frame._tex and frame._lastDesatVal ~= desat then
+                        frame._lastDesatVal = desat
+                        frame._tex:SetDesaturation(desat)
                     end
                     -- Suppress GCD: this pass drives the geometry, so it also owns
                     -- hiding the swipe when that geometry is only a GCD.
-                    ApplyPresetGCDSwipe(f, spellRef, cdInfo)
+                    ApplyPresetGCDSwipe(frame, spellRef, cdInfo)
                     -- Resource check: dim vertex color when not enough resources
                     -- Only for custom spells (not racials -- racials don't cost resources).
                     -- Out of Range Coloring (opt-in) outranks the dim; its answer
                     -- (f._rangeOut) is kept by events and only painted here.
-                    if f._isCustomSpellFrame and f._tex then
-                        mod.PaintCustomSpellTint(f, spellRef, onRealCD)
+                    if frame._isCustomSpellFrame and frame._tex then
+                        mod.PaintCustomSpellTint(frame, spellRef, onRealCD)
                     end
-                    if f._lastVertexDim then
+                    if frame._lastVertexDim then
                         anyUnsettled = true
                     end
                     -- "Show Charges" (opt-in, CD/utility custom spells only):
@@ -589,8 +589,8 @@ local function ProcessPresetCooldowns()
                     -- Gated by ns._cdmAnyCustomForceCount + a lazy fontstring, so it
                     -- costs nothing unless a custom spell opts in. Rides this same
                     -- 10Hz-when-dirty pass -- no extra OnUpdate.
-                    if mod._cdmAnyCustomForceCount and f._isCustomSpellFrame then
-                        local fcF = _ecmeFC[f]
+                    if mod._cdmAnyCustomForceCount and frame._isCustomSpellFrame then
+                        local fcF = _ecmeFC[frame]
                         local bkF = fcF and fcF.barKey
                         local sdF = bkF and mod.GetBarSpellData and mod.GetBarSpellData(bkF)
                         local forceCount = sdF
@@ -602,12 +602,12 @@ local function ProcessPresetCooldowns()
                             -- pass re-reads; an unarmed pass keeps the text --
                             -- and no longer blocks the drain from settling.
                             if textArm then
-                                if not f._castCountText then
-                                    f._castCountText = f:CreateFontString(nil, "OVERLAY")
+                                if not frame._castCountText then
+                                    frame._castCountText = frame:CreateFontString(nil, "OVERLAY")
                                     -- Match the bar's native stack/charge text styling
                                     -- (font, size, color, anchor, X/Y offset);
                                     -- RefreshCDMIconAppearance keeps it in sync afterwards.
-                                    mod.StyleCustomChargeText(f, bkF)
+                                    mod.StyleCustomChargeText(frame, bkF)
                                 end
                                 local chargeInfo = C_Spell.GetSpellCharges
                                     and C_Spell.GetSpellCharges(spellRef)
@@ -622,30 +622,30 @@ local function ProcessPresetCooldowns()
                                 -- render it Blizzard's way: TruncateWhenZero turns it into a
                                 -- display-safe string and drops it at zero, without reading
                                 -- the value. pcall because it can throw; failure -> hide.
-                                local success, str
+                                local success, text
                                 if C_StringUtil and C_StringUtil.TruncateWhenZero then
-                                    success, str = pcall(C_StringUtil.TruncateWhenZero, num)
+                                    success, text = pcall(C_StringUtil.TruncateWhenZero, num)
                                 end
-                                if success and str then
-                                    f._castCountText:SetText(str)
-                                    if not f._castCountText:IsShown() then
-                                        f._castCountText:Show()
+                                if success and text then
+                                    frame._castCountText:SetText(text)
+                                    if not frame._castCountText:IsShown() then
+                                        frame._castCountText:Show()
                                     end
-                                elseif f._castCountText:IsShown() then
-                                    f._castCountText:SetText("")
-                                    f._castCountText:Hide()
+                                elseif frame._castCountText:IsShown() then
+                                    frame._castCountText:SetText("")
+                                    frame._castCountText:Hide()
                                 end
                             end
-                        elseif f._castCountText and f._castCountText:IsShown() then
-                            f._castCountText:SetText("")
-                            f._castCountText:Hide()
-                            f._lastCastCount = nil
+                        elseif frame._castCountText and frame._castCountText:IsShown() then
+                            frame._castCountText:SetText("")
+                            frame._castCountText:Hide()
+                            frame._lastCastCount = nil
                         end
                     end
                 end
             elseif
-                f._isItemPresetFrame
-                and f._presetItemID
+                frame._isItemPresetFrame
+                and frame._presetItemID
                 and nowTime >= _encounterResetUntil
                 -- Item read-skip (probe-proven capture #12: the item branch was the
                 -- drain's entire remaining cost): a READY, un-armed, un-desaturated item
@@ -654,30 +654,30 @@ local function ProcessPresetCooldowns()
                 -- sweep heals anything missed.
                 and (
                     fullSweep
-                    or f._itemWalkArm ~= false
-                    or f._countArm ~= false
-                    or f._inCombatLockout
-                    or f._lastDesat
-                    or (f._cdStart and f._cdDur and nowTime < f._cdStart + f._cdDur)
+                    or frame._itemWalkArm ~= false
+                    or frame._countArm ~= false
+                    or frame._inCombatLockout
+                    or frame._lastDesat
+                    or (frame._cdStart and frame._cdDur and nowTime < frame._cdStart + frame._cdDur)
                 )
             then
                 -- Pot presets: re-resolve the display variant (generation-gated,
                 -- one compare when nothing changed) and drive count/cooldown off
                 -- the resolved chain. Every other item preset keeps the legacy
                 -- primary-then-alts walk byte-identically.
-                local dispID = PotSwap.Ensure(f)
+                local dispID = PotSwap.Ensure(frame)
                 -- A variant flip moves the cooldown source: force a re-walk.
-                if dispID ~= f._lastDispID then
-                    f._lastDispID = dispID
-                    f._itemWalkArm = true
+                if dispID ~= frame._lastDispID then
+                    frame._lastDispID = dispID
+                    frame._itemWalkArm = true
                 end
                 -- Walk-on-edge: item cooldowns only move on BAG_UPDATE_COOLDOWN
                 -- / cast / bag-content / encounter-reset edges, all of which arm
                 -- the walk. Between edges the cached start/dur drives itemOnCD
                 -- and the armed widget completes on its own (nil arm = first
                 -- pass for this frame, walk once).
-                if f._itemWalkArm ~= false then
-                    f._itemWalkArm = false
+                if frame._itemWalkArm ~= false then
+                    frame._itemWalkArm = false
                     local getContainerCD = C_Container and C_Container.GetItemCooldown
                     local start, dur
                     -- SINGLE-ID cooldown probe (user-directed model, the reference
@@ -691,14 +691,14 @@ local function ProcessPresetCooldowns()
                     -- ability press) now costs 1-2 calls instead of a dozen bag scans.
                     local probeID
                     if dispID then
-                        if (f._displayCount or 0) > 0 then
-                            f._lastOwnedDispID = dispID
+                        if (frame._displayCount or 0) > 0 then
+                            frame._lastOwnedDispID = dispID
                             probeID = dispID
                         else
-                            probeID = f._lastOwnedDispID or dispID
+                            probeID = frame._lastOwnedDispID or dispID
                         end
                     else
-                        probeID = f._itemCdSource or f._presetItemID
+                        probeID = frame._itemCdSource or frame._presetItemID
                     end
                     if getContainerCD then
                         start, dur = getContainerCD(probeID)
@@ -709,14 +709,14 @@ local function ProcessPresetCooldowns()
                     -- One-time seed per frame object: post-/reload a residual
                     -- cd can live on an id we have no memory of (used before
                     -- the reload, nothing owned now) -- find and remember it.
-                    if not f._cdSeeded then
-                        f._cdSeeded = true
+                    if not frame._cdSeeded then
+                        frame._cdSeeded = true
                         if not (start and dur and dur > 1.5) then
-                            local entries = dispID and PotSwap.Chain(f._presetData, f._presetItemID)
-                                or (f._presetData and f._presetData.altItemIDs)
+                            local entries = dispID and PotSwap.Chain(frame._presetData, frame._presetItemID)
+                                or (frame._presetData and frame._presetData.altItemIDs)
                             if entries then
-                                for idx = 1, #entries do
-                                    local cid = entries[idx]
+                                for index = 1, #entries do
+                                    local cid = entries[index]
                                     if cid ~= probeID then
                                         if getContainerCD then
                                             start, dur = getContainerCD(cid)
@@ -726,9 +726,9 @@ local function ProcessPresetCooldowns()
                                         end
                                         if start and dur and dur > 1.5 then
                                             if dispID then
-                                                f._lastOwnedDispID = cid
+                                                frame._lastOwnedDispID = cid
                                             else
-                                                f._itemCdSource = cid
+                                                frame._itemCdSource = cid
                                             end
                                             break
                                         end
@@ -738,17 +738,17 @@ local function ProcessPresetCooldowns()
                         end
                     end
                     if start and dur and dur > 1.5 then
-                        f._cooldown:SetCooldown(start, dur)
-                        f._cdStart = start
-                        f._cdDur = dur
-                    elseif not (f._cdStart and f._cdDur and (nowTime < f._cdStart + f._cdDur)) then
-                        f._cooldown:Clear()
-                        f._cdStart = nil
-                        f._cdDur = nil
+                        frame._cooldown:SetCooldown(start, dur)
+                        frame._cdStart = start
+                        frame._cdDur = dur
+                    elseif not (frame._cdStart and frame._cdDur and (nowTime < frame._cdStart + frame._cdDur)) then
+                        frame._cooldown:Clear()
+                        frame._cdStart = nil
+                        frame._cdDur = nil
                     end
                 end
-                local itemOnCD = f._cdStart and f._cdDur and (nowTime < f._cdStart + f._cdDur)
-                if itemOnCD or f._inCombatLockout then
+                local itemOnCD = frame._cdStart and frame._cdDur and (nowTime < frame._cdStart + frame._cdDur)
+                if itemOnCD or frame._inCombatLockout then
                     anyUnsettled = true
                 end
                 local sum
@@ -756,12 +756,12 @@ local function ProcessPresetCooldowns()
                     -- Exact count of the resolved variant only -- never a sum
                     -- across ranks/families (2 Fleeting shows 2, even with 50
                     -- regular rank 1s in the bags).
-                    sum = f._displayCount or 0
+                    sum = frame._displayCount or 0
                     -- Consume the arm here too: resolving pots count via PotSwap
                     -- (_displayCount), so without this the read-skip gate saw pots as
                     -- count-armed FOREVER and never skipped them (probe capture #12).
-                    f._countArm = false
-                elseif f._countArm ~= false then
+                    frame._countArm = false
+                elseif frame._countArm ~= false then
                     -- Count-on-edge: item counts move with bag contents
                     -- (BAG_UPDATE_DELAYED), a use-cast, or a charge-only
                     -- change (BAG_UPDATE_COOLDOWN recheck), all of which arm.
@@ -769,18 +769,18 @@ local function ProcessPresetCooldowns()
                     -- id (f._itemCdSource): first owned id wins; while
                     -- nothing is owned the LAST owned id is kept (the shared
                     -- cd lives on the id that was just used).
-                    f._countArm = false
+                    frame._countArm = false
                     local owned
-                    sum, owned = mod._ReadItemPresetCount(f)
+                    sum, owned = mod._ReadItemPresetCount(frame)
                     if owned then
-                        f._itemCdSource = owned
+                        frame._itemCdSource = owned
                     end
-                    f._cachedTotal = sum
+                    frame._cachedTotal = sum
                 else
-                    sum = f._cachedTotal or 0
+                    sum = frame._cachedTotal or 0
                 end
-                if f._itemCountText then
-                    local fc = _ecmeFC[f]
+                if frame._itemCountText then
+                    local fc = _ecmeFC[frame]
                     local bk = fc and fc.barKey
                     local edge = bk and barDataByKey[bk]
                     local showIC = not edge or edge.showItemCount ~= false
@@ -795,37 +795,37 @@ local function ProcessPresetCooldowns()
                     -- already reads as "none left").
                     local displayCount = showIC and (sum > 0) and sum or nil
                     if displayCount then
-                        if f._lastItemCount ~= displayCount then
-                            f._itemCountText:SetText(displayCount)
-                            f._lastItemCount = displayCount
+                        if frame._lastItemCount ~= displayCount then
+                            frame._itemCountText:SetText(displayCount)
+                            frame._lastItemCount = displayCount
                         end
-                        if not f._itemCountText:IsShown() then
-                            f._itemCountText:Show()
+                        if not frame._itemCountText:IsShown() then
+                            frame._itemCountText:Show()
                         end
-                    elseif f._lastItemCount then
-                        f._itemCountText:SetText("")
-                        f._itemCountText:Hide()
-                        f._lastItemCount = nil
+                    elseif frame._lastItemCount then
+                        frame._itemCountText:SetText("")
+                        frame._itemCountText:Hide()
+                        frame._lastItemCount = nil
                     end
                 end
                 do
                     -- Quality pip follows the variant actually being SHOWN: a pot
                     -- preset resolves its icon across ranks, so keying this on the
                     -- primary would label the icon with a rank it is not drawing.
-                    local fc2 = _ecmeFC[f]
+                    local fc2 = _ecmeFC[frame]
                     local bk2 = fc2 and fc2.barKey
                     local bd2 = bk2 and barDataByKey[bk2]
                     ApplyItemQualityPip(
-                        f,
-                        f._displayItemID or f._presetItemID,
+                        frame,
+                        frame._displayItemID or frame._presetItemID,
                         bd2 and bd2.showItemQuality == true
                     )
                 end
-                local shouldDesat = (sum == 0 or itemOnCD or f._inCombatLockout) and true or false
-                if shouldDesat ~= f._lastDesat then
-                    f._lastDesat = shouldDesat
-                    if f._tex then
-                        f._tex:SetDesaturated(shouldDesat)
+                local shouldDesat = (sum == 0 or itemOnCD or frame._inCombatLockout) and true or false
+                if shouldDesat ~= frame._lastDesat then
+                    frame._lastDesat = shouldDesat
+                    if frame._tex then
+                        frame._tex:SetDesaturated(shouldDesat)
                     end
                 end
             end
@@ -856,21 +856,21 @@ end
 -- frames whose owning bar has the setting on.
 local function CheckItemPresenceForHide()
     local changed = false
-    for _, f in pairs(_presetFrames) do
-        if f._isItemPresetFrame and f._presetItemID then
-            local edge = f._ownerBarKey and barDataByKey[f._ownerBarKey]
+    for _, frame in pairs(_presetFrames) do
+        if frame._isItemPresetFrame and frame._presetItemID then
+            local edge = frame._ownerBarKey and barDataByKey[frame._ownerBarKey]
             -- A stone the Pact of Gluttony rule hides is never injected, so its
             -- stale presence cache must not queue a reanchor on every bag edge.
-            if edge and edge.hideItemsIfMissing and not mod._HealthstoneHiddenByPact(f._presetItemID) then
+            if edge and edge.hideItemsIfMissing and not mod._HealthstoneHiddenByPact(frame._presetItemID) then
                 local sum
-                if PotSwap.Ensure(f) then
+                if PotSwap.Ensure(frame) then
                     -- Pot presets: present = the resolved chain owns anything
                     -- (partner family counts while the swap toggle is on).
-                    sum = f._displayCount or 0
+                    sum = frame._displayCount or 0
                 else
-                    sum = mod._ReadItemPresetCount(f)
+                    sum = mod._ReadItemPresetCount(frame)
                 end
-                if (sum > 0) ~= f._hidePresenceCached then
+                if (sum > 0) ~= frame._hidePresenceCached then
                     changed = true
                 end
             end
@@ -902,10 +902,10 @@ mod._pcBagFlush = function()
     -- Contents are the only thing that changes item counts, and a new stack can
     -- move the displayed cooldown source too: re-walk both. (Live set: hidden
     -- frames re-arm on their Show edge.)
-    for f in pairs(_pcActive) do
-        if f._isItemPresetFrame then
-            f._itemWalkArm = true
-            f._countArm = true
+    for frame in pairs(_pcActive) do
+        if frame._isItemPresetFrame then
+            frame._itemWalkArm = true
+            frame._countArm = true
         end
     end
     _presetCdDirty = true
@@ -960,18 +960,18 @@ _racialCdListener:SetScript("OnEvent", function(_, evt, a1, a2, a3, a4)
         -- edge), and this event fires on nearly every ability press, where an
         -- unheld family preset would count every one of its ranks.
         local hit, crossed
-        for f in pairs(_pcActive) do
+        for frame in pairs(_pcActive) do
             if
-                f._isItemPresetFrame
-                and f._presetItemID
-                and not f._displayItemID
-                and f._cachedTotal
-                and f._cachedTotal > 0
-                and f._countArm == false
+                frame._isItemPresetFrame
+                and frame._presetItemID
+                and not frame._displayItemID
+                and frame._cachedTotal
+                and frame._cachedTotal > 0
+                and frame._countArm == false
             then
-                local old, num = f._cachedTotal, mod._ReadItemPresetCount(f)
+                local old, num = frame._cachedTotal, mod._ReadItemPresetCount(frame)
                 if num ~= old then
-                    f._countArm = true
+                    frame._countArm = true
                     hit = true
                     if (num == 0) ~= (old == 0) then
                         crossed = true
@@ -1004,9 +1004,9 @@ _racialCdListener:SetScript("OnEvent", function(_, evt, a1, a2, a3, a4)
         -- nothing to report. The count recheck above stays ungated on purpose:
         -- it is the only charge-only count refresh and arms only on a change.
         if not _pcAllSettled then
-            for f in pairs(_pcActive) do
-                if f._isItemPresetFrame then
-                    f._itemWalkArm = true
+            for frame in pairs(_pcActive) do
+                if frame._isItemPresetFrame then
+                    frame._itemWalkArm = true
                 end
             end
             _presetCdDirty = true
@@ -1018,19 +1018,19 @@ _racialCdListener:SetScript("OnEvent", function(_, evt, a1, a2, a3, a4)
     end
     if evt == "ENCOUNTER_END" or evt == "CHALLENGE_MODE_START" then
         if evt == "CHALLENGE_MODE_START" or select(2, GetInstanceInfo()) == "raid" then
-            for _, f in pairs(_presetFrames) do
-                if f._isItemPresetFrame then
-                    f._cdStart = nil
-                    f._cdDur = nil
-                    f._inCombatLockout = nil
-                    if f._cooldown then
-                        f._cooldown:Clear()
+            for _, frame in pairs(_presetFrames) do
+                if frame._isItemPresetFrame then
+                    frame._cdStart = nil
+                    frame._cdDur = nil
+                    frame._inCombatLockout = nil
+                    if frame._cooldown then
+                        frame._cooldown:Clear()
                     end
-                    if f._tex then
-                        f._tex:SetDesaturated(false)
+                    if frame._tex then
+                        frame._tex:SetDesaturated(false)
                     end
-                    f._lastDesat = false
-                    f._itemWalkArm = true
+                    frame._lastDesat = false
+                    frame._itemWalkArm = true
                 end
             end
             _encounterResetUntil = GetTime() + 3
@@ -1049,10 +1049,10 @@ _racialCdListener:SetScript("OnEvent", function(_, evt, a1, a2, a3, a4)
         -- so a cast pushes nothing visible on a ready frame, and the cast's OWN
         -- cooldown start arrives as a named SPELL_UPDATE_COOLDOWN in the same
         -- cascade, which the catch-all's payload discrimination arms precisely.
-        for f in pairs(_pcActive) do
-            if f._isItemPresetFrame then
-                f._itemWalkArm = true
-                f._countArm = true
+        for frame in pairs(_pcActive) do
+            if frame._isItemPresetFrame then
+                frame._itemWalkArm = true
+                frame._countArm = true
             end
         end
         _presetCdDirty = true
@@ -1063,28 +1063,28 @@ _racialCdListener:SetScript("OnEvent", function(_, evt, a1, a2, a3, a4)
         end
         local targetItemID = spellId and _combatLockoutSpells[spellId]
         if targetItemID and InCombatLockdown() then
-            for _, f in pairs(_presetFrames) do
-                if f._isItemPresetFrame and f._presetItemID == targetItemID then
-                    f._inCombatLockout = true
-                    if f._cooldown then
-                        f._cooldown:Clear()
+            for _, frame in pairs(_presetFrames) do
+                if frame._isItemPresetFrame and frame._presetItemID == targetItemID then
+                    frame._inCombatLockout = true
+                    if frame._cooldown then
+                        frame._cooldown:Clear()
                     end
-                    if f._tex then
-                        f._tex:SetDesaturated(true)
+                    if frame._tex then
+                        frame._tex:SetDesaturated(true)
                     end
-                    f._lastDesat = true
+                    frame._lastDesat = true
                 end
             end
         end
         return
     end
     if evt == "PLAYER_REGEN_ENABLED" then
-        for _, f in pairs(_presetFrames) do
-            if f._isItemPresetFrame then
-                if f._inCombatLockout then
-                    f._inCombatLockout = nil
+        for _, frame in pairs(_presetFrames) do
+            if frame._isItemPresetFrame then
+                if frame._inCombatLockout then
+                    frame._inCombatLockout = nil
                 end
-                f._itemWalkArm = true
+                frame._itemWalkArm = true
             end
         end
         _presetCdDirty = true -- refresh desaturation on combat end
@@ -1103,9 +1103,9 @@ _racialCdListener:SetScript("OnEvent", function(_, evt, a1, a2, a3, a4)
             local nowU = GetTime()
             if nowU >= (mod._pcUsableNext or 0) then
                 mod._pcUsableNext = nowU + 0.2
-                for f in pairs(_pcActive) do
-                    if f._isCustomSpellFrame then
-                        f._cdEvalArm = true
+                for frame in pairs(_pcActive) do
+                    if frame._isCustomSpellFrame then
+                        frame._cdEvalArm = true
                     end
                 end
                 _presetCdDirty = true
@@ -1132,11 +1132,11 @@ _racialCdListener:SetScript("OnEvent", function(_, evt, a1, a2, a3, a4)
             local spellRef, base = a1, a2
             local named = _PlainNum(spellRef)
             local baseOk = named and _PlainNum(base)
-            for f in pairs(_pcActive) do
-                if not f._isItemPresetFrame then
-                    local fsid = f._cachedPresetSID
+            for frame in pairs(_pcActive) do
+                if not frame._isItemPresetFrame then
+                    local fsid = frame._cachedPresetSID
                     if not named or not fsid or fsid == spellRef or (baseOk and fsid == base) then
-                        f._cdPushArm = true
+                        frame._cdPushArm = true
                     end
                 end
             end
@@ -1144,11 +1144,11 @@ _racialCdListener:SetScript("OnEvent", function(_, evt, a1, a2, a3, a4)
             -- Same discrimination for charge movement (charge customs).
             local spellRef = a1
             local named = _PlainNum(spellRef)
-            for f in pairs(_pcActive) do
-                if not f._isItemPresetFrame then
-                    local fsid = f._cachedPresetSID
+            for frame in pairs(_pcActive) do
+                if not frame._isItemPresetFrame then
+                    local fsid = frame._cachedPresetSID
                     if not named or not fsid or fsid == spellRef then
-                        f._cdPushArm = true
+                        frame._cdPushArm = true
                     end
                 end
             end
@@ -1170,14 +1170,14 @@ _racialCdListener:SetScript("OnEvent", function(_, evt, a1, a2, a3, a4)
             local spellRef = a1
             local named = _PlainNum(spellRef)
             local hit
-            for f in pairs(_pcActive) do
+            for frame in pairs(_pcActive) do
                 if
-                    f._isCustomSpellFrame
-                    and f._castCountText
-                    and f._castCountText:IsShown()
-                    and (not named or not f._cachedPresetSID or f._cachedPresetSID == spellRef)
+                    frame._isCustomSpellFrame
+                    and frame._castCountText
+                    and frame._castCountText:IsShown()
+                    and (not named or not frame._cachedPresetSID or frame._cachedPresetSID == spellRef)
                 then
-                    f._cdEvalArm = true
+                    frame._cdEvalArm = true
                     hit = true
                 end
             end

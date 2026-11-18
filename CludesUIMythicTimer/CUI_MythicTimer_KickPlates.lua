@@ -382,16 +382,16 @@ function Gate.New(hostFrame)
     local gate = CreateFrame("StatusBar", nil, hostFrame)
     gate:EnableMouse(false)
     gate:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-    local fill = gate:GetStatusBarTexture()
-    fill:SetVertexColor(0, 0, 0, 0)
-    if fill.SetSnapToPixelGrid then
-        fill:SetSnapToPixelGrid(false)
-        fill:SetTexelSnappingBias(0)
+    local fillTex = gate:GetStatusBarTexture()
+    fillTex:SetVertexColor(0, 0, 0, 0)
+    if fillTex.SetSnapToPixelGrid then
+        fillTex:SetSnapToPixelGrid(false)
+        fillTex:SetTexelSnappingBias(0)
     end
     gate:SetAlpha(0)
     gate:SetMinMaxValues(0, 1)
     gate:SetValue(1)
-    return gate, fill
+    return gate, fillTex
 end
 
 function Gate.NewClip(hostFrame)
@@ -404,27 +404,27 @@ end
 -- The clip open while the fill is whole: from the gate's left edge to the
 -- fill's right edge, hung again after every feed so it never keeps the edge
 -- of a fill that moved.
-function Gate.HangWhole(clip, fill, gate)
+function Gate.HangWhole(clip, fillTex, gate)
     clip:ClearAllPoints()
     clip:SetPoint("TOPLEFT", gate, "TOPLEFT", 0, 0)
     clip:SetPoint("BOTTOMLEFT", gate, "BOTTOMLEFT", 0, 0)
-    clip:SetPoint("TOPRIGHT", fill, "TOPRIGHT", 0, 0)
-    clip:SetPoint("BOTTOMRIGHT", fill, "BOTTOMRIGHT", 0, 0)
+    clip:SetPoint("TOPRIGHT", fillTex, "TOPRIGHT", 0, 0)
+    clip:SetPoint("BOTTOMRIGHT", fillTex, "BOTTOMRIGHT", 0, 0)
 end
 
 -- The count at the element's placing as the value, the latest as the
 -- maximum: whole while the count did not move, short once it rose.
-function Gate.FeedWhole(gate, fill, clip, base, current)
+function Gate.FeedWhole(gate, fillTex, clip, base, current)
     gate:SetMinMaxValues(0, current)
     gate:SetValue(base)
-    Gate.HangWhole(clip, fill, gate)
+    Gate.HangWhole(clip, fillTex, gate)
 end
 
 -- Whole from plain values: the element shows.
-function Gate.ResetWhole(gate, fill, clip)
+function Gate.ResetWhole(gate, fillTex, clip)
     gate:SetMinMaxValues(0, 1)
     gate:SetValue(1)
-    Gate.HangWhole(clip, fill, gate)
+    Gate.HangWhole(clip, fillTex, gate)
 end
 
 -- A hidden element must not keep its slot either (the owner's blank spot,
@@ -447,21 +447,21 @@ end
 -- a standard or a reverse fill (set before the texture, which a fill style
 -- change re-mints), drawing nothing, the fill unsnapped like the gates'.
 function Gate.NewBar(hostFrame, reverse)
-    local bar = CreateFrame("StatusBar", nil, hostFrame)
-    bar:EnableMouse(false)
+    local barFrame = CreateFrame("StatusBar", nil, hostFrame)
+    barFrame:EnableMouse(false)
     if reverse then
-        bar:SetFillStyle(Enum.StatusBarFillStyle.Reverse)
+        barFrame:SetFillStyle(Enum.StatusBarFillStyle.Reverse)
     end
-    bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-    local fill = bar:GetStatusBarTexture()
-    fill:SetVertexColor(0, 0, 0, 0)
-    if fill.SetSnapToPixelGrid then
-        fill:SetSnapToPixelGrid(false)
-        fill:SetTexelSnappingBias(0)
+    barFrame:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
+    local fillTex = barFrame:GetStatusBarTexture()
+    fillTex:SetVertexColor(0, 0, 0, 0)
+    if fillTex.SetSnapToPixelGrid then
+        fillTex:SetSnapToPixelGrid(false)
+        fillTex:SetTexelSnappingBias(0)
     end
-    bar:SetMinMaxValues(0, 1)
-    bar:SetValue(0)
-    return bar, fill
+    barFrame:SetMinMaxValues(0, 1)
+    barFrame:SetValue(0)
+    return barFrame, fillTex
 end
 
 function Gate.NewStep(hostFrame)
@@ -733,28 +733,28 @@ local AK
 
 -- The text pass (noDefaultFonts): the countdown in the module font at the
 -- chosen corner; stacks never show.
-local function ApplyText(btnFrame, d, style)
-    local fontStr = d.duration
+local function ApplyText(btnFrame, skinData, style)
+    local fontStr = skinData.duration
     if fontStr then
         local filePath = CludesUI.GetFontPath(FONT_KEY) or ICON_FONT
         local fontKey = filePath .. "|" .. style.timerSize
-        if d.ktFont ~= fontKey then
-            d.ktFont = fontKey
+        if skinData.ktFont ~= fontKey then
+            skinData.ktFont = fontKey
             CludesUI.ApplyIconTextFont(fontStr, filePath, style.timerSize, FONT_KEY)
         end
         fontStr:SetTextColor(1, 1, 1)
         local m = TEXT_POS[style.timerPos] or TEXT_POS.topleft
         local aKey = m.point .. "|" .. (m.nx + style.timerX) .. "|" .. (m.ny + style.timerY)
-        if d.ktAnchor ~= aKey then
+        if skinData.ktAnchor ~= aKey then
             fontStr:ClearAllPoints()
             fontStr:SetPoint(m.point, btnFrame, m.point, m.nx + style.timerX, m.ny + style.timerY)
-            d.ktAnchor = aKey
+            skinData.ktAnchor = aKey
         end
         fontStr:SetJustifyH(m.justify)
         fontStr:SetShown(not style.hideDurationText)
     end
-    if d.stack then
-        d.stack:Hide()
+    if skinData.stack then
+        skinData.stack:Hide()
     end
 end
 
@@ -825,9 +825,9 @@ local function PlaceEdge(b)
         local ratio = PlateRatio(backing)
         local mid = barH / 2 + b.oy * ratio
         local half = sSize * ratio / 2
-        local icon = m.NP_FullIconPush(backing, side, mid - half, mid + half)
-        if icon > 0 and m.NP_FullIconPush(backing, side, b.rowY, b.rowY + b.rowH) == 0 then
-            push = icon
+        local iconTex = m.NP_FullIconPush(backing, side, mid - half, mid + half)
+        if iconTex > 0 and m.NP_FullIconPush(backing, side, b.rowY, b.rowY + b.rowH) == 0 then
+            push = iconTex
         end
     end
     -- The icon hangs from the edge's inner side (its LEFT on the plate's
@@ -884,53 +884,53 @@ local function AnchorIcon(b)
         rel = b.edge
     end
     local ox, oy = b.ox, b.oy
-    local f = b.wrap or b
-    f:ClearAllPoints()
+    local frame = b.wrap or b
+    frame:ClearAllPoints()
     if b.isRail then
         if sAnchor == "LEFT" then
-            Pix.Point(f, "RIGHT", rel, "LEFT", ox, oy)
+            Pix.Point(frame, "RIGHT", rel, "LEFT", ox, oy)
         elseif sAnchor == "RIGHT" then
-            Pix.Point(f, "LEFT", rel, "RIGHT", ox, oy)
+            Pix.Point(frame, "LEFT", rel, "RIGHT", ox, oy)
         elseif sAnchor == "TOP" then
-            Pix.Point(f, "BOTTOMLEFT", rel, "TOP", ox - sSize / 2, oy)
+            Pix.Point(frame, "BOTTOMLEFT", rel, "TOP", ox - sSize / 2, oy)
         else
-            Pix.Point(f, "TOPLEFT", b.relBottom, "BOTTOM", ox - sSize / 2, oy)
+            Pix.Point(frame, "TOPLEFT", b.relBottom, "BOTTOM", ox - sSize / 2, oy)
         end
         return
     end
     local half = Pix.Scale(sSize) / 2
-    local hang, prev = b.hang, b.prevEl
+    local hang, previous = b.hang, b.prevEl
     if hang then
         local const = b.hangConst or 0
         if sAnchor == "LEFT" then
-            Pix.Point(f, "RIGHT", hang, "CENTER", const, 0)
+            Pix.Point(frame, "RIGHT", hang, "CENTER", const, 0)
         elseif sAnchor == "RIGHT" then
-            Pix.Point(f, "LEFT", hang, "CENTER", -const, 0)
+            Pix.Point(frame, "LEFT", hang, "CENTER", -const, 0)
         elseif sAnchor == "TOP" then
-            Pix.Point(f, "BOTTOMLEFT", hang, "CENTER", -const, -half)
+            Pix.Point(frame, "BOTTOMLEFT", hang, "CENTER", -const, -half)
         else
-            Pix.Point(f, "TOPLEFT", hang, "CENTER", -const, half)
+            Pix.Point(frame, "TOPLEFT", hang, "CENTER", -const, half)
         end
-    elseif prev then
-        local ef, ep, eo = Gate.ElementEnd(prev)
+    elseif previous then
+        local ef, ep, eo = Gate.ElementEnd(previous)
         if sAnchor == "LEFT" then
-            Pix.Point(f, "RIGHT", ef, ep, eo, 0)
+            Pix.Point(frame, "RIGHT", ef, ep, eo, 0)
         elseif sAnchor == "RIGHT" then
-            Pix.Point(f, "LEFT", ef, ep, eo, 0)
+            Pix.Point(frame, "LEFT", ef, ep, eo, 0)
         elseif sAnchor == "TOP" then
-            Pix.Point(f, "BOTTOMLEFT", ef, ep, eo, -half)
+            Pix.Point(frame, "BOTTOMLEFT", ef, ep, eo, -half)
         else
-            Pix.Point(f, "TOPLEFT", ef, ep, eo, half)
+            Pix.Point(frame, "TOPLEFT", ef, ep, eo, half)
         end
     else
         if sAnchor == "LEFT" then
-            Pix.Point(f, "RIGHT", rel, "LEFT", ox, oy)
+            Pix.Point(frame, "RIGHT", rel, "LEFT", ox, oy)
         elseif sAnchor == "RIGHT" then
-            Pix.Point(f, "LEFT", rel, "RIGHT", ox, oy)
+            Pix.Point(frame, "LEFT", rel, "RIGHT", ox, oy)
         elseif sAnchor == "TOP" then
-            Pix.Point(f, "BOTTOM", rel, "TOP", ox, oy)
+            Pix.Point(frame, "BOTTOM", rel, "TOP", ox, oy)
         else
-            Pix.Point(f, "TOP", b.relBottom, "BOTTOM", ox, oy)
+            Pix.Point(frame, "TOP", b.relBottom, "BOTTOM", ox, oy)
         end
     end
     -- The count gate's clip hung again about the moved wrap; a fed gate is
@@ -1004,40 +1004,40 @@ local function SetIconLevels(b, strata, lvl)
     end
     b:SetFrameStrata(strata)
     b:SetFrameLevel(lvl)
-    local d = b.d
+    local skinData = b.d
     b.iconClip:SetFrameStrata(strata)
     b.iconClip:SetFrameLevel(lvl)
     b.iconHolder:SetFrameStrata(strata)
     b.iconHolder:SetFrameLevel(lvl)
-    d.cooldown:SetFrameStrata(strata)
-    d.cooldown:SetFrameLevel(lvl + 1)
-    d.borderHost:SetFrameStrata(strata)
-    d.borderHost:SetFrameLevel(lvl + 2)
-    d.dispelHolder:SetFrameStrata(strata)
-    d.dispelHolder:SetFrameLevel(lvl + 3)
-    d.stackCarrier:SetFrameStrata(strata)
-    d.stackCarrier:SetFrameLevel(lvl + 4)
+    skinData.cooldown:SetFrameStrata(strata)
+    skinData.cooldown:SetFrameLevel(lvl + 1)
+    skinData.borderHost:SetFrameStrata(strata)
+    skinData.borderHost:SetFrameLevel(lvl + 2)
+    skinData.dispelHolder:SetFrameStrata(strata)
+    skinData.dispelHolder:SetFrameLevel(lvl + 3)
+    skinData.stackCarrier:SetFrameStrata(strata)
+    skinData.stackCarrier:SetFrameLevel(lvl + 4)
 end
 
-local function Place(b, host, isCUI)
+local function Place(b, owner, isCUI)
     local rel, relBottom, ox, oy, strata, lvl
     if isCUI then
-        rel = host.health
+        rel = owner.health
         -- Bottom side sits under the cast bar (its rect resolves while hidden).
-        relBottom = host.cast or rel
+        relBottom = owner.cast or rel
         ox, oy = sOffX, sOffY
         -- The plate's own strata keeps the icon inside its flattened render
         -- layer, at the level above every tier of ours (PLATE_TOP).
-        strata = host:GetFrameStrata()
+        strata = owner:GetFrameStrata()
         lvl = PLATE_TOP
-        b.cuiPlate = host
+        b.cuiPlate = owner
         -- An aura row on the icon's side: the icon sits past it (AnchorIcon).
-        b.row, b.rowY, b.rowH = SideRow(host)
+        b.row, b.rowY, b.rowH = SideRow(owner)
     else
-        rel, relBottom = host, host
+        rel, relBottom = owner, owner
         ox, oy = sOthX, sOthY
-        strata = host:GetFrameStrata()
-        lvl = host:GetFrameLevel() + PLATE_TOP
+        strata = owner:GetFrameStrata()
+        lvl = owner:GetFrameLevel() + PLATE_TOP
         b.cuiPlate = nil
         b.row = nil
     end
@@ -1049,9 +1049,9 @@ local function Place(b, host, isCUI)
     end
     -- Placement stamp: a new kick on the same plate under the same style
     -- skips this pass.
-    b.placedHost, b.placedGen = host, styleGen
+    b.placedHost, b.placedGen = owner, styleGen
     local placed = b.wrap or b
-    placed:SetParent(above or host)
+    placed:SetParent(above or owner)
     if b.isRail then
         Rails.SetLevels(b, strata, lvl)
     elseif b.isGhost then
@@ -1061,11 +1061,11 @@ local function Place(b, host, isCUI)
     end
     b.rel, b.relBottom, b.ox, b.oy = rel, relBottom, ox, oy
     -- A Full Sized cast icon on the icon's side covers it during a cast.
-    local iconFrame = isCUI and FullIconSide() == sAnchor and host.castIconFrame or nil
-    WatchCast(b, iconFrame and host.cast or nil, iconFrame)
+    local iconFrame = isCUI and FullIconSide() == sAnchor and owner.castIconFrame or nil
+    WatchCast(b, iconFrame and owner.cast or nil, iconFrame)
     AnchorIcon(b)
     if isCUI then
-        ArrowsFollow(host)
+        ArrowsFollow(owner)
     end
 end
 
@@ -1110,19 +1110,19 @@ local function LayoutPlate(unitToken)
     -- 2026-10-22). Hooked again after, in row order.
     for i = 1, num do
         local b = entries[i]
-        local hang, prev = false, false
+        local hang, previous = false, false
         if shift and i == ready + 1 then
             hang = shift
         elseif i > 1 then
-            prev = entries[i - 1]
+            previous = entries[i - 1]
         end
-        local prevGen = prev and prev.endGen or 0
+        local prevGen = previous and previous.endGen or 0
         b.slot = i
-        if b.placedHost and (b.slotAt ~= i or b.hang ~= hang or b.prevEl ~= prev or b.prevGen ~= prevGen) then
-            b.slotAt, b.hang, b.prevEl, b.prevGen = i, hang, prev, prevGen
+        if b.placedHost and (b.slotAt ~= i or b.hang ~= hang or b.prevEl ~= previous or b.prevGen ~= prevGen) then
+            b.slotAt, b.hang, b.prevEl, b.prevGen = i, hang, previous, prevGen
             b.relink = true
-            local f = b.wrap or b
-            f:ClearAllPoints()
+            local frame = b.wrap or b
+            frame:ClearAllPoints()
         end
     end
     if rail then
@@ -1169,7 +1169,7 @@ end
 -- Puts an icon on a plate (off its old one first). The plate's GUID is kept
 -- where it is plain, and whether it is the player's target, to find the mob
 -- again should its plate come back.
-local function PutOnPlate(b, unitToken, host, isCUI)
+local function PutOnPlate(b, unitToken, owner, isCUI)
     if b.unit ~= unitToken then
         TakeOffPlate(b)
         local entries = onPlate[unitToken]
@@ -1192,12 +1192,12 @@ local function PutOnPlate(b, unitToken, host, isCUI)
             Rails.SetLiveHidden(b.kicker, true)
         end
     end
-    if b.placedHost ~= host or b.placedGen ~= styleGen then
-        Place(b, host, isCUI)
+    if b.placedHost ~= owner or b.placedGen ~= styleGen then
+        Place(b, owner, isCUI)
     else
         AnchorIcon(b)
         if isCUI then
-            ArrowsFollow(host)
+            ArrowsFollow(owner)
         end
     end
     b.slotAt = b.slot
@@ -1207,10 +1207,10 @@ end
 --------------------------------------------------------------------------------
 --  Paint
 --------------------------------------------------------------------------------
-local function Inset(widget, b, r)
+local function Inset(widget, b, region)
     widget:ClearAllPoints()
-    widget:SetPoint("TOPLEFT", b, "TOPLEFT", r, -r)
-    widget:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -r, r)
+    widget:SetPoint("TOPLEFT", b, "TOPLEFT", region, -region)
+    widget:SetPoint("BOTTOMRIGHT", b, "BOTTOMRIGHT", -region, region)
 end
 
 -- Sizes, insets and the style pass. Runs once per settings generation per
@@ -1249,20 +1249,20 @@ end
 -- The border in the kicker's colour while Class Color Border is on and the
 -- class is plain; black otherwise (grey for a kicker without a class).
 local function PaintBorder(b, cls)
-    local host = b.d.borderHost
+    local owner = b.d.borderHost
     if type(cls) == "nil" then
-        Pix.SetBorderColor(host, NEUTRAL, NEUTRAL, NEUTRAL, 1)
+        Pix.SetBorderColor(owner, NEUTRAL, NEUTRAL, NEUTRAL, 1)
         return
     end
     if sClassBorder and not Secret(cls) then
         local c = C_ClassColor.GetClassColor(cls)
         if c then
-            local r, g, bl = c:GetRGB()
-            Pix.SetBorderColor(host, r, g, bl, 1)
+            local region, g, bl = c:GetRGB()
+            Pix.SetBorderColor(owner, region, g, bl, 1)
             return
         end
     end
-    Pix.SetBorderColor(host, 0, 0, 0, 1)
+    Pix.SetBorderColor(owner, 0, 0, 0, 1)
 end
 
 -- What stands for the kicker: `tex` (a spec icon or an interrupt's icon,
@@ -1271,18 +1271,18 @@ end
 -- Both are kept on the icon as values only, so a restyle can repaint them.
 local function PaintKicker(b, cls, texture)
     b.kClass, b.kTex = cls, texture
-    local d = b.d
+    local skinData = b.d
     if texture then
-        d.icon:SetTexture(texture)
-        d.icon:Show()
+        skinData.icon:SetTexture(texture)
+        skinData.icon:Show()
         b.classFS:Hide()
         b.paw:Hide()
     elseif type(cls) == "nil" then
-        d.icon:Hide()
+        skinData.icon:Hide()
         b.classFS:Hide()
         b.paw:Show()
     else
-        d.icon:Hide()
+        skinData.icon:Hide()
         b.paw:Hide()
         b.classFS:SetFormattedText(iconFmt, cls)
         b.classFS:Show()
@@ -1314,19 +1314,19 @@ end
 -- stays, plain, once it ends, and its plate's icons take their places by
 -- readiness.
 local function PaintCooldown(b, start, dur)
-    local d = b.d
+    local skinData = b.d
     b.cdStart, b.cdDur = start, dur
     if start and dur and dur > 0 then
-        d.cooldown:SetCooldown(start, dur)
+        skinData.cooldown:SetCooldown(start, dur)
         if b.binding then
             b.dur:SetTimeFromStart(start, dur)
             b.binding:SetEnabled(true)
         end
     else
-        d.cooldown:Clear()
+        skinData.cooldown:Clear()
         if b.binding then
             b.binding:SetEnabled(false)
-            d.duration:SetText("")
+            skinData.duration:SetText("")
         end
     end
     PaintDesat(b, CdRunning(b))
@@ -1355,9 +1355,9 @@ local function Detach(b)
     if b.unit then
         WatchCast(b, nil)
         b:Hide()
-        local f = b.wrap or b
-        f:ClearAllPoints()
-        f:SetParent(park)
+        local frame = b.wrap or b
+        frame:ClearAllPoints()
+        frame:SetParent(park)
         b.edge:ClearAllPoints()
         b.edge:SetParent(park)
         TakeOffPlate(b)
@@ -1480,8 +1480,8 @@ local function PreviewTexture(cls)
     end
     if sIconStyle == "spec" then
         local ident = CLASS_IDS[cls]
-        local _, _, _, icon = GetSpecializationInfoForClassID(ident, 1)
-        return icon
+        local _, _, _, iconTex = GetSpecializationInfoForClassID(ident, 1)
+        return iconTex
     elseif sIconStyle == "kick" then
         local spell = KD.ClassMainKick(cls)
         return spell and C_Spell.GetSpellTexture(spell) or nil
@@ -1567,8 +1567,8 @@ end
 --  parent's scale and renders at UIParent's (StyleIcon); the icon string's
 --  holder renders at scale 1.
 --------------------------------------------------------------------------------
-local function CellExtra(btnFrame, d, style)
-    ApplyText(btnFrame, d, style)
+local function CellExtra(btnFrame, skinData, style)
+    ApplyText(btnFrame, skinData, style)
 end
 
 -- `parent`: a lane's or a ghost cell's count clip, for a cell that hangs
@@ -1581,22 +1581,22 @@ end
 -- clip the cell lives in, open over the cell while the gate's fill is whole
 -- (Gate.FeedWhole); the cell fills the wrap.
 local function BuildIcon(hostFrame)
-    local wrap, gate, fill, clip
+    local wrap, gate, fillTex, clip
     if not hostFrame then
         wrap = CreateFrame("Frame", nil, park)
         wrap:EnableMouse(false)
         wrap:SetIgnoreParentScale(true)
-        gate, fill = Gate.New(wrap)
+        gate, fillTex = Gate.New(wrap)
         clip = Gate.NewClip(wrap)
     end
-    local b, d = AK.CreateStyledCell(hostFrame or clip, STYLE, CellExtra)
-    b.d = d
+    local b, skinData = AK.CreateStyledCell(hostFrame or clip, STYLE, CellExtra)
+    b.d = skinData
     if hostFrame then
         b.laneCell = true
     else
-        b.wrap, b.gate, b.fill, b.clip = wrap, gate, fill, clip
+        b.wrap, b.gate, b.fill, b.clip = wrap, gate, fillTex, clip
         b:SetAllPoints(wrap)
-        Gate.HangWhole(clip, fill, gate)
+        Gate.HangWhole(clip, fillTex, gate)
         -- The step pair the next element of the row hangs from (one pitch
         -- past the wrap while the icon shows), and the row end frame at its
         -- end for the target arrows (SideGuest); anchored by StyleIcon.
@@ -1610,9 +1610,9 @@ local function BuildIcon(hostFrame)
     end
     b:Hide()
     b:EnableMouse(false)
-    d.cooldown:EnableMouse(false)
-    d.cooldown:SetHideCountdownNumbers(true)
-    d.icon:Hide()
+    skinData.cooldown:EnableMouse(false)
+    skinData.cooldown:SetHideCountdownNumbers(true)
+    skinData.icon:Hide()
 
     -- The class icon overfills the area inside the border by a hair and this
     -- frame, set to that area (StyleIcon), clips it there.
@@ -1645,7 +1645,7 @@ local function BuildIcon(hostFrame)
 
     -- The cooldown ran out: the greyed icon comes back (a cell of ours), and
     -- its plate's icons take their places again (a ready kick moves up).
-    d.cooldown:SetScript("OnCooldownDone", function()
+    skinData.cooldown:SetScript("OnCooldownDone", function()
         PaintDesat(b, false)
         ReadinessMoved(b)
     end)
@@ -1655,7 +1655,7 @@ local function BuildIcon(hostFrame)
     if C_DurationUtil and C_DurationUtil.CreateDurationTextBinding then
         b.dur = C_DurationUtil.CreateDuration()
         b.binding = C_DurationUtil.CreateDurationTextBinding()
-        b.binding:SetFontString(d.duration)
+        b.binding:SetFontString(skinData.duration)
         b.binding:SetDuration(b.dur)
         local fmt = AK.GetDurationFormatter(false)
         if fmt then
@@ -1736,7 +1736,7 @@ local function Ready()
     end
 end
 
-local function ShowIcon(key, kicker, unitToken, host, isCUI, cls, texture, start, dur, preview)
+local function ShowIcon(key, kicker, unitToken, owner, isCUI, cls, texture, start, dur, preview)
     Ready()
     local b = icons[key] or Acquire(key, kicker)
     detached[key] = nil
@@ -1744,7 +1744,7 @@ local function ShowIcon(key, kicker, unitToken, host, isCUI, cls, texture, start
     if b.styleGen ~= styleGen then
         StyleIcon(b)
     end
-    PutOnPlate(b, unitToken, host, isCUI)
+    PutOnPlate(b, unitToken, owner, isCUI)
     PaintKicker(b, cls, texture)
     PaintCooldown(b, start, dur)
     b:Show()
@@ -1874,10 +1874,10 @@ end
 -- The clip from the gate's fill edge to the gate's right edge, anchored again
 -- after every feed so it never keeps the edge of a fill that moved.
 function Ghosts.Hang(sub)
-    local clip, fill, gate = sub.clip, sub.fill, sub.gate
+    local clip, fillTex, gate = sub.clip, sub.fill, sub.gate
     clip:ClearAllPoints()
-    clip:SetPoint("TOPLEFT", fill, "TOPRIGHT", 0, 0)
-    clip:SetPoint("BOTTOMLEFT", fill, "BOTTOMRIGHT", 0, 0)
+    clip:SetPoint("TOPLEFT", fillTex, "TOPRIGHT", 0, 0)
+    clip:SetPoint("BOTTOMLEFT", fillTex, "BOTTOMRIGHT", 0, 0)
     clip:SetPoint("TOPRIGHT", gate, "TOPRIGHT", 0, 0)
     clip:SetPoint("BOTTOMRIGHT", gate, "BOTTOMRIGHT", 0, 0)
 end
@@ -1910,7 +1910,7 @@ end
 -- holding a lane-style kit cell, anchored on the ghost for good. All of them
 -- are born under the ghost, so they carry the park's aspect.
 function Ghosts.BuildSub(g, k)
-    local gate, fill = Gate.New(g)
+    local gate, fillTex = Gate.New(g)
     gate:Hide()
     local clip = Gate.NewClip(g)
     clip:Hide()
@@ -1922,7 +1922,7 @@ function Ghosts.BuildSub(g, k)
     cell:SetAllPoints(g)
     local sub = {
         gate = gate,
-        fill = fill,
+        fill = fillTex,
         clip = clip,
         gateB = gateB,
         fillB = fillB,
@@ -2128,22 +2128,22 @@ end
 -- ended meanwhile goes.
 function Ghosts.Return(unitToken, unitGuid, isTarget)
     local live, nowTime = Ghosts.live, GetTime()
-    local host, isCUI
+    local owner, isCUI
     for i = #live, 1, -1 do
         local g = live[i]
         if g.waiting then
             if nowTime >= g.expireAt then
                 Ghosts.Release(g)
             elseif (unitGuid and g.guid == unitGuid) or (isTarget and g.waitTarget) then
-                if not host then
-                    host, isCUI = ResolveHost(unitToken)
+                if not owner then
+                    owner, isCUI = ResolveHost(unitToken)
                 end
-                if host then
+                if owner then
                     Ghosts.SetWaiting(g, false)
                     if g.styleGen ~= styleGen then
                         Ghosts.Dress(g)
                     end
-                    PutOnPlate(g, unitToken, host, isCUI)
+                    PutOnPlate(g, unitToken, owner, isCUI)
                     Ghosts.FeedAll(g)
                     g:Show()
                     if not driver:IsShown() then
@@ -2178,7 +2178,7 @@ end
 -- could have kicked and has a known cooldown, fed their counts and timed from
 -- t with their own cooldown. The ghost holds that span while the longest of
 -- them could still run (CdRunning: it sorts with the icons on cooldown).
-function Ghosts.Show(t, unitToken, host, isCUI, units, before, after)
+function Ghosts.Show(t, unitToken, owner, isCUI, units, before, after)
     local num, longest = 0, 0
     for i = 1, #units do
         local dur = Ghosts.Dur(units[i], before, after)
@@ -2236,7 +2236,7 @@ function Ghosts.Show(t, unitToken, host, isCUI, units, before, after)
     Ghosts.Chain(g)
     local live = Ghosts.live
     live[#live + 1] = g
-    PutOnPlate(g, unitToken, host, isCUI)
+    PutOnPlate(g, unitToken, owner, isCUI)
     -- Placed: fed again now that the gates sit where they show, and once
     -- more on the driver's next pass.
     Ghosts.FeedAll(g)
@@ -2375,10 +2375,10 @@ function Ghosts.Restyle()
     for i = #live, 1, -1 do
         local g = live[i]
         if g.styleGen ~= styleGen and g.unit then
-            local host, isCUI = ResolveHost(g.unit)
-            if host then
+            local owner, isCUI = ResolveHost(g.unit)
+            if owner then
                 Ghosts.Dress(g)
-                Place(g, host, isCUI)
+                Place(g, owner, isCUI)
                 Ghosts.FeedAll(g)
             else
                 Ghosts.Release(g)
@@ -2442,9 +2442,9 @@ function Ghosts.Supersede(kicker, start)
                 else
                     local longest = 0
                     for k = 1, num do
-                        local d = subs[k].cell.cdDur
-                        if d and d > longest then
-                            longest = d
+                        local skinData = subs[k].cell.cdDur
+                        if skinData and skinData > longest then
+                            longest = skinData
                         end
                     end
                     g.cdDur, g.expireAt = longest, g.t + longest
@@ -2470,9 +2470,9 @@ function Ghosts.OnGate(t, units, before, after, plates, platesOnly)
     for i = 1, #plates do
         local unitToken = plates[i]
         if NAMEPLATE_UNITS[unitToken] and not Ghosts.Has(t, unitToken) and IsHostile(unitToken) then
-            local host, isCUI = ResolveHost(unitToken)
-            if host then
-                Ghosts.Show(t, unitToken, host, isCUI, units, before, after)
+            local owner, isCUI = ResolveHost(unitToken)
+            if owner then
+                Ghosts.Show(t, unitToken, owner, isCUI, units, before, after)
             end
         end
     end
@@ -2499,14 +2499,14 @@ local function OnKick(unitToken, who, _, _, _, _)
     if not IsHostile(unitToken) then
         return
     end
-    local host, isCUI = ResolveHost(unitToken)
-    if not host then
+    local owner, isCUI = ResolveHost(unitToken)
+    if not owner then
         return
     end
     local m = KE.Member(who)
     local cls = (m and m.class) or UnitClassBase(who)
     local start, dur = KE.Cooldown(who)
-    b = ShowIcon(who, who, unitToken, host, isCUI, cls, KickerTexture(m), start, dur, false)
+    b = ShowIcon(who, who, unitToken, owner, isCUI, cls, KickerTexture(m), start, dur, false)
     b.at = nowTime
     -- The count gate's baseline: the kicker's count as the engine read it at
     -- this kick, in this fight (none for your own cast: you are never a
@@ -2854,23 +2854,23 @@ local function BuildLane(rail, i)
     local gate = CreateFrame("StatusBar", nil, clip)
     gate:EnableMouse(false)
     gate:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
-    local fill = gate:GetStatusBarTexture()
-    fill:SetVertexColor(0, 0, 0, 0)
-    if fill.SetSnapToPixelGrid then
-        fill:SetSnapToPixelGrid(false)
-        fill:SetTexelSnappingBias(0)
+    local fillTex = gate:GetStatusBarTexture()
+    fillTex:SetVertexColor(0, 0, 0, 0)
+    if fillTex.SetSnapToPixelGrid then
+        fillTex:SetSnapToPixelGrid(false)
+        fillTex:SetTexelSnappingBias(0)
     end
     local gateB, fillB = Gate.New(gate)
     local clipB = Gate.NewClip(gate)
     local cell = BuildIcon(clipB)
     cell:ClearAllPoints()
-    cell:SetPoint("LEFT", fill, "RIGHT", 0, 0)
+    cell:SetPoint("LEFT", fillTex, "RIGHT", 0, 0)
     cell.rail = rail
     Gate.HangWhole(clipB, fillB, gateB)
     local lane = {
         clip = clip,
         gate = gate,
-        fill = fill,
+        fill = fillTex,
         gateB = gateB,
         fillB = fillB,
         clipB = clipB,
@@ -2916,11 +2916,11 @@ end
 -- A bar of the shift chain: one slot pitch wide, a standard or a reverse
 -- fill (Gate.NewBar).
 local function ChainBar(rail, reverse)
-    local bar, fill = Gate.NewBar(rail, reverse)
-    bar:SetSize(sSize + ICON_GAP, Pix.Scale(sSize))
-    bar:SetFrameStrata(rail:GetFrameStrata())
-    bar:SetFrameLevel(rail:GetFrameLevel())
-    return bar, fill
+    local barFrame, fillTex = Gate.NewBar(rail, reverse)
+    barFrame:SetSize(sSize + ICON_GAP, Pix.Scale(sSize))
+    barFrame:SetFrameStrata(rail:GetFrameStrata())
+    barFrame:SetFrameLevel(rail:GetFrameLevel())
+    return barFrame, fillTex
 end
 
 -- A pair of the shift chain (rail.chain) or, with `chain`, of the hug chain.
@@ -3327,8 +3327,8 @@ function Rails.SyncPlate(unitToken)
         Rails.Release(unitToken)
         return
     end
-    local host, isCUI = ResolveHost(unitToken)
-    if not host then
+    local owner, isCUI = ResolveHost(unitToken)
+    if not owner then
         Rails.Release(unitToken)
         return
     end
@@ -3339,8 +3339,8 @@ function Rails.SyncPlate(unitToken)
     end
     DressRail(rail)
     rail.unit = unitToken
-    if rail.placedHost ~= host or rail.placedGen ~= styleGen then
-        Place(rail, host, isCUI)
+    if rail.placedHost ~= owner or rail.placedGen ~= styleGen then
+        Place(rail, owner, isCUI)
     end
     LayoutPlate(unitToken)
     FeedRail(rail, position)
@@ -3510,16 +3510,16 @@ end
 -- pending login or reload restore runs here, where the instance reads true,
 -- and a zone-in or a fresh enable asks the group (ask).
 function Rails.Settled(ask)
-    local f = Rails.frame
-    if not f then
+    local frame = Rails.frame
+    if not frame then
         return
     end
     if MarkerInstance() then
-        f:RegisterEvent("CHAT_MSG_ADDON")
-        f:RegisterEvent("GROUP_ROSTER_UPDATE")
+        frame:RegisterEvent("CHAT_MSG_ADDON")
+        frame:RegisterEvent("GROUP_ROSTER_UPDATE")
     else
-        f:UnregisterEvent("CHAT_MSG_ADDON")
-        f:UnregisterEvent("GROUP_ROSTER_UPDATE")
+        frame:UnregisterEvent("CHAT_MSG_ADDON")
+        frame:UnregisterEvent("GROUP_ROSTER_UPDATE")
     end
     if Rails.pendingRestore then
         Rails.pendingRestore = false
@@ -3566,8 +3566,8 @@ local function PreviewUnit(unitToken)
     if not NAMEPLATE_UNITS[unitToken] or not IsHostile(unitToken) then
         return
     end
-    local host, isCUI = ResolveHost(unitToken)
-    if not host then
+    local owner, isCUI = ResolveHost(unitToken)
+    if not owner then
         return
     end
     previewSeq = previewSeq + 1
@@ -3577,7 +3577,7 @@ local function PreviewUnit(unitToken)
         "~" .. unitToken,
         nil,
         unitToken,
-        host,
+        owner,
         isCUI,
         cls,
         PreviewTexture(cls),
@@ -3616,18 +3616,18 @@ local function OnPlateAdded(unitToken)
     end
     local g = PlainString(UnitGUID(unitToken))
     local isTarget = IsTargetPlate(unitToken)
-    local host, isCUI
+    local owner, isCUI
     for key, b in pairs(detached) do
         if (g and b.guid == g) or (isTarget and b.waitTarget) then
-            if not host then
-                host, isCUI = ResolveHost(unitToken)
+            if not owner then
+                owner, isCUI = ResolveHost(unitToken)
             end
-            if host then
+            if owner then
                 detached[key] = nil
                 if b.styleGen ~= styleGen then
                     StyleIcon(b)
                 end
-                PutOnPlate(b, unitToken, host, isCUI)
+                PutOnPlate(b, unitToken, owner, isCUI)
                 PaintKicker(b, b.kClass, b.kTex)
                 PaintCooldown(b, b.cdStart, b.cdDur)
                 b:Show()
@@ -3741,10 +3741,10 @@ local function RestyleLive()
     end
     for key, b in pairs(icons) do
         if b.styleGen ~= styleGen and b.unit then
-            local host, isCUI = ResolveHost(b.unit)
-            if host then
+            local owner, isCUI = ResolveHost(b.unit)
+            if owner then
                 StyleIcon(b)
-                Place(b, host, isCUI)
+                Place(b, owner, isCUI)
                 local texture = b.kTex
                 if b.kicker then
                     texture = KickerTexture(KE.Member(b.kicker))
@@ -4092,7 +4092,7 @@ end
 -- nothing to paint from. The cells render at UIParent's scale like the live
 -- icons, so the host must sit at that scale (the kit's fit stays 1 for this
 -- column).
-function mod.KT_PaintSampleIcon(host)
+function mod.KT_PaintSampleIcon(owner)
     local conf = Cfg()
     if not conf then
         return nil
@@ -4127,7 +4127,7 @@ function mod.KT_PaintSampleIcon(host)
         pw, ph, ox, oy = np.GetHealthBarWidth(), np.GetHealthBarHeight(), sOffX, sOffY
     end
     local backing = EnsureSamplePlate()
-    backing:SetParent(host)
+    backing:SetParent(owner)
     backing:SetSize(pw, ph)
     backing:Show()
     for i = 1, 2 do
@@ -4177,7 +4177,7 @@ function mod.KT_PaintSampleIcon(host)
     end
     bl, br, bt, bb = min(bl, il), max(br, ir), max(bt, it), min(bb, ib)
     backing:ClearAllPoints()
-    backing:SetPoint("CENTER", host, "CENTER", -(bl + br) / 2, -(bt + bb) / 2)
+    backing:SetPoint("CENTER", owner, "CENTER", -(bl + br) / 2, -(bt + bb) / 2)
     return ceil(br - bl), ceil(bt - bb)
 end
 

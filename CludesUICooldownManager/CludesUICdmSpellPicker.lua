@@ -1260,12 +1260,12 @@ local function EnsureBarOrderSeeded(barId, sd)
     -- IS the ability there, so the two ids coincide.
     local isBuff = mod.IsBarBuffFamily and mod.IsBarBuffFamily(barId)
     for i = 1, #icons do
-        local icon = icons[i]
-        if icon then
-            local fc = fcCache and fcCache[icon]
+        local iconTex = icons[i]
+        if iconTex then
+            local fc = fcCache and fcCache[iconTex]
             local spellRef
             if isBuff then
-                spellRef = (mod.GetCanonicalSpellIDForFrame and mod.GetCanonicalSpellIDForFrame(icon))
+                spellRef = (mod.GetCanonicalSpellIDForFrame and mod.GetCanonicalSpellIDForFrame(iconTex))
                     or (fc and fc.spellID)
             else
                 spellRef = fc and fc.spellID

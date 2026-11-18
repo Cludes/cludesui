@@ -465,9 +465,9 @@ function EAB_VTABLE.Hover.ScheduleFadeOut(barId, status, options)
         return
     end
     status.foPending = true
-    local cb = status.foCb
-    if not cb then
-        cb = function()
+    local callback = status.foCb
+    if not callback then
+        callback = function()
             status.foPending = false
             if options.isStillHovered and options.isStillHovered(status) then
                 if options.markHoveredWhileActive then
@@ -506,9 +506,9 @@ function EAB_VTABLE.Hover.ScheduleFadeOut(barId, status, options)
                 end
             end
         end
-        status.foCb = cb
+        status.foCb = callback
     end
-    C_Timer_After(0.1, cb)
+    C_Timer_After(0.1, callback)
 end
 
 function EAB_VTABLE.Hover.BuildHandlers(barId, status, options)
@@ -586,8 +586,8 @@ local function AttachHoverHooks(barId)
                     cx, cy = cx / scale, cy / scale
                     local pad = (s.buttonPadding or 2) + 2
                     local nearVisible = false
-                    for idx = 1, #buttons do
-                        local button = buttons[idx]
+                    for index = 1, #buttons do
+                        local button = buttons[index]
                         if button and button:IsShown() and not mod._eabParked(button) then
                             local bl, bb, bw, bh = button:GetRect()
                             if
@@ -621,8 +621,8 @@ local function AttachHoverHooks(barId)
 
     widget:HookScript("OnEnter", OnEnter)
     widget:HookScript("OnLeave", OnLeave)
-    for idx = 1, #buttons do
-        local button = buttons[idx]
+    for index = 1, #buttons do
+        local button = buttons[index]
         if button then
             button:HookScript("OnEnter", OnEnter)
             button:HookScript("OnLeave", OnLeave)

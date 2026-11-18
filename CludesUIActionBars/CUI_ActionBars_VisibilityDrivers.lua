@@ -484,8 +484,8 @@ mod._ixBarSync = function(barId, eligOnly)
             if InCombatLockdown() then
                 mod._eabApplyDeferred = true
             else
-                for idx = 1, #buttons do
-                    local button = buttons[idx]
+                for index = 1, #buttons do
+                    local button = buttons[index]
                     local fd = button and mod._eabFD[button]
                     if fd and fd.ixStyled then
                         mod._ixStyle(button, fd, s)

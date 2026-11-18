@@ -43,15 +43,15 @@ local Pix = CludesUI.PP
 do
     local pool = {}
     local num = 40
-    for idx = 1, num do
-        pool[idx] = CreateFrame("Frame")
+    for index = 1, num do
+        pool[index] = CreateFrame("Frame")
     end
     mod.TakeShell = function()
         if num > 0 then
-            local f = pool[num]
+            local frame = pool[num]
             pool[num] = nil
             num = num - 1
-            return f
+            return frame
         end
         -- Pool exhausted (not expected): frame just bills the parent; bump n if it happens.
         return CreateFrame("Frame")
@@ -265,12 +265,12 @@ local C_Timer_After = C_Timer.After
 -- Stored on ns, not in a file-scope local.
 mod._eabFD = setmetatable({}, { __mode = "k" })
 function mod.EFD(widget)
-    local d = mod._eabFD[widget]
-    if not d then
-        d = {}
-        mod._eabFD[widget] = d
+    local skinData = mod._eabFD[widget]
+    if not skinData then
+        skinData = {}
+        mod._eabFD[widget] = skinData
     end
-    return d
+    return skinData
 end
 
 -- Local alias for hot-path EFD access
@@ -283,8 +283,8 @@ local EFD = mod.EFD
 -- on every hidden->shown edge, so the button is parked only while hidden. Our
 -- own Show() keeps alpha, so each Lua Show site turns a surfaced 2 into 1.
 function mod._eabParked(button)
-    local d = mod._eabFD[button]
-    local p = d and d.parkA0
+    local skinData = mod._eabFD[button]
+    local p = skinData and skinData.parkA0
     if p == 2 then
         return not button:IsShown()
     end
@@ -534,9 +534,9 @@ local EXTRA_BARS = {
 -- it): no holder, mover or visibility row there, and its container is left
 -- to Blizzard.
 if CludesUI.IS_FOREVER then
-    for idx = #EXTRA_BARS, 1, -1 do
-        if EXTRA_BARS[idx].key == "ExtraActionButton" then
-            table.remove(EXTRA_BARS, idx)
+    for index = #EXTRA_BARS, 1, -1 do
+        if EXTRA_BARS[index].key == "ExtraActionButton" then
+            table.remove(EXTRA_BARS, index)
         end
     end
 end
@@ -1007,20 +1007,20 @@ for _, details in ipairs(EXTRA_BARS) do
         clickThrough = false,
     }
     if details.isDataBar then
-        local d = defaultSet.profile.bars[details.key]
-        d.width = 400
-        d.height = 18
-        d.orientation = "HORIZONTAL"
-        d.clickThrough = true -- default on for data bars
+        local skinData = defaultSet.profile.bars[details.key]
+        skinData.width = 400
+        skinData.height = 18
+        skinData.orientation = "HORIZONTAL"
+        skinData.clickThrough = true -- default on for data bars
         -- Custom Border (opt-in): off keeps the built-in 1px black line. The
         -- style keys below are what the option starts from (solid, thin, black)
         -- and render that same line. Offsets, shifts and borderThicknessPx have
         -- no default (nil = the style's own).
-        d.customBorder = false
-        d.borderTexture = "solid"
-        d.borderThickness = "thin"
-        d.borderColor = { r = 0, g = 0, b = 0, a = 1 }
-        d.borderBehind = false
+        skinData.customBorder = false
+        skinData.borderTexture = "solid"
+        skinData.borderThickness = "thin"
+        skinData.borderColor = { r = 0, g = 0, b = 0, a = 1 }
+        skinData.borderBehind = false
     end
 end
 -- House Favor bar ships opt-in: hidden until the user turns it on.
@@ -1168,8 +1168,8 @@ function mod.EABQueueGrid(show)
             return
         end
         local entries = wanted and _gridState.showFns or _gridState.hideFns
-        for idx = 1, #entries do
-            entries[idx]()
+        for index = 1, #entries do
+            entries[index]()
         end
     end)
 end

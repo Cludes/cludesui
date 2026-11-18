@@ -475,10 +475,10 @@ eventFrame:SetScript("OnEvent", function(_, evt, unitToken, updateInfo, arg3)
         -- Flush a secondary buff-viewer park that was blocked during combat
         if evt == "PLAYER_REGEN_ENABLED" and mod._secondaryParkPending then
             mod._secondaryParkPending = nil
-            local sv = _G[BLIZZ_CDM_FRAMES_SECONDARY.buffs]
-            local svc = sv and _ecmeFC[sv]
+            local savedVars = _G[BLIZZ_CDM_FRAMES_SECONDARY.buffs]
+            local svc = savedVars and _ecmeFC[savedVars]
             if svc and svc.hidden then
-                mod.ParkSecondaryBuffViewer(sv)
+                mod.ParkSecondaryBuffViewer(savedVars)
             end
         end
         -- Flush deferred roster reanchor that was blocked during combat
@@ -572,7 +572,7 @@ end)
 SLASH_ECME1 = "/ccme"
 SLASH_ECME2 = "/cdmeffects"
 SLASH_ECME3 = "/ccdm"
-SlashCmdList.ECME = function(msg)
+SlashCmdList.ECME = function(message)
     if InCombatLockdown and InCombatLockdown() then
         return
     end

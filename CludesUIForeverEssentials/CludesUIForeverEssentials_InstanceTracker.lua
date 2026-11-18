@@ -109,7 +109,7 @@ local function ReadCopy(unitToken)
         record.copy = copy
     end
     -- The same copy earlier this hour: this visit is not a new instance.
-    for idx, e in ipairs(Store().entries) do
+    for index, e in ipairs(Store().entries) do
         if e ~= record and e.map == visit.map and e.copy == copy then
             for jdx, posX in ipairs(Store().entries) do
                 if posX == record then
@@ -284,12 +284,12 @@ ev:SetScript("OnEvent", function(_, evt, a1, a2)
     elseif evt == "PLAYER_XP_UPDATE" then
         local xp, max = UnitXP("player"), UnitXPMax("player")
         if lastXP then
-            local d = xp - lastXP
-            if d < 0 then
-                d = (lastMax - lastXP) + xp
+            local skinData = xp - lastXP
+            if skinData < 0 then
+                skinData = (lastMax - lastXP) + xp
             end -- a level-up in between
-            if d > 0 then
-                visit.xp = visit.xp + d
+            if skinData > 0 then
+                visit.xp = visit.xp + skinData
             end
         end
         lastXP, lastMax = xp, max

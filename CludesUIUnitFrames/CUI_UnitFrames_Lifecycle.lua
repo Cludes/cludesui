@@ -201,9 +201,9 @@ function CludesUF:GetGrowDirectionForBar(barId)
     return mod.PAB_GetGrowDirection and mod.PAB_GetGrowDirection(barId)
 end
 
-function CludesUF:SetGrowDirectionForBar(barId, dir)
+function CludesUF:SetGrowDirectionForBar(barId, direction)
     if mod.PAB_SetGrowDirection then
-        mod.PAB_SetGrowDirection(barId, dir)
+        mod.PAB_SetGrowDirection(barId, direction)
     end
 end
 
@@ -269,22 +269,22 @@ do
         -- spec and range-checks with its best heal in the spellbook.
         if CludesUI.IS_FOREVER then
             local entries = CludesUI.FOREVER_HEAL_SPELLS[pClass]
-            for idx = 1, (entries and #entries or 0) do
-                if Known(entries[idx]) then
-                    helpSpell = entries[idx]
+            for index = 1, (entries and #entries or 0) do
+                if Known(entries[index]) then
+                    helpSpell = entries[index]
                     break
                 end
             end
         end
     end
 
-    local function TickOne(f, unitToken)
+    local function TickOne(frame, unitToken)
         if not saved then
             return
         end
         local oor = (saved.profile.boss and saved.profile.boss.oorAlpha) or 0.4
         if oor >= 1 or not UnitExists(unitToken) then
-            f:SetAlpha(1)
+            frame:SetAlpha(1)
             return
         end
         local spell
@@ -301,20 +301,20 @@ do
             -- nil check never touches a secret.
             local inRange = C_Spell.IsSpellInRange(spell, unitToken)
             if issecretvalue(inRange) or inRange ~= nil then
-                f:SetAlphaFromBoolean(inRange, 1, oor)
+                frame:SetAlphaFromBoolean(inRange, 1, oor)
             else
-                f:SetAlpha(1)
+                frame:SetAlpha(1)
             end
         else
-            f:SetAlpha(1)
+            frame:SetAlpha(1)
         end
     end
 
     local function Tick()
-        for idx = 1, 5 do
-            local f = frameList["boss" .. idx]
-            if f and f:IsVisible() then
-                TickOne(f, "boss" .. idx)
+        for index = 1, 5 do
+            local frame = frameList["boss" .. index]
+            if frame and frame:IsVisible() then
+                TickOne(frame, "boss" .. index)
             end
         end
     end
@@ -335,19 +335,19 @@ do
             return
         end
         hooked = true
-        for idx = 1, 5 do
-            local f = frameList["boss" .. idx]
-            if f then
-                local unitToken = "boss" .. idx
-                if f:IsVisible() then
+        for index = 1, 5 do
+            local frame = frameList["boss" .. index]
+            if frame then
+                local unitToken = "boss" .. index
+                if frame:IsVisible() then
                     visCount = visCount + 1
                 end
-                f:HookScript("OnShow", function(self)
+                frame:HookScript("OnShow", function(self)
                     visCount = visCount + 1
                     TickOne(self, unitToken)
                     UpdateTicker()
                 end)
-                f:HookScript("OnHide", function(self)
+                frame:HookScript("OnHide", function(self)
                     visCount = math.max(0, visCount - 1)
                     self:SetAlpha(1)
                     UpdateTicker()
@@ -443,9 +443,9 @@ do
         target = "unitFrames",
         collect = function()
             wipe(entries)
-            for _, f in pairs(frameList) do
-                if type(f) == "table" and f.GetCenter then
-                    entries[#entries + 1] = f
+            for _, frame in pairs(frameList) do
+                if type(frame) == "table" and frame.GetCenter then
+                    entries[#entries + 1] = frame
                 end
             end
             return groups

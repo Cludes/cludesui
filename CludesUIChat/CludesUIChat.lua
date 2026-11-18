@@ -70,12 +70,12 @@ local min, upper, floor, ceil, abs = min, max, floor, ceil, math.abs
 -- tables (that taints them -> HistoryKeeper errors in protected instances).
 local _cfd = {}
 local function CFD(castFrame)
-    local d = _cfd[castFrame]
-    if not d then
-        d = {}
-        _cfd[castFrame] = d
+    local skinData = _cfd[castFrame]
+    if not skinData then
+        skinData = {}
+        _cfd[castFrame] = skinData
     end
-    return d
+    return skinData
 end
 CludesUI._chatCFD = CFD
 
@@ -198,9 +198,9 @@ local function EnsureDB()
 end
 
 function CHAT.DB()
-    local d = EnsureDB()
-    if d and d.profile and d.profile.chat then
-        return d.profile.chat
+    local skinData = EnsureDB()
+    if skinData and skinData.profile and skinData.profile.chat then
+        return skinData.profile.chat
     end
     return {
         enabled = true,
@@ -217,8 +217,8 @@ end
 function mod.ChatStyle()
     local val = mod._chatStyle
     if val == nil then
-        local d = _G._CUCHAT_DB
-        local c = d and d.profile and d.profile.chat
+        local skinData = _G._CUCHAT_DB
+        local c = skinData and skinData.profile and skinData.profile.chat
         if not c then
             return "cui"
         end
@@ -405,9 +405,9 @@ local EDIT_BG_R, EDIT_BG_G, EDIT_BG_B = 0.05, 0.065, 0.08
 
 local function GetInnerBorderColor(conf)
     if conf.innerBorderColorMode == "accent" and CludesUI.GetAccentColor then
-        local r, g, b = CludesUI.GetAccentColor()
+        local region, g, b = CludesUI.GetAccentColor()
         local c = conf.innerBorderColor
-        return r, g, b, (c and c.a) or 0.06
+        return region, g, b, (c and c.a) or 0.06
     end
     local c = conf.innerBorderColor or { r = 1, g = 1, b = 1, a = 0.06 }
     return c.r or 1, c.g or 1, c.b or 1, c.a == nil and 0.06 or c.a
@@ -482,8 +482,8 @@ function CHAT.ApplyBackground()
     -- Stock styles: Blizzard's own chat background shows through (revealed on
     -- the chat frame itself), so our panel and sidebar carry no paint.
     local stock = mod.ChatStock()
-    for idx = 1, 20 do
-        local castFrame = _G["ChatFrame" .. idx]
+    for index = 1, 20 do
+        local castFrame = _G["ChatFrame" .. index]
         if castFrame and CFD(castFrame).bg then
             local bgTex = CFD(castFrame).bg:GetRegions()
             if bgTex then
@@ -689,8 +689,8 @@ function CHAT.ApplyExtendedBackground()
             local mode = conf.panelBorderColorMode or "custom"
             local color
             if mode == "accent" then
-                local r, g, b = CludesUI.GetAccentColor()
-                color = { r = r, g = g, b = b }
+                local region, g, b = CludesUI.GetAccentColor()
+                color = { r = region, g = g, b = b }
             elseif mode == "class" then
                 local _, class = UnitClass("player")
                 color = class and RAID_CLASS_COLORS[class] or { r = 1, g = 1, b = 1 }
@@ -799,25 +799,25 @@ function CHAT.ApplyFonts()
     local font = GetFont()
     local editFont = GetEditBoxFont()
     local outline = GetOutlineFlag()
-    for idx = 1, 20 do
-        local castFrame = _G["ChatFrame" .. idx]
+    for index = 1, 20 do
+        local castFrame = _G["ChatFrame" .. index]
         if castFrame and castFrame.SetFont then
-            local size = GetFrameFontSize(idx)
+            local size = GetFrameFontSize(index)
             -- Same per-window font FAMILY as our display view (CJK members):
             -- the invisible Blizzard frame owns hyperlink hit-zones, so its
             -- glyph metrics must match ours on lines carrying CJK text.
-            local fam = CHAT.EngineFontFamily and CHAT.EngineFontFamily(idx, font, size, outline)
+            local fam = CHAT.EngineFontFamily and CHAT.EngineFontFamily(index, font, size, outline)
             if fam then
                 castFrame:SetFontObject(fam)
             else
                 castFrame:SetFont(font, size, outline)
             end
         end
-        local eb = _G["ChatFrame" .. idx .. "EditBox"]
+        local eb = _G["ChatFrame" .. index .. "EditBox"]
         if eb then
-            local size = GetEditBoxFontSize(idx)
+            local size = GetEditBoxFontSize(index)
             eb:SetFont(editFont, size, outline)
-            if idx <= 10 then
+            if index <= 10 then
                 if eb.header then
                     eb.header:SetFont(editFont, size, outline)
                 end
@@ -846,17 +846,17 @@ function CHAT.ApplyChatFontSize(size)
     if type(size) ~= "number" or size <= 0 then
         return
     end
-    for idx = 1, 10 do
-        if _G["ChatFrame" .. idx] then
-            CludesUI.SetChatWindowSize(idx, size)
+    for index = 1, 10 do
+        if _G["ChatFrame" .. index] then
+            CludesUI.SetChatWindowSize(index, size)
         end
     end
     -- Temp whisper frames carry no numbered storage; their live font is the
     -- state FCF_GetChatWindowInfo reads back, so set it directly.
     local frameList = _G.CHAT_FRAMES
     if type(frameList) == "table" then
-        for idx = 11, #frameList do
-            local castFrame = _G[frameList[idx]]
+        for index = 11, #frameList do
+            local castFrame = _G[frameList[index]]
             if castFrame and castFrame.isTemporary and castFrame.inUse and castFrame.SetFont then
                 local font, _, flags = castFrame:GetFont()
                 if font then
@@ -992,16 +992,16 @@ end
 function CHAT.ApplyBorders()
     local conf = CHAT.DB()
     local hide = CHAT.BordersHidden(conf)
-    local r, g, b, a = GetInnerBorderColor(conf)
+    local region, g, b, a = GetInnerBorderColor(conf)
 
-    for idx = 1, 20 do
-        local castFrame = _G["ChatFrame" .. idx]
+    for index = 1, 20 do
+        local castFrame = _G["ChatFrame" .. index]
         if castFrame and CFD(castFrame).bg and Pix.GetBorders(CFD(castFrame).bg) then
-            Pix.SetBorderColor(CFD(castFrame).bg, r, g, b, a)
+            Pix.SetBorderColor(CFD(castFrame).bg, region, g, b, a)
             Pix.GetBorders(CFD(castFrame).bg):SetShown(not hide)
         end
         if castFrame and CFD(castFrame).inputDiv then
-            CFD(castFrame).inputDiv:SetColorTexture(r, g, b, a)
+            CFD(castFrame).inputDiv:SetColorTexture(region, g, b, a)
             -- Input-on-top: the divider marks the overlaid input's edge, so it
             -- shares that input's shown state (ECHAT.ApplyInputTopStrip) --
             -- otherwise it cuts across a message once the strip is released.
@@ -1014,11 +1014,11 @@ function CHAT.ApplyBorders()
     if cf1 and CFD(cf1).sidebar then
         local sbBgHidden = conf.hideSidebarBg
         if Pix.GetBorders(CFD(cf1).sidebar) then
-            Pix.SetBorderColor(CFD(cf1).sidebar, r, g, b, a)
+            Pix.SetBorderColor(CFD(cf1).sidebar, region, g, b, a)
             Pix.GetBorders(CFD(cf1).sidebar):SetShown(not hide and not sbBgHidden)
         end
         if CFD(cf1).sidebarDiv then
-            CFD(cf1).sidebarDiv:SetColorTexture(r, g, b, a)
+            CFD(cf1).sidebarDiv:SetColorTexture(region, g, b, a)
             CFD(cf1).sidebarDiv:SetShown(not hide)
         end
     end
@@ -1073,25 +1073,25 @@ end
 -- this to one queued placement per chat frame per frame; the closure is built once
 -- and reused, so repeats cost only the timer.
 function CHAT.PositionChatPanel(castFrame)
-    local d = CFD(castFrame)
-    if d._posQueued then
+    local skinData = CFD(castFrame)
+    if skinData._posQueued then
         return
     end
-    d._posQueued = true
-    local func = d._posDefer
+    skinData._posQueued = true
+    local func = skinData._posDefer
     if not func then
         func = function()
-            d._posQueued = nil
+            skinData._posQueued = nil
             CHAT._PositionChatPanelNow(castFrame)
         end
-        d._posDefer = func
+        skinData._posDefer = func
     end
     C_Timer.After(0, func)
 end
 
 function CHAT._PositionChatPanelNow(castFrame)
-    local d = CFD(castFrame)
-    local backdrop = d and d.bg
+    local skinData = CFD(castFrame)
+    local backdrop = skinData and skinData.bg
     if not backdrop then
         return
     end
@@ -1102,8 +1102,8 @@ function CHAT._PositionChatPanelNow(castFrame)
     if not castFrame:IsShown() and castFrame ~= _G.ChatFrame1 then
         return
     end
-    local l, t, r, cb = castFrame:GetLeft(), castFrame:GetTop(), castFrame:GetRight(), castFrame:GetBottom()
-    if not (l and t and r and cb) then
+    local l, t, region, callback = castFrame:GetLeft(), castFrame:GetTop(), castFrame:GetRight(), castFrame:GetBottom()
+    if not (l and t and region and callback) then
         -- Undock rescue: dragging a tab off the dock can end with Blizzard's
         -- StopMovingOrSizing clearing the frame's anchors and never baking the
         -- drop position back on (12.1). The point-less frame then crashes
@@ -1142,35 +1142,35 @@ function CHAT._PositionChatPanelNow(castFrame)
     -- corners -- no secret value is ever read, and the panel+text ride the
     -- drag like the Blizzard-owned art does.
     local issecret = _G.issecretvalue
-    if issecret and (issecret(l) or issecret(t) or issecret(r) or issecret(cb)) then
-        if _G.MOVING_CHATFRAME == castFrame and d._bgL then
+    if issecret and (issecret(l) or issecret(t) or issecret(region) or issecret(callback)) then
+        if _G.MOVING_CHATFRAME == castFrame and skinData._bgL then
             local mx, my = GetCursorPosition()
             if mx and my and not (issecret(mx) or issecret(my)) then
                 local ui2 = UIParent:GetEffectiveScale()
                 if ui2 and ui2 > 0 then
                     mx, my = mx / ui2, my / ui2
-                    local base = d._dragCursorBase
+                    local base = skinData._dragCursorBase
                     if not base then
-                        base = { x = mx, y = my, l = d._bgL, t = d._bgT, r = d._bgR, b = d._bgB }
-                        d._dragCursorBase = base
+                        base = { x = mx, y = my, l = skinData._bgL, t = skinData._bgT, r = skinData._bgR, b = skinData._bgB }
+                        skinData._dragCursorBase = base
                     end
                     local dx, dy = mx - base.x, my - base.y
-                    d._bgL, d._bgT = base.l + dx, base.t + dy
-                    d._bgR, d._bgB = base.r + dx, base.b + dy
+                    skinData._bgL, skinData._bgT = base.l + dx, base.t + dy
+                    skinData._bgR, skinData._bgB = base.r + dx, base.b + dy
                     backdrop:ClearAllPoints()
-                    backdrop:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", d._bgL, d._bgT)
-                    backdrop:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMLEFT", d._bgR, d._bgB)
+                    backdrop:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", skinData._bgL, skinData._bgT)
+                    backdrop:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMLEFT", skinData._bgR, skinData._bgB)
                 end
             end
         end
         return
     end
-    d._dragCursorBase = nil
+    skinData._dragCursorBase = nil
     -- Rest-rect cache (frame-local space) for the tab-drag ownership lane:
     -- the broken StartMoving capture scrambles the rect before any post-hook
     -- can read it, so drag-start grab offsets come from here instead.
-    d._cfL, d._cfT = l, t
-    d._cfWasDocked = castFrame.isDocked and true or nil
+    skinData._cfL, skinData._cfT = l, t
+    skinData._cfWasDocked = castFrame.isDocked and true or nil
     -- Rects come back in each frame's own space; convert to UIParent's.
     local ui = UIParent:GetEffectiveScale()
     if not ui or ui == 0 then
@@ -1179,7 +1179,7 @@ function CHAT._PositionChatPanelNow(castFrame)
     local cs = castFrame:GetEffectiveScale() / ui
     -- Insets from ApplyInputPosition (input above/below, its height); falls
     -- back to creation-time geometry before that has ever run.
-    local ins = d._bgIns
+    local ins = skinData._bgIns
     local il, ir, it, ib
     if ins then
         il, ir, it, ib = ins.l, ins.r, ins.t, ins.b
@@ -1187,11 +1187,11 @@ function CHAT._PositionChatPanelNow(castFrame)
         il, ir, it, ib = -10, 5, 3, -6
     end
     local leftX, topY = (l * cs) + il, (t * cs) + it
-    local right, bottom = (r * cs) + ir, (cb * cs) + ib
+    local right, bottom = (region * cs) + ir, (callback * cs) + ib
     if right - leftX < 1 or topY - bottom < 1 then
         return
     end
-    local pl, pt, pr, pb = d._bgL, d._bgT, d._bgR, d._bgB
+    local pl, pt, pr, pb = skinData._bgL, skinData._bgT, skinData._bgR, skinData._bgB
     -- Write only when it moved: this runs every frame and a redundant SetPoint
     -- is still a layout write.
     if
@@ -1203,7 +1203,7 @@ function CHAT._PositionChatPanelNow(castFrame)
     then
         return
     end
-    d._bgL, d._bgT, d._bgR, d._bgB = leftX, topY, right, bottom
+    skinData._bgL, skinData._bgT, skinData._bgR, skinData._bgB = leftX, topY, right, bottom
     backdrop:ClearAllPoints()
     backdrop:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", leftX, topY)
     backdrop:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMLEFT", right, bottom)
@@ -1214,8 +1214,8 @@ end
 -- event passes -- both timer-equivalent contexts). Skin-pass call sites keep
 -- using the queued PositionChatPanel above.
 function CHAT.PositionChatPanelsNow()
-    for idx = 1, 20 do
-        local castFrame = _G["ChatFrame" .. idx]
+    for index = 1, 20 do
+        local castFrame = _G["ChatFrame" .. index]
         -- Gate on the panel existing, NOT on _skinned: that table is a local of
         -- CUI_Chat_EditBox.lua, so referencing it here reads a nil GLOBAL.
         if castFrame and CFD(castFrame).bg then
@@ -1238,44 +1238,44 @@ local function PanelHost()
     return FCF_GetCurrentFullScreenFrame and FCF_GetCurrentFullScreenFrame() or UIParent
 end
 
-local function ReseatPanel(f, host)
-    if not f then
+local function ReseatPanel(frame, owner)
+    if not frame then
         return
     end
-    local p = f:GetParent()
-    if p ~= host and (p == UIParent or p == _panelHost) then
-        FrameUtil.SetParentMaintainRenderLayering(f, host)
+    local p = frame:GetParent()
+    if p ~= owner and (p == UIParent or p == _panelHost) then
+        FrameUtil.SetParentMaintainRenderLayering(frame, owner)
     end
 end
 
 function CHAT.ApplyPanelHost()
-    local host = PanelHost()
-    for idx = 1, 20 do
-        local castFrame = _G["ChatFrame" .. idx]
+    local owner = PanelHost()
+    for index = 1, 20 do
+        local castFrame = _G["ChatFrame" .. index]
         if castFrame then
-            local d = CFD(castFrame)
-            ReseatPanel(d.bg, host)
-            ReseatPanel(d.sidebar, host)
+            local skinData = CFD(castFrame)
+            ReseatPanel(skinData.bg, owner)
+            ReseatPanel(skinData.sidebar, owner)
             -- Moves only while it is seated on the chat panel; on the sidebar
             -- seat it is a child of a frame this pass already moved.
-            ReseatPanel(d.scrollBtn, host)
+            ReseatPanel(skinData.scrollBtn, owner)
         end
     end
-    ReseatPanel(mod._chatTabStrip, host)
-    ReseatPanel(mod._chatBgExt, host)
-    ReseatPanel(mod._chatPanelBorder, host)
-    ReseatPanel(mod._sidebarSeparateBorder, host)
-    ReseatPanel(mod._chatHoverOverlay, host)
-    _panelHost = host
+    ReseatPanel(mod._chatTabStrip, owner)
+    ReseatPanel(mod._chatBgExt, owner)
+    ReseatPanel(mod._chatPanelBorder, owner)
+    ReseatPanel(mod._sidebarSeparateBorder, owner)
+    ReseatPanel(mod._chatHoverOverlay, owner)
+    _panelHost = owner
 end
 
 -- The on-demand popups are built the first time they are used and can be built
 -- on either side of an editor session, so they seat themselves on show instead
 -- of riding the pass above.
-function CHAT.HostPopup(f)
-    local host = PanelHost()
-    if f:GetParent() ~= host then
-        FrameUtil.SetParentMaintainRenderLayering(f, host)
+function CHAT.HostPopup(frame)
+    local owner = PanelHost()
+    if frame:GetParent() ~= owner then
+        FrameUtil.SetParentMaintainRenderLayering(frame, owner)
     end
 end
 
@@ -1310,8 +1310,8 @@ local function EnsureChatClampInsets()
             wl, wr, wb = -CHAT.FV.X, CHAT.FV.X, -CHAT.FV_PanelDrop(GetEditBoxHeight())
         end
     end
-    local l, r, t, b = cf1:GetClampRectInsets()
-    if l ~= wl or r ~= wr or t ~= wt or b ~= wb then
+    local l, region, t, b = cf1:GetClampRectInsets()
+    if l ~= wl or region ~= wr or t ~= wt or b ~= wb then
         cf1:SetClampRectInsets(wl, wr, wt, wb)
         -- A rect the clamp pinned under the other insets stays pinned until
         -- the anchors are written again (they still read as ours), so the
@@ -1342,14 +1342,14 @@ CHAT.STOCK_BG_X = 8
 CHAT._stockBgPts = {}
 -- Rewrites the x of every LEFT/RIGHT anchor on region r; true once settled
 -- (nothing to seat, or seated), false when a secret anchor held it off.
-function CHAT._SeatStockX(r, lx, rx)
-    if not (r and r.GetNumPoints) then
+function CHAT._SeatStockX(region, lx, rx)
+    if not (region and region.GetNumPoints) then
         return true
     end
     local sec = _G.issecretvalue
     local pts, c, differs = CHAT._stockBgPts, 0, false
-    for idx = 1, r:GetNumPoints() do
-        local p, rel, rp, posX, posY = r:GetPoint(idx)
+    for index = 1, region:GetNumPoints() do
+        local p, rel, rp, posX, posY = region:GetPoint(index)
         if not p or (sec and (sec(posX) or sec(posY))) then
             for jdx = 1, c do
                 pts[jdx] = nil
@@ -1368,7 +1368,7 @@ function CHAT._SeatStockX(r, lx, rx)
             local p = pts[jdx]
             local posX = (p:find("LEFT") and lx) or (p:find("RIGHT") and rx) or nil
             if posX then
-                r:SetPoint(p, pts[jdx + 1], pts[jdx + 2], posX, pts[jdx + 3])
+                region:SetPoint(p, pts[jdx + 1], pts[jdx + 2], posX, pts[jdx + 3])
             end
         end
     end
@@ -1381,14 +1381,14 @@ function CHAT.SeatStockBackground(castFrame)
     if not (castFrame and CHAT._stockSeatArmed) then
         return
     end
-    local d = CFD(castFrame)
-    if d.stockSeated then
+    local skinData = CFD(castFrame)
+    if skinData.stockSeated then
         return
     end
     local ident = castFrame:GetID()
     local cc = Constants and Constants.ChatFrameConstants
     if not ident or ident < 1 or ident == 2 or ident > ((cc and cc.MaxChatWindows) or 10) then
-        d.stockSeated = true
+        skinData.stockSeated = true
         return
     end
     local X = CHAT.STOCK_BG_X
@@ -1403,7 +1403,7 @@ function CHAT.SeatStockBackground(castFrame)
         success = CHAT._SeatStockX(castFrame.ResizeButton, 4, 4) and success
     end
     if success then
-        d.stockSeated = true
+        skinData.stockSeated = true
     end
 end
 
@@ -1501,8 +1501,8 @@ function CHAT.SyncChatFrameState()
     -- chat frame's strata, one level below it, and so does WoW Forever
     -- (Blizzard's art stripped; the hosted combat log must draw over ours).
     local stockLvl = mod.ChatStockArt()
-    for idx = 1, 20 do
-        local castFrame = _G["ChatFrame" .. idx]
+    for index = 1, 20 do
+        local castFrame = _G["ChatFrame" .. index]
         if castFrame then
             local isShown = castFrame:IsShown()
             if isShown then
@@ -1512,7 +1512,7 @@ function CHAT.SyncChatFrameState()
                 -- flickering with that fight even after btnFrame's own art was
                 -- emptied. GetAlpha reads secret on chat-roleset widgets in
                 -- lockdown; a secret skips the compare and re-asserts.
-                local bf = castFrame.isDocked and _G["ChatFrame" .. idx .. "ButtonFrame"]
+                local bf = castFrame.isDocked and _G["ChatFrame" .. index .. "ButtonFrame"]
                 local bfA = bf and bf:GetAlpha()
                 if bfA and ((issecretvalue and issecretvalue(bfA)) or bfA ~= 0) then
                     bf:SetAlpha(0)
@@ -1583,12 +1583,12 @@ do
 
     -- Seed before the first interaction so a fast tab-menu change is still
     -- recognized as a change from the settled Blizzard value.
-    for idx = 1, 20 do
-        local castFrame = _G["ChatFrame" .. idx]
+    for index = 1, 20 do
+        local castFrame = _G["ChatFrame" .. index]
         if castFrame and castFrame.GetFont then
-            local size = GetFrameFontSize(idx)
+            local size = GetFrameFontSize(index)
             if size and size > 0 then
-                lastFontSize[idx] = size
+                lastFontSize[index] = size
             end
         end
     end
@@ -1649,31 +1649,31 @@ do
         -- UPDATE_CHAT_WINDOWS. Mirror the changed stored size into the CUI
         -- profile while this existing interaction-only watcher is armed, then
         -- refresh our visible copy from Blizzard's storage.
-        for idx = 1, 20 do
-            local castFrame = _G["ChatFrame" .. idx]
+        for index = 1, 20 do
+            local castFrame = _G["ChatFrame" .. index]
             if castFrame and castFrame.GetFont then
-                local size = GetFrameFontSize(idx)
-                if size and size ~= lastFontSize[idx] then
-                    if lastFontSize[idx] then
+                local size = GetFrameFontSize(index)
+                if size and size ~= lastFontSize[index] then
+                    if lastFontSize[index] then
                         local conf = CHAT.DB()
                         if conf and conf.chatFontSize ~= size then
                             conf.chatFontSize = size
                         end
                     end
-                    if lastFontSize[idx] and CHAT.EngineApplyFontTo then
+                    if lastFontSize[index] and CHAT.EngineApplyFontTo then
                         CHAT.EngineApplyFontTo(castFrame)
                     end
-                    lastFontSize[idx] = size
+                    lastFontSize[index] = size
                 end
             end
         end
         -- A frame appeared or closed (tab menu close, window created).
         local shownChanged = false
-        for idx = 1, 20 do
-            local castFrame = _G["ChatFrame" .. idx]
+        for index = 1, 20 do
+            local castFrame = _G["ChatFrame" .. index]
             local isShown = castFrame and castFrame:IsShown() or false
-            if isShown ~= lastShown[idx] then
-                lastShown[idx] = isShown
+            if isShown ~= lastShown[index] then
+                lastShown[index] = isShown
                 shownChanged = true
             end
         end

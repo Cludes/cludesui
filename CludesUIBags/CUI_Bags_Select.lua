@@ -64,9 +64,9 @@ do
         return shade
     end
     -- Ends the hover look of a plus button hidden under the mouse (it may get no OnLeave)
-    function mod.EndPlusHover(btn)
-        if btn._hover then
-            PlusOnLeave(btn)
+    function mod.EndPlusHover(button)
+        if button._hover then
+            PlusOnLeave(button)
         end
     end
 end
@@ -186,8 +186,8 @@ local function GetOrCreateAssignOverlay()
 end
 
 local function ResetAssignOverlays()
-    for idx = 1, _assignOverlayIdx do
-        _assignOverlays[idx]:Hide()
+    for index = 1, _assignOverlayIdx do
+        _assignOverlays[index]:Hide()
     end
     _assignOverlayIdx = 0
 end
@@ -309,13 +309,13 @@ function mod.SelectSlotUnderCursor()
     local rawCx, rawCy = GetCursorPosition()
     local pool = itemSlots
     for _ = 1, 2 do
-        for _, btn in pairs(pool) do
-            if btn:IsShown() and btn:GetParent():IsShown() then
-                local es = btn:GetEffectiveScale()
+        for _, button in pairs(pool) do
+            if button:IsShown() and button:GetParent():IsShown() then
+                local es = button:GetEffectiveScale()
                 local cx, cy = rawCx / es, rawCy / es
-                local l, b, wid, hgt = btn:GetRect()
+                local l, b, wid, hgt = button:GetRect()
                 if l and b and wid and hgt and cx >= l and cx <= l + wid and cy >= b and cy <= b + hgt then
-                    return btn
+                    return button
                 end
             end
         end
@@ -332,16 +332,16 @@ end
 function mod.RepaintJunkItem(itemId)
     local pool = itemSlots
     for _ = 1, 2 do
-        for _, btn in pairs(pool) do
-            if btn:IsShown() and btn:GetParent():IsShown() then
-                local bag, slot = btn:GetParent():GetID(), btn:GetID()
+        for _, button in pairs(pool) do
+            if button:IsShown() and button:GetParent():IsShown() then
+                local bag, slot = button:GetParent():GetID(), button:GetID()
                 if C_Container.GetContainerItemID(bag, slot) == itemId then
                     local details = C_Container.GetContainerItemInfo(bag, slot)
                     if details then
-                        if btn._lvIcon then
-                            mod.ListPaintJunk(btn, details)
+                        if button._lvIcon then
+                            mod.ListPaintJunk(button, details)
                         else
-                            mod.GridPaintJunk(btn, details)
+                            mod.GridPaintJunk(button, details)
                         end
                     end
                 end
@@ -472,24 +472,24 @@ EnterAssignSelectMode = function(catKey, junk)
             end
             lastX, lastY, lastScroll = posX, posY, s
             self._hoverDirty = nil
-            local btn = FindBtnUnderCursor()
-            if btn == hoveredBtn then
+            local button = FindBtnUnderCursor()
+            if button == hoveredBtn then
                 return
             end
             ClearHover()
-            if btn and btn.icon and btn.icon:IsShown() then
-                savedR, savedG, savedB, savedA, savedBrdSize = GetInsetBorderStyle(btn)
+            if button and button.icon and button.icon:IsShown() then
+                savedR, savedG, savedB, savedA, savedBrdSize = GetInsetBorderStyle(button)
                 if savedR then
                     local ar, ag, ab = GetAccentRGB()
-                    SetInsetBorderColor(btn, ar, ag, ab, 1)
+                    SetInsetBorderColor(button, ar, ag, ab, 1)
                     local Pix = CUI and CUI.PP
                     local px2 = ((Pix and Pix.mult) or 1) * 2
-                    SetInsetBorderThickness(btn, px2)
+                    SetInsetBorderThickness(button, px2)
                 end
                 hoverOv:ClearAllPoints()
-                hoverOv:SetAllPoints(btn)
+                hoverOv:SetAllPoints(button)
                 hoverOv:Show()
-                hoveredBtn = btn
+                hoveredBtn = button
             end
         end)
 
@@ -507,10 +507,10 @@ EnterAssignSelectMode = function(catKey, junk)
                 CUI_Bags._closeBtn:Click()
                 return
             end
-            local btn = FindBtnUnderCursor()
-            if btn then
-                local bagID = btn:GetParent():GetID()
-                local slotID = btn:GetID()
+            local button = FindBtnUnderCursor()
+            if button then
+                local bagID = button:GetParent():GetID()
+                local slotID = button:GetID()
                 if bagID and slotID and slotID > 0 then
                     local details = C_Container.GetContainerItemInfo(bagID, slotID)
                     if details and details.itemID and _assignSelectCatKey then
@@ -655,26 +655,26 @@ do
             return
         end
         local p = BP()
-        local prev, gap = self._searchBox, 13
+        local previous, gap = self._searchBox, 13
         local sortOn = p.bagShowSortIcon ~= false
         self._sortBtn:SetShown(sortOn)
         local forever = mod.BagsForever()
         if sortOn or forever then
-            prev, gap = self._sortBtn, 6
+            previous, gap = self._sortBtn, 6
         end
         local bagsOn = p.bagShowBagsIcon ~= false
         bags:ClearAllPoints()
-        bags:SetPoint("RIGHT", prev, "LEFT", -gap, 0)
+        bags:SetPoint("RIGHT", previous, "LEFT", -gap, 0)
         bags:SetShown(bagsOn)
         if bagsOn then
-            prev, gap = bags, 6
+            previous, gap = bags, 6
         else
             CUI_BagsWindow:Hide() -- opened only from Show Bags
         end
         -- Quick Actions (CludesUIBags_QuickActions.lua), off by default
-        local quick = mod.SyncQuickActionsIcon(prev, gap)
+        local quick = mod.SyncQuickActionsIcon(previous, gap)
         if quick then
-            prev, gap = quick, 6
+            previous, gap = quick, 6
         end
         local junkOn = CUI_CategoryManager:IsJunkMarkerEnabled()
         if junkOn and not self._junkBtn then
@@ -682,11 +682,11 @@ do
         end
         if self._junkBtn then
             self._junkBtn:ClearAllPoints()
-            self._junkBtn:SetPoint("RIGHT", prev, "LEFT", -gap, 0)
+            self._junkBtn:SetPoint("RIGHT", previous, "LEFT", -gap, 0)
             self._junkBtn:SetShown(junkOn)
             self._sellJunkBtn:SetShown(junkOn and _openItemPanels.merchant == true)
         end
-        local edge = prev
+        local edge = previous
         if junkOn and self._junkBtn then
             edge = self._sellJunkBtn:IsShown() and self._sellJunkBtn or self._junkBtn
         end
@@ -760,7 +760,7 @@ do
         self._junkSelling = true
         local slots, ids, values, sent = {}, {}, {}, {}
         local kept = GatherJunkSlots(slots, ids)
-        local idx, done = 0, false
+        local index, done = 0, false
         local function Landed(k)
             local key = slots[k]
             return C_Container.GetContainerItemID(math.floor(key / 1000), key % 1000) ~= ids[k]
@@ -784,9 +784,9 @@ do
                 return
             end
             done = true
-            local f = CUI_Bags._junkSettle
-            if f then
-                f:UnregisterAllEvents()
+            local frame = CUI_Bags._junkSettle
+            if frame then
+                frame:UnregisterAllEvents()
             end
             CUI_Bags._junkSelling = nil
             local sold, earned = 0, 0
@@ -806,11 +806,11 @@ do
             end
             local tag = CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r "
             if sold > 0 then
-                local msg = CludesUI.Lf("Sold %1$d junk item(s)", sold)
+                local message = CludesUI.Lf("Sold %1$d junk item(s)", sold)
                 if earned > 0 then
-                    msg = msg .. "  " .. C_CurrencyInfo.GetCoinTextureString(earned)
+                    message = message .. "  " .. C_CurrencyInfo.GetCoinTextureString(earned)
                 end
-                CludesUI.Print(tag .. msg)
+                CludesUI.Print(tag .. message)
             end
             if leftX > 0 then
                 CludesUI.Print(tag .. CludesUI.Lf("%d junk item(s) could not be sold.", leftX))
@@ -822,21 +822,21 @@ do
             if not InFlight() then
                 return Finish()
             end
-            local f = CUI_Bags._junkSettle
-            if not f then
-                f = CreateFrame("Frame")
-                f:SetScript("OnEvent", function(self)
+            local frame = CUI_Bags._junkSettle
+            if not frame then
+                frame = CreateFrame("Frame")
+                frame:SetScript("OnEvent", function(self)
                     self._check()
                 end)
-                CUI_Bags._junkSettle = f
+                CUI_Bags._junkSettle = frame
             end
-            f._check = function()
+            frame._check = function()
                 if not InFlight() then
                     Finish()
                 end
             end
-            f:RegisterEvent("BAG_UPDATE_DELAYED")
-            f:RegisterEvent("ITEM_LOCK_CHANGED")
+            frame:RegisterEvent("BAG_UPDATE_DELAYED")
+            frame:RegisterEvent("ITEM_LOCK_CHANGED")
             C_Timer.After(2, Finish)
         end
         local function step()
@@ -844,16 +844,16 @@ do
                 and not InCombatLockdown()
                 and not CursorHasItem()
             force = nil
-            while live and idx < #slots do
-                idx = idx + 1
-                local key = slots[idx]
+            while live and index < #slots do
+                index = index + 1
+                local key = slots[index]
                 local bag, slot = math.floor(key / 1000), key % 1000
                 local details = C_Container.GetContainerItemInfo(bag, slot)
                 -- Still the gathered item, and not locked
-                if details and details.itemID == ids[idx] and not details.isLocked then
-                    values[idx] = ((details.hyperlink and select(11, GetItemInfo(details.hyperlink))) or 0)
+                if details and details.itemID == ids[index] and not details.isLocked then
+                    values[index] = ((details.hyperlink and select(11, GetItemInfo(details.hyperlink))) or 0)
                         * (details.stackCount or 1)
-                    sent[#sent + 1] = idx
+                    sent[#sent + 1] = index
                     C_Container.UseContainerItem(bag, slot)
                     C_Timer.After(0.08, step)
                     return
@@ -983,24 +983,24 @@ EnterPinSelectMode = function()
             end
             lastX, lastY, lastScroll = posX, posY, s
             self._hoverDirty = nil
-            local btn = FindBtnUnderCursor()
-            if btn == pinHoveredBtn then
+            local button = FindBtnUnderCursor()
+            if button == pinHoveredBtn then
                 return
             end
             ClearPinHover()
-            if btn and btn.icon and btn.icon:IsShown() then
-                pinSavedR, pinSavedG, pinSavedB, pinSavedA, pinSavedBrdSize = GetInsetBorderStyle(btn)
+            if button and button.icon and button.icon:IsShown() then
+                pinSavedR, pinSavedG, pinSavedB, pinSavedA, pinSavedBrdSize = GetInsetBorderStyle(button)
                 if pinSavedR then
                     local ar, ag, ab = GetAccentRGB()
-                    SetInsetBorderColor(btn, ar, ag, ab, 1)
+                    SetInsetBorderColor(button, ar, ag, ab, 1)
                     local Pix = CUI and CUI.PP
                     local px2 = ((Pix and Pix.mult) or 1) * 2
-                    SetInsetBorderThickness(btn, px2)
+                    SetInsetBorderThickness(button, px2)
                 end
                 pinHoverOv:ClearAllPoints()
-                pinHoverOv:SetAllPoints(btn)
+                pinHoverOv:SetAllPoints(button)
                 pinHoverOv:Show()
-                pinHoveredBtn = btn
+                pinHoveredBtn = button
             end
         end)
 
@@ -1010,10 +1010,10 @@ EnterPinSelectMode = function()
                 ExitPinSelectMode()
                 return
             end
-            local btn = FindBtnUnderCursor()
-            if btn then
-                local bagID = btn:GetParent():GetID()
-                local slotID = btn:GetID()
+            local button = FindBtnUnderCursor()
+            if button then
+                local bagID = button:GetParent():GetID()
+                local slotID = button:GetID()
                 if bagID and slotID and slotID > 0 then
                     local details = C_Container.GetContainerItemInfo(bagID, slotID)
                     if details and details.itemID then

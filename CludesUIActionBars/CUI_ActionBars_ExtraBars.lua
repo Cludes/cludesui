@@ -118,11 +118,11 @@ local function SetupBlizzardMovableFrame(barId)
             mod.CombatQueue.Defer(reparentKey, ReparentIntoHolder)
             return
         end
-        for _, f in ipairs(extraFrames) do
-            f:SetParent(holderFrame)
+        for _, frame in ipairs(extraFrames) do
+            frame:SetParent(holderFrame)
             -- ExtraAbilityContainer is an Edit Mode system: base methods only.
-            CludesUI.ClearFramePoints(f)
-            CludesUI.SetFramePoint(f, "CENTER", holderFrame, "CENTER", 0, 0)
+            CludesUI.ClearFramePoints(frame)
+            CludesUI.SetFramePoint(frame, "CENTER", holderFrame, "CENTER", 0, 0)
         end
     end
 
@@ -264,8 +264,8 @@ local function SetupBlizzardMovableFrame(barId)
 
     -- Hook SetParent on every managed frame so we re-reparent immediately if
     -- Blizzard or another addon steals the frame back.
-    for _, f in ipairs(extraFrames) do
-        hooksecurefunc(f, "SetParent", function(self, newParent)
+    for _, frame in ipairs(extraFrames) do
+        hooksecurefunc(frame, "SetParent", function(self, newParent)
             if newParent ~= holderFrame then
                 ReparentIntoHolder()
             end
@@ -480,21 +480,21 @@ local function FadeForeverBarArt(barId)
         end
         return
     end
-    local bar = _G.BagsBar
-    if not bar then
+    local barFrame = _G.BagsBar
+    if not barFrame then
         return
     end
     if not fvBagArt then
         fvBagArt = {}
-        local regions = { bar:GetRegions() }
+        local regions = { barFrame:GetRegions() }
         for i = 1, #regions do
-            local r = regions[i]
-            local atlas = r.GetAtlas and r:GetAtlas()
+            local region = regions[i]
+            local atlas = region.GetAtlas and region:GetAtlas()
             if atlas then
                 local la = atlas:lower()
                 for jdx = 1, #FV_BAG_ART do
                     if la:find(FV_BAG_ART[jdx], 1, true) then
-                        fvBagArt[#fvBagArt + 1] = r
+                        fvBagArt[#fvBagArt + 1] = region
                         break
                     end
                 end

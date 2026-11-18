@@ -403,15 +403,15 @@ function NameplateFrame:UpdateHealthValues()
         local curve = mod.GetLowHpGlowCurve()
         if curve then
             if UnitIsDeadOrGhost(unitToken) then
-                for idx = 1, #lg do
-                    lg[idx]:SetVertexColor(0, 0, 0, 1)
+                for index = 1, #lg do
+                    lg[index]:SetVertexColor(0, 0, 0, 1)
                 end
             else
-                local success, col = pcall(UnitHealthPercent, unitToken, true, curve)
-                if success and col and col.GetRGBA then
-                    local r, g, b, a = col:GetRGBA()
-                    for idx = 1, #lg do
-                        lg[idx]:SetVertexColor(r, g, b, a)
+                local success, colour = pcall(UnitHealthPercent, unitToken, true, curve)
+                if success and colour and colour.GetRGBA then
+                    local region, g, b, a = colour:GetRGBA()
+                    for index = 1, #lg do
+                        lg[index]:SetVertexColor(region, g, b, a)
                     end
                 end
             end

@@ -49,32 +49,32 @@ local function Number(n)
 end
 
 -- What counts towards the season cap: earned (crests), else what is held.
-local function Earned(d)
-    if d.useTotalEarnedForMaxQty then
-        return d.totalEarned or d.quantity or 0
+local function Earned(skinData)
+    if skinData.useTotalEarnedForMaxQty then
+        return skinData.totalEarned or skinData.quantity or 0
     end
-    return d.quantity or 0
+    return skinData.quantity or 0
 end
 
 -- The bar's figure: what can be spent, or the season's earned/cap (a
 -- different number once some are spent, hence "Season Progress", not "Cap").
-local function BarAmount(d, progress)
-    local cap = d.maxQuantity
+local function BarAmount(skinData, progress)
+    local cap = skinData.maxQuantity
     if not progress or not cap or cap <= 0 then
-        return Number(d.quantity or 0)
+        return Number(skinData.quantity or 0)
     end
-    return Number(Earned(d)) .. "/" .. Number(cap)
+    return Number(Earned(skinData)) .. "/" .. Number(cap)
 end
 
 -- The tooltip's figure: what is held, then the season's progress dimmed, so
 -- it never seems to contradict the bar.
-local function TipAmount(d)
-    local held = Number(d.quantity or 0)
-    local cap = d.maxQuantity
+local function TipAmount(skinData)
+    local held = Number(skinData.quantity or 0)
+    local cap = skinData.maxQuantity
     if not cap or cap <= 0 then
         return held
     end
-    return held .. " " .. DIM .. "(" .. Number(Earned(d)) .. "/" .. Number(cap) .. ")|r"
+    return held .. " " .. DIM .. "(" .. Number(Earned(skinData)) .. "/" .. Number(cap) .. ")|r"
 end
 
 mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
@@ -119,13 +119,13 @@ mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
         for i = first, last, step do
             local crest = K.CRESTS[i]
             if s[crest.key] ~= false then
-                local d = Info(crest.id)
-                if not d then
+                local skinData = Info(crest.id)
+                if not skinData then
                     parts[#parts + 1] = "-"
-                elseif not (s.hideEmpty == true and (d.quantity or 0) <= 0) then
-                    local part = BarAmount(d, s.showSeasonProgress == true)
-                    if s.showIcons ~= false and d.iconFileID then
-                        part = format("|T%s:%d:%d:0:0:64:64:5:59:5:59|t", d.iconFileID, iconSize, iconSize)
+                elseif not (s.hideEmpty == true and (skinData.quantity or 0) <= 0) then
+                    local part = BarAmount(skinData, s.showSeasonProgress == true)
+                    if s.showIcons ~= false and skinData.iconFileID then
+                        part = format("|T%s:%d:%d:0:0:64:64:5:59:5:59|t", skinData.iconFileID, iconSize, iconSize)
                             .. part
                     end
                     if coloured then
@@ -196,20 +196,20 @@ mod.BlockFactories.crests = function(blockCfg, slot, contentFrame, barCtx)
     end
 
     local function ShowTooltip()
-        local r, g, b = mod.GetAccent()
+        local region, g, b = mod.GetAccent()
         mod.Tip_Begin(button)
         -- The header names the dimmed figure, as the game's own tooltip does.
         mod.Tip_AddDouble(L["CRESTS"], L["SEASON_MAXIMUM"], 1, 1, 1, 0.667, 0.667, 0.667)
         mod.Tip_AddLine(" ")
         -- All five, whatever the bar shows.
         for _, crest in ipairs(K.CRESTS) do
-            local d = Info(crest.id)
-            if d then
-                mod.Tip_AddDouble(d.name or "?", TipAmount(d), crest.r, crest.g, crest.b, 1, 1, 1)
+            local skinData = Info(crest.id)
+            if skinData then
+                mod.Tip_AddDouble(skinData.name or "?", TipAmount(skinData), crest.r, crest.g, crest.b, 1, 1, 1)
             end
         end
         mod.Tip_AddLine(" ")
-        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_CURRENCIES"], 1, 1, 1, r, g, b)
+        mod.Tip_AddDouble(L["LEFT_CLICK"], L["OPEN_CURRENCIES"], 1, 1, 1, region, g, b)
         mod.Tip_Show()
     end
 

@@ -259,9 +259,9 @@ local function ClipHole(hole, cells)
         for jdx = 1, (cells and #cells or 0) do
             local qx0, qx1, qy0, qy1 = BoxEdges(cells[jdx])
             if qx1 > x0 and qx0 < x1 and qy1 > y0 and qy0 < y1 then
-                local d = min(qx1 - x0, x1 - qx0, qy1 - y0, y1 - qy0)
-                if not best or d < best then
-                    best, bx0, bx1, by0, by1 = d, qx1, qx0, qy1, qy0
+                local skinData = min(qx1 - x0, x1 - qx0, qy1 - y0, y1 - qy0)
+                if not best or skinData < best then
+                    best, bx0, bx1, by0, by1 = skinData, qx1, qx0, qy1, qy0
                 end
             end
         end
@@ -323,10 +323,10 @@ local function BlocksReach(c, hole)
 end
 
 -- Every OTHER claim's parent cell, clipped off this claim's own children.
-local function ParentHoles(claims, idx)
-    local c, holes = claims[idx], nil
+local function ParentHoles(claims, index)
+    local c, holes = claims[index], nil
     for jdx = 1, #claims do
-        local hgt = (jdx ~= idx) and claims[jdx].parentBox or nil
+        local hgt = (jdx ~= index) and claims[jdx].parentBox or nil
         if hgt and BlocksReach(c, hgt) then
             hgt = nil
         end
@@ -352,10 +352,10 @@ end
 -- holds anyway is a gate a piece that matters may not get.
 local function Covered(b, regions)
     local pieces = { b }
-    for r = 1, #regions do
+    for region = 1, #regions do
         local kept = {}
-        for idx = 1, #pieces do
-            CarveBox(kept, pieces[idx], regions[r], true)
+        for index = 1, #pieces do
+            CarveBox(kept, pieces[index], regions[region], true)
         end
         pieces = kept
         if #pieces == 0 then
@@ -512,11 +512,11 @@ function PaletteView:ChildGeom(isShown, slots)
     -- release after the other one stopped.
     local cap = (self:IsGrid() and p.gridNestStyle == "HALO") and MAX_CHILDREN or MAX_SLOTS
     local claims
-    for idx = 1, isShown do
-        local kids = ChildSlots(ChildIndex(slots[idx]), cap)
+    for index = 1, isShown do
+        local kids = ChildSlots(ChildIndex(slots[index]), cap)
         if kids and #kids > 0 then
             claims = claims or {}
-            claims[#claims + 1] = { parent = idx, n = #kids, slots = kids, palette = ChildIndex(slots[idx]) }
+            claims[#claims + 1] = { parent = index, n = #kids, slots = kids, palette = ChildIndex(slots[index]) }
         end
     end
     if not claims then
@@ -564,8 +564,8 @@ function PaletteView:ChildGeom(isShown, slots)
     -- Angles for all of them before any of them is sized: a claim keeping clear
     -- of its neighbours measures against the claim either side of it, and half
     -- of those sit later in the array.
-    for idx = 1, total do
-        claims[idx].angle = arcStart + (claims[idx].parent - 1) * step
+    for index = 1, total do
+        claims[index].angle = arcStart + (claims[index].parent - 1) * step
     end
 
     -- Both icons' halves plus the gap, so the band the user sets is the space
@@ -573,22 +573,22 @@ function PaletteView:ChildGeom(isShown, slots)
     -- children -- the ring every claim's children start hugging from.
     local inner = radius + iconSize * 0.5 + childIcon * 0.5 + band
 
-    for idx = 1, total do
-        local c = claims[idx]
+    for index = 1, total do
+        local c = claims[index]
         -- The whole cap by default. NONE stops at the midpoint with the nearest
         -- CLAIMANT either side, so two nests never share ground; a lone
         -- claimant on a full circle has no neighbour to meet, and on an open
         -- arc the ends are free space.
         local half = capHalf
         if keepClear and total > 1 then
-            local nxt = claims[idx + 1] and claims[idx + 1].angle or (full and (claims[1].angle + TWO_PI))
-            local prev = claims[idx - 1] and claims[idx - 1].angle
+            local nxt = claims[index + 1] and claims[index + 1].angle or (full and (claims[1].angle + TWO_PI))
+            local previous = claims[index - 1] and claims[index - 1].angle
                 or (full and (claims[total].angle - TWO_PI))
             if nxt then
                 half = min(half, (nxt - c.angle) * 0.5)
             end
-            if prev then
-                half = min(half, (c.angle - prev) * 0.5)
+            if previous then
+                half = min(half, (c.angle - previous) * 0.5)
             end
         end
         -- Never NARROWER than the parent's own sector: a claim always has at
@@ -638,9 +638,9 @@ function PaletteView:ChildGeom(isShown, slots)
         -- first ring's inner edge is c.band, the parent/child hand-off
         -- already computed above; the last ring has no outer edge at all.
         rowList[1].lo = c.band
-        for r = 2, #rowList do
-            local mid = (rowList[r - 1].radius + rowList[r].radius) * 0.5
-            rowList[r - 1].hi, rowList[r].lo = mid, mid
+        for region = 2, #rowList do
+            local mid = (rowList[region - 1].radius + rowList[region].radius) * 0.5
+            rowList[region - 1].hi, rowList[region].lo = mid, mid
         end
         c.rows = rowList
         -- The outermost ring's radius, so Layout can size the frame to hold
@@ -684,9 +684,9 @@ function PaletteView:ChildGeom(isShown, slots)
         -- a neighbouring claim take over -- gliding onto its entry leaves this
         -- ground, which disarms, which puts its parent gate back up.
         local wide, coarsest = 0, 0
-        for r = 1, #rowList do
-            wide = max(wide, rowList[r].n * rowList[r].step * 0.5)
-            coarsest = max(coarsest, rowList[r].step)
+        for region = 1, #rowList do
+            wide = max(wide, rowList[region].n * rowList[region].step * 0.5)
+            coarsest = max(coarsest, rowList[region].step)
         end
         c.ground = {
             -- Radial projection onto the parent's own axis, not plain
@@ -732,8 +732,8 @@ function PaletteView:ChildGeom(isShown, slots)
         -- actually disarms never trusts their bounds, only the wedge.
         local ringBoxes = {}
         for jdx = 1, c.n do
-            local r, a = self:ChildRingPos(c, jdx)
-            local cx, cy = r * sin(a), r * cos(a)
+            local region, a = self:ChildRingPos(c, jdx)
+            local cx, cy = region * sin(a), region * cos(a)
             ringBoxes[jdx] = { x = cx, y = cy, hw = c.icon * 0.5, hh = c.icon * 0.5 }
         end
         local nest = NestBBox(ringBoxes)
@@ -763,8 +763,8 @@ end
 -- local index it finds back into the child it belongs to.
 function PaletteView:ChildRingPos(c, jdx)
     local rowList = c.rows
-    for r = 1, #rowList do
-        local row = rowList[r]
+    for region = 1, #rowList do
+        local row = rowList[region]
         if jdx <= row.n then
             return row.radius, row.start + (jdx - 1) * row.step
         end
@@ -968,16 +968,16 @@ function PaletteView:ApplyFanGeometry()
     local extra = iconSize * (zoom - 1) * 0.5
     local sel = self.selection
 
-    for idx = 1, isShown do
-        local wid = self.widgets[idx]
+    for index = 1, isShown do
+        local wid = self.widgets[index]
         -- Shortest cyclic path, so wrapping past the end slides forward
         -- instead of rewinding the whole strip.
-        local d = (idx - center) % isShown
-        if d > half then
-            d = d - isShown
+        local skinData = (index - center) % isShown
+        if skinData > half then
+            skinData = skinData - isShown
         end
 
-        local key = abs(d)
+        local key = abs(skinData)
         -- The strip FLOWS at its ends instead of popping: an entry keeps
         -- drawing for one slot past the last settled one, its alpha fading
         -- to exactly zero at the first slot a settled strip hides -- alpha
@@ -994,7 +994,7 @@ function PaletteView:ApplyFanGeometry()
             local s = max(minS, decay ^ key)
             local off = FanOffset(key, iconSize, gap, decay, minS)
             off = off + extra * min(1, key)
-            if d < 0 then
+            if skinData < 0 then
                 off = -off
             end
 
@@ -1004,7 +1004,7 @@ function PaletteView:ApplyFanGeometry()
             -- multiply the spacing computed above. The selected entry is
             -- magnified in the same breath, because these sizes are rewritten
             -- on every animation step and would erase a zoom applied elsewhere.
-            local z = (idx == sel) and zoom or 1
+            local z = (index == sel) and zoom or 1
             wid.baseSize = iconSize * s
             wid:SetSize(iconSize * s * z, iconSize * s * z)
             wid:ClearAllPoints()

@@ -124,10 +124,10 @@ local function AnyTickViewer()
     end
     local stamp = false
     for _, wid in ipairs(_windows) do
-        local f = wid.frame
+        local frame = wid.frame
         -- A Threat window (WoW Forever) is painted by its own list's updates.
-        if f and wid.curDMType ~= "threat" then
-            if f:IsVisible() then
+        if frame and wid.curDMType ~= "threat" then
+            if frame:IsVisible() then
                 return true
             end
             if
@@ -602,8 +602,8 @@ initFrame:SetScript("OnEvent", function(self)
     -- windowCount is authoritative; trim stale array entries beyond it
     local winCount = math.max(1, conf.windowCount or 1)
     conf.windowCount = winCount
-    for idx = winCount + 1, MAX_WINDOWS do
-        conf.windows[idx] = nil
+    for index = winCount + 1, MAX_WINDOWS do
+        conf.windows[index] = nil
     end
     local winIdx = 0
     _buildGen = _buildGen + 1
@@ -662,23 +662,23 @@ initFrame:SetScript("OnEvent", function(self)
         end
         local wc = math.max(1, c.windowCount or 1)
         c.windowCount = wc
-        for idx = wc + 1, MAX_WINDOWS do
-            c.windows[idx] = nil
+        for index = wc + 1, MAX_WINDOWS do
+            c.windows[index] = nil
         end
         -- Windows past the new count are parked, the last first (they come back in order)
-        for idx = #_windows, wc + 1, -1 do
-            local wid = _windows[idx]
-            _windows[idx] = nil
+        for index = #_windows, wc + 1, -1 do
+            local wid = _windows[index]
+            _windows[index] = nil
             wid.Park()
         end
         -- Kept windows re-read the new profile; a slot with none brings back a parked
         -- window or builds one
-        for idx = 1, wc do
-            local wid = _windows[idx]
+        for index = 1, wc do
+            local wid = _windows[index]
             if wid then
-                wid.Reapply(idx)
+                wid.Reapply(index)
             else
-                _windows[idx] = mod.DMAcquireWindow(idx)
+                _windows[index] = mod.DMAcquireWindow(index)
             end
         end
         mod.ApplyWindowBorder()

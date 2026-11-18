@@ -56,8 +56,8 @@ end
 local DebuffChainFor
 do
     local LISTED = {}
-    for idx = 1, #DEBUFF_FILTER_ORDER do
-        LISTED[DEBUFF_FILTER_ORDER[idx]] = true
+    for index = 1, #DEBUFF_FILTER_ORDER do
+        LISTED[DEBUFF_FILTER_ORDER[index]] = true
     end
 
     -- Types of `a` also in / not in `b`, as a fresh set; nil when none are left.
@@ -84,8 +84,8 @@ do
 
     local function CopyPart(p)
         local t, c = {}, {}
-        for idx = 1, #p.tokens do
-            t[idx] = p.tokens[idx]
+        for index = 1, #p.tokens do
+            t[index] = p.tokens[index]
         end
         for k, v in pairs(p.cand) do
             c[k] = v
@@ -94,8 +94,8 @@ do
     end
 
     local function HasToken(p, tok)
-        for idx = 1, #p.tokens do
-            if p.tokens[idx] == tok then
+        for index = 1, #p.tokens do
+            if p.tokens[index] == tok then
                 return true
             end
         end
@@ -118,8 +118,8 @@ do
         local tokens, cand, cats = { "HARMFUL" }, {}, {}
         local picks, nTypes, clash = 0, 0, false
         local inc, anyType, exc, typeKey, playerTok, hideBool, dispTok
-        for idx = 1, #tokenClasses do
-            local class = tokenClasses[idx]
+        for index = 1, #tokenClasses do
+            local class = tokenClasses[index]
             if LISTED[class.key] then
                 if ClassEnabled(class, false, conf) then
                     picks = picks + 1
@@ -136,8 +136,8 @@ do
                 end
             end
         end
-        for idx = 1, #candidateClasses do
-            local class = candidateClasses[idx]
+        for index = 1, #candidateClasses do
+            local class = candidateClasses[index]
             local cc = class.cand
             if cc and LISTED[class.key] then
                 if ClassEnabled(class, false, conf) then
@@ -289,8 +289,8 @@ do
 
     local function MatchLink(p, cats)
         local sorted = {}
-        for idx = 1, #cats do
-            sorted[idx] = cats[idx]
+        for index = 1, #cats do
+            sorted[index] = cats[index]
         end
         table.sort(sorted)
         return {
@@ -315,19 +315,19 @@ do
         local entries = conf.fxList
         if entries then
             local inSet, seen = {}, {}
-            for idx = 1, #cats do
-                inSet[cats[idx]] = true
+            for index = 1, #cats do
+                inSet[cats[index]] = true
             end
-            for idx = 1, #entries do
-                local e = entries[idx]
-                local f = e.filters
-                if f and PAB_FxEntryActive(e) then
+            for index = 1, #entries do
+                local e = entries[index]
+                local frame = e.filters
+                if frame and PAB_FxEntryActive(e) then
                     -- First block wins: one naming a category the rest already
                     -- belongs to paints all of it, and no later block reaches it.
                     local hit = false
                     for jdx = 1, #DEBUFF_FILTER_ORDER do
                         local key = DEBUFF_FILTER_ORDER[jdx]
-                        if f[key] then
+                        if frame[key] then
                             if inSet[key] then
                                 hit = true
                             else
@@ -345,7 +345,7 @@ do
                     end
                     for jdx = 1, #DEBUFF_FILTER_ORDER do
                         local key = DEBUFF_FILTER_ORDER[jdx]
-                        if f[key] and not seen[key] then
+                        if frame[key] and not seen[key] then
                             seen[key] = true
                             local class = ClassByKey(key)
                             local a, b
@@ -409,8 +409,8 @@ local function CandFP(castFrame)
     end
     table.sort(keyList)
     local parts = {}
-    for idx = 1, #keyList do
-        local k = keyList[idx]
+    for index = 1, #keyList do
+        local k = keyList[index]
         local v = castFrame[k]
         if type(v) == "table" then
             local first = next(v)
@@ -551,8 +551,8 @@ local function ApplyGroupConfig(
     -- Container-level padding is a THIRD, unrelated concept: the OUTER edge inset,
     -- fixed at 0 elsewhere and never affected by either.
     local isActive = {}
-    for idx = 1, #chain do
-        local itemLink = chain[idx]
+    for index = 1, #chain do
+        local itemLink = chain[index]
         -- Size override, debuffs only: cfg.fxList is nil for buffs, so szOv is always
         -- nil there.
         local szOv = PAB_FxSizeFor(conf.fxList, itemLink.cats or itemLink.key)
@@ -618,9 +618,9 @@ local function ApplyGroupConfig(
                 -- BEFORE extraInit at creation (CludesUI_AuraKit.lua's
                 -- MakeInitializer), so the first applyExtra pass sees d.dmCat == nil
                 -- harmlessly and this re-arms it right after.
-                extraInit = function(btnFrame, d, style)
-                    d.dmCat = catKey
-                    PAB_ApplyDmFx(btnFrame, d, style, true)
+                extraInit = function(btnFrame, skinData, style)
+                    skinData.dmCat = catKey
+                    PAB_ApplyDmFx(btnFrame, skinData, style, true)
                 end,
             })
             declaredSet[effKey] = true

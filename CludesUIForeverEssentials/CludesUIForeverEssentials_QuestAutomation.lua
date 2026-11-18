@@ -53,18 +53,18 @@ end
 -- The older quest greeting window (an NPC with only quests to offer).
 local function OnGreeting()
     if Get("turnIn") then
-        for idx = 1, GetNumActiveQuests() do
-            local _, complete = GetActiveTitle(idx)
+        for index = 1, GetNumActiveQuests() do
+            local _, complete = GetActiveTitle(index)
             if complete then
-                return SelectActiveQuest(idx)
+                return SelectActiveQuest(index)
             end
         end
     end
     if Get("accept") then
-        for idx = 1, GetNumAvailableQuests() do
-            local trivial = IsAvailableQuestTrivial and IsAvailableQuestTrivial(idx)
+        for index = 1, GetNumAvailableQuests() do
+            local trivial = IsAvailableQuestTrivial and IsAvailableQuestTrivial(index)
             if not (Get("skipGrey") and trivial) then
-                return SelectAvailableQuest(idx)
+                return SelectAvailableQuest(index)
             end
         end
     end
@@ -76,19 +76,19 @@ ev:SetScript("OnEvent", function(_, evt, a1, a2)
         if not (Get("progress") and IsInGroup(LE_PARTY_CATEGORY_HOME) and not IsInRaid()) then
             return
         end
-        local msg = a2
-        if type(msg) ~= "string" or Secret(msg) then
+        local message = a2
+        if type(message) ~= "string" or Secret(message) then
             return
         end
-        local done, need = msg:match(": (%d+)/(%d+)$")
+        local done, need = message:match(": (%d+)/(%d+)$")
         if not done then
             return
         end
-        if lastSaid[msg] and GetTime() - lastSaid[msg] < 2 then
+        if lastSaid[message] and GetTime() - lastSaid[message] < 2 then
             return
         end
-        lastSaid[msg] = GetTime()
-        SendChatMessage(msg, "PARTY")
+        lastSaid[message] = GetTime()
+        SendChatMessage(message, "PARTY")
         return
     end
     if Paused() then

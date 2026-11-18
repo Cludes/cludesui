@@ -78,12 +78,12 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
         for i = 1, count do
             local index = select(i, ...)
             if index then
-                local name, icon, rank, maxRank, _, _, line = GetProfessionInfo(index)
+                local name, iconTex, rank, maxRank, _, _, line = GetProfessionInfo(index)
                 local row = rows[secondary and SECONDARY_ORDER[line] or i]
                 if row then
-                    local d = row.data
-                    d.idx, d.name, d.icon, d.id = index, name or "", icon, line
-                    d.rank, d.maxRank = rank or 0, maxRank or 0
+                    local skinData = row.data
+                    skinData.idx, skinData.name, skinData.icon, skinData.id = index, name or "", iconTex, line
+                    skinData.rank, skinData.maxRank = rank or 0, maxRank or 0
                 end
             end
         end
@@ -100,17 +100,17 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
             barCtx.GetThickness(),
         }
         for _, row in ipairs(rows) do
-            local d = row.data
-            parts[#parts + 1] = d.idx
-                    and table.concat({ d.idx, d.name, tostring(d.icon), d.id or 0, d.rank, d.maxRank }, ":")
+            local skinData = row.data
+            parts[#parts + 1] = skinData.idx
+                    and table.concat({ skinData.idx, skinData.name, tostring(skinData.icon), skinData.id or 0, skinData.rank, skinData.maxRank }, ":")
                 or "-"
         end
         return table.concat(parts, "|")
     end
     local drawn -- the fingerprint last drawn
 
-    local function OpenProfession(d)
-        if not d or not d.id or InCombatLockdown() then
+    local function OpenProfession(skinData)
+        if not skinData or not skinData.id or InCombatLockdown() then
             return
         end
         local open = C_TradeSkillUI
@@ -118,10 +118,10 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
             and C_TradeSkillUI.GetBaseProfessionInfo()
         local frame = _G.ProfessionsFrame
         -- A second click on the open profession closes it.
-        if open and open.professionID == d.id and frame and frame:IsShown() then
+        if open and open.professionID == skinData.id and frame and frame:IsShown() then
             C_TradeSkillUI.CloseTradeSkill()
         else
-            C_TradeSkillUI.OpenTradeSkill(d.id)
+            C_TradeSkillUI.OpenTradeSkill(skinData.id)
         end
     end
 
@@ -132,10 +132,10 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
         mod.Tip_AddLine(title, 1, 1, 1)
         mod.Tip_AddLine(" ")
         for _, row in ipairs(rows) do
-            local d = row.data
-            if d.idx and d.name then
-                local rank = CludesUI.COLOR_CODES.WHITE .. d.rank .. "|r / " .. d.maxRank
-                mod.Tip_AddDouble(d.name, rank, 1, 1, 1, 1, 1, 1)
+            local skinData = row.data
+            if skinData.idx and skinData.name then
+                local rank = CludesUI.COLOR_CODES.WHITE .. skinData.rank .. "|r / " .. skinData.maxRank
+                mod.Tip_AddDouble(skinData.name, rank, 1, 1, 1, 1, 1, 1)
             end
         end
         mod.Tip_AddLine(" ")
@@ -153,48 +153,48 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
         end
         built = true
         for i, row in ipairs(rows) do
-            local f = CreateFrame(
+            local frame = CreateFrame(
                 "Button",
                 "CludesUIDataBarsProf" .. i .. "_" .. inst.key,
                 contentFrame,
                 "SecureActionButtonTemplate"
             )
-            f:SetSize(1, barCtx.GetThickness())
-            f:EnableMouse(true)
-            f:RegisterForClicks("AnyUp")
-            f:SetAttribute("useOnKeyDown", false)
+            frame:SetSize(1, barCtx.GetThickness())
+            frame:EnableMouse(true)
+            frame:RegisterForClicks("AnyUp")
+            frame:SetAttribute("useOnKeyDown", false)
             if secondary then
-                f:SetAttribute("*type2", "spell")
-                f:SetAttribute("*spell2", CAMPFIRE)
+                frame:SetAttribute("*type2", "spell")
+                frame:SetAttribute("*spell2", CAMPFIRE)
             elseif _G.ProfessionMicroButton then
-                f:SetAttribute("*type2", "click")
-                f:SetAttribute("*clickbutton2", _G.ProfessionMicroButton)
+                frame:SetAttribute("*type2", "click")
+                frame:SetAttribute("*clickbutton2", _G.ProfessionMicroButton)
             end
-            local skill = CreateFrame("StatusBar", nil, f)
+            local skill = CreateFrame("StatusBar", nil, frame)
             skill:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
             local track = skill:CreateTexture(nil, "BACKGROUND")
             track:SetAllPoints()
-            row.frame, row.skill, row.track = f, skill, track
-            row.icon = f:CreateTexture(nil, "OVERLAY")
-            row.text = f:CreateFontString(nil, "OVERLAY")
+            row.frame, row.skill, row.track = frame, skill, track
+            row.icon = frame:CreateTexture(nil, "OVERLAY")
+            row.text = frame:CreateFontString(nil, "OVERLAY")
             K.AttachTextOffset(inst, row.text)
 
             -- HookScript, not SetScript: replacing OnClick would drop the
             -- secure handler that does the right-click.
-            f:HookScript("OnClick", function(_, mouseButton)
+            frame:HookScript("OnClick", function(_, mouseButton)
                 if mouseButton == "LeftButton" then
                     OpenProfession(row.data)
                 end
             end)
-            f:SetScript("OnEnter", function(self)
-                local r, g, b = mod.GetAccent()
-                row.text:SetTextColor(r, g, b, 1)
-                row.icon:SetVertexColor(r, g, b, 1)
+            frame:SetScript("OnEnter", function(self)
+                local region, g, b = mod.GetAccent()
+                row.text:SetTextColor(region, g, b, 1)
+                row.icon:SetVertexColor(region, g, b, 1)
                 ShowTooltip(self)
             end)
-            f:SetScript("OnLeave", function(self)
-                local r, g, b = K.BlockColorOf(blockCfg)
-                row.text:SetTextColor(r, g, b, 1)
+            frame:SetScript("OnLeave", function(self)
+                local region, g, b = K.BlockColorOf(blockCfg)
+                row.text:SetTextColor(region, g, b, 1)
                 -- The icon goes back to the icon colour, not the text's.
                 local ir, ig, ib = K.IconColorOf(blockCfg)
                 row.icon:SetVertexColor(ir, ig, ib, 1)
@@ -204,19 +204,19 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
     end
 
     local function FillSkillBar(row)
-        local d = row.data
-        local r, g, b = mod.GetAccent()
-        row.skill:SetMinMaxValues(1, d.maxRank)
-        row.skill:SetValue(d.rank)
-        row.skill:SetStatusBarColor(r, g, b, 1)
+        local skinData = row.data
+        local region, g, b = mod.GetAccent()
+        row.skill:SetMinMaxValues(1, skinData.maxRank)
+        row.skill:SetValue(skinData.rank)
+        row.skill:SetStatusBarColor(region, g, b, 1)
         row.track:SetColorTexture(BAR_TRACK[1], BAR_TRACK[2], BAR_TRACK[3], BAR_TRACK[4])
     end
 
     -- Draws one profession into its row's button; hides the button if not learned.
     local function DrawRow(row)
-        local d, f, icon, text, skill = row.data, row.frame, row.icon, row.text, row.skill
-        if not d.idx then
-            f:Hide()
+        local skinData, frame, iconTex, text, skill = row.data, row.frame, row.icon, row.text, row.skill
+        if not skinData.idx then
+            frame:Hide()
             return
         end
         local s = Settings()
@@ -224,44 +224,44 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
         local fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
         local iconSize = fontSize + 8
         local valuesOnly = s.textDisplay == "values"
-        local withBar = not valuesOnly and d.rank ~= d.maxRank
+        local withBar = not valuesOnly and skinData.rank ~= skinData.maxRank
         local withIcon = s.showIcon ~= false
 
         -- Ours, unless the setting asks for the game's (or we have none).
-        local ours = s.iconStyle ~= "wow" and OUR_ICONS[d.id]
-        icon:SetTexture(ours and (ART .. ours .. ".png") or d.icon)
+        local ours = s.iconStyle ~= "wow" and OUR_ICONS[skinData.id]
+        iconTex:SetTexture(ours and (ART .. ours .. ".png") or skinData.icon)
         if ours then
-            icon:SetTexCoord(0, 1, 0, 1)
+            iconTex:SetTexCoord(0, 1, 0, 1)
         else
-            K.CropStockIcon(icon) -- the game's icons have a border baked in
+            K.CropStockIcon(iconTex) -- the game's icons have a border baked in
         end
         if withIcon then
-            icon:SetSize(iconSize, iconSize)
-            icon:Show()
+            iconTex:SetSize(iconSize, iconSize)
+            iconTex:Show()
         else
-            icon:Hide()
+            iconTex:Hide()
         end
         local ir, ig, ib = K.IconColorOf(blockCfg)
-        icon:SetVertexColor(ir, ig, ib, 1)
+        iconTex:SetVertexColor(ir, ig, ib, 1)
 
         mod.SetFont(text, fontSize, barCtx.cfg)
-        local r, g, b = K.BlockColorOf(blockCfg)
-        text:SetTextColor(r, g, b, 1)
-        text:SetText(valuesOnly and (d.rank .. "/" .. d.maxRank) or (d.name or ""))
+        local region, g, b = K.BlockColorOf(blockCfg)
+        text:SetTextColor(region, g, b, 1)
+        text:SetText(valuesOnly and (skinData.rank .. "/" .. skinData.maxRank) or (skinData.name or ""))
 
         if barCtx.IsVertical() then
             -- Icon, text and bar stacked, centred in the bar's width.
             local width = K.VSlotW(inst)
             local inner = max(30, width - 8)
             local height = withIcon and (8 + iconSize + 2) or (8 + 2)
-            icon:ClearAllPoints()
-            icon:SetPoint("TOP", f, "TOP", 0, -4)
+            iconTex:ClearAllPoints()
+            iconTex:SetPoint("TOP", frame, "TOP", 0, -4)
             mod.SetWrappedText(text, inner, "CENTER")
             text:ClearAllPoints()
             if withIcon then
-                text:SetPoint("TOP", icon, "BOTTOM", 0, -2)
+                text:SetPoint("TOP", iconTex, "BOTTOM", 0, -2)
             else
-                text:SetPoint("TOP", f, "TOP", 0, -4)
+                text:SetPoint("TOP", frame, "TOP", 0, -4)
             end
             height = height + mod.SnapToPixelGrid(text:GetStringHeight())
             if withBar then
@@ -274,8 +274,8 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
             else
                 skill:Hide()
             end
-            f:SetSize(width, max(height, barH))
-            f:Show()
+            frame:SetSize(width, max(height, barH))
+            frame:Show()
             return
         end
 
@@ -283,36 +283,36 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
         -- the bar as wide as the text and level with the icon's bottom. With
         -- no icon the text and bar keep the icon's band.
         mod.ResetInlineText(text, "LEFT")
-        icon:ClearAllPoints()
-        icon:SetPoint("LEFT", f, "LEFT", 0, 0)
+        iconTex:ClearAllPoints()
+        iconTex:SetPoint("LEFT", frame, "LEFT", 0, 0)
         local half = iconSize / 2
         text:ClearAllPoints()
         if not withBar then
             skill:Hide()
             if withIcon then
-                text:SetPoint("LEFT", icon, "RIGHT", K.ICON_GAP, 0)
+                text:SetPoint("LEFT", iconTex, "RIGHT", K.ICON_GAP, 0)
             else
-                text:SetPoint("LEFT", f, "LEFT", 0, 0)
+                text:SetPoint("LEFT", frame, "LEFT", 0, 0)
             end
         else
             skill:Show()
             if withIcon then
-                text:SetPoint("TOPLEFT", icon, "TOPRIGHT", K.ICON_GAP, 0)
+                text:SetPoint("TOPLEFT", iconTex, "TOPRIGHT", K.ICON_GAP, 0)
             else
-                text:SetPoint("TOPLEFT", f, "LEFT", 0, half)
+                text:SetPoint("TOPLEFT", frame, "LEFT", 0, half)
             end
             FillSkillBar(row)
             skill:SetSize(max(text:GetStringWidth(), 20), max(2, iconSize - fontSize - 3))
             skill:ClearAllPoints()
             if withIcon then
-                skill:SetPoint("BOTTOMLEFT", icon, "BOTTOMRIGHT", K.ICON_GAP, 0)
+                skill:SetPoint("BOTTOMLEFT", iconTex, "BOTTOMRIGHT", K.ICON_GAP, 0)
             else
-                skill:SetPoint("BOTTOMLEFT", f, "LEFT", 0, -half)
+                skill:SetPoint("BOTTOMLEFT", frame, "LEFT", 0, -half)
             end
         end
         local lead = withIcon and (iconSize + K.ICON_GAP) or 0
-        f:SetSize(lead + max(text:GetStringWidth(), 20), barH)
-        f:Show()
+        frame:SetSize(lead + max(text:GetStringWidth(), 20), barH)
+        frame:Show()
     end
 
     -- Lays the learned professions out in a row (or a column), then sizes the block.
@@ -323,27 +323,27 @@ local function MakeBlock(blockCfg, slot, contentFrame, barCtx, secondary)
         for _, row in ipairs(rows) do
             DrawRow(row)
             if row.data.idx then
-                local f = row.frame
-                f:ClearAllPoints()
+                local frame = row.frame
+                frame:ClearAllPoints()
                 if vertical then
                     if previous then
-                        f:SetPoint("TOP", previous, "BOTTOM", 0, -gap)
+                        frame:SetPoint("TOP", previous, "BOTTOM", 0, -gap)
                     else
-                        f:SetPoint("TOP", contentFrame, "TOP", 0, 0)
+                        frame:SetPoint("TOP", contentFrame, "TOP", 0, 0)
                     end
-                    extent = extent + f:GetHeight()
+                    extent = extent + frame:GetHeight()
                 else
                     if previous then
-                        f:SetPoint("LEFT", previous, "RIGHT", gap, 0)
+                        frame:SetPoint("LEFT", previous, "RIGHT", gap, 0)
                     else
-                        f:SetPoint("LEFT", contentFrame, "LEFT", 0, 0)
+                        frame:SetPoint("LEFT", contentFrame, "LEFT", 0, 0)
                     end
-                    extent = extent + f:GetWidth()
+                    extent = extent + frame:GetWidth()
                 end
                 if previous then
                     extent = extent + gap
                 end
-                previous = f
+                previous = frame
             end
         end
         if vertical then

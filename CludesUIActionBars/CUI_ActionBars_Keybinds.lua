@@ -168,9 +168,9 @@ local function UpdateKeybinds()
             if noForm or noSky then
                 barHasCustomPaging = true
             end
-            for idx, button in ipairs(btns) do
+            for index, button in ipairs(btns) do
                 if button then
-                    local cmd = prefixText .. idx
+                    local cmd = prefixText .. index
                     local k1, k2 = GetBindingKey(cmd)
                     -- Routing is native for everything on standard bars,
                     -- empowers included (flyouts are the exception -- see
@@ -204,7 +204,7 @@ local function UpdateKeybinds()
                     if not isPH then
                         local off = BAR_SLOT_OFFSETS[details.key]
                         if off then
-                            local base = off + idx
+                            local base = off + index
                             if base ~= slot then
                                 isPH = SlotIsPH(base)
                             end
@@ -258,7 +258,7 @@ local function UpdateKeybinds()
         local prefixText = BINDING_MAP[details.key]
         local btns = barButtons[details.key]
         if prefixText and btns then
-            for idx, button in ipairs(btns) do
+            for index, button in ipairs(btns) do
                 if button then
                     local k1, k2, useClick = sig[jdx + 1], sig[jdx + 2], sig[jdx + 3]
                     jdx = jdx + 4
@@ -271,7 +271,7 @@ local function UpdateKeybinds()
                             SetOverrideBindingClick(_eabBindOwner, false, k2, btnName)
                         end
                     else
-                        local cmd = prefixText .. idx
+                        local cmd = prefixText .. index
                         if k1 then
                             SetOverrideBinding(_eabBindOwner, false, k1, cmd)
                         end

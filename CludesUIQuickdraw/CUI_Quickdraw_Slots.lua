@@ -104,11 +104,11 @@ end
 -- the next push and every icon drawn before it agree with what actually fired.
 -- Called from the release; a cell that does not cycle answers nothing and
 -- leaves the slot alone.
-local function CyclePosBack(btn, position, slot)
-    if not btn or not position or not slot then
+local function CyclePosBack(button, position, slot)
+    if not button or not position or not slot then
         return
     end
-    local place = tonumber(btn:GetAttribute("eqdCycPos" .. position))
+    local place = tonumber(button:GetAttribute("eqdCycPos" .. position))
     if place and CycleSteps(slot.kind) then
         slot.cyclePos = place
     end
@@ -325,8 +325,8 @@ function mod.OutfitInfo(slot)
 end
 
 function mod.OutfitIcon(details)
-    local icon = details and details.icon
-    return icon ~= 0 and icon or nil
+    local iconTex = details and details.icon
+    return iconTex ~= 0 and iconTex or nil
 end
 
 function mod.OutfitSlots()
@@ -366,10 +366,10 @@ function mod.EquipmentSetSlots()
         return result
     end
     for _, ident in ipairs(C_EquipmentSet.GetEquipmentSetIDs()) do
-        local name, icon = C_EquipmentSet.GetEquipmentSetInfo(ident)
+        local name, iconTex = C_EquipmentSet.GetEquipmentSetInfo(ident)
         if name then
             result[#result + 1] =
-                { kind = "equipmentset", id = ident, owner = ownerFrame, name = name, icon = icon }
+                { kind = "equipmentset", id = ident, owner = ownerFrame, name = name, icon = iconTex }
         end
     end
     return result
@@ -536,9 +536,9 @@ do
             key = "greatvault",
             icon = ART .. "menu-vault.png",
             fire = function()
-                local f = WeeklyRewardsFrame
-                if f and f:IsShown() then
-                    HideUIPanel(f)
+                local frame = WeeklyRewardsFrame
+                if frame and frame:IsShown() then
+                    HideUIPanel(frame)
                 elseif WeeklyRewards_ShowUI then
                     WeeklyRewards_ShowUI()
                 end
@@ -638,8 +638,8 @@ do
             nameList = { nameList }
         end
         for _, name in ipairs(nameList) do
-            local f = _G[name]
-            if f and f.Click and f.IsForbidden and not f:IsForbidden() then
+            local frame = _G[name]
+            if frame and frame.Click and frame.IsForbidden and not frame:IsForbidden() then
                 return name
             end
         end

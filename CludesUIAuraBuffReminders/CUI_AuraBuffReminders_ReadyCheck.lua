@@ -42,9 +42,9 @@ local SetupReadyCheckManaWarning = function()
     function REMIND.RCWColor()
         local p = saved and saved.profile
         local c = p and p.consumables
-        local col = c and c.rcManaWarnColor
-        if col and col.r then
-            return col.r, col.g, col.b
+        local colour = c and c.rcManaWarnColor
+        if colour and colour.r then
+            return colour.r, colour.g, colour.b
         end
         local mc = CludesUI.GetPowerColor("MANA")
         if mc then
@@ -87,17 +87,17 @@ local SetupReadyCheckManaWarning = function()
         warnFS:SetFont(font, (c and c.rcManaWarnSize) or 48, outline)
         -- Explicit white instance color: tinted purely via SetVertexColor (curve result); with no instance color it would inherit the primed shadow FontObject's color, which resolves BLACK.
         warnFS:SetTextColor(1, 1, 1, 1)
-        local r, g, b = REMIND.RCWColor()
+        local region, g, b = REMIND.RCWColor()
         -- Curve: alpha 1 at/below 80%, alpha 0 above; colors the FontString directly via SetVertexColor, using alpha for visibility -- no secret value reads.
         if C_CurveUtil and C_CurveUtil.CreateColorCurve then
             warnCurve = C_CurveUtil.CreateColorCurve()
-            warnCurve:AddPoint(0.0, CreateColor(r, g, b, 1))
-            warnCurve:AddPoint(0.80, CreateColor(r, g, b, 1))
-            warnCurve:AddPoint(0.8001, CreateColor(r, g, b, 0))
-            warnCurve:AddPoint(1.0, CreateColor(r, g, b, 0))
+            warnCurve:AddPoint(0.0, CreateColor(region, g, b, 1))
+            warnCurve:AddPoint(0.80, CreateColor(region, g, b, 1))
+            warnCurve:AddPoint(0.8001, CreateColor(region, g, b, 0))
+            warnCurve:AddPoint(1.0, CreateColor(region, g, b, 0))
         end
         if warnFrame:IsShown() then
-            warnFS:SetVertexColor(r, g, b, 1)
+            warnFS:SetVertexColor(region, g, b, 1)
         end
     end
 
@@ -214,8 +214,8 @@ local SetupReadyCheckManaWarning = function()
             warnTimer:Cancel()
             warnTimer = nil
         end
-        local r, g, b = REMIND.RCWColor()
-        warnFS:SetVertexColor(r, g, b, 1)
+        local region, g, b = REMIND.RCWColor()
+        warnFS:SetVertexColor(region, g, b, 1)
         warnFrame:Show()
         if warnFrame._breathe and not warnFrame._breathe:IsPlaying() then
             warnFrame._breathe:Play()

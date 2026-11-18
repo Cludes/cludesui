@@ -339,7 +339,7 @@ function mod.RefreshGlowCombatGate()
     end
 end
 
-StartNativeGlow = function(overlayFrame, style, cr, cg, cb, options)
+StartNativeGlow = function(overlayFrame, style, cr, cg, callback, options)
     if not overlayFrame then
         return
     end
@@ -379,7 +379,7 @@ StartNativeGlow = function(overlayFrame, style, cr, cg, cb, options)
             mod._cdmGlowRec[overlayFrame] = rec
         end
         local ownerFC = hostFrame and _ecmeFC[hostFrame]
-        rec.style, rec.r, rec.g, rec.b, rec.opts = styleIdx, cr, cg, cb, options
+        rec.style, rec.r, rec.g, rec.b, rec.opts = styleIdx, cr, cg, callback, options
         rec.owner, rec.sid = hostFrame, ownerFC and ownerFC.spellID or nil
         rec.active = true
         -- Suppressed overlays keep _glowActive = true: the buff ticker's
@@ -408,16 +408,16 @@ StartNativeGlow = function(overlayFrame, style, cr, cg, cb, options)
     end
     local noColor = (cr == nil)
     if noColor then
-        cr, cg, cb = 1.0, 0.788, 0.137
+        cr, cg, callback = 1.0, 0.788, 0.137
     end
     cr = cr or 1
     cg = cg or 1
-    cb = cb or 1
+    callback = callback or 1
 
     if record.shapeGlow then
         -- CDM-specific: read shape mask/border from the icon frame
-        local icon = hostFrame
-        local ifc2 = _ecmeFC[icon]
+        local iconTex = hostFrame
+        local ifc2 = _ecmeFC[iconTex]
         local shape = (ifc2 and ifc2.shapeApplied) and (ifc2 and ifc2.shapeName) or nil
         local shapeMask = ifc2 and ifc2.shapeMask
         -- No custom shape (none/cropped) = sharp-cornered square: use the square glow texture so
@@ -430,7 +430,7 @@ StartNativeGlow = function(overlayFrame, style, cr, cg, cb, options)
         end
         local maskPath = CDM_SHAPES.masks[shape]
         local borderPath = (not noShape) and CDM_SHAPES.borders[shape] or nil
-        _G_Glows.StartShapeGlow(overlayFrame, math.min(pW, pH), cr, cg, cb, 1.20, {
+        _G_Glows.StartShapeGlow(overlayFrame, math.min(pW, pH), cr, cg, callback, 1.20, {
             maskPath = maskPath,
             borderPath = borderPath,
             shapeMask = shapeMask,
@@ -509,7 +509,7 @@ StartNativeGlow = function(overlayFrame, style, cr, cg, cb, options)
             lineLen,
             cr,
             cg,
-            cb,
+            callback,
             pW,
             pH,
             bgR,
@@ -518,9 +518,9 @@ StartNativeGlow = function(overlayFrame, style, cr, cg, cb, options)
             bgA
         )
     elseif record.buttonGlow then
-        _G_Glows.StartButtonGlow(overlayFrame, pW, cr, cg, cb, nil, pH)
+        _G_Glows.StartButtonGlow(overlayFrame, pW, cr, cg, callback, nil, pH)
     elseif record.autocast then
-        _G_Glows.StartAutoCastShine(overlayFrame, pW, cr, cg, cb, 1.0, pH)
+        _G_Glows.StartAutoCastShine(overlayFrame, pW, cr, cg, callback, 1.0, pH)
     elseif record.solidFill then
         -- Clip to the shape mask only while a custom shape is applied, decided as
         -- in the Shape branch above: a removed shape leaves its mask object on the
@@ -536,14 +536,14 @@ StartNativeGlow = function(overlayFrame, style, cr, cg, cb, options)
             overlayFrame,
             noColor and 0 or cr,
             noColor and 0 or cg,
-            noColor and 0 or cb,
+            noColor and 0 or callback,
             { alpha = options and options.alpha, shapeMask = shapeMask }
         )
     else
         if noColor then
-            cr, cg, cb = nil, nil, nil
+            cr, cg, callback = nil, nil, nil
         end
-        _G_Glows.StartFlipBookGlow(overlayFrame, pW, record, cr, cg, cb, pH)
+        _G_Glows.StartFlipBookGlow(overlayFrame, pW, record, cr, cg, callback, pH)
     end
 
     -- Threshold gating: bound every texture the style just created with the
@@ -557,10 +557,10 @@ StartNativeGlow = function(overlayFrame, style, cr, cg, cb, options)
     -- below re-binds it on the textures that replay creates fresh.
     local mask2 = options and options.maskWith2
     if mask2 then
-        for _, r in ipairs({ overlayFrame:GetRegions() }) do
-            if r.AddMaskTexture and r._cuiTGMask2 ~= mask2 then
-                r._cuiTGMask2 = mask2
-                r:AddMaskTexture(mask2)
+        for _, region in ipairs({ overlayFrame:GetRegions() }) do
+            if region.AddMaskTexture and region._cuiTGMask2 ~= mask2 then
+                region._cuiTGMask2 = mask2
+                region:AddMaskTexture(mask2)
             end
         end
     end
@@ -602,7 +602,7 @@ mod.StopNativeGlow = StopNativeGlow
 -- (fd._cdGlowOwed) so the edge that ends that glow lights this one at once
 -- (ns.CdGlowKick). Returns the overlay lit. alpha is the Blackout fill
 -- opacity (nil = opaque); the other styles take no opts at all.
-function mod.StartCdGlow(fd, style, cr, cg, cb, alpha)
+function mod.StartCdGlow(fd, style, cr, cg, callback, alpha)
     if not fd then
         return
     end
@@ -615,12 +615,12 @@ function mod.StartCdGlow(fd, style, cr, cg, cb, alpha)
         -- DecorateFrame keeps its level through re-layouts.
         local bo = fd.blackoutOverlay
         if not bo and fd.glowOverlay then
-            local icon = fd.glowOverlay:GetParent()
-            bo = CreateFrame("Frame", nil, icon)
-            bo:SetAllPoints(icon)
+            local iconTex = fd.glowOverlay:GetParent()
+            bo = CreateFrame("Frame", nil, iconTex)
+            bo:SetAllPoints(iconTex)
             bo:SetAlpha(0)
             bo:EnableMouse(false)
-            bo:SetFrameLevel(icon:GetFrameLevel() + 12)
+            bo:SetFrameLevel(iconTex:GetFrameLevel() + 12)
             fd.blackoutOverlay = bo
         end
         -- A fresh table per start: StartNativeGlow keeps opts by reference in
@@ -640,7 +640,7 @@ function mod.StartCdGlow(fd, style, cr, cg, cb, alpha)
         StopNativeGlow(other)
     end
     if overlayFrame then
-        StartNativeGlow(overlayFrame, style, cr, cg, cb, options)
+        StartNativeGlow(overlayFrame, style, cr, cg, callback, options)
     end
     return overlayFrame
 end
@@ -833,33 +833,33 @@ local function FindOurIconForBlizzChild(barId, blizzChild)
     if not icons then
         return nil
     end
-    for _, icon in ipairs(icons) do
-        local iifc = _ecmeFC[icon]
+    for _, iconTex in ipairs(icons) do
+        local iifc = _ecmeFC[iconTex]
         local bc = iifc and iifc.blizzChild
-        if icon == blizzChild or bc == blizzChild then
-            return icon
+        if iconTex == blizzChild or bc == blizzChild then
+            return iconTex
         end
     end
     -- Fallback: match by spellID (covers override spells like HST -> Storm Stream)
     local alertSid, alertBase = ResolveBlizzChildSpellID(blizzChild)
     if alertSid then
-        for _, icon in ipairs(icons) do
-            local ifc = _ecmeFC[icon]
+        for _, iconTex in ipairs(icons) do
+            local ifc = _ecmeFC[iconTex]
             local isid = ifc and ifc.spellID
             -- Second compare: the alert child's cooldownInfo carries its BASE id, so an icon
             -- assigned the base of a transformed spell matches on a plain field compare -- no per-icon API translation.
             if isid == alertSid or (alertBase and isid == alertBase) then
-                return icon
+                return iconTex
             end
         end
         -- Override mapping (base <-> override). Last resort: only reachable when the icon's assigned id and the alert's base id differ yet still override-resolve to the alert spell.
-        for _, icon in ipairs(icons) do
-            local ifc = _ecmeFC[icon]
+        for _, iconTex in ipairs(icons) do
+            local ifc = _ecmeFC[iconTex]
             local iconSid = ifc and ifc.spellID
             if iconSid and C_SpellBook and C_SpellBook.FindSpellOverrideByID then
                 local ovr = C_SpellBook.FindSpellOverrideByID(iconSid)
                 if ovr and ovr == alertSid then
-                    return icon
+                    return iconTex
                 end
             end
         end
@@ -928,12 +928,12 @@ end
 mod.ResolveGlowColor = ResolveGlowColor
 
 -- Show proc glow on one of our icons. Uses per-spell settings if available.
-local function ShowProcGlow(icon, cr, cg, cb)
-    if not icon then
+local function ShowProcGlow(iconTex, cr, cg, callback)
+    if not iconTex then
         return
     end
-    local fd = _getFD(icon)
-    local glow = fd and fd.glowOverlay or icon._glowOverlay
+    local fd = _getFD(iconTex)
+    local glow = fd and fd.glowOverlay or iconTex._glowOverlay
     if not glow then
         return
     end
@@ -941,7 +941,7 @@ local function ShowProcGlow(icon, cr, cg, cb)
         return
     end
 
-    local fc = _ecmeFC[icon]
+    local fc = _ecmeFC[iconTex]
     -- Force Shape Glow (style 2) for custom-shaped icons (any but none/cropped)
     local shapeName = (fc and fc.shapeApplied) and fc.shapeName or nil
     local isCustomShape = shapeName and shapeName ~= "none" and shapeName ~= "cropped"
@@ -955,7 +955,7 @@ local function ShowProcGlow(icon, cr, cg, cb)
         -- base-spell setting resolves on its talent "proc into a second ability"
         -- override form (e.g. Reap -> base 344862). assignedSpells-only matching misses
         -- this on default Essential/Utility bars, whose assignedSpells list is empty.
-        local ss = mod.ResolveSpellSettings and mod.ResolveSpellSettings(icon, spellRef, sd, bk)
+        local ss = mod.ResolveSpellSettings and mod.ResolveSpellSettings(iconTex, spellRef, sd, bk)
         if ss then
             -- Custom shapes are locked to Shape Glow: ignore the per-spell glow
             -- type (incl. "None"). The per-spell glow COLOR below still applies.
@@ -970,17 +970,17 @@ local function ShowProcGlow(icon, cr, cg, cb)
             -- Unified glow color takes priority over per-type settings
             local ur, ug, ub = ResolveGlowColor(ss)
             if ur then
-                cr, cg, cb = ur, ug, ub
+                cr, cg, callback = ur, ug, ub
             elseif ss.procGlowClassColor then
                 local _, ct = UnitClass("player")
                 if ct then
                     local cc = RAID_CLASS_COLORS[ct]
                     if cc then
-                        cr, cg, cb = cc.r, cc.g, cc.b
+                        cr, cg, callback = cc.r, cc.g, cc.b
                     end
                 end
             elseif ss.procGlowR ~= nil then
-                cr, cg, cb = ss.procGlowR, ss.procGlowG or 0.788, ss.procGlowB or 0.137
+                cr, cg, callback = ss.procGlowR, ss.procGlowG or 0.788, ss.procGlowB or 0.137
             end
         end
     end
@@ -1008,18 +1008,18 @@ local function ShowProcGlow(icon, cr, cg, cb)
             fd._cdStateGlowOn = false
         end
     end
-    StartNativeGlow(glow, style, cr, cg, cb)
+    StartNativeGlow(glow, style, cr, cg, callback)
     if fd then
         fd.procGlowActive = true
     end
 end
 
-local function StopProcGlow(icon)
-    local fd = icon and _getFD(icon)
-    if not icon or not (fd and fd.procGlowActive) then
+local function StopProcGlow(iconTex)
+    local fd = iconTex and _getFD(iconTex)
+    if not iconTex or not (fd and fd.procGlowActive) then
         return
     end
-    local glow = fd and fd.glowOverlay or icon._glowOverlay
+    local glow = fd and fd.glowOverlay or iconTex._glowOverlay
     StopNativeGlow(glow)
     if fd then
         fd.procGlowActive = false
@@ -1031,7 +1031,7 @@ local function StopProcGlow(icon)
     -- that actually ran a CD-state glow path carry them, so pure proc-glow users never wake
     -- the flush frame.
     if fd._cdGlowOwed then
-        mod.CdGlowKick(icon)
+        mod.CdGlowKick(iconTex)
     elseif fd._cdGlowBoundSid and mod.QueueCDGlowResourceCheck then
         mod.QueueCDGlowResourceCheck()
     end

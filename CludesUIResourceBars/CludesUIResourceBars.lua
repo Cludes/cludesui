@@ -400,8 +400,8 @@ function mod.GetBlizzardPowerAtlas(powerKey)
     candidates[#candidates + 1] = "Unit_" .. suffix .. "_Fill"
     candidates[#candidates + 1] = "UI-HUD-UnitFrame-Player-PortraitOff-Bar-" .. suffix
     candidates[#candidates + 1] = "UI-HUD-UnitFrame-Player-PortraitOn-Bar-" .. suffix
-    for idx = 1, #candidates do
-        local name = candidates[idx]
+    for index = 1, #candidates do
+        local name = candidates[index]
         if C_Texture.GetAtlasInfo(name) then
             return name
         end
@@ -569,14 +569,14 @@ local IP = {
 -- shared counter is safe. On IP, not new locals.
 IP.layers = {}
 IP.layerN = 0
-function IP.push(step, r, g, b, a)
+function IP.push(step, region, g, b, a)
     IP.layerN = IP.layerN + 1
     local t = IP.layers[IP.layerN]
     if not t then
         t = {}
         IP.layers[IP.layerN] = t
     end
-    t.step, t.r, t.g, t.b, t.a = step, r, g, b, a
+    t.step, t.r, t.g, t.b, t.a = step, region, g, b, a
 end
 
 local function GetIcicleCount()
@@ -599,8 +599,8 @@ local function GetIcicleCount()
     end
 
     if C_UnitAuras and C_UnitAuras.GetAuraDataByIndex then
-        for idx = 1, 255 do
-            local aura = C_UnitAuras.GetAuraDataByIndex("player", idx, "HELPFUL")
+        for index = 1, 255 do
+            local aura = C_UnitAuras.GetAuraDataByIndex("player", index, "HELPFUL")
             if not aura then
                 break
             end

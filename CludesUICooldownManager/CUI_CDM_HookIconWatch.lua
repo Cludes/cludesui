@@ -288,7 +288,7 @@ local function HookCdReadyAvailableAlert(widget, fd)
         return
     end
     _cdReadyAlertHooked[widget] = true
-    hooksecurefunc(widget, "TriggerAvailableAlert", function(f)
+    hooksecurefunc(widget, "TriggerAvailableAlert", function(frame)
         if not mod._cdmAnyCdReadySound then
             return
         end
@@ -296,10 +296,10 @@ local function HookCdReadyAvailableAlert(widget, fd)
             return
         end
         -- A buff frame's alert fires on AURA gain, not readiness (see the watch below).
-        if fd._isBuffViewerFrame or f._isCustomBuffFrame or f._isPlaceholderFrame then
+        if fd._isBuffViewerFrame or frame._isCustomBuffFrame or frame._isPlaceholderFrame then
             return
         end
-        local fca = _ecmeFC[f]
+        local fca = _ecmeFC[frame]
         local sida = fca and fca.spellID
         local bka = fca and fca.barKey
         if not sida or not bka then
@@ -314,7 +314,7 @@ local function HookCdReadyAvailableAlert(widget, fd)
         if bka:sub(1, 7) == "__ghost" then
             return
         end
-        local ssa = ResolveSpellSettings(f, sida, mod.GetBarSpellData(bka))
+        local ssa = ResolveSpellSettings(frame, sida, mod.GetBarSpellData(bka))
         local keya = ssa and ssa.cdReadySoundKey
         if not keya or keya == "none" then
             return
@@ -372,8 +372,8 @@ function mod.WatchCdReadySoundIfEnabled(widget)
             ef:RegisterEvent("SPELL_UPDATE_COOLDOWN")
             ef:RegisterEvent("SPELL_UPDATE_CHARGES")
             ef:SetScript("OnEvent", function()
-                for f, d in pairs(mod._cdReadySoundWatch) do
-                    EvalCdReadySound(f, d)
+                for frame, skinData in pairs(mod._cdReadySoundWatch) do
+                    EvalCdReadySound(frame, skinData)
                 end
             end)
             mod._cdReadySoundEventFrame = ef
@@ -514,8 +514,8 @@ local function WatchChargeCdTextFrame(widget, fd)
         local ef = mod.TakeShell()
         ef:RegisterEvent("SPELL_UPDATE_CHARGES")
         ef:SetScript("OnEvent", function()
-            for f, d in pairs(mod._chargeCdTextWatch) do
-                EvalChargeCdTextFrame(f, d)
+            for frame, skinData in pairs(mod._chargeCdTextWatch) do
+                EvalChargeCdTextFrame(frame, skinData)
             end
         end)
         mod._chargeCdTextEventFrame = ef
@@ -691,8 +691,8 @@ function mod.WatchZeroChargeTextIfEnabled(widget)
             local ef = mod.TakeShell()
             ef:RegisterEvent("SPELL_UPDATE_CHARGES")
             ef:SetScript("OnEvent", function()
-                for f, d in pairs(mod._zeroChargeTextWatch) do
-                    EvalZeroChargeTextFrame(f, d)
+                for frame, skinData in pairs(mod._zeroChargeTextWatch) do
+                    EvalZeroChargeTextFrame(frame, skinData)
                 end
             end)
             mod._zeroChargeTextEventFrame = ef
@@ -875,14 +875,14 @@ do
         if not casterRules then
             local function Forms(...)
                 local set = {}
-                for idx = 1, select("#", ...) do
-                    set[select(idx, ...)] = true
+                for index = 1, select("#", ...) do
+                    set[select(index, ...)] = true
                 end
                 return set
             end
             local function Add(rule, ids)
-                for idx = 1, #ids do
-                    casterRules[ids[idx]] = rule
+                for index = 1, #ids do
+                    casterRules[ids[index]] = rule
                 end
             end
             -- Form IDs (GetShapeshiftFormID): Dire Bear is WoW Forever's, and
@@ -1115,8 +1115,8 @@ do
         local hit = false
         local added = updateInfo.addedAuras
         if Readable(added) then
-            for idx = 1, #added do
-                local aura = added[idx]
+            for index = 1, #added do
+                local aura = added[index]
                 if Readable(aura) then
                     local ident = aura.spellId
                     if not issecretvalue(ident) and procAuras[ident] then
@@ -1132,8 +1132,8 @@ do
         end
         local removed = updateInfo.removedAuraInstanceIDs
         if Readable(removed) then
-            for idx = 1, #removed do
-                local iid = removed[idx]
+            for index = 1, #removed do
+                local iid = removed[index]
                 local ident = not issecretvalue(iid) and procIIDs[iid]
                 if ident then
                     auraState[ident] = nil
@@ -1160,8 +1160,8 @@ do
     -- Any of these spells known (one that cannot be read counts)
     local function Permits(spells)
         if spells then
-            for idx = 1, #spells do
-                if Knows(spells[idx]) ~= false then
+            for index = 1, #spells do
+                if Knows(spells[index]) ~= false then
                     return true
                 end
             end
@@ -1224,8 +1224,8 @@ do
     local function NamesForm(textValue, typed)
         if not typed then
             local fits = false
-            for idx = 1, 2 do
-                local tpl = TEMPLATES[idx]
+            for index = 1, 2 do
+                local tpl = TEMPLATES[index]
                 local at = type(tpl) == "string" and tpl:find("%s", 1, true)
                 if at then
                     local pre, suf = tpl:sub(1, at - 1), tpl:sub(at + 2)
@@ -1244,8 +1244,8 @@ do
         end
         if num ~= formCount then
             local nameList = {}
-            for idx = 1, num do
-                local _, _, _, formSid = GetShapeshiftFormInfo(idx)
+            for index = 1, num do
+                local _, _, _, formSid = GetShapeshiftFormInfo(index)
                 if issecretvalue(formSid) or type(formSid) ~= "number" or formSid <= 0 then
                     return nil
                 end
@@ -1260,8 +1260,8 @@ do
             end
             formNames, formCount = nameList, num
         end
-        for idx = 1, #formNames do
-            if textValue:find(formNames[idx], 1, true) then
+        for index = 1, #formNames do
+            if textValue:find(formNames[index], 1, true) then
                 return true
             end
         end
@@ -1284,8 +1284,8 @@ do
             return nil
         end
         local unread = false
-        for idx = 1, #lines do
-            local line = lines[idx]
+        for index = 1, #lines do
+            local line = lines[index]
             local success, t, req = Readable(line)
             if success then
                 t, req = line.type, line.requirementType
@@ -1310,18 +1310,18 @@ do
                     if not Readable(c) then
                         return nil
                     end
-                    local r, g, b = c.r, c.g, c.b
+                    local region, g, b = c.r, c.g, c.b
                     if
-                        issecretvalue(r)
+                        issecretvalue(region)
                         or issecretvalue(g)
                         or issecretvalue(b)
-                        or type(r) ~= "number"
+                        or type(region) ~= "number"
                         or type(g) ~= "number"
                         or type(b) ~= "number"
                     then
                         return nil
                     end
-                    return r >= 0.9 and g <= 0.2 and b <= 0.2
+                    return region >= 0.9 and g <= 0.2 and b <= 0.2
                 end
             end
         end
@@ -1596,8 +1596,8 @@ function mod.WatchCdStateChargeIfEnabled(widget)
         local ef = mod.TakeShell()
         ef:RegisterEvent("SPELL_UPDATE_CHARGES")
         ef:SetScript("OnEvent", function()
-            for f, d in pairs(mod._cdStateChargeWatch) do
-                EvalCdStateChargeFrame(f, d)
+            for frame, skinData in pairs(mod._cdStateChargeWatch) do
+                EvalCdStateChargeFrame(frame, skinData)
             end
         end)
         mod._cdStateChargeEventFrame = ef

@@ -67,8 +67,8 @@ local function TipText()
         scopeHex = CM.HexColor(1, 0.82, 0.3),
         segHex = {},
     }
-    for idx, seg in ipairs(SEGMENTS) do
-        tipText.segHex[idx] = CM.HexColor(seg.r, seg.g, seg.b)
+    for index, seg in ipairs(SEGMENTS) do
+        tipText.segHex[index] = CM.HexColor(seg.r, seg.g, seg.b)
     end
     return tipText
 end
@@ -190,13 +190,13 @@ local function ShowTip(self)
         tipLines[n + 1] = " "
         tipLines[n + 2] = T.scopeHex .. T[scope] .. "|r  " .. CludesUI.Lf("%d applied", c.applied)
         n = n + 2
-        for idx, seg in ipairs(SEGMENTS) do
+        for index, seg in ipairs(SEGMENTS) do
             n = n + 1
-            tipLines[n] = "   " .. T.segHex[idx] .. T[seg.key] .. "|r  " .. c[seg.key]
+            tipLines[n] = "   " .. T.segHex[index] .. T[seg.key] .. "|r  " .. c[seg.key]
         end
     end
-    for idx = #tipLines, n + 1, -1 do
-        tipLines[idx] = nil
+    for index = #tipLines, n + 1, -1 do
+        tipLines[index] = nil
     end
     CM.ShowWidgetTooltip(self, table.concat(tipLines, "\n"), { anchor = "right", justify = "LEFT" })
 end
@@ -259,14 +259,14 @@ local function Layout()
         if lpath then
             labelFS:SetFont(lpath, TITLE_SIZE, lflags)
         end
-        local r, g, b = labelFS:GetTextColor()
-        if r then
-            cardFrame.title:SetTextColor(r, g, b, 1)
+        local region, g, b = labelFS:GetTextColor()
+        if region then
+            cardFrame.title:SetTextColor(region, g, b, 1)
         end
     end
     local texPath = TexturePath()
-    for idx, seg in ipairs(SEGMENTS) do
-        local t = cardFrame.segs[idx]
+    for index, seg in ipairs(SEGMENTS) do
+        local t = cardFrame.segs[index]
         if texPath then
             t:SetTexture(texPath)
             t:SetVertexColor(seg.r, seg.g, seg.b, 1)
@@ -275,7 +275,7 @@ local function Layout()
             t:SetVertexColor(1, 1, 1, 1)
             t:SetTexCoord(0, 1, 0, 1)
         end
-        CM.ApplyModuleFont(cardFrame.nums[idx], npath, nsize, ADDON_NAME, "OUTLINE")
+        CM.ApplyModuleFont(cardFrame.nums[index], npath, nsize, ADDON_NAME, "OUTLINE")
     end
     CM.ApplyModuleFont(cardFrame.empty, npath, nsize, ADDON_NAME, "OUTLINE")
     Place()
@@ -289,21 +289,21 @@ local function Refresh()
     local c = Counts(Scope())
     -- Split the bar between the shown outcomes so it always fills.
     local sum = 0
-    for idx, seg in ipairs(SEGMENTS) do
+    for index, seg in ipairs(SEGMENTS) do
         local val = c[seg.key]
-        shares[idx] = Get(seg.cfg, true) and val or 0
-        sum = sum + shares[idx]
+        shares[index] = Get(seg.cfg, true) and val or 0
+        sum = sum + shares[index]
     end
-    local bar = cardFrame.bar
-    local wid = bar:GetWidth() or 0
+    local barFrame = cardFrame.bar
+    local wid = barFrame:GetWidth() or 0
     local textured = TexturePath()
     local posX = 0
-    for idx, seg in ipairs(SEGMENTS) do
-        local texture, num = cardFrame.segs[idx], cardFrame.nums[idx]
-        local sw = (sum > 0) and (wid * shares[idx] / sum) or 0
+    for index, seg in ipairs(SEGMENTS) do
+        local texture, num = cardFrame.segs[index], cardFrame.nums[index]
+        local sw = (sum > 0) and (wid * shares[index] / sum) or 0
         texture:ClearAllPoints()
-        texture:SetPoint("TOPLEFT", bar, "TOPLEFT", posX, 0)
-        texture:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", posX, 0)
+        texture:SetPoint("TOPLEFT", barFrame, "TOPLEFT", posX, 0)
+        texture:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", posX, 0)
         texture:SetWidth(math.max(sw, 0.01))
         -- Each segment shows its slice of the texture so it reads as one bar.
         if textured and wid > 0 then
@@ -335,16 +335,16 @@ local function BuildCard()
 end
 
 BuildCardInto = function()
-    local host = _G.GroupFinderFrame
+    local owner = _G.GroupFinderFrame
     local pve = _G.PVEFrame
-    if not (host and pve and pve.Inset) then
+    if not (owner and pve and pve.Inset) then
         return nil
     end
 
     -- Build into a local first so a failure never leaves half a card.
-    local cardFrame = CreateFrame("Frame", nil, host)
-    cardFrame:SetAllPoints(host)
-    cardFrame:SetFrameLevel(host:GetFrameLevel() + 5)
+    local cardFrame = CreateFrame("Frame", nil, owner)
+    cardFrame:SetAllPoints(owner)
+    cardFrame:SetFrameLevel(owner:GetFrameLevel() + 5)
 
     cardFrame.title = cardFrame:CreateFontString(nil, "OVERLAY")
     CM.ApplyModuleFont(cardFrame.title, nil, 12, ADDON_NAME, "")
@@ -362,32 +362,32 @@ BuildCardInto = function()
     if S and S.AddBorder then
         S.AddBorder(box)
     else
-        local r, g, b, a = mod.ThemeBorder()
-        CM.MakeBorder(box, r, g, b, a)
+        local region, g, b, a = mod.ThemeBorder()
+        CM.MakeBorder(box, region, g, b, a)
     end
     cardFrame.box = box
     local px = CM.PP.mult
-    local bar = CreateFrame("Frame", nil, box)
-    bar:SetPoint("TOPLEFT", box, "TOPLEFT", px, -px)
-    bar:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -px, px)
-    cardFrame.bar = bar
+    local barFrame = CreateFrame("Frame", nil, box)
+    barFrame:SetPoint("TOPLEFT", box, "TOPLEFT", px, -px)
+    barFrame:SetPoint("BOTTOMRIGHT", box, "BOTTOMRIGHT", -px, px)
+    cardFrame.bar = barFrame
     cardFrame.segs, cardFrame.nums = {}, {}
-    for idx = 1, #SEGMENTS do
-        cardFrame.segs[idx] = bar:CreateTexture(nil, "ARTWORK", nil, 1)
-        local num = bar:CreateFontString(nil, "OVERLAY")
+    for index = 1, #SEGMENTS do
+        cardFrame.segs[index] = barFrame:CreateTexture(nil, "ARTWORK", nil, 1)
+        local num = barFrame:CreateFontString(nil, "OVERLAY")
         CM.ApplyModuleFont(num, nil, 12, ADDON_NAME, "OUTLINE")
         num:SetTextColor(1, 1, 1, 1)
         num:SetJustifyH("CENTER")
         num:SetJustifyV("MIDDLE")
-        cardFrame.nums[idx] = num
+        cardFrame.nums[index] = num
     end
-    cardFrame.empty = bar:CreateFontString(nil, "OVERLAY")
+    cardFrame.empty = barFrame:CreateFontString(nil, "OVERLAY")
     CM.ApplyModuleFont(cardFrame.empty, nil, 12, ADDON_NAME, "OUTLINE")
     cardFrame.empty:SetTextColor(1, 1, 1, 0.6)
-    cardFrame.empty:SetPoint("CENTER", bar, "CENTER", 0, 0)
+    cardFrame.empty:SetPoint("CENTER", barFrame, "CENTER", 0, 0)
     cardFrame.empty:SetText(CludesUI.L("N/A"))
     cardFrame.empty:Hide()
-    bar:SetScript("OnSizeChanged", function()
+    barFrame:SetScript("OnSizeChanged", function()
         Refresh()
     end)
     return cardFrame

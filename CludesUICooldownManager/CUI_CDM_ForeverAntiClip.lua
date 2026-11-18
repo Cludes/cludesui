@@ -110,15 +110,15 @@ end
 -- When the running GCD ends; 0 while none runs (or it reads secret).
 local function ReadGCD()
     local cd = C_Spell.GetSpellCooldown(GCD_SPELL)
-    local s, d = cd and cd.startTime, cd and cd.duration
+    local s, skinData = cd and cd.startTime, cd and cd.duration
     if
         type(s) == "number"
-        and type(d) == "number"
+        and type(skinData) == "number"
         and not issecretvalue(s)
-        and not issecretvalue(d)
-        and d > 0
+        and not issecretvalue(skinData)
+        and skinData > 0
     then
-        gcdEnd = s + d
+        gcdEnd = s + skinData
     else
         gcdEnd = 0
     end
@@ -139,10 +139,10 @@ local function Evaluate(widget, nowTime)
     if type(spellRef) ~= "number" or spellRef <= 0 then
         -- A totem item's expiry came from its totem data, so the cached aura
         -- is unchecked here and may be a secret table (no index on one).
-        local d = widget.auraDataCached
+        local skinData = widget.auraDataCached
         spellRef = nil
-        if not issecretvalue(d) and d then
-            spellRef = d.spellId
+        if not issecretvalue(skinData) and skinData then
+            spellRef = skinData.spellId
         end
     end
     local plain = type(spellRef) == "number" and not issecretvalue(spellRef)
@@ -293,11 +293,11 @@ local function SetArmed(wanted)
     end
     armed = wanted
     if wanted then
-        for idx = 1, #CAST_EVENTS do
-            ev:RegisterUnitEvent(CAST_EVENTS[idx], "player")
+        for index = 1, #CAST_EVENTS do
+            ev:RegisterUnitEvent(CAST_EVENTS[index], "player")
         end
-        for idx = 1, #CAST_TIME_EVENTS do
-            ev:RegisterEvent(CAST_TIME_EVENTS[idx])
+        for index = 1, #CAST_TIME_EVENTS do
+            ev:RegisterEvent(CAST_TIME_EVENTS[index])
         end
         ev:RegisterUnitEvent("UNIT_SPELL_HASTE", "player")
         ReadCast()

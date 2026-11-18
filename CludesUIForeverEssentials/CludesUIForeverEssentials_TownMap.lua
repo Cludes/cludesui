@@ -113,14 +113,14 @@ local function IsFile(art)
     return art:find("\\", 1, true) ~= nil
 end
 
-local function TryArt(icon, art)
+local function TryArt(iconTex, art)
     if IsFile(art) then
-        return icon:SetTexture(art)
+        return iconTex:SetTexture(art)
     end
     if not C_Texture.GetAtlasInfo(art) then
         return false
     end
-    icon:SetAtlas(art)
+    iconTex:SetAtlas(art)
     return true
 end
 
@@ -146,26 +146,26 @@ local function ClassIcon(token)
 end
 
 local function Paint(pin, npc)
-    local icon, kind = pin.icon, npc[3]
+    local iconTex, kind = pin.icon, npc[3]
     SetRound(pin, false)
     for _, art in ipairs(MAP_ART[kind] or EMPTY) do
-        if TryArt(icon, art) then
-            icon:SetTexCoord(0, 1, 0, 1)
+        if TryArt(iconTex, art) then
+            iconTex:SetTexCoord(0, 1, 0, 1)
             pin.border:Hide()
             return
         end
     end
     if ROUND_ART[kind] then
         SetRound(pin, true)
-        icon:SetTexture(CATEGORIES[kind][2])
-        icon:SetTexCoord(0, 1, 0, 1)
+        iconTex:SetTexture(CATEGORIES[kind][2])
+        iconTex:SetTexCoord(0, 1, 0, 1)
         pin.border:Hide()
         return
     end
-    icon:SetTexture(
+    iconTex:SetTexture(
         CATEGORIES[kind][2] or (npc[6] and ClassIcon(npc[6])) or "Interface\\Icons\\INV_Misc_QuestionMark"
     )
-    icon:SetTexCoord(CROP_LOW, CROP_HIGH, CROP_LOW, CROP_HIGH)
+    iconTex:SetTexCoord(CROP_LOW, CROP_HIGH, CROP_LOW, CROP_HIGH)
     pin.border:Show()
 end
 
@@ -250,16 +250,16 @@ local function Anchor(p)
 end
 
 local function Clear()
-    for idx = 1, used do
-        pins[idx]:Hide()
-        pins[idx].npc = nil
+    for index = 1, used do
+        pins[index]:Hide()
+        pins[index].npc = nil
     end
     used = 0
 end
 
 local function Rescale()
-    for idx = 1, used do
-        Anchor(pins[idx])
+    for index = 1, used do
+        Anchor(pins[index])
     end
 end
 
@@ -287,11 +287,11 @@ local function Draw()
     if not mapID then
         return
     end
-    local d = Data()
+    local skinData = Data()
     local faction = Faction()
     local _, class = UnitClass("player")
-    local shops = not Get("capitalsOnly") or d.capitals[mapID]
-    for _, entries in ipairs({ d.npcs[mapID], d.mail[mapID], d.spirit[mapID] }) do
+    local shops = not Get("capitalsOnly") or skinData.capitals[mapID]
+    for _, entries in ipairs({ skinData.npcs[mapID], skinData.mail[mapID], skinData.spirit[mapID] }) do
         for _, npc in ipairs(entries or EMPTY) do
             if Wanted(npc, faction, class, shops) then
                 Place(npc)
@@ -366,11 +366,11 @@ local function MiniNew()
     return pin
 end
 
-local function MiniPaint(pin, entries, idx)
-    pin.npc = entries[idx]
+local function MiniPaint(pin, entries, index)
+    pin.npc = entries[index]
     local size = Get("size") * 0.9
     pin:SetSize(size, size)
-    Paint(pin, entries[idx])
+    Paint(pin, entries[index])
 end
 
 local function MiniRefresh()
@@ -379,17 +379,17 @@ local function MiniRefresh()
         and (Get("minimapMail") or Get("minimapSpirit"))
         and C_Map.GetBestMapForUnit("player")
     if map then
-        local d, faction = Data(), Faction()
+        local skinData, faction = Data(), Faction()
         local same = SameMap(map)
         if Get("minimapMail") and Get("mail") then
-            for _, s in ipairs(d.mail[same] or EMPTY) do
+            for _, s in ipairs(skinData.mail[same] or EMPTY) do
                 if (s[7] or ""):find(faction, 1, true) then
                     spots[#spots + 1] = s
                 end
             end
         end
         if Get("minimapSpirit") and Get("spirit") then
-            for _, s in ipairs(d.spirit[same] or EMPTY) do
+            for _, s in ipairs(skinData.spirit[same] or EMPTY) do
                 if (s[7] or ""):find(faction, 1, true) then
                     spots[#spots + 1] = s
                 end
@@ -404,8 +404,8 @@ local function MiniRefresh()
             max = MINI_MAX,
             new = MiniNew,
             paint = MiniPaint,
-            xy = function(entries, idx)
-                return entries[idx][1] / 100, entries[idx][2] / 100
+            xy = function(entries, index)
+                return entries[index][1] / 100, entries[index][2] / 100
             end,
         })
     mini:Set(map, spots, #spots)

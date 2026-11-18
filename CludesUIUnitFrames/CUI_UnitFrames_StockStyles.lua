@@ -460,11 +460,11 @@ function mod.UF_ForeverKit()
     -- (cols l..r, rows t..b of its mw x mh file) covers exactly that rect.
     -- The player art is centred half a unit down the box, so its rows fall
     -- on halves.
-    local function Fit(bar, posX, posY, wid, hgt, l, r, t, b, mw, mh)
-        local kx, ky = wid / (r - l + 1), hgt / (b - t + 1)
-        bar.x, bar.y, bar.w, bar.h = posX, posY, wid, hgt
-        bar.mx, bar.my = -l * kx, t * ky
-        bar.mw, bar.mh = mw * kx, mh * ky
+    local function Fit(barFrame, posX, posY, wid, hgt, l, region, t, b, mw, mh)
+        local kx, ky = wid / (region - l + 1), hgt / (b - t + 1)
+        barFrame.x, barFrame.y, barFrame.w, barFrame.h = posX, posY, wid, hgt
+        barFrame.mx, barFrame.my = -l * kx, t * ky
+        barFrame.mw, barFrame.mh = mw * kx, mh * ky
     end
     Fit(P.health, 88, 45.5, 123, 15, 4, 123, 9, 21, 128, 32)
     Fit(P.power, 88, 61.5, 123, 10, 4, 123, 4, 11, 128, 16)
@@ -691,8 +691,8 @@ function mod.UF_StyleSlotKeys()
         "player.combatIndicatorPosition",
     }
     local units = mod.UF_TEXTURE_UNITS
-    for idx = 1, #units do
-        k[#k + 1] = units[idx] .. ".healthBarTexture"
+    for index = 1, #units do
+        k[#k + 1] = units[index] .. ".healthBarTexture"
     end
     return k
 end
@@ -728,17 +728,17 @@ function mod.UF_SeedStock(p, styleKey, isForever)
         p.classicTextureSeeded = true
         p.healthBarTexture = "plating"
         local units = mod.UF_TEXTURE_UNITS
-        for idx = 1, #units do
-            local s = p[units[idx]]
+        for index = 1, #units do
+            local s = p[units[index]]
             if type(s) == "table" then
                 s.healthBarTexture = nil
             end
         end
     end
-    local icon = mod.UF_STOCK_COMBAT[styleKey]
-    if icon and p.player and p.stockCombatSeededStyle ~= styleKey then
+    local iconTex = mod.UF_STOCK_COMBAT[styleKey]
+    if iconTex and p.player and p.stockCombatSeededStyle ~= styleKey then
         p.stockCombatSeededStyle = styleKey
-        p.player.combatIndicatorStyle = icon
+        p.player.combatIndicatorStyle = iconTex
         p.player.combatIndicatorPosition = "portrait"
     end
 end
@@ -811,7 +811,7 @@ end
 -- A kit bar's mask on `bar`: the stock mask at its own size, or at the size
 -- the kit stretches it to (mw x mh), hung from the bar's top-left. B.maskFile:
 -- a mask file of ours instead of the stock atlas.
-function mod.UF_SeatBarMask(mask, bar, B)
+function mod.UF_SeatBarMask(mask, barFrame, B)
     if B.maskFile then
         mask:SetTexture(B.maskFile, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
     else
@@ -825,7 +825,7 @@ function mod.UF_SeatBarMask(mask, bar, B)
         mask:SetSize(wid, hgt * B.sy)
     end
     mask:ClearAllPoints()
-    mask:SetPoint("TOPLEFT", bar, "TOPLEFT", B.mx, B.my)
+    mask:SetPoint("TOPLEFT", barFrame, "TOPLEFT", B.mx, B.my)
 end
 -- Paints an art entry on a texture; useSize takes the entry's own size.
 function mod.UF_SetArt(texture, a, useSize)
@@ -851,10 +851,10 @@ end
 -- its layer, created once; `tex` is the callers' handle and draws nothing.
 -- `pct` is the unit's Border Size percentage (nil = the shared default).
 -- Idempotent (the seat memoizes on the rect and scale).
-function mod.UF_SeatClassicCastFrame(texture, bar, hgt, pct)
+function mod.UF_SeatClassicCastFrame(texture, barFrame, hgt, pct)
     local CK = mod.UF_BLIZZ.cast
     local CF = CludesUI.ClassicFrame
-    if not (texture and bar and CK and CF) then
+    if not (texture and barFrame and CK and CF) then
         return
     end
     if not mod.UF_ArtOK(CK.frame) then
@@ -868,13 +868,13 @@ function mod.UF_SeatClassicCastFrame(texture, bar, hgt, pct)
         texture._classicPieces = p
         texture:Hide()
     end
-    CF.Seat(p, bar, CF.ScaleK(pct), false)
+    CF.Seat(p, barFrame, CF.ScaleK(pct), false)
 end
 -- First existing atlas of a candidate list (nil when none is available).
 function mod.UF_BlizzAtlas(entries)
-    for idx = 1, #entries do
-        if mod.UF_AtlasOK(entries[idx]) then
-            return entries[idx]
+    for index = 1, #entries do
+        if mod.UF_AtlasOK(entries[index]) then
+            return entries[index]
         end
     end
     return nil
@@ -1064,24 +1064,24 @@ mod._ufAnchorKeys = {
 }
 CludesUI._GetAnchorTargetExtent = function(targetKey, side)
     if mod._ufAnchorKeys[targetKey] and mod.UF_Blizz() then
-        local f = (targetKey == "boss") and frameList.boss1 or frameList[targetKey]
-        local l, r, t, b = mod.UF_BlizzVis(f)
-        if l and f:GetLeft() then
-            local ratio = f:GetEffectiveScale() / UIParent:GetEffectiveScale()
+        local frame = (targetKey == "boss") and frameList.boss1 or frameList[targetKey]
+        local l, region, t, b = mod.UF_BlizzVis(frame)
+        if l and frame:GetLeft() then
+            local ratio = frame:GetEffectiveScale() / UIParent:GetEffectiveScale()
             if side == "LEFT" then
-                return (f:GetLeft() + l) * ratio
+                return (frame:GetLeft() + l) * ratio
             elseif side == "RIGHT" then
-                return (f:GetRight() - r) * ratio
+                return (frame:GetRight() - region) * ratio
             elseif side == "TOP" then
-                return (f:GetTop() - t) * ratio
+                return (frame:GetTop() - t) * ratio
             elseif side == "BOTTOM" then
-                return (f:GetBottom() + b) * ratio
+                return (frame:GetBottom() + b) * ratio
             end
         end
     end
-    local prev = mod._ufPrevAnchorExtent
-    if prev then
-        return prev(targetKey, side)
+    local previous = mod._ufPrevAnchorExtent
+    if previous then
+        return previous(targetKey, side)
     end
     return nil
 end
@@ -1102,15 +1102,15 @@ CludesUI._GetAnchorFollowFrame = function(childKey, targetKey, side)
         and childKey == CastbarUnlockKey(targetKey)
     then
         -- Only a holder created with the layout aspect may hang off the block.
-        local f = frameList[targetKey]
-        local holderFrame = f and f.Castbar and f.Castbar:GetParent()
+        local frame = frameList[targetKey]
+        local holderFrame = frame and frame.Castbar and frame.Castbar:GetParent()
         if holderFrame and holderFrame._blizzAspect then
-            return mod.UF_BlizzAuraBlock(f)
+            return mod.UF_BlizzAuraBlock(frame)
         end
     end
-    local prev = mod._ufPrevAnchorFollow
-    if prev then
-        return prev(childKey, targetKey, side)
+    local previous = mod._ufPrevAnchorFollow
+    if previous then
+        return previous(childKey, targetKey, side)
     end
     return nil
 end
@@ -1193,7 +1193,7 @@ function mod.UF_ApplyBlizzBarArt(widget)
     if health then
         -- Hide Power Bar: the taller bar and its stretched mask.
         local HB = widget._blizzMerged and mod.UF_MergedHealth(G) or G.health
-        local fill = health:GetStatusBarTexture()
+        local fillTex = health:GetStatusBarTexture()
         health:SetOrientation("HORIZONTAL")
         mod.ApplyFillRotation(health)
         -- The mask object exists only for a kit with bar masks (the classic
@@ -1214,7 +1214,7 @@ function mod.UF_ApplyBlizzBarArt(widget)
             hp, hp and hp._forward, hp and hp._healAbsorb, hp and hp._topBar, hp and hp._healTopBar
         if not mirror and mod.UF_AtlasOK(G.health.mask) then
             mod.UF_SeatBarMask(mask, health, HB)
-            mod.UF_SetMask(fill, mask)
+            mod.UF_SetMask(fillTex, mask)
             if health.bg then
                 mod.UF_SetMask(health.bg, mask)
             end
@@ -1223,8 +1223,8 @@ function mod.UF_ApplyBlizzBarArt(widget)
             end -- Textured Background layer
             mod.UF_BlizzBarShadow(health, mask, HB.h)
             -- Absorb fills ride the same rounded ends.
-            for idx = 1, 5 do
-                local scrollBar = barList[idx]
+            for index = 1, 5 do
+                local scrollBar = barList[index]
                 if scrollBar and scrollBar.GetStatusBarTexture then
                     mod.UF_SetMask(scrollBar:GetStatusBarTexture(), mask)
                 end
@@ -1235,8 +1235,8 @@ function mod.UF_ApplyBlizzBarArt(widget)
         else
             -- Mirrored small frame (or no mask art): plain fills.
             if mask then
-                if fill then
-                    pcall(fill.RemoveMaskTexture, fill, mask)
+                if fillTex then
+                    pcall(fillTex.RemoveMaskTexture, fillTex, mask)
                 end
                 if health.bg then
                     pcall(health.bg.RemoveMaskTexture, health.bg, mask)
@@ -1244,8 +1244,8 @@ function mod.UF_ApplyBlizzBarArt(widget)
                 if health._cuiBgTex then
                     pcall(health._cuiBgTex.RemoveMaskTexture, health._cuiBgTex, mask)
                 end
-                for idx = 1, #barList do
-                    local scrollBar = barList[idx]
+                for index = 1, #barList do
+                    local scrollBar = barList[index]
                     local t = scrollBar and scrollBar.GetStatusBarTexture and scrollBar:GetStatusBarTexture()
                     if t then
                         pcall(t.RemoveMaskTexture, t, mask)
@@ -1292,8 +1292,8 @@ function mod.UF_ApplyBlizzBarArt(widget)
                     mod.UF_BlizzBarShadow(power, nil, G.power.h)
                 elseif power._blizzShadow then
                     -- Detached bar: it carries its own CUI border.
-                    for idx = 1, 4 do
-                        power._blizzShadow[idx]:Hide()
+                    for index = 1, 4 do
+                        power._blizzShadow[index]:Hide()
                     end
                 end
             end
@@ -1327,21 +1327,21 @@ local function PlaceArtPiece(texture, widget, file, leftX, topY, x0, x1, y0, y1,
     texture:SetSize(x1 - x0, y1 - y0)
     texture:Show()
 end
-function mod.UF_PaintArtCut(widget, art, pieces, file, cut, l, r, t, b, wid, hgt, ax, ay, keepLeft)
+function mod.UF_PaintArtCut(widget, art, pieces, file, cut, l, region, t, b, wid, hgt, ax, ay, keepLeft)
     -- Art-local spans (y down from the art's top) and the art's top-left off
     -- the frame's centre.
     local y0 = (cut.t - t) / (b - t) * hgt
     local y1 = (cut.b - t) / (b - t) * hgt
-    local xs = (cut.x - l) / (r - l) * wid
+    local xs = (cut.x - l) / (region - l) * wid
     local leftX, topY = ax - wid / 2, ay + hgt / 2
-    local du = (r - l) / wid
+    local du = (region - l) / wid
     -- The art's own texture draws the rows above the band.
-    PlaceArtPiece(art, widget, file, leftX, topY, 0, wid, 0, y0, l, r, t, cut.t)
-    PlaceArtPiece(pieces[1], widget, file, leftX, topY, 0, wid, y1, hgt, l, r, cut.b, b)
+    PlaceArtPiece(art, widget, file, leftX, topY, 0, wid, 0, y0, l, region, t, cut.t)
+    PlaceArtPiece(pieces[1], widget, file, leftX, topY, 0, wid, y1, hgt, l, region, cut.b, b)
     -- The sheet's columns past x lie right of xs, or left of it on an art
     -- sampled flipped (the classic player frame's).
     if keepLeft == nil then
-        keepLeft = r < l
+        keepLeft = region < l
     end
     local kx0, kx1, cx0, cx1
     if keepLeft then
@@ -1392,11 +1392,11 @@ function mod.UF_PaintBlizzArt(widget, atlas)
     -- Hide Power Bar's art pieces show only while that paint runs (below).
     local pieces = af._artCut
     if pieces then
-        for idx = 1, 3 do
-            pieces[idx]:Hide()
+        for index = 1, 3 do
+            pieces[index]:Hide()
         end
     end
-    local file, l, r, t, b, wid, hgt, anchorPoint, posX, posY
+    local file, l, region, t, b, wid, hgt, anchorPoint, posX, posY
     if type(atlas) == "table" then
         -- File descriptor: its own sheet coords and anchor (CENTER by default).
         if not mod.UF_ArtOK(atlas) then
@@ -1404,7 +1404,7 @@ function mod.UF_PaintBlizzArt(widget, atlas)
             return
         end
         file = atlas.file
-        l, r, t, b = atlas.l or 0, atlas.r or 1, atlas.t or 0, atlas.b or 1
+        l, region, t, b = atlas.l or 0, atlas.r or 1, atlas.t or 0, atlas.b or 1
         wid, hgt = atlas.w, atlas.h
         anchorPoint, posX, posY = atlas.point or "CENTER", atlas.x or 0, atlas.y or 0
     else
@@ -1414,7 +1414,7 @@ function mod.UF_PaintBlizzArt(widget, atlas)
             return
         end
         file = details.file or details.filename
-        l, r, t, b = details.leftTexCoord, details.rightTexCoord, details.topTexCoord, details.bottomTexCoord
+        l, region, t, b = details.leftTexCoord, details.rightTexCoord, details.topTexCoord, details.bottomTexCoord
         wid, hgt = details.width, details.height
         anchorPoint, posX, posY = "CENTER", 0, 0
     end
@@ -1435,7 +1435,7 @@ function mod.UF_PaintBlizzArt(widget, atlas)
                 cut = {}
                 af._atlasCut = cut
             end
-            local dv, du = (b - t) / c.h, (r - l) / c.w
+            local dv, du = (b - t) / c.h, (region - l) / c.w
             cut.t, cut.b, cut.src = t + c.t * dv, t + c.b * dv, t + c.src * dv
             cut.x = l + c.x * du
             keepLeft = c.ringLeft == true
@@ -1444,22 +1444,22 @@ function mod.UF_PaintBlizzArt(widget, atlas)
     if cut and anchorPoint == "CENTER" and not widget._blizzMirror then
         if not pieces then
             pieces = {}
-            for idx = 1, 3 do
+            for index = 1, 3 do
                 local texture = af:CreateTexture(nil, "BACKGROUND")
                 UnsnapTex(texture)
-                pieces[idx] = texture
+                pieces[index] = texture
             end
             af._artCut = pieces
         end
-        mod.UF_PaintArtCut(widget, art, pieces, file, cut, l, r, t, b, wid, hgt, posX, posY, keepLeft)
+        mod.UF_PaintArtCut(widget, art, pieces, file, cut, l, region, t, b, wid, hgt, posX, posY, keepLeft)
         return
     end
     if widget._blizzMirror then
-        art:SetTexCoord(r, l, t, b)
+        art:SetTexCoord(region, l, t, b)
         anchorPoint = mod._ufMirrorPoint[anchorPoint] or anchorPoint
         posX = -posX
     else
-        art:SetTexCoord(l, r, t, b)
+        art:SetTexCoord(l, region, t, b)
     end
     art:ClearAllPoints()
     art:SetPoint(anchorPoint, widget, anchorPoint, posX, posY)
@@ -1476,25 +1476,25 @@ mod._ufShadeClear = CreateColor(0, 0, 0, 0)
 mod._ufShadeTop = CreateColor(0, 0, 0, 0.55)
 mod._ufShadeBottom = CreateColor(0, 0, 0, 0.30)
 mod._ufShadeEnd = CreateColor(0, 0, 0, 0.35)
-function mod.UF_BlizzBarShadow(bar, mask, hgt)
-    local sh = bar._blizzShadow
+function mod.UF_BlizzBarShadow(barFrame, mask, hgt)
+    local sh = barFrame._blizzShadow
     -- A kit with flat bars (the classic frames) draws no bevel.
     if mod.UF_BLIZZ.noBevel then
         if sh then
-            for idx = 1, 4 do
-                sh[idx]:Hide()
+            for index = 1, 4 do
+                sh[index]:Hide()
             end
         end
         return
     end
     if not sh then
         sh = {}
-        bar._blizzShadow = sh
-        for idx = 1, 4 do
-            local texture = bar:CreateTexture(nil, "OVERLAY", nil, -3)
+        barFrame._blizzShadow = sh
+        for index = 1, 4 do
+            local texture = barFrame:CreateTexture(nil, "OVERLAY", nil, -3)
             texture:SetTexture("Interface\\Buttons\\WHITE8X8")
             UnsnapTex(texture)
-            sh[idx] = texture
+            sh[index] = texture
         end
         -- VERTICAL runs bottom -> top, HORIZONTAL left -> right.
         sh[1]:SetGradient("VERTICAL", mod._ufShadeClear, mod._ufShadeTop)
@@ -1504,12 +1504,12 @@ function mod.UF_BlizzBarShadow(bar, mask, hgt)
     end
     -- nil = unmasked strips (mirrored small frames): an earlier mask comes off.
     if sh._mask ~= mask then
-        for idx = 1, 4 do
+        for index = 1, 4 do
             if sh._mask then
-                pcall(sh[idx].RemoveMaskTexture, sh[idx], sh._mask)
+                pcall(sh[index].RemoveMaskTexture, sh[index], sh._mask)
             end
             if mask then
-                sh[idx]:AddMaskTexture(mask)
+                sh[index]:AddMaskTexture(mask)
             end
         end
         sh._mask = mask
@@ -1519,23 +1519,23 @@ function mod.UF_BlizzBarShadow(bar, mask, hgt)
         math.max(1, math.floor(hgt * 0.1)),
         math.max(2, math.floor(hgt * 0.15))
     sh[1]:ClearAllPoints()
-    sh[1]:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
-    sh[1]:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
+    sh[1]:SetPoint("TOPLEFT", barFrame, "TOPLEFT", 0, 0)
+    sh[1]:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", 0, 0)
     sh[1]:SetHeight(topY)
     sh[2]:ClearAllPoints()
-    sh[2]:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
-    sh[2]:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+    sh[2]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", 0, 0)
+    sh[2]:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", 0, 0)
     sh[2]:SetHeight(bottom)
     sh[3]:ClearAllPoints()
-    sh[3]:SetPoint("TOPLEFT", bar, "TOPLEFT", 0, 0)
-    sh[3]:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", 0, 0)
+    sh[3]:SetPoint("TOPLEFT", barFrame, "TOPLEFT", 0, 0)
+    sh[3]:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", 0, 0)
     sh[3]:SetWidth(ends)
     sh[4]:ClearAllPoints()
-    sh[4]:SetPoint("TOPRIGHT", bar, "TOPRIGHT", 0, 0)
-    sh[4]:SetPoint("BOTTOMRIGHT", bar, "BOTTOMRIGHT", 0, 0)
+    sh[4]:SetPoint("TOPRIGHT", barFrame, "TOPRIGHT", 0, 0)
+    sh[4]:SetPoint("BOTTOMRIGHT", barFrame, "BOTTOMRIGHT", 0, 0)
     sh[4]:SetWidth(ends)
-    for idx = 1, 4 do
-        sh[idx]:Show()
+    for index = 1, 4 do
+        sh[index]:Show()
     end
 end
 
@@ -1576,8 +1576,8 @@ function mod.UF_ApplyBlizzFrameArt(widget, G)
             ev:RegisterUnitEvent("UNIT_FACTION", "target", "focus")
             ev:SetScript("OnEvent", function()
                 local entries = mod._ufBlizzArtFrames
-                for idx = 1, #entries do
-                    mod.UF_RefreshBlizzTargetArt(entries[idx])
+                for index = 1, #entries do
+                    mod.UF_RefreshBlizzTargetArt(entries[index])
                 end
             end)
             mod._ufBlizzArtEvents = ev
@@ -1674,9 +1674,9 @@ function mod.UF_RefreshBlizzTargetArt(widget)
     local extras = widget._blizzExtras and G.rep and unitToken and UnitExists(unitToken)
     local c
     if extras then
-        local r, g, b = UnitSelectionColor(unitToken)
-        if r and not issecretvalue(r) and not issecretvalue(g) and not issecretvalue(b) then
-            af._rep:SetVertexColor(r, g, b)
+        local region, g, b = UnitSelectionColor(unitToken)
+        if region and not issecretvalue(region) and not issecretvalue(g) and not issecretvalue(b) then
+            af._rep:SetVertexColor(region, g, b)
         else
             af._rep:SetVertexColor(0.5, 0.5, 0.5)
         end
@@ -1853,18 +1853,18 @@ function mod.UF_BlizzLevelPass(widget)
         return
     end
     local clip = widget._barClip
-    local host = widget._blizzLevelHost
-    if not host then
-        host = CreateFrame("Frame", nil, widget)
-        host:SetAllPoints(widget)
-        host:EnableMouse(false)
-        widget._blizzLevelHost = host
-        local fontStr = host:CreateFontString(nil, "OVERLAY")
+    local owner = widget._blizzLevelHost
+    if not owner then
+        owner = CreateFrame("Frame", nil, widget)
+        owner:SetAllPoints(widget)
+        owner:EnableMouse(false)
+        widget._blizzLevelHost = owner
+        local fontStr = owner:CreateFontString(nil, "OVERLAY")
         -- The stock number font as the baseline: the name's font is copied
         -- below once the name text carries one (not yet at first spawn).
         fontStr:SetFontObject(GameNormalNumberFont)
         widget._blizzLevel = fontStr
-        local skull = host:CreateTexture(nil, "OVERLAY", nil, 1)
+        local skull = owner:CreateTexture(nil, "OVERLAY", nil, 1)
         skull:Hide()
         widget._blizzLevelSkull = skull
         if not mod._ufBlizzLevelEvents then
@@ -1881,10 +1881,10 @@ function mod.UF_BlizzLevelPass(widget)
                 -- Unit events refresh their frame; everything else refreshes all.
                 local entries = mod._ufBlizzLevelFrames
                 local byUnit = type(unitToken) == "string"
-                for idx = 1, #entries do
-                    local f = entries[idx]
-                    if not byUnit or f._cuiUnit == unitToken then
-                        mod.UF_BlizzLevelRefresh(f, evt)
+                for index = 1, #entries do
+                    local frame = entries[index]
+                    if not byUnit or frame._cuiUnit == unitToken then
+                        mod.UF_BlizzLevelRefresh(frame, evt)
                     end
                 end
             end)
@@ -1894,8 +1894,8 @@ function mod.UF_BlizzLevelPass(widget)
     end
     -- Re-seated every pass: the host follows the bar clip's strata and sits
     -- above the bars, like the art frame does below them.
-    host:SetFrameStrata((clip and clip:GetFrameStrata()) or widget:GetFrameStrata())
-    host:SetFrameLevel(((clip and clip:GetFrameLevel()) or widget:GetFrameLevel()) + 12)
+    owner:SetFrameStrata((clip and clip:GetFrameStrata()) or widget:GetFrameStrata())
+    owner:SetFrameLevel(((clip and clip:GetFrameLevel()) or widget:GetFrameLevel()) + 12)
     local fontStr, skull = widget._blizzLevel, widget._blizzLevelSkull
     local s = GetSettingsForUnit(widget._cuiBaseUnit or widget._cuiUnit)
     -- Same face, outline and shadow as the unit name (and its size, unless
@@ -1924,7 +1924,7 @@ function mod.UF_BlizzLevelPass(widget)
     if B then
         local badge = widget._blizzLevelBadge
         if not badge then
-            badge = host:CreateTexture(nil, "OVERLAY", nil, -1)
+            badge = owner:CreateTexture(nil, "OVERLAY", nil, -1)
             UnsnapTex(badge)
             mod.UF_SetArt(badge, B.atlas)
             widget._blizzLevelBadge = badge
@@ -1957,7 +1957,7 @@ function mod.UF_BlizzLevelPass(widget)
     if PV and (u == "player" or u == "target" or u == "focus") then
         local els = widget._blizzPvP
         if not els then
-            els = { pvpIcon = host:CreateTexture(nil, "OVERLAY", nil, 3) }
+            els = { pvpIcon = owner:CreateTexture(nil, "OVERLAY", nil, 3) }
             UnsnapTex(els.pvpIcon)
             -- Blizzard's own scale and offsets, so the crest lands where the
             -- stock frame puts it whatever the scale does to the offsets.
@@ -2092,56 +2092,56 @@ end
 
 -- Cast bar fill per cast kind ("cast" | "channel"); one field test when the
 -- style is off, memoized per bar.
-function mod.UF_SetBlizzCastFill(cb, kind)
-    if not cb or not cb._blizzCast then
+function mod.UF_SetBlizzCastFill(callback, kind)
+    if not callback or not callback._blizzCast then
         return
     end
     kind = kind or "cast"
-    if cb._blizzFillKind == kind then
+    if callback._blizzFillKind == kind then
         return
     end
     local atlas = mod.UF_BlizzAtlas(mod.UF_CAST_BLIZZ[kind] or mod.UF_CAST_BLIZZ.cast)
     if not atlas then
         return
     end
-    cb._blizzFillKind = kind
-    cb:GetStatusBarTexture():SetAtlas(atlas)
+    callback._blizzFillKind = kind
+    callback:GetStatusBarTexture():SetAtlas(atlas)
 end
 -- Spell name into the text box under the bar (honouring its side + offsets).
-function mod.UF_BlizzCastText(cb)
-    local box = cb and cb._blizzTextBox
-    if not box or not box:IsShown() or not cb.Text then
+function mod.UF_BlizzCastText(callback)
+    local box = callback and callback._blizzTextBox
+    if not box or not box:IsShown() or not callback.Text then
         return
     end
-    if cb._nameSide == "none" then
+    if callback._nameSide == "none" then
         return
     end
     -- The box spans the bar (not the holder: an in-width icon takes part of
     -- the holder), so the name's width follows the bar.
-    local wid = cb:GetWidth()
+    local wid = callback:GetWidth()
     -- Secret under aura restriction when the holder rides the aura block:
     -- keep the out-of-combat layout (the width is fixed in combat).
     if issecretvalue(wid) then
         return
     end
     wid = wid or 0
-    cb.Text:ClearAllPoints()
-    local side = cb._nameSide or "left"
-    local ox, oy = cb._nameOX or 0, cb._nameOY or 0
+    callback.Text:ClearAllPoints()
+    local side = callback._nameSide or "left"
+    local ox, oy = callback._nameOX or 0, callback._nameOY or 0
     if side == "right" then
-        cb.Text:SetJustifyH("RIGHT")
-        cb.Text:SetPoint("RIGHT", box, "RIGHT", -8 + ox, oy)
+        callback.Text:SetJustifyH("RIGHT")
+        callback.Text:SetPoint("RIGHT", box, "RIGHT", -8 + ox, oy)
     elseif side == "center" then
-        cb.Text:SetJustifyH("CENTER")
-        cb.Text:SetPoint("CENTER", box, "CENTER", ox, oy)
+        callback.Text:SetJustifyH("CENTER")
+        callback.Text:SetPoint("CENTER", box, "CENTER", ox, oy)
     else
-        cb.Text:SetJustifyH("LEFT")
-        cb.Text:SetPoint("LEFT", box, "LEFT", 8 + ox, oy)
+        callback.Text:SetJustifyH("LEFT")
+        callback.Text:SetPoint("LEFT", box, "LEFT", 8 + ox, oy)
     end
     if wid > 20 then
-        cb.Text:SetWidth(wid - 16)
+        callback.Text:SetWidth(wid - 16)
     end
-    mod.ReflowFontString(cb.Text)
+    mod.ReflowFontString(callback.Text)
 end
 -- Cast icon under the style: a square spanning the bar and the stock text
 -- box under it (the box hangs 13px below the bar while the spell name
@@ -2150,57 +2150,57 @@ end
 -- the user's offsets, so its top lines up with the bar and its bottom with
 -- the box. Inputs are the ones LayoutCastbarIcon stamped; the only rect read
 -- is the holder's explicit height (plain on every anchor chain).
-function mod.UF_BlizzCastIcon(cb)
-    local ico = cb and cb._iconFrame
-    local host = cb and cb:GetParent()
-    if not ico or not host then
+function mod.UF_BlizzCastIcon(callback)
+    local ico = callback and callback._iconFrame
+    local owner = callback and callback:GetParent()
+    if not ico or not owner then
         return
     end
     -- The configured height LayoutCastbarIcon stamped (the holder's own rect
     -- reads back secret while it rides the aura block).
-    local hostH = cb._icoSide or host:GetHeight()
+    local hostH = callback._icoSide or owner:GetHeight()
     if issecretvalue(hostH) or not hostH or hostH <= 0 then
         return
     end
-    local box = cb._blizzTextBox
+    local box = callback._blizzTextBox
     local side = hostH + ((box and box:IsShown()) and 13 or 0)
-    local inWidth, onRight = cb._icoInWidth, cb._icoOnRight
-    local offX, offY = cb._icoOffX or 0, cb._icoOffY or 0
+    local inWidth, onRight = callback._icoInWidth, callback._icoOnRight
+    local offX, offY = callback._icoOffX or 0, callback._icoOffY or 0
     ico:ClearAllPoints()
     ico:SetSize(side, side)
     if inWidth then
         if onRight then
-            Pix.Point(ico, "TOPRIGHT", host, "TOPRIGHT", offX, offY)
+            Pix.Point(ico, "TOPRIGHT", owner, "TOPRIGHT", offX, offY)
         else
-            Pix.Point(ico, "TOPLEFT", host, "TOPLEFT", offX, offY)
+            Pix.Point(ico, "TOPLEFT", owner, "TOPLEFT", offX, offY)
         end
         -- The bar takes the rest of the footprint (LayoutCastbarIcon inset it
         -- by the CUI square; this icon is wider).
-        cb:ClearAllPoints()
+        callback:ClearAllPoints()
         if onRight then
-            Pix.Point(cb, "TOPLEFT", host, "TOPLEFT", 0, 0)
-            Pix.Point(cb, "BOTTOMRIGHT", host, "BOTTOMRIGHT", -side, 0)
+            Pix.Point(callback, "TOPLEFT", owner, "TOPLEFT", 0, 0)
+            Pix.Point(callback, "BOTTOMRIGHT", owner, "BOTTOMRIGHT", -side, 0)
         else
-            Pix.Point(cb, "TOPLEFT", host, "TOPLEFT", side, 0)
-            Pix.Point(cb, "BOTTOMRIGHT", host, "BOTTOMRIGHT", 0, 0)
+            Pix.Point(callback, "TOPLEFT", owner, "TOPLEFT", side, 0)
+            Pix.Point(callback, "BOTTOMRIGHT", owner, "BOTTOMRIGHT", 0, 0)
         end
     elseif onRight then
-        Pix.Point(ico, "TOPLEFT", host, "TOPRIGHT", offX, offY)
+        Pix.Point(ico, "TOPLEFT", owner, "TOPRIGHT", offX, offY)
     else
-        Pix.Point(ico, "TOPRIGHT", host, "TOPLEFT", offX, offY)
+        Pix.Point(ico, "TOPRIGHT", owner, "TOPLEFT", offX, offY)
     end
 end
 -- Cast bar: stock background, fill art, frame and text box; the CUI tint
 -- layer stays off (the fill art is its own colour). Border and icon frame go.
-function mod.UF_ApplyBlizzCastbar(cb)
-    if not cb then
+function mod.UF_ApplyBlizzCastbar(callback)
+    if not callback then
         return
     end
     -- The stock chrome owns the frame: a Custom Border Style host stays hidden.
-    if cb._cbBorder then
-        cb._cbBorder:Hide()
+    if callback._cbBorder then
+        callback._cbBorder:Hide()
     end
-    local host = cb:GetParent()
+    local owner = callback:GetParent()
     local CK = mod.UF_BLIZZ.cast
     if CK then
         -- Classic kit: the vanilla cast bar frame round the user's own fill
@@ -2212,136 +2212,136 @@ function mod.UF_ApplyBlizzCastbar(cb)
         -- the holder above the bar and the icon (both holder +1) and under
         -- the text overlay, so the rim overlaps the icon's edges as it does
         -- the fill's.
-        cb._blizzCast = nil
-        Pix.HideBorder(cb)
-        if not cb._blizzFrame and host then
-            local af = CreateFrame("Frame", nil, host)
-            af:SetAllPoints(host)
+        callback._blizzCast = nil
+        Pix.HideBorder(callback)
+        if not callback._blizzFrame and owner then
+            local af = CreateFrame("Frame", nil, owner)
+            af:SetAllPoints(owner)
             af:EnableMouse(false)
-            af:SetFrameLevel(host:GetFrameLevel() + 3)
-            cb._classicArt = af
+            af:SetFrameLevel(owner:GetFrameLevel() + 3)
+            callback._classicArt = af
             local fr = af:CreateTexture(nil, "OVERLAY", nil, 2)
             UnsnapTex(fr)
-            cb._blizzFrame = fr
+            callback._blizzFrame = fr
         end
-        if cb._blizzFrame then
-            mod.UF_SeatClassicCastFrame(cb._blizzFrame, host, nil, cb._classicPct)
+        if callback._blizzFrame then
+            mod.UF_SeatClassicCastFrame(callback._blizzFrame, owner, nil, callback._classicPct)
         end
-        local ico = cb._iconFrame
+        local ico = callback._iconFrame
         if ico then
             Pix.HideBorder(ico)
             if ico._bg then
                 ico._bg:Hide()
             end
-            if cb.Icon then
-                cb.Icon:ClearAllPoints()
-                cb.Icon:SetAllPoints(ico)
+            if callback.Icon then
+                callback.Icon:ClearAllPoints()
+                callback.Icon:SetAllPoints(ico)
             end
         end
-        if cb.Icon then
-            cb.Icon:SetTexCoord(0, 1, 0, 1)
+        if callback.Icon then
+            callback.Icon:SetTexCoord(0, 1, 0, 1)
         end
-        mod.UF_BlizzCastIcon(cb)
-        if cb._layoutTextZones then
-            cb:_layoutTextZones()
+        mod.UF_BlizzCastIcon(callback)
+        if callback._layoutTextZones then
+            callback:_layoutTextZones()
         end
         return
     end
-    cb._blizzCast = true
-    cb._blizzFillKind = nil
-    cb:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    local fill = cb:GetStatusBarTexture()
-    if fill then
-        fill:SetHorizTile(false)
-        UnsnapTex(fill)
+    callback._blizzCast = true
+    callback._blizzFillKind = nil
+    callback:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    local fillTex = callback:GetStatusBarTexture()
+    if fillTex then
+        fillTex:SetHorizTile(false)
+        UnsnapTex(fillTex)
     end
-    mod.UF_SetBlizzCastFill(cb, cb.channeling and "channel" or "cast")
-    cb:SetStatusBarColor(1, 1, 1, cb._fillOp or 1)
-    if cb.castTintLayer then
-        cb.castTintLayer:SetAlpha(0)
-        cb._castTintOn = nil
+    mod.UF_SetBlizzCastFill(callback, callback.channeling and "channel" or "cast")
+    callback:SetStatusBarColor(1, 1, 1, callback._fillOp or 1)
+    if callback.castTintLayer then
+        callback.castTintLayer:SetAlpha(0)
+        callback._castTintOn = nil
     end
-    if host and host._bgTex then
+    if owner and owner._bgTex then
         -- A bar texture, not frame chrome: the retail background under
         -- Blizzard Style, WoW Forever included.
         local bgAtlas = mod.UF_BlizzAtlas(mod.UF_CAST_BLIZZ.bg)
         if bgAtlas then
-            CludesUI.StockAtlas(host._bgTex, bgAtlas)
+            CludesUI.StockAtlas(owner._bgTex, bgAtlas)
         end
-        host._bgTex:ClearAllPoints()
-        host._bgTex:SetPoint("TOPLEFT", host, "TOPLEFT", -1, 1)
-        host._bgTex:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", 1, -1)
+        owner._bgTex:ClearAllPoints()
+        owner._bgTex:SetPoint("TOPLEFT", owner, "TOPLEFT", -1, 1)
+        owner._bgTex:SetPoint("BOTTOMRIGHT", owner, "BOTTOMRIGHT", 1, -1)
     end
-    Pix.HideBorder(cb)
-    if not cb._blizzFrame then
+    Pix.HideBorder(callback)
+    if not callback._blizzFrame then
         -- The frame art rides its own child of the bar, above the
         -- uninterruptible shield's host (bar +1) and the kick marker (bar +2),
         -- under the text overlay: as a region of the bar itself, the shield
         -- frame would draw its grey over the art.
-        local af = CreateFrame("Frame", nil, cb)
-        af:SetAllPoints(cb)
+        local af = CreateFrame("Frame", nil, callback)
+        af:SetAllPoints(callback)
         af:EnableMouse(false)
-        cb._blizzArtFr = af
+        callback._blizzArtFr = af
         local fr = af:CreateTexture(nil, "OVERLAY", nil, 2)
         UnsnapTex(fr)
-        cb._blizzFrame = fr
-        local tb = host:CreateTexture(nil, "BACKGROUND", nil, -1)
+        callback._blizzFrame = fr
+        local tb = owner:CreateTexture(nil, "BACKGROUND", nil, -1)
         UnsnapTex(tb)
-        cb._blizzTextBox = tb
-        local orig = cb._layoutTextZones
+        callback._blizzTextBox = tb
+        local orig = callback._layoutTextZones
         if orig then
-            cb._layoutTextZones = function(self)
+            callback._layoutTextZones = function(self)
                 orig(self)
                 mod.UF_BlizzCastText(self)
             end
         end
     end
     -- Re-asserted every pass (a strata change rebuilds child levels).
-    local artLvl = cb:GetFrameLevel() + 3
-    if cb._blizzArtFr and cb._blizzArtFr:GetFrameLevel() ~= artLvl then
-        cb._blizzArtFr:SetFrameLevel(artLvl)
+    local artLvl = callback:GetFrameLevel() + 3
+    if callback._blizzArtFr and callback._blizzArtFr:GetFrameLevel() ~= artLvl then
+        callback._blizzArtFr:SetFrameLevel(artLvl)
     end
     local frAtlas = mod.UF_BlizzAtlas(mod.UF_CAST_BLIZZ.frame)
     if frAtlas then
-        mod.UF_StockAtlas(cb._blizzFrame, frAtlas)
-        cb._blizzFrame:ClearAllPoints()
-        cb._blizzFrame:SetPoint("TOPLEFT", cb, "TOPLEFT", -2, 2)
-        cb._blizzFrame:SetPoint("BOTTOMRIGHT", cb, "BOTTOMRIGHT", 2, -2)
-        cb._blizzFrame:Show()
+        mod.UF_StockAtlas(callback._blizzFrame, frAtlas)
+        callback._blizzFrame:ClearAllPoints()
+        callback._blizzFrame:SetPoint("TOPLEFT", callback, "TOPLEFT", -2, 2)
+        callback._blizzFrame:SetPoint("BOTTOMRIGHT", callback, "BOTTOMRIGHT", 2, -2)
+        callback._blizzFrame:Show()
     else
-        cb._blizzFrame:Hide()
+        callback._blizzFrame:Hide()
     end
     local tbAtlas = mod.UF_BlizzAtlas(mod.UF_CAST_BLIZZ.textbox)
-    if tbAtlas and cb._nameSide ~= "none" then
+    if tbAtlas and callback._nameSide ~= "none" then
         -- Under the BAR (not the holder): with an in-width icon the bar
         -- starts past the icon, and the box's left edge follows the bar's.
-        mod.UF_StockAtlas(cb._blizzTextBox, tbAtlas)
-        cb._blizzTextBox:ClearAllPoints()
-        cb._blizzTextBox:SetPoint("TOPLEFT", cb, "BOTTOMLEFT", 0, 3)
-        cb._blizzTextBox:SetPoint("BOTTOMRIGHT", cb, "BOTTOMRIGHT", 0, -13)
-        cb._blizzTextBox:Show()
+        mod.UF_StockAtlas(callback._blizzTextBox, tbAtlas)
+        callback._blizzTextBox:ClearAllPoints()
+        callback._blizzTextBox:SetPoint("TOPLEFT", callback, "BOTTOMLEFT", 0, 3)
+        callback._blizzTextBox:SetPoint("BOTTOMRIGHT", callback, "BOTTOMRIGHT", 0, -13)
+        callback._blizzTextBox:Show()
     else
-        cb._blizzTextBox:Hide()
+        callback._blizzTextBox:Hide()
     end
     -- The icon is the bare art, as stock: no CUI black plate, no border and
     -- no 1px inset (the inset was that border's room).
-    local ico = cb._iconFrame
+    local ico = callback._iconFrame
     if ico then
         Pix.HideBorder(ico)
         if ico._bg then
             ico._bg:Hide()
         end
-        if cb.Icon then
-            cb.Icon:ClearAllPoints()
-            cb.Icon:SetAllPoints(ico)
+        if callback.Icon then
+            callback.Icon:ClearAllPoints()
+            callback.Icon:SetAllPoints(ico)
         end
     end
-    if cb.Icon then
-        cb.Icon:SetTexCoord(0, 1, 0, 1)
+    if callback.Icon then
+        callback.Icon:SetTexCoord(0, 1, 0, 1)
     end
-    mod.UF_BlizzCastIcon(cb)
-    if cb._layoutTextZones then
-        cb:_layoutTextZones()
+    mod.UF_BlizzCastIcon(callback)
+    if callback._layoutTextZones then
+        callback:_layoutTextZones()
     end
 end
 
@@ -2506,8 +2506,8 @@ function mod.UF_ApplyBlizzardLayout(widget, unitToken)
             mod._ufBarScratch = barList
         end
         barList[1], barList[2], barList[3], barList[4], barList[5] = hp, hp._forward, hp._healAbsorb, nil, nil
-        for idx = 1, 3 do
-            local scrollBar = barList[idx]
+        for index = 1, 3 do
+            local scrollBar = barList[index]
             if scrollBar and scrollBar.SetSize then
                 scrollBar:SetSize(hw, hh)
             end

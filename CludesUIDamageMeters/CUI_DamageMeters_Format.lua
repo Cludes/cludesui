@@ -104,79 +104,79 @@ end
 local THIN_LINE_KEYS = { ["thin-line-top"] = "TOP", ["thin-line-bottom"] = "BOTTOM" }
 local THIN_LINE_PX = 1
 
-local function SetupThinLine(fill, edge)
-    if not fill._thinLine then
-        local tl = CreateFrame("StatusBar", nil, fill)
+local function SetupThinLine(fillTex, edge)
+    if not fillTex._thinLine then
+        local tl = CreateFrame("StatusBar", nil, fillTex)
         tl:SetStatusBarTexture(BAR_TEX)
-        fill._thinLine = tl
+        fillTex._thinLine = tl
         -- Hook SetStatusBarColor to forward to overlay
-        local origSSBC = fill.SetStatusBarColor
-        fill.SetStatusBarColor = function(self, r, g, b, a)
+        local origSSBC = fillTex.SetStatusBarColor
+        fillTex.SetStatusBarColor = function(self, region, g, b, a)
             if self._thinLine and self._thinLineActive then
-                self._thinLine:SetStatusBarColor(r, g, b, a)
+                self._thinLine:SetStatusBarColor(region, g, b, a)
                 origSSBC(self, 0, 0, 0, 0)
             else
-                origSSBC(self, r, g, b, a)
+                origSSBC(self, region, g, b, a)
             end
         end
         -- Hook SetMinMaxValues + SetValue to sync overlay
-        local origSMMV = fill.SetMinMaxValues
-        fill.SetMinMaxValues = function(self, lo, hi)
+        local origSMMV = fillTex.SetMinMaxValues
+        fillTex.SetMinMaxValues = function(self, lo, hi)
             origSMMV(self, lo, hi)
             if self._thinLine and self._thinLineActive then
                 self._thinLine:SetMinMaxValues(lo, hi)
             end
         end
-        local origSV = fill.SetValue
-        fill.SetValue = function(self, val)
+        local origSV = fillTex.SetValue
+        fillTex.SetValue = function(self, val)
             origSV(self, val)
             if self._thinLine and self._thinLineActive then
                 self._thinLine:SetValue(val)
             end
         end
     end
-    local tl = fill._thinLine
+    local tl = fillTex._thinLine
     local Pix = CUI and CUI.PP
     local px = THIN_LINE_PX * ((Pix and Pix.mult) or 1)
     tl:ClearAllPoints()
     if edge == "TOP" then
-        tl:SetPoint("TOPLEFT", fill, "TOPLEFT", 0, 0)
-        tl:SetPoint("TOPRIGHT", fill, "TOPRIGHT", 0, 0)
+        tl:SetPoint("TOPLEFT", fillTex, "TOPLEFT", 0, 0)
+        tl:SetPoint("TOPRIGHT", fillTex, "TOPRIGHT", 0, 0)
     else
-        tl:SetPoint("BOTTOMLEFT", fill, "BOTTOMLEFT", 0, 0)
-        tl:SetPoint("BOTTOMRIGHT", fill, "BOTTOMRIGHT", 0, 0)
+        tl:SetPoint("BOTTOMLEFT", fillTex, "BOTTOMLEFT", 0, 0)
+        tl:SetPoint("BOTTOMRIGHT", fillTex, "BOTTOMRIGHT", 0, 0)
     end
     tl:SetHeight(px)
     tl:Show()
-    fill._thinLineActive = true
+    fillTex._thinLineActive = true
 end
 
-local function ClearThinLine(fill)
-    if not fill._thinLineActive then
+local function ClearThinLine(fillTex)
+    if not fillTex._thinLineActive then
         return
     end
-    fill._thinLineActive = false
-    if fill._thinLine then
-        fill._thinLine:Hide()
+    fillTex._thinLineActive = false
+    if fillTex._thinLine then
+        fillTex._thinLine:Hide()
     end
     -- Thin-line mode left the fill transparent; reset to opaque so the bar is visible immediately (RefreshUI applies the real color)
-    fill:SetStatusBarColor(1, 1, 1, 1)
+    fillTex:SetStatusBarColor(1, 1, 1, 1)
 end
 
-local function ApplyBarTexture(fill, texPath, texKey)
+local function ApplyBarTexture(fillTex, texPath, texKey)
     -- Blizzard Style: the user's texture as below, plus the stock bevel over
     -- it (strips on the fill, independent of the texture path). Classic WoW
     -- UI bars are plain rectangles: no strips.
     if mod.DMStyle() == "blizzard" then
-        mod.DMApplyBlizzFill(fill)
+        mod.DMApplyBlizzFill(fillTex)
     end
     local edge = THIN_LINE_KEYS[texKey]
     if edge then
-        fill:SetStatusBarTexture(BAR_TEX)
-        SetupThinLine(fill, edge)
+        fillTex:SetStatusBarTexture(BAR_TEX)
+        SetupThinLine(fillTex, edge)
     else
-        fill:SetStatusBarTexture(texPath)
-        ClearThinLine(fill)
+        fillTex:SetStatusBarTexture(texPath)
+        ClearThinLine(fillTex)
     end
 end
 
@@ -501,8 +501,8 @@ function mod._DMHiddenDeathsPass(wid)
     if not srcs then
         return
     end
-    for idx = 1, #srcs do
-        local source = srcs[idx]
+    for index = 1, #srcs do
+        local source = srcs[index]
         local rid, t = source.deathRecapID, source.deathTimeSeconds
         -- A readable death time needs no stamp.
         if
@@ -548,9 +548,9 @@ local function GetBreakdownDuration(session, sessionID)
     elseif session == Enum.DamageMeterSessionType.Current then
         return GetCurrentViewDuration()
     elseif C_DamageMeter and C_DamageMeter.GetSessionDurationSeconds then
-        local d = C_DamageMeter.GetSessionDurationSeconds(session)
-        if type(d) == "number" and not (issecretvalue and issecretvalue(d)) then
-            return d
+        local skinData = C_DamageMeter.GetSessionDurationSeconds(session)
+        if type(skinData) == "number" and not (issecretvalue and issecretvalue(skinData)) then
+            return skinData
         end
     end
 end
@@ -691,8 +691,8 @@ local function AggregateEnemyPlayers(srcData, duration, rowList)
         return nil
     end
     local secret = false
-    for idx = 1, count do
-        local spell = spells[idx]
+    for index = 1, count do
+        local spell = spells[index]
         local det = spell.combatSpellDetails
         if IsSecret(spell.totalAmount) or (det and IsSecret(det.unitName)) then
             secret = true
@@ -700,8 +700,8 @@ local function AggregateEnemyPlayers(srcData, duration, rowList)
         end
     end
     local num = 0
-    for idx = 1, count do
-        local spell = spells[idx]
+    for index = 1, count do
+        local spell = spells[index]
         local det = spell.combatSpellDetails
         local name = det and det.unitName
         if name ~= nil then
@@ -715,10 +715,10 @@ local function AggregateEnemyPlayers(srcData, duration, rowList)
                     p = {}
                     rowList[num] = p
                 end
-                local cls, icon, pet, mob = det.unitClassFilename, det.specIconID, det.isPet, det.isMob
+                local cls, iconTex, pet, mob = det.unitClassFilename, det.specIconID, det.isPet, det.isMob
                 p.name = name
                 p.class = not IsSecret(cls) and cls or nil
-                p.specIcon = not IsSecret(icon) and icon or nil
+                p.specIcon = not IsSecret(iconTex) and iconTex or nil
                 -- The Name Format leaves a pet's or a mob's name whole
                 -- (StripRealm); a flag that cannot be read counts as set.
                 p.isPet, p.isMob = IsSecret(pet) or pet, IsSecret(mob) or mob
@@ -735,13 +735,13 @@ local function AggregateEnemyPlayers(srcData, duration, rowList)
         return nil
     end
     if not secret then
-        for idx = 1, num do
-            local p = rowList[idx]
+        for index = 1, num do
+            local p = rowList[index]
             p.amountPerSecond = AmountPerSecond(p.total, duration)
         end
         -- Largest first; an insertion sort, since only the first n rows are live.
-        for idx = 2, num do
-            local p, jdx = rowList[idx], idx - 1
+        for index = 2, num do
+            local p, jdx = rowList[index], index - 1
             while jdx >= 1 and rowList[jdx].total < p.total do
                 rowList[jdx + 1] = rowList[jdx]
                 jdx = jdx - 1
@@ -884,8 +884,8 @@ local function BuildPlayerTargets(playerName, session, sessionID, maxTargets)
 
     if #entries > maxTargets then
         local trimmed = {}
-        for idx = 1, maxTargets do
-            trimmed[idx] = entries[idx]
+        for index = 1, maxTargets do
+            trimmed[index] = entries[index]
         end
 
         return trimmed

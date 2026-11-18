@@ -381,8 +381,8 @@ local function ApplyBarOpacity(barId)
     local a = EffectiveBarAlpha(barInfo)
     local icons = cdmBarIcons[barId]
     if icons then
-        for idx = 1, #icons do
-            local ic = icons[idx]
+        for index = 1, #icons do
+            local ic = icons[index]
             if ic then
                 local icfc = _ecmeFC[ic]
                 if IsPlaceholderRenderHidden(ic, barInfo) then
@@ -747,11 +747,11 @@ do
     -- contents are server-pushed and transient rather than a layout the player
     -- configured, and their page indices can overlap the slot ranges of action
     -- bars 6-8 (145-180), which are already scanned via _barBindingDefs.
-    local function _ScanMainBarStable(idx, key)
-        _ResolveSlotBinding(idx, key, _TIER_MAINBAR_HOME)
+    local function _ScanMainBarStable(index, key)
+        _ResolveSlotBinding(index, key, _TIER_MAINBAR_HOME)
         -- Bonus bars 1-5 (forms, stealth, stances, skyriding) = pages 7-11.
         for pg = 7, 11 do
-            _ResolveSlotBinding(idx + (pg - 1) * 12, key, _TIER_MAINBAR_BONUS + pg - 7)
+            _ResolveSlotBinding(index + (pg - 1) * 12, key, _TIER_MAINBAR_BONUS + pg - 7)
         end
     end
 
@@ -761,7 +761,7 @@ do
     -- disabled), derive the page from the client: bonus bars (forms) map to pages
     -- 7+, but only when page 1 is otherwise active -- a manual page beats the
     -- form/skyriding swap, same priority order the engine itself uses.
-    local function _ScanMainBarLive(idx, key)
+    local function _ScanMainBarLive(index, key)
         local mbf = _G["EABBar_MainBar"]
         local pg = mbf and tonumber(mbf:GetAttribute("actionpage"))
         if not pg then
@@ -773,7 +773,7 @@ do
                 pg = page
             end
         end
-        _ResolveSlotBinding(idx + (pg - 1) * 12, key, _TIER_MAINBAR_HOME)
+        _ResolveSlotBinding(index + (pg - 1) * 12, key, _TIER_MAINBAR_HOME)
     end
 
     -- Global toggle for the stable scan. Default ON via DEFAULTS; the strict
@@ -812,13 +812,13 @@ do
         end
     end
     local function HookBarPageEdges()
-        for idx = 1, #_PAGE_EDGE_BARS do
-            local barName = _PAGE_EDGE_BARS[idx]
+        for index = 1, #_PAGE_EDGE_BARS do
+            local barName = _PAGE_EDGE_BARS[index]
             if not _pageEdgeHooked[barName] then
-                local f = _G[barName]
-                if f then
+                local frame = _G[barName]
+                if frame then
                     _pageEdgeHooked[barName] = true
-                    f:HookScript("OnAttributeChanged", OnBarAttributeChanged)
+                    frame:HookScript("OnAttributeChanged", OnBarAttributeChanged)
                 end
             end
         end
@@ -844,10 +844,10 @@ do
             HookBarPageEdges()
         end
         for _, def in ipairs(_barBindingDefs) do
-            for idx = 1, 12 do
-                local key = GetBindingKey(def.prefix .. idx)
+            for index = 1, 12 do
+                local key = GetBindingKey(def.prefix .. index)
                 if key then
-                    local slot = def.startSlot + idx - 1
+                    local slot = def.startSlot + index - 1
                     if def.eabButton then
                         -- CUI bars 9/10 have no native binding command: their keys
                         -- are routed through the button with SetOverrideBindingClick
@@ -868,10 +868,10 @@ do
             end
         end
         local scanMainBar = _stableMode and _ScanMainBarStable or _ScanMainBarLive
-        for idx = 1, 12 do
-            local key = GetBindingKey("ACTIONBUTTON" .. idx)
+        for index = 1, 12 do
+            local key = GetBindingKey("ACTIONBUTTON" .. index)
             if key then
-                scanMainBar(idx, key)
+                scanMainBar(index, key)
             end
         end
     end
@@ -911,10 +911,10 @@ do
     local function ApplyCachedKeybinds()
         for barId, icons in pairs(cdmBarIcons) do
             local edge = barDataByKey[barId]
-            for _, icon in ipairs(icons) do
-                local ifd = _getFD(icon)
-                local kbText = ifd and ifd.keybindText or icon._keybindText
-                local ifc = _ecmeFC[icon]
+            for _, iconTex in ipairs(icons) do
+                local ifd = _getFD(iconTex)
+                local kbText = ifd and ifd.keybindText or iconTex._keybindText
+                local ifc = _ecmeFC[iconTex]
                 local spellRef = ifc and ifc.spellID
                 if ifc then
                     ifc.keybindSid = spellRef
@@ -923,13 +923,13 @@ do
                     if edge and edge.showKeybind and spellRef then
                         local key = ResolveCDMKeybind(spellRef)
                         -- Item presets: the resolved display variant first (pot presets may be showing another rank/Fleeting/the swapped-in partner pot), then the static alt ids.
-                        if not key and icon._isItemPresetFrame and icon._displayItemID then
-                            key = _cdmKeybindCache[-icon._displayItemID]
+                        if not key and iconTex._isItemPresetFrame and iconTex._displayItemID then
+                            key = _cdmKeybindCache[-iconTex._displayItemID]
                         end
                         -- Item presets: check alt item IDs (user may have a different rank of the same potion on their bar).
                         -- Blizzard's own row rendering under a preset key (a frame with
                         -- no preset data of its own) walks that preset's ranks the same way.
-                        local pdK = icon._presetData
+                        local pdK = iconTex._presetData
                         if not key and not pdK and type(spellRef) == "number" and spellRef < 0 then
                             pdK = mod.ItemPresetForKey(spellRef)
                         end
@@ -942,8 +942,8 @@ do
                             end
                         end
                         -- Trinkets: check by equipped item's action slot
-                        if not key and icon._isTrinketFrame and icon._trinketSlot then
-                            local itemId = GetInventoryItemID("player", icon._trinketSlot)
+                        if not key and iconTex._isTrinketFrame and iconTex._trinketSlot then
+                            local itemId = GetInventoryItemID("player", iconTex._trinketSlot)
                             if itemId then
                                 key = _cdmKeybindCache[-itemId]
                             end
@@ -981,8 +981,8 @@ do
     -- unless an icon's spell differs from the one its text was resolved for.
     mod.RefreshStaleCDMKeybinds = function()
         for _, icons in pairs(cdmBarIcons) do
-            for idx = 1, #icons do
-                local ifc = _ecmeFC[icons[idx]]
+            for index = 1, #icons do
+                local ifc = _ecmeFC[icons[index]]
                 if ifc and ifc.spellID ~= ifc.keybindSid then
                     ApplyCachedKeybinds()
                     return
@@ -1042,10 +1042,10 @@ BuildAllCDMBars = function()
     -- auto-create a skeleton table (e.g. { barVisibility = "always" }) with no key. Every keyed
     -- consumer (spell data, racial normalize, unlock snapshots) then errors on the nil key. The override writer no longer fabricates numeric containers; this prunes profiles that already carry ghosts.
     if type(p.cdmBars.bars) == "table" then
-        for idx = #p.cdmBars.bars, 1, -1 do
-            local edge = p.cdmBars.bars[idx]
+        for index = #p.cdmBars.bars, 1, -1 do
+            local edge = p.cdmBars.bars[index]
             if type(edge) ~= "table" or not edge.key then
-                table.remove(p.cdmBars.bars, idx)
+                table.remove(p.cdmBars.bars, index)
             end
         end
     end
@@ -1086,7 +1086,7 @@ BuildAllCDMBars = function()
     local hookActive = mod.IsViewerHooked and mod.IsViewerHooked()
     wipe(barDataByKey)
     mod._cdmAnyOverflowCfg = nil
-    for idx, barInfo in ipairs(p.cdmBars.bars) do
+    for index, barInfo in ipairs(p.cdmBars.bars) do
         barDataByKey[barInfo.key] = barInfo
         -- Live migration: buffGlowMode replaced buffGlowClassColor + "buffGlowR set" nil checks
         if not barInfo.buffGlowMode then
@@ -1117,7 +1117,7 @@ BuildAllCDMBars = function()
         then
             mod._cdmAnyOverflowCfg = true
         end
-        BuildCDMBar(idx)
+        BuildCDMBar(index)
         local widget = cdmBarFrames[barInfo.key]
         if widget then
             widget._prevVisibleCount = nil
@@ -1129,8 +1129,8 @@ BuildAllCDMBars = function()
             -- Reset cached icon state so textures re-evaluate after a character switch
             local icons = cdmBarIcons[barInfo.key]
             if icons then
-                for _, icon in ipairs(icons) do
-                    local iifc = FC(icon)
+                for _, iconTex in ipairs(icons) do
+                    local iifc = FC(iconTex)
                     iifc.lastTex = nil
                     iifc.lastDesat = nil
                     iifc.blizzChild = nil
@@ -1316,8 +1316,8 @@ function mod.NormalizeRacialAssignments()
     -- Single pass across every bar: keep exactly one racial slot total.
     local kept = false
     for _, entries in ipairs(lists) do
-        for idx = #entries, 1, -1 do
-            local spellRef = entries[idx]
+        for index = #entries, 1, -1 do
+            local spellRef = entries[index]
             if spellRef and spellRef > 0 and ALL_RACIAL_SPELLS[spellRef] then
                 if
                     spellRef == isActive
@@ -1330,12 +1330,12 @@ function mod.NormalizeRacialAssignments()
                     kept = true
                 elseif not activePresent and not kept then
                     -- No active racial anywhere: promote this foreign one.
-                    entries[idx] = isActive
+                    entries[index] = isActive
                     kept = true
                     mod._spellOrderDirty = true
                 else
                     -- Any further racial (foreign or duplicate) is removed.
-                    table.remove(entries, idx)
+                    table.remove(entries, index)
                     mod._spellOrderDirty = true
                 end
             end
@@ -1360,9 +1360,9 @@ function mod.FullCDMRebuild(reason)
 
     -- 2. Clear old preset frames (trinkets, racials, custom spells)
     if mod._presetFrames then
-        for _, f in pairs(mod._presetFrames) do
-            f:Hide()
-            f:ClearAllPoints()
+        for _, frame in pairs(mod._presetFrames) do
+            frame:Hide()
+            frame:ClearAllPoints()
         end
         -- Deliberately NOT wiped: this map is the identity/REUSE registry the
         -- create-only frame sites key by. Wiping it orphaned every preset frame OBJECT
@@ -1407,8 +1407,8 @@ function mod.FullCDMRebuild(reason)
     if isFullWipe then
         -- Wipe all icon arrays
         for bk, icons in pairs(cdmBarIcons) do
-            for idx = 1, #icons do
-                icons[idx] = nil
+            for index = 1, #icons do
+                icons[index] = nil
             end
         end
         -- Clear change detection so layout runs fresh

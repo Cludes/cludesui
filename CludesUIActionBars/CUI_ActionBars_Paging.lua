@@ -144,14 +144,14 @@ local function ForeverFormClauses(pagingConfig, useDefaults)
         return nil
     end
     local result
-    for idx = 1, GetNumShapeshiftForms() do
-        local _, _, _, spellId = GetShapeshiftFormInfo(idx)
+    for index = 1, GetNumShapeshiftForms() do
+        local _, _, _, spellId = GetShapeshiftFormInfo(index)
         local status = spellId and not issecretvalue(spellId) and FOREVER_FORM_STATE[spellId]
         local page = status
             and ((pagingConfig and pagingConfig[status]) or (useDefaults and FOREVER_FORM_PAGE[status]))
         if page then
             local clause = (status == "cat" and "[form:%d,nostealth] %s" or "[form:%d] %s"):format(
-                idx,
+                index,
                 tostring(page)
             )
             result = result and (result .. "; " .. clause) or clause
@@ -232,8 +232,8 @@ function EAB_VTABLE.BuildPagingConditions(barId, pagingConfig, defaultPage)
     -- picked for a specific form in the dropdowns is an explicit request, and
     -- this path is click-routed, so the icon and the key agree either way.
     if barId == "MainBar" then
-        for idx = 2, NUM_AB_PAGES do
-            parts[#parts + 1] = "[bar:" .. idx .. "] " .. idx
+        for index = 2, NUM_AB_PAGES do
+            parts[#parts + 1] = "[bar:" .. index .. "] " .. index
         end
         if not noSky then
             parts[#parts + 1] = "[bonusbar:5] 11"
@@ -284,8 +284,8 @@ local function GetClassPagingConditions()
     -- engine's or a form + manual-page combo shows one ability and fires another.
     -- (Auto-paging opt-outs deliberately break from this -- why they force keys off
     -- ACTIONBUTTONn onto the click route; see UpdateKeybinds pass 1.)
-    for idx = 2, NUM_AB_PAGES do
-        conditions = conditions .. "[bar:" .. idx .. "] " .. idx .. "; "
+    for index = 2, NUM_AB_PAGES do
+        conditions = conditions .. "[bar:" .. index .. "] " .. index .. "; "
     end
 
     -- Class-specific form paging (page 1 only, per the ordering above)
@@ -341,9 +341,9 @@ end
 -- conditionals cycle pages statically, no dynamic attribute changes needed.
 local _macroNext = "/changeactionbar [bar:6] 1"
 local _macroPrev = "/changeactionbar [bar:1] 6"
-for idx = 1, NUM_AB_PAGES - 1 do
-    _macroNext = _macroNext .. "; [bar:" .. idx .. "] " .. (idx + 1)
-    _macroPrev = _macroPrev .. "; [bar:" .. (idx + 1) .. "] " .. idx
+for index = 1, NUM_AB_PAGES - 1 do
+    _macroNext = _macroNext .. "; [bar:" .. index .. "] " .. (index + 1)
+    _macroPrev = _macroPrev .. "; [bar:" .. (index + 1) .. "] " .. index
 end
 
 -- Shared by the secure paging macros and the legacy non-secure functions.
@@ -381,9 +381,9 @@ local function BuildFilteredPageMacro(delta, skip)
     return "/changeactionbar " .. table.concat(macro, "; ")
 end
 
-local function WireSecurePagingButton(btn, delta)
-    btn:SetAttribute("type", "macro")
-    btn:SetAttribute("macrotext", delta > 0 and _macroNext or _macroPrev)
+local function WireSecurePagingButton(button, delta)
+    button:SetAttribute("type", "macro")
+    button:SetAttribute("macrotext", delta > 0 and _macroNext or _macroPrev)
 end
 
 local _filteredPagingActive = false
@@ -428,31 +428,31 @@ function mod.RefreshPagingCycleMacros()
     _filteredPagingActive = not not enabled
 end
 
-local function InitPagingQuickKeybindButton(btn, atlas)
-    if not btn then
+local function InitPagingQuickKeybindButton(button, atlas)
+    if not button then
         return
     end
 
-    if not btn.QuickKeybindHighlightTexture then
-        local texture = btn:CreateTexture(nil, "OVERLAY")
-        texture:SetAllPoints(btn)
+    if not button.QuickKeybindHighlightTexture then
+        local texture = button:CreateTexture(nil, "OVERLAY")
+        texture:SetAllPoints(button)
         texture:SetAtlas(atlas)
         texture:SetAlpha(0.8)
         texture:Hide()
-        btn.QuickKeybindHighlightTexture = texture
+        button.QuickKeybindHighlightTexture = texture
     end
 
-    if EFD(btn).quickKeybindInit or not QuickKeybindButtonTemplateMixin then
+    if EFD(button).quickKeybindInit or not QuickKeybindButtonTemplateMixin then
         return
     end
 
-    Mixin(btn, QuickKeybindButtonTemplateMixin)
-    btn:HookScript("OnShow", btn.QuickKeybindButtonOnShow)
-    btn:HookScript("OnHide", btn.QuickKeybindButtonOnHide)
-    btn:HookScript("OnClick", btn.QuickKeybindButtonOnClick)
-    btn:HookScript("OnEnter", btn.QuickKeybindButtonOnEnter)
-    btn:HookScript("OnLeave", btn.QuickKeybindButtonOnLeave)
-    EFD(btn).quickKeybindInit = true
+    Mixin(button, QuickKeybindButtonTemplateMixin)
+    button:HookScript("OnShow", button.QuickKeybindButtonOnShow)
+    button:HookScript("OnHide", button.QuickKeybindButtonOnHide)
+    button:HookScript("OnClick", button.QuickKeybindButtonOnClick)
+    button:HookScript("OnEnter", button.QuickKeybindButtonOnEnter)
+    button:HookScript("OnLeave", button.QuickKeybindButtonOnLeave)
+    EFD(button).quickKeybindInit = true
     -- Do NOT call btn:QuickKeybindButtonOnShow() eagerly here. It registers
     -- persistent EventRegistry callbacks that fire UpdateMouseWheelHandler
     -- (and thus SetScript) on a SecureActionButtonTemplate frame on every
@@ -464,50 +464,50 @@ local function SetupPagingFrame()
         return _pagingFrame
     end
 
-    local f = CreateFrame("Frame", "EABPagingFrame", UIParent)
-    f:SetSize(20, 52)
-    f:SetFrameStrata("MEDIUM")
-    f:SetFrameLevel(10)
+    local frame = CreateFrame("Frame", "EABPagingFrame", UIParent)
+    frame:SetSize(20, 52)
+    frame:SetFrameStrata("MEDIUM")
+    frame:SetFrameLevel(10)
 
     -- Page number text
-    local pageText = f:CreateFontString(nil, "OVERLAY")
+    local pageText = frame:CreateFontString(nil, "OVERLAY")
     pageText:SetFont(STANDARD_TEXT_FONT, 12, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
     pageText:SetTextColor(1, 1, 1, 0.9)
     pageText:SetText("1")
-    f._pageText = pageText
+    frame._pageText = pageText
 
     -- Own secure macrotext (WireSecurePagingButton), NOT Blizzard's
     -- ActionBarUpButton -- Blizzard's pager buttons are mouse-dead (KillPagerMouse).
-    local upBtn = CreateFrame("Button", "EABPagingUp", f, "SecureActionButtonTemplate")
+    local upBtn = CreateFrame("Button", "EABPagingUp", frame, "SecureActionButtonTemplate")
     upBtn:SetSize(18, 18)
     upBtn:RegisterForClicks("AnyUp", "AnyDown")
     upBtn:SetNormalAtlas("UI-HUD-ActionBar-PageUpArrow-Up")
     upBtn:SetPushedAtlas("UI-HUD-ActionBar-PageUpArrow-Down")
     upBtn:SetDisabledAtlas("UI-HUD-ActionBar-PageUpArrow-Disabled")
     upBtn:SetHighlightAtlas("UI-HUD-ActionBar-PageUpArrow-Mouseover")
-    f._upBtn = upBtn
+    frame._upBtn = upBtn
     InitPagingQuickKeybindButton(upBtn, "UI-HUD-ActionBar-PageUpArrow-Mouseover")
 
     -- same: own secure macrotext, not Blizzard's button
-    local downBtn = CreateFrame("Button", "EABPagingDown", f, "SecureActionButtonTemplate")
+    local downBtn = CreateFrame("Button", "EABPagingDown", frame, "SecureActionButtonTemplate")
     downBtn:SetSize(18, 18)
     downBtn:RegisterForClicks("AnyUp", "AnyDown")
     downBtn:SetNormalAtlas("UI-HUD-ActionBar-PageDownArrow-Up")
     downBtn:SetPushedAtlas("UI-HUD-ActionBar-PageDownArrow-Down")
     downBtn:SetDisabledAtlas("UI-HUD-ActionBar-PageDownArrow-Disabled")
     downBtn:SetHighlightAtlas("UI-HUD-ActionBar-PageDownArrow-Mouseover")
-    f._downBtn = downBtn
+    frame._downBtn = downBtn
     InitPagingQuickKeybindButton(downBtn, "UI-HUD-ActionBar-PageDownArrow-Mouseover")
 
     -- Update page text and vehicle state. Combat visibility is the bar's own:
     -- the frame is parented to MainBar, whose visibility driver shows and
     -- hides it in combat (a Show or Hide here would also fight the paged
     -- driver in LayoutPagingFrame).
-    f:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
-    f:RegisterEvent("UPDATE_BONUS_ACTIONBAR")
-    f:RegisterEvent("UPDATE_OVERRIDE_ACTIONBAR")
-    f:RegisterEvent("UPDATE_VEHICLE_ACTIONBAR")
-    f:SetScript("OnEvent", function(_, evt)
+    frame:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
+    frame:RegisterEvent("UPDATE_BONUS_ACTIONBAR")
+    frame:RegisterEvent("UPDATE_OVERRIDE_ACTIONBAR")
+    frame:RegisterEvent("UPDATE_VEHICLE_ACTIONBAR")
+    frame:SetScript("OnEvent", function(_, evt)
         if evt == "UPDATE_OVERRIDE_ACTIONBAR" or evt == "UPDATE_VEHICLE_ACTIONBAR" then
             LayoutPagingFrame()
             -- Trigger page sync; the Queue callback early-returns in combat,
@@ -529,8 +529,8 @@ local function SetupPagingFrame()
     upBtn.commandName = "NEXTACTIONPAGE"
     downBtn.commandName = "PREVIOUSACTIONPAGE"
 
-    SetPagingFrame(f)
-    return f
+    SetPagingFrame(frame)
+    return frame
 end
 
 -- The paging arrows' sizes for a button height, shared with the options
@@ -549,21 +549,21 @@ end
 -- the bar's place, as the always-shown arrows are. The manager applies its
 -- verdict on every pass, so nothing else shows or hides the frame meanwhile.
 local PAGED_VIS = "[overridebar][vehicleui][possessbar][shapeshift] hide; [bar:1] hide; show"
-local function SetPagedDriver(f, on)
+local function SetPagedDriver(frame, on)
     if on then
-        if not f._pagedVis then
-            f._pagedVis = true
-            RegisterAttributeDriver(f, "state-visibility", PAGED_VIS)
+        if not frame._pagedVis then
+            frame._pagedVis = true
+            RegisterAttributeDriver(frame, "state-visibility", PAGED_VIS)
         end
-    elseif f._pagedVis then
-        f._pagedVis = nil
-        UnregisterAttributeDriver(f, "state-visibility")
+    elseif frame._pagedVis then
+        frame._pagedVis = nil
+        UnregisterAttributeDriver(frame, "state-visibility")
     end
 end
 
 LayoutPagingFrame = function()
-    local f = _pagingFrame
-    if not f then
+    local frame = _pagingFrame
+    if not frame then
         return
     end
     if InCombatLockdown() then
@@ -571,8 +571,8 @@ LayoutPagingFrame = function()
     end
     local mainFrame = barFrames and barFrames["MainBar"]
     if not mainFrame then
-        SetPagedDriver(f, false)
-        f:Hide()
+        SetPagedDriver(frame, false)
+        frame:Hide()
         return
     end
 
@@ -582,25 +582,25 @@ LayoutPagingFrame = function()
         and ABAR.db.profile.bars
         and ABAR.db.profile.bars["MainBar"]
     if not s then
-        SetPagedDriver(f, false)
-        f:Hide()
+        SetPagedDriver(frame, false)
+        frame:Hide()
         return
     end
 
     -- Parenting to MainBar makes it inherit secure show/hide + mouseover-fade
     -- alpha automatically, including in combat. Reparenting secure children is
     -- blocked in combat, hence the InCombatLockdown gate above.
-    if f:GetParent() ~= mainFrame then
-        f:SetParent(mainFrame)
-        f:SetFrameStrata("MEDIUM")
-        f:SetAlpha(1)
+    if frame:GetParent() ~= mainFrame then
+        frame:SetParent(mainFrame)
+        frame:SetFrameStrata("MEDIUM")
+        frame:SetAlpha(1)
     end
     -- Five levels over the bar, and one over its end caps while they can show
     -- (retail's page arrows sit over its caps).
     local caps = s.orientation ~= "vertical" and mod.AB_CAPS[mod.AB_CapsLook("MainBar") or "-"]
     local lvl = (mainFrame:GetFrameLevel() or 1) + 1 + (caps and caps.lvl or 4)
-    if f:GetFrameLevel() ~= lvl then
-        f:SetFrameLevel(lvl)
+    if frame:GetFrameLevel() ~= lvl then
+        frame:SetFrameLevel(lvl)
     end
 
     -- Paging Arrows: always shown. Off: shown only while paged (Show While
@@ -608,17 +608,17 @@ LayoutPagingFrame = function()
     local always = s.showPagingArrows
     local whilePaged = not always and s.pagingArrowsWhilePaged ~= false
     if ABAR.VisibilityCompat.IsNever(s) or s.enabled == false or not (always or whilePaged) then
-        SetPagedDriver(f, false)
-        f:Hide()
+        SetPagedDriver(frame, false)
+        frame:Hide()
         return
     end
 
     if always then
-        SetPagedDriver(f, false)
+        SetPagedDriver(frame, false)
         -- Hide during vehicle/override (paging doesn't apply)
         local overridePage = mainFrame:GetAttribute("state-overridepage") or 0
         if overridePage > 0 then
-            f:Hide()
+            frame:Hide()
             return
         end
     end
@@ -628,46 +628,46 @@ LayoutPagingFrame = function()
     local btnH = (s.buttonHeight and s.buttonHeight > 0) and s.buttonHeight or (base and base.h or 45)
     local arrowSize, textSize, gap, barGap = mod.AB_PagingArrowMetrics(btnH)
 
-    f._upBtn:SetSize(arrowSize, arrowSize)
-    f._downBtn:SetSize(arrowSize, arrowSize)
-    f._pageText:SetFont(STANDARD_TEXT_FONT, textSize, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
+    frame._upBtn:SetSize(arrowSize, arrowSize)
+    frame._downBtn:SetSize(arrowSize, arrowSize)
+    frame._pageText:SetFont(STANDARD_TEXT_FONT, textSize, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
 
-    f._upBtn:ClearAllPoints()
-    f._downBtn:ClearAllPoints()
-    f._pageText:ClearAllPoints()
+    frame._upBtn:ClearAllPoints()
+    frame._downBtn:ClearAllPoints()
+    frame._pageText:ClearAllPoints()
 
     local onRight = s.pagingArrowsRight
 
     if isVertical then
         local totalW = arrowSize + gap + textSize * 2 + gap + arrowSize
-        f:SetSize(totalW, arrowSize)
-        f:ClearAllPoints()
+        frame:SetSize(totalW, arrowSize)
+        frame:ClearAllPoints()
         if onRight then
-            f:SetPoint("TOP", mainFrame, "BOTTOM", 0, -barGap)
+            frame:SetPoint("TOP", mainFrame, "BOTTOM", 0, -barGap)
         else
-            f:SetPoint("BOTTOM", mainFrame, "TOP", 0, barGap)
+            frame:SetPoint("BOTTOM", mainFrame, "TOP", 0, barGap)
         end
-        f._downBtn:SetPoint("LEFT", f, "LEFT", 0, 0)
-        f._pageText:SetPoint("CENTER", f, "CENTER", 0, 0)
-        f._upBtn:SetPoint("RIGHT", f, "RIGHT", 0, 0)
+        frame._downBtn:SetPoint("LEFT", frame, "LEFT", 0, 0)
+        frame._pageText:SetPoint("CENTER", frame, "CENTER", 0, 0)
+        frame._upBtn:SetPoint("RIGHT", frame, "RIGHT", 0, 0)
     else
         local totalH = arrowSize + gap + textSize + gap + arrowSize
-        f:SetSize(arrowSize, totalH)
-        f:ClearAllPoints()
+        frame:SetSize(arrowSize, totalH)
+        frame:ClearAllPoints()
         if onRight then
-            f:SetPoint("LEFT", mainFrame, "RIGHT", barGap, 0)
+            frame:SetPoint("LEFT", mainFrame, "RIGHT", barGap, 0)
         else
-            f:SetPoint("RIGHT", mainFrame, "LEFT", -barGap, 0)
+            frame:SetPoint("RIGHT", mainFrame, "LEFT", -barGap, 0)
         end
-        f._upBtn:SetPoint("TOP", f, "TOP", 0, 0)
-        f._pageText:SetPoint("CENTER", f, "CENTER", 0, 0)
-        f._downBtn:SetPoint("BOTTOM", f, "BOTTOM", 0, 0)
+        frame._upBtn:SetPoint("TOP", frame, "TOP", 0, 0)
+        frame._pageText:SetPoint("CENTER", frame, "CENTER", 0, 0)
+        frame._downBtn:SetPoint("BOTTOM", frame, "BOTTOM", 0, 0)
     end
 
     if whilePaged then
-        SetPagedDriver(f, true)
+        SetPagedDriver(frame, true)
     else
-        f:Show()
+        frame:Show()
     end
 end
 mod.LayoutPagingFrame = LayoutPagingFrame

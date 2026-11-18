@@ -84,12 +84,12 @@ mod.BlockFactories.audio = function(blockCfg, slot, contentFrame, barCtx)
     button:EnableMouse(true)
     button:EnableMouseWheel(true)
     button:RegisterForClicks("LeftButtonUp")
-    local icon = button:CreateTexture(nil, "OVERLAY")
+    local iconTex = button:CreateTexture(nil, "OVERLAY")
     local track = button:CreateTexture(nil, "BACKGROUND")
     track:SetColorTexture(0.15, 0.15, 0.15, 0.6)
-    local fill = CreateFrame("StatusBar", nil, button)
-    fill:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    fill:SetMinMaxValues(0, 1)
+    local fillTex = CreateFrame("StatusBar", nil, button)
+    fillTex:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    fillTex:SetMinMaxValues(0, 1)
     -- The drag area: the bar plus 4px above and below, so the thin bar is easy
     -- to grab; a click on the icon never sets the volume.
     local grab = CreateFrame("Button", nil, button)
@@ -100,18 +100,18 @@ mod.BlockFactories.audio = function(blockCfg, slot, contentFrame, barCtx)
     -- Colours and the bar's value: red when the channel cannot be heard, the
     -- accent on hover, else the block's icon colour (the bar is accent-filled).
     local function Paint()
-        local r, g, b = mod.GetAccent()
+        local region, g, b = mod.GetAccent()
         if not Audible(Channel()) then
-            r, g, b = MUTED[1], MUTED[2], MUTED[3]
-            icon:SetVertexColor(r, g, b, 1)
+            region, g, b = MUTED[1], MUTED[2], MUTED[3]
+            iconTex:SetVertexColor(region, g, b, 1)
         elseif hovered then
-            icon:SetVertexColor(r, g, b, 1)
+            iconTex:SetVertexColor(region, g, b, 1)
         else
             local ir, ig, ib = K.IconColorOf(blockCfg)
-            icon:SetVertexColor(ir, ig, ib, 1)
+            iconTex:SetVertexColor(ir, ig, ib, 1)
         end
-        fill:SetStatusBarColor(r, g, b, 1)
-        fill:SetValue(Volume(Channel()))
+        fillTex:SetStatusBarColor(region, g, b, 1)
+        fillTex:SetValue(Volume(Channel()))
     end
 
     -- Tooltip rows: click mutes that channel, the wheel sets its volume.
@@ -219,27 +219,27 @@ mod.BlockFactories.audio = function(blockCfg, slot, contentFrame, barCtx)
     end)
 
     function inst:Refresh()
-        K.SetBlockIcon(icon, blockCfg)
+        K.SetBlockIcon(iconTex, blockCfg)
         local barH = barCtx.GetThickness()
         local fontSize = max(9, floor(K.CONTENT_BASE * 0.4333 + 0.5))
         local showIcon = Settings().showIcon ~= false
         local iconSize = showIcon and fontSize + 4 or 0
         local gap = showIcon and K.ICON_GAP or 0
-        icon:SetShown(showIcon)
+        iconTex:SetShown(showIcon)
         if showIcon then
-            icon:SetSize(iconSize, iconSize)
+            iconTex:SetSize(iconSize, iconSize)
         end
         Paint()
 
-        icon:ClearAllPoints()
+        iconTex:ClearAllPoints()
         track:ClearAllPoints()
         if barCtx.IsVertical() then
             -- Icon above the bar, both centred in the bar's width.
             local slotW = K.VSlotW(inst)
-            icon:SetPoint("TOP", button, "TOP", 0, -4)
+            iconTex:SetPoint("TOP", button, "TOP", 0, -4)
             track:SetSize(max(30, slotW - 8), BAR_H)
             if showIcon then
-                track:SetPoint("TOP", icon, "BOTTOM", 0, -4)
+                track:SetPoint("TOP", iconTex, "BOTTOM", 0, -4)
             else
                 track:SetPoint("TOP", button, "TOP", 0, -6)
             end
@@ -247,13 +247,13 @@ mod.BlockFactories.audio = function(blockCfg, slot, contentFrame, barCtx)
         else
             -- Icon then bar, left to right.
             local barW = max(40, floor(K.CONTENT_BASE * 2 + 0.5))
-            icon:SetPoint("LEFT", button, "LEFT", 0, 0)
+            iconTex:SetPoint("LEFT", button, "LEFT", 0, 0)
             track:SetSize(barW, BAR_H)
             track:SetPoint("LEFT", button, "LEFT", iconSize + gap, 0)
             contentFrame:SetSize(iconSize + gap + barW, barH)
         end
-        fill:ClearAllPoints()
-        fill:SetAllPoints(track)
+        fillTex:ClearAllPoints()
+        fillTex:SetAllPoints(track)
         grab:ClearAllPoints()
         grab:SetPoint("TOPLEFT", track, "TOPLEFT", 0, 4)
         grab:SetPoint("BOTTOMRIGHT", track, "BOTTOMRIGHT", 0, -4)

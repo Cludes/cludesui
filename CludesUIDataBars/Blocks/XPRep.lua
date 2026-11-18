@@ -40,14 +40,14 @@ local function Watched()
     if legacy then
         return legacy()
     end
-    local d = C_Reputation and C_Reputation.GetWatchedFactionData and C_Reputation.GetWatchedFactionData()
-    if d then
-        return d.name,
-            d.reaction,
-            d.currentReactionThreshold,
-            d.nextReactionThreshold,
-            d.currentStanding,
-            d.factionID
+    local skinData = C_Reputation and C_Reputation.GetWatchedFactionData and C_Reputation.GetWatchedFactionData()
+    if skinData then
+        return skinData.name,
+            skinData.reaction,
+            skinData.currentReactionThreshold,
+            skinData.nextReactionThreshold,
+            skinData.currentStanding,
+            skinData.factionID
     end
 end
 
@@ -80,7 +80,7 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
     end
 
     -- The label for cur of total, and whether "to level" / the name goes with it.
-    local function Label(cur, total)
+    local function Label(current, total)
         local s = Settings()
         local display = mod.GetXPRepTextDisplay(s)
         if display == "off" then
@@ -88,9 +88,9 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
         end
         local context = s.textFormat ~= "plain"
         if display == "values" then
-            return Number(cur) .. " / " .. Number(total), context, true
+            return Number(current) .. " / " .. Number(total), context, true
         end
-        return floor(cur / max(1, total) * 100) .. "%", context
+        return floor(current / max(1, total) * 100) .. "%", context
     end
 
     local function XPState()
@@ -108,20 +108,20 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
         if maxXP <= 0 then
             maxXP = 1
         end
-        local cur = max(0, min(maxXP, UnitXP("player") or 0))
+        local current = max(0, min(maxXP, UnitXP("player") or 0))
         local level = UnitLevel and UnitLevel("player") or 0
-        local label, context, values = Label(cur, maxXP)
+        local label, context, values = Label(current, maxXP)
         if context then
             label = label .. (values and " XP" or "") .. " to level " .. (level + 1)
         end
-        local r, g, b = mod.GetAccent()
+        local region, g, b = mod.GetAccent()
         return {
             label = label,
             tooltipLabel = "Level " .. level .. " XP",
             minV = 0,
             maxV = maxXP,
-            curV = cur,
-            r = r,
+            curV = current,
+            r = region,
             g = g,
             b = b,
             rested = GetXPExhaustion() or 0,
@@ -130,7 +130,7 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
     end
 
     local function RepState()
-        local name, reaction, low, high, cur, factionID = Watched()
+        local name, reaction, low, high, current, factionID = Watched()
         if not name then
             -- As above: hidden in automatic mode only.
             if Settings().mode ~= "rep" then
@@ -147,51 +147,51 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
         local isFriend = friend and friend.friendshipFactionID and friend.friendshipFactionID > 0
         if isFriend then
             low = friend.reactionThreshold or 0
-            cur = friend.standing or low
+            current = friend.standing or low
             if friend.nextThreshold and friend.nextThreshold > low then
                 high = friend.nextThreshold
             else
-                low, high, cur = 0, 1, 1 -- the top rank: a full bar
+                low, high, current = 0, 1, 1 -- the top rank: a full bar
             end
         end
         -- Renown: progress towards the next renown level.
         if not isFriend and factionID and C_MajorFactions and C_MajorFactions.GetMajorFactionData then
             local major = C_MajorFactions.GetMajorFactionData(factionID)
             if major and type(major.renownLevelThreshold) == "number" and major.renownLevelThreshold > 0 then
-                low, high, cur = 0, major.renownLevelThreshold, major.renownReputationEarned or 0
+                low, high, current = 0, major.renownLevelThreshold, major.renownReputationEarned or 0
             end
         end
         -- Counted from the bottom of the current standing.
-        if type(low) == "number" and type(high) == "number" and type(cur) == "number" and high - low > 0 then
-            low, high, cur = 0, high - low, cur - low
+        if type(low) == "number" and type(high) == "number" and type(current) == "number" and high - low > 0 then
+            low, high, current = 0, high - low, current - low
         end
         low = type(low) == "number" and low or 0
         high = type(high) == "number" and high or 1
-        cur = type(cur) == "number" and cur or 0
+        current = type(current) == "number" and current or 0
         if high <= low then
             high = low + 1
         end
-        cur = max(low, min(high, cur))
+        current = max(low, min(high, current))
 
-        local label, context = Label(cur - low, high - low)
+        local label, context = Label(current - low, high - low)
         if context then
             local short = #name > 20 and (name:sub(1, 20) .. "...") or name
             label = short .. " " .. label
         end
         local color = FACTION_BAR_COLORS and FACTION_BAR_COLORS[reaction]
-        local r, g, b
+        local region, g, b
         if color then
-            r, g, b = color.r, color.g, color.b
+            region, g, b = color.r, color.g, color.b
         else
-            r, g, b = mod.GetAccent()
+            region, g, b = mod.GetAccent()
         end
         return {
             label = label,
             tooltipLabel = name,
             minV = low,
             maxV = high,
-            curV = cur,
-            r = r,
+            curV = current,
+            r = region,
             g = g,
             b = b,
             rested = 0,
@@ -214,8 +214,8 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
     hit:RegisterForClicks("AnyUp")
     local label = content:CreateFontString(nil, "OVERLAY")
     K.AttachTextOffset(inst, label)
-    local fill = CreateFrame("StatusBar", nil, content)
-    fill:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    local fillTex = CreateFrame("StatusBar", nil, content)
+    fillTex:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
     local track = content:CreateTexture(nil, "BACKGROUND")
     local rested = CreateFrame("StatusBar", nil, content)
     rested:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
@@ -227,9 +227,9 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
     -- The bar's colour and fill, and rested XP behind it.
     local function Fill(state)
         rested:Hide()
-        fill:SetStatusBarColor(state.r, state.g, state.b, 1)
-        fill:SetMinMaxValues(state.minV, state.maxV)
-        fill:SetValue(state.curV)
+        fillTex:SetStatusBarColor(state.r, state.g, state.b, 1)
+        fillTex:SetMinMaxValues(state.minV, state.maxV)
+        fillTex:SetValue(state.curV)
         if state.rested > 0 then
             rested:SetMinMaxValues(state.minV, state.maxV)
             rested:SetValue(min(state.curV + state.rested, state.maxV))
@@ -240,7 +240,7 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
     local function Track(width, height)
         track:SetSize(width, height)
         track:SetColorTexture(1, 1, 1, 0.1)
-        fill:ClearAllPoints()
+        fillTex:ClearAllPoints()
         rested:ClearAllPoints()
     end
 
@@ -262,8 +262,8 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
         -- XP's bar runs 40px past the label; GetAutoLength counts it in.
         self._xpExtend = state.isXP and 40 or 0
         -- The block colour is the label's; the bar keeps its own colour.
-        local r, g, b = K.BlockColorOf(blockCfg)
-        label:SetTextColor(r, g, b, 1)
+        local region, g, b = K.BlockColorOf(blockCfg)
+        label:SetTextColor(region, g, b, 1)
         Fill(state)
         -- A font first: SetText on a FontString that never had one errors.
         mod.SetFont(label, fontSize, barCtx.cfg)
@@ -278,8 +278,8 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
             track:ClearAllPoints()
             track:SetPoint("CENTER", content, "CENTER", 0, 0)
             Track(width, thin)
-            fill:SetAllPoints(track)
-            rested:SetAllPoints(fill)
+            fillTex:SetAllPoints(track)
+            rested:SetAllPoints(fillTex)
         elseif barCtx.IsVertical() then
             -- The label above the bar, both the bar's width.
             local slotW = K.VSlotW(self)
@@ -293,9 +293,9 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
             track:ClearAllPoints()
             track:SetPoint("TOP", content, "TOP", 0, top)
             Track(inner, 4)
-            fill:SetSize(inner, 4)
-            fill:SetPoint("TOP", content, "TOP", 0, top)
-            rested:SetAllPoints(fill)
+            fillTex:SetSize(inner, 4)
+            fillTex:SetPoint("TOP", content, "TOP", 0, top)
+            rested:SetAllPoints(fillTex)
             content:SetSize(slotW, max(3 + textH + 3 + 4 + 3, 40))
         else
             -- The label over the bar, the bar as wide as the label (XP: 40px
@@ -322,9 +322,9 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
             track:ClearAllPoints()
             track:SetPoint("TOPLEFT", content, "TOPLEFT", 0, top)
             Track(barW, thin)
-            fill:SetSize(barW, thin)
-            fill:SetPoint("TOPLEFT", content, "TOPLEFT", 0, top)
-            rested:SetAllPoints(fill)
+            fillTex:SetSize(barW, thin)
+            fillTex:SetPoint("TOPLEFT", content, "TOPLEFT", 0, top)
+            rested:SetAllPoints(fillTex)
         end
         drawnLabel = (state.isXP and "xp:" or "rep:") .. state.label
         K.MaybeRelayout(self)
@@ -351,7 +351,7 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
         if not state then
             return
         end
-        local r, g, b = mod.GetAccent()
+        local region, g, b = mod.GetAccent()
         mod.Tip_Begin(hit)
         -- With the text off there is no label, so the bar is named instead.
         mod.Tip_AddLine(state.label ~= "" and state.label or state.tooltipLabel, 1, 1, 1)
@@ -372,7 +372,7 @@ mod.BlockFactories.xprep = function(blockCfg, slot, content, barCtx)
         end
         mod.Tip_AddLine(" ")
         local switch = mode == "xp" and L["SWITCH_TO_REP"] or L["SWITCH_TO_XP"]
-        mod.Tip_AddDouble(L["RIGHT_CLICK"], switch, 1, 1, 1, r, g, b)
+        mod.Tip_AddDouble(L["RIGHT_CLICK"], switch, 1, 1, 1, region, g, b)
         mod.Tip_Show()
     end)
     hit:SetScript("OnLeave", function()

@@ -384,15 +384,15 @@ ReloadFramesBody = function()
                     elseif bossIdx and bossIdx > 1 and not (CludesUI and CludesUI._unlockActive) then
                         -- boss2..5 always re-chain off the previous boss with the
                         -- current Vertical Spacing value, regardless of saved pos.
-                        local prev = frameList["boss" .. (bossIdx - 1)]
-                        if prev then
+                        local previous = frameList["boss" .. (bossIdx - 1)]
+                        if previous then
                             widget:ClearAllPoints()
                             local bossStackDir = saved.profile.boss and saved.profile.boss.bossStackDirection
                                 or "down"
                             if bossStackDir == "up" then
-                                widget:SetPoint("TOPLEFT", prev, "TOPLEFT", 0, bossSpacing)
+                                widget:SetPoint("TOPLEFT", previous, "TOPLEFT", 0, bossSpacing)
                             else
-                                widget:SetPoint("TOPLEFT", prev, "TOPLEFT", 0, -bossSpacing)
+                                widget:SetPoint("TOPLEFT", previous, "TOPLEFT", 0, -bossSpacing)
                             end
                         end
                     end
@@ -2255,8 +2255,8 @@ ReloadFramesBody = function()
                         if s2.powerBgPowerColored and self.bg then
                             local pr, pg, pb = CludesUI.ResolveUnitPowerColor(unitToken)
                             if pr then
-                                local f = CludesUI.GetPowerBgDarkenFactor()
-                                self.bg:SetColorTexture(pr * f, pg * f, pb * f, 1)
+                                local frame = CludesUI.GetPowerBgDarkenFactor()
+                                self.bg:SetColorTexture(pr * frame, pg * frame, pb * frame, 1)
                             end
                         end
                         -- Keep the power-percent text color in sync with this unit
@@ -2439,18 +2439,18 @@ ReloadFramesBody = function()
                     -- typeface) and sync X/Y offsets + side layout so live boss frames update
                     -- on every cast-text option change.
                     if unitToken:match("^boss") then
-                        local cb = widget.Castbar
-                        if cb.Text then
-                            SetMiniFont(cb.Text, prefs.castSpellNameSize or 11)
+                        local callback = widget.Castbar
+                        if callback.Text then
+                            SetMiniFont(callback.Text, prefs.castSpellNameSize or 11)
                         end
-                        if cb.Time then
-                            SetMiniFont(cb.Time, prefs.castDurationSize or 10)
+                        if callback.Time then
+                            SetMiniFont(callback.Time, prefs.castDurationSize or 10)
                         end
-                        if cb.Target then
-                            SetMiniFont(cb.Target, prefs.castSpellTargetSize or 11)
+                        if callback.Target then
+                            SetMiniFont(callback.Target, prefs.castSpellTargetSize or 11)
                         end
-                        if cb._syncOffsetsAndLayout then
-                            cb:_syncOffsetsAndLayout(prefs)
+                        if callback._syncOffsetsAndLayout then
+                            callback:_syncOffsetsAndLayout(prefs)
                         end
                     end
                 end
@@ -2509,8 +2509,8 @@ ReloadFramesBody = function()
     local RAID_MARKER_UNITS = { "player", "target", "focus", "boss1", "boss2", "boss3", "boss4", "boss5" }
     for _, rmUnit in ipairs(RAID_MARKER_UNITS) do
         local rmFrame = frameList[rmUnit]
-        local icon = rmFrame and rmFrame._raidMarkerIcon
-        if rmFrame and icon then
+        local iconTex = rmFrame and rmFrame._raidMarkerIcon
+        if rmFrame and iconTex then
             local rmS = GetSettingsForUnit(rmUnit)
             local rmSize = (rmS and rmS.raidMarkerSize) or 28
             local rmAlign = (rmS and rmS.raidMarkerAlign) or "right"
@@ -2518,32 +2518,32 @@ ReloadFramesBody = function()
             local rmY = (rmS and rmS.raidMarkerY) or 0
             local rmEnabled = rmS and rmS.raidMarkerEnabled
             local isBoss = rmUnit:match("^boss%d$")
-            icon:SetSize(rmSize, rmSize)
-            icon:ClearAllPoints()
+            iconTex:SetSize(rmSize, rmSize)
+            iconTex:ClearAllPoints()
             if isBoss then
                 if rmAlign == "left" then
-                    icon:SetPoint("RIGHT", rmFrame, "LEFT", rmX, rmY)
+                    iconTex:SetPoint("RIGHT", rmFrame, "LEFT", rmX, rmY)
                 elseif rmAlign == "center" then
-                    icon:SetPoint("CENTER", rmFrame, "CENTER", rmX, rmY)
+                    iconTex:SetPoint("CENTER", rmFrame, "CENTER", rmX, rmY)
                 else
-                    icon:SetPoint("LEFT", rmFrame, "RIGHT", rmX, rmY)
+                    iconTex:SetPoint("LEFT", rmFrame, "RIGHT", rmX, rmY)
                 end
             else
                 local rmAnchor = (rmAlign == "left") and "TOPLEFT"
                     or (rmAlign == "center") and "TOP"
                     or "TOPRIGHT"
-                icon:SetPoint("CENTER", rmFrame, rmAnchor, rmX, rmY)
+                iconTex:SetPoint("CENTER", rmFrame, rmAnchor, rmX, rmY)
             end
             if rmEnabled then
-                rmFrame.RaidTargetIndicator = icon
+                rmFrame.RaidTargetIndicator = iconTex
                 rmFrame:EnableElement("RaidTargetIndicator")
-                if icon.ForceUpdate then
-                    icon:ForceUpdate()
+                if iconTex.ForceUpdate then
+                    iconTex:ForceUpdate()
                 end
             else
                 rmFrame:DisableElement("RaidTargetIndicator")
                 rmFrame.RaidTargetIndicator = nil
-                icon:Hide()
+                iconTex:Hide()
             end
         end
     end
@@ -2660,8 +2660,8 @@ ReloadFramesBody = function()
     -- frame's border pad; only a pad that really changed re-pushes its matches.
     if CludesUI.MatchPadChanged then
         local padKeys = mod.UF_PAD_KEYS
-        for idx = 1, #padKeys do
-            CludesUI.MatchPadChanged(padKeys[idx])
+        for index = 1, #padKeys do
+            CludesUI.MatchPadChanged(padKeys[index])
         end
     end
     -- Last: its ForceAll repaint must follow the per-frame ApplyDarkTheme, or turning
@@ -2702,28 +2702,28 @@ function mod.UF_FrameBorderPad(key)
         return nil
     end
     local isMini = (key == "pet" or key == "targettarget" or key == "focustarget")
-    local d = isMini and GetMiniDonorSettings(key) or prefs
-    local btex = d.borderTexture or "solid"
+    local skinData = isMini and GetMiniDonorSettings(key) or prefs
+    local btex = skinData.borderTexture or "solid"
     if btex == "solid" then
         return nil
     end
-    local bs = prefs.borderSizeOverride or d.borderSize or 1
+    local bs = prefs.borderSizeOverride or skinData.borderSize or 1
     local bpx = nil
     if not prefs.borderSizeOverride then
-        bpx = CludesUI.BorderPx(d.borderSizePx, bs, btex)
+        bpx = CludesUI.BorderPx(skinData.borderSizePx, bs, btex)
     end
     return CludesUI.BorderMatchPad(
         bs,
         btex,
-        d.borderTextureOffset,
-        d.borderTextureOffsetY,
-        d.borderTextureShiftX,
-        d.borderTextureShiftY,
+        skinData.borderTextureOffset,
+        skinData.borderTextureOffsetY,
+        skinData.borderTextureShiftX,
+        skinData.borderTextureShiftY,
         "unitframes",
         bs,
         bpx,
         nil,
-        d.borderAlpha or 1
+        skinData.borderAlpha or 1
     )
 end
 

@@ -70,12 +70,12 @@ do
         return edges
     end
 
-    local function _applyBorderEdges(edges, button, brdSize, cr, cg, cb)
+    local function _applyBorderEdges(edges, button, brdSize, cr, cg, callback)
         edges._active = true
         local anchor = button.icon or button.Icon or button
         local Pix = CludesUI.PP
         for jdx = 1, 4 do
-            edges[jdx]:SetVertexColor(cr, cg, cb, 1)
+            edges[jdx]:SetVertexColor(cr, cg, callback, 1)
         end
         edges[1]:ClearAllPoints()
         edges[1]:SetPoint("TOPLEFT", anchor)
@@ -190,10 +190,10 @@ end
 -- it is set again after). Keeps the current tint. Unmemoized, like the bar
 -- border's own textured path. Callers keep it out of combat.
 mod._ixStyle = function(button, fd, s)
-    local host = fd.ixHost
+    local owner = fd.ixHost
     local sz, px = ResolveBorderThickness(s)
     CludesUI.ApplyBorderStyle(
-        host,
+        owner,
         sz,
         fd.ixR or 1,
         fd.ixG or 1,
@@ -209,7 +209,7 @@ mod._ixStyle = function(button, fd, s)
         nil,
         px
     )
-    local edge = CludesUI._bdBorderData[host]
+    local edge = CludesUI._bdBorderData[owner]
     if edge then
         edge:SetFrameLevel(mod._eabBorderLevel(button, s.borderBehind, s.borderAboveEffects))
     end
@@ -235,10 +235,10 @@ mod._ixPaint = function(button, fd)
         end
     end
     if c then
-        local r, g, b, a = c[1], c[2], c[3], c[4]
-        if fd.ixR ~= r or fd.ixG ~= g or fd.ixB ~= b or fd.ixA ~= a then
-            fd.ixR, fd.ixG, fd.ixB, fd.ixA = r, g, b, a
-            edge:SetBackdropBorderColor(r, g, b, a)
+        local region, g, b, a = c[1], c[2], c[3], c[4]
+        if fd.ixR ~= region or fd.ixG ~= g or fd.ixB ~= b or fd.ixA ~= a then
+            fd.ixR, fd.ixG, fd.ixB, fd.ixA = region, g, b, a
+            edge:SetBackdropBorderColor(region, g, b, a)
         end
         if not fd.ixLit then
             fd.ixLit = true
@@ -321,9 +321,9 @@ end
 mod._ixHookChecked = function(button, fd)
     fd.ixCheckHooked = true
     hooksecurefunc(button, "SetChecked", function()
-        local d = mod._eabFD[button]
-        if d and d.ixCast then
-            mod._ixSampleChecked(button, d)
+        local skinData = mod._eabFD[button]
+        if skinData and skinData.ixCast then
+            mod._ixSampleChecked(button, skinData)
         end
     end)
 end
@@ -348,9 +348,9 @@ mod._ixRole = function(button, s, role, enabled)
                 local wid = CreateFrame("Frame", nil, button)
                 wid:SetAllPoints(button)
                 wid:Hide()
-                local host = CreateFrame("Frame", nil, wid)
-                host:SetAllPoints(wid)
-                fd.ixBorder, fd.ixHost = wid, host
+                local owner = CreateFrame("Frame", nil, wid)
+                owner:SetAllPoints(wid)
+                fd.ixBorder, fd.ixHost = wid, owner
                 mod._ixEver = true
             end
             if not fd.ixStyled then
@@ -396,13 +396,13 @@ function ABAR:ApplyPushedTextures()
     local customC = p.pushedCustomColor or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
     local brdSize = p.pushedBorderSize or 4
 
-    local cr, cg, cb = customC.r, customC.g, customC.b
+    local cr, cg, callback = customC.r, customC.g, customC.b
     if useCC then
         local _, ct = UnitClass("player")
         if ct then
             local cc = RAID_CLASS_COLORS[ct]
             if cc then
-                cr, cg, cb = cc.r, cc.g, cc.b
+                cr, cg, callback = cc.r, cc.g, cc.b
             end
         end
     end
@@ -413,7 +413,7 @@ function ABAR:ApplyPushedTextures()
     local ixOn = abStyle == "cui" and (mod._ixRolesOn(p))
     if ixOn then
         local t = mod._ixPushC
-        t[1], t[2], t[3], t[4] = cr, cg, cb, customC.a or 1
+        t[1], t[2], t[3], t[4] = cr, cg, callback, customC.a or 1
     end
     local ixEver = mod._ixEver
 
@@ -422,8 +422,8 @@ function ABAR:ApplyPushedTextures()
         if buttons then
             local s = p.bars[details.key]
             local ixBar = ixOn and mod._ixBarEligible(details.key)
-            for idx = 1, #buttons do
-                local button = buttons[idx]
+            for index = 1, #buttons do
+                local button = buttons[index]
                 if button and button.PushedTexture then
                     if abStyle ~= "cui" then
                         if abStyle == "classic" then
@@ -452,7 +452,7 @@ function ABAR:ApplyPushedTextures()
                             mod._hideBorderEdges(button, "_pushedBorder")
                         else
                             local edges = mod._setupBorderEdges(button, "_pushedBorder", button.PushedTexture)
-                            mod._applyBorderEdges(edges, button, brdSize, cr, cg, cb)
+                            mod._applyBorderEdges(edges, button, brdSize, cr, cg, callback)
                         end
                     else
                         button.PushedTexture:SetAlpha(1)
@@ -462,9 +462,9 @@ function ABAR:ApplyPushedTextures()
                                 button.PushedTexture,
                                 HIGHLIGHT_TEXTURES[pType] or HIGHLIGHT_TEXTURES[2]
                             )
-                            button.PushedTexture:SetVertexColor(cr, cg, cb, 1)
+                            button.PushedTexture:SetVertexColor(cr, cg, callback, 1)
                         elseif pType == 4 then
-                            button.PushedTexture:SetColorTexture(cr, cg, cb, 0.35)
+                            button.PushedTexture:SetColorTexture(cr, cg, callback, 0.35)
                         end
                     end
                     -- Stock styles, other pushed types, the option off and
@@ -506,10 +506,10 @@ do
                 local keyList = _btnKeys[button]
                 local held = false
                 if keyList then
-                    for idx = 1, #keyList do
+                    for index = 1, #keyList do
                         -- IsKeyDown reads no non-ASCII key name (the Nordic section key):
                         -- such a key stays lit until its binding's key-up below.
-                        if IsKeyDown(keyList[idx]) or keyList[idx]:find("[\128-\255]") then
+                        if IsKeyDown(keyList[index]) or keyList[index]:find("[\128-\255]") then
                             held = true
                             break
                         end
@@ -635,13 +635,13 @@ function ABAR:ApplyHighlightTextures()
     local customC = p.highlightCustomColor or { r = 0.973, g = 0.839, b = 0.604, a = 1 }
     local brdSize = p.highlightBorderSize or 4
 
-    local cr, cg, cb = customC.r, customC.g, customC.b
+    local cr, cg, callback = customC.r, customC.g, customC.b
     if useCC then
         local _, ct = UnitClass("player")
         if ct then
             local cc = RAID_CLASS_COLORS[ct]
             if cc then
-                cr, cg, cb = cc.r, cc.g, cc.b
+                cr, cg, callback = cc.r, cc.g, cc.b
             end
         end
     end
@@ -656,7 +656,7 @@ function ABAR:ApplyHighlightTextures()
     ixOn = ixOn and not abStock
     do
         local t = mod._ixHlC
-        t[1], t[2], t[3], t[4] = cr, cg, cb, customC.a or 1
+        t[1], t[2], t[3], t[4] = cr, cg, callback, customC.a or 1
     end
     local ixEver = mod._ixEver
 
@@ -666,8 +666,8 @@ function ABAR:ApplyHighlightTextures()
             -- own in ns.AB_PaintClassicButton)
             local buttons = ixEver and barButtons[details.key]
             if buttons then
-                for idx = 1, #buttons do
-                    local button = buttons[idx]
+                for index = 1, #buttons do
+                    local button = buttons[index]
                     if button then
                         mod._ixRole(button, nil, "ixHover", false)
                     end
@@ -678,8 +678,8 @@ function ABAR:ApplyHighlightTextures()
             if buttons then
                 local s = p.bars[details.key]
                 local ixBar = ixOn and mod._ixBarEligible(details.key)
-                for idx = 1, #buttons do
-                    local button = buttons[idx]
+                for index = 1, #buttons do
+                    local button = buttons[index]
                     if button and button.HighlightTexture then
                         if hType == 6 then
                             button.HighlightTexture:SetAlpha(0)
@@ -690,7 +690,7 @@ function ABAR:ApplyHighlightTextures()
                                 mod._hideBorderEdges(button, "_highlightBorder")
                             else
                                 local edges = mod._setupBorderEdges(button, "_highlightBorder")
-                                mod._applyBorderEdges(edges, button, brdSize, cr, cg, cb)
+                                mod._applyBorderEdges(edges, button, brdSize, cr, cg, callback)
                             end
                             if not EFD(button).hlBorderHooked then
                                 EFD(button).hlBorderHooked = true
@@ -732,9 +732,9 @@ function ABAR:ApplyHighlightTextures()
                                     button.HighlightTexture,
                                     HIGHLIGHT_TEXTURES[hType] or HIGHLIGHT_TEXTURES[1]
                                 )
-                                button.HighlightTexture:SetVertexColor(cr, cg, cb, 1)
+                                button.HighlightTexture:SetVertexColor(cr, cg, callback, 1)
                             elseif hType == 4 then
-                                button.HighlightTexture:SetColorTexture(cr, cg, cb, 0.35)
+                                button.HighlightTexture:SetColorTexture(cr, cg, callback, 0.35)
                             end
                         end
                         if ixEver and not ixBar then

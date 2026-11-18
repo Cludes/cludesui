@@ -71,20 +71,20 @@ end
 --  Same split as CludesUIChat's scrollback history.
 --------------------------------------------------------------------------------
 local function GetSV()
-    local sv = _G[SV_NAME]
-    if type(sv) ~= "table" then
-        sv = {}
-        _G[SV_NAME] = sv
+    local savedVars = _G[SV_NAME]
+    if type(savedVars) ~= "table" then
+        savedVars = {}
+        _G[SV_NAME] = savedVars
     end
-    if type(sv.runs) ~= "table" then
-        sv.runs = {}
+    if type(savedVars.runs) ~= "table" then
+        savedVars.runs = {}
     end
     -- Stamped only when absent. Writing it on every read would relabel older
     -- records as current and leave a future migration nothing to branch on.
-    if sv.schema == nil then
-        sv.schema = SCHEMA
+    if savedVars.schema == nil then
+        savedVars.schema = SCHEMA
     end
-    return sv
+    return savedVars
 end
 
 local function HistorySize()
@@ -116,11 +116,11 @@ local function StoreRun(record)
     if type(record) ~= "table" then
         return
     end
-    local sv = GetSV()
-    table.insert(sv.runs, 1, record)
+    local savedVars = GetSV()
+    table.insert(savedVars.runs, 1, record)
     local cap = HistorySize()
-    for i = #sv.runs, cap + 1, -1 do
-        sv.runs[i] = nil
+    for i = #savedVars.runs, cap + 1, -1 do
+        savedVars.runs[i] = nil
     end
     NotifyRunsChanged()
 end
@@ -131,14 +131,14 @@ end
 
 -- Stored runs, newest first, or nil. Read only: never creates the SavedVariable.
 function CludesUI._MythicRuns.Get()
-    local sv = _G[SV_NAME]
-    local runs = type(sv) == "table" and sv.runs
+    local savedVars = _G[SV_NAME]
+    local runs = type(savedVars) == "table" and savedVars.runs
     return type(runs) == "table" and runs or nil
 end
 
 function mod.RS_ClearHistory()
-    local sv = GetSV()
-    wipe(sv.runs)
+    local savedVars = GetSV()
+    wipe(savedVars.runs)
     if RefreshWindowIfOpen then
         RefreshWindowIfOpen()
     end
@@ -149,8 +149,8 @@ CludesUI._MythicRuns.Clear = mod.RS_ClearHistory
 -- Season purge: drop records for dungeons that are no longer in the pool, the
 -- same shape EMT:OnInitialize already uses for bestObjectiveSplits.
 local function PurgeOldSeasons()
-    local sv = _G[SV_NAME]
-    if type(sv) ~= "table" or type(sv.runs) ~= "table" then
+    local savedVars = _G[SV_NAME]
+    if type(savedVars) ~= "table" or type(savedVars.runs) ~= "table" then
         return
     end
     local maps = C_ChallengeMode and C_ChallengeMode.GetMapTable and C_ChallengeMode.GetMapTable()
@@ -161,11 +161,11 @@ local function PurgeOldSeasons()
     for _, mapID in ipairs(maps) do
         valid[mapID] = true
     end
-    for i = #sv.runs, 1, -1 do
-        local rec = sv.runs[i]
+    for i = #savedVars.runs, 1, -1 do
+        local rec = savedVars.runs[i]
         local mapID = rec and tonumber(rec.mapID)
         if not mapID or not valid[mapID] then
-            table.remove(sv.runs, i)
+            table.remove(savedVars.runs, i)
         end
     end
 end
@@ -234,8 +234,8 @@ local function PetOwner(source, owners)
             end
         end
     end
-    local icon = source.specIconID
-    if IsSecret(icon) or (icon ~= nil and icon ~= 0) then
+    local iconTex = source.specIconID
+    if IsSecret(iconTex) or (iconTex ~= nil and iconTex ~= 0) then
         return nil
     end
     local cls = PlainString(source.classFilename)
@@ -536,9 +536,9 @@ local function RecordLoot(rst, ord, unitGuid, name, itemLink)
     if not rec and name then
         local short = name:match("^([^%-]+)") or name
         for _, g in ipairs(ord) do
-            local r = rst[g]
-            if r and r.name and (r.name:match("^([^%-]+)") or r.name) == short then
-                rec = r
+            local region = rst[g]
+            if region and region.name and (region.name:match("^([^%-]+)") or region.name) == short then
+                rec = region
                 break
             end
         end
@@ -612,12 +612,12 @@ local function OwnSpecIcon()
     if not (CSI and CSI.GetSpecialization and CSI.GetSpecializationInfo) then
         return nil
     end
-    local idx = CSI.GetSpecialization()
-    if not idx then
+    local index = CSI.GetSpecialization()
+    if not index then
         return nil
     end
-    local _, _, _, icon = CSI.GetSpecializationInfo(idx)
-    return PlainNumber(icon)
+    local _, _, _, iconTex = CSI.GetSpecializationInfo(index)
+    return PlainNumber(iconTex)
 end
 
 -- GetSpecializationInfoForSpecID is the documented name; the ByID global is
@@ -918,9 +918,9 @@ local function HarvestInto(record, rst, base, baseDur, based, sg)
     -- amountPerSecond is Blizzard's own figure and is the honest fallback.
     if based and baseDur then
         local live = (duration and duration > baseDur) and (duration - baseDur) or 0
-        local d = live + sg.bankDur
-        if d > 0 then
-            deltaDuration = d
+        local skinData = live + sg.bankDur
+        if skinData > 0 then
+            deltaDuration = skinData
         end
     end
     record.hasBaseline = based and true or false
@@ -1035,9 +1035,9 @@ local function Checkpoint(sg, rst)
             end
         end
     end
-    local d = SessionDuration()
-    if d then
-        sg.snapDur = d
+    local skinData = SessionDuration()
+    if skinData then
+        sg.snapDur = skinData
     end
     if readable then
         sg.unbanked = false
@@ -1190,8 +1190,8 @@ local function BuildMembers(record, rst, ord)
                 m = {}
                 result[num] = m
             end
-            for _, f in ipairs(MEMBER_FIELDS) do
-                m[f] = rec[f]
+            for _, frame in ipairs(MEMBER_FIELDS) do
+                m[frame] = rec[frame]
             end
         end
     end
@@ -1765,8 +1765,8 @@ local function SetRowFS(fontStr, size, flags)
     CUI.SetFontFamily(fontStr, filePath, size or FONT_SZ, outline, false)
 end
 
-local function Hex(r, g, b)
-    return format("%02x%02x%02x", floor((r or 1) * 255), floor((g or 1) * 255), floor((b or 1) * 255))
+local function Hex(region, g, b)
+    return format("%02x%02x%02x", floor((region or 1) * 255), floor((g or 1) * 255), floor((b or 1) * 255))
 end
 
 -- Shared number engine: K/M/B, or thousand/wan/yi grouping on koKR/zhCN/zhTW.
@@ -1809,11 +1809,11 @@ local function ScoreText(m)
         return "-"
     end
     local hex = "ffffff"
-    local col = C_ChallengeMode
+    local colour = C_ChallengeMode
         and C_ChallengeMode.GetDungeonScoreRarityColor
         and C_ChallengeMode.GetDungeonScoreRarityColor(m.score)
-    if type(col) == "table" and col.r then
-        hex = Hex(col.r, col.g, col.b)
+    if type(colour) == "table" and colour.r then
+        hex = Hex(colour.r, colour.g, colour.b)
     end
     return format("|cff%s%d|r", hex, floor(m.score))
 end
@@ -1826,8 +1826,8 @@ local function NonZero(v)
     return nil
 end
 
-local function CellText(col, m, c)
-    local k = col.key
+local function CellText(colour, m, c)
+    local k = colour.key
     if k == "name" then
         return format("|cff%s%s|r", ClassHex(m.class), ShortName(m.name))
     end
@@ -1849,14 +1849,14 @@ local function CellText(col, m, c)
     return ""
 end
 
-local function SubText(col, m, c)
-    if col.key == "name" then
+local function SubText(colour, m, c)
+    if colour.key == "name" then
         if c and c.colItemLevel ~= false and m.ilvl then
             return format("(%d)", m.ilvl)
         end
         return ""
     end
-    if col.key == "score" then
+    if colour.key == "score" then
         if m.scoreGain and m.scoreGain > 0 then
             return format("(+%d)", floor(m.scoreGain))
         end
@@ -1937,18 +1937,18 @@ local function MakeRow(hostFrame, size)
     row:SetHeight(RowHeight(size))
     row.text, row.sub, row.icons = {}, {}, {}
     local px = (CUI.PP and CUI.PP.mult) or 1
-    for _, col in ipairs(COLUMNS) do
+    for _, colour in ipairs(COLUMNS) do
         local fontStr = row:CreateFontString(nil, "OVERLAY")
         SetRowFS(fontStr, size)
         fontStr:SetTextColor(1, 1, 1, 1)
-        fontStr:SetJustifyH(col.justify or (col.kind == "icon" and "CENTER" or "LEFT"))
+        fontStr:SetJustifyH(colour.justify or (colour.kind == "icon" and "CENTER" or "LEFT"))
         fontStr:SetWordWrap(false)
-        row.text[col.key] = fontStr
-        if col.kind == "icon" then
+        row.text[colour.key] = fontStr
+        if colour.kind == "icon" then
             local cell = CreateFrame("Frame", nil, row)
             cell:SetSize(ICON_SZ, ICON_SZ)
             cell.tex = cell:CreateTexture(nil, "ARTWORK")
-            if col.key == "spec" or col.key == "loot" then
+            if colour.key == "spec" or colour.key == "loot" then
                 -- Square icon on a black plate, inset by one physical pixel so
                 -- the plate reads as a 1px border.
                 cell.bg = cell:CreateTexture(nil, "BACKGROUND")
@@ -1959,15 +1959,15 @@ local function MakeRow(hostFrame, size)
             else
                 cell.tex:SetAllPoints()
             end
-            row.icons[col.key] = cell
+            row.icons[colour.key] = cell
         else
-            local style = col.sub and SUB_STYLE[col.key]
+            local style = colour.sub and SUB_STYLE[colour.key]
             if style then
                 local sfs = CUI.MakeFont(row, size - 2, nil, style.r, style.g, style.b, 1)
                 SetFS(sfs, size - 2, "")
                 sfs:SetJustifyH("LEFT")
                 sfs:SetWordWrap(false)
-                row.sub[col.key] = sfs
+                row.sub[colour.key] = sfs
             end
         end
     end
@@ -2102,8 +2102,8 @@ local function BuildWindow()
     colHdr:SetPoint("TOPLEFT", window, "TOPLEFT", 0, -HEAD_H)
     colHdr:SetPoint("TOPRIGHT", window, "TOPRIGHT", 0, -HEAD_H)
     colHdr:SetHeight(COLHDR_H)
-    for _, col in ipairs(COLUMNS) do
-        local fontStr = colHdr.text[col.key]
+    for _, colour in ipairs(COLUMNS) do
+        local fontStr = colHdr.text[colour.key]
         if fontStr then
             SetRowFS(fontStr, COLHDR_SZ)
             fontStr:SetTextColor(1, 1, 1, 0.45)
@@ -2120,9 +2120,9 @@ local function BuildWindow()
     -- direction; stored on the profile. The active column is the bright
     -- header, nothing else marks it.
     colHdr.sortBtns = {}
-    for _, col in ipairs(COLUMNS) do
-        if SORT_KEYS[col.key] then
-            local fontStr = colHdr.text[col.key]
+    for _, colour in ipairs(COLUMNS) do
+        if SORT_KEYS[colour.key] then
+            local fontStr = colHdr.text[colour.key]
             local button = CreateFrame("Button", nil, colHdr)
             button:SetFrameLevel(colHdr:GetFrameLevel() + 2)
             button:SetScript("OnEnter", function()
@@ -2141,15 +2141,15 @@ local function BuildWindow()
                     return
                 end
                 local key, asc = SortState()
-                if key == col.key then
+                if key == colour.key then
                     c.sortAsc = not asc
                 else
-                    c.sortKey = col.key
+                    c.sortKey = colour.key
                     c.sortAsc = false
                 end
                 RefreshWindowIfOpen()
             end)
-            colHdr.sortBtns[col.key] = button
+            colHdr.sortBtns[colour.key] = button
         end
     end
 
@@ -2179,9 +2179,9 @@ end
 local function VisibleColumns()
     local c = Cfg() or {}
     wipe(visibleCols)
-    for _, col in ipairs(COLUMNS) do
-        if not col.cfg or c[col.cfg] ~= false then
-            visibleCols[#visibleCols + 1] = col
+    for _, colour in ipairs(COLUMNS) do
+        if not colour.cfg or c[colour.cfg] ~= false then
+            visibleCols[#visibleCols + 1] = colour
         end
     end
     return visibleCols
@@ -2218,9 +2218,9 @@ local function FillSpecCell(cell, m)
     local coords = m.class and not IsSecret(m.class) and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[m.class]
     if coords then
         cell.tex:SetTexture(CLASS_ICON_TEX)
-        local l, r, t, b = coords[1], coords[2], coords[3], coords[4]
-        local dx, dy = (r - l) * zoom, (b - t) * zoom
-        cell.tex:SetTexCoord(l + dx, r - dx, t + dy, b - dy)
+        local l, region, t, b = coords[1], coords[2], coords[3], coords[4]
+        local dx, dy = (region - l) * zoom, (b - t) * zoom
+        cell.tex:SetTexCoord(l + dx, region - dx, t + dy, b - dy)
         cell:Show()
         return
     end
@@ -2260,8 +2260,8 @@ local function FillLootCell(cell, m)
     cell._link = m.lootLink
     if m.lootID or m.lootLink then
         local ident = m.lootID or IDFromLink(m.lootLink)
-        local icon = ident and C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(ident)
-        cell.tex:SetTexture(icon or "Interface\\Icons\\INV_Misc_QuestionMark")
+        local iconTex = ident and C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(ident)
+        cell.tex:SetTexture(iconTex or "Interface\\Icons\\INV_Misc_QuestionMark")
         cell.tex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
     else
         cell.tex:SetTexture(nil)
@@ -2279,16 +2279,16 @@ end
 -- of columns the user switched off.
 local function PlaceInto(boxHolder, cols, widths, primW, subW)
     local posX = PAD
-    for idx, col in ipairs(cols) do
-        local wt = widths[idx]
-        local fontStr = boxHolder.text[col.key]
-        local sfs = boxHolder.sub and boxHolder.sub[col.key]
-        local icon = boxHolder.icons[col.key]
-        if icon then
-            icon:ClearAllPoints()
-            icon:SetPoint("LEFT", boxHolder, "LEFT", posX + (wt - ICON_SZ) / 2, 0)
+    for index, colour in ipairs(cols) do
+        local wt = widths[index]
+        local fontStr = boxHolder.text[colour.key]
+        local sfs = boxHolder.sub and boxHolder.sub[colour.key]
+        local iconTex = boxHolder.icons[colour.key]
+        if iconTex then
+            iconTex:ClearAllPoints()
+            iconTex:SetPoint("LEFT", boxHolder, "LEFT", posX + (wt - ICON_SZ) / 2, 0)
         end
-        local scrollBar = boxHolder.sortBtns and boxHolder.sortBtns[col.key]
+        local scrollBar = boxHolder.sortBtns and boxHolder.sortBtns[colour.key]
         if scrollBar then
             scrollBar:ClearAllPoints()
             scrollBar:SetPoint("TOPLEFT", boxHolder, "TOPLEFT", posX, 0)
@@ -2298,7 +2298,7 @@ local function PlaceInto(boxHolder, cols, widths, primW, subW)
         if fontStr then
             fontStr:ClearAllPoints()
             fontStr:SetPoint("LEFT", boxHolder, "LEFT", posX, 0)
-            if col.sub == "inline" then
+            if colour.sub == "inline" then
                 fontStr:SetWidth(wt)
                 if sfs then
                     -- Anchored off this row's own text, so the item level sits
@@ -2310,40 +2310,40 @@ local function PlaceInto(boxHolder, cols, widths, primW, subW)
                     sfs:Show()
                 end
             else
-                fontStr:SetWidth(primW[idx])
+                fontStr:SetWidth(primW[index])
                 if sfs then
                     sfs:ClearAllPoints()
-                    sfs:SetPoint("LEFT", boxHolder, "LEFT", posX + primW[idx] + SUB_GAP, 0)
-                    sfs:SetWidth(math.max(1, subW[idx]))
+                    sfs:SetPoint("LEFT", boxHolder, "LEFT", posX + primW[index] + SUB_GAP, 0)
+                    sfs:SetWidth(math.max(1, subW[index]))
                     sfs:Show()
                 end
             end
             fontStr:Show()
         end
-        posX = posX + wt + (col.gapAfter or COL_GAP)
+        posX = posX + wt + (colour.gapAfter or COL_GAP)
     end
-    for _, col in ipairs(COLUMNS) do
+    for _, colour in ipairs(COLUMNS) do
         local isShown = false
         for _, vc in ipairs(cols) do
-            if vc.key == col.key then
+            if vc.key == colour.key then
                 isShown = true
                 break
             end
         end
         if not isShown then
-            local fontStr = boxHolder.text[col.key]
+            local fontStr = boxHolder.text[colour.key]
             if fontStr then
                 fontStr:Hide()
             end
-            local sfs = boxHolder.sub and boxHolder.sub[col.key]
+            local sfs = boxHolder.sub and boxHolder.sub[colour.key]
             if sfs then
                 sfs:Hide()
             end
-            local icon = boxHolder.icons[col.key]
-            if icon then
-                icon:Hide()
+            local iconTex = boxHolder.icons[colour.key]
+            if iconTex then
+                iconTex:Hide()
             end
-            local scrollBar = boxHolder.sortBtns and boxHolder.sortBtns[col.key]
+            local scrollBar = boxHolder.sortBtns and boxHolder.sortBtns[colour.key]
             if scrollBar then
                 scrollBar:Hide()
             end
@@ -2432,15 +2432,15 @@ local function Render(record)
         rowList[i]:SetPoint("TOPRIGHT", window, "TOPRIGHT", 0, posY)
         local row, m = rowList[i], members[i]
         row:Show()
-        for _, col in ipairs(COLUMNS) do
-            local fontStr = row.text[col.key]
+        for _, colour in ipairs(COLUMNS) do
+            local fontStr = row.text[colour.key]
             if fontStr then
-                fontStr:SetText(CellText(col, m, c))
+                fontStr:SetText(CellText(colour, m, c))
                 fontStr:SetTextColor(1, 1, 1, 1)
             end
-            local sfs = row.sub[col.key]
+            local sfs = row.sub[colour.key]
             if sfs then
-                sfs:SetText(SubText(col, m, c))
+                sfs:SetText(SubText(colour, m, c))
             end
         end
         if row.icons.spec then
@@ -2454,19 +2454,19 @@ local function Render(record)
         rowList[i]:Hide()
     end
 
-    for _, col in ipairs(COLUMNS) do
-        local fontStr = colHdr.text[col.key]
+    for _, colour in ipairs(COLUMNS) do
+        local fontStr = colHdr.text[colour.key]
         if fontStr then
-            fontStr:SetText(col.header ~= "" and CUI.L(col.header) or "")
+            fontStr:SetText(colour.header ~= "" and CUI.L(colour.header) or "")
         end
-        local sfs = colHdr.sub[col.key]
+        local sfs = colHdr.sub[colour.key]
         if sfs then
             sfs:SetText("")
         end
         -- Active sort column: bright header; the rest muted.
-        local scrollBar = colHdr.sortBtns and colHdr.sortBtns[col.key]
+        local scrollBar = colHdr.sortBtns and colHdr.sortBtns[colour.key]
         if scrollBar then
-            local isActive = (col.key == sortKey)
+            local isActive = (colour.key == sortKey)
             scrollBar.active = isActive
             if fontStr then
                 fontStr:SetTextColor(1, 1, 1, isActive and 1 or 0.45)
@@ -2480,38 +2480,38 @@ local function Render(record)
     wipe(widths)
     wipe(primW)
     wipe(subW)
-    for idx, col in ipairs(cols) do
-        local wp, ws, wt = col.minW, 0, col.minW
-        if col.kind == "icon" then
-            wt = math.max(col.minW, MeasuredWidth(colHdr.text[col.key], 0))
+    for index, colour in ipairs(cols) do
+        local wp, ws, wt = colour.minW, 0, colour.minW
+        if colour.kind == "icon" then
+            wt = math.max(colour.minW, MeasuredWidth(colHdr.text[colour.key], 0))
             wp = wt
-        elseif col.kind == "text" then
-            wp = MeasuredWidth(colHdr.text[col.key], 0)
+        elseif colour.kind == "text" then
+            wp = MeasuredWidth(colHdr.text[colour.key], 0)
             for i = 1, #members do
-                wp = math.max(wp, MeasuredWidth(rowList[i].text[col.key], 0))
-                if col.sub then
-                    ws = math.max(ws, MeasuredWidth(rowList[i].sub[col.key], 0))
+                wp = math.max(wp, MeasuredWidth(rowList[i].text[colour.key], 0))
+                if colour.sub then
+                    ws = math.max(ws, MeasuredWidth(rowList[i].sub[colour.key], 0))
                 end
             end
-            if col.sub == "inline" then
+            if colour.sub == "inline" then
                 -- The primary is sized per row here, so the column only has to
                 -- fit the widest name plus its own extra.
-                wt = math.max(col.minW, MeasuredWidth(colHdr.text[col.key], 0))
+                wt = math.max(colour.minW, MeasuredWidth(colHdr.text[colour.key], 0))
                 for i = 1, #members do
-                    local a = MeasuredWidth(rowList[i].text[col.key], 0)
-                    local b = MeasuredWidth(rowList[i].sub[col.key], 0)
+                    local a = MeasuredWidth(rowList[i].text[colour.key], 0)
+                    local b = MeasuredWidth(rowList[i].sub[colour.key], 0)
                     wt = math.max(wt, a + (b > 0 and (SUB_GAP + b) or 0))
                 end
             else
-                wp = math.max(wp, col.minW)
+                wp = math.max(wp, colour.minW)
                 wt = wp + (ws > 0 and (SUB_GAP + ws) or 0)
             end
         end
-        primW[idx], subW[idx], widths[idx] = wp, ws, wt
+        primW[index], subW[index], widths[index] = wp, ws, wt
         sum = sum + wt
     end
-    for idx = 1, #cols - 1 do
-        sum = sum + (cols[idx].gapAfter or COL_GAP)
+    for index = 1, #cols - 1 do
+        sum = sum + (cols[index].gapAfter or COL_GAP)
     end
     sum = sum + PAD * 2
 
@@ -2668,15 +2668,15 @@ end
 --------------------------------------------------------------------------------
 SLASH_CUIMPLUS1 = "/ov"
 SLASH_CUIMPLUS2 = "/cuimplus"
-SlashCmdList.CUIMPLUS = function(msg)
+SlashCmdList.CUIMPLUS = function(message)
     if not Enabled() then
         CUI.PrintError(CludesUI.L("Run Summary is disabled in Mythic+ Tools."))
         return
     end
-    local lower = msg and msg:lower() or ""
+    local lower = message and message:lower() or ""
     if lower:find("preview", 1, true) then
         mod.RS_ShowPreview()
         return
     end
-    mod.RS_Show(msg and tonumber(msg:match("%d+")))
+    mod.RS_Show(message and tonumber(message:match("%d+")))
 end

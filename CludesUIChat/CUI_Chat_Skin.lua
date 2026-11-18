@@ -82,18 +82,18 @@ local function SkinChatFrame(castFrame)
     -- (the drop spot) so the position save completes cleanly. Same shipped
     -- object-hook shape as the ApplySystemAnchor guard; fires only when a
     -- chat frame stops moving (user drag), self-gates to the broken state.
-    hooksecurefunc(castFrame, "StopMovingOrSizing", function(f)
-        if f.isDocked then
+    hooksecurefunc(castFrame, "StopMovingOrSizing", function(frame)
+        if frame.isDocked then
             return
         end
-        if f:GetNumPoints() == 0 then
+        if frame:GetNumPoints() == 0 then
             -- TOPLEFT, matching Blizzard's own undock anchor convention (the
             -- tab drag grabs near the frame's top-left, so a later re-attach
             -- by anchor point lands without a jump; CENTER produced one).
             local issec = _G.issecretvalue
             local mx, my = GetCursorPosition()
-            local es = f:GetEffectiveScale()
-            local wid, hgt = f:GetWidth() or 430, f:GetHeight() or 120
+            local es = frame:GetEffectiveScale()
+            local wid, hgt = frame:GetWidth() or 430, frame:GetHeight() or 120
             if
                 mx
                 and my
@@ -101,9 +101,9 @@ local function SkinChatFrame(castFrame)
                 and es > 0
                 and not (issec and (issec(mx) or issec(my) or issec(wid) or issec(hgt)))
             then
-                f:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", mx / es - wid / 2, my / es + hgt / 2)
+                frame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", mx / es - wid / 2, my / es + hgt / 2)
             else
-                f:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+                frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
             end
         end
     end)
@@ -349,11 +349,11 @@ local function SkinChatFrame(castFrame)
                     yOff or -ICON_SPACING
                 )
             end
-            local icon = button:CreateTexture(nil, "ARTWORK")
+            local iconTex = button:CreateTexture(nil, "ARTWORK")
             -- Stock styles: the kit dresses the button (no CludesUI tint,
             -- alpha or hover hooks).
             if CHAT.SB_KIT and key then
-                button._icon = icon
+                button._icon = iconTex
                 if key == "scroll" then
                     CHAT.SB_DressScroll(button, "sidebar")
                 else
@@ -361,17 +361,17 @@ local function SkinChatFrame(castFrame)
                 end
                 return button
             end
-            icon:SetAllPoints()
-            icon:SetTexture(texPath)
-            icon:SetDesaturated(true)
-            icon:SetVertexColor(1, 1, 1, ICON_ALPHA)
+            iconTex:SetAllPoints()
+            iconTex:SetTexture(texPath)
+            iconTex:SetDesaturated(true)
+            iconTex:SetVertexColor(1, 1, 1, ICON_ALPHA)
             button:HookScript("OnEnter", function()
-                icon:SetVertexColor(1, 1, 1, ICON_HOVER_ALPHA)
+                iconTex:SetVertexColor(1, 1, 1, ICON_HOVER_ALPHA)
             end)
             button:HookScript("OnLeave", function()
-                icon:SetVertexColor(1, 1, 1, ICON_ALPHA)
+                iconTex:SetVertexColor(1, 1, 1, ICON_ALPHA)
             end)
-            button._icon = icon
+            button._icon = iconTex
             return button
         end
 
@@ -908,8 +908,8 @@ local function SkinChatFrame(castFrame)
         -- fades it in with btnFrame's alpha on hover the same as any other
         -- chat window, and its own alpha/mouse state were never touched here.
         local regions = { btnFrame:GetRegions() }
-        for idx = 1, #regions do
-            local regionFrame = regions[idx]
+        for index = 1, #regions do
+            local regionFrame = regions[index]
             if regionFrame:IsObjectType("Texture") then
                 regionFrame:SetTexture("")
             end
@@ -1011,8 +1011,8 @@ local function SkinChatFrame(castFrame)
     local stockArt = mod.ChatStockArt()
     if castFrame.GetRegions and not stockArt then
         local regions = { castFrame:GetRegions() }
-        for idx = 1, #regions do
-            local regionFrame = regions[idx]
+        for index = 1, #regions do
+            local regionFrame = regions[index]
             if regionFrame and regionFrame:IsObjectType("Texture") and not regionFrame._cuiOwned then
                 regionFrame:SetTexture("")
                 regionFrame:SetAtlas("")
@@ -1024,8 +1024,8 @@ local function SkinChatFrame(castFrame)
         castFrame.Background:SetAlpha(0)
         if castFrame.Background.GetRegions then
             local regions = { castFrame.Background:GetRegions() }
-            for idx = 1, #regions do
-                local regionFrame = regions[idx]
+            for index = 1, #regions do
+                local regionFrame = regions[index]
                 if regionFrame and regionFrame:IsObjectType("Texture") then
                     regionFrame:SetAlpha(0)
                 end
@@ -1047,8 +1047,8 @@ local function SkinChatFrame(castFrame)
 
             if qbf.GetRegions then
                 local regions = { qbf:GetRegions() }
-                for idx = 1, #regions do
-                    local regionFrame = regions[idx]
+                for index = 1, #regions do
+                    local regionFrame = regions[index]
                     if regionFrame and regionFrame:IsObjectType("Texture") then
                         regionFrame:SetAlpha(0)
                     end
@@ -1104,8 +1104,8 @@ local function SkinChatFrame(castFrame)
             end
             if qbf.GetChildren then
                 local children = { qbf:GetChildren() }
-                for idx = 1, #children do
-                    local button = children[idx]
+                for index = 1, #children do
+                    local button = children[index]
                     if
                         button and button:IsObjectType("CheckButton")
                         or (button and button:IsObjectType("Button"))

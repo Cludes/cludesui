@@ -43,13 +43,13 @@ end
 local function Members()
     local result = {}
     if IsInRaid() then
-        for idx = 1, GetNumGroupMembers() do
-            result[#result + 1] = "raid" .. idx
+        for index = 1, GetNumGroupMembers() do
+            result[#result + 1] = "raid" .. index
         end
     else
         result[1] = "player"
-        for idx = 1, GetNumSubgroupMembers() do
-            result[#result + 1] = "party" .. idx
+        for index = 1, GetNumSubgroupMembers() do
+            result[#result + 1] = "party" .. index
         end
     end
     return result
@@ -193,31 +193,31 @@ local function Build()
     tinsert(UISpecialFrames, "CludesUIGroupInspect")
 end
 
-local function Row(idx)
-    local r = rowList[idx]
-    if not r then
-        r = CreateFrame("Button", nil, window)
-        r:SetSize(440, ROW_H)
-        r.text = r:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(r.text, 12, "essentials")
-        r.text:SetPoint("LEFT")
-        r.text:SetJustifyH("LEFT")
-        r.text:SetWidth(440)
-        r.text:SetWordWrap(false)
-        local highlight = r:CreateTexture(nil, "HIGHLIGHT")
+local function Row(index)
+    local region = rowList[index]
+    if not region then
+        region = CreateFrame("Button", nil, window)
+        region:SetSize(440, ROW_H)
+        region.text = region:CreateFontString(nil, "OVERLAY")
+        CludesUI.Kit.Font(region.text, 12, "essentials")
+        region.text:SetPoint("LEFT")
+        region.text:SetJustifyH("LEFT")
+        region.text:SetWidth(440)
+        region.text:SetWordWrap(false)
+        local highlight = region:CreateTexture(nil, "HIGHLIGHT")
         highlight:SetAllPoints()
         highlight:SetColorTexture(1, 1, 1, 0.06)
-        r:SetScript("OnClick", function(self)
+        region:SetScript("OnClick", function(self)
             if self.unit and UnitExists(self.unit) and CanInspect(self.unit, true) then
                 InspectUnit(self.unit)
             end
         end)
-        rowList[idx] = r
+        rowList[index] = region
     end
-    r:ClearAllPoints()
-    r:SetPoint("TOPLEFT", window, "TOPLEFT", 10, -30 - (idx - 1) * ROW_H)
-    r:Show()
-    return r
+    region:ClearAllPoints()
+    region:SetPoint("TOPLEFT", window, "TOPLEFT", 10, -30 - (index - 1) * ROW_H)
+    region:Show()
+    return region
 end
 
 Refresh = function()
@@ -252,13 +252,13 @@ Refresh = function()
     table.sort(entries, function(a, b)
         return a.ilvl > b.ilvl
     end)
-    for idx, l in ipairs(entries) do
-        local r = Row(idx)
-        r.unit = l.unit
-        r.text:SetText(l.text)
+    for index, l in ipairs(entries) do
+        local region = Row(index)
+        region.unit = l.unit
+        region.text:SetText(l.text)
     end
-    for idx = #entries + 1, #rowList do
-        rowList[idx]:Hide()
+    for index = #entries + 1, #rowList do
+        rowList[index]:Hide()
     end
     window:SetHeight(40 + #entries * ROW_H)
 end

@@ -494,8 +494,8 @@ end
 
 -- Snap a measurement to an even whole pixel, min 2 (text height rounding).
 function mod.SnapToPixelGrid(v)
-    local r = floor((v or 0) + 0.5)
-    return max(2, r + (r % 2))
+    local region = floor((v or 0) + 0.5)
+    return max(2, region + (region % 2))
 end
 
 -------------------------------------------------------------------------------
@@ -524,11 +524,11 @@ local function CoinMarker(i, coinIcons, coloured)
     if coinIcons then
         return COIN_TEX[i]
     end
-    local d = DENOMINATIONS[i]
+    local skinData = DENOMINATIONS[i]
     if coloured then
-        return d.color .. d.symbol .. "|r"
+        return skinData.color .. skinData.symbol .. "|r"
     end
-    return d.symbol
+    return skinData.symbol
 end
 
 -- Gold abbreviation (SI units): 284208 -> "284.2K". The breakpoint table and
@@ -670,90 +670,90 @@ function mod.CreateFramePool(frameType, hostFrame, template)
     pool._inactive = {}
 
     function pool:Acquire()
-        local f = tremove(self._inactive)
-        if not f then
-            f = CreateFrame(self._type, nil, self._parent, self._template)
+        local frame = tremove(self._inactive)
+        if not frame then
+            frame = CreateFrame(self._type, nil, self._parent, self._template)
         end
-        f:SetParent(self._parent)
-        f:Show()
-        self._active[#self._active + 1] = f
-        return f
+        frame:SetParent(self._parent)
+        frame:Show()
+        self._active[#self._active + 1] = frame
+        return frame
     end
 
-    local function ResetPooledFrame(f)
-        if not f then
+    local function ResetPooledFrame(frame)
+        if not frame then
             return
         end
-        f:Hide()
-        f:ClearAllPoints()
-        f:SetParent(pool._parent)
-        f:SetAlpha(1)
-        f:SetScale(1)
-        f:SetWidth(1)
-        f:SetHeight(1)
-        f:EnableMouse(false)
-        f:RegisterForClicks()
-        f:SetScript("OnEnter", nil)
-        f:SetScript("OnLeave", nil)
-        f:SetScript("OnClick", nil)
-        f:SetScript("OnMouseDown", nil)
-        f:SetScript("OnMouseUp", nil)
-        f:SetScript("OnUpdate", nil)
-        f:SetScript("OnShow", nil)
-        f:SetScript("OnHide", nil)
-        if f.GetNormalTexture and f:GetNormalTexture() and f:GetNormalTexture().SetTexture then
-            f:GetNormalTexture():SetTexture(nil)
+        frame:Hide()
+        frame:ClearAllPoints()
+        frame:SetParent(pool._parent)
+        frame:SetAlpha(1)
+        frame:SetScale(1)
+        frame:SetWidth(1)
+        frame:SetHeight(1)
+        frame:EnableMouse(false)
+        frame:RegisterForClicks()
+        frame:SetScript("OnEnter", nil)
+        frame:SetScript("OnLeave", nil)
+        frame:SetScript("OnClick", nil)
+        frame:SetScript("OnMouseDown", nil)
+        frame:SetScript("OnMouseUp", nil)
+        frame:SetScript("OnUpdate", nil)
+        frame:SetScript("OnShow", nil)
+        frame:SetScript("OnHide", nil)
+        if frame.GetNormalTexture and frame:GetNormalTexture() and frame:GetNormalTexture().SetTexture then
+            frame:GetNormalTexture():SetTexture(nil)
         end
-        if f.GetPushedTexture and f:GetPushedTexture() and f:GetPushedTexture().SetTexture then
-            f:GetPushedTexture():SetTexture(nil)
+        if frame.GetPushedTexture and frame:GetPushedTexture() and frame:GetPushedTexture().SetTexture then
+            frame:GetPushedTexture():SetTexture(nil)
         end
-        if f.GetHighlightTexture and f:GetHighlightTexture() and f:GetHighlightTexture().SetTexture then
-            f:GetHighlightTexture():SetTexture(nil)
+        if frame.GetHighlightTexture and frame:GetHighlightTexture() and frame:GetHighlightTexture().SetTexture then
+            frame:GetHighlightTexture():SetTexture(nil)
         end
-        if f.GetDisabledTexture and f:GetDisabledTexture() and f:GetDisabledTexture().SetTexture then
-            f:GetDisabledTexture():SetTexture(nil)
+        if frame.GetDisabledTexture and frame:GetDisabledTexture() and frame:GetDisabledTexture().SetTexture then
+            frame:GetDisabledTexture():SetTexture(nil)
         end
-        if f.GetCheckedTexture and f:GetCheckedTexture() and f:GetCheckedTexture().SetTexture then
-            f:GetCheckedTexture():SetTexture(nil)
+        if frame.GetCheckedTexture and frame:GetCheckedTexture() and frame:GetCheckedTexture().SetTexture then
+            frame:GetCheckedTexture():SetTexture(nil)
         end
-        if f.SetButtonState then
-            f:SetButtonState("NORMAL")
+        if frame.SetButtonState then
+            frame:SetButtonState("NORMAL")
         end
-        if f.SetChecked then
-            f:SetChecked(false)
+        if frame.SetChecked then
+            frame:SetChecked(false)
         end
-        if f.SetText then
-            f:SetText("")
+        if frame.SetText then
+            frame:SetText("")
         end
-        if f.SetAttribute then
-            pcall(f.SetAttribute, f, "type", nil)
-            pcall(f.SetAttribute, f, "macrotext", nil)
-            pcall(f.SetAttribute, f, "clickbutton", nil)
+        if frame.SetAttribute then
+            pcall(frame.SetAttribute, frame, "type", nil)
+            pcall(frame.SetAttribute, frame, "macrotext", nil)
+            pcall(frame.SetAttribute, frame, "clickbutton", nil)
         end
-        if f.GetNumRegions then
+        if frame.GetNumRegions then
             -- select() avoids allocating a throwaway table per released frame.
-            for i = 1, f:GetNumRegions() do
-                local r = select(i, f:GetRegions())
-                if r and r.Hide then
-                    r:Hide()
+            for i = 1, frame:GetNumRegions() do
+                local region = select(i, frame:GetRegions())
+                if region and region.Hide then
+                    region:Hide()
                 end
-                if r and r.SetAlpha then
-                    r:SetAlpha(1)
+                if region and region.SetAlpha then
+                    region:SetAlpha(1)
                 end
-                if r and r.ClearAllPoints then
-                    r:ClearAllPoints()
+                if region and region.ClearAllPoints then
+                    region:ClearAllPoints()
                 end
-                if r and r.SetText then
-                    r:SetText("")
+                if region and region.SetText then
+                    region:SetText("")
                 end
-                if r and r.SetTexture then
-                    r:SetTexture(nil)
+                if region and region.SetTexture then
+                    region:SetTexture(nil)
                 end
-                if r and r.SetVertexColor then
-                    r:SetVertexColor(1, 1, 1, 1)
+                if region and region.SetVertexColor then
+                    region:SetVertexColor(1, 1, 1, 1)
                 end
-                if r and r.SetTexCoord then
-                    r:SetTexCoord(0, 1, 0, 1)
+                if region and region.SetTexCoord then
+                    region:SetTexCoord(0, 1, 0, 1)
                 end
             end
         end
@@ -761,9 +761,9 @@ function mod.CreateFramePool(frameType, hostFrame, template)
 
     function pool:ReleaseAll()
         for i = #self._active, 1, -1 do
-            local f = tremove(self._active, i)
-            ResetPooledFrame(f)
-            self._inactive[#self._inactive + 1] = f
+            local frame = tremove(self._active, i)
+            ResetPooledFrame(frame)
+            self._inactive[#self._inactive + 1] = frame
         end
     end
 
@@ -1201,7 +1201,7 @@ do
     -- they're the same thing, an interactive tooltip row. The accent recolor
     -- only shows if the row's left text carries no embedded |c..|r codes.
     local function PlaceRowOverlay(b, i, innerW)
-        local d, row = payload[i], rowList[i]
+        local skinData, row = payload[i], rowList[i]
         -- Re-stated per placement, not just at creation: the tip's level can
         -- rise on any Tip_Show, and a pooled button keeping the old base
         -- would sink under the background. Never lowered.
@@ -1210,10 +1210,10 @@ do
             b:SetFrameLevel(wanted)
         end
         b:ClearAllPoints()
-        b:SetPoint("TOPLEFT", tipText, "TOPLEFT", PAD, d._y)
-        b:SetSize(max(1, innerW), max(1, d._h))
+        b:SetPoint("TOPLEFT", tipText, "TOPLEFT", PAD, skinData._y)
+        b:SetSize(max(1, innerW), max(1, skinData._h))
         local ar, ag, ab = mod.GetAccent()
-        local lr, lg, lb = d.lr or 1, d.lg or 1, d.lb or 1
+        local lr, lg, lb = skinData.lr or 1, skinData.lg or 1, skinData.lb or 1
         b:SetScript("OnEnter", function()
             row.left:SetTextColor(ar, ag, ab, 1)
         end)
@@ -1273,7 +1273,7 @@ do
     -- Tip_Show sizes via GetStringWidth, which errors on a SECRET-fed
     -- FontString. Rows carrying a secret are dropped here, so the tooltip
     -- shortens instead of erroring. Add functions return true when added.
-    function mod.Tip_AddLine(textValue, r, g, b)
+    function mod.Tip_AddLine(textValue, region, g, b)
         if not tipText then
             return
         end
@@ -1285,35 +1285,35 @@ do
         -- (names, numbers, already-localized strings) has no key, falls back unchanged.
         textValue = CludesUI.L(textValue)
         dataCount = dataCount + 1
-        local d = payload[dataCount]
-        if not d then
-            d = {}
-            payload[dataCount] = d
+        local skinData = payload[dataCount]
+        if not skinData then
+            skinData = {}
+            payload[dataCount] = skinData
         end
-        d.l = textValue or " "
-        d.lr = r
-        d.lg = g
-        d.lb = b
-        d.r = nil
-        d.wrap = nil
-        d.action = nil
-        d.actionToy = nil
-        d.actionMacro = nil
-        d.actionHouse = nil
-        d._padBand = nil
-        d.onClick = nil
-        d.onWheel = nil
-        d.ncols = nil
+        skinData.l = textValue or " "
+        skinData.lr = region
+        skinData.lg = g
+        skinData.lb = b
+        skinData.r = nil
+        skinData.wrap = nil
+        skinData.action = nil
+        skinData.actionToy = nil
+        skinData.actionMacro = nil
+        skinData.actionHouse = nil
+        skinData._padBand = nil
+        skinData.onClick = nil
+        skinData.onWheel = nil
+        skinData.ncols = nil
         return true
     end
 
     -- Long prose (currency descriptions etc.): word-wraps at maxWidth px
     -- instead of blowing the tooltip out to the widest single line.
-    function mod.Tip_AddWrappedLine(textValue, maxWidth, r, g, b)
+    function mod.Tip_AddWrappedLine(textValue, maxWidth, region, g, b)
         if not tipText then
             return
         end
-        if mod.Tip_AddLine(textValue, r, g, b) then
+        if mod.Tip_AddLine(textValue, region, g, b) then
             payload[dataCount].wrap = maxWidth or 280
         end
     end
@@ -1329,28 +1329,28 @@ do
         leftX = CludesUI.L(leftX)
         right = CludesUI.L(right) -- see Tip_AddLine
         dataCount = dataCount + 1
-        local d = payload[dataCount]
-        if not d then
-            d = {}
-            payload[dataCount] = d
+        local skinData = payload[dataCount]
+        if not skinData then
+            skinData = {}
+            payload[dataCount] = skinData
         end
-        d.l = leftX or " "
-        d.lr = lr
-        d.lg = lg
-        d.lb = lb
-        d.r = right or ""
-        d.rr = rr
-        d.rg = rg
-        d.rb = rb
-        d.wrap = nil
-        d.action = nil
-        d.actionToy = nil
-        d.actionMacro = nil
-        d.actionHouse = nil
-        d._padBand = nil
-        d.onClick = nil
-        d.onWheel = nil
-        d.ncols = nil
+        skinData.l = leftX or " "
+        skinData.lr = lr
+        skinData.lg = lg
+        skinData.lb = lb
+        skinData.r = right or ""
+        skinData.rr = rr
+        skinData.rg = rg
+        skinData.rb = rb
+        skinData.wrap = nil
+        skinData.action = nil
+        skinData.actionToy = nil
+        skinData.actionMacro = nil
+        skinData.actionHouse = nil
+        skinData._padBand = nil
+        skinData.onClick = nil
+        skinData.onWheel = nil
+        skinData.ncols = nil
         return true
     end
 
@@ -1374,33 +1374,33 @@ do
             end
         end
         dataCount = dataCount + 1
-        local d = payload[dataCount]
-        if not d then
-            d = {}
-            payload[dataCount] = d
+        local skinData = payload[dataCount]
+        if not skinData then
+            skinData = {}
+            payload[dataCount] = skinData
         end
-        d.l = leftX or " "
-        d.lr = lr
-        d.lg = lg
-        d.lb = lb
-        d.r = nil
-        d.wrap = nil
-        d.action = nil
-        d.actionToy = nil
-        d.actionMacro = nil
-        d.actionHouse = nil
-        d._padBand = nil
-        d.onClick = nil
-        d.onWheel = nil
+        skinData.l = leftX or " "
+        skinData.lr = lr
+        skinData.lg = lg
+        skinData.lb = lb
+        skinData.r = nil
+        skinData.wrap = nil
+        skinData.action = nil
+        skinData.actionToy = nil
+        skinData.actionMacro = nil
+        skinData.actionHouse = nil
+        skinData._padBand = nil
+        skinData.onClick = nil
+        skinData.onWheel = nil
         -- nil, never 0: Tip_Show tests `if d.ncols`, and 0 is true in Lua, so a
         -- token-less row would reserve the right column and pad the tip by
         -- COL_GAP for content that never renders.
-        d.ncols = num > 0 and num or nil
+        skinData.ncols = num > 0 and num or nil
         if num > 0 then
-            local c = d.cols
+            local c = skinData.cols
             if not c then
                 c = {}
-                d.cols = c
+                skinData.cols = c
             end
             for i = 1, num do
                 c[i] = tokens[i]
@@ -1512,7 +1512,7 @@ do
         local maxWrap, anyWrap = 0, false
         wipe(colW)
         for i = 1, dataCount do
-            local d = payload[i]
+            local skinData = payload[i]
             local row = EnsureRow(i)
             -- Both columns can list players (friends, guild members, their
             -- notes, the account's characters): font families.
@@ -1527,14 +1527,14 @@ do
             -- width, which the wrap cap is applied to.
             row.left:SetWordWrap(false)
             row.left:SetWidth(0)
-            row.left:SetText(d.l)
-            row.left:SetTextColor(d.lr or 1, d.lg or 1, d.lb or 1, 1)
+            row.left:SetText(skinData.l)
+            row.left:SetTextColor(skinData.lr or 1, skinData.lg or 1, skinData.lb or 1, 1)
             row.left:Show()
             local lw = row.left:GetStringWidth() or 0
-            if d.wrap then
+            if skinData.wrap then
                 anyWrap = true
-                if lw > d.wrap then
-                    lw = d.wrap
+                if lw > skinData.wrap then
+                    lw = skinData.wrap
                 end
                 if lw > maxWrap then
                     maxWrap = lw
@@ -1542,10 +1542,10 @@ do
             elseif lw > maxLeft then
                 maxLeft = lw
             end
-            if d.r then
+            if skinData.r then
                 anyRight = true
-                row.right:SetText(d.r)
-                row.right:SetTextColor(d.rr or 1, d.rg or 1, d.rb or 1, 1)
+                row.right:SetText(skinData.r)
+                row.right:SetTextColor(skinData.rr or 1, skinData.rg or 1, skinData.rb or 1, 1)
                 row.right:Show()
                 local rw = row.right:GetStringWidth() or 0
                 if rw > maxRight then
@@ -1556,17 +1556,17 @@ do
                 row.right:Hide()
             end
             local colH = 0
-            if d.ncols then
+            if skinData.ncols then
                 anyRight = true
-                if d.ncols > colCount then
-                    colCount = d.ncols
+                if skinData.ncols > colCount then
+                    colCount = skinData.ncols
                 end
-                for c = 1, d.ncols do
+                for c = 1, skinData.ncols do
                     local fontStr = EnsureCol(row, c)
                     mod.SetFont(fontStr, FONT_SIZE)
                     fontStr:SetWordWrap(false)
                     fontStr:SetWidth(0)
-                    fontStr:SetText(d.cols[c])
+                    fontStr:SetText(skinData.cols[c])
                     fontStr:Show()
                     local tw = fontStr:GetStringWidth() or 0
                     if tw > (colW[c] or 0) then
@@ -1578,13 +1578,13 @@ do
                     end
                 end
             end
-            HideCols(row, (d.ncols or 0) + 1)
+            HideCols(row, (skinData.ncols or 0) + 1)
             -- Covers whichever of the three row shapes is in play, so a taller
             -- token can't bleed into the next row. Wrapped-row height depends
             -- on final width, so it's filled in below.
-            if not d.wrap then
+            if not skinData.wrap then
                 local hgt = row.left:GetStringHeight() or FONT_SIZE
-                if d.r then
+                if skinData.r then
                     local rh = row.right:GetStringHeight() or 0
                     if rh > hgt then
                         hgt = rh
@@ -1596,10 +1596,10 @@ do
                 -- Clickable (or pad-marked) rows carry 2px of breathing room
                 -- above and below the text; the padded band is the rect the
                 -- overlay button and its hover wash cover.
-                if d.action or d.actionToy or d.actionMacro or d.actionHouse or d._padBand then
+                if skinData.action or skinData.actionToy or skinData.actionMacro or skinData.actionHouse or skinData._padBand then
                     hgt = hgt + 4
                 end
-                d._h = hgt
+                skinData._h = hgt
             end
         end
         for i = dataCount + 1, #rowList do
@@ -1630,23 +1630,23 @@ do
                 innerW = maxWrap
             end
             for i = 1, dataCount do
-                local d = payload[i]
-                if d.wrap then
+                local skinData = payload[i]
+                if skinData.wrap then
                     local leftX = rowList[i].left
                     leftX:SetWordWrap(true)
                     leftX:SetWidth(innerW)
                     local hgt = leftX:GetStringHeight() or FONT_SIZE
-                    if d.action or d.actionToy or d.actionMacro or d.actionHouse or d._padBand then
+                    if skinData.action or skinData.actionToy or skinData.actionMacro or skinData.actionHouse or skinData._padBand then
                         hgt = hgt + 4
                     end
-                    d._h = hgt
+                    skinData._h = hgt
                 end
             end
         end
         for i = 1, dataCount do
-            local d = payload[i]
-            d._h = d._h or FONT_SIZE
-            totalH = totalH + d._h + (i > 1 and ROW_GAP or 0)
+            local skinData = payload[i]
+            skinData._h = skinData._h or FONT_SIZE
+            totalH = totalH + skinData._h + (i > 1 and ROW_GAP or 0)
         end
 
         local wid = innerW + PAD * 2
@@ -1655,27 +1655,27 @@ do
 
         local posY = -PAD
         for i = 1, dataCount do
-            local d = payload[i]
+            local skinData = payload[i]
             local row = rowList[i]
             -- Text sits 4px into a clickable row's padded band (centered);
             -- d._y keeps the band's top so the overlay covers all of it.
             local ty = posY
-            if d.action or d.actionToy or d.actionMacro or d.actionHouse or d._padBand then
+            if skinData.action or skinData.actionToy or skinData.actionMacro or skinData.actionHouse or skinData._padBand then
                 ty = posY - 2
             end
             row.left:ClearAllPoints()
             row.left:SetPoint("TOPLEFT", tipText, "TOPLEFT", PAD, ty)
-            if d.r then
+            if skinData.r then
                 row.right:ClearAllPoints()
                 row.right:SetPoint("TOPRIGHT", tipText, "TOPRIGHT", -PAD, ty)
             end
-            if d.ncols then
+            if skinData.ncols then
                 -- Walk columns right to left so the block ends flush with the
                 -- tip's right edge, where a plain right string would land.
                 -- Each token anchors by its own right edge at natural width.
                 local off = PAD
                 for c = colCount, 1, -1 do
-                    local fontStr = c <= d.ncols and row.cols[c]
+                    local fontStr = c <= skinData.ncols and row.cols[c]
                     if fontStr then
                         fontStr:ClearAllPoints()
                         fontStr:SetPoint("TOPRIGHT", tipText, "TOPRIGHT", -off, ty)
@@ -1683,8 +1683,8 @@ do
                     off = off + (colW[c] or 0) + (c > 1 and TOKEN_GAP or 0)
                 end
             end
-            d._y = posY
-            posY = posY - d._h - ROW_GAP
+            skinData._y = posY
+            posY = posY - skinData._h - ROW_GAP
         end
 
         -- Interactive overlay: one secure spell button per action row, spanning
@@ -1695,46 +1695,46 @@ do
         interactive = false
         if not InCombatLockdown() then
             for i = 1, dataCount do
-                local d = payload[i]
-                if d.action or d.actionToy or d.actionMacro or d.actionHouse then
+                local skinData = payload[i]
+                if skinData.action or skinData.actionToy or skinData.actionMacro or skinData.actionHouse then
                     interactive = true
                     -- Re-attach the host: REGEN_DISABLED detaches it (and the
                     -- buttons) from the tip at every combat start.
                     if activeActions == 0 then
-                        local host = EnsureActionHost()
-                        host:ClearAllPoints()
-                        host:SetAllPoints(tipText)
+                        local owner = EnsureActionHost()
+                        owner:ClearAllPoints()
+                        owner:SetAllPoints(tipText)
                         -- Follow the tip up if it outranked GameTooltip this show.
                         local hw = tipText:GetFrameLevel() + 10
-                        if host:GetFrameLevel() < hw then
-                            host:SetFrameLevel(hw)
+                        if owner:GetFrameLevel() < hw then
+                            owner:SetFrameLevel(hw)
                         end
                     end
                     local b = AcquireActionButton()
                     -- Pooled reuse swaps type + payload; the unused payload is
                     -- cleared so a recycled button can never fire a stale one.
-                    local hgt = d.actionHouse and not d.actionHouse.returnTrip and d.actionHouse.house
+                    local hgt = skinData.actionHouse and not skinData.actionHouse.returnTrip and skinData.actionHouse.house
                     b:SetAttribute("house-neighborhood-guid", hgt and hgt.neighborhoodGUID or nil)
                     b:SetAttribute("house-guid", hgt and hgt.houseGUID or nil)
                     b:SetAttribute("house-plot-id", hgt and hgt.plotID or nil)
-                    if d.action then
+                    if skinData.action then
                         b:SetAttribute("type", "spell")
-                        b:SetAttribute("spell", d.action)
+                        b:SetAttribute("spell", skinData.action)
                         b:SetAttribute("toy", nil)
                         b:SetAttribute("macrotext", nil)
-                    elseif d.actionToy then
+                    elseif skinData.actionToy then
                         b:SetAttribute("type", "toy")
-                        b:SetAttribute("toy", d.actionToy)
+                        b:SetAttribute("toy", skinData.actionToy)
                         b:SetAttribute("spell", nil)
                         b:SetAttribute("macrotext", nil)
-                    elseif d.actionHouse then
-                        b:SetAttribute("type", d.actionHouse.returnTrip and "returnhome" or "teleporthome")
+                    elseif skinData.actionHouse then
+                        b:SetAttribute("type", skinData.actionHouse.returnTrip and "returnhome" or "teleporthome")
                         b:SetAttribute("spell", nil)
                         b:SetAttribute("toy", nil)
                         b:SetAttribute("macrotext", nil)
                     else
                         b:SetAttribute("type", "macro")
-                        b:SetAttribute("macrotext", d.actionMacro)
+                        b:SetAttribute("macrotext", skinData.actionMacro)
                         b:SetAttribute("spell", nil)
                         b:SetAttribute("toy", nil)
                     end
@@ -1748,16 +1748,16 @@ do
         HideClickButtons()
         local anyWheel = false
         for i = 1, dataCount do
-            local d = payload[i]
-            if d.onClick then
+            local skinData = payload[i]
+            if skinData.onClick then
                 interactive = true
                 local b = AcquireClickButton()
-                local cb = d.onClick
+                local callback = skinData.onClick
                 PlaceRowOverlay(b, i, innerW)
                 b:SetScript("OnClick", function(_, mouseButton)
-                    cb(mouseButton)
+                    callback(mouseButton)
                 end)
-                local wcb = d.onWheel
+                local wcb = skinData.onWheel
                 if wcb then
                     anyWheel = true
                     b:EnableMouseWheel(true)
@@ -1785,37 +1785,37 @@ do
         -- the bar axis, clamped to screen. Owner coords convert through
         -- effective scale first since blocks carry their own Content Scale.
         tipText:ClearAllPoints()
-        local bar = owner:GetParent()
-        while bar do
-            local num = bar.GetName and bar:GetName()
+        local barFrame = owner:GetParent()
+        while barFrame do
+            local num = barFrame.GetName and barFrame:GetName()
             if num and num:find("^CludesUIDataBarsBar%d+$") then
                 break
             end
-            bar = bar:GetParent()
+            barFrame = barFrame:GetParent()
         end
         local ocx, ocy = owner:GetCenter()
-        if bar and ocx then
+        if barFrame and ocx then
             local os = owner:GetEffectiveScale()
             local ts = tipText:GetEffectiveScale()
-            local bcx, bcy = bar:GetCenter()
-            local bs = bar:GetEffectiveScale()
+            local bcx, bcy = barFrame:GetCenter()
+            local bs = barFrame:GetEffectiveScale()
             local uiScale = UIParent:GetEffectiveScale()
             local halfW = UIParent:GetWidth() * uiScale / 2
             local halfH = UIParent:GetHeight() * uiScale / 2
-            if bar:GetHeight() > bar:GetWidth() then
+            if barFrame:GetHeight() > barFrame:GetWidth() then
                 -- Vertical bar: open toward the roomier horizontal side.
                 local oy = (ocy * os - bcy * bs) / ts
                 if bcx * bs < halfW then
-                    tipText:SetPoint("LEFT", bar, "RIGHT", 6, oy)
+                    tipText:SetPoint("LEFT", barFrame, "RIGHT", 6, oy)
                 else
-                    tipText:SetPoint("RIGHT", bar, "LEFT", -6, oy)
+                    tipText:SetPoint("RIGHT", barFrame, "LEFT", -6, oy)
                 end
             else
                 local ox = (ocx * os - bcx * bs) / ts
                 if bcy * bs < halfH then
-                    tipText:SetPoint("BOTTOM", bar, "TOP", ox, 6)
+                    tipText:SetPoint("BOTTOM", barFrame, "TOP", ox, 6)
                 else
-                    tipText:SetPoint("TOP", bar, "BOTTOM", ox, -6)
+                    tipText:SetPoint("TOP", barFrame, "BOTTOM", ox, -6)
                 end
             end
         else
@@ -1938,11 +1938,11 @@ local function ContentGapsOf(b)
     if l == nil then
         l = base
     end
-    local r = b.contentGapR
-    if r == nil then
-        r = base
+    local region = b.contentGapR
+    if region == nil then
+        region = base
     end
-    return l, r
+    return l, region
 end
 mod.ContentGapsOf = ContentGapsOf
 
@@ -2169,38 +2169,38 @@ local BG_ASPECT = 561 / 433
 local BASE_L, BASE_R, BASE_T, BASE_B = 0.25, 1, 0, 0.75
 local BASE_U, BASE_V = BASE_R - BASE_L, BASE_B - BASE_T
 
-local function EnsureThemeTextures(host)
+local function EnsureThemeTextures(owner)
     -- Made once per host. An options preview strip is a frame of the options
     -- page pool that every header build dresses again for another use: the
     -- textures count only for the dress (generation) they were made in. Gen
     -- is nil for every frame the pool did not make (the live bars).
-    local gen = POOL.Gen and POOL.Gen(host)
-    if host._edbBgAtlas and host._edbThemeGen == gen then
+    local gen = POOL.Gen and POOL.Gen(owner)
+    if owner._edbBgAtlas and owner._edbThemeGen == gen then
         return
     end
-    local bgAtlas = host:CreateTexture(nil, "BACKGROUND", nil, -8)
+    local bgAtlas = owner:CreateTexture(nil, "BACKGROUND", nil, -8)
     bgAtlas:SetTexture("Interface\\AddOns\\CludesUI\\media\\modern_blizz.png")
-    bgAtlas:SetAllPoints(host)
-    local bgOverlay = host:CreateTexture(nil, "BACKGROUND", nil, -7)
+    bgAtlas:SetAllPoints(owner)
+    local bgOverlay = owner:CreateTexture(nil, "BACKGROUND", nil, -7)
     bgOverlay:SetColorTexture(0, 0, 0, 0.5)
-    bgOverlay:SetAllPoints(host)
-    local modernBg = host:CreateTexture(nil, "BACKGROUND", nil, -7)
+    bgOverlay:SetAllPoints(owner)
+    local modernBg = owner:CreateTexture(nil, "BACKGROUND", nil, -7)
     modernBg:SetColorTexture(0.067, 0.067, 0.067, 0.95)
-    modernBg:SetAllPoints(host)
+    modernBg:SetAllPoints(owner)
     -- Bar Texture layer: replaces the flat/art background when picked,
     -- tinted by the style's color+opacity knobs.
-    local barTex = host:CreateTexture(nil, "BACKGROUND", nil, -6)
-    barTex:SetAllPoints(host)
+    local barTex = owner:CreateTexture(nil, "BACKGROUND", nil, -6)
+    barTex:SetAllPoints(owner)
     barTex:SetAlpha(0)
-    host._edbBgAtlas = bgAtlas
-    host._edbBgOverlay = bgOverlay
-    host._edbModernBg = modernBg
-    host._edbBarTex = barTex
-    host._edbThemeGen = gen
+    owner._edbBgAtlas = bgAtlas
+    owner._edbBgOverlay = bgOverlay
+    owner._edbModernBg = modernBg
+    owner._edbBarTex = barTex
+    owner._edbThemeGen = gen
 
     -- Cover-fit: crop the atlas so it fills the host without stretching.
     local function UpdateBgTexCoords()
-        local fw, fh = host:GetSize()
+        local fw, fh = owner:GetSize()
         if not fw or fw == 0 or not fh or fh == 0 then
             return
         end
@@ -2215,12 +2215,12 @@ local function EnsureThemeTextures(host)
             bgAtlas:SetTexCoord(BASE_L + trimU, BASE_R - trimU, BASE_T, BASE_B)
         end
     end
-    host:HookScript("OnSizeChanged", UpdateBgTexCoords)
+    owner:HookScript("OnSizeChanged", UpdateBgTexCoords)
     UpdateBgTexCoords()
 end
 
-local function ApplyThemeToHost(host, theme, texKey, showBorder)
-    EnsureThemeTextures(host)
+local function ApplyThemeToHost(owner, theme, texKey, showBorder)
+    EnsureThemeTextures(owner)
     theme = theme or {}
     -- Bar Texture (per-bar cfg.barTexture): resolved through the shared
     -- key -> path table (built-ins + SharedMedia). nil/"none"/unknown key
@@ -2231,20 +2231,20 @@ local function ApplyThemeToHost(host, theme, texKey, showBorder)
     end
     local op
     if theme.style == "modern" then
-        host._edbBgAtlas:SetAlpha(0)
-        host._edbBgOverlay:SetAlpha(0)
+        owner._edbBgAtlas:SetAlpha(0)
+        owner._edbBgOverlay:SetAlpha(0)
         local c = theme.modernColor or {}
         if texPath then
             -- Tinted by the Modern color; its alpha rides the vertex tint
             -- so Bar Opacity keeps working.
-            host._edbBarTex:SetTexture(texPath)
-            host._edbBarTex:SetVertexColor(c.r or 0.067, c.g or 0.067, c.b or 0.067, c.a or 0.95)
-            host._edbBarTex:SetAlpha(c.a or 0.95)
-            host._edbModernBg:SetAlpha(0)
+            owner._edbBarTex:SetTexture(texPath)
+            owner._edbBarTex:SetVertexColor(c.r or 0.067, c.g or 0.067, c.b or 0.067, c.a or 0.95)
+            owner._edbBarTex:SetAlpha(c.a or 0.95)
+            owner._edbModernBg:SetAlpha(0)
         else
-            host._edbBarTex:SetAlpha(0)
-            host._edbModernBg:SetColorTexture(c.r or 0.067, c.g or 0.067, c.b or 0.067, c.a or 0.95)
-            host._edbModernBg:SetAlpha(1)
+            owner._edbBarTex:SetAlpha(0)
+            owner._edbModernBg:SetColorTexture(c.r or 0.067, c.g or 0.067, c.b or 0.067, c.a or 0.95)
+            owner._edbModernBg:SetAlpha(1)
         end
         op = c.a
         if op == nil then
@@ -2258,28 +2258,28 @@ local function ApplyThemeToHost(host, theme, texKey, showBorder)
         if op == nil then
             op = 1
         end
-        host._edbBarTex:SetAlpha(0)
-        host._edbBgAtlas:SetAlpha(op)
-        host._edbBgOverlay:SetColorTexture(0, 0, 0, theme.cuiAlpha or 0.5)
-        host._edbBgOverlay:SetAlpha(op)
-        host._edbModernBg:SetAlpha(0)
+        owner._edbBarTex:SetAlpha(0)
+        owner._edbBgAtlas:SetAlpha(op)
+        owner._edbBgOverlay:SetColorTexture(0, 0, 0, theme.cuiAlpha or 0.5)
+        owner._edbBgOverlay:SetAlpha(op)
+        owner._edbModernBg:SetAlpha(0)
     end
     -- Bar Opacity carries the border with it: the base border alpha (0.8)
     -- is baked into the strip textures, frame alpha multiplies on top.
     -- SetAlpha is combat-legal even on implicitly protected bars. Off
     -- (cfg.hideBorder == true) zeros it rather than Hide(), same reason.
-    if host._edbBorder then
+    if owner._edbBorder then
         if showBorder == false then
-            host._edbBorder:SetAlpha(0)
+            owner._edbBorder:SetAlpha(0)
         else
-            host._edbBorder:SetAlpha(op)
+            owner._edbBorder:SetAlpha(op)
         end
     end
 end
 
 -- Exposed so the options preview strip renders the exact same recipe.
-function mod.MakePreviewBackdrop(host, themeCfg, showBorder)
-    ApplyThemeToHost(host, themeCfg, nil, showBorder)
+function mod.MakePreviewBackdrop(owner, themeCfg, showBorder)
+    ApplyThemeToHost(owner, themeCfg, nil, showBorder)
 end
 
 -------------------------------------------------------------------------------
@@ -2364,10 +2364,10 @@ local function ApplyBarPosition(ident)
     if not (rec and rec.bar and conf) then
         return
     end
-    local bar = rec.bar
+    local barFrame = rec.bar
     -- Implicitly protected bar (secure children): reposition is blocked in
     -- combat; keep current position and re-apply once on regen.
-    if InCombatLockdown() and bar:IsProtected() then
+    if InCombatLockdown() and barFrame:IsProtected() then
         mod.DeferUntilOOC("pos:" .. ident, function()
             ApplyBarPosition(ident)
         end)
@@ -2395,13 +2395,13 @@ local function ApplyBarPosition(ident)
         end
     end
 
-    bar:ClearAllPoints()
+    barFrame:ClearAllPoints()
     if not (full or edge) then
         -- Plain saved position: keep the stored anchor semantics as-is.
         if sp and sp.point then
-            bar:SetPoint(sp.point, UIParent, sp.relPoint or sp.point, sp.x or 0, sp.y or 0)
+            barFrame:SetPoint(sp.point, UIParent, sp.relPoint or sp.point, sp.x or 0, sp.y or 0)
         else
-            bar:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+            barFrame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
         end
         return
     end
@@ -2416,7 +2416,7 @@ local function ApplyBarPosition(ident)
     -- screen-centered when full, else saved position. Cross-axis: flush to
     -- the snapped edge, else saved position.
     local uw, uh = UIParent:GetWidth(), UIParent:GetHeight()
-    local bw, bh = bar:GetSize()
+    local bw, bh = barFrame:GetSize()
     local cx, cy = uw / 2, uh / 2
     if sp and sp.point then
         local rx, ry = PointXY(sp.relPoint or sp.point, uw, uh)
@@ -2445,14 +2445,14 @@ local function ApplyBarPosition(ident)
     end
     if full then
         if vertical then
-            bar:SetPoint("TOP", UIParent, "TOPLEFT", cx, 0)
-            bar:SetPoint("BOTTOM", UIParent, "BOTTOMLEFT", cx, 0)
+            barFrame:SetPoint("TOP", UIParent, "TOPLEFT", cx, 0)
+            barFrame:SetPoint("BOTTOM", UIParent, "BOTTOMLEFT", cx, 0)
         else
-            bar:SetPoint("LEFT", UIParent, "BOTTOMLEFT", 0, cy)
-            bar:SetPoint("RIGHT", UIParent, "BOTTOMRIGHT", 0, cy)
+            barFrame:SetPoint("LEFT", UIParent, "BOTTOMLEFT", 0, cy)
+            barFrame:SetPoint("RIGHT", UIParent, "BOTTOMRIGHT", 0, cy)
         end
     else
-        bar:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx, cy)
+        barFrame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx, cy)
     end
 end
 
@@ -2620,9 +2620,9 @@ function mod.RequestLayout(ident)
     end
     rec.layoutQueued = true
     C_Timer.After(0, function()
-        local r = live[ident]
-        if r then
-            r.layoutQueued = false
+        local region = live[ident]
+        if region then
+            region.layoutQueued = false
         end
         ApplyLayout(ident)
     end)
@@ -2702,8 +2702,8 @@ ApplyLayout = function(ident)
             -- EVERY block renders INTO its assigned share (sizing is purely
             -- share-based); re-render whenever the assignment changes, e.g.
             -- on a bar resize, so content re-fits its new slot.
-            local prev = rec.assigned[seg.block.id]
-            if prev == nil or abs(prev - px) > 0.5 then
+            local previous = rec.assigned[seg.block.id]
+            if previous == nil or abs(previous - px) > 0.5 then
                 rec.assigned[seg.block.id] = px
                 local instance = rec.insts[seg.block.id]
                 if instance and instance.Refresh then
@@ -3852,8 +3852,8 @@ function mod.CreateBar(templateKey)
         if b then
             for k, v in pairs(bt) do
                 if k == "settings" then
-                    for sk, sv in pairs(v) do
-                        b.settings[sk] = DeepCopy(sv)
+                    for sk, savedVars in pairs(v) do
+                        b.settings[sk] = DeepCopy(savedVars)
                     end
                 elseif k ~= "type" then
                     b[k] = DeepCopy(v)

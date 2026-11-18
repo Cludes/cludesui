@@ -183,16 +183,16 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
                 -- Blizzard's position and the next normalize dedupes in its favor -- permanently snapping the user's saved order back to Blizzard order. A by-value cursor lookup fails the same way and dumps inserts at slot 1.
                 local insertPos = nil
                 for walk = 1, nWalk do
-                    local icon
+                    local iconTex
                     if walk <= nLive then
-                        icon = icons[walk]
+                        iconTex = icons[walk]
                     else
-                        icon = tcHidden[walk - nLive]
+                        iconTex = tcHidden[walk - nLive]
                         -- A hidden frame has no on-screen neighbour, so place it beside its
                         -- live neighbours in Blizzard's layout: after the nearest same-viewer
                         -- icon below its layoutIndex, else before the nearest one above, else
                         -- after the last live slot (the cursor as it stands).
-                        local L, vf = icon.layoutIndex, icon.viewerFrame
+                        local L, vf = iconTex.layoutIndex, iconTex.viewerFrame
                         if L and vf and FindVar then
                             local predLI, predAt, succLI, succAt
                             for jdx = 1, nLive do
@@ -217,16 +217,16 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
                             end
                         end
                     end
-                    local fc = mod._ecmeFC and mod._ecmeFC[icon]
+                    local fc = mod._ecmeFC and mod._ecmeFC[iconTex]
                     local spellRef = fc and fc.spellID
                     -- Skip hosted-buff frames and their placeholders: their bar membership is the
                     -- hosted MARKER entry, and their positive spellID would materialize the same
                     -- spell's COOLDOWN form. But DO advance the cursor over their marker: on a mixed
                     -- bar a spell re-inserted after a buff must land after the buff's marker, not squeezed back next to the previous CD spell.
-                    local fdRS = mod._hookFrameData and mod._hookFrameData[icon]
+                    local fdRS = mod._hookFrameData and mod._hookFrameData[iconTex]
                     if
                         (fc and fc.isHostedBuff)
-                        or icon._isPlaceholderFrame
+                        or iconTex._isPlaceholderFrame
                         or (fdRS and fdRS._isBuffViewerFrame)
                     then
                         local hSid = fc and fc.spellID
@@ -236,15 +236,15 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
                             and mod.HostedBuffMarkerToSpell
                             and not (fc and fc._overflowLayoutBar)
                         then
-                            for idx = 1, #sd.assignedSpells do
-                                local dec = mod.HostedBuffMarkerToSpell(sd.assignedSpells[idx])
+                            for index = 1, #sd.assignedSpells do
+                                local dec = mod.HostedBuffMarkerToSpell(sd.assignedSpells[index])
                                 if
                                     dec
                                     and (dec == hSid or (mod.IsVariantOf and mod.IsVariantOf(dec, hSid)))
                                 then
                                     -- Forward-only: never drag the cursor backward.
-                                    if not insertPos or idx > insertPos then
-                                        insertPos = idx
+                                    if not insertPos or index > insertPos then
+                                        insertPos = index
                                     end
                                     break
                                 end
@@ -257,7 +257,7 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
                         spellRef = nil
                     end
                     -- Skip cd-claimed collided-buff icons: their membership is the cooldownID claim, never a spellID slot (mirrors the hosted-buff membership rule above).
-                    if spellRef and claimedCd and icon.cooldownID and claimedCd[icon.cooldownID] then
+                    if spellRef and claimedCd and iconTex.cooldownID and claimedCd[iconTex.cooldownID] then
                         spellRef = nil
                     end
                     if type(spellRef) == "number" and spellRef ~= 0 then
@@ -306,7 +306,7 @@ function mod.ReseedAssignedSpellsFromLiveIcons(cdUtilOnly)
                                 insertPos = place
                                 didInsert = true
                             end
-                        elseif mod.IsItemPresetKey(spellRef) and not icon._isItemPresetFrame then
+                        elseif mod.IsItemPresetKey(spellRef) and not iconTex._isItemPresetFrame then
                             -- Blizzard's own potion / healthstone row, rendering under
                             -- an item preset key no bar lists (CUI_CDM_HookReanchor.lua,
                             -- Phase 1): list the key where the row renders, so it gets
@@ -541,8 +541,8 @@ function mod.ReconcileAssignedSpellDrops(barId)
             local icons = mod.cdmBarIcons
             if icons then
                 for _, entries in pairs(icons) do
-                    for idx = 1, #entries do
-                        local ic = entries[idx]
+                    for index = 1, #entries do
+                        local ic = entries[index]
                         local fcN = ic and mod._ecmeFC[ic]
                         local k = fcN and fcN.spellID
                         if k and not ic._isItemPresetFrame and mod.IsItemPresetKey(k) then
@@ -730,8 +730,8 @@ function mod.ReconcileAssignedSpellDrops(barId)
             writeIdx = writeIdx + 1
         end
     end
-    for idx = writeIdx, #sd.assignedSpells do
-        sd.assignedSpells[idx] = nil
+    for index = writeIdx, #sd.assignedSpells do
+        sd.assignedSpells[index] = nil
     end
 
     -- Normalize the hosted-buff representation: a hosted buff owns a MARKER
@@ -770,12 +770,12 @@ function mod.ReconcileAssignedSpellDrops(barId)
             if type(hsid) == "number" and hsid > 0 then
                 local marker = mod.HostedBuffMarker(hsid)
                 local markerIdx, plainIdx
-                for idx = 1, #entries do
-                    local val = entries[idx]
+                for index = 1, #entries do
+                    local val = entries[index]
                     if val == marker then
-                        markerIdx = idx
+                        markerIdx = index
                     elseif val == hsid then
-                        plainIdx = idx
+                        plainIdx = index
                     end
                 end
                 if plainIdx then
@@ -974,8 +974,8 @@ function mod.CDMIsGroupBuffSpellHidden(spellId)
     if not okList or type(hiddenList) ~= "table" then
         return false
     end
-    for idx = 1, #hiddenList do
-        if hiddenList[idx] == spellId then
+    for index = 1, #hiddenList do
+        if hiddenList[index] == spellId then
             return true
         end
     end
@@ -1002,8 +1002,8 @@ function mod.CDMBuildLiveCategorySetLookup(category)
         return nil
     end
     local lookup = {}
-    for idx = 1, #ids do
-        local ident = ids[idx]
+    for index = 1, #ids do
+        local ident = ids[index]
         if _IsUsableSID(ident) then
             lookup[ident] = true
         end
@@ -1454,8 +1454,8 @@ function mod.ReconcileBuffFamilyDrops(barId)
                 end
                 while num > 0 do
                     local nf, nn = nil, 0
-                    for idx = 1, num do
-                        local partners = ledger[frontier[idx]]
+                    for index = 1, num do
+                        local partners = ledger[frontier[index]]
                         if partners then
                             for partner in pairs(partners) do
                                 if _IsUsableSID(partner) and not ledgerClosure[partner] then
@@ -1515,8 +1515,8 @@ function mod.ReconcileBuffFamilyDrops(barId)
             writeIdx = writeIdx + 1
         end
     end
-    for idx = writeIdx, #sd.assignedSpells do
-        sd.assignedSpells[idx] = nil
+    for index = writeIdx, #sd.assignedSpells do
+        sd.assignedSpells[index] = nil
     end
     if dropped then
         mod._spellOrderDirty = true
@@ -1603,8 +1603,8 @@ function mod.RepopulateFromBlizzard(fromRequest)
                 writeIdx = writeIdx + 1
             end
         end
-        for idx = writeIdx, #entries do
-            entries[idx] = nil
+        for index = writeIdx, #entries do
+            entries[index] = nil
         end
     end
 
@@ -1677,9 +1677,9 @@ function mod.RepopulateFromBlizzard(fromRequest)
             local sd = not isBuff and b.key and mod.GetBarSpellData(b.key)
             local entries = sd and sd.assignedSpells
             if entries then
-                for idx = #entries, 1, -1 do
-                    if ALL_RACIAL_SPELLS[entries[idx]] then
-                        table.remove(entries, idx)
+                for index = #entries, 1, -1 do
+                    if ALL_RACIAL_SPELLS[entries[index]] then
+                        table.remove(entries, index)
                     end
                 end
             end
@@ -1747,8 +1747,8 @@ function CludesUI.RequestCDMRepopulate(specIDs)
     if specIDs == nil then
         local _, _, classID = UnitClass("player")
         local total = classID and C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0
-        for idx = 1, total do
-            local ident = GetSpecializationInfoForClassID(classID, idx)
+        for index = 1, total do
+            local ident = GetSpecializationInfoForClassID(classID, index)
             if IsSpecID(ident) then
                 ids[#ids + 1] = ident
             end

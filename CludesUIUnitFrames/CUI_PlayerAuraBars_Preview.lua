@@ -205,9 +205,9 @@ local function PreviewSpellIcon(spellId)
         return cached
     end
     local details = C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(spellId)
-    local icon = (details and details.iconID) or 134400
-    previewIconCache[spellId] = icon
-    return icon
+    local iconTex = (details and details.iconID) or 134400
+    previewIconCache[spellId] = iconTex
+    return iconTex
 end
 
 -- Weapon-enchant preview cells, leading the bar exactly like the live ones
@@ -256,9 +256,9 @@ end
 local PREVIEW_ENCHANT_SLOT_NAMES =
     { [INVSLOT_MAINHAND or 16] = "MainHandSlot", [INVSLOT_OFFHAND or 17] = "SecondaryHandSlot" }
 local function PreviewEnchantIcon(slot)
-    local tex = GetInventoryItemTexture("player", slot)
-    if tex then
-        return tex
+    local texture = GetInventoryItemTexture("player", slot)
+    if texture then
+        return texture
     end
     local name = PREVIEW_ENCHANT_SLOT_NAMES[slot]
     if name and C_PaperDollInfo and C_PaperDollInfo.GetInventorySlotInfo then
@@ -623,9 +623,9 @@ end
 local function DedupeByIcon(ids)
     local seenIcons, result = {}, {}
     for i = 1, #ids do
-        local icon = PreviewSpellIcon(ids[i])
-        if not seenIcons[icon] then
-            seenIcons[icon] = true
+        local iconTex = PreviewSpellIcon(ids[i])
+        if not seenIcons[iconTex] then
+            seenIcons[iconTex] = true
             result[#result + 1] = ids[i]
         end
     end
@@ -664,14 +664,14 @@ local function BuildMixedRealSpells(conf)
         local allFilters = mod.PAB_Filters and mod.PAB_Filters()
         if allFilters then
             for i = 1, #allFilters do
-                local f = allFilters[i]
-                if conf.filters[f.id] then
+                local frame = allFilters[i]
+                if conf.filters[frame.id] then
                     local ids = {}
-                    for ident, enabled in pairs(f.spells) do
+                    for ident, enabled in pairs(frame.spells) do
                         if
                             enabled
                             and not (negSet and negSet[ident])
-                            and not mod.PAB_OtherClientSpell(f, ident)
+                            and not mod.PAB_OtherClientSpell(frame, ident)
                         then
                             ids[#ids + 1] = ident
                         end
@@ -769,13 +769,13 @@ local function BuildPreviewSlots(isBuff, conf, entries, listLen, count)
             local subSet
             if isBuff and (conf.showAllBuffs ~= false or conf.hasDuration == true) and conf.negFilters then
                 for filterId in pairs(conf.negFilters) do
-                    local f = mod.PAB_GetFilter and mod.PAB_GetFilter(filterId)
-                    if f and f.spells then
-                        for ident, enabled in pairs(f.spells) do
-                            if enabled and not mod.PAB_OtherClientSpell(f, ident) then
+                    local frame = mod.PAB_GetFilter and mod.PAB_GetFilter(filterId)
+                    if frame and frame.spells then
+                        for ident, enabled in pairs(frame.spells) do
+                            if enabled and not mod.PAB_OtherClientSpell(frame, ident) then
                                 subSet = subSet or {}
                                 subSet[ident] = true
-                                ExpandFamily(subSet, ident, f.spells)
+                                ExpandFamily(subSet, ident, frame.spells)
                             end
                         end
                     end
@@ -853,18 +853,18 @@ local function ApplyPreviewFx(button, e)
     local Pix = CludesUI.PP
     local bSize = (e and e.borderSize) or 0
     if bSize > 0 and Pix then
-        local host = button.fxBorder
-        if not host then
-            host = CreateFrame("Frame", nil, button)
-            host:SetAllPoints(button)
-            host:SetFrameLevel(button.border:GetFrameLevel() + 1)
-            host:EnableMouse(false)
-            Pix.CreateBorder(host, 0, 0, 0, 1, 1)
-            button.fxBorder = host
+        local owner = button.fxBorder
+        if not owner then
+            owner = CreateFrame("Frame", nil, button)
+            owner:SetAllPoints(button)
+            owner:SetFrameLevel(button.border:GetFrameLevel() + 1)
+            owner:EnableMouse(false)
+            Pix.CreateBorder(owner, 0, 0, 0, 1, 1)
+            button.fxBorder = owner
         end
         local bc = e.borderColor or { r = 0, g = 0, b = 0 }
-        Pix.UpdateBorder(host, bSize, bc.r or 0, bc.g or 0, bc.b or 0, 1)
-        host:Show()
+        Pix.UpdateBorder(owner, bSize, bc.r or 0, bc.g or 0, bc.b or 0, 1)
+        owner:Show()
     elseif button.fxBorder then
         button.fxBorder:Hide()
     end
@@ -975,32 +975,32 @@ local function RenderPreviewIcons(box, icons, isBuff, conf, fontFile, pool)
         -- line and row 2 wraps back to the bar's own edge, no per-row indent.
         -- Their cells come out of the aura cap, so the box always fits.
         local runningX, runningY = {}, 0
-        for r = 0, rowList - 1 do
-            runningX[r] = 0
+        for region = 0, rowList - 1 do
+            runningX[region] = 0
         end
         for i = 1, sum do
-            local r = math.floor((i - 1) / cols)
-            colOffset[i] = runningX[r] or 0
-            runningX[r] = (runningX[r] or 0)
+            local region = math.floor((i - 1) / cols)
+            colOffset[i] = runningX[region] or 0
+            runningX[region] = (runningX[region] or 0)
                 + (vertical and slotHeight and slotHeight[i] or slotSize[i])
                 + pad
-            rowHeight[r] =
-                math.max(rowHeight[r] or 0, (not vertical) and slotHeight and slotHeight[i] or slotSize[i])
+            rowHeight[region] =
+                math.max(rowHeight[region] or 0, (not vertical) and slotHeight and slotHeight[i] or slotSize[i])
         end
-        for r = 0, rowList - 1 do
-            rowWidth[r] = math.max(0, runningX[r] - pad) -- drop the trailing gap
+        for region = 0, rowList - 1 do
+            rowWidth[region] = math.max(0, runningX[region] - pad) -- drop the trailing gap
         end
-        for r = 0, rowList - 1 do
-            rowYOffset[r] = runningY
-            runningY = runningY + (rowHeight[r] or 0) + rowGap
+        for region = 0, rowList - 1 do
+            rowYOffset[region] = runningY
+            runningY = runningY + (rowHeight[region] or 0) + rowGap
         end
     end
     -- blockW/blockH are generic axis extents: "within-line" (rowWidth, primary/fill
     -- axis) and "across-lines" (wrap axis) -- screen X/Y only for horizontal growth.
     -- Vertical growth (Up/Down) swaps which maps to X vs Y below.
     local blockW = 0
-    for r = 0, rowList - 1 do
-        blockW = math.max(blockW, rowWidth[r] or 0)
+    for region = 0, rowList - 1 do
+        blockW = math.max(blockW, rowWidth[region] or 0)
     end
     local blockH = math.max(0, (rowYOffset[rowList - 1] or 0) + (rowHeight[rowList - 1] or 0))
     local halfPrimary, halfCross = blockW / 2, blockH / 2
@@ -1129,8 +1129,8 @@ local function RenderPreviewIcons(box, icons, isBuff, conf, fontFile, pool)
                 if shapeActive and style.shapeBorderPath and Pix.ApplyMaskedShapeBorder then
                     CludesUI.HideBorderStyle(button.border)
                     if button.borderState and button.borderState._secretBorderEdges then
-                        for _, tex in pairs(button.borderState._secretBorderEdges) do
-                            tex:Hide()
+                        for _, texture in pairs(button.borderState._secretBorderEdges) do
+                            texture:Hide()
                         end
                     end
                     Pix:ApplyMaskedShapeBorder(

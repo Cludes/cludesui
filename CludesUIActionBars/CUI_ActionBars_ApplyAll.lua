@@ -122,9 +122,9 @@ local function ApplyAll()
     -- visibility drivers without firing the per-bar OnShow/OnHide edges the
     -- dormancy map saw. Per-key memoized, so unchanged bars cost one table read.
     for _, details in ipairs(BAR_CONFIG) do
-        local f = barFrames[details.key]
-        if f then
-            mod.ApplyBarDormancy(details.key, not f:IsVisible())
+        local frame = barFrames[details.key]
+        if frame then
+            mod.ApplyBarDormancy(details.key, not frame:IsVisible())
         end
     end
 

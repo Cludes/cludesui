@@ -180,10 +180,10 @@ local function SecureSetupHandler_PrepareRefs()
     -- Register stock bar frames to hide
     local blizzIdx = 0
     for _, record in ipairs(STOCK_BAR_DISPOSAL) do
-        local bar = _G[record.name]
-        if bar then
+        local barFrame = _G[record.name]
+        if barFrame then
             blizzIdx = blizzIdx + 1
-            _secureHandler:SetFrameRef("blizzbar-" .. blizzIdx, bar)
+            _secureHandler:SetFrameRef("blizzbar-" .. blizzIdx, barFrame)
         end
     end
     if StatusTrackingBarManager and not (ABAR.db and ABAR.db.profile.useBlizzardDataBars) then
@@ -202,46 +202,46 @@ end
 -- layoutData: table of { slot = { barKey, x, y, w, h, show, actionSlot } }
 -- barFrameData: table of { key, w, h, point, relPoint, x, y }
 local function SecureSetupHandler_Execute(layoutData, barFrameData)
-    for slot, d in pairs(layoutData) do
-        local actionSlot = d.actionSlot or 0
+    for slot, skinData in pairs(layoutData) do
+        local actionSlot = skinData.actionSlot or 0
         _secureHandler:SetAttribute(
             "layout-" .. slot,
-            d.barKey
+            skinData.barKey
                 .. "|"
-                .. d.x
+                .. skinData.x
                 .. "|"
-                .. d.y
+                .. skinData.y
                 .. "|"
-                .. d.w
+                .. skinData.w
                 .. "|"
-                .. d.h
+                .. skinData.h
                 .. "|"
-                .. (d.show and "1" or "0")
+                .. (skinData.show and "1" or "0")
                 .. "|"
                 .. actionSlot
         )
     end
     -- Encode bar frame sizes/positions
     local barFrameCount = 0
-    for _, d in ipairs(barFrameData) do
+    for _, skinData in ipairs(barFrameData) do
         barFrameCount = barFrameCount + 1
         _secureHandler:SetAttribute(
             "barframe-" .. barFrameCount,
-            d.key
+            skinData.key
                 .. "|"
-                .. d.w
+                .. skinData.w
                 .. "|"
-                .. d.h
+                .. skinData.h
                 .. "|"
-                .. d.point
+                .. skinData.point
                 .. "|"
-                .. d.relPoint
+                .. skinData.relPoint
                 .. "|"
-                .. d.x
+                .. skinData.x
                 .. "|"
-                .. d.y
+                .. skinData.y
                 .. "|"
-                .. (d.hidden and "1" or "0")
+                .. (skinData.hidden and "1" or "0")
         )
     end
     _secureHandler:SetAttribute("barframe-count", barFrameCount)
@@ -254,8 +254,8 @@ local function HideBlizzardBars()
     -- Stance/Pet buttons are still reused, so only action buttons are hidden.
     for _, details in ipairs(BAR_CONFIG) do
         if details.blizzBtnPrefix and not details.isStance and not details.isPetBar then
-            for idx = 1, details.count do
-                local button = _G[details.blizzBtnPrefix .. idx]
+            for index = 1, details.count do
+                local button = _G[details.blizzBtnPrefix .. index]
                 if button then
                     -- NOT reparented, and that is deliberate. The template sets
                     -- "useparent-actionpage" and then seeds self.action from
@@ -282,18 +282,18 @@ local function HideBlizzardBars()
     -- rather than at file load.
     local remainingBars = { "MainMenuBar", "StanceBar", "PetActionBar" }
     for _, name in ipairs(remainingBars) do
-        local bar = _G[name]
-        if bar then
-            bar:UnregisterAllEvents()
+        local barFrame = _G[name]
+        if barFrame then
+            barFrame:UnregisterAllEvents()
             -- No Hide()/HideBase() call: SetParent(hiddenParent) below already
             -- makes the bar effectively invisible taint-free (see the note on
             -- ReassertHiddenOnShow above hiddenParent's creation).
-            bar:SetParent(hiddenParent)
+            barFrame:SetParent(hiddenParent)
             -- Prevent Blizzard re-showing it (spell transforms like Ascendance
             -- can trigger ValidateActionBarTransition, creating invisible dead zones)
-            mod.ReassertHiddenOnShow(bar)
-            if bar.actionButtons and type(bar.actionButtons) == "table" then
-                for _, childFrame in pairs(bar.actionButtons) do
+            mod.ReassertHiddenOnShow(barFrame)
+            if barFrame.actionButtons and type(barFrame.actionButtons) == "table" then
+                for _, childFrame in pairs(barFrame.actionButtons) do
                     mod.QuietlyHideBlizzButton(childFrame)
                 end
             end
@@ -432,9 +432,9 @@ local BINDING_MAP = {
 -- BINDING_HEADER_<header> for the section title, BINDING_NAME_<command> per row.
 _G.BINDING_HEADER_CUI_BAR9 = "CludesUI Action Bar 9"
 _G.BINDING_HEADER_CUI_BAR10 = "CludesUI Action Bar 10"
-for idx = 1, 12 do
-    _G["BINDING_NAME_CUI_BAR9_BUTTON" .. idx] = "Action Bar 9 Button " .. idx
-    _G["BINDING_NAME_CUI_BAR10_BUTTON" .. idx] = "Action Bar 10 Button " .. idx
+for index = 1, 12 do
+    _G["BINDING_NAME_CUI_BAR9_BUTTON" .. index] = "Action Bar 9 Button " .. index
+    _G["BINDING_NAME_CUI_BAR10_BUTTON" .. index] = "Action Bar 10 Button " .. index
 end
 
 -- Flyout system lives in CUI_ActionBars_Flyout.lua (loaded after this file).
@@ -599,8 +599,8 @@ local function GetOrCreateButton(slot, hostFrame, details, index, skipProtected)
             if fr[tail] == button then
                 fr[tail] = nil
             else
-                for k, f in pairs(fr) do
-                    if f == button then
+                for k, frame in pairs(fr) do
+                    if frame == button then
                         fr[k] = nil
                     end
                 end

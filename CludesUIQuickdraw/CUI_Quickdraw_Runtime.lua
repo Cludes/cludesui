@@ -96,14 +96,14 @@ function ReleaseSecureState(index)
         cancelButton:SetAttribute("eqdOwner", nil)
     end
 
-    local btn = index and secureButtons[index]
-    if btn then
-        btn:SetAttribute("eqdArmed", nil)
+    local button = index and secureButtons[index]
+    if button then
+        button:SetAttribute("eqdArmed", nil)
         -- With this left standing the next press of the key would read as the
         -- toggle shutting a menu that is no longer on screen, and be swallowed.
         -- Refused in combat like every other write here, which is what
         -- secureCloseDirty hands to PLAYER_REGEN_ENABLED.
-        btn:SetAttribute("eqdLatched", nil)
+        button:SetAttribute("eqdLatched", nil)
     end
     local pool = index and gatePools[index]
     if not pool then
@@ -118,16 +118,16 @@ function ReleaseSecureState(index)
             pgate:Hide()
         end
         local rgates = pool.rgate[k]
-        for r = 1, REGION_MAX do
-            local rgate = rgates and rgates[r]
+        for region = 1, REGION_MAX do
+            local rgate = rgates and rgates[region]
             if rgate then
                 rgate:Hide()
             end
         end
     end
     if pool.lattice then
-        for d = -MAX_LATTICE, MAX_LATTICE do
-            local lg = pool.lattice[d]
+        for skinData = -MAX_LATTICE, MAX_LATTICE do
+            local lg = pool.lattice[skinData]
             if lg then
                 lg:Hide()
             end
@@ -253,21 +253,21 @@ local function OnPostClick(self, _, down)
 end
 
 local function GetSecureButton(index)
-    local btn = secureButtons[index]
-    if btn then
-        return btn
+    local button = secureButtons[index]
+    if button then
+        return button
     end
 
-    btn = CreateFrame("Button", "CUIQuickdrawButton" .. index, UIParent, "SecureActionButtonTemplate")
-    btn._palette = index
+    button = CreateFrame("Button", "CUIQuickdrawButton" .. index, UIParent, "SecureActionButtonTemplate")
+    button._palette = index
     -- The same number the sandbox can read: the ownership test in SNIPPET_PRE
     -- and SNIPPET_POST needs to know which palette it is running for, and a
     -- plain field is invisible from inside the restricted environment. Written
     -- here, where the button is built, which is out of combat by construction
     -- -- UpdateBindings, the only caller, defers the whole rebind to
     -- PLAYER_REGEN_ENABLED while the player is fighting.
-    btn:SetAttribute("eqdPalette", index)
-    btn:RegisterForClicks("AnyDown", "AnyUp")
+    button:SetAttribute("eqdPalette", index)
+    button:RegisterForClicks("AnyDown", "AnyUp")
 
     -- SecureActionButton_OnClick performs the action on exactly one edge
     -- (SecureTemplates.lua:786-793):
@@ -280,32 +280,32 @@ local function GetSecureButton(index)
     -- then skipped entirely: PreClick and PostClick still run, so the palette
     -- opens and closes normally while no action is ever performed. Pinning the
     -- attribute keeps the acting edge on UP whatever the CVar says.
-    btn:SetAttribute("useOnKeyDown", false)
+    button:SetAttribute("useOnKeyDown", false)
     -- Parked off-screen and invisible, but shown: an override-binding click
     -- has to reach a live button, and the suite's click-cast proxies use the
     -- same shape (CUI_RaidFrames_ClickCast.lua).
-    btn:EnableMouse(false)
-    btn:SetSize(1, 1)
-    btn:SetAlpha(0)
-    btn:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -300 - index * 4, 100)
-    btn:Show()
-    btn:SetScript("PreClick", OnPreClick)
-    btn:SetScript("PostClick", OnPostClick)
+    button:EnableMouse(false)
+    button:SetSize(1, 1)
+    button:SetAlpha(0)
+    button:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -300 - index * 4, 100)
+    button:Show()
+    button:SetScript("PreClick", OnPreClick)
+    button:SetScript("PostClick", OnPostClick)
 
     -- The snippet measures the cursor against the palette, so it needs a handle to
     -- it. Wrapped around OnClick rather than PreClick: PreClick is ours, and the
     -- wrap has to run inside the very click that goes on to fire the action.
-    SecureHandlerSetFrameRef(btn, "ui", UIParent)
-    SecureHandlerSetFrameRef(btn, "catcher", EnsureScrollCatcher())
-    SecureHandlerSetFrameRef(btn, "cancel", EnsureCancelButton())
+    SecureHandlerSetFrameRef(button, "ui", UIParent)
+    SecureHandlerSetFrameRef(button, "catcher", EnsureScrollCatcher())
+    SecureHandlerSetFrameRef(button, "cancel", EnsureCancelButton())
     -- The other direction too: the wheel snippet re-derives the hover-armed
     -- nest and needs this button's geometry to do it; the press stamps
     -- eqdOwnerIdx on the catcher so it knows which ref to read.
-    SecureHandlerSetFrameRef(EnsureScrollCatcher(), "btn" .. index, btn)
-    SecureHandlerWrapScript(btn, "OnClick", EnsureSecureHeader(), SNIPPET_PRE, SNIPPET_POST)
+    SecureHandlerSetFrameRef(EnsureScrollCatcher(), "btn" .. index, button)
+    SecureHandlerWrapScript(button, "OnClick", EnsureSecureHeader(), SNIPPET_PRE, SNIPPET_POST)
 
-    secureButtons[index] = btn
-    return btn
+    secureButtons[index] = button
+    return button
 end
 
 -- Hand the sandbox everything it needs to choose a entry. Out of combat only:
@@ -324,14 +324,14 @@ local pushedClaims = {}
 -- contribute are pushed through here, under the cell index the snippet will
 -- resolve a release to -- which is what lets the snippet fire either without
 -- knowing which of the two it landed on.
-local function PushCell(btn, i, slot, p)
+local function PushCell(button, i, slot, p)
     local aType, aKey, aVal = ResolveAction(slot, p)
-    btn:SetAttribute("eqdT" .. i, aType)
-    btn:SetAttribute("eqdK" .. i, aKey)
-    btn:SetAttribute("eqdV" .. i, aVal)
+    button:SetAttribute("eqdT" .. i, aType)
+    button:SetAttribute("eqdK" .. i, aKey)
+    button:SetAttribute("eqdV" .. i, aVal)
     -- A palette resolves to no action, same as an empty slot. Marked so the
     -- trace can tell "you stopped on the door" from "that slot is empty".
-    btn:SetAttribute("eqdPal" .. i, ChildIndex(slot) and true or nil)
+    button:SetAttribute("eqdPal" .. i, ChildIndex(slot) and true or nil)
 
     -- A cycling entry's whole run, one step per attribute, plus the position it
     -- is up to. Written out rather than parsed in the snippet: the marker order
@@ -342,21 +342,21 @@ local function PushCell(btn, i, slot, p)
     -- being one has to lose it -- and the steps under it, which are read by
     -- position and would otherwise outlive a shorter run.
     local steps = CycleSteps(slot and slot.kind)
-    local had = tonumber(btn:GetAttribute("eqdCycN" .. i)) or 0
+    local had = tonumber(button:GetAttribute("eqdCycN" .. i)) or 0
     for s = 1, max(had, steps and #steps or 0) do
-        btn:SetAttribute("eqdCycV" .. i .. "_" .. s, steps and steps[s] or nil)
+        button:SetAttribute("eqdCycV" .. i .. "_" .. s, steps and steps[s] or nil)
     end
-    btn:SetAttribute("eqdCycN" .. i, steps and #steps or nil)
-    btn:SetAttribute("eqdCycPos" .. i, steps and tonumber(slot.cyclePos) or nil)
+    button:SetAttribute("eqdCycN" .. i, steps and #steps or nil)
+    button:SetAttribute("eqdCycPos" .. i, steps and tonumber(slot.cyclePos) or nil)
 
     -- Random Hearthstone cells, so a press can roll them again without a whole
     -- push. Every cell index passes through here on every push, cleared ones
     -- included, so the record cannot outlive the entry.
-    local hearth = btn._hearthCells
+    local hearth = button._hearthCells
     if slot and slot.kind == "randomhearth" then
         if not hearth then
             hearth = {}
-            btn._hearthCells = hearth
+            button._hearthCells = hearth
         end
         hearth[i] = slot
     elseif hearth then
@@ -377,14 +377,14 @@ RerollHearth = function(pressed)
         return
     end
     Inner.Hearth.Roll()
-    for _, btn in pairs(secureButtons) do
-        local cells = btn._hearthCells
+    for _, button in pairs(secureButtons) do
+        local cells = button._hearthCells
         if cells then
             for i, slot in pairs(cells) do
                 local aType, aKey, aVal = ResolveAction(slot)
-                btn:SetAttribute("eqdT" .. i, aType)
-                btn:SetAttribute("eqdK" .. i, aKey)
-                btn:SetAttribute("eqdV" .. i, aVal)
+                button:SetAttribute("eqdT" .. i, aType)
+                button:SetAttribute("eqdK" .. i, aKey)
+                button:SetAttribute("eqdV" .. i, aVal)
             end
         end
     end
@@ -395,9 +395,9 @@ local function PushPalette(index)
         return
     end
     local p = PA(index)
-    local btn = secureButtons[index]
+    local button = secureButtons[index]
     local palette = EnsurePalette(index)
-    if not p or not btn or not palette then
+    if not p or not button or not palette then
         return
     end
 
@@ -422,7 +422,7 @@ local function PushPalette(index)
     -- together between this push and any open that follows it.
     local slotsEff = UsableSlots(palette, p)
     for i = 1, MAX_SLOTS do
-        PushCell(btn, i, slotsEff[i], p)
+        PushCell(button, i, slotsEff[i], p)
         -- Ahead of the first open rather than at it: a load is a server round
         -- trip, and this runs at login and on every spellbook or macro change,
         -- so the palette has its icons long before anyone holds the key.
@@ -438,15 +438,15 @@ local function PushPalette(index)
     -- Where the palette's centre will be, so the snippet can work in UIParent
     -- units without a handle to the palette itself. Cursor mode has no fixed
     -- centre, so the snippet takes the opening cursor position instead.
-    btn:SetAttribute("eqdFixed", p.centerMode == "SCREEN")
-    btn:SetAttribute("eqdPosX", p.posX or 0)
-    btn:SetAttribute("eqdPosY", p.posY or 0)
-    btn:SetAttribute("eqdScale", p.scale or 1)
+    button:SetAttribute("eqdFixed", p.centerMode == "SCREEN")
+    button:SetAttribute("eqdPosX", p.posX or 0)
+    button:SetAttribute("eqdPosY", p.posY or 0)
+    button:SetAttribute("eqdScale", p.scale or 1)
 
     local model = LayoutModel(index)
-    btn:SetAttribute("eqdMode", model)
-    btn:SetAttribute("eqdShown", num)
-    btn:SetAttribute("eqdInvert", p.fanInvert == true)
+    button:SetAttribute("eqdMode", model)
+    button:SetAttribute("eqdShown", num)
+    button:SetAttribute("eqdInvert", p.fanInvert == true)
 
     -- Toggle Menu Open, and the key a latched menu answers to. Both are read by
     -- the press branch of SNIPPET_PRE, which latches only when it has the two of
@@ -456,12 +456,12 @@ local function PushPalette(index)
     -- The Select key comes off the profile rather than the palette: p is the
     -- appearance view, and a key that is not an APPEARANCE_KEY falls through it
     -- to the profile, which is where this one lives.
-    btn:SetAttribute("eqdToggle", p.toggleMode == true or nil)
+    button:SetAttribute("eqdToggle", p.toggleMode == true or nil)
     local confirmKey = p.confirmKey
-    btn:SetAttribute("eqdConfirm", (type(confirmKey) == "string" and confirmKey ~= "") and confirmKey or nil)
+    button:SetAttribute("eqdConfirm", (type(confirmKey) == "string" and confirmKey ~= "") and confirmKey or nil)
     -- Same story for the cancel key, and from the same place in the profile.
     local cancelKey = p.cancelKey
-    btn:SetAttribute("eqdCancelKey", (type(cancelKey) == "string" and cancelKey ~= "") and cancelKey or nil)
+    button:SetAttribute("eqdCancelKey", (type(cancelKey) == "string" and cancelKey ~= "") and cancelKey or nil)
 
     -- Pointer layouts: the cell centres, worked out here rather than in the
     -- snippet. GridDims and GridBase already encode the auto-column rule and the
@@ -475,22 +475,22 @@ local function PushPalette(index)
         for i = 1, MAX_SLOTS do
             if i <= num then
                 local bx, by = liveView:GridBase(i, cols, rowList, pitch, num)
-                btn:SetAttribute("eqdBX" .. i, bx)
-                btn:SetAttribute("eqdBY" .. i, by)
+                button:SetAttribute("eqdBX" .. i, bx)
+                button:SetAttribute("eqdBY" .. i, by)
             else
-                btn:SetAttribute("eqdBX" .. i, nil)
-                btn:SetAttribute("eqdBY" .. i, nil)
+                button:SetAttribute("eqdBX" .. i, nil)
+                button:SetAttribute("eqdBY" .. i, nil)
             end
             -- A half-extent is what marks a cell as a nest, and the nests are
             -- written after this. Cleared over the palette's OWN range too: a
             -- longer set of nests last time would otherwise leave half-extents
             -- on indices that are now ordinary entries, and those entries would
             -- answer to containment instead of taking their turn at nearness.
-            btn:SetAttribute("eqdHW" .. i, nil)
-            btn:SetAttribute("eqdHH" .. i, nil)
+            button:SetAttribute("eqdHW" .. i, nil)
+            button:SetAttribute("eqdHH" .. i, nil)
         end
-        btn:SetAttribute("eqdPitch", pitch)
-        btn:SetAttribute("eqdReach", GRID_REACH)
+        button:SetAttribute("eqdPitch", pitch)
+        button:SetAttribute("eqdReach", GRID_REACH)
     end
 
     -- The scroll fan's cancel box: a margin across, the drawn strip plus that
@@ -498,24 +498,24 @@ local function PushPalette(index)
     -- pointer layouts' table of cells, the strip having only one axis to steer.
     if model == "SCROLL" then
         local _, iconSize = liveView:Geom()
-        btn:SetAttribute("eqdFanMargin", FAN_CANCEL_REACH * (iconSize + (p.fanGap or 10)))
-        btn:SetAttribute("eqdFanHalf", liveView:FanHalfLength())
-        btn:SetAttribute("eqdFanHoriz", liveView:FanHoriz())
+        button:SetAttribute("eqdFanMargin", FAN_CANCEL_REACH * (iconSize + (p.fanGap or 10)))
+        button:SetAttribute("eqdFanHalf", liveView:FanHalfLength())
+        button:SetAttribute("eqdFanHoriz", liveView:FanHoriz())
         -- The hover channel ("Select Action with Mouse"): the snippet re-runs
         -- AdvanceFan's arithmetic at release, so it needs the same numbers --
         -- the strip's pitch, the on-strip band (half an icon), and the drawn
         -- window it must not pick beyond. nil when the channel is off, so the
         -- snippet's gate is one attribute read.
         if p.fanMouseSelect ~= false then
-            btn:SetAttribute("eqdFanMouse", 1)
-            btn:SetAttribute("eqdPitch", iconSize + (p.fanGap or 10))
-            btn:SetAttribute("eqdFanBand", iconSize * 0.5)
-            btn:SetAttribute("eqdFanWin", p.fanVisible or 2)
+            button:SetAttribute("eqdFanMouse", 1)
+            button:SetAttribute("eqdPitch", iconSize + (p.fanGap or 10))
+            button:SetAttribute("eqdFanBand", iconSize * 0.5)
+            button:SetAttribute("eqdFanWin", p.fanVisible or 2)
         else
-            btn:SetAttribute("eqdFanMouse", nil)
+            button:SetAttribute("eqdFanMouse", nil)
         end
     end
-    btn:SetAttribute("eqdDeadZone", deadZone)
+    button:SetAttribute("eqdDeadZone", deadZone)
     -- Degrees, not the radians ArcGeom deals in. The sandbox whitelists WoW's
     -- GLOBAL atan2 (RestrictedEnvironment.lua:60), which answers in DEGREES --
     -- where HitTest upvalues math.atan2, which answers in radians. Treating the
@@ -523,9 +523,9 @@ local function PushPalette(index)
     -- one entry fired its neighbour, and a release near the arc's edge missed
     -- entirely. Converting here keeps the one conversion in Lua, where the unit
     -- is named, and lets the snippet wrap on an exact 360.
-    btn:SetAttribute("eqdStepDeg", step * 180 / pi)
-    btn:SetAttribute("eqdStartDeg", arcStart * 180 / pi)
-    btn:SetAttribute("eqdFull", full)
+    button:SetAttribute("eqdStepDeg", step * 180 / pi)
+    button:SetAttribute("eqdStartDeg", arcStart * 180 / pi)
+    button:SetAttribute("eqdFull", full)
 
     -- Nested entries. They are appended to the SAME action table the palette's
     -- own entries use, starting past the last of them, so the firing end of the
@@ -556,8 +556,8 @@ local function PushPalette(index)
     -- The arming gates. Built out of combat like everything else here, grown
     -- to the same mark, and reused and merely repositioned afterwards. See the
     -- "Arming gates" section in CUI_Quickdraw_Gates.lua for what they are for.
-    EnsureGates(index, btn, gateMax)
-    btn:SetAttribute("eqdGateMax", gateMax)
+    EnsureGates(index, button, gateMax)
+    button:SetAttribute("eqdGateMax", gateMax)
 
     local sum = num
     for k = 1, (claims and #claims or 0) do
@@ -565,7 +565,7 @@ local function PushPalette(index)
         c.base = sum
         for jdx = 1, c.n do
             sum = sum + 1
-            PushCell(btn, sum, c.slots[jdx], p)
+            PushCell(button, sum, c.slots[jdx], p)
             -- A palette reached only by being nested carries no keybind, so it
             -- gets no push of its own and this is the only warm its entries see.
             mod.WarmSlot(c.slots[jdx])
@@ -575,10 +575,10 @@ local function PushPalette(index)
             -- fall to the nearest-cell search below.
             if c.cells then
                 local b = c.cells[jdx]
-                btn:SetAttribute("eqdBX" .. sum, b.x)
-                btn:SetAttribute("eqdBY" .. sum, b.y)
-                btn:SetAttribute("eqdHW" .. sum, b.hw)
-                btn:SetAttribute("eqdHH" .. sum, b.hh)
+                button:SetAttribute("eqdBX" .. sum, b.x)
+                button:SetAttribute("eqdBY" .. sum, b.y)
+                button:SetAttribute("eqdHW" .. sum, b.hw)
+                button:SetAttribute("eqdHH" .. sum, b.hh)
             end
         end
     end
@@ -587,14 +587,14 @@ local function PushPalette(index)
     -- palette does not pay a hundred attribute writes on every options tick.
     for i = max(sum, MAX_SLOTS) + 1, (pushedCells[index] or 0) do
         -- nil for the slot, which is also how PushCell clears a cycle's steps.
-        PushCell(btn, i, nil, p)
-        btn:SetAttribute("eqdBX" .. i, nil)
-        btn:SetAttribute("eqdBY" .. i, nil)
-        btn:SetAttribute("eqdHW" .. i, nil)
-        btn:SetAttribute("eqdHH" .. i, nil)
+        PushCell(button, i, nil, p)
+        button:SetAttribute("eqdBX" .. i, nil)
+        button:SetAttribute("eqdBY" .. i, nil)
+        button:SetAttribute("eqdHW" .. i, nil)
+        button:SetAttribute("eqdHH" .. i, nil)
     end
     pushedCells[index] = sum
-    btn:SetAttribute("eqdTotal", sum)
+    button:SetAttribute("eqdTotal", sum)
 
     -- One claim-index -> cell-range mapping, the parent's own arming box, and
     -- up to REGION_MAX region boxes, for every possible claim slot -- cleared
@@ -605,19 +605,19 @@ local function PushPalette(index)
     -- means one thing everywhere it is read regardless of layout.
     for k = 1, gateMax do
         local c = claims and claims[k]
-        btn:SetAttribute("eqdGBase" .. k, c and c.base)
-        btn:SetAttribute("eqdGNum" .. k, c and c.n)
+        button:SetAttribute("eqdGBase" .. k, c and c.base)
+        button:SetAttribute("eqdGNum" .. k, c and c.n)
         local pb = c and c.parentBox
-        btn:SetAttribute("eqdPOX" .. k, pb and pb.x)
-        btn:SetAttribute("eqdPOY" .. k, pb and pb.y)
-        btn:SetAttribute("eqdPOHW" .. k, pb and pb.hw)
-        btn:SetAttribute("eqdPOHH" .. k, pb and pb.hh)
-        for r = 1, REGION_MAX do
-            local rb = c and c.regions and c.regions[r]
-            btn:SetAttribute("eqdROX" .. k .. "_" .. r, rb and rb.x)
-            btn:SetAttribute("eqdROY" .. k .. "_" .. r, rb and rb.y)
-            btn:SetAttribute("eqdROHW" .. k .. "_" .. r, rb and rb.hw)
-            btn:SetAttribute("eqdROHH" .. k .. "_" .. r, rb and rb.hh)
+        button:SetAttribute("eqdPOX" .. k, pb and pb.x)
+        button:SetAttribute("eqdPOY" .. k, pb and pb.y)
+        button:SetAttribute("eqdPOHW" .. k, pb and pb.hw)
+        button:SetAttribute("eqdPOHH" .. k, pb and pb.hh)
+        for region = 1, REGION_MAX do
+            local rb = c and c.regions and c.regions[region]
+            button:SetAttribute("eqdROX" .. k .. "_" .. region, rb and rb.x)
+            button:SetAttribute("eqdROY" .. k .. "_" .. region, rb and rb.y)
+            button:SetAttribute("eqdROHW" .. k .. "_" .. region, rb and rb.hw)
+            button:SetAttribute("eqdROHH" .. k .. "_" .. region, rb and rb.hh)
         end
     end
 
@@ -630,26 +630,26 @@ local function PushPalette(index)
     -- release reads the boxes through).
     if model == "SCROLL" then
         for i = 1, MAX_SLOTS do
-            btn:SetAttribute("eqdNBase" .. i, nil)
-            btn:SetAttribute("eqdNNum" .. i, nil)
-            btn:SetAttribute("eqdNAcross" .. i, nil)
-            btn:SetAttribute("eqdNSide" .. i, nil)
-            btn:SetAttribute("eqdClaimAt" .. i, nil)
+            button:SetAttribute("eqdNBase" .. i, nil)
+            button:SetAttribute("eqdNNum" .. i, nil)
+            button:SetAttribute("eqdNAcross" .. i, nil)
+            button:SetAttribute("eqdNSide" .. i, nil)
+            button:SetAttribute("eqdClaimAt" .. i, nil)
         end
         for k = 1, gateMax do
-            btn:SetAttribute("eqdCSlot" .. k, nil)
+            button:SetAttribute("eqdCSlot" .. k, nil)
         end
         for k = 1, (claims and #claims or 0) do
             local c = claims[k]
-            btn:SetAttribute("eqdNBase" .. c.parent, c.base)
-            btn:SetAttribute("eqdNNum" .. c.parent, c.n)
-            btn:SetAttribute("eqdNAcross" .. c.parent, c.across)
-            btn:SetAttribute("eqdNSide" .. c.parent, c.sign)
-            btn:SetAttribute("eqdClaimAt" .. c.parent, k)
-            btn:SetAttribute("eqdCSlot" .. k, c.parent)
+            button:SetAttribute("eqdNBase" .. c.parent, c.base)
+            button:SetAttribute("eqdNNum" .. c.parent, c.n)
+            button:SetAttribute("eqdNAcross" .. c.parent, c.across)
+            button:SetAttribute("eqdNSide" .. c.parent, c.sign)
+            button:SetAttribute("eqdClaimAt" .. c.parent, k)
+            button:SetAttribute("eqdCSlot" .. k, c.parent)
         end
         if claims then
-            EnsureLatticeGates(index, btn)
+            EnsureLatticeGates(index, button)
         end
     end
 
@@ -666,8 +666,8 @@ local function PushPalette(index)
     local angular = (model == "ANGULAR") and claims or nil
     for k = 1, gateMax do
         local c = angular and angular[k]
-        btn:SetAttribute("eqdCBand" .. k, c and c.band)
-        btn:SetAttribute("eqdCRows" .. k, c and #c.rows)
+        button:SetAttribute("eqdCBand" .. k, c and c.band)
+        button:SetAttribute("eqdCRows" .. k, c and #c.rows)
         -- The claim's own ground -- the beam and the wedge ChildGeom sized --
         -- for the DISARM test only. LeaveSnippet asks "is the cursor still on
         -- this claim" and never walks the rings the release below does: the
@@ -676,28 +676,28 @@ local function PushPalette(index)
         -- belonged to nothing every reach for a child disarmed the claim a few
         -- units into itself.
         local g = c and c.ground
-        btn:SetAttribute("eqdCAngle" .. k, g and ((c.angle * 180 / pi) % 360))
-        btn:SetAttribute("eqdCAX" .. k, g and g.ax)
-        btn:SetAttribute("eqdCAY" .. k, g and g.ay)
-        btn:SetAttribute("eqdCLo" .. k, g and g.lo)
-        btn:SetAttribute("eqdCEdge" .. k, g and g.edge)
-        btn:SetAttribute("eqdCBeam" .. k, g and g.beam)
-        btn:SetAttribute("eqdCSlope" .. k, g and g.slope)
-        btn:SetAttribute("eqdCWedge" .. k, g and (g.half * 180 / pi))
-        for r = 1, MAX_CHILD_ROWS do
-            local row = c and c.rows[r]
-            local tag = "eqdCR" .. k .. "_" .. r
-            btn:SetAttribute(tag .. "Lo", row and row.lo)
-            btn:SetAttribute(tag .. "Hi", row and row.hi)
-            btn:SetAttribute(tag .. "N", row and row.n)
+        button:SetAttribute("eqdCAngle" .. k, g and ((c.angle * 180 / pi) % 360))
+        button:SetAttribute("eqdCAX" .. k, g and g.ax)
+        button:SetAttribute("eqdCAY" .. k, g and g.ay)
+        button:SetAttribute("eqdCLo" .. k, g and g.lo)
+        button:SetAttribute("eqdCEdge" .. k, g and g.edge)
+        button:SetAttribute("eqdCBeam" .. k, g and g.beam)
+        button:SetAttribute("eqdCSlope" .. k, g and g.slope)
+        button:SetAttribute("eqdCWedge" .. k, g and (g.half * 180 / pi))
+        for region = 1, MAX_CHILD_ROWS do
+            local row = c and c.rows[region]
+            local tag = "eqdCR" .. k .. "_" .. region
+            button:SetAttribute(tag .. "Lo", row and row.lo)
+            button:SetAttribute(tag .. "Hi", row and row.hi)
+            button:SetAttribute(tag .. "N", row and row.n)
             -- Absolute: the cell index this ring's first child lands on, so the
             -- snippet adds nothing but the local offset it works out itself.
-            btn:SetAttribute(tag .. "Base", row and (c.base + row.base))
-            btn:SetAttribute(tag .. "StepDeg", row and (row.step * 180 / pi))
-            btn:SetAttribute(tag .. "StartDeg", row and (((row.start - row.step * 0.5) * 180 / pi) % 360))
+            button:SetAttribute(tag .. "Base", row and (c.base + row.base))
+            button:SetAttribute(tag .. "StepDeg", row and (row.step * 180 / pi))
+            button:SetAttribute(tag .. "StartDeg", row and (((row.start - row.step * 0.5) * 180 / pi) % 360))
         end
     end
-    btn:SetAttribute("eqdClaims", angular and #angular or 0)
+    button:SetAttribute("eqdClaims", angular and #angular or 0)
 
     -- Back to whatever the view is actually drawing.
     liveView.appIndex = nil

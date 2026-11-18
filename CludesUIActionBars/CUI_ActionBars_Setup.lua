@@ -192,8 +192,8 @@ function ABAR:FinishSetup()
                 local curPage = tonumber(mbFrame:GetAttribute("state-page")) or 1
                 local mbBtns = barButtons["MainBar"]
                 if mbBtns then
-                    for idx, button in ipairs(mbBtns) do
-                        button:SetAttribute("action", idx + (curPage - 1) * 12)
+                    for index, button in ipairs(mbBtns) do
+                        button:SetAttribute("action", index + (curPage - 1) * 12)
                     end
                 end
             end
@@ -243,18 +243,18 @@ function ABAR:FinishSetup()
                             or false,
                     })
 
-                    for idx, btnData in pairs(btnLayout) do
-                        local button = buttons[idx]
+                    for index, btnData in pairs(btnLayout) do
+                        local button = buttons[index]
                         if button and button._secureSlotIdx then
                             local actionSlot = 0
                             if key == "MainBar" then
                                 -- For MainBar, actionSlot encodes the button index (1-12)
-                                actionSlot = idx
+                                actionSlot = index
                             elseif details.isPetBar then
                                 -- PetActionButtons use their index (1-10) as their slot ID
-                                actionSlot = idx
+                                actionSlot = index
                             elseif not details.isStance then
-                                actionSlot = slotOffset + idx
+                                actionSlot = slotOffset + index
                             end
                             layoutData[button._secureSlotIdx] = {
                                 barKey = key,
@@ -1191,12 +1191,12 @@ function ABAR:FinishSetup()
         if not self._anyHideNoTarget then
             return
         end
-        local idx = UnitExists("softinteract") and true or false
+        local index = UnitExists("softinteract") and true or false
         local e = UnitExists("softenemy") and true or false
         local fr = UnitExists("softfriend") and true or false
         local t = UnitExists("target") and true or false
-        if idx ~= lastI or e ~= lastE or fr ~= lastF or t ~= lastT then
-            lastI, lastE, lastF, lastT = idx, e, fr, t
+        if index ~= lastI or e ~= lastE or fr ~= lastF or t ~= lastT then
+            lastI, lastE, lastF, lastT = index, e, fr, t
             ImmediateSoftTargetCheck()
             self:UpdateHousingVisibility()
         end
@@ -1391,8 +1391,8 @@ function ABAR:FinishSetup()
                     for key in pairs(changedBars) do
                         self:ApplyAlwaysShowButtons(key)
                     end
-                    for idx = 1, #changed do
-                        local button = changed[idx]
+                    for index = 1, #changed do
+                        local button = changed[index]
                         EAB_VTABLE.ForceButtonRefresh(button, button:GetAttribute("action"))
                     end
                 end
@@ -1474,10 +1474,10 @@ function ABAR:FinishSetup()
             if kind == "cd" then
                 -- Cooldown-only path: safe during combat, no taint risk.
                 -- Update each button's cooldown frame directly.
-                for idx = 1, NUM_PET_ACTION_SLOTS do
-                    local button = _G["PetActionButton" .. idx]
+                for index = 1, NUM_PET_ACTION_SLOTS do
+                    local button = _G["PetActionButton" .. index]
                     if button and button.cooldown then
-                        local start, duration, enable = GetPetActionCooldown(idx)
+                        local start, duration, enable = GetPetActionCooldown(index)
                         CooldownFrame_Set(button.cooldown, start, duration, enable)
                     end
                 end
@@ -1506,16 +1506,16 @@ function ABAR:FinishSetup()
                         parkCut = petInfo.count
                     end
                 end
-                for idx = 1, NUM_PET_ACTION_SLOTS do
-                    local button = _G["PetActionButton" .. idx]
+                for index = 1, NUM_PET_ACTION_SLOTS do
+                    local button = _G["PetActionButton" .. index]
                     if button then
                         local name, texture, isToken, isActive, autoCastAllowed, autoCastEnabled =
-                            GetPetActionInfo(idx)
+                            GetPetActionInfo(index)
                         -- Any change here drops the pet layout memo and asks
                         -- the regen pass for the Hide / mouse work combat
                         -- withholds; so does a filled slot whose button was
                         -- hidden out of combat, which only that pass can show.
-                        if idx <= parkCut then
+                        if index <= parkCut then
                             local pfd = EFD(button)
                             if not button:IsShown() then
                                 if hasPetBar and texture then
@@ -1540,7 +1540,7 @@ function ABAR:FinishSetup()
                                 button.icon:SetTexture(texture)
                             end
                             -- Dim icon when the ability is not currently usable.
-                            local usable = GetPetActionSlotUsable(idx)
+                            local usable = GetPetActionSlotUsable(index)
                             local shade = usable and 1 or 0.4
                             button.icon:SetVertexColor(shade, shade, shade)
                             button.icon:Show()
@@ -1565,11 +1565,11 @@ function ABAR:FinishSetup()
                         -- to call during combat lockdown.
                         local ct = button:GetCheckedTexture()
                         local ctA = ABAR:GetCheckedAlpha("PetBar")
-                        if isActive and petAttackStopped and IsPetAttackAction(idx) then
+                        if isActive and petAttackStopped and IsPetAttackAction(index) then
                             isActive = false
                         end
                         if isActive then
-                            if IsPetAttackAction(idx) then
+                            if IsPetAttackAction(index) then
                                 button:StartFlash()
                                 if ct then
                                     ct:SetAlpha(0.5 * ctA)
@@ -1587,7 +1587,7 @@ function ABAR:FinishSetup()
                         end
                         -- Update cooldown
                         if button.cooldown then
-                            local start, duration, enable = GetPetActionCooldown(idx)
+                            local start, duration, enable = GetPetActionCooldown(index)
                             CooldownFrame_Set(button.cooldown, start, duration, enable)
                         end
                     end
@@ -1599,10 +1599,10 @@ function ABAR:FinishSetup()
                 -- During a spell drag, skip PetActionBar:Update() which
                 -- hides empty slots. Just refresh textures per-button so
                 -- the vacated slot clears its icon while the grid stays.
-                for idx = 1, NUM_PET_ACTION_SLOTS do
-                    local button = _G["PetActionButton" .. idx]
+                for index = 1, NUM_PET_ACTION_SLOTS do
+                    local button = _G["PetActionButton" .. index]
                     if button then
-                        local name, texture, isToken = GetPetActionInfo(idx)
+                        local name, texture, isToken = GetPetActionInfo(index)
                         if texture then
                             if isToken then
                                 button.icon:SetTexture(_G[texture])
@@ -1630,8 +1630,8 @@ function ABAR:FinishSetup()
                     PetActionBar:Update()
                 end
             else
-                for idx = 1, NUM_PET_ACTION_SLOTS do
-                    local button = _G["PetActionButton" .. idx]
+                for index = 1, NUM_PET_ACTION_SLOTS do
+                    local button = _G["PetActionButton" .. index]
                     if button then
                         button.icon:Hide()
                         if button.AutoCastOverlay then
@@ -1640,7 +1640,7 @@ function ABAR:FinishSetup()
                         button:StopFlash()
                         button:SetChecked(false)
                         if button.cooldown then
-                            local start, duration, enable = GetPetActionCooldown(idx)
+                            local start, duration, enable = GetPetActionCooldown(index)
                             CooldownFrame_Set(button.cooldown, start, duration, enable)
                         end
                     end
@@ -1648,8 +1648,8 @@ function ABAR:FinishSetup()
             end
             -- Blizzard's update reads GetPetActionInfo too: the stop wins.
             if petAttackStopped then
-                for idx = 1, NUM_PET_ACTION_SLOTS do
-                    local button = IsPetAttackAction(idx) and _G["PetActionButton" .. idx]
+                for index = 1, NUM_PET_ACTION_SLOTS do
+                    local button = IsPetAttackAction(index) and _G["PetActionButton" .. index]
                     if button then
                         button:SetChecked(false)
                         button:StopFlash()
@@ -1663,8 +1663,8 @@ function ABAR:FinishSetup()
             -- above) clears the memo, so it only ever holds what this pass drew;
             -- it is stored after the two passes, which clear it themselves.
             local sig = PetHasActionBar() and "p" or "n"
-            for idx = 1, NUM_PET_ACTION_SLOTS do
-                sig = sig .. (GetPetActionInfo(idx) and "1" or "0")
+            for index = 1, NUM_PET_ACTION_SLOTS do
+                sig = sig .. (GetPetActionInfo(index) and "1" or "0")
             end
             if sig ~= mod._eabPetLayoutSig then
                 LayoutBar("PetBar")
@@ -1714,18 +1714,18 @@ function ABAR:FinishSetup()
             return
         end
         local kind = (evt == "PET_BAR_UPDATE_COOLDOWN") and "cd" or "full"
-        local prev = _petPendingKind
-        _petPendingKind = (kind == "full" or prev == "full") and "full" or "cd"
-        if not prev then
+        local previous = _petPendingKind
+        _petPendingKind = (kind == "full" or previous == "full") and "full" or "cd"
+        if not previous then
             C_Timer_After(0, PetBarDeferred)
         end
     end
     -- Bar-reveal reconcile (ApplyBarDormancy show edge): one full pass
     -- covers everything the hidden-skip above dropped.
     mod._eabPetReconcile = function()
-        local prev = _petPendingKind
+        local previous = _petPendingKind
         _petPendingKind = "full"
-        if not prev then
+        if not previous then
             C_Timer_After(0, PetBarDeferred)
         end
     end
@@ -1774,36 +1774,36 @@ function ABAR:FinishSetup()
         -- icons here as its UpdateState does, never on the cooldown event.
         local paintIcons = evt ~= "UPDATE_SHAPESHIFT_COOLDOWN" and CludesUI.PadGamepadUI()
         local numForms = GetNumShapeshiftForms()
-        for idx = 1, numForms do
-            local button = _G["StanceButton" .. idx]
+        for index = 1, numForms do
+            local button = _G["StanceButton" .. index]
             if button then
                 -- Clicks toggle the checked state optimistically; reconcile it
                 -- from the actual form even when the cooldown has not changed.
-                local texture, isActive, isCastable = GetShapeshiftFormInfo(idx)
+                local texture, isActive, isCastable = GetShapeshiftFormInfo(index)
                 button:SetChecked(isActive)
-                local icon = paintIcons and button.icon
-                if icon then
-                    icon:SetTexture(texture)
+                local iconTex = paintIcons and button.icon
+                if iconTex then
+                    iconTex:SetTexture(texture)
                     if not (issecretvalue and issecretvalue(isCastable)) then
                         local c = isCastable and 1 or 0.4
-                        icon:SetVertexColor(c, c, c)
+                        iconTex:SetVertexColor(c, c, c)
                     end
                 end
             end
             if button and button.cooldown then
-                local start, duration, enable = GetShapeshiftFormCooldown(idx)
+                local start, duration, enable = GetShapeshiftFormCooldown(index)
                 if
                     issecretvalue
                     and (issecretvalue(start) or issecretvalue(duration) or issecretvalue(enable))
                 then
-                    stanceLast[idx] = nil
+                    stanceLast[index] = nil
                     CooldownFrame_Set(button.cooldown, start, duration, enable)
                 else
-                    local m = stanceLast[idx]
+                    local m = stanceLast[index]
                     if not m or m[1] ~= start or m[2] ~= duration or m[3] ~= enable then
                         if not m then
                             m = {}
-                            stanceLast[idx] = m
+                            stanceLast[index] = m
                         end
                         m[1], m[2], m[3] = start, duration, enable
                         CooldownFrame_Set(button.cooldown, start, duration, enable)
@@ -1828,14 +1828,14 @@ function ABAR:FinishSetup()
             return
         end
         for _, record in ipairs(STOCK_BAR_DISPOSAL) do
-            local bar = _G[record.name]
-            if bar then
+            local barFrame = _G[record.name]
+            if barFrame then
                 if not record.retainEvents then
-                    bar:UnregisterAllEvents()
+                    barFrame:UnregisterAllEvents()
                 end
                 -- No Hide(): see ReassertHiddenOnShow's note above
                 -- hiddenParent's creation. Reparenting alone is enough.
-                bar:SetParent(hiddenParent)
+                barFrame:SetParent(hiddenParent)
             end
         end
         -- Both event broadcasters are quieted at file-load time (top of file).
@@ -1857,9 +1857,9 @@ function ABAR:FinishSetup()
     -- ReassertHiddenOnShow reparents rather than Hide()s -- see its note above
     -- hiddenParent's creation.
     for _, record in ipairs(STOCK_BAR_DISPOSAL) do
-        local bar = _G[record.name]
-        if bar then
-            mod.ReassertHiddenOnShow(bar)
+        local barFrame = _G[record.name]
+        if barFrame then
+            mod.ReassertHiddenOnShow(barFrame)
         end
     end
 
@@ -1891,9 +1891,9 @@ function ABAR:FinishSetup()
     -- after the visibility drivers above have settled each frame's state.
     -- The per-key memo makes this a no-op for anything the edges already handled.
     for _, details in ipairs(BAR_CONFIG) do
-        local f = barFrames[details.key]
-        if f then
-            mod.ApplyBarDormancy(details.key, not f:IsVisible())
+        local frame = barFrames[details.key]
+        if frame then
+            mod.ApplyBarDormancy(details.key, not frame:IsVisible())
         end
     end
 end

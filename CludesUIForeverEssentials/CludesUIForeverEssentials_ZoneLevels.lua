@@ -154,20 +154,20 @@ end
 -- green once none do; white without Fishing.
 local function FishingText(base)
     local low, high = math.max(base, 1), base + NO_GETAWAY
-    local r, g, b = 1, 1, 1
+    local region, g, b = 1, 1, 1
     local _, _, _, fishing = GetProfessions()
     if fishing then
         local _, _, rank, _, _, _, _, modifier = GetProfessionInfo(fishing)
         local skill = rank + (modifier or 0)
         if skill < low then
-            r, g, b = 1, 0.25, 0.25
+            region, g, b = 1, 0.25, 0.25
         elseif skill < high then
-            r, g, b = 1, 0.82, 0
+            region, g, b = 1, 0.82, 0
         else
-            r, g, b = 0.25, 1, 0.25
+            region, g, b = 0.25, 1, 0.25
         end
     end
-    return CludesUI.HexColor(r, g, b) .. ("%s %d|r"):format(C_Spell.GetSpellName(FISHING_SPELL) or "", low)
+    return CludesUI.HexColor(region, g, b) .. ("%s %d|r"):format(C_Spell.GetSpellName(FISHING_SPELL) or "", low)
 end
 
 -- The area label's Name changed. On a continent, when it names one of its

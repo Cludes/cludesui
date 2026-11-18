@@ -1046,8 +1046,8 @@ CludesUI.NewInternals(mod, "_qdInternals", {
     liveViewSetters = {},
     scrollCatcherSetters = {},
     cancelButtonSetters = {},
-    SetUsableSlots = function(f)
-        UsableSlots = f
+    SetUsableSlots = function(frame)
+        UsableSlots = frame
     end,
 }, {
     SetDB = "dbSetters",

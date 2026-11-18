@@ -177,7 +177,7 @@ local function CreateBarFrame(details)
     -- fires this frame's insecure OnAttributeChanged -- the one clean owning
     -- edge to retire the filled lists and slot->button map so the next
     -- cooldown pass rebuilds against the new mapping.
-    widget:HookScript("OnAttributeChanged", function(f, name)
+    widget:HookScript("OnAttributeChanged", function(frame, name)
         if name == "state-page" then
             mod._cdFilledDirty = true
             mod._slotBtnMapDirty = true
@@ -187,7 +187,7 @@ local function CreateBarFrame(details)
             -- page is applied by now, which ACTIONBAR_PAGE_CHANGED's own
             -- passes cannot rely on (it fires before the state driver runs)
             if mod._eabRangePageEdge then
-                mod._eabRangePageEdge(f._barKey)
+                mod._eabRangePageEdge(frame._barKey)
             end
             if mod._eabQueueGlowRescan then
                 mod._eabQueueGlowRescan()
@@ -200,14 +200,14 @@ local function CreateBarFrame(details)
     -- so both edges are combat-legal. Buttons don't exist yet at creation
     -- time (handler no-ops until they do); FinishSetup's initial sync covers
     -- bars that START hidden (their OnHide never fires).
-    widget:HookScript("OnShow", function(f)
+    widget:HookScript("OnShow", function(frame)
         if mod.ApplyBarDormancy then
-            mod.ApplyBarDormancy(f._barKey, false)
+            mod.ApplyBarDormancy(frame._barKey, false)
         end
     end)
-    widget:HookScript("OnHide", function(f)
+    widget:HookScript("OnHide", function(frame)
         if mod.ApplyBarDormancy then
-            mod.ApplyBarDormancy(f._barKey, true)
+            mod.ApplyBarDormancy(frame._barKey, true)
         end
     end)
     return widget
@@ -498,8 +498,8 @@ end
 -- bar frames in combat, so the combat /reload build runs this at combat end.
 -- On ns, not a file local.
 mod._eabClampAllBars = function()
-    for _, f in pairs(barFrames) do
-        f:SetClampedToScreen(true)
+    for _, frame in pairs(barFrames) do
+        frame:SetClampedToScreen(true)
     end
 end
 
@@ -548,8 +548,8 @@ local function CaptureBlizzardDefaults()
     -- Blizzard's stack order, at the stack's left edge plus the bar's own
     -- indent (WoW Forever's default anchors carry one). nil when the bar is
     -- not parked there (moved in Edit Mode, or a layout with no stack).
-    local function StackSlot(bar)
-        local pt, rel, rpt, px, py = bar:GetPoint(1)
+    local function StackSlot(barFrame)
+        local pt, rel, rpt, px, py = barFrame:GetPoint(1)
         if pt ~= "TOPLEFT" or rel ~= UIParent or rpt ~= "TOPLEFT" or px ~= 0 or py ~= 0 then
             return nil
         end
@@ -563,29 +563,29 @@ local function CaptureBlizzardDefaults()
         if not success or type(entries) ~= "table" then
             return nil
         end
-        local function Anchor(f)
+        local function Anchor(frame)
             if not (EM and EM.GetDefaultAnchor) then
                 return nil
             end
-            local okA, a = pcall(EM.GetDefaultAnchor, EM, f)
+            local okA, a = pcall(EM.GetDefaultAnchor, EM, frame)
             return okA and type(a) == "table" and a or nil
         end
         local below, listed
         for i = 1, #entries do
-            local f = entries[i]
-            if f == bar then
+            local frame = entries[i]
+            if frame == barFrame then
                 listed = true
                 break
             end
             if
-                f
-                and f:IsShown()
-                and not f.skipAutomaticPositioning
-                and (not f.IsInDefaultPosition or f:IsInDefaultPosition())
+                frame
+                and frame:IsShown()
+                and not frame.skipAutomaticPositioning
+                and (not frame.IsInDefaultPosition or frame:IsInDefaultPosition())
             then
-                local a = Anchor(f)
+                local a = Anchor(frame)
                 if not (a and a.bottomBarExcludeFromStackIncrement) then
-                    below = f
+                    below = frame
                 end
             end
         end
@@ -594,13 +594,13 @@ local function CaptureBlizzardDefaults()
         end
         below = below or _G.MainActionBar
         local l, t = below and below:GetLeft(), below and below:GetTop()
-        local wid, hgt = bar:GetWidth(), bar:GetHeight()
+        local wid, hgt = barFrame:GetWidth(), barFrame:GetHeight()
         if not (l and t and wid and hgt) then
             return nil
         end
         local kB = below:GetEffectiveScale() / uiScale
-        local k = bar:GetEffectiveScale() / uiScale
-        local aB, a = Anchor(below), Anchor(bar)
+        local k = barFrame:GetEffectiveScale() / uiScale
+        local aB, a = Anchor(below), Anchor(barFrame)
         local leftX = (l - (aB and aB.bottomBarOffsetX or 0)) * kB + (a and a.bottomBarOffsetX or 0) * k
         local bottom = t * kB + (tonumber(_G.BOTTOM_ACTION_BARS_SPACER_Y) or 4) * k
         return leftX + wid * k / 2 - uiW / 2, bottom + hgt * k / 2 - uiH / 2
@@ -611,7 +611,7 @@ local function CaptureBlizzardDefaults()
     local mainActionBar = _G["MainActionBar"]
 
     for _, details in ipairs(BAR_CONFIG) do
-        local bar = _G[details.blizzFrame]
+        local barFrame = _G[details.blizzFrame]
         if details.key == "MainBar" then
             -- MainBar reads Edit Mode settings + position from MainActionBar.
             -- Early disposal reparents it to the full-screen hiddenParent, so
@@ -652,13 +652,13 @@ local function CaptureBlizzardDefaults()
             end
 
             captured["MainBar"] = payload
-        elseif bar and bar:GetPoint(1) then
+        elseif barFrame and barFrame:GetPoint(1) then
             local payload = {}
 
             -- Position: convert to UIParent-relative CENTER coords.
-            local cx, cy = bar:GetCenter()
+            local cx, cy = barFrame:GetCenter()
             if cx and cy then
-                local bScale = bar:GetEffectiveScale()
+                local bScale = barFrame:GetEffectiveScale()
                 cx = cx * bScale / uiScale
                 cy = cy * bScale / uiScale
                 payload.point = "CENTER"
@@ -669,8 +669,8 @@ local function CaptureBlizzardDefaults()
 
             -- A stance or pet bar hidden right now (no forms yet, no pet out)
             -- was never stacked: it takes the slot it gets once it shows.
-            if (details.isStance or details.isPetBar) and not bar:IsShown() then
-                local sx, sy = StackSlot(bar)
+            if (details.isStance or details.isPetBar) and not barFrame:IsShown() then
+                local sx, sy = StackSlot(barFrame)
                 if sx then
                     payload.point, payload.relPoint = "CENTER", "CENTER"
                     payload.x, payload.y, payload.stackSlot = sx, sy, true
@@ -678,41 +678,41 @@ local function CaptureBlizzardDefaults()
             end
 
             -- Number of visible buttons try Edit Mode setting 2 first
-            if bar.GetSettingValue then
-                local success, val = pcall(bar.GetSettingValue, bar, 2)
+            if barFrame.GetSettingValue then
+                local success, val = pcall(barFrame.GetSettingValue, barFrame, 2)
                 if success and val and val >= 6 and val <= 12 then
                     payload.numIcons = val
                 end
             end
-            if not payload.numIcons and bar.numButtonsShowable and bar.numButtonsShowable > 0 then
-                payload.numIcons = bar.numButtonsShowable
+            if not payload.numIcons and barFrame.numButtonsShowable and barFrame.numButtonsShowable > 0 then
+                payload.numIcons = barFrame.numButtonsShowable
             end
 
             -- Number of rows try Edit Mode setting 1 first
-            if bar.GetSettingValue then
-                local success, val = pcall(bar.GetSettingValue, bar, 1)
+            if barFrame.GetSettingValue then
+                local success, val = pcall(barFrame.GetSettingValue, barFrame, 1)
                 if success and val and val >= 1 and val <= 4 then
                     payload.numRows = val
                 end
             end
-            if not payload.numRows and bar.numRows and bar.numRows > 0 then
-                payload.numRows = bar.numRows
+            if not payload.numRows and barFrame.numRows and barFrame.numRows > 0 then
+                payload.numRows = barFrame.numRows
             end
 
             -- Orientation
-            if bar.isHorizontal ~= nil then
-                payload.orientation = bar.isHorizontal and "horizontal" or "vertical"
+            if barFrame.isHorizontal ~= nil then
+                payload.orientation = barFrame.isHorizontal and "horizontal" or "vertical"
             end
-            if bar.GetSettingValue then
-                local success, val = pcall(bar.GetSettingValue, bar, 0)
+            if barFrame.GetSettingValue then
+                local success, val = pcall(barFrame.GetSettingValue, barFrame, 0)
                 if success and val ~= nil then
                     payload.orientation = (val == 0) and "horizontal" or "vertical"
                 end
             end
 
             -- Icon size (Edit Mode setting 3).
-            if bar.GetSettingValue then
-                local success, val = pcall(bar.GetSettingValue, bar, 3)
+            if barFrame.GetSettingValue then
+                local success, val = pcall(barFrame.GetSettingValue, barFrame, 3)
                 if success and val ~= nil and val > 0 then
                     payload.blizzIconScale = val / 100
                 end
@@ -720,12 +720,12 @@ local function CaptureBlizzardDefaults()
 
             -- Always Show Buttons (setting 9): 0=off, 1=on
             if
-                bar.GetSettingValue
+                barFrame.GetSettingValue
                 and details.key ~= "MainBar"
                 and not details.isStance
                 and not details.isPetBar
             then
-                local success, val = pcall(bar.GetSettingValue, bar, 9)
+                local success, val = pcall(barFrame.GetSettingValue, barFrame, 9)
                 if success and val ~= nil then
                     payload.alwaysShowButtons = (val == 1)
                 end
@@ -751,10 +751,10 @@ local function CaptureBlizzardDefaults()
             -- 2=OutOfCombat, 3=Hidden. A bar disabled via Gameplay > Action
             -- Bars (CVars) reports IsShown()=false while setting 5 still
             -- claims "Always Visible"; IsShown=false takes priority.
-            if not bar:IsShown() then
+            if not barFrame:IsShown() then
                 payload.visibility = 3
-            elseif bar.GetSettingValue and not details.isStance and not details.isPetBar then
-                local success, val = pcall(bar.GetSettingValue, bar, 5)
+            elseif barFrame.GetSettingValue and not details.isStance and not details.isPetBar then
+                local success, val = pcall(barFrame.GetSettingValue, barFrame, 5)
                 if success and val ~= nil then
                     payload.visibility = val
                 end
@@ -781,16 +781,16 @@ function mod.AB_CaptureCapSpan(captured)
         return nil, nil
     end
     local uiS = UIParent:GetEffectiveScale()
-    local function Rect(f)
-        if not (f and f.GetLeft) then
+    local function Rect(frame)
+        if not (frame and frame.GetLeft) then
             return nil
         end
-        local l, r, t, b = f:GetLeft(), f:GetRight(), f:GetTop(), f:GetBottom()
-        if not (l and r and t and b) or r - l < 1 or t - b < 1 then
+        local l, region, t, b = frame:GetLeft(), frame:GetRight(), frame:GetTop(), frame:GetBottom()
+        if not (l and region and t and b) or region - l < 1 or t - b < 1 then
             return nil
         end
-        local k = f:GetEffectiveScale() / uiS
-        return { l * k, r * k, t * k, b * k }
+        local k = frame:GetEffectiveScale() / uiS
+        return { l * k, region * k, t * k, b * k }
     end
     local home = Rect(main)
     if not home or home[2] - home[1] < 20 then
@@ -798,19 +798,19 @@ function mod.AB_CaptureCapSpan(captured)
     end
     local cands = {}
     for _, details in ipairs(BAR_CONFIG) do
-        local d = captured[details.key]
+        local skinData = captured[details.key]
         if
             details.key ~= "MainBar"
-            and d
+            and skinData
             and details.blizzFrame
             and not details.isStance
             and not details.isPetBar
-            and d.orientation == "horizontal"
-            and (d.visibility == nil or d.visibility == 0)
+            and skinData.orientation == "horizontal"
+            and (skinData.visibility == nil or skinData.visibility == 0)
         then
-            local r = Rect(_G[details.blizzFrame])
-            if r then
-                cands[#cands + 1] = { key = details.key, r = r }
+            local region = Rect(_G[details.blizzFrame])
+            if region then
+                cands[#cands + 1] = { key = details.key, r = region }
             end
         end
     end
@@ -823,29 +823,29 @@ function mod.AB_CaptureCapSpan(captured)
         and mm:IsShown()
         and mm.isHorizontal ~= false
     then
-        local r = Rect(mcf)
-        if r then
-            cands[#cands + 1] = { key = "MicroBar", r = r }
+        local region = Rect(mcf)
+        if region then
+            cands[#cands + 1] = { key = "MicroBar", r = region }
         end
     end
     local bags = _G.BagsBar
     if bags and bags:IsShown() and bags.isHorizontal ~= false then
-        local r = Rect(bags)
-        if r then
-            cands[#cands + 1] = { key = "BagBar", r = r }
+        local region = Rect(bags)
+        if region then
+            cands[#cands + 1] = { key = "BagBar", r = region }
         end
     end
-    local function Walk(dir)
+    local function Walk(direction)
         local current, last, used = home, nil, {}
         while true do
             local best, bestGap
             for i = 1, #cands do
                 local c = cands[i]
                 if not used[c] then
-                    local r = c.r
-                    local shade = min(current[3], r[3]) - max(current[4], r[4])
-                    if shade >= 0.5 * min(current[3] - current[4], r[3] - r[4]) then
-                        local gap = (dir > 0) and (r[1] - current[2]) or (current[1] - r[2])
+                    local region = c.r
+                    local shade = min(current[3], region[3]) - max(current[4], region[4])
+                    if shade >= 0.5 * min(current[3] - current[4], region[3] - region[4]) then
+                        local gap = (direction > 0) and (region[1] - current[2]) or (current[1] - region[2])
                         if gap >= -8 and gap <= 12 and (not bestGap or gap < bestGap) then
                             best, bestGap = c, gap
                         end

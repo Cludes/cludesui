@@ -506,8 +506,8 @@ local function InMythicPlusKey()
 end
 
 -- Mythic raid diff IDs: 16 fixed-20p (PrimaryRaidMythic), 233 flex (RaidMythicFlexible). Add future IDs here so every gate below stays correct.
-local function IsMythicRaidDiff(d)
-    return d == 16 or d == 233
+local function IsMythicRaidDiff(skinData)
+    return skinData == 16 or skinData == 233
 end
 
 -- Mythic 0 dungeon (difficulty 23). A keyed M+ run is not M0.
@@ -544,46 +544,46 @@ function REMIND.CurrentDifficultyCat()
     if InMythicPlusKey() then
         return "d_mplus"
     end
-    local it, d = _cachedIType, _cachedDiffID
+    local it, skinData = _cachedIType, _cachedDiffID
     if it == "party" then
-        if d == 23 or d == 8 then
+        if skinData == 23 or skinData == 8 then
             return "d_mythic"
         end
-        if d == 2 then
+        if skinData == 2 then
             return "d_heroic"
         end
-        if d == 1 then
+        if skinData == 1 then
             return "d_normal"
         end
-        if d == 24 then
+        if skinData == 24 then
             return "d_timewalking"
         end
-        if d == 205 then
+        if skinData == 205 then
             return "d_follower"
         end
     elseif it == "raid" then
-        if IsMythicRaidDiff(d) then
+        if IsMythicRaidDiff(skinData) then
             return "r_mythic"
         end
-        if d == 15 or d == 6 then
+        if skinData == 15 or skinData == 6 then
             return "r_heroic"
         end
-        if d == 14 or d == 3 or d == 4 or d == 5 then
+        if skinData == 14 or skinData == 3 or skinData == 4 or skinData == 5 then
             return "r_normal"
         end
-        if d == 17 or d == 7 then
+        if skinData == 17 or skinData == 7 then
             return "r_lfr"
         end
-        if d == 33 then
+        if skinData == 33 then
             return "d_timewalking"
         end
         -- WoW Forever raids report the legacy 40- and 20-player ids; they feed
         -- the Forever section's "Raids" bucket. Retail leaves them unmapped.
-        if REMIND.FOREVER and (d == 9 or d == 148) then
+        if REMIND.FOREVER and (skinData == 9 or skinData == 148) then
             return "r_normal"
         end
     elseif it == "scenario" then
-        if d == 208 then
+        if skinData == 208 then
             return "s_delve"
         end
     end

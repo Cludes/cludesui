@@ -135,8 +135,8 @@ local function Msg(textValue)
 end
 
 -- On-screen text in the QoL font; Raid Tools' ApplyFonts keeps it current.
-local function Text(hostFrame, size, r, g, b)
-    return RT.Text(widget, hostFrame, size, r, g, b)
+local function Text(hostFrame, size, region, g, b)
+    return RT.Text(widget, hostFrame, size, region, g, b)
 end
 
 -------------------------------------------------------------------------------
@@ -147,8 +147,8 @@ local function AllReadable(ids)
     if not should then
         return true
     end
-    for idx = 1, #ids do
-        local success, secret = pcall(should, ids[idx])
+    for index = 1, #ids do
+        local success, secret = pcall(should, ids[index])
         if not success or IsSecret(secret) or secret ~= false then
             return false
         end
@@ -177,8 +177,8 @@ end
 -- State values: true or an expiration time = has it, false = verified
 -- missing, nil = cannot tell, "eating" = food channel up.
 local function ListState(unitToken, ids, readable, restricted)
-    for idx = 1, #ids do
-        local val = FindID(unitToken, ids[idx])
+    for index = 1, #ids do
+        local val = FindID(unitToken, ids[index])
         if val then
             return val
         end
@@ -210,8 +210,8 @@ local function FoodState(unitToken, restricted)
         return nil
     end
     local sawReadable, eating = false, false
-    for idx = 1, AURA_SCAN_LIMIT do
-        local success, aura = pcall(C_UnitAuras.GetAuraDataByIndex, unitToken, idx, "HELPFUL")
+    for index = 1, AURA_SCAN_LIMIT do
+        local success, aura = pcall(C_UnitAuras.GetAuraDataByIndex, unitToken, index, "HELPFUL")
         if not success then
             return nil
         end
@@ -281,60 +281,60 @@ local function MakeCell(hostFrame)
     return cell
 end
 
-local function MakeRow(idx)
-    local r = CreateFrame("Frame", nil, widget.table)
-    r:SetHeight(ROW_H)
-    if idx % 2 == 0 then
-        local stripe = r:CreateTexture(nil, "BACKGROUND")
+local function MakeRow(index)
+    local region = CreateFrame("Frame", nil, widget.table)
+    region:SetHeight(ROW_H)
+    if index % 2 == 0 then
+        local stripe = region:CreateTexture(nil, "BACKGROUND")
         stripe:SetColorTexture(1, 1, 1, 0.03)
-        stripe:SetAllPoints(r)
+        stripe:SetAllPoints(region)
     end
     -- A member's name: a font family, which draws the scripts the font lacks
-    r.name = RT.NameText(widget, r, 11, 1, 1, 1)
-    r.name:SetPoint("LEFT", r, "LEFT", 4, 0)
-    r.name:SetWidth(NAME_W - 6)
-    r.name:SetJustifyH("LEFT")
-    r.name:SetWordWrap(false)
-    r.flask = MakeCell(r)
-    r.food = MakeCell(r)
-    r.rune = MakeCell(r)
-    r.vantus = MakeCell(r)
-    r.cells = { r.flask, r.food, r.rune, r.vantus }
-    r.buffs = {}
+    region.name = RT.NameText(widget, region, 11, 1, 1, 1)
+    region.name:SetPoint("LEFT", region, "LEFT", 4, 0)
+    region.name:SetWidth(NAME_W - 6)
+    region.name:SetJustifyH("LEFT")
+    region.name:SetWordWrap(false)
+    region.flask = MakeCell(region)
+    region.food = MakeCell(region)
+    region.rune = MakeCell(region)
+    region.vantus = MakeCell(region)
+    region.cells = { region.flask, region.food, region.rune, region.vantus }
+    region.buffs = {}
     for jdx = 1, BUFF_SLOTS do
-        local t = r:CreateTexture(nil, "ARTWORK")
+        local t = region:CreateTexture(nil, "ARTWORK")
         t:SetSize(ICON, ICON)
         t:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        r.buffs[jdx] = t
+        region.buffs[jdx] = t
     end
-    r.buffsOk = r:CreateTexture(nil, "ARTWORK")
-    r.buffsOk:SetSize(ICON, ICON)
-    r.buffsOk:SetTexture(TEX_YES)
-    r.buffsQ = Text(r, 11, 0.6, 0.6, 0.6)
-    r.buffsQ:SetPoint("LEFT", r.buffsOk, "LEFT", 0, 0)
-    r.buffsQ:SetText("?")
-    rowList[idx] = r
-    return r
+    region.buffsOk = region:CreateTexture(nil, "ARTWORK")
+    region.buffsOk:SetSize(ICON, ICON)
+    region.buffsOk:SetTexture(TEX_YES)
+    region.buffsQ = Text(region, 11, 0.6, 0.6, 0.6)
+    region.buffsQ:SetPoint("LEFT", region.buffsOk, "LEFT", 0, 0)
+    region.buffsQ:SetText("?")
+    rowList[index] = region
+    return region
 end
 
-local function PlaceRow(r)
-    if r._colsKey == colsKey then
+local function PlaceRow(region)
+    if region._colsKey == colsKey then
         return
     end
-    r._colsKey = colsKey
-    r:SetWidth(blockW)
+    region._colsKey = colsKey
+    region:SetWidth(blockW)
     for key = 1, CELLS do
-        local cell = r.cells[key]
+        local cell = region.cells[key]
         cell:ClearAllPoints()
-        cell:SetPoint("LEFT", r, "LEFT", colX[key], 0)
+        cell:SetPoint("LEFT", region, "LEFT", colX[key], 0)
         cell:SetShown(colShown[key])
     end
     for jdx = 1, BUFF_SLOTS do
-        r.buffs[jdx]:ClearAllPoints()
-        r.buffs[jdx]:SetPoint("LEFT", r, "LEFT", buffsX + (jdx - 1) * BUFF_STEP, 0)
+        region.buffs[jdx]:ClearAllPoints()
+        region.buffs[jdx]:SetPoint("LEFT", region, "LEFT", buffsX + (jdx - 1) * BUFF_STEP, 0)
     end
-    r.buffsOk:ClearAllPoints()
-    r.buffsOk:SetPoint("LEFT", r, "LEFT", buffsX, 0)
+    region.buffsOk:ClearAllPoints()
+    region.buffsOk:SetPoint("LEFT", region, "LEFT", buffsX, 0)
 end
 
 local function PlaceHeader(hgt)
@@ -488,23 +488,23 @@ local function Build()
     -- box's hit rect.
     local ar, ag, ab = CludesUI.GetAccentColor()
     local function MakeCheckbox(textValue, onClick)
-        local cb = CreateFrame("Button", nil, widget)
-        cb:SetSize(14, 14)
-        local box = cb:CreateTexture(nil, "BACKGROUND")
+        local callback = CreateFrame("Button", nil, widget)
+        callback:SetSize(14, 14)
+        local box = callback:CreateTexture(nil, "BACKGROUND")
         box:SetColorTexture(0.08, 0.08, 0.08, 0.92)
-        box:SetAllPoints(cb)
-        CludesUI.MakeBorder(cb, 0.35, 0.35, 0.35, 1)
-        cb.check = cb:CreateTexture(nil, "ARTWORK")
-        cb.check:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
-        cb.check:SetPoint("CENTER")
-        cb.check:SetSize(16, 16)
-        cb.check:SetVertexColor(ar, ag, ab)
-        cb.label = Text(widget, 11, 0.85, 0.85, 0.85)
-        cb.label:SetPoint("LEFT", cb, "RIGHT", 6, 0)
-        cb.label:SetText(textValue)
-        cb:SetHitRectInsets(0, -(cb.label:GetStringWidth() + 6), 0, 0)
-        cb:SetScript("OnClick", onClick)
-        return cb
+        box:SetAllPoints(callback)
+        CludesUI.MakeBorder(callback, 0.35, 0.35, 0.35, 1)
+        callback.check = callback:CreateTexture(nil, "ARTWORK")
+        callback.check:SetTexture("Interface\\Buttons\\UI-CheckBox-Check")
+        callback.check:SetPoint("CENTER")
+        callback.check:SetSize(16, 16)
+        callback.check:SetVertexColor(ar, ag, ab)
+        callback.label = Text(widget, 11, 0.85, 0.85, 0.85)
+        callback.label:SetPoint("LEFT", callback, "RIGHT", 6, 0)
+        callback.label:SetText(textValue)
+        callback:SetHitRectInsets(0, -(callback.label:GetStringWidth() + 6), 0, 0)
+        callback:SetScript("OnClick", onClick)
+        return callback
     end
     widget.onlyBox = MakeCheckbox(CludesUI.L("Hide Fully Buffed"), function()
         local c = CDB()
@@ -604,32 +604,32 @@ local function CollectUnits()
     wipe(providers)
     wipe(isMember)
     if IsInRaid() then
-        for idx = 1, GetNumGroupMembers() do
-            local u = "raid" .. idx
+        for index = 1, GetNumGroupMembers() do
+            local u = "raid" .. index
             if UnitExists(u) then
                 units[#units + 1] = u
             end
         end
     else
         units[1] = "player"
-        for idx = 1, GetNumSubgroupMembers() do
-            local u = "party" .. idx
+        for index = 1, GetNumSubgroupMembers() do
+            local u = "party" .. index
             if UnitExists(u) then
                 units[#units + 1] = u
             end
         end
     end
     wipe(sortName)
-    for idx = 1, #units do
-        local u = units[idx]
+    for index = 1, #units do
+        local u = units[index]
         local name = PlainString(UnitName(u))
         if name then
             sortName[u] = strlower(name)
         end
     end
     table.sort(units, SortByName)
-    for idx = 1, #units do
-        local u = units[idx]
+    for index = 1, #units do
+        local u = units[index]
         isMember[u] = true
         local cls = UnitIsConnected(u) and UnitClassToken(u)
         if cls then
@@ -715,54 +715,54 @@ local function NotFullyBuffed(s, nowTime, runeRequired, vantusRequired)
         or SoonLeft(s.buffsExp, nowTime)
 end
 
-local function PaintRow(r, unitToken, nowTime)
+local function PaintRow(region, unitToken, nowTime)
     local s = states[unitToken]
-    r.name:SetText(UnitName(unitToken))
+    region.name:SetText(UnitName(unitToken))
     local cls = UnitClassToken(unitToken)
     local cc = cls and CludesUI.GetClassColor(cls)
     if cc and s.online then
-        r.name:SetTextColor(cc.r, cc.g, cc.b)
+        region.name:SetTextColor(cc.r, cc.g, cc.b)
     else
-        r.name:SetTextColor(0.5, 0.5, 0.5)
+        region.name:SetTextColor(0.5, 0.5, 0.5)
     end
-    SetCell(r.flask, s.flask, nowTime)
-    SetCell(r.food, s.food, nowTime)
-    SetCell(r.rune, s.rune, nowTime)
-    SetCell(r.vantus, s.vantus, nowTime)
+    SetCell(region.flask, s.flask, nowTime)
+    SetCell(region.food, s.food, nowTime)
+    SetCell(region.rune, s.rune, nowTime)
+    SetCell(region.vantus, s.vantus, nowTime)
     local icons = s.icons
     for jdx = 1, BUFF_SLOTS do
         local ident = icons[jdx]
         if ident then
-            r.buffs[jdx]:SetTexture(C_Spell.GetSpellTexture(ident))
-            r.buffs[jdx]:Show()
+            region.buffs[jdx]:SetTexture(C_Spell.GetSpellTexture(ident))
+            region.buffs[jdx]:Show()
         else
-            r.buffs[jdx]:Hide()
+            region.buffs[jdx]:Hide()
         end
     end
     -- flask is nil only for a row that was not read at all (offline, dead, out of range).
     local leftX = s.missing == 0 and SoonLeft(s.buffsExp, nowTime)
-    r.buffsOk:SetShown(s.flask ~= nil and s.missing == 0 and not leftX)
+    region.buffsOk:SetShown(s.flask ~= nil and s.missing == 0 and not leftX)
     if s.flask == nil then
-        r.buffsQ:SetText("?")
-        r.buffsQ:SetTextColor(0.6, 0.6, 0.6)
-        r.buffsQ:Show()
+        region.buffsQ:SetText("?")
+        region.buffsQ:SetTextColor(0.6, 0.6, 0.6)
+        region.buffsQ:Show()
     elseif leftX then
-        r.buffsQ:SetText(MinutesText(leftX))
-        r.buffsQ:SetTextColor(1, 0.8, 0.2)
-        r.buffsQ:Show()
+        region.buffsQ:SetText(MinutesText(leftX))
+        region.buffsQ:SetTextColor(1, 0.8, 0.2)
+        region.buffsQ:Show()
     else
-        r.buffsQ:Hide()
+        region.buffsQ:Hide()
     end
 end
 
 -- Wide enough for the note line and the checkbox row (its labels follow the font).
 local function MinWidth()
     local wid = PAD + 4
-    for idx, cb in ipairs(widget.boxes) do
-        if idx > 1 then
+    for index, callback in ipairs(widget.boxes) do
+        if index > 1 then
             wid = wid + 16
         end
-        wid = wid + 14 + 6 + cb.label:GetStringWidth()
+        wid = wid + 14 + 6 + callback.label:GetStringWidth()
     end
     return math.max(MIN_W, wid + PAD)
 end
@@ -787,17 +787,17 @@ local function Layout(num, nTotals)
     for b = blocks + 1, #heads do
         heads[b]:Hide()
     end
-    for idx = 1, num do
-        local r = rowList[idx] or MakeRow(idx)
-        PlaceRow(r)
-        local b = math.floor((idx - 1) / perBlock)
-        local slot = (idx - 1) % perBlock
-        r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", heads[b + 1], "BOTTOMLEFT", 0, -slot * ROW_H)
-        r:Show()
+    for index = 1, num do
+        local region = rowList[index] or MakeRow(index)
+        PlaceRow(region)
+        local b = math.floor((index - 1) / perBlock)
+        local slot = (index - 1) % perBlock
+        region:ClearAllPoints()
+        region:SetPoint("TOPLEFT", heads[b + 1], "BOTTOMLEFT", 0, -slot * ROW_H)
+        region:Show()
     end
-    for idx = num + 1, #rowList do
-        rowList[idx]:Hide()
+    for index = num + 1, #rowList do
+        rowList[index]:Hide()
     end
     widget:SetSize(
         math.max(MinWidth(), PAD * 2 + blocks * blockW + (blocks - 1) * BLOCK_GAP),
@@ -809,13 +809,13 @@ end
 -- totals[row][column]; columns are flask, food, rune, vantus, raid buffs.
 local totals = { {}, {}, {} }
 
-local function Tally(t, col, val, nowTime)
+local function Tally(t, colour, val, nowTime)
     if val == false then
-        t[1][col] = t[1][col] + 1
+        t[1][colour] = t[1][colour] + 1
     elseif val == nil then
-        t[3][col] = t[3][col] + 1
+        t[3][colour] = t[3][colour] + 1
     elseif SoonLeft(val, nowTime) then
-        t[2][col] = t[2][col] + 1
+        t[2][colour] = t[2][colour] + 1
     end
 end
 
@@ -853,8 +853,8 @@ function Render()
     end
     wipe(shownUnits)
     wakeAt = nil
-    for idx = 1, #units do
-        local u = units[idx]
+    for index = 1, #units do
+        local u = units[index]
         local s = states[u]
         if s then
             Tally(totals, 1, s.flask, nowTime)
@@ -919,8 +919,8 @@ function Render()
     widget.sep:SetShown(topY ~= nil)
 
     Layout(num, nTotals)
-    for idx = 1, num do
-        PaintRow(rowList[idx], shownUnits[idx], nowTime)
+    for index = 1, num do
+        PaintRow(rowList[index], shownUnits[index], nowTime)
     end
     -- Nobody listed (everyone fully buffed): no header and no totals either,
     -- even when a count is non-zero for a column the filter ignores.
@@ -950,8 +950,8 @@ local function Rebuild()
     CollectUnits()
     local restricted = Restricted()
     widget._restricted = restricted
-    for idx = 1, #units do
-        ComputeState(units[idx], restricted)
+    for index = 1, #units do
+        ComputeState(units[index], restricted)
     end
     Render()
 end

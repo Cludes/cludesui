@@ -282,8 +282,8 @@ ev:SetScript("OnEvent", function(_, evt, a1)
             Announce(itemLink)
         end
     elseif evt == "LOOT_OPENED" then
-        for idx = 1, GetNumLootItems() do
-            local itemLink = GetLootSlotLink(idx)
+        for index = 1, GetNumLootItems() do
+            local itemLink = GetLootSlotLink(index)
             if itemLink and not Secret(itemLink) then
                 Announce(itemLink)
             end
@@ -334,32 +334,32 @@ local function Build()
         "|cff9aa6b2Alt+Shift-click an item to add or remove it. Right-click a row to clear it.|r"
     )
 
-    for idx, s in ipairs(SLOTS) do
-        local r = CreateFrame("Button", nil, window)
-        r:SetSize(400, ROW_H)
-        r:SetPoint("TOPLEFT", 10, -32 - (idx - 1) * ROW_H)
-        r:RegisterForClicks("AnyUp")
-        r.slot = s[1]
-        r.label = r:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(r.label, 12, "essentials")
-        r.label:SetPoint("LEFT")
-        r.label:SetWidth(70)
-        r.label:SetJustifyH("LEFT")
-        r.label:SetText("|cff9aa6b2" .. s[2] .. "|r")
-        r.icon = r:CreateTexture(nil, "ARTWORK")
-        r.icon:SetSize(ROW_H - 4, ROW_H - 4)
-        r.icon:SetPoint("LEFT", 74, 0)
-        r.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        r.text = r:CreateFontString(nil, "OVERLAY")
-        CludesUI.Kit.Font(r.text, 12, "essentials")
-        r.text:SetPoint("LEFT", r.icon, "RIGHT", 6, 0)
-        r.text:SetWidth(310)
-        r.text:SetJustifyH("LEFT")
-        r.text:SetWordWrap(false)
-        local highlight = r:CreateTexture(nil, "HIGHLIGHT")
+    for index, s in ipairs(SLOTS) do
+        local region = CreateFrame("Button", nil, window)
+        region:SetSize(400, ROW_H)
+        region:SetPoint("TOPLEFT", 10, -32 - (index - 1) * ROW_H)
+        region:RegisterForClicks("AnyUp")
+        region.slot = s[1]
+        region.label = region:CreateFontString(nil, "OVERLAY")
+        CludesUI.Kit.Font(region.label, 12, "essentials")
+        region.label:SetPoint("LEFT")
+        region.label:SetWidth(70)
+        region.label:SetJustifyH("LEFT")
+        region.label:SetText("|cff9aa6b2" .. s[2] .. "|r")
+        region.icon = region:CreateTexture(nil, "ARTWORK")
+        region.icon:SetSize(ROW_H - 4, ROW_H - 4)
+        region.icon:SetPoint("LEFT", 74, 0)
+        region.icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+        region.text = region:CreateFontString(nil, "OVERLAY")
+        CludesUI.Kit.Font(region.text, 12, "essentials")
+        region.text:SetPoint("LEFT", region.icon, "RIGHT", 6, 0)
+        region.text:SetWidth(310)
+        region.text:SetJustifyH("LEFT")
+        region.text:SetWordWrap(false)
+        local highlight = region:CreateTexture(nil, "HIGHLIGHT")
         highlight:SetAllPoints()
         highlight:SetColorTexture(1, 1, 1, 0.05)
-        r:SetScript("OnClick", function(self, btnFrame)
+        region:SetScript("OnClick", function(self, btnFrame)
             local ident = List()[self.slot]
             if btnFrame == "RightButton" and ident then
                 List()[self.slot] = nil
@@ -371,7 +371,7 @@ local function Build()
                 end
             end
         end)
-        r:SetScript("OnEnter", function(self)
+        region:SetScript("OnEnter", function(self)
             local ident = List()[self.slot]
             if not ident then
                 return
@@ -380,10 +380,10 @@ local function Build()
             GameTooltip:SetItemByID(ident)
             GameTooltip:Show()
         end)
-        r:SetScript("OnLeave", function()
+        region:SetScript("OnLeave", function()
             GameTooltip:Hide()
         end)
-        rowList[idx] = r
+        rowList[index] = region
     end
     window:Hide()
     tinsert(UISpecialFrames, "CludesUIBiSWindow")
@@ -394,26 +394,26 @@ Refresh = function()
         return
     end
     local have, sum = 0, 0
-    for _, r in ipairs(rowList) do
-        local ident = List()[r.slot]
+    for _, region in ipairs(rowList) do
+        local ident = List()[region.slot]
         if ident then
             sum = sum + 1
             local name, itemLink, quality = C_Item.GetItemInfo(ident)
-            r.icon:SetTexture(C_Item.GetItemIconByID(ident))
-            r.icon:Show()
+            region.icon:SetTexture(C_Item.GetItemIconByID(ident))
+            region.icon:Show()
             local mine = module.Owned(ident)
             if mine then
                 have = have + 1
             end
             local gain = not mine and module.ItemGain and module.ItemGain(ident, itemLink)
-            r.text:SetText(
+            region.text:SetText(
                 (itemLink or name or ("item " .. ident))
                     .. (mine and "  |cff60d080yours|r" or "  |cff9aa6b2needed|r")
                     .. (gain and ("  |cff60d080+%.1f%%|r"):format(gain) or "")
             )
         else
-            r.icon:Hide()
-            r.text:SetText("|cff606870none picked|r")
+            region.icon:Hide()
+            region.text:SetText("|cff606870none picked|r")
         end
     end
     window.title:SetText(
@@ -446,10 +446,10 @@ CludesUI._BiS = {
 }
 
 SLASH_CUIBIS1 = "/cbis"
-SlashCmdList.CUIBIS = function(msg)
-    msg = (msg or ""):match("^%s*(.-)%s*$")
-    if msg ~= "" then
-        return module.ToggleBis(msg)
+SlashCmdList.CUIBIS = function(message)
+    message = (message or ""):match("^%s*(.-)%s*$")
+    if message ~= "" then
+        return module.ToggleBis(message)
     end
     if window and window:IsShown() then
         window:Hide()

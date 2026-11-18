@@ -443,29 +443,29 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
                 value = Name(res) .. ": " .. value
             end
         end
-        local text, icon = row.text, row.icon
+        local text, iconTex = row.text, row.icon
         mod.SetFont(text, pass.fontSize, barCtx.cfg)
         text:SetText(value)
         row.alpha = blank and 0.5 or 1
         text:SetTextColor(pass.r, pass.g, pass.b, row.alpha)
         text:ClearAllPoints()
         text:Show()
-        icon:SetTexture(Icon(res))
-        K.CropStockIcon(icon)
-        icon:SetVertexColor(pass.ir, pass.ig, pass.ib, 1)
-        icon:ClearAllPoints()
+        iconTex:SetTexture(Icon(res))
+        K.CropStockIcon(iconTex)
+        iconTex:SetVertexColor(pass.ir, pass.ig, pass.ib, 1)
+        iconTex:ClearAllPoints()
         local withIcon = pass.iconSize > 0 and not blank
         if withIcon then
-            icon:SetSize(pass.iconSize, pass.iconSize)
-            icon:Show()
+            iconTex:SetSize(pass.iconSize, pass.iconSize)
+            iconTex:Show()
         else
-            icon:Hide()
+            iconTex:Hide()
         end
         if pass.vertical then
             -- Stacked: icon, then its count, down the slot.
             mod.SetWrappedText(text, max(24, pass.width - 8), "CENTER")
             if withIcon then
-                icon:SetPoint("TOP", button, "TOP", 0, -pass.y)
+                iconTex:SetPoint("TOP", button, "TOP", 0, -pass.y)
                 pass.y = pass.y + pass.iconSize + 2
             end
             text:SetPoint("TOP", button, "TOP", 0, -pass.y)
@@ -477,7 +477,7 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
                 pass.x = pass.x + 12
             end
             if withIcon then
-                icon:SetPoint("LEFT", button, "LEFT", pass.x, 0)
+                iconTex:SetPoint("LEFT", button, "LEFT", pass.x, 0)
                 pass.x = pass.x + pass.iconSize + K.ICON_GAP
             end
             text:SetPoint("LEFT", button, "LEFT", pass.x, 0)
@@ -530,14 +530,14 @@ mod.BlockFactories.supplies = function(blockCfg, slot, contentFrame, barCtx)
 
     -- Hover recolours the drawn rows only (unless the counts are stale).
     local function Recolour()
-        local r, g, b
+        local region, g, b
         if hovered then
-            r, g, b = mod.GetAccent()
+            region, g, b = mod.GetAccent()
         else
-            r, g, b = K.BlockColorOf(blockCfg)
+            region, g, b = K.BlockColorOf(blockCfg)
         end
         for i = 1, used or 0 do
-            rows[i].text:SetTextColor(r, g, b, rows[i].alpha)
+            rows[i].text:SetTextColor(region, g, b, rows[i].alpha)
         end
     end
     button:SetScript("OnEnter", function()

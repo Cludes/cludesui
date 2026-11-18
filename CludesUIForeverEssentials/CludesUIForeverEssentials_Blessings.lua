@@ -83,8 +83,8 @@ end
 local function On()
     return F.Enabled()
 end
-local function Print(msg)
-    CludesUI.Print("|cff4cc9f0Blessings:|r " .. msg)
+local function Print(message)
+    CludesUI.Print("|cff4cc9f0Blessings:|r " .. message)
 end
 -- Shared between the sections below (each keeps its own helpers in a do block).
 local HiddenAuras, Remembered, ForgetIfDead, CastSent, NoteCast, CastDone, ForgetCasts
@@ -163,9 +163,9 @@ end
 Index(FURY)
 
 local function HighestKnown(ids)
-    for idx = #(ids or {}), 1, -1 do
-        if C_SpellBook.IsSpellKnown(ids[idx]) then
-            return ids[idx]
+    for index = #(ids or {}), 1, -1 do
+        if C_SpellBook.IsSpellKnown(ids[index]) then
+            return ids[index]
         end
     end
 end
@@ -236,17 +236,17 @@ do
         local raid = IsInRaid()
         if raid then
             units = {}
-            for idx = 1, GetNumGroupMembers() do
-                units[#units + 1] = "raid" .. idx
+            for index = 1, GetNumGroupMembers() do
+                units[#units + 1] = "raid" .. index
             end
         else
-            for idx = 1, GetNumSubgroupMembers() do
-                units[#units + 1] = "party" .. idx
+            for index = 1, GetNumSubgroupMembers() do
+                units[#units + 1] = "party" .. index
             end
         end
         local realm = GetNormalizedRealmName()
         local entries, firstNames = {}, {}
-        for idx, unitToken in ipairs(units) do
+        for index, unitToken in ipairs(units) do
             local name, unitRealm = UnitFullName(unitToken)
             local _, class = UnitClass(unitToken)
             local unitGuid = UnitGUID(unitToken)
@@ -267,9 +267,9 @@ do
                     who = who,
                     short = short,
                     server = server,
-                    rosterName = raid and (GetRaidRosterInfo(idx)) or nil,
+                    rosterName = raid and (GetRaidRosterInfo(index)) or nil,
                 }
-                local subgroup = raid and select(3, GetRaidRosterInfo(idx))
+                local subgroup = raid and select(3, GetRaidRosterInfo(index))
                 member.subgroup = not Secret(subgroup) and subgroup or nil
                 local nameList = { who, short, member.rosterName }
                 if Readable(short) and Readable(server) then
@@ -579,8 +579,8 @@ do
         if s.ended then
             return nil
         end
-        for idx = s.next or 1, MAX_AURAS do
-            local aura = C_UnitAuras.GetAuraDataByIndex(unitToken, idx, "HELPFUL")
+        for index = s.next or 1, MAX_AURAS do
+            local aura = C_UnitAuras.GetAuraDataByIndex(unitToken, index, "HELPFUL")
             if not aura then
                 s.ended = "none"
                 return false
@@ -596,7 +596,7 @@ do
                 s[family] = (Secret(expires) or not expires or expires == 0) and true or expires
             end
             if family and family == key then
-                s.next = idx + 1
+                s.next = index + 1
                 return Found(s[family])
             end
         end
@@ -673,25 +673,25 @@ do
                 local range = UnitIsVisible(member.unit) and InRange(member, spell)
                 if has ~= nil and range ~= false then
                     s.reachable = true
-                    local r = not has and 0 or (remaining and remaining < EXPIRING and 1 or 2)
-                    if range == true and r < 2 and member.targetable then
-                        if r == 0 then
+                    local region = not has and 0 or (remaining and remaining < EXPIRING and 1 or 2)
+                    if range == true and region < 2 and member.targetable then
+                        if region == 0 then
                             s.missingNear = s.missingNear + 1
                         else
                             s.expiringNear = s.expiringNear + 1
                         end
                         if not players[member.guid] then
                             s.classDue = s.classDue + 1
-                            if r == 0 then
+                            if region == 0 then
                                 s.classMissing = s.classMissing + 1
                             end
                         end
                     end
                     local l = remaining or math.huge
                     if member.targetable then
-                        queue[#queue + 1] = { names = member.names, spell = spell, rank = r, left = l }
-                        if not s.target or r < rank or (r == rank and l < leftX) then
-                            s.target, s.spell, rank, leftX = member, spell, r, l
+                        queue[#queue + 1] = { names = member.names, spell = spell, rank = region, left = l }
+                        if not s.target or region < rank or (region == rank and l < leftX) then
+                            s.target, s.spell, rank, leftX = member, spell, region, l
                         end
                     end
                 end
@@ -708,8 +708,8 @@ do
             due = math.min(due, 1)
         end
         local keep = Get("respect") and 0 or 1
-        for idx = #queue, math.max(due, keep) + 1, -1 do
-            queue[idx] = nil
+        for index = #queue, math.max(due, keep) + 1, -1 do
+            queue[index] = nil
         end
         if due == 0 and keep == 0 then
             s.target = nil
@@ -788,8 +788,8 @@ do
 
     local function EncodePlan(classes, aura)
         local result = {}
-        for idx, class in ipairs(CLASSES) do
-            result[idx] = classes[class] and BY_KEY[classes[class]].code or NONE_CODE
+        for index, class in ipairs(CLASSES) do
+            result[index] = classes[class] and BY_KEY[classes[class]].code or NONE_CODE
         end
         result[#result + 1] = aura and BY_KEY[aura].code or NONE_CODE
         return table.concat(result)
@@ -800,8 +800,8 @@ do
             return
         end
         local classes = {}
-        for idx, class in ipairs(CLASSES) do
-            local c = textValue:sub(idx, idx)
+        for index, class in ipairs(CLASSES) do
+            local c = textValue:sub(index, index)
             if c ~= NONE_CODE then
                 local record = BY_CODE[c]
                 if not (record and record.blessing) then
@@ -850,14 +850,14 @@ do
         end
     end
 
-    function Send(msg, key)
+    function Send(message, key)
         if InCombatLockdown() then
-            pending[key or msg] = msg
+            pending[key or message] = message
             return
         end
         local channel = Channel()
         if channel then
-            C_ChatInfo.SendAddonMessage(PREFIX, msg, channel)
+            C_ChatInfo.SendAddonMessage(PREFIX, message, channel)
         end
     end
 
@@ -1011,8 +1011,8 @@ do
         end
     end
 
-    function OnMessage(msg, sender)
-        if msg == "R" then
+    function OnMessage(message, sender)
+        if message == "R" then
             if not SenderIsUnit(sender, "player", UnitGUID("player")) then
                 BroadcastSoon()
             end
@@ -1023,19 +1023,19 @@ do
             return
         end
         local who = from.who
-        local target, plan = msg:match("^S|([^|]+)|(%S+)$")
+        local target, plan = message:match("^S|([^|]+)|(%S+)$")
         if target then
             return OnAssigned(from, Ambiguate(sender, "none"), target, plan)
         end
-        local symbols, loh, di = msg:match("^I|(%d+)|(%-?%d+)|(%-?%d+)$")
+        local symbols, loh, di = message:match("^I|(%d+)|(%-?%d+)|(%-?%d+)$")
         if symbols then
             return OnStatus(who, symbols, loh, di)
         end
-        local part, entries = msg:match("^P|(%d+)|(.*)$")
+        local part, entries = message:match("^P|(%d+)|(.*)$")
         if part then
             return OnPlayers(who, part, entries)
         end
-        local body, known = msg:match("^F|(%S+)|(%a*)$")
+        local body, known = message:match("^F|(%S+)|(%a*)$")
         OnPlan(from, body, known)
     end
 
@@ -1074,9 +1074,9 @@ do
             broadcastAfterCombat = false
             BroadcastSoon()
         end
-        for key, msg in pairs(pending) do
+        for key, message in pairs(pending) do
             pending[key] = nil
-            Send(msg)
+            Send(message)
         end
         if IsPaladin() or CanAssign("player") then
             AskPallyPower()
@@ -1109,8 +1109,8 @@ do
     end
 
     local function PPKnown(plan, keyList, ranks)
-        for idx, key in ipairs(keyList) do
-            local rank = ranks:sub(2 * idx - 1, 2 * idx - 1)
+        for index, key in ipairs(keyList) do
+            local rank = ranks:sub(2 * index - 1, 2 * index - 1)
             plan.known[key] = rank ~= "" and rank ~= "n" or nil
         end
     end
@@ -1122,8 +1122,8 @@ do
 
     local function PPClasses(plan, given)
         plan.classes = {}
-        for idx, class in ipairs(PP_CLASSES) do
-            plan.classes[class] = PPPick(plan, PP_BLESSINGS, given:sub(idx, idx))
+        for index, class in ipairs(PP_CLASSES) do
+            plan.classes[class] = PPPick(plan, PP_BLESSINGS, given:sub(index, index))
         end
     end
 
@@ -1140,29 +1140,29 @@ do
         end
     end
 
-    local function PPChange(msg, from)
-        if msg == "CLEAR" or msg == "CLEAR SKIP" then
+    local function PPChange(message, from)
+        if message == "CLEAR" or message == "CLEAR SKIP" then
             local lead = CanAssign(from.unit)
             for _, plan in pairs(others) do
                 if plan.pallyPower and (lead or plan.free) then
                     plan.classes = {}
-                    if msg == "CLEAR" then
+                    if message == "CLEAR" then
                         plan.aura = nil
                     end
                 end
             end
             return
         end
-        local name, class, index = msg:match("^ASSIGN (.+) (%d+) (%d+)$")
+        local name, class, index = message:match("^ASSIGN (.+) (%d+) (%d+)$")
         if name then
-            local plan, col = PPTarget(name, from), PP_CLASSES[tonumber(class)]
-            if plan and col then
-                plan.classes[col] = PPPick(plan, PP_BLESSINGS, index)
+            local plan, colour = PPTarget(name, from), PP_CLASSES[tonumber(class)]
+            if plan and colour then
+                plan.classes[colour] = PPPick(plan, PP_BLESSINGS, index)
             end
             return
         end
         local given
-        name, given = msg:match("^PASSIGN (.+)@([%dn]*)$")
+        name, given = message:match("^PASSIGN (.+)@([%dn]*)$")
         if name then
             local plan = PPTarget(name, from)
             if plan then
@@ -1170,30 +1170,30 @@ do
             end
             return
         end
-        name, index = msg:match("^MASSIGN (.+) (%d+)$")
+        name, index = message:match("^MASSIGN (.+) (%d+)$")
         if name then
             local plan = PPTarget(name, from)
             if not plan then
                 return
             end
             local key = PPPick(plan, PP_BLESSINGS, index)
-            for _, col in ipairs(PP_CLASSES) do
-                plan.classes[col] = key
+            for _, colour in ipairs(PP_CLASSES) do
+                plan.classes[colour] = key
             end
             return
         end
-        name, index = msg:match("^AASSIGN (.+) (%d+)$")
+        name, index = message:match("^AASSIGN (.+) (%d+)$")
         local plan = name and PPTarget(name, from)
         if plan then
             plan.aura = PPPick(plan, PP_AURAS, index)
         end
     end
 
-    function OnPallyPower(msg, sender)
-        local ranks, given = msg:match("^SELF ([%xn]*)@([%dn]*)$")
-        local auraRanks, aura = msg:match("^ASELF ([%xn]*)@([%dn]*)$")
-        local symbols = msg:match("SYMCOUNT (%d+)")
-        local change = PP_CHANGES[msg:match("^%u+")]
+    function OnPallyPower(message, sender)
+        local ranks, given = message:match("^SELF ([%xn]*)@([%dn]*)$")
+        local auraRanks, aura = message:match("^ASELF ([%xn]*)@([%dn]*)$")
+        local symbols = message:match("SYMCOUNT (%d+)")
+        local change = PP_CHANGES[message:match("^%u+")]
         if not (ranks or auraRanks or symbols or change) then
             return
         end
@@ -1202,7 +1202,7 @@ do
             return
         end
         if change then
-            PPChange(msg, from)
+            PPChange(message, from)
             return RefreshPage()
         end
         if from.class ~= "PALADIN" then
@@ -1219,8 +1219,8 @@ do
             PPKnown(plan, PP_AURAS, auraRanks)
             plan.aura = PPPick(plan, PP_AURAS, aura)
         else
-            local loh, di = msg:match("COOLDOWNS:[^:]*:([^:]*):[^:]*:([^:]*)$")
-            plan.free = msg:find("FREEASSIGN YES", 1, true) == 1 or nil
+            local loh, di = message:match("COOLDOWNS:[^:]*:([^:]*):[^:]*:([^:]*)$")
+            plan.free = message:find("FREEASSIGN YES", 1, true) == 1 or nil
             plan.status =
                 { symbols = math.min(tonumber(symbols), MAX_SYMBOLS), loh = PPEnds(loh), di = PPEnds(di) }
         end
@@ -1433,10 +1433,10 @@ do
             free[#free + 1] = p
         end
         for _, key in ipairs(wanted) do
-            for idx, p in ipairs(free) do
+            for index, p in ipairs(free) do
                 if p.known[key] then
                     give(p, key)
-                    table.remove(free, idx)
+                    table.remove(free, index)
                     break
                 end
             end
@@ -1569,15 +1569,15 @@ do
         ApplyPlans(plans)
     end
 
-    function SetFor(who, col, key)
+    function SetFor(who, colour, key)
         local plan = others[who]
         if not plan then
             return
         end
-        if col == AURA_COLUMN then
+        if colour == AURA_COLUMN then
             plan.aura = key
         else
-            plan.classes[col] = key
+            plan.classes[colour] = key
         end
         SendPlan(who, plan.classes, plan.aura)
     end
@@ -1635,16 +1635,16 @@ local function RowStep()
     return Look.size + Look.gap + LabelRoom()
 end
 
-local function LookPin(widget, bar, posX, posY)
+local function LookPin(widget, barFrame, posX, posY)
     widget:ClearAllPoints()
     if Look.vertical then
-        widget:SetPoint("TOPLEFT", bar, "TOPLEFT", posY or 0, -posX)
+        widget:SetPoint("TOPLEFT", barFrame, "TOPLEFT", posY or 0, -posX)
     else
-        widget:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", posX, posY or 0)
+        widget:SetPoint("BOTTOMLEFT", barFrame, "BOTTOMLEFT", posX, posY or 0)
     end
 end
 
-local function LookPlace(widget, bar, posX, posY)
+local function LookPlace(widget, barFrame, posX, posY)
     local size = Look.size
     widget:SetSize(size, size)
     CludesUI.Kit.Font(widget.timer, Look.timerSize, "essentials")
@@ -1663,7 +1663,7 @@ local function LookPlace(widget, bar, posX, posY)
             widget.label:SetWidth(size + Look.gap)
         end
     end
-    LookPin(widget, bar, posX, posY)
+    LookPin(widget, barFrame, posX, posY)
     widget:Show()
     return posX + size + Look.gap
 end
@@ -1732,10 +1732,10 @@ local function Watch(widget)
             initializeFrame = function(btnFrame)
                 btnFrame:SetAllPoints(widget.icon)
                 btnFrame:EnableMouse(false)
-                local icon = btnFrame:CreateTexture(nil, "ARTWORK")
-                icon:SetAllPoints()
-                icon:SetTexCoord(ICON_CROP, 1 - ICON_CROP, ICON_CROP, 1 - ICON_CROP)
-                btnFrame:SetIcon(icon)
+                local iconTex = btnFrame:CreateTexture(nil, "ARTWORK")
+                iconTex:SetAllPoints()
+                iconTex:SetTexCoord(ICON_CROP, 1 - ICON_CROP, ICON_CROP, 1 - ICON_CROP)
+                btnFrame:SetIcon(iconTex)
                 local textValue = btnFrame:CreateFontString(nil, "OVERLAY")
                 CludesUI.Kit.Font(textValue, Get("timerSize"), "essentials")
                 widget.watchText = textValue
@@ -1805,12 +1805,12 @@ end
 -------------------------------------------------------------------------------
 local OpenWindow, PlayerList
 
-local function SetOwn(col, key)
+local function SetOwn(colour, key)
     local storage = Store()
-    if col == AURA_COLUMN then
+    if colour == AURA_COLUMN then
         storage.aura = key
     else
-        storage.classes[col] = key
+        storage.classes[colour] = key
     end
     BroadcastSoon()
     Changed()
@@ -2020,9 +2020,9 @@ do
         return flyoutClass
     end
 
-    function PlayerList.Build(bar)
-        flyout = CreateFrame("Frame", nil, bar)
-        flyout:SetPoint("BOTTOMLEFT", bar, "TOPLEFT", 0, 18)
+    function PlayerList.Build(barFrame)
+        flyout = CreateFrame("Frame", nil, barFrame)
+        flyout:SetPoint("BOTTOMLEFT", barFrame, "TOPLEFT", 0, 18)
         CludesUI.Kit.Panel(flyout, 0.9)
         flyout.title = flyout:CreateFontString(nil, "OVERLAY")
         CludesUI.Kit.Font(flyout.title, 12, "essentials")
@@ -2056,18 +2056,18 @@ do
         end
         local storage = Store()
         flyout:Show()
-        for idx, member in ipairs(listMembers) do
-            local row = rowList[idx] or NewRow(idx)
-            rowList[idx] = row
+        for index, member in ipairs(listMembers) do
+            local row = rowList[index] or NewRow(index)
+            rowList[index] = row
             PaintRow(row, member, storage)
             row:ClearAllPoints()
-            row:SetPoint("TOPLEFT", 6, -26 - (idx - 1) * 32)
+            row:SetPoint("TOPLEFT", 6, -26 - (index - 1) * 32)
             row:Show()
         end
-        for idx = #listMembers + 1, #rowList do
-            SetNames(rowList[idx].header, NOBODY)
-            SetWatch(rowList[idx].slot, nil, nil)
-            rowList[idx]:Hide()
+        for index = #listMembers + 1, #rowList do
+            SetNames(rowList[index].header, NOBODY)
+            SetWatch(rowList[index].slot, nil, nil)
+            rowList[index]:Hide()
         end
         flyout.title:SetText(ClassName(flyoutClass))
         flyout:SetSize(242, 30 + #listMembers * 32)
@@ -2101,27 +2101,27 @@ do
     K = {}
 
     local function NewKeyButton(name, handler)
-        local btn = CreateFrame("Button", name, UIParent, "SecureActionButtonTemplate")
-        btn:RegisterForClicks("AnyDown")
-        btn:SetAttribute("useOnKeyDown", true)
-        btn:SetAttribute("type", "spell")
-        btn:SetAttribute("count", 0)
-        SecureHandlerWrapScript(btn, "OnClick", handler, KEY_STEP)
-        btn:SetScript("PostClick", function(self)
+        local button = CreateFrame("Button", name, UIParent, "SecureActionButtonTemplate")
+        button:RegisterForClicks("AnyDown")
+        button:SetAttribute("useOnKeyDown", true)
+        button:SetAttribute("type", "spell")
+        button:SetAttribute("count", 0)
+        SecureHandlerWrapScript(button, "OnClick", handler, KEY_STEP)
+        button:SetScript("PostClick", function(self)
             NoteCast(self:GetAttribute("unit"), self:GetAttribute("spell"))
         end)
-        return btn
+        return button
     end
 
-    local function SetQueue(btn, entries, kind)
+    local function SetQueue(button, entries, kind)
         kind = kind or ""
         table.sort(entries, ByUrgency)
-        for idx, record in ipairs(entries) do
-            btn:SetAttribute("unit" .. kind .. idx, record.unit)
-            btn:SetAttribute("spell" .. kind .. idx, record.spell)
+        for index, record in ipairs(entries) do
+            button:SetAttribute("unit" .. kind .. index, record.unit)
+            button:SetAttribute("spell" .. kind .. index, record.spell)
         end
-        btn:SetAttribute("count" .. kind, #entries)
-        btn:SetAttribute("step" .. kind, 1)
+        button:SetAttribute("count" .. kind, #entries)
+        button:SetAttribute("step" .. kind, 1)
     end
 
     local function Singles(members, single, shared)
@@ -2233,7 +2233,7 @@ local AUTO_STEP = [[
 
 local GROUP_CHANNELS = { PARTY = true, RAID = true, INSTANCE_CHAT = true }
 local RESCAN_DELAY, LANDING_WINDOW, TICK = 1, 1, 3
-local bar, cells, auraButton, furyButton, sealButton, autoButton, secureHandler
+local barFrame, cells, auraButton, furyButton, sealButton, autoButton, secureHandler
 local dirty, ticker, buildAfterCombat
 local refreshQueued, landing, landingQueued, sentSymbols
 local events = CreateFrame("Frame")
@@ -2241,17 +2241,17 @@ local Apply
 
 local function SurveyQueue(cell, queue)
     local parts = {}
-    for idx, record in ipairs(queue) do
-        parts[idx] = record.names .. "=" .. record.spell
+    for index, record in ipairs(queue) do
+        parts[index] = record.names .. "=" .. record.spell
     end
     local signature = table.concat(parts, ";")
     if signature == cell.signature then
         return
     end
     cell.signature = signature
-    for idx, record in ipairs(queue) do
-        cell.cast:SetAttribute("queueNames" .. idx, record.names)
-        cell.cast:SetAttribute("queueSpell" .. idx, record.spell)
+    for index, record in ipairs(queue) do
+        cell.cast:SetAttribute("queueNames" .. index, record.names)
+        cell.cast:SetAttribute("queueSpell" .. index, record.spell)
     end
     cell.cast:SetAttribute("count", #queue)
 end
@@ -2287,7 +2287,7 @@ local function SecretAuras()
 end
 
 local function NewCell(class)
-    local cell = CreateFrame("Frame", nil, bar)
+    local cell = CreateFrame("Frame", nil, barFrame)
     cell.class = class
     LookIcon(cell)
     cell.label = cell:CreateFontString(nil, "OVERLAY")
@@ -2364,51 +2364,51 @@ local function Cycle(entries, current, choose, delta)
         return
     end
     local at = 1
-    for idx, key in ipairs(known) do
+    for index, key in ipairs(known) do
         if key == current() then
-            at = idx
+            at = index
         end
     end
     choose(known[(at - 1 + (delta > 0 and 1 or -1)) % #known + 1])
 end
 
 local function NewBarButton(name)
-    local btn = CreateFrame("Button", name, bar, "SecureActionButtonTemplate")
-    LookIcon(btn)
-    return btn
+    local button = CreateFrame("Button", name, barFrame, "SecureActionButtonTemplate")
+    LookIcon(button)
+    return button
 end
 
 local function NewSelfButton(name)
-    local btn = NewBarButton(name)
-    btn:RegisterForClicks("AnyUp", "AnyDown")
-    btn:SetAttribute("type1", "spell")
-    btn:SetAttribute("unit1", "player")
-    Watch(btn)
-    return btn
+    local button = NewBarButton(name)
+    button:RegisterForClicks("AnyUp", "AnyDown")
+    button:SetAttribute("type1", "spell")
+    button:SetAttribute("unit1", "player")
+    Watch(button)
+    return button
 end
 
 local function NewAutoButton(name)
-    local btn = NewBarButton(name)
-    btn:RegisterForClicks("AnyUp")
-    btn:SetAttribute("useOnKeyDown", false)
-    btn:SetAttribute("type1", "spell")
-    btn:SetAttribute("type2", "spell")
-    btn:SetAttribute("countN", 0)
-    btn:SetAttribute("countG", 0)
-    SecureHandlerWrapScript(btn, "OnClick", secureHandler, AUTO_STEP)
-    btn:SetScript("PostClick", function(self)
+    local button = NewBarButton(name)
+    button:RegisterForClicks("AnyUp")
+    button:SetAttribute("useOnKeyDown", false)
+    button:SetAttribute("type1", "spell")
+    button:SetAttribute("type2", "spell")
+    button:SetAttribute("countN", 0)
+    button:SetAttribute("countG", 0)
+    SecureHandlerWrapScript(button, "OnClick", secureHandler, AUTO_STEP)
+    button:SetScript("PostClick", function(self)
         NoteCast(self:GetAttribute("unit"), self:GetAttribute("spell"))
     end)
-    keyAuto = btn
-    return btn
+    keyAuto = button
+    return button
 end
 
-local function PrepareSeal(btn, key)
+local function PrepareSeal(button, key)
     local ident = BY_KEY[key].ranks[1]
-    btn:SetAttribute("spell1", C_Spell.GetSpellName(ident))
-    btn.icon:SetTexture(C_Spell.GetSpellTexture(ident))
-    SetWatch(btn, "player", key)
-    LookSelf(btn, false)
+    button:SetAttribute("spell1", C_Spell.GetSpellName(ident))
+    button.icon:SetTexture(C_Spell.GetSpellTexture(ident))
+    SetWatch(button, "player", key)
+    LookSelf(button, false)
 end
 
 local function PaintAuto()
@@ -2421,38 +2421,38 @@ local function PaintAuto()
     autoButton.mark:SetText(due > 0 and due or "")
 end
 
-local function PrepareSelf(btn, key)
+local function PrepareSelf(button, key)
     local spell = HighestKnown(BY_KEY[key].ranks)
-    btn:SetAttribute("spell1", spell)
-    btn.icon:SetTexture(C_Spell.GetSpellTexture(spell))
-    SetWatch(btn, "player", key)
-    LookState(btn, key, BuffState("player", key))
+    button:SetAttribute("spell1", spell)
+    button.icon:SetTexture(C_Spell.GetSpellTexture(spell))
+    SetWatch(button, "player", key)
+    LookState(button, key, BuffState("player", key))
 end
 
 local function PlaceSelf(posX)
     local aura = Get("showAura") and CurrentAura()
     if aura then
         PrepareSelf(auraButton, aura)
-        posX = LookPlace(auraButton, bar, posX)
+        posX = LookPlace(auraButton, barFrame, posX)
     else
         auraButton:Hide()
     end
     if Get("showFury") and Learned(FURY) then
         PrepareSelf(furyButton, "fury")
-        posX = LookPlace(furyButton, bar, posX)
+        posX = LookPlace(furyButton, barFrame, posX)
     else
         furyButton:Hide()
     end
     local seal = Get("showSeal") and CurrentSeal()
     if seal then
         PrepareSeal(sealButton, seal)
-        posX = LookPlace(sealButton, bar, posX)
+        posX = LookPlace(sealButton, barFrame, posX)
     else
         sealButton:Hide()
     end
     if Get("showAuto") then
         autoButton:SetAttribute("leftKind", Get("autoGreater") and "G" or "N")
-        posX = LookPlace(autoButton, bar, posX)
+        posX = LookPlace(autoButton, barFrame, posX)
     else
         autoButton:Hide()
     end
@@ -2485,7 +2485,7 @@ local function PlaceCells(byClass, posX)
     end
     Look.rows = math.max(1, math.ceil(total / Look.perRow))
     local done = posX + math.min(total, Look.perRow) * (Look.size + Look.gap)
-    local idx = 0
+    local index = 0
     for _, class in ipairs(CLASSES) do
         local members = byClass[class]
         local cell = cells[class]
@@ -2496,11 +2496,11 @@ local function PlaceCells(byClass, posX)
             SizeRecipient(cell.header, cell.cast, Look.size)
             LookPlace(
                 cell,
-                bar,
-                posX + idx % Look.perRow * (Look.size + Look.gap),
-                math.floor(idx / Look.perRow) * RowStep()
+                barFrame,
+                posX + index % Look.perRow * (Look.size + Look.gap),
+                math.floor(index / Look.perRow) * RowStep()
             )
-            idx = idx + 1
+            index = index + 1
             PrepareCell(cell)
         elseif cell then
             HideCell(cell)
@@ -2520,7 +2520,7 @@ local function Wanted()
 end
 
 function Refresh()
-    if not bar then
+    if not barFrame then
         return
     end
     if InCombatLockdown() or (SecretAuras() and not HiddenAuras()) then
@@ -2529,11 +2529,11 @@ function Refresh()
     end
     dirty = false
     if not (On() and IsPaladin() and (Wanted() or CludesUI._unlockActive)) then
-        bar:Hide()
+        barFrame:Hide()
         K.Clear()
         return
     end
-    bar:Show()
+    barFrame:Show()
     BeginAuraMemo()
     LookRead()
     local posX = PlaceSelf(0)
@@ -2550,8 +2550,8 @@ function Refresh()
     K.Fill(byClass)
     PaintAuto()
     EndAuraMemo()
-    LookFit(bar, posX)
-    bar:SetShown(posX > 0 or CludesUI._unlockActive)
+    LookFit(barFrame, posX)
+    barFrame:SetShown(posX > 0 or CludesUI._unlockActive)
 end
 
 function Changed()
@@ -2568,9 +2568,9 @@ local function OnSelfClick(self, btnFrame)
 end
 
 local function BuildBar()
-    bar = CreateFrame("Frame", "CludesUIBlessingBar", UIParent)
-    bar:SetClampedToScreen(true)
-    bar:SetSize(Get("size"), Get("size"))
+    barFrame = CreateFrame("Frame", "CludesUIBlessingBar", UIParent)
+    barFrame:SetClampedToScreen(true)
+    barFrame:SetSize(Get("size"), Get("size"))
     cells = {}
     secureHandler = CreateFrame("Frame", nil, UIParent, "SecureHandlerBaseTemplate")
     auraButton = NewSelfButton("CludesUIBlessAura")
@@ -2620,9 +2620,9 @@ local function BuildBar()
         "Auto Buff",
         "Left-click: the next blessing. Right-click: the next Greater Blessing. Each goes to whoever needs it most."
     )
-    PlayerList.Build(bar)
+    PlayerList.Build(barFrame)
     if not CludesUI._unlockActive then
-        F.Place(bar)
+        F.Place(barFrame)
     end
 end
 
@@ -2672,14 +2672,14 @@ end
 
 events:SetScript("OnEvent", function(_, evt, ...)
     if evt == "CHAT_MSG_ADDON" then
-        local prefixText, msg, channel, sender = ...
-        if Secret(prefixText) or Secret(msg) or Secret(channel) or Secret(sender) then
+        local prefixText, message, channel, sender = ...
+        if Secret(prefixText) or Secret(message) or Secret(channel) or Secret(sender) then
             return
         end
         if prefixText == PREFIX and GROUP_CHANNELS[channel] then
-            OnMessage(msg, sender)
+            OnMessage(message, sender)
         elseif prefixText == PP_PREFIX and (GROUP_CHANNELS[channel] or channel == "WHISPER") then
-            OnPallyPower(msg, sender)
+            OnPallyPower(message, sender)
         end
     elseif evt == "GROUP_ROSTER_UPDATE" or evt == "PLAYER_ENTERING_WORLD" then
         if evt == "PLAYER_ENTERING_WORLD" then
@@ -2736,7 +2736,7 @@ events:SetScript("OnEvent", function(_, evt, ...)
 end)
 
 local function OnTick()
-    if not (bar and bar:IsShown() and not InCombatLockdown()) then
+    if not (barFrame and barFrame:IsShown() and not InCombatLockdown()) then
         return
     end
     local symbols = C_Item.GetItemCount(SYMBOL_OF_KINGS)
@@ -2754,11 +2754,11 @@ function Apply()
         ticker = nil
     end
     if not On() then
-        if bar and InCombatLockdown() then
+        if barFrame and InCombatLockdown() then
             dirty = true
             events:RegisterEvent("PLAYER_REGEN_ENABLED")
-        elseif bar then
-            bar:Hide()
+        elseif barFrame then
+            barFrame:Hide()
             K.Clear()
         end
         return
@@ -2782,11 +2782,11 @@ function Apply()
     end
     events:RegisterUnitEvent("UNIT_SPELLCAST_SENT", "player")
     events:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
-    if not bar and InCombatLockdown() then
+    if not barFrame and InCombatLockdown() then
         buildAfterCombat = true
         return
     end
-    if not bar then
+    if not barFrame then
         BuildBar()
     end
     ticker = C_Timer.NewTicker(TICK, OnTick)
@@ -2832,17 +2832,17 @@ do
 
     local function WinItem(kind)
         winUsed = winUsed + 1
-        local item = winPool[winUsed]
-        if item and item.kind ~= kind then
-            item:Hide()
-            item = nil
+        local entry = winPool[winUsed]
+        if entry and entry.kind ~= kind then
+            entry:Hide()
+            entry = nil
         end
-        if not item then
+        if not entry then
             if kind == "cell" then
-                item = CreateFrame("Button", nil, winContent)
-                item:SetSize(CELL, CELL)
-                LookIcon(item)
-                item:SetScript("OnEnter", function(self)
+                entry = CreateFrame("Button", nil, winContent)
+                entry:SetSize(CELL, CELL)
+                LookIcon(entry)
+                entry:SetScript("OnEnter", function(self)
                     GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
                     GameTooltip:SetText(self.title or "", 1, 1, 1)
                     local ar, ag, ab = CludesUI.Kit.Accent()
@@ -2851,50 +2851,50 @@ do
                     end
                     GameTooltip:Show()
                 end)
-                item:SetScript("OnLeave", function()
+                entry:SetScript("OnLeave", function()
                     GameTooltip:Hide()
                 end)
             else
-                item = CreateFrame("Frame", nil, winContent)
-                item:SetSize(1, 1)
-                item.text = item:CreateFontString(nil, "OVERLAY")
-                item.text:SetPoint("TOPLEFT")
-                item.text:SetJustifyH("LEFT")
+                entry = CreateFrame("Frame", nil, winContent)
+                entry:SetSize(1, 1)
+                entry.text = entry:CreateFontString(nil, "OVERLAY")
+                entry.text:SetPoint("TOPLEFT")
+                entry.text:SetJustifyH("LEFT")
             end
-            item.kind = kind
+            entry.kind = kind
             local old = winPool[winUsed]
             if old then
                 old:Hide()
             end
-            winPool[winUsed] = item
+            winPool[winUsed] = entry
         end
-        item:ClearAllPoints()
-        item:Show()
-        return item
+        entry:ClearAllPoints()
+        entry:Show()
+        return entry
     end
 
     local function WinText(posX, posY, textValue, size, colour, width)
-        local item = WinItem("text")
-        item:SetPoint("TOPLEFT", winContent, "TOPLEFT", posX, posY)
-        CludesUI.Kit.Font(item.text, size or 12, "essentials")
-        item.text:SetTextColor(unpack(colour or { 1, 1, 1 }))
-        item.text:SetWidth(width or 0)
-        item.text:SetWordWrap(width ~= nil)
-        item.text:SetText(textValue)
-        return item.text:GetStringHeight()
+        local entry = WinItem("text")
+        entry:SetPoint("TOPLEFT", winContent, "TOPLEFT", posX, posY)
+        CludesUI.Kit.Font(entry.text, size or 12, "essentials")
+        entry.text:SetTextColor(unpack(colour or { 1, 1, 1 }))
+        entry.text:SetWidth(width or 0)
+        entry.text:SetWordWrap(width ~= nil)
+        entry.text:SetText(textValue)
+        return entry.text:GetStringHeight()
     end
 
-    local function WinCell(posX, posY, icon, lit, title, body, onClick)
-        local btn = WinItem("cell")
-        btn:SetPoint("TOPLEFT", winContent, "TOPLEFT", posX, posY)
-        btn.icon:SetTexture(icon)
-        btn.icon:SetDesaturated(not lit)
-        btn.icon:SetAlpha(lit and 1 or 0.35)
-        btn.icon:SetVertexColor(1, 1, 1)
-        btn.mark:SetText("")
-        btn.timer:SetText("")
-        btn.title, btn.body = title, body
-        btn:SetScript("OnClick", onClick)
+    local function WinCell(posX, posY, iconTex, lit, title, body, onClick)
+        local button = WinItem("cell")
+        button:SetPoint("TOPLEFT", winContent, "TOPLEFT", posX, posY)
+        button.icon:SetTexture(iconTex)
+        button.icon:SetDesaturated(not lit)
+        button.icon:SetAlpha(lit and 1 or 0.35)
+        button.icon:SetVertexColor(1, 1, 1)
+        button.mark:SetText("")
+        button.timer:SetText("")
+        button.title, button.body = title, body
+        button:SetScript("OnClick", onClick)
     end
 
     local function Remaining(leftX)
@@ -2961,8 +2961,8 @@ do
                 can = function(record)
                     return plan.known[record.key]
                 end,
-                set = not plan.pallyPower and (lead or (mayFree and plan.free)) and function(col, key)
-                    SetFor(who, col, key)
+                set = not plan.pallyPower and (lead or (mayFree and plan.free)) and function(colour, key)
+                    SetFor(who, colour, key)
                     RefreshPage()
                 end,
             }
@@ -2991,8 +2991,8 @@ do
         if not (window and window:IsShown()) then
             return
         end
-        for idx = 1, winUsed do
-            winPool[idx]:Hide()
+        for index = 1, winUsed do
+            winPool[index]:Hide()
         end
         winUsed = 0
         local posY = -4
@@ -3002,15 +3002,15 @@ do
             columns[#columns + 1] = class
         end
         columns[#columns + 1] = AURA_COLUMN
-        for idx, col in ipairs(columns) do
-            local aura = col == AURA_COLUMN
+        for index, colour in ipairs(columns) do
+            local aura = colour == AURA_COLUMN
             WinCell(
-                NAME_W + (idx - 1) * (CELL + GAP),
+                NAME_W + (index - 1) * (CELL + GAP),
                 posY,
                 aura and SpellIcon("devotion")
-                    or ("Interface\\Icons\\ClassIcon_" .. col:lower():gsub("^%l", string.upper)),
+                    or ("Interface\\Icons\\ClassIcon_" .. colour:lower():gsub("^%l", string.upper)),
                 true,
-                aura and "Aura" or ClassName(col)
+                aura and "Aura" or ClassName(colour)
             )
         end
         posY = posY - CELL - 10
@@ -3030,30 +3030,30 @@ do
             )
             if row.plan then
                 WinText(0, posY - 20, StatusText(row), 10, { 0.6, 0.65, 0.7 }, NAME_W - 10)
-                for idx, col in ipairs(columns) do
-                    local aura = col == AURA_COLUMN
-                    local key = aura and row.plan.aura or row.plan.classes[col]
-                    local title = aura and "Aura" or ClassName(col)
+                for index, colour in ipairs(columns) do
+                    local aura = colour == AURA_COLUMN
+                    local key = aura and row.plan.aura or row.plan.classes[colour]
+                    local title = aura and "Aura" or ClassName(colour)
                     local onClick = row.set
-                        and function(btn)
+                        and function(button)
                             local function Can(record)
                                 return row.can(record)
-                                    and (aura or key == record.key or Allowed(col, record.key))
+                                    and (aura or key == record.key or Allowed(colour, record.key))
                             end
-                            OpenMenu(btn, title, aura and AURAS or BLESSINGS, function()
-                                return aura and row.plan.aura or row.plan.classes[col]
+                            OpenMenu(button, title, aura and AURAS or BLESSINGS, function()
+                                return aura and row.plan.aura or row.plan.classes[colour]
                             end, function(choice)
-                                row.set(col, choice)
+                                row.set(colour, choice)
                             end, "None", Can)
                         end
                     WinCell(
-                        NAME_W + (idx - 1) * (CELL + GAP),
+                        NAME_W + (index - 1) * (CELL + GAP),
                         posY,
                         key and SpellIcon(key) or QUESTION,
                         key ~= nil,
                         title,
                         (key and SpellName(key) or "Nothing assigned")
-                            .. (aura and "" or OwnList(roster, row.players, col))
+                            .. (aura and "" or OwnList(roster, row.players, colour))
                             .. (
                                 onClick and "\nClick to change."
                                 or row.plan.pallyPower and "\nPlanned in PallyPower."
@@ -3263,14 +3263,14 @@ F.Start(Apply, {
         return F.Enabled() and IsPaladin()
     end,
     frame = function(build)
-        if build and not bar and not InCombatLockdown() then
+        if build and not barFrame and not InCombatLockdown() then
             BuildBar()
             Refresh()
         end
-        return bar
+        return barFrame
     end,
     size = function()
-        return bar and bar:GetWidth() or Get("size"), bar and bar:GetHeight() or Get("size")
+        return barFrame and barFrame:GetWidth() or Get("size"), barFrame and barFrame:GetHeight() or Get("size")
     end,
     noAnchorTarget = true,
     noSizeMatchTarget = true,

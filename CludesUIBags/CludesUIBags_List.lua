@@ -152,37 +152,37 @@ local _bindLoc = ItemLocation:CreateEmpty()
 -------------------------------------------------------------------------------
 --  Per-item values (stamped on the pooled slot tables, wiped on reuse)
 -------------------------------------------------------------------------------
-local function StampItem(d)
-    local details = d.info
-    local count = d._mergedCount or details.stackCount or 1
-    local _, _, _, baseIlvl, reqLevel, _, _, _, _, _, sellPrice, _, _, bindType = GetItemInfo(d.itemLink)
-    local _, _, subType, _, _, classID = GetItemInfoInstant(d.itemLink)
-    d._lvName = details.itemName or ""
-    d._lvQuality = details.quality or 1
-    d._lvIlvl = d._isGear and (tonumber(d._giIlvl) or baseIlvl) or 0
-    d._lvReq = (reqLevel and reqLevel > 1) and reqLevel or 0
-    d._lvType = subType or ""
-    d._lvCount = count
+local function StampItem(skinData)
+    local details = skinData.info
+    local count = skinData._mergedCount or details.stackCount or 1
+    local _, _, _, baseIlvl, reqLevel, _, _, _, _, _, sellPrice, _, _, bindType = GetItemInfo(skinData.itemLink)
+    local _, _, subType, _, _, classID = GetItemInfoInstant(skinData.itemLink)
+    skinData._lvName = details.itemName or ""
+    skinData._lvQuality = details.quality or 1
+    skinData._lvIlvl = skinData._isGear and (tonumber(skinData._giIlvl) or baseIlvl) or 0
+    skinData._lvReq = (reqLevel and reqLevel > 1) and reqLevel or 0
+    skinData._lvType = subType or ""
+    skinData._lvCount = count
     -- Track sort: tier (CUI._TRACK_RANK) then rank within it
-    local rank, tc = d._giTrackRank or "", d._giTrackColor
-    d._lvTrack = rank
-    d._lvTrackSort = tc
+    local rank, tc = skinData._giTrackRank or "", skinData._giTrackColor
+    skinData._lvTrack = rank
+    skinData._lvTrackSort = tc
             and ((CUI._TRACK_RANK and CUI._TRACK_RANK[tc] or 0) * 100 + (tonumber(rank:match("^(%d+)")) or 0))
         or 0
-    d._lvSell = (not details.hasNoValue and sellPrice) and sellPrice * count or 0
-    if bindType == IB.OnEquip and not details.isBound and d.bag and d.slot then
-        _bindLoc:SetBagAndSlot(d.bag, d.slot)
+    skinData._lvSell = (not details.hasNoValue and sellPrice) and sellPrice * count or 0
+    if bindType == IB.OnEquip and not details.isBound and skinData.bag and skinData.slot then
+        _bindLoc:SetBagAndSlot(skinData.bag, skinData.slot)
         if C_Item.IsBoundToAccountUntilEquip(_bindLoc) then
             bindType = IB.ToBnetAccountUntilEquipped
         end
     end
     if details.isBound and BIND_SOULBOUND[bindType] then
-        d._lvBind = L("SB")
+        skinData._lvBind = L("SB")
     else
-        d._lvBind = bindType and BIND_ABBR[bindType] and L(BIND_ABBR[bindType]) or ""
+        skinData._lvBind = bindType and BIND_ABBR[bindType] and L(BIND_ABBR[bindType]) or ""
     end
     local key = classID and SPLIT_KEY[classID]
-    d._lvSub = (key and BP()[key] and subType) or ""
+    skinData._lvSub = (key and BP()[key] and subType) or ""
 end
 mod.StampListItem = StampItem
 
@@ -240,49 +240,49 @@ end
 local _rows, _sections, _hdrBars = {}, {}, {}
 local _rowsUsed, _sectionsUsed = 0, 0
 
-local function SkinRow(btn)
+local function SkinRow(button)
     -- Methods only on template sub-objects (property writes taint)
-    if btn.NewItemTexture then
-        btn.NewItemTexture:Hide()
-        btn.NewItemTexture:SetAlpha(0)
+    if button.NewItemTexture then
+        button.NewItemTexture:Hide()
+        button.NewItemTexture:SetAlpha(0)
     end
-    if btn.BattlepayItemTexture then
-        btn.BattlepayItemTexture:Hide()
-        btn.BattlepayItemTexture:SetAlpha(0)
+    if button.BattlepayItemTexture then
+        button.BattlepayItemTexture:Hide()
+        button.BattlepayItemTexture:SetAlpha(0)
     end
-    if btn.flash then
-        btn.flash:Hide()
-        btn.flash:SetAlpha(0)
+    if button.flash then
+        button.flash:Hide()
+        button.flash:SetAlpha(0)
     end
-    if btn.newitemglowAnim then
-        btn.newitemglowAnim:Stop()
+    if button.newitemglowAnim then
+        button.newitemglowAnim:Stop()
     end
-    if btn.NormalTexture then
-        btn.NormalTexture:SetAlpha(0)
+    if button.NormalTexture then
+        button.NormalTexture:SetAlpha(0)
     end
-    if btn.IconBorder then
-        btn.IconBorder:SetAlpha(0)
+    if button.IconBorder then
+        button.IconBorder:SetAlpha(0)
     end
-    if btn.icon then
-        btn.icon:SetAlpha(0)
+    if button.icon then
+        button.icon:SetAlpha(0)
     end
-    if btn.Count then
-        btn.Count:SetAlpha(0)
+    if button.Count then
+        button.Count:SetAlpha(0)
     end
-    local ht = btn:GetHighlightTexture()
+    local ht = button:GetHighlightTexture()
     if ht then
         ht:SetTexture(nil)
         ht:SetColorTexture(1, 1, 1, 0.08)
         ht:ClearAllPoints()
-        ht:SetAllPoints(btn)
+        ht:SetAllPoints(button)
     end
-    local pt = btn:GetPushedTexture()
+    local pt = button:GetPushedTexture()
     if pt then
         pt:SetAtlas(nil)
         pt:SetTexture(nil)
         pt:SetColorTexture(1, 1, 1, 0.04)
         pt:ClearAllPoints()
-        pt:SetAllPoints(btn)
+        pt:SetAllPoints(button)
     end
 end
 
@@ -290,43 +290,43 @@ end
 -- nil in combat (a secure button born in lockdown is tainted); callers skip
 -- the row and fill it after combat.
 local _hostRows = {} -- host -> rows created under it (live column reflow)
-function mod.CreateListRow(host)
+function mod.CreateListRow(owner)
     if InCombatLockdown() then
         return nil
     end
-    local slotParent = CreateFrame("Frame", nil, host)
-    local btn = CreateFrame("ItemButton", nil, slotParent, "ContainerFrameItemButtonTemplate")
-    mod.PinItemButton(btn, host)
-    btn:SetAllPoints(slotParent)
-    btn:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-    btn:RegisterForDrag("LeftButton")
-    SkinRow(btn)
+    local slotParent = CreateFrame("Frame", nil, owner)
+    local button = CreateFrame("ItemButton", nil, slotParent, "ContainerFrameItemButtonTemplate")
+    mod.PinItemButton(button, owner)
+    button:SetAllPoints(slotParent)
+    button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    button:RegisterForDrag("LeftButton")
+    SkinRow(button)
 
-    btn._stripe = btn:CreateTexture(nil, "BACKGROUND")
-    btn._stripe:SetAllPoints()
-    btn._stripe:SetColorTexture(1, 1, 1, 0.03)
+    button._stripe = button:CreateTexture(nil, "BACKGROUND")
+    button._stripe:SetAllPoints()
+    button._stripe:SetColorTexture(1, 1, 1, 0.03)
 
-    btn._lvIcon = btn:CreateTexture(nil, "ARTWORK")
-    btn._lvIcon:SetSize(ICON_SIZE, ICON_SIZE)
-    if btn.Cooldown then
-        btn.Cooldown:ClearAllPoints()
-        btn.Cooldown:SetAllPoints(btn._lvIcon)
-        btn.Cooldown:SetHideCountdownNumbers(true)
+    button._lvIcon = button:CreateTexture(nil, "ARTWORK")
+    button._lvIcon:SetSize(ICON_SIZE, ICON_SIZE)
+    if button.Cooldown then
+        button.Cooldown:ClearAllPoints()
+        button.Cooldown:SetAllPoints(button._lvIcon)
+        button.Cooldown:SetHideCountdownNumbers(true)
     end
     -- Third-party overlay painters (CUI_Bags.RunItemOverlays) parent to this,
     -- as on the grid slots: here it covers the row's icon.
-    local shade = CreateFrame("Frame", nil, btn)
-    shade:SetAllPoints(btn._lvIcon)
-    shade:SetFrameLevel(btn:GetFrameLevel() + 3)
-    btn._textOverlay = shade
-    btn._cells = {}
-    local entries = _hostRows[host]
+    local shade = CreateFrame("Frame", nil, button)
+    shade:SetAllPoints(button._lvIcon)
+    shade:SetFrameLevel(button:GetFrameLevel() + 3)
+    button._textOverlay = shade
+    button._cells = {}
+    local entries = _hostRows[owner]
     if not entries then
         entries = {}
-        _hostRows[host] = entries
+        _hostRows[owner] = entries
     end
-    entries[#entries + 1] = btn
-    return btn
+    entries[#entries + 1] = button
+    return button
 end
 
 -- Secure container button, one per row. NEVER created in combat (a button
@@ -340,15 +340,15 @@ local function GetOrCreateRow(position)
         CUI_Bags._poolShort = true
         return nil
     end
-    local btn = mod.CreateListRow(CUI_Bags)
-    btn:HookScript("OnMouseUp", mod.SlotMiddleClick)
-    btn:HookScript("PreClick", mod.BankRoutePreClick)
-    btn:HookScript("OnClick", mod.BankRouteOnClick)
-    btn:HookScript("PostClick", function(self)
+    local button = mod.CreateListRow(CUI_Bags)
+    button:HookScript("OnMouseUp", mod.SlotMiddleClick)
+    button:HookScript("PreClick", mod.BankRoutePreClick)
+    button:HookScript("OnClick", mod.BankRouteOnClick)
+    button:HookScript("PostClick", function(self)
         CUI_Bags.ShowStackSplitter(self, mod.SplitTargetBags(self:GetParent():GetID()), CUI_Bags)
     end)
-    _rows[position] = btn
-    return btn
+    _rows[position] = button
+    return button
 end
 
 -- Pre-build rows out of combat so a first open mid-fight has them.
@@ -371,44 +371,44 @@ function mod.WarmListRows(sum, t0, msBudget)
     return true
 end
 
-local function GetCell(btn, ident)
-    local fontStr = btn._cells[ident]
+local function GetCell(button, ident)
+    local fontStr = button._cells[ident]
     if not fontStr then
-        fontStr = btn:CreateFontString(nil, "OVERLAY")
+        fontStr = button:CreateFontString(nil, "OVERLAY")
         fontStr:SetWordWrap(false)
         fontStr:SetJustifyH(COLUMNS[ident].justify or "LEFT")
-        btn._cells[ident] = fontStr
+        button._cells[ident] = fontStr
     end
     SetListFont(fontStr)
     return fontStr
 end
 
-local function SetRoundIcon(btn, round)
-    if (btn._lvRound or false) == round then
+local function SetRoundIcon(button, round)
+    if (button._lvRound or false) == round then
         return
     end
-    btn._lvRound = round
-    local slotMask = btn._textOverlay._fvIconMask
+    button._lvRound = round
+    local slotMask = button._textOverlay._fvIconMask
     if round then
         if slotMask then
-            btn._lvIcon:RemoveMaskTexture(slotMask)
+            button._lvIcon:RemoveMaskTexture(slotMask)
         end
-        if not btn._lvMask then
-            btn._lvMask = btn:CreateMaskTexture()
-            btn._lvMask:SetTexture(ROUND_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-            btn._lvMask:SetAllPoints(btn._lvIcon)
+        if not button._lvMask then
+            button._lvMask = button:CreateMaskTexture()
+            button._lvMask:SetTexture(ROUND_MASK, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+            button._lvMask:SetAllPoints(button._lvIcon)
         end
-        btn._lvIcon:AddMaskTexture(btn._lvMask)
-        if btn.Cooldown then
-            btn.Cooldown:SetSwipeTexture(ROUND_MASK)
+        button._lvIcon:AddMaskTexture(button._lvMask)
+        if button.Cooldown then
+            button.Cooldown:SetSwipeTexture(ROUND_MASK)
         end
     else
-        btn._lvIcon:RemoveMaskTexture(btn._lvMask)
+        button._lvIcon:RemoveMaskTexture(button._lvMask)
         if slotMask then
-            btn._lvIcon:AddMaskTexture(slotMask)
+            button._lvIcon:AddMaskTexture(slotMask)
         end
-        if btn.Cooldown then
-            btn.Cooldown:SetSwipeTexture("Interface\\Buttons\\WHITE8X8")
+        if button.Cooldown then
+            button.Cooldown:SetSwipeTexture("Interface\\Buttons\\WHITE8X8")
         end
     end
 end
@@ -453,35 +453,35 @@ local function GetOrCreateSection(position)
     if _sections[position] then
         return _sections[position]
     end
-    local f = CreateFrame("Button", nil, CUI_Bags)
-    f._arrow = f:CreateTexture(nil, "OVERLAY")
-    f._arrow:SetSize(8, 8)
-    f._arrow:SetTexture(ARROW_TEX)
-    f._arrow:SetPoint("LEFT", f, "LEFT", 0, 0)
-    f._label = f:CreateFontString(nil, "OVERLAY")
-    f._label:SetPoint("LEFT", f._arrow, "RIGHT", 4, 0)
-    f._label:SetJustifyH("LEFT")
-    f._count = f:CreateFontString(nil, "OVERLAY")
-    f._count:SetPoint("LEFT", f._label, "RIGHT", 4, 0)
-    f._count:SetTextColor(0.7, 0.7, 0.7, 0.9)
-    f._line = f:CreateTexture(nil, "ARTWORK")
-    f._line:SetHeight(CUI.PP.mult)
-    f._line:SetPoint("LEFT", f._count, "RIGHT", 6, 0)
-    f._line:SetPoint("RIGHT", f, "RIGHT", 0, 0)
-    f._line:SetColorTexture(0.7, 0.7, 0.7, 0.2)
-    f:SetScript("OnClick", ToggleCollapsed)
-    f:SetScript("OnEnter", function(self)
+    local frame = CreateFrame("Button", nil, CUI_Bags)
+    frame._arrow = frame:CreateTexture(nil, "OVERLAY")
+    frame._arrow:SetSize(8, 8)
+    frame._arrow:SetTexture(ARROW_TEX)
+    frame._arrow:SetPoint("LEFT", frame, "LEFT", 0, 0)
+    frame._label = frame:CreateFontString(nil, "OVERLAY")
+    frame._label:SetPoint("LEFT", frame._arrow, "RIGHT", 4, 0)
+    frame._label:SetJustifyH("LEFT")
+    frame._count = frame:CreateFontString(nil, "OVERLAY")
+    frame._count:SetPoint("LEFT", frame._label, "RIGHT", 4, 0)
+    frame._count:SetTextColor(0.7, 0.7, 0.7, 0.9)
+    frame._line = frame:CreateTexture(nil, "ARTWORK")
+    frame._line:SetHeight(CUI.PP.mult)
+    frame._line:SetPoint("LEFT", frame._count, "RIGHT", 6, 0)
+    frame._line:SetPoint("RIGHT", frame, "RIGHT", 0, 0)
+    frame._line:SetColorTexture(0.7, 0.7, 0.7, 0.2)
+    frame:SetScript("OnClick", ToggleCollapsed)
+    frame:SetScript("OnEnter", function(self)
         self._label:SetAlpha(1)
         self._arrow:SetAlpha(1)
     end)
-    f:SetScript("OnLeave", function(self)
+    frame:SetScript("OnLeave", function(self)
         self._label:SetAlpha(0.8)
         self._arrow:SetAlpha(0.6)
     end)
-    f._label:SetAlpha(0.8)
-    f._arrow:SetAlpha(0.6)
-    _sections[position] = f
-    return f
+    frame._label:SetAlpha(0.8)
+    frame._arrow:SetAlpha(0.6)
+    _sections[position] = frame
+    return frame
 end
 
 -------------------------------------------------------------------------------
@@ -637,8 +637,8 @@ local function OnHeaderDragUpdate(self)
     for _, cid in ipairs(cols) do
         local b = btns[cid]
         if cid ~= self._colId and b then
-            local l, r = b:GetLeft(), b:GetRight()
-            if l and cx > (l + r) / 2 then
+            local l, region = b:GetLeft(), b:GetRight()
+            if l and cx > (l + region) / 2 then
                 target = target + 1
             end
         end
@@ -688,23 +688,23 @@ end
 
 -- Live column reflow: re-place the header buttons and the visible rows'
 -- cells from the current widths, without a bag rescan.
-local function ReflowHost(host)
-    local bar = _hdrBars[host]
-    if not bar or not bar:IsShown() or not bar._rowW then
+local function ReflowHost(owner)
+    local barFrame = _hdrBars[owner]
+    if not barFrame or not barFrame:IsShown() or not barFrame._rowW then
         return
     end
-    local cols = LayoutColumns(bar._rowW)
-    mod.UpdateListHeaderBar(host, cols, bar._leftX, bar._topY, bar._startX, bar._noSort)
-    for _, btn in ipairs(_hostRows[host] or _emptyP) do
-        if btn:IsVisible() then
-            if btn._lvIcon:IsShown() and _colX.icon then
-                btn._lvIcon:ClearAllPoints()
-                btn._lvIcon:SetPoint("LEFT", btn, "LEFT", _colX.icon, 0)
+    local cols = LayoutColumns(barFrame._rowW)
+    mod.UpdateListHeaderBar(owner, cols, barFrame._leftX, barFrame._topY, barFrame._startX, barFrame._noSort)
+    for _, button in ipairs(_hostRows[owner] or _emptyP) do
+        if button:IsVisible() then
+            if button._lvIcon:IsShown() and _colX.icon then
+                button._lvIcon:ClearAllPoints()
+                button._lvIcon:SetPoint("LEFT", button, "LEFT", _colX.icon, 0)
             end
-            for ident, fontStr in pairs(btn._cells) do
+            for ident, fontStr in pairs(button._cells) do
                 if fontStr:IsShown() and IndexOf(cols, ident) then
                     fontStr:ClearAllPoints()
-                    fontStr:SetPoint("LEFT", btn, "LEFT", _colX[ident], 0)
+                    fontStr:SetPoint("LEFT", button, "LEFT", _colX[ident], 0)
                     fontStr:SetWidth(_colW[ident])
                 end
             end
@@ -744,8 +744,8 @@ local function SizerOnUpdate(self)
         p.bagListColWidths = t
     end
     t[heading._colId] = wid
-    for host in pairs(_hdrBars) do
-        ReflowHost(host)
+    for owner in pairs(_hdrBars) do
+        ReflowHost(owner)
     end
 end
 
@@ -754,11 +754,11 @@ local function SizerOnMouseDown(self, btnFrame)
         return
     end
     local heading = self:GetParent()
-    local bar = heading:GetParent()
-    if not bar._rowW then
+    local barFrame = heading:GetParent()
+    if not barFrame._rowW then
         return
     end
-    LayoutColumns(bar._rowW)
+    LayoutColumns(barFrame._rowW)
     -- Width the flexible column can give up (no flexible column: capped growth)
     local slack = 200
     for _, cid in ipairs(GetColumns()) do
@@ -773,11 +773,11 @@ local function SizerOnMouseDown(self, btnFrame)
     self:SetScript("OnUpdate", SizerOnUpdate)
 end
 
-local function GetOrCreateHeaderBtn(bar, ident)
-    if bar._btns[ident] then
-        return bar._btns[ident]
+local function GetOrCreateHeaderBtn(barFrame, ident)
+    if barFrame._btns[ident] then
+        return barFrame._btns[ident]
     end
-    local b = CreateFrame("Button", nil, bar)
+    local b = CreateFrame("Button", nil, barFrame)
     b:SetHeight(COLHDR_H)
     b._colId = ident
     b._label = b:CreateFontString(nil, "OVERLAY")
@@ -832,53 +832,53 @@ local function GetOrCreateHeaderBtn(bar, ident)
         end
         CUI.HideWidgetTooltip()
     end)
-    bar._btns[ident] = b
+    barFrame._btns[ident] = b
     return b
 end
 
 -- the column bar for a window, nil before its first list refresh
-function mod.ListHeaderBar(host)
-    return _hdrBars[host]
+function mod.ListHeaderBar(owner)
+    return _hdrBars[owner]
 end
 
 -- One column header bar per host frame (bags, bank). Returns its height.
-function mod.UpdateListHeaderBar(host, cols, leftX, topY, startX, noSort)
-    local bar = _hdrBars[host]
-    if not bar then
-        bar = CreateFrame("Frame", nil, host)
-        bar:SetHeight(COLHDR_H)
-        bar._btns = {}
-        local line = bar:CreateTexture(nil, "ARTWORK")
+function mod.UpdateListHeaderBar(owner, cols, leftX, topY, startX, noSort)
+    local barFrame = _hdrBars[owner]
+    if not barFrame then
+        barFrame = CreateFrame("Frame", nil, owner)
+        barFrame:SetHeight(COLHDR_H)
+        barFrame._btns = {}
+        local line = barFrame:CreateTexture(nil, "ARTWORK")
         line:SetHeight(CUI.PP.mult)
         line:SetPoint("BOTTOMLEFT")
         line:SetPoint("BOTTOMRIGHT")
         line:SetColorTexture(0.7, 0.7, 0.7, 0.2)
-        _hdrBars[host] = bar
+        _hdrBars[owner] = barFrame
     end
     -- Kept for live reflow while a column is resized
-    bar._rowW, bar._leftX, bar._topY, bar._startX, bar._noSort = _lastRowW, leftX, topY, startX, noSort
+    barFrame._rowW, barFrame._leftX, barFrame._topY, barFrame._startX, barFrame._noSort = _lastRowW, leftX, topY, startX, noSort
     local flexIdx
     for i, ident in ipairs(cols) do
         if not COLUMNS[ident].width then
             flexIdx = i
         end
     end
-    bar:ClearAllPoints()
-    bar:SetPoint("TOPLEFT", host, "TOPLEFT", leftX, topY)
-    bar:SetPoint("TOPRIGHT", host, "TOPRIGHT", 0, topY)
-    bar:Show()
+    barFrame:ClearAllPoints()
+    barFrame:SetPoint("TOPLEFT", owner, "TOPLEFT", leftX, topY)
+    barFrame:SetPoint("TOPRIGHT", owner, "TOPRIGHT", 0, topY)
+    barFrame:Show()
     -- Hide only dropped columns: hiding the held button would end its drag
-    for ident, b in pairs(bar._btns) do
+    for ident, b in pairs(barFrame._btns) do
         if not IndexOf(cols, ident) then
             b:Hide()
         end
     end
     local sortKey = not noSort and BP().bagListSortKey
     for i, ident in ipairs(cols) do
-        local b = GetOrCreateHeaderBtn(bar, ident)
+        local b = GetOrCreateHeaderBtn(barFrame, ident)
         SetListFont(b._label, 10)
         b:ClearAllPoints()
-        b:SetPoint("TOPLEFT", bar, "TOPLEFT", startX + _colX[ident], 0)
+        b:SetPoint("TOPLEFT", barFrame, "TOPLEFT", startX + _colX[ident], 0)
         b:SetWidth(math.max(_colW[ident], 12))
         if b._sizer then
             -- Grip sits in the gap on the side facing the flexible column
@@ -925,45 +925,45 @@ end
 -------------------------------------------------------------------------------
 -- dim: a pinned item in a OneBag / MultiBag bag section while Dim Items in
 -- OneBag/MultiBag is on (the grid's search-miss alpha).
-local function RenderRow(btn, payload, cols, rowW, posX, posY, stripe, dim)
+local function RenderRow(button, payload, cols, rowW, posX, posY, stripe, dim)
     -- Bags and bank share the column tables at their own row widths: a bank
     -- batch painted after a bags refresh re-lays them out for its width.
     if rowW ~= _lastRowW then
         LayoutColumns(rowW)
     end
-    local hostFrame = btn:GetParent()
+    local hostFrame = button:GetParent()
     hostFrame:ClearAllPoints()
     hostFrame:SetSize(rowW, RowH())
     hostFrame:SetPoint("TOPLEFT", posX, posY)
     hostFrame:SetID(payload.bag)
-    btn:SetID(payload.slot)
+    button:SetID(payload.slot)
     hostFrame:Show()
-    btn:Show()
-    btn:SetAlpha(dim and 0.2 or 1)
-    btn._stripe:SetShown(stripe and BP().bagListHideStripes ~= true)
+    button:Show()
+    button:SetAlpha(dim and 0.2 or 1)
+    button._stripe:SetShown(stripe and BP().bagListHideStripes ~= true)
 
     local details = payload.info
     local q = details.quality or 1
-    for _, fontStr in pairs(btn._cells) do
+    for _, fontStr in pairs(button._cells) do
         fontStr:Hide()
     end
-    btn._lvIcon:Hide()
+    button._lvIcon:Hide()
     for _, ident in ipairs(cols) do
         local cx, cw = _colX[ident], _colW[ident]
         if ident == "icon" then
-            local icon = btn._lvIcon
+            local iconTex = button._lvIcon
             local isz = math.min(ICON_SIZE, RowH() - 4)
-            icon:SetSize(isz, isz)
-            icon:ClearAllPoints()
-            icon:SetPoint("LEFT", btn, "LEFT", cx, 0)
-            icon:SetTexture(details.iconFileID)
+            iconTex:SetSize(isz, isz)
+            iconTex:ClearAllPoints()
+            iconTex:SetPoint("LEFT", button, "LEFT", cx, 0)
+            iconTex:SetTexture(details.iconFileID)
             local round = BP().bagListRoundIcons == true
-            SetRoundIcon(btn, round)
+            SetRoundIcon(button, round)
             -- Round: fixed crop past the icon's baked-in border so the circle edge stays clean
             local z = round and ROUND_ZOOM or (BP().bagItemIconZoom or 0.08)
-            icon:SetTexCoord(z, 1 - z, z, 1 - z)
+            iconTex:SetTexCoord(z, 1 - z, z, 1 - z)
             -- Junk Item Visuals' Desaturate greys grey items and Junk Marker junk
-            icon:SetDesaturated(
+            iconTex:SetDesaturated(
                 details.isLocked
                     or (BP().bagDesaturateJunkItems == true and (q == 0 or CUI_CategoryManager:IsJunk(
                         details.itemID,
@@ -972,19 +972,19 @@ local function RenderRow(btn, payload, cols, rowW, posX, posY, stripe, dim)
                     or false
             )
             if CUI._BagsItemUnusable(payload.bag, payload.slot, payload.itemLink, details.itemID) then
-                icon:SetVertexColor(1, 0.1, 0.1)
+                iconTex:SetVertexColor(1, 0.1, 0.1)
             else
-                icon:SetVertexColor(1, 1, 1)
+                iconTex:SetVertexColor(1, 1, 1)
             end
-            icon:Show()
+            iconTex:Show()
             -- Quality Item Border: square icons only
-            local shade = btn._textOverlay
+            local shade = button._textOverlay
             if not round and (BP().bagQualityBorder ~= false or mod.BagsForever()) then
                 if not (shade._brdT or shade._fvSlotBorder) then
-                    mod.CreateInsetBorder(shade, true, icon)
+                    mod.CreateInsetBorder(shade, true, iconTex)
                 end
-                local r, g, b = mod.QualityBorderColor(q)
-                mod.SetInsetBorderColor(shade, r, g, b, 1)
+                local region, g, b = mod.QualityBorderColor(q)
+                mod.SetInsetBorderColor(shade, region, g, b, 1)
                 if shade._fvSlotBorder then
                     mod.SetForeverSlotQuestBorder(shade, payload._isQuest, payload._isQuestStarter)
                 end
@@ -995,9 +995,9 @@ local function RenderRow(btn, payload, cols, rowW, posX, posY, stripe, dim)
                 end
             end
         else
-            local fontStr = GetCell(btn, ident)
+            local fontStr = GetCell(button, ident)
             fontStr:ClearAllPoints()
-            fontStr:SetPoint("LEFT", btn, "LEFT", cx, 0)
+            fontStr:SetPoint("LEFT", button, "LEFT", cx, 0)
             fontStr:SetWidth(cw)
             local textValue
             if ident == "name" then
@@ -1036,27 +1036,27 @@ local function RenderRow(btn, payload, cols, rowW, posX, posY, stripe, dim)
         end
     end
 
-    if btn.Cooldown then
+    if button.Cooldown then
         if payload._cdStart and IndexOf(cols, "icon") then
-            btn.Cooldown:SetCooldown(payload._cdStart, payload._cdDuration)
+            button.Cooldown:SetCooldown(payload._cdStart, payload._cdDuration)
         else
-            btn.Cooldown:Clear()
+            button.Cooldown:Clear()
         end
     end
-    btn._textOverlay:SetShown(btn._lvIcon:IsShown())
-    CUI_Bags.RunItemOverlays(btn, payload)
+    button._textOverlay:SetShown(button._lvIcon:IsShown())
+    CUI_Bags.RunItemOverlays(button, payload)
     -- Tooltip requery after the slot re-assignment (see RenderButton)
-    if GameTooltip:IsOwned(btn) and btn.UpdateTooltip then
-        btn:UpdateTooltip()
+    if GameTooltip:IsOwned(button) and button.UpdateTooltip then
+        button:UpdateTooltip()
     end
 end
 mod.RenderListRow = RenderRow
 
 -- Mark mode: the row pool it hit-tests, and the one row it toggled
 mod.ListRows = _rows
-function mod.ListPaintJunk(btn, details)
+function mod.ListPaintJunk(button, details)
     local q = details.quality or 1
-    btn._lvIcon:SetDesaturated(
+    button._lvIcon:SetDesaturated(
         details.isLocked
             or (BP().bagDesaturateJunkItems == true and (q == 0 or CUI_CategoryManager:IsJunk(
                 details.itemID,
@@ -1068,47 +1068,47 @@ end
 
 -- Re-pins each host's rows (the bags and the bank) after its level moved (ns.PinItemPool)
 function mod.ResyncListRowLevels()
-    for host, rowList in pairs(_hostRows) do
-        mod.PinItemPool(rowList, host, "_rowPinLevel")
+    for owner, rowList in pairs(_hostRows) do
+        mod.PinItemPool(rowList, owner, "_rowPinLevel")
     end
 end
 
 -- Empty bag slot row (OneBag / MultiBag); clicking or dropping an item
 -- places it in that slot.
-local function RenderEmptyRow(btn, cols, d, rowW, posX, posY, stripe)
+local function RenderEmptyRow(button, cols, skinData, rowW, posX, posY, stripe)
     if rowW ~= _lastRowW then
         LayoutColumns(rowW)
     end
-    local hostFrame = btn:GetParent()
+    local hostFrame = button:GetParent()
     hostFrame:ClearAllPoints()
     hostFrame:SetSize(rowW, RowH())
     hostFrame:SetPoint("TOPLEFT", posX, posY)
-    hostFrame:SetID(d.bag)
-    btn:SetID(d.slot)
+    hostFrame:SetID(skinData.bag)
+    button:SetID(skinData.slot)
     hostFrame:Show()
-    btn:Show()
-    btn:SetAlpha(1)
-    btn._stripe:SetShown(stripe and BP().bagListHideStripes ~= true)
-    btn._lvIcon:Hide()
-    for _, fontStr in pairs(btn._cells) do
+    button:Show()
+    button:SetAlpha(1)
+    button._stripe:SetShown(stripe and BP().bagListHideStripes ~= true)
+    button._lvIcon:Hide()
+    for _, fontStr in pairs(button._cells) do
         fontStr:Hide()
     end
-    if btn.Cooldown then
-        btn.Cooldown:Clear()
+    if button.Cooldown then
+        button.Cooldown:Clear()
     end
     local hasName = IndexOf(cols, "name")
-    local fontStr = GetCell(btn, "name")
+    local fontStr = GetCell(button, "name")
     fontStr:ClearAllPoints()
-    fontStr:SetPoint("LEFT", btn, "LEFT", hasName and _colX.name or COL_GAP, 0)
+    fontStr:SetPoint("LEFT", button, "LEFT", hasName and _colX.name or COL_GAP, 0)
     fontStr:SetWidth(hasName and _colW.name or (rowW - COL_GAP * 2))
     fontStr:SetTextColor(0.4, 0.4, 0.4)
     fontStr:SetText(L("Empty"))
     fontStr:Show()
     -- No item: painters clear what they drew on this reused row
-    btn._textOverlay:Hide()
-    CUI_Bags.RunItemOverlays(btn, d)
-    if GameTooltip:IsOwned(btn) and btn.UpdateTooltip then
-        btn:UpdateTooltip()
+    button._textOverlay:Hide()
+    CUI_Bags.RunItemOverlays(button, skinData)
+    if GameTooltip:IsOwned(button) and button.UpdateTooltip then
+        button:UpdateTooltip()
     end
 end
 mod.ListRowH = RowH
@@ -1181,7 +1181,7 @@ function mod.RenderListView(itemList, options)
         return b
     end
     -- subOrder: the sub-section's sort key (equip slots), nil sorts by label
-    local function Add(key, sub, d, subOrder)
+    local function Add(key, sub, skinData, subOrder)
         local b = GetBucket(key)
         local sl = b.subs[sub]
         if not sl then
@@ -1189,9 +1189,9 @@ function mod.RenderListView(itemList, options)
             b.subs[sub] = sl
             b.subList[#b.subList + 1] = sl
         end
-        sl[#sl + 1] = d
+        sl[#sl + 1] = skinData
         b.n = b.n + 1
-        b.sell = b.sell + d._lvSell
+        b.sell = b.sell + skinData._lvSell
     end
     -- OneBag: a WoW Forever special bag (ns.SpecialBags) keeps a section of
     -- its own, as the reagent bag does, after Main Bags.
@@ -1209,50 +1209,50 @@ function mod.RenderListView(itemList, options)
     -- Group Gear by Slot: the gear categories' sub-sections are equip slots,
     -- in place of Split by Type
     local gearSlots = not slotView and mod.ArmorySlotGroupingEnabled()
-    for _, d in ipairs(itemList) do
-        local ci = d.categoryIndex
+    for _, skinData in ipairs(itemList) do
+        local ci = skinData.categoryIndex
         local category = ci and cats[ci]
-        if d.info and d.itemLink then
-            StampItem(d)
-            if pinnedSet and mod.IsItemPinned(pinnedSet, d.itemLink, d.info.itemID) then
-                Add("pinned", "", d)
+        if skinData.info and skinData.itemLink then
+            StampItem(skinData)
+            if pinnedSet and mod.IsItemPinned(pinnedSet, skinData.itemLink, skinData.info.itemID) then
+                Add("pinned", "", skinData)
             end
-            if recentSet and recentSet[d.info.itemID] and not d._pinnedOnly then
-                Add("recent", "", d)
+            if recentSet and recentSet[skinData.info.itemID] and not skinData._pinnedOnly then
+                Add("recent", "", skinData)
             end
             if options.recentOnly then
-                Add("recent", "", d)
+                Add("recent", "", skinData)
             elseif slotView then
-                Add(BagKey(d.bag), "", d)
+                Add(BagKey(skinData.bag), "", skinData)
             elseif
                 category
-                and not (options.allItems and d._pinnedOnly)
+                and not (options.allItems and skinData._pinnedOnly)
                 and not hidden[category._defaultName]
                 and not (category.groupName and hidden[category.groupName])
             then
-                local key = (junkOn and category.isJunk or (not junkOn and d._lvQuality == 0)) and "junk"
+                local key = (junkOn and category.isJunk or (not junkOn and skinData._lvQuality == 0)) and "junk"
                     or ci
                 if key == "junk" then
-                    Add(key, "", d)
+                    Add(key, "", skinData)
                 elseif gearSlots and mod.IsArmoryGearCategory(category) then
-                    local sk, labelText = mod.GetArmorySlotBucket(d)
-                    Add(key, labelText, d, sk)
+                    local sk, labelText = mod.GetArmorySlotBucket(skinData)
+                    Add(key, labelText, skinData, sk)
                 else
-                    Add(key, d._lvSub, d)
+                    Add(key, skinData._lvSub, skinData)
                 end
             end
         end
     end
     if slotView and options.emptySlots then
-        for _, d in ipairs(options.emptySlots) do
-            local b = GetBucket(BagKey(d.bag))
+        for _, skinData in ipairs(options.emptySlots) do
+            local b = GetBucket(BagKey(skinData.bag))
             local sl = b.subs[""]
             if not sl then
                 sl = { label = "" }
                 b.subs[""] = sl
                 b.subList[1] = sl
             end
-            sl[#sl + 1] = d
+            sl[#sl + 1] = skinData
         end
     end
     -- Pinned first, category (or bag) order, Junk after the last saved category
@@ -1339,24 +1339,24 @@ function mod.RenderListView(itemList, options)
             if not subCollapsed then
                 table.sort(sl, b.key == "recent" and mod.RecentCompare or rowCompare)
             end
-            for i, d in ipairs(subCollapsed and _emptyP or sl) do
-                local btn = GetOrCreateRow(_rowsUsed + 1)
-                if btn then -- nil in combat (see GetOrCreateRow)
+            for i, skinData in ipairs(subCollapsed and _emptyP or sl) do
+                local button = GetOrCreateRow(_rowsUsed + 1)
+                if button then -- nil in combat (see GetOrCreateRow)
                     _rowsUsed = _rowsUsed + 1
-                    btn:GetParent():SetParent(childFrame)
-                    if d.info then
+                    button:GetParent():SetParent(childFrame)
+                    if skinData.info then
                         RenderRow(
-                            btn,
-                            d,
+                            button,
+                            skinData,
                             cols,
                             rowW,
                             posX,
                             posY,
                             i % 2 == 0,
-                            d._pinDim and b.key ~= "pinned" and b.key ~= "recent"
+                            skinData._pinDim and b.key ~= "pinned" and b.key ~= "recent"
                         )
                     else
-                        RenderEmptyRow(btn, cols, d, rowW, posX, posY, i % 2 == 0)
+                        RenderEmptyRow(button, cols, skinData, rowW, posX, posY, i % 2 == 0)
                     end
                     posY = posY - rowH
                 end

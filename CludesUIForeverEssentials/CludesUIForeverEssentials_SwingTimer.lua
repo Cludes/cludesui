@@ -66,17 +66,17 @@ local function HasWeapon(t)
     return type(speed) == "number" and not (issecretvalue and issecretvalue(speed)) and speed > 0
 end
 
-local function OnUpdate(bar)
-    local leftX = bar.started + bar.duration - GetTime()
+local function OnUpdate(barFrame)
+    local leftX = barFrame.started + barFrame.duration - GetTime()
     if leftX > 0 then
-        bar:SetValue(bar.duration - leftX)
-        bar.text:SetText(("%.1f"):format(leftX))
+        barFrame:SetValue(barFrame.duration - leftX)
+        barFrame.text:SetText(("%.1f"):format(leftX))
     else
-        bar:SetValue(bar.duration)
-        bar.text:SetText("")
+        barFrame:SetValue(barFrame.duration)
+        barFrame.text:SetText("")
         if leftX < -IDLE_AFTER then
-            bar.started = nil
-            bar:SetScript("OnUpdate", nil)
+            barFrame.started = nil
+            barFrame:SetScript("OnUpdate", nil)
             module.SwingLayout()
         end
     end

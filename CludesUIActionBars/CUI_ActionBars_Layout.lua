@@ -187,42 +187,42 @@ local function ComputeBarLayout(key)
     local colFlip, rowFlip, cornerFill = mod.GetOrderFlips(s, isVertical, rowsUpward)
 
     local result = {}
-    for idx = 1, details.count do
-        local button = buttons[idx]
+    for index = 1, details.count do
+        local button = buttons[index]
         if not button then
             break
         end
-        if idx > numIcons then
-            result[idx] = { x = 0, y = 0, w = btnW, h = btnH, show = false }
+        if index > numIcons then
+            result[index] = { x = 0, y = 0, w = btnW, h = btnH, show = false }
         else
-            local col, row
+            local colour, row
             if isVertical then
                 if cornerFill then
                     -- Corner modes fill across columns first, then wrap down a
                     -- row (numRows = the column count on vertical bars).
-                    col = (idx - 1) % numRows
-                    row = floor((idx - 1) / numRows)
+                    colour = (index - 1) % numRows
+                    row = floor((index - 1) / numRows)
                 else
-                    col = floor((idx - 1) / stride)
-                    row = (idx - 1) % stride
+                    colour = floor((index - 1) / stride)
+                    row = (index - 1) % stride
                 end
             else
-                col = (idx - 1) % stride
-                row = floor((idx - 1) / stride)
+                colour = (index - 1) % stride
+                row = floor((index - 1) / stride)
             end
             -- Icon order flips first so the width/height-match extras
             -- below derive from the final visual position.
             if colFlip then
-                col = (isVertical and numRows or stride) - 1 - col
+                colour = (isVertical and numRows or stride) - 1 - colour
             end
             if rowFlip then
                 row = (isVertical and stride or numRows) - 1 - row
             end
-            local thisBtnW = (extraWC > 0 and col < extraWC) and (btnW + onePxC) or btnW
+            local thisBtnW = (extraWC > 0 and colour < extraWC) and (btnW + onePxC) or btnW
             local thisBtnH = (extraHC > 0 and row < extraHC) and (btnH + onePxC) or btnH
-            local extraBeforeW = math.min(col, extraWC) * onePxC
+            local extraBeforeW = math.min(colour, extraWC) * onePxC
             local extraBeforeH = math.min(row, extraHC) * onePxC
-            local xOff = col * stepW + extraBeforeW
+            local xOff = colour * stepW + extraBeforeW
             local yOff
             if rowsUpward then
                 yOff = row * stepH + extraBeforeH
@@ -237,7 +237,7 @@ local function ComputeBarLayout(key)
             then
                 show = false
             end
-            result[idx] = { x = xOff, y = yOff, w = thisBtnW, h = thisBtnH, show = show }
+            result[index] = { x = xOff, y = yOff, w = thisBtnW, h = thisBtnH, show = show }
         end
     end
 
@@ -294,8 +294,8 @@ do
                     grp.pivot = widget
                     local entries = grp.frames
                     wipe(entries)
-                    for idx = 1, #buttons do
-                        local button = buttons[idx]
+                    for index = 1, #buttons do
+                        local button = buttons[index]
                         if button and button:IsShown() then
                             entries[#entries + 1] = button
                         end
@@ -359,9 +359,9 @@ local function LayoutBar(key)
         do
             local cx, cy = widget:GetCenter()
             if cx and cy then
-                local r = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
+                local region = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
                 local uw, uh = UIParent:GetSize()
-                fbS = ((cx * r > uw * 2 / 3) and 2 or 0) + ((cy * r > uh * 2 / 3) and 1 or 0)
+                fbS = ((cx * region > uw * 2 / 3) and 2 or 0) + ((cy * region > uh * 2 / 3) and 1 or 0)
             end
         end
         local showES = s.alwaysShowButtons
@@ -374,9 +374,9 @@ local function LayoutBar(key)
         local fillS = ""
         if not showES then
             local tf = {}
-            for idx = 1, details.count do
-                local b = buttons[idx]
-                tf[idx] = (b and not mod.AB_EmptySlot(b, details)) and "1" or "0"
+            for index = 1, details.count do
+                local b = buttons[index]
+                tf[index] = (b and not mod.AB_EmptySlot(b, details)) and "1" or "0"
             end
             fillS = table.concat(tf)
         end
@@ -517,13 +517,13 @@ local function LayoutBar(key)
     local assistFit = ABAR.db.profile.assistGlowFitCropped
     local assistRefit = false
 
-    for idx = 1, details.count do
-        local button = buttons[idx]
+    for index = 1, details.count do
+        local button = buttons[index]
         if not button then
             break
         end
 
-        if idx > numIcons then
+        if index > numIcons then
             button:Hide()
             button:SetAlpha(0)
             mod._eabMarkParked(button, details)
@@ -537,26 +537,26 @@ local function LayoutBar(key)
                 lfd.parkA0 = 1
             end
 
-            local col, row
+            local colour, row
             if isVertical then
                 if cornerFill then
                     -- Corner modes fill across columns first, then wrap down a
                     -- row (numRows = the column count on vertical bars).
-                    col = (idx - 1) % numRows
-                    row = floor((idx - 1) / numRows)
+                    colour = (index - 1) % numRows
+                    row = floor((index - 1) / numRows)
                 else
-                    col = floor((idx - 1) / stride)
-                    row = (idx - 1) % stride
+                    colour = floor((index - 1) / stride)
+                    row = (index - 1) % stride
                 end
             else
-                col = (idx - 1) % stride
-                row = floor((idx - 1) / stride)
+                colour = (index - 1) % stride
+                row = floor((index - 1) / stride)
             end
 
             -- Icon order flips first so the width/height-match extras
             -- below derive from the final visual position.
             if colFlip then
-                col = (isVertical and numRows or stride) - 1 - col
+                colour = (isVertical and numRows or stride) - 1 - colour
             end
             if rowFlip then
                 row = (isVertical and stride or numRows) - 1 - row
@@ -564,14 +564,14 @@ local function LayoutBar(key)
 
             -- Width/height match: first N columns/rows get +1 physical pixel.
             -- Only the matched axis expands, so a row stays uniform (no 1px jag).
-            local thisBtnW = (extraW > 0 and col < extraW) and (btnW + onePx) or btnW
+            local thisBtnW = (extraW > 0 and colour < extraW) and (btnW + onePx) or btnW
             local thisBtnH = (extraH > 0 and row < extraH) and (btnH + onePx) or btnH
             -- Cumulative offset from expanded buttons before this one
-            local extraBeforeW = math.min(col, extraW) * onePx
+            local extraBeforeW = math.min(colour, extraW) * onePx
             local extraBeforeH = math.min(row, extraH) * onePx
 
             button:ClearAllPoints()
-            local xOff = col * stepW + extraBeforeW
+            local xOff = colour * stepW + extraBeforeW
             local yOff, anchor
             if rowsUpward then
                 yOff = row * stepH + extraBeforeH
@@ -738,8 +738,8 @@ local function LayoutBar(key)
     do
         local c1, c2 = widget:GetCenter()
         if c1 and c2 then
-            local r = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
-            preCX, preCY = c1 * r, c2 * r
+            local region = widget:GetEffectiveScale() / UIParent:GetEffectiveScale()
+            preCX, preCY = c1 * region, c2 * region
         end
     end
     CludesUI._layoutBarResizing = key
@@ -873,8 +873,8 @@ local function LayoutBar(key)
             flyDir = isVertical and "RIGHT" or "UP"
         end
     end
-    for idx = 1, #buttons do
-        local button = buttons[idx]
+    for index = 1, #buttons do
+        local button = buttons[index]
         if button then
             -- Ensure the button has GetPopupDirection for Blizzard's SpellFlyout system
             -- (must be available on all buttons, regardless of squareIcons setting)
@@ -1029,14 +1029,14 @@ function ABAR:RecalcFlyoutDirection(barId)
     cy = cy * fScale / uiScale
     local thirdW = uiW / 3
     local thirdH = uiH / 3
-    local dir
+    local direction
     if isVert then
-        dir = (cx > thirdW * 2) and "LEFT" or "RIGHT"
+        direction = (cx > thirdW * 2) and "LEFT" or "RIGHT"
     else
-        dir = (cy > thirdH * 2) and "DOWN" or "UP"
+        direction = (cy > thirdH * 2) and "DOWN" or "UP"
     end
     for _, button in ipairs(btns) do
-        button:SetAttribute("flyoutDirection", dir)
+        button:SetAttribute("flyoutDirection", direction)
     end
 end
 

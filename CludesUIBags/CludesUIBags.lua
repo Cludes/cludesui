@@ -62,11 +62,11 @@ local IsEquippableItem = C_Item.IsEquippableItem
 local _canUseCache = {}
 local ITEM_CLASS_RECIPE = Enum.ItemClass.Recipe
 local function BagsItemUnusable(bagID, slot, itemLink, itemId)
-    local item = itemLink or itemId
-    if not item then
+    local entry = itemLink or itemId
+    if not entry then
         return false
     end
-    local cached = _canUseCache[item]
+    local cached = _canUseCache[entry]
     if cached ~= nil then
         return cached
     end
@@ -76,15 +76,15 @@ local function BagsItemUnusable(bagID, slot, itemLink, itemId)
     -- below. Skip that: the scan can see red from the crafted item's own preview
     -- stats, not just from the recipe's learn requirements. Use the usable check
     -- instead, which reflects skill/known state directly.
-    local _, _, _, _, _, classID = GetItemInfoInstant(item)
+    local _, _, _, _, _, classID = GetItemInfoInstant(entry)
     if classID == ITEM_CLASS_RECIPE then
-        local usable = C_Item.IsUsableItem(item)
+        local usable = C_Item.IsUsableItem(entry)
         unusable = not usable
-        _canUseCache[item] = unusable
+        _canUseCache[entry] = unusable
         return unusable
     end
 
-    if IsEquippableItem(item) or C_Item.GetItemSpell(item) then
+    if IsEquippableItem(entry) or C_Item.GetItemSpell(entry) then
         -- Only use a tooltip from the real bag slot or real item link; both carry
         -- bonus IDs, which set the item's true required level. A bare itemID lacks
         -- those and can read the wrong level requirement either way.
@@ -125,15 +125,15 @@ local function BagsItemUnusable(bagID, slot, itemLink, itemId)
             return unusable
         end
     end
-    _canUseCache[item] = unusable
+    _canUseCache[entry] = unusable
     return unusable
 end
 CludesUI._BagsItemUnusable = BagsItemUnusable -- local CUI alias is declared further down
 do
-    local f = CreateFrame("Frame")
-    f:RegisterEvent("PLAYER_LEVEL_UP")
-    f:RegisterEvent("PLAYER_LEVEL_CHANGED")
-    f:SetScript("OnEvent", function()
+    local frame = CreateFrame("Frame")
+    frame:RegisterEvent("PLAYER_LEVEL_UP")
+    frame:RegisterEvent("PLAYER_LEVEL_CHANGED")
+    frame:SetScript("OnEvent", function()
         wipe(_canUseCache)
     end)
 end
@@ -470,16 +470,16 @@ local function NormalizePinKey(itemLink, itemId)
         -- Split keeping empty fields. After "item:": 1 itemID, 2 enchant,
         -- 3-6 gems, 7 suffix, 8 uniqueID, 9 linkLevel, 10 specID,
         -- 11 modifiersMask, 12 itemContext, 13 numBonusIDs, 14.. bonusIDs.
-        local f = {}
+        local frame = {}
         for field in (payload .. ":"):gmatch("([^:]*):") do
-            f[#f + 1] = field
+            frame[#frame + 1] = field
         end
-        local ident = f[1]
+        local ident = frame[1]
         if ident and ident ~= "" then
-            local num = tonumber(f[13]) or 0
+            local num = tonumber(frame[13]) or 0
             key = "p" .. ident
-            for idx = 1, num do
-                key = key .. ":" .. (f[13 + idx] or "")
+            for index = 1, num do
+                key = key .. ":" .. (frame[13 + index] or "")
             end
         end
     end
@@ -621,9 +621,9 @@ CludesUI.NewInternals(mod, "_bagsInternals", {
 -- keeps its own copy (OnSlotMetrics gets { size, spacing }), and frames made
 -- through SizeSlot get resized on a change
 local slotFrames = setmetatable({}, { __mode = "k" })
-function mod.SizeSlot(f)
-    slotFrames[f] = true
-    f:SetSize(SLOT_SIZE, SLOT_SIZE)
+function mod.SizeSlot(frame)
+    slotFrames[frame] = true
+    frame:SetSize(SLOT_SIZE, SLOT_SIZE)
 end
 function mod.OnSlotMetrics(func)
     local entries = mod._bagsInternals.slotMetricSetters
@@ -640,8 +640,8 @@ function mod.ApplySlotMetrics()
     end
     SLOT_SIZE, SPACING = size, gap
     mod.SLOT_SIZE, mod.SPACING = size, gap
-    for f in pairs(slotFrames) do
-        f:SetSize(size, size)
+    for frame in pairs(slotFrames) do
+        frame:SetSize(size, size)
     end
     mod._bagsInternals.SetSlotMetrics({ size, gap })
 end

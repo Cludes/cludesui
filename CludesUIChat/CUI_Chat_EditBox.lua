@@ -165,13 +165,13 @@ local function EnsureChatStateCallbacks()
         if not PermanentEditBox(eb) then
             return
         end
-        local d = CFD(eb)
-        local hgt = d.history
+        local skinData = CFD(eb)
+        local hgt = skinData.history
         if not hgt then
             return
         end
-        local line = d.pendingLine
-        d.pendingLine = nil
+        local line = skinData.pendingLine
+        skinData.pendingLine = nil
         local textValue = eb:GetText()
         -- type() and issecretvalue() BEFORE any comparison. `text == ""` on a
         -- secret string THROWS ("attempt to compare ... a secret string
@@ -405,26 +405,26 @@ local function SkinEditBox(castFrame)
                     end
                     return
                 end
-                local d = CFD(self)
-                local hgt = d.history
+                local skinData = CFD(self)
+                local hgt = skinData.history
                 if #hgt == 0 then
                     return
                 end
                 if key == "UP" then
-                    d.histIdx = d.histIdx + 1
-                    if d.histIdx > #hgt then
-                        d.histIdx = #hgt
+                    skinData.histIdx = skinData.histIdx + 1
+                    if skinData.histIdx > #hgt then
+                        skinData.histIdx = #hgt
                     end
                 else
-                    d.histIdx = d.histIdx - 1
-                    if d.histIdx < 0 then
-                        d.histIdx = 0
+                    skinData.histIdx = skinData.histIdx - 1
+                    if skinData.histIdx < 0 then
+                        skinData.histIdx = 0
                     end
                 end
-                if d.histIdx == 0 then
+                if skinData.histIdx == 0 then
                     self:SetText("")
                 else
-                    local record = hgt[#hgt - d.histIdx + 1]
+                    local record = hgt[#hgt - skinData.histIdx + 1]
                     if record then
                         self:SetText(record)
                     else

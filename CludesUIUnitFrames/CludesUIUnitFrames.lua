@@ -70,8 +70,8 @@ do
             mod.CombatQueue.Defer("HiddenParentSweep", SweepLooseFrames)
             return
         end
-        for f in pairs(looseFrames) do
-            f:SetParent(homeParent[f] or hiddenParent)
+        for frame in pairs(looseFrames) do
+            frame:SetParent(homeParent[frame] or hiddenParent)
         end
         wipe(looseFrames)
     end
@@ -162,8 +162,8 @@ do
         "DemonHunterSoulFragmentsBar",
     }
     local function DisableAltPowerBars()
-        for idx = 1, #ALT_POWER_BARS do
-            Unreg(_G[ALT_POWER_BARS[idx]])
+        for index = 1, #ALT_POWER_BARS do
+            Unreg(_G[ALT_POWER_BARS[index]])
         end
     end
 
@@ -229,8 +229,8 @@ do
                 -- Container is reparented (Edit Mode can revive it); individual boss frames are
                 -- container-managed and must NOT be reparented or layout code breaks their sizes.
                 HandleFrame(BossTargetFrameContainer)
-                for idx = 1, (_G.MAX_BOSS_FRAMES or 5) do
-                    HandleFrame("Boss" .. idx .. "TargetFrame", true)
+                for index = 1, (_G.MAX_BOSS_FRAMES or 5) do
+                    HandleFrame("Boss" .. index .. "TargetFrame", true)
                 end
             end
         end
@@ -1522,11 +1522,11 @@ end
 local _gradColorA = CreateColor(1, 1, 1, 1)
 local _gradColorB = CreateColor(1, 1, 1, 1)
 
-local function ApplyBarGradient(ft, dir, br, backdrop, bb, ba, er, eg, eb, ea)
+local function ApplyBarGradient(ft, direction, br, backdrop, bb, ba, er, eg, eb, ea)
     ft:SetVertexColor(1, 1, 1, 1)
     _gradColorA:SetRGBA(br, backdrop, bb, ba)
     _gradColorB:SetRGBA(er, eg, eb, ea)
-    ft:SetGradient(dir, _gradColorA, _gradColorB)
+    ft:SetGradient(direction, _gradColorA, _gradColorB)
 end
 
 local SOLID_BACKDROP = { bgFile = "Interface\\Buttons\\WHITE8X8" }
@@ -1692,9 +1692,9 @@ mod.ResolveHealthBarTextureKey = function(ownSettings, donorSettings)
         return own
     end
     if donorSettings then
-        local d = donorSettings.healthBarTexture
-        if d and d ~= "inherit" then
-            return d
+        local skinData = donorSettings.healthBarTexture
+        if skinData and skinData ~= "inherit" then
+            return skinData
         end
     end
     return saved.profile.healthBarTexture or "none"
@@ -1722,8 +1722,8 @@ do
         end
         local own = s.healthBarTexture
         if MINI[unitKey] and (own == nil or own == "inherit") then
-            local d = mod.GetMiniDonorSettings(unitKey)
-            return (d and d.textureBg) == true
+            local skinData = mod.GetMiniDonorSettings(unitKey)
+            return (skinData and skinData.textureBg) == true
         end
         return s.textureBg == true
     end
@@ -1774,12 +1774,12 @@ do
         return CludesUI.ResolveTexturePath(healthBarTextures, texKey or "none", nil)
     end
 
-    local function PaintTinted(self, r, g, b, a)
-        self:SetVertexColor(r, g, b, a)
+    local function PaintTinted(self, region, g, b, a)
+        self:SetVertexColor(region, g, b, a)
     end
-    local function PaintHealth(self, r, g, b, a)
-        TexM.SetColorTexture(self, r, g, b, a)
-        self._cuiBgTex:SetVertexColor(r, g, b, a)
+    local function PaintHealth(self, region, g, b, a)
+        TexM.SetColorTexture(self, region, g, b, a)
+        self._cuiBgTex:SetVertexColor(region, g, b, a)
     end
     local function AlphaHealth(self, a)
         TexM.SetAlpha(self, a)
@@ -1804,17 +1804,17 @@ do
     end
 
     -- One paint of a background that is never swapped (the options preview).
-    function mod.UF_TexBgPaint(texture, filePath, r, g, b, a)
+    function mod.UF_TexBgPaint(texture, filePath, region, g, b, a)
         if filePath then
             texture:SetTexture(filePath)
-            texture:SetVertexColor(r, g, b, a)
+            texture:SetVertexColor(region, g, b, a)
             texture._cuiTexPath = filePath
         else
             if texture._cuiTexPath then
                 texture._cuiTexPath = nil
                 texture:SetVertexColor(1, 1, 1, 1)
             end
-            texture:SetColorTexture(r, g, b, a)
+            texture:SetColorTexture(region, g, b, a)
         end
     end
 
@@ -1847,8 +1847,8 @@ do
         end
         if filePath then
             TexM = TexM or { SetColorTexture = backdrop.SetColorTexture, SetAlpha = backdrop.SetAlpha }
-            local fill = health:GetStatusBarTexture()
-            local tiled = fill and (fill:GetHorizTile() or fill:GetVertTile())
+            local fillTex = health:GetStatusBarTexture()
+            local tiled = fillTex and (fillTex:GetHorizTile() or fillTex:GetVertTile())
             local layer =
                 mod.UF_TexBgLayer(health, filePath, s.healthVerticalFill and not mod.UF_Blizz() and not tiled)
             backdrop._cuiBgTex = layer
@@ -1877,8 +1877,8 @@ do
 
     -- From ns.ApplyCastBarTexture, before it applies the fill.
     function mod.UF_TexBgCast(castbar, texKey)
-        local host = castbar:GetParent()
-        local backdrop = host and host._bgTex
+        local owner = castbar:GetParent()
+        local backdrop = owner and owner._bgTex
         if not backdrop or (not saved.profile.castTextureBg and not backdrop._cuiTexPath) then
             return
         end
@@ -1918,11 +1918,11 @@ mod.ApplyCastBarTexture = function(castbar, texKey)
         -- entry the Resource Bars cast bar offers), tinted by the bar's
         -- colours like any file; the cast tint rides the same art.
         castbar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-        local fill = castbar:GetStatusBarTexture()
-        if fill then
-            fill:SetAtlas("UI-CastingBar-Fill", true)
-            fill:SetHorizTile(false)
-            UnsnapTex(fill)
+        local fillTex = castbar:GetStatusBarTexture()
+        if fillTex then
+            fillTex:SetAtlas("UI-CastingBar-Fill", true)
+            fillTex:SetHorizTile(false)
+            UnsnapTex(fillTex)
         end
         if castbar.castTintLayer then
             castbar.castTintLayer:SetAtlas("UI-CastingBar-Fill", true)
@@ -1932,10 +1932,10 @@ mod.ApplyCastBarTexture = function(castbar, texKey)
     local filePath =
         CludesUI.ResolveTexturePath(healthBarTextures, texKey or "none", "Interface\\Buttons\\WHITE8X8")
     castbar:SetStatusBarTexture(filePath)
-    local fill = castbar:GetStatusBarTexture()
-    if fill then
-        fill:SetHorizTile(false)
-        UnsnapTex(fill)
+    local fillTex = castbar:GetStatusBarTexture()
+    if fillTex then
+        fillTex:SetHorizTile(false)
+        UnsnapTex(fillTex)
     end
     if castbar.castTintLayer then
         castbar.castTintLayer:SetTexture(filePath)
@@ -2318,8 +2318,8 @@ do
         if not (color and color.GetRGB) then
             return false
         end
-        local r, g, b = color:GetRGB()
-        return true, r, g, b, issecretvalue(r)
+        local region, g, b = color:GetRGB()
+        return true, region, g, b, issecretvalue(region)
     end
 
     -- Clean-number twins for the options previews, where the health percent is a
@@ -2426,9 +2426,9 @@ local function UF_SecretSafeHealthColor(self, evt, unitToken)
             -- Blizzard's shade. GetClassColorForRestrictedUnit recovers the user's custom
             -- class color for group members with the compare done in C; its r/g/b are secret,
             -- so they go into a scratch ColorMixin (plain field writes) and are never read.
-            local success, r, g, b = CludesUI.GetClassColorForRestrictedUnit(unitToken, class)
+            local success, region, g, b = CludesUI.GetClassColorForRestrictedUnit(unitToken, class)
             if success then
-                SECRET_CLASS_COLOR:SetRGB(r, g, b)
+                SECRET_CLASS_COLOR:SetRGB(region, g, b)
                 color = SECRET_CLASS_COLOR
             elseif C_ClassColor and C_ClassColor.GetClassColor then
                 color = C_ClassColor.GetClassColor(class)
@@ -2628,14 +2628,14 @@ local function ApplyDarkTheme(health, unitToken)
                 elseif cFill and not classColored then
                     self.bg:SetColorTexture(cFill.r * 0.2, cFill.g * 0.2, cFill.b * 0.2, 1)
                 elseif color and color.GetRGB then
-                    local r, g, b = color:GetRGB()
+                    local region, g, b = color:GetRGB()
                     -- SetColorTexture takes secrets; the multiply does not, and there is no
                     -- C-side blend to darken one with. So a restricted unit's background
                     -- degrades to the default dark rather than throwing on the tint.
-                    if issecretvalue(r) then
+                    if issecretvalue(region) then
                         self.bg:SetColorTexture(DARK_HEALTH_R, DARK_HEALTH_G, DARK_HEALTH_B, 1)
                     else
-                        self.bg:SetColorTexture(r * 0.2, g * 0.2, b * 0.2, 1)
+                        self.bg:SetColorTexture(region * 0.2, g * 0.2, b * 0.2, 1)
                     end
                 else
                     -- No color source (e.g. no target): default bg.

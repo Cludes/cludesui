@@ -57,8 +57,8 @@ local function ReadSlot(slot)
     end
     local row = { kind = kind, id = Plain(ident), sub = sub }
     if kind == "macro" and row.id then
-        local name, icon, body = GetMacroInfo(row.id)
-        row.name, row.icon, row.body = name, icon, body
+        local name, iconTex, body = GetMacroInfo(row.id)
+        row.name, row.icon, row.body = name, iconTex, body
     elseif kind == "equipmentset" then
         row.name = ident
     end
@@ -76,8 +76,8 @@ function module.SaveActionProfile(name)
     end
     if Get("bindings") then
         p.bindings = {}
-        for idx = 1, GetNumBindings() do
-            local command, _, key1, key2 = GetBinding(idx)
+        for index = 1, GetNumBindings() do
+            local command, _, key1, key2 = GetBinding(index)
             if command and (key1 or key2) then
                 p.bindings[#p.bindings + 1] = { command, key1, key2 }
             end
@@ -160,8 +160,8 @@ function module.LoadActionProfile(name)
         end
     end
     if p.bindings and Get("bindings") then
-        for idx = 1, GetNumBindings() do
-            local _, _, key1, key2 = GetBinding(idx)
+        for index = 1, GetNumBindings() do
+            local _, _, key1, key2 = GetBinding(index)
             if key1 then
                 SetBinding(key1)
             end
@@ -199,8 +199,8 @@ CludesUI._ActionBarProfiles = {
 }
 
 SLASH_CUIABPROFILE1 = "/cbars"
-SlashCmdList.CUIABPROFILE = function(msg)
-    local cmd, rest = (msg or ""):match("^%s*(%S*)%s*(.-)%s*$")
+SlashCmdList.CUIABPROFILE = function(message)
+    local cmd, rest = (message or ""):match("^%s*(%S*)%s*(.-)%s*$")
     cmd = cmd:lower()
     if cmd == "save" then
         module.SaveActionProfile(rest)

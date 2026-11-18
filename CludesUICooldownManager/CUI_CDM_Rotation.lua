@@ -31,13 +31,13 @@ local function CDMIconsForSpell(spellId, result)
         spellBase = spellId
     end
     for _, icons in pairs(cdmBarIcons) do
-        for _, icon in ipairs(icons) do
-            local ifc = _ecmeFC[icon]
+        for _, iconTex in ipairs(icons) do
+            local ifc = _ecmeFC[iconTex]
             local spellRef = ifc and ifc.spellID
             if type(spellRef) ~= "number" or (issecretvalue and issecretvalue(spellRef)) then
                 spellRef = nil
             end
-            if spellRef and icon:IsShown() then
+            if spellRef and iconTex:IsShown() then
                 -- Direct/base match first (cheap); only resolve the icon's own base if those
                 -- miss, to keep the common path light. sid > 0: item/trinket icons store -itemID/-13/-14, which must not be fed to GetBaseSpell.
                 local match = (spellRef == spellId) or (spellRef == spellBase)
@@ -48,7 +48,7 @@ local function CDMIconsForSpell(spellId, result)
                     end
                 end
                 if match then
-                    result[#result + 1] = icon
+                    result[#result + 1] = iconTex
                 end
             end
         end
@@ -104,15 +104,15 @@ do
         return GetCVarBool and GetCVarBool("assistedCombatHighlight")
     end
 
-    local function _rotCreateHighlight(icon)
+    local function _rotCreateHighlight(iconTex)
         local success, hf =
-            pcall(CreateFrame, "Frame", nil, icon, "ActionBarButtonAssistedCombatHighlightTemplate")
+            pcall(CreateFrame, "Frame", nil, iconTex, "ActionBarButtonAssistedCombatHighlightTemplate")
         if not success or not hf then
             return nil
         end
         hf:SetAllPoints()
         -- Sit above everything on the icon: Blizzard's cooldown swipe, our border frame, our glowOverlay (+6), and any proc alert frames. +15 clears them all with margin.
-        hf:SetFrameLevel(icon:GetFrameLevel() + 15)
+        hf:SetFrameLevel(iconTex:GetFrameLevel() + 15)
         hf:Hide()
         if hf.Flipbook and hf.Flipbook.Anim then
             hf.Flipbook.Anim:Play()
@@ -121,19 +121,19 @@ do
         return hf
     end
 
-    local function _rotCreateCustom(icon)
-        local overlayFrame = CreateFrame("Frame", nil, icon)
-        overlayFrame:SetFrameLevel(icon:GetFrameLevel() + 15)
+    local function _rotCreateCustom(iconTex)
+        local overlayFrame = CreateFrame("Frame", nil, iconTex)
+        overlayFrame:SetFrameLevel(iconTex:GetFrameLevel() + 15)
         overlayFrame:SetAlpha(0)
         return overlayFrame
     end
 
-    local function _rotSolidBorder(overlayFrame, thickness, r, g, b)
+    local function _rotSolidBorder(overlayFrame, thickness, region, g, b)
         local t = overlayFrame._rotSolid
         if not t then
             t = {}
-            for idx = 1, 4 do
-                t[idx] = overlayFrame:CreateTexture(nil, "OVERLAY", nil, 7)
+            for index = 1, 4 do
+                t[index] = overlayFrame:CreateTexture(nil, "OVERLAY", nil, 7)
             end
             t[1]:SetPoint("TOPLEFT")
             t[1]:SetPoint("TOPRIGHT")
@@ -150,9 +150,9 @@ do
         t[2]:SetHeight(px)
         t[3]:SetWidth(px)
         t[4]:SetWidth(px)
-        for idx = 1, 4 do
-            t[idx]:SetColorTexture(r, g, b, 1)
-            t[idx]:Show()
+        for index = 1, 4 do
+            t[index]:SetColorTexture(region, g, b, 1)
+            t[index]:Show()
         end
     end
 
@@ -161,8 +161,8 @@ do
         if not t then
             return
         end
-        for idx = 1, 4 do
-            t[idx]:Hide()
+        for index = 1, 4 do
+            t[index]:Hide()
         end
     end
 
@@ -183,8 +183,8 @@ do
         return nil
     end
 
-    local function _rotHide(icon)
-        local rfc = icon and _ecmeFC[icon]
+    local function _rotHide(iconTex)
+        local rfc = iconTex and _ecmeFC[iconTex]
         local hf = rfc and rfc.rotationHighlight
         if hf then
             if hf.Flipbook and hf.Flipbook.Anim then
@@ -200,11 +200,11 @@ do
         end
     end
 
-    local function _rotShow(icon)
-        if not icon then
+    local function _rotShow(iconTex)
+        if not iconTex then
             return
         end
-        local rfc = FC(icon)
+        local rfc = FC(iconTex)
         local conf = _rotConfig()
         local style = conf and conf.rotationAssistStyle or "blizzard"
         if style ~= "solid" and not ROT_STYLE_TO_GLOW[style] then
@@ -221,7 +221,7 @@ do
             end
             local overlayFrame = rfc.rotationCustomHighlight
             if not overlayFrame then
-                overlayFrame = _rotCreateCustom(icon)
+                overlayFrame = _rotCreateCustom(iconTex)
                 rfc.rotationCustomHighlight = overlayFrame
             end
             local outset = conf.rotationAssistOutset or 1
@@ -231,16 +231,16 @@ do
                 outset = 12
             end
             overlayFrame:ClearAllPoints()
-            overlayFrame:SetPoint("TOPLEFT", icon, "TOPLEFT", -outset, outset)
-            overlayFrame:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", outset, -outset)
-            overlayFrame:SetFrameLevel(icon:GetFrameLevel() + 15)
+            overlayFrame:SetPoint("TOPLEFT", iconTex, "TOPLEFT", -outset, outset)
+            overlayFrame:SetPoint("BOTTOMRIGHT", iconTex, "BOTTOMRIGHT", outset, -outset)
+            overlayFrame:SetFrameLevel(iconTex:GetFrameLevel() + 15)
             local thickness = conf.rotationAssistThickness or 3
             if thickness < 1 then
                 thickness = 1
             elseif thickness > 8 then
                 thickness = 8
             end
-            local cr, cg, cb = _rotResolveColor(conf)
+            local cr, cg, callback = _rotResolveColor(conf)
             local glowStyle = ROT_STYLE_TO_GLOW[style]
             -- Pixel Glow lines/speed/background (unset = the engine defaults).
             local lines, speed = conf.rotationAssistLines or 8, conf.rotationAssistSpeed or 4
@@ -252,7 +252,7 @@ do
                 mod._rotKeyScratch = kt
             end
             kt[1], kt[2], kt[3], kt[4], kt[5], kt[6], kt[7] =
-                style, cr or -1, cg or -1, cb or -1, thickness, outset, glowStyle or 0
+                style, cr or -1, cg or -1, callback or -1, thickness, outset, glowStyle or 0
             kt[8], kt[9], kt[10] = lines, speed, conf.rotationAssistBackground and 1 or 0
             kt[11], kt[12], kt[13] = bgc and bgc.r or 0, bgc and bgc.g or 0, bgc and bgc.b or 0
             local cfgKey = table.concat(kt, ":", 1, 13)
@@ -260,14 +260,14 @@ do
                 overlayFrame._rotCfgKey = cfgKey
                 if style == "solid" then
                     StopNativeGlow(overlayFrame)
-                    _rotSolidBorder(overlayFrame, thickness, cr or 1.0, cg or 0.788, cb or 0.137)
+                    _rotSolidBorder(overlayFrame, thickness, cr or 1.0, cg or 0.788, callback or 0.137)
                     overlayFrame._glowActive = true
                     overlayFrame:SetAlpha(1)
                 else
                     _rotHideSolid(overlayFrame)
-                    local wid = (icon:GetWidth() or 36) + outset * 2
-                    local hgt = (icon:GetHeight() or 36) + outset * 2
-                    StartNativeGlow(overlayFrame, glowStyle, cr, cg, cb, {
+                    local wid = (iconTex:GetWidth() or 36) + outset * 2
+                    local hgt = (iconTex:GetHeight() or 36) + outset * 2
+                    StartNativeGlow(overlayFrame, glowStyle, cr, cg, callback, {
                         N = lines,
                         th = thickness,
                         period = speed,
@@ -292,20 +292,20 @@ do
         end
         local hf = rfc.rotationHighlight
         if not hf then
-            hf = _rotCreateHighlight(icon)
+            hf = _rotCreateHighlight(iconTex)
             if not hf then
                 return
             end
             rfc.rotationHighlight = hf
         end
         if hf.Flipbook then
-            local wid = icon:GetWidth() or 36
-            local hgt = icon:GetHeight() or 36
+            local wid = iconTex:GetWidth() or 36
+            local hgt = iconTex:GetHeight() or 36
             local ox = wid * ROT_GLOW_RATIO
             local oy = hgt * ROT_GLOW_RATIO
             hf.Flipbook:ClearAllPoints()
-            hf.Flipbook:SetPoint("TOPLEFT", icon, "TOPLEFT", -ox, oy)
-            hf.Flipbook:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", ox, -oy)
+            hf.Flipbook:SetPoint("TOPLEFT", iconTex, "TOPLEFT", -ox, oy)
+            hf.Flipbook:SetPoint("BOTTOMRIGHT", iconTex, "BOTTOMRIGHT", ox, -oy)
         end
         hf:Show()
         if hf.Flipbook and hf.Flipbook.Anim then
@@ -318,9 +318,9 @@ do
 
     local function UpdateRotationHighlightsNow()
         if not _rotCVarOn() then
-            for icon in pairs(mod._rotationGlowedIcons) do
-                _rotHide(icon)
-                mod._rotationGlowedIcons[icon] = nil
+            for iconTex in pairs(mod._rotationGlowedIcons) do
+                _rotHide(iconTex)
+                mod._rotationGlowedIcons[iconTex] = nil
             end
             return
         end
@@ -335,16 +335,16 @@ do
         local newSet = _rotSpareSet
         wipe(newSet)
         if suggestedSpell then
-            for _, icon in ipairs(CDMIconsForSpell(suggestedSpell, _rotMatched)) do
-                _rotShow(icon)
-                newSet[icon] = true
+            for _, iconTex in ipairs(CDMIconsForSpell(suggestedSpell, _rotMatched)) do
+                _rotShow(iconTex)
+                newSet[iconTex] = true
             end
         end
 
         local oldSet = mod._rotationGlowedIcons
-        for icon in pairs(oldSet) do
-            if not newSet[icon] then
-                _rotHide(icon)
+        for iconTex in pairs(oldSet) do
+            if not newSet[iconTex] then
+                _rotHide(iconTex)
             end
         end
         _rotSpareSet = oldSet
@@ -370,8 +370,8 @@ do
     local function _rotSyncCombat()
         local inCombat = InCombatLockdown() or UnitAffectingCombat("player")
         mod._rotationInCombat = inCombat and true or false
-        for icon in pairs(mod._rotationGlowedIcons) do
-            local rfc2 = icon and _ecmeFC[icon]
+        for iconTex in pairs(mod._rotationGlowedIcons) do
+            local rfc2 = iconTex and _ecmeFC[iconTex]
             local hf = rfc2 and rfc2.rotationHighlight
             if hf and hf:IsShown() and hf.Flipbook and hf.Flipbook.Anim then
                 if mod._rotationInCombat then
@@ -460,8 +460,8 @@ end
 -- secret or unknown answer leaves their colour alone. Cleared to nil when no
 -- override is live, since Blizzard's own check is correct for the base spell.
 -- On ns.* because the main chunk is at Lua 5.1's 200-local cap.
-function mod.ApplyOverrideRangeTint(icon, overrideSpellID)
-    local fd = _getFD(icon)
+function mod.ApplyOverrideRangeTint(iconTex, overrideSpellID)
+    local fd = _getFD(iconTex)
     local texture = fd and fd.tex
     local C = CooldownViewerConstants
     if not (texture and C) then
@@ -484,11 +484,11 @@ function mod.ApplyOverrideRangeTint(icon, overrideSpellID)
             if guard or not spellRef then
                 return
             end
-            local r = C_Spell.IsSpellInRange(spellRef)
-            if issecretvalue and issecretvalue(r) then
+            local region = C_Spell.IsSpellInRange(spellRef)
+            if issecretvalue and issecretvalue(region) then
                 return
             end
-            if r ~= false then
+            if region ~= false then
                 return
             end
             guard = true
@@ -506,7 +506,7 @@ function mod.ApplyOverrideRangeTint(icon, overrideSpellID)
         texture:SetVertexColor(C.ITEM_NOT_IN_RANGE_COLOR:GetRGBA())
         return
     end
-    local spellRef = overrideSpellID or icon.rangeCheckSpellID
+    local spellRef = overrideSpellID or iconTex.rangeCheckSpellID
     if not spellRef then
         return
     end
@@ -532,8 +532,8 @@ end
 -- since a spell can become theirs while ours is armed.
 function mod.BlizzardArmsRange(spellId)
     for _, icons in pairs(cdmBarIcons) do
-        for _, icon in ipairs(icons) do
-            if icon.rangeCheckSpellID == spellId then
+        for _, iconTex in ipairs(icons) do
+            if iconTex.rangeCheckSpellID == spellId then
                 return true
             end
         end
@@ -547,14 +547,14 @@ function mod.ArmOverrideRange(baseSpellID, overrideSpellID)
         armed = {}
         mod._oorArmed = armed
     end
-    local prev = armed[baseSpellID]
-    if prev == overrideSpellID then
+    local previous = armed[baseSpellID]
+    if previous == overrideSpellID then
         return
     end
-    if prev then
+    if previous then
         -- Also left armed while a custom spell icon holds it (CdmHooks, Out of Range Coloring).
-        if not mod.BlizzardArmsRange(prev) and not mod.CustomSpellRangeHolds(prev) then
-            C_Spell.EnableSpellRangeCheck(prev, false)
+        if not mod.BlizzardArmsRange(previous) and not mod.CustomSpellRangeHolds(previous) then
+            C_Spell.EnableSpellRangeCheck(previous, false)
         end
         armed[baseSpellID] = nil
     end
@@ -582,8 +582,8 @@ function mod.DisarmOverrideRanges()
     -- hook polling a dead spell and hold the repaint gate open. Also what
     -- keeps the live count exact across spec changes.
     for _, icons in pairs(cdmBarIcons) do
-        for _, icon in ipairs(icons) do
-            local fd = _getFD(icon)
+        for _, iconTex in ipairs(icons) do
+            local fd = _getFD(iconTex)
             if fd and fd._oorSpellID ~= nil then
                 fd._oorSpellID = nil
             end
@@ -610,10 +610,10 @@ function mod.RepaintOverrideRange(spellId)
         return
     end
     for _, icons in pairs(cdmBarIcons) do
-        for _, icon in ipairs(icons) do
-            local fd = _getFD(icon)
+        for _, iconTex in ipairs(icons) do
+            local fd = _getFD(iconTex)
             if fd and fd._oorSpellID == spellId then
-                mod.ApplyOverrideRangeTint(icon, spellId)
+                mod.ApplyOverrideRangeTint(iconTex, spellId)
             end
         end
     end
@@ -634,9 +634,9 @@ function mod.ResyncCdmRange(baseSpellID, overrideSpellID)
     local liveOverride = (overrideSpellID and overrideSpellID ~= baseSpellID) and overrideSpellID or nil
     mod.ArmOverrideRange(baseSpellID, liveOverride)
     for _, icons in pairs(cdmBarIcons) do
-        for _, icon in ipairs(icons) do
-            if icon.rangeCheckSpellID == baseSpellID then
-                mod.ApplyOverrideRangeTint(icon, liveOverride)
+        for _, iconTex in ipairs(icons) do
+            if iconTex.rangeCheckSpellID == baseSpellID then
+                mod.ApplyOverrideRangeTint(iconTex, liveOverride)
             end
         end
     end

@@ -110,8 +110,8 @@ local worldHooked = false
 -------------------------------------------------------------------------------
 local function ResolveFishing()
     fishingID, fishingName = nil, nil
-    for idx = 1, #FISHING_SPELLS do
-        local ident = FISHING_SPELLS[idx]
+    for index = 1, #FISHING_SPELLS do
+        local ident = FISHING_SPELLS[index]
         if IsPlayerSpell(ident) then
             fishingID, fishingName = ident, C_Spell.GetSpellName(ident)
             return
@@ -148,9 +148,9 @@ local function PoleInBags()
 end
 
 local function BestLure()
-    for idx = 1, #LURES do
-        if C_Item.GetItemCount(LURES[idx]) > 0 then
-            return LURES[idx]
+    for index = 1, #LURES do
+        if C_Item.GetItemCount(LURES[index]) > 0 then
+            return LURES[index]
         end
     end
 end
@@ -232,11 +232,11 @@ local function BuildIndicator()
     indicator:SetMouseMotionEnabled(true)
     indicator:SetMouseClickEnabled(false)
     indicator:Hide()
-    local icon = indicator:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints()
-    icon:SetTexture(ICON)
-    icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-    indicator.icon = icon
+    local iconTex = indicator:CreateTexture(nil, "ARTWORK")
+    iconTex:SetAllPoints()
+    iconTex:SetTexture(ICON)
+    iconTex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    indicator.icon = iconTex
     Pix.CreateBorder(indicator, 1, 0.2, 0.2, 1, 2, "OVERLAY", 2)
     -- The key, clipped to the icon's width.
     local key = indicator:CreateFontString(nil, "OVERLAY", "NumberFontNormal")
@@ -261,11 +261,11 @@ local function UpdateIndicator()
         return
     end
     BuildIndicator()
-    local r, g, b = 1, 0.2, 0.2
+    local region, g, b = 1, 0.2, 0.2
     if reeling then
-        r, g, b = 0.2, 1, 0.3
+        region, g, b = 0.2, 1, 0.3
     end
-    CludesUI.PP.SetBorderColor(indicator, r, g, b, 1)
+    CludesUI.PP.SetBorderColor(indicator, region, g, b, 1)
     indicator.icon:SetDesaturated(not reeling)
     indicator.key:SetText(GetBindingText(F.Get("key"), true))
     indicator:Show()
@@ -522,8 +522,8 @@ local function Apply()
     if IndicatorOn() then
         BuildIndicator()
     end -- placed in Unlock Mode before the first cast
-    for idx = 1, #FEATURE_EVENTS do
-        ev:RegisterEvent(FEATURE_EVENTS[idx])
+    for index = 1, #FEATURE_EVENTS do
+        ev:RegisterEvent(FEATURE_EVENTS[index])
     end
     ev:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_START", "player")
     ev:RegisterUnitEvent("UNIT_SPELLCAST_CHANNEL_STOP", "player")

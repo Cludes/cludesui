@@ -159,9 +159,9 @@ local function Report()
         local rank = C_Spell.GetSpellSubtext(ident)
         local spell = (C_Spell.GetSpellLink(ident) or name or "?")
             .. (rank and rank ~= "" and " (" .. rank .. ")" or "")
-        local msg = total == 1 and CludesUI.Lf("Upranked %s on 1 action slot.", spell)
+        local message = total == 1 and CludesUI.Lf("Upranked %s on 1 action slot.", spell)
             or CludesUI.Lf("Upranked %1$s on %2$d action slots.", spell, total)
-        CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. msg)
+        CludesUI.Print(CludesUI.COLOR_CODES.BRAND .. "CludesUI:|r " .. message)
     end
 end
 

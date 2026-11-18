@@ -128,8 +128,8 @@ local function ScanMail()
     end
     local isShown, sum = GetInboxNumItems()
     local itemList, soonest, nowTime = {}, nil, time()
-    for idx = 1, isShown do
-        local _, _, _, _, _, _, daysLeft, itemCount = GetInboxHeaderInfo(idx)
+    for index = 1, isShown do
+        local _, _, _, _, _, _, daysLeft, itemCount = GetInboxHeaderInfo(index)
         if daysLeft then
             local expires = nowTime + math.floor(daysLeft * DAY)
             if not soonest or expires < soonest then
@@ -138,7 +138,7 @@ local function ScanMail()
         end
         if itemCount and itemCount > 0 then
             for a = 1, MAIL_ATTACHMENTS do
-                local _, ident, _, count = GetInboxItem(idx, a)
+                local _, ident, _, count = GetInboxItem(index, a)
                 if ident then
                     itemList[ident] = (itemList[ident] or 0) + (count or 1)
                 end
@@ -255,10 +255,10 @@ if TooltipDataProcessor and TooltipDataProcessor.AddTooltipPostCall then
             return a.count > b.count
         end)
         tooltip:AddDoubleLine("Total owned", sum, 1, 1, 1, 1, 1, 1)
-        for idx = 1, math.min(#rowList, 8) do
+        for index = 1, math.min(#rowList, 8) do
             tooltip:AddDoubleLine(
-                "  " .. ClassName(rowList[idx].name, rowList[idx].class),
-                rowList[idx].text,
+                "  " .. ClassName(rowList[index].name, rowList[index].class),
+                rowList[index].text,
                 1,
                 1,
                 1,
@@ -280,8 +280,8 @@ local pendingSlot, pendingItem, pendingBag, pendingBagSlot
 local clicking = false
 local mEv = CreateFrame("Frame")
 
-local function Menu(ownerFrame, fill)
-    CludesUI.Kit.ContextMenu(ownerFrame, fill)
+local function Menu(ownerFrame, fillTex)
+    CludesUI.Kit.ContextMenu(ownerFrame, fillTex)
 end
 
 local function OpenAltsMenu(ownerFrame)
@@ -319,9 +319,9 @@ local function OpenAltsMenu(ownerFrame)
 end
 
 local function FreeSlot()
-    for idx = 1, SEND_SLOTS do
-        if not HasSendMailItem(idx) then
-            return idx
+    for index = 1, SEND_SLOTS do
+        if not HasSendMailItem(index) then
+            return index
         end
     end
 end

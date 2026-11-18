@@ -158,7 +158,7 @@ function PaletteView:AdvanceNeedle(nowTime)
     -- 0.25s ease-out grow, the alpha riding the ease. Colored by the
     -- selection color -- lifted toward white for the streak, the same lift
     -- the armed border uses -- so the line and the entry it lands on agree.
-    local r, g, b = SelectColor(self:P())
+    local region, g, b = SelectColor(self:P())
     local t = (nowTime - (self._needleT0 or nowTime)) / 0.25
     if t > 1 then
         t = 1
@@ -166,7 +166,7 @@ function PaletteView:AdvanceNeedle(nowTime)
     local ease = 1 - (1 - t) * (1 - t)
     line:SetStartPoint("CENTER", self.frame, sx, sy)
     line:SetEndPoint("CENTER", self.frame, sx + (ex - sx) * ease, sy + (ey - sy) * ease)
-    line:SetVertexColor(r, g, b, 0.75 * ease)
+    line:SetVertexColor(region, g, b, 0.75 * ease)
     line:Show()
 
     local pulse = hub.pulse
@@ -210,7 +210,7 @@ function PaletteView:AdvanceNeedle(nowTime)
                     sx + (ex - sx) * clampHead,
                     sy + (ey - sy) * clampHead
                 )
-                pulse:SetVertexColor(r + (1 - r) * 0.55, g + (1 - g) * 0.55, b + (1 - b) * 0.55, 0.5 * fadeA)
+                pulse:SetVertexColor(region + (1 - region) * 0.55, g + (1 - g) * 0.55, b + (1 - b) * 0.55, 0.5 * fadeA)
                 pulse:Show()
             end
         else
@@ -349,8 +349,8 @@ function PaletteView:HitTest(theta, dist)
         -- midpoint. A miss here (angularly outside the ring it landed in)
         -- falls out of the claim entirely rather than trying another
         -- ring: the rings partition the RADIUS, not the angle.
-        for r = 1, #c.rows do
-            local row = c.rows[r]
+        for region = 1, #c.rows do
+            local row = c.rows[region]
             if dist >= row.lo and (not row.hi or dist < row.hi) then
                 if row.step > 0 then
                     local rel = (theta - row.start + row.step * 0.5) % TWO_PI
@@ -445,11 +445,11 @@ function PaletteView:AdvanceArc()
             -- one step from it rather than a whole turn away. Flattened over
             -- the entry's own sector -- see FalloffK -- so the entry the cursor
             -- is on holds still while the cursor moves about inside it.
-            local d = (theta - (arcStart + (i - 1) * step)) % TWO_PI
-            if d > pi then
-                d = TWO_PI - d
+            local skinData = (theta - (arcStart + (i - 1) * step)) % TWO_PI
+            if skinData > pi then
+                skinData = TWO_PI - skinData
             end
-            local key = FalloffK(d / step)
+            local key = FalloffK(skinData / step)
             s = max(minS, decay ^ key)
             a = max(minA, aDecay ^ key)
         end

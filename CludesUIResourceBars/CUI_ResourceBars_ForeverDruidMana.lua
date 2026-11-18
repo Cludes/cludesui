@@ -122,7 +122,7 @@ local function ReachOf(pp, es)
 end
 
 -- One side ("l" / "r" / "t" / "b") of a reach, 0 when drawn inside.
-local function Side(side, l, r, t, b)
+local function Side(side, l, region, t, b)
     if not l then
         return 0
     end
@@ -130,7 +130,7 @@ local function Side(side, l, r, t, b)
     if side == "l" then
         val = l
     elseif side == "r" then
-        val = r
+        val = region
     elseif side == "t" then
         val = t
     else
@@ -315,35 +315,35 @@ end)
 -- inner StatusBar inset a quarter pixel so the fill never bleeds past the
 -- border, bg inside it. host._sb / host._bg are what ns.ApplyFillOpacity reads.
 local function EnsureBuilt(pb)
-    local host = S.host
-    if host then
-        if host:GetParent() ~= pb then
-            host:SetParent(pb)
+    local owner = S.host
+    if owner then
+        if owner:GetParent() ~= pb then
+            owner:SetParent(pb)
         end
         return
     end
-    host = CreateFrame("Frame", nil, pb)
-    host:Hide()
-    local scrollBar = CreateFrame("StatusBar", nil, host)
+    owner = CreateFrame("Frame", nil, pb)
+    owner:Hide()
+    local scrollBar = CreateFrame("StatusBar", nil, owner)
     local q = CludesUI.PP.mult * 0.25
-    scrollBar:SetPoint("TOPLEFT", host, "TOPLEFT", q, -q)
-    scrollBar:SetPoint("BOTTOMRIGHT", host, "BOTTOMRIGHT", -q, q)
+    scrollBar:SetPoint("TOPLEFT", owner, "TOPLEFT", q, -q)
+    scrollBar:SetPoint("BOTTOMRIGHT", owner, "BOTTOMRIGHT", -q, q)
     scrollBar:SetStatusBarTexture(WHITE)
     scrollBar:SetMinMaxValues(0, 1)
     scrollBar:SetValue(0)
     local backdrop = scrollBar:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
-    local border = CreateFrame("Frame", nil, host)
-    border:SetAllPoints(host)
-    local textFrame = CreateFrame("Frame", nil, host)
-    textFrame:SetAllPoints(host)
+    local border = CreateFrame("Frame", nil, owner)
+    border:SetAllPoints(owner)
+    local textFrame = CreateFrame("Frame", nil, owner)
+    textFrame:SetAllPoints(owner)
     -- Font before any SetText ("Font not set" on the Forever client).
     local textValue = textFrame:CreateFontString(nil, "OVERLAY")
     mod.SetRBFont(textValue, mod.GetRBFont(), 8)
     textValue:SetWordWrap(false)
-    host._sb, host._bg = scrollBar, backdrop
+    owner._sb, owner._bg = scrollBar, backdrop
     S.host, S.sb, S.bg, S.border, S.textFrame, S.text =
-        host, scrollBar, backdrop, border, textFrame, textValue
+        owner, scrollBar, backdrop, border, textFrame, textValue
 end
 
 -- Levels, then position and size (sized before the border is styled: a
@@ -353,9 +353,9 @@ end
 -- frame the Power Bar draws (reach below). Returns orientation, inside.
 local function Layout(pb, pp, g, c)
     local Pix = CludesUI.PP
-    local host, bdr = S.host, S.border
+    local owner, bdr = S.host, S.border
     local base = pb._sb:GetFrameLevel() + 1
-    host:SetFrameLevel(base)
+    owner:SetFrameLevel(base)
     S.sb:SetFrameLevel(base + 1)
     bdr:SetFrameLevel(pp.borderBehind and max(0, base - 1) or (base + 1))
     S.textFrame:SetFrameLevel(24)
@@ -371,22 +371,22 @@ local function Layout(pb, pp, g, c)
     local ox = Pix.SnapForES(c.offsetX or 0, es)
     local oy = Pix.SnapForES(c.offsetY or 0, es)
 
-    host:ClearAllPoints()
+    owner:ClearAllPoints()
     if place == "inside" then
-        local idx = Pix.SnapForES(InsideInset(pp), es)
+        local index = Pix.SnapForES(InsideInset(pp), es)
         -- Never thicker than the Power Bar's fill.
-        local room = (vertical and pb:GetWidth() or pb:GetHeight()) - 2 * idx
+        local room = (vertical and pb:GetWidth() or pb:GetHeight()) - 2 * index
         if room > 0 and thick > room then
             thick = room
         end
         if vertical then
-            host:SetPoint("TOPRIGHT", pb, "TOPRIGHT", ox - idx, oy - idx)
-            host:SetPoint("BOTTOMRIGHT", pb, "BOTTOMRIGHT", ox - idx, oy + idx)
-            host:SetWidth(thick)
+            owner:SetPoint("TOPRIGHT", pb, "TOPRIGHT", ox - index, oy - index)
+            owner:SetPoint("BOTTOMRIGHT", pb, "BOTTOMRIGHT", ox - index, oy + index)
+            owner:SetWidth(thick)
         else
-            host:SetPoint("BOTTOMLEFT", pb, "BOTTOMLEFT", ox + idx, oy + idx)
-            host:SetPoint("BOTTOMRIGHT", pb, "BOTTOMRIGHT", ox - idx, oy + idx)
-            host:SetHeight(thick)
+            owner:SetPoint("BOTTOMLEFT", pb, "BOTTOMLEFT", ox + index, oy + index)
+            owner:SetPoint("BOTTOMRIGHT", pb, "BOTTOMRIGHT", ox - index, oy + index)
+            owner:SetHeight(thick)
         end
         S.extSide, S.extSig = nil, nil
         return ori, true
@@ -402,28 +402,28 @@ local function Layout(pb, pp, g, c)
     else
         pbSide, ownSide = above and "t" or "b", above and "b" or "t"
     end
-    local d = Pix.SnapForES(
+    local skinData = Pix.SnapForES(
         max(c.gap or 2, 0) + PowerBarReach(pp, place, pbSide, vertical, es) + Side(ownSide, ReachOf(pp, es)),
         es
     )
     if vertical then
         if above then
-            host:SetPoint("TOPRIGHT", pb, "TOPLEFT", ox - d, oy)
-            host:SetPoint("BOTTOMRIGHT", pb, "BOTTOMLEFT", ox - d, oy)
+            owner:SetPoint("TOPRIGHT", pb, "TOPLEFT", ox - skinData, oy)
+            owner:SetPoint("BOTTOMRIGHT", pb, "BOTTOMLEFT", ox - skinData, oy)
         else
-            host:SetPoint("TOPLEFT", pb, "TOPRIGHT", ox + d, oy)
-            host:SetPoint("BOTTOMLEFT", pb, "BOTTOMRIGHT", ox + d, oy)
+            owner:SetPoint("TOPLEFT", pb, "TOPRIGHT", ox + skinData, oy)
+            owner:SetPoint("BOTTOMLEFT", pb, "BOTTOMRIGHT", ox + skinData, oy)
         end
-        host:SetWidth(thick)
+        owner:SetWidth(thick)
     else
         if above then
-            host:SetPoint("BOTTOMLEFT", pb, "TOPLEFT", ox, oy + d)
-            host:SetPoint("BOTTOMRIGHT", pb, "TOPRIGHT", ox, oy + d)
+            owner:SetPoint("BOTTOMLEFT", pb, "TOPLEFT", ox, oy + skinData)
+            owner:SetPoint("BOTTOMRIGHT", pb, "TOPRIGHT", ox, oy + skinData)
         else
-            host:SetPoint("TOPLEFT", pb, "BOTTOMLEFT", ox, oy - d)
-            host:SetPoint("TOPRIGHT", pb, "BOTTOMRIGHT", ox, oy - d)
+            owner:SetPoint("TOPLEFT", pb, "BOTTOMLEFT", ox, oy - skinData)
+            owner:SetPoint("TOPRIGHT", pb, "BOTTOMRIGHT", ox, oy - skinData)
         end
-        host:SetHeight(thick)
+        owner:SetHeight(thick)
     end
     -- The anchor side this bar extends past (NotifyExtent compares extSig).
     if vertical then
@@ -431,7 +431,7 @@ local function Layout(pb, pp, g, c)
     else
         S.extSide = above and "TOP" or "BOTTOM"
     end
-    S.extSig = format("%s:%s:%s:%s:%s", S.extSide, thick, d, ox, oy)
+    S.extSig = format("%s:%s:%s:%s:%s", S.extSide, thick, skinData, ox, oy)
     return ori, false
 end
 
@@ -503,8 +503,8 @@ local function ApplyLook(pp, g, p, ori)
             ft._lfOn, ft._lgOn = nil, nil
         end
     end
-    local r, gr, b = ManaColor()
-    mod.ApplyBarFlat(scrollBar:GetStatusBarTexture(), r, gr, b, 1)
+    local region, gr, b = ManaColor()
+    mod.ApplyBarFlat(scrollBar:GetStatusBarTexture(), region, gr, b, 1)
     S.bg:SetColorTexture(pp.bgR or 0, pp.bgG or 0, pp.bgB or 0, pp.bgA or 0.75)
     -- Textured Background, as the Power Bar's: flat while Fill Color is below 100.
     if g.barTextureBg or S.bg._erbBgTex then
@@ -518,19 +518,19 @@ local function ApplyLook(pp, g, p, ori)
         )
     end
     mod.ApplyFillOpacity(S.host, ori, pp.fillOpacity)
-    return r, gr, b
+    return region, gr, b
 end
 
 -- Text style, same keys and colour rule as the Power Bar's text (custom, or
 -- the power colour: here mana's).
-local function ApplyText(c, r, g, b)
+local function ApplyText(c, region, g, b)
     local fontStr = S.text
     mod.SetRBFont(fontStr, mod.GetRBFont(), c.textSize or 8)
     fontStr:ClearAllPoints()
     local a = c.textAnchor or "CENTER"
     fontStr:SetPoint(a, S.host, a, c.textXOffset or 0, c.textYOffset or 0)
     if c.textCustomColored == false then
-        fontStr:SetTextColor(r, g, b, 1)
+        fontStr:SetTextColor(region, g, b, 1)
     else
         fontStr:SetTextColor(c.textFillR or 1, c.textFillG or 1, c.textFillB or 1, c.textFillA or 1)
     end
@@ -584,8 +584,8 @@ function mod.FDM_Apply(pb, pp, g)
     g = g or p.general or EMPTY
     local ori, inside = Layout(pb, pp, g, c)
     ApplyBorder(pp, inside)
-    local r, gr, b = ApplyLook(pp, g, p, ori)
-    ApplyText(c, r, gr, b)
+    local region, gr, b = ApplyLook(pp, g, p, ori)
+    ApplyText(c, region, gr, b)
     local wasLive = S.live
     Refresh()
     -- Already live: the new look and text settings paint now (an edge into
@@ -637,16 +637,16 @@ end
 local prevExtent = CludesUI._GetAnchorTargetExtent
 CludesUI._GetAnchorTargetExtent = function(targetKey, side)
     if targetKey == "ERB_Power" and S.shown and not S.parked and side == S.extSide then
-        local host, pb = S.host, S.pb
+        local owner, pb = S.host, S.pb
         local val, pv
         if side == "BOTTOM" then
-            val, pv = host:GetBottom(), pb:GetBottom()
+            val, pv = owner:GetBottom(), pb:GetBottom()
         elseif side == "TOP" then
-            val, pv = host:GetTop(), pb:GetTop()
+            val, pv = owner:GetTop(), pb:GetTop()
         elseif side == "LEFT" then
-            val, pv = host:GetLeft(), pb:GetLeft()
+            val, pv = owner:GetLeft(), pb:GetLeft()
         else
-            val, pv = host:GetRight(), pb:GetRight()
+            val, pv = owner:GetRight(), pb:GetRight()
         end
         if val and pv then
             -- Only ever outward: an offset that tucks it back toward the
@@ -658,7 +658,7 @@ CludesUI._GetAnchorTargetExtent = function(targetKey, side)
             elseif pv > val then
                 val = pv
             end
-            return val * host:GetEffectiveScale() / UIParent:GetEffectiveScale()
+            return val * owner:GetEffectiveScale() / UIParent:GetEffectiveScale()
         end
     end
     if prevExtent then

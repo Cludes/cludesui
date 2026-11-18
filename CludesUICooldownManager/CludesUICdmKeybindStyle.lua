@@ -42,30 +42,30 @@ local function StyleBadge(textValue, edge, scale)
         end
         -- Pooled with the options preview's text overlay (an options page pool
         -- host); the plain CreateFrame on a live icon.
-        local f = POOL.CreateFrame("Frame", nil, textValue:GetParent())
-        local fill = f:CreateTexture(nil, "BACKGROUND")
-        fill:SetAllPoints()
-        badge = { frame = f, fill = fill, rim = Pix.CreateBorder(f, 1, 1, 1, 1, 1) }
+        local frame = POOL.CreateFrame("Frame", nil, textValue:GetParent())
+        local fillTex = frame:CreateTexture(nil, "BACKGROUND")
+        fillTex:SetAllPoints()
+        badge = { frame = frame, fill = fillTex, rim = Pix.CreateBorder(frame, 1, 1, 1, 1, 1) }
         badges[textValue] = badge
     end
     badge.bd, badge.on = edge, enabled
-    local f = badge.frame
+    local frame = badge.frame
     if not enabled then
-        f:Hide()
+        frame:Hide()
         return badge
     end
     local level = textValue:GetParent():GetFrameLevel() - 2
     if level < 0 then
         level = 0
     end
-    f:SetFrameLevel(level)
+    frame:SetFrameLevel(level)
     badge.rim:SetFrameLevel(level + 1)
     scale = scale or badge.scale or 1
     badge.scale = scale
     local padding = (edge.keybindPadding or 2) * scale
-    f:ClearAllPoints()
-    f:SetPoint("TOPLEFT", textValue, "TOPLEFT", -padding, padding)
-    f:SetPoint("BOTTOMRIGHT", textValue, "BOTTOMRIGHT", padding, -padding)
+    frame:ClearAllPoints()
+    frame:SetPoint("TOPLEFT", textValue, "TOPLEFT", -padding, padding)
+    frame:SetPoint("BOTTOMRIGHT", textValue, "BOTTOMRIGHT", padding, -padding)
     badge.fill:SetColorTexture(
         edge.keybindBackgroundR or 0,
         edge.keybindBackgroundG or 0,
@@ -75,7 +75,7 @@ local function StyleBadge(textValue, edge, scale)
     badge.fill:SetShown(bgAlpha > 0)
     if borderAlpha > 0 and borderSize > 0 then
         Pix.UpdateBorder(
-            f,
+            frame,
             borderSize,
             edge.keybindBorderR or 1,
             edge.keybindBorderG or 1,

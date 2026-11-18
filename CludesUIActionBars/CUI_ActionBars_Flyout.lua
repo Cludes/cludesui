@@ -22,7 +22,7 @@ local EFD = mod.EFD
 --  SkinBlizzardFlyoutButton
 --  Apply shape/border/zoom to a single SpellFlyout button.
 -------------------------------------------------------------------------------
-local function SkinBlizzardFlyoutButton(button, shape, zoom, brdOn, cr, cg, cb, ca, sbR, sbG, sbB, sbA, brdSz)
+local function SkinBlizzardFlyoutButton(button, shape, zoom, brdOn, cr, cg, callback, ca, sbR, sbG, sbB, sbA, brdSz)
     -- Strip default Blizzard art (one-time)
     local fd = EFD(button)
     if not fd.blizzStripped then
@@ -36,8 +36,8 @@ local function SkinBlizzardFlyoutButton(button, shape, zoom, brdOn, cr, cg, cb, 
         end
     end
 
-    local icon = button.icon or button.Icon
-    if not icon then
+    local iconTex = button.icon or button.Icon
+    if not iconTex then
         return
     end
 
@@ -62,8 +62,8 @@ local function SkinBlizzardFlyoutButton(button, shape, zoom, brdOn, cr, cg, cb, 
             mask:SetAllPoints(button)
         end
         mask:Show()
-        pcall(icon.RemoveMaskTexture, icon, mask)
-        icon:AddMaskTexture(mask)
+        pcall(iconTex.RemoveMaskTexture, iconTex, mask)
+        iconTex:AddMaskTexture(mask)
 
         -- Expand icon for shape inset
         local shapeOffset = SHAPE_ICON_EXPAND_OFFSETS and SHAPE_ICON_EXPAND_OFFSETS[shape] or 0
@@ -75,16 +75,16 @@ local function SkinBlizzardFlyoutButton(button, shape, zoom, brdOn, cr, cg, cb, 
         local halfIE = iconExp / 2
         local Pix = CludesUI and CludesUI.PP
         if Pix then
-            icon:ClearAllPoints()
-            Pix.Point(icon, "TOPLEFT", button, "TOPLEFT", -halfIE, halfIE)
-            Pix.Point(icon, "BOTTOMRIGHT", button, "BOTTOMRIGHT", halfIE, -halfIE)
+            iconTex:ClearAllPoints()
+            Pix.Point(iconTex, "TOPLEFT", button, "TOPLEFT", -halfIE, halfIE)
+            Pix.Point(iconTex, "BOTTOMRIGHT", button, "BOTTOMRIGHT", halfIE, -halfIE)
         end
 
         -- Shape texcoord expand
         local insetPx = SHAPE_INSETS and SHAPE_INSETS[shape] or 17
         local visRatio = (128 - 2 * insetPx) / 128
         local expand = ((1 / visRatio) - 1) * 0.5
-        icon:SetTexCoord(-expand, 1 + expand, -expand, 1 + expand)
+        iconTex:SetTexCoord(-expand, 1 + expand, -expand, 1 + expand)
 
         -- Mask cooldown
         if button.cooldown and not button.cooldown:IsForbidden() then
@@ -120,7 +120,7 @@ local function SkinBlizzardFlyoutButton(button, shape, zoom, brdOn, cr, cg, cb, 
     else
         -- Square / cropped / none
         if fd.shapeMask then
-            pcall(icon.RemoveMaskTexture, icon, fd.shapeMask)
+            pcall(iconTex.RemoveMaskTexture, iconTex, fd.shapeMask)
             if button.cooldown and not button.cooldown:IsForbidden() then
                 pcall(button.cooldown.RemoveMaskTexture, button.cooldown, fd.shapeMask)
                 pcall(button.cooldown.SetSwipeTexture, button.cooldown, "")
@@ -131,15 +131,15 @@ local function SkinBlizzardFlyoutButton(button, shape, zoom, brdOn, cr, cg, cb, 
             fd.shapeBorder:Hide()
         end
 
-        icon:ClearAllPoints()
-        icon:SetAllPoints(button)
+        iconTex:ClearAllPoints()
+        iconTex:SetAllPoints(button)
         if shape == "cropped" then
             local z = zoom or 0
-            icon:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
+            iconTex:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
         elseif zoom and zoom > 0 then
-            icon:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
+            iconTex:SetTexCoord(zoom, 1 - zoom, zoom, 1 - zoom)
         else
-            icon:SetTexCoord(0, 1, 0, 1)
+            iconTex:SetTexCoord(0, 1, 0, 1)
         end
 
         local Pix = CludesUI and CludesUI.PP
@@ -149,7 +149,7 @@ local function SkinBlizzardFlyoutButton(button, shape, zoom, brdOn, cr, cg, cb, 
                     Pix.CreateBorder(button, 0, 0, 0, 1, 1, "OVERLAY", -1)
                     fd.borders = Pix.GetBorders(button)
                 end
-                Pix.UpdateBorder(button, brdSz, cr, cg, cb, ca)
+                Pix.UpdateBorder(button, brdSz, cr, cg, callback, ca)
                 Pix.ShowBorder(button)
             elseif fd.borders then
                 Pix.HideBorder(button)
@@ -193,13 +193,13 @@ local function OnBlizzardFlyoutShow(flyout)
         brdSz = brdPx
     end
     local brdColor = s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
-    local cr, cg, cb, ca = brdColor.r, brdColor.g, brdColor.b, brdColor.a or 1
+    local cr, cg, callback, ca = brdColor.r, brdColor.g, brdColor.b, brdColor.a or 1
     if s.borderClassColor then
         local _, ct = UnitClass("player")
         if ct then
             local cc = RAID_CLASS_COLORS[ct]
             if cc then
-                cr, cg, cb = cc.r, cc.g, cc.b
+                cr, cg, callback = cc.r, cc.g, cc.b
             end
         end
     end
@@ -238,8 +238,8 @@ local function OnBlizzardFlyoutShow(flyout)
     -- in the button's record).
     local classic = mod.AB_Style() == "classic"
     local children = { flyout:GetChildren() }
-    for idx = 1, #children do
-        local childFrame = children[idx]
+    for index = 1, #children do
+        local childFrame = children[index]
         if childFrame and childFrame:IsShown() and childFrame.icon then
             if classic then
                 if not mod.EFD(childFrame).classicArt then
@@ -253,7 +253,7 @@ local function OnBlizzardFlyoutShow(flyout)
                     brdOn,
                     cr,
                     cg,
-                    cb,
+                    callback,
                     ca,
                     sbR,
                     sbG,

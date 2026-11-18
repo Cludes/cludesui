@@ -101,8 +101,8 @@ do
     end
 
     -- Only addon-owned icons reach this helper. Secure owners are gated by the caller.
-    function mod.ApplyIconShape(f, p)
-        if not (f and f._icon) then
+    function mod.ApplyIconShape(frame, p)
+        if not (frame and frame._icon) then
             return
         end
         local shape = (p and p.iconShape) or "none"
@@ -110,27 +110,27 @@ do
         local zoom = (p and p.iconZoom) or 0.07
         local crop = shape == "cropped" and mod.CropPercent(p) or 0
         local inset = masked and ((p and p.borderSize) or 1) > 0 and 1 or 0
-        local status = f._eabrShape
+        local status = frame._eabrShape
         if not status then
             if shape == "none" and not (p and p.iconZoom) then
                 return
             end
             status = {}
-            f._eabrShape = status
+            frame._eabrShape = status
         end
         if
             status.shape == shape
             and status.zoom == zoom
             and status.crop == crop
             and status.inset == inset
-            and status.highlight == f._hl
+            and status.highlight == frame._hl
         then
             return
         end
-        local icon = f._icon
+        local iconTex = frame._icon
         if masked then
             if not status.mask then
-                status.mask = f:CreateMaskTexture()
+                status.mask = frame:CreateMaskTexture()
             end
             status.mask:SetTexture(
                 CludesUI.SHAPE_MASKS[shape],
@@ -140,18 +140,18 @@ do
             status.mask:ClearAllPoints()
             if inset > 0 then
                 -- CDM keeps the icon inside the ring; the ring itself is unmasked.
-                CludesUI.PP.Point(status.mask, "TOPLEFT", f, "TOPLEFT", inset, -inset)
-                CludesUI.PP.Point(status.mask, "BOTTOMRIGHT", f, "BOTTOMRIGHT", -inset, inset)
+                CludesUI.PP.Point(status.mask, "TOPLEFT", frame, "TOPLEFT", inset, -inset)
+                CludesUI.PP.Point(status.mask, "BOTTOMRIGHT", frame, "BOTTOMRIGHT", -inset, inset)
             else
-                status.mask:SetAllPoints(f)
+                status.mask:SetAllPoints(frame)
             end
             status.mask:Show()
             if not status.attached then
-                icon:AddMaskTexture(status.mask)
+                iconTex:AddMaskTexture(status.mask)
                 status.attached = true
             end
-            if f._hl and (status.highlight ~= f._hl or not status.highlightAttached) then
-                f._hl:AddMaskTexture(status.mask)
+            if frame._hl and (status.highlight ~= frame._hl or not status.highlightAttached) then
+                frame._hl:AddMaskTexture(status.mask)
                 status.highlightAttached = true
             end
             if not status.glowExtra then
@@ -163,10 +163,10 @@ do
             status.glowExtra.borderPath = CludesUI.SHAPE_BORDERS[shape]
             local visible = (128 - 2 * (CludesUI.SHAPE_INSETS[shape] or 17)) / 128
             local half = (0.5 - zoom) / visible
-            icon:SetTexCoord(0.5 - half, 0.5 + half, 0.5 - half, 0.5 + half)
+            iconTex:SetTexCoord(0.5 - half, 0.5 + half, 0.5 - half, 0.5 + half)
         else
             if status.attached then
-                icon:RemoveMaskTexture(status.mask)
+                iconTex:RemoveMaskTexture(status.mask)
                 if status.highlight then
                     status.highlight:RemoveMaskTexture(status.mask)
                 end
@@ -176,18 +176,18 @@ do
             if status.mask then
                 status.mask:Hide()
             end
-            icon:SetTexCoord(zoom, 1 - zoom, zoom + crop / 100, 1 - zoom - crop / 100)
+            iconTex:SetTexCoord(zoom, 1 - zoom, zoom + crop / 100, 1 - zoom - crop / 100)
         end
-        if icon.SetSnapToPixelGrid then
-            icon:SetSnapToPixelGrid(false)
-            icon:SetTexelSnappingBias(0)
+        if iconTex.SetSnapToPixelGrid then
+            iconTex:SetSnapToPixelGrid(false)
+            iconTex:SetTexelSnappingBias(0)
         end
-        status.shape, status.zoom, status.crop, status.highlight = shape, zoom, crop, f._hl
+        status.shape, status.zoom, status.crop, status.highlight = shape, zoom, crop, frame._hl
         status.inset = inset
     end
 
-    function mod.IconGlowExtra(f, panelFrame)
-        local status = f._eabrShape
+    function mod.IconGlowExtra(frame, panelFrame)
+        local status = frame._eabrShape
         if status and status.attached then
             status.glowExtra.panel = panelFrame or nil
             return status.glowExtra
@@ -251,35 +251,35 @@ end
 -- this path. A block local.
 do
     local POOL = CludesUI._Pool
-    function REMIND.ApplyIconBorder(f, protectedOwner)
-        if not f or (protectedOwner and InCombatLockdown()) then
+    function REMIND.ApplyIconBorder(frame, protectedOwner)
+        if not frame or (protectedOwner and InCombatLockdown()) then
             return
         end
         local p = db and db.profile and db.profile.display
-        if (p and ((p.iconShape and p.iconShape ~= "none") or p.iconZoom)) or f._eabrShape then
-            mod.ApplyIconShape(f, p)
+        if (p and ((p.iconShape and p.iconShape ~= "none") or p.iconZoom)) or frame._eabrShape then
+            mod.ApplyIconShape(frame, p)
         end
-        local border = f._eabrBorderFrame
+        local border = frame._eabrBorderFrame
         if not border then
             -- The options preview icons are frames of the options page pool, so
             -- their border comes from it too; a live reminder icon gets a plain
             -- new frame.
-            border = POOL.CreateFrame("Frame", nil, f)
+            border = POOL.CreateFrame("Frame", nil, frame)
             border:SetAllPoints()
             border:EnableMouse(false)
-            f._eabrBorderFrame = border
+            frame._eabrBorderFrame = border
         end
 
         local size = (p and p.borderSize) or 1
         local texture = (p and p.borderTexture) or "solid"
-        local r, g, b, a =
+        local region, g, b, a =
             (p and p.borderR) or 0, (p and p.borderG) or 0, (p and p.borderB) or 0, (p and p.borderA) or 1
         local ox, oy = p and p.borderTextureOffset, p and p.borderTextureOffsetY
         local sx, sy = p and p.borderTextureShiftX, p and p.borderTextureShiftY
         local behind = p and p.borderBehind == true
         -- +2: the strips sit one level up (PP.CreateBorder), below the glow
         -- wrapper (+4), so a 1px glow is never hidden under a 1px border.
-        local level = behind and max(0, f:GetFrameLevel() - 1) or (f:GetFrameLevel() + 2)
+        local level = behind and max(0, frame:GetFrameLevel() - 1) or (frame:GetFrameLevel() + 2)
         -- Exact size companion, memoized raw: it only counts while paired with size + texture.
         local pxRaw = p and p.borderSizePx
 
@@ -287,7 +287,7 @@ do
             -- Shape art has its own thickness units; never send it through the
             -- rectangular border cache, which must repaint after switching back.
             if border._eabrSize ~= nil then
-                CludesUI.ApplyBorderStyle(border, 0, r, g, b, a, "solid")
+                CludesUI.ApplyBorderStyle(border, 0, region, g, b, a, "solid")
                 border._eabrSize = nil
             end
             border:SetFrameLevel(level)
@@ -300,13 +300,13 @@ do
                 nil,
                 CludesUI.SHAPE_BORDERS[p.iconShape],
                 size > 0 and 7 or 0,
-                r,
+                region,
                 g,
                 b,
                 a
             )
             return
-        elseif f._eabrShape then
+        elseif frame._eabrShape then
             CludesUI.PP:HideMaskedShapeBorder(border)
         end
 
@@ -317,7 +317,7 @@ do
             border._eabrSize == size
             and border._eabrTexture == texture
             and border._eabrPx == pxRaw
-            and border._eabrR == r
+            and border._eabrR == region
             and border._eabrG == g
             and border._eabrB == b
             and border._eabrA == a
@@ -335,7 +335,7 @@ do
         CludesUI.ApplyBorderStyle(
             border,
             size,
-            r,
+            region,
             g,
             b,
             a,
@@ -350,78 +350,78 @@ do
             CludesUI.BorderPx(pxRaw, size, texture)
         )
         border._eabrSize, border._eabrTexture, border._eabrPx = size, texture, pxRaw
-        border._eabrR, border._eabrG, border._eabrB, border._eabrA = r, g, b, a
+        border._eabrR, border._eabrG, border._eabrB, border._eabrA = region, g, b, a
         border._eabrOX, border._eabrOY, border._eabrSX, border._eabrSY = ox, oy, sx, sy
         border._eabrBehind, border._eabrLevel = behind, level
     end
 end
 
 function REMIND.ApplyAllIconBorders()
-    for _, f in pairs(iconPool) do
-        REMIND.ApplyIconBorder(f, true)
+    for _, frame in pairs(iconPool) do
+        REMIND.ApplyIconBorder(frame, true)
     end
-    for _, f in pairs(combatIconPool) do
-        REMIND.ApplyIconBorder(f, false)
+    for _, frame in pairs(combatIconPool) do
+        REMIND.ApplyIconBorder(frame, false)
     end
-    for _, f in pairs(receiverIconPool) do
-        REMIND.ApplyIconBorder(f, false)
+    for _, frame in pairs(receiverIconPool) do
+        REMIND.ApplyIconBorder(frame, false)
     end
-    for _, f in pairs(cursorIconPool) do
-        REMIND.ApplyIconBorder(f, false)
+    for _, frame in pairs(cursorIconPool) do
+        REMIND.ApplyIconBorder(frame, false)
     end
     if REMIND._providerCastBtn then
         REMIND.ApplyIconBorder(REMIND._providerCastBtn, true)
     end
     if _B.icons then
-        for _, f in pairs(_B.icons) do
-            REMIND.ApplyIconBorder(f, false)
+        for _, frame in pairs(_B.icons) do
+            REMIND.ApplyIconBorder(frame, false)
         end
     end
 end
 
-function REMIND.GetIconTextOverlay(f)
-    if f._textOverlay then
-        return f._textOverlay
+function REMIND.GetIconTextOverlay(frame)
+    if frame._textOverlay then
+        return frame._textOverlay
     end
-    local overlayFrame = CreateFrame("Frame", nil, f)
+    local overlayFrame = CreateFrame("Frame", nil, frame)
     overlayFrame:SetAllPoints()
-    overlayFrame:SetFrameLevel(f:GetFrameLevel() + 5)
-    f._textOverlay = overlayFrame
+    overlayFrame:SetFrameLevel(frame:GetFrameLevel() + 5)
+    frame._textOverlay = overlayFrame
     return overlayFrame
 end
 
 local function BuildCombatIcon(name)
-    local f = CreateFrame("Frame", name, combatAnchor)
-    f:SetSize(ICON_SIZE, ICON_SIZE)
-    f:SetFrameStrata(GetStrata())
-    f:SetFrameLevel(120)
-    f:Hide()
-    local icon = f:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints()
-    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    f._icon = icon
-    REMIND.ApplyIconBorder(f, false)
-    local textValue = REMIND.GetIconTextOverlay(f):CreateFontString(nil, "OVERLAY")
-    textValue:SetPoint("TOP", f, "BOTTOM", 0, -2)
+    local frame = CreateFrame("Frame", name, combatAnchor)
+    frame:SetSize(ICON_SIZE, ICON_SIZE)
+    frame:SetFrameStrata(GetStrata())
+    frame:SetFrameLevel(120)
+    frame:Hide()
+    local iconTex = frame:CreateTexture(nil, "ARTWORK")
+    iconTex:SetAllPoints()
+    iconTex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    frame._icon = iconTex
+    REMIND.ApplyIconBorder(frame, false)
+    local textValue = REMIND.GetIconTextOverlay(frame):CreateFontString(nil, "OVERLAY")
+    textValue:SetPoint("TOP", frame, "BOTTOM", 0, -2)
     SetABRFont(textValue, ResolveFontPath(), 11)
     textValue:SetTextColor(1, 1, 1, 1)
-    f._text = textValue
-    REMIND.CreateIconCountOverlay(f)
-    REMIND.CreateIconQualityOverlay(f)
-    REMIND.CreateIconBagCountOverlay(f)
-    REMIND.AttachIconHover(f)
-    REMIND.AttachIconTooltip(f)
-    REMIND.AttachCombatClickHint(f)
-    return f
+    frame._text = textValue
+    REMIND.CreateIconCountOverlay(frame)
+    REMIND.CreateIconQualityOverlay(frame)
+    REMIND.CreateIconBagCountOverlay(frame)
+    REMIND.AttachIconHover(frame)
+    REMIND.AttachIconTooltip(frame)
+    REMIND.AttachCombatClickHint(frame)
+    return frame
 end
 
 local function GetOrCreateCombatIcon(index)
-    local f = combatIconPool[index]
-    if not f then
-        f = BuildCombatIcon("EABR_CombatIcon" .. index)
-        combatIconPool[index] = f
+    local frame = combatIconPool[index]
+    if not frame then
+        frame = BuildCombatIcon("EABR_CombatIcon" .. index)
+        combatIconPool[index] = frame
     end
-    return f
+    return frame
 end
 
 -- A groupmate's raid buff the player cannot cast is shown to be read, never
@@ -432,50 +432,50 @@ end
 -- out of combat. One first built in combat lets every click through (no
 -- dismiss) until HideCombatIcons routes it once combat is over.
 local receiversUnrouted = false
-local function RouteReceiverIcon(f)
+local function RouteReceiverIcon(frame)
     if InCombatLockdown() then
-        f:SetMouseClickEnabled(false)
+        frame:SetMouseClickEnabled(false)
         receiversUnrouted = true
         return
     end
-    f:SetPassThroughButtons("LeftButton", "RightButton")
-    f:SetMouseClickEnabled(true)
-    f._routed = true
+    frame:SetPassThroughButtons("LeftButton", "RightButton")
+    frame:SetMouseClickEnabled(true)
+    frame._routed = true
 end
 
 local function GetOrCreateReceiverIcon(index)
-    local f = receiverIconPool[index]
-    if not f then
-        f = BuildCombatIcon("EABR_ReceiverIcon" .. index)
-        REMIND.SetIconHighlight(f, false)
-        RouteReceiverIcon(f)
-        receiverIconPool[index] = f
+    local frame = receiverIconPool[index]
+    if not frame then
+        frame = BuildCombatIcon("EABR_ReceiverIcon" .. index)
+        REMIND.SetIconHighlight(frame, false)
+        RouteReceiverIcon(frame)
+        receiverIconPool[index] = frame
     end
-    return f
+    return frame
 end
 
 -- Icons of each pool shown by the current combat pass.
 local combatShown, receiversShown = 0, 0
 
 local function HideCombatIcons()
-    for idx = 1, #combatActiveIcons do
-        local f = combatActiveIcons[idx]
-        if f then
-            REMIND.ClearEatingVisual(f)
-            if f._eabrGlowWrapper then
-                f._eabrGlowWrapper:Hide()
+    for index = 1, #combatActiveIcons do
+        local frame = combatActiveIcons[index]
+        if frame then
+            REMIND.ClearEatingVisual(frame)
+            if frame._eabrGlowWrapper then
+                frame._eabrGlowWrapper:Hide()
             end
-            f._text:SetText("")
-            f:Hide()
+            frame._text:SetText("")
+            frame:Hide()
         end
     end
     wipe(combatActiveIcons)
     combatShown, receiversShown = 0, 0
     if receiversUnrouted and not InCombatLockdown() then
         receiversUnrouted = false
-        for _, f in pairs(receiverIconPool) do
-            if not f._routed then
-                RouteReceiverIcon(f)
+        for _, frame in pairs(receiverIconPool) do
+            if not frame._routed then
+                RouteReceiverIcon(frame)
             end
         end
     end
@@ -488,17 +488,17 @@ local function HideCombatIcons()
 end
 
 local function ShowCombatIcon(m)
-    local f
+    local frame
     if REMIND.IsReceiverRaidBuff(m) then
         receiversShown = receiversShown + 1
-        f = GetOrCreateReceiverIcon(receiversShown)
+        frame = GetOrCreateReceiverIcon(receiversShown)
     else
         combatShown = combatShown + 1
-        f = GetOrCreateCombatIcon(combatShown)
+        frame = GetOrCreateCombatIcon(combatShown)
     end
-    f._dismissKey = m.dismissKey or nil
+    frame._dismissKey = m.dismissKey or nil
     local spellId = m.spellID or (m.data and m.data.castSpell)
-    f._icon:SetTexture(m.texture or (spellId and Tex(spellId)) or 134400)
+    frame._icon:SetTexture(m.texture or (spellId and Tex(spellId)) or 134400)
     local p = db and db.profile.display
     if p and p.showText and not m.isEating then
         local tc = p.textColor or DEFAULT_TEXT_COLOR
@@ -506,33 +506,33 @@ local function ShowCombatIcon(m)
         local textSize = p.textSize or 11
         local xOff = p.textXOffset or 0
         local yOff = p.textYOffset or -2
-        SetABRFont(f._text, fontFile, textSize)
-        f._text:ClearAllPoints()
+        SetABRFont(frame._text, fontFile, textSize)
+        frame._text:ClearAllPoints()
         local tp, ip = GetTextAnchorPoints(p)
-        f._text:SetPoint(tp, f, ip, xOff, yOff)
-        f._text:SetTextColor(tc.r, tc.g, tc.b, 1)
-        f._text:SetText(m.label or "")
-        f._text:Show()
+        frame._text:SetPoint(tp, frame, ip, xOff, yOff)
+        frame._text:SetTextColor(tc.r, tc.g, tc.b, 1)
+        frame._text:SetText(m.label or "")
+        frame._text:Show()
     else
-        f._text:SetText("")
-        f._text:Hide()
+        frame._text:SetText("")
+        frame._text:Hide()
     end
-    REMIND.ApplyEatingVisual(f, m)
-    REMIND.ApplyIconExpiry(f, m)
-    REMIND.ApplyIconTooltipData(f, m)
-    REMIND.ApplyIconQuality(f, (not m.isEating) and m.qualityAtlas or nil)
+    REMIND.ApplyEatingVisual(frame, m)
+    REMIND.ApplyIconExpiry(frame, m)
+    REMIND.ApplyIconTooltipData(frame, m)
+    REMIND.ApplyIconQuality(frame, (not m.isEating) and m.qualityAtlas or nil)
     if m.groupTotal then
-        REMIND.ApplyIconGroupCoverage(f, m.groupHave, m.groupTotal)
+        REMIND.ApplyIconGroupCoverage(frame, m.groupHave, m.groupTotal)
     else
         REMIND.ApplyIconBagCount(
-            f,
+            frame,
             (not m.isEating) and m.bagCount or nil,
             (not m.isEating) and m.desaturated or nil,
             (not m.isEating) and m.substitute or nil
         )
     end
-    f:Show()
-    combatActiveIcons[#combatActiveIcons + 1] = f
+    frame:Show()
+    combatActiveIcons[#combatActiveIcons + 1] = frame
 end
 
 -- Left-aligned from the anchor's left edge; Grow Left right-aligns from its
@@ -559,14 +559,14 @@ local function LayoutCombatIcons()
     if p.growDirection == "LEFT" and not reserveSlot then
         pt, xOff = "TOPRIGHT", -(count - 1) * (sz + spacing)
     end
-    for idx, f in ipairs(combatActiveIcons) do
-        f:SetSize(sz, iconH)
-        f:SetAlpha(p.opacity or 1.0)
-        REMIND.ApplyIconBorder(f, false)
-        REMIND.SizeIconQuality(f, sz)
-        REMIND.SizeIconBagCount(f, sz)
-        f:ClearAllPoints()
-        f:SetPoint(pt, combatAnchor, pt, xOff + (idx - 1) * (sz + spacing), 0)
+    for index, frame in ipairs(combatActiveIcons) do
+        frame:SetSize(sz, iconH)
+        frame:SetAlpha(p.opacity or 1.0)
+        REMIND.ApplyIconBorder(frame, false)
+        REMIND.SizeIconQuality(frame, sz)
+        REMIND.SizeIconBagCount(frame, sz)
+        frame:ClearAllPoints()
+        frame:SetPoint(pt, combatAnchor, pt, xOff + (index - 1) * (sz + spacing), 0)
     end
 end
 
@@ -577,29 +577,29 @@ local function GetOrCreateCursorIcon(index)
     if cursorIconPool[index] then
         return cursorIconPool[index]
     end
-    local f = CreateFrame("Frame", "EABR_CursorIcon" .. index, cursorAnchor)
-    f:SetSize(ICON_SIZE, ICON_SIZE)
-    f:SetFrameStrata("TOOLTIP")
-    f:SetFrameLevel(9980)
-    f:Hide()
-    local icon = f:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints()
-    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    f._icon = icon
-    REMIND.ApplyIconBorder(f, false)
-    local textValue = REMIND.GetIconTextOverlay(f):CreateFontString(nil, "OVERLAY")
-    textValue:SetPoint("TOP", f, "BOTTOM", 0, -2)
+    local frame = CreateFrame("Frame", "EABR_CursorIcon" .. index, cursorAnchor)
+    frame:SetSize(ICON_SIZE, ICON_SIZE)
+    frame:SetFrameStrata("TOOLTIP")
+    frame:SetFrameLevel(9980)
+    frame:Hide()
+    local iconTex = frame:CreateTexture(nil, "ARTWORK")
+    iconTex:SetAllPoints()
+    iconTex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    frame._icon = iconTex
+    REMIND.ApplyIconBorder(frame, false)
+    local textValue = REMIND.GetIconTextOverlay(frame):CreateFontString(nil, "OVERLAY")
+    textValue:SetPoint("TOP", frame, "BOTTOM", 0, -2)
     SetABRFont(textValue, ResolveFontPath(), 11)
     textValue:SetTextColor(1, 1, 1, 1)
-    f._text = textValue
-    REMIND.CreateIconCountOverlay(f)
-    REMIND.CreateIconQualityOverlay(f)
-    REMIND.CreateIconBagCountOverlay(f)
-    REMIND.AttachIconHover(f)
-    REMIND.AttachIconTooltip(f)
-    REMIND.AttachCombatClickHint(f)
-    cursorIconPool[index] = f
-    return f
+    frame._text = textValue
+    REMIND.CreateIconCountOverlay(frame)
+    REMIND.CreateIconQualityOverlay(frame)
+    REMIND.CreateIconBagCountOverlay(frame)
+    REMIND.AttachIconHover(frame)
+    REMIND.AttachIconTooltip(frame)
+    REMIND.AttachCombatClickHint(frame)
+    cursorIconPool[index] = frame
+    return frame
 end
 
 -- Hides the cursor anchor once nothing rides it: no cursor icon and no beacon
@@ -612,15 +612,15 @@ local function ReleaseCursorAnchor()
 end
 
 local function HideCursorIcons()
-    for idx = 1, #cursorActiveIcons do
-        local f = cursorActiveIcons[idx]
-        if f then
-            REMIND.ClearEatingVisual(f)
-            if f._eabrGlowWrapper then
-                f._eabrGlowWrapper:Hide()
+    for index = 1, #cursorActiveIcons do
+        local frame = cursorActiveIcons[index]
+        if frame then
+            REMIND.ClearEatingVisual(frame)
+            if frame._eabrGlowWrapper then
+                frame._eabrGlowWrapper:Hide()
             end
-            f._text:SetText("")
-            f:Hide()
+            frame._text:SetText("")
+            frame:Hide()
         end
     end
     wipe(cursorActiveIcons)
@@ -631,10 +631,10 @@ local function HideCursorIcons()
 end
 
 local function ShowCursorIcon(iconIdx, m)
-    local f = GetOrCreateCursorIcon(iconIdx)
-    f._dismissKey = m.dismissKey or nil
+    local frame = GetOrCreateCursorIcon(iconIdx)
+    frame._dismissKey = m.dismissKey or nil
     local spellId = m.spellID or (m.data and m.data.castSpell)
-    f._icon:SetTexture(m.texture or (spellId and Tex(spellId)) or 134400)
+    frame._icon:SetTexture(m.texture or (spellId and Tex(spellId)) or 134400)
     local p = db and db.profile.display
     if p and p.showText and not m.isEating then
         local tc = p.textColor or DEFAULT_TEXT_COLOR
@@ -642,33 +642,33 @@ local function ShowCursorIcon(iconIdx, m)
         local textSize = p.textSize or 11
         local xOff = p.textXOffset or 0
         local yOff = p.textYOffset or -2
-        SetABRFont(f._text, fontFile, textSize)
-        f._text:ClearAllPoints()
+        SetABRFont(frame._text, fontFile, textSize)
+        frame._text:ClearAllPoints()
         local tp, ip = GetTextAnchorPoints(p)
-        f._text:SetPoint(tp, f, ip, xOff, yOff)
-        f._text:SetTextColor(tc.r, tc.g, tc.b, 1)
-        f._text:SetText(m.label or "")
-        f._text:Show()
+        frame._text:SetPoint(tp, frame, ip, xOff, yOff)
+        frame._text:SetTextColor(tc.r, tc.g, tc.b, 1)
+        frame._text:SetText(m.label or "")
+        frame._text:Show()
     else
-        f._text:SetText("")
-        f._text:Hide()
+        frame._text:SetText("")
+        frame._text:Hide()
     end
-    REMIND.ApplyEatingVisual(f, m)
-    REMIND.ApplyIconExpiry(f, m)
-    REMIND.ApplyIconTooltipData(f, m)
-    REMIND.ApplyIconQuality(f, (not m.isEating) and m.qualityAtlas or nil)
+    REMIND.ApplyEatingVisual(frame, m)
+    REMIND.ApplyIconExpiry(frame, m)
+    REMIND.ApplyIconTooltipData(frame, m)
+    REMIND.ApplyIconQuality(frame, (not m.isEating) and m.qualityAtlas or nil)
     if m.groupTotal then
-        REMIND.ApplyIconGroupCoverage(f, m.groupHave, m.groupTotal)
+        REMIND.ApplyIconGroupCoverage(frame, m.groupHave, m.groupTotal)
     else
         REMIND.ApplyIconBagCount(
-            f,
+            frame,
             (not m.isEating) and m.bagCount or nil,
             (not m.isEating) and m.desaturated or nil,
             (not m.isEating) and m.substitute or nil
         )
     end
-    f:Show()
-    cursorActiveIcons[#cursorActiveIcons + 1] = f
+    frame:Show()
+    cursorActiveIcons[#cursorActiveIcons + 1] = frame
 end
 
 local function LayoutCursorIcons()
@@ -686,14 +686,14 @@ local function LayoutCursorIcons()
     end
     local totalW = (count * sz) + ((count - 1) * spacing)
     local startX = -(totalW / 2) + (sz / 2)
-    for idx, f in ipairs(cursorActiveIcons) do
-        f:SetSize(sz, iconH)
-        f:SetAlpha(p.opacity or 1.0)
-        REMIND.ApplyIconBorder(f, false)
-        REMIND.SizeIconQuality(f, sz)
-        REMIND.SizeIconBagCount(f, sz)
-        f:ClearAllPoints()
-        f:SetPoint("CENTER", cursorAnchor, "CENTER", startX + (idx - 1) * (sz + spacing), 0)
+    for index, frame in ipairs(cursorActiveIcons) do
+        frame:SetSize(sz, iconH)
+        frame:SetAlpha(p.opacity or 1.0)
+        REMIND.ApplyIconBorder(frame, false)
+        REMIND.SizeIconQuality(frame, sz)
+        REMIND.SizeIconBagCount(frame, sz)
+        frame:ClearAllPoints()
+        frame:SetPoint("CENTER", cursorAnchor, "CENTER", startX + (index - 1) * (sz + spacing), 0)
     end
 end
 
@@ -708,8 +708,8 @@ function REMIND.LayoutProviderCastHome()
     if InCombatLockdown() then
         return
     end
-    local btn = REMIND._providerCastBtn
-    if not btn or not iconAnchor then
+    local button = REMIND._providerCastBtn
+    if not button or not iconAnchor then
         return
     end
     local p = db and db.profile and db.profile.display
@@ -719,28 +719,28 @@ function REMIND.LayoutProviderCastHome()
     if p and p.iconShape and p.iconShape ~= "none" then
         sz, iconH = mod.IconDimensions(sz, p)
     end
-    btn:SetSize(sz, iconH)
-    REMIND.ApplyIconBorder(btn, true)
-    btn:ClearAllPoints()
-    btn:SetPoint("TOPLEFT", iconAnchor, "TOPLEFT", 0, 0)
-    REMIND.SizeIconQuality(btn, sz)
-    REMIND.SizeIconBagCount(btn, sz)
+    button:SetSize(sz, iconH)
+    REMIND.ApplyIconBorder(button, true)
+    button:ClearAllPoints()
+    button:SetPoint("TOPLEFT", iconAnchor, "TOPLEFT", 0, 0)
+    REMIND.SizeIconQuality(button, sz)
+    REMIND.SizeIconBagCount(button, sz)
 end
 
 function REMIND.ParkProviderCastButton()
-    local btn = REMIND._providerCastBtn
-    if not btn then
+    local button = REMIND._providerCastBtn
+    if not button then
         return
     end
     local wasVisible = REMIND._providerCastVisible
     REMIND._providerCastVisible = false
-    btn:SetAlpha(0)
-    if btn._text then
-        btn._text:SetText("")
-        btn._text:Hide()
+    button:SetAlpha(0)
+    if button._text then
+        button._text:SetText("")
+        button._text:Hide()
     end
-    if btn._eabrGlowWrapper then
-        btn._eabrGlowWrapper:Hide()
+    if button._eabrGlowWrapper then
+        button._eabrGlowWrapper:Hide()
     end
     if InCombatLockdown() then
         -- Slot stays reserved; move/mouse changes are protected under lockdown.
@@ -750,9 +750,9 @@ function REMIND.ParkProviderCastButton()
         return
     end
     REMIND._providerCastCombatReserved = false
-    btn:EnableMouse(false)
-    btn:ClearAllPoints()
-    btn:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -10000, 10000)
+    button:EnableMouse(false)
+    button:ClearAllPoints()
+    button:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -10000, 10000)
 end
 
 function REMIND.EnsureProviderCastButton()
@@ -762,14 +762,14 @@ function REMIND.EnsureProviderCastButton()
     if not iconAnchor or InCombatLockdown() then
         return nil
     end
-    local btn = CreateFrame("Button", "EABR_ProviderCast", UIParent, "SecureActionButtonTemplate")
-    btn:SetSize(ICON_SIZE, ICON_SIZE)
-    btn:RegisterForClicks("LeftButtonDown", "LeftButtonUp", "MiddleButtonUp")
-    securecallfunction(btn.SetPassThroughButtons, btn, "RightButton")
-    btn:SetAttribute("useOnKeyDown", false)
-    btn:SetFrameStrata(GetStrata())
-    btn:SetFrameLevel(120)
-    btn:HookScript("PostClick", function(self, btnFrame)
+    local button = CreateFrame("Button", "EABR_ProviderCast", UIParent, "SecureActionButtonTemplate")
+    button:SetSize(ICON_SIZE, ICON_SIZE)
+    button:RegisterForClicks("LeftButtonDown", "LeftButtonUp", "MiddleButtonUp")
+    securecallfunction(button.SetPassThroughButtons, button, "RightButton")
+    button:SetAttribute("useOnKeyDown", false)
+    button:SetFrameStrata(GetStrata())
+    button:SetFrameLevel(120)
+    button:HookScript("PostClick", function(self, btnFrame)
         if btnFrame == "MiddleButton" and self._dismissKey then
             _dismissedUntilLoad[self._dismissKey] = true
             if _G._CUABR_RequestRefresh then
@@ -777,26 +777,26 @@ function REMIND.EnsureProviderCastButton()
             end
         end
     end)
-    local icon = btn:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints()
-    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    btn._icon = icon
-    REMIND.ApplyIconBorder(btn, true)
-    local textValue = REMIND.GetIconTextOverlay(btn):CreateFontString(nil, "OVERLAY")
-    textValue:SetPoint("TOP", btn, "BOTTOM", 0, -2)
+    local iconTex = button:CreateTexture(nil, "ARTWORK")
+    iconTex:SetAllPoints()
+    iconTex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    button._icon = iconTex
+    REMIND.ApplyIconBorder(button, true)
+    local textValue = REMIND.GetIconTextOverlay(button):CreateFontString(nil, "OVERLAY")
+    textValue:SetPoint("TOP", button, "BOTTOM", 0, -2)
     SetABRFont(textValue, ResolveFontPath(), 11)
     textValue:SetTextColor(1, 1, 1, 1)
-    btn._text = textValue
-    REMIND.CreateIconCountOverlay(btn)
-    REMIND.CreateIconQualityOverlay(btn)
-    REMIND.CreateIconBagCountOverlay(btn)
-    REMIND.AttachIconHover(btn)
-    REMIND.AttachIconTooltip(btn)
-    btn:Show()
-    REMIND._providerCastBtn = btn
+    button._text = textValue
+    REMIND.CreateIconCountOverlay(button)
+    REMIND.CreateIconQualityOverlay(button)
+    REMIND.CreateIconBagCountOverlay(button)
+    REMIND.AttachIconHover(button)
+    REMIND.AttachIconTooltip(button)
+    button:Show()
+    REMIND._providerCastBtn = button
     REMIND._providerCastVisible = false
     REMIND.ParkProviderCastButton()
-    return btn
+    return button
 end
 
 -- Binds the player's own castable raid buff to the button (OOC only), so the
@@ -814,8 +814,8 @@ function REMIND.SyncProviderCastSpell()
             return
         end
     end
-    local btn = REMIND.EnsureProviderCastButton()
-    if not btn then
+    local button = REMIND.EnsureProviderCastButton()
+    if not button then
         return
     end
     if not REMIND.FOREVER then
@@ -841,14 +841,14 @@ function REMIND.SyncProviderCastSpell()
     REMIND._providerCastSpell = spellId
     REMIND._providerCastUnit = unitToken
     if spellId then
-        btn:SetAttribute("type1", "spell")
-        btn:SetAttribute("spell1", spellId)
-        btn:SetAttribute("item1", nil)
-        btn:SetAttribute("macrotext1", nil)
-        btn:SetAttribute("unit1", unitToken)
-        btn._icon:SetTexture(Tex(spellId) or 134400)
-        btn._tooltipSpell = spellId
-        btn._tooltipItem = nil
+        button:SetAttribute("type1", "spell")
+        button:SetAttribute("spell1", spellId)
+        button:SetAttribute("item1", nil)
+        button:SetAttribute("macrotext1", nil)
+        button:SetAttribute("unit1", unitToken)
+        button._icon:SetTexture(Tex(spellId) or 134400)
+        button._tooltipSpell = spellId
+        button._tooltipItem = nil
     end
     if not REMIND._providerCastVisible then
         REMIND.ParkProviderCastButton()
@@ -858,8 +858,8 @@ end
 -- Shows/hides the provider button. OOC: full place/mouse control. Combat:
 -- alpha + child visuals only (EnableMouse/SetPoint are protected).
 function REMIND.SetProviderCastCombatVisible(visible, m)
-    local btn = REMIND._providerCastBtn
-    if not btn then
+    local button = REMIND._providerCastBtn
+    if not button then
         REMIND._providerCastVisible = false
         return
     end
@@ -869,35 +869,35 @@ function REMIND.SetProviderCastCombatVisible(visible, m)
     end
     REMIND._providerCastVisible = true
     REMIND._providerCastCombatReserved = true
-    btn._dismissKey = m.dismissKey or nil
+    button._dismissKey = m.dismissKey or nil
     local spellId = m.spellID or REMIND._providerCastSpell
-    btn._icon:SetTexture(m.texture or Tex(spellId) or 134400)
-    REMIND.ApplyIconTooltipData(btn, m)
+    button._icon:SetTexture(m.texture or Tex(spellId) or 134400)
+    REMIND.ApplyIconTooltipData(button, m)
     local p = db and db.profile and db.profile.display
     if p and p.showText then
         local tc = p.textColor or DEFAULT_TEXT_COLOR
-        SetABRFont(btn._text, ResolveFontPath(p.nameFont), p.textSize or 11)
-        btn._text:ClearAllPoints()
+        SetABRFont(button._text, ResolveFontPath(p.nameFont), p.textSize or 11)
+        button._text:ClearAllPoints()
         local tp, ip = GetTextAnchorPoints(p)
-        btn._text:SetPoint(tp, btn, ip, p.textXOffset or 0, p.textYOffset or -2)
-        btn._text:SetTextColor(tc.r, tc.g, tc.b, 1)
-        btn._text:SetText(m.label or "")
-        btn._text:SetAlpha(1)
-        btn._text:Show()
+        button._text:SetPoint(tp, button, ip, p.textXOffset or 0, p.textYOffset or -2)
+        button._text:SetTextColor(tc.r, tc.g, tc.b, 1)
+        button._text:SetText(m.label or "")
+        button._text:SetAlpha(1)
+        button._text:Show()
     else
-        btn._text:SetText("")
-        btn._text:Hide()
+        button._text:SetText("")
+        button._text:Hide()
     end
     if m.groupTotal then
-        REMIND.ApplyIconGroupCoverage(btn, m.groupHave, m.groupTotal)
+        REMIND.ApplyIconGroupCoverage(button, m.groupHave, m.groupTotal)
     else
-        REMIND.ApplyIconBagCount(btn, nil, nil, nil)
+        REMIND.ApplyIconBagCount(button, nil, nil, nil)
     end
     if not InCombatLockdown() then
         REMIND.LayoutProviderCastHome()
-        btn:EnableMouse(true)
+        button:EnableMouse(true)
     end
-    btn:SetAlpha((p and p.opacity) or 1)
+    button:SetAlpha((p and p.opacity) or 1)
 end
 
 local function IsImportantBuff(m)
@@ -913,18 +913,18 @@ end
 
 -- Hides stale secure buttons via alpha=0 (safe in combat); also stops glow animations (glow wrappers are plain Frames, not secure).
 local function FadeOutSecureIcons()
-    for idx = 1, #activeIcons do
-        local btn = activeIcons[idx]
-        if btn then
-            btn:SetAlpha(0)
+    for index = 1, #activeIcons do
+        local button = activeIcons[index]
+        if button then
+            button:SetAlpha(0)
             -- A faded button still takes clicks: no buff request from it.
-            btn._requestKey = nil
-            if btn._text then
-                btn._text:SetAlpha(0)
+            button._requestKey = nil
+            if button._text then
+                button._text:SetAlpha(0)
             end
-            if btn._eabrGlowWrapper then
-                StopAllGlows(btn._eabrGlowWrapper)
-                btn._eabrGlowWrapper:SetAlpha(0)
+            if button._eabrGlowWrapper then
+                StopAllGlows(button._eabrGlowWrapper)
+                button._eabrGlowWrapper:SetAlpha(0)
             end
         end
     end
@@ -953,34 +953,34 @@ do
 
     -- Also clears the glow when it is off, so callers need no RemoveGlow first
     -- (that would reset StartSpecGlow's signature and restart every refresh).
-    ApplyGlow = function(btn, p, overrideSz)
+    ApplyGlow = function(button, p, overrideSz)
         local specInfo = GlowSpec(p)
         if not specInfo then
-            local wid = btn._eabrGlowWrapper
+            local wid = button._eabrGlowWrapper
             if wid then
                 StopAllGlows(wid)
                 wid:Hide()
             end
             return
         end
-        if not btn._eabrGlowWrapper then
-            local wid = CreateFrame("Frame", nil, btn)
-            wid:SetAllPoints(btn)
-            wid:SetFrameLevel(btn:GetFrameLevel() + 4)
-            btn._eabrGlowWrapper = wid
+        if not button._eabrGlowWrapper then
+            local wid = CreateFrame("Frame", nil, button)
+            wid:SetAllPoints(button)
+            wid:SetFrameLevel(button:GetFrameLevel() + 4)
+            button._eabrGlowWrapper = wid
         end
-        local wrapper = btn._eabrGlowWrapper
-        local sz = overrideSz or btn:GetWidth() or ICON_SIZE
+        local wrapper = button._eabrGlowWrapper
+        local sz = overrideSz or button:GetWidth() or ICON_SIZE
         local hgt, extra = sz
         if p.iconShape and p.iconShape ~= "none" then
             if overrideSz then
                 sz, hgt = mod.IconDimensions(sz, p)
             else
-                hgt = btn:GetHeight()
+                hgt = button:GetHeight()
             end
         end
-        if btn._eabrShape then
-            extra = mod.IconGlowExtra(btn)
+        if button._eabrShape then
+            extra = mod.IconGlowExtra(button)
         end
         CludesUI.Glows.StartSpecGlow(wrapper, specInfo, sz, hgt, "icon", extra)
         wrapper:SetAlpha(1)
@@ -988,10 +988,10 @@ do
     end
 end
 
-local function RemoveGlow(btn)
-    if btn._eabrGlowWrapper then
-        StopAllGlows(btn._eabrGlowWrapper)
-        btn._eabrGlowWrapper:Hide()
+local function RemoveGlow(button)
+    if button._eabrGlowWrapper then
+        StopAllGlows(button._eabrGlowWrapper)
+        button._eabrGlowWrapper:Hide()
     end
 end
 
@@ -1001,34 +1001,34 @@ end
 --  countdown. All frames here are OURS (field writes are safe). Every helper
 --  hangs on EABR.
 -------------------------------------------------------------------------------
-function REMIND.AttachIconHover(f)
-    if f._eabrHoverAttached then
+function REMIND.AttachIconHover(frame)
+    if frame._eabrHoverAttached then
         return
     end
-    local icon = f._icon
-    if f:IsObjectType("Button") then
-        local hl = f:CreateTexture(nil, "HIGHLIGHT")
-        hl:SetAllPoints(icon)
-        hl:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-        hl:SetColorTexture(1, 1, 1, 0.2)
-        f._hl = hl
+    local iconTex = frame._icon
+    if frame:IsObjectType("Button") then
+        local highlight = frame:CreateTexture(nil, "HIGHLIGHT")
+        highlight:SetAllPoints(iconTex)
+        highlight:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+        highlight:SetColorTexture(1, 1, 1, 0.2)
+        frame._hl = highlight
     else
-        f:EnableMouse(true)
-        local hl = f:CreateTexture(nil, "OVERLAY")
-        hl:SetAllPoints(icon)
-        hl:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-        hl:SetColorTexture(1, 1, 1, 0.2)
-        hl:Hide()
-        f:HookScript("OnEnter", function(self)
+        frame:EnableMouse(true)
+        local highlight = frame:CreateTexture(nil, "OVERLAY")
+        highlight:SetAllPoints(iconTex)
+        highlight:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+        highlight:SetColorTexture(1, 1, 1, 0.2)
+        highlight:Hide()
+        frame:HookScript("OnEnter", function(self)
             if not self._hlOff then
-                hl:Show()
+                highlight:Show()
             end
         end)
-        f:HookScript("OnLeave", function()
-            hl:Hide()
+        frame:HookScript("OnLeave", function()
+            highlight:Hide()
         end)
     end
-    f._eabrHoverAttached = true
+    frame._eabrHoverAttached = true
 end
 
 -- A groupmate's raid buff the player cannot cast: shown to be read, never
@@ -1040,54 +1040,54 @@ end
 -- Per-use hover highlight: off on an icon that takes no left click, so it
 -- never reads as a button. A Button draws its highlight on the HIGHLIGHT
 -- layer (hidden as a texture); the plain pools gate their OnEnter on the flag.
-function REMIND.SetIconHighlight(f, enabled)
+function REMIND.SetIconHighlight(frame, enabled)
     local off = not enabled
-    if f._hlOff == off then
+    if frame._hlOff == off then
         return
     end
-    f._hlOff = off
-    if f._hl then
-        f._hl:SetShown(enabled)
+    frame._hlOff = off
+    if frame._hl then
+        frame._hl:SetShown(enabled)
     end
 end
 
-function REMIND.ApplyIconTooltipData(f, m)
-    if not f then
+function REMIND.ApplyIconTooltipData(frame, m)
+    if not frame then
         return
     end
     if not m then
-        f._tooltipItem = nil
-        f._tooltipSpell = nil
-        f._tooltipLabel = nil
+        frame._tooltipItem = nil
+        frame._tooltipSpell = nil
+        frame._tooltipLabel = nil
         return
     end
-    f._tooltipItem = m.tooltipItem or m.itemID or nil
-    f._tooltipSpell = m.spellID or (m.data and m.data.castSpell) or nil
-    f._tooltipLabel = m.label or nil
+    frame._tooltipItem = m.tooltipItem or m.itemID or nil
+    frame._tooltipSpell = m.spellID or (m.data and m.data.castSpell) or nil
+    frame._tooltipLabel = m.label or nil
 end
 
-function REMIND.ShowIconTooltip(f)
-    local d = db and db.profile and db.profile.display
-    if not d or d.showTooltips == false then
+function REMIND.ShowIconTooltip(frame)
+    local skinData = db and db.profile and db.profile.display
+    if not skinData or skinData.showTooltips == false then
         return
     end
-    if not f then
+    if not frame then
         return
     end
-    if f._tooltipItem or f._tooltipSpell then
+    if frame._tooltipItem or frame._tooltipSpell then
         -- Item/spell data tooltips render through GameTooltip (the only
         -- game-data renderer). pcall-armored: 12.1 restricted-tooltip ACLs
         -- can deny frame-level calls when the content turns secret.
         local success = pcall(function()
-            GameTooltip:SetOwner(f, "ANCHOR_RIGHT")
-            if f._tooltipItem then
-                GameTooltip:SetItemByID(f._tooltipItem)
+            GameTooltip:SetOwner(frame, "ANCHOR_RIGHT")
+            if frame._tooltipItem then
+                GameTooltip:SetItemByID(frame._tooltipItem)
             else
-                GameTooltip:SetSpellByID(f._tooltipSpell)
+                GameTooltip:SetSpellByID(frame._tooltipSpell)
             end
-            if f._outOfStock then
+            if frame._outOfStock then
                 GameTooltip:AddLine(CludesUI.L("You don't have this item in your bags"), 1, 0.3, 0.3, true)
-            elseif f._substitute then
+            elseif frame._substitute then
                 GameTooltip:AddLine(
                     CludesUI.L("Your preferred food is out - using a backup you own"),
                     1,
@@ -1101,32 +1101,32 @@ function REMIND.ShowIconTooltip(f)
         if not success then
             GameTooltip:Hide()
         end
-    elseif f._tooltipLabel and f._tooltipLabel ~= "" then
+    elseif frame._tooltipLabel and frame._tooltipLabel ~= "" then
         -- Plain-text reminders use the suite tooltip, never GameTooltip.
-        CludesUI.ShowWidgetTooltip(f, tostring(f._tooltipLabel))
+        CludesUI.ShowWidgetTooltip(frame, tostring(frame._tooltipLabel))
     end
 end
 
-function REMIND.HideIconTooltip(f)
-    if f and (f._tooltipItem or f._tooltipSpell) then
+function REMIND.HideIconTooltip(frame)
+    if frame and (frame._tooltipItem or frame._tooltipSpell) then
         GameTooltip:Hide()
     else
         CludesUI.HideWidgetTooltip()
     end
 end
 
-function REMIND.AttachIconTooltip(f)
-    if f._eabrTooltipAttached then
+function REMIND.AttachIconTooltip(frame)
+    if frame._eabrTooltipAttached then
         return
     end
-    f:EnableMouse(true)
-    f:HookScript("OnEnter", function(self)
+    frame:EnableMouse(true)
+    frame:HookScript("OnEnter", function(self)
         REMIND.ShowIconTooltip(self)
     end)
-    f:HookScript("OnLeave", function(self)
+    frame:HookScript("OnLeave", function(self)
         REMIND.HideIconTooltip(self)
     end)
-    f._eabrTooltipAttached = true
+    frame._eabrTooltipAttached = true
 end
 
 -- Visual-only combat/cursor icons: tell the player why left-click does nothing.
@@ -1226,25 +1226,25 @@ do
         sentAt[key] = nowTime
         local rb = db.profile.raidBuffs
         local custom = rb.requestCustom and CleanRequestText(rb.requestText or RequestExample())
-        local msg
+        local message
         -- Text without the token falls back to the default line.
         if custom and HasRequestToken(custom) then
-            msg = custom:gsub(TOKEN_PATTERN, (name:gsub("%%", "%%%%")))
+            message = custom:gsub(TOKEN_PATTERN, (name:gsub("%%", "%%%%")))
         else
-            msg = CludesUI.Lf("%1$s, please!", name)
+            message = CludesUI.Lf("%1$s, please!", name)
         end
-        C_ChatInfo.SendChatMessage(CutBytes(msg, 255), channel)
+        C_ChatInfo.SendChatMessage(CutBytes(message, 255), channel)
     end
 end
 
 -- Middle-click dismisses here too. These are plain frames rather than the OOC
 -- secure buttons, so the click carries no action of its own.
-function REMIND.AttachCombatClickHint(f)
-    if f._eabrCombatClickHint then
+function REMIND.AttachCombatClickHint(frame)
+    if frame._eabrCombatClickHint then
         return
     end
-    f:EnableMouse(true)
-    f:HookScript("OnMouseUp", function(self, btnFrame)
+    frame:EnableMouse(true)
+    frame:HookScript("OnMouseUp", function(self, btnFrame)
         if btnFrame == "LeftButton" then
             REMIND.NotifyCombatClickDisabled()
         elseif btnFrame == "MiddleButton" and self._dismissKey then
@@ -1254,17 +1254,17 @@ function REMIND.AttachCombatClickHint(f)
             end
         end
     end)
-    f._eabrCombatClickHint = true
+    frame._eabrCombatClickHint = true
 end
 
-function REMIND.CreateIconCountOverlay(f)
-    if f._count then
-        return f._count
+function REMIND.CreateIconCountOverlay(frame)
+    if frame._count then
+        return frame._count
     end
-    local count = REMIND.GetIconTextOverlay(f):CreateFontString(nil, "OVERLAY", "NumberFontNormalLarge")
-    count:SetPoint("CENTER", f._icon, "CENTER", 0, 0)
+    local count = REMIND.GetIconTextOverlay(frame):CreateFontString(nil, "OVERLAY", "NumberFontNormalLarge")
+    count:SetPoint("CENTER", frame._icon, "CENTER", 0, 0)
     count:Hide()
-    f._count = count
+    frame._count = count
     return count
 end
 
@@ -1301,40 +1301,40 @@ function REMIND.GetItemQualityAtlas(itemId)
     return atlas
 end
 
-function REMIND.CreateIconQualityOverlay(f)
-    if f._quality then
-        return f._quality
+function REMIND.CreateIconQualityOverlay(frame)
+    if frame._quality then
+        return frame._quality
     end
     -- Keep the crafted-quality badge above the dedicated border child, just
     -- like count/name text. This matters for the wider textured styles.
-    local q = REMIND.GetIconTextOverlay(f):CreateTexture(nil, "OVERLAY", nil, 7)
+    local q = REMIND.GetIconTextOverlay(frame):CreateTexture(nil, "OVERLAY", nil, 7)
     q:Hide()
-    f._quality = q
+    frame._quality = q
     return q
 end
 
-function REMIND.SizeIconQuality(f, sz)
-    local q = f._quality
-    if not q or not f._qualityAtlas then
+function REMIND.SizeIconQuality(frame, sz)
+    local q = frame._quality
+    if not q or not frame._qualityAtlas then
         return
     end
     local qs = max(10, floor(sz * 0.42))
     local off = floor(sz * 0.10)
     q:SetSize(qs, qs)
     q:ClearAllPoints()
-    q:SetPoint("BOTTOMLEFT", f, "BOTTOMLEFT", -off, -off)
+    q:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", -off, -off)
 end
 
-function REMIND.ApplyIconQuality(f, atlas)
-    if not f then
+function REMIND.ApplyIconQuality(frame, atlas)
+    if not frame then
         return
     end
-    REMIND.CreateIconQualityOverlay(f)
-    f._qualityAtlas = atlas or nil
-    local q = f._quality
+    REMIND.CreateIconQualityOverlay(frame)
+    frame._qualityAtlas = atlas or nil
+    local q = frame._quality
     if atlas then
         q:SetAtlas(atlas)
-        REMIND.SizeIconQuality(f, f:GetWidth() or ICON_SIZE)
+        REMIND.SizeIconQuality(frame, frame:GetWidth() or ICON_SIZE)
         q:Show()
     else
         q:Hide()
@@ -1342,21 +1342,21 @@ function REMIND.ApplyIconQuality(f, atlas)
 end
 
 -- Bag-count badge (how many of the consumable remain), bottom-right corner.
-function REMIND.CreateIconBagCountOverlay(f)
-    if f._bagCount then
-        return f._bagCount
+function REMIND.CreateIconBagCountOverlay(frame)
+    if frame._bagCount then
+        return frame._bagCount
     end
-    local fontStr = REMIND.GetIconTextOverlay(f):CreateFontString(nil, "OVERLAY")
+    local fontStr = REMIND.GetIconTextOverlay(frame):CreateFontString(nil, "OVERLAY")
     local p = db and db.profile.display
     SetABRFont(fontStr, ResolveFontPath(p and p.countFont), 11)
     fontStr:Hide()
-    f._bagCount = fontStr
+    frame._bagCount = fontStr
     return fontStr
 end
 
-function REMIND.SizeIconBagCount(f, sz)
-    local fontStr = f._bagCount
-    if not fontStr or not f._bagCountShown then
+function REMIND.SizeIconBagCount(frame, sz)
+    local fontStr = frame._bagCount
+    if not fontStr or not frame._bagCountShown then
         return
     end
     local p = db and db.profile.display
@@ -1366,59 +1366,59 @@ function REMIND.SizeIconBagCount(f, sz)
     local dx = (p and p.countXOffset) or 0
     local dy = (p and p.countYOffset) or 0
     fontStr:ClearAllPoints()
-    fontStr:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", dx, dy)
+    fontStr:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", dx, dy)
 end
 
-function REMIND.ApplyIconBagCount(f, count, outOfStock, substitute, spellRank)
-    if not f then
+function REMIND.ApplyIconBagCount(frame, count, outOfStock, substitute, spellRank)
+    if not frame then
         return
     end
-    REMIND.CreateIconBagCountOverlay(f)
-    f._outOfStock = outOfStock and true or nil
-    f._substitute = (substitute and not outOfStock) and true or nil
-    local fontStr = f._bagCount
+    REMIND.CreateIconBagCountOverlay(frame)
+    frame._outOfStock = outOfStock and true or nil
+    frame._substitute = (substitute and not outOfStock) and true or nil
+    local fontStr = frame._bagCount
     local p = db and db.profile.display
     local showCount = not p or p.showCount ~= false
     if showCount and outOfStock then
-        f._bagCountShown = true
+        frame._bagCountShown = true
         fontStr:SetText("0")
         fontStr:SetTextColor(1, 0.2, 0.2, 1)
-        REMIND.SizeIconBagCount(f, f:GetWidth() or ICON_SIZE)
+        REMIND.SizeIconBagCount(frame, frame:GetWidth() or ICON_SIZE)
         fontStr:Show()
     elseif spellRank or (showCount and count and count > 0) then
-        f._bagCountShown = true
+        frame._bagCountShown = true
         fontStr:SetText(spellRank or count)
         if substitute and not spellRank then
             fontStr:SetTextColor(1, 0.82, 0, 1)
         else
             fontStr:SetTextColor(1, 1, 1, 1)
         end
-        REMIND.SizeIconBagCount(f, f:GetWidth() or ICON_SIZE)
+        REMIND.SizeIconBagCount(frame, frame:GetWidth() or ICON_SIZE)
         fontStr:Show()
     else
-        f._bagCountShown = nil
+        frame._bagCountShown = nil
         fontStr:SetText("")
         fontStr:Hide()
     end
 end
 
 -- Raid-buff group coverage ("12/15") on the same corner badge as item count.
-function REMIND.ApplyIconGroupCoverage(f, have, sum)
-    if not f then
+function REMIND.ApplyIconGroupCoverage(frame, have, sum)
+    if not frame then
         return
     end
-    REMIND.CreateIconBagCountOverlay(f)
-    local fontStr = f._bagCount
+    REMIND.CreateIconBagCountOverlay(frame)
+    local fontStr = frame._bagCount
     if have ~= nil and sum and sum > 0 then
-        f._bagCountShown = true
-        f._outOfStock = nil
-        f._substitute = nil
+        frame._bagCountShown = true
+        frame._outOfStock = nil
+        frame._substitute = nil
         fontStr:SetText(have .. "/" .. sum)
         fontStr:SetTextColor(1, 1, 1, 1)
-        REMIND.SizeIconBagCount(f, f:GetWidth() or ICON_SIZE)
+        REMIND.SizeIconBagCount(frame, frame:GetWidth() or ICON_SIZE)
         fontStr:Show()
     else
-        f._bagCountShown = nil
+        frame._bagCountShown = nil
         fontStr:SetText("")
         fontStr:Hide()
     end
@@ -1431,18 +1431,18 @@ end
 --  per-tick allocation (text only rewritten on change); it self-clears at
 --  expiry and requests one refresh.
 -------------------------------------------------------------------------------
-function REMIND.ClearEatingVisual(f)
-    if f._eabrEatingOnUpdate then
-        f:SetScript("OnUpdate", nil)
-        f._eabrEatingOnUpdate = nil
+function REMIND.ClearEatingVisual(frame)
+    if frame._eabrEatingOnUpdate then
+        frame:SetScript("OnUpdate", nil)
+        frame._eabrEatingOnUpdate = nil
     end
-    if f._count then
-        f._count:Hide()
+    if frame._count then
+        frame._count:Hide()
     end
-    if f._expiryBinding then
-        f._expiryBinding:SetEnabled(false)
+    if frame._expiryBinding then
+        frame._expiryBinding:SetEnabled(false)
     end
-    f._eabrEatingIcon = nil
+    frame._eabrEatingIcon = nil
 end
 
 function REMIND.EatingTick(self, elapsed)
@@ -1478,16 +1478,16 @@ function REMIND.EatingTick(self, elapsed)
     end
 end
 
-function REMIND.ApplyEatingVisual(f, m)
-    REMIND.ClearEatingVisual(f)
+function REMIND.ApplyEatingVisual(frame, m)
+    REMIND.ClearEatingVisual(frame)
     if not (m and m.isEating) then
         return
     end
-    REMIND.CreateIconCountOverlay(f)
-    f._icon:SetDesaturated(false)
-    f._icon:SetTexture(133950)
-    f._eabrEatingIcon = true
-    RemoveGlow(f)
+    REMIND.CreateIconCountOverlay(frame)
+    frame._icon:SetDesaturated(false)
+    frame._icon:SetTexture(133950)
+    frame._eabrEatingIcon = true
+    RemoveGlow(frame)
     local expTime = m.eatingExpirationTime
     if not expTime then
         return
@@ -1495,19 +1495,19 @@ function REMIND.ApplyEatingVisual(f, m)
     local p = db and db.profile.display
     local fontFile = ResolveFontPath()
     local textSize = max(14, floor(((p and p.textSize) or 11) * 1.15))
-    SetABRFont(f._count, fontFile, textSize)
-    f._count:SetTextColor(1, 1, 1, 1)
-    f._eatingExp = expTime
-    f._eatingText = nil
-    f._eatingAccum = 1 -- force an immediate paint on the first tick
-    REMIND.EatingTick(f, 0)
-    f._eabrEatingOnUpdate = true
-    f:SetScript("OnUpdate", REMIND.EatingTick)
+    SetABRFont(frame._count, fontFile, textSize)
+    frame._count:SetTextColor(1, 1, 1, 1)
+    frame._eatingExp = expTime
+    frame._eatingText = nil
+    frame._eatingAccum = 1 -- force an immediate paint on the first tick
+    REMIND.EatingTick(frame, 0)
+    frame._eabrEatingOnUpdate = true
+    frame:SetScript("OnUpdate", REMIND.EatingTick)
 end
 
-function REMIND.ApplyIconExpiry(f, m)
+function REMIND.ApplyIconExpiry(frame, m)
     local expireAt = m and m.expireAt
-    local binding = f._expiryBinding
+    local binding = frame._expiryBinding
     if not expireAt then
         if binding then
             binding:SetEnabled(false)
@@ -1517,22 +1517,22 @@ function REMIND.ApplyIconExpiry(f, m)
     if not (C_DurationUtil and C_DurationUtil.CreateDurationTextBinding) then
         return
     end
-    local count = REMIND.CreateIconCountOverlay(f)
+    local count = REMIND.CreateIconCountOverlay(frame)
     if not binding then
-        f._expiryDuration = C_DurationUtil.CreateDuration()
+        frame._expiryDuration = C_DurationUtil.CreateDuration()
         binding = C_DurationUtil.CreateDurationTextBinding()
         binding:SetFontString(count)
-        binding:SetDuration(f._expiryDuration)
+        binding:SetDuration(frame._expiryDuration)
         local fmt = CludesUI.AuraKit.GetDurationFormatter(false)
         if fmt then
             binding:SetFormatter(fmt)
         end
-        f._expiryBinding = binding
+        frame._expiryBinding = binding
     end
     local p = db and db.profile.display
     SetABRFont(count, ResolveFontPath(), max(14, floor(((p and p.textSize) or 11) * 1.15)))
     count:SetTextColor(1, 1, 1, 1)
-    f._expiryDuration:SetTimeFromEnd(expireAt, m.expireTotal)
+    frame._expiryDuration:SetTimeFromEnd(expireAt, m.expireTotal)
     binding:SetEnabled(true)
     count:Show()
 end
@@ -1545,17 +1545,17 @@ local function GetOrCreateIcon(index)
         return iconPool[index]
     end
     -- SecureActionButtonTemplate for click-to-cast in combat
-    local btn = CreateFrame("Button", "EABR_Icon" .. index, iconAnchor, "SecureActionButtonTemplate")
-    btn:SetSize(ICON_SIZE, ICON_SIZE)
-    btn:RegisterForClicks("LeftButtonDown", "LeftButtonUp", "MiddleButtonUp", "RightButtonUp")
-    securecallfunction(btn.SetPassThroughButtons, btn, "RightButton")
-    btn:SetFrameStrata(GetStrata())
-    btn:Hide()
+    local button = CreateFrame("Button", "EABR_Icon" .. index, iconAnchor, "SecureActionButtonTemplate")
+    button:SetSize(ICON_SIZE, ICON_SIZE)
+    button:RegisterForClicks("LeftButtonDown", "LeftButtonUp", "MiddleButtonUp", "RightButtonUp")
+    securecallfunction(button.SetPassThroughButtons, button, "RightButton")
+    button:SetFrameStrata(GetStrata())
+    button:Hide()
 
     -- Middle-click dismiss: hide this reminder until the next loading screen.
     -- Right-click on a multi-pet-cycle reminder previews the next pet without
     -- casting. On a clickable spell group it opens the spell picker.
-    btn:HookScript("PostClick", function(self, btnFrame, down)
+    button:HookScript("PostClick", function(self, btnFrame, down)
         if btnFrame == "MiddleButton" and self._dismissKey then
             _dismissedUntilLoad[self._dismissKey] = true
             if _G._CUABR_RequestRefresh then
@@ -1573,26 +1573,26 @@ local function GetOrCreateIcon(index)
         end
     end)
 
-    local icon = btn:CreateTexture(nil, "ARTWORK")
-    icon:SetAllPoints()
-    icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-    btn._icon = icon
-    REMIND.ApplyIconBorder(btn, true)
+    local iconTex = button:CreateTexture(nil, "ARTWORK")
+    iconTex:SetAllPoints()
+    iconTex:SetTexCoord(0.07, 0.93, 0.07, 0.93)
+    button._icon = iconTex
+    REMIND.ApplyIconBorder(button, true)
 
-    local textValue = REMIND.GetIconTextOverlay(btn):CreateFontString(nil, "OVERLAY")
-    textValue:SetPoint("TOP", btn, "BOTTOM", 0, -2)
+    local textValue = REMIND.GetIconTextOverlay(button):CreateFontString(nil, "OVERLAY")
+    textValue:SetPoint("TOP", button, "BOTTOM", 0, -2)
     SetABRFont(textValue, ResolveFontPath(), 11)
     textValue:SetTextColor(1, 1, 1, 1)
-    btn._text = textValue
+    button._text = textValue
 
-    REMIND.CreateIconCountOverlay(btn)
-    REMIND.CreateIconQualityOverlay(btn)
-    REMIND.CreateIconBagCountOverlay(btn)
-    REMIND.AttachIconHover(btn)
-    REMIND.AttachIconTooltip(btn)
+    REMIND.CreateIconCountOverlay(button)
+    REMIND.CreateIconQualityOverlay(button)
+    REMIND.CreateIconBagCountOverlay(button)
+    REMIND.AttachIconHover(button)
+    REMIND.AttachIconTooltip(button)
 
-    iconPool[index] = btn
-    return btn
+    iconPool[index] = button
+    return button
 end
 
 -- The four setters below suffix every action attribute with the "1" button, so
@@ -1602,55 +1602,55 @@ end
 -- not reliably outrank it.
 
 -- Sets icon to a plain texture with no click action (clears cast attributes OOC).
-local function SetIconTexture(btn, texture, labelText)
+local function SetIconTexture(button, texture, labelText)
     if not InCombat() then
-        btn:SetAttribute("type1", nil)
-        btn:SetAttribute("spell1", nil)
-        btn:SetAttribute("item1", nil)
-        btn:SetAttribute("macrotext1", nil)
+        button:SetAttribute("type1", nil)
+        button:SetAttribute("spell1", nil)
+        button:SetAttribute("item1", nil)
+        button:SetAttribute("macrotext1", nil)
     end
-    btn._icon:SetTexture(texture or 134400)
-    btn._tooltipSpell = nil
-    btn._tooltipItem = nil
+    button._icon:SetTexture(texture or 134400)
+    button._tooltipSpell = nil
+    button._tooltipItem = nil
 end
 
-local function SetIconSpell(btn, spellId, texture, labelText)
+local function SetIconSpell(button, spellId, texture, labelText)
     if not InCombat() then
-        btn:SetAttribute("type1", "spell")
-        btn:SetAttribute("spell1", spellId)
-        btn:SetAttribute("item1", nil)
-        btn:SetAttribute("macrotext1", nil)
-        btn:SetAttribute("unit1", "player")
+        button:SetAttribute("type1", "spell")
+        button:SetAttribute("spell1", spellId)
+        button:SetAttribute("item1", nil)
+        button:SetAttribute("macrotext1", nil)
+        button:SetAttribute("unit1", "player")
     end
-    btn._icon:SetTexture(texture or Tex(spellId) or 134400)
-    btn._tooltipSpell = spellId
-    btn._tooltipItem = nil
+    button._icon:SetTexture(texture or Tex(spellId) or 134400)
+    button._tooltipSpell = spellId
+    button._tooltipItem = nil
 end
 
-local function SetIconItem(btn, itemId, texture, labelText)
+local function SetIconItem(button, itemId, texture, labelText)
     if not InCombat() then
-        btn:SetAttribute("type1", "item")
-        btn:SetAttribute("item1", "item:" .. itemId)
-        btn:SetAttribute("spell1", nil)
-        btn:SetAttribute("macrotext1", nil)
-        btn:SetAttribute("unit1", nil)
+        button:SetAttribute("type1", "item")
+        button:SetAttribute("item1", "item:" .. itemId)
+        button:SetAttribute("spell1", nil)
+        button:SetAttribute("macrotext1", nil)
+        button:SetAttribute("unit1", nil)
     end
-    btn._icon:SetTexture(texture or C_Item.GetItemIconByID(itemId) or 134400)
-    btn._tooltipSpell = nil
-    btn._tooltipItem = itemId
+    button._icon:SetTexture(texture or C_Item.GetItemIconByID(itemId) or 134400)
+    button._tooltipSpell = nil
+    button._tooltipItem = itemId
 end
 
-local function SetIconMacro(btn, macrotext, texture, spellId)
+local function SetIconMacro(button, macrotext, texture, spellId)
     if not InCombat() then
-        btn:SetAttribute("type1", "macro")
-        btn:SetAttribute("macrotext1", macrotext)
-        btn:SetAttribute("spell1", nil)
-        btn:SetAttribute("item1", nil)
-        btn:SetAttribute("unit1", nil)
+        button:SetAttribute("type1", "macro")
+        button:SetAttribute("macrotext1", macrotext)
+        button:SetAttribute("spell1", nil)
+        button:SetAttribute("item1", nil)
+        button:SetAttribute("unit1", nil)
     end
-    btn._icon:SetTexture(texture or 134400)
-    btn._tooltipSpell = spellId
-    btn._tooltipItem = nil
+    button._icon:SetTexture(texture or 134400)
+    button._tooltipSpell = spellId
+    button._tooltipItem = nil
 end
 
 local pickerSpellData = {}
@@ -1677,8 +1677,8 @@ function REMIND.ForeverPickerSpellData(ident, ranked)
     return payload.macro, payload.rank
 end
 
-ShowForeverGroupMenu = function(btn)
-    local set = btn._foreverGroup
+ShowForeverGroupMenu = function(button)
+    local set = button._foreverGroup
     local profile = db.profile
     local forever = profile.forever
     local prefs = set.settings
@@ -1708,7 +1708,7 @@ ShowForeverGroupMenu = function(btn)
         end
     end
     local function IsSelected(spellId)
-        return btn._tooltipSpell == REMIND.ForeverGroupCastSpell(set, spellId)
+        return button._tooltipSpell == REMIND.ForeverGroupCastSpell(set, spellId)
     end
     local function IsCurrent()
         if
@@ -1716,8 +1716,8 @@ ShowForeverGroupMenu = function(btn)
             or db.profile ~= profile
             or profile.forever ~= forever
             or not (forever and forever.pickerEnabled)
-            or btn._foreverGroup ~= set
-            or not btn:IsVisible()
+            or button._foreverGroup ~= set
+            or not button:IsVisible()
         then
             return false
         end
@@ -1734,8 +1734,8 @@ ShowForeverGroupMenu = function(btn)
         if not macro then
             return
         end
-        SetIconMacro(btn, macro, Tex(ident), ident)
-        REMIND.ApplyIconBagCount(btn, nil, nil, nil, rank)
+        SetIconMacro(button, macro, Tex(ident), ident)
+        REMIND.ApplyIconBagCount(button, nil, nil, nil, rank)
     end
     local function SelectSpell(spellId)
         if not CanChange(spellId) then
@@ -1783,7 +1783,7 @@ ShowForeverGroupMenu = function(btn)
                 if nextRank < #known and not rank then
                     return
                 end
-                local selected = btn._tooltipSpell == current
+                local selected = button._tooltipSpell == current
                 if nextRank < #known then
                     local saved = SaveSettings()
                     if not saved.castRanks then
@@ -1822,7 +1822,7 @@ ShowForeverGroupMenu = function(btn)
     then
         return
     end
-    REMIND.HideIconTooltip(btn)
+    REMIND.HideIconTooltip(button)
     if not iconPickerStyle then
         local inset = { left = 4, right = 4, top = 4, bottom = 4 }
         local padding = { width = 0, height = 0 }
@@ -1841,9 +1841,9 @@ ShowForeverGroupMenu = function(btn)
             end,
         })
     end
-    local previousStyle = btn.menuMixin
-    btn.menuMixin = iconPickerStyle
-    local dropMenu = MenuUtil.CreateContextMenu(btn, function(_, root)
+    local previousStyle = button.menuMixin
+    button.menuMixin = iconPickerStyle
+    local dropMenu = MenuUtil.CreateContextMenu(button, function(_, root)
         root:AddMenuReleasedCallback(function()
             REMIND.ValidateOpenPicker = nil
         end)
@@ -1861,11 +1861,11 @@ ShowForeverGroupMenu = function(btn)
                     border:SetPoint("CENTER")
                     border:SetColorTexture(1, 0.82, 0, 1)
                 end
-                local icon = widget:AttachTexture()
-                icon:SetDrawLayer("ARTWORK", 1)
-                icon:SetSize(34, 34)
-                icon:SetPoint("CENTER")
-                icon:SetTexture(Tex(spellId) or 134400)
+                local iconTex = widget:AttachTexture()
+                iconTex:SetDrawLayer("ARTWORK", 1)
+                iconTex:SetSize(34, 34)
+                iconTex:SetPoint("CENTER")
+                iconTex:SetTexture(Tex(spellId) or 134400)
                 return 38, 38
             end)
             btnFrame:SetTooltip(function(tooltip, description)
@@ -1881,7 +1881,7 @@ ShowForeverGroupMenu = function(btn)
             AddRankControl(btnFrame, ident)
         end
     end)
-    btn.menuMixin = previousStyle
+    button.menuMixin = previousStyle
     if dropMenu then
         REMIND.ValidateOpenPicker = function()
             if not IsCurrent() then
@@ -1945,30 +1945,30 @@ do
         inUse = 0
     end
 
-    ApplySetup = function(btn, m)
+    ApplySetup = function(button, m)
         local mode = m.mode
         if mode == "spell" then
-            SetIconSpell(btn, m.spellID, m.texture or Tex(m.spellID), m.label)
+            SetIconSpell(button, m.spellID, m.texture or Tex(m.spellID), m.label)
             if m.unit and not InCombat() then
-                btn:SetAttribute("unit1", m.unit)
+                button:SetAttribute("unit1", m.unit)
             end
         elseif mode == "item" then
-            SetIconItem(btn, m.itemID, m.texture, m.label)
+            SetIconItem(button, m.itemID, m.texture, m.label)
         elseif mode == "macro" then
-            SetIconMacro(btn, m.macro, m.texture or (m.spellID and Tex(m.spellID)), m.spellID)
-            btn._tooltipItem = m.tooltipItem
+            SetIconMacro(button, m.macro, m.texture or (m.spellID and Tex(m.spellID)), m.spellID)
+            button._tooltipItem = m.tooltipItem
         else -- "texture"
-            SetIconTexture(btn, m.texture, m.label)
+            SetIconTexture(button, m.texture, m.label)
             if m.spellID then
-                btn._tooltipSpell = m.spellID
+                button._tooltipSpell = m.spellID
             end
             if m.tooltipItem then
-                btn._tooltipItem = m.tooltipItem
+                button._tooltipItem = m.tooltipItem
             end
         end
-        btn._text:SetText(m.label or "")
-        btn._icon:SetDesaturated(m.desaturated or false)
-        btn._tooltipLabel = m.label or nil
+        button._text:SetText(m.label or "")
+        button._icon:SetDesaturated(m.desaturated or false)
+        button._tooltipLabel = m.label or nil
     end
 end
 

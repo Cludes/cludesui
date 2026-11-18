@@ -84,9 +84,9 @@ local function ReadTrees()
     if not entries then
         return
     end
-    for idx, t in ipairs(entries) do
+    for index, t in ipairs(entries) do
         t.name = ShortName(t.groupID) or t.name
-        trees[idx] = t
+        trees[index] = t
     end
     if tree > #trees then
         tree = 1
@@ -105,11 +105,11 @@ local function SpellOf(details)
     if not def then
         return
     end
-    local icon = def.overrideIcon
-    if not icon or icon == 0 then
-        icon = def.spellID and C_Spell.GetSpellTexture(def.spellID)
+    local iconTex = def.overrideIcon
+    if not iconTex or iconTex == 0 then
+        iconTex = def.spellID and C_Spell.GetSpellTexture(def.spellID)
     end
-    return def.spellID, icon
+    return def.spellID, iconTex
 end
 
 -------------------------------------------------------------------------------
@@ -174,11 +174,11 @@ end
 -- grey with no rank.
 local function FillTalent(b, nodeID, cell)
     local details = cell.info
-    local spellId, icon = SpellOf(details)
+    local spellId, iconTex = SpellOf(details)
     b.nodeID, b.spellID = nodeID, spellId
     b:ClearAllPoints()
     b:SetPoint("TOPLEFT", LEFT + cell.col * STEP, -(TOP + cell.row * STEP))
-    b.icon:SetTexture(icon)
+    b.icon:SetTexture(iconTex)
     local rank = details.activeRank
     local open = rank > 0 or (unspent > 0 and details.canPurchaseRank)
     b.icon:SetDesaturated(not open)
@@ -275,8 +275,8 @@ Paint = function()
         end
         FillTalent(b, nodeID, cell)
     end
-    for idx = used + 1, #window.talents do
-        window.talents[idx]:Hide()
+    for index = used + 1, #window.talents do
+        window.talents[index]:Hide()
     end
 
     local links = 0
@@ -288,20 +288,20 @@ Paint = function()
             end
         end
     end
-    for idx = links + 1, #window.lines do
-        window.lines[idx]:Hide()
+    for index = links + 1, #window.lines do
+        window.lines[index]:Hide()
     end
-    for idx = links + 1, #window.arrows do
-        window.arrows[idx]:Hide()
+    for index = links + 1, #window.arrows do
+        window.arrows[index]:Hide()
     end
     window.canvas:SetSize(VIEW_W, math.max(VIEW_H, TOP * 2 + (rowList - 1) * STEP + SIZE))
 
-    for idx, tab in ipairs(window.tabs) do
-        local payload = trees[idx]
+    for index, tab in ipairs(window.tabs) do
+        local payload = trees[index]
         tab:SetShown(payload ~= nil)
         if payload then
             tab.text:SetText(payload.name)
-            local on = idx == tree
+            local on = index == tree
             for _, texture in ipairs(tab.active) do
                 texture:SetShown(on)
             end
@@ -397,16 +397,16 @@ local EVENTS = {
 }
 
 -- Listens only while open. Closing drops the points staged here.
-local function WinShown(f)
+local function WinShown(frame)
     for _, evt in ipairs(EVENTS) do
-        f:RegisterEvent(evt)
+        frame:RegisterEvent(evt)
     end
     PlaySound(SOUNDKIT.IG_CHARACTER_INFO_OPEN)
     Refresh()
 end
 
-local function WinHidden(f)
-    f:UnregisterAllEvents()
+local function WinHidden(frame)
+    frame:UnregisterAllEvents()
     PlaySound(SOUNDKIT.IG_CHARACTER_INFO_CLOSE)
     Rollback()
 end
@@ -433,10 +433,10 @@ local function TabArt(tab, file, height, rise, bottom)
     return { leftX, middle, right }
 end
 
-local function NewTab(idx)
+local function NewTab(index)
     local tab = CreateFrame("Button", nil, window)
     tab:SetSize(108, 32)
-    tab:SetPoint("TOPLEFT", window, "BOTTOMLEFT", 12 + (idx - 1) * 104, 78)
+    tab:SetPoint("TOPLEFT", window, "BOTTOMLEFT", 12 + (index - 1) * 104, 78)
     tab.inactive = TabArt(tab, "UI-Character-InActiveTab", 32, 0, 1)
     tab.active = TabArt(tab, "UI-Character-ActiveTab", 35, 5, 0.546875)
     tab.text = tab:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
@@ -444,10 +444,10 @@ local function NewTab(idx)
     tab.text:SetWidth(92)
     tab.text:SetWordWrap(false)
     tab:SetScript("OnClick", function()
-        if idx == tree then
+        if index == tree then
             return
         end
-        tree = idx
+        tree = index
         window.scroll:SetVerticalScroll(0)
         PlaySound(SOUNDKIT.IG_CHARACTER_INFO_TAB)
         Paint()
@@ -520,20 +520,20 @@ local function Build()
 
     -- The bordered bar the points-spent line sits in: the input box border,
     -- two 8 px ends and a stretched middle.
-    local bar = {}
-    for idx, part in ipairs({ { 0, 0.0625 }, { 0.0625, 0.9375 }, { 0.9375, 1 } }) do
-        bar[idx] = window:CreateTexture(nil, "ARTWORK", nil, 2)
-        bar[idx]:SetTexture("Interface\\Common\\Common-Input-Border")
-        bar[idx]:SetTexCoord(part[1], part[2], 0, 0.625)
+    local barFrame = {}
+    for index, part in ipairs({ { 0, 0.0625 }, { 0.0625, 0.9375 }, { 0.9375, 1 } }) do
+        barFrame[index] = window:CreateTexture(nil, "ARTWORK", nil, 2)
+        barFrame[index]:SetTexture("Interface\\Common\\Common-Input-Border")
+        barFrame[index]:SetTexCoord(part[1], part[2], 0, 0.625)
     end
-    bar[1]:SetSize(8, 20)
-    bar[1]:SetPoint("TOPLEFT", window, "TOP", -117, -48)
-    bar[3]:SetSize(8, 20)
-    bar[3]:SetPoint("TOPRIGHT", window, "TOP", 129, -48)
-    bar[2]:SetPoint("TOPLEFT", bar[1], "TOPRIGHT")
-    bar[2]:SetPoint("BOTTOMRIGHT", bar[3], "BOTTOMLEFT")
+    barFrame[1]:SetSize(8, 20)
+    barFrame[1]:SetPoint("TOPLEFT", window, "TOP", -117, -48)
+    barFrame[3]:SetSize(8, 20)
+    barFrame[3]:SetPoint("TOPRIGHT", window, "TOP", 129, -48)
+    barFrame[2]:SetPoint("TOPLEFT", barFrame[1], "TOPRIGHT")
+    barFrame[2]:SetPoint("BOTTOMRIGHT", barFrame[3], "BOTTOMLEFT")
     window.spent = window:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
-    window.spent:SetPoint("CENTER", bar[2])
+    window.spent:SetPoint("CENTER", barFrame[2])
     window.points = window:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
     window.learn = CreateFrame("Button", nil, window, "UIPanelButtonTemplate")
     window.learn:SetSize(86, 20)
@@ -543,8 +543,8 @@ local function Build()
     window.points:SetPoint("RIGHT", window.learn, "LEFT", -10, 0)
 
     window.tabs, window.talents, window.lines, window.arrows = {}, {}, {}, {}
-    for idx = 1, 3 do
-        window.tabs[idx] = NewTab(idx)
+    for index = 1, 3 do
+        window.tabs[index] = NewTab(index)
     end
 
     window:SetScript("OnShow", WinShown)

@@ -93,11 +93,11 @@ local function DB()
     if _shDB then
         return _shDB
     end
-    local d = mod.EDM.DB()
-    if not d.spellHistory then
-        d.spellHistory = {}
+    local skinData = mod.EDM.DB()
+    if not skinData.spellHistory then
+        skinData.spellHistory = {}
     end
-    local sh = d.spellHistory
+    local sh = skinData.spellHistory
     for k, v in pairs(SH_DEFAULTS) do
         if sh[k] == nil then
             sh[k] = v
@@ -669,31 +669,31 @@ local function IconStripGeometry(count)
     local sh = DB()
     local iconSz = SnapSize(sh.iconSize or 24)
     local gap = sh.iconSpacing or 1
-    local dir = sh.growDirection or "LEFT"
+    local direction = sh.growDirection or "LEFT"
     count = max(1, count or sh.iconCount or 5)
     local span = count * iconSz + (count - 1) * gap
-    local horizontal = dir == "LEFT" or dir == "RIGHT"
+    local horizontal = direction == "LEFT" or direction == "RIGHT"
     local width = horizontal and span or iconSz
     local height = horizontal and iconSz or span
-    local leftOffset = dir == "LEFT" and (span - iconSz) or 0
-    local upOffset = dir == "UP" and (span - iconSz) or 0
-    return iconSz, gap, dir, width, height, leftOffset, upOffset
+    local leftOffset = direction == "LEFT" and (span - iconSz) or 0
+    local upOffset = direction == "UP" and (span - iconSz) or 0
+    return iconSz, gap, direction, width, height, leftOffset, upOffset
 end
 
 local function PositionIconContainer(count)
     if not _iconContainer or not _iconStrip then
         return
     end
-    local iconSz, _, dir, width, height, leftOffset, upOffset = IconStripGeometry(count)
+    local iconSz, _, direction, width, height, leftOffset, upOffset = IconStripGeometry(count)
 
     _iconContainer:SetSize(width, height)
     _iconStrip:SetSize(iconSz, iconSz)
     _iconStrip:ClearAllPoints()
-    if dir == "RIGHT" then
+    if direction == "RIGHT" then
         _iconStrip:SetPoint("LEFT", _iconContainer, "LEFT", 0, 0)
-    elseif dir == "LEFT" then
+    elseif direction == "LEFT" then
         _iconStrip:SetPoint("RIGHT", _iconContainer, "RIGHT", 0, 0)
-    elseif dir == "DOWN" then
+    elseif direction == "DOWN" then
         _iconStrip:SetPoint("TOP", _iconContainer, "TOP", 0, 0)
     else
         _iconStrip:SetPoint("BOTTOM", _iconContainer, "BOTTOM", 0, 0)
@@ -799,9 +799,9 @@ local function ScheduleFade(fadeTime, maxIcons)
     for i = 1, num do
         local age = nowTime - FadeBase(_history[i])
         if age < fadeTime then
-            local d = fadeTime - age
-            if not nextIn or d < nextIn then
-                nextIn = d
+            local skinData = fadeTime - age
+            if not nextIn or skinData < nextIn then
+                nextIn = skinData
             end
         elseif age < fadeTime + FADE_DUR then
             fading = true
@@ -862,28 +862,28 @@ end
 -- Plays a one-shot intro animation on an icon frame.
 -- Uses dt-accumulated OnUpdate for smooth sub-frame interpolation.
 -- Only called on icon 1, which always rests at CENTER of _iconStrip.
-local function PlayIconAnim(ic, animType, dir, targetAlpha)
-    local f = ic.frame
+local function PlayIconAnim(ic, animType, direction, targetAlpha)
+    local frame = ic.frame
     targetAlpha = targetAlpha or 1
 
     -- Kill any in-progress animation and snap to rest position.
     -- Using hardcoded rest anchor (icon 1 = CENTER,0,0) instead of
     -- GetPoint, which returns mid-animation displacement on rapid casts.
-    f:SetScript("OnUpdate", nil)
-    f:SetScale(1)
-    f:ClearAllPoints()
-    f:SetPoint("CENTER", _iconStrip, "CENTER", 0, 0)
+    frame:SetScript("OnUpdate", nil)
+    frame:SetScale(1)
+    frame:ClearAllPoints()
+    frame:SetPoint("CENTER", _iconStrip, "CENTER", 0, 0)
 
     local p1, rel, relP, origX, origY = "CENTER", _iconStrip, "CENTER", 0, 0
 
     -- Compute starting displacement for slide types
     local dx, dy = 0, 0
     if animType == "slide" then
-        if dir == "LEFT" then
+        if direction == "LEFT" then
             dx = ANIM_SLIDE_PX
-        elseif dir == "RIGHT" then
+        elseif direction == "RIGHT" then
             dx = -ANIM_SLIDE_PX
-        elseif dir == "UP" then
+        elseif direction == "UP" then
             dy = -ANIM_SLIDE_PX
         else
             dy = ANIM_SLIDE_PX
@@ -894,15 +894,15 @@ local function PlayIconAnim(ic, animType, dir, targetAlpha)
     local elapsed = 0
     local startAlpha = targetAlpha * 0.5
 
-    f:SetAlpha(startAlpha)
+    frame:SetAlpha(startAlpha)
     if isFly then
-        f:SetScale(1.35)
+        frame:SetScale(1.35)
     end
     if dx ~= 0 or dy ~= 0 then
-        f:SetPoint(p1, rel, relP, origX + dx, origY + dy)
+        frame:SetPoint(p1, rel, relP, origX + dx, origY + dy)
     end
 
-    f:SetScript("OnUpdate", function(self, dt)
+    frame:SetScript("OnUpdate", function(self, dt)
         elapsed = elapsed + dt
         local t = elapsed / ANIM_DUR
         if t >= 1 then
@@ -1062,7 +1062,7 @@ BuildIconStrip = function()
 
     local iconSz = SnapSize(sh.iconSize or 24)
     local gap = sh.iconSpacing or 1
-    local dir = sh.growDirection or "LEFT"
+    local direction = sh.growDirection or "LEFT"
     local iconZoom = sh.iconZoom or 0.08
 
     local maxIcons = sh.iconCount or 5
@@ -1112,7 +1112,7 @@ BuildIconStrip = function()
 
     -- Position and size only on layout change (checked after count is known)
     local iconAlphaCheck = sh.iconOpacity or 1
-    local needsLayout = (iconSz .. "|" .. gap .. "|" .. dir .. "|" .. count .. "|" .. iconAlphaCheck)
+    local needsLayout = (iconSz .. "|" .. gap .. "|" .. direction .. "|" .. count .. "|" .. iconAlphaCheck)
         ~= _iconLayoutKey
     if needsLayout then
         _iconContainer._layoutCount = count
@@ -1146,11 +1146,11 @@ BuildIconStrip = function()
                 local off = (i - 1) * (iconSz + gap)
                 if i == 1 then
                     ic.frame:SetPoint("CENTER", _iconStrip, "CENTER", 0, 0)
-                elseif dir == "RIGHT" then
+                elseif direction == "RIGHT" then
                     ic.frame:SetPoint("CENTER", _iconStrip, "CENTER", off, 0)
-                elseif dir == "LEFT" then
+                elseif direction == "LEFT" then
                     ic.frame:SetPoint("CENTER", _iconStrip, "CENTER", -off, 0)
-                elseif dir == "DOWN" then
+                elseif direction == "DOWN" then
                     ic.frame:SetPoint("CENTER", _iconStrip, "CENTER", 0, -off)
                 else
                     ic.frame:SetPoint("CENTER", _iconStrip, "CENTER", 0, off)
@@ -1220,7 +1220,7 @@ BuildIconStrip = function()
                     _lastAnimTimestamp = ts
                     local animType = sh.iconAnimation or "slide"
                     if animType ~= "none" then
-                        PlayIconAnim(ic, animType, dir, iconAlpha)
+                        PlayIconAnim(ic, animType, direction, iconAlpha)
                     end
                 end
             end
@@ -1232,7 +1232,7 @@ BuildIconStrip = function()
     end
     _lastIconCount = count
     if layoutChanged then
-        _iconLayoutKey = iconSz .. "|" .. gap .. "|" .. dir .. "|" .. count .. "|" .. iconAlpha
+        _iconLayoutKey = iconSz .. "|" .. gap .. "|" .. direction .. "|" .. count .. "|" .. iconAlpha
     end
 
     _iconStrip:Show()
@@ -1273,26 +1273,26 @@ mod.MakeIconHistoryUnlockElement = function(MK)
             -- Unlock Mode stores registered elements as CENTER/CENTER offsets.
             -- Convert that full-container center back to the legacy first-icon
             -- TOPLEFT convention so old profiles and Shift-drag keep agreeing.
-            local iconSz, _, dir, width, height = UnlockGeometry()
+            local iconSz, _, direction, width, height = UnlockGeometry()
             local centerX = UIParent:GetWidth() * 0.5 + (posX or 0)
             local centerY = UIParent:GetHeight() * 0.5 + (posY or 0)
             local firstLeft = centerX - width * 0.5
             local firstTop = centerY + height * 0.5
-            if dir == "LEFT" then
+            if direction == "LEFT" then
                 firstLeft = firstLeft + width - iconSz
             end
-            if dir == "UP" then
+            if direction == "UP" then
                 firstTop = firstTop - height + iconSz
             end
             DB().iconPos = { x = firstLeft, y = firstTop }
         end,
         loadPos = function()
             local place = DB().iconPos
-            local iconSz, _, dir, width, height = UnlockGeometry()
+            local iconSz, _, direction, width, height = UnlockGeometry()
             local firstLeft = place and place.x or (UIParent:GetWidth() * 0.5 - iconSz * 0.5)
             local firstTop = place and place.y or (UIParent:GetHeight() * 0.5 + iconSz * 0.5)
-            local leftX = firstLeft - (dir == "LEFT" and (width - iconSz) or 0)
-            local topY = firstTop + (dir == "UP" and (height - iconSz) or 0)
+            local leftX = firstLeft - (direction == "LEFT" and (width - iconSz) or 0)
+            local topY = firstTop + (direction == "UP" and (height - iconSz) or 0)
             return {
                 point = "CENTER",
                 relPoint = "CENTER",
@@ -1322,53 +1322,53 @@ local _barLayoutCache = "" -- tracks layout changes (barH, spacing, texture)
 local _lastBarVisible = 0 -- tracks visible bar count for minimal loop
 
 local function MakeHistoryBar(hostFrame)
-    local bar = {}
-    bar.row = CreateFrame("Frame", nil, hostFrame)
-    bar.row:SetHeight(18)
+    local barFrame = {}
+    barFrame.row = CreateFrame("Frame", nil, hostFrame)
+    barFrame.row:SetHeight(18)
 
     -- Icon anchored to row left; fill starts right of icon
-    bar.icon = bar.row:CreateTexture(nil, "OVERLAY")
-    bar.icon:SetSize(18, 18)
-    bar.icon:SetPoint("LEFT", bar.row, "LEFT", 0, 0)
+    barFrame.icon = barFrame.row:CreateTexture(nil, "OVERLAY")
+    barFrame.icon:SetSize(18, 18)
+    barFrame.icon:SetPoint("LEFT", barFrame.row, "LEFT", 0, 0)
     local z = DB().iconZoom or 0.08
-    bar.icon:SetTexCoord(z, 1 - z, z, 1 - z)
+    barFrame.icon:SetTexCoord(z, 1 - z, z, 1 - z)
 
-    bar.fill = CreateFrame("StatusBar", nil, bar.row)
-    bar.fill:SetPoint("TOPLEFT", bar.icon, "TOPRIGHT", 0, 0)
-    bar.fill:SetPoint("BOTTOMRIGHT", bar.row, "BOTTOMRIGHT", 0, 0)
-    bar.fill:SetMinMaxValues(0, 1)
-    bar.fill:SetValue(1)
-    bar.fill:SetStatusBarTexture(BAR_TEX)
+    barFrame.fill = CreateFrame("StatusBar", nil, barFrame.row)
+    barFrame.fill:SetPoint("TOPLEFT", barFrame.icon, "TOPRIGHT", 0, 0)
+    barFrame.fill:SetPoint("BOTTOMRIGHT", barFrame.row, "BOTTOMRIGHT", 0, 0)
+    barFrame.fill:SetMinMaxValues(0, 1)
+    barFrame.fill:SetValue(1)
+    barFrame.fill:SetStatusBarTexture(BAR_TEX)
     -- Blizzard Style: the same track and edge as the meter's own rows
     -- (Classic WoW UI rows stay plain).
     if mod.DMStyle() == "blizzard" then
-        bar._bg = bar.row:CreateTexture(nil, "BACKGROUND")
-        mod.DMApplyBlizzBarBg(bar)
+        barFrame._bg = barFrame.row:CreateTexture(nil, "BACKGROUND")
+        mod.DMApplyBlizzBarBg(barFrame)
     end
 
-    local tf = CreateFrame("Frame", nil, bar.fill)
-    tf:SetAllPoints(bar.fill)
-    tf:SetFrameLevel(bar.fill:GetFrameLevel() + 2)
+    local tf = CreateFrame("Frame", nil, barFrame.fill)
+    tf:SetAllPoints(barFrame.fill)
+    tf:SetFrameLevel(barFrame.fill:GetFrameLevel() + 2)
 
     local sh = DB()
     local fontStr = sh.textSize or 11
 
-    bar.label = tf:CreateFontString(nil, "OVERLAY")
-    bar.label:SetPoint("LEFT", bar.icon, "RIGHT", 4, 0)
-    bar.label:SetJustifyH("LEFT")
-    bar.label:SetWordWrap(false)
-    SetFont(bar.label, fontStr)
+    barFrame.label = tf:CreateFontString(nil, "OVERLAY")
+    barFrame.label:SetPoint("LEFT", barFrame.icon, "RIGHT", 4, 0)
+    barFrame.label:SetJustifyH("LEFT")
+    barFrame.label:SetWordWrap(false)
+    SetFont(barFrame.label, fontStr)
 
-    bar.rightText = tf:CreateFontString(nil, "OVERLAY")
-    bar.rightText:SetPoint("RIGHT", tf, "RIGHT", -3, 0)
-    bar.rightText:SetJustifyH("RIGHT")
-    bar.rightText:SetWordWrap(false)
-    SetFont(bar.rightText, fontStr)
+    barFrame.rightText = tf:CreateFontString(nil, "OVERLAY")
+    barFrame.rightText:SetPoint("RIGHT", tf, "RIGHT", -3, 0)
+    barFrame.rightText:SetJustifyH("RIGHT")
+    barFrame.rightText:SetWordWrap(false)
+    SetFont(barFrame.rightText, fontStr)
 
-    bar.label:SetPoint("RIGHT", bar.rightText, "LEFT", -4, 0)
+    barFrame.label:SetPoint("RIGHT", barFrame.rightText, "LEFT", -4, 0)
 
-    bar.row:Hide()
-    return bar
+    barFrame.row:Hide()
+    return barFrame
 end
 
 local MEDIA = "Interface\\AddOns\\CludesUIDamageMeters\\Media\\"
@@ -1453,23 +1453,23 @@ local function BuildBarWindow()
             button:SetSize(btnSize, btnSize)
             button:SetPoint("RIGHT", heading, "RIGHT", xOff, mod.DMHdrLift(22))
             button:SetFrameLevel(heading:GetFrameLevel() + 2)
-            local icon = button:CreateTexture(nil, "ARTWORK")
-            icon:SetAllPoints()
-            button._hdrIcon = icon
-            if not mod.DMPaintHdrArt(icon, artKey) then
-                icon:SetTexture(texFile)
-                icon:SetDesaturated(true)
-                icon:SetVertexColor(1, 1, 1, ICON_A)
+            local iconTex = button:CreateTexture(nil, "ARTWORK")
+            iconTex:SetAllPoints()
+            button._hdrIcon = iconTex
+            if not mod.DMPaintHdrArt(iconTex, artKey) then
+                iconTex:SetTexture(texFile)
+                iconTex:SetDesaturated(true)
+                iconTex:SetVertexColor(1, 1, 1, ICON_A)
             end
             button:SetScript("OnEnter", function()
-                if not mod.DMHdrHover(icon, true) then
-                    icon:SetVertexColor(1, 1, 1, ICON_HA)
+                if not mod.DMHdrHover(iconTex, true) then
+                    iconTex:SetVertexColor(1, 1, 1, ICON_HA)
                 end
                 CUI.ShowWidgetTooltip(button, tooltip)
             end)
             button:SetScript("OnLeave", function()
-                if not mod.DMHdrHover(icon, false) then
-                    icon:SetVertexColor(1, 1, 1, ICON_A)
+                if not mod.DMHdrHover(iconTex, false) then
+                    iconTex:SetVertexColor(1, 1, 1, ICON_A)
                 end
                 CUI.HideWidgetTooltip()
             end)
@@ -1477,7 +1477,7 @@ local function BuildBarWindow()
                 CUI.HideWidgetTooltip()
                 onClick(button)
             end)
-            button._icon = icon
+            button._icon = iconTex
             return button
         end
 
@@ -1724,99 +1724,99 @@ RefreshBarWindow = function()
     end
 
     for i = 1, loopEnd do
-        local bar = _barPool[i]
-        if not bar then
+        local barFrame = _barPool[i]
+        if not barFrame then
             break
         end
         local position = _barScroll + i
         if i <= visSlots and position <= sum then
             local record = _history[position]
 
-            if bar._cachedZoom ~= barIconZoom then
-                bar._cachedZoom = barIconZoom
-                bar.icon:SetTexCoord(barIconZoom, 1 - barIconZoom, barIconZoom, 1 - barIconZoom)
+            if barFrame._cachedZoom ~= barIconZoom then
+                barFrame._cachedZoom = barIconZoom
+                barFrame.icon:SetTexCoord(barIconZoom, 1 - barIconZoom, barIconZoom, 1 - barIconZoom)
             end
 
             -- Layout: only on settings change or slot reuse
-            if layoutChanged or bar._cachedSlot ~= i then
-                bar._cachedSlot = i
+            if layoutChanged or barFrame._cachedSlot ~= i then
+                barFrame._cachedSlot = i
                 local posY = -(i - 1) * stride
-                bar.row:ClearAllPoints()
-                bar.row:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", 0, posY)
-                bar.row:SetPoint("TOPRIGHT", contentFrame, "TOPRIGHT", 0, posY)
-                bar.row:SetHeight(barH)
-                bar.fill:SetStatusBarTexture(texPath)
+                barFrame.row:ClearAllPoints()
+                barFrame.row:SetPoint("TOPLEFT", contentFrame, "TOPLEFT", 0, posY)
+                barFrame.row:SetPoint("TOPRIGHT", contentFrame, "TOPRIGHT", 0, posY)
+                barFrame.row:SetHeight(barH)
+                barFrame.fill:SetStatusBarTexture(texPath)
                 -- Blizzard Style: the stock bevel over the user's texture
                 -- (none under Classic WoW UI).
                 if mod.DMStyle() == "blizzard" then
-                    mod.DMApplyBlizzFill(bar.fill)
+                    mod.DMApplyBlizzFill(barFrame.fill)
                 end
-                bar.icon:SetSize(barH, barH)
-                bar._cachedEntry = nil -- force content rebuild
+                barFrame.icon:SetSize(barH, barH)
+                barFrame._cachedEntry = nil -- force content rebuild
             end
 
             -- Content: only when entry changes
-            if bar._cachedEntry ~= record then
-                bar._cachedEntry = record
+            if barFrame._cachedEntry ~= record then
+                barFrame._cachedEntry = record
                 if record.icon then
-                    bar.icon:SetTexture(record.icon)
-                    bar.icon:Show()
+                    barFrame.icon:SetTexture(record.icon)
+                    barFrame.icon:Show()
                 else
-                    bar.icon:Hide()
+                    barFrame.icon:Hide()
                 end
-                bar.label:SetText(record.spellName or "?")
-                bar._cachedStatus = nil -- force color/fill rebuild
-                bar._cachedFillDone = nil -- force fill value reset
+                barFrame.label:SetText(record.spellName or "?")
+                barFrame._cachedStatus = nil -- force color/fill rebuild
+                barFrame._cachedFillDone = nil -- force fill value reset
             end
 
             -- Color + fill: update when status changes or on active casts
             local status = record.status
-            if bar._cachedStatus ~= status then
-                bar._cachedStatus = status
-                local cr, cg, cb
+            if barFrame._cachedStatus ~= status then
+                barFrame._cachedStatus = status
+                local cr, cg, callback
                 if status == "failed" or status == "interrupted" then
-                    cr, cg, cb = stR, stG, stB
+                    cr, cg, callback = stR, stG, stB
                 else
-                    cr, cg, cb = nR, nG, nB
+                    cr, cg, callback = nR, nG, nB
                 end
-                bar.fill:SetStatusBarColor(cr, cg, cb, barAlpha)
+                barFrame.fill:SetStatusBarColor(cr, cg, callback, barAlpha)
             end
 
             -- Fill value: always set for active casts, once for finished
             if record.fillProgress then
-                bar.fill:SetValue(record.fillProgress)
+                barFrame.fill:SetValue(record.fillProgress)
             elseif status == "casting" or status == "channeling" then
                 local nowTime = GetTime()
                 local dur = record.endTime - record.startTime
                 if dur > 0 then
                     local progress = status == "channeling" and (record.endTime - nowTime) / dur
                         or (nowTime - record.startTime) / dur
-                    bar.fill:SetValue(min(max(progress, 0), 1))
+                    barFrame.fill:SetValue(min(max(progress, 0), 1))
                 else
-                    bar.fill:SetValue(1)
+                    barFrame.fill:SetValue(1)
                 end
-            elseif not bar._cachedFillDone then
-                bar._cachedFillDone = true
-                bar.fill:SetValue(1)
+            elseif not barFrame._cachedFillDone then
+                barFrame._cachedFillDone = true
+                barFrame.fill:SetValue(1)
             end
 
             -- Text color: only on settings change
-            if layoutChanged or not bar._cachedTxColor then
-                bar._cachedTxColor = true
-                bar.label:SetTextColor(txR, txG, txB, 1)
-                bar.rightText:SetTextColor(txR, txG, txB, 1)
+            if layoutChanged or not barFrame._cachedTxColor then
+                barFrame._cachedTxColor = true
+                barFrame.label:SetTextColor(txR, txG, txB, 1)
+                barFrame.rightText:SetTextColor(txR, txG, txB, 1)
             end
 
-            bar.rightText:SetText(BuildRightText(record))
-            bar.row:Show()
+            barFrame.rightText:SetText(BuildRightText(record))
+            barFrame.row:Show()
         else
-            if bar then
-                bar.row:Hide()
-                bar._cachedSlot = nil
-                bar._cachedEntry = nil
-                bar._cachedStatus = nil
-                bar._cachedFillDone = nil
-                bar._cachedTxColor = nil
+            if barFrame then
+                barFrame.row:Hide()
+                barFrame._cachedSlot = nil
+                barFrame._cachedEntry = nil
+                barFrame._cachedStatus = nil
+                barFrame._cachedFillDone = nil
+                barFrame._cachedTxColor = nil
             end
         end
     end
@@ -1853,15 +1853,15 @@ _castAnimFrame:SetScript("OnUpdate", function(self)
         end
         local status = record.status
         if status == "casting" or status == "channeling" then
-            local bar = _barPool[i]
-            if bar and bar.row:IsShown() then
+            local barFrame = _barPool[i]
+            if barFrame and barFrame.row:IsShown() then
                 local dur = record.endTime - record.startTime
                 if dur > 0 then
                     local progress = status == "channeling" and (record.endTime - nowTime) / dur
                         or (nowTime - record.startTime) / dur
-                    bar.fill:SetValue(min(max(progress, 0), 1))
+                    barFrame.fill:SetValue(min(max(progress, 0), 1))
                 end
-                bar.rightText:SetText(BuildRightText(record))
+                barFrame.rightText:SetText(BuildRightText(record))
             end
         end
     end

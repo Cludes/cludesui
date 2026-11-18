@@ -75,16 +75,16 @@ function mod.DMThreatMenu(itemList)
     if not feed then
         return
     end
-    for idx = #itemList, 1, -1 do
-        local e = itemList[idx]
+    for index = #itemList, 1, -1 do
+        local e = itemList[index]
         if type(e) == "table" and e.noThreat then
-            table.remove(itemList, idx)
+            table.remove(itemList, index)
         end
     end
     local head = feed.MenuItems({})
     head[#head + 1] = "---"
-    for idx = #head, 1, -1 do
-        table.insert(itemList, 1, head[idx])
+    for index = #head, 1, -1 do
+        table.insert(itemList, 1, head[index])
     end
 end
 

@@ -227,12 +227,12 @@ end
 _tbbWake:SetScript("OnEvent", _tbbWake.OnEvent)
 mod.WakeTBBTick = _tbbWake.Wake
 
-function mod.WakeTBBTickIfParked(item)
+function mod.WakeTBBTickIfParked(entry)
     if
         _tbbWake._enabled
         and tbbTickFrame
         and not tbbTickFrame:IsShown()
-        and (not item or item:IsActive())
+        and (not entry or entry:IsActive())
     then
         _tbbWake.Wake()
     end
@@ -594,24 +594,24 @@ do
         if not record then
             return nil
         end
-        local f = tbbStandins[gk]
-        if not f then
-            f = CreateFrame("Frame", nil, UIParent)
-            tbbStandins[gk] = f
+        local frame = tbbStandins[gk]
+        if not frame then
+            frame = CreateFrame("Frame", nil, UIParent)
+            tbbStandins[gk] = frame
         end
         local PPl = CludesUI and CludesUI.PP
         local sn = PPl and PPl.Snap or function(val)
             return val
         end
-        f:SetSize(sn(record.width or 270), sn(record.height or 24))
+        frame:SetSize(sn(record.width or 270), sn(record.height or 24))
         -- SetPoint ONLY on an actual position change (signature-stamped): this
         -- runs from getFrame, and the unlock machinery hooksecurefuncs SetPoint
         -- on resolved frames -- an unconditional re-point per resolve fed the
         -- move-check timer a fresh SetPoint every frame, forever (audit-caught).
         -- getFrame must never mutate what it merely resolves.
         local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("TBBG_" .. gk)
-        if anchored and f:GetLeft() then
-            return f
+        if anchored and frame:GetLeft() then
+            return frame
         end
         local place = record.pos
         local sig
@@ -626,16 +626,16 @@ do
         else
             sig = "default"
         end
-        if f._posSig ~= sig then
-            f._posSig = sig
-            f:ClearAllPoints()
+        if frame._posSig ~= sig then
+            frame._posSig = sig
+            frame:ClearAllPoints()
             if place and place.point then
-                f:SetPoint(place.point, UIParent, place.relPoint or place.point, place.x or 0, place.y or 0)
+                frame:SetPoint(place.point, UIParent, place.relPoint or place.point, place.x or 0, place.y or 0)
             else
-                f:SetPoint("CENTER", UIParent, "CENTER", 0, 200)
+                frame:SetPoint("CENTER", UIParent, "CENTER", 0, 200)
             end
         end
-        return f
+        return frame
     end
     -- Read-only lookup (no create): lets getFrame keep resolving a stand-in
     -- built earlier this session after the option flips to None, so the flip's
@@ -708,11 +708,11 @@ do
             end
             local gk = targetKey:sub(6)
             local record = mod.TBBGlobalGroup(gk)
-            local dir = TBBShiftDirFor(record, gk)
-            if dir == 0 then
+            local direction = TBBShiftDirFor(record, gk)
+            if direction == 0 then
                 return 0
             end
-            return dir, record.shiftNoBarExtraY or 0
+            return direction, record.shiftNoBarExtraY or 0
         end,
         wants = function()
             local reg = TBBGlobalDB(false)
@@ -856,18 +856,18 @@ do
         local best
         for i, c in ipairs(t.bars or {}) do
             if c.enabled ~= false and mod.TBBBarGroupID(c) == gid then
-                local f = tbbFrames[i]
-                if f and f:IsShown() and f:GetLeft() then
-                    local fS = f:GetEffectiveScale() / uiS
+                local frame = tbbFrames[i]
+                if frame and frame:IsShown() and frame:GetLeft() then
+                    local fS = frame:GetEffectiveScale() / uiS
                     local val
                     if side == "TOP" then
-                        val = (f:GetTop() or 0) * fS
+                        val = (frame:GetTop() or 0) * fS
                     elseif side == "BOTTOM" then
-                        val = (f:GetBottom() or 0) * fS
+                        val = (frame:GetBottom() or 0) * fS
                     elseif side == "LEFT" then
-                        val = (f:GetLeft() or 0) * fS
+                        val = (frame:GetLeft() or 0) * fS
                     else
-                        val = (f:GetRight() or 0) * fS
+                        val = (frame:GetRight() or 0) * fS
                     end
                     if not best then
                         best = val
@@ -1446,14 +1446,14 @@ local function ReflowGroup(tbb, gid, barList)
     local visible = st.visible
     local total = 0
     for i, conf in ipairs(barList) do
-        local f = tbbFrames[i]
+        local frame = tbbFrames[i]
         if
             conf
             and conf.enabled ~= false
             and mod.TBBBarGroupID(conf) == gid
-            and f
-            and f._tbbReady
-            and f:IsShown()
+            and frame
+            and frame._tbbReady
+            and frame:IsShown()
         then
             total = total + 1
             local e = visible[total]
@@ -1462,7 +1462,7 @@ local function ReflowGroup(tbb, gid, barList)
                 visible[total] = e
             end
             e.idx = i
-            e.frame = f
+            e.frame = frame
         end
     end
 
@@ -1510,22 +1510,22 @@ local function ReflowGroup(tbb, gid, barList)
     -- and the unlock system already position it and honor IsUnlockAnchored, so re-deriving
     -- from tbbPositions would clobber an element-anchored group (stale coord/screen center).
 
-    local prev = first
+    local previous = first
     for num = 2, total do
-        local f = visible[num].frame
-        f:ClearAllPoints()
+        local frame = visible[num].frame
+        frame:ClearAllPoints()
         if growDir == "DOWN" then
-            f:SetPoint("TOP", prev, "BOTTOM", 0, -spacing)
+            frame:SetPoint("TOP", previous, "BOTTOM", 0, -spacing)
         elseif growDir == "UP" then
-            f:SetPoint("BOTTOM", prev, "TOP", 0, spacing)
+            frame:SetPoint("BOTTOM", previous, "TOP", 0, spacing)
         elseif growDir == "RIGHT" then
-            f:SetPoint("LEFT", prev, "RIGHT", spacing, 0)
+            frame:SetPoint("LEFT", previous, "RIGHT", spacing, 0)
         elseif growDir == "LEFT" then
-            f:SetPoint("RIGHT", prev, "LEFT", -spacing, 0)
+            frame:SetPoint("RIGHT", previous, "LEFT", -spacing, 0)
         else
-            f:SetPoint("TOP", prev, "BOTTOM", 0, -spacing)
+            frame:SetPoint("TOP", previous, "BOTTOM", 0, -spacing)
         end
-        prev = f
+        previous = frame
     end
 
     -- Only reached when the visible sequence/grow/spacing actually changed: let elements anchored to the group's growth side re-read the moving edge.
@@ -1577,13 +1577,13 @@ function mod.PropagateTBBGroupSize(srcIdx, size, value)
     for i, c in ipairs(barList) do
         if i ~= srcIdx and mod.TBBBarGroupID(c) == srcGid then
             c[size] = value
-            local f = tbbFrames[i]
-            if f then
+            local frame = tbbFrames[i]
+            if frame then
                 -- width/height are the total footprint (icon included), so the frame takes the value directly.
                 if size == "width" then
-                    f:SetWidth(value)
+                    frame:SetWidth(value)
                 else
-                    f:SetHeight(value)
+                    frame:SetHeight(value)
                 end
             end
         end

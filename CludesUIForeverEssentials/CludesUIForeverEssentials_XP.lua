@@ -71,7 +71,7 @@ local cardFrame
 local sessionStart, sessionXP = 0, 0
 local paused, pausedAt, pausedTotal = false, nil, 0
 local lastXP, lastXPMax
-local cur, anchor -- the level being timed, and when its clock last started
+local current, anchor -- the level being timed, and when its clock last started
 local trendBase, trendAt, trendDir = 0, 0, 0
 
 -- Per character: { current = { level, base, partial }, levels = { [level] = { total } } }
@@ -87,13 +87,13 @@ local function Splits()
 end
 
 local function LevelTime()
-    return cur and (cur.base + (anchor and GetTime() - anchor or 0)) or 0
+    return current and (current.base + (anchor and GetTime() - anchor or 0)) or 0
 end
 
 local function StartLevel(s, fromStart, level)
-    cur = { level = level or UnitLevel("player"), base = 0, partial = not fromStart }
+    current = { level = level or UnitLevel("player"), base = 0, partial = not fromStart }
     anchor = not paused and GetTime() or nil
-    s.current = cur
+    s.current = current
 end
 
 local function TrackSplits(newLevel)
@@ -101,17 +101,17 @@ local function TrackSplits(newLevel)
     if not s then
         return
     end
-    if not cur then
+    if not current then
         local saved = s.current
         if saved and saved.level == UnitLevel("player") then
-            cur, anchor = saved, not paused and GetTime() or nil
+            current, anchor = saved, not paused and GetTime() or nil
         else
             StartLevel(s, UnitXP("player") == 0)
         end
     end
     local level = newLevel or UnitLevel("player")
-    if level > cur.level then
-        s.levels[cur.level] = { total = not cur.partial and LevelTime() or nil }
+    if level > current.level then
+        s.levels[current.level] = { total = not current.partial and LevelTime() or nil }
         StartLevel(s, true, level)
     elseif not anchor and not paused then
         anchor = GetTime()
@@ -144,7 +144,7 @@ function module.XPStart()
     end
     pausedTotal = pausedTotal + GetTime() - pausedAt
     paused, pausedAt = false, nil
-    if cur then
+    if current then
         anchor = GetTime()
     end
     if Update then
@@ -156,8 +156,8 @@ function module.XPPause()
         return
     end
     paused, pausedAt = true, GetTime()
-    if cur and anchor then
-        cur.base, anchor = LevelTime(), nil
+    if current and anchor then
+        current.base, anchor = LevelTime(), nil
     end
     if Update then
         Update()
@@ -247,28 +247,28 @@ Update = function()
         lines[#lines + 1] = "Ding in " .. Clock(ding)
     end
     lines[#lines + 1] = (paused and "|cffffb040paused|r  " or "") .. "Session " .. Clock(elapsed)
-    if cur then
+    if current then
         lines[#lines + 1] = ("Level %d  %s%s"):format(
-            cur.level,
+            current.level,
             Clock(LevelTime()),
-            cur.partial and "+" or ""
+            current.partial and "+" or ""
         )
     end
     if X.Get("splits") then
         local s = Splits()
         local keyList = {}
         for level, rec in pairs(s and s.levels or {}) do
-            if type(level) == "number" and rec.total and (not cur or level < cur.level) then
+            if type(level) == "number" and rec.total and (not current or level < current.level) then
                 keyList[#keyList + 1] = level
             end
         end
         table.sort(keyList, function(a, b)
             return a > b
         end)
-        for idx = 1, math.min(#keyList, X.Get("history")) do
+        for index = 1, math.min(#keyList, X.Get("history")) do
             lines[#lines + 1] = ("|cff9aa6b2Level %d  %s|r"):format(
-                keyList[idx],
-                Clock(s.levels[keyList[idx]].total)
+                keyList[index],
+                Clock(s.levels[keyList[index]].total)
             )
         end
     end
@@ -291,8 +291,8 @@ end
 local xEv = CreateFrame("Frame")
 xEv:SetScript("OnEvent", function(_, evt, arg1)
     if evt == "PLAYER_LOGOUT" then
-        if cur then
-            cur.base = LevelTime()
+        if current then
+            current.base = LevelTime()
         end
         return
     end
@@ -311,8 +311,8 @@ end)
 local clock
 local function XApply()
     if not X.Enabled() then
-        if cur and anchor then
-            cur.base, anchor = LevelTime(), nil
+        if current and anchor then
+            current.base, anchor = LevelTime(), nil
         end
         xEv:UnregisterAllEvents()
         if clock then
@@ -368,8 +368,8 @@ X.Start(XApply, {
 })
 
 SLASH_CUIXP1 = "/cxp"
-SlashCmdList.CUIXP = function(msg)
-    local run = ({ start = module.XPStart, pause = module.XPPause, reset = module.XPReset })[(msg or "")
+SlashCmdList.CUIXP = function(message)
+    local run = ({ start = module.XPStart, pause = module.XPPause, reset = module.XPReset })[(message or "")
         :lower()
         :match("%S+") or ""]
     if run then
@@ -448,15 +448,15 @@ end
 local function Roster()
     local entries, units = {}, { "player" }
     if IsInRaid() then
-        for idx = 1, GetNumGroupMembers() do
-            local me = UnitIsUnit("raid" .. idx, "player")
+        for index = 1, GetNumGroupMembers() do
+            local me = UnitIsUnit("raid" .. index, "player")
             if not Secret(me) and not me then
-                units[#units + 1] = "raid" .. idx
+                units[#units + 1] = "raid" .. index
             end
         end
     else
-        for idx = 1, GetNumSubgroupMembers() do
-            units[#units + 1] = "party" .. idx
+        for index = 1, GetNumSubgroupMembers() do
+            units[#units + 1] = "party" .. index
         end
     end
     for _, unitToken in ipairs(units) do
@@ -480,26 +480,26 @@ local function SenderIs(sender, unitGuid)
     return false
 end
 
-local function Row(idx)
-    local r = rowList[idx]
-    if r then
-        return r
+local function Row(index)
+    local region = rowList[index]
+    if region then
+        return region
     end
-    r = CreateFrame("Frame", nil, gFrame)
-    r.name = r:CreateFontString(nil, "OVERLAY")
-    r.name:SetPoint("LEFT")
-    r.name:SetJustifyH("LEFT")
-    r.name:SetWordWrap(false)
-    r.bar = CreateFrame("StatusBar", nil, r)
-    r.bar:SetPoint("BOTTOMRIGHT")
-    r.bar:SetMinMaxValues(0, 1)
-    r.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
-    r.bar:SetStatusBarColor(CludesUI.Kit.Accent())
-    CludesUI.Kit.Panel(r.bar, 0.85)
-    r.text = r.bar:CreateFontString(nil, "OVERLAY")
-    r.text:SetPoint("CENTER")
-    rowList[idx] = r
-    return r
+    region = CreateFrame("Frame", nil, gFrame)
+    region.name = region:CreateFontString(nil, "OVERLAY")
+    region.name:SetPoint("LEFT")
+    region.name:SetJustifyH("LEFT")
+    region.name:SetWordWrap(false)
+    region.bar = CreateFrame("StatusBar", nil, region)
+    region.bar:SetPoint("BOTTOMRIGHT")
+    region.bar:SetMinMaxValues(0, 1)
+    region.bar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
+    region.bar:SetStatusBarColor(CludesUI.Kit.Accent())
+    CludesUI.Kit.Panel(region.bar, 0.85)
+    region.text = region.bar:CreateFontString(nil, "OVERLAY")
+    region.text:SetPoint("CENTER")
+    rowList[index] = region
+    return region
 end
 
 local SAMPLE = {
@@ -540,59 +540,59 @@ local function GRefresh()
     local rowH = math.max(18, size + 6)
     local nameW = 90 * size / 12
     gFrame:SetSize(G.Get("width"), #entries * (rowH + 2) - 2)
-    for idx, m in ipairs(entries) do
-        local r = Row(idx)
-        r:ClearAllPoints()
-        r:SetPoint("TOPLEFT", 0, -(idx - 1) * (rowH + 2))
-        r:SetPoint("TOPRIGHT", 0, -(idx - 1) * (rowH + 2))
-        r:SetHeight(rowH)
-        CludesUI.Kit.Font(r.name, size, "essentials")
-        r.name:SetWidth(nameW - 4)
-        CludesUI.Kit.Font(r.text, size - 1, "essentials")
-        r.bar:SetPoint("TOPLEFT", nameW, 0)
+    for index, m in ipairs(entries) do
+        local region = Row(index)
+        region:ClearAllPoints()
+        region:SetPoint("TOPLEFT", 0, -(index - 1) * (rowH + 2))
+        region:SetPoint("TOPRIGHT", 0, -(index - 1) * (rowH + 2))
+        region:SetHeight(rowH)
+        CludesUI.Kit.Font(region.name, size, "essentials")
+        region.name:SetWidth(nameW - 4)
+        CludesUI.Kit.Font(region.text, size - 1, "essentials")
+        region.bar:SetPoint("TOPLEFT", nameW, 0)
         local c = m.class and RAID_CLASS_COLORS[m.class]
-        r.name:SetText(m.name)
+        region.name:SetText(m.name)
         if c then
-            r.name:SetTextColor(c.r, c.g, c.b)
+            region.name:SetTextColor(c.r, c.g, c.b)
         else
-            r.name:SetTextColor(1, 1, 1)
+            region.name:SetTextColor(1, 1, 1)
         end
-        local d = m.data
-        if not d then
-            r.bar:SetValue(0)
-            r.text:SetText(
+        local skinData = m.data
+        if not skinData then
+            region.bar:SetValue(0)
+            region.text:SetText(
                 (m.level and m.level > 0 and ("Lv " .. m.level) or "Lv ?") .. "  |cff9ca3afno addon|r"
             )
-        elseif d.level >= MaxLevel() or d.max <= 0 then
-            r.bar:SetValue(1)
-            r.text:SetText("Lv " .. d.level .. "  Max")
+        elseif skinData.level >= MaxLevel() or skinData.max <= 0 then
+            region.bar:SetValue(1)
+            region.text:SetText("Lv " .. skinData.level .. "  Max")
         else
-            local pct = d.xp / d.max
-            r.bar:SetValue(pct)
-            r.text:SetText(("Lv %d  %.1f%%"):format(d.level, pct * 100))
+            local pct = skinData.xp / skinData.max
+            region.bar:SetValue(pct)
+            region.text:SetText(("Lv %d  %.1f%%"):format(skinData.level, pct * 100))
         end
-        r:Show()
+        region:Show()
     end
-    for idx = #entries + 1, #rowList do
-        rowList[idx]:Hide()
+    for index = #entries + 1, #rowList do
+        rowList[index]:Hide()
     end
     gFrame:Show()
 end
 
 local gEv = CreateFrame("Frame")
-gEv:SetScript("OnEvent", function(_, evt, prefixText, msg, channel, sender)
+gEv:SetScript("OnEvent", function(_, evt, prefixText, message, channel, sender)
     if evt == "CHAT_MSG_ADDON" then
-        if Secret(prefixText) or Secret(msg) or Secret(channel) or Secret(sender) then
+        if Secret(prefixText) or Secret(message) or Secret(channel) or Secret(sender) then
             return
         end
         if prefixText ~= PREFIX or not GROUP_CHANNELS[channel] then
             return
         end
-        if msg == ASK then
+        if message == ASK then
             SendSoon()
             return
         end
-        local unitGuid, level, xp, max = msg:match(MESSAGE_PATTERN)
+        local unitGuid, level, xp, max = message:match(MESSAGE_PATTERN)
         if not unitGuid or not unitGuid:find("^Player%-") or unitGuid == UnitGUID("player") then
             return
         end

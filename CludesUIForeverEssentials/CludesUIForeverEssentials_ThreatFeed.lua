@@ -37,9 +37,9 @@ local RequestUpdate
 
 -- "1.", "2.", ... built once each. The pull line takes no rank.
 local RANKS = setmetatable({}, {
-    __index = function(t, idx)
-        local s = idx .. "."
-        t[idx] = s
+    __index = function(t, index)
+        local s = index .. "."
+        t[index] = s
         return s
     end,
 })
@@ -48,9 +48,9 @@ local RANKS = setmetatable({}, {
 -- per class. Kept once found; a failed read tries again next time.
 local specIcons = {}
 local function SpecIcon(unitToken, class)
-    local icon = specIcons[class]
-    if icon then
-        return icon
+    local iconTex = specIcons[class]
+    if iconTex then
+        return iconTex
     end
     local _, _, classID = UnitClass(unitToken)
     if issecretvalue(classID) or type(classID) ~= "number" then
@@ -86,30 +86,30 @@ end
 -- One row: the fields a Damage Meters row reads, plus the threat ones
 -- (rankText, threatText, threatColor, threatPet). The value text is rebuilt only
 -- when its numbers or the unit style change.
-local function FillRow(r, e, rank, c)
+local function FillRow(region, e, rank, c)
     local unitToken = e.unit
     if e.pull then
-        r.name, r.classFilename, r.specIconID = CludesUI.L("Pull Aggro"), nil, nil
-        r.rankText, r.threatColor = "", c.pullColor
+        region.name, region.classFilename, region.specIconID = CludesUI.L("Pull Aggro"), nil, nil
+        region.rankText, region.threatColor = "", c.pullColor
     else
         local class = mod.ClassOf(unitToken)
         local name = CUI.WithSurname(UnitName(unitToken))
         if not issecretvalue(name) and name == nil then
             name = unitToken
         end
-        r.name, r.classFilename = name, class
+        region.name, region.classFilename = name, class
         if e.isPet then
-            r.specIconID = PET_ICON
+            region.specIconID = PET_ICON
         else
-            r.specIconID = class and SpecIcon(unitToken, class) or nil
+            region.specIconID = class and SpecIcon(unitToken, class) or nil
         end
-        r.rankText = RANKS[rank]
-        r.threatColor = (e.own and c.playerColor) or (e.tanking and c.tankColor) or nil
+        region.rankText = RANKS[rank]
+        region.threatColor = (e.own and c.playerColor) or (e.tanking and c.tankColor) or nil
     end
-    r.threatPet = e.isPet == true
-    r.isLocalPlayer = e.own == true
-    r.totalAmount = e.raw
-    r.threatScaled = e.scaled
+    region.threatPet = e.isPet == true
+    region.isLocalPlayer = e.own == true
+    region.totalAmount = e.raw
+    region.threatScaled = e.scaled
     local raw = c.showValue and e.raw or nil
     local pct
     if c.showPercent and not (e.pull and raw) then
@@ -119,16 +119,16 @@ local function FillRow(r, e, rank, c)
             pct = e.rawPct
         end
     end
-    if r.threatText == nil or r._raw ~= raw or r._pct ~= pct or r._units ~= units or r._fmt ~= fmtGen then
-        r._raw, r._pct, r._units, r._fmt = raw, pct, units, fmtGen
+    if region.threatText == nil or region._raw ~= raw or region._pct ~= pct or region._units ~= units or region._fmt ~= fmtGen then
+        region._raw, region._pct, region._units, region._fmt = raw, pct, units, fmtGen
         if raw and pct then
-            r.threatText = format("%s  %.0f%%", CUI.AbbreviateNumber(raw, units), pct)
+            region.threatText = format("%s  %.0f%%", CUI.AbbreviateNumber(raw, units), pct)
         elseif raw then
-            r.threatText = CUI.AbbreviateNumber(raw, units)
+            region.threatText = CUI.AbbreviateNumber(raw, units)
         elseif pct then
-            r.threatText = format("%.0f%%", pct)
+            region.threatText = format("%.0f%%", pct)
         else
-            r.threatText = ""
+            region.threatText = ""
         end
     end
 end
@@ -151,21 +151,21 @@ local function Build()
     end
     local had = #sources
     local rank = 0
-    for idx = 1, total do
-        local e = entries[idx]
+    for index = 1, total do
+        local e = entries[index]
         if not e.pull then
             rank = rank + 1
         end
-        local r = pool[idx]
-        if not r then
-            r = {}
-            pool[idx] = r
+        local region = pool[index]
+        if not region then
+            region = {}
+            pool[index] = region
         end
-        FillRow(r, e, rank, c)
-        sources[idx] = r
+        FillRow(region, e, rank, c)
+        sources[index] = region
     end
-    for idx = had, total + 1, -1 do
-        sources[idx] = nil
+    for index = had, total + 1, -1 do
+        sources[index] = nil
     end
     -- (The secret test first: a secret name cannot be tested or joined.)
     local title = session.threatTitle
@@ -327,8 +327,8 @@ local function Stop()
     threatOn, flagsUnit, mobUnit, titleName = false, nil, nil, nil
     SetFollow(false)
     conf = nil
-    for idx = #sources, 1, -1 do
-        sources[idx] = nil
+    for index = #sources, 1, -1 do
+        sources[index] = nil
     end
 end
 
