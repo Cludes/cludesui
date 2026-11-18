@@ -151,17 +151,17 @@ end
 -- ns.PAB_ImportBM2Filters) that retail does not curate there: a retail user
 -- may add such an id by hand, so only the seed's own note tells them apart.
 function mod.PAB_OtherClientSpell(frame, ident)
-    local key = frame.preset and mod.PAB_PRESET_KEY[frame.name]
-    if not key then
+    local filterKey = frame.preset and mod.PAB_PRESET_KEY[frame.name]
+    if not filterKey then
         return false
     end
-    local here = CludesUI.BUFF_PRESET_IDS[key]
+    local here = CludesUI.BUFF_PRESET_IDS[filterKey]
     if here and here[ident] then
         return false
     end
     if CludesUI.IS_FOREVER == true then
-        local other = CludesUI.BUFF_PRESET_OTHER_IDS[key]
-        return (other and other[ident]) == true
+        local otherSet = CludesUI.BUFF_PRESET_OTHER_IDS[filterKey]
+        return (otherSet and otherSet[ident]) == true
     end
     local m = frame.foreverSeeded
     return (m and m[ident]) == true
@@ -188,22 +188,22 @@ function mod.PAB_HiddenPresetFilter(ident)
     return false
 end
 
-function mod.PAB_AddFilter(name)
+function mod.PAB_AddFilter(label)
     local s = PABEnsure()
     if not s then
         return nil
     end
     local storage = FilterStore(s)
-    local frame = { id = storage.nextId, name = name or "New Filter", spells = {} }
+    local frame = { id = storage.nextId, name = label or "New Filter", spells = {} }
     storage.nextId = storage.nextId + 1
     storage.list[#storage.list + 1] = frame
     return frame
 end
 
-function mod.PAB_RenameFilter(ident, name)
+function mod.PAB_RenameFilter(ident, label)
     local frame = mod.PAB_GetFilter(ident)
-    if frame and name and name ~= "" then
-        frame.name = name
+    if frame and label and label ~= "" then
+        frame.name = label
     end
 end
 
@@ -240,19 +240,19 @@ function mod.PAB_DeleteFilter(ident)
     if s.defaultBuffs then
         Strip(s.defaultBuffs, true)
     end
-    local customBuffBars = s.customBuffBars
-    if customBuffBars then
-        for i = 1, #customBuffBars do
-            Strip(customBuffBars[i], false)
+    local customBars = s.customBuffBars
+    if customBars then
+        for i = 1, #customBars do
+            Strip(customBars[i], false)
         end
     end
     -- Editing-spec bucket bars share the same filter registry.
     if s.pabSpecBars then
         for _, b in pairs(s.pabSpecBars) do
-            local bl = b.buffBars
-            if bl then
-                for i = 1, #bl do
-                    Strip(bl[i], false)
+            local blockList = b.buffBars
+            if blockList then
+                for i = 1, #blockList do
+                    Strip(blockList[i], false)
                 end
             end
         end
@@ -318,13 +318,13 @@ function mod.PAB_SetSpellState(filterId, spellId, status)
             end
         end
     end
-    local name = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spellId)
-    if name then
+    local label = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spellId)
+    if label then
         for ident in pairs(frame.spells) do
             if
                 ident ~= spellId
                 and not mod.PAB_OtherClientSpell(frame, ident)
-                and C_Spell.GetSpellName(ident) == name
+                and C_Spell.GetSpellName(ident) == label
             then
                 Write(ident)
             end
@@ -357,14 +357,14 @@ end
 function mod.PAB_ResolveSpells(conf)
     local set = {}
     local direct
-    local spells = conf.spells
-    if spells then
+    local spellSet = conf.spells
+    if spellSet then
         direct = {}
-        for i = 1, #spells do
-            set[spells[i]] = true
-            direct[spells[i]] = true
-            ExpandFamily(direct, spells[i])
-            ExpandFamily(set, spells[i])
+        for i = 1, #spellSet do
+            set[spellSet[i]] = true
+            direct[spellSet[i]] = true
+            ExpandFamily(direct, spellSet[i])
+            ExpandFamily(set, spellSet[i])
         end
     end
     -- Under the broad modes (All Buffs / Has Duration) the hide-lane filters leave via
@@ -441,56 +441,56 @@ end
 -- alternates into their own keys (seed convention), so each copied primary
 -- fans out to its alternates with the same state.
 function mod.PAB_CopyBM2FiltersIn()
-    local br = CludesUI._BM2FilterBridge
+    local buffRules = CludesUI._BM2FilterBridge
     local s = PABEnsure()
-    if not (br and s) then
+    if not (buffRules and s) then
         return false
     end
-    local source = br.Filters() or {}
-    local altsMap = br.PresetAlts and br.PresetAlts() or nil
+    local source = buffRules.Filters() or {}
+    local altsMap = buffRules.PresetAlts and buffRules.PresetAlts() or nil
     -- An id typed into a library filter tracks that aura alone there, so it
     -- comes over alone (an older library has no such ids).
-    local typedIn = br.SpellExact
+    local typedIn = buffRules.SpellExact
     local nameToId = NameToId(FilterStore(s).list)
     for i = 1, #source do
         local scrollFrame = source[i]
-        local tid = nameToId[scrollFrame.name]
-        local tf = tid and mod.PAB_GetFilter(tid)
-        if not tf then
-            tf = mod.PAB_AddFilter(scrollFrame.name)
+        local typeId = nameToId[scrollFrame.name]
+        local typeFilter = typeId and mod.PAB_GetFilter(typeId)
+        if not typeFilter then
+            typeFilter = mod.PAB_AddFilter(scrollFrame.name)
         end
-        if tf then
-            local spells = {}
+        if typeFilter then
+            local spellSet = {}
             for ident, on in pairs(scrollFrame.spells) do
                 -- Ids the library keeps only for the other client are not
                 -- this client's to copy.
-                if not br.OtherClientSpell(scrollFrame, ident) then
+                if not buffRules.OtherClientSpell(scrollFrame, ident) then
                     local status = on and true or false
-                    spells[ident] = status
+                    spellSet[ident] = status
                     local a = altsMap and altsMap[ident]
                     if a and not (typedIn and typedIn(scrollFrame, ident)) then
                         for jdx = 1, #a do
-                            spells[a[jdx]] = status
+                            spellSet[a[jdx]] = status
                         end
                     end
                 end
             end
             -- Retail: a copied id is the library's live content, no longer a
             -- Forever-seed note.
-            local m = tf.foreverSeeded
+            local m = typeFilter.foreverSeeded
             if m and CludesUI.IS_FOREVER ~= true then
-                for ident in pairs(spells) do
+                for ident in pairs(spellSet) do
                     m[ident] = nil
                 end
             end
             -- The copy overwrites what this editor shows; ids kept only for
             -- the other client are not shown, so they stay.
-            for ident, on in pairs(tf.spells) do
-                if spells[ident] == nil and mod.PAB_OtherClientSpell(tf, ident) then
-                    spells[ident] = on
+            for ident, on in pairs(typeFilter.spells) do
+                if spellSet[ident] == nil and mod.PAB_OtherClientSpell(typeFilter, ident) then
+                    spellSet[ident] = on
                 end
             end
-            tf.spells = spells
+            typeFilter.spells = spellSet
         end
     end
     -- The player FRAME's buff container resolves this registry through the UF
@@ -507,16 +507,16 @@ end
 -- Library ids never change, so indicator assignments and banked spec-override
 -- forks stay valid.
 function mod.PAB_CopyOwnFiltersIntoBM2()
-    local br = CludesUI._BM2FilterBridge
+    local buffRules = CludesUI._BM2FilterBridge
     local s = PAB()
-    if not (br and s) then
+    if not (buffRules and s) then
         return false
     end
     -- Alt id -> primary: our registry flattens talent/rank alternates into
     -- their own keys; the Buff Manager library stores primaries and expands
     -- alternates at resolution, so alternates fold onto their primary here.
     local altToPrimary = {}
-    local altsMap = br.PresetAlts and br.PresetAlts() or nil
+    local altsMap = buffRules.PresetAlts and buffRules.PresetAlts() or nil
     if altsMap then
         for primary, alts in pairs(altsMap) do
             for i = 1, #alts do
@@ -526,16 +526,16 @@ function mod.PAB_CopyOwnFiltersIntoBM2()
     end
     -- Presets only the other client offers stay out (ns.PAB_Filters' view).
     local own = mod.PAB_Filters() or FilterStore(s).list
-    local nameToId = NameToId(br.Filters() or {})
+    local nameToId = NameToId(buffRules.Filters() or {})
     for i = 1, #own do
         local of = own[i]
-        local tid = nameToId[of.name]
-        if not tid then
-            local nf = br.AddFilter(of.name)
-            tid = nf and nf.id
+        local typeId = nameToId[of.name]
+        if not typeId then
+            local nf = buffRules.AddFilter(of.name)
+            typeId = nf and nf.id
         end
-        local tf = tid and br.GetFilter(tid)
-        if tf then
+        local typeFilter = typeId and buffRules.GetFilter(typeId)
+        if typeFilter then
             local desired = {}
             for ident, on in pairs(of.spells) do
                 -- Ids kept only for the other client are not this client's to copy.
@@ -551,36 +551,36 @@ function mod.PAB_CopyOwnFiltersIntoBM2()
                     end
                 end
             end
-            local curated = tf.preset and br.CuratedSpells and br.CuratedSpells(tf.preset) or nil
+            local curated = typeFilter.preset and buffRules.CuratedSpells and buffRules.CuratedSpells(typeFilter.preset) or nil
             for ident, on in pairs(desired) do
                 -- An id the library keeps only for the other client counts as
                 -- absent (BM2_AddCustomSpell takes it over).
                 if
-                    (tf.spells[ident] == nil or br.OtherClientSpell(tf, ident))
+                    (typeFilter.spells[ident] == nil or buffRules.OtherClientSpell(typeFilter, ident))
                     and not (curated and curated[ident])
                 then
                     -- New non-curated id must carry the custom marker or the
                     -- library's curation prune strips it on the next merge.
-                    br.AddCustomSpell(tid, ident)
+                    buffRules.AddCustomSpell(typeId, ident)
                 end
-                br.SetSpellState(tid, ident, on)
+                buffRules.SetSpellState(typeId, ident, on)
             end
             -- Our version is authoritative: ids we don't carry go unchecked
             -- (false, not nil -- a nil curated id gets re-seeded to its
             -- default) and foreign custom ids are removed. Ids the library
             -- keeps only for the other client are left as they are.
-            for ident in pairs(tf.spells) do
-                if desired[ident] == nil and not br.OtherClientSpell(tf, ident) then
-                    if tf.custom and tf.custom[ident] then
-                        br.SetSpellState(tid, ident, nil)
+            for ident in pairs(typeFilter.spells) do
+                if desired[ident] == nil and not buffRules.OtherClientSpell(typeFilter, ident) then
+                    if typeFilter.custom and typeFilter.custom[ident] then
+                        buffRules.SetSpellState(typeId, ident, nil)
                     else
-                        br.SetSpellState(tid, ident, false)
+                        buffRules.SetSpellState(typeId, ident, false)
                     end
                 end
             end
         end
     end
-    br.Refresh()
+    buffRules.Refresh()
     return true
 end
 
@@ -626,10 +626,10 @@ do
     for i = 1, #BP.filters do
         local def = BP.filters[i]
         local entries = BP.spells[def.key]
-        local enabled, disabled = {}, {}
+        local isEnabled, disabled = {}, {}
         if entries then
             for ident, details in pairs(entries) do
-                local dst = details.disabled and disabled or enabled
+                local dst = details.disabled and disabled or isEnabled
                 dst[#dst + 1] = ident
                 if details.class ~= "ALL" then
                     SPELL_CLASS_HINTS[ident] = details.class
@@ -646,10 +646,10 @@ do
                 end
             end
         end
-        table.sort(enabled)
+        table.sort(isEnabled)
         table.sort(disabled)
         BM2_FILTER_SEED[#BM2_FILTER_SEED + 1] =
-            { key = def.key, name = def.name, enabled = enabled, disabled = disabled }
+            { key = def.key, name = def.name, enabled = isEnabled, disabled = disabled }
     end
     -- Every member of a curated family (primary + its alternates) maps to the whole
     -- member list, so PAB_ResolveSpells can expand from whichever id the user has.
@@ -673,9 +673,9 @@ do
         keyByName[BP.filters[i].name] = BP.filters[i].key
         offered[BP.filters[i].key] = true
     end
-    local other = CludesUI.BUFF_PRESET_OTHER_FILTERS
-    for i = 1, #other do
-        local def = other[i]
+    local otherSet = CludesUI.BUFF_PRESET_OTHER_FILTERS
+    for i = 1, #otherSet do
+        local def = otherSet[i]
         if keyByName[def.name] == nil then
             keyByName[def.name] = def.key
         end
@@ -727,11 +727,11 @@ function mod.PAB_ImportBM2Filters()
     -- retail keeps it inert when the profile goes back there
     -- (ns.PAB_OtherClientSpell). Nothing is noted on retail.
     local retailIds = CludesUI.IS_FOREVER == true and CludesUI.BUFF_PRESET_OTHER_IDS or nil
-    local function NoteSeed(frame, key, ident)
+    local function NoteSeed(frame, filterKey, ident)
         if not retailIds then
             return
         end
-        local current = retailIds[key]
+        local current = retailIds[filterKey]
         if current and current[ident] then
             return
         end
@@ -826,14 +826,14 @@ function mod.PAB_GetCustomBuffBar(ident)
         end
     end
     local s = PAB()
-    local st = s and s.pabSpecBars
-    if st then
-        for key, b in pairs(st) do
-            local bl = b.buffBars
-            if bl then
-                for i = 1, #bl do
-                    if bl[i].id == ident then
-                        return bl[i], key
+    local state = s and s.pabSpecBars
+    if state then
+        for filterKey, b in pairs(state) do
+            local blockList = b.buffBars
+            if blockList then
+                for i = 1, #blockList do
+                    if blockList[i].id == ident then
+                        return blockList[i], filterKey
                     end
                 end
             end
@@ -851,14 +851,14 @@ function mod.PAB_GetCustomDebuffBar(ident)
         end
     end
     local s = PAB()
-    local st = s and s.pabSpecBars
-    if st then
-        for key, b in pairs(st) do
-            local bl = b.debuffBars
-            if bl then
-                for i = 1, #bl do
-                    if bl[i].id == ident then
-                        return bl[i], key
+    local state = s and s.pabSpecBars
+    if state then
+        for filterKey, b in pairs(state) do
+            local blockList = b.debuffBars
+            if blockList then
+                for i = 1, #blockList do
+                    if blockList[i].id == ident then
+                        return blockList[i], filterKey
                     end
                 end
             end
@@ -875,7 +875,7 @@ end
 -- Disease/Poison/Bleed). NOT pre-populated, same as those two starting as {}:
 -- BuildStyle/ComputeGrid apply the same `or <default>` fallbacks either way, so a
 -- fresh bar renders with sane defaults and Options only writes fields the user touches.
-function mod.PAB_AddCustomBuffBar(name, bucketKey)
+function mod.PAB_AddCustomBuffBar(label, bucket)
     local s = PABEnsure()
     if not s then
         return nil
@@ -883,7 +883,7 @@ function mod.PAB_AddCustomBuffBar(name, bucketKey)
     s.customBuffBars = s.customBuffBars or {}
     local barFrame = {
         id = NextBarId(s),
-        name = name or "New Buff Bar",
+        name = label or "New Buff Bar",
         enabled = true,
         filters = {}, -- [filterId] = true (BM2-style assigned filters)
         spells = {}, -- {spellID, ...} direct/custom spells
@@ -898,12 +898,12 @@ function mod.PAB_AddCustomBuffBar(name, bucketKey)
     }
     -- The edited editing-spec bucket owns the new bar; ids come from the ONE
     -- shared counter regardless of bucket.
-    local target = mod.PAB_BucketBars(true, bucketKey, true) or s.customBuffBars
+    local target = mod.PAB_BucketBars(true, bucket, true) or s.customBuffBars
     target[#target + 1] = barFrame
     return barFrame
 end
 
-function mod.PAB_AddCustomDebuffBar(name, bucketKey)
+function mod.PAB_AddCustomDebuffBar(label, bucket)
     local s = PABEnsure()
     if not s then
         return nil
@@ -911,7 +911,7 @@ function mod.PAB_AddCustomDebuffBar(name, bucketKey)
     s.customDebuffBars = s.customDebuffBars or {}
     local barFrame = {
         id = NextBarId(s),
-        name = name or "New Debuff Bar",
+        name = label or "New Debuff Bar",
         enabled = true,
         classFilters = {}, -- [classKey] = true, same vocabulary as BuildChain
         growDirection = "LEFT",
@@ -920,7 +920,7 @@ function mod.PAB_AddCustomDebuffBar(name, bucketKey)
         maxRows = 1,
         maxTotal = 8,
     }
-    local target = mod.PAB_BucketBars(false, bucketKey, true) or s.customDebuffBars
+    local target = mod.PAB_BucketBars(false, bucket, true) or s.customDebuffBars
     target[#target + 1] = barFrame
     return barFrame
 end
@@ -932,12 +932,12 @@ end
 -- Deep-copies a custom bar into another editing-spec bucket (the right-click
 -- "Add To" menu): full settings clone -- position included -- under a fresh
 -- global id; the source is untouched.
-function mod.PAB_CopyCustomBar(isBuff, source, bucketKey)
+function mod.PAB_CopyCustomBar(isBuff, source, bucket)
     local s = PABEnsure()
     if not (s and source) then
         return nil
     end
-    local target = mod.PAB_BucketBars(isBuff, bucketKey, true)
+    local target = mod.PAB_BucketBars(isBuff, bucket, true)
     if not target then
         return nil
     end
@@ -951,16 +951,16 @@ end
 -- sweep its per-spec disable keys (ids are global and never reused, so a
 -- deleted bar's key could only leak).
 local function DeleteFromSpecBuckets(s, ident, listField)
-    local st = s.pabSpecBars
-    if not st then
+    local state = s.pabSpecBars
+    if not state then
         return
     end
-    for _, b in pairs(st) do
-        local bl = b[listField]
-        if bl then
-            for i = #bl, 1, -1 do
-                if bl[i].id == ident then
-                    table.remove(bl, i)
+    for _, b in pairs(state) do
+        local blockList = b[listField]
+        if blockList then
+            for i = #blockList, 1, -1 do
+                if blockList[i].id == ident then
+                    table.remove(blockList, i)
                 end
             end
         end
@@ -1066,8 +1066,8 @@ end
 
 -- Group buckets a concrete "spec<ID>" view inherits from, in display order.
 -- nil for group views and unknown keys.
-function mod.PAB_InheritedGroupsFor(bucketKey)
-    local m = type(bucketKey) == "string" and bucketKey:match("^spec(%d+)$")
+function mod.PAB_InheritedGroupsFor(bucket)
+    local m = type(bucket) == "string" and bucket:match("^spec(%d+)$")
     local spellRef = m and tonumber(m)
     if not spellRef then
         return nil
@@ -1087,22 +1087,22 @@ function mod.PAB_InheritedGroupsFor(bucketKey)
     return result
 end
 
-local function SpecBarBucket(s, key, create)
-    local st = s.pabSpecBars
-    if not st then
+local function SpecBarBucket(s, filterKey, create)
+    local state = s.pabSpecBars
+    if not state then
         if not create then
             return nil
         end
-        st = {}
-        s.pabSpecBars = st
+        state = {}
+        s.pabSpecBars = state
     end
-    local b = st[key]
+    local b = state[filterKey]
     if not b then
         if not create then
             return nil
         end
         b = { buffBars = {}, debuffBars = {}, inhDis = {} }
-        st[key] = b
+        state[filterKey] = b
     end
     b.buffBars = b.buffBars or {}
     b.debuffBars = b.debuffBars or {}
@@ -1114,8 +1114,8 @@ end
 -- whose "spec<ID>" bucket holds data (buff bars, debuff bars or per-spec
 -- disables of All Specs bars), else its first spec. token nil = the player's
 -- class. Resolved per reload / page build / removal, never per frame.
-function mod.PAB_BucketHasData(ident, st)
-    local b = st and st["spec" .. ident]
+function mod.PAB_BucketHasData(ident, state)
+    local b = state and state["spec" .. ident]
     if b == nil then
         return false
     end
@@ -1157,12 +1157,12 @@ function mod.PAB_ForeverKey(token)
 end
 
 -- Bucket bar array for an EDITED view ("allspecs"/nil = the legacy arrays).
-function mod.PAB_BucketBars(isBuff, key, create)
+function mod.PAB_BucketBars(isBuff, filterKey, create)
     local s = create and PABEnsure() or PAB()
     if not s then
         return nil
     end
-    if not key or key == "allspecs" then
+    if not filterKey or filterKey == "allspecs" then
         if isBuff then
             if create then
                 s.customBuffBars = s.customBuffBars or {}
@@ -1174,7 +1174,7 @@ function mod.PAB_BucketBars(isBuff, key, create)
         end
         return s.customDebuffBars
     end
-    local b = SpecBarBucket(s, key, create)
+    local b = SpecBarBucket(s, filterKey, create)
     if not b then
         return nil
     end
@@ -1208,11 +1208,11 @@ function mod.PAB_SetInhDisabled(concreteKey, ident, disabled)
 end
 
 -- Does bucketKey's content render for the given spec?
-local function BucketApplies(bucketKey, spellRef)
-    if not bucketKey or bucketKey == "allspecs" then
+local function BucketApplies(bucket, spellRef)
+    if not bucket or bucket == "allspecs" then
         return true
     end
-    local m = bucketKey:match("^spec(%d+)$")
+    local m = bucket:match("^spec(%d+)$")
     if m then
         return spellRef == tonumber(m)
     end
@@ -1224,10 +1224,10 @@ local function BucketApplies(bucketKey, spellRef)
         return false
     end
     local roleKey = RoleBucketForSpecID(spellRef)
-    if bucketKey == "nonhealer" then
+    if bucket == "nonhealer" then
         return roleKey ~= "healers"
     end
-    return bucketKey == roleKey
+    return bucket == roleKey
 end
 
 -- Render verdict for a custom bar: the MODULE is on (Disable All is a full
@@ -1235,7 +1235,7 @@ end
 -- lingering), the bar's own toggle is on, its owning bucket applies to the
 -- CURRENT spec, and (group buckets, All Specs included) this spec hasn't
 -- per-spec disabled it. bucketKey nil = legacy = "allspecs".
-function mod.PAB_BarActive(barFrame, bucketKey)
+function mod.PAB_BarActive(barFrame, bucket)
     if not barFrame or barFrame.enabled == false then
         return false
     end
@@ -1244,10 +1244,10 @@ function mod.PAB_BarActive(barFrame, bucketKey)
         return false
     end
     local spellRef = CurrentSpecID()
-    if not BucketApplies(bucketKey, spellRef) then
+    if not BucketApplies(bucket, spellRef) then
         return false
     end
-    local isOwn = bucketKey and bucketKey:match("^spec%d") and true or false
+    local isOwn = bucket and bucket:match("^spec%d") and true or false
     if not isOwn and spellRef then
         local s = PAB()
         local con = s and s.pabSpecBars and s.pabSpecBars["spec" .. spellRef]

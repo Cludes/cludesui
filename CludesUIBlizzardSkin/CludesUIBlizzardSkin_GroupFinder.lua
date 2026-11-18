@@ -252,18 +252,18 @@ end
 
 -- Strip an InsetFrameTemplate child (its Bg + rounded box) so it blends into the
 -- panel backdrop instead of showing a nested box.
-local function FadeInset(inset)
-    if not inset or inset:IsForbidden() then
+local function FadeInset(insetPx)
+    if not insetPx or insetPx:IsForbidden() then
         return
     end
-    FadeRegions(inset)
-    if inset.Bg then
-        inset.Bg:SetAlpha(0)
+    FadeRegions(insetPx)
+    if insetPx.Bg then
+        insetPx.Bg:SetAlpha(0)
     end
-    if inset.NineSlice then
-        FadeRegions(inset.NineSlice)
+    if insetPx.NineSlice then
+        FadeRegions(insetPx.NineSlice)
     end
-    Register(inset, true)
+    Register(insetPx, true)
 end
 
 -- Generic action button -> flat dark block with hover. keepKeys preserves named
@@ -378,16 +378,16 @@ end
 -- box on the left, with a green tick when checked and a soft wash on
 -- hover-or-checked. State is driven off the Blizzard checkbox via hooks so it
 -- always mirrors the real value (no writing to the Blizzard frame's table).
-local function SkinCheckbox(cb)
-    if not cb or cb:IsForbidden() then
+local function SkinCheckbox(checkBtn)
+    if not checkBtn or checkBtn:IsForbidden() then
         return
     end
-    local skinData = GetFFD(cb)
+    local skinData = GetFFD(checkBtn)
     if skinData.skinned then
         return
     end
     skinData.skinned = true
-    local regionList = { cb:GetRegions() }
+    local regionList = { checkBtn:GetRegions() }
     for idx = 1, #regionList do
         local region = regionList[idx]
         if region and region.IsObjectType and region:IsObjectType("Texture") and region.SetTexture then
@@ -401,56 +401,56 @@ local function SkinCheckbox(cb)
         "GetCheckedTexture",
         "GetDisabledCheckedTexture",
     }) do
-        local t = cb[g] and cb[g](cb)
+        local t = checkBtn[g] and checkBtn[g](checkBtn)
         if t and t.SetTexture then
             t:SetTexture("")
         end
     end
-    local boxF = CreateFrame("Frame", nil, cb)
+    local boxF = CreateFrame("Frame", nil, checkBtn)
     boxF:SetSize(14, 14)
-    boxF:SetPoint("LEFT", cb, "LEFT", 4, 0)
+    boxF:SetPoint("LEFT", checkBtn, "LEFT", 4, 0)
     local fillTex = SolidTex(boxF, "BACKGROUND", 0.02, 0.02, 0.02, 1)
     fillTex:SetAllPoints(boxF)
     skinData.bg = fillTex
     AddBorder(boxF, 0.25, 0.25, 0.25, 1)
-    local tick = boxF:CreateTexture(nil, "OVERLAY")
-    tick:SetPoint("TOPLEFT", 3, -3)
-    tick:SetPoint("BOTTOMRIGHT", -3, 3)
-    tick:SetColorTexture(Theme.accR, Theme.accG, Theme.accB, 1)
+    local tickTex = boxF:CreateTexture(nil, "OVERLAY")
+    tickTex:SetPoint("TOPLEFT", 3, -3)
+    tickTex:SetPoint("BOTTOMRIGHT", -3, 3)
+    tickTex:SetColorTexture(Theme.accR, Theme.accG, Theme.accB, 1)
     local washTex = SolidTex(boxF, "ARTWORK", 1, 1, 1, 0.1)
     washTex:SetAllPoints(boxF)
     washTex:Hide()
     local hovering = false
-    local function updState()
-        local checked = cb:GetChecked()
+    local function updateState()
+        local checked = checkBtn:GetChecked()
         if issecretvalue(checked) then
             -- LFGList apply-phase data can make the checked state SECRET, and
             -- boolean-testing it throws. Bind the tick straight off the secret
             -- via the boolean-accepting alpha setter; the wash tracks hover
             -- only while the state is unreadable.
-            if tick.SetAlphaFromBoolean then
-                tick:Show()
-                tick:SetAlphaFromBoolean(checked, 1, 0)
+            if tickTex.SetAlphaFromBoolean then
+                tickTex:Show()
+                tickTex:SetAlphaFromBoolean(checked, 1, 0)
             end
             washTex:SetShown(hovering)
             return
         end
         checked = checked and true or false
-        tick:SetAlpha(1)
-        tick:SetShown(checked)
+        tickTex:SetAlpha(1)
+        tickTex:SetShown(checked)
         washTex:SetShown(hovering or checked)
     end
-    cb:HookScript("OnEnter", function()
+    checkBtn:HookScript("OnEnter", function()
         hovering = true
-        updState()
+        updateState()
     end)
-    cb:HookScript("OnLeave", function()
+    checkBtn:HookScript("OnLeave", function()
         hovering = false
-        updState()
+        updateState()
     end)
-    cb:HookScript("OnClick", updState)
-    hooksecurefunc(cb, "SetChecked", updState)
-    updState()
+    checkBtn:HookScript("OnClick", updateState)
+    hooksecurefunc(checkBtn, "SetChecked", updateState)
+    updateState()
 end
 
 -- Modern dropdown / selector -> flat block. Heavily nil-guarded because the
@@ -522,14 +522,14 @@ local function SkinScrollBar(scrollBar)
     if track then
         FadeRegions(track)
     end
-    local thumb = (track and track.Thumb) or (scrollBar.GetThumb and scrollBar:GetThumb())
-    if thumb and not GetFFD(thumb).bg then
-        FadeRegions(thumb)
-        local t = SolidTex(thumb, "ARTWORK", 1, 1, 1, 0.3)
-        t:SetPoint("TOP", thumb, "TOP", 0, 0)
-        t:SetPoint("BOTTOM", thumb, "BOTTOM", 0, 0)
+    local knob = (track and track.Thumb) or (scrollBar.GetThumb and scrollBar:GetThumb())
+    if knob and not GetFFD(knob).bg then
+        FadeRegions(knob)
+        local t = SolidTex(knob, "ARTWORK", 1, 1, 1, 0.3)
+        t:SetPoint("TOP", knob, "TOP", 0, 0)
+        t:SetPoint("BOTTOM", knob, "BOTTOM", 0, 0)
         t:SetWidth(4)
-        GetFFD(thumb).bg = t
+        GetFFD(knob).bg = t
     end
 end
 
@@ -596,31 +596,31 @@ local function SkinTab(tabBtn)
         end
     end)
 
-    local underline = tabBtn:CreateTexture(nil, "OVERLAY", nil, 6)
+    local underlineTex = tabBtn:CreateTexture(nil, "OVERLAY", nil, 6)
     if CUI and CUI.PanelPP and CUI.PanelPP.DisablePixelSnap then
-        CUI.PanelPP.DisablePixelSnap(underline)
-        underline:SetHeight(CUI.PanelPP.mult or 1)
+        CUI.PanelPP.DisablePixelSnap(underlineTex)
+        underlineTex:SetHeight(CUI.PanelPP.mult or 1)
     else
-        underline:SetHeight(1)
+        underlineTex:SetHeight(1)
     end
-    underline:SetPoint("BOTTOMLEFT", tabBtn, "BOTTOMLEFT", 0, 0)
-    underline:SetPoint("BOTTOMRIGHT", tabBtn, "BOTTOMRIGHT", 0, 0)
+    underlineTex:SetPoint("BOTTOMLEFT", tabBtn, "BOTTOMLEFT", 0, 0)
+    underlineTex:SetPoint("BOTTOMRIGHT", tabBtn, "BOTTOMRIGHT", 0, 0)
     -- Color + visibility follow the Blizzard Window Skins "Global Options"
     -- accent-bar setting; the window-skin engine recolors registered
     -- underlines on option edits and accent changes.
     local wsk = mod.WSkin
     if wsk and wsk.AccentBarColor then
         local ur, ug, ub = wsk.AccentBarColor()
-        underline:SetColorTexture(ur, ug, ub, 1)
+        underlineTex:SetColorTexture(ur, ug, ub, 1)
         if wsk.RegisterAccentUnderline then
-            wsk.RegisterAccentUnderline(underline)
+            wsk.RegisterAccentUnderline(underlineTex)
         end
     else
-        underline:SetColorTexture(Theme.accR, Theme.accG, Theme.accB, 1)
-        CUI.RegAccent({ type = "solid", obj = underline, a = 1 })
+        underlineTex:SetColorTexture(Theme.accR, Theme.accG, Theme.accB, 1)
+        CUI.RegAccent({ type = "solid", obj = underlineTex, a = 1 })
     end
-    underline:Hide()
-    skinData.underline = underline
+    underlineTex:Hide()
+    skinData.underline = underlineTex
 end
 
 local _gfLooksHooked = false
@@ -1045,10 +1045,10 @@ end
 -- for the first button: Blizzard HIDES that texture in the AddButton rebuild
 -- and re-derives selection from the ID, and the first category is auto-selected
 -- by default (never passing through the click hook).
-local function IsLFGCategorySelected(cs, button)
-    return cs.selectedCategory ~= nil
-        and button.categoryID == cs.selectedCategory
-        and button.filters == cs.selectedFilters
+local function IsLFGCategorySelected(checkSkin, button)
+    return checkSkin.selectedCategory ~= nil
+        and button.categoryID == checkSkin.selectedCategory
+        and button.filters == checkSkin.selectedFilters
 end
 
 local function UpdateLFGCategorySelection()
@@ -1087,15 +1087,15 @@ local function Skin_LFGList()
         -- hook that catches the default selection and every click alike.
         if LFGListCategorySelection_AddButton and not GetFFD(CS).addBtnHook then
             GetFFD(CS).addBtnHook = true
-            hooksecurefunc("LFGListCategorySelection_AddButton", function(cs, btnIndex, categoryID, filters)
-                local b = cs and cs.CategoryButtons and cs.CategoryButtons[btnIndex]
+            hooksecurefunc("LFGListCategorySelection_AddButton", function(checkSkin, btnIndex, categoryID, filters)
+                local b = checkSkin and checkSkin.CategoryButtons and checkSkin.CategoryButtons[btnIndex]
                 if not b or b:IsForbidden() then
                     return
                 end
                 SkinLFGCategoryButton(b)
                 local skinData = FFD[b]
                 if skinData and skinData.selWash then
-                    local sel = (cs.selectedCategory == categoryID) and (cs.selectedFilters == filters)
+                    local sel = (checkSkin.selectedCategory == categoryID) and (checkSkin.selectedFilters == filters)
                     skinData.selWash:SetShown(sel and true or false)
                 end
             end)
@@ -1579,9 +1579,9 @@ local function Skin_PVP()
     local hf = _G.HonorFrame
     if hf then
         SkinPanel(hf, { noBg = true, noBorder = true })
-        local inset = hf.Inset or _G.HonorFrameInset
-        if inset then
-            FadeInset(inset)
+        local insetPx = hf.Inset or _G.HonorFrameInset
+        if insetPx then
+            FadeInset(insetPx)
         end
         if hf.QueueButton then
             SkinButton(hf.QueueButton)
@@ -1603,9 +1603,9 @@ local function Skin_PVP()
     local castFrame = _G.ConquestFrame
     if castFrame then
         SkinPanel(castFrame, { noBg = true, noBorder = true })
-        local inset = castFrame.Inset or _G.ConquestFrameInset
-        if inset then
-            FadeInset(inset)
+        local insetPx = castFrame.Inset or _G.ConquestFrameInset
+        if insetPx then
+            FadeInset(insetPx)
         end
         if castFrame.JoinButton then
             SkinButton(castFrame.JoinButton)
@@ -1616,9 +1616,9 @@ local function Skin_PVP()
     local tg = _G.TrainingGroundsFrame
     if tg then
         SkinPanel(tg, { noBg = true, noBorder = true })
-        local inset = tg.Inset or _G.TrainingGroundsFrameInset
-        if inset then
-            FadeInset(inset)
+        local insetPx = tg.Inset or _G.TrainingGroundsFrameInset
+        if insetPx then
+            FadeInset(insetPx)
         end
         if tg.QueueButton then
             SkinButton(tg.QueueButton)
@@ -1815,9 +1815,9 @@ local function RestoreAppRoles(dialog)
     pcall(function()
         local saved = CludesUIDB.lfgSavedRoles
         local function applyFn(button, wanted)
-            local cb = button and button.CheckButton
-            if cb and cb:IsEnabled() then
-                cb:SetChecked(wanted and true or false)
+            local checkBtn = button and button.CheckButton
+            if checkBtn and checkBtn:IsEnabled() then
+                checkBtn:SetChecked(wanted and true or false)
             end
         end
         applyFn(dialog.TankButton, saved.tank)
@@ -1859,9 +1859,9 @@ local function InstallRememberRolesHooks()
     end)
     for _, key in ipairs({ "TankButton", "HealerButton", "DamagerButton" }) do
         local button = dialog[key]
-        local cb = button and button.CheckButton
-        if cb then
-            cb:HookScript("OnClick", function()
+        local checkBtn = button and button.CheckButton
+        if checkBtn then
+            checkBtn:HookScript("OnClick", function()
                 SaveAppRoles(dialog)
             end)
         end
@@ -1893,36 +1893,36 @@ end
 -- Add another name here if a different addon is reported doing the same thing.
 local KNOWN_PVE_COMPANIONS = { "RaiderIO_ProfileTooltip" }
 
-local function FindOutermostFrame(pve, side)
-    local outFrame = pve
-    local pveScale = pve:GetEffectiveScale() or 1
-    local outEdgeAbs = ((side == "right" and pve:GetRight() or pve:GetLeft()) or 0) * pveScale
-    local pveTop, pveBottom = pve:GetTop(), pve:GetBottom()
+local function FindOutermostFrame(pveFrame, side)
+    local outFrame = pveFrame
+    local pveScale = pveFrame:GetEffectiveScale() or 1
+    local outerEdge = ((side == "right" and pveFrame:GetRight() or pveFrame:GetLeft()) or 0) * pveScale
+    local pveTop, pveBottom = pveFrame:GetTop(), pveFrame:GetBottom()
     if not pveTop or not pveBottom then
-        return outFrame, outEdgeAbs
+        return outFrame, outerEdge
     end
     local topAbs, bottomAbs = pveTop * pveScale, pveBottom * pveScale
 
     for _, name in ipairs(KNOWN_PVE_COMPANIONS) do
-        local checkFrame = _G[name]
-        if checkFrame and checkFrame:IsVisible() then
-            local fLeft, fRight = checkFrame:GetLeft(), checkFrame:GetRight()
-            local fTop, fBottom = checkFrame:GetTop(), checkFrame:GetBottom()
+        local checkBox = _G[name]
+        if checkBox and checkBox:IsVisible() then
+            local fLeft, fRight = checkBox:GetLeft(), checkBox:GetRight()
+            local fTop, fBottom = checkBox:GetTop(), checkBox:GetBottom()
             if fLeft and fRight and fTop and fBottom then
-                local fScale = checkFrame:GetEffectiveScale() or 1
+                local fScale = checkBox:GetEffectiveScale() or 1
                 local fLeftAbs, fRightAbs = fLeft * fScale, fRight * fScale
                 local fTopAbs, fBottomAbs = fTop * fScale, fBottom * fScale
                 if fTopAbs > bottomAbs and fBottomAbs < topAbs then
-                    if side == "right" and fRightAbs > outEdgeAbs then
-                        outFrame, outEdgeAbs = checkFrame, fRightAbs
-                    elseif side == "left" and fLeftAbs < outEdgeAbs then
-                        outFrame, outEdgeAbs = checkFrame, fLeftAbs
+                    if side == "right" and fRightAbs > outerEdge then
+                        outFrame, outerEdge = checkBox, fRightAbs
+                    elseif side == "left" and fLeftAbs < outerEdge then
+                        outFrame, outerEdge = checkBox, fLeftAbs
                     end
                 end
             end
         end
     end
-    return outFrame, outEdgeAbs
+    return outFrame, outerEdge
 end
 
 -- Guards our own SetPoint call below from re-triggering itself through the
@@ -1935,11 +1935,11 @@ local function DockCharacterFrame()
         return
     end
     local castFrame = _G.CharacterFrame
-    local pve = PVEFrame
-    if not castFrame or not pve then
+    local pveFrame = PVEFrame
+    if not castFrame or not pveFrame then
         return
     end
-    if not castFrame:IsShown() or not pve:IsShown() then
+    if not castFrame:IsShown() or not pveFrame:IsShown() then
         return
     end
     -- No pin check here: PVEFrame is protected, so it can never get even the
@@ -1950,24 +1950,24 @@ local function DockCharacterFrame()
     -- -pinned CharacterFrame -- their chosen SCALE is untouched, only the
     -- anchor point moves.
 
-    local cs = castFrame:GetEffectiveScale() or 1
+    local checkSkin = castFrame:GetEffectiveScale() or 1
     local ues = UIParent:GetEffectiveScale() or 1
-    local wAbs = (castFrame:GetWidth() or 0) * cs
-    local leftFrame, leftEdgeAbs = FindOutermostFrame(pve, "left")
-    local rightFrame, rightEdgeAbs = FindOutermostFrame(pve, "right")
+    local wAbs = (castFrame:GetWidth() or 0) * checkSkin
+    local leftFrame, leftEdgeAbs = FindOutermostFrame(pveFrame, "left")
+    local rightFrame, rightEdgeAbs = FindOutermostFrame(pveFrame, "right")
     local leftRoom = leftEdgeAbs
     local rightRoom = (GetScreenWidth() or 0) * ues - rightEdgeAbs
-    local dockLeft = leftRoom >= wAbs + PVE_DOCK_MARGIN * cs or leftRoom >= rightRoom
+    local dockLeft = leftRoom >= wAbs + PVE_DOCK_MARGIN * checkSkin or leftRoom >= rightRoom
 
     local targetPoint, targetRel, targetRelPoint, targetX, targetY, expectedEdgeAbs
     if dockLeft then
         targetPoint, targetRel, targetRelPoint, targetX, targetY =
             "TOPRIGHT", leftFrame, "TOPLEFT", -PVE_DOCK_MARGIN, 0
-        expectedEdgeAbs = leftEdgeAbs - PVE_DOCK_MARGIN * cs
+        expectedEdgeAbs = leftEdgeAbs - PVE_DOCK_MARGIN * checkSkin
     else
         targetPoint, targetRel, targetRelPoint, targetX, targetY =
             "TOPLEFT", rightFrame, "TOPRIGHT", PVE_DOCK_MARGIN, 0
-        expectedEdgeAbs = rightEdgeAbs + PVE_DOCK_MARGIN * cs
+        expectedEdgeAbs = rightEdgeAbs + PVE_DOCK_MARGIN * checkSkin
     end
 
     -- PVEFrame's own internal layout re-anchors it (and a docked companion) repeatedly
@@ -1979,7 +1979,7 @@ local function DockCharacterFrame()
     -- decision (Shifter's scale step can reposition CharacterFrame away from our dock
     -- via ITS OWN saved-position math without leftFrame/rightFrame/ dockLeft ever
     -- changing, which a decision-only cache can't detect).
-    local curEdgeAbs = (dockLeft and (castFrame:GetRight() or 0) or (castFrame:GetLeft() or 0)) * cs
+    local curEdgeAbs = (dockLeft and (castFrame:GetRight() or 0) or (castFrame:GetLeft() or 0)) * checkSkin
     if math.abs(curEdgeAbs - expectedEdgeAbs) < 1 then
         return
     end

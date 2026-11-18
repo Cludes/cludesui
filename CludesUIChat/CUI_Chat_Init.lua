@@ -312,25 +312,25 @@ initFrame:SetScript("OnEvent", function(self)
     -- config loads) coincides with these events on our own frame -- outside Blizzard's
     -- dispatch, deferred one tick. Also covers user-created permanent windows
     -- (UPDATE_CHAT_WINDOWS) and repositions panels after scale changes.
-    local tabPassFrame = CreateFrame("Frame")
-    tabPassFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-    tabPassFrame:RegisterEvent("UPDATE_CHAT_WINDOWS")
-    tabPassFrame:RegisterEvent("UPDATE_FLOATING_CHAT_WINDOWS")
-    tabPassFrame:RegisterEvent("UI_SCALE_CHANGED")
-    tabPassFrame:RegisterEvent("DISPLAY_SIZE_CHANGED")
-    tabPassFrame:SetScript("OnEvent", QueueFullPass)
+    local tabPass = CreateFrame("Frame")
+    tabPass:RegisterEvent("PLAYER_ENTERING_WORLD")
+    tabPass:RegisterEvent("UPDATE_CHAT_WINDOWS")
+    tabPass:RegisterEvent("UPDATE_FLOATING_CHAT_WINDOWS")
+    tabPass:RegisterEvent("UI_SCALE_CHANGED")
+    tabPass:RegisterEvent("DISPLAY_SIZE_CHANGED")
+    tabPass:SetScript("OnEvent", QueueFullPass)
     -- Edit Mode can rebuild the chat dock and tab geometry after a panel resize.
     -- Re-assert tab appearance only once that update has left Blizzard's
     -- event/script stack; the short second pass covers the final size commit
     -- performed while Edit Mode closes.
     do
-        local editModeStyleGeneration = 0
+        local editStyleGen = 0
         local function QueueEditModeTabStyle()
-            editModeStyleGeneration = editModeStyleGeneration + 1
-            local generation = editModeStyleGeneration
+            editStyleGen = editStyleGen + 1
+            local generation = editStyleGen
             QueueTabPass()
             C_Timer.After(0.10, function()
-                if generation == editModeStyleGeneration then
+                if generation == editStyleGen then
                     QueueTabPass()
                 end
             end)
@@ -384,12 +384,12 @@ initFrame:SetScript("OnEvent", function(self)
     -- That covers every temp-window trigger: incoming whisper and outgoing /w in
     -- popout mode (WHISPER_INFORM).
     do
-        local tempWinFrame = CreateFrame("Frame")
-        tempWinFrame:RegisterEvent("CHAT_MSG_WHISPER")
-        tempWinFrame:RegisterEvent("CHAT_MSG_WHISPER_INFORM")
-        tempWinFrame:RegisterEvent("CHAT_MSG_BN_WHISPER")
-        tempWinFrame:RegisterEvent("CHAT_MSG_BN_WHISPER_INFORM")
-        tempWinFrame:SetScript("OnEvent", QueueFullPass)
+        local tempWindow = CreateFrame("Frame")
+        tempWindow:RegisterEvent("CHAT_MSG_WHISPER")
+        tempWindow:RegisterEvent("CHAT_MSG_WHISPER_INFORM")
+        tempWindow:RegisterEvent("CHAT_MSG_BN_WHISPER")
+        tempWindow:RegisterEvent("CHAT_MSG_BN_WHISPER_INFORM")
+        tempWindow:SetScript("OnEvent", QueueFullPass)
     end
     -- User-created permanent chat windows are covered by the full pass on
     -- UPDATE_CHAT_WINDOWS -- NO hooksecurefunc on FCF_OpenNewWindow: it is
@@ -490,7 +490,7 @@ initFrame:SetScript("OnEvent", function(self)
     --     chat area (event-driven, no polling).
     ---------------------------------------------------------------------------
     do
-        local idleTimer = nil
+        local idleTicker = nil
         -- Hover state (UpdateHoverState below); read by OnActiveMessage.
         local _idleMouseOver = false
         local SetMessageWake -- with OnActiveMessage below
@@ -520,9 +520,9 @@ initFrame:SetScript("OnEvent", function(self)
         local function CancelIdleFade()
             local wasActive = _idleFadeActive
             SetIdleFadeActive(false)
-            if idleTimer then
-                idleTimer:Cancel()
-                idleTimer = nil
+            if idleTicker then
+                idleTicker:Cancel()
+                idleTicker = nil
             end
             if _visChatVisible then
                 CHAT.SetIdleFadeAlpha(1)
@@ -544,7 +544,7 @@ initFrame:SetScript("OnEvent", function(self)
                 return
             end
             local delay = conf.idleFadeDelay or 15
-            idleTimer = C_Timer.NewTimer(delay, StartIdleFade)
+            idleTicker = C_Timer.NewTimer(delay, StartIdleFade)
         end
 
         -- Visibility fully hid the chat: fade now and drop the leftover delay.
@@ -552,9 +552,9 @@ initFrame:SetScript("OnEvent", function(self)
             if not IsIdleApplicable() then
                 return
             end
-            if idleTimer then
-                idleTimer:Cancel()
-                idleTimer = nil
+            if idleTicker then
+                idleTicker:Cancel()
+                idleTicker = nil
             end
             StartIdleFade()
         end
@@ -708,10 +708,10 @@ initFrame:SetScript("OnEvent", function(self)
             end)
 
             local _whisperThrottle = 0
-            local whisperFrame = CreateFrame("Frame")
-            whisperFrame:RegisterEvent("CHAT_MSG_WHISPER")
-            whisperFrame:RegisterEvent("CHAT_MSG_BN_WHISPER")
-            whisperFrame:SetScript("OnEvent", function()
+            local whisperWindow = CreateFrame("Frame")
+            whisperWindow:RegisterEvent("CHAT_MSG_WHISPER")
+            whisperWindow:RegisterEvent("CHAT_MSG_BN_WHISPER")
+            whisperWindow:SetScript("OnEvent", function()
                 OnActiveMessage()
                 local conf = CHAT.DB()
                 local key = conf and conf.whisperSoundKey
@@ -745,7 +745,7 @@ initFrame:SetScript("OnEvent", function(self)
             if over and not _idleMouseOver then
                 _idleMouseOver = true
                 CancelIdleFade()
-            elseif not over and (_idleMouseOver or not (idleTimer or _idleFadeActive)) then
+            elseif not over and (_idleMouseOver or not (idleTicker or _idleFadeActive)) then
                 -- Also re-arm when nothing is armed: a hover that began while
                 -- faded is cleared by the reveal (ApplyIdleFadeHoverMotion),
                 -- so its leave would otherwise find no edge and no timer.
@@ -757,10 +757,10 @@ initFrame:SetScript("OnEvent", function(self)
         -- Single invisible overlay covering tabs + bg + sidebar, at BACKGROUND strata.
         -- Its mouse motion is conditional -- see ApplyIdleFadeHoverMotion below.
         do
-            local cf1 = _G.ChatFrame1
+            local generalFrame = _G.ChatFrame1
             local gdm = _G.GeneralDockManager
-            local bg1 = CFD(cf1).bg
-            local scrollBar = CFD(cf1).sidebar
+            local bg1 = CFD(generalFrame).bg
+            local scrollBar = CFD(generalFrame).sidebar
             if bg1 and gdm then
                 local overlayFrame = CreateFrame("Frame", nil, UIParent)
                 mod._chatHoverOverlay = overlayFrame
@@ -812,16 +812,16 @@ initFrame:SetScript("OnEvent", function(self)
 
         -- Sidebar has EnableMouse(true) which blocks the overlay beneath it.
         -- HookScript on our own frame -- safe, no taint.
-        local sidebar = CFD(ChatFrame1).sidebar
-        if sidebar then
-            sidebar:HookScript("OnEnter", function()
+        local sideBar = CFD(ChatFrame1).sidebar
+        if sideBar then
+            sideBar:HookScript("OnEnter", function()
                 _hoverCount = _hoverCount + 1
                 UpdateHoverState()
                 if CHAT.FollowArm then
                     CHAT.FollowArm()
                 end
             end)
-            sidebar:HookScript("OnLeave", function()
+            sideBar:HookScript("OnLeave", function()
                 _hoverCount = upper(0, _hoverCount - 1)
                 UpdateHoverState()
                 if CHAT.FollowRelease then
@@ -880,29 +880,29 @@ initFrame:SetScript("OnEvent", function(self)
             return
         end
         local conf = CHAT.DB()
-        local fmt = conf.timestampFormat or "%I:%M "
-        if fmt == "none" then
-            fmt = nil
-        elseif fmt == "__blizzard" then
+        local formatStr = conf.timestampFormat or "%I:%M "
+        if formatStr == "none" then
+            formatStr = nil
+        elseif formatStr == "__blizzard" then
             local success, frame = pcall(function()
                 return ChatFrameUtil
                     and ChatFrameUtil.GetTimestampFormat
                     and ChatFrameUtil.GetTimestampFormat()
             end)
-            fmt = (success and type(frame) == "string" and frame ~= "" and frame ~= "none") and frame or nil
+            formatStr = (success and type(frame) == "string" and frame ~= "" and frame ~= "none") and frame or nil
         end
-        CHAT.EngineSetStampAll(conf.timestampAll == true and fmt ~= nil, fmt)
+        CHAT.EngineSetStampAll(conf.timestampAll == true and formatStr ~= nil, formatStr)
     end
     CHAT.ApplyStampAll = ApplyStampAll
 
     local function ApplyTimestampCVar()
         ApplyStampAll()
         local conf = CHAT.DB()
-        local fmt = conf.timestampFormat or "%I:%M "
-        if fmt == "__blizzard" then
+        local formatStr = conf.timestampFormat or "%I:%M "
+        if formatStr == "__blizzard" then
             return
         end
-        CludesUI.SetCVar("showTimestamps", fmt, "CludesUIChat")
+        CludesUI.SetCVar("showTimestamps", formatStr, "CludesUIChat")
     end
     ApplyTimestampCVar()
     C_Timer.After(2, ApplyTimestampCVar)
@@ -1068,8 +1068,8 @@ initFrame:SetScript("OnEvent", function(self)
     --  12b. BNet Toast notification -- position via unlock mode
     ---------------------------------------------------------------------------
     do
-        local toast = _G.BNToastFrame
-        if toast then
+        local toastFrame = _G.BNToastFrame
+        if toastFrame then
             -- Apply saved position or default to bottom-right of chat bg
             local function ApplyToastPosition()
                 local conf = CHAT.DB()
@@ -1083,12 +1083,12 @@ initFrame:SetScript("OnEvent", function(self)
                 local px, py = place.x or 0, place.y or 0
                 local PPa = CUI and CUI.PP
                 if PPa and PPa.SnapForES then
-                    local es = toast:GetEffectiveScale()
-                    px = PPa.SnapForES(px, es)
-                    py = PPa.SnapForES(py, es)
+                    local effScale = toastFrame:GetEffectiveScale()
+                    px = PPa.SnapForES(px, effScale)
+                    py = PPa.SnapForES(py, effScale)
                 end
-                toast:ClearAllPoints()
-                toast:SetPoint(place.point, UIParent, place.relPoint or place.point, px, py)
+                toastFrame:ClearAllPoints()
+                toastFrame:SetPoint(place.point, UIParent, place.relPoint or place.point, px, py)
             end
 
             -- Enforce saved position when Blizzard tries to reposition; skip
@@ -1103,7 +1103,7 @@ initFrame:SetScript("OnEvent", function(self)
             -- position matters; the deferred call lets Blizzard finish its own
             -- anchoring first. Same shape as the FCFDock_SelectWindow hook this module
             -- already replaced for taint reasons.
-            toast:HookScript("OnShow", function()
+            toastFrame:HookScript("OnShow", function()
                 if CUI._unlockActive then
                     return
                 end
@@ -1129,19 +1129,19 @@ initFrame:SetScript("OnEvent", function(self)
                     -- Default: anchor to top of chat bg
                     local cf1bg = _G.ChatFrame1 and CFD(_G.ChatFrame1).bg
                     if cf1bg then
-                        toast:ClearAllPoints()
-                        toast:SetPoint("BOTTOMLEFT", cf1bg, "TOPLEFT", 0, 30)
+                        toastFrame:ClearAllPoints()
+                        toastFrame:SetPoint("BOTTOMLEFT", cf1bg, "TOPLEFT", 0, 30)
                         -- Snapshot the absolute position
-                        local es = toast:GetEffectiveScale()
-                        local uiS = UIParent:GetEffectiveScale()
-                        local cx, cy = toast:GetCenter()
+                        local effScale = toastFrame:GetEffectiveScale()
+                        local uiScale = UIParent:GetEffectiveScale()
+                        local cx, cy = toastFrame:GetCenter()
                         local uCX, uCY = UIParent:GetCenter()
                         if cx and uCX then
                             conf.toastPosition = {
                                 point = "CENTER",
                                 relPoint = "CENTER",
-                                x = (cx * es - uCX * uiS) / uiS,
-                                y = (cy * es - uCY * uiS) / uiS,
+                                x = (cx * effScale - uCX * uiScale) / uiScale,
+                                y = (cy * effScale - uCY * uiScale) / uiScale,
                             }
                         end
                     end
@@ -1161,10 +1161,10 @@ initFrame:SetScript("OnEvent", function(self)
                         noAnchorTo = true,
                         noResize = true,
                         getFrame = function()
-                            return toast
+                            return toastFrame
                         end,
                         getSize = function()
-                            return toast:GetWidth(), toast:GetHeight()
+                            return toastFrame:GetWidth(), toastFrame:GetHeight()
                         end,
                         isHidden = function()
                             return false
@@ -1238,8 +1238,8 @@ initFrame:SetScript("OnEvent", function(self)
                     return _G.ChatFrame1
                 end,
                 getSize = function()
-                    local cf1 = _G.ChatFrame1
-                    return cf1:GetWidth(), cf1:GetHeight()
+                    local generalFrame = _G.ChatFrame1
+                    return generalFrame:GetWidth(), generalFrame:GetHeight()
                 end,
                 isHidden = function()
                     return false

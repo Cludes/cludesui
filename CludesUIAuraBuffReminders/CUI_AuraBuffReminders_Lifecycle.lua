@@ -51,17 +51,17 @@ local saved
 Inner.dbSetters[#Inner.dbSetters + 1] = function(val)
     saved = val
 end
-local iconAnchor
+local iconHolder
 Inner.iconAnchorSetters[#Inner.iconAnchorSetters + 1] = function(val)
-    iconAnchor = val
+    iconHolder = val
 end
-local combatAnchor
+local combatHolder
 Inner.combatAnchorSetters[#Inner.combatAnchorSetters + 1] = function(val)
-    combatAnchor = val
+    combatHolder = val
 end
-local cursorAnchor
+local cursorHolder
 Inner.cursorAnchorSetters[#Inner.cursorAnchorSetters + 1] = function(val)
-    cursorAnchor = val
+    cursorHolder = val
 end
 
 local _encounterSnapshotTime = nil
@@ -74,16 +74,16 @@ local pendingOOCRefresh = false
 -------------------------------------------------------------------------------
 --  MAIN EVENT FRAME (forward-declared so OnEnable can reference it)
 -------------------------------------------------------------------------------
-local mainFrame = CreateFrame("Frame")
+local hostFrame = CreateFrame("Frame")
 
 -- Toggles broad vs player-only UNIT_AURA registration; file-scope so OnEnable and the event handler can both use it.
 local function _setBroad(on)
     if on and not _groupAuraBroadActive then
-        mainFrame:RegisterEvent("UNIT_AURA")
+        hostFrame:RegisterEvent("UNIT_AURA")
         _groupAuraBroadActive = true
     elseif not on and _groupAuraBroadActive then
-        mainFrame:UnregisterEvent("UNIT_AURA")
-        mainFrame:RegisterUnitEvent("UNIT_AURA", "player")
+        hostFrame:UnregisterEvent("UNIT_AURA")
+        hostFrame:RegisterUnitEvent("UNIT_AURA", "player")
         _groupAuraBroadActive = false
     end
 end
@@ -116,18 +116,18 @@ function REMIND:OnInitialize()
     --  legacy keys and every block no-ops.
     ---------------------------------------------------------------------------
     local p = saved.profile
-    local co = p and p.consumables
+    local collector = p and p.consumables
     -- Old single Augment Rune dropdown -> the dormant per-item "Show In"
     -- tier set (kept for the future per-item conditions cog).
-    if co and co.runeDisplayMode ~= nil then
-        co.showIn = co.showIn or {}
-        co.showIn.augment_rune = co.runeDisplayMode
-        co.runeDisplayMode = nil
+    if collector and collector.runeDisplayMode ~= nil then
+        collector.showIn = collector.showIn or {}
+        collector.showIn.augment_rune = collector.runeDisplayMode
+        collector.runeDisplayMode = nil
     end
     -- Old tiered "Show In" strings -> per-difficulty override sets. Absent
     -- category = on, so only unchecked difficulties store false ("all" =
     -- cleared entirely).
-    if co and co.showIn then
+    if collector and collector.showIn then
         local function tierToSet(tier)
             if tier == "heroic_mythic" then
                 return { d_normal = false, r_normal = false, r_lfr = false }
@@ -142,59 +142,59 @@ function REMIND:OnInitialize()
             end
             return nil -- "all" or unknown => every difficulty on
         end
-        for k, val in pairs(co.showIn) do
+        for k, val in pairs(collector.showIn) do
             if type(val) == "string" then
-                co.showIn[k] = tierToSet(val)
+                collector.showIn[k] = tierToSet(val)
             end
         end
     end
     -- Per-spell/open-world/others-missing model -> per-section "Where to
     -- Show" + "Show When". Open-world masters map to the open_world bucket;
     -- everything else is retired.
-    local rb = p and p.raidBuffs
-    if rb and (rb.showOthersMissing ~= nil or rb.showNonInstanced ~= nil) then
-        rb.showWhen = { othersMissing = (rb.showOthersMissing ~= false), iAmMissing = false }
-        rb.whereToShow = { open_world = (rb.showNonInstanced == true) }
-        rb.showOthersMissing, rb.showNonInstanced = nil, nil
+    local rebuild = p and p.raidBuffs
+    if rebuild and (rebuild.showOthersMissing ~= nil or rebuild.showNonInstanced ~= nil) then
+        rebuild.showWhen = { othersMissing = (rebuild.showOthersMissing ~= false), iAmMissing = false }
+        rebuild.whereToShow = { open_world = (rebuild.showNonInstanced == true) }
+        rebuild.showOthersMissing, rebuild.showNonInstanced = nil, nil
     end
-    local au = p and p.auras
-    if au and au.showNonInstanced ~= nil then
-        au.whereToShow = { open_world = (au.showNonInstanced ~= false) }
-        au.showNonInstanced = nil
+    local auraRec = p and p.auras
+    if auraRec and auraRec.showNonInstanced ~= nil then
+        auraRec.whereToShow = { open_world = (auraRec.showNonInstanced ~= false) }
+        auraRec.showNonInstanced = nil
     end
-    if co and co.showSpecialsNonInstanced ~= nil then
-        co.specialsWhereToShow = { open_world = (co.showSpecialsNonInstanced ~= false) }
-        co.showSpecialsNonInstanced = nil
+    if collector and collector.showSpecialsNonInstanced ~= nil then
+        collector.specialsWhereToShow = { open_world = (collector.showSpecialsNonInstanced ~= false) }
+        collector.showSpecialsNonInstanced = nil
     end
     -- Old party/raid consumable thresholds -> the global timing pair.
-    local disp = p and p.display
-    if disp then
-        if disp.showUnderDurationDungeon ~= nil or disp.showUnderDurationRaid ~= nil then
-            if disp.showUnder == nil then
-                disp.showUnder = disp.showUnderDurationRaid or 5
+    local display = p and p.display
+    if display then
+        if display.showUnderDurationDungeon ~= nil or display.showUnderDurationRaid ~= nil then
+            if display.showUnder == nil then
+                display.showUnder = display.showUnderDurationRaid or 5
             end
-            if disp.showUnderMPlus == nil then
-                disp.showUnderMPlus = disp.showUnderDurationDungeon or 40
+            if display.showUnderMPlus == nil then
+                display.showUnderMPlus = display.showUnderDurationDungeon or 40
             end
-            disp.showUnderDurationDungeon = nil
-            disp.showUnderDurationRaid = nil
+            display.showUnderDurationDungeon = nil
+            display.showUnderDurationRaid = nil
         end
-        if disp.showUnder == nil then
-            disp.showUnder = 5
+        if display.showUnder == nil then
+            display.showUnder = 5
         end
-        if disp.showUnderMPlus == nil then
-            disp.showUnderMPlus = 40
+        if display.showUnderMPlus == nil then
+            display.showUnderMPlus = 40
         end
     end
     -- Retired per-section scale keys (display scale is the one knob).
-    if rb then
-        rb.scale = nil
+    if rebuild then
+        rebuild.scale = nil
     end
-    if au then
-        au.scale = nil
+    if auraRec then
+        auraRec.scale = nil
     end
-    if co then
-        co.scale = nil
+    if collector then
+        collector.scale = nil
     end
 
     -- Migrates the login-active profile eagerly; profiles activated later are covered by the read-path call in ResolveGlowTint.
@@ -246,49 +246,49 @@ function REMIND:OnEnable()
     _G._CUABR_STRATA_ORDER = STRATA_ORDER
 
     SetIconAnchor(CreateFrame("Frame", "EABR_Anchor", UIParent))
-    iconAnchor:SetSize(1, 1)
-    iconAnchor:SetFrameStrata(GetStrata())
-    iconAnchor:EnableMouse(false)
+    iconHolder:SetSize(1, 1)
+    iconHolder:SetFrameStrata(GetStrata())
+    iconHolder:EnableMouse(false)
     ApplyUnlockPos()
 
     -- Combat anchor: non-secure, follows iconAnchor position; parented to UIParent so Show/Hide is never blocked by combat lockdown.
     SetCombatAnchor(CreateFrame("Frame", "EABR_CombatAnchor", UIParent))
-    combatAnchor:SetSize(1, 1)
-    combatAnchor:SetFrameStrata(GetStrata())
-    combatAnchor:SetFrameLevel(110)
-    combatAnchor:EnableMouse(false)
-    combatAnchor:SetAllPoints(iconAnchor)
-    combatAnchor:Show()
-    CludesUI.SetElementVisibility(combatAnchor, false)
+    combatHolder:SetSize(1, 1)
+    combatHolder:SetFrameStrata(GetStrata())
+    combatHolder:SetFrameLevel(110)
+    combatHolder:EnableMouse(false)
+    combatHolder:SetAllPoints(iconHolder)
+    combatHolder:Show()
+    CludesUI.SetElementVisibility(combatHolder, false)
 
     -- Cursor anchor: tracks cursor position via OnUpdate (same as CDM).
     SetCursorAnchor(CreateFrame("Frame", "EABR_CursorAnchor", UIParent))
-    cursorAnchor:SetSize(1, 1)
-    cursorAnchor:SetFrameStrata("TOOLTIP")
-    cursorAnchor:SetFrameLevel(9980)
-    cursorAnchor:EnableMouse(false)
-    cursorAnchor:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+    cursorHolder:SetSize(1, 1)
+    cursorHolder:SetFrameStrata("TOOLTIP")
+    cursorHolder:SetFrameLevel(9980)
+    cursorHolder:EnableMouse(false)
+    cursorHolder:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
     do
         -- Cursor glue on the suite's shared cursor service (Tier A motionOnly: fires per render frame while the cursor MOVES, parked at rest). Subscription follows the frame's own OnShow/OnHide; OnShow snaps once via M.Get() so a cursor that moved while hidden never shows stale.
         local lastMX, lastMY
         local function GlueBody(rawX, rawY)
             local s = UIParent:GetEffectiveScale()
-            local cx = floor(rawX / s + 0.5)
-            local cy = floor(rawY / s + 0.5)
-            if cx ~= lastMX or cy ~= lastMY then
-                lastMX, lastMY = cx, cy
-                cursorAnchor:ClearAllPoints()
-                cursorAnchor:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx, cy + 60)
+            local cursorX = floor(rawX / s + 0.5)
+            local cursorY = floor(rawY / s + 0.5)
+            if cursorX ~= lastMX or cursorY ~= lastMY then
+                lastMX, lastMY = cursorX, cursorY
+                cursorHolder:ClearAllPoints()
+                cursorHolder:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cursorX, cursorY + 60)
             end
         end
-        cursorAnchor:SetScript("OnShow", function()
+        cursorHolder:SetScript("OnShow", function()
             local M = CludesUI.Mouse
             if M then
                 GlueBody(M.Get())
                 M.SubscribeFrame("abrCursor", GlueBody, true)
             end
         end)
-        cursorAnchor:SetScript("OnHide", function()
+        cursorHolder:SetScript("OnHide", function()
             local M = CludesUI.Mouse
             if M then
                 M.UnsubscribeFrame("abrCursor")
@@ -296,15 +296,15 @@ function REMIND:OnEnable()
         end)
     end
     -- Starts hidden: OnUpdate only runs while :IsShown(), saving CPU when no cursor-attached reminders are active.
-    cursorAnchor:Hide()
-    CludesUI.SetElementVisibility(cursorAnchor, false)
+    cursorHolder:Hide()
+    CludesUI.SetElementVisibility(cursorHolder, false)
 
     -- Talent reminder anchor created by CludesUIABR_TalentReminders.lua (independent of iconAnchor so parent alpha doesn't hide it).
 
     local function ApplyStrata()
         local strata = GetStrata()
-        iconAnchor:SetFrameStrata(strata)
-        combatAnchor:SetFrameStrata(strata)
+        iconHolder:SetFrameStrata(strata)
+        combatHolder:SetFrameStrata(strata)
         for _, button in pairs(iconPool) do
             button:SetFrameStrata(strata)
         end
@@ -380,11 +380,11 @@ function REMIND:OnEnable()
             and GetSpecID() == 102
             and Known(24858)
         if moonkinOn then
-            mainFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
-            mainFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORMS")
+            hostFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
+            hostFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORMS")
         else
-            mainFrame:UnregisterEvent("UPDATE_SHAPESHIFT_FORM")
-            mainFrame:UnregisterEvent("UPDATE_SHAPESHIFT_FORMS")
+            hostFrame:UnregisterEvent("UPDATE_SHAPESHIFT_FORM")
+            hostFrame:UnregisterEvent("UPDATE_SHAPESHIFT_FORMS")
         end
         _needGroupAura = false
         _isEvokerOwnOnRaid = false
@@ -397,23 +397,23 @@ function REMIND:OnEnable()
         -- unless the relevant reminder can actually be used/shown.
         local prevTrackID = REMIND._trackOwnOtherAuraID
         REMIND._trackOwnOtherAuraID = nil
-        local co = saved.profile.consumables
-        local au = saved.profile.auras
+        local collector = saved.profile.consumables
+        local auraRec = saved.profile.auras
         if
             playerClass == "SHAMAN"
             and Known(383010)
-            and co
-            and co.enabled
-            and co.enabled.es_ally == true
+            and collector
+            and collector.enabled
+            and collector.enabled.es_ally == true
             and (IsInGroup() or IsInRaid())
         then
             REMIND._trackOwnOtherAuraID = 974
         elseif
             playerClass == "EVOKER"
             and Known(369459)
-            and au
-            and au.enabled
-            and au.enabled.som ~= false
+            and auraRec
+            and auraRec.enabled
+            and auraRec.enabled.som ~= false
             and InRealInstancedContent()
             and (IsInGroup() or IsInRaid())
         then
@@ -444,25 +444,25 @@ function REMIND:OnEnable()
                 break
             end
         end
-        for _, aura in ipairs(AURAS) do
+        for _, auraInfo in ipairs(AURAS) do
             if
-                aura.class == playerClass
-                and aura.key ~= "som"
-                and (aura.check == "ownOnRaid" or aura.check == "ownGroupOrSelf")
-                and saved.profile.auras.enabled[aura.key] ~= false
+                auraInfo.class == playerClass
+                and auraInfo.key ~= "som"
+                and (auraInfo.check == "ownOnRaid" or auraInfo.check == "ownGroupOrSelf")
+                and saved.profile.auras.enabled[auraInfo.key] ~= false
             then
                 _needGroupAura = true
                 REMIND._rosterRefresh = true
                 REMIND._needsGroupAuraRefresh = true
-                if playerClass == "EVOKER" and aura.check == "ownOnRaid" and aura.key ~= "som" then
+                if playerClass == "EVOKER" and auraInfo.check == "ownOnRaid" and auraInfo.key ~= "som" then
                     _isEvokerOwnOnRaid = true
                 end
                 break
             end
         end
         if _needGroupAura then
-            mainFrame:RegisterEvent("GROUP_JOINED")
-            mainFrame:RegisterEvent("GROUP_LEFT")
+            hostFrame:RegisterEvent("GROUP_JOINED")
+            hostFrame:RegisterEvent("GROUP_LEFT")
             -- Start broad if OOC; in combat only while a group reader needs it
             -- (the same predicate as the pull edge).
             if InCombat() and not REMIND.KeepGroupAuraInCombat() then
@@ -472,8 +472,8 @@ function REMIND:OnEnable()
             end
         else
             _setBroad(false)
-            mainFrame:UnregisterEvent("GROUP_JOINED")
-            mainFrame:UnregisterEvent("GROUP_LEFT")
+            hostFrame:UnregisterEvent("GROUP_JOINED")
+            hostFrame:UnregisterEvent("GROUP_LEFT")
         end
         -- Tracking just turned on: seed the cache (the scan is OOC-only;
         -- combat end rescans otherwise).
@@ -488,7 +488,7 @@ function REMIND:OnEnable()
 
     -- Register spellcast tracking for Hunters (combat reminder for Hunter's Mark)
     if not REMIND.FOREVER and (GetPlayerClass() == "HUNTER" or GetPlayerClass() == "EVOKER") then
-        mainFrame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+        hostFrame:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
     end
 
     -- WoW Forever's Raid Buffs watch tracks its own range (EABR.FvSyncGroupWatch).
@@ -558,8 +558,8 @@ function REMIND:OnEnable()
     end
 
     local function _clearRangeTrackers()
-        for _, tracker in pairs(_rangeTrackers) do
-            tracker:UnregisterAllEvents()
+        for _, trackerFrame in pairs(_rangeTrackers) do
+            trackerFrame:UnregisterAllEvents()
         end
     end
 
@@ -567,14 +567,14 @@ function REMIND:OnEnable()
         if UnitIsUnit(unitToken, "player") then
             return
         end
-        local tracker = _rangeTrackers[unitToken]
-        if not tracker then
-            tracker = CreateFrame("Frame")
-            tracker:SetScript("OnEvent", _onRangeEvent)
-            _rangeTrackers[unitToken] = tracker
+        local trackerFrame = _rangeTrackers[unitToken]
+        if not trackerFrame then
+            trackerFrame = CreateFrame("Frame")
+            trackerFrame:SetScript("OnEvent", _onRangeEvent)
+            _rangeTrackers[unitToken] = trackerFrame
         end
-        tracker:RegisterUnitEvent("UNIT_IN_RANGE_UPDATE", unitToken)
-        tracker:RegisterUnitEvent("UNIT_CONNECTION", unitToken)
+        trackerFrame:RegisterUnitEvent("UNIT_IN_RANGE_UPDATE", unitToken)
+        trackerFrame:RegisterUnitEvent("UNIT_CONNECTION", unitToken)
     end
 
     local function _rebuildRangeTracking()
@@ -620,7 +620,7 @@ end
 -------------------------------------------------------------------------------
 --  MAIN EVENT HANDLER (OnEvent script for runtime events)
 -------------------------------------------------------------------------------
-mainFrame:SetScript("OnEvent", function(_, e, arg1, arg2, arg3)
+hostFrame:SetScript("OnEvent", function(_, e, firstArg, arg2, arg3)
     if e == "ENCOUNTER_START" then
         SnapshotPlayerAuras()
         if _isEvokerOwnOnRaid then
@@ -751,7 +751,7 @@ mainFrame:SetScript("OnEvent", function(_, e, arg1, arg2, arg3)
 
     if e == "UNIT_AURA" then
         -- arg1 = unit token. Player aura changes always refresh; group member changes only matter for Evoker ownOnRaid cache updates and OOC raid buff checks (broad UNIT_AURA is only registered for classes needing group tracking).
-        if arg1 == "player" then
+        if firstArg == "player" then
             if not REMIND.FOREVER then
                 REMIND.UpdateEatingState(arg2)
             end -- eating channel feeds the retail food reminder only
@@ -766,13 +766,13 @@ mainFrame:SetScript("OnEvent", function(_, e, arg1, arg2, arg3)
             RequestRefresh()
         else
             -- Group member aura change (fast unit-type check via first byte). Broad UNIT_AURA stays registered in combat for Evoker ownOnRaid / provider-view coverage tracking; coalesces group events into one deferred refresh.
-            if arg1 and (arg1:match("^party%d+$") or arg1:match("^raid%d+$")) then
+            if firstArg and (firstArg:match("^party%d+$") or firstArg:match("^raid%d+$")) then
                 if REMIND._trackOwnOtherAuraID then
-                    REMIND.UpdateOwnOtherAuraForUnit(arg1)
+                    REMIND.UpdateOwnOtherAuraForUnit(firstArg)
                 end
                 if _isEvokerOwnOnRaid and InCombat() and IsInGroup() then
                     for _, ident in ipairs(_ownOnRaidIDs) do
-                        if not _preCombatOwnOnRaidCache[ident] and REMIND._OwnCastOn(arg1, ident) then
+                        if not _preCombatOwnOnRaidCache[ident] and REMIND._OwnCastOn(firstArg, ident) then
                             _preCombatOwnOnRaidCache[ident] = true
                         end
                     end
@@ -794,7 +794,7 @@ mainFrame:SetScript("OnEvent", function(_, e, arg1, arg2, arg3)
     end
 
     if e == "UNIT_ENTERED_VEHICLE" or e == "UNIT_EXITED_VEHICLE" then
-        if arg1 == "player" then
+        if firstArg == "player" then
             RequestRefresh()
         end
         return
@@ -852,7 +852,7 @@ mainFrame:SetScript("OnEvent", function(_, e, arg1, arg2, arg3)
         end
     elseif e == "MINIMAP_UPDATE_TRACKING" then
         REMIND._fvTrackDirty = true
-    elseif e == "PLAYER_EQUIPMENT_CHANGED" and arg1 ~= 16 and arg1 ~= 17 then
+    elseif e == "PLAYER_EQUIPMENT_CHANGED" and firstArg ~= 16 and firstArg ~= 17 then
         -- Weapon Buffs (its only registration): only a weapon slot matters.
         return
     end
@@ -909,20 +909,20 @@ if REMIND.FOREVER then
     -- events itself (EABR.FvSyncGroupWatch), the two trackers their minimap
     -- event (EABR.FvSyncTrackingEvent), the Action Picker its spellbook event
     -- (EABR.FvSyncPickerSpellEvents).
-    mainFrame:RegisterEvent("PLAYER_UPDATE_RESTING")
-    mainFrame:RegisterEvent("LEARNED_SPELL_IN_SKILL_LINE")
-    mainFrame:RegisterEvent("ENCOUNTER_START")
-    mainFrame:RegisterEvent("ENCOUNTER_END")
-    mainFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
-    mainFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-    mainFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-    mainFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-    mainFrame:RegisterUnitEvent("UNIT_AURA", "player")
-    mainFrame:RegisterUnitEvent("UNIT_ENTERED_VEHICLE", "player")
-    mainFrame:RegisterUnitEvent("UNIT_EXITED_VEHICLE", "player")
-    mainFrame:RegisterEvent("PLAYER_DEAD")
-    mainFrame:RegisterEvent("PLAYER_ALIVE")
-    mainFrame:RegisterEvent("PLAYER_UNGHOST")
+    hostFrame:RegisterEvent("PLAYER_UPDATE_RESTING")
+    hostFrame:RegisterEvent("LEARNED_SPELL_IN_SKILL_LINE")
+    hostFrame:RegisterEvent("ENCOUNTER_START")
+    hostFrame:RegisterEvent("ENCOUNTER_END")
+    hostFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+    hostFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+    hostFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    hostFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+    hostFrame:RegisterUnitEvent("UNIT_AURA", "player")
+    hostFrame:RegisterUnitEvent("UNIT_ENTERED_VEHICLE", "player")
+    hostFrame:RegisterUnitEvent("UNIT_EXITED_VEHICLE", "player")
+    hostFrame:RegisterEvent("PLAYER_DEAD")
+    hostFrame:RegisterEvent("PLAYER_ALIVE")
+    hostFrame:RegisterEvent("PLAYER_UNGHOST")
     -- Class trackers and Find Treasure have no aura edge: their minimap event
     -- is listened to only while a reminder that reads them can show
     -- (EABR.CollectForever; EABR.FvStandDown turns it off).
@@ -934,9 +934,9 @@ if REMIND.FOREVER then
         if wanted then
             -- Nothing was heard while it was off: the minimap is read afresh.
             REMIND._fvTrackDirty = true
-            mainFrame:RegisterEvent("MINIMAP_UPDATE_TRACKING")
+            hostFrame:RegisterEvent("MINIMAP_UPDATE_TRACKING")
         else
-            mainFrame:UnregisterEvent("MINIMAP_UPDATE_TRACKING")
+            hostFrame:UnregisterEvent("MINIMAP_UPDATE_TRACKING")
         end
     end
     -- The Action Picker's choices follow the spellbook: SPELLS_CHANGED is
@@ -948,9 +948,9 @@ if REMIND.FOREVER then
             -- Talent changes may have happened while this listener was off.
             REMIND._fvFamDirty = true
             REMIND._fvClassPickerGroups = nil
-            mainFrame:RegisterEvent("SPELLS_CHANGED")
+            hostFrame:RegisterEvent("SPELLS_CHANGED")
         else
-            mainFrame:UnregisterEvent("SPELLS_CHANGED")
+            hostFrame:UnregisterEvent("SPELLS_CHANGED")
         end
     end
     function REMIND.FvSyncWeaponEvents(wanted)
@@ -959,11 +959,11 @@ if REMIND.FOREVER then
         end
         REMIND._fvWeaponEv = wanted
         if wanted then
-            mainFrame:RegisterEvent("WEAPON_ENCHANT_CHANGED")
-            mainFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+            hostFrame:RegisterEvent("WEAPON_ENCHANT_CHANGED")
+            hostFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
         else
-            mainFrame:UnregisterEvent("WEAPON_ENCHANT_CHANGED")
-            mainFrame:UnregisterEvent("PLAYER_EQUIPMENT_CHANGED")
+            hostFrame:UnregisterEvent("WEAPON_ENCHANT_CHANGED")
+            hostFrame:UnregisterEvent("PLAYER_EQUIPMENT_CHANGED")
         end
     end
     function REMIND.FvSyncBagEvent(wanted)
@@ -973,25 +973,25 @@ if REMIND.FOREVER then
         REMIND._fvBagEv = wanted
         if wanted then
             InvalidateItemCountCache()
-            mainFrame:RegisterEvent("BAG_UPDATE_DELAYED")
+            hostFrame:RegisterEvent("BAG_UPDATE_DELAYED")
         else
-            mainFrame:UnregisterEvent("BAG_UPDATE_DELAYED")
+            hostFrame:UnregisterEvent("BAG_UPDATE_DELAYED")
         end
     end
     -- A Cozy Sleeping Bag bought or looted while none is owned and the shared
     -- bag listener above is off: one item count per bag change until one shows
     -- up, which wakes the reminder; that listener takes over from there
     -- (EABR.FvSleepingBagOwned).
-    local sleepWatch
+    local sleepWatcher
     function REMIND.FvSyncSleepBagWatch(wanted)
         if wanted == (REMIND._fvSleepWatch or false) then
             return
         end
         REMIND._fvSleepWatch = wanted
         if wanted then
-            if not sleepWatch then
-                sleepWatch = CreateFrame("Frame")
-                sleepWatch:SetScript("OnEvent", function()
+            if not sleepWatcher then
+                sleepWatcher = CreateFrame("Frame")
+                sleepWatcher:SetScript("OnEvent", function()
                     if (C_Item.GetItemCount(REMIND.SLEEPING_BAG_ITEM) or 0) > 0 then
                         REMIND._fvSleepBag = true
                         REMIND.FvSyncSleepBagWatch(false)
@@ -999,42 +999,42 @@ if REMIND.FOREVER then
                     end
                 end)
             end
-            sleepWatch:RegisterEvent("BAG_UPDATE_DELAYED")
-        elseif sleepWatch then
-            sleepWatch:UnregisterEvent("BAG_UPDATE_DELAYED")
+            sleepWatcher:RegisterEvent("BAG_UPDATE_DELAYED")
+        elseif sleepWatcher then
+            sleepWatcher:UnregisterEvent("BAG_UPDATE_DELAYED")
         end
     end
 else
-    mainFrame:RegisterEvent("ENCOUNTER_START")
-    mainFrame:RegisterEvent("ENCOUNTER_END")
-    mainFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
-    mainFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
-    mainFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-    mainFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-    mainFrame:RegisterEvent("SPELLS_CHANGED")
-    mainFrame:RegisterEvent("PLAYER_TALENT_UPDATE")
-    mainFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-    mainFrame:RegisterEvent("PLAYER_LEVEL_CHANGED")
-    mainFrame:RegisterEvent("TRAIT_CONFIG_UPDATED")
-    mainFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
-    mainFrame:RegisterUnitEvent("UNIT_AURA", "player")
-    mainFrame:RegisterUnitEvent("UNIT_INVENTORY_CHANGED", "player")
-    mainFrame:RegisterEvent("CHALLENGE_MODE_START")
-    mainFrame:RegisterEvent("CHALLENGE_MODE_COMPLETED")
-    mainFrame:RegisterEvent("CHALLENGE_MODE_RESET")
-    mainFrame:RegisterEvent("BAG_UPDATE_DELAYED")
-    mainFrame:RegisterEvent("WEAPON_ENCHANT_CHANGED")
-    mainFrame:RegisterUnitEvent("UNIT_ENTERED_VEHICLE", "player")
-    mainFrame:RegisterUnitEvent("UNIT_EXITED_VEHICLE", "player")
-    mainFrame:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED")
-    mainFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
-    mainFrame:RegisterEvent("PLAYER_DEAD")
-    mainFrame:RegisterEvent("PLAYER_ALIVE")
-    mainFrame:RegisterEvent("PLAYER_UNGHOST")
-    mainFrame:RegisterEvent("BAG_UPDATE")
-    mainFrame:RegisterUnitEvent("UNIT_PET", "player")
+    hostFrame:RegisterEvent("ENCOUNTER_START")
+    hostFrame:RegisterEvent("ENCOUNTER_END")
+    hostFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+    hostFrame:RegisterEvent("PLAYER_REGEN_ENABLED")
+    hostFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    hostFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+    hostFrame:RegisterEvent("SPELLS_CHANGED")
+    hostFrame:RegisterEvent("PLAYER_TALENT_UPDATE")
+    hostFrame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+    hostFrame:RegisterEvent("PLAYER_LEVEL_CHANGED")
+    hostFrame:RegisterEvent("TRAIT_CONFIG_UPDATED")
+    hostFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
+    hostFrame:RegisterUnitEvent("UNIT_AURA", "player")
+    hostFrame:RegisterUnitEvent("UNIT_INVENTORY_CHANGED", "player")
+    hostFrame:RegisterEvent("CHALLENGE_MODE_START")
+    hostFrame:RegisterEvent("CHALLENGE_MODE_COMPLETED")
+    hostFrame:RegisterEvent("CHALLENGE_MODE_RESET")
+    hostFrame:RegisterEvent("BAG_UPDATE_DELAYED")
+    hostFrame:RegisterEvent("WEAPON_ENCHANT_CHANGED")
+    hostFrame:RegisterUnitEvent("UNIT_ENTERED_VEHICLE", "player")
+    hostFrame:RegisterUnitEvent("UNIT_EXITED_VEHICLE", "player")
+    hostFrame:RegisterEvent("PLAYER_MOUNT_DISPLAY_CHANGED")
+    hostFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
+    hostFrame:RegisterEvent("PLAYER_DEAD")
+    hostFrame:RegisterEvent("PLAYER_ALIVE")
+    hostFrame:RegisterEvent("PLAYER_UNGHOST")
+    hostFrame:RegisterEvent("BAG_UPDATE")
+    hostFrame:RegisterUnitEvent("UNIT_PET", "player")
     -- UNIT_PET fires on pet summon/dismiss, NOT stance changes. Pet on Passive reacts to the pet's command state via the pet action bar -- PET_BAR_UPDATE is that event; without it the reminder only re-evaluated on reload.
-    mainFrame:RegisterEvent("PET_BAR_UPDATE")
+    hostFrame:RegisterEvent("PET_BAR_UPDATE")
 end
 
 Inner.broken = false

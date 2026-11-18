@@ -87,8 +87,8 @@ mod.WindowCorner = Corner
 local Look = { inset = 0, iconPad = -2, stock = false, menuLook = "meter" }
 mod.Look = Look
 
-function Look.IconSize(size)
-    return size
+function Look.IconSize(px)
+    return px
 end
 function Look.WindowBg(texture, region, g, b, a)
     texture:SetColorTexture(region, g, b, a)
@@ -109,17 +109,17 @@ function Look.HeaderIcon(button)
     iconTex:SetVertexColor(1, 1, 1, ICON_ALPHA)
 end
 function Look.SeatHeaderIcon() end
-function Look.HeaderHover(button, hovered)
-    button.icon:SetVertexColor(1, 1, 1, hovered and ICON_HOVER_ALPHA or ICON_ALPHA)
+function Look.HeaderHover(button, isHovered)
+    button.icon:SetVertexColor(1, 1, 1, isHovered and ICON_HOVER_ALPHA or ICON_ALPHA)
 end
-function Look.LockIcon(button, locked)
-    button.icon:SetTexture(MEDIA .. (locked and "dm_locked.png" or "dm_unlocked.png"))
+function Look.LockIcon(button, isLocked)
+    button.icon:SetTexture(MEDIA .. (isLocked and "dm_locked.png" or "dm_unlocked.png"))
 end
-function Look.SeatFill(row, iconWidth)
-    local fillTex = row.fill
+function Look.SeatFill(line, iconWidth)
+    local fillTex = line.fill
     fillTex:ClearAllPoints()
-    fillTex:SetPoint("TOPLEFT", row, "TOPLEFT", iconWidth, 0)
-    fillTex:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", 0, 0)
+    fillTex:SetPoint("TOPLEFT", line, "TOPLEFT", iconWidth, 0)
+    fillTex:SetPoint("BOTTOMRIGHT", line, "BOTTOMRIGHT", 0, 0)
     return iconWidth, 0
 end
 function Look.RowBg(texture, region, g, b, a)
@@ -166,7 +166,7 @@ end
 local BLIZZ_HEADER = "ui-damagemeters-header-bar"
 local BLIZZ_TRACK = "ui-damagemeters-bar-shadowbg"
 local BLIZZ_EDGE = "ui-damagemeters-bar-shadowedge"
-local shade -- gradient colours, made when the look is installed
+local shadeTex -- gradient colours, made when the look is installed
 
 local Blizzard = { stock = true }
 
@@ -192,11 +192,11 @@ function Blizzard.WindowBg(texture, _, _, _, a)
         texture:SetColorTexture(0, 0, 0, 0)
     end
     local body = 245 / 255 * a
-    shade.lo:SetRGBA(0, 0, 0, body)
-    shade.hi:SetRGBA(0, 0, 0, body * 0.5)
+    shadeTex.lo:SetRGBA(0, 0, 0, body)
+    shadeTex.hi:SetRGBA(0, 0, 0, body * 0.5)
     -- VERTICAL runs bottom to top.
-    parts[1]:SetGradient("VERTICAL", shade.lo, shade.hi)
-    parts[2]:SetGradient("VERTICAL", shade.lo, shade.lo)
+    parts[1]:SetGradient("VERTICAL", shadeTex.lo, shadeTex.hi)
+    parts[2]:SetGradient("VERTICAL", shadeTex.lo, shadeTex.lo)
 end
 
 -- The header colour is not used; its opacity is.
@@ -219,10 +219,10 @@ end
 
 -- The stock track 2px outside the fill and its edge highlight over it, set
 -- up once per row (WoW Forever wears it too: a bar texture, not frame art).
-local function BlizzTrack(row, art)
-    local fillTex = row.fill
+local function BlizzTrack(line, artTex)
+    local fillTex = line.fill
     if HasAtlas(BLIZZ_TRACK) then
-        local backdrop = row.bg
+        local backdrop = line.bg
         backdrop:SetAtlas(BLIZZ_TRACK)
         backdrop:SetVertexColor(1, 1, 1, 1)
         backdrop:ClearAllPoints()
@@ -234,7 +234,7 @@ local function BlizzTrack(row, art)
         edge:SetAtlas(BLIZZ_EDGE)
         edge:SetPoint("TOPLEFT", fillTex, "TOPLEFT", -2, 2)
         edge:SetPoint("BOTTOMRIGHT", fillTex, "BOTTOMRIGHT", 2, -2)
-        art.edge = edge
+        artTex.edge = edge
     end
 end
 
@@ -244,56 +244,56 @@ end
 -- sized from the fill's height and re-anchor only when the fill texture
 -- object (a path change can make a new one) or that height changes. The fill
 -- fades by its colour's alpha, so its art fades with it.
-function Blizzard.RowStyled(row, dm)
-    local fillTex = row.fill
-    local art = rowArt[row]
-    if not art then
-        art = {}
+function Blizzard.RowStyled(line, dragMove)
+    local fillTex = line.fill
+    local artTex = rowArt[line]
+    if not artTex then
+        artTex = {}
         for index = 1, 4 do
-            art[index] = fillTex:CreateTexture(nil, "OVERLAY", nil, -3)
-            GradientBase(art[index])
+            artTex[index] = fillTex:CreateTexture(nil, "OVERLAY", nil, -3)
+            GradientBase(artTex[index])
         end
         -- VERTICAL runs bottom to top, HORIZONTAL left to right.
-        art[1]:SetGradient("VERTICAL", shade.clear, shade.top)
-        art[2]:SetGradient("VERTICAL", shade.bottom, shade.clear)
-        art[3]:SetGradient("HORIZONTAL", shade.ends, shade.clear)
-        art[4]:SetGradient("HORIZONTAL", shade.clear, shade.ends)
-        BlizzTrack(row, art)
-        rowArt[row] = art
+        artTex[1]:SetGradient("VERTICAL", shadeTex.clear, shadeTex.top)
+        artTex[2]:SetGradient("VERTICAL", shadeTex.bottom, shadeTex.clear)
+        artTex[3]:SetGradient("HORIZONTAL", shadeTex.ends, shadeTex.clear)
+        artTex[4]:SetGradient("HORIZONTAL", shadeTex.clear, shadeTex.ends)
+        BlizzTrack(line, artTex)
+        rowArt[line] = artTex
     end
-    local ft, hgt = fillTex:GetStatusBarTexture(), dm.barHeight
-    if ft and (art.tex ~= ft or art.h ~= hgt) then
-        art.tex, art.h = ft, hgt
+    local fadeTicker, hgt = fillTex:GetStatusBarTexture(), dragMove.barHeight
+    if fadeTicker and (artTex.tex ~= fadeTicker or artTex.h ~= hgt) then
+        artTex.tex, artTex.h = fadeTicker, hgt
         local topY = math.max(2, math.floor(hgt * 0.2))
         local bottom = math.max(1, math.floor(hgt * 0.1))
         local ends = math.max(2, math.floor(hgt * 0.15))
-        local s = art[1]
+        local s = artTex[1]
         s:ClearAllPoints()
-        s:SetPoint("TOPLEFT", ft, "TOPLEFT", 0, 0)
-        s:SetPoint("TOPRIGHT", ft, "TOPRIGHT", 0, 0)
+        s:SetPoint("TOPLEFT", fadeTicker, "TOPLEFT", 0, 0)
+        s:SetPoint("TOPRIGHT", fadeTicker, "TOPRIGHT", 0, 0)
         s:SetHeight(topY)
-        s = art[2]
+        s = artTex[2]
         s:ClearAllPoints()
-        s:SetPoint("BOTTOMLEFT", ft, "BOTTOMLEFT", 0, 0)
-        s:SetPoint("BOTTOMRIGHT", ft, "BOTTOMRIGHT", 0, 0)
+        s:SetPoint("BOTTOMLEFT", fadeTicker, "BOTTOMLEFT", 0, 0)
+        s:SetPoint("BOTTOMRIGHT", fadeTicker, "BOTTOMRIGHT", 0, 0)
         s:SetHeight(bottom)
-        s = art[3]
+        s = artTex[3]
         s:ClearAllPoints()
-        s:SetPoint("TOPLEFT", ft, "TOPLEFT", 0, 0)
-        s:SetPoint("BOTTOMLEFT", ft, "BOTTOMLEFT", 0, 0)
+        s:SetPoint("TOPLEFT", fadeTicker, "TOPLEFT", 0, 0)
+        s:SetPoint("BOTTOMLEFT", fadeTicker, "BOTTOMLEFT", 0, 0)
         s:SetWidth(ends)
-        s = art[4]
+        s = artTex[4]
         s:ClearAllPoints()
-        s:SetPoint("TOPRIGHT", ft, "TOPRIGHT", 0, 0)
-        s:SetPoint("BOTTOMRIGHT", ft, "BOTTOMRIGHT", 0, 0)
+        s:SetPoint("TOPRIGHT", fadeTicker, "TOPRIGHT", 0, 0)
+        s:SetPoint("BOTTOMRIGHT", fadeTicker, "BOTTOMRIGHT", 0, 0)
         s:SetWidth(ends)
     end
-    local a = dm.barFillAlpha
+    local a = dragMove.barFillAlpha
     for index = 1, 4 do
-        art[index]:SetAlpha(a)
+        artTex[index]:SetAlpha(a)
     end
-    if art.edge then
-        art.edge:SetAlpha(a)
+    if artTex.edge then
+        artTex.edge:SetAlpha(a)
     end
 end
 
@@ -344,21 +344,21 @@ local function Tile(texture, region, g, b, a)
     texture:SetVertexColor(region, g, b, a)
 end
 
-local function PaintArt(texture, art)
+local function PaintArt(texture, artTex)
     texture:SetDesaturated(false)
-    texture:SetTexture(art.file)
-    if art.crop then
-        texture:SetTexCoord(art.crop, 1 - art.crop, art.crop, 1 - art.crop)
+    texture:SetTexture(artTex.file)
+    if artTex.crop then
+        texture:SetTexCoord(artTex.crop, 1 - artTex.crop, artTex.crop, 1 - artTex.crop)
     else
-        texture:SetTexCoord(art.l, art.r, art.t, art.b)
+        texture:SetTexCoord(artTex.l, artTex.r, artTex.t, artTex.b)
     end
     texture:SetVertexColor(ART_IDLE, ART_IDLE, ART_IDLE, 1)
 end
 
 local Classic = { inset = 5, iconPad = 2, stock = true }
 
-function Classic.IconSize(size)
-    return math.floor(size * 0.85 + 0.5)
+function Classic.IconSize(px)
+    return math.floor(px * 0.85 + 0.5)
 end
 
 -- The window wears the whole box: the tile from under the bevel (the rim's
@@ -420,23 +420,23 @@ function Classic.HeaderLine(texture)
 end
 
 function Classic.HeaderIcon(button)
-    local art = CLASSIC_HDR_ART[button.key]
-    if not art then
+    local artTex = CLASSIC_HDR_ART[button.key]
+    if not artTex then
         return GlyphIcon(button)
     end
-    iconArt[button] = art
-    PaintArt(button.icon, art)
+    iconArt[button] = artTex
+    PaintArt(button.icon, artTex)
 end
 
-function Classic.SeatHeaderIcon(button, size)
-    local art = iconArt[button]
-    if not art then
+function Classic.SeatHeaderIcon(button, px)
+    local artTex = iconArt[button]
+    if not artTex then
         return
     end
-    local iconTex, k = button.icon, art.scale
+    local iconTex, k = button.icon, artTex.scale
     iconTex:ClearAllPoints()
     if k and k < 1 then
-        local inset = size * (1 - k) / 2
+        local inset = px * (1 - k) / 2
         iconTex:SetPoint("TOPLEFT", button, "TOPLEFT", inset, -inset)
         iconTex:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -inset, inset)
     else
@@ -445,18 +445,18 @@ function Classic.SeatHeaderIcon(button, size)
 end
 
 -- Stock art brightens on hover instead of fading in.
-function Classic.HeaderHover(button, hovered)
+function Classic.HeaderHover(button, isHovered)
     if not iconArt[button] then
-        return GlyphHover(button, hovered)
+        return GlyphHover(button, isHovered)
     end
-    local k = hovered and ART_HOVER or ART_IDLE
+    local k = isHovered and ART_HOVER or ART_IDLE
     button.icon:SetVertexColor(k, k, k, 1)
 end
 
 -- The vanilla lock is a square button.
-function Classic.LockIcon(button, locked)
+function Classic.LockIcon(button, isLocked)
     button:SetSize(18, 18)
-    PaintArt(button.icon, locked and CLASSIC_LOCKED or CLASSIC_UNLOCKED)
+    PaintArt(button.icon, isLocked and CLASSIC_LOCKED or CLASSIC_UNLOCKED)
 end
 
 -------------------------------------------------------------------------------
@@ -515,12 +515,12 @@ local frameKind -- the Damage Meters windows' Border Style ("slim", "textured", 
 -- Always installed; the window pieces go in only with their art (UseForever).
 local Forever = { iconPad = FV.btnPad, titleColor = FV.gold, menuLook = "meterForever" }
 
-function Forever.IconSize(size)
-    return math.floor(size * FV.btnScale + 0.5)
+function Forever.IconSize(px)
+    return math.floor(px * FV.btnScale + 0.5)
 end
 
 -- A button's plate in its idle or hover art, set only when it changes.
-local function Plate(button, hovered)
+local function Plate(button, isHovered)
     if not platesOK then
         return
     end
@@ -531,7 +531,7 @@ local function Plate(button, hovered)
         p = { tex = texture }
         plates[button] = p
     end
-    local atlas = hovered and FV.plateHover or FV.plate
+    local atlas = isHovered and FV.plateHover or FV.plate
     if p.atlas ~= atlas then
         p.atlas = atlas
         p.tex:SetAtlas(atlas)
@@ -556,15 +556,15 @@ function Forever.HeaderIcon(button)
     FvGlyph(button, button.file)
 end
 
-function Forever.HeaderHover(button, hovered)
-    Tan(button.icon, hovered and ART_HOVER or ART_IDLE)
-    Plate(button, hovered)
+function Forever.HeaderHover(button, isHovered)
+    Tan(button.icon, isHovered and ART_HOVER or ART_IDLE)
+    Plate(button, isHovered)
 end
 
 -- The lock's own art on a square plate.
-function Forever.LockIcon(button, locked)
+function Forever.LockIcon(button, isLocked)
     button:SetSize(18, 18)
-    FvGlyph(button, locked and "dm_locked_top.png" or "dm_unlock_top.png")
+    FvGlyph(button, isLocked and "dm_locked_top.png" or "dm_unlock_top.png")
 end
 
 -- The window's frame on a child frame over its content, in the Border Style
@@ -640,13 +640,13 @@ local function UseForever()
         Look[key] = value
     end
     if CUI.ForeverBorderOK() then
-        local dm = CUI._ModuleNS[DM_ADDON]
-        frameKind = dm and dm.DMFvKindShared and dm.DMFvKindShared() or nil
+        local dragMove = CUI._ModuleNS[DM_ADDON]
+        frameKind = dragMove and dragMove.DMFvKindShared and dragMove.DMFvKindShared() or nil
         -- Heavy Bronze takes the Damage Meters windows' own insets (only they
         -- offer it, so their table is there whenever it is picked) and clips
         -- the rows inside them, as their viewport clips theirs.
         if frameKind == "heavy" then
-            FV.heavyInset, FV.heavyBodyInset = dm.DM_FV.heavyInset, dm.DM_FV.heavyBodyInset
+            FV.heavyInset, FV.heavyBodyInset = dragMove.DM_FV.heavyInset, dragMove.DM_FV.heavyBodyInset
             Look.clipRows = true
         end
         Look.inset = frameKind == "heavy" and FV.heavyInset or FV.inset
@@ -667,7 +667,7 @@ function mod.UseLook(styleKey, forever)
         return
     end
     if source == Blizzard then
-        shade = {
+        shadeTex = {
             lo = CreateColor(0, 0, 0, 1),
             hi = CreateColor(0, 0, 0, 0.5),
             clear = CreateColor(0, 0, 0, 0),
@@ -753,7 +753,7 @@ end
 -- Lays out the shown header buttons at `size`, raised by `lift` (nil = 0);
 -- returns the leftmost one (the title runs up to it), or nil when none is
 -- shown.
-function mod.LayoutHeaderButtons(surface, size, lift)
+function mod.LayoutHeaderButtons(surface, px, lift)
     local header, pad = surface.header, Look.iconPad
     local used, num, leftmost = 0, 0, nil
     local entries = surface.hdrBtns
@@ -761,17 +761,17 @@ function mod.LayoutHeaderButtons(surface, size, lift)
         local button = entries[index]
         if button:IsShown() then
             num = num + 1
-            local width = size
+            local winWidth = px
             if button.isText then
-                width = math.ceil(button.label:GetStringWidth() or 0) + 12
+                winWidth = math.ceil(button.label:GetStringWidth() or 0) + 12
             end
-            button:SetSize(width, size)
+            button:SetSize(winWidth, px)
             if not button.isText then
-                Look.SeatHeaderIcon(button, size)
+                Look.SeatHeaderIcon(button, px)
             end
             button:ClearAllPoints()
             button:SetPoint("RIGHT", header, "RIGHT", -(used + pad * num + 2), lift or 0)
-            used = used + width
+            used = used + winWidth
             leftmost = button
         end
     end
@@ -789,8 +789,8 @@ local nearL, nearR, nearT, nearB
 
 local function GatherTargets(self)
     wipe(targets)
-    local dm = CUI._ModuleNS[DM_ADDON]
-    local windows = dm and dm._windows
+    local dragMove = CUI._ModuleNS[DM_ADDON]
+    local windows = dragMove and dragMove._windows
     if type(windows) == "table" then
         for index = 1, #windows do
             local wid = windows[index]
@@ -815,8 +815,8 @@ end
 
 -- The shown target nearest the rect: the smallest edge-to-edge gap (0 when
 -- they overlap), the first in list order on a tie. Its edges land in near*.
-local function Closest(leftX, topY, width, height)
-    local right, bottom = leftX + width, topY - height
+local function Closest(leftX, topY, winWidth, winHeight)
+    local right, bottom = leftX + winWidth, topY - winHeight
     local best, bestDist
     for index = 1, #targets do
         local frame = targets[index]
@@ -849,8 +849,8 @@ end
 -- beside it on the right, beside it on the left (top-to-top, bottom-to-bottom,
 -- stacked below, stacked above), taken within SNAP_DIST.
 local function SnapMove(self, leftX, topY)
-    local width, height = self:GetWidth(), self:GetHeight()
-    if not Closest(leftX, topY, width, height) then
+    local winWidth, winHeight = self:GetWidth(), self:GetHeight()
+    if not Closest(leftX, topY, winWidth, winHeight) then
         return leftX, topY
     end
     local best, snapped = SNAP_DIST + 1, leftX
@@ -858,17 +858,17 @@ local function SnapMove(self, leftX, topY)
     if skinData < best then
         best, snapped = skinData, nearL
     end
-    skinData = math.abs(leftX + width - nearR)
+    skinData = math.abs(leftX + winWidth - nearR)
     if skinData < best then
-        best, snapped = skinData, nearR - width
+        best, snapped = skinData, nearR - winWidth
     end
     skinData = math.abs(leftX - nearR)
     if skinData < best then
         best, snapped = skinData, nearR
     end
-    skinData = math.abs(leftX + width - nearL)
+    skinData = math.abs(leftX + winWidth - nearL)
     if skinData < best then
-        best, snapped = skinData, nearL - width
+        best, snapped = skinData, nearL - winWidth
     end
     if best <= SNAP_DIST then
         leftX = snapped
@@ -878,17 +878,17 @@ local function SnapMove(self, leftX, topY)
     if skinData < best then
         best, snapped = skinData, nearT
     end
-    skinData = math.abs(topY - height - nearB)
+    skinData = math.abs(topY - winHeight - nearB)
     if skinData < best then
-        best, snapped = skinData, nearB + height
+        best, snapped = skinData, nearB + winHeight
     end
     skinData = math.abs(topY - nearB)
     if skinData < best then
         best, snapped = skinData, nearB
     end
-    skinData = math.abs(topY - height - nearT)
+    skinData = math.abs(topY - winHeight - nearT)
     if skinData < best then
-        best, snapped = skinData, nearT + height
+        best, snapped = skinData, nearT + winHeight
     end
     if best <= SNAP_DIST then
         topY = snapped
@@ -898,19 +898,19 @@ end
 
 -- Size snap for a resize: each dimension takes the nearest window's within
 -- SNAP_DIST.
-local function SnapSize(self, leftX, topY, width, height)
+local function SnapSize(self, leftX, topY, winWidth, winHeight)
     local near = Closest(leftX, topY, self:GetWidth(), self:GetHeight())
     if not near then
-        return width, height
+        return winWidth, winHeight
     end
     local wid, hgt = near:GetWidth(), near:GetHeight()
-    if Plain(wid) and math.abs(width - wid) <= SNAP_DIST then
-        width = wid
+    if Plain(wid) and math.abs(winWidth - wid) <= SNAP_DIST then
+        winWidth = wid
     end
-    if Plain(hgt) and math.abs(height - hgt) <= SNAP_DIST then
-        height = hgt
+    if Plain(hgt) and math.abs(winHeight - hgt) <= SNAP_DIST then
+        winHeight = hgt
     end
-    return width, height
+    return winWidth, winHeight
 end
 
 -------------------------------------------------------------------------------
@@ -932,108 +932,108 @@ function mod.AttachChrome(widget, owner)
     local header = widget.header
     local level = widget:GetFrameLevel()
     local chrome = { resizing = false }
-    local locked = owner.IsLocked()
-    local hovered = false
+    local isLocked = owner.IsLocked()
+    local isHovered = false
     header:EnableMouse(true)
 
-    local grip = CreateFrame("Button", nil, widget)
-    grip:SetSize(18, 18)
-    grip:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -2, 2)
-    grip:SetFrameLevel(level + 15)
-    grip.icon = grip:CreateTexture(nil, "ARTWORK")
-    grip.icon:SetAllPoints()
-    grip.icon:SetTexture(RESIZE_ICON)
-    grip.icon:SetDesaturated(true)
-    grip.icon:SetVertexColor(1, 1, 1)
-    grip:EnableMouse(true)
-    grip:SetAlpha(0)
-    widget.grip = grip
+    local gripBtn = CreateFrame("Button", nil, widget)
+    gripBtn:SetSize(18, 18)
+    gripBtn:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -2, 2)
+    gripBtn:SetFrameLevel(level + 15)
+    gripBtn.icon = gripBtn:CreateTexture(nil, "ARTWORK")
+    gripBtn.icon:SetAllPoints()
+    gripBtn.icon:SetTexture(RESIZE_ICON)
+    gripBtn.icon:SetDesaturated(true)
+    gripBtn.icon:SetVertexColor(1, 1, 1)
+    gripBtn:EnableMouse(true)
+    gripBtn:SetAlpha(0)
+    widget.grip = gripBtn
 
-    local lock = CreateFrame("Button", nil, widget)
-    lock:SetSize(13, 17)
-    lock:SetFrameLevel(level + 16)
-    lock.icon = lock:CreateTexture(nil, "ARTWORK")
-    lock.icon:SetAllPoints()
-    lock.icon:SetDesaturated(true)
-    lock.icon:SetVertexColor(1, 1, 1)
-    lock:EnableMouse(true)
-    lock:SetAlpha(0)
-    widget.lockBtn = lock
+    local lockBtn = CreateFrame("Button", nil, widget)
+    lockBtn:SetSize(13, 17)
+    lockBtn:SetFrameLevel(level + 16)
+    lockBtn.icon = lockBtn:CreateTexture(nil, "ARTWORK")
+    lockBtn.icon:SetAllPoints()
+    lockBtn.icon:SetDesaturated(true)
+    lockBtn.icon:SetVertexColor(1, 1, 1)
+    lockBtn:EnableMouse(true)
+    lockBtn:SetAlpha(0)
+    widget.lockBtn = lockBtn
 
     local function Resting()
-        return hovered and 0.3 or 0
+        return isHovered and 0.3 or 0
     end
 
     local function LockText()
-        return locked and CludesUI.L("Locked") or CludesUI.L("Unlocked")
+        return isLocked and CludesUI.L("Locked") or CludesUI.L("Unlocked")
     end
 
     -- Locked, the icon takes the grip's corner (the grip is hidden then).
     local function UpdateLockIcon()
-        Look.LockIcon(lock, locked)
-        lock:ClearAllPoints()
-        if locked then
-            lock:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -4, 4)
+        Look.LockIcon(lockBtn, isLocked)
+        lockBtn:ClearAllPoints()
+        if isLocked then
+            lockBtn:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -4, 4)
         else
-            lock:SetPoint("RIGHT", grip, "LEFT", -2, 0)
+            lockBtn:SetPoint("RIGHT", gripBtn, "LEFT", -2, 0)
         end
     end
 
-    grip:SetScript("OnEnter", function(self)
-        if not locked then
+    gripBtn:SetScript("OnEnter", function(self)
+        if not isLocked then
             self:SetAlpha(0.7)
         end
     end)
-    grip:SetScript("OnLeave", function(self)
-        self:SetAlpha((hovered and not locked) and 0.3 or 0)
+    gripBtn:SetScript("OnLeave", function(self)
+        self:SetAlpha((isHovered and not isLocked) and 0.3 or 0)
     end)
-    lock:SetScript("OnEnter", function(self)
+    lockBtn:SetScript("OnEnter", function(self)
         self:SetAlpha(0.7)
         CUI.ShowWidgetTooltip(self, LockText())
     end)
-    lock:SetScript("OnLeave", function(self)
+    lockBtn:SetScript("OnLeave", function(self)
         self:SetAlpha(Resting())
         CUI.HideWidgetTooltip()
     end)
-    lock:SetScript("OnClick", function(self)
-        locked = not locked
-        owner.SetLocked(locked)
+    lockBtn:SetScript("OnClick", function(self)
+        isLocked = not isLocked
+        owner.SetLocked(isLocked)
         UpdateLockIcon()
-        grip:SetAlpha(locked and 0 or Resting())
+        gripBtn:SetAlpha(isLocked and 0 or Resting())
         self:SetAlpha(Resting())
         CUI.HideWidgetTooltip()
         CUI.ShowWidgetTooltip(self, LockText())
     end)
 
     function chrome.SyncLock()
-        locked = owner.IsLocked()
+        isLocked = owner.IsLocked()
         UpdateLockIcon()
-        grip:SetAlpha((hovered and not locked) and 0.3 or 0)
-        lock:SetAlpha(Resting())
+        gripBtn:SetAlpha((isHovered and not isLocked) and 0.3 or 0)
+        lockBtn:SetAlpha(Resting())
     end
 
     -- Hover fade: grip and lock ease to 0.3 while the window is hovered (0.7
     -- on the control itself), and back to 0 when it is left.
-    local fadeAlpha, fadeTarget = 0, 0
+    local fadeNow, fadeTarget = 0, 0
     local fader = CreateFrame("Frame")
     fader:Hide()
     fader:SetScript("OnUpdate", function(self, elapsed)
         local step = elapsed / FADE_TIME
-        if fadeTarget > fadeAlpha then
-            fadeAlpha = math.min(fadeTarget, fadeAlpha + step)
+        if fadeTarget > fadeNow then
+            fadeNow = math.min(fadeTarget, fadeNow + step)
         else
-            fadeAlpha = math.max(fadeTarget, fadeAlpha - step)
+            fadeNow = math.max(fadeTarget, fadeNow - step)
         end
-        if math.abs(fadeAlpha - fadeTarget) < 0.001 then
-            fadeAlpha = fadeTarget
+        if math.abs(fadeNow - fadeTarget) < 0.001 then
+            fadeNow = fadeTarget
         end
-        if not locked and not grip:IsMouseOver() then
-            grip:SetAlpha(fadeAlpha * 0.3)
+        if not isLocked and not gripBtn:IsMouseOver() then
+            gripBtn:SetAlpha(fadeNow * 0.3)
         end
-        if not lock:IsMouseOver() then
-            lock:SetAlpha(fadeAlpha * 0.3)
+        if not lockBtn:IsMouseOver() then
+            lockBtn:SetAlpha(fadeNow * 0.3)
         end
-        if fadeAlpha == fadeTarget then
+        if fadeNow == fadeTarget then
             self:Hide()
         end
     end)
@@ -1046,14 +1046,14 @@ function mod.AttachChrome(widget, owner)
         end
     end
     local function Poll()
-        if widget:IsMouseOver() or grip:IsMouseOver() or lock:IsMouseOver() then
-            if not hovered then
-                hovered, fadeTarget = true, 1
+        if widget:IsMouseOver() or gripBtn:IsMouseOver() or lockBtn:IsMouseOver() then
+            if not isHovered then
+                isHovered, fadeTarget = true, 1
                 fader:Show()
             end
         else
-            if hovered then
-                hovered, fadeTarget = false, 0
+            if isHovered then
+                isHovered, fadeTarget = false, 0
                 fader:Show()
             end
             StopPoll()
@@ -1066,14 +1066,14 @@ function mod.AttachChrome(widget, owner)
     end
     widget:HookScript("OnEnter", StartPoll)
     header:HookScript("OnEnter", StartPoll)
-    grip:HookScript("OnEnter", StartPoll)
-    lock:HookScript("OnEnter", StartPoll)
+    gripBtn:HookScript("OnEnter", StartPoll)
+    lockBtn:HookScript("OnEnter", StartPoll)
     widget:HookScript("OnHide", function()
         StopPoll()
-        hovered, fadeAlpha, fadeTarget = false, 0, 0
+        isHovered, fadeNow, fadeTarget = false, 0, 0
         fader:Hide()
-        grip:SetAlpha(0)
-        lock:SetAlpha(0)
+        gripBtn:SetAlpha(0)
+        lockBtn:SetAlpha(0)
         -- A menu opened from this window's header closes with it.
         local ownerFrame = CUI.ContextMenuOwner()
         if ownerFrame and ownerFrame:GetParent() == header then
@@ -1088,7 +1088,7 @@ function mod.AttachChrome(widget, owner)
     end
 
     local function CanStart()
-        return not locked and owner.CanMove() and not CUI.InProtectedInstance()
+        return not isLocked and owner.CanMove() and not CUI.InProtectedInstance()
     end
 
     local snapOff, cursorX, cursorY, startL, startT
@@ -1186,39 +1186,39 @@ function mod.AttachChrome(widget, owner)
         local posX, posY = Cursor()
         local dx, dy = posX - cursorX, cursorY - posY
         local shift = IsShiftKeyDown()
-        local width, height = startW + dx, startH + dy
+        local winWidth, winHeight = startW + dx, startH + dy
         if shift then
             if not shiftWas then
                 axis = math.abs(dx) >= math.abs(dy) and "w" or "h"
             end
             if axis == "w" then
-                height = startH
+                winHeight = startH
             else
-                width = startW
+                winWidth = startW
             end
         end
-        width, height = math.max(MIN_W, width), math.max(MIN_H, height)
+        winWidth, winHeight = math.max(MIN_W, winWidth), math.max(MIN_H, winHeight)
         if not snapOff then
-            width, height = SnapSize(widget, pinL, pinT, width, height)
+            winWidth, winHeight = SnapSize(widget, pinL, pinT, winWidth, winHeight)
         end
         local maxW = (UIParent:GetRight() or 0) - pinL
         local maxH = pinT - (UIParent:GetBottom() or 0)
         if maxW > MIN_W then
-            width = math.min(width, maxW)
+            winWidth = math.min(winWidth, maxW)
         end
         if maxH > MIN_H then
-            height = math.min(height, maxH)
+            winHeight = math.min(winHeight, maxH)
         end
         shiftWas = shift
-        if width == lastW and height == lastH then
+        if winWidth == lastW and winHeight == lastH then
             return
         end
-        lastW, lastH = width, height
+        lastW, lastH = winWidth, winHeight
         widget:ClearAllPoints()
         widget:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", pinL, pinT)
-        widget:SetSize(width, height)
+        widget:SetSize(winWidth, winHeight)
     end)
-    grip:SetScript("OnMouseDown", function(_, btnFrame)
+    gripBtn:SetScript("OnMouseDown", function(_, btnFrame)
         if btnFrame ~= "LeftButton" or not CanStart() then
             return
         end
@@ -1239,7 +1239,7 @@ function mod.AttachChrome(widget, owner)
         chrome.resizing = true
         sizer:Show()
     end)
-    grip:SetScript("OnMouseUp", function(_, btnFrame)
+    gripBtn:SetScript("OnMouseUp", function(_, btnFrame)
         if btnFrame == "LeftButton" and sizer:IsShown() then
             EndResize()
         end

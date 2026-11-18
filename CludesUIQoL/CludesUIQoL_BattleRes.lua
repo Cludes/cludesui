@@ -65,13 +65,13 @@ local defaultSet = {
     },
 }
 
-local addon = {}
-addon.db = nil
+local addonName = {}
+addonName.db = nil
 local function P()
-    return addon.db and addon.db.profile and addon.db.profile.battleRes
+    return addonName.db and addonName.db.profile and addonName.db.profile.battleRes
 end
 
-local widget, iconTex, borderTex, durationFS, countFS, cooldownFrame, textFS
+local widget, iconTexture, borderTex, durationText, countLine, cdFrame, textLine
 
 -- Options-page live preview: forces the icon on screen for as long as the owning
 -- page is. Real charge data is used whenever the brez pool reports any; outside
@@ -152,9 +152,9 @@ local BORDER_PX = { none = 0, thin = 1, normal = 2, heavy = 3, strong = 4 }
 
 local function _resolveBorderColor(p)
     if p.borderUseClass then
-        local _, ct = UnitClass("player")
-        if ct and RAID_CLASS_COLORS[ct] then
-            return RAID_CLASS_COLORS[ct].r, RAID_CLASS_COLORS[ct].g, RAID_CLASS_COLORS[ct].b, 1
+        local _, countText = UnitClass("player")
+        if countText and RAID_CLASS_COLORS[countText] then
+            return RAID_CLASS_COLORS[countText].r, RAID_CLASS_COLORS[countText].g, RAID_CLASS_COLORS[countText].b, 1
         end
     end
     local c = p.borderColor
@@ -177,11 +177,11 @@ end
 
 -- Custom-shape outline: the shape's mask grown by the border size and filled with
 -- the border colour behind the masked icon, leaving a ring exactly that thick.
-local function _applyShapeOutline(owner, shape, bs, region, g, b, a)
+local function _applyShapeOutline(owner, shapeKey, bs, region, g, b, a)
     local t = owner._cuiOutline
-    local maskPath = shape and CludesUI.SHAPE_MASKS[shape]
+    local maskFile = shapeKey and CludesUI.SHAPE_MASKS[shapeKey]
     local Pix = CludesUI and CludesUI.PP
-    if not (maskPath and Pix) or bs <= 0 then
+    if not (maskFile and Pix) or bs <= 0 then
         if t then
             t:Hide()
         end
@@ -196,12 +196,12 @@ local function _applyShapeOutline(owner, shape, bs, region, g, b, a)
     local m = owner._cuiOutlineMask
     -- The mask's opening is its middle (128 - 2 * inset) / 128: grow it by bs over
     -- that ratio so the outline reaches bs pixels past the icon's own edge.
-    local inset = CludesUI.SHAPE_INSETS[shape] or 17
+    local inset = CludesUI.SHAPE_INSETS[shapeKey] or 17
     local grow = _snapOff(Pix.FromPixels(bs * 128 / (128 - 2 * inset)))
     m:ClearAllPoints()
     m:SetPoint("TOPLEFT", owner, "TOPLEFT", -grow, grow)
     m:SetPoint("BOTTOMRIGHT", owner, "BOTTOMRIGHT", grow, -grow)
-    m:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    m:SetTexture(maskFile, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
     t:ClearAllPoints()
     t:SetAllPoints(m)
     t:SetColorTexture(region, g, b, a)
@@ -220,34 +220,34 @@ local function ApplyShape()
     end
 
     local Pix = CludesUI and CludesUI.PP
-    local shape = p.shape or "none"
+    local shapeKey = p.shape or "none"
     local bs = BORDER_PX[p.borderSize or "thin"] or 1
 
     -- Frame sizing: square by default; for "cropped" the height is 80% of width
     -- (mirrors Action Bars line 2263: btnH = btnH * 0.80).
     local size = p.iconSize or 40
     local fw, fh = size, size
-    if shape == "cropped" then
+    if shapeKey == "cropped" then
         fh = math.floor(size * 0.80 + 0.5)
     end
     if Pix and Pix.Snap then
         fw, fh = Pix.Snap(fw), Pix.Snap(fh)
     end
     widget:SetSize(fw, fh)
-    iconTex:ClearAllPoints()
-    iconTex:SetAllPoints(widget)
+    iconTexture:ClearAllPoints()
+    iconTexture:SetAllPoints(widget)
 
     -- Cooldown swirl: covers the icon area.
-    if cooldownFrame then
-        cooldownFrame:ClearAllPoints()
-        cooldownFrame:SetAllPoints(widget)
+    if cdFrame then
+        cdFrame:ClearAllPoints()
+        cdFrame:SetAllPoints(widget)
     end
 
     -- Duration text (centered) and count text (bottom-right) -- positioned for
     -- every shape since the early-return below would otherwise skip them.
-    SetBrezIconFont(durationFS, p.durationSize or 12)
-    durationFS:ClearAllPoints()
-    durationFS:SetPoint(
+    SetBrezIconFont(durationText, p.durationSize or 12)
+    durationText:ClearAllPoints()
+    durationText:SetPoint(
         "CENTER",
         widget,
         "CENTER",
@@ -255,9 +255,9 @@ local function ApplyShape()
         _snapOff(p.durationOffsetY or 0)
     )
 
-    SetBrezIconFont(countFS, p.countSize or 11)
-    countFS:ClearAllPoints()
-    countFS:SetPoint(
+    SetBrezIconFont(countLine, p.countSize or 11)
+    countLine:ClearAllPoints()
+    countLine:SetPoint(
         "BOTTOMRIGHT",
         widget,
         "BOTTOMRIGHT",
@@ -268,34 +268,34 @@ local function ApplyShape()
     -----------------------------------------------------------------------
     --  BASE CASE: "none" or "cropped" -- plain texture, no mask
     -----------------------------------------------------------------------
-    if shape == "none" or shape == "cropped" then
-        if iconTex._mask then
+    if shapeKey == "none" or shapeKey == "cropped" then
+        if iconTexture._mask then
             -- Remove the mask from the cooldown swipe and reset its
             -- swipe texture BEFORE we nil out the mask reference.
             -- Otherwise the swipe stays cropped to the previous shape.
-            if cooldownFrame and not cooldownFrame:IsForbidden() then
-                pcall(cooldownFrame.RemoveMaskTexture, cooldownFrame, iconTex._mask)
-                if cooldownFrame.SetSwipeTexture then
-                    pcall(cooldownFrame.SetSwipeTexture, cooldownFrame, "")
+            if cdFrame and not cdFrame:IsForbidden() then
+                pcall(cdFrame.RemoveMaskTexture, cdFrame, iconTexture._mask)
+                if cdFrame.SetSwipeTexture then
+                    pcall(cdFrame.SetSwipeTexture, cdFrame, "")
                 end
             end
-            iconTex:RemoveMaskTexture(iconTex._mask)
-            iconTex._mask:SetTexture(nil)
-            iconTex._mask:ClearAllPoints()
-            iconTex._mask:SetSize(0.001, 0.001)
-            iconTex._mask:Hide()
-            iconTex._mask = nil
+            iconTexture:RemoveMaskTexture(iconTexture._mask)
+            iconTexture._mask:SetTexture(nil)
+            iconTexture._mask:ClearAllPoints()
+            iconTexture._mask:SetSize(0.001, 0.001)
+            iconTexture._mask:Hide()
+            iconTexture._mask = nil
         end
         borderTex:Hide() -- shape-border atlas is for custom shapes only
         _applyShapeOutline(widget, nil, 0)
 
         local z = (p.iconZoom or 11) / 100
-        if shape == "cropped" then
-            iconTex:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
+        if shapeKey == "cropped" then
+            iconTexture:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
         elseif z > 0 then
-            iconTex:SetTexCoord(z, 1 - z, z, 1 - z)
+            iconTexture:SetTexCoord(z, 1 - z, z, 1 - z)
         else
-            iconTex:SetTexCoord(0, 1, 0, 1)
+            iconTexture:SetTexCoord(0, 1, 0, 1)
         end
 
         -- Pixel-perfect border via PP.CreateBorder (canonical CUI pattern).
@@ -321,39 +321,39 @@ local function ApplyShape()
         Pix.HideBorder(widget)
     end
 
-    local maskPath = SHAPE_MASKS[shape]
-    if maskPath then
-        if not iconTex._mask then
-            iconTex._mask = widget:CreateMaskTexture()
-            iconTex._mask:SetAllPoints(iconTex)
-            iconTex:AddMaskTexture(iconTex._mask)
+    local maskFile = SHAPE_MASKS[shapeKey]
+    if maskFile then
+        if not iconTexture._mask then
+            iconTexture._mask = widget:CreateMaskTexture()
+            iconTexture._mask:SetAllPoints(iconTexture)
+            iconTexture:AddMaskTexture(iconTexture._mask)
         end
-        iconTex._mask:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        iconTex._mask:Show()
-        iconTex:SetTexCoord(0, 1, 0, 1)
+        iconTexture._mask:SetTexture(maskFile, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        iconTexture._mask:Show()
+        iconTexture:SetTexCoord(0, 1, 0, 1)
         -- Crop the cooldown swipe to the same shape (matches action bar
         -- behavior). Adds the icon's mask to the cooldown frame and uses
         -- the mask path as the swipe texture so the spinning swipe
         -- follows the custom outline rather than a square.
-        if cooldownFrame and not cooldownFrame:IsForbidden() then
-            pcall(cooldownFrame.AddMaskTexture, cooldownFrame, iconTex._mask)
-            if cooldownFrame.SetSwipeTexture then
-                pcall(cooldownFrame.SetSwipeTexture, cooldownFrame, maskPath)
+        if cdFrame and not cdFrame:IsForbidden() then
+            pcall(cdFrame.AddMaskTexture, cdFrame, iconTexture._mask)
+            if cdFrame.SetSwipeTexture then
+                pcall(cdFrame.SetSwipeTexture, cdFrame, maskFile)
             end
         end
-    elseif cooldownFrame and not cooldownFrame:IsForbidden() then
+    elseif cdFrame and not cdFrame:IsForbidden() then
         -- Default shape: remove any prior mask + restore default swipe.
-        if iconTex._mask then
-            pcall(cooldownFrame.RemoveMaskTexture, cooldownFrame, iconTex._mask)
+        if iconTexture._mask then
+            pcall(cdFrame.RemoveMaskTexture, cdFrame, iconTexture._mask)
         end
-        if cooldownFrame.SetSwipeTexture then
-            pcall(cooldownFrame.SetSwipeTexture, cooldownFrame, "")
+        if cdFrame.SetSwipeTexture then
+            pcall(cdFrame.SetSwipeTexture, cdFrame, "")
         end
     end
 
     borderTex:Hide()
     local region, g, b, a = _resolveBorderColor(p)
-    _applyShapeOutline(widget, shape, bs, region, g, b, a)
+    _applyShapeOutline(widget, shapeKey, bs, region, g, b, a)
 end
 
 -------------------------------------------------------------------------------
@@ -372,7 +372,7 @@ end
 -- recharging). The separator pipe is escaped as || for the renderer; the
 -- count goes red at 0 charges, matching the icon display's count text.
 local function _setTextDisplay(countStr, timeStr, isZero)
-    if not textFS then
+    if not textLine then
         return
     end
     if countStr == _txtCount and timeStr == _txtTime and isZero == _txtZero then
@@ -381,9 +381,9 @@ local function _setTextDisplay(countStr, timeStr, isZero)
     _txtCount, _txtTime, _txtZero = countStr, timeStr, isZero
     local cpfx = isZero and "|cffff3333" or _cntPfx
     if timeStr ~= "" then
-        textFS:SetFormattedText("%s%s|r |cffa6a6a6|||r %s%s|r", cpfx, countStr, _timPfx, timeStr)
+        textLine:SetFormattedText("%s%s|r |cffa6a6a6|||r %s%s|r", cpfx, countStr, _timPfx, timeStr)
     else
-        textFS:SetFormattedText("%s%s|r", cpfx, countStr)
+        textLine:SetFormattedText("%s%s|r", cpfx, countStr)
     end
 end
 
@@ -393,20 +393,20 @@ end
 -- shows (UpdateVisibility polls immediately on Show).
 local function ApplyText()
     local p = P()
-    if not p or not textFS then
+    if not p or not textLine then
         return
     end
     _cntPfx = _colorPrefix(p.textCountColor)
     _timPfx = _colorPrefix(p.textTimerColor)
-    SetBrezFont(textFS, p.textSize or 14)
+    SetBrezFont(textLine, p.textSize or 14)
     -- Drop the dedupe caches so the next compose re-renders with new colors
     -- (the ticker repaints within half a second while shown).
     _txtCount, _txtTime, _txtZero = nil, nil, nil
     if not widget:IsShown() then
         _setTextDisplay("2", "4:14", false)
     end
-    local wid = textFS:GetStringWidth() or 0
-    local hgt = textFS:GetStringHeight() or 0
+    local wid = textLine:GetStringWidth() or 0
+    local hgt = textLine:GetStringHeight() or 0
     if wid < 1 then
         wid = (p.textSize or 14) * 4
     end
@@ -473,37 +473,37 @@ local function _activeKeystoneLevel()
 end
 
 -- Re-read encounter and keystone state directly (zone-in, or events re-registered).
-function mod.RefreshInstanceState(st)
-    st.inEncounter = IsEncounterInProgress() or false
-    if st.inEncounter then
+function mod.RefreshInstanceState(state)
+    state.inEncounter = IsEncounterInProgress() or false
+    if state.inEncounter then
         local _, instanceType = GetInstanceInfo()
-        st.encounterIsRaid = (instanceType == "raid")
+        state.encounterIsRaid = (instanceType == "raid")
     else
-        st.encounterIsRaid = false
+        state.encounterIsRaid = false
     end
-    st.inChallenge = _activeKeystoneLevel() ~= nil
+    state.inChallenge = _activeKeystoneLevel() ~= nil
 end
 
 -- Mirrors CludesUIMythicTimer's keystone events plus ENCOUNTER_START/END
 -- for raid bosses. Other events are ignored.
-function mod.ApplyInstanceEvent(st, evt)
+function mod.ApplyInstanceEvent(state, evt)
     if evt == "ENCOUNTER_START" then
-        st.inEncounter = true
+        state.inEncounter = true
         local _, instanceType = GetInstanceInfo()
-        st.encounterIsRaid = (instanceType == "raid")
+        state.encounterIsRaid = (instanceType == "raid")
     elseif evt == "ENCOUNTER_END" then
-        st.inEncounter = false
-        st.encounterIsRaid = false
+        state.inEncounter = false
+        state.encounterIsRaid = false
     elseif evt == "CHALLENGE_MODE_START" or evt == "WORLD_STATE_TIMER_START" then
-        st.inChallenge = _activeKeystoneLevel() ~= nil
+        state.inChallenge = _activeKeystoneLevel() ~= nil
     elseif
         evt == "CHALLENGE_MODE_COMPLETED"
         or evt == "CHALLENGE_MODE_RESET"
         or evt == "WORLD_STATE_TIMER_STOP"
     then
-        st.inChallenge = false
+        state.inChallenge = false
     elseif evt == "PLAYER_ENTERING_WORLD" then
-        mod.RefreshInstanceState(st)
+        mod.RefreshInstanceState(state)
     end
 end
 
@@ -569,22 +569,22 @@ end
 local _lastCountText, _lastDurText, _lastCountColor
 local function _setCount(s, isZero)
     if s ~= _lastCountText then
-        countFS:SetText(s)
+        countLine:SetText(s)
         _lastCountText = s
     end
     local key = isZero and "zero" or "ok"
     if key ~= _lastCountColor then
         if isZero then
-            countFS:SetTextColor(1, 0.2, 0.2, 1)
+            countLine:SetTextColor(1, 0.2, 0.2, 1)
         else
-            countFS:SetTextColor(1, 1, 1, 1)
+            countLine:SetTextColor(1, 1, 1, 1)
         end
         _lastCountColor = key
     end
 end
 local function _setDur(s)
     if s ~= _lastDurText then
-        durationFS:SetText(s)
+        durationText:SetText(s)
         _lastDurText = s
     end
 end
@@ -592,7 +592,7 @@ local _lastDesat = false
 local function _setDesat(wanted)
     wanted = wanted and true or false
     if wanted ~= _lastDesat then
-        iconTex:SetDesaturated(wanted)
+        iconTexture:SetDesaturated(wanted)
         _lastDesat = wanted
     end
 end
@@ -608,17 +608,17 @@ local function _showPreviewCharges()
         -- Once per cycle: re-setting the SAME values each poll is idempotent, but
         -- re-setting new ones would restart the swipe animation twice a second.
         _previewExpiry = GetTime() + 90
-        if cooldownFrame then
-            cooldownFrame:SetCooldown(GetTime(), 90)
+        if cdFrame then
+            cdFrame:SetCooldown(GetTime(), 90)
         end
     end
-    local timeText = FormatTime(_previewExpiry - GetTime())
+    local timeLabel = FormatTime(_previewExpiry - GetTime())
     if IsTextMode() then
-        _setTextDisplay("2", timeText, false)
+        _setTextDisplay("2", timeLabel, false)
         return
     end
     _setCount("2", false)
-    _setDur(timeText)
+    _setDur(timeLabel)
     _setDesat(false)
 end
 
@@ -641,29 +641,29 @@ local function PollCharges()
         end
         return
     end
-    local charges, maxCharges = details.currentCharges, details.maxCharges
+    local chargeCount, maxCharges = details.currentCharges, details.maxCharges
     local start, dur = details.cooldownStartTime, details.cooldownDuration
-    local recharging = charges < maxCharges and start and dur and dur > 0
-    local timeText = ""
+    local recharging = chargeCount < maxCharges and start and dur and dur > 0
+    local timeLabel = ""
     if recharging then
         local remaining = (start + dur) - GetTime()
-        timeText = remaining > 0 and FormatTime(remaining) or ""
+        timeLabel = remaining > 0 and FormatTime(remaining) or ""
     end
 
     if textMode then
-        _setTextDisplay(tostring(charges), timeText, charges <= 0)
+        _setTextDisplay(tostring(chargeCount), timeLabel, chargeCount <= 0)
         return
     end
 
-    _setCount(tostring(charges), charges <= 0)
-    _setDur(timeText)
+    _setCount(tostring(chargeCount), chargeCount <= 0)
+    _setDur(timeLabel)
     local p = P()
-    _setDesat(p and p.desaturateNoCharges ~= false and charges <= 0)
-    if cooldownFrame then
+    _setDesat(p and p.desaturateNoCharges ~= false and chargeCount <= 0)
+    if cdFrame then
         if recharging then
-            cooldownFrame:SetCooldown(start, dur)
+            cdFrame:SetCooldown(start, dur)
         else
-            cooldownFrame:Clear()
+            cdFrame:Clear()
         end
     end
 end
@@ -694,8 +694,8 @@ local function UpdateVisibility()
         -- can surface them as if they were real charge data.
         if _previewExpiry ~= 0 and not _previewActive() then
             _previewExpiry = 0
-            if cooldownFrame then
-                cooldownFrame:Clear()
+            if cdFrame then
+                cdFrame:Clear()
             end
             if IsTextMode() then
                 _setTextDisplay("", "", false)
@@ -727,41 +727,41 @@ local function CreateBrezFrame()
     widget:SetSize(40, 40)
     widget:Hide()
 
-    iconTex = widget:CreateTexture(nil, "ARTWORK")
-    iconTex:SetAllPoints(widget)
+    iconTexture = widget:CreateTexture(nil, "ARTWORK")
+    iconTexture:SetAllPoints(widget)
     local brezIcon
     if C_Spell and C_Spell.GetSpellTexture then
         brezIcon = C_Spell.GetSpellTexture(BREZ_SPELL_ID)
     end
-    iconTex:SetTexture(brezIcon or 136080)
-    iconTex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    iconTexture:SetTexture(brezIcon or 136080)
+    iconTexture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
     borderTex = widget:CreateTexture(nil, "OVERLAY")
     borderTex:Hide()
 
-    cooldownFrame = CreateFrame("Cooldown", nil, widget, "CooldownFrameTemplate")
-    cooldownFrame:SetAllPoints(widget)
-    cooldownFrame:SetDrawEdge(false)
-    cooldownFrame:SetHideCountdownNumbers(true) -- we render our own duration text
-    cooldownFrame:SetFrameLevel(widget:GetFrameLevel() + 1)
+    cdFrame = CreateFrame("Cooldown", nil, widget, "CooldownFrameTemplate")
+    cdFrame:SetAllPoints(widget)
+    cdFrame:SetDrawEdge(false)
+    cdFrame:SetHideCountdownNumbers(true) -- we render our own duration text
+    cdFrame:SetFrameLevel(widget:GetFrameLevel() + 1)
 
-    durationFS = cooldownFrame:CreateFontString(nil, "OVERLAY")
-    SetBrezIconFont(durationFS, 14)
-    durationFS:SetText("")
+    durationText = cdFrame:CreateFontString(nil, "OVERLAY")
+    SetBrezIconFont(durationText, 14)
+    durationText:SetText("")
 
-    countFS = cooldownFrame:CreateFontString(nil, "OVERLAY")
-    SetBrezIconFont(countFS, 12)
-    countFS:SetText("")
+    countLine = cdFrame:CreateFontString(nil, "OVERLAY")
+    SetBrezIconFont(countLine, 12)
+    countLine:SetText("")
 
     -- Text display ("2 | 4:14"): centered on the frame, shown instead of the
     -- icon elements when displayMode is "text". A default font is required
     -- before any SetText ("Font not set" error otherwise); ApplyText re-applies
     -- the configured size on top of it.
-    textFS = widget:CreateFontString(nil, "OVERLAY")
-    SetBrezFont(textFS, 14)
-    textFS:SetPoint("CENTER", widget, "CENTER", 0, 0)
-    textFS:SetText("")
-    textFS:Hide()
+    textLine = widget:CreateFontString(nil, "OVERLAY")
+    SetBrezFont(textLine, 14)
+    textLine:SetPoint("CENTER", widget, "CENTER", 0, 0)
+    textLine:SetText("")
+    textLine:Hide()
 
     return widget
 end
@@ -771,7 +771,7 @@ end
 -------------------------------------------------------------------------------
 local _syncEventRegistration -- defined in the event section below
 local function Apply()
-    if not addon.db then
+    if not addonName.db then
         return
     end
     if not widget then
@@ -780,24 +780,24 @@ local function Apply()
     if IsTextMode() then
         -- Text display: hide every icon element (duration/count texts are
         -- children of the cooldown frame, so they hide with it).
-        iconTex:Hide()
+        iconTexture:Hide()
         borderTex:Hide()
-        if cooldownFrame then
-            cooldownFrame:Clear()
-            cooldownFrame:Hide()
+        if cdFrame then
+            cdFrame:Clear()
+            cdFrame:Hide()
         end
         local Pix = CludesUI and CludesUI.PP
         if Pix and Pix.GetBorders and Pix.GetBorders(widget) then
             Pix.HideBorder(widget)
         end
         _applyShapeOutline(widget, nil, 0)
-        textFS:Show()
+        textLine:Show()
         ApplyText()
     else
-        textFS:Hide()
-        iconTex:Show()
-        if cooldownFrame then
-            cooldownFrame:Show()
+        textLine:Hide()
+        iconTexture:Show()
+        if cdFrame then
+            cdFrame:Show()
         end
         ApplyShape()
     end
@@ -810,7 +810,7 @@ _G._CUI_BattleRes_Apply = Apply
 -- QoL Reset: the Battle Res and Bloodlust slices back to their defaults (both
 -- live in this file's defaults table).
 function _G._CUI_BattleRes_Reset()
-    local prof = addon.db and addon.db.profile
+    local prof = addonName.db and addonName.db.profile
     if not prof then
         return
     end
@@ -982,9 +982,9 @@ boot:SetScript("OnEvent", function(self)
     if not CludesUI or not CludesUI.Lite or not CludesUI.Lite.NewDB then
         return
     end
-    addon.db = CludesUI.Lite.NewDB("CludesUIQoLDB", defaultSet, true)
+    addonName.db = CludesUI.Lite.NewDB("CludesUIQoLDB", defaultSet, true)
     _G._CUI_BattleRes_DB = function()
-        return addon.db
+        return addonName.db
     end
     CreateBrezFrame()
     -- Apply registers events (gated on enabled + visibility) and refreshes

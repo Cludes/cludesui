@@ -31,7 +31,7 @@ end
 local FRIENDS_ATLAS = "housefinder_neighborhood-friends-icon"
 
 local function GatherOnlineFriends()
-    local guild, favorites, friends = {}, {}, {}
+    local guild, favorites, friendList = {}, {}, {}
     local seenBNet = {}
     local myName = UnitName("player")
     -- Notes are stored raw: the tooltip cleans only the rows it shows, and only with Show Notes on.
@@ -39,14 +39,14 @@ local function GatherOnlineFriends()
     if IsInGuild and IsInGuild() then
         local sum = GetNumGuildMembers() or 0
         for i = 1, sum do
-            local name, _, _, level, _, zone, publicNote, _, online, _, class = GetGuildRosterInfo(i)
-            if online and name then
-                local short = name:match("^([^%-]+)") or name
+            local label, _, _, level, _, zone, publicNote, _, online, _, class = GetGuildRosterInfo(i)
+            if online and label then
+                local short = label:match("^([^%-]+)") or label
                 if short ~= myName then
                     -- Fix "Name-Realm-Realm" to "Name-Realm"
                     guild[#guild + 1] = {
                         name = short,
-                        full = CludesUI.BuildFullName(name) or name,
+                        full = CludesUI.BuildFullName(label) or label,
                         class = class,
                         zone = zone or "",
                         level = level,
@@ -60,44 +60,44 @@ local function GatherOnlineFriends()
 
     local numBNet = BNGetNumFriends and BNGetNumFriends() or 0
     for i = 1, numBNet do
-        local acct = C_BattleNet and C_BattleNet.GetFriendAccountInfo and C_BattleNet.GetFriendAccountInfo(i)
-        if acct then
-            local gameInfo = acct.gameAccountInfo
-            if gameInfo and gameInfo.isOnline and gameInfo.clientProgram == "WoW" then
-                local charName = gameInfo.characterName
-                local class = gameInfo.className and gameInfo.className:upper():gsub(" ", "")
-                if gameInfo.classID and C_CreatureInfo and C_CreatureInfo.GetClassInfo then
-                    local ci = C_CreatureInfo.GetClassInfo(gameInfo.classID)
+        local account = C_BattleNet and C_BattleNet.GetFriendAccountInfo and C_BattleNet.GetFriendAccountInfo(i)
+        if account then
+            local gameAccount = account.gameAccountInfo
+            if gameAccount and gameAccount.isOnline and gameAccount.clientProgram == "WoW" then
+                local characterName = gameAccount.characterName
+                local class = gameAccount.className and gameAccount.className:upper():gsub(" ", "")
+                if gameAccount.classID and C_CreatureInfo and C_CreatureInfo.GetClassInfo then
+                    local ci = C_CreatureInfo.GetClassInfo(gameAccount.classID)
                     if ci and ci.classFile then
                         class = ci.classFile
                     end
                 end
-                local zone = gameInfo.areaName or ""
+                local zone = gameAccount.areaName or ""
                 -- Fix "Name-Realm-Realm" to "Name-Realm"
-                local full = CludesUI.BuildFullName(charName, gameInfo.realmName) or charName
+                local full = CludesUI.BuildFullName(characterName, gameAccount.realmName) or characterName
                 -- Battle tag without the #discriminator (fall back to accountName/RealID)
-                local rawTag = acct.battleTag or acct.accountName
+                local rawTag = account.battleTag or account.accountName
                 local tagName = rawTag and rawTag:match("^([^#]+)") or rawTag
                 local record = {
-                    name = charName or tagName or "???",
+                    name = characterName or tagName or "???",
                     full = full,
                     class = class,
                     zone = zone,
-                    level = gameInfo.characterLevel,
+                    level = gameAccount.characterLevel,
                     bnetTag = tagName,
-                    bnetName = acct.accountName or acct.battleTag,
-                    bnetID = acct.bnetAccountID,
-                    isFavorite = acct.isFavorite,
-                    note = acct.note,
+                    bnetName = account.accountName or account.battleTag,
+                    bnetID = account.bnetAccountID,
+                    isFavorite = account.isFavorite,
+                    note = account.note,
                     kind = "bnet",
                 }
-                if charName then
-                    seenBNet[charName] = true
+                if characterName then
+                    seenBNet[characterName] = true
                 end
-                if acct.isFavorite then
+                if account.isFavorite then
                     favorites[#favorites + 1] = record
                 else
-                    friends[#friends + 1] = record
+                    friendList[#friendList + 1] = record
                 end
             end
         end
@@ -108,11 +108,11 @@ local function GatherOnlineFriends()
     for i = 1, numChar do
         local details = C_FriendList.GetFriendInfoByIndex(i)
         if details and details.connected then
-            local charName = details.name
-            if charName and not seenBNet[charName] then
-                friends[#friends + 1] = {
-                    name = charName:match("^([^%-]+)") or charName,
-                    full = CludesUI.BuildFullName(charName) or charName,
+            local characterName = details.name
+            if characterName and not seenBNet[characterName] then
+                friendList[#friendList + 1] = {
+                    name = characterName:match("^([^%-]+)") or characterName,
+                    full = CludesUI.BuildFullName(characterName) or characterName,
                     class = details.className and details.className:upper():gsub(" ", ""),
                     zone = details.area or "",
                     level = details.level,
@@ -128,9 +128,9 @@ local function GatherOnlineFriends()
     for _, g in ipairs(guild) do
         guildSet[g.name] = true
     end
-    for i = #friends, 1, -1 do
-        if guildSet[friends[i].name] then
-            table.remove(friends, i)
+    for i = #friendList, 1, -1 do
+        if guildSet[friendList[i].name] then
+            table.remove(friendList, i)
         end
     end
     for i = #favorites, 1, -1 do
@@ -156,9 +156,9 @@ local function GatherOnlineFriends()
     end
     table.sort(guild, byZone)
     table.sort(favorites, byTag)
-    table.sort(friends, byTag)
+    table.sort(friendList, byTag)
 
-    return guild, favorites, friends
+    return guild, favorites, friendList
 end
 
 -- Custom two-column friends tooltip (same pattern as the M+ death tooltip). FTT_FONT
@@ -227,7 +227,7 @@ do
     -- faction/realm), everyone else by character name. An explicit chat frame skips
     -- ChatFrame_SendTell's FCF_OpenTemporaryWindow path (SetTellTarget/windowList/
     -- MessageEventHandler taint cascade); a "/w" macro can't open the editbox, only send.
-    local function FTTOpenWhisper(charName, bnetName)
+    local function FTTOpenWhisper(characterName, bnetName)
         -- Suppress whispers in protected content, and while /cuidev is on (it forces the
         -- same secret-value environment as a real Mythic+). InProtectedInstance() itself
         -- reports true in dev mode; the separate branch exists only for the clearer message.
@@ -250,12 +250,12 @@ do
                 return
             end
         end
-        if charName and charName ~= "" then
+        if characterName and characterName ~= "" then
             local sendTell = (ChatFrameUtil and ChatFrameUtil.SendTell) or ChatFrame_SendTell
             -- Fix "Name-Realm-Realm" to "Name-Realm"
-            local target = CludesUI.BuildFullName(charName) or charName
+            local goal = CludesUI.BuildFullName(characterName) or characterName
             if sendTell then
-                sendTell(target, DEFAULT_CHAT_FRAME)
+                sendTell(goal, DEFAULT_CHAT_FRAME)
             end
         end
     end
@@ -309,9 +309,9 @@ do
 
         -- Whisper(charName, bnetName); Invite always uses the character name.
         MakeItem(CludesUI.L("Whisper"), -PAD, FTTOpenWhisper)
-        MakeItem(CludesUI.L("Invite"), -PAD - RH, function(target)
-            if target and target ~= "" and C_PartyInfo and C_PartyInfo.InviteUnit then
-                C_PartyInfo.InviteUnit(CludesUI.BuildFullName(target) or target)
+        MakeItem(CludesUI.L("Invite"), -PAD - RH, function(goal)
+            if goal and goal ~= "" and C_PartyInfo and C_PartyInfo.InviteUnit then
+                C_PartyInfo.InviteUnit(CludesUI.BuildFullName(goal) or goal)
             end
         end)
 
@@ -329,13 +329,13 @@ do
     end
 
     local function FTTShowRowMenu(rowBtn)
-        local target = rowBtn and rowBtn._fttTarget
+        local goal = rowBtn and rowBtn._fttTarget
         local bnet = rowBtn and rowBtn._fttBnet
-        if (not target or target == "") and (not bnet or bnet == "") then
+        if (not goal or goal == "") and (not bnet or bnet == "") then
             return
         end
         local m = GetFTTMenu()
-        m._target = target
+        m._target = goal
         m._bnet = bnet
         _fttMenuOpen = true
         CancelFTTHide()
@@ -448,8 +448,8 @@ do
     end
 
     -- Row targets (read by its OnClick and the menu): target = character name (invite + character whisper), bnet = Battle.net account (preferred for whisper).
-    local function FTTSetRowTarget(button, target, bnet)
-        button._fttTarget = target
+    local function FTTSetRowTarget(button, goal, bnet)
+        button._fttTarget = goal
         button._fttBnet = bnet
     end
 
@@ -485,11 +485,11 @@ do
 
     function ShowFriendsTooltip(anchor)
         CancelFTTHide()
-        local guild, favorites, friends = GatherOnlineFriends()
+        local guild, favorites, friendList = GatherOnlineFriends()
         local tooltip = GetFriendsTT()
         -- Scale the whole tooltip to the user's Custom Tooltip Size (re-applied each show).
         tooltip:SetScale(GetCustomTooltipScale())
-        local sum = #guild + #favorites + #friends
+        local sum = #guild + #favorites + #friendList
 
         local mp = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
         local maxRows = mp and tonumber(mp.friendsMaxRows) or 0
@@ -502,13 +502,13 @@ do
         end
         local showNotes = mp and mp.friendsShowNotes
 
-        local font = FTT_FONT()
+        local fontFile = FTT_FONT()
         for i = 1, #_friendsTTRows do
             FTTNameFont(_friendsTTRows[i].name, 10)
-            _friendsTTRows[i].zone:SetFont(font, 10, "")
+            _friendsTTRows[i].zone:SetFont(fontFile, 10, "")
         end
         for i = 1, #_friendsTTHeaders do
-            _friendsTTHeaders[i]:SetFont(font, 12, "")
+            _friendsTTHeaders[i]:SetFont(fontFile, 12, "")
         end
 
         -- Hide pooled elements and clear stale entry refs.
@@ -535,18 +535,18 @@ do
         end
 
         if sum == 0 then
-            local row = EnsureFTTRow(1)
-            FTTNameFont(row.name, 10)
-            row.name:SetText(CludesUI.COLOR_CODES.DIM .. CludesUI.L("No friends online") .. "|r")
-            row.zone:SetText("")
+            local line = EnsureFTTRow(1)
+            FTTNameFont(line.name, 10)
+            line.name:SetText(CludesUI.COLOR_CODES.DIM .. CludesUI.L("No friends online") .. "|r")
+            line.zone:SetText("")
             tooltip:SetSize(FTT_PAD * 2 + 140, FTT_PAD + FTT_ROW_H + FTT_PAD)
-            row.button:ClearAllPoints()
-            row.button:SetPoint("TOPLEFT", tooltip, "TOPLEFT", FTT_PAD, -FTT_PAD)
-            row.button:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -FTT_PAD, -FTT_PAD)
-            row.button._entry = nil
-            FTTSetRowTarget(row.button, nil)
-            row.button:Show()
-            row.name:Show()
+            line.button:ClearAllPoints()
+            line.button:SetPoint("TOPLEFT", tooltip, "TOPLEFT", FTT_PAD, -FTT_PAD)
+            line.button:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -FTT_PAD, -FTT_PAD)
+            line.button._entry = nil
+            FTTSetRowTarget(line.button, nil)
+            line.button:Show()
+            line.name:Show()
             tooltip:ClearAllPoints()
             local gpt = SKIN._Grow.edge[SKIN._Grow.Dir()] or SKIN._Grow.edge.left
             tooltip:SetPoint(gpt[1], anchor, gpt[2], gpt[3], gpt[4])
@@ -561,33 +561,33 @@ do
         if #guild > 0 then
             sections[#sections + 1] = { title = "Guild", list = guild }
         end
-        if #friends > 0 then
-            sections[#sections + 1] = { title = "Friends", list = friends }
+        if #friendList > 0 then
+            sections[#sections + 1] = { title = "Friends", list = friendList }
         end
 
-        local rowIdx = 0
+        local lineIndex = 0
         local hdrIdx = 0
         local divIdx = 0
         local maxNameW, maxZoneW, maxNoteW = 0, 0, 0
-        local curY = -FTT_PAD
+        local nextY = -FTT_PAD
 
         for si, sec in ipairs(sections) do
             -- Divider line between sections (not before the first)
             if si > 1 then
-                curY = curY - FTT_DIV_PAD
+                nextY = nextY - FTT_DIV_PAD
                 divIdx = divIdx + 1
                 local div = EnsureFTTDivider(divIdx)
                 div:ClearAllPoints()
-                div:SetPoint("TOPLEFT", tooltip, "TOPLEFT", FTT_PAD, curY)
-                div:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -FTT_PAD, curY)
+                div:SetPoint("TOPLEFT", tooltip, "TOPLEFT", FTT_PAD, nextY)
+                div:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -FTT_PAD, nextY)
                 div:Show()
-                curY = curY - div:GetHeight() - FTT_DIV_PAD
+                nextY = nextY - div:GetHeight() - FTT_DIV_PAD
             end
 
-            curY = curY - 5 -- spacing above header
+            nextY = nextY - 5 -- spacing above header
             hdrIdx = hdrIdx + 1
             local heading = EnsureFTTHeader(hdrIdx)
-            heading:SetFont(font, 12, "")
+            heading:SetFont(fontFile, 12, "")
             local ac = CludesUI.CLUDES_GREEN or CludesUI._accentColor
             local acHex = ac
                     and format(
@@ -599,9 +599,9 @@ do
                 or "4cc9f0"
             heading:SetText(CludesUI.L(sec.title) .. " (|cff" .. acHex .. #sec.list .. "|r)")
             heading:ClearAllPoints()
-            heading:SetPoint("TOP", tooltip, "TOP", 0, curY)
+            heading:SetPoint("TOP", tooltip, "TOP", 0, nextY)
             heading:Show()
-            curY = curY - FTT_HDR_H - 5 -- spacing below header
+            nextY = nextY - FTT_HDR_H - 5 -- spacing below header
 
             local isShown = #sec.list
             if maxRows > 0 and isShown > maxRows then
@@ -609,10 +609,10 @@ do
             end
             for i = 1, isShown do
                 local e = sec.list[i]
-                rowIdx = rowIdx + 1
-                local row = EnsureFTTRow(rowIdx)
-                FTTNameFont(row.name, 10)
-                row.zone:SetFont(font, 10, "")
+                lineIndex = lineIndex + 1
+                local line = EnsureFTTRow(lineIndex)
+                FTTNameFont(line.name, 10)
+                line.zone:SetFont(fontFile, 10, "")
 
                 local cc = e.class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[e.class]
                 local colored = cc and cc:WrapTextInColorCode(e.name) or e.name
@@ -625,27 +625,27 @@ do
                 if lvl and lvl > 0 then
                     colored = colored .. " |cffb0b0b0" .. lvl .. "|r"
                 end
-                row.name:SetText(colored)
-                row.name:SetTextColor(1, 1, 1, 0.85)
+                line.name:SetText(colored)
+                line.name:SetTextColor(1, 1, 1, 0.85)
 
                 local zone = e.zone or ""
                 if zone ~= "" then
-                    row.zone:SetText(CludesUI.COLOR_CODES.DIM .. zone .. "|r")
+                    line.zone:SetText(CludesUI.COLOR_CODES.DIM .. zone .. "|r")
                 else
-                    row.zone:SetText("")
+                    line.zone:SetText("")
                 end
 
-                row.button._entry = e
-                FTTSetRowTarget(row.button, e.full or e.name, e.bnetName)
-                row.button:ClearAllPoints()
-                row.button:SetPoint("TOPLEFT", tooltip, "TOPLEFT", FTT_PAD, curY)
-                row.button:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -FTT_PAD, curY)
-                row.button:Show()
-                row.name:Show()
-                row.zone:Show()
+                line.button._entry = e
+                FTTSetRowTarget(line.button, e.full or e.name, e.bnetName)
+                line.button:ClearAllPoints()
+                line.button:SetPoint("TOPLEFT", tooltip, "TOPLEFT", FTT_PAD, nextY)
+                line.button:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -FTT_PAD, nextY)
+                line.button:Show()
+                line.name:Show()
+                line.zone:Show()
 
-                local nw = row.name:GetStringWidth() or 0
-                local zw = row.zone:GetStringWidth() or 0
+                local nw = line.name:GetStringWidth() or 0
+                local zw = line.zone:GetStringWidth() or 0
                 if nw > maxNameW then
                     maxNameW = nw
                 end
@@ -656,10 +656,10 @@ do
                 local rowH = FTT_ROW_H
                 local note = showNotes and CludesUI.StripFriendNoteTag(e.note)
                 if note then
-                    FTTNameFont(row.note, 9)
-                    row.note:SetText(note)
-                    row.note:Show()
-                    local ntw = row.note:GetUnboundedStringWidth() or 0
+                    FTTNameFont(line.note, 9)
+                    line.note:SetText(note)
+                    line.note:Show()
+                    local ntw = line.note:GetUnboundedStringWidth() or 0
                     if ntw > FTT_NOTE_MAX_W then
                         ntw = FTT_NOTE_MAX_W
                     end
@@ -668,34 +668,34 @@ do
                     end
                     rowH = FTT_ROW_H + FTT_NOTE_H
                 end
-                row.button:SetHeight(rowH)
+                line.button:SetHeight(rowH)
 
-                curY = curY - (rowH + FTT_GAP)
+                nextY = nextY - (rowH + FTT_GAP)
             end
 
             if maxRows > 0 and #sec.list > maxRows then
-                rowIdx = rowIdx + 1
-                local row = EnsureFTTRow(rowIdx)
-                FTTNameFont(row.name, 10)
-                row.name:SetText(
+                lineIndex = lineIndex + 1
+                local line = EnsureFTTRow(lineIndex)
+                FTTNameFont(line.name, 10)
+                line.name:SetText(
                     CludesUI.COLOR_CODES.DIM .. CludesUI.Lf("...and %1$d more", #sec.list - maxRows) .. "|r"
                 )
-                row.zone:SetText("")
-                row.button._entry = nil
-                FTTSetRowTarget(row.button, nil)
-                row.button:ClearAllPoints()
-                row.button:SetPoint("TOPLEFT", tooltip, "TOPLEFT", FTT_PAD, curY)
-                row.button:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -FTT_PAD, curY)
-                row.button:Show()
-                row.name:Show()
-                curY = curY - (FTT_ROW_H + FTT_GAP)
+                line.zone:SetText("")
+                line.button._entry = nil
+                FTTSetRowTarget(line.button, nil)
+                line.button:ClearAllPoints()
+                line.button:SetPoint("TOPLEFT", tooltip, "TOPLEFT", FTT_PAD, nextY)
+                line.button:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -FTT_PAD, nextY)
+                line.button:Show()
+                line.name:Show()
+                nextY = nextY - (FTT_ROW_H + FTT_GAP)
             end
         end
 
         local contentW = FTT_PAD + maxNameW + 16 + maxZoneW + FTT_PAD
         local noteW = FTT_PAD + FTT_NOTE_INDENT + maxNoteW + FTT_PAD
         local ttW = math.max(contentW, noteW, 160)
-        local ttH = -curY + FTT_PAD
+        local ttH = -nextY + FTT_PAD
 
         tooltip:SetSize(ttW, ttH)
         tooltip:ClearAllPoints()
@@ -817,7 +817,7 @@ local function ShowCalendarTooltip(anchor, lockoutEntries)
     local tooltip = GetCalendarTT()
     -- Scale the whole tooltip to the user's Custom Tooltip Size (re-applied each show).
     tooltip:SetScale(GetCustomTooltipScale())
-    local font = FTT_FONT()
+    local fontFile = FTT_FONT()
 
     for i = 1, #_calendarTTRows do
         _calendarTTRows[i].left:Hide()
@@ -829,7 +829,7 @@ local function ShowCalendarTooltip(anchor, lockoutEntries)
     end
 
     local title = EnsureCalendarTTTitle()
-    title:SetFont(font, 12, "")
+    title:SetFont(fontFile, 12, "")
     title:SetText(CludesUI.L("Calendar"))
 
     local footerData = {
@@ -838,30 +838,30 @@ local function ShowCalendarTooltip(anchor, lockoutEntries)
     }
 
     local maxLeftW, maxRightW = 0, 0
-    local curY = -CTT_PAD
+    local nextY = -CTT_PAD
 
     title:ClearAllPoints()
-    title:SetPoint("TOP", tooltip, "TOP", 0, curY)
+    title:SetPoint("TOP", tooltip, "TOP", 0, nextY)
     title:Show()
-    curY = curY - CTT_TITLE_H - CTT_GAP
+    nextY = nextY - CTT_TITLE_H - CTT_GAP
 
     for i, record in ipairs(lockoutEntries) do
-        local row = EnsureCalendarTTRow(i)
-        row.left:SetFont(font, 10, "")
-        row.right:SetFont(font, 10, "")
-        row.left:SetText(record.left)
-        row.right:SetText(record.right or "")
-        row.left:ClearAllPoints()
-        row.left:SetPoint("TOPLEFT", tooltip, "TOPLEFT", CTT_PAD, curY)
-        row.right:ClearAllPoints()
-        row.right:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -CTT_PAD, curY)
-        row.left:Show()
+        local line = EnsureCalendarTTRow(i)
+        line.left:SetFont(fontFile, 10, "")
+        line.right:SetFont(fontFile, 10, "")
+        line.left:SetText(record.left)
+        line.right:SetText(record.right or "")
+        line.left:ClearAllPoints()
+        line.left:SetPoint("TOPLEFT", tooltip, "TOPLEFT", CTT_PAD, nextY)
+        line.right:ClearAllPoints()
+        line.right:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -CTT_PAD, nextY)
+        line.left:Show()
         if record.right and record.right ~= "" then
-            row.right:Show()
+            line.right:Show()
         end
 
-        local lw = row.left:GetStringWidth() or 0
-        local rw = row.right:GetStringWidth() or 0
+        local lw = line.left:GetStringWidth() or 0
+        local rw = line.right:GetStringWidth() or 0
         if lw > maxLeftW then
             maxLeftW = lw
         end
@@ -869,26 +869,26 @@ local function ShowCalendarTooltip(anchor, lockoutEntries)
             maxRightW = rw
         end
 
-        curY = curY - CTT_ROW_H
+        nextY = nextY - CTT_ROW_H
     end
 
-    curY = curY - CTT_GAP
+    nextY = nextY - CTT_GAP
 
     for i, fd in ipairs(footerData) do
-        local footer = EnsureCalendarTTFooter(i)
-        footer.left:SetFont(font, 10, "")
-        footer.right:SetFont(font, 10, "")
-        footer.left:SetText(fd.left)
-        footer.right:SetText(fd.right)
-        footer.left:ClearAllPoints()
-        footer.left:SetPoint("TOPLEFT", tooltip, "TOPLEFT", CTT_PAD, curY)
-        footer.right:ClearAllPoints()
-        footer.right:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -CTT_PAD, curY)
-        footer.left:Show()
-        footer.right:Show()
+        local footerLine = EnsureCalendarTTFooter(i)
+        footerLine.left:SetFont(fontFile, 10, "")
+        footerLine.right:SetFont(fontFile, 10, "")
+        footerLine.left:SetText(fd.left)
+        footerLine.right:SetText(fd.right)
+        footerLine.left:ClearAllPoints()
+        footerLine.left:SetPoint("TOPLEFT", tooltip, "TOPLEFT", CTT_PAD, nextY)
+        footerLine.right:ClearAllPoints()
+        footerLine.right:SetPoint("TOPRIGHT", tooltip, "TOPRIGHT", -CTT_PAD, nextY)
+        footerLine.left:Show()
+        footerLine.right:Show()
 
-        local lw = footer.left:GetStringWidth() or 0
-        local rw = footer.right:GetStringWidth() or 0
+        local lw = footerLine.left:GetStringWidth() or 0
+        local rw = footerLine.right:GetStringWidth() or 0
         if lw > maxLeftW then
             maxLeftW = lw
         end
@@ -896,12 +896,12 @@ local function ShowCalendarTooltip(anchor, lockoutEntries)
             maxRightW = rw
         end
 
-        curY = curY - CTT_ROW_H
+        nextY = nextY - CTT_ROW_H
     end
 
     local contentW = CTT_PAD + maxLeftW + 16 + maxRightW + CTT_PAD
     local ttW = math.max(contentW, 180)
-    local ttH = -curY + CTT_PAD
+    local ttH = -nextY + CTT_PAD
 
     tooltip:SetSize(ttW, ttH)
     tooltip:ClearAllPoints()
@@ -944,9 +944,9 @@ local function GetCalendarLockoutEntries()
 
     local entries = {}
     for i = 1, GetNumSavedInstances() do
-        local name, _, _, difficulty, locked, extended, _, isRaid, _, difficultyName, numEncounters, encounterProgress =
+        local label, _, _, difficulty, locked, extended, _, isRaid, _, difficultyName, numEncounters, encounterProgress =
             GetSavedInstanceInfo(i)
-        local held = name and (locked or extended)
+        local held = label and (locked or extended)
         -- Dungeon rows only matter when the hold tracks real encounters; raids always show.
         if held and not isRaid and not (numEncounters and numEncounters > 0) then
             held = false
@@ -959,9 +959,9 @@ local function GetCalendarLockoutEntries()
                 rightText = format("%s %d/%d", diffLabel, encounterProgress, numEncounters)
             end
             entries[#entries + 1] = {
-                name = name,
+                name = label,
                 tierOrder = LOCKOUT_TIER_ORDER[tier] or LOCKOUT_TIER_ORDER.normal,
-                left = name,
+                left = label,
                 right = rightText,
             }
         end
