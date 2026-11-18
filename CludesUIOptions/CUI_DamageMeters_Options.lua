@@ -52,23 +52,23 @@ CludesUI.AtOptionsLogin(function()
         return DB()[keyName]
     end
     -- Row getters over Cfg: a key's value (or a default), or whether it is true.
-    local function CfgOr(key, default)
+    local function CfgOr(settingKey, default)
         return function()
-            return Cfg(key) or default
+            return Cfg(settingKey) or default
         end
     end
-    local function CfgIs(key)
+    local function CfgIs(settingKey)
         return function()
-            return Cfg(key) == true
+            return Cfg(settingKey) == true
         end
     end
     local function Set(keyName, val)
         DB()[keyName] = val
     end
     -- Row setters over Set: the key written with the row's value.
-    local function SetRow(key)
+    local function SetRow(settingKey)
         return function(value)
-            Set(key, value)
+            Set(settingKey, value)
         end
     end
 
@@ -100,7 +100,7 @@ CludesUI.AtOptionsLogin(function()
     end
 
     -- Bar texture dropdown values (same pattern as Resource Bars / Nameplates)
-    local dmTexValues = {}
+    local textureValues = {}
     local dmTexOrder = {}
     do
         CludesUI.AppendSharedMediaTextures(
@@ -112,16 +112,16 @@ CludesUI.AtOptionsLogin(function()
         local texNames = _G._CUDM_BarTextureNames or {}
         local texOrder2 = _G._CUDM_BarTextureOrder or {}
         local texLookup = _G._CUDM_BarTextures or {}
-        for _, key in ipairs(texOrder2) do
-            if key ~= "---" then
-                dmTexValues[key] = texNames[key] or key
+        for _, settingKey in ipairs(texOrder2) do
+            if settingKey ~= "---" then
+                textureValues[settingKey] = texNames[settingKey] or settingKey
             end
-            dmTexOrder[#dmTexOrder + 1] = key
+            dmTexOrder[#dmTexOrder + 1] = settingKey
         end
-        dmTexValues._menuOpts = {
+        textureValues._menuOpts = {
             itemHeight = 28,
-            background = function(key)
-                return texLookup[key]
+            background = function(settingKey)
+                return texLookup[settingKey]
             end,
         }
     end
@@ -129,13 +129,13 @@ CludesUI.AtOptionsLogin(function()
     -- Variant with "Match Damage Meters" at the top (for breakdown / spell history)
     local matchTexValues = { match = "Match Damage Meters" }
     local matchTexOrder = { "match", "---" }
-    for _, key in ipairs(dmTexOrder) do
-        matchTexOrder[#matchTexOrder + 1] = key
-        if key ~= "---" then
-            matchTexValues[key] = dmTexValues[key]
+    for _, settingKey in ipairs(dmTexOrder) do
+        matchTexOrder[#matchTexOrder + 1] = settingKey
+        if settingKey ~= "---" then
+            matchTexValues[settingKey] = textureValues[settingKey]
         end
     end
-    matchTexValues._menuOpts = dmTexValues._menuOpts
+    matchTexValues._menuOpts = textureValues._menuOpts
 
     local function BuildPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
@@ -238,7 +238,7 @@ CludesUI.AtOptionsLogin(function()
             -- rebuild below tears down the button it's anchored to: RefreshPage(true)
             -- recreates this whole block's frames, and a still-open popup left anchored
             -- to the old (now orphaned) cog button drifts to wherever that frame lands.
-            local unsafeCogShow
+            local cogShowUnsafe
             local _, _unsafeCogShow = CludesUI.BuildInlineCog(region, {
                 title = "Refresh Rate",
                 rows = {
@@ -256,8 +256,8 @@ CludesUI.AtOptionsLogin(function()
                                     Set("refreshRate", floor)
                                 end
                             end
-                            if unsafeCogShow and unsafeCogShow._popupFrame then
-                                unsafeCogShow._popupFrame:Hide()
+                            if cogShowUnsafe and cogShowUnsafe._popupFrame then
+                                cogShowUnsafe._popupFrame:Hide()
                             end
                             CludesUI:RefreshPage(true)
                         end,
@@ -265,7 +265,7 @@ CludesUI.AtOptionsLogin(function()
                 },
                 anchorTo = region._control,
             })
-            unsafeCogShow = _unsafeCogShow
+            cogShowUnsafe = _unsafeCogShow
         end
         cursorY = cursorY - height
 
@@ -462,7 +462,7 @@ CludesUI.AtOptionsLogin(function()
         bgRow, height = W:DualRow(hostFrame, cursorY, fvBorderCfg or CludesUI.BlizzStyle.Gate("damagemeters", {
             type = "dropdown",
             text = "Background Texture",
-            values = dmTexValues,
+            values = textureValues,
             order = dmTexOrder,
             getValue = CfgOr("bgTexture", "none"),
             setValue = function(val)
@@ -549,9 +549,9 @@ CludesUI.AtOptionsLogin(function()
         -- slot -- not this row.
         do
             local region = visRow._rightRegion
-            local suffix = region:CreateFontString(nil, "OVERLAY")
-            suffix:SetFont(CludesUI.EXPRESSWAY, 11, "")
-            suffix:SetTextColor(1, 1, 1, 0.35)
+            local tail = region:CreateFontString(nil, "OVERLAY")
+            tail:SetFont(CludesUI.EXPRESSWAY, 11, "")
+            tail:SetTextColor(1, 1, 1, 0.35)
             local rrLabel
             -- An idle pooled region keeps its last build's text: skip it.
             local regions = { region:GetRegions() }
@@ -568,11 +568,11 @@ CludesUI.AtOptionsLogin(function()
                 end
             end
             if rrLabel then
-                suffix:SetPoint("LEFT", rrLabel, "RIGHT", 5, 0)
+                tail:SetPoint("LEFT", rrLabel, "RIGHT", 5, 0)
             else
-                suffix:SetPoint("LEFT", region, "LEFT", 150, 0)
+                tail:SetPoint("LEFT", region, "LEFT", 150, 0)
             end
-            suffix:SetText(CludesUI.L("(seconds)"))
+            tail:SetText(CludesUI.L("(seconds)"))
         end
 
         if not CludesUI._prebuilding then
@@ -766,7 +766,7 @@ CludesUI.AtOptionsLogin(function()
                 },
             })
 
-            local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
+            local customColorSwatch, updateCustom = CludesUI.BuildColorSwatch(
                 region,
                 hdrBorderRow:GetFrameLevel() + 3,
                 function()
@@ -787,9 +787,9 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(customSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
-            local origIconClick = customSwatch:GetScript("OnClick")
-            customSwatch:SetScript("OnClick", function(self, ...)
+            Pix.Point(customColorSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
+            local origIconClick = customColorSwatch:GetScript("OnClick")
+            customColorSwatch:SetScript("OnClick", function(self, ...)
                 if Cfg("iconColorUseAccent") then
                     Set("iconColorUseAccent", false)
                     if mod.ApplyIconColor then
@@ -802,9 +802,9 @@ CludesUI.AtOptionsLogin(function()
                     origIconClick(self, ...)
                 end
             end)
-            CludesUI.HoverTip(customSwatch, "Custom Color")
+            CludesUI.HoverTip(customColorSwatch, "Custom Color")
 
-            local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(
+            local accentColorSwatch, updateAccent = CludesUI.BuildColorSwatch(
                 region,
                 hdrBorderRow:GetFrameLevel() + 3,
                 function()
@@ -820,16 +820,16 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(accentSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
-            accentSwatch:SetScript("OnClick", function()
+            Pix.Point(accentColorSwatch, "RIGHT", customColorSwatch, "LEFT", -8, 0)
+            accentColorSwatch:SetScript("OnClick", function()
                 Set("iconColorUseAccent", true)
                 if mod.ApplyIconColor then
                     mod.ApplyIconColor()
                 end
                 CludesUI:RefreshPage()
             end)
-            CludesUI.HoverTip(accentSwatch, "Accent Color")
-            region._lastInline = accentSwatch
+            CludesUI.HoverTip(accentColorSwatch, "Accent Color")
+            region._lastInline = accentColorSwatch
 
             -- Classic WoW UI paints every header icon with vanilla art that
             -- carries its own colours, and WoW Forever tints the glyphs its
@@ -841,19 +841,19 @@ CludesUI.AtOptionsLogin(function()
                 updateCustom()
                 updateAccent()
                 if stockIcons then
-                    customSwatch:SetAlpha(0.3)
-                    accentSwatch:SetAlpha(0.3)
+                    customColorSwatch:SetAlpha(0.3)
+                    accentColorSwatch:SetAlpha(0.3)
                     return
                 end
-                local useAccent = Cfg("iconColorUseAccent")
-                customSwatch:SetAlpha(useAccent and 0.3 or 1)
-                accentSwatch:SetAlpha(useAccent and 1 or 0.3)
+                local accentOn = Cfg("iconColorUseAccent")
+                customColorSwatch:SetAlpha(accentOn and 0.3 or 1)
+                accentColorSwatch:SetAlpha(accentOn and 1 or 0.3)
             end
             CludesUI.RegisterWidgetRefresh(refreshHdrIcon)
             refreshHdrIcon()
             if stockIcons then
-                CludesUI.BlizzStyle.BlockInline("damagemeters", customSwatch)
-                CludesUI.BlizzStyle.BlockInline("damagemeters", accentSwatch)
+                CludesUI.BlizzStyle.BlockInline("damagemeters", customColorSwatch)
+                CludesUI.BlizzStyle.BlockInline("damagemeters", accentColorSwatch)
             end
         end
         cursorY = cursorY - height
@@ -908,7 +908,7 @@ CludesUI.AtOptionsLogin(function()
                 },
             })
 
-            local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
+            local customColorSwatch, updateCustom = CludesUI.BuildColorSwatch(
                 region,
                 hdrRow2:GetFrameLevel() + 3,
                 function()
@@ -927,9 +927,9 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(customSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
-            local origHdrTextClick = customSwatch:GetScript("OnClick")
-            customSwatch:SetScript("OnClick", function(self, ...)
+            Pix.Point(customColorSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
+            local origHdrTextClick = customColorSwatch:GetScript("OnClick")
+            customColorSwatch:SetScript("OnClick", function(self, ...)
                 if Cfg("hdrTextUseAccent") ~= false then
                     Set("hdrTextUseAccent", false)
                     ApplyHdr()
@@ -940,9 +940,9 @@ CludesUI.AtOptionsLogin(function()
                     origHdrTextClick(self, ...)
                 end
             end)
-            CludesUI.HoverTip(customSwatch, "Custom Color")
+            CludesUI.HoverTip(customColorSwatch, "Custom Color")
 
-            local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(
+            local accentColorSwatch, updateAccent = CludesUI.BuildColorSwatch(
                 region,
                 hdrRow2:GetFrameLevel() + 3,
                 function()
@@ -956,21 +956,21 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(accentSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
-            accentSwatch:SetScript("OnClick", function()
+            Pix.Point(accentColorSwatch, "RIGHT", customColorSwatch, "LEFT", -8, 0)
+            accentColorSwatch:SetScript("OnClick", function()
                 Set("hdrTextUseAccent", true)
                 ApplyHdr()
                 CludesUI:RefreshPage()
             end)
-            CludesUI.HoverTip(accentSwatch, "Accent Color")
-            region._lastInline = accentSwatch
+            CludesUI.HoverTip(accentColorSwatch, "Accent Color")
+            region._lastInline = accentColorSwatch
 
             local function refreshHdrText()
                 updateCustom()
                 updateAccent()
-                local useAccent = Cfg("hdrTextUseAccent") ~= false
-                customSwatch:SetAlpha(useAccent and 0.3 or 1)
-                accentSwatch:SetAlpha(useAccent and 1 or 0.3)
+                local accentOn = Cfg("hdrTextUseAccent") ~= false
+                customColorSwatch:SetAlpha(accentOn and 0.3 or 1)
+                accentColorSwatch:SetAlpha(accentOn and 1 or 0.3)
             end
             CludesUI.RegisterWidgetRefresh(refreshHdrText)
             refreshHdrText()
@@ -988,7 +988,7 @@ CludesUI.AtOptionsLogin(function()
             DMBlizzGate({
                 type = "dropdown",
                 text = "Bar Texture",
-                values = dmTexValues,
+                values = textureValues,
                 order = dmTexOrder,
                 getValue = CfgOr("barTexture", "none"),
                 setValue = function(val)
@@ -1153,8 +1153,8 @@ CludesUI.AtOptionsLogin(function()
                     max = 0.20,
                     step = 0.01,
                     get = function()
-                        local key = ZoomKey()
-                        return Cfg(key) or (key == "classIconZoom" and 0.06 or 0)
+                        local settingKey = ZoomKey()
+                        return Cfg(settingKey) or (settingKey == "classIconZoom" and 0.06 or 0)
                     end,
                     set = function(val)
                         Set(ZoomKey(), val)
@@ -1768,9 +1768,9 @@ CludesUI.AtOptionsLogin(function()
                     barBgClassSwatch:SetAlpha(0.3)
                     return
                 end
-                local useClass = Cfg("barBgUseClassColor")
-                barBgSwatch:SetAlpha(useClass and 0.3 or 1)
-                barBgClassSwatch:SetAlpha(useClass and 1 or 0.3)
+                local classOn = Cfg("barBgUseClassColor")
+                barBgSwatch:SetAlpha(classOn and 0.3 or 1)
+                barBgClassSwatch:SetAlpha(classOn and 1 or 0.3)
             end
             CludesUI.RegisterWidgetRefresh(refreshBarBg)
             refreshBarBg()
@@ -1862,9 +1862,9 @@ CludesUI.AtOptionsLogin(function()
         })
         do
             local region = hnRow._rightRegion
-            local suffix = region:CreateFontString(nil, "OVERLAY")
-            suffix:SetFont(CludesUI.EXPRESSWAY, 11, "")
-            suffix:SetTextColor(1, 1, 1, 0.35)
+            local tail = region:CreateFontString(nil, "OVERLAY")
+            tail:SetFont(CludesUI.EXPRESSWAY, 11, "")
+            tail:SetTextColor(1, 1, 1, 0.35)
             local hnLabel
             -- An idle pooled region keeps its last build's text: skip it.
             local regions = { region:GetRegions() }
@@ -1881,11 +1881,11 @@ CludesUI.AtOptionsLogin(function()
                 end
             end
             if hnLabel then
-                suffix:SetPoint("LEFT", hnLabel, "RIGHT", 5, 0)
+                tail:SetPoint("LEFT", hnLabel, "RIGHT", 5, 0)
             else
-                suffix:SetPoint("LEFT", region, "LEFT", 150, 0)
+                tail:SetPoint("LEFT", region, "LEFT", 150, 0)
             end
-            suffix:SetText("(1, 2, 3)")
+            tail:SetText("(1, 2, 3)")
         end
         cursorY = cursorY - height
 
@@ -1971,7 +1971,7 @@ CludesUI.AtOptionsLogin(function()
                 rows = leftRows,
             })
 
-            local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
+            local customColorSwatch, updateCustom = CludesUI.BuildColorSwatch(
                 region,
                 btRow:GetFrameLevel() + 3,
                 function()
@@ -1990,9 +1990,9 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(customSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
-            local origClick = customSwatch:GetScript("OnClick")
-            customSwatch:SetScript("OnClick", function(self, ...)
+            Pix.Point(customColorSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
+            local origClick = customColorSwatch:GetScript("OnClick")
+            customColorSwatch:SetScript("OnClick", function(self, ...)
                 if Cfg("leftTextUseClassColor") then
                     Set("leftTextUseClassColor", false)
                     Refresh()
@@ -2003,9 +2003,9 @@ CludesUI.AtOptionsLogin(function()
                     origClick(self, ...)
                 end
             end)
-            CludesUI.HoverTip(customSwatch, "Custom Color")
+            CludesUI.HoverTip(customColorSwatch, "Custom Color")
 
-            local classSwatch, updateClass = CludesUI.BuildColorSwatch(
+            local classColorSwatch, updateClass = CludesUI.BuildColorSwatch(
                 region,
                 btRow:GetFrameLevel() + 3,
                 function()
@@ -2023,21 +2023,21 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(classSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
-            classSwatch:SetScript("OnClick", function()
+            Pix.Point(classColorSwatch, "RIGHT", customColorSwatch, "LEFT", -8, 0)
+            classColorSwatch:SetScript("OnClick", function()
                 Set("leftTextUseClassColor", true)
                 Refresh()
                 CludesUI:RefreshPage()
             end)
-            CludesUI.HoverTip(classSwatch, "Class Color")
-            region._lastInline = classSwatch
+            CludesUI.HoverTip(classColorSwatch, "Class Color")
+            region._lastInline = classColorSwatch
 
             local function refreshLeft()
                 updateCustom()
                 updateClass()
-                local useClass = Cfg("leftTextUseClassColor")
-                customSwatch:SetAlpha(useClass and 0.3 or 1)
-                classSwatch:SetAlpha(useClass and 1 or 0.3)
+                local classOn = Cfg("leftTextUseClassColor")
+                customColorSwatch:SetAlpha(classOn and 0.3 or 1)
+                classColorSwatch:SetAlpha(classOn and 1 or 0.3)
             end
             CludesUI.RegisterWidgetRefresh(refreshLeft)
             refreshLeft()
@@ -2082,7 +2082,7 @@ CludesUI.AtOptionsLogin(function()
                 },
             })
 
-            local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
+            local customColorSwatch, updateCustom = CludesUI.BuildColorSwatch(
                 region,
                 btRow:GetFrameLevel() + 3,
                 function()
@@ -2102,9 +2102,9 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(customSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
-            local origClick = customSwatch:GetScript("OnClick")
-            customSwatch:SetScript("OnClick", function(self, ...)
+            Pix.Point(customColorSwatch, "RIGHT", region._lastInline or control, "LEFT", -8, 0)
+            local origClick = customColorSwatch:GetScript("OnClick")
+            customColorSwatch:SetScript("OnClick", function(self, ...)
                 if Cfg("rightTextUseClassColor") or Cfg("rightTextUseThreatGradient") then
                     Set("rightTextUseClassColor", false)
                     Set("rightTextUseThreatGradient", false)
@@ -2116,9 +2116,9 @@ CludesUI.AtOptionsLogin(function()
                     origClick(self, ...)
                 end
             end)
-            CludesUI.HoverTip(customSwatch, "Custom Color")
+            CludesUI.HoverTip(customColorSwatch, "Custom Color")
 
-            local classSwatch, updateClass = CludesUI.BuildColorSwatch(
+            local classColorSwatch, updateClass = CludesUI.BuildColorSwatch(
                 region,
                 btRow:GetFrameLevel() + 3,
                 function()
@@ -2137,28 +2137,28 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(classSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
-            classSwatch:SetScript("OnClick", function()
+            Pix.Point(classColorSwatch, "RIGHT", customColorSwatch, "LEFT", -8, 0)
+            classColorSwatch:SetScript("OnClick", function()
                 Set("rightTextUseClassColor", true)
                 Set("rightTextUseThreatGradient", false)
                 Refresh()
                 CludesUI:RefreshPage()
             end)
-            CludesUI.HoverTip(classSwatch, "Class Color")
+            CludesUI.HoverTip(classColorSwatch, "Class Color")
 
             local function refreshRight()
                 updateCustom()
                 updateClass()
-                local useClass = Cfg("rightTextUseClassColor")
+                local classOn = Cfg("rightTextUseClassColor")
                 local gradient = Cfg("rightTextUseThreatGradient")
-                customSwatch:SetAlpha((useClass or gradient) and 0.3 or 1)
-                classSwatch:SetAlpha((useClass and not gradient) and 1 or 0.3)
+                customColorSwatch:SetAlpha((classOn or gradient) and 0.3 or 1)
+                classColorSwatch:SetAlpha((classOn and not gradient) and 1 or 0.3)
             end
             CludesUI.RegisterWidgetRefresh(refreshRight)
             refreshRight()
 
             -- Value gradient: a swatch showing its colour scale, toggled by a click.
-            region._lastInline = classSwatch
+            region._lastInline = classColorSwatch
             CludesUI.BuildInlineSwatches(region, {
                 {
                     tooltip = "Colors each value on a green to red scale.",
@@ -3209,7 +3209,7 @@ CludesUI.AtOptionsLogin(function()
             local region = textRow._rightRegion
             local control = region._control
 
-            local customSwatch, updateCustom = CludesUI.BuildColorSwatch(
+            local customColorSwatch, updateCustom = CludesUI.BuildColorSwatch(
                 region,
                 textRow:GetFrameLevel() + 3,
                 function()
@@ -3228,9 +3228,9 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(customSwatch, "RIGHT", control, "LEFT", -8, 0)
-            local origClick = customSwatch:GetScript("OnClick")
-            customSwatch:SetScript("OnClick", function(self, ...)
+            Pix.Point(customColorSwatch, "RIGHT", control, "LEFT", -8, 0)
+            local origClick = customColorSwatch:GetScript("OnClick")
+            customColorSwatch:SetScript("OnClick", function(self, ...)
                 if SHDB().textColorUseAccent then
                     SHDB().textColorUseAccent = false
                     RefreshSH()
@@ -3241,9 +3241,9 @@ CludesUI.AtOptionsLogin(function()
                     origClick(self, ...)
                 end
             end)
-            CludesUI.HoverTip(customSwatch, "Custom Color")
+            CludesUI.HoverTip(customColorSwatch, "Custom Color")
 
-            local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(
+            local accentColorSwatch, updateAccent = CludesUI.BuildColorSwatch(
                 region,
                 textRow:GetFrameLevel() + 3,
                 function()
@@ -3257,13 +3257,13 @@ CludesUI.AtOptionsLogin(function()
                 false,
                 20
             )
-            Pix.Point(accentSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
-            accentSwatch:SetScript("OnClick", function()
+            Pix.Point(accentColorSwatch, "RIGHT", customColorSwatch, "LEFT", -8, 0)
+            accentColorSwatch:SetScript("OnClick", function()
                 SHDB().textColorUseAccent = true
                 RefreshSH()
                 CludesUI:RefreshPage()
             end)
-            CludesUI.HoverTip(accentSwatch, "Accent Color")
+            CludesUI.HoverTip(accentColorSwatch, "Accent Color")
 
             local function MakeSwatchBlock(colorSwatch)
                 local block = CludesUI.NewSwatchBlocker(colorSwatch)
@@ -3275,16 +3275,16 @@ CludesUI.AtOptionsLogin(function()
                 end)
                 return block
             end
-            local customBlock = MakeSwatchBlock(customSwatch)
-            local accentBlock = MakeSwatchBlock(accentSwatch)
+            local customBlock = MakeSwatchBlock(customColorSwatch)
+            local accentBlock = MakeSwatchBlock(accentColorSwatch)
 
             local function refreshTextSwatches()
                 updateCustom()
                 updateAccent()
                 local off = barOff()
-                local useAccent = SHDB().textColorUseAccent
-                customSwatch:SetAlpha(off and 0.3 or (useAccent and 0.3 or 1))
-                accentSwatch:SetAlpha(off and 0.3 or (useAccent and 1 or 0.3))
+                local accentOn = SHDB().textColorUseAccent
+                customColorSwatch:SetAlpha(off and 0.3 or (accentOn and 0.3 or 1))
+                accentColorSwatch:SetAlpha(off and 0.3 or (accentOn and 1 or 0.3))
                 if off then
                     customBlock:Show()
                     accentBlock:Show()

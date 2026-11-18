@@ -28,20 +28,20 @@ local function Account()
     return CludesUIDB
 end
 -- Row accessors over Account(): a key read (or its default) and written.
-local function AccountField(key)
+local function AccountField(settingKey)
     return function(value)
-        Account()[key] = value
+        Account()[settingKey] = value
     end
 end
-local function AccountFieldThen(key)
+local function AccountFieldThen(settingKey)
     return function(value)
-        Account()[key] = value
+        Account()[settingKey] = value
         CludesUI:RefreshPage()
     end
 end
-local function AccountFieldThen2(key)
+local function AccountFieldThen2(settingKey)
     return function(value)
-        Account()[key] = value
+        Account()[settingKey] = value
         if CludesUI._applyTargetDistanceFrame then
             CludesUI._applyTargetDistanceFrame()
         end
@@ -142,13 +142,13 @@ local function ShowTransformsPopup()
 
         local rowList = {}
         local function RefreshRows()
-            for _, row in ipairs(rowList) do
-                if transformsStaged[row._key] then
-                    row._check:Show()
-                    row._boxBorder:SetColor(ACC.r, ACC.g, ACC.b, 0.8)
+            for _, line in ipairs(rowList) do
+                if transformsStaged[line._key] then
+                    line._check:Show()
+                    line._boxBorder:SetColor(ACC.r, ACC.g, ACC.b, 0.8)
                 else
-                    row._check:Hide()
-                    row._boxBorder:SetColor(0.4, 0.4, 0.4, 0.6)
+                    line._check:Hide()
+                    line._boxBorder:SetColor(0.4, 0.4, 0.4, 0.6)
                 end
             end
         end
@@ -163,18 +163,18 @@ local function ShowTransformsPopup()
         end
         local checkAllBtn = CreateFrame("Button", nil, dialog)
         checkAllBtn:SetFrameLevel(dialog:GetFrameLevel() + 2)
-        local checkAllLbl = checkAllBtn:CreateFontString(nil, "OVERLAY")
-        checkAllLbl:SetFont(FONT, 14, "")
-        checkAllLbl:SetText(CludesUI.L("Check All"))
-        checkAllLbl:SetTextColor(1, 1, 1, 0.45)
-        checkAllLbl:SetPoint("CENTER")
-        checkAllBtn:SetSize(checkAllLbl:GetStringWidth() + 4, 20)
+        local checkAllText = checkAllBtn:CreateFontString(nil, "OVERLAY")
+        checkAllText:SetFont(FONT, 14, "")
+        checkAllText:SetText(CludesUI.L("Check All"))
+        checkAllText:SetTextColor(1, 1, 1, 0.45)
+        checkAllText:SetPoint("CENTER")
+        checkAllBtn:SetSize(checkAllText:GetStringWidth() + 4, 20)
         checkAllBtn:SetPoint("TOPLEFT", dialog, "TOPLEFT", CONTENT_LEFT, -(CONTENT_TOP - 22))
         checkAllBtn:SetScript("OnEnter", function()
-            checkAllLbl:SetTextColor(1, 1, 1, 0.80)
+            checkAllText:SetTextColor(1, 1, 1, 0.80)
         end)
         checkAllBtn:SetScript("OnLeave", function()
-            checkAllLbl:SetTextColor(1, 1, 1, 0.45)
+            checkAllText:SetTextColor(1, 1, 1, 0.45)
         end)
         checkAllBtn:SetScript("OnClick", function()
             SetAll(true)
@@ -192,18 +192,18 @@ local function ShowTransformsPopup()
 
         local uncheckAllBtn = CreateFrame("Button", nil, dialog)
         uncheckAllBtn:SetFrameLevel(dialog:GetFrameLevel() + 2)
-        local uncheckAllLbl = uncheckAllBtn:CreateFontString(nil, "OVERLAY")
-        uncheckAllLbl:SetFont(FONT, 14, "")
-        uncheckAllLbl:SetText(CludesUI.L("Uncheck All"))
-        uncheckAllLbl:SetTextColor(1, 1, 1, 0.45)
-        uncheckAllLbl:SetPoint("CENTER")
-        uncheckAllBtn:SetSize(uncheckAllLbl:GetStringWidth() + 4, 20)
+        local uncheckAllText = uncheckAllBtn:CreateFontString(nil, "OVERLAY")
+        uncheckAllText:SetFont(FONT, 14, "")
+        uncheckAllText:SetText(CludesUI.L("Uncheck All"))
+        uncheckAllText:SetTextColor(1, 1, 1, 0.45)
+        uncheckAllText:SetPoint("CENTER")
+        uncheckAllBtn:SetSize(uncheckAllText:GetStringWidth() + 4, 20)
         uncheckAllBtn:SetPoint("LEFT", checkAllBtn, "RIGHT", 20, 0)
         uncheckAllBtn:SetScript("OnEnter", function()
-            uncheckAllLbl:SetTextColor(1, 1, 1, 0.80)
+            uncheckAllText:SetTextColor(1, 1, 1, 0.80)
         end)
         uncheckAllBtn:SetScript("OnLeave", function()
-            uncheckAllLbl:SetTextColor(1, 1, 1, 0.45)
+            uncheckAllText:SetTextColor(1, 1, 1, 0.45)
         end)
         uncheckAllBtn:SetScript("OnClick", function()
             SetAll(false)
@@ -220,78 +220,78 @@ local function ShowTransformsPopup()
 
             local itemList = catItems[category] or {}
             for idx, entry in ipairs(itemList) do
-                local row = CreateFrame("Button", nil, dialog)
-                row:SetSize(COL_W, ROW_H)
-                row:SetPoint(
+                local line = CreateFrame("Button", nil, dialog)
+                line:SetSize(COL_W, ROW_H)
+                line:SetPoint(
                     "TOPLEFT",
                     dialog,
                     "TOPLEFT",
                     colX,
                     -(CONTENT_TOP + HDR_H + 4 + (idx - 1) * ROW_H)
                 )
-                row._key = entry.key
+                line._key = entry.key
 
-                local boxFrame = CreateFrame("Frame", nil, row)
+                local boxFrame = CreateFrame("Frame", nil, line)
                 boxFrame:SetSize(18, 18)
-                boxFrame:SetPoint("LEFT", row, "LEFT", 4, 0)
-                boxFrame:SetFrameLevel(row:GetFrameLevel() + 1)
+                boxFrame:SetPoint("LEFT", line, "LEFT", 4, 0)
+                boxFrame:SetFrameLevel(line:GetFrameLevel() + 1)
                 local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
                 boxBg:SetAllPoints()
                 boxBg:SetColorTexture(0.114, 0.106, 0.099, 1)
-                row._boxBorder = CludesUI.MakeRoundedBorder(boxFrame, 0.4, 0.4, 0.4, 0.6, boxBg)
+                line._boxBorder = CludesUI.MakeRoundedBorder(boxFrame, 0.4, 0.4, 0.4, 0.6, boxBg)
                 local check = boxFrame:CreateTexture(nil, "ARTWORK")
                 check:SetPoint("TOPLEFT", boxFrame, "TOPLEFT", 3, -3)
                 check:SetPoint("BOTTOMRIGHT", boxFrame, "BOTTOMRIGHT", -3, 3)
                 check:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
                 CludesUI.RoundBody(boxFrame, check, 1)
-                row._check = check
+                line._check = check
 
-                local labelFS = row:CreateFontString(nil, "OVERLAY")
+                local labelFS = line:CreateFontString(nil, "OVERLAY")
                 labelFS:SetFont(FONT, 13, "")
                 labelFS:SetPoint("LEFT", boxFrame, "RIGHT", 8, 0)
-                labelFS:SetPoint("RIGHT", row, "RIGHT", -2, 0)
+                labelFS:SetPoint("RIGHT", line, "RIGHT", -2, 0)
                 labelFS:SetJustifyH("LEFT")
                 labelFS:SetWordWrap(false)
                 labelFS:SetTextColor(1, 1, 1, 0.65)
                 labelFS:SetText(CludesUI.L(entry.label))
 
-                row:SetScript("OnEnter", function()
+                line:SetScript("OnEnter", function()
                     labelFS:SetTextColor(1, 1, 1, 0.95)
                 end)
-                row:SetScript("OnLeave", function()
+                line:SetScript("OnLeave", function()
                     labelFS:SetTextColor(1, 1, 1, 0.65)
                 end)
-                row:SetScript("OnClick", function()
+                line:SetScript("OnClick", function()
                     transformsStaged[entry.key] = not transformsStaged[entry.key]
                     RefreshRows()
                 end)
-                rowList[#rowList + 1] = row
+                rowList[#rowList + 1] = line
             end
         end
 
         -- Apply button (green, spec-popup style)
-        local applyBtn = CreateFrame("Button", nil, dialog)
-        applyBtn:SetFrameLevel(dialog:GetFrameLevel() + 2)
-        applyBtn:SetSize(200, 39)
-        applyBtn:SetPoint("BOTTOM", dialog, "BOTTOM", 0, 38)
-        local applyBg = applyBtn:CreateTexture(nil, "BACKGROUND")
+        local applyButton = CreateFrame("Button", nil, dialog)
+        applyButton:SetFrameLevel(dialog:GetFrameLevel() + 2)
+        applyButton:SetSize(200, 39)
+        applyButton:SetPoint("BOTTOM", dialog, "BOTTOM", 0, 38)
+        local applyBg = applyButton:CreateTexture(nil, "BACKGROUND")
         applyBg:SetAllPoints()
         applyBg:SetColorTexture(0.062, 0.070, 0.082, 0.92)
-        local applyBrd = CludesUI.MakeRoundedBorder(applyBtn, ACC.r, ACC.g, ACC.b, 0.9, applyBg)
-        local applyLbl = applyBtn:CreateFontString(nil, "OVERLAY")
+        local applyBrd = CludesUI.MakeRoundedBorder(applyButton, ACC.r, ACC.g, ACC.b, 0.9, applyBg)
+        local applyLbl = applyButton:CreateFontString(nil, "OVERLAY")
         applyLbl:SetFont(FONT, 16, "")
         applyLbl:SetPoint("CENTER")
         applyLbl:SetText(CludesUI.L("Apply"))
         applyLbl:SetTextColor(ACC.r, ACC.g, ACC.b, 0.9)
-        applyBtn:SetScript("OnEnter", function()
+        applyButton:SetScript("OnEnter", function()
             applyLbl:SetTextColor(ACC.r, ACC.g, ACC.b, 1)
             applyBrd:SetColor(ACC.r, ACC.g, ACC.b, 1)
         end)
-        applyBtn:SetScript("OnLeave", function()
+        applyButton:SetScript("OnLeave", function()
             applyLbl:SetTextColor(ACC.r, ACC.g, ACC.b, 0.9)
             applyBrd:SetColor(ACC.r, ACC.g, ACC.b, 0.9)
         end)
-        applyBtn:SetScript("OnClick", function()
+        applyButton:SetScript("OnClick", function()
             Account().hideTransformItems = CludesUIDB.hideTransformItems or {}
             local t = CludesUIDB.hideTransformItems
             for _, entry in ipairs(payload.items) do
@@ -315,11 +315,11 @@ local function ShowTransformsPopup()
             end
         end)
         CludesUI.PopupTakeKeys(dialog, shade)
-        dialog:SetScript("OnKeyDown", function(self, key)
+        dialog:SetScript("OnKeyDown", function(self, settingKey)
             if InCombatLockdown() then
                 return
             end
-            if key == "ESCAPE" then
+            if settingKey == "ESCAPE" then
                 self:SetPropagateKeyboardInput(false)
                 shade:Hide()
             else
@@ -359,22 +359,22 @@ local function BuildSelfCombatTextSection(hostFrame, cursorY)
         heading,
         { key = "CUI_SelfCombatText", disabled = sctOff, disabledTooltip = "Self Combat Text" }
     )
-    local function sctToggle(textValue, key)
+    local function sctToggle(textValue, settingKey)
         return {
             type = "toggle",
             text = textValue,
             disabled = sctOff,
             disabledTooltip = "Self Combat Text",
             getValue = function()
-                return SCTGet(key)
+                return SCTGet(settingKey)
             end,
             setValue = function(val)
-                SCTSet(key, val)
+                SCTSet(settingKey, val)
                 CludesUI:RefreshPage()
             end,
         }
     end
-    local function sctDropdown(textValue, key, values, sequence)
+    local function sctDropdown(textValue, settingKey, values, sequence)
         return {
             type = "dropdown",
             text = textValue,
@@ -383,22 +383,22 @@ local function BuildSelfCombatTextSection(hostFrame, cursorY)
             disabled = sctOff,
             disabledTooltip = "Self Combat Text",
             getValue = function()
-                return SCTGet(key)
+                return SCTGet(settingKey)
             end,
             setValue = function(val)
-                SCTSet(key, val)
+                SCTSet(settingKey, val)
             end,
         }
     end
     -- A category toggle's colour, locked while the feature or that category is off
-    local function sctSwatch(region, key, colorKey, labelText)
+    local function sctSwatch(region, settingKey, colorKey, labelText)
         if CludesUI._prebuilding then
             return
         end
         CludesUI.BuildInlineSwatches(region, {
             {
                 disabled = function()
-                    return sctOff() or not SCTGet(key)
+                    return sctOff() or not SCTGet(settingKey)
                 end,
                 disabledTooltip = function()
                     return sctOff() and "Self Combat Text" or labelText
@@ -684,18 +684,18 @@ CludesUI.AtOptionsLogin(function()
             -- others unset = off), the runtime's KindHidden rule.
             local TOAST_KEYS =
                 { "hideAlertToastsLoot", "hideAlertToastsAchievements", "hideAlertToastsHousing" }
-            local function ToastHidden(key)
+            local function ToastHidden(settingKey)
                 local saved = CludesUIDB
                 if not (saved and saved.hideAlertToasts) then
                     return false
                 end
-                local val = saved[key]
+                local val = saved[settingKey]
                 if val == nil then
-                    return key == "hideAlertToastsLoot"
+                    return settingKey == "hideAlertToastsLoot"
                 end
                 return val
             end
-            local function SetToast(key, val)
+            local function SetToast(settingKey, val)
                 local saved = QDB()
                 if val and not saved.hideAlertToasts then
                     -- The switch goes on for this kind alone.
@@ -704,7 +704,7 @@ CludesUI.AtOptionsLogin(function()
                         saved[TOAST_KEYS[idx]] = false
                     end
                 end
-                saved[key] = val and true or false
+                saved[settingKey] = val and true or false
                 if not val then
                     local any = false
                     for idx = 1, #TOAST_KEYS do
@@ -720,16 +720,16 @@ CludesUI.AtOptionsLogin(function()
                     CludesUI._applyHideAlertToasts()
                 end
             end
-            local function Toast(key, labelText, alias)
+            local function Toast(settingKey, labelText, aliasName)
                 return {
-                    key = key,
+                    key = settingKey,
                     label = labelText,
-                    alias = alias,
+                    alias = aliasName,
                     read = function()
-                        return ToastHidden(key)
+                        return ToastHidden(settingKey)
                     end,
                     write = function(val)
-                        SetToast(key, val)
+                        SetToast(settingKey, val)
                     end,
                 }
             end
@@ -930,11 +930,11 @@ CludesUI.AtOptionsLogin(function()
                     210,
                     leftRegion:GetFrameLevel() + 2,
                     itemList,
-                    function(key)
-                        return byKey[key].read()
+                    function(settingKey)
+                        return byKey[settingKey].read()
                     end,
-                    function(key, val)
-                        byKey[key].write(val)
+                    function(settingKey, val)
+                        byKey[settingKey].write(val)
                     end
                 )
                 Pix.Point(hbeDD, "RIGHT", leftRegion, "RIGHT", -20, 0)
@@ -1508,11 +1508,11 @@ CludesUI.AtOptionsLogin(function()
                 if fpsUpdClass then
                     fpsUpdClass()
                 end
-                local off = fpsOff()
+                local isOff = fpsOff()
                 for _, block in ipairs(fpsBlocks) do
-                    block:SetShown(off)
+                    block:SetShown(isOff)
                 end
-                local m = not off and fpsMode() or nil
+                local m = not isOff and fpsMode() or nil
                 fpsClassSw:SetAlpha(m == "class" and 1 or 0.3)
                 fpsSwatch:SetAlpha(m == "custom" and 1 or 0.3)
             end
@@ -1737,8 +1737,8 @@ CludesUI.AtOptionsLogin(function()
             end)
 
             CludesUI.RegisterWidgetRefresh(function()
-                local off = durOff()
-                if off then
+                local isOff = durOff()
+                if isOff then
                     durSwatch:SetAlpha(0.3)
                     durSwBlock:Show()
                 else
@@ -1758,7 +1758,7 @@ CludesUI.AtOptionsLogin(function()
             -- Eye icon to toggle durability warning preview (left of swatch)
             local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
             local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
-            local durPreviewShown = false
+            local durabilityPreview = false
             local eyeButton = CreateFrame("Button", nil, leftRegion)
             eyeButton:SetSize(26, 26)
             eyeButton:SetPoint("RIGHT", leftRegion._lastInline or leftRegion._control, "LEFT", -8, 0)
@@ -1768,7 +1768,7 @@ CludesUI.AtOptionsLogin(function()
             local eyeTex = eyeButton:CreateTexture(nil, "OVERLAY")
             eyeTex:SetAllPoints()
             local function RefreshDurEye()
-                if durPreviewShown then
+                if durabilityPreview then
                     eyeTex:SetTexture(EYE_INVISIBLE)
                 else
                     eyeTex:SetTexture(EYE_VISIBLE)
@@ -1784,9 +1784,9 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI.SetGlyphAlpha(self, 0.4)
             end)
             eyeButton:SetScript("OnClick", function(self)
-                durPreviewShown = not durPreviewShown
+                durabilityPreview = not durabilityPreview
                 RefreshDurEye()
-                if durPreviewShown then
+                if durabilityPreview then
                     if CludesUI._applyDurWarn then
                         CludesUI._applyDurWarn()
                     end
@@ -1810,9 +1810,9 @@ CludesUI.AtOptionsLogin(function()
             end)
 
             CludesUI.RegisterWidgetRefresh(function()
-                local off = durOff()
-                if off then
-                    durPreviewShown = false
+                local isOff = durOff()
+                if isOff then
+                    durabilityPreview = false
                     RefreshDurEye()
                     CludesUI.SetGlyphAlpha(eyeButton, 0.15)
                     eyeBlock:Show()
@@ -1912,8 +1912,8 @@ CludesUI.AtOptionsLogin(function()
                 local sequence = CludesUI._secondaryStatsOrder and CludesUI._secondaryStatsOrder()
                     or DEFAULT_STAT_ORDER
                 local itemList = {}
-                for _, key in ipairs(sequence) do
-                    itemList[#itemList + 1] = { key = key, label = STAT_LABELS[key] }
+                for _, settingKey in ipairs(sequence) do
+                    itemList[#itemList + 1] = { key = settingKey, label = STAT_LABELS[settingKey] }
                 end
                 return itemList
             end
@@ -1995,12 +1995,12 @@ CludesUI.AtOptionsLogin(function()
                         label = "Reorder Shown Stats",
                         maxVisible = 12,
                         items = function()
-                            local hidden = CludesUI.QoLExtrasGet("secondaryStatsHidden")
+                            local isHidden = CludesUI.QoLExtrasGet("secondaryStatsHidden")
                             local itemList = {}
-                            for _, key in ipairs(CludesUI._secondaryStatsOrder()) do
-                                if not (type(hidden) == "table" and hidden[key]) then
+                            for _, settingKey in ipairs(CludesUI._secondaryStatsOrder()) do
+                                if not (type(isHidden) == "table" and isHidden[settingKey]) then
                                     itemList[#itemList + 1] =
-                                        { key = key, label = CludesUI.L(FV_STAT[key].label) }
+                                        { key = settingKey, label = CludesUI.L(FV_STAT[settingKey].label) }
                                 end
                             end
                             return itemList
@@ -2008,13 +2008,13 @@ CludesUI.AtOptionsLogin(function()
                         -- The hidden stats follow the shown ones, in their saved order.
                         set = function(keyList)
                             local sequence, seen = {}, {}
-                            for _, key in ipairs(keyList) do
-                                sequence[#sequence + 1] = key
-                                seen[key] = true
+                            for _, settingKey in ipairs(keyList) do
+                                sequence[#sequence + 1] = settingKey
+                                seen[settingKey] = true
                             end
-                            for _, key in ipairs(CludesUI._secondaryStatsOrder()) do
-                                if not seen[key] then
-                                    sequence[#sequence + 1] = key
+                            for _, settingKey in ipairs(CludesUI._secondaryStatsOrder()) do
+                                if not seen[settingKey] then
+                                    sequence[#sequence + 1] = settingKey
                                 end
                             end
                             CludesUI.QoLExtrasSet("secondaryStatsOrder", sequence)
@@ -2064,38 +2064,38 @@ CludesUI.AtOptionsLogin(function()
                         label = "Stats to Show",
                         items = StatItems,
                         hint = "Drag to Reorder",
-                        get = function(key)
-                            local hidden = CludesUI.QoLExtrasGet("secondaryStatsHidden")
-                            return not (type(hidden) == "table" and hidden[key])
+                        get = function(settingKey)
+                            local isHidden = CludesUI.QoLExtrasGet("secondaryStatsHidden")
+                            return not (type(isHidden) == "table" and isHidden[settingKey])
                         end,
-                        set = function(key, isShown)
+                        set = function(settingKey, isShown)
                             local old = CludesUI.QoLExtrasGet("secondaryStatsHidden")
-                            local hidden = {}
+                            local isHidden = {}
                             if type(old) == "table" then
                                 for keyName, val in pairs(old) do
-                                    hidden[keyName] = val
+                                    isHidden[keyName] = val
                                 end
                             end
                             if isShown then
                                 -- Tertiaries default off, so false is the explicit
                                 -- per-profile override that keeps one checked.
-                                if TERTIARY_STATS[key] then
-                                    hidden[key] = false
+                                if TERTIARY_STATS[settingKey] then
+                                    isHidden[settingKey] = false
                                 else
-                                    hidden[key] = nil
+                                    isHidden[settingKey] = nil
                                 end
                             else
-                                hidden[key] = true
+                                isHidden[settingKey] = true
                             end
-                            CludesUI.QoLExtrasSet("secondaryStatsHidden", hidden)
+                            CludesUI.QoLExtrasSet("secondaryStatsHidden", isHidden)
                             if CludesUI._applySecondaryStats then
                                 CludesUI._applySecondaryStats()
                             end
                         end,
                         setOrder = function(keyList)
                             local sequence = {}
-                            for idx, key in ipairs(keyList) do
-                                sequence[idx] = key
+                            for idx, settingKey in ipairs(keyList) do
+                                sequence[idx] = settingKey
                             end
                             CludesUI.QoLExtrasSet("secondaryStatsOrder", sequence)
                             if CludesUI._applySecondaryStats then
@@ -2110,11 +2110,11 @@ CludesUI.AtOptionsLogin(function()
                         type = "multiswatch",
                         label = "Tertiary Label Color",
                         disabled = function()
-                            local hidden = CludesUI.QoLExtrasGet("secondaryStatsHidden")
-                            return type(hidden) == "table"
-                                and hidden.leech
-                                and hidden.avoidance
-                                and hidden.speed
+                            local isHidden = CludesUI.QoLExtrasGet("secondaryStatsHidden")
+                            return type(isHidden) == "table"
+                                and isHidden.leech
+                                and isHidden.avoidance
+                                and isHidden.speed
                         end,
                         disabledTooltip = "a tertiary stat in Stats to Show",
                         swatches = {
@@ -2318,11 +2318,11 @@ CludesUI.AtOptionsLogin(function()
                 if ssUpdMulti then
                     ssUpdMulti()
                 end
-                local off = statsOff()
+                local isOff = statsOff()
                 for _, block in ipairs(ssBlocks) do
-                    block:SetShown(off)
+                    block:SetShown(isOff)
                 end
-                local m = not off and ssMode() or nil
+                local m = not isOff and ssMode() or nil
                 ssMulti:SetAlpha(m == "palette" and 1 or 0.3)
                 ssClass:SetAlpha(m == "class" and 1 or 0.3)
                 ssCustom:SetAlpha(m == "custom" and 1 or 0.3)
@@ -2623,7 +2623,7 @@ CludesUI.AtOptionsLogin(function()
         local function cdb()
             return _G._CUCL_AceDB and _G._CUCL_AceDB.profile
         end
-        local function cget(keyName)
+        local function cursorGet(keyName)
             local p = cdb()
             if p and p[keyName] ~= nil then
                 return p[keyName]
@@ -2637,7 +2637,7 @@ CludesUI.AtOptionsLogin(function()
             end
         end
         local function crosshairOff()
-            return (cget("crosshairSize") or "None") == "None"
+            return (cursorGet("crosshairSize") or "None") == "None"
         end
 
         -- True when the effective thickness is custom (would display as
@@ -2645,11 +2645,11 @@ CludesUI.AtOptionsLogin(function()
         -- Checked regardless of None so a saved custom config can be restored.
         local function crosshairIsCustom()
             local P = CludesUI.CROSSHAIR_PRESETS
-            local s = cget("crosshairSize")
+            local s = cursorGet("crosshairSize")
             local sizeForBase = (s and s ~= "None" and s) or "Normal"
             local base = (P and (P[sizeForBase] or P.Normal)) or { width = 2 }
-            local hw = cget("crosshairHWidth") or base.width
-            local vw = cget("crosshairVWidth") or base.width
+            local hw = cursorGet("crosshairHWidth") or base.width
+            local vw = cursorGet("crosshairVWidth") or base.width
             if hw ~= vw then
                 return true
             end
@@ -2692,14 +2692,14 @@ CludesUI.AtOptionsLogin(function()
             },
             order = { "None", "Thin", "Normal", "Thick", "custom" },
             getValue = function()
-                local size = cget("crosshairSize") or "None"
+                local size = cursorGet("crosshairSize") or "None"
                 if size == "None" then
                     return "None"
                 end
                 local P = CludesUI.CROSSHAIR_PRESETS
                 local base = (P and (P[size] or P.Normal)) or { width = 2 }
-                local hw = cget("crosshairHWidth") or base.width
-                local vw = cget("crosshairVWidth") or base.width
+                local hw = cursorGet("crosshairHWidth") or base.width
+                local vw = cursorGet("crosshairVWidth") or base.width
                 if hw == vw and P then
                     for name, p in pairs(P) do
                         if p.width == hw then
@@ -2762,7 +2762,7 @@ CludesUI.AtOptionsLogin(function()
             end
 
             local function curVis()
-                return cget("crosshairVisibility") or "always"
+                return cursorGet("crosshairVisibility") or "always"
             end
             local visItems = {
                 {
@@ -2861,7 +2861,7 @@ CludesUI.AtOptionsLogin(function()
                 return crosshairOff()
             end
             local function presetThick()
-                local s = cget("crosshairSize")
+                local s = cursorGet("crosshairSize")
                 local P = CludesUI.CROSSHAIR_PRESETS
                 local p = P and (P[s] or P.Normal)
                 return (p and p.width) or 2
@@ -2892,7 +2892,7 @@ CludesUI.AtOptionsLogin(function()
                     max = 500,
                     step = 1,
                     get = function()
-                        return cget("crosshairHLength") or 40
+                        return cursorGet("crosshairHLength") or 40
                     end,
                     set = function(val)
                         dbset("crosshairHLength", val)
@@ -2905,7 +2905,7 @@ CludesUI.AtOptionsLogin(function()
                     max = 20,
                     step = 1,
                     get = function()
-                        return cget("crosshairHWidth") or presetThick()
+                        return cursorGet("crosshairHWidth") or presetThick()
                     end,
                     set = function(val)
                         dbset("crosshairHWidth", val)
@@ -2919,7 +2919,7 @@ CludesUI.AtOptionsLogin(function()
                     max = 500,
                     step = 1,
                     get = function()
-                        return cget("crosshairVLength") or 40
+                        return cursorGet("crosshairVLength") or 40
                     end,
                     set = function(val)
                         dbset("crosshairVLength", val)
@@ -2932,7 +2932,7 @@ CludesUI.AtOptionsLogin(function()
                     max = 20,
                     step = 1,
                     get = function()
-                        return cget("crosshairVWidth") or presetThick()
+                        return cursorGet("crosshairVWidth") or presetThick()
                     end,
                     set = function(val)
                         dbset("crosshairVWidth", val)
@@ -2946,7 +2946,7 @@ CludesUI.AtOptionsLogin(function()
                     max = 5,
                     step = 1,
                     get = function()
-                        return cget("crosshairBorderSize") or 0
+                        return cursorGet("crosshairBorderSize") or 0
                     end,
                     set = function(val)
                         dbset("crosshairBorderSize", val)
@@ -2957,7 +2957,7 @@ CludesUI.AtOptionsLogin(function()
                     label = "Border Color",
                     hasAlpha = true,
                     get = function()
-                        local bc = cget("crosshairBorderColor")
+                        local bc = cursorGet("crosshairBorderColor")
                         if bc then
                             return bc.r, bc.g, bc.b, bc.a
                         end
@@ -2975,7 +2975,7 @@ CludesUI.AtOptionsLogin(function()
                     max = 200,
                     step = 1,
                     get = function()
-                        return cget("crosshairXOffset") or 0
+                        return cursorGet("crosshairXOffset") or 0
                     end,
                     set = function(val)
                         dbset("crosshairXOffset", val)
@@ -2988,7 +2988,7 @@ CludesUI.AtOptionsLogin(function()
                     max = 200,
                     step = 1,
                     get = function()
-                        return cget("crosshairYOffset") or 0
+                        return cursorGet("crosshairYOffset") or 0
                     end,
                     set = function(val)
                         dbset("crosshairYOffset", val)
@@ -3001,7 +3001,7 @@ CludesUI.AtOptionsLogin(function()
                     values = CludesUI.FRAME_STRATA_LABELS,
                     order = CludesUI.FRAME_STRATA_ORDER_BASE,
                     get = function()
-                        return cget("crosshairStrata") or "MEDIUM"
+                        return cursorGet("crosshairStrata") or "MEDIUM"
                     end,
                     set = function(val)
                         dbset("crosshairStrata", val)
@@ -3015,7 +3015,7 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     label = "Show Melee Range for Hpal",
                     get = function()
-                        return cget("crosshairHpalMelee") == true
+                        return cursorGet("crosshairHpalMelee") == true
                     end,
                     set = function(val)
                         cset("crosshairHpalMelee", val)
@@ -3041,7 +3041,7 @@ CludesUI.AtOptionsLogin(function()
             local leftRegion = crosshairRow._leftRegion
 
             local chSwGet = function()
-                local c = cget("crosshairColor")
+                local c = cursorGet("crosshairColor")
                 if c then
                     return c.r, c.g, c.b, c.a
                 end
@@ -3067,8 +3067,8 @@ CludesUI.AtOptionsLogin(function()
             end)
 
             CludesUI.RegisterWidgetRefresh(function()
-                local off = crosshairOff()
-                if off then
+                local isOff = crosshairOff()
+                if isOff then
                     chSwatch:SetAlpha(0.3)
                     chSwBlock:Show()
                 else
@@ -3105,7 +3105,7 @@ CludesUI.AtOptionsLogin(function()
             disabledTooltip = "Enable the crosshair to use this option.",
             rawTooltip = true,
             getValue = function()
-                return cget("crosshairMeleeColorEnabled") == true
+                return cursorGet("crosshairMeleeColorEnabled") == true
             end,
             setValue = function(val)
                 cset("crosshairMeleeColorEnabled", val)
@@ -3120,10 +3120,10 @@ CludesUI.AtOptionsLogin(function()
         if not CludesUI._prebuilding then
             local leftRegion = meleeRow._leftRegion
             local function meleeOff()
-                return crosshairOff() or cget("crosshairMeleeColorEnabled") ~= true
+                return crosshairOff() or cursorGet("crosshairMeleeColorEnabled") ~= true
             end
             local mcGet = function()
-                local c = cget("crosshairMeleeColor")
+                local c = cursorGet("crosshairMeleeColor")
                 if c then
                     return c.r, c.g, c.b, c.a
                 end
@@ -3148,9 +3148,9 @@ CludesUI.AtOptionsLogin(function()
                 CludesUI.HideWidgetTooltip()
             end)
             CludesUI.RegisterWidgetRefresh(function()
-                local off = meleeOff()
-                mcSwatch:SetAlpha(off and 0.3 or 1)
-                if off then
+                local isOff = meleeOff()
+                mcSwatch:SetAlpha(isOff and 0.3 or 1)
+                if isOff then
                     mcBlock:Show()
                 else
                     mcBlock:Hide()

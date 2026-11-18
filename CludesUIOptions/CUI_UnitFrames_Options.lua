@@ -65,19 +65,19 @@ do
     function mod.UF_NameFormatRows(prefixText, contentDefault, get, set, rowList, contentKey)
         local formatKey = prefixText .. "NameFormat"
         contentKey = contentKey or (prefixText .. "Content")
-        local row = CludesUI.NameFormatCogRow(function()
+        local line = CludesUI.NameFormatCogRow(function()
             return get(formatKey)
         end, function(value)
             set(formatKey, value)
         end, ENEMIES)
-        row.disabled = function()
+        line.disabled = function()
             return not mod.UF_ContentShowsName(
                 get(contentKey, contentDefault),
                 get(prefixText .. "CustomFormat")
             )
         end
-        row.disabledTooltip = "This option only applies when the text shows a name."
-        table.insert(rowList, 1, row)
+        line.disabledTooltip = "This option only applies when the text shows a name."
+        table.insert(rowList, 1, line)
         return rowList
     end
 end
@@ -132,42 +132,42 @@ end
 -- unit's element is "<unit>Castbar". `right` (optional) fills the free right
 -- slot. Returns the row height, 0 (nothing built) off the style, and the row.
 -- On ns: the page builders sit at the local cap.
-function mod.UF_ClassicCastBorderRow(W, hostFrame, cursorY, getS, key, onChange, sync, matchKey, right)
+function mod.UF_ClassicCastBorderRow(W, hostFrame, cursorY, settingGet, settingKey, changed, syncFn, matchKey, right)
     local BS = CludesUI.BlizzStyle
     if not (BS and BS.Active("unitframes") == "classic") then
         return 0
     end
-    local row, height = W:DualRow(
+    local line, height = W:DualRow(
         hostFrame,
         cursorY,
         BS.ClassicBorderSizeCfg(function()
-            local s = getS()
-            return s and s[key]
+            local s = settingGet()
+            return s and s[settingKey]
         end, function(value)
-            local s = getS()
+            local s = settingGet()
             if not s then
                 return
             end
-            s[key] = value
-            onChange()
+            s[settingKey] = value
+            changed()
             if matchKey and CludesUI.ReapplyMatchPads then
                 CludesUI.ReapplyMatchPads(matchKey)
             end
         end),
         right or CludesUI.BlankRowCfg()
     )
-    if sync and not CludesUI._prebuilding then
-        local region = row._leftRegion
-        local function apply(units)
-            local s = getS()
-            local value = s and s[key]
+    if syncFn and not CludesUI._prebuilding then
+        local region = line._leftRegion
+        local function applyFn(units)
+            local s = settingGet()
+            local value = s and s[settingKey]
             for idx = 1, #units do
-                local t = sync.db(units[idx])
+                local t = syncFn.db(units[idx])
                 if t then
                     t[mod.UF_CastClassicKey(units[idx])] = value
                 end
             end
-            sync.reload()
+            syncFn.reload()
             for idx = 1, #units do
                 CludesUI.ReapplyMatchPads(units[idx] .. "Castbar")
             end
@@ -177,14 +177,14 @@ function mod.UF_ClassicCastBorderRow(W, hostFrame, cursorY, getS, key, onChange,
             region = region,
             tooltip = "Apply Border Size to all Frames",
             onClick = function()
-                apply(sync.units)
+                applyFn(syncFn.units)
             end,
             isSynced = function()
-                local s = getS()
-                local value = s and s[key]
-                for idx = 1, #sync.units do
-                    local t = sync.db(sync.units[idx])
-                    if t and t[mod.UF_CastClassicKey(sync.units[idx])] ~= value then
+                local s = settingGet()
+                local value = s and s[settingKey]
+                for idx = 1, #syncFn.units do
+                    local t = syncFn.db(syncFn.units[idx])
+                    if t and t[mod.UF_CastClassicKey(syncFn.units[idx])] ~= value then
                         return false
                     end
                 end
@@ -194,14 +194,14 @@ function mod.UF_ClassicCastBorderRow(W, hostFrame, cursorY, getS, key, onChange,
                 return { region }
             end,
             multiApply = {
-                elementKeys = sync.units,
-                elementLabels = sync.labels,
-                getCurrentKey = sync.current,
-                onApply = apply,
+                elementKeys = syncFn.units,
+                elementLabels = syncFn.labels,
+                getCurrentKey = syncFn.current,
+                onApply = applyFn,
             },
         })
     end
-    return height, row
+    return height, line
 end
 
 -- The 3D portrait performance warning, shown until confirmed once (account-
@@ -324,17 +324,17 @@ end
 -- frames page only) adds the two apply-to-all links: { units, labels,
 -- current(), db(unit) }. Returns the height built. On ns: the page builders
 -- sit at their upvalue caps.
-function mod.UF_CastBorderRows(W, hostFrame, cursorY, getS, onChange, matchKey, sync)
+function mod.UF_CastBorderRows(W, hostFrame, cursorY, settingGet, changed, matchKey, syncFn)
     local BS = CludesUI.BlizzStyle
     local y0 = cursorY
     local function Changed()
-        onChange()
+        changed()
         if matchKey then
             CludesUI.ReapplyMatchPads(matchKey)
         end
     end
     local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
-    local row, height = W:DualRow(
+    local line, height = W:DualRow(
         hostFrame,
         cursorY,
         BS.Gate("unitframes", {
@@ -344,10 +344,10 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, getS, onChange, matchKey, 
             values = texValues,
             order = texOrder,
             getValue = function()
-                return getS().castBorderStyle or "solid"
+                return settingGet().castBorderStyle or "solid"
             end,
             setValue = function(value)
-                local s = getS()
+                local s = settingGet()
                 s.castBorderStyle = value
                 s.castBorderOffsetX, s.castBorderOffsetY = nil, nil
                 s.castBorderShiftX, s.castBorderShiftY = nil, nil
@@ -373,19 +373,19 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, getS, onChange, matchKey, 
                 text = "Border Size",
                 trackWidth = 120,
                 getStep = function()
-                    return getS().castBorderSize or 1
+                    return settingGet().castBorderSize or 1
                 end,
                 setStep = function(step)
-                    getS().castBorderSize = step
+                    settingGet().castBorderSize = step
                 end,
                 getTex = function()
-                    return getS().castBorderStyle or "solid"
+                    return settingGet().castBorderStyle or "solid"
                 end,
                 getPx = function()
-                    return getS().castBorderSizePx
+                    return settingGet().castBorderSizePx
                 end,
                 setPx = function(value)
-                    getS().castBorderSizePx = value
+                    settingGet().castBorderSizePx = value
                 end,
                 -- The refresh dims the colour swatch at 0.
                 apply = function()
@@ -398,33 +398,33 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, getS, onChange, matchKey, 
     cursorY = cursorY - height
     -- Width Offset | Height Offset: a textured style's outward offsets.
     do
-        local texture = getS().castBorderStyle or "solid"
+        local texture = settingGet().castBorderStyle or "solid"
         if texture ~= "solid" and texture ~= "" then
             local ocfgL, ocfgR = CludesUI.BorderOffsetRowCfgs({
                 addonKey = "unitframes",
                 getTex = function()
-                    return getS().castBorderStyle or "solid"
+                    return settingGet().castBorderStyle or "solid"
                 end,
                 getStep = function()
-                    return getS().castBorderSize or 1
+                    return settingGet().castBorderSize or 1
                 end,
                 getSizeKey = function()
-                    return getS().castBorderSize or 1
+                    return settingGet().castBorderSize or 1
                 end,
                 getPx = function()
-                    return getS().castBorderSizePx
+                    return settingGet().castBorderSizePx
                 end,
                 getX = function()
-                    return getS().castBorderOffsetX
+                    return settingGet().castBorderOffsetX
                 end,
                 setX = function(value)
-                    getS().castBorderOffsetX = value
+                    settingGet().castBorderOffsetX = value
                 end,
                 getY = function()
-                    return getS().castBorderOffsetY
+                    return settingGet().castBorderOffsetY
                 end,
                 setY = function(value)
-                    getS().castBorderOffsetY = value
+                    settingGet().castBorderOffsetY = value
                 end,
                 apply = Changed,
             })
@@ -440,10 +440,10 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, getS, onChange, matchKey, 
     -- Border Options cog (left): shifts and layering, textured styles only.
     do
         -- A stored shift, else the registry default for the style and size.
-        local function Shift(key, isY)
-            local s = getS()
-            if s[key] then
-                return s[key]
+        local function Shift(settingKey, isY)
+            local s = settingGet()
+            if s[settingKey] then
+                return s[settingKey]
             end
             local _, _, dsx, dsy =
                 CludesUI.GetBorderDefaults("unitframes", s.castBorderStyle or "solid", s.castBorderSize or 1)
@@ -453,15 +453,15 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, getS, onChange, matchKey, 
             return dsx
         end
         -- The shown default stores nil, any other value (0 included) is kept.
-        local function SetShift(key, isY, value)
-            local s = getS()
-            s[key] = nil
-            if value ~= Shift(key, isY) then
-                s[key] = value
+        local function SetShift(settingKey, isY, value)
+            local s = settingGet()
+            s[settingKey] = nil
+            if value ~= Shift(settingKey, isY) then
+                s[settingKey] = value
             end
             Changed()
         end
-        local cogBtn = CludesUI.BuildInlineCog(row._leftRegion, {
+        local cogBtn = CludesUI.BuildInlineCog(line._leftRegion, {
             title = "Border Options",
             rows = {
                 {
@@ -495,17 +495,17 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, getS, onChange, matchKey, 
                     label = "Show Behind",
                     tooltip = "Draws the border behind the cast bar instead of over it.",
                     get = function()
-                        return getS().castBorderBehind == true
+                        return settingGet().castBorderBehind == true
                     end,
                     set = function(value)
-                        getS().castBorderBehind = value
+                        settingGet().castBorderBehind = value
                         Changed()
                     end,
                 },
             },
         })
         local function UpdateCogVis()
-            local texture = getS().castBorderStyle or "solid"
+            local texture = settingGet().castBorderStyle or "solid"
             if texture == "solid" or texture == "" or BS.Get("unitframes") then
                 cogBtn:Hide()
             else
@@ -518,16 +518,16 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, getS, onChange, matchKey, 
 
     -- Colour swatch (with alpha) on Border Size; greyed and blocked at 0.
     do
-        local region = row._rightRegion
-        local sw, updateSw = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
-            local s = getS()
+        local region = line._rightRegion
+        local sw, updateSw = CludesUI.BuildColorSwatch(region, line:GetFrameLevel() + 3, function()
+            local s = settingGet()
             local c = s.castBorderColor
             return c and c.r or 0, c and c.g or 0, c and c.b or 0, s.castBorderAlpha or 1
         end, function(r, g, b, a)
-            local s = getS()
+            local s = settingGet()
             s.castBorderColor = { r = r, g = g, b = b }
             s.castBorderAlpha = a
-            onChange()
+            changed()
         end, true, 20)
         CludesUI.PanelPP.Point(sw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         CludesUI.HoverTip(sw, "Border")
@@ -544,7 +544,7 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, getS, onChange, matchKey, 
         end)
         local function UpdateSw()
             updateSw()
-            if (getS().castBorderSize or 1) == 0 then
+            if (settingGet().castBorderSize or 1) == 0 then
                 sw:SetAlpha(0.3)
                 block:Show()
             else
@@ -559,11 +559,11 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, getS, onChange, matchKey, 
     -- Apply-to-all links (main frames page): the style link carries the style,
     -- its offsets, shifts, layering and colour; the size link the size, its
     -- exact px, colour and style. Both carry the opt-in itself.
-    if sync then
+    if syncFn then
         local function CopyTo(units, withSize)
-            local source = getS()
+            local source = settingGet()
             for idx = 1, #units do
-                local d = sync.db(units[idx])
+                local d = syncFn.db(units[idx])
                 if d and d ~= source then
                     d.castBorderCustom = source.castBorderCustom
                     d.castBorderStyle = source.castBorderStyle
@@ -589,17 +589,17 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, getS, onChange, matchKey, 
                     end
                 end
             end
-            onChange()
+            changed()
             for idx = 1, #units do
                 CludesUI.ReapplyMatchPads(units[idx] .. "Castbar")
             end
             CludesUI:RefreshPage()
         end
         local function StyleSynced()
-            local source = getS()
+            local source = settingGet()
             local bt = source.castBorderStyle or "solid"
-            for idx = 1, #sync.units do
-                local d = sync.db(sync.units[idx])
+            for idx = 1, #syncFn.units do
+                local d = syncFn.db(syncFn.units[idx])
                 if d then
                     if (d.castBorderCustom == true) ~= (source.castBorderCustom == true) then
                         return false
@@ -627,12 +627,12 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, getS, onChange, matchKey, 
             return true
         end
         local function SizeSynced()
-            local source = getS()
+            local source = settingGet()
             local bs, bt = source.castBorderSize or 1, source.castBorderStyle or "solid"
             -- Exact sizes compare as rendered (a cleared or stale value equals none).
             local bpx = CludesUI.BorderPx(source.castBorderSizePx, bs, bt)
-            for idx = 1, #sync.units do
-                local d = sync.db(sync.units[idx])
+            for idx = 1, #syncFn.units do
+                local d = syncFn.db(syncFn.units[idx])
                 if d then
                     if (d.castBorderCustom == true) ~= (source.castBorderCustom == true) then
                         return false
@@ -650,21 +650,21 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, getS, onChange, matchKey, 
             end
             return true
         end
-        local lr, rr = row._leftRegion, row._rightRegion
+        local lr, rr = line._leftRegion, line._rightRegion
         CludesUI.BuildSyncIcon({
             region = lr,
             tooltip = "Apply Cast Bar Border Style to all Frames",
             onClick = function()
-                CopyTo(sync.units, false)
+                CopyTo(syncFn.units, false)
             end,
             isSynced = StyleSynced,
             flashTargets = function()
                 return { lr }
             end,
             multiApply = {
-                elementKeys = sync.units,
-                elementLabels = sync.labels,
-                getCurrentKey = sync.current,
+                elementKeys = syncFn.units,
+                elementLabels = syncFn.labels,
+                getCurrentKey = syncFn.current,
                 onApply = function(keyList)
                     CopyTo(keyList, false)
                 end,
@@ -674,16 +674,16 @@ function mod.UF_CastBorderRows(W, hostFrame, cursorY, getS, onChange, matchKey, 
             region = rr,
             tooltip = "Apply Cast Bar Border to all Frames",
             onClick = function()
-                CopyTo(sync.units, true)
+                CopyTo(syncFn.units, true)
             end,
             isSynced = SizeSynced,
             flashTargets = function()
                 return { rr }
             end,
             multiApply = {
-                elementKeys = sync.units,
-                elementLabels = sync.labels,
-                getCurrentKey = sync.current,
+                elementKeys = syncFn.units,
+                elementLabels = syncFn.labels,
+                getCurrentKey = syncFn.current,
                 onApply = function(keyList)
                     CopyTo(keyList, true)
                 end,
@@ -702,7 +702,7 @@ end
 -- stock styles drop the rows. B = the boss settings table (boss1-5 share it);
 -- onChange repaints. Returns the height built. On ns: the page builders sit at
 -- their upvalue caps.
-function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, onChange)
+function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, changed)
     local BS = CludesUI.BlizzStyle
     local y0 = cursorY
     local function Inheriting()
@@ -716,7 +716,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, onChange)
     local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
     table.insert(texOrder, 1, "inherit")
     texValues.inherit = "Inherit (Main Frames)"
-    local row, height = W:DualRow(
+    local line, height = W:DualRow(
         hostFrame,
         cursorY,
         BS.Gate("unitframes", {
@@ -759,7 +759,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, onChange)
                         B.borderSizePx = false
                     end
                 end
-                onChange()
+                changed()
                 -- The Width / Height Offset row exists only under a textured style.
                 CludesUI:RefreshPage(true)
             end,
@@ -789,7 +789,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, onChange)
                 end,
                 -- The refresh dims the colour swatch at 0.
                 apply = function()
-                    onChange()
+                    changed()
                     CludesUI:RefreshPage()
                 end,
             })
@@ -826,7 +826,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, onChange)
                 setY = function(value)
                     B.borderTextureOffsetY = value
                 end,
-                apply = onChange,
+                apply = changed,
             })
             local _, oh =
                 W:DualRow(hostFrame, cursorY, BS.Gate("unitframes", ocfgL), BS.Gate("unitframes", ocfgR))
@@ -840,9 +840,9 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, onChange)
     -- Border Options cog (left): shifts and layering, own textured styles only.
     do
         -- A stored shift, else the registry default for the style and size.
-        local function Shift(key, isY)
-            if B[key] then
-                return B[key]
+        local function Shift(settingKey, isY)
+            if B[settingKey] then
+                return B[settingKey]
             end
             local _, _, dsx, dsy =
                 CludesUI.GetBorderDefaults("unitframes", B.borderTexture or "solid", B.borderSize or 1)
@@ -852,14 +852,14 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, onChange)
             return dsx
         end
         -- The shown default stores nil, any other value (0 included) is kept.
-        local function SetShift(key, isY, value)
-            B[key] = nil
-            if value ~= Shift(key, isY) then
-                B[key] = value
+        local function SetShift(settingKey, isY, value)
+            B[settingKey] = nil
+            if value ~= Shift(settingKey, isY) then
+                B[settingKey] = value
             end
-            onChange()
+            changed()
         end
-        local cogBtn = CludesUI.BuildInlineCog(row._leftRegion, {
+        local cogBtn = CludesUI.BuildInlineCog(line._leftRegion, {
             title = "Border Options",
             rows = {
                 {
@@ -896,7 +896,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, onChange)
                     end,
                     set = function(value)
                         B.borderBehind = value
-                        onChange()
+                        changed()
                     end,
                 },
                 {
@@ -920,7 +920,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, onChange)
                     end,
                     set = function(value)
                         B.borderPowerSeam = value
-                        onChange()
+                        changed()
                     end,
                 },
             },
@@ -940,7 +940,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, onChange)
     -- Colour swatch (with alpha) on Border Size: shows what is drawn; greyed
     -- and blocked while inheriting or at 0.
     do
-        local region = row._rightRegion
+        local region = line._rightRegion
         -- Corner Radius (CludesUI_RoundedCorners.lua): the boss table's own,
         -- beside the control with the swatch left of it; while inheriting the
         -- main frames' radius applies.
@@ -969,14 +969,14 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, onChange)
                         end,
                         set = function(value)
                             B.cornerRadius = value
-                            onChange()
+                            changed()
                         end,
                     },
                 }, function()
                     return Src().cornerMask
                 end, function(value)
                     B.cornerMask = value
-                    onChange()
+                    changed()
                 end),
                 "Join Power Bar",
                 "Rounds a detached power bar right above or below the frame as one shape with it.",
@@ -985,7 +985,7 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, onChange)
                 end,
                 function(value)
                     B.cornerJoinPower = value
-                    onChange()
+                    changed()
                 end,
                 function()
                     local place = B.powerPosition or "below"
@@ -994,14 +994,14 @@ function mod.UF_BossFrameBorderRows(W, hostFrame, cursorY, B, onChange)
                 "Detached Power Bar"
             ),
         })
-        local sw, updateSw = CludesUI.BuildColorSwatch(region, row:GetFrameLevel() + 3, function()
+        local sw, updateSw = CludesUI.BuildColorSwatch(region, line:GetFrameLevel() + 3, function()
             local s = Src()
             local c = s.borderColor
             return c and c.r or 0, c and c.g or 0, c and c.b or 0, s.borderAlpha or 1
         end, function(r, g, b, a)
             B.borderColor = { r = r, g = g, b = b }
             B.borderAlpha = a
-            onChange()
+            changed()
         end, true, 20)
         CludesUI.PanelPP.Point(sw, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         CludesUI.HoverTip(sw, "Border")
@@ -1045,9 +1045,9 @@ local TRACKED_TITLES = {
     focus = "Focus Tracked Auras",
     boss = "Boss Tracked Auras",
 }
-local function TrackedList(unitKey, field)
+local function TrackedList(unitName, field)
     local saved = mod.db
-    local s = saved and saved.profile and saved.profile[unitKey]
+    local s = saved and saved.profile and saved.profile[unitName]
     if not s then
         return nil
     end
@@ -1056,11 +1056,11 @@ local function TrackedList(unitKey, field)
     end
     return s[field]
 end
-function mod.UFOpt_ShowTrackedAuras(unitKey)
+function mod.UFOpt_ShowTrackedAuras(unitName)
     local choices = {}
     for idx = 1, #TRACKED_UNITS do
         local u = TRACKED_UNITS[idx]
-        if u.key ~= unitKey then
+        if u.key ~= unitName then
             choices[#choices + 1] = u
         end
     end
@@ -1078,25 +1078,25 @@ function mod.UFOpt_ShowTrackedAuras(unitKey)
     end
     CludesUI.ShowTrackedAurasPopup({
         eyebrow = "UNIT FRAME AURA FILTERS",
-        title = TRACKED_TITLES[unitKey] or "Tracked Auras",
+        title = TRACKED_TITLES[unitName] or "Tracked Auras",
         subtitle = "Included debuffs show in addition to your Debuff Filter selection (unless it is set to Only Tracked Auras).",
         includeGet = function()
-            return TrackedList(unitKey, "debuffInclude")
+            return TrackedList(unitName, "debuffInclude")
         end,
         excludeGet = function()
-            return TrackedList(unitKey, "debuffExclude")
+            return TrackedList(unitName, "debuffExclude")
         end,
         -- Caster scope per entry (the MINE tag on each row). Boss includes default
         -- to Only My Casts (nameplate parity) with an any-caster OPT-OUT map;
         -- target/focus includes default to any caster with a MINE OPT-IN map.
         -- Engine: AppendIncludeLinks in CUI_UnitFrames_AuraContainers.lua.
-        includeMine = (unitKey == "boss") and {
+        includeMine = (unitName == "boss") and {
             anyGet = function()
-                return TrackedList(unitKey, "debuffIncludeAnyCaster")
+                return TrackedList(unitName, "debuffIncludeAnyCaster")
             end,
         } or {
             mineGet = function()
-                return TrackedList(unitKey, "debuffIncludeMine")
+                return TrackedList(unitName, "debuffIncludeMine")
             end,
         },
         includePrompt = "Enter the spell ID to always show on this frame.",
@@ -1108,7 +1108,7 @@ function mod.UFOpt_ShowTrackedAuras(unitKey)
             apply = function(srcKey)
                 local saved = mod.db
                 local source = saved and saved.profile and saved.profile[srcKey]
-                local dst = saved and saved.profile and saved.profile[unitKey]
+                local dst = saved and saved.profile and saved.profile[unitName]
                 if not (source and dst) then
                     return
                 end
@@ -1128,7 +1128,7 @@ function mod.UFOpt_ShowTrackedAuras(unitKey)
                 -- any-caster opt-out; target/focus: MINE opt-in). Same kind copies
                 -- them as-is; across kinds the set is inverted so every copied
                 -- entry keeps the scope it showed with.
-                local srcBoss, dstBoss = srcKey == "boss", unitKey == "boss"
+                local srcBoss, dstBoss = srcKey == "boss", unitName == "boss"
                 if srcBoss == dstBoss then
                     dst.debuffIncludeAnyCaster = Clone(source.debuffIncludeAnyCaster)
                     dst.debuffIncludeMine = Clone(source.debuffIncludeMine)
@@ -1157,12 +1157,12 @@ end
 -- Options preview: the first fake buff stands in for a purgeable one while
 -- Purgeable Buff Glow is set on target/focus and this character can purge or
 -- spellsteal (the live frame's own gate). The host is our own frame.
-function mod.UFOpt_PreviewPurgeGlow(bf, unitKey, s, wid, height)
+function mod.UFOpt_PreviewPurgeGlow(bf, unitName, s, wid, height)
     local Glows = CludesUI.Glows
     if not mod.UF_PurgeGlowSpec then
         return
     end
-    local g = (unitKey == "target" or unitKey == "focus") and s and s.buffPurgeGlow
+    local g = (unitName == "target" or unitName == "focus") and s and s.buffPurgeGlow
     local enabled = type(g) == "number" and g > 0
     if enabled then
         local AK = CludesUI.AuraKit
@@ -1172,25 +1172,25 @@ function mod.UFOpt_PreviewPurgeGlow(bf, unitKey, s, wid, height)
         end
         enabled = magic or enrage
     end
-    local host = bf._purgeGlow
+    local owner = bf._purgeGlow
     if not enabled then
-        if host then
-            if host._cuiGlowActive then
-                Glows.StopGlow(host)
+        if owner then
+            if owner._cuiGlowActive then
+                Glows.StopGlow(owner)
             end
-            host:Hide()
+            owner:Hide()
         end
         return
     end
-    if not host then
-        host = CreateFrame("Frame", nil, bf)
-        host:SetAllPoints(bf)
-        host:SetFrameLevel(bf:GetFrameLevel() + 2)
-        bf._purgeGlow = host
+    if not owner then
+        owner = CreateFrame("Frame", nil, bf)
+        owner:SetAllPoints(bf)
+        owner:SetFrameLevel(bf:GetFrameLevel() + 2)
+        bf._purgeGlow = owner
     end
-    host:Show()
+    owner:Show()
     -- The live renderer's own spec, so the preview is the live look.
-    Glows.StartSpecGlow(host, mod.UF_PurgeGlowSpec(s), wid, height, "engine", Glows.PANEL_EXTRA)
+    Glows.StartSpecGlow(owner, mod.UF_PurgeGlowSpec(s), wid, height, "engine", Glows.PANEL_EXTRA)
 end
 
 -- Target/focus/boss Debuff Filter: ONE single-select mode, an engine VIEW over
@@ -1218,12 +1218,12 @@ local DEBUFF_MODE_TIPS = {
     importantOwn = "Shows only the debuffs you apply that Blizzard also flags as important.",
     importantOrOwn = "Shows the debuffs you apply plus important debuffs from anyone.",
 }
-local function DebuffModeDropdownCfg(textValue, unitKey, getS, onChanged, extra)
+local function DebuffModeDropdownCfg(textValue, unitName, settingGet, onChanged, extra)
     local values = {
         __editTracked = {
             text = "Edit Tracked Auras",
             action = function()
-                mod.UFOpt_ShowTrackedAuras(unitKey)
+                mod.UFOpt_ShowTrackedAuras(unitName)
             end,
         },
         all = "Show All",
@@ -1233,8 +1233,8 @@ local function DebuffModeDropdownCfg(textValue, unitKey, getS, onChanged, extra)
         importantOwn = "Important and Own",
         importantOrOwn = "Important or Own",
         _menuOpts = {
-            onItemHover = function(key, entry)
-                local tipText = DEBUFF_MODE_TIPS[key]
+            onItemHover = function(settingKey, entry)
+                local tipText = DEBUFF_MODE_TIPS[settingKey]
                 if tipText and entry then
                     CludesUI.ShowWidgetTooltip(entry, tipText)
                 end
@@ -1250,10 +1250,10 @@ local function DebuffModeDropdownCfg(textValue, unitKey, getS, onChanged, extra)
         values = values,
         order = DEBUFF_MODE_ORDER,
         getValue = function()
-            return mod.UF_DebuffFilterMode(getS())
+            return mod.UF_DebuffFilterMode(settingGet())
         end,
         setValue = function(value)
-            getS().debuffFilterMode = value
+            settingGet().debuffFilterMode = value
             onChanged()
         end,
     }
@@ -1268,19 +1268,19 @@ end
 -- filter is a single-pick mode list; the player's checkbox Debuff Filter has
 -- the same toggle as a row). s.debuffHideExhaustion, nil = on: the Bloodlust
 -- lockouts stay hidden until it is turned off (stored as false).
-local function HideExhaustionRow(getS, onChanged)
+local function HideExhaustionRow(settingGet, onChanged)
     return {
         type = "toggle",
         label = "Hide Exhaustion",
         tooltip = "Hides Sated, Exhaustion, Temporal Displacement and the other Bloodlust lockout debuffs.",
         get = function()
-            return getS().debuffHideExhaustion ~= false
+            return settingGet().debuffHideExhaustion ~= false
         end,
         set = function(value)
             if value then
-                getS().debuffHideExhaustion = nil
+                settingGet().debuffHideExhaustion = nil
             else
-                getS().debuffHideExhaustion = false
+                settingGet().debuffHideExhaustion = false
             end
             onChanged()
         end,
@@ -1289,7 +1289,7 @@ end
 -- The standard red empty-selection warning on the mode dropdown built by a
 -- DualRow slot (rgn._control): shown while Only Tracked Auras has no active
 -- entry and the column is not already dimmed by its Display = None.
-local function AttachDebuffModeWarn(region, getS, offFn)
+local function AttachDebuffModeWarn(region, settingGet, offFn)
     local dropdown = region and region._control
     if not dropdown then
         return
@@ -1302,7 +1302,7 @@ local function AttachDebuffModeWarn(region, getS, offFn)
             if offFn() then
                 return true
             end
-            local s = getS()
+            local s = settingGet()
             return mod.UF_DebuffFilterMode(s) ~= "tracked" or mod.UF_DebuffHasIncludes(s)
         end
     )
@@ -1324,13 +1324,13 @@ CludesUI.AtLogin(function()
         -- A click overlay (made by create) on every icon of a preview's buff or
         -- debuff row, shown or not: each rides its icon, so icons that appear
         -- later are clickable too.
-        local function OverlayEachIcon(create, icons, key, level)
+        local function OverlayEachIcon(create, icons, settingKey, level)
             if not icons then
                 return
             end
             for idx = 1, #icons do
                 if icons[idx] then
-                    create(icons[idx], key, false, level)
+                    create(icons[idx], settingKey, false, level)
                 end
             end
         end
@@ -1338,16 +1338,16 @@ CludesUI.AtLogin(function()
         -- row's top padding above, in the preview's own scale), draws it, and
         -- returns the height 20 below it, past any buff row and the top of its
         -- details.
-        local function SeatUnitPreview(preview, heading, fy)
-            local scale = preview._previewScale or 1
-            local oy = (fy - (preview._buffTopPad or 0)) / scale
-            preview._headerDropdownOY = math.abs(fy)
-            preview:ClearAllPoints()
-            Pix.Point(preview, "TOP", heading, "TOP", 0, oy)
-            preview._lastOY = oy
-            preview:Update()
-            local drawnH = preview:GetHeight() * preview:GetScale()
-            return fy - drawnH - (preview._buffExtra or 0) - (preview._detTopExtra or 0) - 20
+        local function SeatUnitPreview(previewRef, heading, rowY)
+            local scale = previewRef._previewScale or 1
+            local oy = (rowY - (previewRef._buffTopPad or 0)) / scale
+            previewRef._headerDropdownOY = math.abs(rowY)
+            previewRef:ClearAllPoints()
+            Pix.Point(previewRef, "TOP", heading, "TOP", 0, oy)
+            previewRef._lastOY = oy
+            previewRef:Update()
+            local drawnH = previewRef:GetHeight() * previewRef:GetScale()
+            return rowY - drawnH - (previewRef._buffExtra or 0) - (previewRef._detTopExtra or 0) - 20
         end
         local saved = mod.db
         local frameList = mod.frames
@@ -1364,7 +1364,7 @@ CludesUI.AtLogin(function()
         ---------------------------------------------------------------------------
         --  Shared helpers
         ---------------------------------------------------------------------------
-        local activePreview
+        local livePreview
         local allPreviews = {}
 
         -- Mutable state the page builders share. A table instead of locals so the
@@ -1386,11 +1386,11 @@ CludesUI.AtLogin(function()
         -- pages). A target may be a resolver function (e.g. boss buff/debuff icons,
         -- which point to Simple Display or Location depending on the mode). On ns
         -- to stay clear of the 200-local cap; dismissHint is Main-page only.
-        mod._UFNavigateToSetting = function(targets, key, playGlow, dismissHint)
+        mod._UFNavigateToSetting = function(targets, settingKey, playGlow, dismissHint)
             if not targets then
                 return
             end
-            local m = targets[key]
+            local m = targets[settingKey]
             if type(m) == "function" then
                 m = m()
             end
@@ -1431,9 +1431,9 @@ CludesUI.AtLogin(function()
         -- allPreviews: unit -> its preview. An entry whose frame a kept header root
         -- dressed again for another unit (pv._pvUnit) is stale and skipped.
         local function UpdatePreview()
-            for keyName, preview in pairs(allPreviews) do
-                if preview and preview._pvUnit == keyName and preview.Update then
-                    preview:Update()
+            for keyName, previewRef in pairs(allPreviews) do
+                if previewRef and previewRef._pvUnit == keyName and previewRef.Update then
+                    previewRef:Update()
                 end
             end
             -- Sync in-game boss preview fake debuffs with live edits (location, simple display, size).
@@ -1463,9 +1463,9 @@ CludesUI.AtLogin(function()
 
         -- Hide UIParent-parented disabled overlays when the options window closes
         CludesUI:RegisterOnHide(function()
-            for keyName, preview in pairs(allPreviews) do
-                if preview and preview._pvUnit == keyName and preview._disabledOverlay then
-                    preview._disabledOverlay:Hide()
+            for keyName, previewRef in pairs(allPreviews) do
+                if previewRef and previewRef._pvUnit == keyName and previewRef._disabledOverlay then
+                    previewRef._disabledOverlay:Hide()
                 end
             end
             -- Auto-disable in-game boss preview so live boss frames don't linger on close.
@@ -1586,7 +1586,7 @@ CludesUI.AtLogin(function()
         --  Global Settings Glows page. Engine aura buttons: C-side styles only; an
         --  unset color is the suite default (gold).
         ---------------------------------------------------------------------------
-        local function UF_PurgeGlowDesc(getS)
+        local function UF_PurgeGlowDesc(settingGet)
             -- Blizzard Border: Blizzard's static stealable art, outside the style list.
             local border = CludesUI.Glows.STEALABLE_BORDER
             return {
@@ -1596,7 +1596,7 @@ CludesUI.AtLogin(function()
                 defaultColor = CludesUI.Glows.DEFAULT_COLOR,
                 onChange = ReloadAndUpdate,
                 get = function(f)
-                    local s = getS()
+                    local s = settingGet()
                     if f == "style" then
                         return s.buffPurgeGlow or 0
                     elseif f == "mode" then
@@ -1605,7 +1605,7 @@ CludesUI.AtLogin(function()
                     return CludesUI.GlowOptions.FlatGet(s, "buffPurgeGlow", f)
                 end,
                 set = function(f, a, b, c)
-                    local s = getS()
+                    local s = settingGet()
                     if f == "style" then
                         s.buffPurgeGlow = (a ~= 0) and a or nil
                     elseif f == "mode" then
@@ -1618,17 +1618,17 @@ CludesUI.AtLogin(function()
         end
         -- Target/focus Important Cast Glow: a bar host storing shared style
         -- indices (every style but Shape); an unset mode is the stored custom color.
-        local function UF_ImpCastGlowDesc(getS, onChange)
+        local function UF_ImpCastGlowDesc(settingGet, changed)
             return {
                 host = "bar",
                 caps = { mode = true, params = true, bg = true },
                 defaultColor = { r = 1, g = 0.2, b = 0.2 },
-                onChange = onChange or ReloadAndUpdate,
+                onChange = changed or ReloadAndUpdate,
                 isOff = function()
-                    return getS().castbarImportantGlow ~= true
+                    return settingGet().castbarImportantGlow ~= true
                 end,
                 get = function(f)
-                    local s = getS()
+                    local s = settingGet()
                     if f == "style" then
                         return s.castbarImportantGlowStyle or 1
                     elseif f == "mode" then
@@ -1637,7 +1637,7 @@ CludesUI.AtLogin(function()
                     return CludesUI.GlowOptions.FlatGet(s, "castbarImportantGlow", f)
                 end,
                 set = function(f, a, b, c)
-                    local s = getS()
+                    local s = settingGet()
                     if f == "style" then
                         if a == 0 then
                             s.castbarImportantGlow = false
@@ -1748,36 +1748,36 @@ CludesUI.AtLogin(function()
             local hbtValues, hbtOrder = {}, {}
             local texNames = mod.healthBarTextureNames or {}
             local texOrder2 = mod.healthBarTextureOrder or {}
-            for _, key in ipairs(texOrder2) do
-                if key ~= "---" then
-                    hbtValues[key] = texNames[key] or key
-                    hbtOrder[#hbtOrder + 1] = key
+            for _, settingKey in ipairs(texOrder2) do
+                if settingKey ~= "---" then
+                    hbtValues[settingKey] = texNames[settingKey] or settingKey
+                    hbtOrder[#hbtOrder + 1] = settingKey
                 end
             end
             -- _menuOpts: texture preview backgrounds on each item
             local texLookup = mod.healthBarTextures or {}
             hbtValues._menuOpts = {
                 itemHeight = 28,
-                background = function(key)
-                    return texLookup[key]
+                background = function(settingKey)
+                    return texLookup[settingKey]
                 end,
-                onItemHover = function(key)
-                    local texPath = texLookup[key]
-                    for keyName, preview in pairs(allPreviews) do
-                        if preview and preview._pvUnit == keyName then
-                            local hFill = preview._healthFill
+                onItemHover = function(settingKey)
+                    local texPath = texLookup[settingKey]
+                    for keyName, previewRef in pairs(allPreviews) do
+                        if previewRef and previewRef._pvUnit == keyName then
+                            local hFill = previewRef._healthFill
                             if hFill then
                                 if texPath then
                                     hFill:SetTexture(texPath)
-                                    hFill:SetVertexColor(preview._hR or 0.8, preview._hG or 0.2, preview._hB or 0.2, 1)
+                                    hFill:SetVertexColor(previewRef._hR or 0.8, previewRef._hG or 0.2, previewRef._hB or 0.2, 1)
                                 else
                                     hFill:SetVertexColor(1, 1, 1, 1)
-                                    hFill:SetColorTexture(preview._hR or 0.8, preview._hG or 0.2, preview._hB or 0.2, 1)
+                                    hFill:SetColorTexture(previewRef._hR or 0.8, previewRef._hG or 0.2, previewRef._hB or 0.2, 1)
                                 end
                             end
-                            local pFill = preview._powerFill
+                            local pFill = previewRef._powerFill
                             if pFill then
-                                local pvR, pvG, pvB = preview._pR or 0, preview._pG or 0, preview._pB or 1
+                                local pvR, pvG, pvB = previewRef._pR or 0, previewRef._pG or 0, previewRef._pB or 1
                                 if texPath then
                                     pFill:SetTexture(texPath)
                                     pFill:SetVertexColor(pvR, pvG, pvB, 1)
@@ -1789,11 +1789,11 @@ CludesUI.AtLogin(function()
                         end
                     end
                 end,
-                onItemLeave = function(key)
+                onItemLeave = function(settingKey)
                     -- Revert to the saved texture
-                    for keyName, preview in pairs(allPreviews) do
-                        if preview and preview._pvUnit == keyName and preview.Update then
-                            preview:Update()
+                    for keyName, previewRef in pairs(allPreviews) do
+                        if previewRef and previewRef._pvUnit == keyName and previewRef.Update then
+                            previewRef:Update()
                         end
                     end
                 end,
@@ -2019,19 +2019,19 @@ CludesUI.AtLogin(function()
             ["runic"] = "Runic",
             _menuOpts = {
                 itemHeight = 32,
-                icon = function(key)
-                    if key == "none" then
+                icon = function(settingKey)
+                    if settingKey == "none" then
                         return nil
                     end
                     local _, ct = UnitClass("player")
                     if not ct then
                         return nil
                     end
-                    local coords = CLASS_FULL_COORDS[ct]
-                    if not coords then
+                    local texCoords = CLASS_FULL_COORDS[ct]
+                    if not texCoords then
                         return nil
                     end
-                    return CLASS_FULL_SPRITE_BASE .. key .. ".tga", coords[1], coords[2], coords[3], coords[4]
+                    return CLASS_FULL_SPRITE_BASE .. settingKey .. ".tga", texCoords[1], texCoords[2], texCoords[3], texCoords[4]
                 end,
             },
         }
@@ -2120,22 +2120,22 @@ CludesUI.AtLogin(function()
 
         -- mirror = true swaps the cell's left/right coords (Mirror Portrait).
         local function ApplyClassIconTexture_Preview(texture, classToken, style, mirror)
-            local coords = CLASS_FULL_COORDS[classToken]
-            if not coords then
+            local texCoords = CLASS_FULL_COORDS[classToken]
+            if not texCoords then
                 return false
             end
             texture:SetTexture(CLASS_FULL_SPRITE_BASE .. style .. ".tga")
             if mirror then
-                texture:SetTexCoord(coords[2], coords[1], coords[3], coords[4])
+                texture:SetTexCoord(texCoords[2], texCoords[1], texCoords[3], texCoords[4])
             else
-                texture:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
+                texture:SetTexCoord(texCoords[1], texCoords[2], texCoords[3], texCoords[4])
             end
             return true
         end
 
         -- Apply detached portrait shape to preview portraitFrame pFrame; s = per-unit settings.
-        local function ApplyPreviewPortraitShape(pFrame, s)
-            if not pFrame then
+        local function ApplyPreviewPortraitShape(previewFrame, s)
+            if not previewFrame then
                 return
             end
             local isDetached = (s.portraitStyle or saved.profile.portraitStyle or "attached") == "detached"
@@ -2148,8 +2148,8 @@ CludesUI.AtLogin(function()
             local bExp = 7 - rawBorderSize -- scale border UP; mask clips inner portion
             -- Use the resolved art mode so NPC fallbacks keep their own zoom.
             local classInset
-            if pFrame._previewMode == "class" then
-                local bh = pFrame:GetHeight()
+            if previewFrame._previewMode == "class" then
+                local bh = previewFrame:GetHeight()
                 if bh < 1 then
                     bh = 46
                 end
@@ -2167,170 +2167,170 @@ CludesUI.AtLogin(function()
                 end
             end
 
-            if pFrame._previewBg then
+            if previewFrame._previewBg then
                 local bgc = isDetached and s.detachedPortraitBgColor
                 if bgc then
-                    pFrame._previewBg:SetColorTexture(bgc.r, bgc.g, bgc.b, bgc.a or 1)
+                    previewFrame._previewBg:SetColorTexture(bgc.r, bgc.g, bgc.b, bgc.a or 1)
                 else
-                    pFrame._previewBg:SetColorTexture(0.082, 0.082, 0.082, 1)
+                    previewFrame._previewBg:SetColorTexture(0.082, 0.082, 0.082, 1)
                 end
             end
 
             local texList = {}
-            if pFrame._previewTex then
-                table.insert(texList, pFrame._previewTex)
+            if previewFrame._previewTex then
+                table.insert(texList, previewFrame._previewTex)
             end
-            if pFrame._previewBg then
-                table.insert(texList, pFrame._previewBg)
+            if previewFrame._previewBg then
+                table.insert(texList, previewFrame._previewBg)
             end
 
             -- Remove mask when not detached
             if not isDetached then
-                if pFrame._shapeMask then
+                if previewFrame._shapeMask then
                     for _, texture in ipairs(texList) do
-                        texture:RemoveMaskTexture(pFrame._shapeMask)
+                        texture:RemoveMaskTexture(previewFrame._shapeMask)
                     end
-                    pFrame._shapeMask:Hide()
+                    previewFrame._shapeMask:Hide()
                 end
-                if pFrame._shapeBorderTex then
-                    pFrame._shapeBorderTex:Hide()
+                if previewFrame._shapeBorderTex then
+                    previewFrame._shapeBorderTex:Hide()
                 end
-                if pFrame._sqBorderTexs then
-                    for _, t in ipairs(pFrame._sqBorderTexs) do
+                if previewFrame._sqBorderTexs then
+                    for _, t in ipairs(previewFrame._sqBorderTexs) do
                         t:Hide()
                     end
                 end
                 -- Reset texture positions to default (detached mode expands them for mask fill)
-                if pFrame._previewTex then
+                if previewFrame._previewTex then
                     if classInset then
                         mod.UF_SetClassPortraitPoints(
-                            pFrame._previewTex,
-                            pFrame,
+                            previewFrame._previewTex,
+                            previewFrame,
                             s.portraitClassZoom,
                             classInset,
                             classInset
                         )
                     else
-                        pFrame._previewTex:ClearAllPoints()
-                        pFrame._previewTex:SetPoint("TOPLEFT", pFrame, "TOPLEFT", 0, 0)
-                        pFrame._previewTex:SetPoint("BOTTOMRIGHT", pFrame, "BOTTOMRIGHT", 0, 0)
+                        previewFrame._previewTex:ClearAllPoints()
+                        previewFrame._previewTex:SetPoint("TOPLEFT", previewFrame, "TOPLEFT", 0, 0)
+                        previewFrame._previewTex:SetPoint("BOTTOMRIGHT", previewFrame, "BOTTOMRIGHT", 0, 0)
                     end
                 end
-                if pFrame._previewModel then
-                    pFrame._previewModel:ClearAllPoints()
-                    pFrame._previewModel:SetPoint("TOPLEFT", pFrame, "TOPLEFT", 0, 0)
-                    pFrame._previewModel:SetPoint("BOTTOMRIGHT", pFrame, "BOTTOMRIGHT", 0, 0)
+                if previewFrame._previewModel then
+                    previewFrame._previewModel:ClearAllPoints()
+                    previewFrame._previewModel:SetPoint("TOPLEFT", previewFrame, "TOPLEFT", 0, 0)
+                    previewFrame._previewModel:SetPoint("BOTTOMRIGHT", previewFrame, "BOTTOMRIGHT", 0, 0)
                 end
-                mod.UF_PortraitExtras(pFrame, nil)
+                mod.UF_PortraitExtras(previewFrame, nil)
                 return
             end
 
             -- === MASK ===
             if shape == "none" then
                 -- "None": remove mask, border, and background
-                if pFrame._previewBg then
-                    pFrame._previewBg:Hide()
+                if previewFrame._previewBg then
+                    previewFrame._previewBg:Hide()
                 end
-                if pFrame._shapeMask then
+                if previewFrame._shapeMask then
                     for _, texture in ipairs(texList) do
-                        pcall(texture.RemoveMaskTexture, texture, pFrame._shapeMask)
+                        pcall(texture.RemoveMaskTexture, texture, previewFrame._shapeMask)
                     end
-                    pFrame._shapeMask:Hide()
+                    previewFrame._shapeMask:Hide()
                 end
-                if pFrame._shapeBorderTex then
-                    pFrame._shapeBorderTex:Hide()
+                if previewFrame._shapeBorderTex then
+                    previewFrame._shapeBorderTex:Hide()
                 end
-                if pFrame._sqBorderTexs then
-                    for _, t in ipairs(pFrame._sqBorderTexs) do
+                if previewFrame._sqBorderTexs then
+                    for _, t in ipairs(previewFrame._sqBorderTexs) do
                         t:Hide()
                     end
                 end
-                if pFrame._previewTex then
+                if previewFrame._previewTex then
                     if classInset then
                         mod.UF_SetClassPortraitPoints(
-                            pFrame._previewTex,
-                            pFrame,
+                            previewFrame._previewTex,
+                            previewFrame,
                             s.portraitClassZoom,
                             classInset,
                             classInset
                         )
                     else
-                        pFrame._previewTex:ClearAllPoints()
-                        pFrame._previewTex:SetPoint("TOPLEFT", pFrame, "TOPLEFT", 0, 0)
-                        pFrame._previewTex:SetPoint("BOTTOMRIGHT", pFrame, "BOTTOMRIGHT", 0, 0)
+                        previewFrame._previewTex:ClearAllPoints()
+                        previewFrame._previewTex:SetPoint("TOPLEFT", previewFrame, "TOPLEFT", 0, 0)
+                        previewFrame._previewTex:SetPoint("BOTTOMRIGHT", previewFrame, "BOTTOMRIGHT", 0, 0)
                     end
                 end
-                if pFrame._previewModel then
-                    pFrame._previewModel:ClearAllPoints()
-                    pFrame._previewModel:SetPoint("TOPLEFT", pFrame, "TOPLEFT", 0, 0)
-                    pFrame._previewModel:SetPoint("BOTTOMRIGHT", pFrame, "BOTTOMRIGHT", 0, 0)
+                if previewFrame._previewModel then
+                    previewFrame._previewModel:ClearAllPoints()
+                    previewFrame._previewModel:SetPoint("TOPLEFT", previewFrame, "TOPLEFT", 0, 0)
+                    previewFrame._previewModel:SetPoint("BOTTOMRIGHT", previewFrame, "BOTTOMRIGHT", 0, 0)
                 end
-                mod.UF_PortraitExtras(pFrame, nil)
+                mod.UF_PortraitExtras(previewFrame, nil)
                 return
             end
-            if pFrame._previewBg then
-                pFrame._previewBg:Show()
+            if previewFrame._previewBg then
+                previewFrame._previewBg:Show()
             end
             local maskPath = PORTRAIT_MASKS_P[shape]
             if maskPath then
-                if not pFrame._shapeMask then
-                    pFrame._shapeMask = pFrame:CreateMaskTexture()
-                    pFrame._shapeMask:SetAllPoints(pFrame)
+                if not previewFrame._shapeMask then
+                    previewFrame._shapeMask = previewFrame:CreateMaskTexture()
+                    previewFrame._shapeMask:SetAllPoints(previewFrame)
                 end
-                pFrame._shapeMask:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-                pFrame._shapeMask:Show()
+                previewFrame._shapeMask:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+                previewFrame._shapeMask:Show()
                 for _, texture in ipairs(texList) do
-                    texture:AddMaskTexture(pFrame._shapeMask)
+                    texture:AddMaskTexture(previewFrame._shapeMask)
                 end
             end
 
             -- Hide old square border textures if they exist on this frame
-            if pFrame._sqBorderTexs then
-                for _, t in ipairs(pFrame._sqBorderTexs) do
+            if previewFrame._sqBorderTexs then
+                for _, t in ipairs(previewFrame._sqBorderTexs) do
                     t:Hide()
                 end
             end
 
             -- === TGA BORDER OVERLAY ===
-            if not pFrame._shapeBorderTex then
-                pFrame._shapeBorderTex = pFrame:CreateTexture(nil, "OVERLAY")
-                if pFrame._shapeBorderTex.SetSnapToPixelGrid then
-                    pFrame._shapeBorderTex:SetSnapToPixelGrid(false)
-                    pFrame._shapeBorderTex:SetTexelSnappingBias(0)
+            if not previewFrame._shapeBorderTex then
+                previewFrame._shapeBorderTex = previewFrame:CreateTexture(nil, "OVERLAY")
+                if previewFrame._shapeBorderTex.SetSnapToPixelGrid then
+                    previewFrame._shapeBorderTex:SetSnapToPixelGrid(false)
+                    previewFrame._shapeBorderTex:SetTexelSnappingBias(0)
                 end
             end
             -- Pixels Circle (ns.UF_UNMASKED_RING) keeps its ring outside the mask,
             -- inset from the frame edge, exactly as on the live portrait.
             local ringInset = mod.UF_UNMASKED_RING[shape]
             local off = bExp - (ringInset or 0)
-            pFrame._shapeBorderTex:ClearAllPoints()
-            Pix.Point(pFrame._shapeBorderTex, "TOPLEFT", pFrame, "TOPLEFT", -off, off)
-            Pix.Point(pFrame._shapeBorderTex, "BOTTOMRIGHT", pFrame, "BOTTOMRIGHT", off, -off)
+            previewFrame._shapeBorderTex:ClearAllPoints()
+            Pix.Point(previewFrame._shapeBorderTex, "TOPLEFT", previewFrame, "TOPLEFT", -off, off)
+            Pix.Point(previewFrame._shapeBorderTex, "BOTTOMRIGHT", previewFrame, "BOTTOMRIGHT", off, -off)
             -- Add border to mask so the mask clips its inner edge
-            if pFrame._shapeMask then
-                pcall(pFrame._shapeBorderTex.RemoveMaskTexture, pFrame._shapeBorderTex, pFrame._shapeMask)
+            if previewFrame._shapeMask then
+                pcall(previewFrame._shapeBorderTex.RemoveMaskTexture, previewFrame._shapeBorderTex, previewFrame._shapeMask)
                 if not ringInset then
-                    pFrame._shapeBorderTex:AddMaskTexture(pFrame._shapeMask)
+                    previewFrame._shapeBorderTex:AddMaskTexture(previewFrame._shapeMask)
                 end
             end
             if showBorder then
                 local bp = PORTRAIT_BORDERS_P[shape]
                 if bp then
-                    pFrame._shapeBorderTex:SetTexture(bp)
-                    pFrame._shapeBorderTex:SetVertexColor(bR, bG, bB, borderOpacity)
-                    pFrame._shapeBorderTex:Show()
+                    previewFrame._shapeBorderTex:SetTexture(bp)
+                    previewFrame._shapeBorderTex:SetVertexColor(bR, bG, bB, borderOpacity)
+                    previewFrame._shapeBorderTex:Show()
                 else
-                    pFrame._shapeBorderTex:Hide()
+                    previewFrame._shapeBorderTex:Hide()
                 end
             else
-                pFrame._shapeBorderTex:Hide()
+                previewFrame._shapeBorderTex:Hide()
             end
 
             -- Scale portrait content so its visible area fills the mask opening;
             -- border size does not affect content.
             local insetPx = MASK_INSETS[shape] or 17
-            local bw = pFrame:GetWidth()
-            local bh2 = pFrame:GetHeight()
+            local bw = previewFrame:GetWidth()
+            local bh2 = previewFrame:GetHeight()
             if bw < 1 then
                 bw = 46
             end
@@ -2347,28 +2347,28 @@ CludesUI.AtLogin(function()
             local oR = (expand * bw)
             local oT = (expand * bh2)
             local oB = -(expand * bh2)
-            if pFrame._previewTex then
+            if previewFrame._previewTex then
                 if classInset then
                     mod.UF_SetClassPortraitPoints(
-                        pFrame._previewTex,
-                        pFrame,
+                        previewFrame._previewTex,
+                        previewFrame,
                         s.portraitClassZoom,
                         classInset + oL,
                         classInset - oT
                     )
                 else
-                    pFrame._previewTex:ClearAllPoints()
-                    Pix.Point(pFrame._previewTex, "TOPLEFT", pFrame, "TOPLEFT", oL, oT)
-                    Pix.Point(pFrame._previewTex, "BOTTOMRIGHT", pFrame, "BOTTOMRIGHT", oR, oB)
+                    previewFrame._previewTex:ClearAllPoints()
+                    Pix.Point(previewFrame._previewTex, "TOPLEFT", previewFrame, "TOPLEFT", oL, oT)
+                    Pix.Point(previewFrame._previewTex, "BOTTOMRIGHT", previewFrame, "BOTTOMRIGHT", oR, oB)
                 end
             end
             -- 3D Portrait Below Border: the model inside the ring and under it,
             -- as on the live portrait; off, it fills the frame over the ring.
             mod.UF_PortraitShapeModel(
-                pFrame,
-                pFrame._shapeBorderTex,
-                pFrame._previewModel,
-                pFrame._previewMode == "3d" and s.portrait3dBelowBorder == true,
+                previewFrame,
+                previewFrame._shapeBorderTex,
+                previewFrame._previewModel,
+                previewFrame._previewMode == "3d" and s.portrait3dBelowBorder == true,
                 shape,
                 rawBorderSize
             )
@@ -2378,9 +2378,9 @@ CludesUI.AtLogin(function()
             -- so the detached preview stops clipping (every layout branch of
             -- Update sets its clip again first; the Portrait Dragon lifts it on
             -- its own after this).
-            mod.UF_PortraitExtras(pFrame, s, shape)
-            if ringInset or (pFrame._outerRing and pFrame._outerRing:IsShown()) then
-                pFrame:SetClipsChildren(false)
+            mod.UF_PortraitExtras(previewFrame, s, shape)
+            if ringInset or (previewFrame._outerRing and previewFrame._outerRing:IsShown()) then
+                previewFrame:SetClipsChildren(false)
             end
         end
 
@@ -2647,7 +2647,7 @@ CludesUI.AtLogin(function()
         -- (module table), resolved for this unit + Portrait Side exactly as
         -- ns.UF_BlizzResolve does it for the live frame. nil while the style is
         -- not active this session, and the preview then mocks the CUI look.
-        local function ResolveBlizzPreview(unitKey, s)
+        local function ResolveBlizzPreview(unitName, s)
             local BS = CludesUI.BlizzStyle
             if not (BS and BS.Get and BS.Get("unitframes")) then
                 return nil
@@ -2657,11 +2657,11 @@ CludesUI.AtLogin(function()
                 return nil
             end
             local kind
-            if unitKey == "player" then
+            if unitName == "player" then
                 kind = "player"
-            elseif unitKey == "target" or unitKey == "focus" or unitKey == "boss" then
+            elseif unitName == "target" or unitName == "focus" or unitName == "boss" then
                 kind = "target"
-            elseif unitKey == "pet" and UFB.pet then
+            elseif unitName == "pet" and UFB.pet then
                 kind = "pet"
             else
                 kind = "mini"
@@ -2908,10 +2908,10 @@ CludesUI.AtLogin(function()
         -- Show" / Enable), so "Hidden" is not duplicated; the stored style survives
         -- hiding and resumes on re-enable. opts: tooltip, disabled/disabledTooltip
         -- (ToT/FoT parent gating), onBeforeSet(v) (boss stops its live preview).
-        local function AttachFrameSourceCog(region, unitKey, options)
+        local function AttachFrameSourceCog(region, unitName, options)
             options = options or {}
             local function StoredStyle()
-                local fontStr = saved.profile.frameSource and saved.profile.frameSource[unitKey]
+                local fontStr = saved.profile.frameSource and saved.profile.frameSource[unitName]
                 return fontStr == "blizzard" and "blizzard" or "cui"
             end
             local fsShow -- forward decl: set() below closes the popup through it
@@ -2934,7 +2934,7 @@ CludesUI.AtLogin(function()
                             options.onBeforeSet(value)
                         end
                         -- Also re-enables a hidden frame (see ns.SetUnitFrameSource).
-                        mod.SetUnitFrameSource(unitKey, value)
+                        mod.SetUnitFrameSource(unitName, value)
                         if mod.UpdateFrameVisibility then
                             mod.UpdateFrameVisibility()
                         end
@@ -2987,42 +2987,42 @@ CludesUI.AtLogin(function()
         -- the full-group rule, so cast bar settings never cross to/from player.
         local MINI_GROUP_ORDER = { "targettarget", "focustarget", "pet" }
         local TARGET_FOCUS_PAIR = { "target", "focus" }
-        local function IsGroupSharedKey(key, groupUnits)
+        local function IsGroupSharedKey(settingKey, unitGroup)
             -- Visibility mode stays with the frame: it pairs with enabledFrames (never
             -- copied) and copying one alone desyncs them. Underscore keys are runtime
             -- memos (e.g. _preHiddenBarVisibility), not settings.
-            if type(key) ~= "string" then
+            if type(settingKey) ~= "string" then
                 return false
             end
             -- visibilityMatch only modifies barVisibility's selection, so it has to stay
             -- with the frame for the same reason: copying the modifier to a frame that kept
             -- its own mode changes how that mode reads.
-            if key == "barVisibility" or key == "visibilityMatch" or key:sub(1, 1) == "_" then
+            if settingKey == "barVisibility" or settingKey == "visibilityMatch" or settingKey:sub(1, 1) == "_" then
                 return false
             end
             -- WoW Forever: the pet's power bar position has no counterpart on the
             -- other small frames (theirs never shows), so it stays with the pet.
-            if key == "powerPosition" and mod.UF_PetHasPower and groupUnits == MINI_GROUP_ORDER then
+            if settingKey == "powerPosition" and mod.UF_PetHasPower and unitGroup == MINI_GROUP_ORDER then
                 return false
             end
             -- The pet's buffs and debuffs stay with the pet: the other small frames
             -- have none, so a copy either way would only clear or plant aura keys.
             if
-                groupUnits == MINI_GROUP_ORDER
+                unitGroup == MINI_GROUP_ORDER
                 and (
-                    key:find("^buff")
-                    or key:find("^debuff")
-                    or key == "showBuffs"
-                    or key == "maxBuffs"
-                    or key == "maxDebuffs"
-                    or key == "auraSource"
+                    settingKey:find("^buff")
+                    or settingKey:find("^debuff")
+                    or settingKey == "showBuffs"
+                    or settingKey == "maxBuffs"
+                    or settingKey == "maxDebuffs"
+                    or settingKey == "auraSource"
                 )
             then
                 return false
             end
-            local sup = UNIT_SUPPORTS[key]
+            local sup = UNIT_SUPPORTS[settingKey]
             if sup then
-                for _, u in ipairs(groupUnits) do
+                for _, u in ipairs(unitGroup) do
                     if not sup[u] then
                         return false
                     end
@@ -3030,9 +3030,9 @@ CludesUI.AtLogin(function()
             end
             local defs = saved._profileDefaults or {}
             local inAny, inAll = false, true
-            for _, u in ipairs(groupUnits) do
+            for _, u in ipairs(unitGroup) do
                 local d = defs[u]
-                if d and d[key] ~= nil then
+                if d and d[settingKey] ~= nil then
                     inAny = true
                 else
                     inAll = false
@@ -3043,12 +3043,12 @@ CludesUI.AtLogin(function()
             end
             return true
         end
-        local function CopyAllGroupSettings(srcUnit, dstUnit, groupUnits)
+        local function CopyAllGroupSettings(srcUnit, dstUnit, unitGroup)
             if
                 (srcUnit == "target" or srcUnit == "focus")
                 and (dstUnit == "target" or dstUnit == "focus")
             then
-                groupUnits = TARGET_FOCUS_PAIR
+                unitGroup = TARGET_FOCUS_PAIR
             end
             local source = UNIT_DB_MAP[srcUnit]()
             local dst = UNIT_DB_MAP[dstUnit]()
@@ -3065,7 +3065,7 @@ CludesUI.AtLogin(function()
                 keyList[keyName] = true
             end
             for keyName in pairs(keyList) do
-                if IsGroupSharedKey(keyName, groupUnits) then
+                if IsGroupSharedKey(keyName, unitGroup) then
                     local value = source[keyName]
                     if type(value) == "table" then
                         dst[keyName] = CludesUI.Lite.DeepCopy(value)
@@ -3084,14 +3084,14 @@ CludesUI.AtLogin(function()
         -- player). No choice (lookSource nil) keeps following that order:
         -- re-picking the frame shown stores nothing, and Focus, which behaves
         -- exactly as no choice, is stored as none.
-        local function BuildLookSourcePair(row, unitKey, ddW)
+        local function BuildLookSourcePair(line, unitName, ddW)
             local function Shown()
-                return mod.UF_MiniDonorKey(unitKey)
+                return mod.UF_MiniDonorKey(unitName)
             end
             local dropdownBtn = CludesUI.BuildDropdownControl(
-                row,
+                line,
                 ddW,
-                row:GetFrameLevel() + 2,
+                line:GetFrameLevel() + 2,
                 { target = "Target", focus = "Focus", player = "Player" },
                 { "target", "focus", "player" },
                 Shown,
@@ -3099,7 +3099,7 @@ CludesUI.AtLogin(function()
                     if value == Shown() then
                         return
                     end
-                    saved.profile[unitKey].lookSource = (value ~= "focus") and value or nil
+                    saved.profile[unitName].lookSource = (value ~= "focus") and value or nil
                     ReloadAndUpdate()
                     CludesUI:RefreshPage(true)
                 end
@@ -3110,7 +3110,7 @@ CludesUI.AtLogin(function()
                 dropdownBtn._refreshLabel()
             end)
 
-            local labelText = CludesUI.MakeFont(row, 14, nil, 1, 1, 1)
+            local labelText = CludesUI.MakeFont(line, 14, nil, 1, 1, 1)
             labelText:SetText(CludesUI.L("Copy Look From"))
             labelText:SetTextColor(1, 1, 1, 0.6)
             return labelText, dropdownBtn
@@ -3130,31 +3130,31 @@ CludesUI.AtLogin(function()
         --
         -- withLook (the mini frames) puts the frame's Copy Look From pair beside it,
         -- the two pairs centred as one line.
-        local function BuildApplyAllRow(hostFrame, cursorY, groupUnits, curUnit, withLook)
+        local function BuildApplyAllRow(hostFrame, cursorY, unitGroup, curUnit, withLook)
             local ddValues = { [""] = "Choose Frame..." }
             local ddOrder = {}
-            for _, key in ipairs(groupUnits) do
-                if key ~= curUnit then
-                    ddValues[key] = SHORT_LABELS[key] or key
-                    ddOrder[#ddOrder + 1] = key
+            for _, settingKey in ipairs(unitGroup) do
+                if settingKey ~= curUnit then
+                    ddValues[settingKey] = SHORT_LABELS[settingKey] or settingKey
+                    ddOrder[#ddOrder + 1] = settingKey
                 end
             end
 
             local ROW_H = 50
             local contentPad = CludesUI.CONTENT_PAD or 45
-            local row = CreateFrame("Frame", nil, hostFrame)
-            Pix.Size(row, hostFrame:GetWidth() - contentPad * 2, ROW_H)
-            Pix.Point(row, "TOPLEFT", hostFrame, "TOPLEFT", contentPad, cursorY)
+            local line = CreateFrame("Frame", nil, hostFrame)
+            Pix.Size(line, hostFrame:GetWidth() - contentPad * 2, ROW_H)
+            Pix.Point(line, "TOPLEFT", hostFrame, "TOPLEFT", contentPad, cursorY)
 
-            local labelText = CludesUI.MakeFont(row, 14, nil, 1, 1, 1)
+            local labelText = CludesUI.MakeFont(line, 14, nil, 1, 1, 1)
             labelText:SetText(CludesUI.L("Apply All Settings From"))
             labelText:SetTextColor(1, 1, 1, 0.6)
 
             local DD_W, GAP, PAIR_GAP = 180, 12, 40
             local dropdownBtn = CludesUI.BuildDropdownControl(
-                row,
+                line,
                 DD_W,
-                row:GetFrameLevel() + 2,
+                line:GetFrameLevel() + 2,
                 ddValues,
                 ddOrder,
                 function()
@@ -3188,7 +3188,7 @@ CludesUI.AtLogin(function()
                             if CludesUIDB then
                                 CludesUIDB.ufApplyFromAck = true
                             end
-                            CopyAllGroupSettings(srcUnit, curUnit, groupUnits)
+                            CopyAllGroupSettings(srcUnit, curUnit, unitGroup)
                         end,
                     })
                 end
@@ -3202,63 +3202,63 @@ CludesUI.AtLogin(function()
             local totalW = labelText:GetStringWidth() + GAP + DD_W
             local lookLabel, lookDD
             if withLook then
-                lookLabel, lookDD = BuildLookSourcePair(row, curUnit, DD_W)
+                lookLabel, lookDD = BuildLookSourcePair(line, curUnit, DD_W)
                 totalW = totalW + PAIR_GAP + lookLabel:GetStringWidth() + GAP + DD_W
             end
-            labelText:SetPoint("LEFT", row, "CENTER", -totalW / 2, 0)
+            labelText:SetPoint("LEFT", line, "CENTER", -totalW / 2, 0)
             dropdownBtn:SetPoint("LEFT", labelText, "RIGHT", GAP, 0)
             if lookLabel then
                 lookLabel:SetPoint("LEFT", dropdownBtn, "RIGHT", PAIR_GAP, 0)
                 lookDD:SetPoint("LEFT", lookLabel, "RIGHT", GAP, 0)
             end
 
-            return row, ROW_H
+            return line, ROW_H
         end
 
         local function BuildSharedSettings(hostFrame, cursorY)
             local W = CludesUI.Widgets
             local _, height
-            local row
+            local line
 
             ---------------------------------------------------------------
             --  Unified Get / Set / DB abstraction
             ---------------------------------------------------------------
-            local function SGet(key)
-                return UNIT_DB_MAP[optionState.selectedUnit]()[key]
+            local function SGet(settingKey)
+                return UNIT_DB_MAP[optionState.selectedUnit]()[settingKey]
             end
-            local function SSet(key, val)
-                UNIT_DB_MAP[optionState.selectedUnit]()[key] = val
+            local function SSet(settingKey, val)
+                UNIT_DB_MAP[optionState.selectedUnit]()[settingKey] = val
                 ReloadAndUpdate()
             end
             local function SDB()
                 return UNIT_DB_MAP[optionState.selectedUnit]()
             end
-            local function SVal(key, default)
-                local value = UNIT_DB_MAP[optionState.selectedUnit]()[key]
+            local function SVal(settingKey, default)
+                local value = UNIT_DB_MAP[optionState.selectedUnit]()[settingKey]
                 if value ~= nil then
                     return value
                 end
                 return default
             end
             -- Set that also writes to the current unit (for UNIT_SUPPORTS keys)
-            local function SSetSupported(key, val)
-                UNIT_DB_MAP[optionState.selectedUnit]()[key] = val
+            local function SSetSupported(settingKey, val)
+                UNIT_DB_MAP[optionState.selectedUnit]()[settingKey] = val
                 ReloadAndUpdate()
                 UpdatePreview()
             end
-            local function SGetSupported(key)
-                return UNIT_DB_MAP[optionState.selectedUnit]()[key]
+            local function SGetSupported(settingKey)
+                return UNIT_DB_MAP[optionState.selectedUnit]()[settingKey]
             end
-            local function SValSupported(key, default)
-                local value = UNIT_DB_MAP[optionState.selectedUnit]()[key]
+            local function SValSupported(settingKey, default)
+                local value = UNIT_DB_MAP[optionState.selectedUnit]()[settingKey]
                 if value == nil then
                     return default
                 end
                 return value
             end
             -- Check if current unit supports a setting
-            local function SVisible(key)
-                local sup = UNIT_SUPPORTS[key]
+            local function SVisible(settingKey)
+                local sup = UNIT_SUPPORTS[settingKey]
                 if not sup then
                     return true
                 end
@@ -3266,8 +3266,8 @@ CludesUI.AtLogin(function()
             end
             -- Dim a row region and add a tooltip when the current unit doesn't support
             -- the key; unsupportedTip (optional) shows over the dimmed row.
-            local function SApplySupport(regionFrame, key, unsupportedTip)
-                local visible = SVisible(key)
+            local function SApplySupport(regionFrame, settingKey, unsupportedTip)
+                local visible = SVisible(settingKey)
                 if not visible then
                     regionFrame:SetAlpha(0.35)
                     if regionFrame._control and regionFrame._control.Disable then
@@ -3305,7 +3305,7 @@ CludesUI.AtLogin(function()
 
             hostFrame._showRowDivider = true
 
-            row, height = BuildApplyAllRow(hostFrame, cursorY, GROUP_UNIT_ORDER, optionState.selectedUnit)
+            line, height = BuildApplyAllRow(hostFrame, cursorY, GROUP_UNIT_ORDER, optionState.selectedUnit)
             cursorY = cursorY - height
 
             -- The sections live in UnitFrames_Options\Shared*_Options.lua and read
@@ -3437,7 +3437,7 @@ CludesUI.AtLogin(function()
         local _displayHeaderBuilder
         local displayHeaderFixedH = 0
 
-        local function BuildFrameDisplayPage(pageName, hostFrame, yOffset)
+        local function BuildFrameDisplayPage(pageTitle, hostFrame, yOffset)
             -- Consume any pending unit selection from Element Options navigation
             if CludesUI._consumePendingUnitSelect then
                 CludesUI._consumePendingUnitSelect()
@@ -3454,14 +3454,14 @@ CludesUI.AtLogin(function()
             local cursorY = yOffset
             local _, height
 
-            activePreview = nil
+            livePreview = nil
 
             -------------------------------------------------------------------
             --  CONTENT HEADER  (dropdown + preview)
             -------------------------------------------------------------------
             _displayHeaderBuilder = function(heading, hdrW)
                 local DD_H = 34
-                local fy = -20
+                local rowY = -20
 
                 -- Centered dropdown (matches Action Bars Single Bar Edit)
                 local ddW = 350
@@ -3491,18 +3491,18 @@ CludesUI.AtLogin(function()
                         C_Timer.After(0, UpdatePreview)
                     end
                 )
-                Pix.Point(dropdownBtn, "TOP", heading, "TOP", 0, fy)
+                Pix.Point(dropdownBtn, "TOP", heading, "TOP", 0, rowY)
                 dropdownBtn:SetHeight(DD_H)
-                fy = fy - DD_H - 20
+                rowY = rowY - DD_H - 20
 
                 local side = unitSide[optionState.selectedUnit] or "left"
-                local preview = mod.UFO_BuildUnitPreview(heading, optionState.selectedUnit, side)
-                activePreview = preview
-                fy = SeatUnitPreview(preview, heading, fy)
+                local previewRef = mod.UFO_BuildUnitPreview(heading, optionState.selectedUnit, side)
+                livePreview = previewRef
+                rowY = SeatUnitPreview(previewRef, heading, rowY)
 
                 displayHeaderFixedH = 20 + DD_H + 20 + 20
-                if preview then
-                    preview._headerFixedH = displayHeaderFixedH
+                if previewRef then
+                    previewRef._headerFixedH = displayHeaderFixedH
                 end
 
                 -- Hint text
@@ -3519,13 +3519,13 @@ CludesUI.AtLogin(function()
                         -- region pool (Pool.Keep), so no later build hands it out
                         -- for another text; it is still hidden at its host's reset.
                         optionState._ufPreviewHintFS_display =
-                            PoolKeep(CludesUI.MakeFont(preview or heading, 11, nil, 1, 1, 1))
+                            PoolKeep(CludesUI.MakeFont(previewRef or heading, 11, nil, 1, 1, 1))
                         optionState._ufPreviewHintFS_display:SetAlpha(0.45)
                         optionState._ufPreviewHintFS_display:SetText(
                             CludesUI.L("Click elements to scroll to and highlight their options")
                         )
                     end
-                    optionState._ufPreviewHintFS_display:SetParent(preview or heading)
+                    optionState._ufPreviewHintFS_display:SetParent(previewRef or heading)
                     optionState._ufPreviewHintFS_display:ClearAllPoints()
                     optionState._ufPreviewHintFS_display:SetPoint("BOTTOM", heading, "BOTTOM", 0, 17)
                     optionState._ufPreviewHintFS_display:SetAlpha(0.45)
@@ -3535,7 +3535,7 @@ CludesUI.AtLogin(function()
                     optionState._ufPreviewHintFS_display:Hide()
                 end
 
-                _displayHeaderBaseH = math.abs(fy)
+                _displayHeaderBaseH = math.abs(rowY)
                 return _displayHeaderBaseH + hintH
             end
             CludesUI:SetContentHeader(_displayHeaderBuilder)
@@ -3572,10 +3572,10 @@ CludesUI.AtLogin(function()
             --  CLICK NAVIGATION
             -------------------------------------------------------------------
             local PlaySettingGlow = CludesUI.MakeSettingGlow({ color = CludesUI.CLUDES_GREEN })
-            local function NavigateToSetting(key)
+            local function NavigateToSetting(settingKey)
                 mod._UFNavigateToSetting(
                     hostFrame._sharedClickTargets or hostFrame._ufClickTargets,
-                    key,
+                    settingKey,
                     PlaySettingGlow,
                     true
                 )
@@ -3596,151 +3596,151 @@ CludesUI.AtLogin(function()
             -- Create hit overlays on preview elements. Never from the global search's
             -- hidden prebuild: the preview is live header content, not this hidden job's.
             local textOverlays = {}
-            if activePreview and not CludesUI._prebuilding then
-                local preview = activePreview
-                local baseLevel = (preview._health and preview._health:GetFrameLevel() or 20) + 15
+            if livePreview and not CludesUI._prebuilding then
+                local previewRef = livePreview
+                local baseLevel = (previewRef._health and previewRef._health:GetFrameLevel() or 20) + 15
                 local textLevel = baseLevel + 10
-                if preview._health then
-                    CreateHitOverlay(preview._health, "healthBar", false, baseLevel)
+                if previewRef._health then
+                    CreateHitOverlay(previewRef._health, "healthBar", false, baseLevel)
                 end
                 -- Absorb segments: hit area follows each absorb bar's FILL texture (the
                 -- bar frame spans the whole health width), above the health overlay so it
                 -- routes to Absorbs. No :IsShown() guard needed: as a fill-anchored child it
                 -- auto-hides/shows with the bar; both bars get an overlay so whichever the heal-absorb eyeball shows stays click-navigable.
-                if preview._absorbBar then
-                    local absFill = preview._absorbBar:GetStatusBarTexture()
+                if previewRef._absorbBar then
+                    local absFill = previewRef._absorbBar:GetStatusBarTexture()
                     if absFill then
                         CreateHitOverlay(
                             absFill,
                             "absorbs",
                             false,
                             baseLevel + 5,
-                            { parent = preview._health, showWith = preview._absorbBar }
+                            { parent = previewRef._health, showWith = previewRef._absorbBar }
                         )
                     end
                 end
-                if preview._healAbsorbBar then
-                    local haFill = preview._healAbsorbBar:GetStatusBarTexture()
+                if previewRef._healAbsorbBar then
+                    local haFill = previewRef._healAbsorbBar:GetStatusBarTexture()
                     if haFill then
                         CreateHitOverlay(
                             haFill,
                             "healAbsorb",
                             false,
                             baseLevel + 5,
-                            { parent = preview._health, showWith = preview._healAbsorbBar }
+                            { parent = previewRef._health, showWith = previewRef._healAbsorbBar }
                         )
                     end
                 end
-                if preview._power then
-                    CreateHitOverlay(preview._power, "powerBar", false, baseLevel)
+                if previewRef._power then
+                    CreateHitOverlay(previewRef._power, "powerBar", false, baseLevel)
                 end
-                if preview._portraitFrame and preview._portraitFrame:IsShown() then
-                    CreateHitOverlay(preview._portraitFrame, "portrait", false, baseLevel)
+                if previewRef._portraitFrame and previewRef._portraitFrame:IsShown() then
+                    CreateHitOverlay(previewRef._portraitFrame, "portrait", false, baseLevel)
                 end
-                if preview._castbar then
-                    local castLevel = preview._castbar:GetFrameLevel() + 20
-                    CreateHitOverlay(preview._castbar, "castBar", false, castLevel)
-                    if preview._castIconFrame then
-                        CreateHitOverlay(preview._castIconFrame, "castIcon", false, castLevel)
+                if previewRef._castbar then
+                    local castLevel = previewRef._castbar:GetFrameLevel() + 20
+                    CreateHitOverlay(previewRef._castbar, "castBar", false, castLevel)
+                    if previewRef._castIconFrame then
+                        CreateHitOverlay(previewRef._castIconFrame, "castIcon", false, castLevel)
                     end
-                    if preview._castNameFS then
+                    if previewRef._castNameFS then
                         textOverlays[#textOverlays + 1] =
-                            CreateHitOverlay(preview._castNameFS, "castName", true, castLevel + 5)
+                            CreateHitOverlay(previewRef._castNameFS, "castName", true, castLevel + 5)
                     end
-                    if preview._castTimeFS and preview._castTimeFS:IsShown() then
+                    if previewRef._castTimeFS and previewRef._castTimeFS:IsShown() then
                         textOverlays[#textOverlays + 1] =
-                            CreateHitOverlay(preview._castTimeFS, "castTime", true, castLevel + 5)
+                            CreateHitOverlay(previewRef._castTimeFS, "castTime", true, castLevel + 5)
                     end
-                    if preview._castTargetFS and preview._castTargetFS:IsShown() then
+                    if previewRef._castTargetFS and previewRef._castTargetFS:IsShown() then
                         textOverlays[#textOverlays + 1] =
-                            CreateHitOverlay(preview._castTargetFS, "castTarget", true, castLevel + 5)
+                            CreateHitOverlay(previewRef._castTargetFS, "castTarget", true, castLevel + 5)
                     end
                 end
-                if preview._nameFS and preview._nameFS:IsShown() then
+                if previewRef._nameFS and previewRef._nameFS:IsShown() then
                     textOverlays[#textOverlays + 1] =
-                        CreateHitOverlay(preview._nameFS, "nameText", true, textLevel)
+                        CreateHitOverlay(previewRef._nameFS, "nameText", true, textLevel)
                 end
-                if preview._hpFS and preview._hpFS:IsShown() then
+                if previewRef._hpFS and previewRef._hpFS:IsShown() then
                     textOverlays[#textOverlays + 1] =
-                        CreateHitOverlay(preview._hpFS, "healthText", true, textLevel)
+                        CreateHitOverlay(previewRef._hpFS, "healthText", true, textLevel)
                 end
-                if preview._centerFS and preview._centerFS:IsShown() then
+                if previewRef._centerFS and previewRef._centerFS:IsShown() then
                     textOverlays[#textOverlays + 1] =
-                        CreateHitOverlay(preview._centerFS, "centerText", true, textLevel)
+                        CreateHitOverlay(previewRef._centerFS, "centerText", true, textLevel)
                 end
-                if preview._extraFS and preview._extraFS:IsShown() then
+                if previewRef._extraFS and previewRef._extraFS:IsShown() then
                     textOverlays[#textOverlays + 1] =
-                        CreateHitOverlay(preview._extraFS, "extraText", true, textLevel)
+                        CreateHitOverlay(previewRef._extraFS, "extraText", true, textLevel)
                 end
                 -- Blizzard Style level number: built whenever the art has a level
                 -- circle and shown with the text (the preview toggles it).
-                if preview._levelFS then
-                    local lvOv = CreateHitOverlay(preview._levelFS, "levelText", true, textLevel)
-                    preview._levelOv = lvOv
-                    if not preview._levelFS:IsShown() then
+                if previewRef._levelFS then
+                    local lvOv = CreateHitOverlay(previewRef._levelFS, "levelText", true, textLevel)
+                    previewRef._levelOv = lvOv
+                    if not previewRef._levelFS:IsShown() then
                         lvOv:Hide()
                     end
                     textOverlays[#textOverlays + 1] = lvOv
                 end
-                if preview._ppFS and preview._ppFS:IsShown() then
+                if previewRef._ppFS and previewRef._ppFS:IsShown() then
                     textOverlays[#textOverlays + 1] =
-                        CreateHitOverlay(preview._ppFS, "powerBarText", true, textLevel)
+                        CreateHitOverlay(previewRef._ppFS, "powerBarText", true, textLevel)
                 end
                 -- Overlay EVERY buff/debuff frame, not just currently-shown ones: each
                 -- overlay is a SetAllPoints child of its icon, so it hides/shows and
                 -- re-anchors with it. A prior ":IsShown()" guard tied clickability to
                 -- build-time visibility, so icons shown later (header is cached, not rebuilt) had no overlay.
-                OverlayEachIcon(CreateHitOverlay, preview._buffIcons, "buffIcon", baseLevel)
-                OverlayEachIcon(CreateHitOverlay, preview._debuffIcons, "debuffIcon", baseLevel)
-                if preview._btbFrame then
-                    local btbLevel = preview._btbFrame:GetFrameLevel() + 20
-                    CreateHitOverlay(preview._btbFrame, "btbBar", false, btbLevel)
+                OverlayEachIcon(CreateHitOverlay, previewRef._buffIcons, "buffIcon", baseLevel)
+                OverlayEachIcon(CreateHitOverlay, previewRef._debuffIcons, "debuffIcon", baseLevel)
+                if previewRef._btbFrame then
+                    local btbLevel = previewRef._btbFrame:GetFrameLevel() + 20
+                    CreateHitOverlay(previewRef._btbFrame, "btbBar", false, btbLevel)
                     local btbTextLevel = btbLevel + 5
-                    if preview._btbLeftFS then
+                    if previewRef._btbLeftFS then
                         textOverlays[#textOverlays + 1] =
-                            CreateHitOverlay(preview._btbLeftFS, "btbLeftText", true, btbTextLevel)
+                            CreateHitOverlay(previewRef._btbLeftFS, "btbLeftText", true, btbTextLevel)
                     end
-                    if preview._btbRightFS then
+                    if previewRef._btbRightFS then
                         textOverlays[#textOverlays + 1] =
-                            CreateHitOverlay(preview._btbRightFS, "btbRightText", true, btbTextLevel)
+                            CreateHitOverlay(previewRef._btbRightFS, "btbRightText", true, btbTextLevel)
                     end
-                    if preview._btbCenterFS then
+                    if previewRef._btbCenterFS then
                         textOverlays[#textOverlays + 1] =
-                            CreateHitOverlay(preview._btbCenterFS, "btbCenterText", true, btbTextLevel)
+                            CreateHitOverlay(previewRef._btbCenterFS, "btbCenterText", true, btbTextLevel)
                     end
-                    if preview._btbClassIcon then
+                    if previewRef._btbClassIcon then
                         local ciOv =
-                            CreateHitOverlay(preview._btbClassIcon, "btbClassIcon", false, btbTextLevel + 2)
-                        preview._btbClassIconOv = ciOv
-                        if not preview._btbClassIcon:IsShown() then
+                            CreateHitOverlay(previewRef._btbClassIcon, "btbClassIcon", false, btbTextLevel + 2)
+                        previewRef._btbClassIconOv = ciOv
+                        if not previewRef._btbClassIcon:IsShown() then
                             ciOv:Hide()
                         end
                     end
                 end
-                if preview._cpPipContainer and preview._cpPipContainer:IsShown() then
-                    preview._cpPipOv = CreateHitOverlay(preview._cpPipContainer, "classResource", false, baseLevel + 10)
+                if previewRef._cpPipContainer and previewRef._cpPipContainer:IsShown() then
+                    previewRef._cpPipOv = CreateHitOverlay(previewRef._cpPipContainer, "classResource", false, baseLevel + 10)
                 end
-                if preview._combatIndicator and preview._combatIndicator:IsShown() then
-                    CreateHitOverlay(preview._combatIndicator, "combatIndicator", false, baseLevel + 20)
+                if previewRef._combatIndicator and previewRef._combatIndicator:IsShown() then
+                    CreateHitOverlay(previewRef._combatIndicator, "combatIndicator", false, baseLevel + 20)
                 end
                 -- Indicator badges (eye toggles): overlays made up front, shown and hidden
                 -- with their badge by the preview update, so a badge switched on later is
                 -- clickable straight away.
                 local targets = hostFrame._sharedClickTargets or {}
-                preview._badgeOv = {}
+                previewRef._badgeOv = {}
                 for _, b in ipairs({
-                    { preview._pvRaid, "raidMarker" },
-                    { preview._pvLeader, "leaderIndicator" },
-                    { preview._pvElite, "eliteIndicator" },
-                    { preview._factionIndicator, "factionIndicator" },
+                    { previewRef._pvRaid, "raidMarker" },
+                    { previewRef._pvLeader, "leaderIndicator" },
+                    { previewRef._pvElite, "eliteIndicator" },
+                    { previewRef._factionIndicator, "factionIndicator" },
                 }) do
                     if b[1] and targets[b[2]] then
                         local shade = CreateHitOverlay(b[1], b[2], false, baseLevel + 20)
                         shade:SetShown(b[1]:IsShown())
-                        preview._badgeOv[b[1]] = shade
+                        previewRef._badgeOv[b[1]] = shade
                     end
                 end
-                preview._textOverlays = textOverlays
+                previewRef._textOverlays = textOverlays
             end
 
             return abs(cursorY)
@@ -3749,7 +3749,7 @@ CludesUI.AtLogin(function()
         ---------------------------------------------------------------------------
         --  Mini Frames page  (dropdown selector + mini builders)
         ---------------------------------------------------------------------------
-        local selectedMiniUnit = "targettarget"
+        local pickedMiniUnit = "targettarget"
         local miniUnitLabels = {
             ["targettarget"] = "Target of Target",
             ["focustarget"] = "Focus Target",
@@ -3761,12 +3761,12 @@ CludesUI.AtLogin(function()
         -- Mini Frames page builds (mirrors the Main Frames _setUnitFrameUnit /
         -- _pendingUnitSelect mechanism). Field assignments -- no new locals.
         CludesUI._setMiniUnit = function(unitToken)
-            selectedMiniUnit = unitToken
+            pickedMiniUnit = unitToken
         end
         CludesUI._consumePendingMiniSelect = function()
             local pending = CludesUI._pendingMiniSelect
             if pending then
-                selectedMiniUnit = pending
+                pickedMiniUnit = pending
                 CludesUI._pendingMiniSelect = nil
             end
         end
@@ -3774,7 +3774,7 @@ CludesUI.AtLogin(function()
         local _miniHeaderBuilder
         local miniHeaderFixedH = 0
 
-        local function BuildMiniPage(pageName, hostFrame, yOffset)
+        local function BuildMiniPage(pageTitle, hostFrame, yOffset)
             -- Consume any pending mini selection from Element Options navigation
             if CludesUI._consumePendingMiniSelect then
                 CludesUI._consumePendingMiniSelect()
@@ -3784,20 +3784,20 @@ CludesUI.AtLogin(function()
             -- global-search jump to a unit-specific setting can restore this selection
             -- first via CludesUI._setMiniUnit (see the matching CludesUI._buildingSelector
             -- comment in CUI_CooldownManager_Options.lua for the full reasoning).
-            CludesUI._buildingSelector = { setter = CludesUI._setMiniUnit, key = selectedMiniUnit }
+            CludesUI._buildingSelector = { setter = CludesUI._setMiniUnit, key = pickedMiniUnit }
 
             local W = CludesUI.Widgets
             local cursorY = yOffset
             local _, height
 
-            activePreview = nil
+            livePreview = nil
 
             -------------------------------------------------------------------
             --  CONTENT HEADER  (dropdown + preview)
             -------------------------------------------------------------------
             _miniHeaderBuilder = function(heading, hdrW)
                 local DD_H = 34
-                local fy = -20
+                local rowY = -20
 
                 -- Centered dropdown (matches Action Bars Single Bar Edit)
                 local ddW = 350
@@ -3808,10 +3808,10 @@ CludesUI.AtLogin(function()
                     miniUnitLabels,
                     miniUnitOrder,
                     function()
-                        return selectedMiniUnit
+                        return pickedMiniUnit
                     end,
                     function(value)
-                        selectedMiniUnit = value
+                        pickedMiniUnit = value
                         -- One pass builds the page and its header together.
                         CludesUI:RefreshPage(true)
                         CludesUI.SmoothScrollTo(0)
@@ -3820,20 +3820,20 @@ CludesUI.AtLogin(function()
                         C_Timer.After(0, UpdatePreview)
                     end
                 )
-                Pix.Point(dropdownBtn, "TOP", heading, "TOP", 0, fy)
+                Pix.Point(dropdownBtn, "TOP", heading, "TOP", 0, rowY)
                 dropdownBtn:SetHeight(DD_H)
-                fy = fy - DD_H - 20
+                rowY = rowY - DD_H - 20
 
-                local side = unitSide[selectedMiniUnit] or "left"
-                local preview = mod.UFO_BuildUnitPreview(heading, selectedMiniUnit, side)
-                activePreview = preview
-                fy = SeatUnitPreview(preview, heading, fy)
+                local side = unitSide[pickedMiniUnit] or "left"
+                local previewRef = mod.UFO_BuildUnitPreview(heading, pickedMiniUnit, side)
+                livePreview = previewRef
+                rowY = SeatUnitPreview(previewRef, heading, rowY)
                 miniHeaderFixedH = 20 + DD_H + 20 + 20
-                if preview then
-                    preview._headerFixedH = miniHeaderFixedH
+                if previewRef then
+                    previewRef._headerFixedH = miniHeaderFixedH
                 end
 
-                local _miniHeaderBaseH = math.abs(fy)
+                local _miniHeaderBaseH = math.abs(rowY)
                 return _miniHeaderBaseH
             end
             CludesUI:SetContentHeader(_miniHeaderBuilder)
@@ -3843,7 +3843,7 @@ CludesUI.AtLogin(function()
             -------------------------------------------------------------------
             --  Route to mini builders
             -------------------------------------------------------------------
-            if selectedMiniUnit == "targettarget" then
+            if pickedMiniUnit == "targettarget" then
                 cursorY = -mod.UFO_BuildFoTToTOptions(
                     W,
                     hostFrame,
@@ -3851,10 +3851,10 @@ CludesUI.AtLogin(function()
                     saved.profile.targettarget,
                     "targettarget"
                 )
-            elseif selectedMiniUnit == "focustarget" then
+            elseif pickedMiniUnit == "focustarget" then
                 cursorY =
                     -mod.UFO_BuildFoTToTOptions(W, hostFrame, cursorY, saved.profile.focustarget, "focustarget")
-            elseif selectedMiniUnit == "pet" then
+            elseif pickedMiniUnit == "pet" then
                 cursorY = -mod.UFO_BuildPetOptions(W, hostFrame, cursorY)
             end
 
@@ -3862,8 +3862,8 @@ CludesUI.AtLogin(function()
             --  CLICK NAVIGATION
             -------------------------------------------------------------------
             local PlaySettingGlow = CludesUI.MakeSettingGlow({ color = CludesUI.CLUDES_GREEN })
-            local function NavigateToSetting(key)
-                mod._UFNavigateToSetting(hostFrame._ufClickTargets, key, PlaySettingGlow)
+            local function NavigateToSetting(settingKey)
+                mod._UFNavigateToSetting(hostFrame._ufClickTargets, settingKey, PlaySettingGlow)
             end
             local hitStyle = { container = true }
             local function CreateHitOverlay(element, mappingKey, isText, frameLevelOverride, options)
@@ -3882,55 +3882,55 @@ CludesUI.AtLogin(function()
 
             -- Create hit overlays on preview elements (never from the global search's
             -- hidden prebuild: the preview is live header content)
-            if activePreview and not CludesUI._prebuilding then
-                local preview = activePreview
-                local baseLevel = (preview._health and preview._health:GetFrameLevel() or 20) + 15
+            if livePreview and not CludesUI._prebuilding then
+                local previewRef = livePreview
+                local baseLevel = (previewRef._health and previewRef._health:GetFrameLevel() or 20) + 15
                 local textLevel = baseLevel + 10
-                if preview._health then
+                if previewRef._health then
                     CreateHitOverlay(
-                        preview._health,
+                        previewRef._health,
                         "healthBar",
                         false,
                         baseLevel,
-                        { hlAnchor = preview._border or preview._health }
+                        { hlAnchor = previewRef._border or previewRef._health }
                     )
                 end
                 -- WoW Forever's pet: power bar, power text and happiness icon (the
                 -- other mini previews build none of them).
-                if preview._power then
-                    CreateHitOverlay(preview._power, "powerBar", false, baseLevel)
+                if previewRef._power then
+                    CreateHitOverlay(previewRef._power, "powerBar", false, baseLevel)
                 end
-                if preview._ppFS and preview._ppFS:IsShown() then
-                    CreateHitOverlay(preview._ppFS, "powerBarText", true, textLevel)
+                if previewRef._ppFS and previewRef._ppFS:IsShown() then
+                    CreateHitOverlay(previewRef._ppFS, "powerBarText", true, textLevel)
                 end
-                if preview._happyInd then
-                    CreateHitOverlay(preview._happyInd, "petHappiness", false, baseLevel + 20)
+                if previewRef._happyInd then
+                    CreateHitOverlay(previewRef._happyInd, "petHappiness", false, baseLevel + 20)
                 end
-                if preview._portraitFrame and preview._portraitFrame:IsShown() then
-                    CreateHitOverlay(preview._portraitFrame, "portrait", false, baseLevel)
+                if previewRef._portraitFrame and previewRef._portraitFrame:IsShown() then
+                    CreateHitOverlay(previewRef._portraitFrame, "portrait", false, baseLevel)
                 end
-                if preview._castbar then
-                    local castLevel = preview._castbar:GetFrameLevel() + 20
-                    CreateHitOverlay(preview._castbar, "castBar", false, castLevel)
+                if previewRef._castbar then
+                    local castLevel = previewRef._castbar:GetFrameLevel() + 20
+                    CreateHitOverlay(previewRef._castbar, "castBar", false, castLevel)
                 end
-                if preview._nameFS and preview._nameFS:IsShown() then
-                    CreateHitOverlay(preview._nameFS, "nameText", true, textLevel)
+                if previewRef._nameFS and previewRef._nameFS:IsShown() then
+                    CreateHitOverlay(previewRef._nameFS, "nameText", true, textLevel)
                 end
-                if preview._hpFS and preview._hpFS:IsShown() then
-                    CreateHitOverlay(preview._hpFS, "healthText", true, textLevel)
+                if previewRef._hpFS and previewRef._hpFS:IsShown() then
+                    CreateHitOverlay(previewRef._hpFS, "healthText", true, textLevel)
                 end
-                if preview._extraFS and preview._extraFS:IsShown() then
-                    CreateHitOverlay(preview._extraFS, "extraText", true, textLevel)
+                if previewRef._extraFS and previewRef._extraFS:IsShown() then
+                    CreateHitOverlay(previewRef._extraFS, "extraText", true, textLevel)
                 end
-                if preview._centerFS and preview._centerFS:IsShown() then
-                    CreateHitOverlay(preview._centerFS, "centerText", true, textLevel)
+                if previewRef._centerFS and previewRef._centerFS:IsShown() then
+                    CreateHitOverlay(previewRef._centerFS, "centerText", true, textLevel)
                 end
                 -- The pet's buff/debuff icons -> Buffs / Debuffs Location. Every icon,
                 -- so one shown later stays clickable without a header rebuild (the
                 -- other mini frames show none).
-                if selectedMiniUnit == "pet" then
-                    OverlayEachIcon(CreateHitOverlay, preview._buffIcons, "buffIcon", baseLevel)
-                    OverlayEachIcon(CreateHitOverlay, preview._debuffIcons, "debuffIcon", baseLevel)
+                if pickedMiniUnit == "pet" then
+                    OverlayEachIcon(CreateHitOverlay, previewRef._buffIcons, "buffIcon", baseLevel)
+                    OverlayEachIcon(CreateHitOverlay, previewRef._debuffIcons, "debuffIcon", baseLevel)
                 end
             end
 
@@ -3944,23 +3944,23 @@ CludesUI.AtLogin(function()
         -- cap. Header builder mirrors the Mini page's minus the unit dropdown (boss is the
         -- only unit here); click-navigation block reuses the Mini page's machinery.
         mod._bossHeaderBuilder = nil
-        mod._BuildBossPage = function(pageName, hostFrame, yOffset)
+        mod._BuildBossPage = function(pageTitle, hostFrame, yOffset)
             local W = CludesUI.Widgets
             local cursorY = yOffset
 
-            activePreview = nil
+            livePreview = nil
 
             -------------------------------------------------------------------
             --  CONTENT HEADER  (preview only, no dropdown)
             -------------------------------------------------------------------
             mod._bossHeaderBuilder = function(heading, hdrW)
-                local fy = -20
+                local rowY = -20
                 local side = unitSide.boss or "right"
-                local preview = mod.UFO_BuildUnitPreview(heading, "boss", side)
-                activePreview = preview
-                fy = SeatUnitPreview(preview, heading, fy)
-                preview._headerFixedH = 20 + 20
-                return math.abs(fy)
+                local previewRef = mod.UFO_BuildUnitPreview(heading, "boss", side)
+                livePreview = previewRef
+                rowY = SeatUnitPreview(previewRef, heading, rowY)
+                previewRef._headerFixedH = 20 + 20
+                return math.abs(rowY)
             end
             CludesUI:SetContentHeader(mod._bossHeaderBuilder)
 
@@ -3975,8 +3975,8 @@ CludesUI.AtLogin(function()
             --  CLICK NAVIGATION  (mirrors the Mini Frames page)
             -------------------------------------------------------------------
             local PlaySettingGlow = CludesUI.MakeSettingGlow({ color = CludesUI.CLUDES_GREEN })
-            local function NavigateToSetting(key)
-                mod._UFNavigateToSetting(hostFrame._ufClickTargets, key, PlaySettingGlow)
+            local function NavigateToSetting(settingKey)
+                mod._UFNavigateToSetting(hostFrame._ufClickTargets, settingKey, PlaySettingGlow)
             end
             local hitStyle = { container = true }
             local function CreateHitOverlay(element, mappingKey, isText, frameLevelOverride, options)
@@ -3995,58 +3995,58 @@ CludesUI.AtLogin(function()
 
             -- Create hit overlays on preview elements (never from the global search's
             -- hidden prebuild: the preview is live header content)
-            if activePreview and not CludesUI._prebuilding then
-                local preview = activePreview
-                local baseLevel = (preview._health and preview._health:GetFrameLevel() or 20) + 15
+            if livePreview and not CludesUI._prebuilding then
+                local previewRef = livePreview
+                local baseLevel = (previewRef._health and previewRef._health:GetFrameLevel() or 20) + 15
                 local textLevel = baseLevel + 10
                 -- Health bar and power bar are separately clickable, each covering just
                 -- its own bar (replacing the old ambiguous whole-frame overlay).
-                if preview._health then
-                    CreateHitOverlay(preview._health, "healthBar", false, baseLevel)
+                if previewRef._health then
+                    CreateHitOverlay(previewRef._health, "healthBar", false, baseLevel)
                 end
-                if preview._power then
-                    CreateHitOverlay(preview._power, "powerBar", false, baseLevel)
+                if previewRef._power then
+                    CreateHitOverlay(previewRef._power, "powerBar", false, baseLevel)
                 end
-                if preview._ppFS and preview._ppFS:IsShown() then
-                    CreateHitOverlay(preview._ppFS, "powerBarText", true, textLevel)
+                if previewRef._ppFS and previewRef._ppFS:IsShown() then
+                    CreateHitOverlay(previewRef._ppFS, "powerBarText", true, textLevel)
                 end
-                if preview._portraitFrame and preview._portraitFrame:IsShown() then
-                    CreateHitOverlay(preview._portraitFrame, "portrait", false, baseLevel)
+                if previewRef._portraitFrame and previewRef._portraitFrame:IsShown() then
+                    CreateHitOverlay(previewRef._portraitFrame, "portrait", false, baseLevel)
                 end
-                if preview._castbar then
-                    local castLevel = preview._castbar:GetFrameLevel() + 20
-                    CreateHitOverlay(preview._castbar, "castBar", false, castLevel)
+                if previewRef._castbar then
+                    local castLevel = previewRef._castbar:GetFrameLevel() + 20
+                    CreateHitOverlay(previewRef._castbar, "castBar", false, castLevel)
                     -- Spell icon -> Show Cast Icon setting.
-                    if preview._castIconFrame then
-                        CreateHitOverlay(preview._castIconFrame, "castIcon", false, castLevel)
+                    if previewRef._castIconFrame then
+                        CreateHitOverlay(previewRef._castIconFrame, "castIcon", false, castLevel)
                     end
                 end
-                if preview._nameFS and preview._nameFS:IsShown() then
-                    CreateHitOverlay(preview._nameFS, "nameText", true, textLevel)
+                if previewRef._nameFS and previewRef._nameFS:IsShown() then
+                    CreateHitOverlay(previewRef._nameFS, "nameText", true, textLevel)
                 end
-                if preview._hpFS and preview._hpFS:IsShown() then
-                    CreateHitOverlay(preview._hpFS, "healthText", true, textLevel)
+                if previewRef._hpFS and previewRef._hpFS:IsShown() then
+                    CreateHitOverlay(previewRef._hpFS, "healthText", true, textLevel)
                 end
-                if preview._extraFS and preview._extraFS:IsShown() then
-                    CreateHitOverlay(preview._extraFS, "extraText", true, textLevel)
+                if previewRef._extraFS and previewRef._extraFS:IsShown() then
+                    CreateHitOverlay(previewRef._extraFS, "extraText", true, textLevel)
                 end
-                if preview._centerFS and preview._centerFS:IsShown() then
-                    CreateHitOverlay(preview._centerFS, "centerText", true, textLevel)
+                if previewRef._centerFS and previewRef._centerFS:IsShown() then
+                    CreateHitOverlay(previewRef._centerFS, "centerText", true, textLevel)
                 end
                 -- Blizzard Style level number: built whenever the art has a level
                 -- circle and shown with the text (the preview toggles it).
-                if preview._levelFS then
-                    local lvOv = CreateHitOverlay(preview._levelFS, "levelText", true, textLevel)
-                    preview._levelOv = lvOv
-                    if not preview._levelFS:IsShown() then
+                if previewRef._levelFS then
+                    local lvOv = CreateHitOverlay(previewRef._levelFS, "levelText", true, textLevel)
+                    previewRef._levelOv = lvOv
+                    if not previewRef._levelFS:IsShown() then
                         lvOv:Hide()
                     end
                 end
                 -- Buff/Debuff icons -> their aura settings (Simple Display or Location,
                 -- resolved at click time). Overlay every icon so newly shown ones stay
                 -- clickable without a header rebuild.
-                OverlayEachIcon(CreateHitOverlay, preview._buffIcons, "buffIcon", baseLevel)
-                OverlayEachIcon(CreateHitOverlay, preview._debuffIcons, "debuffIcon", baseLevel)
+                OverlayEachIcon(CreateHitOverlay, previewRef._buffIcons, "buffIcon", baseLevel)
+                OverlayEachIcon(CreateHitOverlay, previewRef._debuffIcons, "debuffIcon", baseLevel)
             end
 
             return abs(cursorY)
@@ -4055,7 +4055,7 @@ CludesUI.AtLogin(function()
         ---------------------------------------------------------------------------
         --  Unlock Mode page  (stub SelectPage intercepts this before buildPage)
         ---------------------------------------------------------------------------
-        local function BuildUnlockPage(pageName, hostFrame, yOffset)
+        local function BuildUnlockPage(pageTitle, hostFrame, yOffset)
             -- SelectPage() intercepts "Unlock Mode" and fires _openUnlockMode directly.
             -- This stub exists only as a safety net in case buildPage is ever called.
             if CludesUI._openUnlockMode then
@@ -4114,7 +4114,7 @@ CludesUI.AtLogin(function()
         -- frame's settings (nil unitFn: the cast bar row); mini: a mini frame's key,
         -- which follows its main frame while its Bar Texture is Inherit; apply: the
         -- page's own refresh after a write.
-        local function TexBgRowCfg(unitFn, apply, mini)
+        local function TexBgRowCfg(unitFn, applyFn, mini)
             if not unitFn then
                 return {
                     type = "toggle",
@@ -4129,7 +4129,7 @@ CludesUI.AtLogin(function()
                     end,
                     set = function(value)
                         saved.profile.castTextureBg = value and true or false
-                        apply()
+                        applyFn()
                     end,
                 }
             end
@@ -4186,7 +4186,7 @@ CludesUI.AtLogin(function()
                         return
                     end
                     s.textureBg = value and true or false
-                    apply()
+                    applyFn()
                 end,
             }
         end
@@ -4278,8 +4278,8 @@ CludesUI.AtLogin(function()
             -- Player Aura Bars draws over the scroll frame: no inline search there.
             noSearchPages = { [PAGE_AURA_BARS] = true },
             searchTerms = ufSearchTerms,
-            buildPage = function(pageName, hostFrame, yOffset)
-                if CludesUI._prebuilding and pageName == PAGE_AURA_BARS then
+            buildPage = function(pageTitle, hostFrame, yOffset)
+                if CludesUI._prebuilding and pageTitle == PAGE_AURA_BARS then
                     return
                 end
                 -- Clean up Player Aura Bars root when switching away. Needed here AND in
@@ -4288,30 +4288,30 @@ CludesUI.AtLogin(function()
                 -- cleanup is inconsistent across tab switches (mirrors CUI_RaidFrames_Options.lua's _bmRoot/_dmRoot/_ccRoot pattern).
                 -- Never from the global search's hidden prebuild of another page: the
                 -- root is the live page's.
-                if pageName ~= PAGE_AURA_BARS and mod._pabRoot and not CludesUI._prebuilding then
+                if pageTitle ~= PAGE_AURA_BARS and mod._pabRoot and not CludesUI._prebuilding then
                     mod.PABMP_ParkRoot()
                 end
                 -- Randomize preview creature IDs on every tab switch
                 RandomizePreviewCreatures()
                 mod.UF_AskExisting2DMirror()
-                if pageName == PAGE_DISPLAY then
-                    return BuildFrameDisplayPage(pageName, hostFrame, yOffset)
-                elseif pageName == PAGE_BOSS then
-                    return mod._BuildBossPage(pageName, hostFrame, yOffset)
-                elseif pageName == PAGE_MINI then
-                    return BuildMiniPage(pageName, hostFrame, yOffset)
-                elseif pageName == PAGE_AURA_BARS then
+                if pageTitle == PAGE_DISPLAY then
+                    return BuildFrameDisplayPage(pageTitle, hostFrame, yOffset)
+                elseif pageTitle == PAGE_BOSS then
+                    return mod._BuildBossPage(pageTitle, hostFrame, yOffset)
+                elseif pageTitle == PAGE_MINI then
+                    return BuildMiniPage(pageTitle, hostFrame, yOffset)
+                elseif pageTitle == PAGE_AURA_BARS then
                     if mod.PABMP_BuildPage then
-                        return mod.PABMP_BuildPage(pageName, hostFrame, yOffset)
+                        return mod.PABMP_BuildPage(pageTitle, hostFrame, yOffset)
                     end
                 end
             end,
-            getHeaderBuilder = function(pageName)
-                if pageName == PAGE_DISPLAY then
+            getHeaderBuilder = function(pageTitle)
+                if pageTitle == PAGE_DISPLAY then
                     return _displayHeaderBuilder
-                elseif pageName == PAGE_BOSS then
+                elseif pageTitle == PAGE_BOSS then
                     return mod._bossHeaderBuilder
-                elseif pageName == PAGE_MINI then
+                elseif pageTitle == PAGE_MINI then
                     return _miniHeaderBuilder
                 end
                 return nil
@@ -4320,38 +4320,38 @@ CludesUI.AtLogin(function()
             -- always "player"/"targettarget"), so a hidden pre-build that only builds the
             -- default leaves other units' settings unsearchable until picked live. Both
             -- unit lists are small and fixed, so build once per unit rather than collapsing to representative shapes.
-            getPrebuildVariants = function(pageName)
-                if pageName == PAGE_DISPLAY then
+            getPrebuildVariants = function(pageTitle)
+                if pageTitle == PAGE_DISPLAY then
                     return {
                         setter = CludesUI._setUnitFrameUnit,
                         keys = unitOrder,
                         currentKey = optionState.selectedUnit,
                     }
-                elseif pageName == PAGE_MINI then
+                elseif pageTitle == PAGE_MINI then
                     return {
                         setter = CludesUI._setMiniUnit,
                         keys = miniUnitOrder,
-                        currentKey = selectedMiniUnit,
+                        currentKey = pickedMiniUnit,
                     }
                 end
                 return nil
             end,
-            onPageCacheRestore = function(pageName)
-                local textCheck = mod._ufTextChecks and mod._ufTextChecks[pageName]
+            onPageCacheRestore = function(pageTitle)
+                local textCheck = mod._ufTextChecks and mod._ufTextChecks[pageTitle]
                 if textCheck and textCheck() then
                     C_Timer.After(0, function()
                         if
                             CludesUI:GetActiveModule() == "CludesUIUnitFrames"
-                            and CludesUI:GetActivePage() == pageName
+                            and CludesUI:GetActivePage() == pageTitle
                         then
                             CludesUI:RefreshPage(true)
                         end
                     end)
                 end
                 -- Clean up Player Aura Bars root when switching away
-                if pageName ~= PAGE_AURA_BARS and mod._pabRoot then
+                if pageTitle ~= PAGE_AURA_BARS and mod._pabRoot then
                     mod.PABMP_ParkRoot()
-                elseif pageName == PAGE_AURA_BARS and not mod._pabRoot then
+                elseif pageTitle == PAGE_AURA_BARS and not mod._pabRoot then
                     -- PABMP_BuildPage bypasses `parent` and builds onto the live shared
                     -- scrollFrame into ns._pabRoot (see buildPage's _prebuilding guard
                     -- above). The framework's page cache doesn't know about that
@@ -4361,7 +4361,7 @@ CludesUI.AtLogin(function()
                     C_Timer.After(0, function()
                         if
                             CludesUI:GetActiveModule() == "CludesUIUnitFrames"
-                            and CludesUI:GetActivePage() == pageName
+                            and CludesUI:GetActivePage() == pageTitle
                         then
                             CludesUI:RefreshPage(true)
                         end
@@ -4371,29 +4371,29 @@ CludesUI.AtLogin(function()
                 mod.UF_AskExisting2DMirror()
                 -- Hide all UIParent-parented disabled overlays before restoring
                 -- (they persist across tab switches since they're not children of pf)
-                for keyName, preview in pairs(allPreviews) do
-                    if preview and preview._pvUnit == keyName and preview._disabledOverlay then
-                        preview._disabledOverlay:Hide()
+                for keyName, previewRef in pairs(allPreviews) do
+                    if previewRef and previewRef._pvUnit == keyName and previewRef._disabledOverlay then
+                        previewRef._disabledOverlay:Hide()
                     end
                 end
                 -- Force re-anchor previews after cache restore (parent changed)
-                for keyName, preview in pairs(allPreviews) do
-                    if preview and preview._pvUnit == keyName then
-                        preview._lastOY = nil
+                for keyName, previewRef in pairs(allPreviews) do
+                    if previewRef and previewRef._pvUnit == keyName then
+                        previewRef._lastOY = nil
                         -- Reset portrait anchor flag so Update() re-anchors it
-                        if preview._portraitFrame then
-                            preview._portraitFrame._anchored = false
+                        if previewRef._portraitFrame then
+                            previewRef._portraitFrame._anchored = false
                         end
                         -- Reset health anchor key so Update() re-anchors health bar
-                        if preview._health then
-                            preview._health._anchorKey = nil
+                        if previewRef._health then
+                            previewRef._health._anchorKey = nil
                         end
                     end
                 end
                 UpdatePreview()
                 -- Refresh hint visibility on cache restore
                 local dismissed = IsPreviewHintDismissed()
-                if pageName == PAGE_DISPLAY and optionState._ufPreviewHintFS_display then
+                if pageTitle == PAGE_DISPLAY and optionState._ufPreviewHintFS_display then
                     if dismissed then
                         optionState._ufPreviewHintFS_display:Hide()
                     else

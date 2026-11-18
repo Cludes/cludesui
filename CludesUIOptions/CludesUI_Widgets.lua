@@ -217,8 +217,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local knob = layer:CreateTexture(nil, "ARTWORK")
         L.track, L.knob, L.pad = tBg, knob, KNOB_PAD
 
-        local animProgress = getValue() and 1 or 0
-        local animTarget = animProgress
+        local animFrac = getValue() and 1 or 0
+        local animTarget = animFrac
         local ANIM_DUR = 0.075
 
         -- OFF = the knob one pad in from the left edge, ON = one pad in from the
@@ -249,10 +249,10 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             )
         end
         L.apply = function()
-            ApplyVisual(animProgress)
+            ApplyVisual(animFrac)
         end
         L:Fit()
-        ApplyVisual(animProgress)
+        ApplyVisual(animFrac)
 
         -- The click handlers stand down after the setter when it rebuilt the page and
         -- this toggle was dressed again for another use (the rebuild painted it).
@@ -264,19 +264,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 if PoolGen(toggle) ~= g then
                     return
                 end
-                animProgress = value and 1 or 0
-                animTarget = animProgress
-                ApplyVisual(animProgress)
+                animFrac = value and 1 or 0
+                animTarget = animFrac
+                ApplyVisual(animFrac)
             end)
         else
             local function AnimOnUpdate(self, elapsed)
                 local dir = (animTarget == 1) and 1 or -1
-                animProgress = animProgress + dir * (elapsed / ANIM_DUR)
-                if (dir == 1 and animProgress >= 1) or (dir == -1 and animProgress <= 0) then
-                    animProgress = animTarget
+                animFrac = animFrac + dir * (elapsed / ANIM_DUR)
+                if (dir == 1 and animFrac >= 1) or (dir == -1 and animFrac <= 0) then
+                    animFrac = animTarget
                     self:SetScript("OnUpdate", nil)
                 end
-                ApplyVisual(animProgress)
+                ApplyVisual(animFrac)
             end
             toggle:SetScript("OnClick", function()
                 local value = not getValue()
@@ -292,7 +292,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         local function SnapToState()
             local value = getValue() and 1 or 0
-            animProgress = value
+            animFrac = value
             animTarget = value
             ApplyVisual(value)
             toggle:SetScript("OnUpdate", nil)
@@ -463,14 +463,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             return
         end
         local hostFrame = controlAnchor:GetParent()
-        local hit = CreateFrame("Frame", nil, hostFrame)
-        hit:SetAllPoints(controlAnchor)
+        local hitArea = CreateFrame("Frame", nil, hostFrame)
+        hitArea:SetAllPoints(controlAnchor)
         local baseLevel = controlAnchor.GetFrameLevel and controlAnchor:GetFrameLevel()
             or hostFrame:GetFrameLevel()
-        hit:SetFrameLevel(baseLevel + 10)
-        hit:SetMouseClickEnabled(false)
-        hit:SetMouseMotionEnabled(false)
-        hit:SetScript("OnEnter", function()
+        hitArea:SetFrameLevel(baseLevel + 10)
+        hitArea:SetMouseClickEnabled(false)
+        hitArea:SetMouseMotionEnabled(false)
+        hitArea:SetScript("OnEnter", function()
             if rowConf.disabled() then
                 local tt = ResolveDisabledTip(rowConf)
                 if tt then
@@ -478,13 +478,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
             end
         end)
-        hit:SetScript("OnLeave", function()
+        hitArea:SetScript("OnLeave", function()
             HideWidgetTooltip()
         end)
         local function UpdateMouse()
             local off = rowConf.disabled()
-            hit:SetMouseClickEnabled(off and true or false)
-            hit:SetMouseMotionEnabled(off and true or false)
+            hitArea:SetMouseClickEnabled(off and true or false)
+            hitArea:SetMouseMotionEnabled(off and true or false)
         end
         RegisterWidgetRefresh(UpdateMouse)
         UpdateMouse()
@@ -535,8 +535,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         return tostring(curKey)
     end
 
-    local function IsDividerKey(key)
-        return type(key) == "string" and key:match("^%-%-%-") ~= nil
+    local function IsDividerKey(itemKey)
+        return type(itemKey) == "string" and itemKey:match("^%-%-%-") ~= nil
     end
 
     -- Build a dropdown popup menu + item buttons; returns { menu, menuItems, refresh }. ddBtn = button the menu hangs off; menuW = menu pixel width; order = key array; values = { key = displayName } (displayName: string or { text=..., note=... }); ddLbl = label FontString updated on selection; style = "wide"/"regular" (WD_ vs RD_ colours).
@@ -646,9 +646,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- fonts, textures and other long lists are typed into instead of scrolled.
         if _moSearchable == nil and #sequence >= 15 then
             _moSearchable = true
-            for _, key in ipairs(sequence) do
-                local dn = values[key]
-                if IsDividerKey(key) or (type(dn) == "table" and dn.subnav) then
+            for _, itemKey in ipairs(sequence) do
+                local dn = values[itemKey]
+                if IsDividerKey(itemKey) or (type(dn) == "table" and dn.subnav) then
                     _moSearchable = false
                     break
                 end
@@ -658,7 +658,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- The search field is the list's flush first row (inside the 1 unit border,
         -- a divider as its last unit); the rows below keep their 4-unit top gap.
         local searchPad = _moSearchable and (SEARCH_H + 4) or 0
-        local searchEdit, searchPlaceholder
+        local searchBox, searchPlaceholder
         local searchResetScroll -- assigned inside the scrolling branch; nil otherwise
         local padInit, padStepSync, padReveal -- controller helpers: padInit (scrolling branch only) builds the other two on first use
         local mBgR, mBgG, mBgB, mBgA = DD_BG_R, DD_BG_G, DD_BG_B, DD_BG_HA
@@ -667,33 +667,33 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- One menu frame per dropdown button for the session (the pool's kept frame): a populate after _invalidateMenu,
         -- or under a button the pool dressed again, gets that frame back reset to fresh and builds on it exactly as on a
         -- new one; its items, search box and scroll parts are pooled under it (the file's CreateFrame).
-        local menu =
+        local dropMenu =
             PoolKept(dropdownBtn, "ddMenu", "Frame", (_menuOpts and _menuOpts.parent) or CludesUI.OverlayParent())
         -- Spec Overrides auto-capture: edits through this menu attribute to the slot whose dropdown opened it.
-        menu._cuiOptionsPopup = true
+        dropMenu._cuiOptionsPopup = true
         -- Controller cursor: the list blocks what is under it but is not a stop itself.
-        CludesUI.PadHint(menu, "nodepass")
-        menu:SetFrameStrata("FULLSCREEN_DIALOG")
-        menu:SetFrameLevel(200)
-        menu:SetClampedToScreen(true)
-        menu:SetClipsChildren(true)
-        menu:EnableMouse(true)
-        menu:SetSize(menuW, 10)
+        CludesUI.PadHint(dropMenu, "nodepass")
+        dropMenu:SetFrameStrata("FULLSCREEN_DIALOG")
+        dropMenu:SetFrameLevel(200)
+        dropMenu:SetClampedToScreen(true)
+        dropMenu:SetClipsChildren(true)
+        dropMenu:EnableMouse(true)
+        dropMenu:SetSize(menuW, 10)
         -- Anchor: default opens downward; _menuOpts.anchor opens left/right so it can't sit behind controls below it.
         if _menuOpts and _menuOpts.anchor == "LEFT" then
-            menu:SetPoint("TOPRIGHT", dropdownBtn, "TOPLEFT", -4, 0)
+            dropMenu:SetPoint("TOPRIGHT", dropdownBtn, "TOPLEFT", -4, 0)
         elseif _menuOpts and _menuOpts.anchor == "RIGHT" then
-            menu:SetPoint("TOPLEFT", dropdownBtn, "TOPRIGHT", 4, 0)
+            dropMenu:SetPoint("TOPLEFT", dropdownBtn, "TOPRIGHT", 4, 0)
         else
-            menu:SetPoint("TOPLEFT", dropdownBtn, "BOTTOMLEFT", 0, -2)
+            dropMenu:SetPoint("TOPLEFT", dropdownBtn, "BOTTOMLEFT", 0, -2)
         end
-        menu:Hide()
-        local menuBg = SolidTex(menu, "BACKGROUND", mBgR, mBgG, mBgB, mBgA)
+        dropMenu:Hide()
+        local menuBg = SolidTex(dropMenu, "BACKGROUND", mBgR, mBgG, mBgB, mBgA)
         menuBg:SetAllPoints()
-        menu._ddBrd = MakeRoundedBorder(menu, mBrR, mBrG, mBrB, mBrA, menuBg, nil, true)
+        dropMenu._ddBrd = MakeRoundedBorder(dropMenu, mBrR, mBrG, mBrB, mBrA, menuBg, nil, true)
         -- House look: an accent cap along the list's top edge.
         do
-            local cap = menu:CreateTexture(nil, "OVERLAY", nil, 7)
+            local cap = dropMenu:CreateTexture(nil, "OVERLAY", nil, 7)
             cap:SetPoint("TOPLEFT")
             cap:SetPoint("TOPRIGHT")
             cap:SetHeight(2)
@@ -704,7 +704,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- whole settings window behind it. Registered on every build: the page
         -- pool drops the registration when it hands this frame out again.
         if CludesUI.RegisterEscapeClose then
-            CludesUI.RegisterEscapeClose(menu)
+            CludesUI.RegisterEscapeClose(dropMenu)
         end
 
         if _moSearchable then
@@ -712,70 +712,70 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local fontFile = (_moLabelFont and _moLabelFont[1])
                 or CludesUI.EXPRESSWAY
                 or "Fonts\\FRIZQT__.TTF"
-            searchEdit = CreateFrame("EditBox", nil, menu)
-            searchEdit:SetPoint("TOPLEFT", menu, "TOPLEFT", 1, -1)
-            searchEdit:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -1, -1)
-            searchEdit:SetHeight(searchPad - 1)
-            searchEdit:SetFrameLevel(menu:GetFrameLevel() + 4)
-            searchEdit:SetFont(fontFile, 11, "")
-            searchEdit:SetTextColor(1, 1, 1, 0.9)
-            searchEdit:SetJustifyH("LEFT")
-            searchEdit:SetAutoFocus(false)
-            searchEdit:SetMaxLetters(30)
+            searchBox = CreateFrame("EditBox", nil, dropMenu)
+            searchBox:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -1)
+            searchBox:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -1)
+            searchBox:SetHeight(searchPad - 1)
+            searchBox:SetFrameLevel(dropMenu:GetFrameLevel() + 4)
+            searchBox:SetFont(fontFile, 11, "")
+            searchBox:SetTextColor(1, 1, 1, 0.9)
+            searchBox:SetJustifyH("LEFT")
+            searchBox:SetAutoFocus(false)
+            searchBox:SetMaxLetters(30)
             -- Text at the row labels' x (rows sit 1 unit in, labels 10 into a row).
-            searchEdit:SetTextInsets(10, 10, 0, 0)
-            local sDiv = searchEdit:CreateTexture(nil, "ARTWORK")
+            searchBox:SetTextInsets(10, 10, 0, 0)
+            local sDiv = searchBox:CreateTexture(nil, "ARTWORK")
             sDiv:SetHeight(1)
-            sDiv:SetPoint("BOTTOMLEFT", searchEdit, "BOTTOMLEFT", 0, 0)
-            sDiv:SetPoint("BOTTOMRIGHT", searchEdit, "BOTTOMRIGHT", 0, 0)
+            sDiv:SetPoint("BOTTOMLEFT", searchBox, "BOTTOMLEFT", 0, 0)
+            sDiv:SetPoint("BOTTOMRIGHT", searchBox, "BOTTOMRIGHT", 0, 0)
             sDiv:SetColorTexture(1, 1, 1, 0.10)
-            searchPlaceholder = searchEdit:CreateFontString(nil, "OVERLAY")
+            searchPlaceholder = searchBox:CreateFontString(nil, "OVERLAY")
             searchPlaceholder:SetFont(fontFile, 11, "")
             searchPlaceholder:SetTextColor(0.5, 0.5, 0.5, 0.6)
-            searchPlaceholder:SetPoint("LEFT", searchEdit, "LEFT", 10, 0)
+            searchPlaceholder:SetPoint("LEFT", searchBox, "LEFT", 10, 0)
             searchPlaceholder:SetText(CludesUI.L("Search..."))
-            searchEdit:SetScript("OnEscapePressed", function(self)
+            searchBox:SetScript("OnEscapePressed", function(self)
                 self:ClearFocus()
             end)
         end
 
         -- Items are always parented here; becomes the scroll child if scrolling is needed.
-        local innerContainer = CreateFrame("Frame", nil, menu)
-        innerContainer:SetWidth(menuW)
-        innerContainer:SetPoint("TOPLEFT", menu, "TOPLEFT", 0, 0)
+        local innerHolder = CreateFrame("Frame", nil, dropMenu)
+        innerHolder:SetWidth(menuW)
+        innerHolder:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 0, 0)
 
         local menuItems = {}
         local menuH = 4
         -- A row at the list's current depth (mH), inset 1 from each side.
         local function MenuRow(height)
-            local entry = CreateFrame("Button", nil, innerContainer)
+            local entry = CreateFrame("Button", nil, innerHolder)
             entry:SetHeight(height)
-            entry:SetPoint("TOPLEFT", innerContainer, "TOPLEFT", 1, -menuH)
-            entry:SetPoint("TOPRIGHT", innerContainer, "TOPRIGHT", -1, -menuH)
-            entry:SetFrameLevel(menu:GetFrameLevel() + 2)
+            entry:SetPoint("TOPLEFT", innerHolder, "TOPLEFT", 1, -menuH)
+            entry:SetPoint("TOPRIGHT", innerHolder, "TOPRIGHT", -1, -menuH)
+            entry:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
             return entry
         end
-        for _, key in ipairs(sequence) do
+        for _, itemKey in ipairs(sequence) do
             -- Keys beginning with "---" insert a thin separator line
-            if IsDividerKey(key) then
-                local div = innerContainer:CreateTexture(nil, "ARTWORK")
+            if IsDividerKey(itemKey) then
+                local div = innerHolder:CreateTexture(nil, "ARTWORK")
                 div:SetHeight(1)
                 div:SetColorTexture(1, 1, 1, 0.10)
-                div:SetPoint("TOPLEFT", innerContainer, "TOPLEFT", 1, -menuH - 4)
-                div:SetPoint("TOPRIGHT", innerContainer, "TOPRIGHT", -1, -menuH - 4)
+                div:SetPoint("TOPLEFT", innerHolder, "TOPLEFT", 1, -menuH - 4)
+                div:SetPoint("TOPRIGHT", innerHolder, "TOPRIGHT", -1, -menuH - 4)
                 menuH = menuH + 9
             else
-                local dn = values[key]
+                local dn = values[itemKey]
                 if dn then
                     -- SUBNAV PARENT: render with arrow, hover flyout
                     if type(dn) == "table" and dn.subnav then
                         local sn = dn.subnav
-                        local parentText = dn.text or tostring(key)
+                        local parentText = dn.text or tostring(itemKey)
                         local entry = MenuRow(26)
-                        local iLbl = MakeFont(entry, 13, nil, TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
-                        iLbl:SetAlpha(1)
-                        iLbl:SetPoint("LEFT", entry, "LEFT", isWide and 12 or 10, 0)
-                        iLbl:SetText(TR(parentText))
+                        local itemText = MakeFont(entry, 13, nil, TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
+                        itemText:SetAlpha(1)
+                        itemText:SetPoint("LEFT", entry, "LEFT", isWide and 12 or 10, 0)
+                        itemText:SetText(TR(parentText))
                         local arrowTex = entry:CreateTexture(nil, "ARTWORK")
                         arrowTex:SetSize(10, 10)
                         arrowTex:SetPoint("RIGHT", entry, "RIGHT", -8, 0)
@@ -784,8 +784,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         local iHl = SolidTex(entry, "ARTWORK", 1, 1, 1, 1)
                         iHl:SetAlpha(0)
                         iHl:SetAllPoints()
-                        entry._key = key
-                        entry._label = iLbl
+                        entry._key = itemKey
+                        entry._label = itemText
                         entry._highlight = iHl
                         entry._isSubnavParent = true
                         entry._subnavChildKeys = {}
@@ -797,24 +797,24 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         menuItems[#menuItems + 1] = entry
 
                         -- Owned by the menu (screen-level, not its child): handed out again by order at each populate.
-                        local flyout = PoolOwned(menu, "flyout", "Frame", CludesUI.OverlayParent())
-                        flyout:SetFrameStrata("FULLSCREEN_DIALOG")
-                        flyout:SetFrameLevel(menu:GetFrameLevel() + 10)
-                        flyout:SetClampedToScreen(true)
-                        flyout:SetSize(menuW, 10)
-                        flyout:Hide()
-                        local flyBg = SolidTex(flyout, "BACKGROUND", mBgR, mBgG, mBgB, mBgA)
+                        local subMenu = PoolOwned(dropMenu, "flyout", "Frame", CludesUI.OverlayParent())
+                        subMenu:SetFrameStrata("FULLSCREEN_DIALOG")
+                        subMenu:SetFrameLevel(dropMenu:GetFrameLevel() + 10)
+                        subMenu:SetClampedToScreen(true)
+                        subMenu:SetSize(menuW, 10)
+                        subMenu:Hide()
+                        local flyBg = SolidTex(subMenu, "BACKGROUND", mBgR, mBgG, mBgB, mBgA)
                         flyBg:SetAllPoints()
-                        MakeRoundedBorder(flyout, mBrR, mBrG, mBrB, mBrA, flyBg, nil, true)
-                        entry._flyout = flyout
-                        if not menu._flyouts then
-                            menu._flyouts = {}
+                        MakeRoundedBorder(subMenu, mBrR, mBrG, mBrB, mBrA, flyBg, nil, true)
+                        entry._flyout = subMenu
+                        if not dropMenu._flyouts then
+                            dropMenu._flyouts = {}
                         end
-                        menu._flyouts[#menu._flyouts + 1] = flyout
+                        dropMenu._flyouts[#dropMenu._flyouts + 1] = subMenu
                         -- Controller cursor: not a stop; Cancel clicks the dropdown button, closing the whole list.
                         if CludesUI.PadCP() then
-                            CludesUI.PadHint(flyout, "nodepass")
-                            flyout.CloseButton = dropdownBtn
+                            CludesUI.PadHint(subMenu, "nodepass")
+                            subMenu.CloseButton = dropdownBtn
                         end
 
                         -- Declared before the children: under the controller cursor they keep the flyout open too.
@@ -822,13 +822,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         -- The delayed close checks below run only while the flyout still has this dress (a later
                         -- populate of the menu hands the same flyout out again).
                         local function CloseFlyoutLater(delay)
-                            local g = PoolGen(flyout)
+                            local g = PoolGen(subMenu)
                             flyoutTimer = C_Timer.NewTimer(delay, function()
-                                if PoolGen(flyout) ~= g then
+                                if PoolGen(subMenu) ~= g then
                                     return
                                 end
-                                if not flyout:IsMouseOver() and not entry:IsMouseOver() then
-                                    flyout:Hide()
+                                if not subMenu:IsMouseOver() and not entry:IsMouseOver() then
+                                    subMenu:Hide()
                                 end
                                 flyoutTimer = nil
                             end)
@@ -840,12 +840,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         for _, childKey in ipairs(sn.order) do
                             local childText = sn.values[childKey]
                             if childText then
-                                local ci = CreateFrame("Button", nil, flyout)
+                                local ci = CreateFrame("Button", nil, subMenu)
                                 flyRows[#flyRows + 1] = ci
                                 ci:SetHeight(sn.itemHeight or 26)
-                                ci:SetPoint("TOPLEFT", flyout, "TOPLEFT", 1, -fH)
-                                ci:SetPoint("TOPRIGHT", flyout, "TOPRIGHT", -1, -fH)
-                                ci:SetFrameLevel(flyout:GetFrameLevel() + 2)
+                                ci:SetPoint("TOPLEFT", subMenu, "TOPLEFT", 1, -fH)
+                                ci:SetPoint("TOPRIGHT", subMenu, "TOPRIGHT", -1, -fH)
+                                ci:SetFrameLevel(subMenu:GetFrameLevel() + 2)
                                 local cLbl =
                                     MakeFont(ci, 13, nil, TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
                                 cLbl:SetAlpha(1)
@@ -856,15 +856,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                                 if sn.icon then
                                     local iconPath, l, r, t, b = sn.icon(childKey)
                                     if iconPath then
-                                        local ico = ci:CreateTexture(nil, "ARTWORK")
+                                        local iconTex = ci:CreateTexture(nil, "ARTWORK")
                                         local icoSz = (sn.itemHeight or 26) - 8
-                                        ico:SetSize(icoSz, icoSz)
-                                        ico:SetPoint("RIGHT", ci, "RIGHT", -6, 0)
-                                        ico:SetTexture(iconPath)
+                                        iconTex:SetSize(icoSz, icoSz)
+                                        iconTex:SetPoint("RIGHT", ci, "RIGHT", -6, 0)
+                                        iconTex:SetTexture(iconPath)
                                         if l then
-                                            ico:SetTexCoord(l, r, t, b)
+                                            iconTex:SetTexCoord(l, r, t, b)
                                         end
-                                        cLbl:SetPoint("RIGHT", ico, "LEFT", -4, 0)
+                                        cLbl:SetPoint("RIGHT", iconTex, "LEFT", -4, 0)
                                         rowW = rowW + icoSz + 4
                                     end
                                 end
@@ -910,17 +910,17 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                                     if PoolGen(dropCaption) == g then
                                         dropCaption:SetText(TR(parentText) .. ": " .. TR(childText))
                                     end
-                                    flyout:Hide()
-                                    menu:Hide()
+                                    subMenu:Hide()
+                                    dropMenu:Hide()
                                     RefreshWidgetsNextFrame()
                                 end)
                                 fH = fH + (sn.itemHeight or 26)
                             end
                         end
-                        flyout:SetSize(fW, fH + 4)
+                        subMenu:SetSize(fW, fH + 4)
 
                         entry:SetScript("OnEnter", function()
-                            iLbl:SetTextColor(1, 1, 1, 1)
+                            itemText:SetTextColor(1, 1, 1, 1)
                             arrowTex:SetAlpha(1)
                             iHl:SetAlpha(DD_ITEM_HL_A)
                             if flyoutTimer then
@@ -928,18 +928,18 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                                 flyoutTimer = nil
                             end
                             -- Close the previous flyout now; its delayed close would leave it under this one.
-                            for _, fo in ipairs(menu._flyouts) do
-                                if fo ~= flyout then
+                            for _, fo in ipairs(dropMenu._flyouts) do
+                                if fo ~= subMenu then
                                     fo:Hide()
                                 end
                             end
-                            flyout:ClearAllPoints()
-                            flyout:SetPoint("TOPLEFT", entry, "TOPRIGHT", 2, 0)
-                            flyout:Show()
-                            flyout:SetScale(menu:GetScale())
+                            subMenu:ClearAllPoints()
+                            subMenu:SetPoint("TOPLEFT", entry, "TOPRIGHT", 2, 0)
+                            subMenu:Show()
+                            subMenu:SetScale(dropMenu:GetScale())
                         end)
                         entry:SetScript("OnLeave", function()
-                            iLbl:SetTextColor(TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
+                            itemText:SetTextColor(TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
                             arrowTex:SetAlpha(0.7)
                             local current = getValue()
                             local isChild = entry._subnavChildKeys[current]
@@ -948,18 +948,18 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                             CloseFlyoutLater(0.25)
                         end)
                         -- Keep the flyout alive while the mouse is over it
-                        flyout:SetScript("OnEnter", function()
+                        subMenu:SetScript("OnEnter", function()
                             if flyoutTimer then
                                 flyoutTimer:Cancel()
                                 flyoutTimer = nil
                             end
                         end)
-                        flyout:SetScript("OnLeave", function()
+                        subMenu:SetScript("OnLeave", function()
                             CloseFlyoutLater(0.15)
                         end)
-                        CludesUI.TrackOverlay(flyout)
-                        menu:HookScript("OnHide", function()
-                            flyout:Hide()
+                        CludesUI.TrackOverlay(subMenu)
+                        dropMenu:HookScript("OnHide", function()
+                            subMenu:Hide()
                         end)
                         entry:SetScript("OnClick", function() end) -- no-op, subnav only
                         menuH = menuH + 26
@@ -973,79 +973,79 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         end
                         local entry = MenuRow(_moItemH)
                         if _moBackground then
-                            local bgPath, bgLook = _moBackground(key)
+                            local bgPath, bgLook = _moBackground(itemKey)
                             if bgPath then
                                 MenuRowBackground(entry, bgPath, bgLook, _moBgVertexColor)
                             end
                         end
-                        local iLbl = MakeFont(entry, 13, nil, TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
+                        local itemText = MakeFont(entry, 13, nil, TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
                         if _moLabelFont then
-                            iLbl:SetFont(_moLabelFont[1], _moLabelFont[2] or 13, _moLabelFont[3] or "")
+                            itemText:SetFont(_moLabelFont[1], _moLabelFont[2] or 13, _moLabelFont[3] or "")
                         end
                         if itemFont then
-                            iLbl:SetFont(itemFont, 13, "")
+                            itemText:SetFont(itemFont, 13, "")
                         end
-                        iLbl:SetAlpha(1)
-                        iLbl:SetPoint("LEFT", entry, "LEFT", isWide and 12 or 10, 0)
-                        iLbl:SetJustifyH("LEFT")
+                        itemText:SetAlpha(1)
+                        itemText:SetPoint("LEFT", entry, "LEFT", isWide and 12 or 10, 0)
+                        itemText:SetJustifyH("LEFT")
                         if _moMaxTextPct then
-                            iLbl:SetWordWrap(false)
-                            iLbl:SetWidth(menuW * _moMaxTextPct)
+                            itemText:SetWordWrap(false)
+                            itemText:SetWidth(menuW * _moMaxTextPct)
                         end
-                        iLbl:SetText(TR(mainText))
+                        itemText:SetText(TR(mainText))
                         if dnAction then
                             local ACC = CludesUI.CLUDES_GREEN
-                            iLbl:SetTextColor(ACC.r, ACC.g, ACC.b, 0.8)
+                            itemText:SetTextColor(ACC.r, ACC.g, ACC.b, 0.8)
                             entry._isAction = true -- Refresh keeps the accent across menu opens
                         elseif _menuOpts and _menuOpts.labelColor then
                             -- Optional .labelColor(key) -> r, g, b[, a]: the label's idle colour;
                             -- hover shows the same hue at full alpha, Refresh restores it.
-                            local lr, lg, lb, la = _menuOpts.labelColor(key)
+                            local lr, lg, lb, la = _menuOpts.labelColor(itemKey)
                             if lr then
                                 entry._lblColor = { lr, lg, lb, la or 1 }
-                                iLbl:SetTextColor(lr, lg, lb, la or 1)
+                                itemText:SetTextColor(lr, lg, lb, la or 1)
                             end
                         end
                         -- Optional icon, three sources: _menuOpts.icon(key) -> texture path (+ texcoord); .iconAtlas(key) -> atlas name; .iconPressedAtlas(key) -> pressed-state atlas. With .iconOnClick the icon becomes a clickable Button on its own frame level so clicks don't reach the item's OnClick.
-                        local _haveAtlas = _moIconAtlas and _moIconAtlas(key) or nil
+                        local _haveAtlas = _moIconAtlas and _moIconAtlas(itemKey) or nil
                         local _iconPath, _il, _ir, _it, _ib
                         if _moIcon and not _haveAtlas then
-                            _iconPath, _il, _ir, _it, _ib = _moIcon(key)
+                            _iconPath, _il, _ir, _it, _ib = _moIcon(itemKey)
                         end
                         if _haveAtlas or _iconPath then
                             -- Optional, both icon kinds: .iconSize(key) -> edge length (default row
                             -- height - 8), .iconColor(key) -> r, g, b[, a] idle tint (hover: alpha 1),
                             -- .iconInset -> right inset, number or fn(key). Unset, the inset is 6;
                             -- with .iconClearScroll it moves clear of the scrollbar when the menu scrolls.
-                            local icoSz = (_menuOpts and _menuOpts.iconSize and _menuOpts.iconSize(key))
+                            local icoSz = (_menuOpts and _menuOpts.iconSize and _menuOpts.iconSize(itemKey))
                                 or (_moItemH - 8)
                             local icoInset = _menuOpts and _menuOpts.iconInset
                             if type(icoInset) == "function" then
-                                icoInset = icoInset(key)
+                                icoInset = icoInset(itemKey)
                             end
                             entry._icoClearScroll = icoInset == nil and _menuOpts and _menuOpts.iconClearScroll
                                 or nil
                             icoInset = icoInset or 6
                             if _menuOpts and _menuOpts.iconColor then
-                                local cr, cg, checkBtn, ca = _menuOpts.iconColor(key)
+                                local cr, cg, checkBtn, ca = _menuOpts.iconColor(itemKey)
                                 if cr then
                                     entry._icoColor = { cr, cg, checkBtn, ca or 1 }
                                 end
                             end
-                            local icoC = entry._icoColor
+                            local iconHolder = entry._icoColor
                             if _moIconOnClick then
-                                local iconBtn = CreateFrame("Button", nil, entry)
-                                iconBtn:SetSize(icoSz, icoSz)
-                                iconBtn:SetPoint("RIGHT", entry, "RIGHT", -icoInset, 0)
-                                entry._icon = iconBtn
-                                iconBtn:SetFrameLevel(entry:GetFrameLevel() + 2)
+                                local iconButton = CreateFrame("Button", nil, entry)
+                                iconButton:SetSize(icoSz, icoSz)
+                                iconButton:SetPoint("RIGHT", entry, "RIGHT", -icoInset, 0)
+                                entry._icon = iconButton
+                                iconButton:SetFrameLevel(entry:GetFrameLevel() + 2)
                                 if _haveAtlas then
-                                    iconBtn:SetNormalAtlas(_haveAtlas)
-                                    local pressedAtlas = _moIconPressedAtlas and _moIconPressedAtlas(key)
+                                    iconButton:SetNormalAtlas(_haveAtlas)
+                                    local pressedAtlas = _moIconPressedAtlas and _moIconPressedAtlas(itemKey)
                                     if pressedAtlas then
-                                        iconBtn:SetPushedAtlas(pressedAtlas)
+                                        iconButton:SetPushedAtlas(pressedAtlas)
                                     end
-                                    iconBtn:SetHighlightAtlas(_haveAtlas)
+                                    iconButton:SetHighlightAtlas(_haveAtlas)
                                     -- Atlas icons carry an intrinsic colour that SetVertexColor
                                     -- only scales, so each state is desaturated and tinted
                                     -- #929292 first (unless the menu keeps native colours),
@@ -1060,90 +1060,90 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                                             end
                                             texture:SetVertexColor(0.573, 0.573, 0.573, 1)
                                         end
-                                        if icoC then
-                                            texture:SetVertexColor(icoC[1], icoC[2], icoC[3], a)
+                                        if iconHolder then
+                                            texture:SetVertexColor(iconHolder[1], iconHolder[2], iconHolder[3], a)
                                         end
                                     end
-                                    GreyAtlas(iconBtn:GetNormalTexture(), icoC and icoC[4])
-                                    GreyAtlas(iconBtn:GetPushedTexture(), 1)
-                                    local hlTex = iconBtn:GetHighlightTexture()
+                                    GreyAtlas(iconButton:GetNormalTexture(), iconHolder and iconHolder[4])
+                                    GreyAtlas(iconButton:GetPushedTexture(), 1)
+                                    local hlTex = iconButton:GetHighlightTexture()
                                     GreyAtlas(hlTex, 1)
                                     if hlTex then
                                         hlTex:SetAlpha(0.4)
                                     end
                                 else
-                                    local ico = iconBtn:CreateTexture(nil, "ARTWORK")
-                                    ico:SetAllPoints()
-                                    ico:SetTexture(_iconPath)
+                                    local iconTex = iconButton:CreateTexture(nil, "ARTWORK")
+                                    iconTex:SetAllPoints()
+                                    iconTex:SetTexture(_iconPath)
                                     if _il then
-                                        ico:SetTexCoord(_il, _ir, _it, _ib)
+                                        iconTex:SetTexCoord(_il, _ir, _it, _ib)
                                     end
-                                    if icoC then
-                                        ico:SetVertexColor(icoC[1], icoC[2], icoC[3], icoC[4])
+                                    if iconHolder then
+                                        iconTex:SetVertexColor(iconHolder[1], iconHolder[2], iconHolder[3], iconHolder[4])
                                     else
-                                        ico:SetVertexColor(0.8, 0.8, 0.8, 1)
+                                        iconTex:SetVertexColor(0.8, 0.8, 0.8, 1)
                                     end
-                                    iconBtn._ico = ico
+                                    iconButton._ico = iconTex
                                 end
                                 -- A texture icon lights on hover: its own colour at full
                                 -- alpha, or white over the resting light grey.
                                 local function PaintIcon(hot)
-                                    local ico = iconBtn._ico
-                                    if not ico then
+                                    local iconTex = iconButton._ico
+                                    if not iconTex then
                                         return
                                     end
-                                    if icoC then
-                                        ico:SetVertexColor(icoC[1], icoC[2], icoC[3], hot and 1 or icoC[4])
+                                    if iconHolder then
+                                        iconTex:SetVertexColor(iconHolder[1], iconHolder[2], iconHolder[3], hot and 1 or iconHolder[4])
                                     elseif hot then
-                                        ico:SetVertexColor(1, 1, 1, 1)
+                                        iconTex:SetVertexColor(1, 1, 1, 1)
                                     else
-                                        ico:SetVertexColor(0.8, 0.8, 0.8, 1)
+                                        iconTex:SetVertexColor(0.8, 0.8, 0.8, 1)
                                     end
                                 end
-                                iconBtn:SetScript("OnEnter", function()
+                                iconButton:SetScript("OnEnter", function()
                                     PaintIcon(true)
                                     if _moIconTooltip then
-                                        ShowWidgetTooltip(iconBtn, _moIconTooltip(key))
+                                        ShowWidgetTooltip(iconButton, _moIconTooltip(itemKey))
                                     end
                                 end)
-                                iconBtn:SetScript("OnLeave", function()
+                                iconButton:SetScript("OnLeave", function()
                                     PaintIcon(false)
                                     if _moIconTooltip then
                                         HideWidgetTooltip()
                                     end
                                 end)
-                                iconBtn:SetScript("OnClick", function()
-                                    _moIconOnClick(key)
+                                iconButton:SetScript("OnClick", function()
+                                    _moIconOnClick(itemKey)
                                 end)
-                                iLbl:SetPoint("RIGHT", iconBtn, "LEFT", -4, 0)
+                                itemText:SetPoint("RIGHT", iconButton, "LEFT", -4, 0)
                             else
-                                local ico = entry:CreateTexture(nil, "ARTWORK")
+                                local iconTex = entry:CreateTexture(nil, "ARTWORK")
                                 -- _menuOpts.iconWidth(key) allows non-square icons; default square.
-                                ico:SetSize(
-                                    (_menuOpts and _menuOpts.iconWidth and _menuOpts.iconWidth(key)) or icoSz,
+                                iconTex:SetSize(
+                                    (_menuOpts and _menuOpts.iconWidth and _menuOpts.iconWidth(itemKey)) or icoSz,
                                     icoSz
                                 )
-                                ico:SetPoint("RIGHT", entry, "RIGHT", -icoInset, 0)
-                                entry._icon, entry._icoTex = ico, ico
+                                iconTex:SetPoint("RIGHT", entry, "RIGHT", -icoInset, 0)
+                                entry._icon, entry._icoTex = iconTex, iconTex
                                 if _haveAtlas then
-                                    ico:SetAtlas(_haveAtlas)
+                                    iconTex:SetAtlas(_haveAtlas)
                                 else
-                                    ico:SetTexture(_iconPath)
+                                    iconTex:SetTexture(_iconPath)
                                     if _il then
-                                        ico:SetTexCoord(_il, _ir, _it, _ib)
+                                        iconTex:SetTexCoord(_il, _ir, _it, _ib)
                                     end
                                 end
-                                if icoC then
-                                    ico:SetVertexColor(icoC[1], icoC[2], icoC[3], icoC[4])
+                                if iconHolder then
+                                    iconTex:SetVertexColor(iconHolder[1], iconHolder[2], iconHolder[3], iconHolder[4])
                                 end
-                                iLbl:SetPoint("RIGHT", ico, "LEFT", -4, 0)
+                                itemText:SetPoint("RIGHT", iconTex, "LEFT", -4, 0)
                             end
                         end
                         local iNote -- annotation: smaller font, 75% alpha, same colour
                         if noteText then
                             iNote = MakeFont(entry, 11, nil, TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
                             iNote:SetAlpha(0.75)
-                            iNote:SetPoint("LEFT", iLbl, "RIGHT", 4, 0)
+                            iNote:SetPoint("LEFT", itemText, "RIGHT", 4, 0)
                             iNote:SetText(TR(noteText))
                         end
                         -- Hover and selection wash in the accent colour (house look).
@@ -1157,7 +1157,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         )
                         iHl:SetAlpha(0)
                         iHl:SetAllPoints()
-                        entry._key, entry._label, entry._highlight, entry._note = key, iLbl, iHl, iNote
+                        entry._key, entry._label, entry._highlight, entry._note = itemKey, itemText, iHl, iNote
                         -- Full display name for the dropdown button label
                         entry._displayName = noteText and (mainText .. " " .. noteText) or mainText
                         menuItems[#menuItems + 1] = entry
@@ -1169,17 +1169,17 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                             local lc, ic = entry._lblColor, entry._icoColor
                             if hot then
                                 if lc then
-                                    iLbl:SetTextColor(lc[1], lc[2], lc[3], 1)
+                                    itemText:SetTextColor(lc[1], lc[2], lc[3], 1)
                                 else
-                                    iLbl:SetTextColor(1, 1, 1, 1)
+                                    itemText:SetTextColor(1, 1, 1, 1)
                                 end
                             elseif dnAction then
                                 local ACC = CludesUI.CLUDES_GREEN
-                                iLbl:SetTextColor(ACC.r, ACC.g, ACC.b, 0.8)
+                                itemText:SetTextColor(ACC.r, ACC.g, ACC.b, 0.8)
                             elseif lc then
-                                iLbl:SetTextColor(lc[1], lc[2], lc[3], lc[4])
+                                itemText:SetTextColor(lc[1], lc[2], lc[3], lc[4])
                             else
-                                iLbl:SetTextColor(TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
+                                itemText:SetTextColor(TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
                             end
                             if ic and entry._icoTex then
                                 entry._icoTex:SetVertexColor(ic[1], ic[2], ic[3], hot and 1 or ic[4])
@@ -1199,7 +1199,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         end
                         entry:SetScript("OnEnter", function()
                             if disabledValuesFn then
-                                local dv = disabledValuesFn(key)
+                                local dv = disabledValuesFn(itemKey)
                                 if dv then
                                     -- A string return doubles as the tooltip text
                                     if type(dv) == "string" then
@@ -1211,36 +1211,36 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                             Paint(true)
                             -- Second arg (item frame) is additive: (key)-only handlers ignore it; others use it to anchor tooltips.
                             if _moOnItemHover then
-                                _moOnItemHover(key, entry)
+                                _moOnItemHover(itemKey, entry)
                             end
                         end)
                         entry:SetScript("OnLeave", function()
-                            if disabledValuesFn and disabledValuesFn(key) then
+                            if disabledValuesFn and disabledValuesFn(itemKey) then
                                 HideWidgetTooltip()
                                 return
                             end
                             Paint(false)
                             if _moOnItemLeave then
-                                _moOnItemLeave(key, entry)
+                                _moOnItemLeave(itemKey, entry)
                             end
                         end)
                         entry:SetScript("OnClick", function()
-                            if disabledValuesFn and disabledValuesFn(key) then
+                            if disabledValuesFn and disabledValuesFn(itemKey) then
                                 return
                             end
                             if dnAction then
-                                menu:Hide()
+                                dropMenu:Hide()
                                 dnAction()
                                 return
                             end
                             -- The label write stands down when the setter rebuilt the page and the label was
                             -- dressed again for another use (the rebuild painted it); the list always closes.
                             local g = PoolGen(dropCaption)
-                            setValue(key)
+                            setValue(itemKey)
                             if PoolGen(dropCaption) == g then
                                 dropCaption:SetText(TR(mainText))
                             end
-                            menu:Hide()
+                            dropMenu:Hide()
                             RefreshWidgetsNextFrame()
                         end)
                         menuH = menuH + _moItemH
@@ -1250,57 +1250,57 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end -- for order
 
         local totalContentH = menuH + 3
-        innerContainer:SetHeight(totalContentH)
+        innerHolder:SetHeight(totalContentH)
 
         ---------------------------------------------------------------------------
         --  Scrollable dropdown: content over DD_MAX_HEIGHT is wrapped in a ScrollFrame with a thin custom scrollbar + smooth scrolling.
         ---------------------------------------------------------------------------
         if totalContentH > (_menuOpts and _menuOpts.maxHeight or DD_MAX_HEIGHT) then
-            menu:SetHeight((_menuOpts and _menuOpts.maxHeight or DD_MAX_HEIGHT) + searchPad)
+            dropMenu:SetHeight((_menuOpts and _menuOpts.maxHeight or DD_MAX_HEIGHT) + searchPad)
 
-            local sf = CreateFrame("ScrollFrame", nil, menu)
+            local scroller = CreateFrame("ScrollFrame", nil, dropMenu)
             -- inset: the controller step strips' height (0 without them). An edge
             -- the scroll area would touch keeps 1 unit, so a scrolled row's text
             -- (no mask takes a font string) stops at the border instead of
             -- running over it.
             local function PlaceScroll(inset)
                 local topY = searchPad + inset
-                sf:SetPoint("TOPLEFT", menu, "TOPLEFT", 0, -(topY > 0 and topY or 1))
-                sf:SetPoint("BOTTOMRIGHT", menu, "BOTTOMRIGHT", 0, inset > 0 and inset or 1)
+                scroller:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 0, -(topY > 0 and topY or 1))
+                scroller:SetPoint("BOTTOMRIGHT", dropMenu, "BOTTOMRIGHT", 0, inset > 0 and inset or 1)
             end
             PlaceScroll(0)
-            sf:SetFrameLevel(menu:GetFrameLevel() + 1)
-            sf:EnableMouseWheel(true)
-            sf:SetScrollChild(innerContainer)
-            innerContainer:SetWidth(menuW)
+            scroller:SetFrameLevel(dropMenu:GetFrameLevel() + 1)
+            scroller:EnableMouseWheel(true)
+            scroller:SetScrollChild(innerHolder)
+            innerHolder:SetWidth(menuW)
             -- The track below sits 4-8px in from the right: icons of a menu with
             -- .iconClearScroll move to 10 so they clear it; an explicit .iconInset stays.
             for idx = 1, #menuItems do
-                local it = menuItems[idx]
-                if it._icon and it._icoClearScroll then
-                    it._icon:ClearAllPoints()
-                    it._icon:SetPoint("RIGHT", it, "RIGHT", -10, 0)
+                local entry = menuItems[idx]
+                if entry._icon and entry._icoClearScroll then
+                    entry._icon:ClearAllPoints()
+                    entry._icon:SetPoint("RIGHT", entry, "RIGHT", -10, 0)
                 end
             end
 
             -- Thin scrollbar track (4px, right side; matches main panel style)
-            local ddTrack = CreateFrame("Frame", nil, sf)
-            ddTrack:SetWidth(4)
-            ddTrack:SetPoint("TOPRIGHT", sf, "TOPRIGHT", -4, -4)
-            ddTrack:SetPoint("BOTTOMRIGHT", sf, "BOTTOMRIGHT", -4, 4)
-            ddTrack:SetFrameLevel(sf:GetFrameLevel() + 2)
-            SolidTex(ddTrack, "BACKGROUND", 1, 1, 1, 0.02):SetAllPoints()
+            local menuRail = CreateFrame("Frame", nil, scroller)
+            menuRail:SetWidth(4)
+            menuRail:SetPoint("TOPRIGHT", scroller, "TOPRIGHT", -4, -4)
+            menuRail:SetPoint("BOTTOMRIGHT", scroller, "BOTTOMRIGHT", -4, 4)
+            menuRail:SetFrameLevel(scroller:GetFrameLevel() + 2)
+            SolidTex(menuRail, "BACKGROUND", 1, 1, 1, 0.02):SetAllPoints()
 
-            local ddThumb = CreateFrame("Button", nil, ddTrack)
-            ddThumb:SetWidth(4)
-            ddThumb:SetFrameLevel(ddTrack:GetFrameLevel() + 1)
-            ddThumb:EnableMouse(true)
-            ddThumb:RegisterForDrag("LeftButton")
-            ddThumb:SetScript("OnDragStart", function() end)
-            ddThumb:SetScript("OnDragStop", function() end)
-            SolidTex(ddThumb, "ARTWORK", 1, 1, 1, 0.27):SetAllPoints()
+            local menuKnob = CreateFrame("Button", nil, menuRail)
+            menuKnob:SetWidth(4)
+            menuKnob:SetFrameLevel(menuRail:GetFrameLevel() + 1)
+            menuKnob:EnableMouse(true)
+            menuKnob:RegisterForDrag("LeftButton")
+            menuKnob:SetScript("OnDragStart", function() end)
+            menuKnob:SetScript("OnDragStop", function() end)
+            SolidTex(menuKnob, "ARTWORK", 1, 1, 1, 0.27):SetAllPoints()
             -- Controller cursor: it scrolls the list to the selected row itself; the pointer-drag thumb is no stop.
-            CludesUI.PadHint(ddThumb, "nodeignore")
+            CludesUI.PadHint(menuKnob, "nodeignore")
 
             -- Smooth scroll state (per-dropdown, isolated from main panel)
             local ddScrollTarget = 0
@@ -1309,36 +1309,36 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             local SMOOTH_SPEED = 12
 
             -- Parentless; owned by the menu, so each populate hands the same one out again.
-            local ddSmoothFrame = PoolOwned(menu, "smooth", "Frame")
+            local ddSmoothFrame = PoolOwned(dropMenu, "smooth", "Frame")
             ddSmoothFrame:Hide()
 
             local function UpdateDDThumb()
-                local maxScroll = CludesUI.SafeScrollRange(sf)
+                local maxScroll = CludesUI.SafeScrollRange(scroller)
                 if maxScroll <= 0 then
-                    ddTrack:Hide()
+                    menuRail:Hide()
                     return
                 end
-                ddTrack:Show()
-                local trackH = ddTrack:GetHeight()
-                local visH = sf:GetHeight()
+                menuRail:Show()
+                local trackH = menuRail:GetHeight()
+                local visH = scroller:GetHeight()
                 local ratio = visH / (visH + maxScroll)
                 local thumbH = math.max(20, trackH * ratio)
-                ddThumb:SetHeight(thumbH)
-                local scrollRatio = (tonumber(sf:GetVerticalScroll()) or 0) / maxScroll
+                menuKnob:SetHeight(thumbH)
+                local scrollRatio = (tonumber(scroller:GetVerticalScroll()) or 0) / maxScroll
                 local maxTravel = trackH - thumbH
-                ddThumb:ClearAllPoints()
-                ddThumb:SetPoint("TOP", ddTrack, "TOP", 0, -(scrollRatio * maxTravel))
+                menuKnob:ClearAllPoints()
+                menuKnob:SetPoint("TOP", menuRail, "TOP", 0, -(scrollRatio * maxTravel))
             end
 
             -- A scroll position held inside the list's range.
             local function Clamp(pos)
-                return math.max(0, math.min(CludesUI.SafeScrollRange(sf), pos))
+                return math.max(0, math.min(CludesUI.SafeScrollRange(scroller), pos))
             end
             -- Straight to pos, no easing (the target follows so a later wheel
             -- starts from there).
             local function JumpTo(pos)
                 ddScrollTarget = pos
-                sf:SetVerticalScroll(pos)
+                scroller:SetVerticalScroll(pos)
                 UpdateDDThumb()
             end
             local function StopSmooth()
@@ -1347,7 +1347,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
             -- Where a new step starts: the easing's target while one runs.
             local function StepBase()
-                return ddSmoothing and ddScrollTarget or sf:GetVerticalScroll()
+                return ddSmoothing and ddScrollTarget or scroller:GetVerticalScroll()
             end
 
             -- Lets the search filter snap back to the top after the list changes.
@@ -1358,7 +1358,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             -- The easing: each frame closes part of the gap to the target, and
             -- lands on it once under a third of a unit away.
             ddSmoothFrame:SetScript("OnUpdate", function(_, elapsed)
-                local current = sf:GetVerticalScroll()
+                local current = scroller:GetVerticalScroll()
                 ddScrollTarget = Clamp(ddScrollTarget)
                 local diff = ddScrollTarget - current
                 if math.abs(diff) < 0.3 then
@@ -1366,7 +1366,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     StopSmooth()
                     return
                 end
-                sf:SetVerticalScroll(Clamp(current + diff * math.min(1, SMOOTH_SPEED * elapsed)))
+                scroller:SetVerticalScroll(Clamp(current + diff * math.min(1, SMOOTH_SPEED * elapsed)))
                 UpdateDDThumb()
             end)
 
@@ -1378,13 +1378,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
             end
 
-            sf:SetScript("OnMouseWheel", function(self, delta)
+            scroller:SetScript("OnMouseWheel", function(self, delta)
                 if CludesUI.SafeScrollRange(self) <= 0 then
                     return
                 end
                 DDSmoothScrollTo(StepBase() - delta * SCROLL_STEP)
             end)
-            sf:SetScript("OnScrollRangeChanged", UpdateDDThumb)
+            scroller:SetScript("OnScrollRangeChanged", UpdateDDThumb)
 
             -- Controller helpers, built by the first open that runs with a controller
             -- (menu._padOpen), so a list never opened with one carries none of them.
@@ -1400,30 +1400,30 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     DDSmoothScrollTo(StepBase() + self._dir * SCROLL_STEP)
                 end
                 local function MakePadStep(dir, edge, cursorY)
-                    local b = CreateFrame("Button", nil, menu)
+                    local b = CreateFrame("Button", nil, dropMenu)
                     b:SetHeight(PAD_STEP_H)
-                    b:SetPoint(edge .. "LEFT", menu, edge .. "LEFT", 1, cursorY)
-                    b:SetPoint(edge .. "RIGHT", menu, edge .. "RIGHT", -1, cursorY)
-                    b:SetFrameLevel(menu:GetFrameLevel() + 3)
+                    b:SetPoint(edge .. "LEFT", dropMenu, edge .. "LEFT", 1, cursorY)
+                    b:SetPoint(edge .. "RIGHT", dropMenu, edge .. "RIGHT", -1, cursorY)
+                    b:SetFrameLevel(dropMenu:GetFrameLevel() + 3)
                     b._dir = dir
                     local highlight = SolidTex(b, "ARTWORK", 1, 1, 1, 1)
                     highlight:SetAllPoints()
                     highlight:SetAlpha(0)
-                    local arrow = b:CreateTexture(nil, "OVERLAY")
-                    arrow:SetSize(18, 18)
-                    arrow:SetPoint("CENTER")
-                    arrow:SetTexture(MEDIA_PATH .. "icons/cui-arrow.png")
+                    local arrowTex = b:CreateTexture(nil, "OVERLAY")
+                    arrowTex:SetSize(18, 18)
+                    arrowTex:SetPoint("CENTER")
+                    arrowTex:SetTexture(MEDIA_PATH .. "icons/cui-arrow.png")
                     if dir < 0 then
-                        arrow:SetRotation(math.pi)
+                        arrowTex:SetRotation(math.pi)
                     end
-                    arrow:SetAlpha(0.6)
+                    arrowTex:SetAlpha(0.6)
                     b:SetScript("OnEnter", function()
                         highlight:SetAlpha(DD_ITEM_HL_A)
-                        arrow:SetAlpha(1)
+                        arrowTex:SetAlpha(1)
                     end)
                     b:SetScript("OnLeave", function()
                         highlight:SetAlpha(0)
-                        arrow:SetAlpha(0.6)
+                        arrowTex:SetAlpha(0.6)
                     end)
                     b:SetScript("OnClick", PadStepClick)
                     -- The controller cursor scrolls the list by itself; the strips serve the pointer.
@@ -1445,14 +1445,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
                 -- Controller cursor: scroll the row it is about to land on into view;
                 -- true when that row is inside the visible list afterwards.
-                padReveal = function(it)
-                    local topY, itTop = innerContainer:GetTop(), it:GetTop()
+                padReveal = function(entry)
+                    local topY, itTop = innerHolder:GetTop(), entry:GetTop()
                     if not (topY and itTop) then
                         return false
                     end
                     StopSmooth()
-                    JumpTo(Clamp((topY - itTop) - (sf:GetHeight() - it:GetHeight()) / 2))
-                    local sTop, sBot, iTop, iBot = sf:GetTop(), sf:GetBottom(), it:GetTop(), it:GetBottom()
+                    JumpTo(Clamp((topY - itTop) - (scroller:GetHeight() - entry:GetHeight()) / 2))
+                    local sTop, sBot, iTop, iBot = scroller:GetTop(), scroller:GetBottom(), entry:GetTop(), entry:GetBottom()
                     return (sTop and sBot and iTop and iBot and iBot < sTop and iTop > sBot) and true or false
                 end
             end
@@ -1463,22 +1463,22 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             -- not close it.
             local ddDragging = false
             local ddDragStartY, ddDragStartScroll
-            local function EndThumbDrag(thumb)
+            local function EndThumbDrag(knob)
                 ddDragging = false
-                menu._ddThumbDragging = false
-                thumb:SetScript("OnUpdate", nil)
+                dropMenu._ddThumbDragging = false
+                knob:SetScript("OnUpdate", nil)
             end
 
-            ddThumb:SetScript("OnMouseDown", function(self, btnFrame)
+            menuKnob:SetScript("OnMouseDown", function(self, btnFrame)
                 if btnFrame ~= "LeftButton" then
                     return
                 end
                 ddDragging = true
-                menu._ddThumbDragging = true
+                dropMenu._ddThumbDragging = true
                 StopSmooth()
                 local _, cursorY = GetCursorPosition()
                 ddDragStartY = cursorY / self:GetEffectiveScale()
-                ddDragStartScroll = sf:GetVerticalScroll()
+                ddDragStartScroll = scroller:GetVerticalScroll()
                 self:SetScript("OnUpdate", function(self2)
                     if not IsMouseButtonDown("LeftButton") then
                         EndThumbDrag(self2)
@@ -1486,46 +1486,46 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end
                     local _, cy = GetCursorPosition()
                     local deltaY = ddDragStartY - cy / self2:GetEffectiveScale()
-                    local maxTravel = ddTrack:GetHeight() - self2:GetHeight()
+                    local maxTravel = menuRail:GetHeight() - self2:GetHeight()
                     if maxTravel <= 0 then
                         return
                     end
-                    local maxScroll = CludesUI.SafeScrollRange(sf)
+                    local maxScroll = CludesUI.SafeScrollRange(scroller)
                     JumpTo(Clamp(ddDragStartScroll + (deltaY / maxTravel) * maxScroll))
                 end)
             end)
-            ddThumb:SetScript("OnMouseUp", function(self, btnFrame)
+            menuKnob:SetScript("OnMouseUp", function(self, btnFrame)
                 if btnFrame ~= "LeftButton" then
                     return
                 end
                 EndThumbDrag(self)
             end)
 
-            menu:HookScript("OnHide", function()
+            dropMenu:HookScript("OnHide", function()
                 ddSmoothing = false
                 ddSmoothFrame:Hide()
                 ddScrollTarget = 0
-                sf:SetVerticalScroll(0)
+                scroller:SetVerticalScroll(0)
             end)
 
-            menu:HookScript("OnShow", function()
+            dropMenu:HookScript("OnShow", function()
                 ddScrollTarget = 0
-                sf:SetVerticalScroll(0)
+                scroller:SetVerticalScroll(0)
                 UpdateDDThumb()
             end)
         else
-            menu:SetHeight(totalContentH + searchPad)
+            dropMenu:SetHeight(totalContentH + searchPad)
             if searchPad > 0 then
-                innerContainer:ClearAllPoints()
-                innerContainer:SetPoint("TOPLEFT", menu, "TOPLEFT", 0, -searchPad)
-                innerContainer:SetPoint("BOTTOMRIGHT", menu, "BOTTOMRIGHT", 0, 0)
+                innerHolder:ClearAllPoints()
+                innerHolder:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 0, -searchPad)
+                innerHolder:SetPoint("BOTTOMRIGHT", dropMenu, "BOTTOMRIGHT", 0, 0)
             else
-                innerContainer:SetAllPoints(menu)
+                innerHolder:SetAllPoints(dropMenu)
             end
         end
 
         -- Optional search filter, wired once items/container/scroll helpers exist. Matches visible label text (any locale).
-        if searchEdit then
+        if searchBox then
             local function ApplySearchFilter(raw)
                 local q = strlower(strtrim(raw or ""))
                 if searchPlaceholder then
@@ -1537,35 +1537,35 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     if q == "" or strfind(strlower(tostring(name)), q, 1, true) then
                         entry:Show()
                         entry:ClearAllPoints()
-                        entry:SetPoint("TOPLEFT", innerContainer, "TOPLEFT", 1, -(4 + visIdx * _moItemH))
-                        entry:SetPoint("TOPRIGHT", innerContainer, "TOPRIGHT", -1, -(4 + visIdx * _moItemH))
+                        entry:SetPoint("TOPLEFT", innerHolder, "TOPLEFT", 1, -(4 + visIdx * _moItemH))
+                        entry:SetPoint("TOPRIGHT", innerHolder, "TOPRIGHT", -1, -(4 + visIdx * _moItemH))
                         visIdx = visIdx + 1
                     else
                         entry:Hide()
                     end
                 end
-                innerContainer:SetHeight(math.max(1, 4 + visIdx * _moItemH + 3))
+                innerHolder:SetHeight(math.max(1, 4 + visIdx * _moItemH + 3))
                 if searchResetScroll then
                     searchResetScroll()
                 end
             end
-            searchEdit:SetScript("OnTextChanged", function(self)
+            searchBox:SetScript("OnTextChanged", function(self)
                 ApplySearchFilter(self:GetText())
             end)
             -- Focus the dropdown search on open (not under the controller cursor: focus
             -- would pop its on-screen keyboard over the list; its Special press focuses).
             local function FocusSearch()
-                searchEdit:SetText("")
+                searchBox:SetText("")
                 ApplySearchFilter("")
                 if not CludesUI.PadCursorShown() then
-                    searchEdit:SetFocus()
+                    searchBox:SetFocus()
                 end
             end
-            menu._focusSearch = FocusSearch
-            menu:HookScript("OnShow", FocusSearch)
-            menu:HookScript("OnHide", function()
-                searchEdit:SetText("")
-                searchEdit:ClearFocus()
+            dropMenu._focusSearch = FocusSearch
+            dropMenu:HookScript("OnShow", FocusSearch)
+            dropMenu:HookScript("OnHide", function()
+                searchBox:SetText("")
+                searchBox:ClearFocus()
             end)
         end
 
@@ -1621,7 +1621,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- cursor onto the selected row (the first row when none is), scrolled into
         -- view. Mouse and keyboard stop at the first gate, unless strips an earlier
         -- controller open showed must be put away.
-        menu._padOpen = function()
+        dropMenu._padOpen = function()
             if not padStepSync and not CludesUI.PadInUse() then
                 return
             end
@@ -1638,13 +1638,13 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
             local current, target = getValue(), nil
             for idx = 1, #menuItems do
-                local it = menuItems[idx]
-                if it:IsShown() then
+                local entry = menuItems[idx]
+                if entry:IsShown() then
                     if not target then
-                        target = it
+                        target = entry
                     end
-                    if it._key == current or (it._subnavChildKeys and it._subnavChildKeys[current]) then
-                        target = it
+                    if entry._key == current or (entry._subnavChildKeys and entry._subnavChildKeys[current]) then
+                        target = entry
                         break
                     end
                 end
@@ -1654,9 +1654,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if target and padReveal and not padReveal(target) then
                 target = nil
             end
-            CludesUI.PadFocus(target or menu)
+            CludesUI.PadFocus(target or dropMenu)
         end
-        return menu, menuItems, Refresh
+        return dropMenu, menuItems, Refresh
     end
 
     -- CludesUI.SeatDropdownMenu(menu): a list hangs off its button, so a button
@@ -1666,33 +1666,33 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- so repeated opens never drift.
     do
         local floor, abs = math.floor, math.abs
-        function CludesUI.SeatDropdownMenu(menu)
-            if menu:GetNumPoints() ~= 1 then
+        function CludesUI.SeatDropdownMenu(dropMenu)
+            if dropMenu:GetNumPoints() ~= 1 then
                 return
             end
-            local pt, rel, rpt, posX, cursorY = menu:GetPoint(1)
+            local pt, rel, rpt, posX, cursorY = dropMenu:GetPoint(1)
             -- Not the offsets this function set (read back as floats): the caller
             -- anchored the list again, so those are the new base.
-            local sx, sy = menu._seatedX, menu._seatedY
+            local sx, sy = dropMenu._seatedX, dropMenu._seatedY
             if not sx or abs(posX - sx) > 0.01 or abs(cursorY - sy) > 0.01 then
-                menu._seatX, menu._seatY = posX, cursorY
+                dropMenu._seatX, dropMenu._seatY = posX, cursorY
             end
-            posX, cursorY = menu._seatX, menu._seatY
-            menu:SetPoint(pt, rel, rpt, posX, cursorY)
-            local l, t = menu:GetLeft(), menu:GetTop()
-            local keyName = menu:GetEffectiveScale() / CludesUI.PP.perfect
+            posX, cursorY = dropMenu._seatX, dropMenu._seatY
+            dropMenu:SetPoint(pt, rel, rpt, posX, cursorY)
+            local l, t = dropMenu:GetLeft(), dropMenu:GetTop()
+            local keyName = dropMenu:GetEffectiveScale() / CludesUI.PP.perfect
             if l and t and keyName > 0 and not (issecretvalue(l) or issecretvalue(t)) then
                 l, t = l * keyName, t * keyName
                 posX, cursorY = posX + (floor(l + 0.5) - l) / keyName, cursorY + (floor(t + 0.5) - t) / keyName
-                menu:SetPoint(pt, rel, rpt, posX, cursorY)
+                dropMenu:SetPoint(pt, rel, rpt, posX, cursorY)
             end
-            menu._seatedX, menu._seatedY = posX, cursorY
+            dropMenu._seatedX, dropMenu._seatedY = posX, cursorY
         end
     end
 
     -- Wire OnEnter/OnLeave/OnClick/OnShow/OnHide for a dropdown button + menu. s = { bg_r..a, bg_hr..ha, brd_r..a, brd_hr..ha, txt_r..a, txt_hr..ha } (24 values)
     -- ddBtn._valueDimA, when set, holds the value text at that alpha in both states (a greyed-out current value stays greyed under the cursor).
-    local function WireDropdownScripts(dropdownBtn, dropCaption, backdrop, brd, menu, refresh, s, keepClickHandler)
+    local function WireDropdownScripts(dropdownBtn, dropCaption, backdrop, brd, dropMenu, refresh, s, keepClickHandler)
         local function ApplyNormal()
             dropCaption:SetTextColor(s[17], s[18], s[19], dropdownBtn._valueDimA or s[20])
             brd:SetColor(s[9], s[10], s[11], s[12])
@@ -1705,12 +1705,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
         dropdownBtn:SetScript("OnEnter", function()
             ApplyHover()
-            if dropdownBtn._ttText and not menu:IsShown() then
+            if dropdownBtn._ttText and not dropMenu:IsShown() then
                 ShowWidgetTooltip(dropdownBtn, dropdownBtn._ttText, dropdownBtn._ttOpts)
             end
         end)
         dropdownBtn:SetScript("OnLeave", function()
-            if not menu:IsShown() then
+            if not dropMenu:IsShown() then
                 ApplyNormal()
                 if dropdownBtn._ttText then
                     HideWidgetTooltip()
@@ -1726,24 +1726,24 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 if dropdownBtn._ttText then
                     HideWidgetTooltip()
                 end
-                if menu:IsShown() then
-                    menu:Hide()
+                if dropMenu:IsShown() then
+                    dropMenu:Hide()
                 else
-                    menu:Show()
+                    dropMenu:Show()
                 end
             end)
             dropdownBtn:HookScript("OnHide", function()
-                menu:Hide()
+                dropMenu:Hide()
             end)
         end
         -- Controller cursor: its Cancel press clicks the dropdown button, which closes the list.
         if CludesUI.PadCP() then
-            menu.CloseButton = dropdownBtn
+            dropMenu.CloseButton = dropdownBtn
         end
-        menu:SetScript("OnShow", function(self)
+        dropMenu:SetScript("OnShow", function(self)
             -- Detect custom parenting via GetParent(); _menuOpts is out of scope here. The
             -- controller-cursor overlay layer covers UIParent 1:1, so it counts as UIParent.
-            local mp = menu:GetParent()
+            local mp = dropMenu:GetParent()
             if mp ~= UIParent and mp ~= CludesUI._overlayLayer then
                 -- Scaled popup parent: scale is inherited, leave at 1 (nothing to match, nothing to go stale).
                 self:SetScale(1)
@@ -1767,12 +1767,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             ApplyHover()
             refresh()
             -- This SetScript replaces BuildDropdownMenu's OnShow hook, so drive its search auto-focus directly.
-            if menu._focusSearch then
-                menu._focusSearch()
+            if dropMenu._focusSearch then
+                dropMenu._focusSearch()
             end
             -- Controller open edge (step strips, cursor into the list); returns at once without one.
-            if menu._padOpen then
-                menu._padOpen()
+            if dropMenu._padOpen then
+                dropMenu._padOpen()
             end
             self:SetScript("OnUpdate", function(m)
                 local flyoverFlyout = false
@@ -1826,7 +1826,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
             end)
         end)
-        menu:SetScript("OnHide", function(self)
+        dropMenu:SetScript("OnHide", function(self)
             self:SetScript("OnUpdate", nil)
             if CludesUI._openDropdownMenu == self then
                 CludesUI._openDropdownMenu = nil
@@ -1853,7 +1853,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
         end)
         -- A no-op unless the menu sits on the controller-cursor overlay layer.
-        CludesUI.TrackOverlay(menu)
+        CludesUI.TrackOverlay(dropMenu)
     end
 
     -- Pre-built colour arrays for the two dropdown styles
@@ -1998,23 +1998,23 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             inputAlpha = math.min(1, inputAlpha + SL.MW_INPUT_BOOST)
         end
 
-        local trackFrame = CreateFrame("Frame", nil, hostFrame)
-        Pix.Size(trackFrame, trackW, 20)
-        trackFrame:SetFrameLevel(hostFrame:GetFrameLevel() + 1)
+        local trackBar = CreateFrame("Frame", nil, hostFrame)
+        Pix.Size(trackBar, trackW, 20)
+        trackBar:SetFrameLevel(hostFrame:GetFrameLevel() + 1)
 
         -- trackDark and trackFill only measure, never draw (the drag reads
         -- trackDark's left edge, the thumb rides trackFill's right edge); the
         -- pills on a pixel layer draw them, round-ended and crisp at every Window
         -- Scale, the fill's right end under the thumb.
-        local trackDark = SolidTex(trackFrame, "BACKGROUND", 0, 0, 0, 0)
+        local trackDark = SolidTex(trackBar, "BACKGROUND", 0, 0, 0, 0)
         Pix.Size(trackDark, trackW, trackH)
-        Pix.Point(trackDark, "CENTER", trackFrame, "CENTER", 0, 0)
+        Pix.Point(trackDark, "CENTER", trackBar, "CENTER", 0, 0)
 
-        local trackFill = SolidTex(trackFrame, "BORDER", 0, 0, 0, 0)
+        local trackFill = SolidTex(trackBar, "BORDER", 0, 0, 0, 0)
         Pix.Height(trackFill, trackH)
         Pix.Point(trackFill, "LEFT", trackDark, "LEFT", 0, 0)
 
-        local L = PX.Layer(trackFrame, PX.SliderFit)
+        local L = PX.Layer(trackBar, PX.SliderFit)
         local trackPill = L._frame:CreateTexture(nil, "BACKGROUND")
         trackPill:SetAllPoints(trackDark)
         trackPill:SetVertexColor(trkR, trkG, trkB, trkA)
@@ -2023,39 +2023,39 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         fillPill:SetPoint("BOTTOMRIGHT", trackFill, "BOTTOMRIGHT", 0, 0)
         fillPill:SetVertexColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, SL.FILL_A)
 
-        local thumb = CreateFrame("Button", nil, trackFrame)
-        Pix.Size(thumb, thumbSz, thumbSz)
-        thumb:SetFrameLevel(trackFrame:GetFrameLevel() + 2)
-        thumb:EnableMouse(true)
-        Pix.Point(thumb, "CENTER", trackFill, "RIGHT", 0, 0)
+        local knob = CreateFrame("Button", nil, trackBar)
+        Pix.Size(knob, thumbSz, thumbSz)
+        knob:SetFrameLevel(trackBar:GetFrameLevel() + 2)
+        knob:EnableMouse(true)
+        Pix.Point(knob, "CENTER", trackFill, "RIGHT", 0, 0)
         -- Opaque blocker behind the thumb hides the track fill line; SetIgnoreParentAlpha keeps it solid when the slider grays out at 0.3.
-        local thumbBlockerFrame = CreateFrame("Frame", nil, thumb)
+        local thumbBlockerFrame = CreateFrame("Frame", nil, knob)
         thumbBlockerFrame:SetAllPoints()
-        thumbBlockerFrame:SetFrameLevel(thumb:GetFrameLevel())
+        thumbBlockerFrame:SetFrameLevel(knob:GetFrameLevel())
         thumbBlockerFrame:SetIgnoreParentAlpha(true)
         local thumbBlocker = thumbBlockerFrame:CreateTexture(nil, "BACKGROUND")
         thumbBlocker:SetAllPoints()
         thumbBlocker:SetVertexColor(DARK_BG.r, DARK_BG.g, DARK_BG.b, 1)
         -- The thumb and its blocker are circles (white art, vertex colour).
-        local thumbTex = thumb:CreateTexture(nil, "ARTWORK")
+        local thumbTex = knob:CreateTexture(nil, "ARTWORK")
         thumbTex:SetAllPoints()
         thumbTex:SetVertexColor(CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 1)
         L.track, L.fill, L.thumb, L.blocker = trackPill, fillPill, thumbTex, thumbBlocker
-        L.trackRef, L.thumbRef = trackDark, thumb
+        L.trackRef, L.thumbRef = trackDark, knob
         L:Fit()
 
-        local valBox = CreateFrame("EditBox", nil, hostFrame)
-        Pix.Size(valBox, inputW, inputH)
-        valBox:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
-        valBox:SetAutoFocus(false)
-        valBox:SetNumeric(false)
-        valBox:SetMaxLetters(6)
-        valBox:SetJustifyH("CENTER")
-        valBox:SetFont(EXPRESSWAY, inputFontSz, "")
-        valBox:SetTextColor(TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
-        local valBg = SolidTex(valBox, "BACKGROUND", SL.INPUT_R, SL.INPUT_G, SL.INPUT_B, inputAlpha)
+        local valueBox = CreateFrame("EditBox", nil, hostFrame)
+        Pix.Size(valueBox, inputW, inputH)
+        valueBox:SetFrameLevel(hostFrame:GetFrameLevel() + 2)
+        valueBox:SetAutoFocus(false)
+        valueBox:SetNumeric(false)
+        valueBox:SetMaxLetters(6)
+        valueBox:SetJustifyH("CENTER")
+        valueBox:SetFont(EXPRESSWAY, inputFontSz, "")
+        valueBox:SetTextColor(TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
+        local valBg = SolidTex(valueBox, "BACKGROUND", SL.INPUT_R, SL.INPUT_G, SL.INPUT_B, inputAlpha)
         valBg:SetAllPoints()
-        MakeRoundedBorder(valBox, BORDER_R, BORDER_G, BORDER_B, SL.INPUT_BRD_A, valBg)
+        MakeRoundedBorder(valueBox, BORDER_R, BORDER_G, BORDER_B, SL.INPUT_BRD_A, valBg)
 
         local function FormatVal(value)
             if step >= 1 then
@@ -2077,21 +2077,21 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- as 0 then 30 to 180): the drag, a typed value and the shown number all land
         -- on an allowed value.
         local function SnapStep(value)
-            local snapped = minVal + math.floor((value - minVal) / step + 0.5) * step
-            snapped = math.max(minVal, math.min(maxVal, snapped))
+            local snappedValue = minVal + math.floor((value - minVal) / step + 0.5) * step
+            snappedValue = math.max(minVal, math.min(maxVal, snappedValue))
             if valueSnap then
-                snapped = valueSnap(snapped)
+                snappedValue = valueSnap(snappedValue)
             end
-            return snapped
+            return snappedValue
         end
 
         local currentVal = getValue()
         local function UpdateSliderVisual(val)
             local ratio = math.max(0, math.min(1, (val - minVal) / (maxVal - minVal)))
             trackFill:SetWidth(math.max(1, math.floor(trackW * ratio + 0.5)))
-            local snapped = SnapStep(val)
-            if not valBox:HasFocus() then
-                valBox:SetText(FormatVal(snapped))
+            local snappedValue = SnapStep(val)
+            if not valueBox:HasFocus() then
+                valueBox:SetText(FormatVal(snappedValue))
             end
         end
         UpdateSliderVisual(currentVal)
@@ -2134,14 +2134,14 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local function StartDrag()
             isDragging = true
             CludesUI._sliderDragging = (CludesUI._sliderDragging or 0) + 1
-            trackFrame._cuiOnRecycle = EndDragOnRecycle
-            trackFrame:SetScript("OnHide", EndDragOnHide)
+            trackBar._cuiOnRecycle = EndDragOnRecycle
+            trackBar:SetScript("OnHide", EndDragOnHide)
         end
         local function StopDrag()
             isDragging = false
-            trackFrame:SetScript("OnUpdate", nil)
-            trackFrame:SetScript("OnHide", nil)
-            trackFrame._cuiOnRecycle = nil
+            trackBar:SetScript("OnUpdate", nil)
+            trackBar:SetScript("OnHide", nil)
+            trackBar._cuiOnRecycle = nil
             dragScale = nil
             dragTrackLeft = nil
             lastCommitX = nil
@@ -2156,19 +2156,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- then, as the rebuild already painted the slider. Write answers whether the
         -- slider still has the dress it wrote from.
         local function Write(value)
-            local g = PoolGen(trackFrame)
+            local g = PoolGen(trackBar)
             setValue(value)
-            return PoolGen(trackFrame) == g
+            return PoolGen(trackBar) == g
         end
         local function CommitSnap()
-            local snapped = SnapStep(rawDragVal)
-            if not Write(snapped) then
+            local snappedValue = SnapStep(rawDragVal)
+            if not Write(snappedValue) then
                 return
             end
-            currentVal = snapped
-            rawDragVal = snapped
-            lastSnapped = snapped
-            UpdateSliderVisual(snapped)
+            currentVal = snappedValue
+            rawDragVal = snappedValue
+            lastSnapped = snappedValue
+            UpdateSliderVisual(snappedValue)
         end
 
         -- The track stops showing mid-drag (a forced refresh dropped or rebuilt the page,
@@ -2196,7 +2196,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- _cuiOnRecycle, with no write) or a new drag began.
         local hideGen
         local function FinishHiddenDrag()
-            if isDragging or PoolGen(trackFrame) ~= hideGen then
+            if isDragging or PoolGen(trackBar) ~= hideGen then
                 return
             end
             CommitSnap()
@@ -2206,7 +2206,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 return
             end
             EndDragOnRecycle()
-            hideGen = PoolGen(trackFrame)
+            hideGen = PoolGen(trackBar)
             QueueDragFinish(FinishHiddenDrag)
         end
 
@@ -2225,19 +2225,19 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
             local cursorX = posX - leftX
             rawDragVal = ValueAt(cursorX)
-            local snapped = SnapStep(rawDragVal)
+            local snappedValue = SnapStep(rawDragVal)
             local halfPx = HalfStepPx()
-            local shouldCommit = snapped ~= lastSnapped
+            local shouldCommit = snappedValue ~= lastSnapped
                 and (lastCommitX == nil or math.abs(cursorX - lastCommitX) >= halfPx)
             if shouldCommit then
                 -- (not dragging: the write rebuilt the page and its hide ended the drag)
-                if not Write(snapped) or not isDragging then
+                if not Write(snappedValue) or not isDragging then
                     return
                 end
-                currentVal = snapped
-                lastSnapped = snapped
+                currentVal = snappedValue
+                lastSnapped = snappedValue
                 lastCommitX = cursorX
-                UpdateSliderVisual(stepped and snapped or rawDragVal)
+                UpdateSliderVisual(stepped and snappedValue or rawDragVal)
             else
                 -- lastSnapped for the visual prevents flicker at step boundaries
                 UpdateSliderVisual(stepped and lastSnapped or rawDragVal)
@@ -2246,23 +2246,23 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
 
         local function BeginDrag()
             StartDrag()
-            dragScale = trackFrame:GetEffectiveScale()
+            dragScale = trackBar:GetEffectiveScale()
             dragTrackLeft = trackDark:GetLeft()
             local posX = select(1, GetCursorPosition()) / dragScale
             local leftX = dragTrackLeft
             if leftX then
                 local cursorX = posX - leftX
                 rawDragVal = ValueAt(cursorX)
-                local snapped = SnapStep(rawDragVal)
-                UpdateSliderVisual(stepped and snapped or rawDragVal)
-                if not Write(snapped) or not isDragging then
+                local snappedValue = SnapStep(rawDragVal)
+                UpdateSliderVisual(stepped and snappedValue or rawDragVal)
+                if not Write(snappedValue) or not isDragging then
                     return
                 end
-                currentVal = snapped
-                lastSnapped = snapped
+                currentVal = snappedValue
+                lastSnapped = snappedValue
                 lastCommitX = cursorX
             end
-            trackFrame:SetScript("OnUpdate", SliderOnUpdate)
+            trackBar:SetScript("OnUpdate", SliderOnUpdate)
         end
 
         local function EndDrag()
@@ -2290,24 +2290,24 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 return
             end
             committingInput = true
-            local raw = tonumber(valBox:GetText())
+            local raw = tonumber(valueBox:GetText())
             local changed = false
             if raw then
                 raw = math.max(minVal, math.min(maxVal, raw))
-                local snapped = SnapStep(raw)
-                changed = snapped ~= currentVal
-                if not Write(snapped) then
+                local snappedValue = SnapStep(raw)
+                changed = snappedValue ~= currentVal
+                if not Write(snappedValue) then
                     -- Dressed again by a rebuild the setter ran: its box lost focus there.
                     committingInput = false
                     return
                 end
-                currentVal = snapped
-                rawDragVal = snapped
-                UpdateSliderVisual(snapped)
+                currentVal = snappedValue
+                rawDragVal = snappedValue
+                UpdateSliderVisual(snappedValue)
             else
-                valBox:SetText(FormatVal(currentVal))
+                valueBox:SetText(FormatVal(currentVal))
             end
-            valBox:ClearFocus()
+            valueBox:ClearFocus()
             committingInput = false
             -- Typing must re-evaluate widget state exactly as EndDrag does, or the refresh sweep misses the change ("Apply to: All" sync indicator, disabled overlays). Only when the value changed (untouched box stays free); deferred while any slider is mid-drag to match EndDrag's once-per-drag refresh.
             if changed and not CludesUI._sliderDragging and CludesUI.RefreshPage then
@@ -2315,46 +2315,46 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
         end
 
-        valBox:SetScript("OnEnterPressed", function()
+        valueBox:SetScript("OnEnterPressed", function()
             CommitInput()
         end)
-        valBox:SetScript("OnEscapePressed", function()
-            valBox:SetText(FormatVal(currentVal))
-            valBox:ClearFocus()
+        valueBox:SetScript("OnEscapePressed", function()
+            valueBox:SetText(FormatVal(currentVal))
+            valueBox:ClearFocus()
         end)
-        valBox:SetScript("OnEditFocusLost", function()
+        valueBox:SetScript("OnEditFocusLost", function()
             CommitInput()
-            valBox:SetTextColor(TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
+            valueBox:SetTextColor(TEXT_DIM_R, TEXT_DIM_G, TEXT_DIM_B, TEXT_DIM_A)
         end)
-        valBox:SetScript("OnEditFocusGained", function()
-            valBox:SetTextColor(1, 1, 1, 1)
-            valBox:HighlightText()
+        valueBox:SetScript("OnEditFocusGained", function()
+            valueBox:SetTextColor(1, 1, 1, 1)
+            valueBox:HighlightText()
         end)
         -- Up / Down in the box step the typed value by the slider's step (Shift:
         -- ten steps), within its range; Enter or leaving the box applies it.
-        valBox:SetScript("OnArrowPressed", function(self, key)
-            if key ~= "UP" and key ~= "DOWN" then
+        valueBox:SetScript("OnArrowPressed", function(self, itemKey)
+            if itemKey ~= "UP" and itemKey ~= "DOWN" then
                 return
             end
             local base = tonumber(self:GetText()) or currentVal
-            local delta = (key == "UP" and 1 or -1) * step * (IsShiftKeyDown() and 10 or 1)
+            local delta = (itemKey == "UP" and 1 or -1) * step * (IsShiftKeyDown() and 10 or 1)
             self:SetText(FormatVal(SnapStep(math.max(minVal, math.min(maxVal, base + delta)))))
         end)
         -- EditBox can fail to render SetText text right after becoming visible; nudging cursor position forces a re-render.
-        valBox:SetScript("OnShow", function()
-            if not valBox:HasFocus() then
-                valBox:SetText(FormatVal(currentVal))
-                valBox:SetCursorPosition(0)
+        valueBox:SetScript("OnShow", function()
+            if not valueBox:HasFocus() then
+                valueBox:SetText(FormatVal(currentVal))
+                valueBox:SetCursorPosition(0)
             end
         end)
 
         local padNudged = false -- controller cursor press in progress (see OnMouseDown)
-        trackFrame:EnableMouse(true)
-        trackFrame:RegisterForDrag("LeftButton")
-        trackFrame:SetScript("OnDragStart", function() end) -- swallow drag so parent window doesn't move
-        trackFrame:SetScript("OnDragStop", function() end)
-        trackFrame:SetScript("OnMouseDown", function(_, btnFrame)
-            if thumb._sliderDisabled then
+        trackBar:EnableMouse(true)
+        trackBar:RegisterForDrag("LeftButton")
+        trackBar:SetScript("OnDragStart", function() end) -- swallow drag so parent window doesn't move
+        trackBar:SetScript("OnDragStop", function() end)
+        trackBar:SetScript("OnMouseDown", function(_, btnFrame)
+            if knob._sliderDisabled then
                 return
             end
             -- Controller cursor: its press runs this track's mouse scripts with no mouse
@@ -2395,12 +2395,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end)
         -- A release ends only a drag this dress began: on a track the pool dressed
         -- again under a held button, the release of the earlier press does nothing.
-        trackFrame:SetScript("OnMouseUp", function(_, btnFrame)
+        trackBar:SetScript("OnMouseUp", function(_, btnFrame)
             if padNudged then
                 padNudged = false
                 return
             end
-            if thumb._sliderDisabled then
+            if knob._sliderDisabled then
                 return
             end
             if btnFrame == "LeftButton" and isDragging then
@@ -2408,22 +2408,22 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
         end)
         -- Controller cursor: the track is the one stop; the pointer-drag thumb is skipped.
-        CludesUI.PadHint(thumb, "nodeignore")
-        thumb._sliderDisabled = false
-        thumb:RegisterForDrag("LeftButton")
-        thumb:SetScript("OnDragStart", function() end)
-        thumb:SetScript("OnDragStop", function() end)
-        thumb:SetScript("OnMouseDown", function(self, btnFrame)
+        CludesUI.PadHint(knob, "nodeignore")
+        knob._sliderDisabled = false
+        knob:RegisterForDrag("LeftButton")
+        knob:SetScript("OnDragStart", function() end)
+        knob:SetScript("OnDragStop", function() end)
+        knob:SetScript("OnMouseDown", function(self, btnFrame)
             if self._sliderDisabled then
                 return
             end
             if btnFrame == "LeftButton" then
                 StartDrag()
                 rawDragVal = currentVal
-                trackFrame:SetScript("OnUpdate", SliderOnUpdate)
+                trackBar:SetScript("OnUpdate", SliderOnUpdate)
             end
         end)
-        thumb:SetScript("OnMouseUp", function(self, btnFrame)
+        knob:SetScript("OnMouseUp", function(self, btnFrame)
             if self._sliderDisabled then
                 return
             end
@@ -2445,7 +2445,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         end
         RegisterWidgetRefresh(RefreshSlider)
 
-        return trackFrame, valBox, RefreshSlider, thumb
+        return trackBar, valueBox, RefreshSlider, knob
     end
 
     -------------------------------------------------------------------------------
@@ -2934,16 +2934,16 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         -- Title tooltip: a hit frame round the title, as a row label's; clicks
         -- pass through.
         if tooltip then
-            local hit = CreateFrame("Frame", nil, widget)
-            hit:SetPoint("TOPLEFT", label, "TOPLEFT", -5, 5)
-            hit:SetPoint("BOTTOMRIGHT", label, "BOTTOMRIGHT", 5, -5)
-            hit:SetScript("OnEnter", function()
+            local hitArea = CreateFrame("Frame", nil, widget)
+            hitArea:SetPoint("TOPLEFT", label, "TOPLEFT", -5, 5)
+            hitArea:SetPoint("BOTTOMRIGHT", label, "BOTTOMRIGHT", 5, -5)
+            hitArea:SetScript("OnEnter", function()
                 ShowWidgetTooltip(label, tooltip)
             end)
-            hit:SetScript("OnLeave", function()
+            hitArea:SetScript("OnLeave", function()
                 HideWidgetTooltip()
             end)
-            hit:SetMouseClickEnabled(false)
+            hitArea:SetMouseClickEnabled(false)
         end
 
         -- The section's card: the one before it on this parent ends above this
@@ -3054,7 +3054,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     -- array (RD_DD_COLOURS / WD_DD_COLOURS). Returns drop(): forgets the built menu
     -- (hidden), so the next click builds it again; true when there was one.
     local function WireLazyDropdown(dropdownBtn, dropCaption, backdrop, brd, s, build)
-        local menu
+        local dropMenu
         local function ApplyNormal()
             dropCaption:SetTextColor(s[17], s[18], s[19], dropdownBtn._valueDimA or s[20])
             brd:SetColor(s[9], s[10], s[11], s[12])
@@ -3072,7 +3072,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             end
         end)
         dropdownBtn:SetScript("OnLeave", function()
-            if not (menu and menu:IsShown()) then
+            if not (dropMenu and dropMenu:IsShown()) then
                 ApplyNormal()
             end
             if dropdownBtn._ttText then
@@ -3083,29 +3083,29 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             if dropdownBtn._ttText then
                 HideWidgetTooltip()
             end
-            if not menu then
+            if not dropMenu then
                 local refresh
-                menu, refresh = build()
+                dropMenu, refresh = build()
                 -- keepClickHandler=true: this OnClick survives, so after drop() the next click builds the menu again.
-                WireDropdownScripts(dropdownBtn, dropCaption, backdrop, brd, menu, refresh, s, true)
+                WireDropdownScripts(dropdownBtn, dropCaption, backdrop, brd, dropMenu, refresh, s, true)
             end
-            if menu:IsShown() then
-                menu:Hide()
+            if dropMenu:IsShown() then
+                dropMenu:Hide()
             else
-                menu:Show()
+                dropMenu:Show()
             end
         end)
         dropdownBtn:HookScript("OnHide", function()
-            if menu then
-                menu:Hide()
+            if dropMenu then
+                dropMenu:Hide()
             end
         end)
         return function()
-            if not menu then
+            if not dropMenu then
                 return false
             end
-            menu:Hide()
-            menu = nil
+            dropMenu:Hide()
+            dropMenu = nil
             return true
         end
     end
@@ -3134,12 +3134,12 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         dropCaption:SetWordWrap(false)
         dropCaption:SetMaxLines(1)
         dropCaption:SetPoint("LEFT", dropdownBtn, "LEFT", 12, 0)
-        local arrow = MakeDropdownArrow(dropdownBtn, 12, Pix)
-        dropCaption:SetPoint("RIGHT", arrow, "LEFT", -5, 0)
+        local arrowTex = MakeDropdownArrow(dropdownBtn, 12, Pix)
+        dropCaption:SetPoint("RIGHT", arrowTex, "LEFT", -5, 0)
         if not sequence then
             sequence = {}
-            for key in pairs(values) do
-                sequence[#sequence + 1] = key
+            for itemKey in pairs(values) do
+                sequence[#sequence + 1] = itemKey
             end
         end
         dropCaption:SetText(DDResolveLabel(values, sequence, getValue()))
@@ -3208,17 +3208,17 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         if not hoverText then
             return
         end
-        local hit = CreateFrame("Frame", nil, hostFrame)
-        hit:SetPoint("TOPLEFT", label, "TOPLEFT", -5, 5)
-        hit:SetPoint("BOTTOMRIGHT", label, "BOTTOMRIGHT", 5, -5)
-        hit:SetScript("OnEnter", function()
+        local hitArea = CreateFrame("Frame", nil, hostFrame)
+        hitArea:SetPoint("TOPLEFT", label, "TOPLEFT", -5, 5)
+        hitArea:SetPoint("BOTTOMRIGHT", label, "BOTTOMRIGHT", 5, -5)
+        hitArea:SetScript("OnEnter", function()
             ShowWidgetTooltip(label, hoverText)
         end)
-        hit:SetScript("OnLeave", function()
+        hitArea:SetScript("OnLeave", function()
             HideWidgetTooltip()
         end)
-        hit:SetMouseClickEnabled(false)
-        return hit
+        hitArea:SetMouseClickEnabled(false)
+        return hitArea
     end
 
     -- Deferred label clamp for row-half regions (DualRow / TripleRow). Half-region labels get their RIGHT edge
@@ -3245,8 +3245,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 local truncated = false
                 local ll, bl, sw = label:GetLeft(), bound:GetLeft(), label:GetStringWidth()
                 -- A row label menu's arrow (BuildRowLabelMenu) sits right after the text: keep its room too.
-                local arrow = regionFrame._labelArrow
-                local reserve = arrow and (6 + arrow:GetWidth()) or 0
+                local arrowTex = regionFrame._labelArrow
+                local reserve = arrowTex and (6 + arrowTex:GetWidth()) or 0
                 -- Not every inline item registers as _lastInline (a page's own cog
                 -- or preview icon): the leftmost shown frame in the row right of
                 -- the label's start bounds it too, so label and hint stop short of it.
@@ -3284,9 +3284,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     -- A label raised for a hint line (region._labelDY) keeps that height.
                     label:SetPoint("RIGHT", bound, "LEFT", -12 - reserve - extra, regionFrame._labelDY or 0)
                     -- The arrow was placed at the full text width: follow the cut label instead.
-                    if arrow then
-                        arrow:ClearAllPoints()
-                        arrow:SetPoint("LEFT", label, "RIGHT", 6, -1)
+                    if arrowTex then
+                        arrowTex:ClearAllPoints()
+                        arrowTex:SetPoint("LEFT", label, "RIGHT", 6, -1)
                     end
                 end
                 regionFrame._labelTruncated = truncated
@@ -3375,7 +3375,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             getValue = getValue,
             setValue = setValue,
         })
-        local trackFrame, valBox = BuildSliderCore(
+        local trackBar, valueBox = BuildSliderCore(
             widget,
             320,
             4,
@@ -3390,9 +3390,9 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             scfg.getValue,
             scfg.setValue
         )
-        Pix.Point(valBox, "RIGHT", widget, "RIGHT", -20, 0)
-        Pix.Point(trackFrame, "RIGHT", valBox, "LEFT", -16, 0)
-        AttachLabelHover(widget, label, (ClampRowLabel(label, trackFrame, "LEFT", 12, textValue, tooltip)))
+        Pix.Point(valueBox, "RIGHT", widget, "RIGHT", -20, 0)
+        Pix.Point(trackBar, "RIGHT", valueBox, "LEFT", -16, 0)
+        AttachLabelHover(widget, label, (ClampRowLabel(label, trackBar, "LEFT", 12, textValue, tooltip)))
         -- Spec Overrides capture: see DualRow BuildHalf.
         widget._captureCfg = {
             type = "slider",
@@ -3574,34 +3574,34 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     do
         local freeGlows = {} -- look key -> free glow frames (hidden, parentless)
 
-        local function FreeGlow(glow)
-            if glow._settingGlowFree then
+        local function FreeGlow(glowTex)
+            if glowTex._settingGlowFree then
                 return
             end
-            glow:Hide()
-            glow:SetScript("OnUpdate", nil)
-            glow:SetParent(nil)
-            glow._settingGlowFree = true
-            local entries = freeGlows[glow._settingGlowKey]
-            entries[#entries + 1] = glow
+            glowTex:Hide()
+            glowTex:SetScript("OnUpdate", nil)
+            glowTex:SetParent(nil)
+            glowTex._settingGlowFree = true
+            local entries = freeGlows[glowTex._settingGlowKey]
+            entries[#entries + 1] = glowTex
         end
 
-        local function TakeGlow(key, r, g, b, px, noSnap)
-            local entries = freeGlows[key]
+        local function TakeGlow(itemKey, r, g, b, px, noSnap)
+            local entries = freeGlows[itemKey]
             if not entries then
                 entries = {}
-                freeGlows[key] = entries
+                freeGlows[itemKey] = entries
             end
             local num = #entries
             if num > 0 then
-                local glow = entries[num]
+                local glowTex = entries[num]
                 entries[num] = nil
-                glow._settingGlowFree = nil
-                return glow
+                glowTex._settingGlowFree = nil
+                return glowTex
             end
-            local glow = CreateFrame("Frame")
+            local glowTex = CreateFrame("Frame")
             local function MkEdge()
-                local t = glow:CreateTexture(nil, "OVERLAY", nil, 7)
+                local t = glowTex:CreateTexture(nil, "OVERLAY", nil, 7)
                 t:SetColorTexture(r, g, b, 1)
                 if noSnap and t.SetSnapToPixelGrid then
                     t:SetSnapToPixelGrid(false)
@@ -3622,8 +3622,8 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             rgt:SetWidth(px)
             rgt:SetPoint("TOPRIGHT", topY, "BOTTOMRIGHT")
             rgt:SetPoint("BOTTOMRIGHT", bot, "TOPRIGHT")
-            glow._settingGlowKey = key
-            return glow
+            glowTex._settingGlowKey = itemKey
+            return glowTex
         end
 
         CludesUI.MakeSettingGlow = function(options)
@@ -3644,41 +3644,41 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     lookPool = look .. "|pool"
                 end
                 local tgen = PoolGen(targetFrame)
-                local key = tgen and lookPool or look
-                local glow = mine
-                if glow and glow._settingGlowOwner == token then
-                    if glow._settingGlowKey ~= key then
+                local itemKey = tgen and lookPool or look
+                local glowTex = mine
+                if glowTex and glowTex._settingGlowOwner == token then
+                    if glowTex._settingGlowKey ~= itemKey then
                         -- serves the other kind of target: the last glow ends here
-                        FreeGlow(glow)
-                        glow = nil
-                    elseif glow._settingGlowFree then
-                        local entries = freeGlows[key]
+                        FreeGlow(glowTex)
+                        glowTex = nil
+                    elseif glowTex._settingGlowFree then
+                        local entries = freeGlows[itemKey]
                         for idx = #entries, 1, -1 do
-                            if entries[idx] == glow then
+                            if entries[idx] == glowTex then
                                 table.remove(entries, idx)
                                 break
                             end
                         end
-                        glow._settingGlowFree = nil
+                        glowTex._settingGlowFree = nil
                     end
                 else
-                    glow = nil
+                    glowTex = nil
                 end
-                if not glow then
-                    glow = TakeGlow(key, cr, cg, checkBtn, px, options.noSnap)
-                    glow._settingGlowOwner = token
-                    mine = glow
+                if not glowTex then
+                    glowTex = TakeGlow(itemKey, cr, cg, checkBtn, px, options.noSnap)
+                    glowTex._settingGlowOwner = token
+                    mine = glowTex
                 end
-                glow:SetParent(targetFrame)
+                glowTex:SetParent(targetFrame)
                 if tgen then
-                    PoolAttach(targetFrame, glow, nil, FreeGlow)
+                    PoolAttach(targetFrame, glowTex, nil, FreeGlow)
                 end
-                glow:SetAllPoints(targetFrame)
-                glow:SetFrameLevel(targetFrame:GetFrameLevel() + 5)
-                glow:SetAlpha(1)
-                glow:Show()
+                glowTex:SetAllPoints(targetFrame)
+                glowTex:SetFrameLevel(targetFrame:GetFrameLevel() + 5)
+                glowTex:SetAlpha(1)
+                glowTex:Show()
                 local elapsed = 0
-                glow:SetScript("OnUpdate", function(self, dt)
+                glowTex:SetScript("OnUpdate", function(self, dt)
                     -- The target was dressed again for another use: this glow is over.
                     if tgen and PoolGen(targetFrame) ~= tgen then
                         FreeGlow(self)
@@ -3711,7 +3711,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     CludesUI.CreatePreviewHitOverlay = function(
         element,
         navigate,
-        key,
+        itemKey,
         isText,
         frameLevelOverride,
         options,
@@ -3794,7 +3794,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
             brd:Hide()
         end)
         button:SetScript("OnMouseDown", function()
-            navigate(key)
+            navigate(itemKey)
         end)
         local sw = options and options.showWith
         if sw then
@@ -3878,15 +3878,15 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     local PICK_ROW_H = 24
 
     local function BuildPickMenu()
-        local menu = CreateFrame("Frame", nil, CludesUI.OverlayParent())
-        menu:SetFrameStrata("FULLSCREEN_DIALOG")
-        menu:SetFrameLevel(220)
-        menu:EnableMouse(true)
-        menu:SetClampedToScreen(true)
-        local backdrop = menu:CreateTexture(nil, "BACKGROUND")
+        local dropMenu = CreateFrame("Frame", nil, CludesUI.OverlayParent())
+        dropMenu:SetFrameStrata("FULLSCREEN_DIALOG")
+        dropMenu:SetFrameLevel(220)
+        dropMenu:EnableMouse(true)
+        dropMenu:SetClampedToScreen(true)
+        local backdrop = dropMenu:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0.067, 0.067, 0.067, 0.98)
-        MakeRoundedBorder(menu, 1, 1, 1, 0.2, backdrop, nil, true)
+        MakeRoundedBorder(dropMenu, 1, 1, 1, 0.2, backdrop, nil, true)
 
         -- Shown and hidden with the menu, just under it.
         local catcher = CreateFrame("Button", nil, CludesUI.OverlayParent())
@@ -3895,11 +3895,11 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         catcher:SetFrameLevel(210)
         catcher:RegisterForClicks("LeftButtonUp", "RightButtonUp")
         catcher:SetScript("OnClick", function()
-            menu:Hide()
+            dropMenu:Hide()
         end)
         catcher:Hide()
-        menu._catcher = catcher
-        menu:SetScript("OnHide", function(self)
+        dropMenu._catcher = catcher
+        dropMenu:SetScript("OnHide", function(self)
             self._catcher:Hide()
             -- Controller cursor: back onto the tile that opened it (set only under that cursor).
             local opener = self._padOpener
@@ -3910,111 +3910,111 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
             end
         end)
-        menu:SetScript("OnShow", function(self)
+        dropMenu:SetScript("OnShow", function(self)
             self._catcher:Show()
         end)
         -- Controller cursor: on its overlay layer the menu is created hidden, so the
         -- layer shows only with it; the menu and its catcher block what they cover
         -- without being stops, and Cancel clicks the catcher (closing the menu).
         if CludesUI.PadCP() then
-            menu:Hide()
-            CludesUI.PadHint(menu, "nodepass")
+            dropMenu:Hide()
+            CludesUI.PadHint(dropMenu, "nodepass")
             CludesUI.PadHint(catcher, "nodepass")
-            menu.CloseButton = catcher
+            dropMenu.CloseButton = catcher
             CludesUI.TrackOverlay(catcher)
-            CludesUI.TrackOverlay(menu)
+            CludesUI.TrackOverlay(dropMenu)
         end
 
-        local title = menu:CreateFontString(nil, "OVERLAY")
-        title:SetPoint("TOPLEFT", menu, "TOPLEFT", 10, -7)
+        local title = dropMenu:CreateFontString(nil, "OVERLAY")
+        title:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 10, -7)
         title:SetTextColor(0.6, 0.6, 0.6)
-        menu._title = title
+        dropMenu._title = title
 
         -- The list: two rows a wheel notch, held inside the list's height.
-        local scroll = CreateFrame("ScrollFrame", nil, menu)
+        local scroll = CreateFrame("ScrollFrame", nil, dropMenu)
         scroll:SetClipsChildren(true)
-        menu._scroll = scroll
+        dropMenu._scroll = scroll
         local list = CreateFrame("Frame", nil, scroll)
         scroll:SetScrollChild(list)
-        menu._child = list
+        dropMenu._child = list
         scroll:EnableMouseWheel(true)
         scroll:SetScript("OnMouseWheel", function(self, delta)
-            local maxS = math.max(0, menu._child:GetHeight() - self:GetHeight())
+            local maxS = math.max(0, dropMenu._child:GetHeight() - self:GetHeight())
             self:SetVerticalScroll(
                 math.max(0, math.min(maxS, self:GetVerticalScroll() - delta * PICK_ROW_H * 2))
             )
         end)
-        menu._rows = {}
-        return menu
+        dropMenu._rows = {}
+        return dropMenu
     end
 
     -- Row idx of the list: a hover wash (none on a disabled row), the icon and
     -- the label; a click on an enabled row closes the menu and reports its key.
-    local function BuildPickRow(menu, idx)
-        local row = CreateFrame("Button", nil, menu._child)
-        row:SetHeight(PICK_ROW_H)
-        row:SetPoint("TOPLEFT", menu._child, "TOPLEFT", 0, -(idx - 1) * PICK_ROW_H)
-        row:SetPoint("RIGHT", menu._child, "RIGHT", 0, 0)
-        local hov = row:CreateTexture(nil, "BACKGROUND")
+    local function BuildPickRow(dropMenu, idx)
+        local line = CreateFrame("Button", nil, dropMenu._child)
+        line:SetHeight(PICK_ROW_H)
+        line:SetPoint("TOPLEFT", dropMenu._child, "TOPLEFT", 0, -(idx - 1) * PICK_ROW_H)
+        line:SetPoint("RIGHT", dropMenu._child, "RIGHT", 0, 0)
+        local hov = line:CreateTexture(nil, "BACKGROUND")
         hov:SetAllPoints()
         hov:SetColorTexture(1, 1, 1, 0)
-        row._hov = hov
-        local ic = row:CreateTexture(nil, "ARTWORK")
+        line._hov = hov
+        local ic = line:CreateTexture(nil, "ARTWORK")
         ic:SetSize(16, 16)
-        ic:SetPoint("LEFT", row, "LEFT", 8, 0)
+        ic:SetPoint("LEFT", line, "LEFT", 8, 0)
         ic:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-        row._icon = ic
-        local labelFS = row:CreateFontString(nil, "OVERLAY")
-        labelFS:SetPoint("RIGHT", row, "RIGHT", -8, 0)
+        line._icon = ic
+        local labelFS = line:CreateFontString(nil, "OVERLAY")
+        labelFS:SetPoint("RIGHT", line, "RIGHT", -8, 0)
         labelFS:SetJustifyH("LEFT")
         labelFS:SetWordWrap(false)
-        row._lbl = labelFS
-        row:SetScript("OnEnter", function(self)
+        line._lbl = labelFS
+        line:SetScript("OnEnter", function(self)
             if not self._disabled then
                 self._hov:SetColorTexture(1, 1, 1, 0.07)
             end
         end)
-        row:SetScript("OnLeave", function(self)
+        line:SetScript("OnLeave", function(self)
             self._hov:SetColorTexture(1, 1, 1, 0)
         end)
-        row:SetScript("OnClick", function(self)
+        line:SetScript("OnClick", function(self)
             if self._disabled then
                 return
             end
-            menu:Hide()
-            if menu._onPick then
-                menu._onPick(self._key)
+            dropMenu:Hide()
+            if dropMenu._onPick then
+                dropMenu._onPick(self._key)
             end
         end)
-        return row
+        return line
     end
 
     -- Dress a row for one item: the label clears the icon when there is one.
-    local function DressPickRow(row, it, fontFile)
-        row._key = it.key
-        row._disabled = it.disabled and true or false
-        row._hov:SetColorTexture(1, 1, 1, 0)
-        local caption = row._lbl
+    local function DressPickRow(line, entry, fontFile)
+        line._key = entry.key
+        line._disabled = entry.disabled and true or false
+        line._hov:SetColorTexture(1, 1, 1, 0)
+        local caption = line._lbl
         caption:SetFont(fontFile, 12, "")
-        caption:SetText(it.label or tostring(it.key))
+        caption:SetText(entry.label or tostring(entry.key))
         caption:ClearAllPoints()
-        caption:SetPoint("RIGHT", row, "RIGHT", -8, 0)
-        if it.icon then
-            row._icon:SetTexture(it.icon)
-            row._icon:Show()
-            caption:SetPoint("LEFT", row, "LEFT", 30, 0)
+        caption:SetPoint("RIGHT", line, "RIGHT", -8, 0)
+        if entry.icon then
+            line._icon:SetTexture(entry.icon)
+            line._icon:Show()
+            caption:SetPoint("LEFT", line, "LEFT", 30, 0)
         else
-            row._icon:Hide()
-            caption:SetPoint("LEFT", row, "LEFT", 10, 0)
+            line._icon:Hide()
+            caption:SetPoint("LEFT", line, "LEFT", 10, 0)
         end
-        if it.disabled then
-            row:SetAlpha(0.35)
+        if entry.disabled then
+            line:SetAlpha(0.35)
             caption:SetTextColor(0.7, 0.7, 0.7)
         else
-            row:SetAlpha(1)
+            line:SetAlpha(1)
             caption:SetTextColor(0.9, 0.9, 0.9)
         end
-        row:Show()
+        line:Show()
     end
 
     function CludesUI.ShowPickMenu(anchor, options)
@@ -4023,61 +4023,61 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
         local width = options.width or 230
         local itemList = options.items or {}
 
-        local menu = CludesUI._pickMenu
-        if not menu then
-            menu = BuildPickMenu()
-            CludesUI._pickMenu = menu
+        local dropMenu = CludesUI._pickMenu
+        if not dropMenu then
+            dropMenu = BuildPickMenu()
+            CludesUI._pickMenu = dropMenu
         end
 
         -- A title band only when there is a title.
         local titleH = 6
         if options.title then
-            menu._title:SetFont(fontFile, 11, "")
-            menu._title:SetText(options.title)
-            menu._title:Show()
+            dropMenu._title:SetFont(fontFile, 11, "")
+            dropMenu._title:SetText(options.title)
+            dropMenu._title:Show()
             titleH = 24
         else
-            menu._title:Hide()
+            dropMenu._title:Hide()
         end
 
         local listH = #itemList * PICK_ROW_H
-        menu:SetSize(width, titleH + math.min(listH, options.maxHeight or 320) + 8)
-        menu._scroll:ClearAllPoints()
-        menu._scroll:SetPoint("TOPLEFT", menu, "TOPLEFT", 0, -titleH)
-        menu._scroll:SetPoint("BOTTOMRIGHT", menu, "BOTTOMRIGHT", 0, 6)
-        menu._child:SetSize(width, math.max(listH, 1))
-        menu._scroll:SetVerticalScroll(0)
+        dropMenu:SetSize(width, titleH + math.min(listH, options.maxHeight or 320) + 8)
+        dropMenu._scroll:ClearAllPoints()
+        dropMenu._scroll:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 0, -titleH)
+        dropMenu._scroll:SetPoint("BOTTOMRIGHT", dropMenu, "BOTTOMRIGHT", 0, 6)
+        dropMenu._child:SetSize(width, math.max(listH, 1))
+        dropMenu._scroll:SetVerticalScroll(0)
 
-        local rowList = menu._rows
-        for idx, it in ipairs(itemList) do
-            local row = rowList[idx]
-            if not row then
-                row = BuildPickRow(menu, idx)
-                rowList[idx] = row
+        local rowList = dropMenu._rows
+        for idx, entry in ipairs(itemList) do
+            local line = rowList[idx]
+            if not line then
+                line = BuildPickRow(dropMenu, idx)
+                rowList[idx] = line
             end
-            DressPickRow(row, it, fontFile)
+            DressPickRow(line, entry, fontFile)
         end
         for idx = #itemList + 1, #rowList do
             rowList[idx]:Hide()
         end
-        menu._onPick = options.onPick
+        dropMenu._onPick = options.onPick
 
         -- Context-menu convention: open at the cursor (clamped on screen).
         -- Controller cursor: the hidden pointer is not on the tile, so open at
         -- the tile and put the cursor into the list.
         local scale = UIParent:GetEffectiveScale()
         local cx, cy = GetCursorPosition()
-        menu:ClearAllPoints()
+        dropMenu:ClearAllPoints()
         local padCursor = CludesUI.PadCursorShown()
         if padCursor and anchor then
-            menu:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -2)
+            dropMenu:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -2)
         else
-            menu:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", cx / scale + 2, cy / scale + 2)
+            dropMenu:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", cx / scale + 2, cy / scale + 2)
         end
-        menu:Show()
+        dropMenu:Show()
         if padCursor then
-            menu._padOpener = anchor
-            CludesUI.PadFocus(menu)
+            dropMenu._padOpener = anchor
+            CludesUI.PadFocus(dropMenu)
         end
     end
 

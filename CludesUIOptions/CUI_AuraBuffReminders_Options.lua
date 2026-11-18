@@ -349,12 +349,12 @@ CludesUI.AtOptionsLogin(function()
         end
         local text = button._text
         if d.showText then
-            local tc = d.textColor or { r = 1, g = 1, b = 1 }
+            local textColor = d.textColor or { r = 1, g = 1, b = 1 }
             CludesUI.ApplyModuleFont(text, GetNameFontPath(), d.textSize or 11, "auraBuff")
             text:ClearAllPoints()
             local own, onIcon = GetPreviewTextAnchor(d)
             text:SetPoint(own, button, onIcon, d.textXOffset or 0, d.textYOffset or -2)
-            text:SetTextColor(tc.r, tc.g, tc.b, 1)
+            text:SetTextColor(textColor.r, textColor.g, textColor.b, 1)
             text:Show()
         else
             text:Hide()
@@ -523,8 +523,8 @@ CludesUI.AtOptionsLogin(function()
         local own, onIcon = GetPreviewTextAnchor(d)
         text:SetPoint(own, button, onIcon, (d and d.textXOffset) or 0, (d and d.textYOffset) or -2)
         CludesUI.ApplyModuleFont(text, GetNameFontPath(), (d and d.textSize) or 11, "auraBuff")
-        local tc = (d and d.textColor) or { r = 1, g = 1, b = 1 }
-        text:SetTextColor(tc.r, tc.g, tc.b, 1)
+        local textColor = (d and d.textColor) or { r = 1, g = 1, b = 1 }
+        text:SetTextColor(textColor.r, textColor.g, textColor.b, 1)
         text:SetText(data.label or "")
         if not (d and d.showText) then
             text:Hide()
@@ -699,15 +699,15 @@ CludesUI.AtOptionsLogin(function()
             return not (t and t[keyName] == false)
         end
     end
-    local function WhereSet(store, onChange)
+    local function WhereSet(store, changed)
         return function(keyName, value)
             local t = store(true)
             if not t then
                 return
             end
             t[keyName] = value and true or false
-            if onChange then
-                onChange()
+            if changed then
+                changed()
             end
         end
     end
@@ -717,15 +717,15 @@ CludesUI.AtOptionsLogin(function()
             return t and t[keyName] == true
         end
     end
-    local function WhenSet(store, onChange)
+    local function WhenSet(store, changed)
         return function(keyName, value)
             local t = store()
             if not t then
                 return
             end
             t[keyName] = value and true or false
-            if onChange then
-                onChange()
+            if changed then
+                changed()
             end
         end
     end
@@ -768,9 +768,9 @@ CludesUI.AtOptionsLogin(function()
     -- Shared reminder-sound catalogue (built + LSM-populated by the QoL
     -- module and exposed on CludesUI). Falls back to just "None".
     local function SoundNamesOrder()
-        local names = CludesUI._groupDeathSoundNames or { none = "None" }
+        local nameList = CludesUI._groupDeathSoundNames or { none = "None" }
         local order = CludesUI._groupDeathSoundOrder or { "none" }
-        return names, order
+        return nameList, order
     end
     local SOUND_TIP = "Play a sound once when a reminder in this section newly appears."
     -- Plays a picked sound once, so the choice is heard.
@@ -786,13 +786,13 @@ CludesUI.AtOptionsLogin(function()
     -- ("none"/nil = silent), plus any extraRows. One reminder sound applies
     -- to the whole section.
     local function AddSectionSoundCog(region, getSec, field, extraRows, title)
-        local names, order = SoundNamesOrder()
+        local nameList, order = SoundNamesOrder()
         local rows = {
             {
                 type = "dropdown",
                 label = "Sound",
                 tooltip = SOUND_TIP,
-                values = names,
+                values = nameList,
                 order = order,
                 get = function()
                     local t = getSec()
@@ -837,10 +837,10 @@ CludesUI.AtOptionsLogin(function()
     -- class-special section looks its field up per call (the map is
     -- exported in ABR's OnEnable, see EABR.SPECIALS) and stores "none"
     -- rather than clearing it (see EABR.SpecialsSound).
-    local function SoundDropdownCfg(cfg)
-        local names, order = SoundNamesOrder()
-        local sec, special = cfg.soundSec, cfg.specialClass
-        local own = cfg.soundField or "sectionSound"
+    local function SoundDropdownCfg(settings)
+        local nameList, order = SoundNamesOrder()
+        local sec, special = settings.soundSec, settings.specialClass
+        local own = settings.soundField or "sectionSound"
         local function Field()
             if not special then
                 return own
@@ -853,7 +853,7 @@ CludesUI.AtOptionsLogin(function()
             text = "Reminder Sound",
             dropdownWidth = 220,
             tooltip = SOUND_TIP,
-            values = names,
+            values = nameList,
             order = order,
             getValue = function()
                 local t = sec()
@@ -900,56 +900,56 @@ CludesUI.AtOptionsLogin(function()
     -- dropdown (+ reminder-sound cog beside it); for a section with a sound
     -- a full "Reminder Sound" dropdown fills the slot instead of a cog; else
     -- the section's own cfg.rightCfg (the caller dresses row._rightRegion).
-    local function SectionControlRow(parent, y, cfg)
-        local rightCfg = cfg.rightCfg
-        if cfg.showWhenStore then
-            rightCfg = Placeholder("Show When", cfg.showWhenTooltip)
-        elseif cfg.soundSec then
-            rightCfg = SoundDropdownCfg(cfg)
+    local function SectionControlRow(parent, y, settings)
+        local rightCfg = settings.rightCfg
+        if settings.showWhenStore then
+            rightCfg = Placeholder("Show When", settings.showWhenTooltip)
+        elseif settings.soundSec then
+            rightCfg = SoundDropdownCfg(settings)
         end
-        local row, h = CludesUI.Widgets:DualRow(
+        local line, h = CludesUI.Widgets:DualRow(
             parent,
             y,
-            Placeholder("Where to Show", cfg.whereTooltip),
+            Placeholder("Where to Show", settings.whereTooltip),
             rightCfg or { type = "label", text = "" }
         )
         if CludesUI._prebuilding then
-            return row, h
+            return line, h
         end
 
-        local where = cfg.whereStore
+        local where = settings.whereStore
         CheckList(
-            row._leftRegion,
-            cfg.whereItems or WHERE_ITEMS,
+            line._leftRegion,
+            settings.whereItems or WHERE_ITEMS,
             WhereGet(where),
-            WhereSet(where, cfg.onChange)
+            WhereSet(where, settings.onChange)
         )
-        if cfg.showWhenStore then
-            local rrgn = row._rightRegion
+        if settings.showWhenStore then
+            local rrgn = line._rightRegion
             CheckList(
                 rrgn,
                 SHOWWHEN_ITEMS,
-                WhenGet(cfg.showWhenStore),
-                WhenSet(cfg.showWhenStore, function()
-                    if cfg.onShowWhenChange then
-                        cfg.onShowWhenChange()
+                WhenGet(settings.showWhenStore),
+                WhenSet(settings.showWhenStore, function()
+                    if settings.onShowWhenChange then
+                        settings.onShowWhenChange()
                     end
-                    if cfg.onChange then
-                        cfg.onChange()
+                    if settings.onChange then
+                        settings.onChange()
                     end
                 end)
             )
-            if cfg.soundSec then
+            if settings.soundSec then
                 AddSectionSoundCog(
                     rrgn,
-                    cfg.soundSec,
-                    cfg.soundField or "sectionSound",
-                    cfg.cogRows,
-                    cfg.cogTitle
+                    settings.soundSec,
+                    settings.soundField or "sectionSound",
+                    settings.cogRows,
+                    settings.cogTitle
                 )
             end
         end
-        return row, h
+        return line, h
     end
 
     -- "(min)" in smaller, dimmer text after each slider label of a dual row.
@@ -1091,21 +1091,21 @@ CludesUI.AtOptionsLogin(function()
         local totalW = parent:GetWidth() - GRID_PAD * 2
         local colW = math.floor(totalW / GRID_COLS)
         local accent = CludesUI.CLUDES_GREEN or { r = 0, g = 0.82, b = 0.62 }
-        for row = 0, rows - 1 do
+        for line = 0, rows - 1 do
             local rowFrame = CreateFrame("Frame", nil, parent)
             PP.Size(rowFrame, totalW, GRID_ROW_H)
-            PP.Point(rowFrame, "TOPLEFT", parent, "TOPLEFT", GRID_PAD, y - row * GRID_ROW_H)
+            PP.Point(rowFrame, "TOPLEFT", parent, "TOPLEFT", GRID_PAD, y - line * GRID_ROW_H)
             rowFrame._skipRowDivider = true
             CludesUI.RowBg(rowFrame, parent)
             for col = 1, GRID_COLS - 1 do
-                local div = NoSnap(rowFrame:CreateTexture(nil, "ARTWORK"))
-                div:SetColorTexture(1, 1, 1, 0.06)
-                div:SetWidth(1)
-                PP.Point(div, "TOP", rowFrame, "TOPLEFT", col * colW, 0)
-                PP.Point(div, "BOTTOM", rowFrame, "BOTTOMLEFT", col * colW, 0)
+                local divider = NoSnap(rowFrame:CreateTexture(nil, "ARTWORK"))
+                divider:SetColorTexture(1, 1, 1, 0.06)
+                divider:SetWidth(1)
+                PP.Point(divider, "TOP", rowFrame, "TOPLEFT", col * colW, 0)
+                PP.Point(divider, "BOTTOM", rowFrame, "BOTTOMLEFT", col * colW, 0)
             end
             for col = 0, GRID_COLS - 1 do
-                local entry = items[row * GRID_COLS + col + 1]
+                local entry = items[line * GRID_COLS + col + 1]
                 if not entry then
                     break
                 end
@@ -1141,15 +1141,15 @@ CludesUI.AtOptionsLogin(function()
 
     -- Adds the spell ID typed into an Add ... Spell input to list: digits only,
     -- a spell the client knows, no duplicates.
-    local function AddSpellIDToList(list, text)
+    local function AddSpellIDToList(entryList, text)
         local spellID = tonumber((text or ""):match("^%s*(%d+)%s*$"))
         if not (spellID and C_Spell and C_Spell.GetSpellInfo and C_Spell.GetSpellInfo(spellID)) then
             return
         end
-        if tContains(list, spellID) then
+        if tContains(entryList, spellID) then
             return
         end
-        list[#list + 1] = spellID
+        entryList[#entryList + 1] = spellID
         RebuildSoon()
     end
 
@@ -1192,10 +1192,10 @@ CludesUI.AtOptionsLogin(function()
     -- Lays slots out two to a row (a blank in an odd last one); returns y.
     local function SlotRows(parent, y, slots, dress)
         for keyName = 1, #slots, 2 do
-            local row, h =
+            local line, h =
                 CludesUI.Widgets:DualRow(parent, y, slots[keyName], slots[keyName + 1] or CludesUI.BlankRowCfg())
             if dress then
-                dress(row, keyName)
+                dress(line, keyName)
             end
             y = y - h
         end
@@ -1284,13 +1284,13 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     local function RemoveCustomSpell(id)
         local f = FDB()
-        local list = f and f.customIDs
-        if not list then
+        local entryList = f and f.customIDs
+        if not entryList then
             return
         end
-        for j = #list, 1, -1 do
-            if list[j] == id then
-                table.remove(list, j)
+        for j = #entryList, 1, -1 do
+            if entryList[j] == id then
+                table.remove(entryList, j)
             end
         end
         if f.customClasses then
@@ -1302,8 +1302,8 @@ CludesUI.AtOptionsLogin(function()
     -- Whether spell id reminds class token (on unless unticked).
     local function CustomClassOn(id, token)
         local f = FDB()
-        local off = f and f.customClasses and f.customClasses[id]
-        return not (off and off[token] == false)
+        local isOff = f and f.customClasses and f.customClasses[id]
+        return not (isOff and isOff[token] == false)
     end
     -- Ticks or unticks class token for spell id; only unticked classes are
     -- stored, and an entry with none left goes.
@@ -1314,18 +1314,18 @@ CludesUI.AtOptionsLogin(function()
         end
         f.customClasses = f.customClasses or {}
         local all = f.customClasses
-        local off = all[id]
+        local isOff = all[id]
         if on then
-            if off then
-                off[token] = nil
-                if not next(off) then
+            if isOff then
+                isOff[token] = nil
+                if not next(isOff) then
                     all[id] = nil
                 end
             end
         else
-            off = off or {}
-            all[id] = off
-            off[token] = false
+            isOff = isOff or {}
+            all[id] = isOff
+            isOff[token] = false
         end
         RefreshAll()
     end
@@ -1406,10 +1406,10 @@ CludesUI.AtOptionsLogin(function()
                 tooltip = "Reminds you whenever this buff is missing, on the classes ticked here.",
             }
         end
-        return SlotRows(parent, y, slots, function(row, keyName)
+        return SlotRows(parent, y, slots, function(line, keyName)
             if ids and not CludesUI._prebuilding then
-                DressCustomSlot(row._leftRegion, ids[keyName - 2])
-                DressCustomSlot(row._rightRegion, ids[keyName - 1])
+                DressCustomSlot(line._leftRegion, ids[keyName - 2])
+                DressCustomSlot(line._rightRegion, ids[keyName - 1])
             end
         end)
     end
@@ -1489,7 +1489,7 @@ CludesUI.AtOptionsLogin(function()
     local BeaconRowShown
     do
         local paladin = not FOREVER and select(2, UnitClass("player")) == "PALADIN"
-        local watch, builtHoly, queued
+        local watcher, builtHoly, queued
         local function IsHoly()
             local spec = C_SpecializationInfo.GetSpecialization()
             return spec ~= nil and C_SpecializationInfo.GetSpecializationInfo(spec) == 65
@@ -1497,7 +1497,7 @@ CludesUI.AtOptionsLogin(function()
         -- One rebuild per burst, a frame later: a cached page has finished showing
         local function Flush()
             queued = nil
-            if watch:IsVisible() and IsHoly() ~= builtHoly then
+            if watcher:IsVisible() and IsHoly() ~= builtHoly then
                 CludesUI:RefreshPage(true)
             end
         end
@@ -1518,27 +1518,27 @@ CludesUI.AtOptionsLogin(function()
                 return holy
             end
             builtHoly = holy
-            if not watch then
-                watch = CreateFrame("Frame")
-                watch._searchIgnore = true -- the inline search never hides it
-                watch:SetScript("OnEvent", Queue)
-                watch:SetScript("OnShow", function(self)
+            if not watcher then
+                watcher = CreateFrame("Frame")
+                watcher._searchIgnore = true -- the inline search never hides it
+                watcher:SetScript("OnEvent", Queue)
+                watcher:SetScript("OnShow", function(self)
                     self:RegisterUnitEvent("PLAYER_SPECIALIZATION_CHANGED", "player")
                     if IsHoly() ~= builtHoly then
                         Queue()
                     end
                 end)
-                watch:SetScript("OnHide", function(self)
+                watcher:SetScript("OnHide", function(self)
                     self:UnregisterEvent("PLAYER_SPECIALIZATION_CHANGED")
                 end)
             end
-            watch:Hide()
-            watch:SetParent(parent)
+            watcher:Hide()
+            watcher:SetParent(parent)
             -- On a kept page wrapper the watcher rides it as an attachment: the
             -- wrapper's next dress hides it (as dropping the page did) and
             -- never moves it to the pool's graveyard.
-            Pool.Attach(parent, watch)
-            watch:Show()
+            Pool.Attach(parent, watcher)
+            watcher:Show()
             return holy
         end
     end
@@ -1768,7 +1768,7 @@ CludesUI.AtOptionsLogin(function()
     -- Icon Shape (+ crop cog) | Icon Zoom.
     local function BuildShapeRow(parent, y)
         local values, order = ns.IconShapeValues()
-        local row, h = CludesUI.Widgets:DualRow(parent, y, {
+        local line, h = CludesUI.Widgets:DualRow(parent, y, {
             type = "dropdown",
             text = "Icon Shape",
             values = values,
@@ -1801,7 +1801,7 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
         })
-        CludesUI.BuildInlineCog(row._leftRegion, {
+        CludesUI.BuildInlineCog(line._leftRegion, {
             title = "Icon Shape",
             disabled = function()
                 local d = DDB()
@@ -1933,7 +1933,7 @@ CludesUI.AtOptionsLogin(function()
     local function BuildBorderRows(parent, y)
         local W = CludesUI.Widgets
         local values, order = CludesUI.GetBorderTextureDropdown()
-        local row, h = W:DualRow(parent, y, {
+        local line, h = W:DualRow(parent, y, {
             type = "dropdown",
             text = "Border Style",
             disabled = function()
@@ -1965,10 +1965,10 @@ CludesUI.AtOptionsLogin(function()
             y = y - offsetH
         end
         if CludesUI._prebuilding then
-            return y, row
+            return y, line
         end
 
-        local cog = CludesUI.BuildInlineCog(row._leftRegion, {
+        local cog = CludesUI.BuildInlineCog(line._leftRegion, {
             title = "Border Options",
             rows = {
                 ShiftRow("Shift X", "borderTextureShiftX", 3),
@@ -1997,7 +1997,7 @@ CludesUI.AtOptionsLogin(function()
         CogShown()
         CludesUI.RegisterWidgetRefresh(CogShown)
 
-        local region = row._rightRegion
+        local region = line._rightRegion
         local swatch, refresh = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
             local d = DDB()
             return (d and d.borderR) or 0,
@@ -2014,7 +2014,7 @@ CludesUI.AtOptionsLogin(function()
         swatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -12, 0)
         region._lastInline = swatch
         CludesUI.RegisterWidgetRefresh(refresh)
-        return y, row
+        return y, line
     end
 
     -- Cog rows bound to a display field: a slider (default when unset) and a
@@ -2090,8 +2090,8 @@ CludesUI.AtOptionsLogin(function()
         })
         local swatch = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
             local d = DDB()
-            local tc = d and d.textColor or { r = 1, g = 1, b = 1 }
-            return tc.r, tc.g, tc.b, 1
+            local textColor = d and d.textColor or { r = 1, g = 1, b = 1 }
+            return textColor.r, textColor.g, textColor.b, 1
         end, function(r, g, b)
             local d = DDB()
             if d then
@@ -2110,9 +2110,9 @@ CludesUI.AtOptionsLogin(function()
         end)
         local function Dim()
             local d = DDB()
-            local off = not d or not d.showText
-            swatch:SetAlpha(off and 0.3 or 1)
-            block:SetShown(off)
+            local isOff = not d or not d.showText
+            swatch:SetAlpha(isOff and 0.3 or 1)
+            block:SetShown(isOff)
         end
         Dim()
         CludesUI.RegisterWidgetRefresh(Dim)
@@ -2530,9 +2530,9 @@ CludesUI.AtOptionsLogin(function()
 
     -- The class consumable sections, in page order.
     local function BuildClassSections(parent, y, refs)
-        local function Items(list, class)
+        local function Items(entryList, class)
             local items = {}
-            for _, entry in ipairs(list or {}) do
+            for _, entry in ipairs(entryList or {}) do
                 items[#items + 1] = EnabledItem(CDB, entry, SpellLabel(entry), class)
             end
             return items
@@ -2665,8 +2665,8 @@ CludesUI.AtOptionsLogin(function()
         })
         y = y - h
         local items = DemonItems()
-        local row
-        row, h = W:DualRow(
+        local line
+        line, h = W:DualRow(
             parent,
             y,
             EnabledToggle(
@@ -2696,7 +2696,7 @@ CludesUI.AtOptionsLogin(function()
 
         local wcc = RAID_CLASS_COLORS and RAID_CLASS_COLORS.WARLOCK
         if wcc then
-            for _, region in ipairs({ ctrlRow._rightRegion, row._leftRegion, row._rightRegion }) do
+            for _, region in ipairs({ ctrlRow._rightRegion, line._leftRegion, line._rightRegion }) do
                 if region._label then
                     region._label:SetTextColor(wcc.r, wcc.g, wcc.b, 1)
                 end
@@ -2738,7 +2738,7 @@ CludesUI.AtOptionsLogin(function()
             CludesUI.RegisterWidgetRefresh(refresh)
         end
         _, h = W:Spacer(parent, y, 10)
-        return y - h, header, row
+        return y - h, header, line
     end
 
     -- An overlay that swallows the mouse over target and says which toggle
@@ -2883,9 +2883,9 @@ CludesUI.AtOptionsLogin(function()
         local block = OffBlocker(button, "Inky Black Potion")
         local function Dim()
             local c = CDB()
-            local off = not c or not c.enabled or not c.enabled.inky_black
-            button:SetAlpha(off and 0.3 or 1)
-            block:SetShown(off)
+            local isOff = not c or not c.enabled or not c.enabled.inky_black
+            button:SetAlpha(isOff and 0.3 or 1)
+            block:SetShown(isOff)
         end
         Dim()
         CludesUI.RegisterWidgetRefresh(Dim)
@@ -3084,15 +3084,15 @@ CludesUI.AtOptionsLogin(function()
         local eyeBlock = OffBlocker(eye, MANA_WARN)
 
         local function Dim()
-            local off = Off()
-            if off then
+            local isOff = Off()
+            if isOff then
                 previewing = false
                 RefreshEye()
             end
-            swatch:SetAlpha(off and 0.3 or 1)
-            swatchBlock:SetShown(off)
-            CludesUI.SetGlyphAlpha(eye, off and 0.15 or 0.4)
-            eyeBlock:SetShown(off)
+            swatch:SetAlpha(isOff and 0.3 or 1)
+            swatchBlock:SetShown(isOff)
+            CludesUI.SetGlyphAlpha(eye, isOff and 0.15 or 0.4)
+            eyeBlock:SetShown(isOff)
         end
         Dim()
         CludesUI.RegisterWidgetRefresh(Dim)
@@ -3100,7 +3100,7 @@ CludesUI.AtOptionsLogin(function()
 
     -- Show Without Item in Bags | Ready Check Mana Warning (+ eye, swatch, cog).
     local function BuildConsumableExtras(parent, y)
-        local row, h = CludesUI.Widgets:DualRow(parent, y, {
+        local line, h = CludesUI.Widgets:DualRow(parent, y, {
             type = "toggle",
             text = "Show Without Item in Bags",
             tooltip = "When on, augment rune/flask/food/weapon reminders still show (dimmed) when you have no matching item in your bags, as a prompt to restock.\nWhen off, they are hidden entirely if you don't carry the item.",
@@ -3138,7 +3138,7 @@ CludesUI.AtOptionsLogin(function()
             end,
         })
         if not CludesUI._prebuilding then
-            ManaWarningInlines(row._rightRegion)
+            ManaWarningInlines(line._rightRegion)
         end
         return y - h
     end
@@ -3179,17 +3179,17 @@ CludesUI.AtOptionsLogin(function()
             local line = buff.lines[1]
             return { key = buff.key, label = _G._CUABR_SpellName(line[#line], buff.key) }
         end
-        local names, seen = {}, {}
+        local nameList, seen = {}, {}
         for _, line in ipairs(buff.lines) do
             for _, id in ipairs({ line[1], line[#line] }) do
                 local name = _G._CUABR_SpellName(id)
                 if name and not seen[name] then
                     seen[name] = true
-                    names[#names + 1] = name
+                    nameList[#nameList + 1] = name
                 end
             end
         end
-        local tip = table.concat(names, "\n")
+        local tip = table.concat(nameList, "\n")
         if buff.own then
             tip = tip .. "\n\n" .. CludesUI.L("Only your own counts.")
         end
@@ -3530,7 +3530,7 @@ CludesUI.AtOptionsLogin(function()
             To("item:" .. key, cell)
         end
         local c = s.consum
-        for key, row in pairs({
+        for key, line in pairs({
             flask = c.flask,
             food = c.food,
             weapon_enchant = c.weapon,
@@ -3538,7 +3538,7 @@ CludesUI.AtOptionsLogin(function()
             healthstone = c.rune,
             inky_black = c.inky,
         }) do
-            To("item:" .. key, row)
+            To("item:" .. key, line)
         end
     end
 
@@ -3589,22 +3589,22 @@ CludesUI.AtOptionsLogin(function()
 
     -- Whether a reminder covers a zone. One saved with the single zone of
     -- an older version holds it in zoneName while it has no list.
-    local function ReminderHasZone(r, zn)
-        local list = r.zoneNames
-        if list and #list > 0 then
-            return tContains(list, zn)
+    local function ReminderHasZone(r, zoneName)
+        local entryList = r.zoneNames
+        if entryList and #entryList > 0 then
+            return tContains(entryList, zoneName)
         end
-        return r.zoneName == zn
+        return r.zoneName == zoneName
     end
     -- A reminder's zone list for an edit; an older version's single zone
     -- moves into it on the first edit.
     local function EditableZoneList(r)
         r.zoneNames = r.zoneNames or {}
-        local list = r.zoneNames
-        if #list == 0 and r.zoneName then
-            list[1] = r.zoneName
+        local entryList = r.zoneNames
+        if #entryList == 0 and r.zoneName then
+            entryList[1] = r.zoneName
         end
-        return list
+        return entryList
     end
 
     -- Every talent of the active loadout's class and spec trees (hero trees
@@ -3700,44 +3700,44 @@ CludesUI.AtOptionsLogin(function()
     -- closed when the button hides. Returns the popup, its list child, the
     -- search box, its placeholder and the list's ScrollTo.
     local function TRSearchPopup(key, button, w, listH, fontPath)
-        local popup = Pool.Kept(_trPopups, key, "Frame", UIParent)
-        popup:SetFrameStrata("FULLSCREEN_DIALOG")
-        popup:SetFrameLevel(200)
-        popup:SetClampedToScreen(true)
-        popup:SetSize(w, listH + TR_SEARCH_H + 10)
-        popup:Hide()
-        local bg = popup:CreateTexture(nil, "BACKGROUND")
+        local dialog = Pool.Kept(_trPopups, key, "Frame", UIParent)
+        dialog:SetFrameStrata("FULLSCREEN_DIALOG")
+        dialog:SetFrameLevel(200)
+        dialog:SetClampedToScreen(true)
+        dialog:SetSize(w, listH + TR_SEARCH_H + 10)
+        dialog:Hide()
+        local bg = dialog:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
         bg:SetColorTexture(0.098, 0.090, 0.082, 0.97)
-        CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.12, bg, nil, true)
+        CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.12, bg, nil, true)
 
-        local search = CreateFrame("EditBox", nil, popup)
-        search:SetSize(w - 16, TR_SEARCH_H)
-        search:SetPoint("TOP", popup, "TOP", 0, -6)
-        search:SetFrameLevel(popup:GetFrameLevel() + 3)
-        search:SetFont(fontPath, 11, "")
-        search:SetTextColor(1, 1, 1, 0.9)
-        search:SetJustifyH("LEFT")
-        search:SetAutoFocus(false)
-        search:SetMaxLetters(30)
-        search:SetTextInsets(4, 4, 0, 0)
-        local searchBg = search:CreateTexture(nil, "BACKGROUND")
+        local searchBox = CreateFrame("EditBox", nil, dialog)
+        searchBox:SetSize(w - 16, TR_SEARCH_H)
+        searchBox:SetPoint("TOP", dialog, "TOP", 0, -6)
+        searchBox:SetFrameLevel(dialog:GetFrameLevel() + 3)
+        searchBox:SetFont(fontPath, 11, "")
+        searchBox:SetTextColor(1, 1, 1, 0.9)
+        searchBox:SetJustifyH("LEFT")
+        searchBox:SetAutoFocus(false)
+        searchBox:SetMaxLetters(30)
+        searchBox:SetTextInsets(4, 4, 0, 0)
+        local searchBg = searchBox:CreateTexture(nil, "BACKGROUND")
         searchBg:SetAllPoints()
         searchBg:SetColorTexture(0, 0, 0, 0.4)
-        CludesUI.RoundBody(search, searchBg)
-        local placeholder = search:CreateFontString(nil, "OVERLAY")
+        CludesUI.RoundBody(searchBox, searchBg)
+        local placeholder = searchBox:CreateFontString(nil, "OVERLAY")
         placeholder:SetFont(fontPath, 11, "")
         placeholder:SetTextColor(0.5, 0.5, 0.5, 0.6)
-        placeholder:SetPoint("LEFT", search, "LEFT", 4, 0)
+        placeholder:SetPoint("LEFT", searchBox, "LEFT", 4, 0)
         placeholder:SetText(CludesUI.L("Search..."))
-        search:SetScript("OnEscapePressed", function(self)
+        searchBox:SetScript("OnEscapePressed", function(self)
             self:ClearFocus()
         end)
 
-        local scroll = CreateFrame("ScrollFrame", nil, popup)
-        scroll:SetPoint("TOPLEFT", popup, "TOPLEFT", 0, -(TR_SEARCH_H + 10))
-        scroll:SetPoint("BOTTOMRIGHT", popup, "BOTTOMRIGHT", 0, 4)
-        scroll:SetFrameLevel(popup:GetFrameLevel() + 1)
+        local scroll = CreateFrame("ScrollFrame", nil, dialog)
+        scroll:SetPoint("TOPLEFT", dialog, "TOPLEFT", 0, -(TR_SEARCH_H + 10))
+        scroll:SetPoint("BOTTOMRIGHT", dialog, "BOTTOMRIGHT", 0, 4)
+        scroll:SetFrameLevel(dialog:GetFrameLevel() + 1)
         scroll:EnableMouseWheel(true)
         local child = CreateFrame("Frame", nil, scroll)
         child:SetWidth(w)
@@ -3748,46 +3748,46 @@ CludesUI.AtOptionsLogin(function()
             rightInset = 4,
             child = child,
         })
-        popup:SetScript("OnMouseWheel", function(_, delta)
+        dialog:SetScript("OnMouseWheel", function(_, delta)
             scroll:GetScript("OnMouseWheel")(scroll, delta)
         end)
-        popup:SetScript("OnUpdate", function()
-            if not popup:IsMouseOver() and not button:IsMouseOver() and IsMouseButtonDown("LeftButton") then
-                popup:Hide()
+        dialog:SetScript("OnUpdate", function()
+            if not dialog:IsMouseOver() and not button:IsMouseOver() and IsMouseButtonDown("LeftButton") then
+                dialog:Hide()
             end
         end)
         button:SetScript("OnClick", function()
-            popup:SetShown(not popup:IsShown())
+            dialog:SetShown(not dialog:IsShown())
         end)
-        return popup, child, search, placeholder, scrollTo
+        return dialog, child, searchBox, placeholder, scrollTo
     end
 
     -- A popup list row at slot i, with its (clear) hover tint.
     local function TRPopupRow(child, i, h)
-        local row = CreateFrame("Button", nil, child)
-        row:SetHeight(h)
-        row:SetPoint("TOPLEFT", child, "TOPLEFT", 1, -(i - 1) * h)
-        row:SetPoint("TOPRIGHT", child, "TOPRIGHT", -1, -(i - 1) * h)
-        local hl = row:CreateTexture(nil, "ARTWORK")
+        local line = CreateFrame("Button", nil, child)
+        line:SetHeight(h)
+        line:SetPoint("TOPLEFT", child, "TOPLEFT", 1, -(i - 1) * h)
+        line:SetPoint("TOPRIGHT", child, "TOPRIGHT", -1, -(i - 1) * h)
+        local hl = line:CreateTexture(nil, "ARTWORK")
         hl:SetAllPoints()
         hl:SetColorTexture(1, 1, 1, 0)
-        row._hl = hl
-        return row
+        line._hl = hl
+        return line
     end
-    local function TRRowLabel(row, fontPath, text)
-        local label = row:CreateFontString(nil, "OVERLAY")
+    local function TRRowLabel(line, fontPath, text)
+        local label = line:CreateFontString(nil, "OVERLAY")
         label:SetFont(fontPath, 11, GetABROptOutline())
         label:SetTextColor(unpack(TR_ROW_TEXT))
         label:SetJustifyH("LEFT")
         label:SetWordWrap(false)
         label:SetText(text)
-        row:SetScript("OnEnter", function()
+        line:SetScript("OnEnter", function()
             label:SetTextColor(1, 1, 1, 1)
-            row._hl:SetColorTexture(1, 1, 1, 0.08)
+            line._hl:SetColorTexture(1, 1, 1, 0.08)
         end)
-        row:SetScript("OnLeave", function()
+        line:SetScript("OnLeave", function()
             label:SetTextColor(unpack(TR_ROW_TEXT))
-            row._hl:SetColorTexture(1, 1, 1, 0)
+            line._hl:SetColorTexture(1, 1, 1, 0)
         end)
         return label
     end
@@ -3796,15 +3796,15 @@ CludesUI.AtOptionsLogin(function()
     -- from the top; returns how many show.
     local function TRFilter(rows, child, h, query, field)
         local shown = 0
-        for _, row in ipairs(rows) do
-            if query == "" or strfind(strlower(row[field]), query, 1, true) then
-                row:Show()
-                row:ClearAllPoints()
-                row:SetPoint("TOPLEFT", child, "TOPLEFT", 1, -shown * h)
-                row:SetPoint("TOPRIGHT", child, "TOPRIGHT", -1, -shown * h)
+        for _, line in ipairs(rows) do
+            if query == "" or strfind(strlower(line[field]), query, 1, true) then
+                line:Show()
+                line:ClearAllPoints()
+                line:SetPoint("TOPLEFT", child, "TOPLEFT", 1, -shown * h)
+                line:SetPoint("TOPRIGHT", child, "TOPRIGHT", -1, -shown * h)
                 shown = shown + 1
             else
-                row:Hide()
+                line:Hide()
             end
         end
         child:SetHeight(math.max(1, shown * h))
@@ -3812,18 +3812,18 @@ CludesUI.AtOptionsLogin(function()
     end
 
     -- A red border that pulses for a moment on a row that is missing its pick.
-    local function PulseRedBorder(row)
-        if not row then
+    local function PulseRedBorder(line)
+        if not line then
             return
         end
-        if not row._redPulse then
-            local frame = CreateFrame("Frame", nil, row)
+        if not line._redPulse then
+            local frame = CreateFrame("Frame", nil, line)
             frame:SetAllPoints()
-            frame:SetFrameLevel(row:GetFrameLevel() + 10)
+            frame:SetFrameLevel(line:GetFrameLevel() + 10)
             frame._border = CludesUI.MakeBorder(frame, 1, 0.2, 0.2, 1, CludesUI.PanelPP)
-            row._redPulse = frame
+            line._redPulse = frame
         end
-        local frame = row._redPulse
+        local frame = line._redPulse
         frame:Show()
         frame:SetAlpha(1)
         local t = 0
@@ -3892,18 +3892,18 @@ CludesUI.AtOptionsLogin(function()
 
     -- A DualRow-styled list row at yOff: alternating background and a centre divider.
     local function TRListRow(container, yOff, index)
-        local row = CreateFrame("Frame", nil, container)
-        PP.Size(row, container:GetWidth() - TR_PAD * 2, TR_ROW_H)
-        PP.Point(row, "TOPLEFT", container, "TOPLEFT", TR_PAD, yOff)
-        local bg = row:CreateTexture(nil, "BACKGROUND")
+        local line = CreateFrame("Frame", nil, container)
+        PP.Size(line, container:GetWidth() - TR_PAD * 2, TR_ROW_H)
+        PP.Point(line, "TOPLEFT", container, "TOPLEFT", TR_PAD, yOff)
+        local bg = line:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
         bg:SetColorTexture(0, 0, 0, (index % 2 == 0) and 0.2 or 0.1)
-        local div = row:CreateTexture(nil, "ARTWORK")
-        div:SetColorTexture(1, 1, 1, 0.06)
-        div:SetWidth(1)
-        PP.Point(div, "TOP", row, "TOP", 0, 0)
-        PP.Point(div, "BOTTOM", row, "BOTTOM", 0, 0)
-        return row
+        local divider = line:CreateTexture(nil, "ARTWORK")
+        divider:SetColorTexture(1, 1, 1, 0.06)
+        divider:SetWidth(1)
+        PP.Point(divider, "TOP", line, "TOP", 0, 0)
+        PP.Point(divider, "BOTTOM", line, "BOTTOM", 0, 0)
+        return line
     end
 
     -- The saved reminders the picker can still reach: at least one of their
@@ -3916,11 +3916,11 @@ CludesUI.AtOptionsLogin(function()
         end
         local visible = {}
         for idx, r in ipairs(reminders) do
-            local list = r.zoneNames
+            local entryList = r.zoneNames
             local live = false
-            if list and #list > 0 then
-                for _, zn in ipairs(list) do
-                    live = live or current[zn] == true
+            if entryList and #entryList > 0 then
+                for _, zoneName in ipairs(entryList) do
+                    live = live or current[zoneName] == true
                 end
             else
                 live = r.zoneName ~= nil and current[r.zoneName] == true
@@ -3961,17 +3961,17 @@ CludesUI.AtOptionsLogin(function()
         end
         -- The zone button's text: the picked zones, sorted, else the prompt.
         local function PickedZonesText()
-            local names = {}
+            local nameList = {}
             for idx, on in pairs(pickedZones) do
                 if on and zones[idx] then
-                    names[#names + 1] = ZoneName(zones[idx].name)
+                    nameList[#nameList + 1] = ZoneName(zones[idx].name)
                 end
             end
-            if #names == 0 then
+            if #nameList == 0 then
                 return "Select Dungeon/Raid/PvP Zone"
             end
-            table.sort(names)
-            return table.concat(names, ", ")
+            table.sort(nameList)
+            return table.concat(nameList, ", ")
         end
 
         -- The zone picker: a wide centred dropdown with a checkbox list.
@@ -3996,15 +3996,15 @@ CludesUI.AtOptionsLogin(function()
         -- search's hidden pre-build makes none (nothing in it to index).
         if not CludesUI._prebuilding then
             local ITEM_H = 28
-            local popup, child, search, placeholder, scrollTo =
+            local dialog, child, searchBox, placeholder, scrollTo =
                 TRSearchPopup("zone", zoneBtn, DD_W, math.min(#zones * ITEM_H + 8, 300), fontPath)
             local eg = CludesUI.CLUDES_GREEN or { r = 0.298, g = 0.788, b = 0.941 }
             local rows = {}
             for i, z in ipairs(zones) do
-                local row = TRPopupRow(child, i, ITEM_H)
-                local boxFrame = CreateFrame("Frame", nil, row)
+                local line = TRPopupRow(child, i, ITEM_H)
+                local boxFrame = CreateFrame("Frame", nil, line)
                 boxFrame:SetSize(14, 14)
-                boxFrame:SetPoint("LEFT", row, "LEFT", 10, 0)
+                boxFrame:SetPoint("LEFT", line, "LEFT", 10, 0)
                 local boxBg = boxFrame:CreateTexture(nil, "BACKGROUND")
                 boxBg:SetAllPoints()
                 boxBg:SetColorTexture(0.064, 0.052, 0.041, 1)
@@ -4015,39 +4015,39 @@ CludesUI.AtOptionsLogin(function()
                 check:SetColorTexture(eg.r, eg.g, eg.b, 1)
                 CludesUI.RoundBody(boxFrame, check, 2)
                 check:Hide()
-                row._cbCheck = check
-                local label = TRRowLabel(row, fontPath, ZoneName(z.name))
+                line._cbCheck = check
+                local label = TRRowLabel(line, fontPath, ZoneName(z.name))
                 label:SetPoint("LEFT", boxFrame, "RIGHT", 8, 0)
-                label:SetPoint("RIGHT", row, "RIGHT", -8, 0)
+                label:SetPoint("RIGHT", line, "RIGHT", -8, 0)
                 check:SetShown(pickedZones[i] == true)
-                row:SetScript("OnClick", function()
+                line:SetScript("OnClick", function()
                     pickedZones[i] = not pickedZones[i]
                     check:SetShown(pickedZones[i] == true)
                     zoneLabel:SetText(PickedZonesText())
                 end)
-                rows[i] = row
-                row._zoneName = z.name
+                rows[i] = line
+                line._zoneName = z.name
             end
             child:SetHeight(math.max(1, #zones * ITEM_H))
-            search:SetScript("OnTextChanged", function(self)
+            searchBox:SetScript("OnTextChanged", function(self)
                 local query = strlower(strtrim(self:GetText()))
                 placeholder:SetShown(query == "")
                 TRFilter(rows, child, ITEM_H, query, "_zoneName")
                 scrollTo(0)
             end)
-            popup:SetScript("OnShow", function()
-                popup:ClearAllPoints()
-                popup:SetPoint("TOPLEFT", zoneBtn, "BOTTOMLEFT", 0, -2)
-                search:SetText("")
-                search:SetFocus()
+            dialog:SetScript("OnShow", function()
+                dialog:ClearAllPoints()
+                dialog:SetPoint("TOPLEFT", zoneBtn, "BOTTOMLEFT", 0, -2)
+                searchBox:SetText("")
+                searchBox:SetFocus()
                 scrollTo(0)
-                for i, row in ipairs(rows) do
-                    row._cbCheck:SetShown(pickedZones[i] == true)
+                for i, line in ipairs(rows) do
+                    line._cbCheck:SetShown(pickedZones[i] == true)
                 end
             end)
             -- Closes with its page (rebuild, tab switch, panel close), as the talent list does.
             zoneBtn:SetScript("OnHide", function()
-                popup:Hide()
+                dialog:Hide()
             end)
         end
         TRDropdownHover(zoneBtn)
@@ -4086,7 +4086,7 @@ CludesUI.AtOptionsLogin(function()
         TRDropdownHover(talentBtn)
         if not CludesUI._prebuilding then
             local ITEM_H = 26
-            local popup, child, search, placeholder, scrollTo = TRSearchPopup(
+            local dialog, child, searchBox, placeholder, scrollTo = TRSearchPopup(
                 "talent:Select Talent",
                 talentBtn,
                 DD_W,
@@ -4095,21 +4095,21 @@ CludesUI.AtOptionsLogin(function()
             )
             local rows = {}
             for i, t in ipairs(talents) do
-                local row = TRPopupRow(child, i, ITEM_H)
-                local label = TRRowLabel(row, fontPath, t.name)
-                label:SetPoint("LEFT", row, "LEFT", 10, 0)
-                label:SetPoint("RIGHT", row, "RIGHT", -8, 0)
-                row._lbl, row._talentName, row._spellID = label, t.name, t.spellID
-                row:SetScript("OnClick", function()
+                local line = TRPopupRow(child, i, ITEM_H)
+                local label = TRRowLabel(line, fontPath, t.name)
+                label:SetPoint("LEFT", line, "LEFT", 10, 0)
+                label:SetPoint("RIGHT", line, "RIGHT", -8, 0)
+                line._lbl, line._talentName, line._spellID = label, t.name, t.spellID
+                line:SetScript("OnClick", function()
                     pickedSpellID, pickedName = t.spellID, t.name
                     talentLabel:SetText(t.name)
                     talentLabel:SetTextColor(1, 1, 1, 0.9)
-                    popup:Hide()
+                    dialog:Hide()
                 end)
-                rows[i] = row
+                rows[i] = line
             end
             child:SetHeight(math.max(1, #talents * ITEM_H))
-            search:SetScript("OnTextChanged", function(self)
+            searchBox:SetScript("OnTextChanged", function(self)
                 local query = strlower(strtrim(self:GetText()))
                 placeholder:SetShown(query == "")
                 TRFilter(rows, child, ITEM_H, query, "_talentName")
@@ -4118,26 +4118,26 @@ CludesUI.AtOptionsLogin(function()
             -- The talent icons are made on the first open, so the page build
             -- pays nothing for them.
             local iconsMade = false
-            popup:SetScript("OnShow", function()
-                popup:ClearAllPoints()
-                popup:SetPoint("TOPLEFT", talentBtn, "BOTTOMLEFT", 0, -2)
+            dialog:SetScript("OnShow", function()
+                dialog:ClearAllPoints()
+                dialog:SetPoint("TOPLEFT", talentBtn, "BOTTOMLEFT", 0, -2)
                 if not iconsMade then
                     iconsMade = true
-                    for _, row in ipairs(rows) do
-                        local icon = row:CreateTexture(nil, "ARTWORK", nil, 1)
+                    for _, line in ipairs(rows) do
+                        local icon = line:CreateTexture(nil, "ARTWORK", nil, 1)
                         icon:SetSize(18, 18)
-                        icon:SetPoint("LEFT", row, "LEFT", 10, 0)
+                        icon:SetPoint("LEFT", line, "LEFT", 10, 0)
                         icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
-                        icon:SetTexture(C_Spell.GetSpellTexture(row._spellID) or 134400)
-                        row._lbl:SetPoint("LEFT", icon, "RIGHT", 6, 0)
+                        icon:SetTexture(C_Spell.GetSpellTexture(line._spellID) or 134400)
+                        line._lbl:SetPoint("LEFT", icon, "RIGHT", 6, 0)
                     end
                 end
-                search:SetText("")
-                search:SetFocus()
+                searchBox:SetText("")
+                searchBox:SetFocus()
                 scrollTo(0)
             end)
             talentBtn:HookScript("OnHide", function()
-                popup:Hide()
+                dialog:Hide()
             end)
         end
         y = y - TALENT_ROW_H
@@ -4152,9 +4152,9 @@ CludesUI.AtOptionsLogin(function()
         y = y - 36
 
         -- The saved reminders (rebuilt on add and remove).
-        local list = CreateFrame("Frame", nil, parent)
-        list:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
-        list:SetSize(parent:GetWidth() or 400, 1)
+        local entryList = CreateFrame("Frame", nil, parent)
+        entryList:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
+        entryList:SetSize(parent:GetWidth() or 400, 1)
         local listRows = {}
         -- The zone dropdowns' labels, in the picker's order.
         local zoneLabels = {}
@@ -4167,17 +4167,17 @@ CludesUI.AtOptionsLogin(function()
         -- Reminder pinned on top; its last zone stays ticked), then "Show
         -- 'Not Needed' Reminder" | where that shows.
         local function ReminderRow(index, idx, reminder, yOff)
-            local row = TRListRow(list, yOff, index)
+            local line = TRListRow(entryList, yOff, index)
             local function Saved()
                 local p = DB()
                 return p and p.talentReminders and p.talentReminders[idx]
             end
-            local icon = row:CreateTexture(nil, "ARTWORK")
+            local icon = line:CreateTexture(nil, "ARTWORK")
             icon:SetSize(22, 22)
-            icon:SetPoint("LEFT", row, "LEFT", TR_SIDE_PAD, 0)
+            icon:SetPoint("LEFT", line, "LEFT", TR_SIDE_PAD, 0)
             icon:SetTexCoord(0.07, 0.93, 0.07, 0.93)
             icon:SetTexture(Tex(reminder.spellID))
-            local name = row:CreateFontString(nil, "OVERLAY")
+            local name = line:CreateFontString(nil, "OVERLAY")
             name:SetFont(fontPath, 14, GetABROptOutline())
             name:SetTextColor(1, 1, 1, 1)
             name:SetJustifyH("LEFT")
@@ -4210,40 +4210,40 @@ CludesUI.AtOptionsLogin(function()
                 },
             }
             for i = 1, #zones do
-                local zn = zones[i].name
+                local zoneName = zones[i].name
                 items[#items + 1] = {
-                    key = zn,
+                    key = zoneName,
                     label = zoneLabels[i],
                     lockedFn = function()
                         local r = Saved()
-                        return (r and ReminderHasZone(r, zn) and ZoneCount(r) <= 1) and true or false
+                        return (r and ReminderHasZone(r, zoneName) and ZoneCount(r) <= 1) and true or false
                     end,
                     lockedTooltip = "A reminder needs at least one zone.",
                 }
             end
             local zoneDD = CludesUI.BuildVisOptsCBDropdown(
-                row,
+                line,
                 TR_ROW_DD_W,
-                row:GetFrameLevel() + 3,
+                line:GetFrameLevel() + 3,
                 items,
-                function(zn)
+                function(zoneName)
                     local r = Saved()
-                    return r and ReminderHasZone(r, zn) or false
+                    return r and ReminderHasZone(r, zoneName) or false
                 end,
-                function(zn, on)
+                function(zoneName, on)
                     local r = Saved()
                     if not r then
                         return
                     end
                     local zl = EditableZoneList(r)
                     if on then
-                        if not ReminderHasZone(r, zn) then
-                            zl[#zl + 1] = zn
+                        if not ReminderHasZone(r, zoneName) then
+                            zl[#zl + 1] = zoneName
                             table.sort(zl)
                         end
                     else
                         for i = #zl, 1, -1 do
-                            if zl[i] == zn then
+                            if zl[i] == zoneName then
                                 table.remove(zl, i)
                             end
                         end
@@ -4257,15 +4257,15 @@ CludesUI.AtOptionsLogin(function()
                 nil,
                 { noAllLabel = true, dimLocked = true }
             )
-            PP.Point(zoneDD, "RIGHT", row, "CENTER", -TR_SIDE_PAD, 0)
+            PP.Point(zoneDD, "RIGHT", line, "CENTER", -TR_SIDE_PAD, 0)
             name:SetPoint("RIGHT", zoneDD, "LEFT", -12, 0)
 
-            local caption2 = row:CreateFontString(nil, "OVERLAY")
+            local caption2 = line:CreateFontString(nil, "OVERLAY")
             caption2:SetFont(fontPath, 14, GetABROptOutline())
             caption2:SetJustifyH("LEFT")
             caption2:SetWordWrap(false)
             caption2:SetMaxLines(1)
-            caption2:SetPoint("LEFT", row, "CENTER", TR_SIDE_PAD, 0)
+            caption2:SetPoint("LEFT", line, "CENTER", TR_SIDE_PAD, 0)
             caption2:SetText(CludesUI.L("Show 'Not Needed' Reminder"))
             -- The runtime's own read of the choice: a reminder saved with the
             -- old checkbox reads on = Current Season Instances, off = Never.
@@ -4279,9 +4279,9 @@ CludesUI.AtOptionsLogin(function()
             end
             Paint()
             local modeDD = CludesUI.BuildDropdownControl(
-                row,
+                line,
                 TR_ROW_DD_W,
-                row:GetFrameLevel() + 3,
+                line:GetFrameLevel() + 3,
                 NOT_NEEDED_VALUES,
                 NOT_NEEDED_ORDER,
                 Mode,
@@ -4297,10 +4297,10 @@ CludesUI.AtOptionsLogin(function()
                     TalentRemindersChanged()
                 end
             )
-            PP.Point(modeDD, "RIGHT", row, "RIGHT", -TR_SIDE_PAD, 0)
+            PP.Point(modeDD, "RIGHT", line, "RIGHT", -TR_SIDE_PAD, 0)
             modeDD._ttText = "Reminds you to remove this talent in instances you did not pick for it."
             caption2:SetPoint("RIGHT", modeDD, "LEFT", -12, 0)
-            return row
+            return line
         end
 
         -- The list, or the empty notice; returns its height. The global
@@ -4311,9 +4311,9 @@ CludesUI.AtOptionsLogin(function()
             end
             -- On a page pool host the rows go back to the container's pool
             -- and are dressed again below, in order.
-            Pool.Begin(list)
-            for _, row in ipairs(listRows) do
-                row:Hide()
+            Pool.Begin(entryList)
+            for _, line in ipairs(listRows) do
+                line:Hide()
             end
             wipe(listRows)
             local p = DB()
@@ -4323,15 +4323,15 @@ CludesUI.AtOptionsLogin(function()
             local reminders = p.talentReminders or {}
             local visible = VisibleReminders(reminders)
             if #visible == 0 then
-                local row = TRListRow(list, 0, 1)
-                local text = row:CreateFontString(nil, "OVERLAY")
+                local line = TRListRow(entryList, 0, 1)
+                local text = line:CreateFontString(nil, "OVERLAY")
                 text:SetFont(fontPath, 13, GetABROptOutline())
                 text:SetTextColor(0.5, 0.5, 0.5, 1)
                 text:SetPoint("CENTER")
                 text:SetText(CludesUI.L("No talent reminders configured"))
-                row:Show()
-                listRows[1] = row
-                list:SetHeight(TR_ROW_H)
+                line:Show()
+                listRows[1] = line
+                entryList:SetHeight(TR_ROW_H)
                 return TR_ROW_H
             end
             local height = 0
@@ -4339,7 +4339,7 @@ CludesUI.AtOptionsLogin(function()
                 listRows[#listRows + 1] = ReminderRow(n, idx, reminders[idx], -height)
                 height = height + TR_ROW_H
             end
-            list:SetHeight(height)
+            entryList:SetHeight(height)
             return height
         end
 
@@ -4356,10 +4356,10 @@ CludesUI.AtOptionsLogin(function()
         -- Add Reminder: needs a zone and a talent (a missing one pulses red);
         -- a reminder for the same talent gains the new zones instead.
         addBtn:SetScript("OnClick", function()
-            local names = {}
+            local nameList = {}
             for idx, on in pairs(pickedZones) do
                 if on and zones[idx] then
-                    names[#names + 1] = zones[idx].name
+                    nameList[#nameList + 1] = zones[idx].name
                 end
             end
             local anyPicked = false
@@ -4379,13 +4379,13 @@ CludesUI.AtOptionsLogin(function()
                 return
             end
             p.talentReminders = p.talentReminders or {}
-            table.sort(names)
+            table.sort(nameList)
             for _, r in ipairs(p.talentReminders) do
                 if r.spellID == pickedSpellID then
                     local zl = EditableZoneList(r)
-                    for _, zn in ipairs(names) do
-                        if not ReminderHasZone(r, zn) then
-                            zl[#zl + 1] = zn
+                    for _, zoneName in ipairs(nameList) do
+                        if not ReminderHasZone(r, zoneName) then
+                            zl[#zl + 1] = zoneName
                         end
                     end
                     table.sort(zl)
@@ -4395,7 +4395,7 @@ CludesUI.AtOptionsLogin(function()
             end
             local _, class = UnitClass("player")
             p.talentReminders[#p.talentReminders + 1] = {
-                zoneNames = names,
+                zoneNames = nameList,
                 spellID = pickedSpellID,
                 spellName = pickedName,
                 notNeededMode = "never",
@@ -4409,8 +4409,8 @@ CludesUI.AtOptionsLogin(function()
         y = y - h
         _, h = W:SectionHeader(parent, "ACTIVE REMINDERS", y)
         y = y - h
-        list:ClearAllPoints()
-        list:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
+        entryList:ClearAllPoints()
+        entryList:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, y)
         y = y - RebuildList()
         _, h = W:Spacer(parent, y, 20)
         return math.abs(y - h)

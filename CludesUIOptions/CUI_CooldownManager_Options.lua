@@ -149,14 +149,14 @@ CludesUI.AtOptionsLogin(function()
 
     -- Legacy installs saved selectedBar as 101/102 for the default cooldowns/
     -- utility CDM bars; normalize to the bar key string (new saves use the key).
-    local function NormalizeSelectedBar(sel)
-        if sel == 101 then
+    local function NormalizeSelectedBar(selection)
+        if selection == 101 then
             return "cooldowns"
         end
-        if sel == 102 then
+        if selection == 102 then
             return "utility"
         end
-        return sel
+        return selection
     end
 
     -- Live dropdown list: {value,label} in display order -- CDM bars from p.cdmBars.bars
@@ -180,20 +180,20 @@ CludesUI.AtOptionsLogin(function()
         return entries
     end
 
-    local function GetBGTargetLabel(sel)
-        sel = NormalizeSelectedBar(sel)
-        if type(sel) == "number" then
-            return CludesUI.L(BG_ACTION_BAR_LABELS[sel] or ("Action Bar " .. sel))
+    local function GetBGTargetLabel(selection)
+        selection = NormalizeSelectedBar(selection)
+        if type(selection) == "number" then
+            return CludesUI.L(BG_ACTION_BAR_LABELS[selection] or ("Action Bar " .. selection))
         end
         local p = mod.ECME and mod.ECME.db and mod.ECME.db.profile
         if p and p.cdmBars and p.cdmBars.bars then
             for _, edge in ipairs(p.cdmBars.bars) do
-                if edge.key == sel then
+                if edge.key == selection then
                     return CludesUI.Lf("CDM Bar - %s", CludesUI.L(edge.name or edge.key))
                 end
             end
         end
-        return tostring(sel)
+        return tostring(selection)
     end
 
     -- Presets/custom spell IDs/racials/trinkets/custom buffs are CludesUI-injected
@@ -340,7 +340,7 @@ CludesUI.AtOptionsLogin(function()
         -- WoW Forever: the anti-clip glow (CUI_CDM_ForeverAntiClip.lua) has no
         -- Blizzard look, so there Blizzard Default is not offered and an unset or
         -- Blizzard Default bar reads as None, as the bar draws it.
-        local function PandemicDesc(getBd, onChange)
+        local function PandemicDesc(getBd, changed)
             local antiClip = mod.CDM_ANTI_CLIP
             return {
                 view = mod.GLOW_VIEW,
@@ -349,7 +349,7 @@ CludesUI.AtOptionsLogin(function()
                 extras = not antiClip and { { value = -1, label = "Blizzard Default" } } or nil,
                 caps = { mode = true, params = true, bg = true },
                 defaultColor = { r = 1, g = 1, b = 0 },
-                onChange = onChange or Rebuild,
+                onChange = changed or Rebuild,
                 get = function(f)
                     local edge = getBd()
                     if not edge then
@@ -382,14 +382,14 @@ CludesUI.AtOptionsLogin(function()
 
         -- Buff Glow of one buff-family bar (flat buffGlow* keys); getBd and
         -- onChange as for PandemicDesc.
-        local function BuffGlowDesc(getBd, onChange)
+        local function BuffGlowDesc(getBd, changed)
             return {
                 view = mod.GLOW_VIEW,
                 host = "icon",
                 excludes = { [4] = true },
                 caps = { mode = true, params = true, bg = true },
                 defaultColor = { r = 1, g = 0.788, b = 0.137 },
-                onChange = onChange or RebuildBuffGlows,
+                onChange = changed or RebuildBuffGlows,
                 get = function(f)
                     local edge = getBd()
                     if not edge then
@@ -496,7 +496,7 @@ CludesUI.AtOptionsLogin(function()
         -- any other stored style or Blizzard Default shows and renders as Pixel, see
         -- ns.PG_TbbEffectiveStyle). getBd resolves the bar at call time, so the
         -- Tracking Bars page (selected bar) and the Glows page share this.
-        local function TbbDesc(getBd, onChange)
+        local function TbbDesc(getBd, changed)
             return {
                 view = mod.GLOW_VIEW,
                 host = "bar",
@@ -507,7 +507,7 @@ CludesUI.AtOptionsLogin(function()
                     local edge = getBd()
                     return not edge or edge.pandemicGlow ~= true
                 end,
-                onChange = onChange,
+                onChange = changed,
                 get = function(f)
                     local edge = getBd()
                     if not edge then
@@ -781,8 +781,8 @@ CludesUI.AtOptionsLogin(function()
                     text = function()
                         -- Read-only: ns.GetBarGlows would create the spec's table.
                         local specKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
-                        local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-                        local backdrop = specKey and sp and sp[specKey] and sp[specKey].barGlows
+                        local spellRec = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
+                        local backdrop = specKey and spellRec and spellRec[specKey] and spellRec[specKey].barGlows
                         local num = 0
                         for _, entries in pairs((backdrop and backdrop.assignments) or {}) do
                             if type(entries) == "table" then
@@ -875,17 +875,17 @@ CludesUI.AtOptionsLogin(function()
 
     -- Check if a specific bar target uses a custom shape (not "none"/"cropped").
     -- barIdx can be a number 1-8 (action bar) or a string (CDM bar key).
-    local function BarHasCustomShape(barIdx)
-        barIdx = NormalizeSelectedBar(barIdx)
-        if type(barIdx) == "string" then
-            local cdmBd = mod.barDataByKey and mod.barDataByKey[barIdx]
-            if cdmBd and cdmBd.iconShape and cdmBd.iconShape ~= "none" and cdmBd.iconShape ~= "cropped" then
+    local function BarHasCustomShape(barIndex)
+        barIndex = NormalizeSelectedBar(barIndex)
+        if type(barIndex) == "string" then
+            local barData = mod.barDataByKey and mod.barDataByKey[barIndex]
+            if barData and barData.iconShape and barData.iconShape ~= "none" and barData.iconShape ~= "cropped" then
                 return true
             end
             return false
         end
         local barKeys = { "MainBar", "Bar2", "Bar3", "Bar4", "Bar5", "Bar6", "Bar7", "Bar8" }
-        local barId = barKeys[barIdx]
+        local barId = barKeys[barIndex]
         if not barId then
             return false
         end
@@ -910,10 +910,10 @@ CludesUI.AtOptionsLogin(function()
         end
     end)
 
-    local function ShowBarGlowSpellPicker(anchor, barIdx, btnIdx, onChanged, overrideAssignKey)
+    local function ShowBarGlowSpellPicker(anchor, barIndex, btnIdx, onChanged, overrideAssignKey)
         local backdrop = mod.GetBarGlows()
-        local assignKey = overrideAssignKey or (barIdx .. "_" .. btnIdx)
-        local buffList = backdrop.assignments[assignKey] or {}
+        local assignmentKey = overrideAssignKey or (barIndex .. "_" .. btnIdx)
+        local buffList = backdrop.assignments[assignmentKey] or {}
 
         local assignedSet = {}
         for _, record in ipairs(buffList) do
@@ -956,17 +956,17 @@ CludesUI.AtOptionsLogin(function()
         -- The button's own ability: its "spell_<id>" key, else the spell on its
         -- action slot. The top "Glow When Usable" row stands for it, and every
         -- entry added here records it.
-        local buttonSid = tonumber(assignKey:match("^spell_(%d+)$"))
+        local buttonSid = tonumber(assignmentKey:match("^spell_(%d+)$"))
         local iconSid
-        if type(barIdx) == "string" then
+        if type(barIndex) == "string" then
             -- CDM bar: the icon's own spell, as the runtime reads it (icon only).
-            local icon = mod.cdmBarIcons and mod.cdmBarIcons[barIdx] and mod.cdmBarIcons[barIdx][btnIdx]
+            local icon = mod.cdmBarIcons and mod.cdmBarIcons[barIndex] and mod.cdmBarIcons[barIndex][btnIdx]
             iconSid = icon and mod.BarGlowButtonSpell(icon)
         elseif not buttonSid then
-            local prefixText = BAR_BUTTON_PREFIXES[barIdx]
-            local realBtn = prefixText and _G[prefixText .. btnIdx]
-            if realBtn and realBtn.action then
-                local aType, ident = GetActionInfo(realBtn.action)
+            local prefixText = BAR_BUTTON_PREFIXES[barIndex]
+            local realButton = prefixText and _G[prefixText .. btnIdx]
+            if realButton and realButton.action then
+                local aType, ident = GetActionInfo(realButton.action)
                 buttonSid = aType == "spell" and ident or nil
             end
         end
@@ -978,29 +978,29 @@ CludesUI.AtOptionsLogin(function()
             isChecked = function(spellRef)
                 return assignedSet[spellRef]
             end,
-            onClick = function(sp, refreshChecks)
-                if assignedSet[sp.spellID] then
-                    assignedSet[sp.spellID] = nil
+            onClick = function(spellRec, refreshChecks)
+                if assignedSet[spellRec.spellID] then
+                    assignedSet[spellRec.spellID] = nil
                     for idx = #buffList, 1, -1 do
-                        if buffList[idx].spellID == sp.spellID then
+                        if buffList[idx].spellID == spellRec.spellID then
                             table.remove(buffList, idx)
                             break
                         end
                     end
                 else
                     -- Add with defaults
-                    assignedSet[sp.spellID] = true
+                    assignedSet[spellRec.spellID] = true
                     local newEntry = {
-                        spellID = sp.spellID,
+                        spellID = spellRec.spellID,
                         glowStyle = 1,
-                        mode = sp.usable and "USABLE" or "ACTIVE",
+                        mode = spellRec.usable and "USABLE" or "ACTIVE",
                         onlyInCombat = false,
                     }
                     newEntry.actionSpellID = buttonSid
                     buffList[#buffList + 1] = newEntry
                 end
                 refreshChecks()
-                backdrop.assignments[assignKey] = buffList
+                backdrop.assignments[assignmentKey] = buffList
                 Refresh()
                 ImmediateUpdate()
             end,
@@ -1027,10 +1027,10 @@ CludesUI.AtOptionsLogin(function()
     -- selected (the rows below belong to its current ability, which paging
     -- changes) or a preview glow was lit on a preview button: then the whole
     -- page is built again.
-    local glowLive =
+    local glowPreview =
         { events = { "ACTIONBAR_PAGE_CHANGED", "UPDATE_BONUS_ACTIONBAR", "PLAYER_MOUNT_DISPLAY_CHANGED" } }
-    function glowLive.Flush()
-        glowLive.pending = false
+    function glowPreview.Flush()
+        glowPreview.pending = false
         if
             not (
                 CludesUI:IsShown()
@@ -1046,24 +1046,24 @@ CludesUI.AtOptionsLogin(function()
             CludesUI:SetContentHeader(_glowHeaderBuilder)
         end
     end
-    function glowLive.OnEvent()
-        if glowLive.pending then
+    function glowPreview.OnEvent()
+        if glowPreview.pending then
             return
         end
-        glowLive.pending = true
-        C_Timer.After(0.15, glowLive.Flush)
+        glowPreview.pending = true
+        C_Timer.After(0.15, glowPreview.Flush)
     end
-    function glowLive.Arm()
-        local f = glowLive.frame
-        for i = 1, #glowLive.events do
-            f:RegisterEvent(glowLive.events[i])
+    function glowPreview.Arm()
+        local f = glowPreview.frame
+        for i = 1, #glowPreview.events do
+            f:RegisterEvent(glowPreview.events[i])
         end
     end
-    function glowLive.Disarm()
-        glowLive.frame:UnregisterAllEvents()
+    function glowPreview.Disarm()
+        glowPreview.frame:UnregisterAllEvents()
     end
 
-    local function BuildBarGlowsPage(pageName, hostFrame, yOffset)
+    local function BuildBarGlowsPage(pageTitle, hostFrame, yOffset)
         local W = CludesUI.Widgets
         local cursorY = yOffset
         local _, height
@@ -1089,21 +1089,21 @@ CludesUI.AtOptionsLogin(function()
         _glowHeaderBuilder = function(header, width)
             -- Re-read current state each build
             local bgData = mod.GetBarGlows()
-            local sel = NormalizeSelectedBar(bgData.selectedBar or 1)
-            local isCDMBar = (type(sel) == "string")
+            local selection = NormalizeSelectedBar(bgData.selectedBar or 1)
+            local cdmBar = (type(selection) == "string")
             -- For CDM bars: cdmBarKey is the bar key string. For action bars:
             -- barIdx is the integer 1-8 used for prefix lookup.
-            local cdmBarKey = isCDMBar and sel or nil
-            local barIdx = isCDMBar and nil or sel
+            local cdmBarKey = cdmBar and selection or nil
+            local barIndex = cdmBar and nil or selection
             local success, EAB_ADDON = pcall(CludesUI.Lite.GetAddon, "CludesUIActionBars")
             if not success then
                 EAB_ADDON = nil
             end
             local barKeyList = { "MainBar", "Bar2", "Bar3", "Bar4", "Bar5", "Bar6", "Bar7", "Bar8" }
-            local barKeyStr = (not isCDMBar) and (barKeyList[barIdx] or "MainBar") or nil
-            local barSettings = nil
+            local barKeyStr = (not cdmBar) and (barKeyList[barIndex] or "MainBar") or nil
+            local barConf = nil
             if barKeyStr and EAB_ADDON and EAB_ADDON.db and EAB_ADDON.db.profile then
-                barSettings = EAB_ADDON.db.profile.bars[barKeyStr]
+                barConf = EAB_ADDON.db.profile.bars[barKeyStr]
             end
 
             -- CDM bars: count icons dynamically; action bars: always 12.
@@ -1111,7 +1111,7 @@ CludesUI.AtOptionsLogin(function()
             -- and excluded here, so every native icon keeps its slot index
             -- (stable glow-assignment fallback keys).
             local NUM_BUTTONS = 12
-            if isCDMBar and mod.cdmBarIcons and mod.cdmBarIcons[cdmBarKey] then
+            if cdmBar and mod.cdmBarIcons and mod.cdmBarIcons[cdmBarKey] then
                 NUM_BUTTONS = 0
                 for _, ic in ipairs(mod.cdmBarIcons[cdmBarKey]) do
                     if not (mod.CdmFrameOverflowBar and mod.CdmFrameOverflowBar(ic)) then
@@ -1122,7 +1122,7 @@ CludesUI.AtOptionsLogin(function()
                     NUM_BUTTONS = 1
                 end
             end
-            local prefixText = (not isCDMBar) and (BAR_BUTTON_PREFIXES[barIdx] or "ActionButton") or nil
+            local prefixText = (not cdmBar) and (BAR_BUTTON_PREFIXES[barIndex] or "ActionButton") or nil
 
             -- Dropdown at top
             local DD_H = 34
@@ -1161,7 +1161,7 @@ CludesUI.AtOptionsLogin(function()
             dropCaption:SetPoint("LEFT", dropdownBtn, "LEFT", 12, 0)
             local ddArrow = CludesUI.MakeDropdownArrow(dropdownBtn, 12, CludesUI.PanelPP)
             dropCaption:SetPoint("RIGHT", ddArrow, "LEFT", -5, 0)
-            dropCaption:SetText(GetBGTargetLabel(sel))
+            dropCaption:SetText(GetBGTargetLabel(selection))
 
             local ddMenu
             local function BuildDDMenu()
@@ -1201,7 +1201,7 @@ CludesUI.AtOptionsLogin(function()
                     local iHl = entry:CreateTexture(nil, "ARTWORK")
                     iHl:SetAllPoints()
                     iHl:SetColorTexture(1, 1, 1, 1)
-                    local isCurrent = (entryVal == sel)
+                    local isCurrent = (entryVal == selection)
                     iHl:SetAlpha(isCurrent and selA or 0)
                     entry:SetScript("OnEnter", function()
                         iLbl:SetTextColor(1, 1, 1, 1)
@@ -1297,10 +1297,10 @@ CludesUI.AtOptionsLogin(function()
             local gridTopY = -(20 + DD_H + 20)
 
             local realBtnW, realBtnH = 36, 36
-            if isCDMBar then
-                local cdmBd = mod.barDataByKey and mod.barDataByKey[cdmBarKey]
-                if cdmBd then
-                    realBtnW = cdmBd.iconSize or 36
+            if cdmBar then
+                local barData = mod.barDataByKey and mod.barDataByKey[cdmBarKey]
+                if barData then
+                    realBtnW = barData.iconSize or 36
                     realBtnH = realBtnW
                 end
                 -- The live icon's on-screen size (width/height match, UI scale) in this panel's scale
@@ -1322,89 +1322,89 @@ CludesUI.AtOptionsLogin(function()
             end
 
             -- Read bar size (no scale -- width/height based)
-            local scaledBtnW = math.floor(realBtnW + 0.5)
+            local buttonW = math.floor(realBtnW + 0.5)
             local scaledBtnH = math.floor(realBtnH + 0.5)
 
             -- CDM bar data reference (reused for shape, spacing, zoom, border)
-            local cdmBd = isCDMBar and mod.barDataByKey and mod.barDataByKey[cdmBarKey] or nil
+            local barData = cdmBar and mod.barDataByKey and mod.barDataByKey[cdmBarKey] or nil
 
             -- Custom shape expansion
-            local btnShape
-            if isCDMBar then
-                btnShape = (cdmBd and cdmBd.iconShape) or "none"
+            local shapeKey
+            if cdmBar then
+                shapeKey = (barData and barData.iconShape) or "none"
             else
-                btnShape = (barSettings and barSettings.buttonShape) or "none"
+                shapeKey = (barConf and barConf.buttonShape) or "none"
             end
-            if btnShape ~= "none" and btnShape ~= "cropped" then
+            if shapeKey ~= "none" and shapeKey ~= "cropped" then
                 local shapeExp = 10
-                scaledBtnW = scaledBtnW + shapeExp
+                buttonW = buttonW + shapeExp
                 scaledBtnH = scaledBtnH + shapeExp
             end
-            if btnShape == "cropped" then
-                scaledBtnH = math.floor(scaledBtnH * (isCDMBar and mod.CdmCropFactor(cdmBd) or 0.80) + 0.5)
+            if shapeKey == "cropped" then
+                scaledBtnH = math.floor(scaledBtnH * (cdmBar and mod.CdmCropFactor(barData) or 0.80) + 0.5)
             end
 
-            local spacing = isCDMBar and ((cdmBd and cdmBd.spacing) or 2)
-                or ((barSettings and barSettings.buttonPadding) or 2)
+            local spacing = cdmBar and ((barData and barData.spacing) or 2)
+                or ((barConf and barConf.buttonPadding) or 2)
             local scaledPad = spacing
 
             -- How many buttons visible
             local numVisible = NUM_BUTTONS
-            if not isCDMBar and barSettings then
-                local shade = barSettings.overrideNumIcons
+            if not cdmBar and barConf then
+                local shade = barConf.overrideNumIcons
                 if shade and shade > 0 and shade < numVisible then
                     numVisible = shade
                 end
             end
 
             -- Read zoom
-            local zoom = isCDMBar and ((cdmBd and cdmBd.iconZoom) or 0.08)
-                or (((barSettings and barSettings.iconZoom) or 5.5) / 100)
-            local square = (not isCDMBar) and EAB_ADDON and EAB_ADDON.db and EAB_ADDON.db.profile.squareIcons
+            local zoom = cdmBar and ((barData and barData.iconZoom) or 0.08)
+                or (((barConf and barConf.iconZoom) or 5.5) / 100)
+            local square = (not cdmBar) and EAB_ADDON and EAB_ADDON.db and EAB_ADDON.db.profile.squareIcons
 
             -- Read border settings
             local brdSize = 0
             local brdColor, brdClassColor
-            if isCDMBar and cdmBd then
-                brdSize = cdmBd.borderSize or 1
+            if cdmBar and barData then
+                brdSize = barData.borderSize or 1
                 -- This preview draws a solid border, so an exact size (borderSizePx)
                 -- shows here only while the bar's style is Solid.
-                local cdmTex = cdmBd.borderTexture or "solid"
-                local cdmPx = CludesUI.BorderPx(cdmBd.borderSizePx, brdSize, cdmTex)
+                local cdmTex = barData.borderTexture or "solid"
+                local cdmPx = CludesUI.BorderPx(barData.borderSizePx, brdSize, cdmTex)
                 if cdmPx and cdmTex == "solid" then
                     brdSize = cdmPx
                 end
                 brdColor = {
-                    r = cdmBd.borderR or 0,
-                    g = cdmBd.borderG or 0,
-                    b = cdmBd.borderB or 0,
-                    a = cdmBd.borderA or 1,
+                    r = barData.borderR or 0,
+                    g = barData.borderG or 0,
+                    b = barData.borderB or 0,
+                    a = barData.borderA or 1,
                 }
-                brdClassColor = cdmBd.borderClassColor
-            elseif not isCDMBar and barSettings then
+                brdClassColor = barData.borderClassColor
+            elseif not cdmBar and barConf then
                 -- None..Strong are the steps 0-4; an unknown or numeric value renders as Thin, as the bar does.
-                local thickness = barSettings.borderThickness or "thin"
+                local thickness = barConf.borderThickness or "thin"
                 brdSize = CludesUI.BORDER_STEP_OF_LABEL[thickness] or 1
-                local abTex = barSettings.borderTexture or "solid"
-                local abPx = CludesUI.BorderPx(barSettings.borderThicknessPx, brdSize, abTex)
+                local abTex = barConf.borderTexture or "solid"
+                local abPx = CludesUI.BorderPx(barConf.borderThicknessPx, brdSize, abTex)
                 if abPx and abTex == "solid" then
                     brdSize = abPx
                 end
-                brdColor = barSettings.borderColor
-                brdClassColor = barSettings.borderClassColor
+                brdColor = barConf.borderColor
+                brdClassColor = barConf.borderClassColor
             end
             if not brdColor then
                 brdColor = { r = 0, g = 0, b = 0, a = 1 }
             end
 
-            local gridW = numVisible * scaledBtnW + (numVisible - 1) * scaledPad
+            local gridW = numVisible * buttonW + (numVisible - 1) * scaledPad
             -- Live-sized CDM icons can outgrow the preview width: shrink to fit
-            if isCDMBar and width and width > 0 and gridW > width then
+            if cdmBar and width and width > 0 and gridW > width then
                 local f = width / gridW
-                scaledBtnW = math.floor(scaledBtnW * f)
+                buttonW = math.floor(buttonW * f)
                 scaledBtnH = math.floor(scaledBtnH * f)
                 scaledPad = scaledPad * f
-                gridW = numVisible * scaledBtnW + (numVisible - 1) * scaledPad
+                gridW = numVisible * buttonW + (numVisible - 1) * scaledPad
             end
             local startX = math.max(0, math.floor((width - gridW) / 2))
             local startY = gridTopY
@@ -1419,93 +1419,93 @@ CludesUI.AtOptionsLogin(function()
                     break
                 end
 
-                local xOff = startX + (i - 1) * (scaledBtnW + scaledPad)
+                local xOff = startX + (i - 1) * (buttonW + scaledPad)
                 local isSelected = (_glowSelectedButton == i)
 
-                local bf = CreateFrame("Button", nil, header)
-                bf:SetSize(scaledBtnW, scaledBtnH)
-                bf:SetPoint("TOPLEFT", header, "TOPLEFT", xOff, startY)
-                _glowBtnFrames[i] = bf
-                bf:RegisterForClicks("LeftButtonUp", "RightButtonDown")
+                local barFrame = CreateFrame("Button", nil, header)
+                barFrame:SetSize(buttonW, scaledBtnH)
+                barFrame:SetPoint("TOPLEFT", header, "TOPLEFT", xOff, startY)
+                _glowBtnFrames[i] = barFrame
+                barFrame:RegisterForClicks("LeftButtonUp", "RightButtonDown")
 
-                local bgTex = bf:CreateTexture(nil, "BACKGROUND")
+                local bgTex = barFrame:CreateTexture(nil, "BACKGROUND")
                 bgTex:SetAllPoints()
                 bgTex:SetColorTexture(0.062, 0.070, 0.082, 0.5)
 
                 -- Icon from real action button or CDM bar icon
-                local realBtn
-                if isCDMBar then
+                local realButton
+                if cdmBar then
                     local cdmIcons = mod.cdmBarIcons and mod.cdmBarIcons[cdmBarKey]
-                    realBtn = cdmIcons and cdmIcons[i]
+                    realButton = cdmIcons and cdmIcons[i]
                     -- Native equipment frames are parked off the live bar (items
                     -- are preset-lane-only), but the icon registry can still hold
                     -- one from a prior pass -- never replicate it into the preview.
                     if
-                        realBtn
-                        and realBtn.cooldownID
+                        realButton
+                        and realButton.cooldownID
                         and C_CooldownViewer
                         and C_CooldownViewer.GetCooldownViewerCooldownInfo
                     then
-                        local rinfo = C_CooldownViewer.GetCooldownViewerCooldownInfo(realBtn.cooldownID)
+                        local rinfo = C_CooldownViewer.GetCooldownViewerCooldownInfo(realButton.cooldownID)
                         if rinfo and rinfo.equipSlot then
-                            realBtn = nil
+                            realButton = nil
                         end
                     end
                 else
-                    realBtn = prefixText and _G[prefixText .. i]
+                    realButton = prefixText and _G[prefixText .. i]
                 end
                 -- Non-glowable icons (see IsNonGlowableCDMIcon) are left inert -- no hover, clicks do nothing.
-                local nonGlowable = isCDMBar and IsNonGlowableCDMIcon(realBtn)
-                local _rbTex = realBtn
-                    and ((mod._hookFrameData[realBtn] and mod._hookFrameData[realBtn].tex) or realBtn._tex)
-                local hasAction = realBtn
-                    and ((realBtn.icon and realBtn.icon:GetTexture()) or (_rbTex and _rbTex:GetTexture()))
-                local iconTex = bf:CreateTexture(nil, "ARTWORK")
-                iconTex:SetAllPoints()
-                UnsnapTex(iconTex)
+                local nonGlowable = cdmBar and IsNonGlowableCDMIcon(realButton)
+                local _rbTex = realButton
+                    and ((mod._hookFrameData[realButton] and mod._hookFrameData[realButton].tex) or realButton._tex)
+                local hasAction = realButton
+                    and ((realButton.icon and realButton.icon:GetTexture()) or (_rbTex and _rbTex:GetTexture()))
+                local iconTexture = barFrame:CreateTexture(nil, "ARTWORK")
+                iconTexture:SetAllPoints()
+                UnsnapTex(iconTexture)
                 if hasAction then
-                    local srcTex = (realBtn.icon and realBtn.icon:GetTexture())
+                    local srcTex = (realButton.icon and realButton.icon:GetTexture())
                         or (_rbTex and _rbTex:GetTexture())
-                    iconTex:SetTexture(srcTex)
+                    iconTexture:SetTexture(srcTex)
                     -- Desaturate (preview only) non-glowable icons so it's visually clear they're not assignable.
                     if nonGlowable then
-                        iconTex:SetDesaturated(true)
+                        iconTexture:SetDesaturated(true)
                     end
                     local z = zoom
-                    if btnShape == "cropped" then
-                        local t = isCDMBar and mod.CdmCropTrim(cdmBd) or 0.10
-                        iconTex:SetTexCoord(z, 1 - z, z + t, 1 - z - t)
+                    if shapeKey == "cropped" then
+                        local t = cdmBar and mod.CdmCropTrim(barData) or 0.10
+                        iconTexture:SetTexCoord(z, 1 - z, z + t, 1 - z - t)
                     elseif z > 0 or square then
-                        iconTex:SetTexCoord(z, 1 - z, z, 1 - z)
+                        iconTexture:SetTexCoord(z, 1 - z, z, 1 - z)
                     else
-                        iconTex:SetTexCoord(0, 1, 0, 1)
+                        iconTexture:SetTexCoord(0, 1, 0, 1)
                     end
                 else
-                    iconTex:SetColorTexture(0, 0, 0, 0.5)
+                    iconTexture:SetColorTexture(0, 0, 0, 0.5)
                 end
 
                 -- Shape mask
-                local SHAPE_MASKS = isCDMBar and mod.CDM_SHAPE_MASKS or AB_SHAPE_MASKS
-                local SHAPE_BORDERS = isCDMBar and mod.CDM_SHAPE_BORDERS or AB_SHAPE_BORDERS
-                if btnShape ~= "none" and btnShape ~= "cropped" and SHAPE_MASKS and SHAPE_MASKS[btnShape] then
-                    local mask = bf:CreateMaskTexture()
-                    mask:SetAllPoints(bf)
-                    mask:SetTexture(SHAPE_MASKS[btnShape], "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-                    iconTex:AddMaskTexture(mask)
+                local SHAPE_MASKS = cdmBar and mod.CDM_SHAPE_MASKS or AB_SHAPE_MASKS
+                local SHAPE_BORDERS = cdmBar and mod.CDM_SHAPE_BORDERS or AB_SHAPE_BORDERS
+                if shapeKey ~= "none" and shapeKey ~= "cropped" and SHAPE_MASKS and SHAPE_MASKS[shapeKey] then
+                    local mask = barFrame:CreateMaskTexture()
+                    mask:SetAllPoints(barFrame)
+                    mask:SetTexture(SHAPE_MASKS[shapeKey], "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+                    iconTexture:AddMaskTexture(mask)
                     bgTex:AddMaskTexture(mask)
                     -- Store shape metadata for glow preview (StartNativeGlow reads these)
-                    bf._shapeApplied = true
-                    bf._shapeName = btnShape
-                    bf._shapeMask = mask
+                    barFrame._shapeApplied = true
+                    barFrame._shapeName = shapeKey
+                    barFrame._shapeMask = mask
                     -- Shape border (always created for hover/accent tinting; invisible when brdSize == 0)
-                    if SHAPE_BORDERS and SHAPE_BORDERS[btnShape] then
-                        local sbt = bf:CreateTexture(nil, "OVERLAY", nil, 6)
-                        sbt:SetAllPoints(bf)
-                        sbt:SetTexture(SHAPE_BORDERS[btnShape])
+                    if SHAPE_BORDERS and SHAPE_BORDERS[shapeKey] then
+                        local sbt = barFrame:CreateTexture(nil, "OVERLAY", nil, 6)
+                        sbt:SetAllPoints(barFrame)
+                        sbt:SetTexture(SHAPE_BORDERS[shapeKey])
                         -- Direct ref for accent/hover tinting below. Never locate via a GetRegions
                         -- scan -- a freshly tracked CD's icon region carries secret values, and
                         -- GetDrawLayer comparisons on it error out mid page-build.
-                        bf._sbt = sbt
+                        barFrame._sbt = sbt
                         if brdSize > 0 then
                             local cr, cg, checkBtn = brdColor.r, brdColor.g, brdColor.b
                             if brdClassColor then
@@ -1536,131 +1536,131 @@ CludesUI.AtOptionsLogin(function()
                     end
                     local Pix = CludesUI and CludesUI.PP
                     if Pix then
-                        Pix.CreateBorder(bf, cr, cg, checkBtn, ca, brdSize, "OVERLAY", 7)
+                        Pix.CreateBorder(barFrame, cr, cg, checkBtn, ca, brdSize, "OVERLAY", 7)
                     end
                 end
 
                 -- Accent border for buttons that have assignments
-                local assignKey
-                if isCDMBar and realBtn and realBtn.cooldownID then
-                    assignKey = "cdm_" .. realBtn.cooldownID
+                local assignmentKey
+                if cdmBar and realButton and realButton.cooldownID then
+                    assignmentKey = "cdm_" .. realButton.cooldownID
                 else
                     -- Per ability, so a stance's repaged bar never shares glows.
-                    assignKey = mod.BarGlowAbilityKey(realBtn) or (barIdx .. "_" .. i)
+                    assignmentKey = mod.BarGlowAbilityKey(realButton) or (barIndex .. "_" .. i)
                 end
-                bf._assignKey = assignKey
-                local assigns = bgData.assignments[assignKey]
+                barFrame._assignKey = assignmentKey
+                local assigns = bgData.assignments[assignmentKey]
                 local hasAssign = assigns and #assigns > 0
 
                 -- Pre-create accent border on every button (hidden unless needed)
-                local accentCont = CreateFrame("Frame", nil, bf)
-                accentCont:SetAllPoints()
-                accentCont:SetFrameLevel(bf:GetFrameLevel() + 2)
+                local accentHolder = CreateFrame("Frame", nil, barFrame)
+                accentHolder:SetAllPoints()
+                accentHolder:SetFrameLevel(barFrame:GetFrameLevel() + 2)
                 local PP2 = CludesUI and CludesUI.PP
 
                 -- Active button gets accent border; assigned (non-active) buttons get white border
                 -- For custom shapes, tint the shape border instead of showing square PP borders
-                local isCustomShape = btnShape ~= "none"
-                    and btnShape ~= "cropped"
-                    and btnShape ~= "square"
-                    and btnShape ~= "csquare"
+                local isCustomShape = shapeKey ~= "none"
+                    and shapeKey ~= "cropped"
+                    and shapeKey ~= "square"
+                    and shapeKey ~= "csquare"
                     and SHAPE_MASKS
-                    and SHAPE_MASKS[btnShape]
-                local accentBrd
+                    and SHAPE_MASKS[shapeKey]
+                local accentEdge
                 if not isCustomShape then
                     if isSelected then
-                        accentBrd = PP2
-                            and PP2.CreateBorder(accentCont, ACCENT.r, ACCENT.g, ACCENT.b, 1, 2, "OVERLAY", 7)
+                        accentEdge = PP2
+                            and PP2.CreateBorder(accentHolder, ACCENT.r, ACCENT.g, ACCENT.b, 1, 2, "OVERLAY", 7)
                     else
-                        accentBrd = PP2 and PP2.CreateBorder(accentCont, 1, 1, 1, 0.6, 2, "OVERLAY", 7)
+                        accentEdge = PP2 and PP2.CreateBorder(accentHolder, 1, 1, 1, 0.6, 2, "OVERLAY", 7)
                     end
-                    if accentBrd then
-                        accentBrd:Hide()
+                    if accentEdge then
+                        accentEdge:Hide()
                     end
                 end
 
                 -- Show active state
                 if isSelected then
                     if isCustomShape then
-                        if bf._sbt then
-                            bf._sbt:SetVertexColor(ACCENT.r, ACCENT.g, ACCENT.b, 1)
+                        if barFrame._sbt then
+                            barFrame._sbt:SetVertexColor(ACCENT.r, ACCENT.g, ACCENT.b, 1)
                         end
-                    elseif accentBrd then
-                        accentBrd:Show()
+                    elseif accentEdge then
+                        accentEdge:Show()
                     end
                 end
 
                 -- Show white border for assigned buttons (even if not active)
                 if hasAssign and not isSelected then
                     if isCustomShape then
-                        if bf._sbt then
-                            bf._sbt:SetVertexColor(1, 1, 1, 0.6)
+                        if barFrame._sbt then
+                            barFrame._sbt:SetVertexColor(1, 1, 1, 0.6)
                         end
-                    elseif accentBrd then
-                        accentBrd:Show()
+                    elseif accentEdge then
+                        accentEdge:Show()
                     end
                 end
 
                 -- Store refs so click handler can activate inline
-                bf._accentBrd = accentBrd
-                bf._accentCont = accentCont
+                barFrame._accentBrd = accentEdge
+                barFrame._accentCont = accentHolder
 
                 -- Button alpha: unassigned = 50%, assigned/active = 100%
                 if isSelected or hasAssign then
-                    bf:SetAlpha(1)
+                    barFrame:SetAlpha(1)
                 else
-                    bf:SetAlpha(0.50)
+                    barFrame:SetAlpha(0.50)
                 end
 
                 -- Hover swaps border to accent; active button needs none (already accent)
-                bf._shapeBorderTex = isCustomShape and bf._sbt or nil
+                barFrame._shapeBorderTex = isCustomShape and barFrame._sbt or nil
                 local origBrdR, origBrdG, origBrdB, origBrdA =
                     brdColor.r, brdColor.g, brdColor.b, brdColor.a or 1
-                if isCDMBar and cdmBd then
-                    origBrdR = cdmBd.borderR or 0
-                    origBrdG = cdmBd.borderG or 0
-                    origBrdB = cdmBd.borderB or 0
-                    origBrdA = (cdmBd.borderSize or 1) > 0 and (cdmBd.borderA or 1) or 0
+                if cdmBar and barData then
+                    origBrdR = barData.borderR or 0
+                    origBrdG = barData.borderG or 0
+                    origBrdB = barData.borderB or 0
+                    origBrdA = (barData.borderSize or 1) > 0 and (barData.borderA or 1) or 0
                 elseif brdSize == 0 then
                     origBrdA = 0
                 end
                 if not isSelected and not nonGlowable then
                     if hasAssign then
-                        bf:SetScript("OnEnter", function()
-                            if isCustomShape and bf._shapeBorderTex then
-                                bf._shapeBorderTex:SetVertexColor(ACCENT.r, ACCENT.g, ACCENT.b, 1)
-                            elseif PP2 and accentCont then
-                                PP2.SetBorderColor(accentCont, ACCENT.r, ACCENT.g, ACCENT.b, 1)
+                        barFrame:SetScript("OnEnter", function()
+                            if isCustomShape and barFrame._shapeBorderTex then
+                                barFrame._shapeBorderTex:SetVertexColor(ACCENT.r, ACCENT.g, ACCENT.b, 1)
+                            elseif PP2 and accentHolder then
+                                PP2.SetBorderColor(accentHolder, ACCENT.r, ACCENT.g, ACCENT.b, 1)
                             end
                         end)
-                        bf:SetScript("OnLeave", function()
-                            if isCustomShape and bf._shapeBorderTex then
-                                bf._shapeBorderTex:SetVertexColor(1, 1, 1, 0.6)
-                            elseif PP2 and accentCont then
-                                PP2.SetBorderColor(accentCont, 1, 1, 1, 0.6)
+                        barFrame:SetScript("OnLeave", function()
+                            if isCustomShape and barFrame._shapeBorderTex then
+                                barFrame._shapeBorderTex:SetVertexColor(1, 1, 1, 0.6)
+                            elseif PP2 and accentHolder then
+                                PP2.SetBorderColor(accentHolder, 1, 1, 1, 0.6)
                             end
                         end)
                     else
-                        bf:SetScript("OnEnter", function()
-                            bf:SetAlpha(0.55)
-                            if isCustomShape and bf._shapeBorderTex then
-                                bf._shapeBorderTex:SetVertexColor(ACCENT.r, ACCENT.g, ACCENT.b, 1)
+                        barFrame:SetScript("OnEnter", function()
+                            barFrame:SetAlpha(0.55)
+                            if isCustomShape and barFrame._shapeBorderTex then
+                                barFrame._shapeBorderTex:SetVertexColor(ACCENT.r, ACCENT.g, ACCENT.b, 1)
                             else
-                                if PP2 and accentCont then
-                                    PP2.SetBorderColor(accentCont, ACCENT.r, ACCENT.g, ACCENT.b, 1)
+                                if PP2 and accentHolder then
+                                    PP2.SetBorderColor(accentHolder, ACCENT.r, ACCENT.g, ACCENT.b, 1)
                                 end
-                                if accentBrd then
-                                    accentBrd:Show()
+                                if accentEdge then
+                                    accentEdge:Show()
                                 end
                             end
                         end)
-                        bf:SetScript("OnLeave", function()
-                            bf:SetAlpha(0.50)
-                            if isCustomShape and bf._shapeBorderTex then
-                                bf._shapeBorderTex:SetVertexColor(origBrdR, origBrdG, origBrdB, origBrdA)
+                        barFrame:SetScript("OnLeave", function()
+                            barFrame:SetAlpha(0.50)
+                            if isCustomShape and barFrame._shapeBorderTex then
+                                barFrame._shapeBorderTex:SetVertexColor(origBrdR, origBrdG, origBrdB, origBrdA)
                             else
-                                if accentBrd then
-                                    accentBrd:Hide()
+                                if accentEdge then
+                                    accentEdge:Hide()
                                 end
                             end
                         end)
@@ -1671,10 +1671,10 @@ CludesUI.AtOptionsLogin(function()
                 local function ActivateInline()
                     local PP3 = CludesUI and CludesUI.PP
                     -- Clear previous active button visuals
-                    if header._activeBtnRef and header._activeBtnRef ~= bf then
+                    if header._activeBtnRef and header._activeBtnRef ~= barFrame then
                         local prev = header._activeBtnRef
                         -- Revert border: if prev has assignments, switch to white; otherwise hide
-                        local prevKey = prev._assignKey or (barIdx .. "_" .. (prev._btnIdx or 0))
+                        local prevKey = prev._assignKey or (barIndex .. "_" .. (prev._btnIdx or 0))
                         local prevAssigns = bgData.assignments[prevKey]
                         local prevHasAssign = prevAssigns and #prevAssigns > 0
                         if prevHasAssign then
@@ -1705,27 +1705,27 @@ CludesUI.AtOptionsLogin(function()
                         end
                     end
                     -- Show this button as active with accent color + full alpha
-                    bf:SetAlpha(1)
-                    if PP3 and accentCont then
-                        PP3.SetBorderColor(accentCont, ACCENT.r, ACCENT.g, ACCENT.b, 1)
+                    barFrame:SetAlpha(1)
+                    if PP3 and accentHolder then
+                        PP3.SetBorderColor(accentHolder, ACCENT.r, ACCENT.g, ACCENT.b, 1)
                     end
-                    if accentBrd then
-                        accentBrd:Show()
+                    if accentEdge then
+                        accentEdge:Show()
                     end
                     -- Remove hover toggle since border is now permanent
-                    bf:SetScript("OnEnter", nil)
-                    bf:SetScript("OnLeave", nil)
-                    header._activeBtnRef = bf
+                    barFrame:SetScript("OnEnter", nil)
+                    barFrame:SetScript("OnLeave", nil)
+                    header._activeBtnRef = barFrame
                 end
-                bf._btnIdx = i
+                barFrame._btnIdx = i
 
                 -- Track the initially active button
                 if isSelected then
-                    header._activeBtnRef = bf
+                    header._activeBtnRef = barFrame
                 end
 
                 -- Left click: select this button. Right click: select + toggle spell picker.
-                bf:SetScript("OnClick", function(self, btnFrame)
+                barFrame:SetScript("OnClick", function(self, btnFrame)
                     -- Non-glowable icons ignore both clicks so no glow can be added.
                     if nonGlowable then
                         return
@@ -1755,7 +1755,7 @@ CludesUI.AtOptionsLogin(function()
                         C_Timer.After(0, function()
                             local newBf = _glowBtnFrames[i]
                             if newBf then
-                                ShowBarGlowSpellPicker(newBf, barIdx, i, function()
+                                ShowBarGlowSpellPicker(newBf, barIndex, i, function()
                                     _glowSelectedButton = i
                                     CludesUI:RefreshPage(true)
                                 end, newBf._assignKey)
@@ -1781,15 +1781,15 @@ CludesUI.AtOptionsLogin(function()
         -- now on, again whenever this page shows, never while it is hidden. Skipped
         -- during a hidden search pre-build: nothing to preview while indexing.
         if not CludesUI._prebuilding then
-            if not glowLive.frame then
-                glowLive.frame = CreateFrame("Frame")
-                glowLive.frame:SetScript("OnEvent", glowLive.OnEvent)
+            if not glowPreview.frame then
+                glowPreview.frame = CreateFrame("Frame")
+                glowPreview.frame:SetScript("OnEvent", glowPreview.OnEvent)
             end
             if hostFrame:IsVisible() then
-                glowLive.Arm()
+                glowPreview.Arm()
             end
-            hostFrame:HookScript("OnShow", glowLive.Arm)
-            hostFrame:HookScript("OnHide", glowLive.Disarm)
+            hostFrame:HookScript("OnShow", glowPreview.Arm)
+            hostFrame:HookScript("OnHide", glowPreview.Disarm)
         end
 
         -------------------------------------------------------------------
@@ -1809,22 +1809,22 @@ CludesUI.AtOptionsLogin(function()
 
         -- No selection: the tip under the button grid is the only hint
         if curBtn then
-            local assignKey, cdmSid
+            local assignmentKey, cdmSid
             local isCurCDM = (type(curBar) == "string")
             if isCurCDM then
                 local cdmIcons = mod.cdmBarIcons and mod.cdmBarIcons[curBar]
                 local icon = cdmIcons and cdmIcons[curBtn]
                 if icon and icon.cooldownID then
-                    assignKey = "cdm_" .. icon.cooldownID
+                    assignmentKey = "cdm_" .. icon.cooldownID
                     cdmSid = mod.BarGlowButtonSpell(icon)
                 end
             end
-            if not assignKey then
+            if not assignmentKey then
                 local prefixText = BAR_BUTTON_PREFIXES[curBar]
                 local curRealBtn = prefixText and _G[prefixText .. curBtn]
-                assignKey = mod.BarGlowAbilityKey(curRealBtn) or (curBar .. "_" .. curBtn)
+                assignmentKey = mod.BarGlowAbilityKey(curRealBtn) or (curBar .. "_" .. curBtn)
             end
-            local buffList = backdrop.assignments[assignKey] or {}
+            local buffList = backdrop.assignments[assignmentKey] or {}
             hostFrame._showRowDivider = true
 
             if #buffList == 0 then
@@ -1856,7 +1856,7 @@ CludesUI.AtOptionsLogin(function()
                         cursorY = mod.BuildBarGlowWhenRow(W, hostFrame, cursorY, record, Refresh, cdmSid)
 
                         -- Helper: resolve current glow color and restart preview if active
-                        local pvKey = assignKey .. "_" .. aIdx
+                        local pvKey = assignmentKey .. "_" .. aIdx
                         local function RefreshPreviewGlow()
                             if not _bgPreviewGlowActive[pvKey] then
                                 return
@@ -2123,7 +2123,7 @@ CludesUI.AtOptionsLogin(function()
                             onClick = function()
                                 table.remove(buffList, removeAIdx)
                                 if #buffList == 0 then
-                                    backdrop.assignments[assignKey] = nil
+                                    backdrop.assignments[assignmentKey] = nil
                                 end
                                 Refresh()
                                 CludesUI:RefreshPage(true)
@@ -2351,10 +2351,10 @@ CludesUI.AtOptionsLogin(function()
         end
         -- Stop fake cooldown on preview slot
         if optionState._cdmPreview and optionState._cdmPreview._previewSlots then
-            local slot = optionState._cdmPreview._previewSlots[1]
-            if slot and slot._previewCD then
-                slot._previewCD:Clear()
-                slot._previewCD:Hide()
+            local slotFrame = optionState._cdmPreview._previewSlots[1]
+            if slotFrame and slotFrame._previewCD then
+                slotFrame._previewCD:Clear()
+                slotFrame._previewCD:Hide()
             end
         end
     end
@@ -2373,14 +2373,14 @@ CludesUI.AtOptionsLogin(function()
         if not optionState._cdmPreview or not optionState._cdmPreview._previewSlots then
             return
         end
-        local slot = optionState._cdmPreview._previewSlots[1]
-        if not slot or not slot:IsShown() then
+        local slotFrame = optionState._cdmPreview._previewSlots[1]
+        if not slotFrame or not slotFrame:IsShown() then
             return
         end
 
         -- Ensure cooldown widget exists on preview slot
-        if not slot._previewCD then
-            local cd = CreateFrame("Cooldown", nil, slot, "CooldownFrameTemplate")
+        if not slotFrame._previewCD then
+            local cd = CreateFrame("Cooldown", nil, slotFrame, "CooldownFrameTemplate")
             cd:SetAllPoints()
             cd:SetDrawEdge(false)
             cd:SetDrawSwipe(true)
@@ -2397,15 +2397,15 @@ CludesUI.AtOptionsLogin(function()
                 cd:SetSnapToPixelGrid(false)
                 cd:SetTexelSnappingBias(0)
             end
-            slot._previewCD = cd
+            slotFrame._previewCD = cd
         end
 
         -- The timers below stand down once the preview slot was dressed again
         -- for a rebuilt preview (page reuse): its state belongs to that build.
-        local slotGen = PoolGen(slot)
+        local slotGen = PoolGen(slotFrame)
         -- Always refresh font (smaller than the bar's cooldown font size, shadow style)
         C_Timer.After(0, function()
-            if PoolGen(slot) ~= slotGen or not slot._previewCD then
+            if PoolGen(slotFrame) ~= slotGen or not slotFrame._previewCD then
                 return
             end
             local fSize = (edge.cooldownFontSize or 12) - 2
@@ -2413,13 +2413,13 @@ CludesUI.AtOptionsLogin(function()
                 fSize = 6
             end
             local fontFile = (CludesUI.GetFontPath("cdm")) or STANDARD_TEXT_FONT
-            for _, regionFrame in ipairs({ slot._previewCD:GetRegions() }) do
+            for _, regionFrame in ipairs({ slotFrame._previewCD:GetRegions() }) do
                 if regionFrame:GetObjectType() == "FontString" then
                     SetPVFont(regionFrame, fontFile, fSize)
                     if mod.AnchorCooldownText then
                         mod.AnchorCooldownText(
                             regionFrame,
-                            slot._previewCD,
+                            slotFrame._previewCD,
                             edge.cooldownTextPosition or "center",
                             edge.cooldownTextX or 0,
                             edge.cooldownTextY or 0
@@ -2431,16 +2431,16 @@ CludesUI.AtOptionsLogin(function()
         end)
 
         -- Ensure glow overlay exists
-        if not slot._glowOverlay then
-            local shade = CreateFrame("Frame", nil, slot)
-            shade:SetAllPoints(slot)
+        if not slotFrame._glowOverlay then
+            local shade = CreateFrame("Frame", nil, slotFrame)
+            shade:SetAllPoints(slotFrame)
             -- Above the Blizzard Style ring (+15) as on the live icons (+16).
-            shade:SetFrameLevel(slot:GetFrameLevel() + (CludesUI.BlizzStyle.Get("cdmicons") and 16 or 3))
+            shade:SetFrameLevel(slotFrame:GetFrameLevel() + (CludesUI.BlizzStyle.Get("cdmicons") and 16 or 3))
             shade:SetAlpha(0)
             shade._cuiGlowPreview = true -- exempt from Show Glows Only in Combat
-            slot._glowOverlay = shade
+            slotFrame._glowOverlay = shade
         end
-        _cdmActivePreviewOverlay = slot._glowOverlay
+        _cdmActivePreviewOverlay = slotFrame._glowOverlay
 
         -- Resolve active animation color
         local animR, animG, animB = 1.0, 0.85, 0.0
@@ -2462,14 +2462,14 @@ CludesUI.AtOptionsLogin(function()
         local PREVIEW_DURATION = 5 -- seconds
 
         if anim == "none" then
-            slot._previewCD:SetSwipeColor(0, 0, 0, swAlpha)
-            slot._previewCD:SetCooldown(GetTime(), PREVIEW_DURATION)
-            slot._previewCD:Show()
+            slotFrame._previewCD:SetSwipeColor(0, 0, 0, swAlpha)
+            slotFrame._previewCD:SetCooldown(GetTime(), PREVIEW_DURATION)
+            slotFrame._previewCD:Show()
             mod.StopNativeGlow(_cdmActivePreviewOverlay)
         else
-            slot._previewCD:SetSwipeColor(animR, animG, animB, swAlpha)
-            slot._previewCD:SetCooldown(GetTime(), PREVIEW_DURATION)
-            slot._previewCD:Show()
+            slotFrame._previewCD:SetSwipeColor(animR, animG, animB, swAlpha)
+            slotFrame._previewCD:SetCooldown(GetTime(), PREVIEW_DURATION)
+            slotFrame._previewCD:Show()
 
             if anim ~= "blizzard" then
                 local glowIdx = tonumber(anim)
@@ -2490,15 +2490,15 @@ CludesUI.AtOptionsLogin(function()
 
         -- Auto-stop glow after preview duration ends
         C_Timer.After(PREVIEW_DURATION, function()
-            if myToken ~= _cdmActivePreviewToken or PoolGen(slot) ~= slotGen then
+            if myToken ~= _cdmActivePreviewToken or PoolGen(slotFrame) ~= slotGen then
                 return
             end
             if _cdmActivePreviewOverlay then
                 mod.StopNativeGlow(_cdmActivePreviewOverlay)
             end
-            if slot._previewCD then
-                slot._previewCD:Clear()
-                slot._previewCD:Hide()
+            if slotFrame._previewCD then
+                slotFrame._previewCD:Clear()
+                slotFrame._previewCD:Hide()
             end
         end)
     end
@@ -2840,7 +2840,7 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     --  Standalone Rotation Assist Icon (independent of the selected CDM bar)
     ---------------------------------------------------------------------------
-    local function BuildRotationAssistIconPage(pageName, hostFrame, yOffset)
+    local function BuildRotationAssistIconPage(pageTitle, hostFrame, yOffset)
         local W = CludesUI.Widgets
         local cursorY = yOffset
         local _, height, heading
@@ -3001,7 +3001,7 @@ CludesUI.AtOptionsLogin(function()
     ---------------------------------------------------------------------------
     --  Unlock Mode page  (opens CludesUI Unlock Mode overlay)
     ---------------------------------------------------------------------------
-    local function BuildUnlockPage(pageName, hostFrame, yOffset)
+    local function BuildUnlockPage(pageTitle, hostFrame, yOffset)
         C_Timer.After(0, function()
             if CludesUI and CludesUI._openUnlockMode then
                 CludesUI._openUnlockMode()
@@ -3107,7 +3107,7 @@ CludesUI.AtOptionsLogin(function()
             or { PAGE_CDM_BARS, PAGE_BAR_GLOWS, PAGE_BUFF_BARS, PAGE_ROTATION_ICON },
         disabledPages = {},
         disabledPageTooltips = {},
-        buildPage = function(pageName, hostFrame, yOffset)
+        buildPage = function(pageTitle, hostFrame, yOffset)
             -- ns._tbbPlaceholderMode / ns._cdmBarsPageOpen reflect the page the player
             -- is REALLY on, not the pageName being built. A hidden search pre-build
             -- cycles pageName through all three pages, so the "switched away" cleanup
@@ -3120,24 +3120,24 @@ CludesUI.AtOptionsLogin(function()
             -- it here would pop the live buff bars onto the screen. It's indexed
             -- normally the first time the player visits it live.
             if CludesUI._prebuilding then
-                if pageName == PAGE_CDM_BARS then
-                    return mod.CDMO_BuildCDMBarsPage(pageName, hostFrame, yOffset)
-                elseif pageName == PAGE_ROTATION_ICON then
-                    return BuildRotationAssistIconPage(pageName, hostFrame, yOffset)
-                elseif pageName == PAGE_BAR_GLOWS then
-                    return BuildBarGlowsPage(pageName, hostFrame, yOffset)
+                if pageTitle == PAGE_CDM_BARS then
+                    return mod.CDMO_BuildCDMBarsPage(pageTitle, hostFrame, yOffset)
+                elseif pageTitle == PAGE_ROTATION_ICON then
+                    return BuildRotationAssistIconPage(pageTitle, hostFrame, yOffset)
+                elseif pageTitle == PAGE_BAR_GLOWS then
+                    return BuildBarGlowsPage(pageTitle, hostFrame, yOffset)
                 end
                 return
             end
             -- Clear TBB placeholders when switching to any non-Tracking Bars page
-            if pageName ~= PAGE_BUFF_BARS and mod._tbbPlaceholderMode then
+            if pageTitle ~= PAGE_BUFF_BARS and mod._tbbPlaceholderMode then
                 mod._tbbPlaceholderMode = false
                 if mod.HideTBBPlaceholders then
                     mod.HideTBBPlaceholders()
                 end
             end
             -- Manage custom aura bar preview: flag-based, not GetActivePage
-            if pageName ~= PAGE_CDM_BARS and mod._cdmBarsPageOpen then
+            if pageTitle ~= PAGE_CDM_BARS and mod._cdmBarsPageOpen then
                 mod._cdmBarsPageOpen = false
                 if mod.UpdateCustomBuffBars then
                     mod.UpdateCustomBuffBars()
@@ -3150,9 +3150,9 @@ CludesUI.AtOptionsLogin(function()
                 HideBuffBarOverlay()
                 HideCDMButtonTip()
             end
-            if pageName == PAGE_CDM_BARS then
+            if pageTitle == PAGE_CDM_BARS then
                 mod._cdmBarsPageOpen = true
-                local h2 = mod.CDMO_BuildCDMBarsPage(pageName, hostFrame, yOffset)
+                local h2 = mod.CDMO_BuildCDMBarsPage(pageTitle, hostFrame, yOffset)
                 if mod.UpdateCustomBuffBars then
                     mod.UpdateCustomBuffBars()
                 end
@@ -3160,18 +3160,18 @@ CludesUI.AtOptionsLogin(function()
                 -- Show one-time button settings tip after preview renders
                 QueueCDMButtonTip()
                 return h2
-            elseif pageName == PAGE_ROTATION_ICON then
-                return BuildRotationAssistIconPage(pageName, hostFrame, yOffset)
-            elseif pageName == PAGE_BAR_GLOWS then
-                return BuildBarGlowsPage(pageName, hostFrame, yOffset)
-            elseif pageName == PAGE_BUFF_BARS then
-                return BuildBuffBarsPage(pageName, hostFrame, yOffset)
+            elseif pageTitle == PAGE_ROTATION_ICON then
+                return BuildRotationAssistIconPage(pageTitle, hostFrame, yOffset)
+            elseif pageTitle == PAGE_BAR_GLOWS then
+                return BuildBarGlowsPage(pageTitle, hostFrame, yOffset)
+            elseif pageTitle == PAGE_BUFF_BARS then
+                return BuildBuffBarsPage(pageTitle, hostFrame, yOffset)
             end
         end,
-        getHeaderBuilder = function(pageName)
-            if pageName == PAGE_CDM_BARS then
+        getHeaderBuilder = function(pageTitle)
+            if pageTitle == PAGE_CDM_BARS then
                 return optionState._cdmHeaderBuilder
-            elseif pageName == PAGE_BAR_GLOWS then
+            elseif pageTitle == PAGE_BAR_GLOWS then
                 return _glowHeaderBuilder
             end
             -- Tracking Bars has no content header (popout preview instead)
@@ -3185,8 +3185,8 @@ CludesUI.AtOptionsLogin(function()
         -- SHAPE (cooldowns/utility/buffs/ custom_buff/focuskick), not per bar instance:
         -- several custom bars of one shape expose identical options, so indexing more
         -- than one of a shape would be a wasted rebuild.
-        getPrebuildVariants = function(pageName)
-            if pageName ~= PAGE_CDM_BARS then
+        getPrebuildVariants = function(pageTitle)
+            if pageTitle ~= PAGE_CDM_BARS then
                 return nil
             end
             local p = DB()
@@ -3216,15 +3216,15 @@ CludesUI.AtOptionsLogin(function()
                 currentKey = currentBar and currentBar.key,
             }
         end,
-        onPageCacheRestore = function(pageName)
+        onPageCacheRestore = function(pageTitle)
             -- Same flag management as buildPage
-            if pageName ~= PAGE_BUFF_BARS and mod._tbbPlaceholderMode then
+            if pageTitle ~= PAGE_BUFF_BARS and mod._tbbPlaceholderMode then
                 mod._tbbPlaceholderMode = false
                 if mod.HideTBBPlaceholders then
                     mod.HideTBBPlaceholders()
                 end
             end
-            if pageName ~= PAGE_CDM_BARS and mod._cdmBarsPageOpen then
+            if pageTitle ~= PAGE_CDM_BARS and mod._cdmBarsPageOpen then
                 mod._cdmBarsPageOpen = false
                 if mod.UpdateCustomBuffBars then
                     mod.UpdateCustomBuffBars()
@@ -3237,13 +3237,13 @@ CludesUI.AtOptionsLogin(function()
                 HideBuffBarOverlay()
                 HideCDMButtonTip()
             end
-            if pageName == PAGE_BUFF_BARS then
+            if pageTitle == PAGE_BUFF_BARS then
                 if mod.ShowTBBPlaceholders then
                     mod.ShowTBBPlaceholders()
                 end
                 RefreshTBBPopout()
             end
-            if pageName == PAGE_CDM_BARS then
+            if pageTitle == PAGE_CDM_BARS then
                 mod._cdmBarsPageOpen = true
                 if mod.UpdateCustomBuffBars then
                     mod.UpdateCustomBuffBars()
@@ -3285,10 +3285,10 @@ CludesUI.AtOptionsLogin(function()
             -- from Blizzard's CDM. Spell data lives in CludesUIDB (per-profile store), not the
             -- AceDB profile, so ResetProfile doesn't touch it. Only clear the ACTIVE profile's current spec to preserve other specs and other profiles.
             if mod and mod.GetActiveSpecProfiles then
-                local sp = mod.GetActiveSpecProfiles()
+                local spellRec = mod.GetActiveSpecProfiles()
                 local specKey = mod.GetActiveSpecKey and mod.GetActiveSpecKey()
-                if sp and specKey and specKey ~= "0" then
-                    sp[specKey] = nil
+                if spellRec and specKey and specKey ~= "0" then
+                    spellRec[specKey] = nil
                     -- WoW Forever: the class reads one of several keys (its
                     -- Forever spec key, then its retail specs); clear them all
                     -- so the reload starts the class fresh.
@@ -3296,11 +3296,11 @@ CludesUI.AtOptionsLogin(function()
                         local token = select(2, UnitClass("player"))
                         local ids = CludesUI.ForeverClassSpecIDs(token)
                         for i = 1, (ids and #ids or 0) do
-                            sp[tostring(ids[i])] = nil
+                            spellRec[tostring(ids[i])] = nil
                         end
                         local lk = CludesUI.FOREVER_CLASS_SPEC[token]
                         if lk then
-                            sp[tostring(lk)] = nil
+                            spellRec[tostring(lk)] = nil
                         end
                     end
                 end

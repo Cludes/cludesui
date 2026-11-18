@@ -60,12 +60,12 @@ local TILE_H = 58
 local AttachEditorScroll
 
 -- Selection state: {kind="buff"|"debuff", id=barId|"default"} or nil.
-local pabSel = { kind = "buff", id = "default" }
+local barPick = { kind = "buff", id = "default" }
 -- Editing-spec bucket: "allspecs" (the legacy bar arrays), a group bucket
 -- key, or a concrete "spec<ID>". Session-sticky like pabSel.
 local pabSpecSel = "allspecs"
 -- Inherited-bar selection ({kind, group, id}); wins over pabSel while set.
-local pabInhSel = nil
+local inheritPick = nil
 
 -- Exported selection setter for What's New deep links (same pattern as
 -- CludesUI._setUnitFrameUnit / _setMiniUnit): the sidebar selection is a
@@ -78,13 +78,13 @@ local pabInhSel = nil
 -- selection against the current view's bucket only, so a bar from another bucket
 -- would be dropped back to the default tile. Same move as the inherited pane's
 -- "Edit in <group>" link.
-CludesUI._setPABSelection = function(kind, ident, bucket)
-    pabSel = { kind = kind, id = ident or "default" }
-    pabInhSel = nil
+CludesUI._setPABSelection = function(kindName, ident, bucket)
+    barPick = { kind = kindName, id = ident or "default" }
+    inheritPick = nil
     if bucket then
         pabSpecSel = bucket
     elseif
-        pabSel.id == "default"
+        barPick.id == "default"
         and pabSpecSel ~= "allspecs"
         and not (type(pabSpecSel) == "string" and pabSpecSel:match("^spec%d"))
     then
@@ -199,24 +199,24 @@ local function PabAllBarEntries()
     local buffBars = mod.PAB_CustomBuffBars and mod.PAB_CustomBuffBars()
     if buffBars then
         for idx = 1, #buffBars do
-            local bar = buffBars[idx]
+            local barConf = buffBars[idx]
             entries[#entries + 1] = {
-                key = "custombuff_" .. bar.id,
-                label = bar.name or "Buff Bar",
+                key = "custombuff_" .. barConf.id,
+                label = barConf.name or "Buff Bar",
                 isBuff = true,
-                cfg = bar,
+                cfg = barConf,
             }
         end
     end
     local debuffBars = mod.PAB_CustomDebuffBars and mod.PAB_CustomDebuffBars()
     if debuffBars then
         for idx = 1, #debuffBars do
-            local bar = debuffBars[idx]
+            local barConf = debuffBars[idx]
             entries[#entries + 1] = {
-                key = "customdebuff_" .. bar.id,
-                label = bar.name or "Debuff Bar",
+                key = "customdebuff_" .. barConf.id,
+                label = barConf.name or "Debuff Bar",
                 isBuff = false,
-                cfg = bar,
+                cfg = barConf,
             }
         end
     end
@@ -224,7 +224,7 @@ local function PabAllBarEntries()
 end
 
 -- Which PabAllBarEntries() row a given (cfg, isBuff) pair is.
-local function PabBarKeyOf(rowConf, isBuff)
+local function PabBarKeyOf(rowConf, buffBar)
     local s = mod.db and mod.db.profile and mod.db.profile.playerAuraBars
     if s then
         if rowConf == mod.PAB_DefaultBuffsCfg(s) then
@@ -235,7 +235,7 @@ local function PabBarKeyOf(rowConf, isBuff)
         end
     end
     if rowConf.id then
-        return (isBuff and "custombuff_" or "customdebuff_") .. rowConf.id
+        return (buffBar and "custombuff_" or "customdebuff_") .. rowConf.id
     end
     return ""
 end
@@ -306,13 +306,13 @@ local DISPEL_COLOR_ROWS = {
 -- never collapses into an unrelated entry.
 local function DedupedPresetSpellUniverse()
     local universe = (mod.PAB_AllPresetSpells and mod.PAB_AllPresetSpells()) or {}
-    local seenNames, result = {}, {}
+    local seenSet, result = {}, {}
     for idx = 1, #universe do
         local ident = universe[idx]
         local name = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(ident)
         local dedupKey = name or ("id:" .. ident)
-        if not seenNames[dedupKey] then
-            seenNames[dedupKey] = true
+        if not seenSet[dedupKey] then
+            seenSet[dedupKey] = true
             result[#result + 1] = ident
         end
     end
@@ -356,11 +356,11 @@ end
 
 local function DedupedFilterItems()
     local filters = (mod.PAB_Filters and mod.PAB_Filters()) or {}
-    local seenNames, result = {}, {}
+    local seenSet, result = {}, {}
     for idx = 1, #filters do
         local f = filters[idx]
-        if not seenNames[f.name] then
-            seenNames[f.name] = true
+        if not seenSet[f.name] then
+            seenSet[f.name] = true
             result[#result + 1] = f
         end
     end
@@ -394,36 +394,36 @@ local function DefaultBuffBarName(rowConf)
     return L(mod.PAB_DefaultBuffsName and mod.PAB_DefaultBuffsName(rowConf) or "Buffs")
 end
 
-local function BuildBuffBarSubtitle(bar)
-    local extraCount = bar.spells and #bar.spells or 0
-    local nHidden = 0
+local function BuildBuffBarSubtitle(barConf)
+    local extraCount = barConf.spells and #barConf.spells or 0
+    local hiddenCount = 0
     -- Presets only the other client offers are not listed here, so they do not count.
-    if bar.negFilters then
-        for fid in pairs(bar.negFilters) do
+    if barConf.negFilters then
+        for fid in pairs(barConf.negFilters) do
             if not mod.PAB_HiddenPresetFilter(fid) then
-                nHidden = nHidden + 1
+                hiddenCount = hiddenCount + 1
             end
         end
     end
 
-    if bar.showAllBuffs ~= false or bar.hasDuration == true then
-        local txt = (bar.showAllBuffs ~= false) and L("All Buffs") or L("Has Duration")
+    if barConf.showAllBuffs ~= false or barConf.hasDuration == true then
+        local textObj = (barConf.showAllBuffs ~= false) and L("All Buffs") or L("Has Duration")
         if extraCount > 0 then
-            txt = txt .. " + " .. extraCount .. " " .. L("spells")
+            textObj = textObj .. " + " .. extraCount .. " " .. L("spells")
         end
-        if nHidden > 0 then
-            txt = txt .. ", " .. nHidden .. " " .. L("hidden")
+        if hiddenCount > 0 then
+            textObj = textObj .. ", " .. hiddenCount .. " " .. L("hidden")
         end
-        return txt
+        return textObj
     end
 
     local nameList, totalSelected = {}, 0
-    if bar.filters then
+    if barConf.filters then
         local allFilters = mod.PAB_Filters and mod.PAB_Filters()
         if allFilters then
             for idx = 1, #allFilters do
                 local f = allFilters[idx]
-                if bar.filters[f.id] then
+                if barConf.filters[f.id] then
                     totalSelected = totalSelected + 1
                     -- L() before the truncate below: preset filters carry raw
                     -- English names (see PAB's BM2_FILTER_SEED), and truncating
@@ -448,8 +448,8 @@ local function BuildBuffBarSubtitle(bar)
     if extraCount > 0 then
         labelText = labelText .. " + " .. extraCount .. " " .. L("spells")
     end
-    if nHidden > 0 then
-        labelText = labelText .. ", " .. nHidden .. " " .. L("hidden")
+    if hiddenCount > 0 then
+        labelText = labelText .. ", " .. hiddenCount .. " " .. L("hidden")
     end
     return labelText
 end
@@ -459,30 +459,30 @@ end
 -- debuff shape (bar.showAllDebuffs + bar.classFilters, no filters/extra
 -- spells concept on the debuff side -- custom debuff bars are pure
 -- class-token selection, see ns.PAB_AddCustomDebuffBar).
-local function BuildDebuffBarSubtitle(bar)
+local function BuildDebuffBarSubtitle(barConf)
     local nc = 0
-    if bar.classFilters then
-        for _ in pairs(bar.classFilters) do
+    if barConf.classFilters then
+        for _ in pairs(barConf.classFilters) do
             nc = nc + 1
         end
     end
-    local nHidden = 0
-    if bar.negClassFilters then
-        for _ in pairs(bar.negClassFilters) do
-            nHidden = nHidden + 1
+    local hiddenCount = 0
+    if barConf.negClassFilters then
+        for _ in pairs(barConf.negClassFilters) do
+            hiddenCount = hiddenCount + 1
         end
     end
-    if bar.showAllDebuffs ~= false then
-        if nHidden > 0 then
-            return L("All Debuffs") .. ", " .. nHidden .. " " .. L("hidden")
+    if barConf.showAllDebuffs ~= false then
+        if hiddenCount > 0 then
+            return L("All Debuffs") .. ", " .. hiddenCount .. " " .. L("hidden")
         end
         return L("All Debuffs")
     end
-    local txt = tostring(nc) .. " " .. (nc == 1 and L("class") or L("classes"))
-    if nHidden > 0 then
-        txt = txt .. ", " .. nHidden .. " " .. L("hidden")
+    local textObj = tostring(nc) .. " " .. (nc == 1 and L("class") or L("classes"))
+    if hiddenCount > 0 then
+        textObj = textObj .. ", " .. hiddenCount .. " " .. L("hidden")
     end
-    return txt
+    return textObj
 end
 
 -------------------------------------------------------------------------------
@@ -512,7 +512,7 @@ end
 -- "Selected" plus the "Custom Spell ID" action -- no "Presets" group, there is
 -- nothing to browse. Used by BOTH the default Buffs bar and every custom buff bar
 -- (unified onto one model).
-local function BuildAssignedBuffsFields(widget, fontFile, sy, rowConf, apply, isDefault)
+local function BuildAssignedBuffsFields(widget, fontFile, startY, rowConf, applyFn, isDefault)
     -- Row accessors over conf: a key read (or its default) and written.
     local function ConfFieldGet(key)
         return function()
@@ -524,16 +524,16 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, rowConf, apply, is
     local _, hh = 0, 0
     local heading
 
-    heading, hh = W:SectionHeader(widget, "ASSIGNED BUFFS", sy)
-    sy = sy - hh
+    heading, hh = W:SectionHeader(widget, "ASSIGNED BUFFS", startY)
+    startY = startY - hh
     -- The Move in Unlock Mode button on the bar's first section: the key reads
     -- the sidebar selection at the click, so it highlights the selected bar.
     CludesUI.BuildSectionUnlockJump(heading, {
         key = function()
-            if pabSel.id == "default" then
+            if barPick.id == "default" then
                 return "PAB_Buffs"
             end
-            return "PAB_CustomBuff_" .. pabSel.id
+            return "PAB_CustomBuff_" .. barPick.id
         end,
     })
 
@@ -568,7 +568,7 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, rowConf, apply, is
     -- Extra Spells (direct SpellIDs) shares this same row and stays
     -- additive in both modes -- see the RIGHT-region block below.
     local ffRow
-    ffRow, hh = W:DualRow(widget, sy, {
+    ffRow, hh = W:DualRow(widget, startY, {
         type = "dropdown",
         text = "Filters",
         values = { __placeholder = "..." },
@@ -587,7 +587,7 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, rowConf, apply, is
         end,
         setValue = function() end,
     })
-    sy = sy - hh
+    startY = startY - hh
 
     local PAB_ALL_BUFFS_KEY, PAB_HAS_DURATION_KEY = "__allBuffs", "__hasDuration"
 
@@ -672,7 +672,7 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, rowConf, apply, is
                                 end
                             end,
                             onChanged = function()
-                                apply()
+                                applyFn()
                             end,
                         })
                     end,
@@ -727,7 +727,7 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, rowConf, apply, is
                     -- lane subtracts in both modes; the show lane simply goes dormant
                     -- while broad content is on). Extra Spells stay untouched.
                     rowConf.hasDuration = nil
-                    apply()
+                    applyFn()
                     -- Non-force, same as every other row: the open menu
                     -- refreshes its own checks/locks in place, so a mode
                     -- flip must not tear the page down under it.
@@ -741,7 +741,7 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, rowConf, apply, is
                     if val then
                         rowConf.showAllBuffs = false
                     end
-                    apply()
+                    applyFn()
                     CludesUI:RefreshPage()
                     return
                 end
@@ -769,7 +769,7 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, rowConf, apply, is
                 if rowConf.filters and not next(rowConf.filters) then
                     rowConf.filters = nil
                 end
-                apply()
+                applyFn()
                 -- Non-force: runs only the registered lightweight refresh callbacks
                 -- (e.g. the sidebar tile's subtitleFn) in-place, unlike
                 -- RefreshPage(true) which would tear down and rebuild the whole page --
@@ -829,7 +829,7 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, rowConf, apply, is
                     if ident and ident > 0 and not HasDirect(ident) then
                         rowConf.spells = rowConf.spells or {}
                         rowConf.spells[#rowConf.spells + 1] = ident
-                        apply()
+                        applyFn()
                         CludesUI:RefreshPage(true)
                     end
                 end,
@@ -919,7 +919,7 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, rowConf, apply, is
                         end
                     end
                 end
-                apply()
+                applyFn()
                 -- Same reasoning as the Filters dropdown above: lightweight
                 -- refresh only, so this checkbox dropdown stays open. The
                 -- Filters dropdown's empty warning re-evaluates through the
@@ -937,7 +937,7 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, rowConf, apply, is
         CludesUI.RegisterWidgetRefresh(cbRefresh)
     end
 
-    return sy
+    return startY
 end
 
 -- "Assigned Debuffs": unified Filters dropdown (same model as Raid Frames' Debuff
@@ -948,29 +948,29 @@ end
 -- both modes, see DebuffSubtractFn/BuildChain). Lanes are mutually exclusive per
 -- class and persist across mode flips. Used by BOTH the default Debuffs bar and
 -- every custom debuff bar.
-local function BuildAssignedDebuffsFields(widget, fontFile, sy, rowConf, apply)
+local function BuildAssignedDebuffsFields(widget, fontFile, startY, rowConf, applyFn)
     local W = CludesUI.Widgets
     local Pix = CludesUI.PanelPP
     local _, hh = 0, 0
     local heading
 
-    heading, hh = W:SectionHeader(widget, "ASSIGNED DEBUFFS", sy)
-    sy = sy - hh
+    heading, hh = W:SectionHeader(widget, "ASSIGNED DEBUFFS", startY)
+    startY = startY - hh
     -- The Move in Unlock Mode button on the bar's first section: the key reads
     -- the sidebar selection at the click, so it highlights the selected bar.
     CludesUI.BuildSectionUnlockJump(heading, {
         key = function()
-            if pabSel.id == "default" then
+            if barPick.id == "default" then
                 return "PAB_Debuffs"
             end
-            return "PAB_CustomDebuff_" .. pabSel.id
+            return "PAB_CustomDebuff_" .. barPick.id
         end,
     })
 
     local safRow
     safRow, hh = W:DualRow(
         widget,
-        sy,
+        startY,
         {
             type = "dropdown",
             text = "Filters",
@@ -985,9 +985,9 @@ local function BuildAssignedDebuffsFields(widget, fontFile, sy, rowConf, apply)
             return rowConf.maxDurSec
         end, function(val)
             rowConf.maxDurSec = val
-        end, apply)
+        end, applyFn)
     )
-    sy = sy - hh
+    startY = startY - hh
     do
         local region = safRow._leftRegion
         if region._control then
@@ -1129,7 +1129,7 @@ local function BuildAssignedDebuffsFields(widget, fontFile, sy, rowConf, apply)
                     -- same convention as showAllBuffs). Lanes persist across
                     -- mode flips (the hide lane subtracts in both modes).
                     rowConf.showAllDebuffs = val
-                    apply()
+                    applyFn()
                     CludesUI:RefreshPage()
                     return
                 end
@@ -1139,13 +1139,13 @@ local function BuildAssignedDebuffsFields(widget, fontFile, sy, rowConf, apply)
                     -- class-filter selection; alone it acts as the timed
                     -- catch-all (DebuffCatchAllOn).
                     rowConf.hasDuration = val or nil
-                    apply()
+                    applyFn()
                     CludesUI:RefreshPage()
                     return
                 end
                 if keyName == PAB_HIDE_EXH_KEY then
                     rowConf.hideExhaustion = val or nil
-                    apply()
+                    applyFn()
                     CludesUI:RefreshPage()
                     return
                 end
@@ -1158,7 +1158,7 @@ local function BuildAssignedDebuffsFields(widget, fontFile, sy, rowConf, apply)
                         return
                     end
                     rowConf.debuffMatch = wanted
-                    apply()
+                    applyFn()
                     CludesUI:RefreshPage()
                     return
                 end
@@ -1189,7 +1189,7 @@ local function BuildAssignedDebuffsFields(widget, fontFile, sy, rowConf, apply)
                 if rowConf.classFilters and not next(rowConf.classFilters) then
                     rowConf.classFilters = nil
                 end
-                apply()
+                applyFn()
                 -- Non-force: runs only the registered lightweight refresh
                 -- callbacks (e.g. the sidebar tile's subtitleFn) in place,
                 -- without closing this open dropdown.
@@ -1232,7 +1232,7 @@ local function BuildAssignedDebuffsFields(widget, fontFile, sy, rowConf, apply)
         )
     end
 
-    return sy
+    return startY
 end
 
 -- "Core": Icon Size (+Icon Zoom cog) | Growth Direction;
@@ -1242,12 +1242,12 @@ end
 -- (BuildContainerSpec doesn't care about slots vs. groups). isBuff is currently unused
 -- here (Sort Method's option set is now shared between buffs/debuffs, see
 -- SORT_METHOD_VALUES' doc comment) but kept for callers/future per-polarity fields.
-local function BuildCoreFields(widget, fontFile, sy, rowConf, apply, isBuff)
+local function BuildCoreFields(widget, fontFile, startY, rowConf, applyFn, buffBar)
     -- Row accessors over conf: a key read (or its default) and written.
     local function ConfFieldThen(key)
         return function(value)
             rowConf[key] = value
-            apply()
+            applyFn()
         end
     end
     local function ConfFieldOr(key, default)
@@ -1259,11 +1259,11 @@ local function BuildCoreFields(widget, fontFile, sy, rowConf, apply, isBuff)
     local Pix = CludesUI.PanelPP
     local _, hh = 0, 0
 
-    _, hh = W:SectionHeader(widget, "CORE", sy)
-    sy = sy - hh
+    _, hh = W:SectionHeader(widget, "CORE", startY)
+    startY = startY - hh
 
     local sizeRow
-    sizeRow, hh = W:DualRow(widget, sy, {
+    sizeRow, hh = W:DualRow(widget, startY, {
         type = "slider",
         text = "Icon Size",
         min = 16,
@@ -1291,12 +1291,12 @@ local function BuildCoreFields(widget, fontFile, sy, rowConf, apply, isBuff)
             end
 
             rowConf.growDirection = val
-            apply()
+            applyFn()
         end,
     })
-    sy = sy - hh
+    startY = startY - hh
 
-    _, hh = W:DualRow(widget, sy, {
+    _, hh = W:DualRow(widget, startY, {
         type = "dropdown",
         text = "Sort Method",
         values = SORT_METHOD_VALUES,
@@ -1311,7 +1311,7 @@ local function BuildCoreFields(widget, fontFile, sy, rowConf, apply, isBuff)
         getValue = ConfFieldOr("sortDirection", "Normal"),
         setValue = ConfFieldThen("sortDirection"),
     })
-    sy = sy - hh
+    startY = startY - hh
     do
         local region = sizeRow._leftRegion
         CludesUI.BuildInlineCog(region, {
@@ -1366,7 +1366,7 @@ local function BuildCoreFields(widget, fontFile, sy, rowConf, apply, isBuff)
     end
 
     local dsRow
-    dsRow, hh = W:DualRow(widget, sy, {
+    dsRow, hh = W:DualRow(widget, startY, {
         type = "toggle",
         text = "Duration",
         getValue = function()
@@ -1381,7 +1381,7 @@ local function BuildCoreFields(widget, fontFile, sy, rowConf, apply, isBuff)
         end,
         setValue = ConfFieldThen("stackShow"),
     })
-    sy = sy - hh
+    startY = startY - hh
     do
         local region = dsRow._leftRegion
         CludesUI.BuildInlineCog(region, {
@@ -1430,7 +1430,7 @@ local function BuildCoreFields(widget, fontFile, sy, rowConf, apply, isBuff)
                     end,
                     set = function(val)
                         rowConf.durationShowSeconds = val and true or nil
-                        apply()
+                        applyFn()
                     end,
                 },
                 {
@@ -1444,7 +1444,7 @@ local function BuildCoreFields(widget, fontFile, sy, rowConf, apply, isBuff)
                     end,
                     set = function(val)
                         rowConf.durationPrecisionThreshold = val > 0 and math.floor(val * 60 + 0.5) or nil
-                        apply()
+                        applyFn()
                     end,
                 },
             },
@@ -1453,7 +1453,7 @@ local function BuildCoreFields(widget, fontFile, sy, rowConf, apply, isBuff)
             return (rowConf.durationColorR or 1), (rowConf.durationColorG or 1), (rowConf.durationColorB or 1), 1
         end, function(r, g, b)
             rowConf.durationColorR, rowConf.durationColorG, rowConf.durationColorB = r, g, b
-            apply()
+            applyFn()
         end, false, 20)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = colorSwatch
@@ -1505,22 +1505,22 @@ local function BuildCoreFields(widget, fontFile, sy, rowConf, apply, isBuff)
             return (rowConf.stackColorR or 1), (rowConf.stackColorG or 1), (rowConf.stackColorB or 1), 1
         end, function(r, g, b)
             rowConf.stackColorR, rowConf.stackColorG, rowConf.stackColorB = r, g, b
-            apply()
+            applyFn()
         end, false, 20)
         colorSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = colorSwatch
         CludesUI.RegisterWidgetRefresh(updateSwatch)
     end
 
-    return sy
+    return startY
 end
 
-local function FontOutlineField(rowConf, apply)
+local function FontOutlineField(rowConf, applyFn)
     -- Row accessors over conf: a key read (or its default) and written.
     local function ConfFieldThen(key)
         return function(value)
             rowConf[key] = value
-            apply()
+            applyFn()
         end
     end
     local function ConfFieldOr(key, default)
@@ -1542,12 +1542,12 @@ end
 -- Offset | Height Offset (textured style only); Icons Per Row (+grid cog) |
 -- Spacing (+row-spacing cog); Icon Shape | Icon Zoom; remaining toggles are
 -- packed by polarity without placeholder slots.
-local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
+local function BuildDisplayFields(widget, fontFile, startY, rowConf, applyFn, buffBar)
     -- Row accessors over conf: a key read (or its default) and written.
     local function ConfFieldThen(key)
         return function(value)
             rowConf[key] = value
-            apply()
+            applyFn()
         end
     end
     local function ConfFieldOr(key, default)
@@ -1559,9 +1559,9 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
     local Pix = CludesUI.PanelPP
     local _, hh = 0, 0
 
-    _, hh = W:SectionHeader(widget, "DISPLAY", sy)
-    sy = sy - hh
-    sy = CludesUI.BlizzStyle.Note(widget, sy, "playerauras")
+    _, hh = W:SectionHeader(widget, "DISPLAY", startY)
+    startY = startY - hh
+    startY = CludesUI.BlizzStyle.Note(widget, startY, "playerauras")
 
     local textureValues, textureOrder = CludesUI.GetBorderTextureDropdown()
     -- Border Size: the pixel slider over cfg.borderSize and its borderSizePx
@@ -1587,7 +1587,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
             end,
             setValue = function(val)
                 rowConf.borderSize = BORDER_SIZE_NUM[val] or 1
-                apply()
+                applyFn()
             end,
         }
     else
@@ -1610,13 +1610,13 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
             setPx = function(val)
                 rowConf.borderSizePx = val
             end,
-            apply = apply,
+            apply = applyFn,
         })
     end
     local styleRow
     styleRow, hh = W:DualRow(
         widget,
-        sy,
+        startY,
         CludesUI.BlizzStyle.Gate("playerauras", {
             type = "dropdown",
             text = "Border Style",
@@ -1646,7 +1646,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
                 if rowConf.borderSizePx then
                     rowConf.borderSizePx = false
                 end
-                apply()
+                applyFn()
                 -- The Width Offset | Height Offset row below exists only for a
                 -- textured style: a Solid/textured crossing rebuilds the page.
                 CludesUI:RefreshPage(true)
@@ -1654,7 +1654,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
         }),
         CludesUI.BlizzStyle.Gate("playerauras", sizeCfg)
     )
-    sy = sy - hh
+    startY = startY - hh
     do
         local region = styleRow._leftRegion
         local borderCogRows = {
@@ -1680,7 +1680,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
                         val = nil
                     end
                     rowConf.borderTextureShiftX = val
-                    apply()
+                    applyFn()
                 end,
             },
             {
@@ -1705,7 +1705,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
                         val = nil
                     end
                     rowConf.borderTextureShiftY = val
-                    apply()
+                    applyFn()
                 end,
             },
             {
@@ -1718,7 +1718,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
             },
         }
         -- Debuff bars only: their engine dispel ring can take this border's art.
-        if not isBuff then
+        if not buffBar then
             borderCogRows[#borderCogRows + 1] = {
                 type = "toggle",
                 label = "Textured Dispel Ring",
@@ -1728,7 +1728,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
                 end,
                 set = function(val)
                     rowConf.borderDispelTextured = val and true or false
-                    apply()
+                    applyFn()
                 end,
             }
         end
@@ -1763,7 +1763,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
             target.borderBehind = rowConf.borderBehind
             -- Textured Dispel Ring is a debuff-bar setting: it travels only from
             -- a debuff bar to debuff bars.
-            if not isBuff and not record.isBuff then
+            if not buffBar and not record.isBuff then
                 target.borderDispelTextured = rowConf.borderDispelTextured
             end
             target.borderR, target.borderG, target.borderB, target.borderA =
@@ -1799,7 +1799,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
                         or c.borderTextureShiftY ~= rowConf.borderTextureShiftY
                         or (c.borderBehind == true) ~= (rowConf.borderBehind == true)
                         or (
-                            not isBuff
+                            not buffBar
                             and not record.isBuff
                             and (c.borderDispelTextured == true) ~= (rowConf.borderDispelTextured == true)
                         )
@@ -1816,7 +1816,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
                 elementKeys = keyList,
                 elementLabels = labels,
                 getCurrentKey = function()
-                    return PabBarKeyOf(rowConf, isBuff)
+                    return PabBarKeyOf(rowConf, buffBar)
                 end,
                 onApply = function(checkedKeys)
                     local byKey = {}
@@ -1870,20 +1870,20 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
                 setY = function(val)
                     rowConf.borderTextureOffsetY = val
                 end,
-                apply = apply,
+                apply = applyFn,
             })
             _, hh = W:DualRow(
                 widget,
-                sy,
+                startY,
                 CludesUI.BlizzStyle.Gate("playerauras", ocfgL),
                 CludesUI.BlizzStyle.Gate("playerauras", ocfgR)
             )
-            sy = sy - hh
+            startY = startY - hh
         end
     end
 
     local rowRow
-    rowRow, hh = W:DualRow(widget, sy, {
+    rowRow, hh = W:DualRow(widget, startY, {
         type = "slider",
         text = "Icons Per Row",
         min = 1,
@@ -1891,7 +1891,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
         step = 1,
         trackWidth = 120,
         getValue = function()
-            return rowConf.iconsPerRow or (isBuff and 11 or 8)
+            return rowConf.iconsPerRow or (buffBar and 11 or 8)
         end,
         setValue = ConfFieldThen("iconsPerRow"),
     }, {
@@ -1904,7 +1904,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
         getValue = ConfFieldOr("padding", 5),
         setValue = ConfFieldThen("padding"),
     })
-    sy = sy - hh
+    startY = startY - hh
     do
         local region = styleRow._rightRegion
         local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
@@ -1915,7 +1915,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
             end,
             function(r, g, b, a)
                 rowConf.borderR, rowConf.borderG, rowConf.borderB, rowConf.borderA = r, g, b, a
-                apply()
+                applyFn()
             end,
             true,
             20
@@ -1988,7 +1988,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
                 elementKeys = keyList,
                 elementLabels = labels,
                 getCurrentKey = function()
-                    return PabBarKeyOf(rowConf, isBuff)
+                    return PabBarKeyOf(rowConf, buffBar)
                 end,
                 onApply = function(checkedKeys)
                     local byKey = {}
@@ -2045,7 +2045,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
                     max = 10,
                     step = 1,
                     get = function()
-                        return rowConf.maxRows or (isBuff and 3 or 2)
+                        return rowConf.maxRows or (buffBar and 3 or 2)
                     end,
                     set = ConfFieldThen("maxRows"),
                 },
@@ -2056,7 +2056,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
                     max = 40,
                     step = 1,
                     get = function()
-                        return rowConf.maxTotal or (isBuff and 32 or 16)
+                        return rowConf.maxTotal or (buffBar and 32 or 16)
                     end,
                     set = ConfFieldThen("maxTotal"),
                 },
@@ -2068,7 +2068,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
     local shapeRow
     shapeRow, hh = W:DualRow(
         widget,
-        sy,
+        startY,
         {
             type = "dropdown",
             text = "Icon Shape",
@@ -2093,7 +2093,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
                 if IsMaskShape(val) and BORDER_SIZE_SHAPE_DISABLED[curKey] then
                     rowConf.borderSize = BORDER_SIZE_NUM[BORDER_SIZE_DEFAULT_SHAPE]
                 end
-                apply()
+                applyFn()
                 -- The Border Size slots (here and in Icon Effects) hold a pixel
                 -- slider without a shape and the None..Strong dropdown with one, so
                 -- a none/custom crossing rebuilds the page to swap the control.
@@ -2117,11 +2117,11 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
             end,
             setValue = function(val)
                 rowConf.iconZoom = val / 100
-                apply()
+                applyFn()
             end,
         })
     )
-    sy = sy - hh
+    startY = startY - hh
     do
         local region = shapeRow._leftRegion
         CludesUI.BuildInlineCog(region, {
@@ -2207,7 +2207,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
                 elementKeys = keyList,
                 elementLabels = labels,
                 getCurrentKey = function()
-                    return PabBarKeyOf(rowConf, isBuff)
+                    return PabBarKeyOf(rowConf, buffBar)
                 end,
                 onApply = function(checkedKeys)
                     local byKey = {}
@@ -2227,7 +2227,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
     end
 
     local swipeRow
-    swipeRow, hh = W:DualRow(widget, sy, {
+    swipeRow, hh = W:DualRow(widget, startY, {
         type = "toggle",
         text = "Show Duration Swipe",
         getValue = function()
@@ -2243,7 +2243,7 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
         end,
         setValue = ConfFieldThen("showTooltips"),
     })
-    sy = sy - hh
+    startY = startY - hh
     do
         local region = swipeRow._leftRegion
         CludesUI.BuildInlineCog(region, {
@@ -2266,8 +2266,8 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
 
     -- Buff bars only: debuffs are never player-cancelable, so the row would
     -- be a dead switch there.
-    if isBuff then
-        _, hh = W:DualRow(widget, sy, FontOutlineField(rowConf, apply), {
+    if buffBar then
+        _, hh = W:DualRow(widget, startY, FontOutlineField(rowConf, applyFn), {
             type = "toggle",
             text = "Right-Click to Cancel",
             tooltip = "Right-clicking a buff icon cancels the buff. Turning this off makes the bar's icons click-through; tooltips still follow the Show Tooltips setting.",
@@ -2276,10 +2276,10 @@ local function BuildDisplayFields(widget, fontFile, sy, rowConf, apply, isBuff)
             end,
             setValue = ConfFieldThen("rightClickCancel"),
         })
-        sy = sy - hh
+        startY = startY - hh
     end
 
-    return sy
+    return startY
 end
 
 -- Debuff-category bars only (default debuffs + custom debuff bars).
@@ -2298,12 +2298,12 @@ local DISPEL_ICON_POS_VALUES = {
 local DISPEL_ICON_POS_ORDER =
     { "none", "topleft", "top", "topright", "left", "center", "right", "bottomleft", "bottom", "bottomright" }
 
-local function BuildDispelColorFields(widget, fontFile, sy, rowConf, apply)
+local function BuildDispelColorFields(widget, fontFile, startY, rowConf, applyFn)
     -- Row accessors over conf: a key read (or its default) and written.
     local function ConfFieldThen(key)
         return function(value)
             rowConf[key] = value
-            apply()
+            applyFn()
         end
     end
     local function ConfFieldOr(key, default)
@@ -2317,14 +2317,14 @@ local function BuildDispelColorFields(widget, fontFile, sy, rowConf, apply)
 
     -- Dispel-type indicator icon on each debuff bar (engine-driven, mirrors
     -- Raid Frames' "Type Icon Position"). "none" (default) = feature off.
-    _, hh = W:SectionHeader(widget, "DEBUFF DISPLAY", sy)
-    sy = sy - hh
+    _, hh = W:SectionHeader(widget, "DEBUFF DISPLAY", startY)
+    startY = startY - hh
     do
         local function IconOn()
             return (rowConf.dispelIconPosition or "none") ~= "none"
         end
         local row
-        row, hh = W:DualRow(widget, sy, {
+        row, hh = W:DualRow(widget, startY, {
             type = "dropdown",
             text = "Type Icon Position",
             tooltip = "Shows the debuff's dispel type icon (Magic, Curse, Disease, Poison, Bleed) on the bar.",
@@ -2333,11 +2333,11 @@ local function BuildDispelColorFields(widget, fontFile, sy, rowConf, apply)
             getValue = ConfFieldOr("dispelIconPosition", "none"),
             setValue = function(val)
                 rowConf.dispelIconPosition = val
-                apply()
+                applyFn()
                 CludesUI:RefreshPage()
             end,
-        }, FontOutlineField(rowConf, apply))
-        sy = sy - hh
+        }, FontOutlineField(rowConf, applyFn))
+        startY = startY - hh
         local region = row._leftRegion
         CludesUI.BuildInlineCog(region, {
             disabled = function()
@@ -2380,11 +2380,11 @@ local function BuildDispelColorFields(widget, fontFile, sy, rowConf, apply)
     -- Blizzard Style paints the stock per-type border art, so the palette has
     -- nothing to colour: the whole section stays out (fully gated rows hide).
     if CludesUI.BlizzStyle.Get("playerauras") then
-        return sy
+        return startY
     end
 
-    _, hh = W:SectionHeader(widget, "DISPEL COLORS", sy)
-    sy = sy - hh
+    _, hh = W:SectionHeader(widget, "DISPEL COLORS", startY)
+    startY = startY - hh
 
     local function AddDispelSwatch(region, record)
         local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 3, function()
@@ -2395,7 +2395,7 @@ local function BuildDispelColorFields(widget, fontFile, sy, rowConf, apply)
             return record.fallback[1], record.fallback[2], record.fallback[3], 1
         end, function(r, g, b)
             rowConf[record.key] = { r = r, g = g, b = b }
-            apply()
+            applyFn()
         end, false, 18)
         Pix.Point(colorSwatch, "RIGHT", region, "RIGHT", -20, 0)
         CludesUI.RegisterWidgetRefresh(updateSwatch)
@@ -2405,18 +2405,18 @@ local function BuildDispelColorFields(widget, fontFile, sy, rowConf, apply)
         local row
         row, hh = W:DualRow(
             widget,
-            sy,
+            startY,
             { type = "label", text = leftX.label },
             right and { type = "label", text = right.label } or { type = "label", text = "" }
         )
-        sy = sy - hh
+        startY = startY - hh
         AddDispelSwatch(row._leftRegion, leftX)
         if right then
             AddDispelSwatch(row._rightRegion, right)
         end
     end
 
-    return sy
+    return startY
 end
 
 -------------------------------------------------------------------------------
@@ -2430,13 +2430,13 @@ end
 --  category -- see PAB_ApplyDmFx/PAB_FxBlockFor there.
 -------------------------------------------------------------------------------
 
-local function BuildFxEffects(widget, sy, rowConf, apply)
+local function BuildFxEffects(widget, startY, rowConf, applyFn)
     -- Real AuraButtons forbid driver-ticked glows (Blizzard_AuraButton.xml:
     -- ForbiddenAspects baked into the template), so the icon glow is an engine
     -- host: the shared controls offer only what renders there.
-    return CludesUI.BuildIconEffects(widget, sy, {
+    return CludesUI.BuildIconEffects(widget, startY, {
         entries = rowConf.fxList or {},
-        apply = apply,
+        apply = applyFn,
         sizeMax = 400,
         fontKey = "unitFrames",
         filters = function(region, e)
@@ -2454,7 +2454,7 @@ local function BuildFxEffects(widget, sy, rowConf, apply)
                 end,
                 function(keyName, val)
                     e.filters[keyName] = val or nil
-                    apply()
+                    applyFn()
                     CludesUI:RefreshPage()
                 end
             )
@@ -2487,7 +2487,7 @@ local function BuildFxEffects(widget, sy, rowConf, apply)
                     end,
                     setValue = function(val)
                         e.borderSize = BORDER_SIZE_NUM[val] or 0
-                        apply()
+                        applyFn()
                     end,
                 }
             end
@@ -2529,23 +2529,23 @@ end
 -- multiple manual measurements confirmed. Rather than keep guessing why the two
 -- structurally- different-but-equivalent approaches render differently, this mirrors
 -- DM's approach exactly since that one is confirmed correct.
-local function WrapCompensatedBody(parentFrame, topOffset)
+local function WrapCompensatedBody(hostFrame, topOffset)
     local contentPad = CludesUI.CONTENT_PAD or 45
     local PAD = 20 -- matches PABMP_BuildPage's own detail-pane inset
     local padDiff = contentPad - PAD
-    local visibleW = parentFrame:GetWidth()
+    local visibleW = hostFrame:GetWidth()
 
-    local scroll = CreateFrame("ScrollFrame", nil, parentFrame)
-    scroll:SetPoint("TOPLEFT", parentFrame, "TOPLEFT", -padDiff, topOffset or 0)
-    scroll:SetPoint("BOTTOMRIGHT", parentFrame, "BOTTOMRIGHT", padDiff, 0)
-    scroll:SetFrameLevel(parentFrame:GetFrameLevel() + 1)
-    scroll:SetClipsChildren(true)
+    local scroller = CreateFrame("ScrollFrame", nil, hostFrame)
+    scroller:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", -padDiff, topOffset or 0)
+    scroller:SetPoint("BOTTOMRIGHT", hostFrame, "BOTTOMRIGHT", padDiff, 0)
+    scroller:SetFrameLevel(hostFrame:GetFrameLevel() + 1)
+    scroller:SetClipsChildren(true)
 
-    local body = CreateFrame("Frame", nil, scroll)
-    body:SetSize(visibleW + padDiff * 2, 10) -- finalized by FinalizeCompensatedBody
-    body._showRowDivider = true
-    scroll:SetScrollChild(body)
-    body._pabUpdateThumb = AttachEditorScroll(scroll, body, nil, padDiff + 2, true)
+    local bodyFrame = CreateFrame("Frame", nil, scroller)
+    bodyFrame:SetSize(visibleW + padDiff * 2, 10) -- finalized by FinalizeCompensatedBody
+    bodyFrame._showRowDivider = true
+    scroller:SetScrollChild(bodyFrame)
+    bodyFrame._pabUpdateThumb = AttachEditorScroll(scroller, bodyFrame, nil, padDiff + 2, true)
 
     -- Every WrapCompensatedBody call in this file immediately follows a
     -- PAB_BuildPreviewBox call on the same `parentFrame` (see the four BuildXDetail
@@ -2560,25 +2560,25 @@ local function WrapCompensatedBody(parentFrame, topOffset)
     -- last (after body._pabUpdateThumb exists) so the closure can call it.
     if mod.PAB_SetPreviewResizeHandler then
         mod.PAB_SetPreviewResizeHandler(function(newTopOffset)
-            scroll:ClearAllPoints()
-            scroll:SetPoint("TOPLEFT", parentFrame, "TOPLEFT", -padDiff, newTopOffset)
-            scroll:SetPoint("BOTTOMRIGHT", parentFrame, "BOTTOMRIGHT", padDiff, 0)
-            if body._pabUpdateThumb then
-                body._pabUpdateThumb()
+            scroller:ClearAllPoints()
+            scroller:SetPoint("TOPLEFT", hostFrame, "TOPLEFT", -padDiff, newTopOffset)
+            scroller:SetPoint("BOTTOMRIGHT", hostFrame, "BOTTOMRIGHT", padDiff, 0)
+            if bodyFrame._pabUpdateThumb then
+                bodyFrame._pabUpdateThumb()
             end
         end)
     end
 
-    return body
+    return bodyFrame
 end
 
 -- Sizes the scroll child to its real content height and refreshes the scrollbar's
 -- thumb/track visibility. Call once, after all of a detail pane's fields have been
 -- built into `body` and the final sy/by accumulator value is known.
-local function FinalizeCompensatedBody(body, sy)
-    body:SetHeight(max(10, math.abs(sy) + 20))
-    if body._pabUpdateThumb then
-        body._pabUpdateThumb()
+local function FinalizeCompensatedBody(bodyFrame, startY)
+    bodyFrame:SetHeight(max(10, math.abs(startY) + 20))
+    if bodyFrame._pabUpdateThumb then
+        bodyFrame._pabUpdateThumb()
     end
 end
 
@@ -2613,7 +2613,7 @@ local function BuildBarTitle(widget, fontFile, name, subtitle, posY)
     return posY - 11 - 18 - 5
 end
 
-local function BuildDefaultBarDetail(widget, fontFile, isBuff)
+local function BuildDefaultBarDetail(widget, fontFile, buffBar)
     local W = CludesUI.Widgets
     if not W then
         return
@@ -2629,62 +2629,62 @@ local function BuildDefaultBarDetail(widget, fontFile, isBuff)
     if mod.PAB_EnsureBarEnable then
         mod.PAB_EnsureBarEnable(s)
     end
-    local rowConf = isBuff and mod.PAB_DefaultBuffsCfg(s) or mod.PAB_DefaultDebuffsCfg(s)
+    local rowConf = buffBar and mod.PAB_DefaultBuffsCfg(s) or mod.PAB_DefaultDebuffsCfg(s)
 
     local function ApplyBar()
         if mod.PAB_Restyle then
             mod.PAB_Restyle()
         end
         if mod.PAB_ApplyLiveConfig then
-            mod.PAB_ApplyLiveConfig(isBuff)
+            mod.PAB_ApplyLiveConfig(buffBar)
         end
     end
 
     local scrollTop = 0
     if mod.PAB_BuildPreviewBox then
         scrollTop =
-            mod.PAB_BuildPreviewBox(widget, fontFile, 0, isBuff and "buff" or "debuff", "default", rowConf)
+            mod.PAB_BuildPreviewBox(widget, fontFile, 0, buffBar and "buff" or "debuff", "default", rowConf)
     end
-    local body = WrapCompensatedBody(widget, scrollTop)
-    local sy = 0
-    sy = BuildBarTitle(
-        body,
+    local bodyFrame = WrapCompensatedBody(widget, scrollTop)
+    local startY = 0
+    startY = BuildBarTitle(
+        bodyFrame,
         fontFile,
-        isBuff and DefaultBuffBarName(rowConf) or L("Debuffs"),
+        buffBar and DefaultBuffBarName(rowConf) or L("Debuffs"),
         L("Built-in bar. Cannot be deleted"),
-        sy
+        startY
     )
 
-    if isBuff then
-        sy = BuildAssignedBuffsFields(body, fontFile, sy, rowConf, ApplyBar, true)
+    if buffBar then
+        startY = BuildAssignedBuffsFields(bodyFrame, fontFile, startY, rowConf, ApplyBar, true)
     else
-        sy = BuildAssignedDebuffsFields(body, fontFile, sy, rowConf, ApplyBar)
+        startY = BuildAssignedDebuffsFields(bodyFrame, fontFile, startY, rowConf, ApplyBar)
     end
-    sy = BuildCoreFields(body, fontFile, sy, rowConf, ApplyBar, isBuff)
-    sy = BuildDisplayFields(body, fontFile, sy, rowConf, ApplyBar, isBuff)
-    if not isBuff then
-        sy = BuildDispelColorFields(body, fontFile, sy, rowConf, ApplyBar)
-        sy = BuildFxEffects(body, sy, rowConf, ApplyBar)
+    startY = BuildCoreFields(bodyFrame, fontFile, startY, rowConf, ApplyBar, buffBar)
+    startY = BuildDisplayFields(bodyFrame, fontFile, startY, rowConf, ApplyBar, buffBar)
+    if not buffBar then
+        startY = BuildDispelColorFields(bodyFrame, fontFile, startY, rowConf, ApplyBar)
+        startY = BuildFxEffects(bodyFrame, startY, rowConf, ApplyBar)
     end
-    FinalizeCompensatedBody(body, sy)
+    FinalizeCompensatedBody(bodyFrame, startY)
 end
 -- Sidebar tile: the shared manager tile at this page's 58px height, with a
 -- 14px pencil and a narrower text inset when there is no pill.
-local function BuildTile(parentFrame, posY, options)
+local function BuildTile(hostFrame, posY, options)
     options.height, options.textRight = TILE_H, options.showToggle and -52 or -16
     options.editSize, options.editSnap = 14, true
-    return CludesUI.BuildManagerTile(parentFrame, posY, options)
+    return CludesUI.BuildManagerTile(hostFrame, posY, options)
 end
 
 -- Sidebar "Add New" button (Raid Frames Buff Manager parity: solid green
 -- accent button, 60% of the sidebar width, centered; background brightens
 -- from 0.8 to full alpha on hover).
-local function AddNewButton(parentFrame, posY, width, labelText, onClick)
+local function AddNewButton(hostFrame, posY, width, labelText, onClick)
     local btnW = floor(width * 0.6)
-    local addBtn = CreateFrame("Button", nil, parentFrame)
+    local addBtn = CreateFrame("Button", nil, hostFrame)
     addBtn:SetSize(btnW, 30)
-    addBtn:SetPoint("TOP", parentFrame, "TOPLEFT", floor(width / 2), posY - 10)
-    addBtn:SetFrameLevel(parentFrame:GetFrameLevel() + 1)
+    addBtn:SetPoint("TOP", hostFrame, "TOPLEFT", floor(width / 2), posY - 10)
+    addBtn:SetFrameLevel(hostFrame:GetFrameLevel() + 1)
     local accentColor = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
     local addBg = addBtn:CreateTexture(nil, "BACKGROUND")
     addBg:SetAllPoints()
@@ -2711,8 +2711,8 @@ end
 --  the default Buffs bar -- same cfg shape (filters/spells), same fields.
 -------------------------------------------------------------------------------
 
-local function Apply(isBuff, barId)
-    if isBuff then
+local function Apply(buffBar, barId)
+    if buffBar then
         if mod.PAB_ReloadCustomBuffBar then
             mod.PAB_ReloadCustomBuffBar(barId)
         end
@@ -2728,7 +2728,7 @@ end
 -- BuildDefaultBarDetail's "Buffs"/"Built-in bar. Cannot be deleted."
 -- header, so both default and custom bar detail panes look consistent.
 -- Naming itself is handled exclusively through the sidebar now -- the
-local function BuildBuffBarDetail(widget, fontFile, bar)
+local function BuildBuffBarDetail(widget, fontFile, barConf)
     local W = CludesUI.Widgets
     if not W then
         return
@@ -2739,20 +2739,20 @@ local function BuildBuffBarDetail(widget, fontFile, bar)
         mod.PAB_EnsureBarEnable(sPAB)
     end
     local function ApplyBar()
-        Apply(true, bar.id)
+        Apply(true, barConf.id)
     end
 
     local scrollTop = 0
     if mod.PAB_BuildPreviewBox then
-        scrollTop = mod.PAB_BuildPreviewBox(widget, fontFile, 0, "buff", bar.id, bar)
+        scrollTop = mod.PAB_BuildPreviewBox(widget, fontFile, 0, "buff", barConf.id, barConf)
     end
-    local body = WrapCompensatedBody(widget, scrollTop)
+    local bodyFrame = WrapCompensatedBody(widget, scrollTop)
     local by = 0
-    by = BuildBarTitle(body, fontFile, L(bar.name or "Buff Bar"), L("Custom buff bar"), by)
-    by = BuildAssignedBuffsFields(body, fontFile, by, bar, ApplyBar)
-    by = BuildCoreFields(body, fontFile, by, bar, ApplyBar, true)
-    by = BuildDisplayFields(body, fontFile, by, bar, ApplyBar, true)
-    FinalizeCompensatedBody(body, by)
+    by = BuildBarTitle(bodyFrame, fontFile, L(barConf.name or "Buff Bar"), L("Custom buff bar"), by)
+    by = BuildAssignedBuffsFields(bodyFrame, fontFile, by, barConf, ApplyBar)
+    by = BuildCoreFields(bodyFrame, fontFile, by, barConf, ApplyBar, true)
+    by = BuildDisplayFields(bodyFrame, fontFile, by, barConf, ApplyBar, true)
+    FinalizeCompensatedBody(bodyFrame, by)
 end
 
 -------------------------------------------------------------------------------
@@ -2761,7 +2761,7 @@ end
 --  RaidFrames).
 -------------------------------------------------------------------------------
 
-local function BuildDebuffBarDetail(widget, fontFile, bar)
+local function BuildDebuffBarDetail(widget, fontFile, barConf)
     local W = CludesUI.Widgets
     if not W then
         return
@@ -2772,22 +2772,22 @@ local function BuildDebuffBarDetail(widget, fontFile, bar)
         mod.PAB_EnsureBarEnable(sPAB)
     end
     local function ApplyBar()
-        Apply(false, bar.id)
+        Apply(false, barConf.id)
     end
 
     local scrollTop = 0
     if mod.PAB_BuildPreviewBox then
-        scrollTop = mod.PAB_BuildPreviewBox(widget, fontFile, 0, "debuff", bar.id, bar)
+        scrollTop = mod.PAB_BuildPreviewBox(widget, fontFile, 0, "debuff", barConf.id, barConf)
     end
-    local body = WrapCompensatedBody(widget, scrollTop)
+    local bodyFrame = WrapCompensatedBody(widget, scrollTop)
     local by = 0
-    by = BuildBarTitle(body, fontFile, L(bar.name or "Debuff Bar"), L("Custom debuff bar"), by)
-    by = BuildAssignedDebuffsFields(body, fontFile, by, bar, ApplyBar)
-    by = BuildCoreFields(body, fontFile, by, bar, ApplyBar, false)
-    by = BuildDisplayFields(body, fontFile, by, bar, ApplyBar, false)
-    by = BuildDispelColorFields(body, fontFile, by, bar, ApplyBar)
-    by = BuildFxEffects(body, by, bar, ApplyBar)
-    FinalizeCompensatedBody(body, by)
+    by = BuildBarTitle(bodyFrame, fontFile, L(barConf.name or "Debuff Bar"), L("Custom debuff bar"), by)
+    by = BuildAssignedDebuffsFields(bodyFrame, fontFile, by, barConf, ApplyBar)
+    by = BuildCoreFields(bodyFrame, fontFile, by, barConf, ApplyBar, false)
+    by = BuildDisplayFields(bodyFrame, fontFile, by, barConf, ApplyBar, false)
+    by = BuildDispelColorFields(bodyFrame, fontFile, by, barConf, ApplyBar)
+    by = BuildFxEffects(bodyFrame, by, barConf, ApplyBar)
+    FinalizeCompensatedBody(bodyFrame, by)
 end
 
 -------------------------------------------------------------------------------
@@ -2834,8 +2834,8 @@ local CLASS_ORDER = {
 -- rightInset (default 2): only WrapCompensatedBody passes more, since its scroll
 -- extends padDiff (~25px) past the pane's visible right edge. panelWheel: a pane
 -- inside the options panel (Shift + wheel scales the panel), not a popup editor.
-AttachEditorScroll = function(scroll, childFrame, onScroll, rightInset, panelWheel)
-    return CludesUI.AttachSmoothScrollbar(scroll, {
+AttachEditorScroll = function(scroller, childFrame, onScroll, rightInset, panelWheel)
+    return CludesUI.AttachSmoothScrollbar(scroller, {
         step = 60,
         thumbMin = 20,
         rightInset = rightInset,
@@ -2925,12 +2925,12 @@ function mod.PABMP_ShowFilterEditor()
 
     local sideScroll, sideChild, fy = CludesUI.BuildFilterSidebar(side, SIDE_W, filters, {
         selected = pabFilterSel,
-        onPick = function(id)
-            pabFilterSel = id
+        onPick = function(barId)
+            pabFilterSel = barId
             pabFilterScrollPos = 0
         end,
-        onAdded = function(id)
-            pabFilterSel = id
+        onAdded = function(barId)
+            pabFilterSel = barId
         end,
         delete = mod.PAB_DeleteFilter,
         rename = mod.PAB_RenameFilter,
@@ -2995,7 +2995,7 @@ function mod.PABMP_ShowFilterEditor()
     local function SpellName(ident)
         return C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(ident)
     end
-    local leftX, scroll, childFrame = CludesUI.BuildFilterDetail(dialog, SIDE_W, POPUP_W, sel, {
+    local leftX, scroller, childFrame = CludesUI.BuildFilterDetail(dialog, SIDE_W, POPUP_W, sel, {
         -- Same curated (deduped) universe as the Extra Spells dropdown.
         searchIds = function()
             local universe = DedupedPresetSpellUniverse()
@@ -3022,7 +3022,7 @@ function mod.PABMP_ShowFilterEditor()
         rebuild = Rebuild,
         input = EditorInput,
     })
-    local _updSpellThumb, setSpellScroll = AttachEditorScroll(scroll, childFrame, function(val)
+    local _updSpellThumb, setSpellScroll = AttachEditorScroll(scroller, childFrame, function(val)
         pabFilterScrollPos = val
     end)
 
@@ -3051,12 +3051,12 @@ function mod.PABMP_ShowFilterEditor()
     end
     table.sort(allIds)
     local byClass, customList = {}, {}
-    local seenNames = {}
+    local seenSet = {}
     for idx = 1, #allIds do
         local ident = allIds[idx]
         local dedupKey = NameOf(ident)
-        if not seenNames[dedupKey] then
-            seenNames[dedupKey] = true
+        if not seenSet[dedupKey] then
+            seenSet[dedupKey] = true
             local cls = hints[ident]
             if cls then
                 byClass[cls] = byClass[cls] or {}
@@ -3118,8 +3118,8 @@ end
 
 local pabAddPopup
 
-local function ShowAddBarPopup(anchorBtn, kind, fontFile)
-    if pabAddPopup and pabAddPopup:IsShown() and pabAddPopup._kind == kind then
+local function ShowAddBarPopup(anchorBtn, kindName, fontFile)
+    if pabAddPopup and pabAddPopup:IsShown() and pabAddPopup._kind == kindName then
         pabAddPopup:Hide()
         return
     end
@@ -3210,25 +3210,25 @@ local function ShowAddBarPopup(anchorBtn, kind, fontFile)
     end
 
     local dialog = pabAddPopup
-    dialog._kind = kind
+    dialog._kind = kindName
     dialog._anchorBtn = anchorBtn
     dialog._nameBox:SetText("")
     dialog._createBtn:SetScript("OnClick", function()
         local textValue = dialog._nameBox:GetText()
         local name = (textValue and textValue ~= "") and textValue or nil
-        local bar
+        local barConf
         -- New bars land in the EDITED editing-spec bucket ("allspecs" =
         -- the legacy arrays, today's behavior).
-        if kind == "buff" then
-            bar = mod.PAB_AddCustomBuffBar and mod.PAB_AddCustomBuffBar(name, pabSpecSel)
+        if kindName == "buff" then
+            barConf = mod.PAB_AddCustomBuffBar and mod.PAB_AddCustomBuffBar(name, pabSpecSel)
         else
-            bar = mod.PAB_AddCustomDebuffBar and mod.PAB_AddCustomDebuffBar(name, pabSpecSel)
+            barConf = mod.PAB_AddCustomDebuffBar and mod.PAB_AddCustomDebuffBar(name, pabSpecSel)
         end
         dialog:Hide()
-        if bar then
-            pabSel = { kind = kind, id = bar.id }
-            pabInhSel = nil
-            Apply(kind == "buff", bar.id)
+        if barConf then
+            barPick = { kind = kindName, id = barConf.id }
+            inheritPick = nil
+            Apply(kindName == "buff", barConf.id)
             CludesUI:RefreshPage(true)
         end
     end)
@@ -3251,17 +3251,17 @@ end
 -- ns._pabRoot = nil means "needs a render". Called where the page is left.
 local pabRootPark
 function mod.PABMP_ParkRoot()
-    local root = mod._pabRoot
-    if not root then
+    local rootFrame = mod._pabRoot
+    if not rootFrame then
         return
     end
     mod._pabRoot = nil
-    root:Hide()
+    rootFrame:Hide()
     if not pabRootPark then
         pabRootPark = CreateFrame("Frame", nil, UIParent)
         pabRootPark:Hide()
     end
-    root:SetParent(pabRootPark)
+    rootFrame:SetParent(pabRootPark)
 end
 
 function mod.PABMP_BuildPage(page, hostFrame, yOffset)
@@ -3338,13 +3338,13 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
     -- Inherited selection: resolve against the owning group's bucket; drop
     -- it when the view no longer inherits that group or the bar is gone.
     local pabInhBar = nil
-    if pabInhSel and inhGroups then
+    if inheritPick and inhGroups then
         for gi = 1, #inhGroups do
-            if inhGroups[gi] == pabInhSel.group then
+            if inhGroups[gi] == inheritPick.group then
                 local gl = mod.PAB_BucketBars
-                    and mod.PAB_BucketBars(pabInhSel.kind == "buff", pabInhSel.group)
+                    and mod.PAB_BucketBars(inheritPick.kind == "buff", inheritPick.group)
                 for idx = 1, #(gl or {}) do
-                    if gl[idx].id == pabInhSel.id then
+                    if gl[idx].id == inheritPick.id then
                         pabInhBar = gl[idx]
                         break
                     end
@@ -3354,22 +3354,22 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
         end
     end
     if not pabInhBar then
-        pabInhSel = nil
+        inheritPick = nil
     end
 
     -- Validate selection against current data (bar may have been deleted
     -- elsewhere, e.g. profile switch). "default" is always valid (the two
     -- fixed built-in bars, not custom-bar list entries).
-    if pabSel and pabSel.id ~= "default" then
+    if barPick and barPick.id ~= "default" then
         local success = false
-        local entries = (pabSel.kind == "buff") and buffBars or debuffBars
+        local entries = (barPick.kind == "buff") and buffBars or debuffBars
         for idx = 1, #entries do
-            if entries[idx].id == pabSel.id then
+            if entries[idx].id == barPick.id then
                 success = true
             end
         end
         if not success then
-            pabSel = { kind = "buff", id = "default" }
+            barPick = { kind = "buff", id = "default" }
         end
     end
 
@@ -3395,18 +3395,18 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
         )
     -- A "default" selection re-targets the first custom bar (or nothing)
     -- whenever the default tiles are not listed in this view.
-    if not showDefaults and pabSel and pabSel.id == "default" then
+    if not showDefaults and barPick and barPick.id == "default" then
         local first = buffBars[1] or debuffBars[1]
         if first then
-            pabSel = { kind = buffBars[1] and "buff" or "debuff", id = first.id }
+            barPick = { kind = buffBars[1] and "buff" or "debuff", id = first.id }
         else
-            pabSel = nil
+            barPick = nil
         end
     end
     -- Back on a defaults-listing view with nothing selected: re-seed the
     -- default selection so the detail pane never stays blank.
-    if showDefaults and not pabSel then
-        pabSel = { kind = "buff", id = "default" }
+    if showDefaults and not barPick then
+        barPick = { kind = "buff", id = "default" }
     end
 
     -- Page-level "Player Aura Bars" header card removed (by request:
@@ -3415,26 +3415,26 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
     -- offset math below still reads clearly as "below the (now empty) header band".
     local HEADER_H = 0
 
-    local root = CreateFrame("Frame", nil, outerRoot)
-    root:SetPoint("TOPLEFT", outerRoot, "TOPLEFT", 0, -HEADER_H)
-    root:SetPoint("BOTTOMRIGHT", outerRoot, "BOTTOMRIGHT", 0, 0)
-    root:SetFrameLevel(outerRoot:GetFrameLevel() + 1)
+    local rootFrame = CreateFrame("Frame", nil, outerRoot)
+    rootFrame:SetPoint("TOPLEFT", outerRoot, "TOPLEFT", 0, -HEADER_H)
+    rootFrame:SetPoint("BOTTOMRIGHT", outerRoot, "BOTTOMRIGHT", 0, 0)
+    rootFrame:SetFrameLevel(outerRoot:GetFrameLevel() + 1)
     local visibleH = fullH - HEADER_H
 
-    local sidebarOuter = CreateFrame("Frame", nil, root)
-    sidebarOuter:SetSize(sidebarW, visibleH)
-    sidebarOuter:SetPoint("TOPRIGHT", root, "TOPRIGHT", 0, -1)
-    sidebarOuter:SetFrameLevel(root:GetFrameLevel() + 1)
-    local sbBg = sidebarOuter:CreateTexture(nil, "BACKGROUND")
+    local sideOuter = CreateFrame("Frame", nil, rootFrame)
+    sideOuter:SetSize(sidebarW, visibleH)
+    sideOuter:SetPoint("TOPRIGHT", rootFrame, "TOPRIGHT", 0, -1)
+    sideOuter:SetFrameLevel(rootFrame:GetFrameLevel() + 1)
+    local sbBg = sideOuter:CreateTexture(nil, "BACKGROUND")
     sbBg:SetAllPoints()
     sbBg:SetColorTexture(0, 0, 0, 0.25)
-    CludesUI.CardSidebar(sidebarOuter, sbBg)
+    CludesUI.CardSidebar(sideOuter, sbBg)
     -------------------------------------------------------------------
     --  SECTIONED SIDEBAR (fixed, no outer scroll): top options (Disable
     --  All / Use Blizzard Buffs), Editing Spec, then two independently
     --  scrollable halves (Buff Bars / Debuff Bars).
     -------------------------------------------------------------------
-    local fixedY = -6
+    local pinnedY = -6
 
     -- The rows' pill and knob, drawn texel to pixel as the settings toggle's
     -- are (CludesUI.MakePixelLayer): a stadium and a circle sized for the
@@ -3458,10 +3458,10 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
 
     -- Toggle row helper (label left, tile-style pill right).
     local function OptionRow(posY, labelText, status, tooltip, onToggle)
-        local row = CreateFrame("Frame", nil, sidebarOuter)
+        local row = CreateFrame("Frame", nil, sideOuter)
         row:SetSize(sidebarW, 26)
-        row:SetPoint("TOPLEFT", sidebarOuter, "TOPLEFT", 0, posY)
-        row:SetFrameLevel(sidebarOuter:GetFrameLevel() + 1)
+        row:SetPoint("TOPLEFT", sideOuter, "TOPLEFT", 0, posY)
+        row:SetFrameLevel(sideOuter:GetFrameLevel() + 1)
         row:EnableMouse(true)
         local labelFS = row:CreateFontString(nil, "OVERLAY")
         labelFS:SetFont(fontFile, 12, "")
@@ -3516,8 +3516,8 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
     -- dropped, Blizzard's native display handed back); a reload is only
     -- recommended cleanup. The page re-covers with the activation overlay,
     -- whose enable action is the way back.
-    fixedY = OptionRow(
-        fixedY,
+    pinnedY = OptionRow(
+        pinnedY,
         L("Disable All"),
         not (mod.PAB_Enabled and mod.PAB_Enabled()),
         L("Turns off Player Aura Bars completely."),
@@ -3543,8 +3543,8 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
 
     -- Use Blizzard Buffs: the built-in Buffs/Debuffs bars stand down and
     -- Blizzard's native display returns, all live; custom bars keep working.
-    fixedY = OptionRow(
-        fixedY,
+    pinnedY = OptionRow(
+        pinnedY,
         L("Use Blizzard Buffs"),
         useBlizz,
         L(
@@ -3563,14 +3563,14 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
     )
     -- No divider under the toggles (user call): just breathing room before
     -- the Editing Spec block.
-    fixedY = fixedY - 9
+    pinnedY = pinnedY - 9
 
     local function SectionDivider(posY)
-        local div = sidebarOuter:CreateTexture(nil, "ARTWORK")
-        div:SetHeight(1)
-        div:SetPoint("TOPLEFT", sidebarOuter, "TOPLEFT", 8, posY - 4)
-        div:SetPoint("TOPRIGHT", sidebarOuter, "TOPRIGHT", -8, posY - 4)
-        div:SetColorTexture(1, 1, 1, 0.08)
+        local divider = sideOuter:CreateTexture(nil, "ARTWORK")
+        divider:SetHeight(1)
+        divider:SetPoint("TOPLEFT", sideOuter, "TOPLEFT", 8, posY - 4)
+        divider:SetPoint("TOPRIGHT", sideOuter, "TOPRIGHT", -8, posY - 4)
+        divider:SetColorTexture(1, 1, 1, 0.08)
         return posY - 9
     end
 
@@ -3581,12 +3581,12 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
     --  group bars as inherited read-only tiles below.
     -------------------------------------------------------------------
     do
-        local specLabel = sidebarOuter:CreateFontString(nil, "OVERLAY")
+        local specLabel = sideOuter:CreateFontString(nil, "OVERLAY")
         specLabel:SetFont(fontFile, 11, "")
-        specLabel:SetPoint("TOP", sidebarOuter, "TOPLEFT", floor(sidebarW / 2), fixedY - 8)
+        specLabel:SetPoint("TOP", sideOuter, "TOPLEFT", floor(sidebarW / 2), pinnedY - 8)
         specLabel:SetText(L("EDITING SPEC"))
         specLabel:SetTextColor(0.6, 0.6, 0.6)
-        fixedY = fixedY - 27
+        pinnedY = pinnedY - 27
 
         -- Roster shared with the right-click "Add To" menu (the menu
         -- rebuilds it lazily per open). WoW Forever: All Specs, then one
@@ -3600,9 +3600,9 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
         }
 
         local specDD = CludesUI.BuildDropdownControl(
-            sidebarOuter,
+            sideOuter,
             sidebarW - 24,
-            sidebarOuter:GetFrameLevel() + 2,
+            sideOuter:GetFrameLevel() + 2,
             specDDValues,
             specDDOrder,
             function()
@@ -3610,44 +3610,44 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
             end,
             function(val)
                 pabSpecSel = val
-                pabSel = { kind = "buff", id = "default" }
-                pabInhSel = nil
+                barPick = { kind = "buff", id = "default" }
+                inheritPick = nil
                 CludesUI:RefreshPage(true)
             end
         )
-        specDD:SetPoint("TOP", sidebarOuter, "TOPLEFT", floor(sidebarW / 2), fixedY)
-        fixedY = fixedY - 36
+        specDD:SetPoint("TOP", sideOuter, "TOPLEFT", floor(sidebarW / 2), pinnedY)
+        pinnedY = pinnedY - 36
     end
-    fixedY = SectionDivider(fixedY)
+    pinnedY = SectionDivider(pinnedY)
 
     -------------------------------------------------------------------
     --  Split halves (Buff Bars / Debuff Bars), each its own scroll; the
     --  sidebar itself no longer scrolls.
     -------------------------------------------------------------------
-    local fixedH = math.abs(fixedY)
+    local fixedH = math.abs(pinnedY)
     -- Floor keeps the halves from collapsing/overlapping at pathological
     -- window heights (the sidebar also clips its children).
     local half = math.max(60, floor((visibleH - fixedH) / 2))
-    sidebarOuter:SetClipsChildren(true)
+    sideOuter:SetClipsChildren(true)
 
     local function MakeSection(posY, height, headerText)
-        local heading = sidebarOuter:CreateFontString(nil, "OVERLAY")
+        local heading = sideOuter:CreateFontString(nil, "OVERLAY")
         heading:SetFont(fontFile, 11, "")
-        heading:SetPoint("TOP", sidebarOuter, "TOPLEFT", floor(sidebarW / 2), posY - 13)
+        heading:SetPoint("TOP", sideOuter, "TOPLEFT", floor(sidebarW / 2), posY - 13)
         heading:SetText(headerText)
         heading:SetTextColor(0.6, 0.6, 0.6)
-        local scroll = CreateFrame("ScrollFrame", nil, sidebarOuter)
-        scroll:SetPoint("TOPLEFT", sidebarOuter, "TOPLEFT", 0, posY - 32)
-        scroll:SetSize(sidebarW, math.max(10, height - 32))
-        scroll:SetClipsChildren(true)
-        local childFrame = CreateFrame("Frame", nil, scroll)
+        local scroller = CreateFrame("ScrollFrame", nil, sideOuter)
+        scroller:SetPoint("TOPLEFT", sideOuter, "TOPLEFT", 0, posY - 32)
+        scroller:SetSize(sidebarW, math.max(10, height - 32))
+        scroller:SetClipsChildren(true)
+        local childFrame = CreateFrame("Frame", nil, scroller)
         childFrame:SetWidth(sidebarW)
-        scroll:SetScrollChild(childFrame)
+        scroller:SetScrollChild(childFrame)
         -- The standard smooth scroll + auto-hiding 4px scrollbar.
-        local updateThumb = AttachEditorScroll(scroll, childFrame)
+        local updateThumb = AttachEditorScroll(scroller, childFrame)
         return {
             child = childFrame,
-            scroll = scroll,
+            scroll = scroller,
             top = posY,
             height = height,
             viewH = math.max(10, height - 32),
@@ -3668,7 +3668,7 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
         else
             sec.scroll:SetHeight(math.max(10, sec.viewH - ADD_AREA))
             sec.child:SetHeight(contentH + 6)
-            AddNewButton(sidebarOuter, sec.top - sec.height + ADD_AREA, sidebarW, labelText, onClick)
+            AddNewButton(sideOuter, sec.top - sec.height + ADD_AREA, sidebarW, labelText, onClick)
         end
         -- Prime the scrollbar's visibility (it otherwise first paints on the
         -- first wheel/drag).
@@ -3677,7 +3677,7 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
         end
     end
 
-    local buffSec = MakeSection(fixedY, half, L("BUFF BARS"))
+    local buffSec = MakeSection(pinnedY, half, L("BUFF BARS"))
     local buffChild = buffSec.child
     -- 2% white wash over the whole Buff Bars half (header + list): visual
     -- separation from the debuff half below (user call). BACKGROUND
@@ -3687,19 +3687,19 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
     -- above the y it returns); bottom edge lands exactly on the
     -- between-halves divider.
     do
-        local wash = sidebarOuter:CreateTexture(nil, "BACKGROUND", nil, 1)
-        wash:SetPoint("TOPLEFT", sidebarOuter, "TOPLEFT", 0, fixedY + 4)
-        wash:SetPoint("TOPRIGHT", sidebarOuter, "TOPRIGHT", 0, fixedY + 4)
+        local wash = sideOuter:CreateTexture(nil, "BACKGROUND", nil, 1)
+        wash:SetPoint("TOPLEFT", sideOuter, "TOPLEFT", 0, pinnedY + 4)
+        wash:SetPoint("TOPRIGHT", sideOuter, "TOPRIGHT", 0, pinnedY + 4)
         wash:SetHeight(half + 4)
         wash:SetColorTexture(1, 1, 1, 0.02)
     end
-    local debuffTop = fixedY - half
+    local debuffTop = pinnedY - half
     do
-        local div = sidebarOuter:CreateTexture(nil, "ARTWORK")
-        div:SetHeight(1)
-        div:SetPoint("TOPLEFT", sidebarOuter, "TOPLEFT", 8, debuffTop)
-        div:SetPoint("TOPRIGHT", sidebarOuter, "TOPRIGHT", -8, debuffTop)
-        div:SetColorTexture(1, 1, 1, 0.08)
+        local divider = sideOuter:CreateTexture(nil, "ARTWORK")
+        divider:SetHeight(1)
+        divider:SetPoint("TOPLEFT", sideOuter, "TOPLEFT", 8, debuffTop)
+        divider:SetPoint("TOPRIGHT", sideOuter, "TOPRIGHT", -8, debuffTop)
+        divider:SetColorTexture(1, 1, 1, 0.08)
     end
     local debuffSec = MakeSection(debuffTop - 1, visibleH - fixedH - half - 1, L("DEBUFF BARS"))
     local debuffChild = debuffSec.child
@@ -3708,41 +3708,41 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
     -- read-only rows -- edit them in their group; the pill toggles ONLY
     -- this spec's enable (ns.PAB_SetInhDisabled). Builds into the given
     -- section child at y; returns the new y cursor.
-    local function BuildInheritedBarTiles(sectionChild, tileY, isBuff)
+    local function BuildInheritedBarTiles(sectionChild, tileTop, buffBar)
         if not inhGroups then
-            return tileY
+            return tileTop
         end
         for gi = 1, #inhGroups do
             local gkey = inhGroups[gi]
             local ginfo = SPEC_GROUP_INFO[gkey]
             local gname = ginfo and L(ginfo.name) or gkey
-            local gl = (mod.PAB_BucketBars and mod.PAB_BucketBars(isBuff, gkey)) or {}
+            local gl = (mod.PAB_BucketBars and mod.PAB_BucketBars(buffBar, gkey)) or {}
             for idx = 1, #gl do
-                local bar = gl[idx]
-                local disHere = mod.PAB_InhDisabled and mod.PAB_InhDisabled(pabSpecSel, bar.id)
-                local kind = isBuff and "buff" or "debuff"
-                tileY = tileY
-                    - BuildTile(sectionChild, tileY, {
+                local barConf = gl[idx]
+                local disHere = mod.PAB_InhDisabled and mod.PAB_InhDisabled(pabSpecSel, barConf.id)
+                local kindName = buffBar and "buff" or "debuff"
+                tileTop = tileTop
+                    - BuildTile(sectionChild, tileTop, {
                         width = sidebarW,
                         fontPath = fontFile,
-                        title = L(bar.name or (isBuff and "Buff Bar" or "Debuff Bar")),
+                        title = L(barConf.name or (buffBar and "Buff Bar" or "Debuff Bar")),
                         subtitle = gname,
                         inheritedTooltip = CludesUI.Lf("Inherited from %1$s. Editable only there.", gname),
                         selected = (
-                            pabInhSel
-                            and pabInhSel.kind == kind
-                            and pabInhSel.group == gkey
-                            and pabInhSel.id == bar.id
+                            inheritPick
+                            and inheritPick.kind == kindName
+                            and inheritPick.group == gkey
+                            and inheritPick.id == barConf.id
                         )
                                 and true
                             or false,
                         -- Pill = the PER-SPEC enable only; a group-level disable
                         -- dims the tile instead (the pill must never look dead).
-                        dimmed = bar.enabled == false or nil,
+                        dimmed = barConf.enabled == false or nil,
                         enabled = (not disHere) and true or false,
                         showToggle = true,
                         onSelect = function()
-                            pabInhSel = { kind = kind, group = gkey, id = bar.id }
+                            inheritPick = { kind = kindName, group = gkey, id = barConf.id }
                             CludesUI:RefreshPage(true)
                         end,
                         onToggle = function()
@@ -3751,23 +3751,23 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
                             end
                             mod.PAB_SetInhDisabled(
                                 pabSpecSel,
-                                bar.id,
-                                not mod.PAB_InhDisabled(pabSpecSel, bar.id)
+                                barConf.id,
+                                not mod.PAB_InhDisabled(pabSpecSel, barConf.id)
                             )
-                            Apply(isBuff, bar.id)
+                            Apply(buffBar, barConf.id)
                             CludesUI:RefreshPage(true)
                         end,
                     })
             end
         end
-        return tileY
+        return tileTop
     end
 
     -- Buff bars section (top half): fixed "Buffs" default bar first (hidden
     -- while Use Blizzard Buffs owns the display), then custom bars.
     do
         local sidebarChild = buffChild -- section-scoped: this half's scroll child
-        local tileY = 0
+        local tileTop = 0
 
         -- Name follows the bar's content (see DefaultBuffBarName). Static, not
         -- a refresh client: every toggle that can change it forces a full page
@@ -3775,17 +3775,17 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
         local sPAB = sPABTop
         local defBuffCfg = sPAB and mod.PAB_DefaultBuffsCfg and mod.PAB_DefaultBuffsCfg(sPAB) or nil
         if showDefaults then
-            tileY = tileY
-                - BuildTile(sidebarChild, tileY, {
+            tileTop = tileTop
+                - BuildTile(sidebarChild, tileTop, {
                     width = sidebarW,
                     fontPath = fontFile,
                     title = DefaultBuffBarName(defBuffCfg),
                     subtitle = L("Default"),
                     selected = (
-                        pabSel
-                        and pabSel.kind == "buff"
-                        and pabSel.id == "default"
-                        and not pabInhSel
+                        barPick
+                        and barPick.kind == "buff"
+                        and barPick.id == "default"
+                        and not inheritPick
                     )
                             and true
                         or false,
@@ -3812,31 +3812,31 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
                         CludesUI:RefreshPage(true)
                     end,
                     onSelect = function()
-                        pabSel = { kind = "buff", id = "default" }
-                        pabInhSel = nil
+                        barPick = { kind = "buff", id = "default" }
+                        inheritPick = nil
                         CludesUI:RefreshPage(true)
                     end,
                 })
         end
-        tileY = BuildInheritedBarTiles(sidebarChild, tileY, true)
+        tileTop = BuildInheritedBarTiles(sidebarChild, tileTop, true)
         for idx = 1, #buffBars do
-            local bar = buffBars[idx]
-            tileY = tileY
-                - BuildTile(sidebarChild, tileY, {
+            local barConf = buffBars[idx]
+            tileTop = tileTop
+                - BuildTile(sidebarChild, tileTop, {
                     width = sidebarW,
                     fontPath = fontFile,
-                    title = L(bar.name or "Buff Bar"),
+                    title = L(barConf.name or "Buff Bar"),
                     subtitleFn = function()
-                        return BuildBuffBarSubtitle(bar)
+                        return BuildBuffBarSubtitle(barConf)
                     end,
-                    selected = (pabSel and pabSel.kind == "buff" and pabSel.id == bar.id and not pabInhSel)
+                    selected = (barPick and barPick.kind == "buff" and barPick.id == barConf.id and not inheritPick)
                             and true
                         or false,
-                    enabled = bar.enabled and true or false,
+                    enabled = barConf.enabled and true or false,
                     showToggle = true,
                     onSelect = function()
-                        pabSel = { kind = "buff", id = bar.id }
-                        pabInhSel = nil
+                        barPick = { kind = "buff", id = barConf.id }
+                        inheritPick = nil
                         CludesUI:RefreshPage(true)
                     end,
                     -- Right-click: copy this bar into another editing-spec
@@ -3850,7 +3850,7 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
                             fontPath = fontFile,
                             items = CludesUI.SpecBucketMenuItems(pabSpecSel, nil, mod.PAB_ForeverKey),
                             onPick = function(key)
-                                local nb = mod.PAB_CopyCustomBar and mod.PAB_CopyCustomBar(true, bar, key)
+                                local nb = mod.PAB_CopyCustomBar and mod.PAB_CopyCustomBar(true, barConf, key)
                                 if nb then
                                     Apply(true, nb.id)
                                     CludesUI:RefreshPage(true)
@@ -3859,25 +3859,25 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
                         })
                     end,
                     onToggle = function(val)
-                        bar.enabled = val and true or false
-                        Apply(true, bar.id)
+                        barConf.enabled = val and true or false
+                        Apply(true, barConf.id)
                         CludesUI:RefreshPage(true)
                     end,
                     onEdit = function()
                         CludesUI:ShowInputPopup({
                             title = L("Rename Bar"),
-                            placeholder = L(bar.name or "Buff Bar"),
+                            placeholder = L(barConf.name or "Buff Bar"),
                             confirmText = L("Rename"),
                             cancelText = L("Cancel"),
                             onConfirm = function(textValue)
                                 if textValue and textValue ~= "" then
-                                    bar.name = textValue
+                                    barConf.name = textValue
                                     -- Re-registers this bar's Unlock Mode label from
                                     -- the new bar.name (RegisterPABCustomUnlock reads
                                     -- it live, but only ever re-runs from here) --
                                     -- without this, Unlock Mode kept showing the old
                                     -- name until the next /reload.
-                                    Apply(true, bar.id)
+                                    Apply(true, barConf.id)
                                 end
                                 CludesUI:RefreshPage(true)
                             end,
@@ -3890,18 +3890,18 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
                             confirmText = L("Delete"),
                             cancelText = L("Cancel"),
                             onConfirm = function()
-                                mod.PAB_DeleteCustomBuffBar(bar.id)
-                                if pabSel and pabSel.kind == "buff" and pabSel.id == bar.id then
-                                    pabSel = { kind = "buff", id = "default" }
+                                mod.PAB_DeleteCustomBuffBar(barConf.id)
+                                if barPick and barPick.kind == "buff" and barPick.id == barConf.id then
+                                    barPick = { kind = "buff", id = "default" }
                                 end
-                                Apply(true, bar.id)
+                                Apply(true, barConf.id)
                                 CludesUI:RefreshPage(true)
                             end,
                         })
                     end,
                 })
         end
-        FinishSection(buffSec, tileY, L("Add Buff Bar"), function(self)
+        FinishSection(buffSec, tileTop, L("Add Buff Bar"), function(self)
             ShowAddBarPopup(self, "buff", fontFile)
         end)
     end
@@ -3910,22 +3910,22 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
     -- (hidden while Use Blizzard Buffs owns the display), then custom.
     do
         local sidebarChild = debuffChild -- section-scoped: this half's scroll child
-        local tileY = 0
+        local tileTop = 0
 
         local sPAB2 = sPABTop
         local defDebuffCfg = sPAB2 and mod.PAB_DefaultDebuffsCfg and mod.PAB_DefaultDebuffsCfg(sPAB2) or nil
         if showDefaults then
-            tileY = tileY
-                - BuildTile(sidebarChild, tileY, {
+            tileTop = tileTop
+                - BuildTile(sidebarChild, tileTop, {
                     width = sidebarW,
                     fontPath = fontFile,
                     title = L("Debuffs"),
                     subtitle = L("Default"),
                     selected = (
-                        pabSel
-                        and pabSel.kind == "debuff"
-                        and pabSel.id == "default"
-                        and not pabInhSel
+                        barPick
+                        and barPick.kind == "debuff"
+                        and barPick.id == "default"
+                        and not inheritPick
                     )
                             and true
                         or false,
@@ -3951,32 +3951,32 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
                         CludesUI:RefreshPage(true)
                     end,
                     onSelect = function()
-                        pabSel = { kind = "debuff", id = "default" }
-                        pabInhSel = nil
+                        barPick = { kind = "debuff", id = "default" }
+                        inheritPick = nil
                         CludesUI:RefreshPage(true)
                     end,
                 })
         end
 
-        tileY = BuildInheritedBarTiles(sidebarChild, tileY, false)
+        tileTop = BuildInheritedBarTiles(sidebarChild, tileTop, false)
         for idx = 1, #debuffBars do
-            local bar = debuffBars[idx]
-            tileY = tileY
-                - BuildTile(sidebarChild, tileY, {
+            local barConf = debuffBars[idx]
+            tileTop = tileTop
+                - BuildTile(sidebarChild, tileTop, {
                     width = sidebarW,
                     fontPath = fontFile,
-                    title = L(bar.name or "Debuff Bar"),
+                    title = L(barConf.name or "Debuff Bar"),
                     subtitleFn = function()
-                        return BuildDebuffBarSubtitle(bar)
+                        return BuildDebuffBarSubtitle(barConf)
                     end,
-                    selected = (pabSel and pabSel.kind == "debuff" and pabSel.id == bar.id and not pabInhSel)
+                    selected = (barPick and barPick.kind == "debuff" and barPick.id == barConf.id and not inheritPick)
                             and true
                         or false,
-                    enabled = bar.enabled and true or false,
+                    enabled = barConf.enabled and true or false,
                     showToggle = true,
                     onSelect = function()
-                        pabSel = { kind = "debuff", id = bar.id }
-                        pabInhSel = nil
+                        barPick = { kind = "debuff", id = barConf.id }
+                        inheritPick = nil
                         CludesUI:RefreshPage(true)
                     end,
                     -- Right-click: copy this bar into another editing-spec
@@ -3990,7 +3990,7 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
                             fontPath = fontFile,
                             items = CludesUI.SpecBucketMenuItems(pabSpecSel, nil, mod.PAB_ForeverKey),
                             onPick = function(key)
-                                local nb = mod.PAB_CopyCustomBar and mod.PAB_CopyCustomBar(false, bar, key)
+                                local nb = mod.PAB_CopyCustomBar and mod.PAB_CopyCustomBar(false, barConf, key)
                                 if nb then
                                     Apply(false, nb.id)
                                     CludesUI:RefreshPage(true)
@@ -3999,25 +3999,25 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
                         })
                     end,
                     onToggle = function(val)
-                        bar.enabled = val and true or false
-                        Apply(false, bar.id)
+                        barConf.enabled = val and true or false
+                        Apply(false, barConf.id)
                         CludesUI:RefreshPage(true)
                     end,
                     onEdit = function()
                         CludesUI:ShowInputPopup({
                             title = L("Rename Bar"),
-                            placeholder = L(bar.name or "Debuff Bar"),
+                            placeholder = L(barConf.name or "Debuff Bar"),
                             confirmText = L("Rename"),
                             cancelText = L("Cancel"),
                             onConfirm = function(textValue)
                                 if textValue and textValue ~= "" then
-                                    bar.name = textValue
+                                    barConf.name = textValue
                                     -- Re-registers this bar's Unlock Mode label from
                                     -- the new bar.name (RegisterPABCustomUnlock reads
                                     -- it live, but only ever re-runs from here) --
                                     -- without this, Unlock Mode kept showing the old
                                     -- name until the next /reload.
-                                    Apply(false, bar.id)
+                                    Apply(false, barConf.id)
                                 end
                                 CludesUI:RefreshPage(true)
                             end,
@@ -4030,38 +4030,38 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
                             confirmText = L("Delete"),
                             cancelText = L("Cancel"),
                             onConfirm = function()
-                                mod.PAB_DeleteCustomDebuffBar(bar.id)
-                                if pabSel and pabSel.kind == "debuff" and pabSel.id == bar.id then
-                                    pabSel = { kind = "debuff", id = "default" }
+                                mod.PAB_DeleteCustomDebuffBar(barConf.id)
+                                if barPick and barPick.kind == "debuff" and barPick.id == barConf.id then
+                                    barPick = { kind = "debuff", id = "default" }
                                 end
-                                Apply(false, bar.id)
+                                Apply(false, barConf.id)
                                 CludesUI:RefreshPage(true)
                             end,
                         })
                     end,
                 })
         end
-        FinishSection(debuffSec, tileY, L("Add Debuff Bar"), function(self)
+        FinishSection(debuffSec, tileTop, L("Add Debuff Bar"), function(self)
             ShowAddBarPopup(self, "debuff", fontFile)
         end)
     end
 
-    local detail = CreateFrame("Frame", nil, root)
-    detail:SetPoint("TOPLEFT", root, "TOPLEFT", 0, 0)
+    local detail = CreateFrame("Frame", nil, rootFrame)
+    detail:SetPoint("TOPLEFT", rootFrame, "TOPLEFT", 0, 0)
     detail:SetSize(leftW, visibleH)
-    detail:SetFrameLevel(root:GetFrameLevel() + 1)
+    detail:SetFrameLevel(rootFrame:GetFrameLevel() + 1)
 
-    if pabInhSel and pabInhBar then
+    if inheritPick and pabInhBar then
         -- Read-only pane for an INHERITED group bar: where it lives, a jump
         -- link to the owning group, and a pointer at the tile toggle for the
         -- per-spec enable. No settings render -- edits belong to the group.
-        local ginfo = SPEC_GROUP_INFO[pabInhSel.group]
-        local gname = ginfo and L(ginfo.name) or pabInhSel.group
+        local ginfo = SPEC_GROUP_INFO[inheritPick.group]
+        local gname = ginfo and L(ginfo.name) or inheritPick.group
         local title = detail:CreateFontString(nil, "OVERLAY")
         title:SetFont(fontFile, 18, "")
         title:SetPoint("TOPLEFT", detail, "TOPLEFT", 25, -25)
         title:SetTextColor(0.55, 0.72, 1)
-        title:SetText(pabInhBar.name or (pabInhSel.kind == "buff" and L("Buff Bar") or L("Debuff Bar")))
+        title:SetText(pabInhBar.name or (inheritPick.kind == "buff" and L("Buff Bar") or L("Debuff Bar")))
         local subMenu = detail:CreateFontString(nil, "OVERLAY")
         subMenu:SetFont(fontFile, 13, "")
         subMenu:SetPoint("LEFT", title, "RIGHT", 6, 0)
@@ -4100,25 +4100,25 @@ function mod.PABMP_BuildPage(page, hostFrame, yOffset)
         itemLink:SetScript("OnLeave", function()
             linkFS:SetAlpha(0.85)
         end)
-        local jumpKind, jumpGroup, jumpId = pabInhSel.kind, pabInhSel.group, pabInhSel.id
+        local jumpKind, jumpGroup, jumpId = inheritPick.kind, inheritPick.group, inheritPick.id
         itemLink:SetScript("OnClick", function()
             pabSpecSel = jumpGroup
-            pabSel = { kind = jumpKind, id = jumpId }
-            pabInhSel = nil
+            barPick = { kind = jumpKind, id = jumpId }
+            inheritPick = nil
             CludesUI:RefreshPage(true)
         end)
-    elseif pabSel then
-        if pabSel.id == "default" then
-            BuildDefaultBarDetail(detail, fontFile, pabSel.kind == "buff")
-        elseif pabSel.kind == "buff" then
-            local bar = mod.PAB_GetCustomBuffBar and mod.PAB_GetCustomBuffBar(pabSel.id)
-            if bar then
-                BuildBuffBarDetail(detail, fontFile, bar)
+    elseif barPick then
+        if barPick.id == "default" then
+            BuildDefaultBarDetail(detail, fontFile, barPick.kind == "buff")
+        elseif barPick.kind == "buff" then
+            local barConf = mod.PAB_GetCustomBuffBar and mod.PAB_GetCustomBuffBar(barPick.id)
+            if barConf then
+                BuildBuffBarDetail(detail, fontFile, barConf)
             end
         else
-            local bar = mod.PAB_GetCustomDebuffBar and mod.PAB_GetCustomDebuffBar(pabSel.id)
-            if bar then
-                BuildDebuffBarDetail(detail, fontFile, bar)
+            local barConf = mod.PAB_GetCustomDebuffBar and mod.PAB_GetCustomDebuffBar(barPick.id)
+            if barConf then
+                BuildDebuffBarDetail(detail, fontFile, barConf)
             end
         end
     end
