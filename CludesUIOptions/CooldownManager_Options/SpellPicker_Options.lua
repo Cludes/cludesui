@@ -806,6 +806,63 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 --  local (AB) instead of individual locals: this function is enormous and Lua 5.1 caps active locals at 200.
                 -----------------------------------------------------------
                 local AB = {}
+                -- A colour row's Custom item ("<key>" set to "custom", the colour in
+                -- <key>R/G/B, default 1, g, b): CustomColorSwatch is its flyout hook,
+                -- a swatch on the Custom item whose first click also picks Custom and
+                -- keeps the flyout open, re-lit; CustomColorApply is the row's Apply to
+                -- Bar, carrying the colour with the mode when the mode is Custom.
+                AB.CustomColorSwatch = function(key, g, b)
+                    local rKey, gKey, bKey = key .. "R", key .. "G", key .. "B"
+                    return function(si, item, sub)
+                        if item.val ~= "custom" then
+                            return
+                        end
+                        si._noCapture = true
+                        local swatchBtn, refreshSwatch = CludesUI.BuildColorSwatch(
+                            si,
+                            si:GetFrameLevel() + 3,
+                            function()
+                                return ss[rKey] or 1, ss[gKey] or g, ss[bKey] or b, 1
+                            end,
+                            function(nr, ng, nb)
+                                ss[rKey], ss[gKey], ss[bKey] = nr, ng, nb
+                                if mod.RefreshCDMIconAppearance then
+                                    mod.RefreshCDMIconAppearance(barId)
+                                end
+                            end,
+                            false,
+                            14
+                        )
+                        swatchBtn:SetPoint("RIGHT", si, "RIGHT", -8, 0)
+                        si._refreshSwatch = refreshSwatch
+                        swatchBtn:HookScript("PreClick", function()
+                            EnsureSS()
+                            ss[key] = "custom"
+                            if not ss[rKey] then
+                                ss[rKey], ss[gKey], ss[bKey] = 1, g, b
+                            end
+                            if sub._refreshSelection then
+                                sub._refreshSelection()
+                            end
+                        end)
+                    end
+                end
+                AB.CustomColorApply = function(key, g, b)
+                    local rKey, gKey, bKey = key .. "R", key .. "G", key .. "B"
+                    return {
+                        apply = {
+                            keys = { key, rKey, gKey, bKey },
+                            write = function(t, v)
+                                t[key] = v
+                                if v == "custom" then
+                                    t[rKey], t[gKey], t[bKey] = ss[rKey] or 1, ss[gKey] or g, ss[bKey] or b
+                                else
+                                    t[rKey], t[gKey], t[bKey] = nil, nil, nil
+                                end
+                            end,
+                        },
+                    }
+                end
                 -- The value a scope table holds for an apply key, read the way the
                 -- Cooldown State Effect pair reads it (raw = the table's own value
                 -- only). A glow saved in cdStateEffect, the single-value form,
@@ -1157,8 +1214,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             or (mod._myRacialsSet and mod._myRacialsSet[sid2])
                             or (bsX.customSpellIDs and bsX.customSpellIDs[sid2])
                         )
-                            -- Hosted-buff markers are reparented Blizzard buff frames,
-                            -- not preset icons -- never mint cas entries for them.
+                            -- Hosted-buff markers are reparented Blizzard buff frames,
+                            -- not preset icons -- never mint cas entries for them.
                             and not (mod.HostedBuffMarkerToSpell and mod.HostedBuffMarkerToSpell(sid2))
                         if isInj then
                             if mod.SlotIDFromKey(sid2) then
@@ -3658,80 +3715,27 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         { val = "class", label = "Class Color" },
                         { val = "custom", label = "Custom" },
                     }
-                    MakeSubnavRow("Glow Effect Color", BUFF_GLOW_COLOR_ITEMS, function()
-                        return ss.buffGlowColor
-                    end, function(v)
-                        EnsureSS()
-                        SetOwn("buffGlowColor", v)
-                        if v == "custom" and not ss.buffGlowColorR then
-                            ss.buffGlowColorR = 1
-                            ss.buffGlowColorG = 0.776
-                            ss.buffGlowColorB = 0.376
-                        end
-                    end, function()
-                        return ss.buffGlowColor == nil
-                    end, function(si, item, sub)
-                        if item.val == "custom" then
-                            si._noCapture = true
-                            local swatchBtn, refreshSwatch = CludesUI.BuildColorSwatch(
-                                si,
-                                si:GetFrameLevel() + 3,
-                                function()
-                                    return ss.buffGlowColorR or 1,
-                                        ss.buffGlowColorG or 0.776,
-                                        ss.buffGlowColorB or 0.376,
-                                        1
-                                end,
-                                function(r, g, b)
-                                    ss.buffGlowColorR = r
-                                    ss.buffGlowColorG = g
-                                    ss.buffGlowColorB = b
-                                    if mod.RefreshCDMIconAppearance then
-                                        mod.RefreshCDMIconAppearance(barId)
-                                    end
-                                end,
-                                false,
-                                14
-                            )
-                            swatchBtn:SetPoint("RIGHT", si, "RIGHT", -8, 0)
-                            si._refreshSwatch = refreshSwatch
-                            swatchBtn:HookScript("PreClick", function()
-                                EnsureSS()
-                                ss.buffGlowColor = "custom"
-                                if not ss.buffGlowColorR then
-                                    ss.buffGlowColorR = 1
-                                    ss.buffGlowColorG = 0.776
-                                    ss.buffGlowColorB = 0.376
-                                end
-                                -- Keep the dropdown AND flyout open (the OnUpdate cpOpen guard
-                                -- holds them while the picker is up); just re-highlight the now-selected Custom row.
-                                if sub._refreshSelection then
-                                    sub._refreshSelection()
-                                end
-                            end)
-                        end
-                    end, {
-                        apply = {
-                            keys = {
-                                "buffGlowColor",
-                                "buffGlowColorR",
-                                "buffGlowColorG",
-                                "buffGlowColorB",
-                            },
-                            write = function(t, v)
-                                t.buffGlowColor = v
-                                if v == "custom" then
-                                    t.buffGlowColorR = ss.buffGlowColorR or 1
-                                    t.buffGlowColorG = ss.buffGlowColorG or 0.776
-                                    t.buffGlowColorB = ss.buffGlowColorB or 0.376
-                                else
-                                    t.buffGlowColorR = nil
-                                    t.buffGlowColorG = nil
-                                    t.buffGlowColorB = nil
-                                end
-                            end,
-                        },
-                    })
+                    MakeSubnavRow(
+                        "Glow Effect Color",
+                        BUFF_GLOW_COLOR_ITEMS,
+                        function()
+                            return ss.buffGlowColor
+                        end,
+                        function(v)
+                            EnsureSS()
+                            SetOwn("buffGlowColor", v)
+                            if v == "custom" and not ss.buffGlowColorR then
+                                ss.buffGlowColorR = 1
+                                ss.buffGlowColorG = 0.776
+                                ss.buffGlowColorB = 0.376
+                            end
+                        end,
+                        function()
+                            return ss.buffGlowColor == nil
+                        end,
+                        AB.CustomColorSwatch("buffGlowColor", 0.776, 0.376),
+                        AB.CustomColorApply("buffGlowColor", 0.776, 0.376)
+                    )
 
                     -- Cooldown Swipe (buffs only): tints the aura-duration swipe. Default =
                     -- the bar's swipe colour; Class/Custom mirror Glow Effect Color; None fully hides the swipe (alpha 0). Applied on the buff frame by the SetSwipeColor hook (which reads these keys).
@@ -3741,76 +3745,30 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         { val = "custom", label = "Custom" },
                         { val = "none", label = "None" },
                     }
-                    MakeSubnavRow("Cooldown Swipe", CD_SWIPE_COLOR_ITEMS, function()
-                        return ss.cdSwipeColor
-                    end, function(v)
-                        EnsureSS()
-                        SetOwn("cdSwipeColor", v)
-                        if v == "custom" and not ss.cdSwipeColorR then
-                            ss.cdSwipeColorR = 1
-                            ss.cdSwipeColorG = 0.776
-                            ss.cdSwipeColorB = 0.376
-                        end
-                        if mod.RefreshCDMIconAppearance then
-                            mod.RefreshCDMIconAppearance(barId)
-                        end
-                    end, function()
-                        return ss.cdSwipeColor == nil
-                    end, function(si, item, sub)
-                        if item.val == "custom" then
-                            si._noCapture = true
-                            local swatchBtn, refreshSwatch = CludesUI.BuildColorSwatch(
-                                si,
-                                si:GetFrameLevel() + 3,
-                                function()
-                                    return ss.cdSwipeColorR or 1,
-                                        ss.cdSwipeColorG or 0.776,
-                                        ss.cdSwipeColorB or 0.376,
-                                        1
-                                end,
-                                function(r, g, b)
-                                    ss.cdSwipeColorR = r
-                                    ss.cdSwipeColorG = g
-                                    ss.cdSwipeColorB = b
-                                    if mod.RefreshCDMIconAppearance then
-                                        mod.RefreshCDMIconAppearance(barId)
-                                    end
-                                end,
-                                false,
-                                14
-                            )
-                            swatchBtn:SetPoint("RIGHT", si, "RIGHT", -8, 0)
-                            si._refreshSwatch = refreshSwatch
-                            swatchBtn:HookScript("PreClick", function()
-                                EnsureSS()
-                                ss.cdSwipeColor = "custom"
-                                if not ss.cdSwipeColorR then
-                                    ss.cdSwipeColorR = 1
-                                    ss.cdSwipeColorG = 0.776
-                                    ss.cdSwipeColorB = 0.376
-                                end
-                                if sub._refreshSelection then
-                                    sub._refreshSelection()
-                                end
-                            end)
-                        end
-                    end, {
-                        apply = {
-                            keys = { "cdSwipeColor", "cdSwipeColorR", "cdSwipeColorG", "cdSwipeColorB" },
-                            write = function(t, v)
-                                t.cdSwipeColor = v
-                                if v == "custom" then
-                                    t.cdSwipeColorR = ss.cdSwipeColorR or 1
-                                    t.cdSwipeColorG = ss.cdSwipeColorG or 0.776
-                                    t.cdSwipeColorB = ss.cdSwipeColorB or 0.376
-                                else
-                                    t.cdSwipeColorR = nil
-                                    t.cdSwipeColorG = nil
-                                    t.cdSwipeColorB = nil
-                                end
-                            end,
-                        },
-                    })
+                    MakeSubnavRow(
+                        "Cooldown Swipe",
+                        CD_SWIPE_COLOR_ITEMS,
+                        function()
+                            return ss.cdSwipeColor
+                        end,
+                        function(v)
+                            EnsureSS()
+                            SetOwn("cdSwipeColor", v)
+                            if v == "custom" and not ss.cdSwipeColorR then
+                                ss.cdSwipeColorR = 1
+                                ss.cdSwipeColorG = 0.776
+                                ss.cdSwipeColorB = 0.376
+                            end
+                            if mod.RefreshCDMIconAppearance then
+                                mod.RefreshCDMIconAppearance(barId)
+                            end
+                        end,
+                        function()
+                            return ss.cdSwipeColor == nil
+                        end,
+                        AB.CustomColorSwatch("cdSwipeColor", 0.776, 0.376),
+                        AB.CustomColorApply("cdSwipeColor", 0.776, 0.376)
+                    )
 
                     -- Duration Text + Charge/Stack Size: each row opens a cog popup mirroring
                     -- the bar's control. Per-icon values override the bar; untouched fields inherit (get falls back to bar).
@@ -6390,84 +6348,36 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             { val = "class", label = "Class Color" },
                             { val = "custom", label = "Custom" },
                         }
-                        local glowColorRow = MakeSubnavRow("Glow Effect Color", GLOW_COLOR_ITEMS, function()
-                            if ss.glowColor == "class" then
-                                return "class"
-                            end
-                            if ss.glowColor == "custom" then
-                                return "custom"
-                            end
-                            return nil
-                        end, function(v)
-                            EnsureSS()
-                            SetOwn("glowColor", v)
-                            if v == "custom" and not ss.glowColorR then
-                                ss.glowColorR = 1
-                                ss.glowColorG = 0.788
-                                ss.glowColorB = 0.137
-                            end
-                            if mod.RefreshCDMIconAppearance then
-                                mod.RefreshCDMIconAppearance(barId)
-                            end
-                        end, function()
-                            return ss.glowColor == nil
-                        end, function(si, item, sub)
-                            if item.val == "custom" then
-                                si._noCapture = true
-                                local swatchBtn, refreshSwatch = CludesUI.BuildColorSwatch(
-                                    si,
-                                    si:GetFrameLevel() + 3,
-                                    function()
-                                        return ss.glowColorR or 1,
-                                            ss.glowColorG or 0.788,
-                                            ss.glowColorB or 0.137,
-                                            1
-                                    end,
-                                    function(r, g, b)
-                                        ss.glowColorR = r
-                                        ss.glowColorG = g
-                                        ss.glowColorB = b
-                                        if mod.RefreshCDMIconAppearance then
-                                            mod.RefreshCDMIconAppearance(barId)
-                                        end
-                                    end,
-                                    false,
-                                    14
-                                )
-                                swatchBtn:SetPoint("RIGHT", si, "RIGHT", -8, 0)
-                                si._refreshSwatch = refreshSwatch
-                                swatchBtn:HookScript("PreClick", function()
-                                    EnsureSS()
-                                    ss.glowColor = "custom"
-                                    if not ss.glowColorR then
-                                        ss.glowColorR = 1
-                                        ss.glowColorG = 0.788
-                                        ss.glowColorB = 0.137
-                                    end
-                                    -- Keep the dropdown AND flyout open (OnUpdate cpOpen guard); re-highlight the now-selected Custom row.
-                                    if sub._refreshSelection then
-                                        sub._refreshSelection()
-                                    end
-                                end)
-                            end
-                        end, {
-                            apply = {
-                                keys = { "glowColor", "glowColorR", "glowColorG", "glowColorB" },
-                                write = function(t, v)
-                                    t.glowColor = v
-                                    if v == "custom" then
-                                        -- Push this spell's effective color.
-                                        t.glowColorR = ss.glowColorR or 1
-                                        t.glowColorG = ss.glowColorG or 0.788
-                                        t.glowColorB = ss.glowColorB or 0.137
-                                    else
-                                        t.glowColorR = nil
-                                        t.glowColorG = nil
-                                        t.glowColorB = nil
-                                    end
-                                end,
-                            },
-                        })
+                        local glowColorRow = MakeSubnavRow(
+                            "Glow Effect Color",
+                            GLOW_COLOR_ITEMS,
+                            function()
+                                if ss.glowColor == "class" then
+                                    return "class"
+                                end
+                                if ss.glowColor == "custom" then
+                                    return "custom"
+                                end
+                                return nil
+                            end,
+                            function(v)
+                                EnsureSS()
+                                SetOwn("glowColor", v)
+                                if v == "custom" and not ss.glowColorR then
+                                    ss.glowColorR = 1
+                                    ss.glowColorG = 0.788
+                                    ss.glowColorB = 0.137
+                                end
+                                if mod.RefreshCDMIconAppearance then
+                                    mod.RefreshCDMIconAppearance(barId)
+                                end
+                            end,
+                            function()
+                                return ss.glowColor == nil
+                            end,
+                            AB.CustomColorSwatch("glowColor", 0.788, 0.137),
+                            AB.CustomColorApply("glowColor", 0.788, 0.137)
+                        )
                     end -- not isCustomInjected
                 end -- isBuffBar per-icon rows
 
