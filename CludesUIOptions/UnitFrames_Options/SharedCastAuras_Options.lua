@@ -59,6 +59,14 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
     local saved, optionState = environ.db, environ.optState
     local W, SGetSupported, SSetSupported, SVal =
         context.W, context.SGetSupported, context.SSetSupported, context.SVal
+    -- Row setters over SSetSupported: the key written with the row's value, then ReloadAndUpdate() and UpdatePreview() for the Then form.
+    local function SSetSupportedRowThen(key)
+        return function(v)
+            SSetSupported(key, v)
+            ReloadAndUpdate()
+            UpdatePreview()
+        end
+    end
     local SValSupported = context.SValSupported
     -- A row getter over SValSupported: the key's value, or the default given.
     local function SValSupportedRow(key, default)
@@ -385,11 +393,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     end
                     return v
                 end,
-                set = function(v)
-                    SSetSupported("castbarKickTickEnabled", v)
-                    ReloadAndUpdate()
-                    UpdatePreview()
-                end,
+                set = SSetSupportedRowThen("castbarKickTickEnabled"),
             }
             cogRows[#cogRows + 1] = {
                 type = "toggle",
@@ -959,11 +963,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     max = 20,
                     step = 1,
                     get = SValSupportedRow("castSpellNameSize", 11),
-                    set = function(v)
-                        SSetSupported("castSpellNameSize", v)
-                        ReloadAndUpdate()
-                        UpdatePreview()
-                    end,
+                    set = SSetSupportedRowThen("castSpellNameSize"),
                 },
                 {
                     type = "slider",
@@ -972,11 +972,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     max = 50,
                     step = 1,
                     get = SValSupportedRow("castSpellNameX", 0),
-                    set = function(v)
-                        SSetSupported("castSpellNameX", v)
-                        ReloadAndUpdate()
-                        UpdatePreview()
-                    end,
+                    set = SSetSupportedRowThen("castSpellNameX"),
                 },
                 {
                     type = "slider",
@@ -985,11 +981,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     max = 50,
                     step = 1,
                     get = SValSupportedRow("castSpellNameY", 0),
-                    set = function(v)
-                        SSetSupported("castSpellNameY", v)
-                        ReloadAndUpdate()
-                        UpdatePreview()
-                    end,
+                    set = SSetSupportedRowThen("castSpellNameY"),
                 },
                 {
                     type = "toggle",
@@ -1048,11 +1040,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     max = 20,
                     step = 1,
                     get = SValSupportedRow("castDurationSize", 10),
-                    set = function(v)
-                        SSetSupported("castDurationSize", v)
-                        ReloadAndUpdate()
-                        UpdatePreview()
-                    end,
+                    set = SSetSupportedRowThen("castDurationSize"),
                 },
                 {
                     type = "slider",
@@ -1061,11 +1049,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     max = 50,
                     step = 1,
                     get = SValSupportedRow("castDurationX", 0),
-                    set = function(v)
-                        SSetSupported("castDurationX", v)
-                        ReloadAndUpdate()
-                        UpdatePreview()
-                    end,
+                    set = SSetSupportedRowThen("castDurationX"),
                 },
                 {
                     type = "slider",
@@ -1074,11 +1058,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     max = 50,
                     step = 1,
                     get = SValSupportedRow("castDurationY", 0),
-                    set = function(v)
-                        SSetSupported("castDurationY", v)
-                        ReloadAndUpdate()
-                        UpdatePreview()
-                    end,
+                    set = SSetSupportedRowThen("castDurationY"),
                 },
             }
             if optionState.selectedUnit == "player" then
@@ -1173,11 +1153,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
             type = "toggle",
             text = "Reverse Fill",
             getValue = SValSupportedRow("castReverseFill", false),
-            setValue = function(v)
-                SSetSupported("castReverseFill", v)
-                ReloadAndUpdate()
-                UpdatePreview()
-            end,
+            setValue = SSetSupportedRowThen("castReverseFill"),
         })
         posY = posY - hgt
         -- Inline cog on Spell Target Size: toggle + X/Y offsets
@@ -1193,11 +1169,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                         max = 20,
                         step = 1,
                         get = SValSupportedRow("castSpellTargetSize", 10),
-                        set = function(v)
-                            SSetSupported("castSpellTargetSize", v)
-                            ReloadAndUpdate()
-                            UpdatePreview()
-                        end,
+                        set = SSetSupportedRowThen("castSpellTargetSize"),
                     },
                     {
                         type = "slider",
@@ -1206,11 +1178,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                         max = 50,
                         step = 1,
                         get = SValSupportedRow("castSpellTargetX", 0),
-                        set = function(v)
-                            SSetSupported("castSpellTargetX", v)
-                            ReloadAndUpdate()
-                            UpdatePreview()
-                        end,
+                        set = SSetSupportedRowThen("castSpellTargetX"),
                     },
                     {
                         type = "slider",
@@ -1219,11 +1187,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                         max = 50,
                         step = 1,
                         get = SValSupportedRow("castSpellTargetY", 0),
-                        set = function(v)
-                            SSetSupported("castSpellTargetY", v)
-                            ReloadAndUpdate()
-                            UpdatePreview()
-                        end,
+                        set = SSetSupportedRowThen("castSpellTargetY"),
                     },
                 },
             })
@@ -1580,6 +1544,12 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
     local saved, frameList, optionState = environ.db, environ.frames, environ.optState
     local W, SApplySupport, SDB, SGet = context.W, context.SApplySupport, context.SDB, context.SGet
     local SSetSupported, SVal, SValSupported = context.SSetSupported, context.SVal, context.SValSupported
+    -- Row setters over SSetSupported: the key written with the row's value.
+    local function SSetSupportedRow(key)
+        return function(v)
+            SSetSupported(key, v)
+        end
+    end
     -- A row getter over SValSupported: the key's value, or the default given.
     local function SValSupportedRow(key, default)
         return function()
