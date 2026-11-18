@@ -61,6 +61,18 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
     local optionState, Pix, ReloadAndUpdate, SGet =
         environ.optState, environ.PP, environ.ReloadAndUpdate, environ.SGet
     local SSet, SVal, SWrite = environ.SSet, environ.SVal, environ.SWrite
+    -- A row getter over SVal: the key's value, or the default given.
+    local function SValRow(key, default)
+        return function()
+            return SVal(key, default)
+        end
+    end
+    -- Row setters over SSet: the key written with the row's value.
+    local function SSetRow(key)
+        return function(v)
+            SSet(key, v)
+        end
+    end
     local _, hgt, heading
     local row
     local _secY = posY -- section start tracker
@@ -226,12 +238,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 return not SVal("showMissingBuffs", true)
             end,
             disabledTooltip = "Missing Buffs",
-            getValue = function()
-                return SVal("missingBuffsSize", 22)
-            end,
-            setValue = function(val)
-                SSet("missingBuffsSize", val)
-            end,
+            getValue = SValRow("missingBuffsSize", 22),
+            setValue = SSetRow("missingBuffsSize"),
         })
         posY = posY - hgt
         do
@@ -455,9 +463,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         return not SVal("missingBuffsThorns", true)
                     end,
                     disabledTooltip = "Thorns",
-                    get = function()
-                        return SVal("missingBuffsThornsTank", false)
-                    end,
+                    get = SValRow("missingBuffsThornsTank", false),
                     set = function(val)
                         SSet("missingBuffsThornsTank", val and true or false)
                     end,
@@ -483,12 +489,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return SVal("missingBuffsOffsetX", 0)
-                    end,
-                    set = function(val)
-                        SSet("missingBuffsOffsetX", val)
-                    end,
+                    get = SValRow("missingBuffsOffsetX", 0),
+                    set = SSetRow("missingBuffsOffsetX"),
                 },
                 {
                     type = "slider",
@@ -496,12 +498,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return SVal("missingBuffsOffsetY", 0)
-                    end,
-                    set = function(val)
-                        SSet("missingBuffsOffsetY", val)
-                    end,
+                    get = SValRow("missingBuffsOffsetY", 0),
+                    set = SSetRow("missingBuffsOffsetY"),
                 },
             }
             -- The icons' glow: the shared glow controls (also listed on
@@ -579,9 +577,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         end,
         disabledTooltip = "Role Text",
         requireState = "disabled",
-        getValue = function()
-            return SVal("roleIconStyle", "modern")
-        end,
+        getValue = SValRow("roleIconStyle", "modern"),
         setValue = function(val)
             SSet("roleIconStyle", val)
             CludesUI:RefreshPage()
@@ -658,9 +654,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     type = "toggle",
                     label = "Role Text",
                     tooltip = "Show Healer, Tank, or DPS text instead of the role icon, using the same size, position, and Show Role settings.",
-                    get = function()
-                        return SVal("roleText", false)
-                    end,
+                    get = SValRow("roleText", false),
                     set = function(val)
                         SSet("roleText", val)
                         if mod._UpdateRoleIcons then
@@ -673,9 +667,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     type = "toggle",
                     label = "Hide In Combat",
                     tooltip = "Hide role icons while you are in combat.",
-                    get = function()
-                        return SVal("roleIconHideInCombat", false)
-                    end,
+                    get = SValRow("roleIconHideInCombat", false),
                     set = function(val)
                         SSet("roleIconHideInCombat", val)
                         if mod._UpdateRoleIcons then
@@ -687,12 +679,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     type = "toggle",
                     label = "Show Behind Border",
                     tooltip = "Draw role icons behind the frame border, including the hover and target highlight.",
-                    get = function()
-                        return SVal("roleIconBehindBorder", false)
-                    end,
-                    set = function(val)
-                        SSet("roleIconBehindBorder", val)
-                    end,
+                    get = SValRow("roleIconBehindBorder", false),
+                    set = SSetRow("roleIconBehindBorder"),
                 },
             },
         })
@@ -734,12 +722,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             requireState = function()
                 return RoleAttached() and "disabled" or nil
             end,
-            getValue = function()
-                return SVal("roleIconPosition", "bottomleft")
-            end,
-            setValue = function(val)
-                SSet("roleIconPosition", val)
-            end,
+            getValue = SValRow("roleIconPosition", "bottomleft"),
+            setValue = SSetRow("roleIconPosition"),
         }),
         {
             type = "slider",
@@ -751,12 +735,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 return not SVal("roleText", false) and SVal("roleIconStyle", "modern") == "none"
             end,
             disabledTooltip = "Role Icons",
-            getValue = function()
-                return SVal("roleIconSize", 14)
-            end,
-            setValue = function(val)
-                SSet("roleIconSize", val)
-            end,
+            getValue = SValRow("roleIconSize", 14),
+            setValue = SSetRow("roleIconSize"),
         }
     )
     posY = posY - hgt
@@ -774,12 +754,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return SVal("roleIconOffsetX", 0)
-                    end,
-                    set = function(val)
-                        SSet("roleIconOffsetX", val)
-                    end,
+                    get = SValRow("roleIconOffsetX", 0),
+                    set = SSetRow("roleIconOffsetX"),
                 },
                 {
                     type = "slider",
@@ -787,12 +763,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return SVal("roleIconOffsetY", 0)
-                    end,
-                    set = function(val)
-                        SSet("roleIconOffsetY", val)
-                    end,
+                    get = SValRow("roleIconOffsetY", 0),
+                    set = SSetRow("roleIconOffsetY"),
                 },
             },
         })
@@ -852,12 +824,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             return not SVal("showRaidMarker", true)
         end,
         disabledTooltip = "Marker Position",
-        getValue = function()
-            return SVal("raidMarkerSize", 16)
-        end,
-        setValue = function(val)
-            SSet("raidMarkerSize", val)
-        end,
+        getValue = SValRow("raidMarkerSize", 16),
+        setValue = SSetRow("raidMarkerSize"),
     })
     posY = posY - hgt
 
@@ -872,12 +840,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return SVal("raidMarkerOffsetX", 0)
-                    end,
-                    set = function(val)
-                        SSet("raidMarkerOffsetX", val)
-                    end,
+                    get = SValRow("raidMarkerOffsetX", 0),
+                    set = SSetRow("raidMarkerOffsetX"),
                 },
                 {
                     type = "slider",
@@ -885,12 +849,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return SVal("raidMarkerOffsetY", 0)
-                    end,
-                    set = function(val)
-                        SSet("raidMarkerOffsetY", val)
-                    end,
+                    get = SValRow("raidMarkerOffsetY", 0),
+                    set = SSetRow("raidMarkerOffsetY"),
                 },
             },
         })
@@ -929,12 +889,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 text = "Ready Check / Summon / Rez",
                 values = readyCheckPositionValues,
                 order = readyCheckPositionOrder,
-                getValue = function()
-                    return SVal("readyCheckPosition", "center")
-                end,
-                setValue = function(val)
-                    SSet("readyCheckPosition", val)
-                end,
+                getValue = SValRow("readyCheckPosition", "center"),
+                setValue = SSetRow("readyCheckPosition"),
             }),
             {
                 type = "slider",
@@ -942,12 +898,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 min = 8,
                 max = 40,
                 step = 1,
-                getValue = function()
-                    return SVal("readyCheckSize", 20)
-                end,
-                setValue = function(val)
-                    SSet("readyCheckSize", val)
-                end,
+                getValue = SValRow("readyCheckSize", 20),
+                setValue = SSetRow("readyCheckSize"),
             }
         )
         posY = posY - hgt
@@ -959,32 +911,20 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     {
                         type = "toggle",
                         label = "Show Ready Check",
-                        get = function()
-                            return SVal("showReadyCheck", true)
-                        end,
-                        set = function(val)
-                            SSet("showReadyCheck", val)
-                        end,
+                        get = SValRow("showReadyCheck", true),
+                        set = SSetRow("showReadyCheck"),
                     },
                     {
                         type = "toggle",
                         label = "Show Incoming Summon",
-                        get = function()
-                            return SVal("showSummonPending", true)
-                        end,
-                        set = function(val)
-                            SSet("showSummonPending", val)
-                        end,
+                        get = SValRow("showSummonPending", true),
+                        set = SSetRow("showSummonPending"),
                     },
                     {
                         type = "toggle",
                         label = "Show Incoming Resurrection",
-                        get = function()
-                            return SVal("showIncomingRez", true)
-                        end,
-                        set = function(val)
-                            SSet("showIncomingRez", val)
-                        end,
+                        get = SValRow("showIncomingRez", true),
+                        set = SSetRow("showIncomingRez"),
                     },
                     {
                         type = "slider",
@@ -992,12 +932,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return SVal("readyCheckOffsetX", 0)
-                        end,
-                        set = function(val)
-                            SSet("readyCheckOffsetX", val)
-                        end,
+                        get = SValRow("readyCheckOffsetX", 0),
+                        set = SSetRow("readyCheckOffsetX"),
                     },
                     {
                         type = "slider",
@@ -1005,12 +941,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return SVal("readyCheckOffsetY", 0)
-                        end,
-                        set = function(val)
-                            SSet("readyCheckOffsetY", val)
-                        end,
+                        get = SValRow("readyCheckOffsetY", 0),
+                        set = SSetRow("readyCheckOffsetY"),
                     },
                 },
             })
@@ -1046,24 +978,16 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             text = "Status Text",
             values = statusTextPositionValues,
             order = statusTextPositionOrder,
-            getValue = function()
-                return SVal("statusTextPosition", "center")
-            end,
-            setValue = function(val)
-                SSet("statusTextPosition", val)
-            end,
+            getValue = SValRow("statusTextPosition", "center"),
+            setValue = SSetRow("statusTextPosition"),
         }, {
             type = "slider",
             text = "Text Size",
             min = 6,
             max = 30,
             step = 1,
-            getValue = function()
-                return SVal("statusTextSize", 14)
-            end,
-            setValue = function(val)
-                SSet("statusTextSize", val)
-            end,
+            getValue = SValRow("statusTextSize", 14),
+            setValue = SSetRow("statusTextSize"),
         })
         posY = posY - hgt
         if not CludesUI._prebuilding then
@@ -1074,9 +998,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     {
                         type = "toggle",
                         label = "Show AFK",
-                        get = function()
-                            return SVal("statusShowAFK", false)
-                        end,
+                        get = SValRow("statusShowAFK", false),
                         set = function(val)
                             SSet("statusShowAFK", val)
                             ReloadAndUpdate()
@@ -1088,12 +1010,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return SVal("statusTextOffsetX", 0)
-                        end,
-                        set = function(val)
-                            SSet("statusTextOffsetX", val)
-                        end,
+                        get = SValRow("statusTextOffsetX", 0),
+                        set = SSetRow("statusTextOffsetX"),
                     },
                     {
                         type = "slider",
@@ -1101,12 +1019,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return SVal("statusTextOffsetY", 0)
-                        end,
-                        set = function(val)
-                            SSet("statusTextOffsetY", val)
-                        end,
+                        get = SValRow("statusTextOffsetY", 0),
+                        set = SSetRow("statusTextOffsetY"),
                     },
                 },
             })
@@ -1195,12 +1109,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 return not SVal("showLeaderIcon", false)
             end,
             disabledTooltip = "Leader Icon",
-            getValue = function()
-                return SVal("leaderIconSize", 14)
-            end,
-            setValue = function(val)
-                SSet("leaderIconSize", val)
-            end,
+            getValue = SValRow("leaderIconSize", 14),
+            setValue = SSetRow("leaderIconSize"),
         })
         posY = posY - hgt
         do
@@ -1212,9 +1122,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         type = "toggle",
                         label = "Show In Combat",
                         tooltip = "Show the leader/assistant icon while you are in combat. Disable to hide it during combat.",
-                        get = function()
-                            return SVal("showLeaderIconInCombat", true)
-                        end,
+                        get = SValRow("showLeaderIconInCombat", true),
                         set = function(val)
                             SSet("showLeaderIconInCombat", val)
                             if mod._UpdateLeaderIcons then
@@ -1228,12 +1136,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return SVal("leaderIconOffsetX", 0)
-                        end,
-                        set = function(val)
-                            SSet("leaderIconOffsetX", val)
-                        end,
+                        get = SValRow("leaderIconOffsetX", 0),
+                        set = SSetRow("leaderIconOffsetX"),
                     },
                     {
                         type = "slider",
@@ -1241,12 +1145,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return SVal("leaderIconOffsetY", 0)
-                        end,
-                        set = function(val)
-                            SSet("leaderIconOffsetY", val)
-                        end,
+                        get = SValRow("leaderIconOffsetY", 0),
+                        set = SSetRow("leaderIconOffsetY"),
                     },
                 },
             })
@@ -1323,12 +1223,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 return not SVal("showCombatIndicator", false)
             end,
             disabledTooltip = "Combat Icon",
-            getValue = function()
-                return SVal("combatIndicatorSize", 16)
-            end,
-            setValue = function(val)
-                SSet("combatIndicatorSize", val)
-            end,
+            getValue = SValRow("combatIndicatorSize", 16),
+            setValue = SSetRow("combatIndicatorSize"),
         })
         posY = posY - hgt
         if not CludesUI._prebuilding then
@@ -1341,9 +1237,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         label = "Style",
                         values = combatStyleValues,
                         order = combatStyleOrder,
-                        get = function()
-                            return SVal("combatIndicatorStyle", "standard")
-                        end,
+                        get = SValRow("combatIndicatorStyle", "standard"),
                         set = function(val)
                             SSet("combatIndicatorStyle", val)
                             if mod._UpdateCombatIcons then
@@ -1377,12 +1271,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return SVal("combatIndicatorOffsetX", 0)
-                        end,
-                        set = function(val)
-                            SSet("combatIndicatorOffsetX", val)
-                        end,
+                        get = SValRow("combatIndicatorOffsetX", 0),
+                        set = SSetRow("combatIndicatorOffsetX"),
                     },
                     {
                         type = "slider",
@@ -1390,12 +1280,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return SVal("combatIndicatorOffsetY", 0)
-                        end,
-                        set = function(val)
-                            SSet("combatIndicatorOffsetY", val)
-                        end,
+                        get = SValRow("combatIndicatorOffsetY", 0),
+                        set = SSetRow("combatIndicatorOffsetY"),
                     },
                 },
             })
@@ -1424,24 +1310,16 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             gnRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Show Group Numbers",
-                getValue = function()
-                    return SVal("showGroupNumbers", false)
-                end,
-                setValue = function(val)
-                    SSet("showGroupNumbers", val)
-                end,
+                getValue = SValRow("showGroupNumbers", false),
+                setValue = SSetRow("showGroupNumbers"),
             }, {
                 type = "slider",
                 text = "Number Size",
                 min = 6,
                 max = 30,
                 step = 1,
-                getValue = function()
-                    return SVal("groupNumberSize", 10)
-                end,
-                setValue = function(val)
-                    SSet("groupNumberSize", val)
-                end,
+                getValue = SValRow("groupNumberSize", 10),
+                setValue = SSetRow("groupNumberSize"),
             })
             posY = posY - hgt
             if not CludesUI._prebuilding then
@@ -1470,12 +1348,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function()
-                                return SVal("groupNumberOffsetX", 0)
-                            end,
-                            set = function(val)
-                                SSet("groupNumberOffsetX", val)
-                            end,
+                            get = SValRow("groupNumberOffsetX", 0),
+                            set = SSetRow("groupNumberOffsetX"),
                         },
                         {
                             type = "slider",
@@ -1483,12 +1357,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function()
-                                return SVal("groupNumberOffsetY", 0)
-                            end,
-                            set = function(val)
-                                SSet("groupNumberOffsetY", val)
-                            end,
+                            get = SValRow("groupNumberOffsetY", 0),
+                            set = SSetRow("groupNumberOffsetY"),
                         },
                     },
                 })
@@ -1554,12 +1424,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 return not SVal("showPingMarker", true)
             end,
             disabledTooltip = "Ping Marker",
-            getValue = function()
-                return SVal("pingMarkerSize", 30)
-            end,
-            setValue = function(val)
-                SSet("pingMarkerSize", val)
-            end,
+            getValue = SValRow("pingMarkerSize", 30),
+            setValue = SSetRow("pingMarkerSize"),
         })
         posY = posY - hgt
         if not CludesUI._prebuilding then
@@ -1573,12 +1439,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return SVal("pingMarkerOffsetX", 0)
-                        end,
-                        set = function(val)
-                            SSet("pingMarkerOffsetX", val)
-                        end,
+                        get = SValRow("pingMarkerOffsetX", 0),
+                        set = SSetRow("pingMarkerOffsetX"),
                     },
                     {
                         type = "slider",
@@ -1586,12 +1448,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return SVal("pingMarkerOffsetY", 0)
-                        end,
-                        set = function(val)
-                            SSet("pingMarkerOffsetY", val)
-                        end,
+                        get = SValRow("pingMarkerOffsetY", 0),
+                        set = SSetRow("pingMarkerOffsetY"),
                     },
                 },
             })
@@ -1711,9 +1569,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         text = "Dispel Overlay",
         values = dispelOverlayValues,
         order = dispelOverlayOrder,
-        getValue = function()
-            return SVal("dispelOverlay", "fill")
-        end,
+        getValue = SValRow("dispelOverlay", "fill"),
         setValue = function(val)
             SSet("dispelOverlay", val)
             CludesUI:RefreshPage()
@@ -1728,12 +1584,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             return SVal("dispelOverlay", "fill") == "none"
         end,
         disabledTooltip = "Dispel Overlay",
-        getValue = function()
-            return SVal("dispelOverlayOpacity", 100)
-        end,
-        setValue = function(val)
-            SSet("dispelOverlayOpacity", val)
-        end,
+        getValue = SValRow("dispelOverlayOpacity", 100),
+        setValue = SSetRow("dispelOverlayOpacity"),
     })
     posY = posY - hgt
 
@@ -1767,12 +1619,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         min = 0,
         max = 4,
         step = 1,
-        getValue = function()
-            return SVal("dispelBorderSize", 2)
-        end,
-        setValue = function(val)
-            SSet("dispelBorderSize", val)
-        end,
+        getValue = SValRow("dispelBorderSize", 2),
+        setValue = SSetRow("dispelBorderSize"),
     }, {
         type = "dropdown",
         text = "Type Icon Position",
@@ -1810,12 +1658,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     min = 8,
                     max = 48,
                     step = 1,
-                    get = function()
-                        return SVal("dispelIconSize", 16)
-                    end,
-                    set = function(val)
-                        SSet("dispelIconSize", val)
-                    end,
+                    get = SValRow("dispelIconSize", 16),
+                    set = SSetRow("dispelIconSize"),
                 },
                 {
                     type = "slider",
@@ -1823,12 +1667,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return SVal("dispelIconOffsetX", 0)
-                    end,
-                    set = function(val)
-                        SSet("dispelIconOffsetX", val)
-                    end,
+                    get = SValRow("dispelIconOffsetX", 0),
+                    set = SSetRow("dispelIconOffsetX"),
                 },
                 {
                     type = "slider",
@@ -1836,12 +1676,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return SVal("dispelIconOffsetY", 0)
-                    end,
-                    set = function(val)
-                        SSet("dispelIconOffsetY", val)
-                    end,
+                    get = SValRow("dispelIconOffsetY", 0),
+                    set = SSetRow("dispelIconOffsetY"),
                 },
             },
         })
@@ -1860,12 +1696,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                     max = 4,
                     step = 1,
                     tooltip = "Thickness in physical pixels. -1 follows the Debuff Manager's Border setting, 0 hides the dispel color border.",
-                    get = function()
-                        return SVal("dispelIconBorderSize", 2)
-                    end,
-                    set = function(val)
-                        SSet("dispelIconBorderSize", val)
-                    end,
+                    get = SValRow("dispelIconBorderSize", 2),
+                    set = SSetRow("dispelIconBorderSize"),
                 },
                 {
                     type = "toggle",
@@ -2007,9 +1839,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Enable Top Name Bar",
-            getValue = function()
-                return SVal("topNameBarEnabled", false)
-            end,
+            getValue = SValRow("topNameBarEnabled", false),
             setValue = CludesUI.SectionToggleSetValue(function(val)
                 SSet("topNameBarEnabled", val)
             end),
@@ -2019,12 +1849,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
             min = 8,
             max = 40,
             step = 1,
-            getValue = function()
-                return SVal("topNameBarHeight", 20)
-            end,
-            setValue = function(val)
-                SSet("topNameBarHeight", val)
-            end,
+            getValue = SValRow("topNameBarHeight", 20),
+            setValue = SSetRow("topNameBarHeight"),
         })
         posY = posY - hgt
 
@@ -2045,12 +1871,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         type = "toggle",
                         label = "Divider",
                         tooltip = "Separates the name bar from the health bar.",
-                        get = function()
-                            return SVal("topNameBarDivider", false)
-                        end,
-                        set = function(val)
-                            SSet("topNameBarDivider", val)
-                        end,
+                        get = SValRow("topNameBarDivider", false),
+                        set = SSetRow("topNameBarDivider"),
                     },
                     {
                         type = "toggle",
@@ -2061,12 +1883,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                         end,
                         disabledTooltip = "Requires Divider.",
                         rawTooltip = true,
-                        get = function()
-                            return SVal("topNameBarDividerMatchColor", false)
-                        end,
-                        set = function(val)
-                            SSet("topNameBarDividerMatchColor", val)
-                        end,
+                        get = SValRow("topNameBarDividerMatchColor", false),
+                        set = SSetRow("topNameBarDividerMatchColor"),
                     },
                 },
             })
@@ -2080,24 +1898,16 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 min = 0,
                 max = 100,
                 step = 1,
-                getValue = function()
-                    return SVal("topNameBarBgOpacity", 80)
-                end,
-                setValue = function(val)
-                    SSet("topNameBarBgOpacity", val)
-                end,
+                getValue = SValRow("topNameBarBgOpacity", 80),
+                setValue = SSetRow("topNameBarBgOpacity"),
             }, {
                 type = "slider",
                 text = "Text Size",
                 min = 6,
                 max = 30,
                 step = 1,
-                getValue = function()
-                    return SVal("topNameBarTextSize", 11)
-                end,
-                setValue = function(val)
-                    SSet("topNameBarTextSize", val)
-                end,
+                getValue = SValRow("topNameBarTextSize", 11),
+                setValue = SSetRow("topNameBarTextSize"),
             })
             posY = posY - hgt
             if not CludesUI._prebuilding then
@@ -2126,12 +1936,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function()
-                                return SVal("topNameBarTextOffsetX", 0)
-                            end,
-                            set = function(val)
-                                SSet("topNameBarTextOffsetX", val)
-                            end,
+                            get = SValRow("topNameBarTextOffsetX", 0),
+                            set = SSetRow("topNameBarTextOffsetX"),
                         },
                         {
                             type = "slider",
@@ -2139,12 +1945,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function()
-                                return SVal("topNameBarTextOffsetY", 0)
-                            end,
-                            set = function(val)
-                                SSet("topNameBarTextOffsetY", val)
-                            end,
+                            get = SValRow("topNameBarTextOffsetY", 0),
+                            set = SSetRow("topNameBarTextOffsetY"),
                         },
                     },
                 })
@@ -2157,22 +1959,14 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 text = "Alignment & Color",
                 values = { center = "Center", left = "Left", right = "Right" },
                 order = { "center", "left", "right" },
-                getValue = function()
-                    return SVal("topNameBarTextAlign", "center")
-                end,
-                setValue = function(val)
-                    SSet("topNameBarTextAlign", val)
-                end,
+                getValue = SValRow("topNameBarTextAlign", "center"),
+                setValue = SSetRow("topNameBarTextAlign"),
             }, {
                 type = "toggle",
                 text = "Show on Bottom",
                 tooltip = "Places the bar at the bottom of the frame instead of the top.",
-                getValue = function()
-                    return SVal("topNameBarBottom", false)
-                end,
-                setValue = function(val)
-                    SSet("topNameBarBottom", val)
-                end,
+                getValue = SValRow("topNameBarBottom", false),
+                setValue = SSetRow("topNameBarBottom"),
             })
             posY = posY - hgt
             -- Custom rightmost (opens picker), class leftmost. Clicking switches topNameBarTextColorMode; the inactive one dims. Custom is added FIRST so it sits next to the dropdown.
@@ -2241,9 +2035,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                 type = "toggle",
                 text = "Attach Role Icons",
                 tooltip = "Places role icons on the Top Name Bar, in the same spot on every frame whether or not it shows a power bar.",
-                getValue = function()
-                    return SVal("roleIconOnNameBar", false)
-                end,
+                getValue = SValRow("roleIconOnNameBar", false),
                 setValue = function(val)
                     SSet("roleIconOnNameBar", val)
                     CludesUI:RefreshPage()
@@ -2263,12 +2055,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                             label = "Position",
                             values = CludesUI.POSITION_GRID_VALUES,
                             order = CludesUI.POSITION_GRID_ORDER,
-                            get = function()
-                                return SVal("roleNameBarPosition", "left")
-                            end,
-                            set = function(val)
-                                SSet("roleNameBarPosition", val)
-                            end,
+                            get = SValRow("roleNameBarPosition", "left"),
+                            set = SSetRow("roleNameBarPosition"),
                         },
                         {
                             type = "slider",
@@ -2276,12 +2064,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function()
-                                return SVal("roleNameBarOffsetX", 0)
-                            end,
-                            set = function(val)
-                                SSet("roleNameBarOffsetX", val)
-                            end,
+                            get = SValRow("roleNameBarOffsetX", 0),
+                            set = SSetRow("roleNameBarOffsetX"),
                         },
                         {
                             type = "slider",
@@ -2289,12 +2073,8 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function()
-                                return SVal("roleNameBarOffsetY", 0)
-                            end,
-                            set = function(val)
-                                SSet("roleNameBarOffsetY", val)
-                            end,
+                            get = SValRow("roleNameBarOffsetY", 0),
+                            set = SSetRow("roleNameBarOffsetY"),
                         },
                     },
                 })
@@ -3053,9 +2833,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         getValue = function()
             return CurTooltipMode()
         end,
-        setValue = function(val)
-            SSet("tooltipMode", val)
-        end,
+        setValue = SSetRow("tooltipMode"),
     })
     posY = posY - hgt
     -- Cog: buff/HoT aura-icon tooltips (Buff Manager), hidden by default and opt-in here. This is the ONLY gate on the aura tip: the dropdown's tooltip mode governs the UNIT tooltip and must NOT veto an aura tip enabled here (see ns.RaidFrameTooltipAllowed).
@@ -3662,9 +3440,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         type = "toggle",
         text = "Right Mouse Camera Unlock",
         tooltip = "Allows free camera movement while holding and dragging right mouse button over raid and party frames. Right-click tap still opens the unit menu.",
-        getValue = function()
-            return SVal("freeRightClickCamera", false)
-        end,
+        getValue = SValRow("freeRightClickCamera", false),
         setValue = function(val)
             SSet("freeRightClickCamera", val)
             if mod.FRCM_Refresh then
@@ -3677,9 +3453,7 @@ local function BuildVisualIndicators(hostFrame, posY, W, onSection, EYE, CustomB
         tooltip = "Controls the display order of raid and party frames. Set higher to show above other elements.",
         values = CludesUI.FRAME_STRATA_LABELS,
         order = CludesUI.FRAME_STRATA_ORDER_BASE,
-        getValue = function()
-            return SVal("frameStrata", "LOW")
-        end,
+        getValue = SValRow("frameStrata", "LOW"),
         setValue = function(val)
             -- Reload after changing strata to restore child frame levels.
             SWrite("frameStrata", val)
