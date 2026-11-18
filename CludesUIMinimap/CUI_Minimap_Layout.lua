@@ -39,9 +39,9 @@ local SetMOEvaluate = Inner.SetMOEvaluate
 
 -- Shared state: one copy per file. A write goes through the Set<Name>
 -- function of ns._internals, which hands the value to every copy.
-local flyoutToggle
+local flyoutBtn
 Inner.flyoutToggleSetters[#Inner.flyoutToggleSetters + 1] = function(val)
-    flyoutToggle = val
+    flyoutBtn = val
 end
 local flyoutPanel
 Inner.flyoutPanelSetters[#Inner.flyoutPanelSetters + 1] = function(val)
@@ -59,9 +59,9 @@ local coordTicker
 Inner.coordTickerSetters[#Inner.coordTickerSetters + 1] = function(val)
     coordTicker = val
 end
-local clockBg
+local clockBack
 Inner.clockBgSetters[#Inner.clockBgSetters + 1] = function(val)
-    clockBg = val
+    clockBack = val
 end
 
 -- Assigned below; SetMOEvaluate hands it to the earlier files. It runs once,
@@ -85,19 +85,19 @@ do
             watch:UnregisterEvent("GLOBAL_MOUSE_UP")
         end
     end
-    local function MenuOpen(blizBtn)
-        return blizBtn.menu ~= nil and blizBtn.menu:IsShown()
+    local function MenuOpen(stockButton)
+        return stockButton.menu ~= nil and stockButton.menu:IsShown()
     end
     -- After our click opened it: closed by something else (a release off ours) forgets it.
-    function SKIN._TrackingMenuOpened(blizBtn, ours)
-        opened = MenuOpen(blizBtn)
+    function SKIN._TrackingMenuOpened(stockButton, ours)
+        opened = MenuOpen(stockButton)
         if not opened then
             return
         end
         if not watch then
             watch = CreateFrame("Frame")
             watch:SetScript("OnEvent", function()
-                if not MenuOpen(blizBtn) and not ours:IsMouseOver() then
+                if not MenuOpen(stockButton) and not ours:IsMouseOver() then
                     Done()
                 end
             end)
@@ -105,22 +105,22 @@ do
         watch:RegisterEvent("GLOBAL_MOUSE_UP")
     end
     -- True when this click closed the menu our click opened (it is gone now).
-    function SKIN._TrackingMenuClosedByPress(blizBtn)
-        if not opened or MenuOpen(blizBtn) then
+    function SKIN._TrackingMenuClosedByPress(stockButton)
+        if not opened or MenuOpen(stockButton) then
             return false
         end
         Done()
         return true
     end
     -- Closed while the mouse was away (Escape): forgotten on the way back in.
-    function SKIN._TrackingMenuForget(blizBtn)
-        if opened and not MenuOpen(blizBtn) then
+    function SKIN._TrackingMenuForget(stockButton)
+        if opened and not MenuOpen(stockButton) then
             Done()
         end
     end
 end
 
-local function BuildCustomIndicators(minimap)
+local function BuildCustomIndicators(mapFrame)
     if _customIndicators.tracking then
         -- Re-apply accent to the friends icon: a later ApplyAll (e.g. PLAYER_ENTERING_WORLD, after
         -- theme resolution mutates CLUDES_GREEN) must override the create-once read below, since creation can race theme resolution (same pattern as CreateFlyoutToggle).
@@ -135,7 +135,7 @@ local function BuildCustomIndicators(minimap)
     -- Tracking
     _customIndicators.tracking = CreateIndicatorBtn(
         "_tracking",
-        minimap,
+        mapFrame,
         "UI-HUD-Minimap-Tracking-Up",
         "UI-HUD-Minimap-Tracking-Mouseover",
         "UI-HUD-Minimap-Tracking-Down",
@@ -146,31 +146,31 @@ local function BuildCustomIndicators(minimap)
                 SKIN._TrackingClickState()
                 return
             end
-            local blizBtn = MinimapCluster and MinimapCluster.Tracking and MinimapCluster.Tracking.Button
-            if not blizBtn or not blizBtn.OpenMenu then
+            local stockButton = MinimapCluster and MinimapCluster.Tracking and MinimapCluster.Tracking.Button
+            if not stockButton or not stockButton.OpenMenu then
                 return
             end
 
-            if blizBtn.menu and blizBtn.menu:IsShown() then
-                blizBtn.menu:Hide()
+            if stockButton.menu and stockButton.menu:IsShown() then
+                stockButton.menu:Hide()
                 return
             end
-            if SKIN._TrackingMenuClosedByPress(blizBtn) then
+            if SKIN._TrackingMenuClosedByPress(stockButton) then
                 return
             end
 
             -- Position hidden Blizzard button at our custom button
-            blizBtn:ClearAllPoints()
-            blizBtn:SetPoint("CENTER", self, "CENTER", 0, 0)
-            blizBtn:SetAlpha(0)
-            blizBtn:EnableMouse(false)
-            blizBtn:OpenMenu()
+            stockButton:ClearAllPoints()
+            stockButton:SetPoint("CENTER", self, "CENTER", 0, 0)
+            stockButton:SetAlpha(0)
+            stockButton:EnableMouse(false)
+            stockButton:OpenMenu()
 
-            if blizBtn.menu then
-                blizBtn.menu:ClearAllPoints()
-                blizBtn.menu:SetPoint("TOPRIGHT", self, "TOPLEFT", -4, 0)
+            if stockButton.menu then
+                stockButton.menu:ClearAllPoints()
+                stockButton.menu:SetPoint("TOPRIGHT", self, "TOPLEFT", -4, 0)
             end
-            SKIN._TrackingMenuOpened(blizBtn, self)
+            SKIN._TrackingMenuOpened(stockButton, self)
         end
     )
     local trackBaseEnter = _customIndicators.tracking:GetScript("OnEnter")
@@ -183,9 +183,9 @@ local function BuildCustomIndicators(minimap)
         if SKIN._TrackingHotspotActive() then
             SKIN._TrackingClickState()
         end
-        local blizBtn = MinimapCluster and MinimapCluster.Tracking and MinimapCluster.Tracking.Button
-        if blizBtn then
-            SKIN._TrackingMenuForget(blizBtn)
+        local stockButton = MinimapCluster and MinimapCluster.Tracking and MinimapCluster.Tracking.Button
+        if stockButton then
+            SKIN._TrackingMenuForget(stockButton)
         end
         if not GetFFD(self).freeMoveJustDragged then
             CludesUI.ShowWidgetTooltip(
@@ -207,7 +207,7 @@ local function BuildCustomIndicators(minimap)
     local calPrefix = "UI-HUD-Calendar-" .. calDay
     _customIndicators.calendar = CreateIndicatorBtn(
         "_gameTime",
-        minimap,
+        mapFrame,
         calPrefix .. "-Up",
         calPrefix .. "-Mouseover",
         calPrefix .. "-Down",
@@ -262,7 +262,7 @@ local function BuildCustomIndicators(minimap)
     -- Mail (informational: tooltip + hover atlas only)
     _customIndicators.mail = CreateIndicatorBtn(
         "_mail",
-        minimap,
+        mapFrame,
         "UI-HUD-Minimap-Mail-Up",
         "UI-HUD-Minimap-Mail-Mouseover",
         nil,
@@ -302,7 +302,7 @@ local function BuildCustomIndicators(minimap)
     -- Crafting Order (informational: tooltip + hover atlas only)
     _customIndicators.crafting = CreateIndicatorBtn(
         "_crafting",
-        minimap,
+        mapFrame,
         "UI-HUD-Minimap-CraftingOrder-Up-2x",
         "UI-HUD-Minimap-CraftingOrder-Over-2x",
         "UI-HUD-Minimap-CraftingOrder-Down-2x",
@@ -349,7 +349,7 @@ local function BuildCustomIndicators(minimap)
     -- Friends Online button
     _customIndicators.friends = CreateIndicatorBtn(
         "_friends",
-        minimap,
+        mapFrame,
         FRIENDS_ATLAS,
         FRIENDS_ATLAS,
         nil,
@@ -400,8 +400,8 @@ local function BuildCustomIndicators(minimap)
     -- Neither exists on WoW Forever (no vault, no keystone portals): the buttons are
     -- never built there, every reader guards on nil, and the options drop their rows.
     if not CludesUI.IS_FOREVER then
-        _greatVaultBtn = CreateGreatVaultBtn(minimap)
-        _portalBtn = CreatePortalBtn(minimap)
+        _greatVaultBtn = CreateGreatVaultBtn(mapFrame)
+        _portalBtn = CreatePortalBtn(mapFrame)
     end
 end
 
@@ -417,55 +417,55 @@ do
     -- No clicks while its menu is open: the menu's close check sees ours under the mouse, so
     -- a press on ours closes it instead of close+reopen. Settled on release, enter and click.
     function SKIN._TrackingClickState()
-        local blizBtn = Btns()
-        if not (isActive and blizBtn) then
+        local stockButton = Btns()
+        if not (isActive and stockButton) then
             return
         end
-        local mp = SKIN.db and SKIN.db.profile.minimap
-        local shift = mp and mp.freeMoveBtns and IsShiftKeyDown()
-        blizBtn:SetMouseClickEnabled(not shift and not (blizBtn.IsMenuOpen and blizBtn:IsMenuOpen()))
+        local mapCfg = SKIN.db and SKIN.db.profile.minimap
+        local shift = mapCfg and mapCfg.freeMoveBtns and IsShiftKeyDown()
+        stockButton:SetMouseClickEnabled(not shift and not (stockButton.IsMenuOpen and stockButton:IsMenuOpen()))
     end
     -- The style is read live (no event): our button's enter and click re-check it.
     function SKIN._TrackingHotspotActive()
-        local mp = SKIN.db and SKIN.db.profile.minimap
-        if mp and isActive ~= (CludesUI.PadGamepadUI() and true or false) then
-            SyncTrackingHotspot(mp)
+        local mapCfg = SKIN.db and SKIN.db.profile.minimap
+        if mapCfg and isActive ~= (CludesUI.PadGamepadUI() and true or false) then
+            SyncTrackingHotspot(mapCfg)
         end
         return isActive
     end
     SyncTrackingHotspot = function(p)
-        local blizBtn, ours = Btns()
-        if not (blizBtn and ours) then
+        local stockButton, ours = Btns()
+        if not (stockButton and ours) then
             return
         end
         local enabled = CludesUI.PadGamepadUI() and not p.hideTrackingButton and ours:IsShown() or false
         if enabled then
             if not home then
-                local wid, hgt = blizBtn:GetSize()
-                home = { blizBtn:GetParent(), wid, hgt, blizBtn:GetPoint(1) }
+                local wid, hgt = stockButton:GetSize()
+                home = { stockButton:GetParent(), wid, hgt, stockButton:GetPoint(1) }
             end
             -- Its menu hangs from its bottom-left: the frame sits just above ours, so the menu
             -- opens beside ours (as the click handler places it); the hit rect is moved onto ours.
             local wid, hgt = ours:GetSize()
-            if blizBtn:GetParent() ~= ours then
-                blizBtn:SetParent(ours)
+            if stockButton:GetParent() ~= ours then
+                stockButton:SetParent(ours)
             end
-            blizBtn:ClearAllPoints()
-            blizBtn:SetSize(wid, hgt)
-            blizBtn:SetPoint("BOTTOMLEFT", ours, "TOPLEFT", -4, 0)
-            blizBtn:SetHitRectInsets(4, -4, hgt, -hgt)
-            blizBtn:SetAlpha(0)
-            blizBtn:SetFrameLevel(ours:GetFrameLevel() + 5)
-        elseif home and blizBtn:GetParent() == ours then
-            blizBtn:SetParent(home[1])
-            blizBtn:ClearAllPoints()
-            blizBtn:SetSize(home[2], home[3])
+            stockButton:ClearAllPoints()
+            stockButton:SetSize(wid, hgt)
+            stockButton:SetPoint("BOTTOMLEFT", ours, "TOPLEFT", -4, 0)
+            stockButton:SetHitRectInsets(4, -4, hgt, -hgt)
+            stockButton:SetAlpha(0)
+            stockButton:SetFrameLevel(ours:GetFrameLevel() + 5)
+        elseif home and stockButton:GetParent() == ours then
+            stockButton:SetParent(home[1])
+            stockButton:ClearAllPoints()
+            stockButton:SetSize(home[2], home[3])
             if home[4] then
-                blizBtn:SetPoint(home[4], home[5], home[6], home[7], home[8])
+                stockButton:SetPoint(home[4], home[5], home[6], home[7], home[8])
             end
-            blizBtn:SetHitRectInsets(0, 0, 0, 0)
-            blizBtn:SetAlpha(1)
-            blizBtn:EnableMouse(false)
+            stockButton:SetHitRectInsets(0, 0, 0, 0)
+            stockButton:SetAlpha(1)
+            stockButton:EnableMouse(false)
         end
         -- The click state is settled on every release, and on a modifier key while Free
         -- Move is on: it drags ours with Shift held, so the hotspot steps aside meanwhile.
@@ -493,7 +493,7 @@ do
             return
         end
         -- Clicks only: hover stays on ours (its tooltip and art), Blizzard's tooltip never shows.
-        blizBtn:SetMouseMotionEnabled(false)
+        stockButton:SetMouseMotionEnabled(false)
         SKIN._TrackingClickState()
     end
 end
@@ -542,50 +542,50 @@ local _inviteEvents = CreateFrame("Frame")
 local _inviteListening = false -- its two events are registered
 local _inviteSeen = 0 -- pending count already alerted (or dismissed)
 
-local function SetInviteShown(cal, show)
-    if show and not cal._invite then
+local function SetInviteShown(calendarBtn, show)
+    if show and not calendarBtn._invite then
         -- Own child frame, so the pulse fades only the notice, never the day icon.
-        local invite = CreateFrame("Frame", nil, cal)
-        invite:SetAllPoints(cal)
-        invite:SetFrameLevel(cal:GetFrameLevel() + 2)
-        invite:Hide()
-        local glow = invite:CreateTexture(nil, "OVERLAY", nil, 1)
+        local inviteIcon = CreateFrame("Frame", nil, calendarBtn)
+        inviteIcon:SetAllPoints(calendarBtn)
+        inviteIcon:SetFrameLevel(calendarBtn:GetFrameLevel() + 2)
+        inviteIcon:Hide()
+        local glow = inviteIcon:CreateTexture(nil, "OVERLAY", nil, 1)
         glow:SetTexture("Interface\\Calendar\\EventNotificationGlow")
         glow:SetBlendMode("ADD")
-        glow:SetPoint("TOPLEFT", invite, "TOPLEFT", -6, 6)
-        glow:SetPoint("BOTTOMRIGHT", invite, "BOTTOMRIGHT", 6, -6)
-        local notice = invite:CreateTexture(nil, "OVERLAY", nil, 2)
+        glow:SetPoint("TOPLEFT", inviteIcon, "TOPLEFT", -6, 6)
+        glow:SetPoint("BOTTOMRIGHT", inviteIcon, "BOTTOMRIGHT", 6, -6)
+        local notice = inviteIcon:CreateTexture(nil, "OVERLAY", nil, 2)
         notice:SetTexture("Interface\\Calendar\\EventNotification")
         notice:SetTexCoord(0.03125, 0.6484375, 0.03125, 0.8671875)
-        notice:SetAllPoints(invite)
+        notice:SetAllPoints(inviteIcon)
         -- Fade out and back in, a full cycle every two seconds; runs only while shown.
-        local pulse = invite:CreateAnimationGroup()
+        local pulse = inviteIcon:CreateAnimationGroup()
         pulse:SetLooping("BOUNCE")
         local fade = pulse:CreateAnimation("Alpha")
         fade:SetFromAlpha(1)
         fade:SetToAlpha(0)
         fade:SetDuration(1)
         fade:SetSmoothing("IN_OUT")
-        invite:SetScript("OnShow", function()
+        inviteIcon:SetScript("OnShow", function()
             pulse:Play()
         end)
-        invite:SetScript("OnHide", function()
+        inviteIcon:SetScript("OnHide", function()
             pulse:Stop()
         end)
-        cal._invite = invite
+        calendarBtn._invite = inviteIcon
     end
-    if cal._invite then
-        cal._invite:SetShown(show)
+    if calendarBtn._invite then
+        calendarBtn._invite:SetShown(show)
     end
 end
 
 SyncCalendarInvites = function()
-    local cal = _customIndicators.calendar
-    if not cal then
+    local calendarBtn = _customIndicators.calendar
+    if not calendarBtn then
         return
     end
-    local mp = SKIN.db and SKIN.db.profile.minimap
-    local enabled = mp and not mp.hideGameTime or false
+    local mapCfg = SKIN.db and SKIN.db.profile.minimap
+    local enabled = mapCfg and not mapCfg.hideGameTime or false
     if enabled ~= _inviteListening then
         _inviteListening = enabled
         if enabled then
@@ -597,7 +597,7 @@ SyncCalendarInvites = function()
     end
     if not enabled then
         _inviteSeen = 0
-        SetInviteShown(cal, false)
+        SetInviteShown(calendarBtn, false)
         return
     end
     local pending = C_Calendar.GetNumPendingInvites() or 0
@@ -607,10 +607,10 @@ SyncCalendarInvites = function()
     end
     if pending == 0 then
         _inviteSeen = 0
-        SetInviteShown(cal, false)
+        SetInviteShown(calendarBtn, false)
     elseif pending > _inviteSeen and not (CalendarFrame and CalendarFrame:IsShown()) then
         _inviteSeen = pending
-        SetInviteShown(cal, true)
+        SetInviteShown(calendarBtn, true)
     end
 end
 _inviteEvents:SetScript("OnEvent", function()
@@ -618,9 +618,9 @@ _inviteEvents:SetScript("OnEvent", function()
 end)
 
 DismissCalendarInvites = function()
-    local cal = _customIndicators.calendar
-    if cal then
-        SetInviteShown(cal, false)
+    local calendarBtn = _customIndicators.calendar
+    if calendarBtn then
+        SetInviteShown(calendarBtn, false)
     end
 end
 
@@ -635,8 +635,8 @@ local function SyncIndicatorVisibility()
                 hasMail = raw or false
             end
         end
-        local mp = SKIN.db and SKIN.db.profile.minimap
-        if mp and mp.hideMail then
+        local mapCfg = SKIN.db and SKIN.db.profile.minimap
+        if mapCfg and mapCfg.hideMail then
             hasMail = false
         end
         _customIndicators.mail:SetShown(hasMail)
@@ -744,19 +744,19 @@ end
 -- (once), set initial alpha. Called at the end of every layout so it stays current.
 local function MO_Refresh(p)
     wipe(_moButtons)
-    local heb = (p and p.hideExtraBtns) or {}
+    local headerEdge = (p and p.hideExtraBtns) or {}
     if p and p.mouseoverExtraBtns then
-        if _greatVaultBtn and not heb.greatVault then
+        if _greatVaultBtn and not headerEdge.greatVault then
             _moButtons[#_moButtons + 1] = _greatVaultBtn
         end
-        if _customIndicators.friends and not heb.friendsOnline then
+        if _customIndicators.friends and not headerEdge.friendsOnline then
             _moButtons[#_moButtons + 1] = _customIndicators.friends
         end
-        if _portalBtn and not heb.portals then
+        if _portalBtn and not headerEdge.portals then
             _moButtons[#_moButtons + 1] = _portalBtn
         end
-        if flyoutToggle and not heb.groupButton then
-            _moButtons[#_moButtons + 1] = flyoutToggle
+        if flyoutBtn and not headerEdge.groupButton then
+            _moButtons[#_moButtons + 1] = flyoutBtn
         end
         -- Ungrouped addon buttons count as extra buttons for this setting too.
         for _, button in ipairs(cachedAddonButtons) do
@@ -784,8 +784,8 @@ local function MO_Refresh(p)
         if _portalBtn then
             _portalBtn:SetAlpha(1)
         end
-        if flyoutToggle then
-            flyoutToggle:SetAlpha(1)
+        if flyoutBtn then
+            flyoutBtn:SetAlpha(1)
         end
         -- Restore ungrouped addon buttons we may have dimmed.
         for _, button in ipairs(cachedAddonButtons) do
@@ -821,13 +821,13 @@ function SKIN._ClassicRingButton(button, crop, ...)
     if button._bg then
         button._bg:Hide()
     end
-    local ring = button._classicRing
-    if not ring then
-        ring = button:CreateTexture(nil, "OVERLAY")
-        ring:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
-        ring:SetSize(53, 53)
-        ring:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
-        button._classicRing = ring
+    local ringTex = button._classicRing
+    if not ringTex then
+        ringTex = button:CreateTexture(nil, "OVERLAY")
+        ringTex:SetTexture("Interface\\Minimap\\MiniMap-TrackingBorder")
+        ringTex:SetSize(53, 53)
+        ringTex:SetPoint("TOPLEFT", button, "TOPLEFT", 0, 0)
+        button._classicRing = ringTex
         local disc = button:CreateTexture(nil, "BACKGROUND")
         disc:SetTexture("Interface\\Minimap\\UI-Minimap-Background")
         disc:SetSize(20, 20)
@@ -851,7 +851,7 @@ function SKIN._ClassicRingButton(button, crop, ...)
         mask:SetPoint("CENTER", button, "TOPLEFT", 16.6, -16.2)
         button._classicMask = mask
     end
-    ring:Show()
+    ringTex:Show()
     button._classicDisc:Show()
     button._classicHL:Show()
     for i = 1, select("#", ...) do
@@ -897,11 +897,11 @@ end
 -- its ring hung elsewhere, reads as its box.
 SKIN._ringTex = setmetatable({}, { __mode = "k" })
 function SKIN._RingInsets(button)
-    local ring = button._classicRing
-    if not ring then
-        ring = SKIN._ringTex[button]
-        if ring == nil then
-            ring = false
+    local ringTex = button._classicRing
+    if not ringTex then
+        ringTex = SKIN._ringTex[button]
+        if ringTex == nil then
+            ringTex = false
             for i = 1, select("#", button:GetRegions()) do
                 local region = select(i, button:GetRegions())
                 if region:IsObjectType("Texture") then
@@ -910,22 +910,22 @@ function SKIN._RingInsets(button)
                         (region.GetTextureFileID and region:GetTextureFileID()) == 136430
                         or (type(texture) == "string" and texture:find("MiniMap%-TrackingBorder"))
                     then
-                        ring = region
+                        ringTex = region
                         break
                     end
                 end
             end
-            SKIN._ringTex[button] = ring
+            SKIN._ringTex[button] = ringTex
         end
     end
-    if not ring or not ring:IsShown() then
+    if not ringTex or not ringTex:IsShown() then
         return 0, 0, 0, 0
     end
-    local pt, rel, rp, posX, posY = ring:GetPoint(1)
+    local pt, rel, rp, posX, posY = ringTex:GetPoint(1)
     if pt ~= "TOPLEFT" or rp ~= "TOPLEFT" or rel ~= button then
         return 0, 0, 0, 0
     end
-    local wid, hgt = ring:GetWidth(), ring:GetHeight()
+    local wid, hgt = ringTex:GetWidth(), ringTex:GetHeight()
     posX, posY = posX or 0, -(posY or 0)
     return posX + wid * 4 / 64,
         posY + hgt * 3 / 64,
@@ -938,11 +938,11 @@ end
 -- textures given, so the pass's own geometry shows unclipped. Re-dressing
 -- puts everything back; a button never dressed is left alone.
 function SKIN._ClassicRingUndress(button, ...)
-    local ring = button and button._classicRing
-    if not ring then
+    local ringTex = button and button._classicRing
+    if not ringTex then
         return
     end
-    ring:Hide()
+    ringTex:Hide()
     button._classicDisc:Hide()
     button._classicHL:Hide()
     for i = 1, select("#", ...) do
@@ -1019,34 +1019,34 @@ function SKIN._FvHeaderIndicator(button, key, s)
     highlight:SetAtlas(atlas)
 end
 
-local function LayoutIndicatorFrames(minimap, p, circleMode)
-    local flvl = minimap:GetFrameLevel() + 10
-    local mapAnchor = GetFFD(minimap).layoutFrame or minimap
+local function LayoutIndicatorFrames(mapFrame, p, circleMode)
+    local flvl = mapFrame:GetFrameLevel() + 10
+    local mapAnchor = GetFFD(mapFrame).layoutFrame or mapFrame
     -- The rows' anchor: the map, or Forever Square's outer frame edge.
-    local rowAnchor = (SKIN._fvSquare and GetFFD(minimap).fvOuter) or mapAnchor
+    local rowAnchor = (SKIN._fvSquare and GetFFD(mapFrame).fvOuter) or mapAnchor
 
     -- Build our custom buttons once, hide Blizzard originals
-    BuildCustomIndicators(minimap)
+    BuildCustomIndicators(mapFrame)
     HideBlizzardIndicators()
     SyncIndicatorVisibility()
 
-    local ci = _customIndicators
-    local sz = GetInteractableBtnSize()
+    local indicators = _customIndicators
+    local size = GetInteractableBtnSize()
     local showBg = p.btnBackgrounds ~= false
     -- Mail Position: "button" = element row; a corner pins it there (as Omnium Folio).
-    local mailCorner = MAIL_CORNER_POINTS[p.mailPosition] and p.mailPosition or nil
+    local mailIcon = MAIL_CORNER_POINTS[p.mailPosition] and p.mailPosition or nil
     -- Resize buttons and update icon aspect ratios
     local inset = 3
-    local avail = sz - inset * 2
-    local blizzHdr = SKIN._MinimapBlizz() and GetFFD(minimap).blizzHeader or nil
+    local avail = size - inset * 2
+    local stockHeader = SKIN._MinimapBlizz() and GetFFD(mapFrame).blizzHeader or nil
     local function ResizeIndicator(button)
         if not button then
             return
         end
-        button:SetSize(sz, sz)
+        button:SetSize(size, size)
         -- Stock styles: no CUI black box behind the indicators.
         if button._bg then
-            button._bg:SetShown(showBg and not blizzHdr)
+            button._bg:SetShown(showBg and not stockHeader)
         end
         local ratio = button._upAtlas and INDICATOR_ATLAS_RATIO[button._upAtlas]
         if ratio and button._icon then
@@ -1065,73 +1065,73 @@ local function LayoutIndicatorFrames(minimap, p, circleMode)
             button._icon:SetPoint("CENTER", button, "CENTER", off and off[1] or 0, off and off[2] or 0)
         end
     end
-    ResizeIndicator(ci.tracking)
+    ResizeIndicator(indicators.tracking)
     -- Update calendar day if it changed (midnight rollover)
-    if ci.calendar then
+    if indicators.calendar then
         local today = tonumber(date("%d")) or 1
-        if ci.calendar._calDay ~= today then
-            ci.calendar._calDay = today
+        if indicators.calendar._calDay ~= today then
+            indicators.calendar._calDay = today
             local prefixText = "UI-HUD-Calendar-" .. today
-            ci.calendar._upAtlas = prefixText .. "-Up"
-            ci.calendar._overAtlas = prefixText .. "-Mouseover"
-            ci.calendar._downAtlas = prefixText .. "-Down"
-            if ci.calendar._icon then
-                ci.calendar._icon:SetAtlas(ci.calendar._upAtlas)
+            indicators.calendar._upAtlas = prefixText .. "-Up"
+            indicators.calendar._overAtlas = prefixText .. "-Mouseover"
+            indicators.calendar._downAtlas = prefixText .. "-Down"
+            if indicators.calendar._icon then
+                indicators.calendar._icon:SetAtlas(indicators.calendar._upAtlas)
             end
         end
     end
-    ResizeIndicator(ci.calendar)
-    ResizeIndicator(ci.mail)
-    ResizeIndicator(ci.crafting)
+    ResizeIndicator(indicators.calendar)
+    ResizeIndicator(indicators.mail)
+    ResizeIndicator(indicators.crafting)
     -- Corner-pinned mail renders bare: no black box, just the mail icon
-    if mailCorner and ci.mail and ci.mail._bg then
-        ci.mail._bg:SetShown(false)
+    if mailIcon and indicators.mail and indicators.mail._bg then
+        indicators.mail._bg:SetShown(false)
     end
-    if flyoutToggle then
-        flyoutToggle:SetSize(sz, sz)
-        if flyoutToggle._bg then
-            flyoutToggle._bg:SetShown(showBg)
+    if flyoutBtn then
+        flyoutBtn:SetSize(size, size)
+        if flyoutBtn._bg then
+            flyoutBtn._bg:SetShown(showBg)
         end
         -- Reset to base anchor so free-move offsets don't accumulate across relayouts
-        local rowMode = GetBtnRowMode(p)
-        local rowBaseX, rowBaseY = GetRowBase(rowMode, p.btnRowDistance)
-        local resES = minimap:GetEffectiveScale()
-        flyoutToggle:ClearAllPoints()
-        flyoutToggle:SetPoint(
-            rowMode.point,
+        local inRows = GetBtnRowMode(p)
+        local rowBaseX, rowBaseY = GetRowBase(inRows, p.btnRowDistance)
+        local resES = mapFrame:GetEffectiveScale()
+        flyoutBtn:ClearAllPoints()
+        flyoutBtn:SetPoint(
+            inRows.point,
             rowAnchor,
-            rowMode.rel,
+            inRows.rel,
             Pix.SnapForES(rowBaseX, resES),
             Pix.SnapForES(rowBaseY, resES)
         )
     end
 
-    if ci.calendar then
-        ci.calendar:SetShown(not p.hideGameTime)
+    if indicators.calendar then
+        indicators.calendar:SetShown(not p.hideGameTime)
     end
 
     -- Difficulty flag (instance type/size indicator)
-    local diffFrame = (MinimapCluster and MinimapCluster.InstanceDifficulty) or _G.MiniMapInstanceDifficulty
-    if diffFrame then
-        diffFrame:SetParent(minimap)
-        diffFrame:SetFrameLevel(flvl + 2)
-        diffFrame:ClearAllPoints()
-        diffFrame:SetPoint("TOPRIGHT", mapAnchor, "TOPRIGHT", 2, 1)
+    local difficultyFrame = (MinimapCluster and MinimapCluster.InstanceDifficulty) or _G.MiniMapInstanceDifficulty
+    if difficultyFrame then
+        difficultyFrame:SetParent(mapFrame)
+        difficultyFrame:SetFrameLevel(flvl + 2)
+        difficultyFrame:ClearAllPoints()
+        difficultyFrame:SetPoint("TOPRIGHT", mapAnchor, "TOPRIGHT", 2, 1)
         -- Text mode overrides Show Blizzard Elements: the flag is always suppressed.
         -- Alpha leaves the hit region live, so a suppressed flag still answers mouseover
         -- with Blizzard's difficulty tooltip at the top-right corner.
         local suppressed = p.hideRaidDifficulty or p.diffTextEnabled
-        diffFrame:SetAlpha(suppressed and 0 or 1)
-        diffFrame:EnableMouseMotion(not suppressed)
-        if diffFrame.Guild then
-            diffFrame.Guild:EnableMouseMotion(not suppressed)
+        difficultyFrame:SetAlpha(suppressed and 0 or 1)
+        difficultyFrame:EnableMouseMotion(not suppressed)
+        if difficultyFrame.Guild then
+            difficultyFrame.Guild:EnableMouseMotion(not suppressed)
         end
     end
-    if not minimap.Layout then
-        minimap.Layout = function() end
+    if not mapFrame.Layout then
+        mapFrame.Layout = function() end
     end
 
-    if blizzHdr then
+    if stockHeader then
         -- Stock styles: placement around the top bar -- tracking on its left,
         -- calendar on its right, crafting stacked under the tracking button,
         -- the difficulty flag hung under the bar's right end. Blizzard Style
@@ -1146,100 +1146,100 @@ local function LayoutIndicatorFrames(minimap, p, circleMode)
         -- still apply.
         local classic = SKIN._MinimapClassic()
         local cs = (p.mapSize or 140) / 140
-        local fvBar = blizzHdr._fvBar
+        local foreverBar = stockHeader._fvBar
         local hs = (p.mapSize or 140) / 198
-        if ci.tracking and not p.hideTrackingButton then
+        if indicators.tracking and not p.hideTrackingButton then
             if classic then
-                SKIN._ClassicRingButton(ci.tracking, nil, ci.tracking._icon)
-            elseif fvBar then
-                SKIN._FvHeaderIndicator(ci.tracking, "tracking", hs)
-            elseif not ci.tracking._blizzRing then
+                SKIN._ClassicRingButton(indicators.tracking, nil, indicators.tracking._icon)
+            elseif foreverBar then
+                SKIN._FvHeaderIndicator(indicators.tracking, "tracking", hs)
+            elseif not indicators.tracking._blizzRing then
                 -- The stock tracking button sits on a round plate (our own button, so the
                 -- texture lives on it directly).
-                local ring = ci.tracking:CreateTexture(nil, "BACKGROUND")
-                ring:SetAllPoints(ci.tracking)
-                SKIN._StockAtlas(ring, "ui-hud-minimap-button")
-                ci.tracking._blizzRing = ring
+                local ringTex = indicators.tracking:CreateTexture(nil, "BACKGROUND")
+                ringTex:SetAllPoints(indicators.tracking)
+                SKIN._StockAtlas(ringTex, "ui-hud-minimap-button")
+                indicators.tracking._blizzRing = ringTex
             end
-            ci.tracking:ClearAllPoints()
-            if fvBar then
-                ci.tracking:SetPoint("CENTER", blizzHdr, "LEFT", -8.5 * hs, 0)
+            indicators.tracking:ClearAllPoints()
+            if foreverBar then
+                indicators.tracking:SetPoint("CENTER", stockHeader, "LEFT", -8.5 * hs, 0)
             else
-                ci.tracking:SetPoint("RIGHT", blizzHdr, "LEFT", -2, 0)
+                indicators.tracking:SetPoint("RIGHT", stockHeader, "LEFT", -2, 0)
             end
-            ci.tracking:Show()
-        elseif ci.tracking then
-            ci.tracking:Hide()
+            indicators.tracking:Show()
+        elseif indicators.tracking then
+            indicators.tracking:Hide()
         end
-        if ci.calendar and not p.hideGameTime then
+        if indicators.calendar and not p.hideGameTime then
             -- Stock: the clock hangs from the bar's top-right corner.
-            ci.calendar:ClearAllPoints()
-            if fvBar then
-                SKIN._FvHeaderIndicator(ci.calendar, "calendar", hs)
-                ci.calendar:SetPoint("TOPLEFT", blizzHdr, "TOPRIGHT", -4 * hs, 0)
+            indicators.calendar:ClearAllPoints()
+            if foreverBar then
+                SKIN._FvHeaderIndicator(indicators.calendar, "calendar", hs)
+                indicators.calendar:SetPoint("TOPLEFT", stockHeader, "TOPRIGHT", -4 * hs, 0)
             else
-                ci.calendar:SetPoint("TOPLEFT", blizzHdr, "TOPRIGHT", 1, 0)
+                indicators.calendar:SetPoint("TOPLEFT", stockHeader, "TOPRIGHT", 1, 0)
             end
         end
-        local under = (ci.tracking and ci.tracking:IsShown() and not fvBar) and ci.tracking or nil
-        if ci.mail and ci.mail:IsShown() then
-            if fvBar then
-                SKIN._FvHeaderIndicator(ci.mail, "mail", hs)
+        local below = (indicators.tracking and indicators.tracking:IsShown() and not foreverBar) and indicators.tracking or nil
+        if indicators.mail and indicators.mail:IsShown() then
+            if foreverBar then
+                SKIN._FvHeaderIndicator(indicators.mail, "mail", hs)
             end
             if classic then
-                if mailCorner then
-                    SKIN._ClassicRingUndress(ci.mail, ci.mail._icon)
+                if mailIcon then
+                    SKIN._ClassicRingUndress(indicators.mail, indicators.mail._icon)
                 else
-                    SKIN._ClassicRingButton(ci.mail, nil, ci.mail._icon)
+                    SKIN._ClassicRingButton(indicators.mail, nil, indicators.mail._icon)
                     -- The dress squares its icon; the envelope keeps its atlas
                     -- aspect at the ring's 16px icon height.
-                    local ratio = ci.mail._upAtlas and INDICATOR_ATLAS_RATIO[ci.mail._upAtlas]
-                    if ratio and ci.mail._icon then
-                        ci.mail._icon:SetSize(16 * ratio, 16)
+                    local ratio = indicators.mail._upAtlas and INDICATOR_ATLAS_RATIO[indicators.mail._upAtlas]
+                    if ratio and indicators.mail._icon then
+                        indicators.mail._icon:SetSize(16 * ratio, 16)
                     end
                 end
             end
-            ci.mail:ClearAllPoints()
-            if mailCorner then
-                ci.mail:SetPoint(mailCorner, mapAnchor, mailCorner, p.mailOffsetX or 0, p.mailOffsetY or 0)
+            indicators.mail:ClearAllPoints()
+            if mailIcon then
+                indicators.mail:SetPoint(mailIcon, mapAnchor, mailIcon, p.mailOffsetX or 0, p.mailOffsetY or 0)
             elseif classic then
                 -- The vanilla mail frame: 33px, its TOPRIGHT 24,-37 off the map's
                 -- top-right corner, ring border hung from its top-left; placed by
                 -- that top-left, 6 lower than the vanilla spot so the difficulty
                 -- flag hanging under the banner's right end clears the ring.
-                ci.mail:SetPoint("TOPLEFT", minimap, "TOPRIGHT", -9 * cs, -43 * cs)
-            elseif fvBar then
-                ci.mail:SetPoint("TOPLEFT", blizzHdr, "BOTTOMLEFT", 0, 0)
-                under = ci.mail
+                indicators.mail:SetPoint("TOPLEFT", mapFrame, "TOPRIGHT", -9 * cs, -43 * cs)
+            elseif foreverBar then
+                indicators.mail:SetPoint("TOPLEFT", stockHeader, "BOTTOMLEFT", 0, 0)
+                below = indicators.mail
             else
-                if under then
-                    ci.mail:SetPoint("TOP", under, "BOTTOM", 0, 0)
+                if below then
+                    indicators.mail:SetPoint("TOP", below, "BOTTOM", 0, 0)
                 else
-                    ci.mail:SetPoint("RIGHT", blizzHdr, "LEFT", -2, 0)
+                    indicators.mail:SetPoint("RIGHT", stockHeader, "LEFT", -2, 0)
                 end
-                under = ci.mail
+                below = indicators.mail
             end
         end
-        if ci.crafting and ci.crafting:IsShown() then
+        if indicators.crafting and indicators.crafting:IsShown() then
             if classic then
-                SKIN._ClassicRingButton(ci.crafting, nil, ci.crafting._icon)
+                SKIN._ClassicRingButton(indicators.crafting, nil, indicators.crafting._icon)
             end
-            ci.crafting:ClearAllPoints()
-            if under then
-                ci.crafting:SetPoint("TOP", under, "BOTTOM", 0, 0)
+            indicators.crafting:ClearAllPoints()
+            if below then
+                indicators.crafting:SetPoint("TOP", below, "BOTTOM", 0, 0)
             else
-                ci.crafting:SetPoint("RIGHT", blizzHdr, "LEFT", -2, 0)
+                indicators.crafting:SetPoint("RIGHT", stockHeader, "LEFT", -2, 0)
             end
         end
-        if diffFrame then
-            diffFrame:ClearAllPoints()
-            diffFrame:SetPoint("TOPRIGHT", blizzHdr, "BOTTOMRIGHT", 0, 1)
+        if difficultyFrame then
+            difficultyFrame:ClearAllPoints()
+            difficultyFrame:SetPoint("TOPRIGHT", stockHeader, "BOTTOMRIGHT", 0, 1)
         end
     elseif circleMode then
         -- Circle layout: horizontal row growing left from the clock. Each element chains
         -- to the previous shown one; a hidden element is skipped, since anchoring to a
         -- frame that was never positioned leaves the whole chain undrawn.
-        local leftAnchor = (clockBg and clockBg:IsShown()) and clockBg or nil
+        local leftAnchor = (clockBack and clockBack:IsShown()) and clockBack or nil
         local function PlaceLeft(button)
             button:ClearAllPoints()
             if leftAnchor then
@@ -1250,40 +1250,40 @@ local function LayoutIndicatorFrames(minimap, p, circleMode)
             leftAnchor = button
         end
 
-        if ci.tracking and not p.hideTrackingButton then
-            PlaceLeft(ci.tracking)
-            ci.tracking:Show()
-        elseif ci.tracking then
-            ci.tracking:Hide()
+        if indicators.tracking and not p.hideTrackingButton then
+            PlaceLeft(indicators.tracking)
+            indicators.tracking:Show()
+        elseif indicators.tracking then
+            indicators.tracking:Hide()
         end
 
-        if ci.calendar and not p.hideGameTime then
-            ci.calendar:ClearAllPoints()
-            if clockBg and clockBg:IsShown() then
-                ci.calendar:SetPoint("LEFT", clockBg, "RIGHT", 0, 0)
+        if indicators.calendar and not p.hideGameTime then
+            indicators.calendar:ClearAllPoints()
+            if clockBack and clockBack:IsShown() then
+                indicators.calendar:SetPoint("LEFT", clockBack, "RIGHT", 0, 0)
             else
-                ci.calendar:SetPoint("TOP", mapAnchor, "TOP", 20, -3)
+                indicators.calendar:SetPoint("TOP", mapAnchor, "TOP", 20, -3)
             end
         end
 
-        if ci.mail and ci.mail:IsShown() then
-            if mailCorner then
-                ci.mail:ClearAllPoints()
-                ci.mail:SetPoint(mailCorner, mapAnchor, mailCorner, p.mailOffsetX or 0, p.mailOffsetY or 0)
+        if indicators.mail and indicators.mail:IsShown() then
+            if mailIcon then
+                indicators.mail:ClearAllPoints()
+                indicators.mail:SetPoint(mailIcon, mapAnchor, mailIcon, p.mailOffsetX or 0, p.mailOffsetY or 0)
             else
-                PlaceLeft(ci.mail)
+                PlaceLeft(indicators.mail)
             end
         end
 
-        if ci.crafting and ci.crafting:IsShown() then
-            PlaceLeft(ci.crafting)
+        if indicators.crafting and indicators.crafting:IsShown() then
+            PlaceLeft(indicators.crafting)
         end
     else
         -- Square layout: element row (corner + growth from Element Row Position), same running-total
         -- placement as the button row below using each element's real width so horizontal rows stay flush despite varying atlas ratios.
-        local rowMode = GetElementRowMode(p)
-        local baseX, baseY = GetRowBase(rowMode, p.elementRowDistance)
-        local elES = minimap:GetEffectiveScale()
+        local inRows = GetElementRowMode(p)
+        local baseX, baseY = GetRowBase(inRows, p.elementRowDistance)
+        local elES = mapFrame:GetEffectiveScale()
         local elPx = Pix.perfect / elES
         local elGap = Pix.SnapForES(p.elementRowSpacing or 0, elES)
         local elX = Pix.SnapForES(baseX, elES)
@@ -1293,64 +1293,64 @@ local function LayoutIndicatorFrames(minimap, p, circleMode)
         -- row (EBS._RingInsets), EBS.FV_RING_GAP apart.
         local fvRings = SKIN._fvSquare
         local ringGap = fvRings and Pix.SnapForES(SKIN.FV_RING_GAP, elES) or 0
-        local ptRight = rowMode.point:find("RIGHT") ~= nil
-        local ptTop = rowMode.point:find("TOP") ~= nil
+        local ptRight = inRows.point:find("RIGHT") ~= nil
+        local ptTop = inRows.point:find("TOP") ~= nil
         local function PlaceElement(button)
             if fvRings then
                 SKIN._RingIndicator(button)
             end
-            local adv = (rowMode.dirX ~= 0) and button:GetWidth() or button:GetHeight()
+            local advancedOn = (inRows.dirX ~= 0) and button:GetWidth() or button:GetHeight()
             local ox, oy = 0, 0
             if fvRings then
                 local l, t, region, b = SKIN._RingInsets(button)
-                adv = adv - ((rowMode.dirX ~= 0) and (l + region) or (t + b)) + ringGap
+                advancedOn = advancedOn - ((inRows.dirX ~= 0) and (l + region) or (t + b)) + ringGap
                 ox = Pix.SnapForES(ptRight and region or -l, elES)
                 oy = Pix.SnapForES(ptTop and t or -b, elES)
             end
             button:ClearAllPoints()
-            button:SetPoint(rowMode.point, rowAnchor, rowMode.rel, elX + ox, elY + oy)
-            adv = math.floor(adv / elPx + 0.001) * elPx + elGap
-            elX = elX + adv * rowMode.dirX
-            elY = elY + adv * rowMode.dirY
+            button:SetPoint(inRows.point, rowAnchor, inRows.rel, elX + ox, elY + oy)
+            advancedOn = math.floor(advancedOn / elPx + 0.001) * elPx + elGap
+            elX = elX + advancedOn * inRows.dirX
+            elY = elY + advancedOn * inRows.dirY
         end
 
-        if ci.tracking and not p.hideTrackingButton then
-            PlaceElement(ci.tracking)
-            ci.tracking:Show()
-        elseif ci.tracking then
-            ci.tracking:Hide()
+        if indicators.tracking and not p.hideTrackingButton then
+            PlaceElement(indicators.tracking)
+            indicators.tracking:Show()
+        elseif indicators.tracking then
+            indicators.tracking:Hide()
         end
 
-        if ci.calendar and not p.hideGameTime then
-            PlaceElement(ci.calendar)
+        if indicators.calendar and not p.hideGameTime then
+            PlaceElement(indicators.calendar)
         end
 
-        if ci.mail and ci.mail:IsShown() then
-            if mailCorner then
+        if indicators.mail and indicators.mail:IsShown() then
+            if mailIcon then
                 -- A corner mail renders bare, its ring dress off.
                 if fvRings then
-                    SKIN._ClassicRingUndress(ci.mail, ci.mail._icon)
+                    SKIN._ClassicRingUndress(indicators.mail, indicators.mail._icon)
                 end
-                ci.mail:ClearAllPoints()
-                ci.mail:SetPoint(mailCorner, mapAnchor, mailCorner, p.mailOffsetX or 0, p.mailOffsetY or 0)
+                indicators.mail:ClearAllPoints()
+                indicators.mail:SetPoint(mailIcon, mapAnchor, mailIcon, p.mailOffsetX or 0, p.mailOffsetY or 0)
             else
-                PlaceElement(ci.mail)
+                PlaceElement(indicators.mail)
             end
         end
 
-        if ci.crafting and ci.crafting:IsShown() then
-            PlaceElement(ci.crafting)
+        if indicators.crafting and indicators.crafting:IsShown() then
+            PlaceElement(indicators.crafting)
         end
     end
 
     -- Ungrouped buttons along the button row; the flyout toggle is its first slot.
-    if flyoutToggle then
-        local rowMode = GetBtnRowMode(p)
-        local rowBaseX, rowBaseY = GetRowBase(rowMode, p.btnRowDistance)
+    if flyoutBtn then
+        local inRows = GetBtnRowMode(p)
+        local rowBaseX, rowBaseY = GetRowBase(inRows, p.btnRowDistance)
         local ungroupBtnSize = GetInteractableBtnSize()
         -- Running-total placement: cursor starts at snapped Distance from Map, advances per button
         -- by its size FLOORED to whole physical pixels (rounding up opens hairline seams; flooring can only overlap-flush) plus snapped Icon Spacing.
-        local rowES = minimap:GetEffectiveScale()
+        local rowES = mapFrame:GetEffectiveScale()
         local rowPx = Pix.perfect / rowES
         local rowGap = Pix.SnapForES(p.btnRowSpacing or 0, rowES)
         local rowX = Pix.SnapForES(rowBaseX, rowES)
@@ -1365,86 +1365,86 @@ local function LayoutIndicatorFrames(minimap, p, circleMode)
         -- Distance from Map further out, with a base gap between buttons. With
         -- Free Move on it keeps the straight row: saved offsets are relative to
         -- the row slots they were dragged from.
-        local arcR, arcT, arcDir
+        local arcRadius, arcT, arcDir
         local arcGap = 0
-        if blizzHdr or (circleMode and not p.freeMoveBtns) then
-            local mapW = minimap:GetWidth() or 140
-            if blizzHdr then
-                arcR = mapW / 2 + 5 * (mapW / 198) + (p.btnRowDistance or 0)
+        if stockHeader or (circleMode and not p.freeMoveBtns) then
+            local mapW = mapFrame:GetWidth() or 140
+            if stockHeader then
+                arcRadius = mapW / 2 + 5 * (mapW / 198) + (p.btnRowDistance or 0)
             else
                 local edge = (p.shape == "textured_circle") and 2 or (p.borderSize or 1)
-                arcR = mapW / 2 + edge + (p.btnRowDistance or 0)
+                arcRadius = mapW / 2 + edge + (p.btnRowDistance or 0)
                 arcGap = Pix.SnapForES(4, rowES)
             end
-            arcT = math.rad(rowMode.arc or 225)
-            arcDir = rowMode.arcDir or -1
+            arcT = math.rad(inRows.arc or 225)
+            arcDir = inRows.arcDir or -1
         end
         -- Stock styles and Forever Square: every button on the row wears the
         -- round minimap-button look -- ours dressed by EBS._ClassicRingButton,
         -- addon buttons in their own native dress (the common minimap-button
         -- library draws exactly that look). The CludesUI look keeps its own
         -- dress, its circle too.
-        local ringDress = (blizzHdr or SKIN._fvSquare) and true or false
+        local ringDress = (stockHeader or SKIN._fvSquare) and true or false
         -- Forever Square's straight row places each ring, not its box: a ring
         -- sits off-centre in its button and at its own size (EBS._RingInsets),
         -- so each ring's edge lands on the row's edge and the next ring
         -- follows EBS.FV_RING_GAP past it.
         local fvRings = ringDress and SKIN._fvSquare
         local ringGap = fvRings and Pix.SnapForES(SKIN.FV_RING_GAP, rowES) or 0
-        local ptRight = rowMode.point:find("RIGHT") ~= nil
-        local ptTop = rowMode.point:find("TOP") ~= nil
+        local ptRight = inRows.point:find("RIGHT") ~= nil
+        local ptTop = inRows.point:find("TOP") ~= nil
         local function PlaceRowButton(button)
-            local adv = (rowMode.dirX ~= 0) and button:GetWidth() or button:GetHeight()
+            local advancedOn = (inRows.dirX ~= 0) and button:GetWidth() or button:GetHeight()
             local ox, oy = 0, 0
             if fvRings then
                 local l, t, region, b = SKIN._RingInsets(button)
-                adv = adv - ((rowMode.dirX ~= 0) and (l + region) or (t + b)) + ringGap
+                advancedOn = advancedOn - ((inRows.dirX ~= 0) and (l + region) or (t + b)) + ringGap
                 ox = Pix.SnapForES(ptRight and region or -l, rowES)
                 oy = Pix.SnapForES(ptTop and t or -b, rowES)
             end
-            adv = math.floor(adv / rowPx + 0.001) * rowPx + rowGap
-            if arcR then
-                SKIN._ArcPoint(button, minimap, arcR, arcT, rowES)
-                arcT = arcT + arcDir * (adv + arcGap) / arcR
+            advancedOn = math.floor(advancedOn / rowPx + 0.001) * rowPx + rowGap
+            if arcRadius then
+                SKIN._ArcPoint(button, mapFrame, arcRadius, arcT, rowES)
+                arcT = arcT + arcDir * (advancedOn + arcGap) / arcRadius
             else
-                button:SetPoint(rowMode.point, rowAnchor, rowMode.rel, rowX + ox, rowY + oy)
-                rowX = rowX + adv * rowMode.dirX
-                rowY = rowY + adv * rowMode.dirY
+                button:SetPoint(inRows.point, rowAnchor, inRows.rel, rowX + ox, rowY + oy)
+                rowX = rowX + advancedOn * inRows.dirX
+                rowY = rowY + advancedOn * inRows.dirY
             end
         end
         if ringDress then
             SKIN._ClassicRingButton(
-                flyoutToggle,
+                flyoutBtn,
                 0.12,
-                flyoutToggle._norm,
-                flyoutToggle._pushed,
-                flyoutToggle._hl
+                flyoutBtn._norm,
+                flyoutBtn._pushed,
+                flyoutBtn._hl
             )
         end
         -- WoW Forever: a row starting at the bottom-left corner starts past
         -- the queue eye Action Bars parks there (half the 45px eye, the gap
         -- and half a ring button, as arc length).
-        if arcR and CludesUI.IS_FOREVER and rowMode.arc == 225 then
+        if arcRadius and CludesUI.IS_FOREVER and inRows.arc == 225 then
             local ab = CludesUI._ModuleNS.CludesUIActionBars
             if ab and ab.AB_ForeverEyeParked() then
-                arcT = arcT + arcDir * (22.5 + rowGap + arcGap + flyoutToggle:GetWidth() / 2) / arcR
+                arcT = arcT + arcDir * (22.5 + rowGap + arcGap + flyoutBtn:GetWidth() / 2) / arcRadius
             end
         end
-        flyoutToggle:ClearAllPoints()
-        local flyoutVisible = flyoutToggle:IsShown()
+        flyoutBtn:ClearAllPoints()
+        local flyoutVisible = flyoutBtn:IsShown()
         if flyoutVisible then
-            PlaceRowButton(flyoutToggle)
-        elseif arcR then
-            SKIN._ArcPoint(flyoutToggle, minimap, arcR, arcT, rowES)
+            PlaceRowButton(flyoutBtn)
+        elseif arcRadius then
+            SKIN._ArcPoint(flyoutBtn, mapFrame, arcRadius, arcT, rowES)
         else
-            flyoutToggle:SetPoint(rowMode.point, rowAnchor, rowMode.rel, rowX, rowY)
+            flyoutBtn:SetPoint(inRows.point, rowAnchor, inRows.rel, rowX, rowY)
         end
-        local mp = SKIN.db and SKIN.db.profile.minimap
+        local mapCfg = SKIN.db and SKIN.db.profile.minimap
         local ungrouped = {}
         for _, button in ipairs(cachedAddonButtons) do
             if _addonVisible[button] ~= false and IsUngrouped(button) then
                 local name = button:GetName()
-                local sequence = mp and mp.ungroupedButtons and mp.ungroupedButtons[name] or 999
+                local sequence = mapCfg and mapCfg.ungroupedButtons and mapCfg.ungroupedButtons[name] or 999
                 if type(sequence) == "boolean" then
                     sequence = 999
                 end
@@ -1469,8 +1469,8 @@ local function LayoutIndicatorFrames(minimap, p, circleMode)
                 end
                 flyoutSavedParents[button] = nil
             end
-            button:SetParent(minimap)
-            button:SetFrameLevel(minimap:GetFrameLevel() + 11)
+            button:SetParent(mapFrame)
+            button:SetFrameLevel(mapFrame:GetFrameLevel() + 11)
             button:ClearAllPoints()
             -- Black boxes only on the CUI look; Blizzard Style keeps the button's
             -- own dress (the common library dress is the stock round minimap
@@ -1535,57 +1535,57 @@ local function LayoutIndicatorFrames(minimap, p, circleMode)
             SKIN._suppressVisTrack = false
         end
 
-        local heb = p.hideExtraBtns or {}
+        local headerEdge = p.hideExtraBtns or {}
 
         -- Extra buttons: Great Vault, Friends Online, M+ Portals. Visibility from
         -- hideExtraBtns; row order from extraBtnOrder (drag-to-reorder in options; nil = fallback list below).
         local function PlaceExtraButton(key)
             if key == "greatVault" then
                 if _greatVaultBtn then
-                    if heb.greatVault then
+                    if headerEdge.greatVault then
                         _greatVaultBtn:Hide()
                     else
                         SizeGreatVaultBtn(_greatVaultBtn, showBg)
                         if ringDress then
                             SKIN._ClassicRingButton(_greatVaultBtn, nil, _greatVaultBtn._whole)
                         end
-                        _greatVaultBtn:SetParent(minimap)
-                        _greatVaultBtn:SetFrameLevel(minimap:GetFrameLevel() + 11)
+                        _greatVaultBtn:SetParent(mapFrame)
+                        _greatVaultBtn:SetFrameLevel(mapFrame:GetFrameLevel() + 11)
                         _greatVaultBtn:ClearAllPoints()
                         PlaceRowButton(_greatVaultBtn)
                         _greatVaultBtn:Show()
                     end
                 end
             elseif key == "friendsOnline" then
-                if ci.friends then
-                    if heb.friendsOnline then
-                        ci.friends:Hide()
+                if indicators.friends then
+                    if headerEdge.friendsOnline then
+                        indicators.friends:Hide()
                     else
-                        ci.friends:SetSize(sz, sz)
-                        if ci.friends._bg then
-                            ci.friends._bg:SetShown(showBg)
+                        indicators.friends:SetSize(size, size)
+                        if indicators.friends._bg then
+                            indicators.friends._bg:SetShown(showBg)
                         end
                         if ringDress then
-                            SKIN._ClassicRingButton(ci.friends, nil, ci.friends._icon)
+                            SKIN._ClassicRingButton(indicators.friends, nil, indicators.friends._icon)
                         end
-                        ci.friends:SetParent(minimap)
-                        ci.friends:SetFrameLevel(minimap:GetFrameLevel() + 11)
-                        ci.friends:ClearAllPoints()
-                        PlaceRowButton(ci.friends)
-                        ci.friends:Show()
+                        indicators.friends:SetParent(mapFrame)
+                        indicators.friends:SetFrameLevel(mapFrame:GetFrameLevel() + 11)
+                        indicators.friends:ClearAllPoints()
+                        PlaceRowButton(indicators.friends)
+                        indicators.friends:Show()
                     end
                 end
             elseif key == "portals" then
                 if _portalBtn then
-                    if heb.portals then
+                    if headerEdge.portals then
                         _portalBtn:Hide()
                     else
                         SizePortalBtn(_portalBtn, showBg)
                         if ringDress then
                             SKIN._ClassicRingButton(_portalBtn, nil, _portalBtn._icon)
                         end
-                        _portalBtn:SetParent(minimap)
-                        _portalBtn:SetFrameLevel(minimap:GetFrameLevel() + 11)
+                        _portalBtn:SetParent(mapFrame)
+                        _portalBtn:SetFrameLevel(mapFrame:GetFrameLevel() + 11)
                         _portalBtn:ClearAllPoints()
                         PlaceRowButton(_portalBtn)
                         _portalBtn:Show()
@@ -1611,38 +1611,38 @@ local function LayoutIndicatorFrames(minimap, p, circleMode)
         end
 
         -- Flyout toggle (CUI group button for addon icons)
-        if flyoutToggle and heb.groupButton then
-            flyoutToggle:Hide()
+        if flyoutBtn and headerEdge.groupButton then
+            flyoutBtn:Hide()
         end
     end
 
     -- Free Move: hook shift+drag on all indicator buttons and apply saved offsets
-    local heb = p.hideExtraBtns or {}
+    local headerEdge = p.hideExtraBtns or {}
     local freeMove = p.freeMoveBtns
     local fmTargets = {}
-    if ci.tracking and not p.hideTrackingButton then
-        fmTargets[#fmTargets + 1] = ci.tracking
+    if indicators.tracking and not p.hideTrackingButton then
+        fmTargets[#fmTargets + 1] = indicators.tracking
     end
-    if ci.calendar and not p.hideGameTime then
-        fmTargets[#fmTargets + 1] = ci.calendar
+    if indicators.calendar and not p.hideGameTime then
+        fmTargets[#fmTargets + 1] = indicators.calendar
     end
-    if ci.mail then
-        fmTargets[#fmTargets + 1] = ci.mail
+    if indicators.mail then
+        fmTargets[#fmTargets + 1] = indicators.mail
     end
-    if ci.crafting then
-        fmTargets[#fmTargets + 1] = ci.crafting
+    if indicators.crafting then
+        fmTargets[#fmTargets + 1] = indicators.crafting
     end
-    if flyoutToggle then
-        fmTargets[#fmTargets + 1] = flyoutToggle
+    if flyoutBtn then
+        fmTargets[#fmTargets + 1] = flyoutBtn
     end
-    if _greatVaultBtn and not heb.greatVault then
+    if _greatVaultBtn and not headerEdge.greatVault then
         fmTargets[#fmTargets + 1] = _greatVaultBtn
     end
-    if _portalBtn and not heb.portals then
+    if _portalBtn and not headerEdge.portals then
         fmTargets[#fmTargets + 1] = _portalBtn
     end
-    if ci.friends and not heb.friendsOnline then
-        fmTargets[#fmTargets + 1] = ci.friends
+    if indicators.friends and not headerEdge.friendsOnline then
+        fmTargets[#fmTargets + 1] = indicators.friends
     end
     -- Include ungrouped addon buttons
     for _, button in ipairs(cachedAddonButtons) do
@@ -1668,8 +1668,8 @@ end
 -- center so we start matching the user's Edit Mode setup. Once per profile.
 -------------------------------------------------------------------------------
 local function CaptureBlizzardMinimap()
-    local minimap = Minimap
-    if not minimap then
+    local mapFrame = Minimap
+    if not mapFrame then
         return
     end
     local p = SKIN.db.profile.minimap
@@ -1678,18 +1678,18 @@ local function CaptureBlizzardMinimap()
     end
 
     local uiScale = UIParent:GetEffectiveScale()
-    local mScale = minimap:GetEffectiveScale()
+    local mScale = mapFrame:GetEffectiveScale()
     local ratio = mScale / uiScale
 
     -- Capture size (use the larger dimension to keep it square)
-    local wid, hgt = minimap:GetWidth(), minimap:GetHeight()
+    local wid, hgt = mapFrame:GetWidth(), mapFrame:GetHeight()
     if wid and wid > 10 then
-        local sz = math.floor(math.max(wid, hgt) * ratio + 0.5)
-        p.mapSize = sz
+        local size = math.floor(math.max(wid, hgt) * ratio + 0.5)
+        p.mapSize = size
     end
 
     -- Capture center position as CENTER/CENTER offset from UIParent
-    local cx, cy = minimap:GetCenter()
+    local cx, cy = mapFrame:GetCenter()
     if cx and cy then
         local uiW, uiH = UIParent:GetSize()
         cx = cx * ratio
@@ -1743,18 +1743,18 @@ local function IsFolioReplacedByAddOn()
 end
 
 -- Folio mode with legacy fallback: pre-dropdown data carries showOmniumFolio (default ON; only false is ever stored).
-local function GetOmniumFolioMode(mp)
+local function GetOmniumFolioMode(mapCfg)
     -- No expansion landing page on WoW Forever: every folio path reads "never".
     if CludesUI.IS_FOREVER then
         return "never"
     end
-    if not mp then
+    if not mapCfg then
         return "always"
     end
-    if mp.omniumFolioMode then
-        return mp.omniumFolioMode
+    if mapCfg.omniumFolioMode then
+        return mapCfg.omniumFolioMode
     end
-    if mp.showOmniumFolio == false then
+    if mapCfg.showOmniumFolio == false then
         return "never"
     end
     return "always"
@@ -1766,8 +1766,8 @@ local function PositionOmniumFolio(button)
     if not button or not Minimap then
         return
     end
-    local mp = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
-    if not mp then
+    local mapCfg = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
+    if not mapCfg then
         return
     end
     _omniumFolioApplying = true
@@ -1776,17 +1776,17 @@ local function PositionOmniumFolio(button)
     end
     button:SetFrameStrata("HIGH")
     button:SetFrameLevel((Minimap:GetFrameLevel() or 0) + 10)
-    button:SetScale(mp.omniumFolioScale or 0.75)
+    button:SetScale(mapCfg.omniumFolioScale or 0.75)
     button:ClearAllPoints()
     -- Anchor the button's chosen corner to the minimap's same corner; X/Y nudge from there (positive X = right, positive Y = up, regardless of corner).
-    local corner = mp.omniumFolioCorner or "BOTTOMLEFT"
+    local corner = mapCfg.omniumFolioCorner or "BOTTOMLEFT"
     if SKIN._MinimapBlizz() then
         -- Stock styles: the stock spot on the ring (the button's centre
         -- 84 left and 63.5 below the map centre at the stock 198px map: the
         -- backdrop's TOPLEFT -3,-150 for the 53px button), mirrored to the chosen
         -- corner and scaled with the map. Anchor offsets are in the button's own
         -- scale, so the map units divide by it; the nudges stay as they were.
-        local mapW = Minimap:GetWidth() or (mp.mapSize or 140)
+        local mapW = Minimap:GetWidth() or (mapCfg.mapSize or 140)
         local s = (mapW / 198) / (button:GetScale() or 1)
         local cx = (corner == "BOTTOMRIGHT" or corner == "TOPRIGHT") and 84 or -84
         local cy = (corner == "TOPLEFT" or corner == "TOPRIGHT") and 63.5 or -63.5
@@ -1794,16 +1794,16 @@ local function PositionOmniumFolio(button)
             "CENTER",
             Minimap,
             "CENTER",
-            cx * s + (mp.omniumFolioX or 0),
-            cy * s + (mp.omniumFolioY or 0)
+            cx * s + (mapCfg.omniumFolioX or 0),
+            cy * s + (mapCfg.omniumFolioY or 0)
         )
     else
         button:SetPoint(
             corner,
             GetFFD(Minimap).layoutFrame or Minimap,
             corner,
-            mp.omniumFolioX or 0,
-            mp.omniumFolioY or 0
+            mapCfg.omniumFolioX or 0,
+            mapCfg.omniumFolioY or 0
         )
     end
     _omniumFolioApplying = false
@@ -1815,8 +1815,8 @@ end
 -- through effective scale and can round the other way sub-pixel at the boundary
 -- (resolution/scale dependent, which is why it repros on some machines only); the
 -- expanded rect ensures "engine entered" implies "this test passes", so the exit watcher never fires early.
-function SKIN._HoverStillOver(minimap)
-    local hoverFrame = GetFFD(minimap).pingBlocker or GetFFD(minimap).layoutFrame or minimap
+function SKIN._HoverStillOver(mapFrame)
+    local hoverFrame = GetFFD(mapFrame).pingBlocker or GetFFD(mapFrame).layoutFrame or mapFrame
     if hoverFrame:IsMouseOver(4, -4, -4, 4) then
         return true
     end
@@ -1832,16 +1832,16 @@ end
 -- Blizzard's own zoom fade), and from the exit watcher for exits across a child
 -- element (those never fire a second minimap OnLeave). Cancels the watcher.
 function SKIN._HVHideNow()
-    local minimap = Minimap
-    if not minimap then
+    local mapFrame = Minimap
+    if not mapFrame then
         return
     end
-    local ffd = GetFFD(minimap)
-    if ffd.hvWatcher then
-        ffd.hvWatcher:Cancel()
-        ffd.hvWatcher = nil
+    local frameData = GetFFD(mapFrame)
+    if frameData.hvWatcher then
+        frameData.hvWatcher:Cancel()
+        frameData.hvWatcher = nil
     end
-    local zi, zo = minimap.ZoomIn, minimap.ZoomOut
+    local zi, zo = mapFrame.ZoomIn, mapFrame.ZoomOut
     if zi then
         zi:Hide()
     end
@@ -1887,44 +1887,44 @@ end
 -- and runs one self-cancelling watcher (minimap's FFD data) that hides them once the
 -- cursor truly leaves -- including exits FROM a child, which never fire a 2nd OnLeave.
 function SKIN._HVRevealMapHover()
-    local minimap = Minimap
-    if not minimap then
+    local mapFrame = Minimap
+    if not mapFrame then
         return
     end
-    local ffd = GetFFD(minimap)
-    if not ffd.active then
+    local frameData = GetFFD(mapFrame)
+    if not frameData.active then
         return
     end
-    if not SKIN._HoverStillOver(minimap) then
+    if not SKIN._HoverStillOver(mapFrame) then
         -- OnEnter is SINGLE-SHOT per hover: if this check fails at the boundary, nothing
         -- re-attempts the reveal for the whole hover (slow entries dwelt there and
         -- failed consistently). Retry briefly and self-cancel when clearly gone.
-        if not ffd.hvRetry then
+        if not frameData.hvRetry then
             local tries = 0
-            ffd.hvRetry = C_Timer.NewTicker(0.1, function()
+            frameData.hvRetry = C_Timer.NewTicker(0.1, function()
                 tries = tries + 1
-                if SKIN._HoverStillOver(minimap) then
-                    ffd.hvRetry:Cancel()
-                    ffd.hvRetry = nil
+                if SKIN._HoverStillOver(mapFrame) then
+                    frameData.hvRetry:Cancel()
+                    frameData.hvRetry = nil
                     SKIN._HVRevealMapHover()
                 elseif tries >= 8 then
-                    ffd.hvRetry:Cancel()
-                    ffd.hvRetry = nil
+                    frameData.hvRetry:Cancel()
+                    frameData.hvRetry = nil
                 end
             end)
         end
         return
     end
-    if ffd.hvRetry then
-        ffd.hvRetry:Cancel()
-        ffd.hvRetry = nil
+    if frameData.hvRetry then
+        frameData.hvRetry:Cancel()
+        frameData.hvRetry = nil
     end
-    local mp = SKIN.db and SKIN.db.profile.minimap
-    if not mp then
+    local mapCfg = SKIN.db and SKIN.db.profile.minimap
+    if not mapCfg then
         return
     end
     local function raiseZoom()
-        local zi, zo = minimap.ZoomIn, minimap.ZoomOut
+        local zi, zo = mapFrame.ZoomIn, mapFrame.ZoomOut
         if UIFrameFadeRemoveFrame then
             if zi then
                 UIFrameFadeRemoveFrame(zi)
@@ -1942,10 +1942,10 @@ function SKIN._HVRevealMapHover()
             zo:Show()
         end
     end
-    if not mp.hideZoomButtons then
+    if not mapCfg.hideZoomButtons then
         raiseZoom()
     end
-    if GetOmniumFolioMode(mp) == "hover" and not IsFolioReplacedByAddOn() then
+    if GetOmniumFolioMode(mapCfg) == "hover" and not IsFolioReplacedByAddOn() then
         local b = _G.ExpansionLandingPageMinimapButton
         if b then
             PositionOmniumFolio(b)
@@ -1954,7 +1954,7 @@ function SKIN._HVRevealMapHover()
             end
         end
     end
-    if GetCoordsModePos(mp) == "hover" then
+    if GetCoordsModePos(mapCfg) == "hover" then
         if coordFrame then
             coordFrame:Show()
         end
@@ -1967,11 +1967,11 @@ function SKIN._HVRevealMapHover()
     if MO_Evaluate then
         MO_Evaluate()
     end
-    if ffd.hvWatcher then
+    if frameData.hvWatcher then
         return
     end
-    ffd.hvWatcher = C_Timer.NewTicker(0.2, function()
-        if SKIN._HoverStillOver(minimap) then
+    frameData.hvWatcher = C_Timer.NewTicker(0.2, function()
+        if SKIN._HoverStillOver(mapFrame) then
             -- Still over the map: keep defeating Blizzard's fader (an intervening
             -- OnLeave may have re-armed it).
             local m2 = SKIN.db and SKIN.db.profile.minimap
@@ -1994,8 +1994,8 @@ local function ApplyOmniumFolio()
     if not button or not Minimap then
         return
     end
-    local mp = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
-    if not mp then
+    local mapCfg = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
+    if not mapCfg then
         return
     end
 
@@ -2036,7 +2036,7 @@ local function ApplyOmniumFolio()
         end)
     end
 
-    local mode = GetOmniumFolioMode(mp)
+    local mode = GetOmniumFolioMode(mapCfg)
     if mode == "never" then
         button:Hide()
         return

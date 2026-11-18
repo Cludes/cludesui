@@ -34,7 +34,7 @@ local GCD_SPELL = CludesUI.GCD_SPELL
 local UnitCastingInfo = UnitCastingInfo
 local UnitChannelInfo = UnitChannelInfo
 
-local frame, t, reticle
+local frame, t, reticleTex
 local lastX, lastY
 
 local lastScale, lastHex, lastTex, lastAlpha
@@ -44,10 +44,10 @@ local mouselookActive = false -- true while the hardware cursor is hidden (mouse
 -------------------------------------------------------------------------------
 --  Utility
 -------------------------------------------------------------------------------
-local function HexToRGB(hex)
-    return tonumber(strsub(hex, 1, 2), 16) / 255,
-        tonumber(strsub(hex, 3, 4), 16) / 255,
-        tonumber(strsub(hex, 5, 6), 16) / 255
+local function HexToRGB(hexColor)
+    return tonumber(strsub(hexColor, 1, 2), 16) / 255,
+        tonumber(strsub(hexColor, 3, 4), 16) / 255,
+        tonumber(strsub(hexColor, 5, 6), 16) / 255
 end
 
 local function ParseHex(raw)
@@ -115,18 +115,18 @@ local function CursorSize(p)
 end
 
 local function ApplyReticle(p, size, region, g, b, a)
-    if not reticle then
+    if not reticleTex then
         return
     end
     if not p.reticle then
-        reticle:Hide()
+        reticleTex:Hide()
         return
     end
     -- ~20% of the ring so the mask has enough pixels to stay circular.
-    local dot = max(4, floor(size * 0.2 + 0.5))
-    reticle:SetSize(dot, dot)
-    reticle:SetColorTexture(region, g, b, a)
-    reticle:Show()
+    local dotTex = max(4, floor(size * 0.2 + 0.5))
+    reticleTex:SetSize(dotTex, dotTex)
+    reticleTex:SetColorTexture(region, g, b, a)
+    reticleTex:Show()
 end
 
 local function Apply()
@@ -135,14 +135,14 @@ local function Apply()
     end
     local p = ECL.db.profile
 
-    local scale = p.scale or DEF_SCALE
+    local zoom = p.scale or DEF_SCALE
     local size = CursorSize(p)
-    if scale ~= lastScale then
-        lastScale = scale
+    if zoom ~= lastScale then
+        lastScale = zoom
         frame:SetSize(size, size)
     end
 
-    local hex = p.hex or DEF_HEX
+    local hexColor = p.hex or DEF_HEX
     local colorModeChanged = (p.useClassColor ~= lastUseClassColor)
     lastUseClassColor = p.useClassColor
     -- Recompute whenever hex, class mode, accent mode, or the mode flag
@@ -150,8 +150,8 @@ local function Apply()
     -- mutates in place when the user changes their accent color mid-session.
     local a = (p.alpha or 100) / 100
     local region, g, b
-    if hex ~= lastHex or p.useClassColor or p.useAccentColor or colorModeChanged or a ~= lastAlpha then
-        lastHex = hex
+    if hexColor ~= lastHex or p.useClassColor or p.useAccentColor or colorModeChanged or a ~= lastAlpha then
+        lastHex = hexColor
         lastAlpha = a
         region, g, b = ResolveColor(p)
         t:SetVertexColor(region, g, b, a)
@@ -179,7 +179,7 @@ end
 -------------------------------------------------------------------------------
 --  Cursor Trail Engine (simple dot trail)
 -------------------------------------------------------------------------------
-local trailDots = {} -- texture pool
+local trailList = {} -- texture pool
 local trailActive = {} -- active dot entries { tex, life, maxLife }
 local trailEntryPool = {} -- recycled entry tables to avoid GC churn
 local trailTimer = 0
@@ -191,22 +191,22 @@ local TRAIL_DOT_DURATION = 0.5
 local TRAIL_DOT_DENSITY = 0.004
 local TRAIL_DOT_BASE_SIZE = 40
 
-local trailContainer -- high-strata parent for trail dots
+local trailHolder -- high-strata parent for trail dots
 
 local function InitTrailDotPool()
-    if not trailContainer then
-        trailContainer = CreateFrame("Frame", "ECL_TrailContainer", UIParent)
-        trailContainer:SetAllPoints(UIParent)
-        trailContainer:SetFrameStrata("TOOLTIP")
-        trailContainer:SetFrameLevel(9998)
-        trailContainer:EnableMouse(false)
+    if not trailHolder then
+        trailHolder = CreateFrame("Frame", "ECL_TrailContainer", UIParent)
+        trailHolder:SetAllPoints(UIParent)
+        trailHolder:SetFrameStrata("TOOLTIP")
+        trailHolder:SetFrameLevel(9998)
+        trailHolder:EnableMouse(false)
     end
     for index = 1, TRAIL_POOL_SIZE do
-        local dot = trailContainer:CreateTexture(nil, "ARTWORK")
-        dot:SetTexture("Interface\\AddOns\\CludesUIQoL\\Media\\ring_normal.tga")
-        dot:SetBlendMode("ADD")
-        dot:Hide()
-        trailDots[index] = dot
+        local dotTex = trailHolder:CreateTexture(nil, "ARTWORK")
+        dotTex:SetTexture("Interface\\AddOns\\CludesUIQoL\\Media\\ring_normal.tga")
+        dotTex:SetBlendMode("ADD")
+        dotTex:Hide()
+        trailList[index] = dotTex
     end
 end
 
@@ -215,35 +215,35 @@ local function GetTrailColor()
     return ResolveColor(p)
 end
 
-local function SpawnTrailDot(cx, cy)
-    if #trailDots == 0 then
+local function SpawnTrailDot(cursorX, cursorY)
+    if #trailList == 0 then
         return
     end
-    local dot = trailDots[#trailDots]
-    trailDots[#trailDots] = nil
+    local dotTex = trailList[#trailList]
+    trailList[#trailList] = nil
     local s = UIParent:GetEffectiveScale()
     local region, g, b = GetTrailColor()
     local baseSize = TRAIL_DOT_BASE_SIZE * 0.8
-    dot:SetVertexColor(region, g, b, 1)
-    dot:SetSize(baseSize, baseSize)
-    dot:ClearAllPoints()
-    dot:SetPoint("CENTER", trailContainer, "BOTTOMLEFT", cx / s, cy / s)
-    dot:SetAlpha(1)
-    dot:Show()
+    dotTex:SetVertexColor(region, g, b, 1)
+    dotTex:SetSize(baseSize, baseSize)
+    dotTex:ClearAllPoints()
+    dotTex:SetPoint("CENTER", trailHolder, "BOTTOMLEFT", cursorX / s, cursorY / s)
+    dotTex:SetAlpha(1)
+    dotTex:Show()
     local record = table.remove(trailEntryPool) or {}
-    record.tex = dot
+    record.tex = dotTex
     record.life = TRAIL_DOT_DURATION
     record.maxLife = TRAIL_DOT_DURATION
     trailActive[#trailActive + 1] = record
 end
 
-local function UpdateTrailDots(elapsed)
+local function UpdateTrailDots(timePassed)
     for index = #trailActive, 1, -1 do
         local e = trailActive[index]
-        e.life = e.life - elapsed
+        e.life = e.life - timePassed
         if e.life <= 0 then
             e.tex:Hide()
-            trailDots[#trailDots + 1] = e.tex
+            trailList[#trailList + 1] = e.tex
             e.tex = nil
             trailEntryPool[#trailEntryPool + 1] = e
             trailActive[index] = trailActive[#trailActive]
@@ -261,7 +261,7 @@ local function HideTrailDots()
     for index = #trailActive, 1, -1 do
         local e = trailActive[index]
         e.tex:Hide()
-        trailDots[#trailDots + 1] = e.tex
+        trailList[#trailList + 1] = e.tex
         e.tex = nil
         trailEntryPool[#trailEntryPool + 1] = e
         trailActive[index] = nil
@@ -274,20 +274,20 @@ local function ApplyTrail()
 
     if not trailEnabled then
         HideTrailDots()
-        if trailContainer then
-            trailContainer:SetScript("OnUpdate", nil)
+        if trailHolder then
+            trailHolder:SetScript("OnUpdate", nil)
         end
         return
     end
 
-    if #trailDots == 0 and #trailActive == 0 then
+    if #trailList == 0 and #trailActive == 0 then
         InitTrailDotPool()
     end
 
     -- Trail runs on trailContainer (always visible) so it keeps ticking
     -- even when the cursor circle frame is hidden (disabled or instance-only).
-    if trailContainer and not trailContainer:GetScript("OnUpdate") then
-        trailContainer:SetScript("OnUpdate", function(_, elapsed)
+    if trailHolder and not trailHolder:GetScript("OnUpdate") then
+        trailHolder:SetScript("OnUpdate", function(_, timePassed)
             if not trailEnabled then
                 return
             end
@@ -297,20 +297,20 @@ local function ApplyTrail()
             -- Instances, Only Show When Hidden, the Visibility block) rather
             -- than re-deriving a subset of them.
             if isVisible then
-                local cx, cy = GetCursorPosition()
-                trailTimer = trailTimer + elapsed
-                local dx = cx - trailLastCX
-                local dy = cy - trailLastCY
+                local cursorX, cursorY = GetCursorPosition()
+                trailTimer = trailTimer + timePassed
+                local dx = cursorX - trailLastCX
+                local dy = cursorY - trailLastCY
                 local moved = (dx * dx + dy * dy) ^ 0.5
                 if trailTimer >= TRAIL_DOT_DENSITY and moved >= 0.5 then
                     trailTimer = 0
-                    SpawnTrailDot(cx, cy)
-                    trailLastCX, trailLastCY = cx, cy
+                    SpawnTrailDot(cursorX, cursorY)
+                    trailLastCX, trailLastCY = cursorX, cursorY
                 end
             end
 
             -- Always update (fade/shrink) active dots so they finish animating
-            UpdateTrailDots(elapsed)
+            UpdateTrailDots(timePassed)
         end)
     end
 end
@@ -363,13 +363,13 @@ end
 --- @param b number  blue
 --- @param a number  alpha
 --- @return Frame  the ring frame with :StartRing / :StopRing / :SetRingColor / :SetRingTexture
-local function CreateRing(hostFrame, radius, ringTex, region, g, b, a)
+local function CreateRing(hostFrame, ringRadius, ringTex, region, g, b, a)
     local ring = CreateFrame("Frame", nil, hostFrame)
-    ring:SetSize(radius * 2, radius * 2)
+    ring:SetSize(ringRadius * 2, ringRadius * 2)
     ring:SetPoint("CENTER", hostFrame, "CENTER", 0, 0)
     ring:SetFrameLevel(hostFrame:GetFrameLevel() + 1)
 
-    ring.radius = radius
+    ring.radius = ringRadius
     ring.dur = 0
     ring.maxDur = 0
     ring._r, ring._g, ring._b, ring._a = region, g, b, a
@@ -412,12 +412,12 @@ local function CreateRing(hostFrame, radius, ringTex, region, g, b, a)
         self._cd:SetSwipeTexture(tp)
     end
 
-    function ring:StartRing(elapsed, maxDur)
-        self.dur = max(elapsed, 0)
+    function ring:StartRing(timePassed, maxDur)
+        self.dur = max(timePassed, 0)
         self.maxDur = maxDur
         self._fg:Hide()
         local nowTime = GetTime()
-        self._cd:SetCooldown(nowTime - elapsed, maxDur)
+        self._cd:SetCooldown(nowTime - timePassed, maxDur)
         self._cd:Show()
         self:Show()
     end
@@ -498,18 +498,18 @@ local function CreateGCDCircle()
         return
     end
     local g = GCD_DB()
-    local radius = (g.radius or 30)
+    local ringRadius = (g.radius or 30)
     local region, ng, b = ParseHex(g.hex)
     local a = (g.alpha or 100) / 100
 
     gcdRoot = CreateFrame("Frame", "ECL_GCDRoot", UIParent)
-    gcdRoot:SetSize(radius * 2, radius * 2)
+    gcdRoot:SetSize(ringRadius * 2, ringRadius * 2)
     gcdRoot:SetFrameStrata("TOOLTIP")
     gcdRoot:SetFrameLevel(9990)
     gcdRoot:EnableMouse(false)
     gcdRoot:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 
-    gcdRing = CreateRing(gcdRoot, radius, g.ringTex or "normal", region, ng, b, a)
+    gcdRing = CreateRing(gcdRoot, ringRadius, g.ringTex or "normal", region, ng, b, a)
 
     -- GCD event handling
     gcdRoot:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
@@ -581,18 +581,18 @@ local function ApplyGCDCircle()
     gcdRoot:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTED", "player")
     gcdRoot:RegisterUnitEvent("UNIT_SPELLCAST_STOP", "player")
     local attached = g.attached ~= false -- default true
-    local radius = g.radius or 30
-    local scale = (g.scale or 100) / 100
+    local ringRadius = g.radius or 30
+    local zoom = (g.scale or 100) / 100
     -- ResolveColor picks accent > class > custom hex automatically
     local region, ng, b = ResolveColor(g)
     local a = (g.alpha or 100) / 100
 
     gcdAttached = attached
-    gcdRoot:SetScale(scale)
+    gcdRoot:SetScale(zoom)
     gcdRing:SetRingColor(region, ng, b, a)
-    gcdRing:SetRingRadius(radius)
+    gcdRing:SetRingRadius(ringRadius)
     gcdRing:SetRingTexture(g.ringTex or "normal")
-    gcdRoot:SetSize(radius * 2, radius * 2)
+    gcdRoot:SetSize(ringRadius * 2, ringRadius * 2)
 
     gcdRoot:Show()
     -- Respect instance-only: hide if not in instance
@@ -617,8 +617,8 @@ local function ApplyGCDCircle()
             gcdRoot:ClearAllPoints()
             gcdRoot:SetPoint("CENTER", UIParent, "BOTTOMLEFT", 0, 0)
             local s = UIParent:GetEffectiveScale()
-            local cx, cy = GetCursorPosition()
-            gcdRoot:SetPoint("CENTER", UIParent, "BOTTOMLEFT", floor(cx / s + 0.5), floor(cy / s + 0.5))
+            local cursorX, cursorY = GetCursorPosition()
+            gcdRoot:SetPoint("CENTER", UIParent, "BOTTOMLEFT", floor(cursorX / s + 0.5), floor(cursorY / s + 0.5))
             gcdRoot:SetScript("OnUpdate", function()
                 local sc = UIParent:GetEffectiveScale()
                 local mx, my = GetCursorPosition()
@@ -653,64 +653,64 @@ UpdateVisibility = function()
         return
     end
     local p = ECL.db.profile
-    local shouldShow = (p.enabled ~= false)
-    if shouldShow and p.instanceOnly then
-        shouldShow = InRealInstancedContent()
+    local showIt = (p.enabled ~= false)
+    if showIt and p.instanceOnly then
+        showIt = InRealInstancedContent()
     end
     -- "Combat Only": only show while the player is in combat. The combat-edge
     -- events driving this are registered only while a toggle is on
     -- (ApplyCombatOnlyEvents).
-    if shouldShow and p.combatOnly then
-        shouldShow = InCombatLockdown() and true or false
+    if showIt and p.combatOnly then
+        showIt = InCombatLockdown() and true or false
     end
     -- Standard visibility options (returns true if should HIDE)
-    if shouldShow and CludesUI.CheckVisibilityOptions(p) then
-        shouldShow = false
+    if showIt and CludesUI.CheckVisibilityOptions(p) then
+        showIt = false
     end
     -- Standard visibility mode (mouseover treated as always for cursor)
-    if shouldShow then
+    if showIt then
         local mode = p.visibility or "always"
         if mode == "never" then
-            shouldShow = false
+            showIt = false
         elseif mode == "in_combat" then
-            shouldShow = _G._CUBS_InCombat and _G._CUBS_InCombat() or false
+            showIt = _G._CUBS_InCombat and _G._CUBS_InCombat() or false
         elseif mode == "out_of_combat" then
-            shouldShow = not (_G._CUBS_InCombat and _G._CUBS_InCombat())
+            showIt = not (_G._CUBS_InCombat and _G._CUBS_InCombat())
         elseif mode == "in_raid" then
-            shouldShow = IsInRaid()
+            showIt = IsInRaid()
         elseif mode == "in_party" then
-            shouldShow = IsInGroup() and not IsInRaid()
+            showIt = IsInGroup() and not IsInRaid()
         elseif mode == "solo" then
-            shouldShow = not IsInGroup()
+            showIt = not IsInGroup()
             -- "always" and "mouseover" both show (cursor is always at mouse)
         end
     end
     -- "Only Show When Hidden": only show while steering the camera/character with
     -- the mouse (cursor hidden). mouselookActive is maintained by the world mouse-
     -- handler hooks (CameraOrSelectOrMove / TurnOrAction) further below.
-    if shouldShow and p.onlyWhenHidden and not mouselookActive then
-        shouldShow = false
+    if showIt and p.onlyWhenHidden and not mouselookActive then
+        showIt = false
     end
-    if shouldShow and not isVisible then
+    if showIt and not isVisible then
         isVisible = true
         -- Snap to the current cursor BEFORE showing, otherwise the frame flashes
         -- at its last (stale) position for one frame -- the glue only repositions
         -- on the following motion sample.
         local s = UIParent:GetEffectiveScale()
-        local cx, cy = GetCursorPosition()
-        cx, cy = floor(cx / s + 0.5), floor(cy / s + 0.5)
-        lastX, lastY = cx, cy
-        frame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx, cy)
+        local cursorX, cursorY = GetCursorPosition()
+        cursorX, cursorY = floor(cursorX / s + 0.5), floor(cursorY / s + 0.5)
+        lastX, lastY = cursorX, cursorY
+        frame:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cursorX, cursorY)
         frame:Show()
         SetCursorGlue(true)
-    elseif not shouldShow and isVisible then
+    elseif not showIt and isVisible then
         isVisible = false
         frame:Hide()
         SetCursorGlue(false)
     end
 
     -- Trail: hide dots and suppress spawning when circle is hidden
-    if not shouldShow and trailEnabled then
+    if not showIt and trailEnabled then
         HideTrailDots()
     end
 
@@ -890,18 +890,18 @@ local function CreateCastCircle()
         return
     end
     local c = Cast_DB()
-    local radius = (c.radius or 36)
+    local ringRadius = (c.radius or 36)
     local region, ng, b = ParseHex(c.hex)
     local a = (c.alpha or 100) / 100
 
     castRoot = CreateFrame("Frame", "ECL_CastRoot", UIParent)
-    castRoot:SetSize(radius * 2, radius * 2)
+    castRoot:SetSize(ringRadius * 2, ringRadius * 2)
     castRoot:SetFrameStrata("TOOLTIP")
     castRoot:SetFrameLevel(9988)
     castRoot:EnableMouse(false)
     castRoot:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
 
-    castRing = CreateRing(castRoot, radius, c.ringTex or "normal", region, ng, b, a)
+    castRing = CreateRing(castRoot, ringRadius, c.ringTex or "normal", region, ng, b, a)
 
     -- Spark textures: main spark + glow layer for vibrancy
     local sparkOverlay = CreateFrame("Frame", nil, castRoot)
@@ -912,14 +912,14 @@ local function CreateCastCircle()
     castRoot._spark = sparkOverlay:CreateTexture(nil, "OVERLAY")
     castRoot._spark:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
     castRoot._spark:SetBlendMode("ADD")
-    castRoot._spark:SetSize(radius * 0.6, radius * 0.6)
+    castRoot._spark:SetSize(ringRadius * 0.6, ringRadius * 0.6)
     castRoot._spark:Hide()
 
     -- Glow layer: a second additive spark, slightly larger and softer, for bloom
     castRoot._sparkGlow = sparkOverlay:CreateTexture(nil, "OVERLAY", nil, -1)
     castRoot._sparkGlow:SetTexture("Interface\\CastingBar\\UI-CastingBar-Spark")
     castRoot._sparkGlow:SetBlendMode("ADD")
-    castRoot._sparkGlow:SetSize(radius * 0.9, radius * 0.9)
+    castRoot._sparkGlow:SetSize(ringRadius * 0.9, ringRadius * 0.9)
     castRoot._sparkGlow:SetAlpha(0.5)
     castRoot._sparkGlow:Hide()
 
@@ -947,11 +947,11 @@ local function CreateCastCircle()
             return
         end
 
-        local c2 = Cast_DB()
-        local ringRadius = c2.radius or 36
+        local castCfg = Cast_DB()
+        local ringRadius = castCfg.radius or 36
         -- Approximate inner radius ratio per ring texture for spark orbit
         local RING_INNER = { thin = 0.92, light = 0.85, normal = 0.78, heavy = 0.68, thick = 0.58 }
-        local innerRatio = RING_INNER[c2.ringTex or "normal"] or 0.78
+        local innerRatio = RING_INNER[castCfg.ringTex or "normal"] or 0.78
         local sparkOrbitR = ringRadius * (1 + innerRatio) * 0.5
 
         local angleDeg = 90 - (pct * 360)
@@ -990,14 +990,14 @@ local function CreateCastCircle()
         if unitToken ~= "player" then
             return
         end
-        local c2 = Cast_DB()
-        if not c2.enabled then
+        local castCfg = Cast_DB()
+        if not castCfg.enabled then
             return
         end
-        if c2.instanceOnly and not InRealInstancedContent() then
+        if castCfg.instanceOnly and not InRealInstancedContent() then
             return
         end
-        if c2.combatOnly and not InCombatLockdown() then
+        if castCfg.combatOnly and not InCombatLockdown() then
             return
         end
 
@@ -1005,10 +1005,10 @@ local function CreateCastCircle()
             local name, _, _, startMS, endMS, _, cID = UnitCastingInfo("player")
             if name then
                 self._castID = cID
-                local elapsed = GetTime() - startMS * 0.001
+                local timePassed = GetTime() - startMS * 0.001
                 local sum = (endMS - startMS) * 0.001
-                castRing:StartRing(elapsed, sum)
-                if c2.sparkEnabled then
+                castRing:StartRing(timePassed, sum)
+                if castCfg.sparkEnabled then
                     if self._spark then
                         self._spark:Show()
                     end
@@ -1029,10 +1029,10 @@ local function CreateCastCircle()
                 if numStages and numStages > 0 and GetUnitEmpowerHoldAtMaxTime then
                     endMS = endMS + GetUnitEmpowerHoldAtMaxTime("player")
                 end
-                local elapsed = GetTime() - startMS * 0.001
+                local timePassed = GetTime() - startMS * 0.001
                 local sum = (endMS - startMS) * 0.001
-                castRing:StartRing(elapsed, sum)
-                if c2.sparkEnabled then
+                castRing:StartRing(timePassed, sum)
+                if castCfg.sparkEnabled then
                     if self._spark then
                         self._spark:Show()
                     end
@@ -1098,22 +1098,22 @@ local function ApplyCastCircle()
         castRoot:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP", "player")
     end
     local attached = c.attached ~= false -- default true
-    local radius = c.radius or 36
-    local scale = (c.scale or 100) / 100
+    local ringRadius = c.radius or 36
+    local zoom = (c.scale or 100) / 100
     -- ResolveColor picks accent > class > custom hex automatically
     local region, ng, b = ResolveColor(c)
     local a = (c.alpha or 100) / 100
 
     castAttached = attached
-    castRoot:SetScale(scale)
+    castRoot:SetScale(zoom)
     castRing:SetRingColor(region, ng, b, a)
-    castRing:SetRingRadius(radius)
+    castRing:SetRingRadius(ringRadius)
     castRing:SetRingTexture(c.ringTex or "normal")
-    castRoot:SetSize(radius * 2, radius * 2)
+    castRoot:SetSize(ringRadius * 2, ringRadius * 2)
 
     -- Spark settings
     if castRoot._spark then
-        local sparkSize = radius * 0.6
+        local sparkSize = ringRadius * 0.6
         castRoot._spark:SetSize(sparkSize, sparkSize)
         if c.sparkEnabled then
             local sr, sg, scrollBar
@@ -1129,7 +1129,7 @@ local function ApplyCastCircle()
             -- Glow layer: same color, slightly transparent for bloom
             if castRoot._sparkGlow then
                 castRoot._sparkGlow:SetVertexColor(sr, sg, scrollBar, 1)
-                castRoot._sparkGlow:SetSize(radius * 0.9, radius * 0.9)
+                castRoot._sparkGlow:SetSize(ringRadius * 0.9, ringRadius * 0.9)
                 castRoot._sparkGlow:SetAlpha(0.5)
             end
         end
@@ -1158,8 +1158,8 @@ local function ApplyCastCircle()
             castRoot:ClearAllPoints()
             castRoot:SetPoint("CENTER", UIParent, "BOTTOMLEFT", 0, 0)
             local s = UIParent:GetEffectiveScale()
-            local cx, cy = GetCursorPosition()
-            castRoot:SetPoint("CENTER", UIParent, "BOTTOMLEFT", floor(cx / s + 0.5), floor(cy / s + 0.5))
+            local cursorX, cursorY = GetCursorPosition()
+            castRoot:SetPoint("CENTER", UIParent, "BOTTOMLEFT", floor(cursorX / s + 0.5), floor(cursorY / s + 0.5))
             castRoot:SetScript("OnUpdate", function()
                 local sc = UIParent:GetEffectiveScale()
                 local mx, my = GetCursorPosition()
@@ -1206,8 +1206,8 @@ local function RegisterUnlockElements()
         return g2.enabled and g2.attached == false
     end
     local function CastDetached()
-        local c2 = Cast_DB()
-        return c2.enabled and c2.attached == false
+        local castCfg = Cast_DB()
+        return castCfg.enabled and castCfg.attached == false
     end
 
     do
@@ -1299,8 +1299,8 @@ local function RegisterUnlockElements()
                 return castRoot
             end,
             getSize = function()
-                local c2 = Cast_DB()
-                local region = c2.radius or 36
+                local castCfg = Cast_DB()
+                local region = castCfg.radius or 36
                 return region * 2, region * 2
             end,
             setWidth = function(_, wid)
@@ -1337,8 +1337,8 @@ local function RegisterUnlockElements()
                 end
             end,
             loadPos = function()
-                local c2 = Cast_DB()
-                return c2.pos
+                local castCfg = Cast_DB()
+                return castCfg.pos
             end,
             clearPos = function()
                 local p = ECL.db and ECL.db.profile
@@ -1370,22 +1370,22 @@ _G._CUCL_ApplyGCDPosition = function()
     local g = GCD_DB()
     local place = g.pos
     if place and place.point then
-        local px, py = place.x or 0, place.y or 0
+        local pixel, py = place.x or 0, place.y or 0
         local PPa = CludesUI and CludesUI.PP
         if PPa then
-            local es = gcdRoot:GetEffectiveScale()
+            local effScale = gcdRoot:GetEffectiveScale()
             local isCenterAnchor = (place.point == "CENTER")
                 and (place.relPoint == "CENTER" or place.relPoint == nil)
             if isCenterAnchor and PPa.SnapCenterForDim then
-                px = PPa.SnapCenterForDim(px, gcdRoot:GetWidth() or 0, es)
-                py = PPa.SnapCenterForDim(py, gcdRoot:GetHeight() or 0, es)
+                pixel = PPa.SnapCenterForDim(pixel, gcdRoot:GetWidth() or 0, effScale)
+                py = PPa.SnapCenterForDim(py, gcdRoot:GetHeight() or 0, effScale)
             elseif PPa.SnapForES then
-                px = PPa.SnapForES(px, es)
-                py = PPa.SnapForES(py, es)
+                pixel = PPa.SnapForES(pixel, effScale)
+                py = PPa.SnapForES(py, effScale)
             end
         end
         gcdRoot:ClearAllPoints()
-        gcdRoot:SetPoint(place.point, UIParent, place.relPoint or place.point, px, py)
+        gcdRoot:SetPoint(place.point, UIParent, place.relPoint or place.point, pixel, py)
     else
         -- Default: screen center
         gcdRoot:ClearAllPoints()
@@ -1405,22 +1405,22 @@ _G._CUCL_ApplyCastPosition = function()
     local c = Cast_DB()
     local place = c.pos
     if place and place.point then
-        local px, py = place.x or 0, place.y or 0
+        local pixel, py = place.x or 0, place.y or 0
         local PPa = CludesUI and CludesUI.PP
         if PPa then
-            local es = castRoot:GetEffectiveScale()
+            local effScale = castRoot:GetEffectiveScale()
             local isCenterAnchor = (place.point == "CENTER")
                 and (place.relPoint == "CENTER" or place.relPoint == nil)
             if isCenterAnchor and PPa.SnapCenterForDim then
-                px = PPa.SnapCenterForDim(px, castRoot:GetWidth() or 0, es)
-                py = PPa.SnapCenterForDim(py, castRoot:GetHeight() or 0, es)
+                pixel = PPa.SnapCenterForDim(pixel, castRoot:GetWidth() or 0, effScale)
+                py = PPa.SnapCenterForDim(py, castRoot:GetHeight() or 0, effScale)
             elseif PPa.SnapForES then
-                px = PPa.SnapForES(px, es)
-                py = PPa.SnapForES(py, es)
+                pixel = PPa.SnapForES(pixel, effScale)
+                py = PPa.SnapForES(py, effScale)
             end
         end
         castRoot:ClearAllPoints()
-        castRoot:SetPoint(place.point, UIParent, place.relPoint or place.point, px, py)
+        castRoot:SetPoint(place.point, UIParent, place.relPoint or place.point, pixel, py)
     else
         -- Default: screen center
         castRoot:ClearAllPoints()
@@ -1572,12 +1572,12 @@ function ECL:OnEnable()
 
     -- Center reticle: solid fill through the shared portrait circle mask,
     -- same construction as the patch-notes sidebar dot.
-    reticle = frame:CreateTexture(nil, "OVERLAY", nil, 1)
-    reticle:SetPoint("CENTER")
-    reticle:SetColorTexture(1, 1, 1, 1)
-    if reticle.SetSnapToPixelGrid then
-        reticle:SetSnapToPixelGrid(false)
-        reticle:SetTexelSnappingBias(0)
+    reticleTex = frame:CreateTexture(nil, "OVERLAY", nil, 1)
+    reticleTex:SetPoint("CENTER")
+    reticleTex:SetColorTexture(1, 1, 1, 1)
+    if reticleTex.SetSnapToPixelGrid then
+        reticleTex:SetSnapToPixelGrid(false)
+        reticleTex:SetTexelSnappingBias(0)
     end
     local reticleMask = frame:CreateMaskTexture()
     reticleMask:SetTexture(
@@ -1585,9 +1585,9 @@ function ECL:OnEnable()
         "CLAMPTOBLACKADDITIVE",
         "CLAMPTOBLACKADDITIVE"
     )
-    reticleMask:SetAllPoints(reticle)
-    reticle:AddMaskTexture(reticleMask)
-    reticle:Hide()
+    reticleMask:SetAllPoints(reticleTex)
+    reticleTex:AddMaskTexture(reticleMask)
+    reticleTex:Hide()
 
     -- No OnUpdate: the shared cursor service drives positioning. The frame
     -- is SHOWN by default and isVisible initializes TRUE, so the first

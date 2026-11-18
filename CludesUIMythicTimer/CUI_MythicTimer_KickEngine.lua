@@ -110,14 +110,14 @@ local LEARN_SESSIONS = { ALL, CUR }
 --------------------------------------------------------------------------------
 --  State
 --------------------------------------------------------------------------------
-local roster = {} -- unit -> member record (built once per slot, reset on a new GUID)
+local rosterMap = {} -- unit -> member record (built once per slot, reset on a new GUID)
 local subs = {} -- key -> handlers { kick = fn, cooldown = fn, roster = fn }
 local subCount = 0
 local isActive = false
-local evt -- event frame, built on the first activation
+local eventTag -- event frame, built on the first activation
 local ownT = -1 -- GetTime() of your last kick cast
 local ownPending = false -- that cast has not been matched to a landed kick yet
-local stopped = {} -- plate units whose cast was kicked this frame, waiting for the meter
+local wasStopped = {} -- plate units whose cast was kicked this frame, waiting for the meter
 local stoppedBy = {} -- their interrupter values (secret or plain)
 local stoppedSpell = {} -- the spells those casts were (plain), false where hidden
 local stoppedT = -1
@@ -136,7 +136,7 @@ local gateT = -1 -- the update the packet was built for
 local countList = {} -- the counts event's members (read at once by the displays)
 local fightGen = 0 -- bumped whenever the counts restart (a new fight, a reset, a load); KE.FightGen
 local lateArmed = false -- a plate stop waits one frame for an update of its own (OnStop, LatePair)
-local grew, leftX = {}, {} -- Attribute's scratch
+local rosterGrew, leftX = {}, {} -- Attribute's scratch
 local growth = {} -- Attribute's scratch: unit -> entries its list gained this update
 local preNarrow = {} -- Pick's scratch: the candidates before the cooldown narrowing
 local rowIdx, rowAt, rowScratch = {}, {}, {} -- TieNarrow's scratch: unit -> its one row's index (false: several), index -> unit
@@ -152,7 +152,7 @@ local rowIdx, rowAt, rowScratch = {}, {}, {} -- TieNarrow's scratch: unit -> its
 -- `a` and `g`: each member's gate source (their demon's for a demon's
 -- interrupt) as last read, its count and its entry count; `gated`: the last
 -- update sent a gate packet a plate arriving later in its window can join.
-local memo = {
+local cache = {
     rows = {},
     n = {},
     a = {},
@@ -172,7 +172,7 @@ local memo = {
 
 local function NewMember(unitToken)
     local m = { unit = unitToken, lastSure = false }
-    roster[unitToken] = m
+    rosterMap[unitToken] = m
     return m
 end
 
@@ -190,13 +190,13 @@ end
 --------------------------------------------------------------------------------
 -- The meter's rows name a spec by its icon; each class's specs map their icon
 -- back to the spec ID (built once per class).
-local function IconSpecs(classID, class)
-    local t = specOfIcon[class]
+local function IconSpecs(classID, classFile)
+    local t = specOfIcon[classFile]
     if t then
         return t
     end
     t = {}
-    specOfIcon[class] = t
+    specOfIcon[classFile] = t
     local num = C_SpecializationInfo.GetNumSpecializationsForClassID(classID) or 0
     for i = 1, num do
         local ident, _, _, iconTex = GetSpecializationInfoForClassID(classID, i)
@@ -210,11 +210,11 @@ end
 
 -- The icon the meter's rows show for a member's spec, from their class's
 -- spec list.
-local function IconOf(classID, class, specID)
-    if not (classID and class and specID) then
+local function IconOf(classID, classFile, specID)
+    if not (classID and classFile and specID) then
         return nil
     end
-    IconSpecs(classID, class)
+    IconSpecs(classID, classFile)
     return specIconOf[specID]
 end
 
@@ -236,35 +236,35 @@ end
 
 -- The member's interrupt and its cooldowns from what is known of them.
 local function ResolveKick(m)
-    local kick, cd, landed, minCd
+    local kickRec, cd, landed, minCd
     local specInfo = m.specID
     if m.class then
         if m.unit == "player" then
             -- Your own: the spellbook knows (a demon's interrupt included).
-            kick = CludesUI.GetActiveKickSpell()
-            if kick and not KD.INTERRUPTS[kick] then
-                kick = KD.OwnCastKick(kick)
+            kickRec = CludesUI.GetActiveKickSpell()
+            if kickRec and not KD.INTERRUPTS[kickRec] then
+                kickRec = KD.OwnCastKick(kickRec)
             end
-            if not kick then
-                kick, specInfo = KD.KickSpell(m.class, m.specID, m.role, m.talents, m.pet)
+            if not kickRec then
+                kickRec, specInfo = KD.KickSpell(m.class, m.specID, m.role, m.talents, m.pet)
             end
         else
-            kick, specInfo = KD.KickSpell(m.class, m.specID, m.role, m.talents, m.pet)
+            kickRec, specInfo = KD.KickSpell(m.class, m.specID, m.role, m.talents, m.pet)
         end
-        if kick then
-            cd, landed = KD.Cooldown(kick, specInfo, m.talents)
+        if kickRec then
+            cd, landed = KD.Cooldown(kickRec, specInfo, m.talents)
             -- The shortest the landed cooldown could be, with every cooldown
             -- talent: what a member whose talents were never read is held to.
-            local _, shortest = KD.Cooldown(kick, specInfo, KD.WATCHED_TALENTS)
+            local _, shortest = KD.Cooldown(kickRec, specInfo, KD.WATCHED_TALENTS)
             minCd = shortest
         end
     end
-    local changed = (m.kick ~= (kick or false))
+    local didChange = (m.kick ~= (kickRec or false))
         or (m.cd ~= cd)
         or (m.landedCd ~= landed)
         or (m.minCd ~= minCd)
-    m.kick, m.cd, m.landedCd, m.minCd = kick or false, cd, landed, minCd
-    return changed
+    m.kick, m.cd, m.landedCd, m.minCd = kickRec or false, cd, landed, minCd
+    return didChange
 end
 
 --------------------------------------------------------------------------------
@@ -275,7 +275,7 @@ local function UnitOfGUID(g)
         return nil
     end
     for i = 1, #GROUP_UNITS do
-        local m = roster[GROUP_UNITS[i]]
+        local m = rosterMap[GROUP_UNITS[i]]
         if m and m.guid == g then
             return GROUP_UNITS[i]
         end
@@ -316,10 +316,10 @@ end
 -- an empty slot clears it. Role, pet and the kick are re-read every time.
 local function SyncRoster()
     local nowTime = GetTime()
-    local changed = false
+    local didChange = false
     for i = 1, #GROUP_UNITS do
         local unitToken = GROUP_UNITS[i]
-        local m = roster[unitToken] or NewMember(unitToken)
+        local m = rosterMap[unitToken] or NewMember(unitToken)
         -- Players only: a delve companion or a follower NPC in the slot is an
         -- empty slot (no row, no inspect).
         if UnitExists(unitToken) and (unitToken == "player" or IsPlayerUnit(unitToken)) then
@@ -327,7 +327,7 @@ local function SyncRoster()
             if unitGuid ~= m.guid then
                 wipe(m)
                 m.unit, m.guid, m.lastSure = unitToken, unitGuid, false
-                changed = true
+                didChange = true
                 -- A new occupant is read whatever the slot's last read did.
                 if unitGuid and unitToken ~= "player" then
                     AskRead(unitToken, true)
@@ -337,10 +337,10 @@ local function SyncRoster()
             -- while a unit's identity is restricted) keeps the last plain
             -- value: the same occupant has the same class, and a new one wiped
             -- the record above.
-            local _, class, classID = UnitClass(unitToken)
-            class = PlainString(class)
-            if class then
-                m.class = class
+            local _, classFile, classID = UnitClass(unitToken)
+            classFile = PlainString(classFile)
+            if classFile then
+                m.class = classFile
                 m.classID = (type(classID) == "number" and not Secret(classID)) and classID or m.classID
             end
             local success, role = pcall(UnitGroupRolesAssigned, unitToken)
@@ -356,18 +356,18 @@ local function SyncRoster()
             end
             if unitToken == "player" then
                 if RefreshPlayer(m, true) then
-                    changed = true
+                    didChange = true
                 end
             elseif ResolveKick(m) then
-                changed = true
+                didChange = true
             end
         elseif m.guid or m.class then
             wipe(m)
             m.unit, m.lastSure = unitToken, false
-            changed = true
+            didChange = true
         end
     end
-    if changed then
+    if didChange then
         Dispatch("roster", nowTime)
     end
 end
@@ -375,7 +375,7 @@ end
 -- Your own spec and talents (IsPlayerSpell), read directly. Returns whether
 -- the kick changed; dispatches unless the caller does (quiet).
 RefreshPlayer = function(m, quiet)
-    m = m or roster.player
+    m = m or rosterMap.player
     if not m then
         return false
     end
@@ -393,11 +393,11 @@ RefreshPlayer = function(m, quiet)
     end
     m.talents = t
     m.pet = PetFamily("player")
-    local changed = ResolveKick(m)
-    if changed and not quiet then
+    local didChange = ResolveKick(m)
+    if didChange and not quiet then
         Dispatch("roster", GetTime())
     end
-    return changed
+    return didChange
 end
 
 --------------------------------------------------------------------------------
@@ -425,22 +425,22 @@ end
 -- the meter credits their kicks through their row. Registered at Activate,
 -- after the roster read gave your class; a hunter's pet is never listened to.
 local function RegisterOwnCasts()
-    local me = roster.player
+    local me = rosterMap.player
     if me and me.class == "WARLOCK" then
-        evt:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player", "pet")
+        eventTag:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player", "pet")
     else
-        evt:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+        eventTag:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
     end
 end
 
 -- For /cuikt: the units whose casts are heard, the key state and each
 -- member's class, spec icon and kick, one line.
 function KE.Listening()
-    local me = roster.player
+    local me = rosterMap.player
     local units = (me and me.class == "WARLOCK") and "player pet" or "player"
     local members = {}
     for i = 1, #GROUP_UNITS do
-        local m = roster[GROUP_UNITS[i]]
+        local m = rosterMap[GROUP_UNITS[i]]
         if m and m.guid then
             members[#members + 1] = m.unit
                 .. " "
@@ -533,8 +533,8 @@ end
 
 local function DoneReading()
     readingUnit, readingGuid = nil, nil
-    if evt then
-        evt:UnregisterEvent("INSPECT_READY")
+    if eventTag then
+        eventTag:UnregisterEvent("INSPECT_READY")
     end
     -- An inspect the player's own window opened meanwhile is theirs to keep.
     if ClearInspectPlayer and not InspectWindowUp() then
@@ -547,7 +547,7 @@ local function OnReadReady(unitGuid)
         return
     end
     local unitToken = readingUnit
-    local m = roster[unitToken]
+    local m = rosterMap[unitToken]
     if m and m.guid == unitGuid then
         local get = C_SpecializationInfo.GetInspectSpecialization
         local success, specInfo = pcall(get, unitToken)
@@ -577,7 +577,7 @@ local function ReadTimedOut(unitGuid)
     if readingUnit and readingGuid == unitGuid then
         local unitToken = readingUnit
         DoneReading()
-        local m = roster[unitToken]
+        local m = rosterMap[unitToken]
         local tries = ((m and m.readTries) or 0) + 1
         if m then
             m.readTries = tries
@@ -601,7 +601,7 @@ ReadNext = function()
     end
     for i = 1, #readList do
         local unitToken = readList[i]
-        local m = roster[unitToken]
+        local m = rosterMap[unitToken]
         local unitGuid = m and m.guid
         if not (unitGuid and UnitExists(unitToken) and UnitIsConnected(unitToken)) then
             table.remove(readList, i)
@@ -612,7 +612,7 @@ ReadNext = function()
         if CanInspect(unitToken) then
             table.remove(readList, i)
             readingUnit, readingGuid = unitToken, unitGuid
-            evt:RegisterEvent("INSPECT_READY")
+            eventTag:RegisterEvent("INSPECT_READY")
             NotifyInspect(unitToken)
             C_Timer.After(INSPECT_WAIT, function()
                 ReadTimedOut(unitGuid)
@@ -655,7 +655,7 @@ local function ReReadStale()
     end
     local nowTime = GetTime()
     for i = 2, #GROUP_UNITS do
-        local m = roster[GROUP_UNITS[i]]
+        local m = rosterMap[GROUP_UNITS[i]]
         if m and m.guid and (not m.readAt or nowTime - m.readAt >= INSPECT_FRESH) then
             AskRead(GROUP_UNITS[i])
         end
@@ -741,11 +741,11 @@ end
 -- their demon's. A demon with no readable source of its own takes the one
 -- row the meter keeps for a warlock with no spec icon, while one warlock in
 -- the group has a demon's interrupt (that row then can be no one else's).
-local function ReadRows(keyList, nmap, amap, gmap)
+local function ReadRows(keyList, nmap, auraMap, guidMap)
     wipe(keyList)
     wipe(nmap)
-    wipe(amap)
-    wipe(gmap)
+    wipe(auraMap)
+    wipe(guidMap)
     local spellRef
     local demonRows, demonRowAmt = 0, nil
     local success, s = pcall(DM.GetCombatSessionFromType, CUR, INT)
@@ -771,7 +771,7 @@ local function ReadRows(keyList, nmap, amap, gmap)
     local demonUnit, demons = nil, 0
     for i = 1, #GROUP_UNITS do
         local u = GROUP_UNITS[i]
-        local m = roster[u]
+        local m = rosterMap[u]
         local g = m and m.guid
         if g then
             local num, amt = ReadSource(g)
@@ -787,19 +787,19 @@ local function ReadRows(keyList, nmap, amap, gmap)
                         pn, pamt = ReadSource(pg)
                     end
                     if pn and pn > 0 then
-                        gmap[u], amap[u] = pn, pamt
+                        guidMap[u], auraMap[u] = pn, pamt
                     else
                         demonUnit = u
                     end
                 elseif num then
-                    gmap[u], amap[u] = num, amt
+                    guidMap[u], auraMap[u] = num, amt
                 end
             end
         end
     end
     if demonUnit and demons == 1 and demonRows == 1 and demonRowAmt ~= nil then
         -- A row exists only once its source interrupted: one entry at least.
-        gmap[demonUnit], amap[demonUnit] = 1, demonRowAmt
+        guidMap[demonUnit], auraMap[demonUnit] = 1, demonRowAmt
     end
     return keyList, nmap, spellRef
 end
@@ -815,7 +815,7 @@ end
 local function SyncLists(nmap, prevN)
     for i = 1, #GROUP_UNITS do
         local u = GROUP_UNITS[i]
-        local m = roster[u]
+        local m = rosterMap[u]
         if m then
             local num = nmap[u] or 0
             if not m.known then
@@ -839,7 +839,7 @@ end
 -- restarted with them (a new fight), which the displays' count gates need to
 -- know (KE.FightGen).
 local function ResetLists()
-    for _, m in pairs(roster) do
+    for _, m in pairs(rosterMap) do
         m.known, m.holes = nil, nil
     end
     fightGen = fightGen + 1
@@ -848,14 +848,14 @@ end
 -- A member whose count could not be read keeps the count last read, so a
 -- failed read is neither a shrink nor, when it reads again, a growth (nor,
 -- for the gate source, a rise the read before it would then miss).
-local function CarryCounts(nmap, amap, gmap)
+local function CarryCounts(nmap, auraMap, guidMap)
     for i = 1, #GROUP_UNITS do
         local u = GROUP_UNITS[i]
         if nmap[u] == nil then
-            nmap[u] = memo.n[u]
+            nmap[u] = cache.n[u]
         end
-        if amap[u] == nil and gmap[u] == nil then
-            amap[u], gmap[u] = memo.a[u], memo.g[u]
+        if auraMap[u] == nil and guidMap[u] == nil then
+            auraMap[u], guidMap[u] = cache.a[u], cache.g[u]
         end
     end
 end
@@ -886,7 +886,7 @@ end
 local function Rebase(force)
     local newSession = force
     if not force then
-        if GetTime() == memo.frameT then
+        if GetTime() == cache.frameT then
             return
         end
         local success, s = pcall(DM.GetCombatSessionFromType, CUR, INT)
@@ -902,7 +902,7 @@ local function Rebase(force)
     local a, g = spareA, spareG
     CarryCounts(num, a, g)
     if not newSession then
-        local shrank, rose = ListsMoved(k, num, memo.rows, memo.n)
+        local shrank, rose = ListsMoved(k, num, cache.rows, cache.n)
         if rose and not shrank then
             return
         end
@@ -911,11 +911,11 @@ local function Rebase(force)
     if newSession then
         ResetLists()
     end
-    SyncLists(num, memo.n)
-    spareKeys, spareN, spareA, spareG = memo.rows, memo.n, memo.a, memo.g
-    memo.rows, memo.n, memo.a, memo.g, lastSession = k, num, a, g, spellRef
+    SyncLists(num, cache.n)
+    spareKeys, spareN, spareA, spareG = cache.rows, cache.n, cache.a, cache.g
+    cache.rows, cache.n, cache.a, cache.g, lastSession = k, num, a, g, spellRef
     -- A new baseline: no gate packet is pending against the old one.
-    memo.gated = false
+    cache.gated = false
 end
 
 -- Each member's spec icon from the meter's rows, where the GUIDs are readable
@@ -924,7 +924,7 @@ local function LearnSpecs()
     if InCombatLockdown() then
         return
     end
-    local changed = false
+    local didChange = false
     for t = 1, #LEARN_TYPES do
         for s = 1, #LEARN_SESSIONS do
             local success, sess = pcall(DM.GetCombatSessionFromType, LEARN_SESSIONS[s], LEARN_TYPES[t])
@@ -936,7 +936,7 @@ local function LearnSpecs()
                         if type(region) == "table" and not Secret(region) then
                             local unitToken = UnitOfGUID(region.sourceGUID)
                             local iconTex = region.specIconID
-                            local m = unitToken and roster[unitToken]
+                            local m = unitToken and rosterMap[unitToken]
                             if
                                 m
                                 and unitToken ~= "player"
@@ -949,7 +949,7 @@ local function LearnSpecs()
                                 if m.specIcon ~= iconTex or m.specID ~= specInfo then
                                     m.specIcon, m.specID, m.specSrc = iconTex, specInfo, "meter"
                                     if ResolveKick(m) then
-                                        changed = true
+                                        didChange = true
                                     end
                                 end
                             end
@@ -959,7 +959,7 @@ local function LearnSpecs()
             end
         end
     end
-    if changed then
+    if didChange then
         Dispatch("roster", GetTime())
     end
 end
@@ -979,7 +979,7 @@ local function KeyUnits(key, result)
     local cls, iconTex = key:match("^([^:]+):([^:%*]+)")
     iconTex = tonumber(iconTex)
     for i = 2, #GROUP_UNITS do
-        local m = roster[GROUP_UNITS[i]]
+        local m = rosterMap[GROUP_UNITS[i]]
         if
             m
             and m.guid
@@ -1022,7 +1022,7 @@ local kept = {}
 local function AllOthers(result)
     wipe(result)
     for i = 2, #GROUP_UNITS do
-        local m = roster[GROUP_UNITS[i]]
+        local m = rosterMap[GROUP_UNITS[i]]
         if m and m.guid and m.kick then
             result[#result + 1] = GROUP_UNITS[i]
         end
@@ -1044,7 +1044,7 @@ end
 local function Eliminate(entries, T)
     wipe(kept)
     for i = 1, #entries do
-        local m = roster[entries[i]]
+        local m = rosterMap[entries[i]]
         if not (m and StillDown(m, T)) then
             kept[#kept + 1] = entries[i]
         end
@@ -1054,7 +1054,7 @@ end
 
 -- Narrows a candidate list by cooldown. Returns who (one left), how, and the
 -- list while several are left.
-local function Narrow(entries, T, how)
+local function Narrow(entries, T, method)
     if #entries > 1 then
         local leftX = Eliminate(entries, T)
         if #leftX > 0 and #leftX < #entries then
@@ -1062,11 +1062,11 @@ local function Narrow(entries, T, how)
             for i = 1, #leftX do
                 entries[i] = leftX[i]
             end
-            how = "cooldown"
+            method = "cooldown"
         end
     end
     if #entries == 1 then
-        return entries[1], how or "only", nil
+        return entries[1], method or "only", nil
     end
     if #entries == 0 then
         return nil, "unknown", nil
@@ -1082,7 +1082,7 @@ end
 -- be tied. Bounds only ever loosen where the engine is unsure.
 local function Loosen(entries)
     for i = 1, #entries do
-        local m = roster[entries[i]]
+        local m = rosterMap[entries[i]]
         if m and m.hi then
             m.hi = m.hi + 1
         end
@@ -1093,8 +1093,8 @@ end
 local function LoosenAll()
     for i = 1, #GROUP_UNITS do
         local u = GROUP_UNITS[i]
-        local m = roster[u]
-        if m and m.hi and (memo.n[u] or 0) > 0 then
+        local m = rosterMap[u]
+        if m and m.hi and (cache.n[u] or 0) > 0 then
             m.hi = m.hi + 1
         end
     end
@@ -1115,7 +1115,7 @@ end
 local function Entered(entries)
     local num = 0
     for i = 1, #entries do
-        if (memo.n[entries[i]] or 0) > 0 then
+        if (cache.n[entries[i]] or 0) > 0 then
             num = num + 1
             entries[num] = entries[i]
         end
@@ -1140,7 +1140,7 @@ end
 local function TieNarrow(entries)
     wipe(rowIdx)
     wipe(rowAt)
-    local rowList = memo.rows
+    local rowList = cache.rows
     for i = 1, #rowList do
         local u = RowMember(rowList[i])
         if u then
@@ -1160,7 +1160,7 @@ local function TieNarrow(entries)
         if position and position > 1 then
             local a = rowAt[position - 1]
             if a and rowIdx[a] == position - 1 then
-                local mx, ma = roster[posX], roster[a]
+                local mx, ma = rosterMap[posX], rosterMap[a]
                 if mx and ma and mx.lo and ma.hi and ma.hi <= mx.lo then
                     keep = false
                 end
@@ -1180,11 +1180,11 @@ end
 -- The members of `list` whose Interrupts list may hold `spell`: those known
 -- to hold it, and those with entries the engine never learned (which could
 -- be anything). A record never read may hold anything too.
-local function MayHold(entries, spell)
+local function MayHold(entries, spellRec)
     local num = 0
     for i = 1, #entries do
-        local m = roster[entries[i]]
-        if m and (not m.known or m.holes > 0 or m.known[spell]) then
+        local m = rosterMap[entries[i]]
+        if m and (not m.known or m.holes > 0 or m.known[spellRec]) then
             num = num + 1
             entries[num] = entries[i]
         end
@@ -1201,13 +1201,13 @@ end
 -- only members with entries could have kicked unseen, and `unseen` (the
 -- kick moved no row) lets the meter's order rule out more. One left by
 -- those deductions is the kicker; several are narrowed by cooldown.
-local function Pick(entries, T, spell, unseen)
+local function Pick(entries, T, spellRec, unseen)
     local before = #entries
-    if spell then
-        MayHold(entries, spell)
+    if spellRec then
+        MayHold(entries, spellRec)
         if #entries == 1 then
-            local m = roster[entries[1]]
-            if m and m.known and m.known[spell] then
+            local m = rosterMap[entries[1]]
+            if m and m.known and m.known[spellRec] then
                 return entries[1], "repeat", nil
             end
         end
@@ -1251,19 +1251,19 @@ end
 -- Not while your own cast is unresolved: it may be the kick that stopped
 -- this plate, the entry another member's kick of a mob with no plate.
 local function PairLearn()
-    local u = memo.learn
+    local u = cache.learn
     if not u then
         return
     end
-    memo.learn = nil
-    if #stopped ~= 1 or OwnPending(GetTime()) then
+    cache.learn = nil
+    if #wasStopped ~= 1 or OwnPending(GetTime()) then
         return
     end
-    local spell = stoppedSpell[1]
-    local m = roster[u]
-    if spell and m and m.known and m.holes > 0 then
+    local spellRec = stoppedSpell[1]
+    local m = rosterMap[u]
+    if spellRec and m and m.known and m.holes > 0 then
         m.holes = m.holes - 1
-        m.known[spell] = true
+        m.known[spellRec] = true
     end
 end
 
@@ -1279,10 +1279,10 @@ local function BuildGate(T)
     wipe(gatePrev)
     wipe(gateCur)
     gateT = T
-    local pa, pg, ca, cg = readPrevA, readPrevG, memo.a, memo.g
+    local pa, pg, ca, cg = readPrevA, readPrevG, cache.a, cache.g
     for i = 2, #GROUP_UNITS do
         local u = GROUP_UNITS[i]
-        local m = roster[u]
+        local m = rosterMap[u]
         if m and m.guid and m.kick and not StillDown(m, T) then
             local before, after = pa[u], ca[u]
             if before ~= nil and after ~= nil and (pg[u] or 0) >= 1 and (cg[u] or 0) >= 1 then
@@ -1291,8 +1291,8 @@ local function BuildGate(T)
             end
         end
     end
-    memo.gated = #gateList > 0
-    return memo.gated
+    cache.gated = #gateList > 0
+    return cache.gated
 end
 
 -- Sends the packet built for update T: with the plates stopped in its batch
@@ -1305,8 +1305,8 @@ local function SendGate(T, withPlates, platesOnly)
     end
     wipe(gatePlates)
     if withPlates then
-        for i = 1, #stopped do
-            gatePlates[i] = stopped[i]
+        for i = 1, #wasStopped do
+            gatePlates[i] = wasStopped[i]
         end
     end
     if platesOnly and #gatePlates == 0 then
@@ -1316,11 +1316,11 @@ local function SendGate(T, withPlates, platesOnly)
 end
 
 -- Reports the kick to the displays for each plate unit kicked this frame.
-local function EmitStopped(T, who, entries, how)
-    for i = 1, #stopped do
-        Dispatch("kick", stopped[i], who, entries, stoppedBy[i], how, T)
+local function EmitStopped(T, caster, entries, method)
+    for i = 1, #wasStopped do
+        Dispatch("kick", wasStopped[i], caster, entries, stoppedBy[i], method, T)
     end
-    wipe(stopped)
+    wipe(wasStopped)
     wipe(stoppedBy)
     wipe(stoppedSpell)
     stoppedT = -1
@@ -1335,7 +1335,7 @@ local Settle
 -- inside its window waits on.
 local function FlushStopped()
     flushArmed = false
-    if #stopped == 0 then
+    if #wasStopped == 0 then
         return
     end
     local leftX = PAIR_WINDOW - (GetTime() - stoppedT)
@@ -1353,85 +1353,85 @@ end
 -- whoever is not on cooldown. grewBy: the entries the one grown list gained;
 -- plates: the casts stopped in the batch paired with this. Returns who, how,
 -- the list while several are left, and whether the answer is sure.
-local function Decide(T, rowKey, rowHow, grew, grewBy, oneNew, spell, plates)
-    local who, how, entries
-    if grew and #grew == 1 then
-        who, how = grew[1], "breakdown"
+local function Decide(T, lineKey, rowHow, rosterGrew, grewBy, oneNew, spellRec, plates)
+    local caster, method, entries
+    if rosterGrew and #rosterGrew == 1 then
+        caster, method = rosterGrew[1], "breakdown"
         -- The row that moved is the kicker's, and so is the one row that
         -- appeared with their first kick: either names their spec.
-        if rowKey and (rowHow == "reorder" or oneNew) then
-            LearnRow(roster[who], rowKey, T)
+        if lineKey and (rowHow == "reorder" or oneNew) then
+            LearnRow(rosterMap[caster], lineKey, T)
         end
         -- The meter counts every interrupt, a grip of a caster included.
         -- Several entries or several casts stopped at once is a grip of a
         -- whole pack; one while the member's kick cannot be ready is a grip
         -- too (your own, a cast of yours the engine never saw). Neither is a
         -- kick: nothing is placed and no cooldown starts.
-        local m = roster[who]
+        local m = rosterMap[caster]
         if grewBy > 1 or plates > 1 then
             return nil, "mass", nil, false
-        elseif who == "player" then
+        elseif caster == "player" then
             if not OwnPending(T) then
                 return nil, "grip", nil, false
             end
         elseif m and StillDown(m, T) then
             return nil, "grip", nil, false
         end
-    elseif grew and #grew > 1 then
+    elseif rosterGrew and #rosterGrew > 1 then
         -- Several lists grew at once: each of those members kicked (Settle
         -- records them all); which of them stopped this plate is narrowed
         -- among them alone.
         entries = scratch
         wipe(entries)
-        for i = 1, #grew do
-            entries[i] = grew[i]
+        for i = 1, #rosterGrew do
+            entries[i] = rosterGrew[i]
         end
-    elseif rowKey then
-        entries = KeyUnits(rowKey, scratch)
+    elseif lineKey then
+        entries = KeyUnits(lineKey, scratch)
         if #entries == 1 then
-            who, how, entries = entries[1], rowHow, nil
-            LearnRow(roster[who], rowKey, T)
+            caster, method, entries = entries[1], rowHow, nil
+            LearnRow(rosterMap[caster], lineKey, T)
         elseif #entries == 0 then
             entries = nil
         end
     end
-    if not who and not entries then
+    if not caster and not entries then
         if OwnPending(T) then
-            who, how = "player", "cast"
+            caster, method = "player", "cast"
         else
-            who, how, entries = Pick(AllOthers(scratch), T, spell, true)
+            caster, method, entries = Pick(AllOthers(scratch), T, spellRec, true)
         end
     elseif entries then
-        who, how, entries = Pick(entries, T, spell, false)
-        if who and how == "only" and rowHow then
-            how = rowHow
+        caster, method, entries = Pick(entries, T, spellRec, false)
+        if caster and method == "only" and rowHow then
+            method = rowHow
         end
     end
-    local sure = how == "cast"
-        or how == "breakdown"
-        or how == "new row"
-        or how == "reorder"
-        or how == "repeat"
-        or how == "order"
-    return who, how, entries, sure
+    local sure = method == "cast"
+        or method == "breakdown"
+        or method == "new row"
+        or method == "reorder"
+        or method == "repeat"
+        or method == "order"
+    return caster, method, entries, sure
 end
 
 -- Keeps the count bounds in step with this update's verdict: a grown list
 -- is that many kicks for sure (a mass interrupt or a grip: at least), a sure
 -- kicker one more, an unsure one or an ambiguous list one more for each
 -- member it could have been, and no answer at all one more for everyone.
-local function Bound(who, how, entries, grew)
-    if grew and #grew > 0 then
-        local exact = not (how == "mass" or how == "grip")
-        for i = 1, #grew do
-            local u = grew[i]
-            Count(roster[u], growth[u] or 1, exact)
+local function Bound(caster, method, entries, rosterGrew)
+    if rosterGrew and #rosterGrew > 0 then
+        local exact = not (method == "mass" or method == "grip")
+        for i = 1, #rosterGrew do
+            local u = rosterGrew[i]
+            Count(rosterMap[u], growth[u] or 1, exact)
         end
-    elseif who then
-        if how == "only" or how == "cooldown" then
+    elseif caster then
+        if method == "only" or method == "cooldown" then
             Loosen(preNarrow)
         else
-            Count(roster[who], 1, true)
+            Count(rosterMap[caster], 1, true)
         end
     elseif entries then
         Loosen(entries)
@@ -1442,22 +1442,22 @@ end
 
 -- Decides, records the kick and, with `emit`, tells the displays about the
 -- plates waiting for it (the one plate kicked then names the spell).
-Settle = function(T, rowKey, rowHow, grew, grewBy, emit, oneNew)
-    local spell = emit and #stopped == 1 and stoppedSpell[1] or nil
-    local who, how, entries, sure =
-        Decide(T, rowKey, rowHow, grew, grewBy, oneNew, spell, emit and #stopped or 0)
-    Bound(who, how, entries, grew)
-    local several = grew and #grew > 1
+Settle = function(T, lineKey, rowHow, rosterGrew, grewBy, emit, oneNew)
+    local spellRec = emit and #wasStopped == 1 and stoppedSpell[1] or nil
+    local caster, method, entries, sure =
+        Decide(T, lineKey, rowHow, rosterGrew, grewBy, oneNew, spellRec, emit and #wasStopped or 0)
+    Bound(caster, method, entries, rosterGrew)
+    local several = rosterGrew and #rosterGrew > 1
     if several then
         -- Every member whose list grew kicked, whichever plate this was.
-        for i = 1, #grew do
-            local m = roster[grew[i]]
+        for i = 1, #rosterGrew do
+            local m = rosterMap[rosterGrew[i]]
             if m then
                 RecordKick(m, T, true)
             end
         end
-    elseif who and sure then
-        local m = roster[who]
+    elseif caster and sure then
+        local m = rosterMap[caster]
         if m then
             RecordKick(m, T, true)
         end
@@ -1467,36 +1467,36 @@ Settle = function(T, rowKey, rowHow, grew, grewBy, emit, oneNew)
     -- member this update hid. A grip (one, or a whole pack) is no kick: no
     -- packet. With several kickers named, which of them stopped this plate is
     -- not known: it gets nobody.
-    local placed = (sure and not several) and who or nil
-    memo.lastT, memo.who, memo.scratch, memo.how = T, placed, entries, how
-    memo.rowKey, memo.rowHow = rowKey, rowHow
-    memo.grew = (grew and #grew > 0) and true or false
-    memo.gated = false
-    if how ~= "mass" and how ~= "grip" and BuildGate(T) then
+    local placed = (sure and not several) and caster or nil
+    cache.lastT, cache.who, cache.scratch, cache.how = T, placed, entries, method
+    cache.rowKey, cache.rowHow = lineKey, rowHow
+    cache.grew = (rosterGrew and #rosterGrew > 0) and true or false
+    cache.gated = false
+    if method ~= "mass" and method ~= "grip" and BuildGate(T) then
         SendGate(T, emit and not placed and not several, false)
     end
     if emit then
-        memo.pairedT = T
+        cache.pairedT = T
         PairLearn()
-        EmitStopped(stoppedT, placed, entries, how)
+        EmitStopped(stoppedT, placed, entries, method)
     end
 end
 
 -- The first Interrupts-typed meter update of a frame against the last one.
 local function Attribute()
     local T = GetTime()
-    if T == memo.frameT then
+    if T == cache.frameT then
         return
     end
-    memo.frameT = T
+    cache.frameT = T
     local keyList, nmap, spellRef = ReadRows(spareKeys, spareN, spareA, spareG)
-    local amap, gmap = spareA, spareG
-    CarryCounts(nmap, amap, gmap)
-    local prevKeys, prevN, prevA, prevG = memo.rows, memo.n, memo.a, memo.g
+    local auraMap, guidMap = spareA, spareG
+    CarryCounts(nmap, auraMap, guidMap)
+    local prevKeys, prevN, prevA, prevG = cache.rows, cache.n, cache.a, cache.g
     -- A count that fell: a new fight began without its session update, and
     -- the lists restarted with it.
     local shrank = ListsMoved(keyList, nmap, prevKeys, prevN)
-    memo.rows, memo.n, memo.a, memo.g, lastSession = keyList, nmap, amap, gmap, spellRef
+    cache.rows, cache.n, cache.a, cache.g, lastSession = keyList, nmap, auraMap, guidMap, spellRef
     spareKeys, spareN, spareA, spareG = prevKeys, prevN, prevA, prevG
     if shrank then
         prevKeys, prevN, prevA, prevG = EMPTY, EMPTY, EMPTY, EMPTY
@@ -1511,32 +1511,32 @@ local function Attribute()
     wipe(countList)
     for i = 2, #GROUP_UNITS do
         local u = GROUP_UNITS[i]
-        if (gmap[u] or 0) >= 1 and amap[u] ~= nil then
+        if (guidMap[u] or 0) >= 1 and auraMap[u] ~= nil then
             countList[#countList + 1] = u
         end
     end
     if #countList > 0 then
-        Dispatch("counts", T, countList, amap)
+        Dispatch("counts", T, countList, auraMap)
     end
 
-    wipe(grew)
+    wipe(rosterGrew)
     wipe(growth)
     local grewBy = 0
     for u, num in pairs(nmap) do
         local skinData = num - (prevN[u] or 0)
         if skinData > 0 then
-            grew[#grew + 1] = u
+            rosterGrew[#rosterGrew + 1] = u
             growth[u] = skinData
             grewBy = skinData
         end
     end
     -- One member's list grew: by one entry, the plate paired with this
     -- update names its spell; by more, a grip of a pack.
-    if #grew ~= 1 then
+    if #rosterGrew ~= 1 then
         grewBy = 0
     end
-    memo.learn = (grewBy == 1) and grew[1] or nil
-    local rowKey, rowHow, newCount = nil, nil, 0
+    cache.learn = (grewBy == 1) and rosterGrew[1] or nil
+    local lineKey, rowHow, newCount = nil, nil, 0
     if #keyList > #prevKeys then
         wipe(leftX)
         for i = 1, #prevKeys do
@@ -1547,7 +1547,7 @@ local function Attribute()
             if (leftX[k] or 0) > 0 then
                 leftX[k] = leftX[k] - 1
             else
-                rowKey = k
+                lineKey = k
                 newCount = newCount + 1
             end
         end
@@ -1555,15 +1555,15 @@ local function Attribute()
     elseif #keyList == #prevKeys then
         for i = 1, #keyList do
             if keyList[i] ~= prevKeys[i] then
-                rowKey, rowHow = keyList[i], "reorder"
+                lineKey, rowHow = keyList[i], "reorder"
                 break
             end
         end
     end
     -- A row no member can own (an enemy that interrupted a player) is no
     -- evidence of a kick.
-    if rowKey and #KeyUnits(rowKey, scratch) == 0 then
-        rowKey, rowHow = nil, nil
+    if lineKey and #KeyUnits(lineKey, scratch) == 0 then
+        lineKey, rowHow = nil, nil
     end
     -- Plates whose cast stopped just before (the same frame, as seen in the
     -- field, or within the window) take this update's answer.
@@ -1572,16 +1572,16 @@ local function Attribute()
     -- member with entries may have landed it, or an enemy that interrupted
     -- a player); the gate packet shows whoever's count rose, and a plate
     -- event a moment later joins it (OnStop).
-    if not rowKey and #grew == 0 and not OwnPending(T) and not landedHere then
+    if not lineKey and #rosterGrew == 0 and not OwnPending(T) and not landedHere then
         LoosenAll()
-        memo.lastT, memo.who, memo.scratch, memo.how = T, nil, nil, "none"
-        memo.rowKey, memo.rowHow, memo.grew = nil, nil, false
+        cache.lastT, cache.who, cache.scratch, cache.how = T, nil, nil, "none"
+        cache.rowKey, cache.rowHow, cache.grew = nil, nil, false
         if BuildGate(T) then
             SendGate(T, false, false)
         end
         return
     end
-    Settle(T, rowKey, rowHow, grew, grewBy, landedHere, newCount == 1)
+    Settle(T, lineKey, rowHow, rosterGrew, grewBy, landedHere, newCount == 1)
 end
 
 -- The batch of plates stopped at stoppedT takes the meter's update at T0 (the
@@ -1594,27 +1594,27 @@ local function PairWith(T0)
     -- plate first gives the batch's size; its spell, plain outside a key,
     -- can name the one member whose list holds it); any other only with
     -- that spell named, and not over an unresolved cast of yours.
-    local named = #stopped == 1 and stoppedSpell[1] or nil
-    local none = memo.how == "none"
-    if not memo.who and not memo.grew and (none or (named and not OwnPending(T))) then
-        local who, how, entries, sure = Decide(T0, memo.rowKey, memo.rowHow, nil, 0, false, named, #stopped)
-        if who and sure and how ~= "mass" and how ~= "grip" then
-            local m = roster[who]
+    local named = #wasStopped == 1 and stoppedSpell[1] or nil
+    local none = cache.how == "none"
+    if not cache.who and not cache.grew and (none or (named and not OwnPending(T))) then
+        local caster, method, entries, sure = Decide(T0, cache.rowKey, cache.rowHow, nil, 0, false, named, #wasStopped)
+        if caster and sure and method ~= "mass" and method ~= "grip" then
+            local m = rosterMap[caster]
             if m then
                 RecordKick(m, T0, true)
                 Count(m, 1, true)
             end
-            memo.who = who
+            cache.who = caster
         end
-        memo.scratch, memo.how = entries, how
+        cache.scratch, cache.how = entries, method
     end
-    memo.pairedT = T0
+    cache.pairedT = T0
     PairLearn()
     -- Still nobody: the plate joins the update's gate packet.
-    if not memo.who and memo.gated then
+    if not cache.who and cache.gated then
         SendGate(T0, true, true)
     end
-    EmitStopped(stoppedT, memo.who, memo.scratch, memo.how)
+    EmitStopped(stoppedT, cache.who, cache.scratch, cache.how)
 end
 
 -- A stop that found only an EARLIER frame's update, a frame later: a kick's
@@ -1627,11 +1627,11 @@ end
 -- the earlier verdict serve the batch, as it always did.
 local function LatePair()
     lateArmed = false
-    if #stopped == 0 then
+    if #wasStopped == 0 then
         return
     end
-    local T0 = memo.lastT
-    if T0 >= 0 and stoppedT - T0 <= PAIR_WINDOW and memo.pairedT ~= T0 then
+    local T0 = cache.lastT
+    if T0 >= 0 and stoppedT - T0 <= PAIR_WINDOW and cache.pairedT ~= T0 then
         PairWith(T0)
     end
 end
@@ -1639,7 +1639,7 @@ end
 -- A plate's cast stopped. A hidden (or plain, non-empty) interrupter is a
 -- kick; nil or "" is crowd control or a natural end. An enemy's spell is
 -- plain; a hidden one is kept as unknown.
-local function OnStop(unitToken, spell, by)
+local function OnStop(unitToken, spellRec, by)
     if not NAMEPLATE_UNITS[unitToken] then
         return
     end
@@ -1652,28 +1652,28 @@ local function OnStop(unitToken, spell, by)
     local T = GetTime()
     if stoppedT < 0 or T - stoppedT > PAIR_WINDOW then
         -- An older batch the meter never answered goes out first.
-        if #stopped > 0 then
+        if #wasStopped > 0 then
             EmitStopped(stoppedT, nil, nil, "unknown")
         end
         stoppedT = T
     end
-    for i = 1, #stopped do
-        if stopped[i] == unitToken then
+    for i = 1, #wasStopped do
+        if wasStopped[i] == unitToken then
             return
         end
     end
-    stopped[#stopped + 1] = unitToken
-    stoppedBy[#stopped] = by
-    stoppedSpell[#stopped] = (type(spell) == "number" and not Secret(spell)) and spell or false
+    wasStopped[#wasStopped + 1] = unitToken
+    stoppedBy[#wasStopped] = by
+    stoppedSpell[#wasStopped] = (type(spellRec) == "number" and not Secret(spellRec)) and spellRec or false
     -- The meter spoke first in this frame: its answer, now.
-    if memo.lastT == T then
+    if cache.lastT == T then
         PairWith(T)
         return
     end
     -- A recent update no frame has taken yet: next frame, unless this frame
     -- brings the batch an update of its own (LatePair). The flush below is
     -- the fallback either way.
-    if memo.lastT >= 0 and T - memo.lastT <= PAIR_WINDOW and memo.pairedT ~= memo.lastT and not lateArmed then
+    if cache.lastT >= 0 and T - cache.lastT <= PAIR_WINDOW and cache.pairedT ~= cache.lastT and not lateArmed then
         lateArmed = true
         C_Timer.After(0, LatePair)
     end
@@ -1709,19 +1709,19 @@ local function OnOwnCast(spellId)
     if Secret(spellId) then
         return
     end
-    local kick = KD.OwnCastKick(spellId)
-    if not kick then
+    local kickRec = KD.OwnCastKick(spellId)
+    if not kickRec then
         return
     end
-    local m = roster.player
+    local m = rosterMap.player
     if not m then
         return
     end
     local T = GetTime()
     ownT, ownPending = T, true
-    if m.kick ~= kick then
-        m.kick = kick
-        m.cd, m.landedCd = KD.Cooldown(kick, m.specID, m.talents)
+    if m.kick ~= kickRec then
+        m.kick = kickRec
+        m.cd, m.landedCd = KD.Cooldown(kickRec, m.specID, m.talents)
     end
     if m.cd then
         StartCd(m, T, m.cd)
@@ -1753,22 +1753,22 @@ local LIVE_EVENTS = {
     "PLAYER_ENTERING_WORLD",
 }
 
-local function OnEvent(_, event, a1, a2, a3, a4, a5)
-    if event == "DAMAGE_METER_COMBAT_SESSION_UPDATED" then
-        if a1 == INT then
+local function OnEvent(_, eventName, firstArg, a2, a3, a4, a5)
+    if eventName == "DAMAGE_METER_COMBAT_SESSION_UPDATED" then
+        if firstArg == INT then
             Attribute()
         end
-    elseif event == "UNIT_SPELLCAST_SUCCEEDED" then
+    elseif eventName == "UNIT_SPELLCAST_SUCCEEDED" then
         OnOwnCast(a3)
-    elseif event == "UNIT_SPELLCAST_INTERRUPTED" or event == "UNIT_SPELLCAST_CHANNEL_STOP" then
-        OnStop(a1, a3, a4)
-    elseif event == "UNIT_SPELLCAST_EMPOWER_STOP" then
-        OnStop(a1, a3, a5)
-    elseif event == "DAMAGE_METER_CURRENT_SESSION_UPDATED" then
+    elseif eventName == "UNIT_SPELLCAST_INTERRUPTED" or eventName == "UNIT_SPELLCAST_CHANNEL_STOP" then
+        OnStop(firstArg, a3, a4)
+    elseif eventName == "UNIT_SPELLCAST_EMPOWER_STOP" then
+        OnStop(firstArg, a3, a5)
+    elseif eventName == "DAMAGE_METER_CURRENT_SESSION_UPDATED" then
         Rebase()
-    elseif event == "DAMAGE_METER_RESET" then
+    elseif eventName == "DAMAGE_METER_RESET" then
         Rebase(true)
-    elseif event == "GROUP_ROSTER_UPDATE" then
+    elseif eventName == "GROUP_ROSTER_UPDATE" then
         -- A roster storm (a load, a group forming) syncs once per frame, and
         -- once more after it: the burst's last event carries its final state.
         local T = GetTime()
@@ -1791,54 +1791,54 @@ local function OnEvent(_, event, a1, a2, a3, a4, a5)
                 end
             end)
         end
-    elseif event == "UNIT_PET" then
-        local m = roster[a1]
+    elseif eventName == "UNIT_PET" then
+        local m = rosterMap[firstArg]
         if m and m.class == "WARLOCK" then
-            m.pet = PetFamily(a1)
+            m.pet = PetFamily(firstArg)
             if ResolveKick(m) then
                 Dispatch("roster", GetTime())
             end
         end
-    elseif event == "PLAYER_SPECIALIZATION_CHANGED" then
-        if a1 == "player" then
+    elseif eventName == "PLAYER_SPECIALIZATION_CHANGED" then
+        if firstArg == "player" then
             RefreshPlayer()
         else
-            local m = a1 and roster[a1]
+            local m = firstArg and rosterMap[firstArg]
             if m and m.guid then
                 m.specID, m.specIcon, m.specSrc, m.talents, m.readAt = nil, nil, nil, nil, nil
                 if ResolveKick(m) then
                     Dispatch("roster", GetTime())
                 end
-                AskRead(a1)
+                AskRead(firstArg)
             end
         end
-    elseif event == "TRAIT_CONFIG_UPDATED" or event == "SPELLS_CHANGED" then
+    elseif eventName == "TRAIT_CONFIG_UPDATED" or eventName == "SPELLS_CHANGED" then
         RefreshPlayer()
-    elseif event == "INSPECT_READY" then
-        OnReadReady(a1)
-    elseif event == "ADDON_RESTRICTION_STATE_CHANGED" then
-        if a1 == RT_COMBAT and a2 == RS_INACTIVE then
+    elseif eventName == "INSPECT_READY" then
+        OnReadReady(firstArg)
+    elseif eventName == "ADDON_RESTRICTION_STATE_CHANGED" then
+        if firstArg == RT_COMBAT and a2 == RS_INACTIVE then
             LearnSpecs()
         end
-    elseif event == "PLAYER_REGEN_ENABLED" then
+    elseif eventName == "PLAYER_REGEN_ENABLED" then
         LearnSpecs()
         ReReadStale()
         ReadNext()
-    elseif event == "CHALLENGE_MODE_START" then
+    elseif eventName == "CHALLENGE_MODE_START" then
         -- A last chance before the key locks the inspect data.
         ReReadStale()
         ReadNext()
-    elseif event == "PLAYER_ENTERING_WORLD" then
-        for _, m in pairs(roster) do
+    elseif eventName == "PLAYER_ENTERING_WORLD" then
+        for _, m in pairs(rosterMap) do
             ClearCd(m)
         end
-        wipe(stopped)
+        wipe(wasStopped)
         wipe(stoppedBy)
         wipe(stoppedSpell)
         stoppedT = -1
         ownPending = false
-        memo.lastT, memo.pairedT, memo.who, memo.scratch, memo.how = -1, -1, nil, nil, nil
-        memo.rowKey, memo.rowHow, memo.learn, memo.gated, memo.grew = nil, nil, nil, false, false
+        cache.lastT, cache.pairedT, cache.who, cache.scratch, cache.how = -1, -1, nil, nil, nil
+        cache.rowKey, cache.rowHow, cache.learn, cache.gated, cache.grew = nil, nil, nil, false, false
         gateT = -1
         Rebase(true)
         SyncRoster()
@@ -1851,15 +1851,15 @@ local function Activate()
         return
     end
     isActive = true
-    if not evt then
-        evt = CreateFrame("Frame")
-        evt:SetScript("OnEvent", OnEvent)
+    if not eventTag then
+        eventTag = CreateFrame("Frame")
+        eventTag:SetScript("OnEvent", OnEvent)
     end
     for i = 1, #LIVE_EVENTS do
-        evt:RegisterEvent(LIVE_EVENTS[i])
+        eventTag:RegisterEvent(LIVE_EVENTS[i])
     end
-    evt:RegisterUnitEvent("UNIT_PET", "player", "party1", "party2", "party3", "party4")
-    memo.frameT = -1
+    eventTag:RegisterUnitEvent("UNIT_PET", "player", "party1", "party2", "party3", "party4")
+    cache.frameT = -1
     Rebase(true)
     SyncRoster()
     RegisterOwnCasts()
@@ -1875,25 +1875,25 @@ local function Deactivate()
         return
     end
     isActive = false
-    evt:UnregisterAllEvents()
+    eventTag:UnregisterAllEvents()
     if readingUnit then
         DoneReading()
     end
     wipe(readList)
     wipe(readAsked)
-    wipe(stopped)
+    wipe(wasStopped)
     wipe(stoppedBy)
     wipe(stoppedSpell)
     stoppedT = -1
     ownPending = false
-    for _, m in pairs(roster) do
+    for _, m in pairs(rosterMap) do
         m.downAt, m.downFor, m.readyAt = nil, nil, nil
     end
     wipe(gateList)
     wipe(gatePrev)
     wipe(gateCur)
     wipe(gatePlates)
-    gateT, memo.gated = -1, false
+    gateT, cache.gated = -1, false
 end
 
 --------------------------------------------------------------------------------
@@ -1956,7 +1956,7 @@ end
 -- holes) and the bounds on their hidden interrupt count (lo, hi). Read-only
 -- by contract.
 function KE.Member(unitToken)
-    return roster[unitToken]
+    return rosterMap[unitToken]
 end
 
 -- A member's interrupt count as the meter last read it (their gate source's:
@@ -1965,7 +1965,7 @@ end
 -- gates take it as a baseline at a sure kick and as the maximum at every
 -- update (the counts event).
 function KE.Count(unitToken)
-    return memo.a[unitToken]
+    return cache.a[unitToken]
 end
 
 -- The fight the counts belong to: a plain number that moves whenever they
@@ -1980,7 +1980,7 @@ end
 -- (every cooldown talent) while their talents were never read; nil while
 -- their interrupt is not known. StillDown's own measure, less KE.ELIM_SLACK.
 function KE.DownFor(unitToken)
-    local m = roster[unitToken]
+    local m = rosterMap[unitToken]
     if not (m and m.kick) then
         return nil
     end
@@ -1992,7 +1992,7 @@ KE.ELIM_SLACK = ELIM_SLACK
 -- (their landed cooldown: Coldthirst and Light of the Sun shorten only that),
 -- or nil while their interrupt is not known.
 function KE.KickDuration(unitToken)
-    local m = roster[unitToken]
+    local m = rosterMap[unitToken]
     if not (m and m.kick) then
         return nil
     end
@@ -2002,7 +2002,7 @@ end
 -- The modeled cooldown of a member's interrupt: start, duration and end time,
 -- nil while ready or unknown.
 function KE.Cooldown(unitToken)
-    local m = roster[unitToken]
+    local m = rosterMap[unitToken]
     if not (m and m.downAt) then
         return nil
     end

@@ -49,13 +49,13 @@ local flyoutPanel
 Inner.flyoutPanelSetters[#Inner.flyoutPanelSetters + 1] = function(val)
     flyoutPanel = val
 end
-local coordFrame
+local coordPanel
 Inner.coordFrameSetters[#Inner.coordFrameSetters + 1] = function(val)
-    coordFrame = val
+    coordPanel = val
 end
-local coordTicker
+local coordTimer
 Inner.coordTickerSetters[#Inner.coordTickerSetters + 1] = function(val)
-    coordTicker = val
+    coordTimer = val
 end
 -- The clock, zone text and FPS readout sit this far above the map: other addons
 -- pin their minimap icons at fixed frame levels around 2000, and icons above the
@@ -68,32 +68,32 @@ function SKIN._MapMiddleClick()
     if not SKIN._ToggleMicroMenu then
         return
     end
-    local mp = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
-    if mp and mp.openMicroMenuOnMiddleClick == false then
+    local mapCfg = SKIN.db and SKIN.db.profile and SKIN.db.profile.minimap
+    if mapCfg and mapCfg.openMicroMenuOnMiddleClick == false then
         return
     end
     SKIN._ToggleMicroMenu()
 end
-local clockFrame
+local clockPanel
 Inner.clockFrameSetters[#Inner.clockFrameSetters + 1] = function(val)
-    clockFrame = val
+    clockPanel = val
 end
-local clockBg
+local clockBack
 Inner.clockBgSetters[#Inner.clockBgSetters + 1] = function(val)
-    clockBg = val
+    clockBack = val
 end
-local locationFrame
+local locationPanel
 Inner.locationFrameSetters[#Inner.locationFrameSetters + 1] = function(val)
-    locationFrame = val
+    locationPanel = val
 end
-local locationBg
+local locationBack
 Inner.locationBgSetters[#Inner.locationBgSetters + 1] = function(val)
-    locationBg = val
+    locationBack = val
 end
 
-local clockTicker
-local fpsBg
-local diffTextFrame
+local clockTimer
+local fpsBack
+local difficultyText
 local addonButtonPoll = nil
 
 -- Set while Blizzard's Toggle Minimap key has hidden the map (the hook, in CUI_Minimap_Lifecycle.lua, sits below
@@ -121,14 +121,14 @@ local function ApplyMinimap()
     -- Icon Size: nothing while unset (Edit Mode's value stands).
     SKIN._ApplyMinimapIconScale()
 
-    local minimap = Minimap
-    if not minimap then
+    local mapFrame = Minimap
+    if not mapFrame then
         return
     end
 
     if not p.enabled then
         -- Untouched this session: do nothing (zero interference with other addons).
-        if not GetFFD(minimap).active then
+        if not GetFFD(mapFrame).active then
             return
         end
         -- Was active, now disabled: only a reload hands control back to Blizzard cleanly; the options toggle prompts for it.
@@ -151,17 +151,17 @@ local function ApplyMinimap()
     local needsClusterHide = MinimapCluster and MinimapCluster:IsShown()
     -- A cropped canvas's parent is built later in this pass, so the first crop has
     -- to schedule the reparent on the layout frame's absence.
-    local needsReparent = minimap:GetParent() ~= DesiredMapParent(minimap)
-        or (SKIN._MapCrop(p, p.mapSize or 140) > 0 and not GetFFD(minimap).layoutFrame)
+    local needsReparent = mapFrame:GetParent() ~= DesiredMapParent(mapFrame)
+        or (SKIN._MapCrop(p, p.mapSize or 140) > 0 and not GetFFD(mapFrame).layoutFrame)
     if needsReparent or needsClusterHide then
         C_Timer.After(0, function()
             if InCombatLockdown() then
                 QueueApplyAll()
                 return
             end
-            local wanted = DesiredMapParent(minimap)
-            if minimap:GetParent() ~= wanted then
-                minimap:SetParent(wanted)
+            local wanted = DesiredMapParent(mapFrame)
+            if mapFrame:GetParent() ~= wanted then
+                mapFrame:SetParent(wanted)
             end
             if needsClusterHide and MinimapCluster then
                 MinimapCluster:SetAlpha(0)
@@ -172,27 +172,27 @@ local function ApplyMinimap()
         end)
     end
     -- Blizzard reparents the minimap during housing transitions and other events; hook SetParent to force it back.
-    if not GetFFD(minimap).parentGuard then
-        GetFFD(minimap).parentGuard = true
-        hooksecurefunc(minimap, "SetParent", function()
-            local wanted = DesiredMapParent(minimap)
-            if minimap:GetParent() ~= wanted then
+    if not GetFFD(mapFrame).parentGuard then
+        GetFFD(mapFrame).parentGuard = true
+        hooksecurefunc(mapFrame, "SetParent", function()
+            local wanted = DesiredMapParent(mapFrame)
+            if mapFrame:GetParent() ~= wanted then
                 if InCombatLockdown() then
                     -- Dropping it would leave the map parented to -- and clipped by --
                     -- whatever reparented it (the cluster, on a battleground or housing
                     -- transition) for the rest of the session.
                     QueueApplyAll()
                 else
-                    minimap:SetParent(wanted)
+                    mapFrame:SetParent(wanted)
                 end
             end
         end)
         -- Lock strata/level so Blizzard can't change them during transitions
-        if minimap.SetFixedFrameStrata then
-            minimap:SetFixedFrameStrata(true)
+        if mapFrame.SetFixedFrameStrata then
+            mapFrame:SetFixedFrameStrata(true)
         end
-        if minimap.SetFixedFrameLevel then
-            minimap:SetFixedFrameLevel(true)
+        if mapFrame.SetFixedFrameLevel then
+            mapFrame:SetFixedFrameLevel(true)
         end
     end
     -- Visibility-aware terminal: an unconditional Show() here would force-show the
@@ -201,22 +201,22 @@ local function ApplyMinimap()
     do
         local vis = CludesUI.EvalVisibility and p and CludesUI.EvalVisibility(p)
         -- Opacity in every state: a hidden map carries it into its next Show().
-        SKIN._WriteMapAlpha(minimap, p)
+        SKIN._WriteMapAlpha(mapFrame, p)
         if _mmKeyHidden then
-            minimap:Hide()
+            mapFrame:Hide()
         elseif not CludesUI.EvalVisibility or vis == true then
-            minimap:Show()
+            mapFrame:Show()
         elseif vis == "mouseover" then
             -- Idle state is a real Hide(), not alpha 0 -- see UpdateMinimapVisibility.
-            if minimap:IsMouseOver() then
-                minimap:Show()
+            if mapFrame:IsMouseOver() then
+                mapFrame:Show()
             else
-                minimap:Hide()
+                mapFrame:Hide()
             end
         elseif vis then
-            minimap:Show()
+            mapFrame:Show()
         else
-            minimap:Hide()
+            mapFrame:Hide()
         end
     end
 
@@ -224,29 +224,29 @@ local function ApplyMinimap()
     -- clicks through but routing middle-click to our micro menu instead of the ping
     -- (zero taint risk). Also the SQUARE mouse surface: the Minimap's own hit region
     -- stays circular, so wheel zoom dies in the square skin's corners -- this overlay covers the full rect and handles the wheel there.
-    if not GetFFD(minimap).pingBlocker then
-        local blocker = CreateFrame("Frame", nil, minimap)
-        blocker:SetAllPoints()
-        blocker:SetFrameLevel(minimap:GetFrameLevel() + 10)
-        blocker:SetPassThroughButtons("LeftButton", "RightButton")
-        blocker:SetPropagateMouseMotion(true)
-        blocker:SetScript("OnMouseUp", function(_, button)
+    if not GetFFD(mapFrame).pingBlocker then
+        local clickBlock = CreateFrame("Frame", nil, mapFrame)
+        clickBlock:SetAllPoints()
+        clickBlock:SetFrameLevel(mapFrame:GetFrameLevel() + 10)
+        clickBlock:SetPassThroughButtons("LeftButton", "RightButton")
+        clickBlock:SetPropagateMouseMotion(true)
+        clickBlock:SetScript("OnMouseUp", function(_, button)
             if button == "MiddleButton" then
                 SKIN._MapMiddleClick()
             end
         end)
-        blocker:SetScript("OnMouseWheel", function(_, delta)
-            local mp = SKIN.db and SKIN.db.profile.minimap
-            if not mp or not mp.scrollZoom then
+        clickBlock:SetScript("OnMouseWheel", function(_, delta)
+            local mapCfg = SKIN.db and SKIN.db.profile.minimap
+            if not mapCfg or not mapCfg.scrollZoom then
                 return
             end
-            local zoom = minimap:GetZoom()
+            local zoom = mapFrame:GetZoom()
             if delta > 0 then
                 zoom = min(zoom + 1, 5)
             else
                 zoom = max(zoom - 1, 0)
             end
-            minimap:SetZoom(zoom)
+            mapFrame:SetZoom(zoom)
             SaveZoomLevel()
             RestartZoomResetTimer()
         end)
@@ -255,12 +255,12 @@ local function ApplyMinimap()
         -- directly onto an unhooked child) never fires its OnEnter. This overlay covers
         -- the FULL rect and, with SetPropagateMouseMotion, gets enter/leave while still
         -- passing motion through (_HVRevealMapHover self-guards via region + dedupe).
-        blocker:HookScript("OnEnter", function()
+        clickBlock:HookScript("OnEnter", function()
             if SKIN._HVRevealMapHover then
                 SKIN._HVRevealMapHover()
             end
         end)
-        GetFFD(minimap).pingBlocker = blocker
+        GetFFD(mapFrame).pingBlocker = clickBlock
     end
 
     for _, name in ipairs(minimapDecorations) do
@@ -285,38 +285,38 @@ local function ApplyMinimap()
 
     -- The stock map is round and Forever Square square; the stored shape waits for the CUI look.
     local shape = SKIN._MapShape(p)
-    local isCircle = (shape == "circle" or shape == "textured_circle")
+    local round = (shape == "circle" or shape == "textured_circle")
     local isRectangular = (shape == "rectangular")
 
-    if GetFFD(minimap).bg then
-        GetFFD(minimap).bg:SetAlpha(0)
+    if GetFFD(mapFrame).bg then
+        GetFFD(mapFrame).bg:SetAlpha(0)
     end
 
     local region, g, b, borderA = GetBorderStyleColor(p)
     -- Hide the circular quest area ring on square minimaps
-    if minimap.SetArchBlobRingScalar then
-        minimap:SetArchBlobRingScalar(isCircle and 1 or 0)
+    if mapFrame.SetArchBlobRingScalar then
+        mapFrame:SetArchBlobRingScalar(round and 1 or 0)
     end
-    if minimap.SetQuestBlobRingScalar then
-        minimap:SetQuestBlobRingScalar(isCircle and 1 or 0)
+    if mapFrame.SetQuestBlobRingScalar then
+        mapFrame:SetQuestBlobRingScalar(round and 1 or 0)
     end
 
-    minimap:SetScale(1.0)
-    local mapSize = p.mapSize or 140
+    mapFrame:SetScale(1.0)
+    local mapPx = p.mapSize or 140
     -- Blizzard's map projection and native player arrow require a square Minimap
     -- canvas. Rectangular mode therefore crops that square canvas with a centered
     -- 4:3 mask; resizing the Blizzard frame itself makes the terrain slide away
     -- from the arrow as zoom changes. A square frame's title bar crops it the same
     -- way, with the crop mask cut for its size (EBS._MapCrop).
-    minimap:SetSize(mapSize, mapSize)
-    local crop, cropMask = SKIN._MapCrop(p, mapSize)
-    local maskID = isCircle and 186178 or cropMask or 130937
-    minimap:SetMaskTexture(maskID)
+    mapFrame:SetSize(mapPx, mapPx)
+    local cropPx, cropMask = SKIN._MapCrop(p, mapPx)
+    local maskID = round and 186178 or cropMask or 130937
+    mapFrame:SetMaskTexture(maskID)
     -- Minimap button libraries and map pins read this global to place their
     -- buttons and pins on the map's edge; the 4:3 crop keeps square corners.
     -- Leave a definition another addon made alone.
     if GetMinimapShape == nil or GetMinimapShape == SKIN._shapeFn then
-        local mapShapeName = isCircle and "ROUND" or "SQUARE"
+        local mapShapeName = round and "ROUND" or "SQUARE"
         if SKIN._shapeName ~= mapShapeName then
             SKIN._shapeName = mapShapeName
             SKIN._shapeFn = function()
@@ -325,28 +325,28 @@ local function ApplyMinimap()
             GetMinimapShape = SKIN._shapeFn
         end
     end
-    minimap:SetHitRectInsets(0, 0, crop, crop)
-    if crop > 0 and not GetFFD(minimap).layoutFrame then
-        local layout = CreateFrame("Frame", nil, UIParent)
-        layout:EnableMouse(false)
-        GetFFD(minimap).layoutFrame = layout
+    mapFrame:SetHitRectInsets(0, 0, cropPx, cropPx)
+    if cropPx > 0 and not GetFFD(mapFrame).layoutFrame then
+        local layoutInfo = CreateFrame("Frame", nil, UIParent)
+        layoutInfo:EnableMouse(false)
+        GetFFD(mapFrame).layoutFrame = layoutInfo
     end
     do
-        local layout = GetFFD(minimap).layoutFrame
-        if layout then
+        local layoutInfo = GetFFD(mapFrame).layoutFrame
+        if layoutInfo then
             -- Re-anchored every pass for the reason the border host below is: this
             -- anchor spans the deferred SetParent that hangs the canvas off it.
-            layout:ClearAllPoints()
-            layout:SetPoint("CENTER", minimap, "CENTER")
-            layout:SetSize(mapSize, mapSize - 2 * crop)
-            layout:SetFrameLevel(minimap:GetFrameLevel())
+            layoutInfo:ClearAllPoints()
+            layoutInfo:SetPoint("CENTER", mapFrame, "CENTER")
+            layoutInfo:SetSize(mapPx, mapPx - 2 * cropPx)
+            layoutInfo:SetFrameLevel(mapFrame:GetFrameLevel())
         end
     end
     do
-        local blocker = GetFFD(minimap).pingBlocker
-        if blocker then
-            blocker:ClearAllPoints()
-            blocker:SetAllPoints(GetFFD(minimap).layoutFrame or minimap)
+        local clickBlock = GetFFD(mapFrame).pingBlocker
+        if clickBlock then
+            clickBlock:ClearAllPoints()
+            clickBlock:SetAllPoints(GetFFD(mapFrame).layoutFrame or mapFrame)
         end
     end
 
@@ -354,11 +354,11 @@ local function ApplyMinimap()
         -- Stock styles: the stock chrome (compass ring + top bar, or the vanilla
         -- ring + banner) instead of any CUI border.
         if SKIN._MinimapClassic() then
-            SKIN._ApplyClassicMinimapChrome(minimap, mapSize)
+            SKIN._ApplyClassicMinimapChrome(mapFrame, mapPx)
         else
-            SKIN._ApplyBlizzMinimapChrome(minimap, mapSize)
+            SKIN._ApplyBlizzMinimapChrome(mapFrame, mapPx)
             if CludesUI.IS_FOREVER and SKIN._MinimapForever() then
-                SKIN._ApplyForeverDiel(minimap, mapSize)
+                SKIN._ApplyForeverDiel(mapFrame, mapPx)
             end
             -- WoW Forever: a queue eye Action Bars parks on the ring follows a
             -- resize (its anchor on the map already follows a move).
@@ -369,31 +369,31 @@ local function ApplyMinimap()
                 end
             end
         end
-        if GetFFD(minimap).borderHost then
-            GetFFD(minimap).borderHost:Hide()
+        if GetFFD(mapFrame).borderHost then
+            GetFFD(mapFrame).borderHost:Hide()
         end
-        if GetFFD(minimap).circBorder then
-            GetFFD(minimap).circBorder:Hide()
+        if GetFFD(mapFrame).circBorder then
+            GetFFD(mapFrame).circBorder:Hide()
         end
-        if GetFFD(minimap).texCircBorder then
-            GetFFD(minimap).texCircBorder:Hide()
+        if GetFFD(mapFrame).texCircBorder then
+            GetFFD(mapFrame).texCircBorder:Hide()
         end
     elseif SKIN._fvSquare then
         -- A square frame on the Forever client (the WoW Forever look's heavy
         -- bronze frame, or Blizzard Style's slim line) in place of the
         -- CludesUI border (latched for the session, so no CUI border is
         -- ever built beside it).
-        SKIN._ApplyForeverSquare(minimap)
-    elseif not isCircle then
+        SKIN._ApplyForeverSquare(mapFrame)
+    elseif not round then
         -- Square / Rectangular: shared border-style engine (solid = PP strips, textured =
         -- BackdropTemplate) on a dedicated host frame -- the engine shows/hides the host
         -- freely, so it must never be the Minimap itself.
         local bs = p.borderSize or 1
-        local owner = GetFFD(minimap).borderHost
+        local owner = GetFFD(mapFrame).borderHost
         if not owner then
-            owner = CreateFrame("Frame", nil, minimap)
+            owner = CreateFrame("Frame", nil, mapFrame)
             owner:EnableMouse(false)
-            GetFFD(minimap).borderHost = owner
+            GetFFD(mapFrame).borderHost = owner
         end
         -- Re-anchor on EVERY apply, not just create: this pass queues the Minimap's
         -- reparent to UIParent a frame out (above), and a host anchored across that
@@ -405,14 +405,14 @@ local function ApplyMinimap()
         -- creation made it permanent for the session, tracking how much else was loading
         -- at login rather than the actual setting. Re-setting the points forces a layout recompute; harmless no-op otherwise.
         owner:ClearAllPoints()
-        owner:SetAllPoints(GetFFD(minimap).layoutFrame or minimap)
+        owner:SetAllPoints(GetFFD(mapFrame).layoutFrame or mapFrame)
         -- Same level as the minimap keeps the border under all child buttons; Show Behind drops it under the map surface for the Shadow style.
         owner:SetFrameLevel(
-            p.borderBehind and math.max(0, minimap:GetFrameLevel() - 1) or minimap:GetFrameLevel()
+            p.borderBehind and math.max(0, mapFrame:GetFrameLevel() - 1) or mapFrame:GetFrameLevel()
         )
         owner:SetAlpha(1)
         -- Exact size beside the legacy step (nil = the legacy path unchanged).
-        local px = CludesUI.BorderPx(p.borderSizePx, bs, p.borderTexture or "solid")
+        local pixel = CludesUI.BorderPx(p.borderSizePx, bs, p.borderTexture or "solid")
         CludesUI.ApplyBorderStyle(
             owner,
             bs,
@@ -428,56 +428,56 @@ local function ApplyMinimap()
             "minimap",
             bs,
             nil,
-            px
+            pixel
         )
-        if GetFFD(minimap).circBorder then
-            GetFFD(minimap).circBorder:Hide()
+        if GetFFD(mapFrame).circBorder then
+            GetFFD(mapFrame).circBorder:Hide()
         end
-        if GetFFD(minimap).texCircBorder then
-            GetFFD(minimap).texCircBorder:Hide()
+        if GetFFD(mapFrame).texCircBorder then
+            GetFFD(mapFrame).texCircBorder:Hide()
         end
     elseif p.shape == "circle" then
         -- Circle: solid colored disc behind the minimap, slightly larger = border ring
-        if GetFFD(minimap).borderHost then
-            GetFFD(minimap).borderHost:Hide()
+        if GetFFD(mapFrame).borderHost then
+            GetFFD(mapFrame).borderHost:Hide()
         end
-        if not GetFFD(minimap).circBorder then
-            local disc = CreateFrame("Frame", nil, minimap)
-            disc:SetFrameLevel(minimap:GetFrameLevel() - 1)
+        if not GetFFD(mapFrame).circBorder then
+            local disc = CreateFrame("Frame", nil, mapFrame)
+            disc:SetFrameLevel(mapFrame:GetFrameLevel() - 1)
             local texture = disc:CreateTexture(nil, "BACKGROUND")
             texture:SetAllPoints(disc)
             texture:SetTexture("Interface\\Common\\CommonMaskCircle")
             disc._tex = texture
-            GetFFD(minimap).circBorder = disc
+            GetFFD(mapFrame).circBorder = disc
         end
         local bs = p.borderSize or 1
-        local circBorder = GetFFD(minimap).circBorder
+        local circBorder = GetFFD(mapFrame).circBorder
         circBorder:ClearAllPoints()
-        circBorder:SetPoint("TOPLEFT", minimap, "TOPLEFT", -bs, bs)
-        circBorder:SetPoint("BOTTOMRIGHT", minimap, "BOTTOMRIGHT", bs, -bs)
+        circBorder:SetPoint("TOPLEFT", mapFrame, "TOPLEFT", -bs, bs)
+        circBorder:SetPoint("BOTTOMRIGHT", mapFrame, "BOTTOMRIGHT", bs, -bs)
         circBorder._tex:SetVertexColor(region, g, b, 1)
         circBorder:Show()
-        if GetFFD(minimap).texCircBorder then
-            GetFFD(minimap).texCircBorder:Hide()
+        if GetFFD(mapFrame).texCircBorder then
+            GetFFD(mapFrame).texCircBorder:Hide()
         end
     elseif p.shape == "textured_circle" then
         -- Textured Circle: void ring border, hide the solid circle border
-        if GetFFD(minimap).borderHost then
-            GetFFD(minimap).borderHost:Hide()
+        if GetFFD(mapFrame).borderHost then
+            GetFFD(mapFrame).borderHost:Hide()
         end
-        if GetFFD(minimap).circBorder then
-            GetFFD(minimap).circBorder:Hide()
+        if GetFFD(mapFrame).circBorder then
+            GetFFD(mapFrame).circBorder:Hide()
         end
-        if not GetFFD(minimap).texCircBorder then
-            local ring = minimap:CreateTexture(nil, "OVERLAY", nil, 7)
+        if not GetFFD(mapFrame).texCircBorder then
+            local ring = mapFrame:CreateTexture(nil, "OVERLAY", nil, 7)
             ring:SetAtlas("wowlabs_minimapvoid-ring-single")
-            GetFFD(minimap).texCircBorder = ring
+            GetFFD(mapFrame).texCircBorder = ring
         end
         local inset = 2
-        local texCircBorder = GetFFD(minimap).texCircBorder
+        local texCircBorder = GetFFD(mapFrame).texCircBorder
         texCircBorder:ClearAllPoints()
-        texCircBorder:SetPoint("TOPLEFT", minimap, "TOPLEFT", -inset, inset)
-        texCircBorder:SetPoint("BOTTOMRIGHT", minimap, "BOTTOMRIGHT", inset, -inset)
+        texCircBorder:SetPoint("TOPLEFT", mapFrame, "TOPLEFT", -inset, inset)
+        texCircBorder:SetPoint("BOTTOMRIGHT", mapFrame, "BOTTOMRIGHT", inset, -inset)
         texCircBorder:SetVertexColor(region, g, b, 1)
         texCircBorder:Show()
     end
@@ -485,47 +485,47 @@ local function ApplyMinimap()
     -- Live-update border on accent change, only while the border actually resolves to the accent (accent swatch active, no class colour override).
     -- Neither square frame on the Forever client draws an CUI border to recolour.
     if p.useClassColor and not p.borderUseClassColor and not SKIN._fvSquare then
-        if not GetFFD(minimap).accentBorderCB then
-            GetFFD(minimap).accentBorderCB = function(ar, ag, ab)
+        if not GetFFD(mapFrame).accentBorderCB then
+            GetFFD(mapFrame).accentBorderCB = function(ar, ag, ab)
                 -- Registration outlives mode switches: re-check before recoloring.
-                local mp = SKIN.db and SKIN.db.profile.minimap
-                if not mp or not mp.useClassColor or mp.borderUseClassColor then
+                local mapCfg = SKIN.db and SKIN.db.profile.minimap
+                if not mapCfg or not mapCfg.useClassColor or mapCfg.borderUseClassColor then
                     return
                 end
-                local owner = GetFFD(minimap).borderHost
+                local owner = GetFFD(mapFrame).borderHost
                 if owner and owner:IsShown() then
                     CludesUI.SetBorderStyleColor(owner, ar, ag, ab, 1)
                 end
-                local callback = GetFFD(minimap).circBorder
+                local callback = GetFFD(mapFrame).circBorder
                 if callback and callback:IsShown() then
                     callback._tex:SetVertexColor(ar, ag, ab, 1)
                 end
-                local tcb = GetFFD(minimap).texCircBorder
+                local tcb = GetFFD(mapFrame).texCircBorder
                 if tcb and tcb:IsShown() then
                     tcb:SetVertexColor(ar, ag, ab, 1)
                 end
             end
         end
-        CludesUI.RegAccent({ type = "callback", fn = GetFFD(minimap).accentBorderCB })
+        CludesUI.RegAccent({ type = "callback", fn = GetFFD(mapFrame).accentBorderCB })
     end
 
     -- Custom housing overlay: our own texture behind the minimap showing the housing indoor map when Blizzard hides the real content. No Blizzard frame manipulation.
-    if not GetFFD(minimap).housingTex then
-        local widget = CreateFrame("Frame", nil, minimap)
-        widget:SetAllPoints(GetFFD(minimap).layoutFrame or minimap)
-        widget:SetFrameLevel(minimap:GetFrameLevel() + 1)
+    if not GetFFD(mapFrame).housingTex then
+        local widget = CreateFrame("Frame", nil, mapFrame)
+        widget:SetAllPoints(GetFFD(mapFrame).layoutFrame or mapFrame)
+        widget:SetFrameLevel(mapFrame:GetFrameLevel() + 1)
         local texture = widget:CreateTexture(nil, "ARTWORK")
-        if isCircle then
-            local inset = -mapSize * 0.10
+        if round then
+            local inset = -mapPx * 0.10
             texture:SetPoint("TOPLEFT", widget, "TOPLEFT", inset, -inset)
             texture:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -inset, inset)
-        elseif crop > 0 then
-            texture:SetSize(mapSize, mapSize)
+        elseif cropPx > 0 then
+            texture:SetSize(mapPx, mapPx)
             texture:SetPoint("CENTER", widget, "CENTER")
         else
             texture:SetAllPoints(widget)
         end
-        if isCircle or crop > 0 then
+        if round or cropPx > 0 then
             local mask = widget:CreateMaskTexture()
             mask:SetAllPoints(widget)
             -- The housing frame already has the visible size, so it takes a
@@ -533,18 +533,18 @@ local function ApplyMinimap()
             -- frame's crop the plain square (the canvas takes the crop masks).
             mask:SetTexture(
                 isRectangular and "Interface\\AddOns\\CludesUIMinimap\\Media\\minimap_rectangular-mask.blp"
-                    or (isCircle and maskID)
+                    or (round and maskID)
                     or 130937
             )
             texture:AddMaskTexture(mask)
             widget._mask = mask
             widget._maskAttached = true
         end
-        widget._isCircle = isCircle
+        widget._isCircle = round
         widget._tex = texture
         widget:Hide()
-        GetFFD(minimap).housingFrame = widget
-        GetFFD(minimap).housingTex = texture
+        GetFFD(mapFrame).housingFrame = widget
+        GetFFD(mapFrame).housingTex = texture
         -- Watch for MinimapBackdrop atlas changes to detect housing
         local backdrop = _G.MinimapBackdrop
         if backdrop then
@@ -572,10 +572,10 @@ local function ApplyMinimap()
                     widget:Hide()
                 end
             end
-            GetFFD(minimap).checkHousing = CheckHousing
+            GetFFD(mapFrame).checkHousing = CheckHousing
             -- Check on zone transitions
-            if not GetFFD(minimap).housingZoneHook then
-                GetFFD(minimap).housingZoneHook = true
+            if not GetFFD(mapFrame).housingZoneHook then
+                GetFFD(mapFrame).housingZoneHook = true
                 local zf = CreateFrame("Frame")
                 zf:RegisterEvent("PLAYER_ENTERING_WORLD")
                 zf:RegisterEvent("ZONE_CHANGED_NEW_AREA")
@@ -587,26 +587,26 @@ local function ApplyMinimap()
         end
     else
         -- Update existing housing frame on reapply (shape/mask can change live).
-        local widget = GetFFD(minimap).housingFrame
+        local widget = GetFFD(mapFrame).housingFrame
         if widget then
             widget:ClearAllPoints()
-            widget:SetAllPoints(GetFFD(minimap).layoutFrame or minimap)
-            widget:SetFrameLevel(minimap:GetFrameLevel() + 1)
-            widget._isCircle = isCircle
+            widget:SetAllPoints(GetFFD(mapFrame).layoutFrame or mapFrame)
+            widget:SetFrameLevel(mapFrame:GetFrameLevel() + 1)
+            widget._isCircle = round
             if widget._tex then
                 widget._tex:ClearAllPoints()
-                if isCircle then
-                    local inset = -mapSize * 0.10
+                if round then
+                    local inset = -mapPx * 0.10
                     widget._tex:SetPoint("TOPLEFT", widget, "TOPLEFT", inset, -inset)
                     widget._tex:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", -inset, inset)
-                elseif crop > 0 then
-                    widget._tex:SetSize(mapSize, mapSize)
+                elseif cropPx > 0 then
+                    widget._tex:SetSize(mapPx, mapPx)
                     widget._tex:SetPoint("CENTER", widget, "CENTER")
                 else
                     widget._tex:SetAllPoints(widget)
                 end
             end
-            if isCircle or crop > 0 then
+            if round or cropPx > 0 then
                 if not widget._mask then
                     local mask = widget:CreateMaskTexture()
                     mask:SetAllPoints(widget)
@@ -619,7 +619,7 @@ local function ApplyMinimap()
                 widget._mask:SetTexture(
                     isRectangular
                             and "Interface\\AddOns\\CludesUIMinimap\\Media\\minimap_rectangular-mask.blp"
-                        or (isCircle and maskID)
+                        or (round and maskID)
                         or 130937
                 )
                 widget._mask:Show()
@@ -634,77 +634,77 @@ local function ApplyMinimap()
     end
     -- Shape changes do not fire a zone event. Reuse the existing housing detector
     -- so atlas/texture selection follows the new shape immediately.
-    if GetFFD(minimap).checkHousing then
-        GetFFD(minimap).checkHousing()
+    if GetFFD(mapFrame).checkHousing then
+        GetFFD(mapFrame).checkHousing()
     end
     -- Clamp to the screen, a cropped map's whole square canvas included: the engine
     -- keeps the canvas's terrain on screen, so a canvas whose hidden strip passes the
     -- top or bottom edge slides its terrain inside the frame and leaves a strip with
     -- no map at that edge. A cropped map therefore stops that strip short of the top
     -- and bottom edges; the Unlock Mode box follows the canvas there.
-    minimap:SetClampedToScreen(true)
-    local bInset = isCircle and (p.borderSize or 1) or 0
-    minimap:SetClampRectInsets(-bInset, bInset, bInset, -bInset)
+    mapFrame:SetClampedToScreen(true)
+    local bInset = round and (p.borderSize or 1) or 0
+    mapFrame:SetClampRectInsets(-bInset, bInset, bInset, -bInset)
     -- Force the engine to re-render at the new size: nudge zoom, restore same frame.
-    local curZoom = minimap:GetZoom()
-    minimap:SetZoom(curZoom > 0 and 0 or 1)
-    minimap:SetZoom(curZoom)
+    local curZoom = mapFrame:GetZoom()
+    mapFrame:SetZoom(curZoom > 0 and 0 or 1)
+    mapFrame:SetZoom(curZoom)
 
     -- Zoom buttons: parent to the minimap bottom-right, raise above the map surface,
     -- hook SetPoint so Blizzard can't re-anchor them (Midnight uses Minimap.ZoomIn/
     -- ZoomOut, not global MinimapZoomIn). With Zoom +/- Icons unchecked they live under
     -- the hidden frame instead, so Blizzard's hover show/fade never renders them; re-checking reparents them back.
-    local zoomIn = minimap.ZoomIn or _G.MinimapZoomIn
-    local zoomOut = minimap.ZoomOut or _G.MinimapZoomOut
+    local zoomInBtn = mapFrame.ZoomIn or _G.MinimapZoomIn
+    local zoomOutBtn = mapFrame.ZoomOut or _G.MinimapZoomOut
     local hideZoom = p.hideZoomButtons
-    if hideZoom and (zoomIn or zoomOut) and not SKIN._hiddenFrame then
+    if hideZoom and (zoomInBtn or zoomOutBtn) and not SKIN._hiddenFrame then
         SKIN._hiddenFrame = CreateFrame("Frame")
         SKIN._hiddenFrame:Hide()
     end
-    if zoomIn then
-        zoomIn:SetParent(hideZoom and SKIN._hiddenFrame or minimap)
-        zoomIn:SetFrameLevel(minimap:GetFrameLevel() + 10)
-        SKIN._ZoomAnchor(zoomIn, true, minimap)
+    if zoomInBtn then
+        zoomInBtn:SetParent(hideZoom and SKIN._hiddenFrame or mapFrame)
+        zoomInBtn:SetFrameLevel(mapFrame:GetFrameLevel() + 10)
+        SKIN._ZoomAnchor(zoomInBtn, true, mapFrame)
         if SKIN._MinimapClassic() then
-            SKIN._ClassicZoomButton(zoomIn, true, mapSize / 140)
+            SKIN._ClassicZoomButton(zoomInBtn, true, mapPx / 140)
         end
-        zoomIn:EnableMouse(true)
-        zoomIn:SetAlpha(1)
+        zoomInBtn:EnableMouse(true)
+        zoomInBtn:SetAlpha(1)
         -- Start in Blizzard's between-hovers state (hidden; hover handlers Show/Hide on map enter/leave) so it is not visible from /reload until hovered.
-        zoomIn:SetShown(minimap:IsMouseOver())
-        if not GetFFD(zoomIn).hooked then
-            hooksecurefunc(zoomIn, "SetPoint", function(self)
+        zoomInBtn:SetShown(mapFrame:IsMouseOver())
+        if not GetFFD(zoomInBtn).hooked then
+            hooksecurefunc(zoomInBtn, "SetPoint", function(self)
                 if GetFFD(self).inHook then
                     return
                 end
                 GetFFD(self).inHook = true
-                SKIN._ZoomAnchor(self, true, minimap)
+                SKIN._ZoomAnchor(self, true, mapFrame)
                 GetFFD(self).inHook = false
             end)
-            GetFFD(zoomIn).hooked = true
+            GetFFD(zoomInBtn).hooked = true
         end
     end
-    if zoomOut then
-        zoomOut:SetParent(hideZoom and SKIN._hiddenFrame or minimap)
-        zoomOut:SetFrameLevel(minimap:GetFrameLevel() + 10)
-        SKIN._ZoomAnchor(zoomOut, false, minimap)
+    if zoomOutBtn then
+        zoomOutBtn:SetParent(hideZoom and SKIN._hiddenFrame or mapFrame)
+        zoomOutBtn:SetFrameLevel(mapFrame:GetFrameLevel() + 10)
+        SKIN._ZoomAnchor(zoomOutBtn, false, mapFrame)
         if SKIN._MinimapClassic() then
-            SKIN._ClassicZoomButton(zoomOut, false, mapSize / 140)
+            SKIN._ClassicZoomButton(zoomOutBtn, false, mapPx / 140)
         end
-        zoomOut:EnableMouse(true)
-        zoomOut:SetAlpha(1)
+        zoomOutBtn:EnableMouse(true)
+        zoomOutBtn:SetAlpha(1)
         -- Same between-hovers start as ZoomIn above
-        zoomOut:SetShown(minimap:IsMouseOver())
-        if not GetFFD(zoomOut).hooked then
-            hooksecurefunc(zoomOut, "SetPoint", function(self)
+        zoomOutBtn:SetShown(mapFrame:IsMouseOver())
+        if not GetFFD(zoomOutBtn).hooked then
+            hooksecurefunc(zoomOutBtn, "SetPoint", function(self)
                 if GetFFD(self).inHook then
                     return
                 end
                 GetFFD(self).inHook = true
-                SKIN._ZoomAnchor(self, false, minimap)
+                SKIN._ZoomAnchor(self, false, mapFrame)
                 GetFFD(self).inHook = false
             end)
-            GetFFD(zoomOut).hooked = true
+            GetFFD(zoomOutBtn).hooked = true
         end
     end
 
@@ -713,13 +713,13 @@ local function ApplyMinimap()
     -- onto a mouse-enabled child (clock, FPS text, folio, buttons); OnEnter never fires
     -- when the cursor enters the region directly on such a child. Both route through
     -- EBS._HVRevealMapHover (no-ops off-region, self-cancelling exit watcher); hooked children's own OnEnter covers direct entry.
-    if not GetFFD(minimap).hoverRevealHooked then
-        GetFFD(minimap).hoverRevealHooked = true
-        minimap:HookScript("OnEnter", function()
+    if not GetFFD(mapFrame).hoverRevealHooked then
+        GetFFD(mapFrame).hoverRevealHooked = true
+        mapFrame:HookScript("OnEnter", function()
             SKIN._HVRevealMapHover()
         end)
         -- Real exits hide instantly (matching Blizzard's zoom fade); moving onto a child keeps the reveal alive and the watcher covers the exit from there.
-        minimap:HookScript("OnLeave", function(self)
+        mapFrame:HookScript("OnLeave", function(self)
             if SKIN._HoverStillOver(self) then
                 SKIN._HVRevealMapHover()
             else
@@ -728,27 +728,27 @@ local function ApplyMinimap()
         end)
     end
 
-    if zoomIn and not GetFFD(zoomIn).zoomSaveHooked then
-        zoomIn:HookScript("OnClick", function()
+    if zoomInBtn and not GetFFD(zoomInBtn).zoomSaveHooked then
+        zoomInBtn:HookScript("OnClick", function()
             SaveZoomLevel()
             RestartZoomResetTimer()
         end)
-        GetFFD(zoomIn).zoomSaveHooked = true
+        GetFFD(zoomInBtn).zoomSaveHooked = true
     end
-    if zoomOut and not GetFFD(zoomOut).zoomSaveHooked then
-        zoomOut:HookScript("OnClick", function()
+    if zoomOutBtn and not GetFFD(zoomOutBtn).zoomSaveHooked then
+        zoomOutBtn:HookScript("OnClick", function()
             SaveZoomLevel()
             RestartZoomResetTimer()
         end)
-        GetFFD(zoomOut).zoomSaveHooked = true
+        GetFFD(zoomOutBtn).zoomSaveHooked = true
     end
 
     -- Mark zoom buttons so GatherMinimapButtons skips them
-    if zoomIn then
-        flyoutOwnedFrames[zoomIn] = true
+    if zoomInBtn then
+        flyoutOwnedFrames[zoomInBtn] = true
     end
-    if zoomOut then
-        flyoutOwnedFrames[zoomOut] = true
+    if zoomOutBtn then
+        flyoutOwnedFrames[zoomOutBtn] = true
     end
 
     -- Flyout toggle button (bottom-left corner) -- create before hiding children
@@ -812,14 +812,14 @@ local function ApplyMinimap()
     -- Clock -- none, inside the map, or boxed on the map edge
     local clockMode, locationMode = GetElementModes(p)
     if clockMode ~= "none" then
-        if not clockBg then
-            Inner.SetClockBg(CreateFrame("Button", nil, minimap, "BackdropTemplate"))
-            clockBg:SetSize(80, 16)
-            clockBg:SetPoint("TOP", minimap, "TOP", 0, 7)
-            clockBg:SetBackdrop({ bgFile = "Interface\\ChatFrame\\ChatFrameBackground" })
-            clockBg:SetFrameLevel(minimap:GetFrameLevel() + SKIN._INFO_TEXT_LEVEL)
-            clockBg:RegisterForClicks("AnyUp")
-            clockBg:SetScript("OnClick", function(_, btnFrame)
+        if not clockBack then
+            Inner.SetClockBg(CreateFrame("Button", nil, mapFrame, "BackdropTemplate"))
+            clockBack:SetSize(80, 16)
+            clockBack:SetPoint("TOP", mapFrame, "TOP", 0, 7)
+            clockBack:SetBackdrop({ bgFile = "Interface\\ChatFrame\\ChatFrameBackground" })
+            clockBack:SetFrameLevel(mapFrame:GetFrameLevel() + SKIN._INFO_TEXT_LEVEL)
+            clockBack:RegisterForClicks("AnyUp")
+            clockBack:SetScript("OnClick", function(_, btnFrame)
                 -- The clock sits above the map's middle-click interceptor, which lets
                 -- only the left and right buttons through: the clock acts on those two,
                 -- and a middle click does here what it does on the map.
@@ -831,8 +831,8 @@ local function ApplyMinimap()
                 end
                 -- With the Great Vault hover tooltip assigned, clicking the clock opens the vault (same as the Great Vault button), not the clock config.
                 -- WoW Forever has no Great Vault: a saved "vault" reads as none there.
-                local mp = SKIN.db and SKIN.db.profile.minimap
-                if mp and mp.clockHoverTooltip == "vault" and not CludesUI.IS_FOREVER then
+                local mapCfg = SKIN.db and SKIN.db.profile.minimap
+                if mapCfg and mapCfg.clockHoverTooltip == "vault" and not CludesUI.IS_FOREVER then
                     CludesUI.ToggleGreatVault()
                     return
                 end
@@ -841,41 +841,41 @@ local function ApplyMinimap()
                 end
             end)
         end
-        if not clockFrame then
-            Inner.SetClockFrame(clockBg:CreateFontString(nil, "OVERLAY"))
-            ApplyMinimapFont(clockFrame, 10)
-            clockFrame:SetPoint("CENTER", clockBg, "CENTER", 0, 0)
-            clockFrame:SetTextColor(1, 1, 1, 0.9)
+        if not clockPanel then
+            Inner.SetClockFrame(clockBack:CreateFontString(nil, "OVERLAY"))
+            ApplyMinimapFont(clockPanel, 10)
+            clockPanel:SetPoint("CENTER", clockBack, "CENTER", 0, 0)
+            clockPanel:SetTextColor(1, 1, 1, 0.9)
         end
         local cxOff = p.clockOffsetX or 0
         local cyOff = p.clockOffsetY or 0
         if clockMode == "inside" then
-            clockBg:SetBackdropColor(0, 0, 0, 0)
+            clockBack:SetBackdropColor(0, 0, 0, 0)
         else
             local ar, ag, ab = SKIN._EdgeBoxColor(p)
-            clockBg:SetBackdropColor(ar, ag, ab, 1)
+            clockBack:SetBackdropColor(ar, ag, ab, 1)
         end
-        local cpt, crel, cbx, cby = ResolveElementAnchor(p.clockPosition or "top", clockMode, isCircle)
-        clockBg:ClearAllPoints()
-        clockBg:SetPoint(cpt, GetFFD(minimap).layoutFrame or minimap, crel, cbx + cxOff, cby + cyOff)
+        local cpt, crel, cbx, cby = ResolveElementAnchor(p.clockPosition or "top", clockMode, round)
+        clockBack:ClearAllPoints()
+        clockBack:SetPoint(cpt, GetFFD(mapFrame).layoutFrame or mapFrame, crel, cbx + cxOff, cby + cyOff)
         -- Align the TEXT edge with the anchor so it lands where the coordinates text
         -- would: inside style pins text to the same wrapper corner the wrapper pins to
         -- the map (wrapper is wider, so centered text would drift toward the middle); edge style keeps it centered in the box.
-        clockFrame:ClearAllPoints()
+        clockPanel:ClearAllPoints()
         if clockMode == "inside" then
-            clockFrame:SetPoint(cpt, clockBg, cpt, 0, 0)
+            clockPanel:SetPoint(cpt, clockBack, cpt, 0, 0)
         else
-            clockFrame:SetPoint("CENTER", clockBg, "CENTER", 0, 0)
+            clockPanel:SetPoint("CENTER", clockBack, "CENTER", 0, 0)
         end
         local cs = p.clockScale or 1.15
-        clockBg:SetScale(cs)
-        _G._CUBS_ClockBg = clockBg
-        clockBg:Show()
-        clockFrame:Show()
-        if not clockTicker then
-            clockTicker = CreateFrame("Frame") -- kept for CVar event + Show/Hide API
-            clockTicker._ticker = nil
-            clockTicker.Show = function(self)
+        clockBack:SetScale(cs)
+        _G._CUBS_ClockBg = clockBack
+        clockBack:Show()
+        clockPanel:Show()
+        if not clockTimer then
+            clockTimer = CreateFrame("Frame") -- kept for CVar event + Show/Hide API
+            clockTimer._ticker = nil
+            clockTimer.Show = function(self)
                 if self._ticker then
                     return
                 end
@@ -883,29 +883,29 @@ local function ApplyMinimap()
                     UpdateClock()
                 end)
             end
-            clockTicker.Hide = function(self)
+            clockTimer.Hide = function(self)
                 if self._ticker then
                     self._ticker:Cancel()
                     self._ticker = nil
                 end
             end
-            clockTicker:RegisterEvent("CVAR_UPDATE")
-            clockTicker:SetScript("OnEvent", function(_, _, cvarName)
+            clockTimer:RegisterEvent("CVAR_UPDATE")
+            clockTimer:SetScript("OnEvent", function(_, _, cvarName)
                 if cvarName == "timeMgrUseMilitaryTime" or cvarName == "timeMgrUseLocalTime" then
                     RefreshClockCVars()
                     UpdateClock()
                 end
             end)
         end
-        clockTicker:Show()
+        clockTimer:Show()
         UpdateClock()
         -- Hover tooltip (Show on Clock Hover): lockouts or Great Vault, reusing the calendar/vault tooltips and their scaling. Mode read live on each hover.
-        if not clockBg._cuiHoverHooked then
-            clockBg._cuiHoverHooked = true
-            clockBg:SetScript("OnEnter", function(self)
+        if not clockBack._cuiHoverHooked then
+            clockBack._cuiHoverHooked = true
+            clockBack:SetScript("OnEnter", function(self)
                 SKIN._HVRevealMapHover()
-                local mp = SKIN.db and SKIN.db.profile.minimap
-                local mode = (mp and mp.clockHoverTooltip) or "none"
+                local mapCfg = SKIN.db and SKIN.db.profile.minimap
+                local mode = (mapCfg and mapCfg.clockHoverTooltip) or "none"
                 if CludesUI.IS_FOREVER and mode == "vault" then
                     mode = "none"
                 end
@@ -921,24 +921,24 @@ local function ApplyMinimap()
                     ShowVaultTooltip(self)
                 end
             end)
-            clockBg:SetScript("OnLeave", function()
+            clockBack:SetScript("OnLeave", function()
                 HideCalendarTooltip()
                 HideVaultTooltip()
             end)
         end
     else
-        if clockBg then
-            clockBg:Hide()
+        if clockBack then
+            clockBack:Hide()
         end
-        if clockFrame then
-            clockFrame:Hide()
+        if clockPanel then
+            clockPanel:Hide()
         end
-        if clockTicker then
-            clockTicker:Hide()
+        if clockTimer then
+            clockTimer:Hide()
         end
     end
 
-    LayoutIndicatorFrames(minimap, p, isCircle)
+    LayoutIndicatorFrames(mapFrame, p, round)
 
     -- Hook Blizzard mail/crafting Show/Hide to sync our custom indicator visibility
     local indicator = MinimapCluster and MinimapCluster.IndicatorFrame
@@ -947,13 +947,13 @@ local function ApplyMinimap()
     if mailFrame and not GetFFD(mailFrame).visHooked then
         GetFFD(mailFrame).visHooked = true
         local function onMailChange()
-            local mp = SKIN.db and SKIN.db.profile.minimap
-            if not mp or not mp.enabled then
+            local mapCfg = SKIN.db and SKIN.db.profile.minimap
+            if not mapCfg or not mapCfg.enabled then
                 return
             end
             SyncIndicatorVisibility()
-            local s = SKIN._MapShape(mp)
-            LayoutIndicatorFrames(minimap, mp, s == "circle" or s == "textured_circle")
+            local s = SKIN._MapShape(mapCfg)
+            LayoutIndicatorFrames(mapFrame, mapCfg, s == "circle" or s == "textured_circle")
         end
         hooksecurefunc(mailFrame, "Show", onMailChange)
         hooksecurefunc(mailFrame, "Hide", onMailChange)
@@ -961,13 +961,13 @@ local function ApplyMinimap()
     if craftingFrame and not GetFFD(craftingFrame).visHooked then
         GetFFD(craftingFrame).visHooked = true
         local function onCraftChange()
-            local mp = SKIN.db and SKIN.db.profile.minimap
-            if not mp or not mp.enabled then
+            local mapCfg = SKIN.db and SKIN.db.profile.minimap
+            if not mapCfg or not mapCfg.enabled then
                 return
             end
             SyncIndicatorVisibility()
-            local s = SKIN._MapShape(mp)
-            LayoutIndicatorFrames(minimap, mp, s == "circle" or s == "textured_circle")
+            local s = SKIN._MapShape(mapCfg)
+            LayoutIndicatorFrames(mapFrame, mapCfg, s == "circle" or s == "textured_circle")
         end
         hooksecurefunc(craftingFrame, "Show", onCraftChange)
         hooksecurefunc(craftingFrame, "Hide", onCraftChange)
@@ -975,95 +975,95 @@ local function ApplyMinimap()
 
     -- Location bar -- none, inside the map, or boxed on the map edge
     if locationMode ~= "none" then
-        if not locationBg then
-            Inner.SetLocationBg(CreateFrame("Frame", nil, minimap, "BackdropTemplate"))
-            locationBg:SetSize(120, 18)
-            locationBg:SetPoint("BOTTOM", minimap, "BOTTOM", 0, -7)
-            locationBg:SetBackdrop({ bgFile = "Interface\\ChatFrame\\ChatFrameBackground" })
-            locationBg:SetFrameLevel(minimap:GetFrameLevel() + SKIN._INFO_TEXT_LEVEL)
-            locationBg:RegisterEvent("ZONE_CHANGED")
-            locationBg:RegisterEvent("ZONE_CHANGED_INDOORS")
-            locationBg:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-            locationBg:RegisterEvent("PLAYER_REGEN_ENABLED") -- guardrails-allow: combat-deferral by Cludes: moved unchanged by the file split; multi-event zone text listener, kept as is in the combat queue migration
-            locationBg:SetScript("OnEvent", function()
+        if not locationBack then
+            Inner.SetLocationBg(CreateFrame("Frame", nil, mapFrame, "BackdropTemplate"))
+            locationBack:SetSize(120, 18)
+            locationBack:SetPoint("BOTTOM", mapFrame, "BOTTOM", 0, -7)
+            locationBack:SetBackdrop({ bgFile = "Interface\\ChatFrame\\ChatFrameBackground" })
+            locationBack:SetFrameLevel(mapFrame:GetFrameLevel() + SKIN._INFO_TEXT_LEVEL)
+            locationBack:RegisterEvent("ZONE_CHANGED")
+            locationBack:RegisterEvent("ZONE_CHANGED_INDOORS")
+            locationBack:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+            locationBack:RegisterEvent("PLAYER_REGEN_ENABLED") -- guardrails-allow: combat-deferral by Cludes: moved unchanged by the file split; multi-event zone text listener, kept as is in the combat queue migration
+            locationBack:SetScript("OnEvent", function()
                 UpdateLocation()
             end)
         end
-        if not locationFrame then
-            Inner.SetLocationFrame(locationBg:CreateFontString(nil, "OVERLAY"))
-            ApplyMinimapFont(locationFrame, 10)
-            locationFrame:SetPoint("CENTER", locationBg, "CENTER", 0, 0)
-            locationFrame:SetTextColor(1, 1, 1, 0.9)
+        if not locationPanel then
+            Inner.SetLocationFrame(locationBack:CreateFontString(nil, "OVERLAY"))
+            ApplyMinimapFont(locationPanel, 10)
+            locationPanel:SetPoint("CENTER", locationBack, "CENTER", 0, 0)
+            locationPanel:SetTextColor(1, 1, 1, 0.9)
         end
         local lxOff = p.locationOffsetX or 0
         local lyOff = p.locationOffsetY or 0
         if locationMode == "inside" then
-            locationBg:SetBackdropColor(0, 0, 0, 0)
+            locationBack:SetBackdropColor(0, 0, 0, 0)
         else
             local ar, ag, ab = SKIN._EdgeBoxColor(p)
-            locationBg:SetBackdropColor(ar, ag, ab, 1)
+            locationBack:SetBackdropColor(ar, ag, ab, 1)
         end
         local lpt, lrel, lbx, lby =
-            ResolveElementAnchor(p.locationPosition or "bottom", locationMode, isCircle)
-        locationBg:ClearAllPoints()
-        locationBg:SetPoint(lpt, GetFFD(minimap).layoutFrame or minimap, lrel, lbx + lxOff, lby + lyOff)
+            ResolveElementAnchor(p.locationPosition or "bottom", locationMode, round)
+        locationBack:ClearAllPoints()
+        locationBack:SetPoint(lpt, GetFFD(mapFrame).layoutFrame or mapFrame, lrel, lbx + lxOff, lby + lyOff)
         -- Align the TEXT edge with the anchor (see the clock block above): inside pins it to the wrapper corner matching the map anchor, edge keeps it centered.
-        locationFrame:ClearAllPoints()
+        locationPanel:ClearAllPoints()
         if locationMode == "inside" then
-            locationFrame:SetPoint(lpt, locationBg, lpt, 0, 0)
+            locationPanel:SetPoint(lpt, locationBack, lpt, 0, 0)
         else
-            locationFrame:SetPoint("CENTER", locationBg, "CENTER", 0, 0)
+            locationPanel:SetPoint("CENTER", locationBack, "CENTER", 0, 0)
         end
-        if blizz and GetFFD(minimap).blizzHeader then
+        if blizz and GetFFD(mapFrame).blizzHeader then
             -- Stock styles: the zone text rides the top bar -- the banner's text
             -- slot under Classic WoW UI, held to the slot by both ends on WoW
             -- Forever's bar (a longer name is cut short with an ellipsis), as
             -- that client's own zone text is (offsets still apply).
-            local heading = GetFFD(minimap).blizzHeader
-            locationBg:SetBackdropColor(0, 0, 0, 0)
-            locationBg:ClearAllPoints()
-            locationBg:SetPoint("CENTER", heading._zoneSlot or heading, "CENTER", lxOff, lyOff)
-            locationFrame:ClearAllPoints()
+            local heading = GetFFD(mapFrame).blizzHeader
+            locationBack:SetBackdropColor(0, 0, 0, 0)
+            locationBack:ClearAllPoints()
+            locationBack:SetPoint("CENTER", heading._zoneSlot or heading, "CENTER", lxOff, lyOff)
+            locationPanel:ClearAllPoints()
             if heading._fvBar then
-                locationFrame:SetPoint("LEFT", heading._zoneSlot, "LEFT", lxOff, lyOff)
-                locationFrame:SetPoint("RIGHT", heading._zoneSlot, "RIGHT", lxOff, lyOff)
-                locationFrame:SetWordWrap(false)
+                locationPanel:SetPoint("LEFT", heading._zoneSlot, "LEFT", lxOff, lyOff)
+                locationPanel:SetPoint("RIGHT", heading._zoneSlot, "RIGHT", lxOff, lyOff)
+                locationPanel:SetWordWrap(false)
             else
-                locationFrame:SetPoint("CENTER", locationBg, "CENTER", 0, 0)
+                locationPanel:SetPoint("CENTER", locationBack, "CENTER", 0, 0)
             end
         elseif SKIN._fvSquare and SKIN._fvTitleOn then
             -- Either square: the zone text rides the frame's title bar, held
             -- to the bar's band by both ends (a longer name is cut short with
             -- an ellipsis); the offsets still apply.
-            local slot = GetFFD(minimap).fvTitleSlot
-            locationBg:SetBackdropColor(0, 0, 0, 0)
-            locationBg:ClearAllPoints()
-            locationBg:SetPoint("CENTER", slot, "CENTER", lxOff, lyOff)
-            locationFrame:ClearAllPoints()
-            locationFrame:SetPoint("LEFT", slot, "LEFT", lxOff, lyOff)
-            locationFrame:SetPoint("RIGHT", slot, "RIGHT", lxOff, lyOff)
-            locationFrame:SetWordWrap(false)
+            local slot = GetFFD(mapFrame).fvTitleSlot
+            locationBack:SetBackdropColor(0, 0, 0, 0)
+            locationBack:ClearAllPoints()
+            locationBack:SetPoint("CENTER", slot, "CENTER", lxOff, lyOff)
+            locationPanel:ClearAllPoints()
+            locationPanel:SetPoint("LEFT", slot, "LEFT", lxOff, lyOff)
+            locationPanel:SetPoint("RIGHT", slot, "RIGHT", lxOff, lyOff)
+            locationPanel:SetWordWrap(false)
         end
         local ls = p.locationScale or 1.15
-        locationBg:SetScale(ls)
-        _G._CUBS_LocationBg = locationBg
-        locationBg:Show()
-        locationFrame:Show()
+        locationBack:SetScale(ls)
+        _G._CUBS_LocationBg = locationBack
+        locationBack:Show()
+        locationPanel:Show()
         UpdateLocation()
     else
-        if locationBg then
-            locationBg:Hide()
+        if locationBack then
+            locationBack:Hide()
         end
-        if locationFrame then
-            locationFrame:Hide()
+        if locationPanel then
+            locationPanel:Hide()
         end
     end
 
     -- Coordinates -- mode (never/hover/always) + anchor position around the map
-    if not coordFrame then
-        Inner.SetCoordFrame(minimap:CreateFontString(nil, "OVERLAY"))
-        ApplyMinimapFont(coordFrame, 11)
-        coordFrame:SetTextColor(1, 1, 1, 0.9)
+    if not coordPanel then
+        Inner.SetCoordFrame(mapFrame:CreateFontString(nil, "OVERLAY"))
+        ApplyMinimapFont(coordPanel, 11)
+        coordPanel:SetTextColor(1, 1, 1, 0.9)
     end
     local coordsMode, coordsPos = GetCoordsModePos(p)
     local cpAnchor = MAP_POS_ANCHORS[coordsPos] or MAP_POS_ANCHORS.topLeft
@@ -1071,14 +1071,14 @@ local function ApplyMinimap()
     local cpx, cpy = SKIN._FvInsideXY(coordsPos, cpAnchor[3], cpAnchor[4])
     cpx = cpx + (p and p.coordsBelowOffsetX or 0)
     cpy = cpy + (p and p.coordsBelowOffsetY or 0)
-    coordFrame:ClearAllPoints()
-    coordFrame:SetPoint(cpAnchor[1], GetFFD(minimap).layoutFrame or minimap, cpAnchor[2], cpx, cpy)
-    coordFrame:SetScale(p and p.coordsScale or 1.0)
-    _G._CUBS_CoordFrame = coordFrame
-    if not coordTicker then
+    coordPanel:ClearAllPoints()
+    coordPanel:SetPoint(cpAnchor[1], GetFFD(mapFrame).layoutFrame or mapFrame, cpAnchor[2], cpx, cpy)
+    coordPanel:SetScale(p and p.coordsScale or 1.0)
+    _G._CUBS_CoordFrame = coordPanel
+    if not coordTimer then
         Inner.SetCoordTicker(CreateFrame("Frame")) -- kept for Show/Hide API
-        coordTicker._ticker = nil
-        coordTicker.Show = function(self)
+        coordTimer._ticker = nil
+        coordTimer.Show = function(self)
             if self._ticker then
                 return
             end
@@ -1086,7 +1086,7 @@ local function ApplyMinimap()
                 UpdateCoords()
             end)
         end
-        coordTicker.Hide = function(self)
+        coordTimer.Hide = function(self)
             if self._ticker then
                 self._ticker:Cancel()
                 self._ticker = nil
@@ -1094,24 +1094,24 @@ local function ApplyMinimap()
         end
     end
     if coordsMode == "always" then
-        coordFrame:Show()
-        coordTicker:Show()
+        coordPanel:Show()
+        coordTimer:Show()
         UpdateCoords()
     else
-        coordFrame:Hide()
-        coordTicker:Hide()
+        coordPanel:Hide()
+        coordTimer:Hide()
     end
     -- Hover mode (coords ticker runs only while the map region is hovered) is driven by EBS._HVRevealMapHover via the shared hover-reveal hooks installed above.
 
     -- FPS/MS readout (Text section): same format/options as the QoL FPS counter.
     if p.showFPS then
-        if not fpsBg then
-            fpsBg = CreateFrame("Frame", nil, minimap)
-            fpsBg:SetSize(60, 20)
-            fpsBg:SetFrameLevel(minimap:GetFrameLevel() + SKIN._INFO_TEXT_LEVEL)
-            fpsBg:EnableMouse(false)
+        if not fpsBack then
+            fpsBack = CreateFrame("Frame", nil, mapFrame)
+            fpsBack:SetSize(60, 20)
+            fpsBack:SetFrameLevel(mapFrame:GetFrameLevel() + SKIN._INFO_TEXT_LEVEL)
+            fpsBack:EnableMouse(false)
             local function MakeFS(size)
-                local fontStr = fpsBg:CreateFontString(nil, "OVERLAY")
+                local fontStr = fpsBack:CreateFontString(nil, "OVERLAY")
                 ApplyMinimapFont(fontStr, size)
                 fontStr:SetTextColor(1, 1, 1, 1)
                 return fontStr
@@ -1120,7 +1120,7 @@ local function ApplyMinimap()
             local DIV_H = 10
             local DIV_PAD = 6
             local function MakeDivider()
-                local skinData = fpsBg:CreateTexture(nil, "OVERLAY")
+                local skinData = fpsBack:CreateTexture(nil, "OVERLAY")
                 skinData:SetColorTexture(1, 1, 1, 1)
                 skinData:SetSize(DIV_W, DIV_H)
                 return skinData
@@ -1128,24 +1128,24 @@ local function ApplyMinimap()
             -- One FontString per SEGMENT ("58 FPS"): number+suffix rasterize in a single
             -- pass, so spacing can never wobble sub-pixel like two separately snapped
             -- strings. Suffix colour rides an inline escape (Accented Text); SetFormattedText keeps formatting C-side with no template rebuilds.
-            local fsFps, fsWorld, fsLocal = MakeFS(12), MakeFS(12), MakeFS(12)
-            fpsBg._fsAll = { fsFps, fsWorld, fsLocal }
+            local fsFps, worldFs, fsLocal = MakeFS(12), MakeFS(12), MakeFS(12)
+            fpsBack._fsAll = { fsFps, worldFs, fsLocal }
             local divWorld = MakeDivider()
             local divLocal = MakeDivider()
 
             local floor = math.floor
             local function UpdateFPS(self)
-                local mp = SKIN.db and SKIN.db.profile.minimap
+                local mapCfg = SKIN.db and SKIN.db.profile.minimap
                 -- Numbers render white; the "FPS"/"MS" suffixes take the description colour while FPS/MS is checked in Accented Text (default on).
                 local hex = "ffffff"
-                if (mp and mp.fpsColorSuffix) ~= false then
-                    local _, _, _, hgt = GetDescColor(mp)
+                if (mapCfg and mapCfg.fpsColorSuffix) ~= false then
+                    local _, _, _, hgt = GetDescColor(mapCfg)
                     hex = hgt
                 end
 
                 local fps = floor(GetFramerate() + 0.5)
-                local showWorld = mp and mp.fpsShowWorldMS
-                local _localMS = mp and mp.fpsShowLocalMS
+                local showWorld = mapCfg and mapCfg.fpsShowWorldMS
+                local _localMS = mapCfg and mapCfg.fpsShowLocalMS
                 local showLocal = (_localMS == nil) and true or _localMS
                 local _, _, latHome, latWorld = GetNetStats()
 
@@ -1159,15 +1159,15 @@ local function ApplyMinimap()
                     divWorld:ClearAllPoints()
                     divWorld:SetPoint("LEFT", anchor, "RIGHT", DIV_PAD, 0)
                     divWorld:Show()
-                    fsWorld:ClearAllPoints()
-                    fsWorld:SetPoint("LEFT", divWorld, "RIGHT", DIV_PAD, 0)
-                    fsWorld:SetFormattedText("%d |cff%sMS|r", latWorld, hex)
-                    fsWorld:Show()
-                    totalW = totalW + DIV_PAD + DIV_W + DIV_PAD + (fsWorld:GetStringWidth() or 0)
-                    anchor = fsWorld
+                    worldFs:ClearAllPoints()
+                    worldFs:SetPoint("LEFT", divWorld, "RIGHT", DIV_PAD, 0)
+                    worldFs:SetFormattedText("%d |cff%sMS|r", latWorld, hex)
+                    worldFs:Show()
+                    totalW = totalW + DIV_PAD + DIV_W + DIV_PAD + (worldFs:GetStringWidth() or 0)
+                    anchor = worldFs
                 else
                     divWorld:Hide()
-                    fsWorld:Hide()
+                    worldFs:Hide()
                 end
 
                 if showLocal then
@@ -1188,7 +1188,7 @@ local function ApplyMinimap()
             end
 
             local elapsed = 0
-            fpsBg:SetScript("OnUpdate", function(self, dt)
+            fpsBack:SetScript("OnUpdate", function(self, dt)
                 elapsed = elapsed + dt
                 if elapsed < (self._interval or 3) then
                     return
@@ -1196,16 +1196,16 @@ local function ApplyMinimap()
                 elapsed = 0
                 UpdateFPS(self)
             end)
-            fpsBg._updateNow = function()
+            fpsBack._updateNow = function()
                 elapsed = 0
-                UpdateFPS(fpsBg)
+                UpdateFPS(fpsBack)
             end
 
             -- Hover tooltip (Show on FPS/MS Hover): same dispatch as the clock
-            fpsBg:SetScript("OnEnter", function(self)
+            fpsBack:SetScript("OnEnter", function(self)
                 SKIN._HVRevealMapHover()
-                local mp = SKIN.db and SKIN.db.profile.minimap
-                local mode = (mp and mp.fpsHoverTooltip) or "none"
+                local mapCfg = SKIN.db and SKIN.db.profile.minimap
+                local mode = (mapCfg and mapCfg.fpsHoverTooltip) or "none"
                 if CludesUI.IS_FOREVER and mode == "vault" then
                     mode = "none"
                 end
@@ -1221,13 +1221,13 @@ local function ApplyMinimap()
                     ShowVaultTooltip(self)
                 end
             end)
-            fpsBg:SetScript("OnLeave", function()
+            fpsBack:SetScript("OnLeave", function()
                 HideCalendarTooltip()
                 HideVaultTooltip()
             end)
             -- With the Great Vault hover tooltip assigned, clicking the readout opens
             -- the vault. Mouse is enabled only while a hover tooltip is assigned, so this never intercepts clicks otherwise.
-            fpsBg:SetScript("OnMouseUp", function(_, btnFrame)
+            fpsBack:SetScript("OnMouseUp", function(_, btnFrame)
                 -- Above the map's middle-click interceptor, like the clock.
                 if btnFrame == "MiddleButton" then
                     SKIN._MapMiddleClick()
@@ -1236,53 +1236,53 @@ local function ApplyMinimap()
                 if btnFrame ~= "LeftButton" then
                     return
                 end
-                local mp = SKIN.db and SKIN.db.profile.minimap
-                if mp and mp.fpsHoverTooltip == "vault" and not CludesUI.IS_FOREVER then
+                local mapCfg = SKIN.db and SKIN.db.profile.minimap
+                if mapCfg and mapCfg.fpsHoverTooltip == "vault" and not CludesUI.IS_FOREVER then
                     CludesUI.ToggleGreatVault()
                 end
             end)
         end
         local fsz = p.fpsTextSize or 12
-        for _, fontStr in ipairs(fpsBg._fsAll) do
+        for _, fontStr in ipairs(fpsBack._fsAll) do
             ApplyMinimapFont(fontStr, fsz)
         end
-        fpsBg._interval = p.fpsUpdateInterval or 3
+        fpsBack._interval = p.fpsUpdateInterval or 3
         local fAnchor = MAP_POS_ANCHORS[p.fpsPosition or "bottomLeft"] or MAP_POS_ANCHORS.bottomLeft
         -- Past the heavy band under Forever Square.
         local fx, fy = SKIN._FvInsideXY(p.fpsPosition, fAnchor[3], fAnchor[4])
         -- One evenly spaced chain at natural widths; the anchored corner is the stable edge the row breathes from.
-        fpsBg:ClearAllPoints()
-        fpsBg:SetPoint(
+        fpsBack:ClearAllPoints()
+        fpsBack:SetPoint(
             fAnchor[1],
-            GetFFD(minimap).layoutFrame or minimap,
+            GetFFD(mapFrame).layoutFrame or mapFrame,
             fAnchor[2],
             fx + (p.fpsOffsetX or 0),
             fy + (p.fpsOffsetY or 0)
         )
-        fpsBg:SetScale(p.fpsScale or 1.0)
-        _G._CUBS_FpsBg = fpsBg
+        fpsBack:SetScale(p.fpsScale or 1.0)
+        _G._CUBS_FpsBg = fpsBack
         -- Mouse only while a hover tooltip is assigned, so it never blocks map clicks
         -- (WoW Forever reads a saved "vault" as none).
-        fpsBg:EnableMouse(
+        fpsBack:EnableMouse(
             (p.fpsHoverTooltip or "none") ~= "none"
                 and not (CludesUI.IS_FOREVER and p.fpsHoverTooltip == "vault")
         )
-        fpsBg:Show()
-        fpsBg._updateNow()
+        fpsBack:Show()
+        fpsBack._updateNow()
     else
-        if fpsBg then
-            fpsBg:Hide()
+        if fpsBack then
+            fpsBack:Hide()
         end
     end
 
     -- Instance Difficulty as Text: compact "20M" readout replacing the Blizzard flag
     -- (suppressed above while enabled); event-driven, zero cost while disabled. Count renders white, letter follows the description colour (as FPS/MS suffixes).
     if p.diffTextEnabled then
-        if not diffTextFrame then
-            diffTextFrame = CreateFrame("Frame", nil, minimap)
-            local fontStr = minimap:CreateFontString(nil, "OVERLAY")
+        if not difficultyText then
+            difficultyText = CreateFrame("Frame", nil, mapFrame)
+            local fontStr = mapFrame:CreateFontString(nil, "OVERLAY")
             fontStr:SetTextColor(1, 1, 1, 1)
-            diffTextFrame._text = fontStr
+            difficultyText._text = fontStr
             -- Difficulty ID -> suffix letter; count prefix rules alongside.
             local SUFFIX = {
                 [1] = "N",
@@ -1334,7 +1334,7 @@ local function ApplyMinimap()
                 EVT = "ffffff",
                 PvP = "ffffff",
             }
-            diffTextFrame._update = function(self)
+            difficultyText._update = function(self)
                 local result = self._text
                 local mp2 = SKIN.db and SKIN.db.profile.minimap
                 if not (mp2 and mp2.diffTextEnabled) then
@@ -1403,11 +1403,11 @@ local function ApplyMinimap()
                 end
                 result:SetFormattedText("%s|cff%s%s|r", (total and total > 0) and total or "", hex, letter)
             end
-            diffTextFrame:SetScript("OnEvent", function(self)
+            difficultyText:SetScript("OnEvent", function(self)
                 self._update(self)
             end)
         end
-        local fontStr = diffTextFrame._text
+        local fontStr = difficultyText._text
         ApplyMinimapFont(fontStr, p.diffTextSize or 12)
         local a = MAP_POS_ANCHORS[p.diffTextPosition or "topLeft"] or MAP_POS_ANCHORS.topLeft
         -- Past the heavy band under Forever Square.
@@ -1415,39 +1415,39 @@ local function ApplyMinimap()
         fontStr:ClearAllPoints()
         fontStr:SetPoint(
             a[1],
-            GetFFD(minimap).layoutFrame or minimap,
+            GetFFD(mapFrame).layoutFrame or mapFrame,
             a[2],
             dx + (p.diffTextOffsetX or 0),
             dy + (p.diffTextOffsetY or 0)
         )
         fontStr:Show()
-        diffTextFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
-        diffTextFrame:RegisterEvent("ZONE_CHANGED_NEW_AREA")
-        diffTextFrame:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
-        diffTextFrame:RegisterEvent("GROUP_ROSTER_UPDATE")
-        diffTextFrame:RegisterEvent("CHALLENGE_MODE_START")
-        diffTextFrame:RegisterEvent("CHALLENGE_MODE_COMPLETED")
-        diffTextFrame:RegisterEvent("CHALLENGE_MODE_RESET")
-        diffTextFrame._update(diffTextFrame)
-    elseif diffTextFrame then
-        diffTextFrame:UnregisterAllEvents()
-        diffTextFrame._text:Hide()
+        difficultyText:RegisterEvent("PLAYER_ENTERING_WORLD")
+        difficultyText:RegisterEvent("ZONE_CHANGED_NEW_AREA")
+        difficultyText:RegisterEvent("PLAYER_DIFFICULTY_CHANGED")
+        difficultyText:RegisterEvent("GROUP_ROSTER_UPDATE")
+        difficultyText:RegisterEvent("CHALLENGE_MODE_START")
+        difficultyText:RegisterEvent("CHALLENGE_MODE_COMPLETED")
+        difficultyText:RegisterEvent("CHALLENGE_MODE_RESET")
+        difficultyText._update(difficultyText)
+    elseif difficultyText then
+        difficultyText:UnregisterAllEvents()
+        difficultyText._text:Hide()
     end
 
     -- Mousewheel zoom lives on the square overlay (the Minimap's own hit region is
     -- circular, leaving the square skin's corners wheel-dead); Scroll to Zoom off leaves both wheel-disabled so the wheel falls through to camera zoom.
     do
-        local blocker = GetFFD(minimap).pingBlocker
-        if blocker then
-            blocker:EnableMouseWheel(p.scrollZoom and true or false)
+        local clickBlock = GetFFD(mapFrame).pingBlocker
+        if clickBlock then
+            clickBlock:EnableMouseWheel(p.scrollZoom and true or false)
         end
-        minimap:EnableMouseWheel(false)
+        mapFrame:EnableMouseWheel(false)
     end
 
-    if not GetFFD(minimap).active then
+    if not GetFFD(mapFrame).active then
         local saved = p.savedZoom or 0
-        if saved >= 0 and saved <= minimap:GetZoomLevels() then
-            minimap:SetZoom(saved)
+        if saved >= 0 and saved <= mapFrame:GetZoomLevels() then
+            mapFrame:SetZoom(saved)
         end
     end
 
@@ -1457,31 +1457,31 @@ local function ApplyMinimap()
     RestartZoomResetTimer()
 
     -- Position: only set on first activation; after that, unlock mode owns positioning.
-    if not GetFFD(minimap).active then
-        minimap:ClearAllPoints()
+    if not GetFFD(mapFrame).active then
+        mapFrame:ClearAllPoints()
         if p.position then
-            local px, py = p.position.x, p.position.y
+            local pixel, py = p.position.x, p.position.y
             local PPa = CludesUI and CludesUI.PP
-            if PPa and px and py then
-                local es = minimap:GetEffectiveScale()
+            if PPa and pixel and py then
+                local es = mapFrame:GetEffectiveScale()
                 local isCenterAnchor = (p.position.point == "CENTER")
                     and (p.position.relPoint == "CENTER" or p.position.relPoint == nil)
                 if isCenterAnchor and PPa.SnapCenterForDim then
-                    px = PPa.SnapCenterForDim(px, minimap:GetWidth() or 0, es)
-                    py = PPa.SnapCenterForDim(py, minimap:GetHeight() or 0, es)
+                    pixel = PPa.SnapCenterForDim(pixel, mapFrame:GetWidth() or 0, es)
+                    py = PPa.SnapCenterForDim(py, mapFrame:GetHeight() or 0, es)
                 elseif PPa.SnapForES then
-                    px = PPa.SnapForES(px, es)
+                    pixel = PPa.SnapForES(pixel, es)
                     py = PPa.SnapForES(py, es)
                 end
             end
-            minimap:SetPoint(p.position.point, UIParent, p.position.relPoint, px, py)
+            mapFrame:SetPoint(p.position.point, UIParent, p.position.relPoint, pixel, py)
         else
-            minimap:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -10, -10)
+            mapFrame:SetPoint("TOPRIGHT", UIParent, "TOPRIGHT", -10, -10)
         end
     end
 
     -- Mark module as active so persistent hooks know they can fire
-    GetFFD(minimap).active = true
+    GetFFD(mapFrame).active = true
 
     ApplyOmniumFolio()
     SKIN._ApplyAddonCompartment()
