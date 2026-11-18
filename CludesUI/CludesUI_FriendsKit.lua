@@ -673,51 +673,51 @@ local function GetRealmMiniRegion(realmName)
     if not REALMS_NA then
         LoadRealms()
     end
-    local clean = realmName:gsub("%s+", "")
+    local cleaned = realmName:gsub("%s+", "")
     -- Check player's own region table first (handles overlapping realm names)
-    local myRegion = GetCurrentRegion()
+    local homeRegion = GetCurrentRegion()
     local primary, secondary
-    if myRegion == 3 then
+    if homeRegion == 3 then
         primary, secondary = REALMS_EU, REALMS_NA
-    elseif myRegion == 2 or myRegion == 4 or myRegion == 5 then
+    elseif homeRegion == 2 or homeRegion == 4 or homeRegion == 5 then
         primary, secondary = REALMS_ASIA, REALMS_NA
     else
         primary, secondary = REALMS_NA, REALMS_EU
     end
-    return primary[clean] or secondary[clean] or REALMS_ASIA[clean]
+    return primary[cleaned] or secondary[cleaned] or REALMS_ASIA[cleaned]
 end
 
 -- Get the mini region for a BNet friend's game account
-local function GetFriendMiniRegion(gameAccountInfo)
-    if not gameAccountInfo then
+local function GetFriendMiniRegion(gameAccount)
+    if not gameAccount then
         return nil
     end
     -- Try realmName first
-    local realm = gameAccountInfo.realmName
-    if realm and realm ~= "" then
-        local result = GetRealmMiniRegion(realm)
+    local realmName = gameAccount.realmName
+    if realmName and realmName ~= "" then
+        local result = GetRealmMiniRegion(realmName)
         if result then
             return result
         end
     end
     -- Fallback: parse richPresence ("Zone - Realm" format)
     -- If realmName was empty, the friend is likely cross-region, so check OTHER tables first
-    local rich = gameAccountInfo.richPresence
-    if rich and rich ~= "" then
-        local realmFromRich = rich:match("%s%-%s(.+)$")
+    local richText = gameAccount.richPresence
+    if richText and richText ~= "" then
+        local realmFromRich = richText:match("%s%-%s(.+)$")
         if realmFromRich and realmFromRich ~= "" then
             if not REALMS_NA then
                 LoadRealms()
             end
-            local clean = realmFromRich:gsub("%s+", "")
-            local myRegion = GetCurrentRegion()
+            local cleaned = realmFromRich:gsub("%s+", "")
+            local homeRegion = GetCurrentRegion()
             -- Check the opposite region first since empty realmName = cross-region friend
-            if myRegion == 1 then
-                return REALMS_EU[clean] or REALMS_ASIA[clean] or REALMS_NA[clean]
-            elseif myRegion == 3 then
-                return REALMS_NA[clean] or REALMS_ASIA[clean] or REALMS_EU[clean]
+            if homeRegion == 1 then
+                return REALMS_EU[cleaned] or REALMS_ASIA[cleaned] or REALMS_NA[cleaned]
+            elseif homeRegion == 3 then
+                return REALMS_NA[cleaned] or REALMS_ASIA[cleaned] or REALMS_EU[cleaned]
             else
-                return REALMS_NA[clean] or REALMS_EU[clean] or REALMS_ASIA[clean]
+                return REALMS_NA[cleaned] or REALMS_EU[cleaned] or REALMS_ASIA[cleaned]
             end
         end
     end
@@ -755,17 +755,17 @@ CludesUI.MINI_TO_FULL = MINI_TO_FULL
 -------------------------------------------------------------------------------
 local classColorCodes = {}
 function Kit.ClassColorCode(class)
-    local code = classColorCodes[class]
-    if code then
-        return code
+    local regionCode = classColorCodes[class]
+    if regionCode then
+        return regionCode
     end
     local cc = RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
     if not cc then
         return nil
     end
-    code = CludesUI.HexColor(cc.r, cc.g, cc.b)
-    classColorCodes[class] = code
-    return code
+    regionCode = CludesUI.HexColor(cc.r, cc.g, cc.b)
+    classColorCodes[class] = regionCode
+    return regionCode
 end
 
 -- Class Icon Theme: the choices both settings pages list
@@ -900,15 +900,15 @@ local FACTION_TEX_NEUTRAL = MEDIA .. "neutral.png"
 
 local CLASS_ICON_SPRITE_BASE = "Interface\\AddOns\\CludesUI\\media\\icons\\class-full\\"
 local CLASS_ICON_SPRITE_TEX = {}
-for _, style in ipairs({ "modern", "dark", "light", "clean" }) do
-    CLASS_ICON_SPRITE_TEX[style] = CLASS_ICON_SPRITE_BASE .. style .. ".tga"
+for _, styleName in ipairs({ "modern", "dark", "light", "clean" }) do
+    CLASS_ICON_SPRITE_TEX[styleName] = CLASS_ICON_SPRITE_BASE .. styleName .. ".tga"
 end
 local CLASS_SPRITE_COORDS = CludesUI.CLASS_ICON_SPRITE_COORDS
 
 -- The class icon sprite sheet of a Class Icon Theme style (the tiles and the
 -- Friends module's legacy rows)
-function Kit.ClassIconSprite(style)
-    return CLASS_ICON_SPRITE_TEX[style] or (CLASS_ICON_SPRITE_BASE .. style .. ".tga")
+function Kit.ClassIconSprite(styleName)
+    return CLASS_ICON_SPRITE_TEX[styleName] or (CLASS_ICON_SPRITE_BASE .. styleName .. ".tga")
 end
 
 local MINI_DISPLAY = {
@@ -972,145 +972,145 @@ local function FontPath()
     return (CludesUI.GetFontPath(host.fontKey)) or STANDARD_TEXT_FONT
 end
 
-local function GetClassFile(accountInfo)
-    local gi = accountInfo and accountInfo.gameAccountInfo
-    if not gi then
+local function GetClassFile(account)
+    local gameInfo = account and account.gameAccountInfo
+    if not gameInfo then
         return nil
     end
-    if gi.classID and gi.classID > 0 then
-        local _, class = GetClassInfo(gi.classID)
+    if gameInfo.classID and gameInfo.classID > 0 then
+        local _, class = GetClassInfo(gameInfo.classID)
         if class then
             return class
         end
     end
-    if gi.className then
-        return CludesUI.ClassTokenFromLocalized(gi.className)
+    if gameInfo.className then
+        return CludesUI.ClassTokenFromLocalized(gameInfo.className)
     end
     return nil
 end
 
-local function IsSameProjectOnline(gi)
-    if not (gi and gi.isOnline) then
+local function IsSameProjectOnline(gameInfo)
+    if not (gameInfo and gameInfo.isOnline) then
         return false
     end
-    if gi.clientProgram ~= BNET_CLIENT_WOW then
+    if gameInfo.clientProgram ~= BNET_CLIENT_WOW then
         return false
     end
-    return gi.wowProjectID == WOW_PROJECT_ID or gi.wowProjectID == nil
+    return gameInfo.wowProjectID == WOW_PROJECT_ID or gameInfo.wowProjectID == nil
 end
 
-local function TileState(accountInfo)
-    local gi = accountInfo and accountInfo.gameAccountInfo
-    if not (gi and gi.isOnline) then
+local function TileState(account)
+    local gameInfo = account and account.gameAccountInfo
+    if not (gameInfo and gameInfo.isOnline) then
         return "offline"
     end
-    return IsSameProjectOnline(gi) and "retail" or "other_game"
+    return IsSameProjectOnline(gameInfo) and "retail" or "other_game"
 end
 
 -------------------------------------------------------------------------------
 --  One-time structure per pooled card
 -------------------------------------------------------------------------------
 local function SkinStructure(cardFrame)
-    local d = GetFFD(cardFrame)
-    if d.skinned then
-        return d
+    local cardData = GetFFD(cardFrame)
+    if cardData.skinned then
+        return cardData
     end
-    d.skinned = true
+    cardData.skinned = true
 
-    d.tileBg = cardFrame:CreateTexture(nil, "BACKGROUND", nil, 2)
-    d.tileBg:SetAllPoints()
-    d.tileBg:SetColorTexture(0, 0, 0, 0.10)
+    cardData.tileBg = cardFrame:CreateTexture(nil, "BACKGROUND", nil, 2)
+    cardData.tileBg:SetAllPoints()
+    cardData.tileBg:SetColorTexture(0, 0, 0, 0.10)
 
-    d.onlineBg = cardFrame:CreateTexture(nil, "BACKGROUND", nil, 3)
-    d.onlineBg:SetTexture(MODERN_BLIZZ_TEX)
-    d.onlineBg:SetTexCoord(MB_L, MB_R, MB_T, MB_B)
-    d.onlineBg:SetAllPoints()
-    d.onlineBg:SetAlpha(TILE_ONLINE_BG_ALPHA)
-    d.onlineBg:Hide()
-    d.onlineMask = cardFrame:CreateMaskTexture()
-    d.onlineMask:SetTexture(TILE_ONLINE_MASK_TEX, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-    d.onlineMask:SetAllPoints(d.onlineBg)
-    d.onlineBg:AddMaskTexture(d.onlineMask)
+    cardData.onlineBg = cardFrame:CreateTexture(nil, "BACKGROUND", nil, 3)
+    cardData.onlineBg:SetTexture(MODERN_BLIZZ_TEX)
+    cardData.onlineBg:SetTexCoord(MB_L, MB_R, MB_T, MB_B)
+    cardData.onlineBg:SetAllPoints()
+    cardData.onlineBg:SetAlpha(TILE_ONLINE_BG_ALPHA)
+    cardData.onlineBg:Hide()
+    cardData.onlineMask = cardFrame:CreateMaskTexture()
+    cardData.onlineMask:SetTexture(TILE_ONLINE_MASK_TEX, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    cardData.onlineMask:SetAllPoints(cardData.onlineBg)
+    cardData.onlineBg:AddMaskTexture(cardData.onlineMask)
 
-    d.factionBg = cardFrame:CreateTexture(nil, "BACKGROUND", nil, 4)
+    cardData.factionBg = cardFrame:CreateTexture(nil, "BACKGROUND", nil, 4)
 
-    d.hoverBar = cardFrame:CreateTexture(nil, "ARTWORK", nil, -7)
-    d.hoverBar:SetAllPoints()
-    d.hoverBar:SetTexture(MODERN_BLIZZ_TEX)
-    d.hoverBar:SetTexCoord(MB_L, MB_R, MB_T, MB_B)
-    d.hoverBar:SetAlpha(TILE_HOVER_ALPHA)
-    d.hoverBar:Hide()
-    d.hoverMask = cardFrame:CreateMaskTexture()
-    d.hoverMask:SetTexture(TILE_HOVER_MASK_TEX, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-    d.hoverMask:SetAllPoints(d.hoverBar)
-    d.hoverBar:AddMaskTexture(d.hoverMask)
+    cardData.hoverBar = cardFrame:CreateTexture(nil, "ARTWORK", nil, -7)
+    cardData.hoverBar:SetAllPoints()
+    cardData.hoverBar:SetTexture(MODERN_BLIZZ_TEX)
+    cardData.hoverBar:SetTexCoord(MB_L, MB_R, MB_T, MB_B)
+    cardData.hoverBar:SetAlpha(TILE_HOVER_ALPHA)
+    cardData.hoverBar:Hide()
+    cardData.hoverMask = cardFrame:CreateMaskTexture()
+    cardData.hoverMask:SetTexture(TILE_HOVER_MASK_TEX, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    cardData.hoverMask:SetAllPoints(cardData.hoverBar)
+    cardData.hoverBar:AddMaskTexture(cardData.hoverMask)
 
-    d.hoverFill = cardFrame:CreateTexture(nil, "ARTWORK", nil, -8)
-    d.hoverFill:SetAllPoints()
-    d.hoverFill:SetColorTexture(1, 1, 1, 0.02)
-    d.hoverFill:SetBlendMode("ADD")
-    d.hoverFill:Hide()
+    cardData.hoverFill = cardFrame:CreateTexture(nil, "ARTWORK", nil, -8)
+    cardData.hoverFill:SetAllPoints()
+    cardData.hoverFill:SetColorTexture(1, 1, 1, 0.02)
+    cardData.hoverFill:SetBlendMode("ADD")
+    cardData.hoverFill:Hide()
 
     cardFrame:HookScript("OnEnter", function()
-        d.hoverBar:Show()
-        d.hoverFill:Show()
+        cardData.hoverBar:Show()
+        cardData.hoverFill:Show()
     end)
     cardFrame:HookScript("OnLeave", function()
-        d.hoverBar:Hide()
-        d.hoverFill:Hide()
+        cardData.hoverBar:Hide()
+        cardData.hoverFill:Hide()
     end)
 
     -- Selection: same look as hover, own sublevels (-5/-6) so it sits above the
     -- hover pair (-7/-8) rather than replacing it. Its own mask texture, since
     -- AddMaskTexture is additive and sharing one would stack on the hover bar.
-    d.selBar = cardFrame:CreateTexture(nil, "ARTWORK", nil, -5)
-    d.selBar:SetAllPoints()
-    d.selBar:SetTexture(MODERN_BLIZZ_TEX)
-    d.selBar:SetTexCoord(MB_L, MB_R, MB_T, MB_B)
-    d.selBar:SetAlpha(TILE_SEL_ALPHA)
-    d.selBar:Hide()
-    d.selMask = cardFrame:CreateMaskTexture()
-    d.selMask:SetTexture(TILE_HOVER_MASK_TEX, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-    d.selMask:SetAllPoints(d.selBar)
-    d.selBar:AddMaskTexture(d.selMask)
+    cardData.selBar = cardFrame:CreateTexture(nil, "ARTWORK", nil, -5)
+    cardData.selBar:SetAllPoints()
+    cardData.selBar:SetTexture(MODERN_BLIZZ_TEX)
+    cardData.selBar:SetTexCoord(MB_L, MB_R, MB_T, MB_B)
+    cardData.selBar:SetAlpha(TILE_SEL_ALPHA)
+    cardData.selBar:Hide()
+    cardData.selMask = cardFrame:CreateMaskTexture()
+    cardData.selMask:SetTexture(TILE_HOVER_MASK_TEX, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+    cardData.selMask:SetAllPoints(cardData.selBar)
+    cardData.selBar:AddMaskTexture(cardData.selMask)
 
-    d.selFill = cardFrame:CreateTexture(nil, "ARTWORK", nil, -6)
-    d.selFill:SetAllPoints()
-    d.selFill:SetColorTexture(1, 1, 1, 0.02)
-    d.selFill:SetBlendMode("ADD")
-    d.selFill:Hide()
+    cardData.selFill = cardFrame:CreateTexture(nil, "ARTWORK", nil, -6)
+    cardData.selFill:SetAllPoints()
+    cardData.selFill:SetColorTexture(1, 1, 1, 0.02)
+    cardData.selFill:SetBlendMode("ADD")
+    cardData.selFill:Hide()
 
-    d.classIcon = cardFrame:CreateTexture(nil, "ARTWORK", nil, 2)
+    cardData.classIcon = cardFrame:CreateTexture(nil, "ARTWORK", nil, 2)
 
     -- The three lines show friends' names and notes: font families (a family
     -- draws the scripts the chosen font lacks), never a plain SetFont.
-    d.name = cardFrame:CreateFontString(nil, "OVERLAY")
-    CludesUI.SetFontFamily(d.name, FontPath(), TILE_NAME_SIZE, "", true)
-    d.name:SetJustifyH("LEFT")
-    d.name:SetWordWrap(false)
+    cardData.name = cardFrame:CreateFontString(nil, "OVERLAY")
+    CludesUI.SetFontFamily(cardData.name, FontPath(), TILE_NAME_SIZE, "", true)
+    cardData.name:SetJustifyH("LEFT")
+    cardData.name:SetWordWrap(false)
     -- Horizontal inset is re-resolved per paint in PaintCard (it follows the
     -- row height); this is just the initial placement.
-    d.name:SetPoint("TOPLEFT", cardFrame, "TOPLEFT", TILE_TARGET_H + TILE_TEXT_GAP, 0)
+    cardData.name:SetPoint("TOPLEFT", cardFrame, "TOPLEFT", TILE_TARGET_H + TILE_TEXT_GAP, 0)
 
     -- Character name + level, its own line under the Battle.net name.
-    d.charLine = cardFrame:CreateFontString(nil, "OVERLAY")
-    CludesUI.SetFontFamily(d.charLine, FontPath(), TILE_CHAR_SIZE, "", true)
-    d.charLine:SetJustifyH("LEFT")
-    d.charLine:SetWordWrap(false)
-    d.charLine:SetPoint("TOPLEFT", d.name, "BOTTOMLEFT", 0, TILE_LINE_GAP)
+    cardData.charLine = cardFrame:CreateFontString(nil, "OVERLAY")
+    CludesUI.SetFontFamily(cardData.charLine, FontPath(), TILE_CHAR_SIZE, "", true)
+    cardData.charLine:SetJustifyH("LEFT")
+    cardData.charLine:SetWordWrap(false)
+    cardData.charLine:SetPoint("TOPLEFT", cardData.name, "BOTTOMLEFT", 0, TILE_LINE_GAP)
 
-    d.info = cardFrame:CreateFontString(nil, "OVERLAY")
-    CludesUI.SetFontFamily(d.info, FontPath(), TILE_INFO_SIZE, "", true)
-    d.info:SetJustifyH("LEFT")
-    d.info:SetWordWrap(false)
+    cardData.info = cardFrame:CreateFontString(nil, "OVERLAY")
+    CludesUI.SetFontFamily(cardData.info, FontPath(), TILE_INFO_SIZE, "", true)
+    cardData.info:SetJustifyH("LEFT")
+    cardData.info:SetWordWrap(false)
     -- Anchored per paint: it follows charLine when there is one, otherwise the
     -- name directly, so offline friends do not leave a hole.
 
-    d.orb = cardFrame:CreateTexture(nil, "OVERLAY", nil, 3)
-    d.orb:SetSize(18, 18)
-    Kit.StatusOrbArt(d.orb)
+    cardData.orb = cardFrame:CreateTexture(nil, "OVERLAY", nil, 3)
+    cardData.orb:SetSize(18, 18)
+    Kit.StatusOrbArt(cardData.orb)
 
-    return d
+    return cardData
 end
 
 -- Blizzard repopulates its card art on every recycle, so this runs per paint.
@@ -1151,18 +1151,18 @@ end
 local ClassColorCode = Kit.ClassColorCode
 
 -- Line 1: the Battle.net account name on its own.
-local function BuildName(accountInfo)
+local function BuildName(account)
     if FriendsListUtil and FriendsListUtil.BuildFriendNameDisplayText then
-        return FriendsListUtil.BuildFriendNameDisplayText(accountInfo)
+        return FriendsListUtil.BuildFriendNameDisplayText(account)
     end
-    return accountInfo.accountName or ""
+    return account.accountName or ""
 end
 
 -- The colour Blizzard uses for the location line, so the level suffix can match
 -- it rather than the character name.
-local function LocationColor(accountInfo)
-    local gi = accountInfo.gameAccountInfo
-    local online = gi ~= nil and gi.isOnline
+local function LocationColor(account)
+    local gameInfo = account.gameAccountInfo
+    local online = gameInfo ~= nil and gameInfo.isOnline
     if online then
         return FRIENDS_GRAY_COLOR or NORMAL_FONT_COLOR
     end
@@ -1172,35 +1172,35 @@ end
 -- Line 2: character name (class-coloured) plus the level, the level tinted to
 -- match the location line below it. Empty when the friend is not on a character
 -- in this project, which collapses the row to two lines.
-local function BuildCharLine(accountInfo)
-    local gi = accountInfo.gameAccountInfo
-    local charName = gi and gi.characterName
-    if not (IsSameProjectOnline(gi) and charName and charName ~= "") then
+local function BuildCharLine(account)
+    local gameInfo = account.gameAccountInfo
+    local charName = gameInfo and gameInfo.characterName
+    if not (IsSameProjectOnline(gameInfo) and charName and charName ~= "") then
         return ""
     end
 
     local isShown = charName
-    local p = Settings()
-    if p and p.classColorNames then
-        local code = ClassColorCode(GetClassFile(accountInfo) or "")
-        if code then
-            isShown = code .. charName .. "|r"
+    local parts = Settings()
+    if parts and parts.classColorNames then
+        local regionCode = ClassColorCode(GetClassFile(account) or "")
+        if regionCode then
+            isShown = regionCode .. charName .. "|r"
         end
     end
 
-    local lvl = gi.characterLevel
+    local lvl = gameInfo.characterLevel
     if lvl then
-        local levelText
+        local levelString
         if SOCIAL_UI_RECENT_ALLIES_CARD_LEVEL_DISPLAY_FORMAT then
-            levelText = format(SOCIAL_UI_RECENT_ALLIES_CARD_LEVEL_DISPLAY_FORMAT, lvl)
+            levelString = format(SOCIAL_UI_RECENT_ALLIES_CARD_LEVEL_DISPLAY_FORMAT, lvl)
         else
-            levelText = CludesUI.Lf("(Level %d)", lvl)
+            levelString = CludesUI.Lf("(Level %d)", lvl)
         end
-        local c = LocationColor(accountInfo)
+        local c = LocationColor(account)
         if c and c.WrapTextInColorCode then
-            levelText = c:WrapTextInColorCode(levelText)
+            levelString = c:WrapTextInColorCode(levelString)
         end
-        isShown = isShown .. " " .. levelText
+        isShown = isShown .. " " .. levelString
     end
     return isShown
 end
@@ -1227,52 +1227,52 @@ local function RealmRuleset(suffix)
         return CludesUI.L("Roleplay PvP")
     end
 end
-local function ForeverRuleset(accountInfo)
-    local gi = accountInfo and accountInfo.gameAccountInfo
-    if not (gi and gi.isOnline and gi.wowProjectID == WOW_PROJECT_FOREVER) then
+local function ForeverRuleset(account)
+    local gameInfo = account and account.gameAccountInfo
+    if not (gameInfo and gameInfo.isOnline and gameInfo.wowProjectID == WOW_PROJECT_FOREVER) then
         return nil
     end
-    local ruleset = gi.richPresence and gi.richPresence:match("^.- %- (.-) %- ")
-    if not ruleset or ruleset == "" then
-        ruleset = RealmRuleset(gi.realmName and gi.realmName:match("Realm%d+(%a+)$"))
+    local rules = gameInfo.richPresence and gameInfo.richPresence:match("^.- %- (.-) %- ")
+    if not rules or rules == "" then
+        rules = RealmRuleset(gameInfo.realmName and gameInfo.realmName:match("Realm%d+(%a+)$"))
     end
-    if not ruleset then
+    if not rules then
         return nil
     end
-    if gi.isInCurrentRegion == false and FriendsListUtil and FriendsListUtil.GetRegionName then
-        ruleset = ruleset .. " (" .. FriendsListUtil.GetRegionName(accountInfo) .. ")"
+    if gameInfo.isInCurrentRegion == false and FriendsListUtil and FriendsListUtil.GetRegionName then
+        rules = rules .. " (" .. FriendsListUtil.GetRegionName(account) .. ")"
     end
-    return ruleset
+    return rules
 end
 
-local function BuildInfo(accountInfo)
+local function BuildInfo(account)
     local textValue = ""
     if FriendsListUtil and FriendsListUtil.BuildLocationDisplayText then
-        textValue = FriendsListUtil.BuildLocationDisplayText(accountInfo) or ""
+        textValue = FriendsListUtil.BuildLocationDisplayText(account) or ""
     end
     -- A WoW Forever friend on our own client: the ruleset after the zone, in
     -- the zone's colour. Where Blizzard's line is the friend's rich presence
     -- instead (seen from another client, or no zone yet), that names the
     -- ruleset already.
-    local gi = accountInfo.gameAccountInfo
-    if gi and gi.areaName and IsSameProjectOnline(gi) then
-        local ruleset = ForeverRuleset(accountInfo)
-        if ruleset then
+    local gameInfo = account.gameAccountInfo
+    if gameInfo and gameInfo.areaName and IsSameProjectOnline(gameInfo) then
+        local rules = ForeverRuleset(account)
+        if rules then
             textValue = textValue
-                .. LocationColor(accountInfo):WrapTextInColorCode(
-                    (gi.areaName ~= "" and " - " or "") .. ruleset
+                .. LocationColor(account):WrapTextInColorCode(
+                    (gameInfo.areaName ~= "" and " - " or "") .. rules
                 )
         end
     end
     if textValue == "" then
-        local cp = gi and gi.clientProgram
-        if gi and gi.isOnline and (cp == "App" or cp == "BSAp") then
+        local cp = gameInfo and gameInfo.clientProgram
+        if gameInfo and gameInfo.isOnline and (cp == "App" or cp == "BSAp") then
             local loc = GetLocale()
             textValue = (loc == "enUS" or loc == "enGB") and "In App" or "Battle.Net"
         end
     end
     -- Legacy ||<tag>:Group|| tags are stripped from any note we display.
-    local note = CludesUI.StripFriendNoteTag(accountInfo.note)
+    local note = CludesUI.StripFriendNoteTag(account.note)
     if note then
         if textValue ~= "" then
             textValue = textValue .. "  |cff888888|  " .. note .. "|r"
@@ -1285,93 +1285,93 @@ end
 
 -- The chosen Class Icon Theme's art for one class on `icon`. Shared by the
 -- CludesUI tile and the stock-style decoration.
-local function SetClassIconTex(icon, style, class)
-    if style == "blizzard" then
-        icon:SetTexture("Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES")
-        local coords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class]
-        if coords then
-            icon:SetTexCoord(unpack(coords))
+local function SetClassIconTex(glyph, styleName, class)
+    if styleName == "blizzard" then
+        glyph:SetTexture("Interface\\GLUES\\CHARACTERCREATE\\UI-CHARACTERCREATE-CLASSES")
+        local texCoords = CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class]
+        if texCoords then
+            glyph:SetTexCoord(unpack(texCoords))
         end
     else
-        local coords = CLASS_SPRITE_COORDS[class]
-        if coords then
-            icon:SetTexture(Kit.ClassIconSprite(style))
-            icon:SetTexCoord(coords[1], coords[2], coords[3], coords[4])
+        local texCoords = CLASS_SPRITE_COORDS[class]
+        if texCoords then
+            glyph:SetTexture(Kit.ClassIconSprite(styleName))
+            glyph:SetTexCoord(texCoords[1], texCoords[2], texCoords[3], texCoords[4])
         end
     end
 end
 
-local function UpdateClassIcon(cardFrame, d, accountInfo)
-    local p = Settings()
-    if not (p and p.showClassIcons ~= false) then
-        d.classIcon:Hide()
+local function UpdateClassIcon(cardFrame, cardData, account)
+    local parts = Settings()
+    if not (parts and parts.showClassIcons ~= false) then
+        cardData.classIcon:Hide()
         return
     end
 
     local hgt = (cardFrame:GetHeight() or 0) - 4
     if hgt <= 0 then
-        d.classIcon:Hide()
+        cardData.classIcon:Hide()
         return
     end
 
-    local icon, state = d.classIcon, TileState(accountInfo)
-    icon:ClearAllPoints()
+    local glyph, state = cardData.classIcon, TileState(account)
+    glyph:ClearAllPoints()
 
     if state == "retail" then
         local inset = math.floor(hgt * 0.025 + 0.5)
-        icon:SetPoint("LEFT", cardFrame, "LEFT", 4, 0)
-        icon:SetPoint("TOP", cardFrame, "TOP", 0, -(2 + inset))
-        icon:SetPoint("BOTTOM", cardFrame, "BOTTOM", 0, 2 + inset)
+        glyph:SetPoint("LEFT", cardFrame, "LEFT", 4, 0)
+        glyph:SetPoint("TOP", cardFrame, "TOP", 0, -(2 + inset))
+        glyph:SetPoint("BOTTOM", cardFrame, "BOTTOM", 0, 2 + inset)
         local iconH = hgt - inset * 2
         if iconH > 0 then
-            icon:SetWidth(iconH)
+            glyph:SetWidth(iconH)
         end
 
-        local class = GetClassFile(accountInfo)
+        local class = GetClassFile(account)
         if not class then
-            icon:Hide()
+            glyph:Hide()
             return
         end
 
-        SetClassIconTex(icon, p.iconStyle or "modern", class)
-        icon:SetDesaturated(false)
-        icon:SetAlpha(1)
+        SetClassIconTex(glyph, parts.iconStyle or "modern", class)
+        glyph:SetDesaturated(false)
+        glyph:SetAlpha(1)
     else
         local smallH = math.floor(hgt * 0.75)
-        icon:SetSize(smallH, smallH)
-        icon:SetPoint("LEFT", cardFrame, "LEFT", 4 + math.floor((hgt - smallH) / 2), 0)
+        glyph:SetSize(smallH, smallH)
+        glyph:SetPoint("LEFT", cardFrame, "LEFT", 4 + math.floor((hgt - smallH) / 2), 0)
         if state == "other_game" then
             local source = cardFrame.GameIconHolder and cardFrame.GameIconHolder.Icon
             local texture = source and source:GetTexture()
             if texture then
-                icon:SetTexture(texture)
-                icon:SetTexCoord(0, 1, 0, 1)
+                glyph:SetTexture(texture)
+                glyph:SetTexCoord(0, 1, 0, 1)
             end
-            icon:SetAlpha(1)
+            glyph:SetAlpha(1)
         else
-            icon:SetTexture(OFFLINE_ICON)
-            icon:SetTexCoord(0, 1, 0, 1)
-            icon:SetAlpha(0.5)
+            glyph:SetTexture(OFFLINE_ICON)
+            glyph:SetTexCoord(0, 1, 0, 1)
+            glyph:SetAlpha(0.5)
         end
-        icon:SetDesaturated(false)
+        glyph:SetDesaturated(false)
     end
-    icon:Show()
+    glyph:Show()
 end
 
-local function UpdateFaction(cardFrame, d, accountInfo)
-    local gi = accountInfo.gameAccountInfo
-    local isRetail = IsSameProjectOnline(gi)
-    local p = Settings()
-    local show = not p or p.factionBanners ~= false
+local function UpdateFaction(cardFrame, cardData, account)
+    local gameInfo = account.gameAccountInfo
+    local isRetail = IsSameProjectOnline(gameInfo)
+    local parts = Settings()
+    local show = not parts or parts.factionBanners ~= false
 
     local filePath = FACTION_TEX_NEUTRAL
-    if show and isRetail and gi.factionName == "Alliance" then
+    if show and isRetail and gameInfo.factionName == "Alliance" then
         filePath = FACTION_TEX_ALLIANCE
-    elseif show and isRetail and gi.factionName == "Horde" then
+    elseif show and isRetail and gameInfo.factionName == "Horde" then
         filePath = FACTION_TEX_HORDE
     end
 
-    local texture = d.factionBg
+    local texture = cardData.factionBg
     texture:SetTexture(filePath)
     texture:SetTexCoord(0, 1, 0, 1)
     texture:ClearAllPoints()
@@ -1381,32 +1381,32 @@ local function UpdateFaction(cardFrame, d, accountInfo)
     texture:Show()
 end
 
-local function UpdateOrb(d, accountInfo)
-    local gi = accountInfo.gameAccountInfo
-    local isOnline = gi and gi.isOnline
+local function UpdateOrb(cardData, account)
+    local gameInfo = account.gameAccountInfo
+    local isOnline = gameInfo and gameInfo.isOnline
 
     -- AFK/DND can arrive as secret values; never branch on them directly.
     local _isv = issecretvalue
-    local rawAFK, rawDND = accountInfo.isAFK, accountInfo.isDND
+    local rawAFK, rawDND = account.isAFK, account.isDND
     local isAFK = (not _isv or not _isv(rawAFK)) and rawAFK or false
     local isDND = (not _isv or not _isv(rawDND)) and rawDND or false
 
-    local orb = d.orb
-    orb:ClearAllPoints()
-    orb:SetPoint("TOPLEFT", d.name, "TOPLEFT", (d.name:GetStringWidth() or 0) - 1, 2)
+    local orbTex = cardData.orb
+    orbTex:ClearAllPoints()
+    orbTex:SetPoint("TOPLEFT", cardData.name, "TOPLEFT", (cardData.name:GetStringWidth() or 0) - 1, 2)
 
     if isOnline then
         if isDND then
-            orb:SetVertexColor(1, 0.2, 0.2, 1)
+            orbTex:SetVertexColor(1, 0.2, 0.2, 1)
         elseif isAFK then
-            orb:SetVertexColor(1, 0.8, 0, 1)
+            orbTex:SetVertexColor(1, 0.8, 0, 1)
         else
-            orb:SetVertexColor(0.2, 1, 0.2, 1)
+            orbTex:SetVertexColor(0.2, 1, 0.2, 1)
         end
     else
-        orb:SetVertexColor(0.4, 0.4, 0.4, 0.6)
+        orbTex:SetVertexColor(0.4, 0.4, 0.4, 0.6)
     end
-    orb:Show()
+    orbTex:Show()
 end
 
 -- Stock styles: a plain region mark (no mouse, so the row keeps every click
@@ -1415,45 +1415,45 @@ end
 -- empty left gutter under its status icon (clear of the name, the favourite
 -- star, the info line and the logo).
 local STOCK_REGION_SIZE = 14
-local function UpdateStockRegion(cardFrame, d, accountInfo)
-    local p = Settings()
-    local gi = accountInfo and accountInfo.gameAccountInfo
+local function UpdateStockRegion(cardFrame, cardData, account)
+    local parts = Settings()
+    local gameInfo = account and account.gameAccountInfo
     -- Same-region friends never carry a mark: skip the realm lookup for them.
-    if (p and p.showRegionIcons == false) or not gi or gi.isInCurrentRegion == true then
-        if d.regionMark then
-            d.regionMark:Hide()
+    if (parts and parts.showRegionIcons == false) or not gameInfo or gameInfo.isInCurrentRegion == true then
+        if cardData.regionMark then
+            cardData.regionMark:Hide()
         end
         return
     end
     local myFull = GetMyFullRegion()
-    local mini = GetFriendMiniRegion(gi)
-    local full = mini and GetFullRegion(mini)
-    if not (mini and full and full ~= myFull) then
-        if d.regionMark then
-            d.regionMark:Hide()
+    local miniIcon = GetFriendMiniRegion(gameInfo)
+    local fullName = miniIcon and GetFullRegion(miniIcon)
+    if not (miniIcon and fullName and fullName ~= myFull) then
+        if cardData.regionMark then
+            cardData.regionMark:Hide()
         end
         return
     end
-    local mark = d.regionMark
-    if not mark then
-        mark = cardFrame:CreateTexture(nil, "OVERLAY", nil, 7)
-        mark:SetSize(STOCK_REGION_SIZE, STOCK_REGION_SIZE)
+    local marker = cardData.regionMark
+    if not marker then
+        marker = cardFrame:CreateTexture(nil, "OVERLAY", nil, 7)
+        marker:SetSize(STOCK_REGION_SIZE, STOCK_REGION_SIZE)
         if cardFrame.PartyButton then
-            mark:SetPoint("BOTTOM", cardFrame.PartyButton, "TOP", 0, 1)
+            marker:SetPoint("BOTTOM", cardFrame.PartyButton, "TOP", 0, 1)
         elseif cardFrame.status and cardFrame.gameIcon then
-            mark:SetSize(12, 12)
-            mark:SetPoint("TOP", cardFrame.status, "BOTTOM", 0, -1)
+            marker:SetSize(12, 12)
+            marker:SetPoint("TOP", cardFrame.status, "BOTTOM", 0, -1)
         else
-            mark:SetPoint("TOPRIGHT", cardFrame, "TOPRIGHT", -12, -3)
+            marker:SetPoint("TOPRIGHT", cardFrame, "TOPRIGHT", -12, -3)
         end
-        d.regionMark = mark
+        cardData.regionMark = marker
     end
-    if d.regionMini ~= mini then
-        d.regionMini = mini
-        mark:SetTexture(GetRegionIcon(mini))
-        mark:SetTexCoord(0, 1, 0, 1)
+    if cardData.regionMini ~= miniIcon then
+        cardData.regionMini = miniIcon
+        marker:SetTexture(GetRegionIcon(miniIcon))
+        marker:SetTexCoord(0, 1, 0, 1)
     end
-    mark:Show()
+    marker:Show()
 end
 
 -- The region icon button on a friend's card or legacy row (frame; its state in
@@ -1466,56 +1466,56 @@ end
 local function RegionOnLeave()
     CludesUI.HideWidgetTooltip()
 end
-function Kit.UpdateRegionButton(widget, d, gameAccountInfo, anchor, show)
+function Kit.UpdateRegionButton(widget, cardData, gameAccount, anchor, show)
     -- Same-region friends never carry a mark.
-    local mini = show
-        and gameAccountInfo
-        and gameAccountInfo.isInCurrentRegion ~= true
-        and GetFriendMiniRegion(gameAccountInfo)
-    local full = mini and GetFullRegion(mini)
-    if not (mini and full and full ~= GetMyFullRegion()) then
-        if d.regionBtn then
-            d.regionBtn:Hide()
+    local miniIcon = show
+        and gameAccount
+        and gameAccount.isInCurrentRegion ~= true
+        and GetFriendMiniRegion(gameAccount)
+    local fullName = miniIcon and GetFullRegion(miniIcon)
+    if not (miniIcon and fullName and fullName ~= GetMyFullRegion()) then
+        if cardData.regionBtn then
+            cardData.regionBtn:Hide()
         end
         return
     end
 
-    if not d.regionBtn then
-        local rb = CreateFrame("Button", nil, widget)
-        rb:SetFrameLevel(widget:GetFrameLevel() + 5)
-        rb._tex = rb:CreateTexture(nil, "OVERLAY", nil, 7)
-        rb._tex:SetAllPoints()
-        rb._tex:SetAlpha(0.25)
-        rb:SetScript("OnEnter", RegionOnEnter)
-        rb:SetScript("OnLeave", RegionOnLeave)
+    if not cardData.regionBtn then
+        local resultBits = CreateFrame("Button", nil, widget)
+        resultBits:SetFrameLevel(widget:GetFrameLevel() + 5)
+        resultBits._tex = resultBits:CreateTexture(nil, "OVERLAY", nil, 7)
+        resultBits._tex:SetAllPoints()
+        resultBits._tex:SetAlpha(0.25)
+        resultBits:SetScript("OnEnter", RegionOnEnter)
+        resultBits:SetScript("OnLeave", RegionOnLeave)
         local iconH = math.floor((widget:GetHeight() or 40) * 0.8)
-        rb:SetSize(iconH, iconH)
+        resultBits:SetSize(iconH, iconH)
         if anchor then
-            rb:SetPoint("RIGHT", anchor, "LEFT", -2, 0)
+            resultBits:SetPoint("RIGHT", anchor, "LEFT", -2, 0)
         else
-            rb:SetPoint("RIGHT", widget, "RIGHT", -30, 0)
+            resultBits:SetPoint("RIGHT", widget, "RIGHT", -30, 0)
         end
-        d.regionBtn = rb
+        cardData.regionBtn = resultBits
     end
 
-    local rb = d.regionBtn
-    if rb._lastMini ~= mini then
-        rb._lastMini = mini
-        rb._tex:SetTexture(GetRegionIcon(mini))
-        rb._tex:SetTexCoord(0, 1, 0, 1)
-        rb._regionLabel = MINI_DISPLAY[mini] or mini
+    local resultBits = cardData.regionBtn
+    if resultBits._lastMini ~= miniIcon then
+        resultBits._lastMini = miniIcon
+        resultBits._tex:SetTexture(GetRegionIcon(miniIcon))
+        resultBits._tex:SetTexCoord(0, 1, 0, 1)
+        resultBits._regionLabel = MINI_DISPLAY[miniIcon] or miniIcon
     end
-    rb:Show()
+    resultBits:Show()
 end
 
-local function UpdateRegion(cardFrame, d, accountInfo)
-    local p = Settings()
+local function UpdateRegion(cardFrame, cardData, account)
+    local parts = Settings()
     Kit.UpdateRegionButton(
         cardFrame,
-        d,
-        accountInfo.gameAccountInfo,
+        cardData,
+        account.gameAccountInfo,
         cardFrame.PartyButton,
-        not (p and p.showRegionIcons == false)
+        not (parts and parts.showRegionIcons == false)
     )
 end
 
@@ -1538,32 +1538,32 @@ local function PaintCard(cardFrame)
     end
 
     local ed = cardFrame.elementData
-    local accountInfo = ed and ed.accountInfo
-    if not accountInfo then
+    local account = ed and ed.accountInfo
+    if not account then
         return
     end
 
-    local d = SkinStructure(cardFrame)
+    local cardData = SkinStructure(cardFrame)
     SuppressBlizzardArt(cardFrame)
 
-    local charText = BuildCharLine(accountInfo)
+    local charText = BuildCharLine(account)
     local hasChar = charText ~= ""
 
-    d.name:SetText(BuildName(accountInfo))
-    d.charLine:SetText(charText)
-    d.charLine:SetShown(hasChar)
-    d.info:SetText(BuildInfo(accountInfo))
+    cardData.name:SetText(BuildName(account))
+    cardData.charLine:SetText(charText)
+    cardData.charLine:SetShown(hasChar)
+    cardData.info:SetText(BuildInfo(account))
 
     -- Every string arrives pre-wrapped in Blizzard colour codes, so the
     -- FontStrings stay white or they would tint the markup.
-    d.name:SetTextColor(1, 1, 1, 1)
-    d.charLine:SetTextColor(1, 1, 1, 1)
-    d.info:SetTextColor(1, 1, 1, 1)
+    cardData.name:SetTextColor(1, 1, 1, 1)
+    cardData.charLine:SetTextColor(1, 1, 1, 1)
+    cardData.info:SetTextColor(1, 1, 1, 1)
 
     -- The location follows whichever line is above it, so a friend with no
     -- character does not leave a gap.
-    d.info:ClearAllPoints()
-    d.info:SetPoint("TOPLEFT", hasChar and d.charLine or d.name, "BOTTOMLEFT", 0, TILE_LINE_GAP)
+    cardData.info:ClearAllPoints()
+    cardData.info:SetPoint("TOPLEFT", hasChar and cardData.charLine or cardData.name, "BOTTOMLEFT", 0, TILE_LINE_GAP)
 
     -- Centre the block vertically. Its height depends on the line count, so it
     -- is measured rather than assumed -- Blizzard's row is 70 and the block is
@@ -1575,8 +1575,8 @@ local function PaintCard(cardFrame)
         if hasChar then
             block = block + TILE_CHAR_SIZE + gap
         end
-        d.name:ClearAllPoints()
-        d.name:SetPoint(
+        cardData.name:ClearAllPoints()
+        cardData.name:SetPoint(
             "TOPLEFT",
             cardFrame,
             "TOPLEFT",
@@ -1585,21 +1585,21 @@ local function PaintCard(cardFrame)
         )
     end
 
-    UpdateClassIcon(cardFrame, d, accountInfo)
-    d.onlineBg:SetShown(accountInfo.gameAccountInfo ~= nil and accountInfo.gameAccountInfo.isOnline == true)
-    UpdateFaction(cardFrame, d, accountInfo)
-    UpdateOrb(d, accountInfo)
-    UpdateRegion(cardFrame, d, accountInfo)
+    UpdateClassIcon(cardFrame, cardData, account)
+    cardData.onlineBg:SetShown(account.gameAccountInfo ~= nil and account.gameAccountInfo.isOnline == true)
+    UpdateFaction(cardFrame, cardData, account)
+    UpdateOrb(cardData, account)
+    UpdateRegion(cardFrame, cardData, account)
 
-    d.hoverBar:Hide()
-    d.hoverFill:Hide()
+    cardData.hoverBar:Hide()
+    cardData.hoverFill:Hide()
 
     -- Blizzard calls SetSelected during its own Initialize, i.e. BEFORE this
     -- paint runs and before the structure above exists. The hook stashes the
     -- state in FFD; this applies it once the textures are there.
-    local sel = d.selected == true
-    d.selBar:SetShown(sel)
-    d.selFill:SetShown(sel)
+    local sel = cardData.selected == true
+    cardData.selBar:SetShown(sel)
+    cardData.selFill:SetShown(sel)
 end
 
 -- The tile pieces the custom friends list (CludesUI_FriendsList.lua) draws
@@ -1642,17 +1642,17 @@ local function DecorateStockCard(cardFrame)
         return
     end
     local ed = cardFrame.elementData
-    local accountInfo = ed and ed.accountInfo
-    if not accountInfo then
+    local account = ed and ed.accountInfo
+    if not account then
         return
     end
 
-    local d = GetFFD(cardFrame)
-    local p = Settings()
-    local gi = accountInfo.gameAccountInfo
+    local cardData = GetFFD(cardFrame)
+    local parts = Settings()
+    local gameInfo = account.gameAccountInfo
     local class
-    if IsSameProjectOnline(gi) then
-        class = (gi.classFilename ~= "" and gi.classFilename) or GetClassFile(accountInfo)
+    if IsSameProjectOnline(gameInfo) then
+        class = (gameInfo.classFilename ~= "" and gameInfo.classFilename) or GetClassFile(account)
     end
 
     -- Class icon: a region of the holder, so it follows Blizzard's own show and
@@ -1661,41 +1661,41 @@ local function DecorateStockCard(cardFrame)
     -- shows the holder, so the logo needs no restore when ours stands down.
     local holderFrame = cardFrame.GameIconHolder
     if holderFrame then
-        local icon = d.stockClassIcon
+        local glyph = cardData.stockClassIcon
         -- Only a class the icon theme has art for takes the slot; any other
         -- token (a special game-mode class) keeps Blizzard's own logo.
-        local style = (p and p.iconStyle) or "modern"
+        local styleName = (parts and parts.iconStyle) or "modern"
         local hasArt = class
-            and not (p and p.showClassIcons == false)
+            and not (parts and parts.showClassIcons == false)
             and (
-                (style == "blizzard" and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class])
-                or (style ~= "blizzard" and CLASS_SPRITE_COORDS[class])
+                (styleName == "blizzard" and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class])
+                or (styleName ~= "blizzard" and CLASS_SPRITE_COORDS[class])
             )
         if hasArt then
-            if not icon then
-                icon = holderFrame:CreateTexture(nil, "OVERLAY")
-                icon:SetAllPoints(holderFrame)
-                d.stockClassIcon = icon
+            if not glyph then
+                glyph = holderFrame:CreateTexture(nil, "OVERLAY")
+                glyph:SetAllPoints(holderFrame)
+                cardData.stockClassIcon = glyph
             end
-            if d.stockIconClass ~= class or d.stockIconStyle ~= style then
-                d.stockIconClass, d.stockIconStyle = class, style
-                SetClassIconTex(icon, style, class)
+            if cardData.stockIconClass ~= class or cardData.stockIconStyle ~= styleName then
+                cardData.stockIconClass, cardData.stockIconStyle = class, styleName
+                SetClassIconTex(glyph, styleName, class)
             end
-            icon:Show()
+            glyph:Show()
             if holderFrame.Icon then
                 holderFrame.Icon:SetAlpha(0)
-                d.stockLogoOff = true
+                cardData.stockLogoOff = true
             end
         else
-            if icon then
-                icon:Hide()
+            if glyph then
+                glyph:Hide()
             end
             -- A pooled card whose last friend wore our icon gets the logo back
             -- (Blizzard restores it only when it re-shows the holder).
-            if d.stockLogoOff and holderFrame.Icon then
+            if cardData.stockLogoOff and holderFrame.Icon then
                 holderFrame.Icon:SetAlpha(1)
             end
-            d.stockLogoOff = nil
+            cardData.stockLogoOff = nil
         end
     end
 
@@ -1704,9 +1704,9 @@ local function DecorateStockCard(cardFrame)
     -- the name's alpha itself, so it is restored here whenever ours stands down.
     local name = cardFrame.Name
     if name then
-        local shade = d.stockName
-        local code = class and p and p.classColorNames and name:IsShown() and ClassColorCode(class)
-        if code then
+        local shade = cardData.stockName
+        local regionCode = class and parts and parts.classColorNames and name:IsShown() and ClassColorCode(class)
+        if regionCode then
             if not shade then
                 shade = cardFrame:CreateFontString(nil, "OVERLAY")
                 local fo = name:GetFontObject()
@@ -1719,31 +1719,31 @@ local function DecorateStockCard(cardFrame)
                 shade:SetJustifyH("LEFT")
                 shade:SetJustifyV("MIDDLE")
                 shade:SetWordWrap(false)
-                d.stockName = shade
+                cardData.stockName = shade
             end
             local charName = (
                 FriendsListUtil
                 and FriendsListUtil.GetFormattedCharacterName
-                and FriendsListUtil.GetFormattedCharacterName(accountInfo)
+                and FriendsListUtil.GetFormattedCharacterName(account)
             )
-                or gi.characterName
+                or gameInfo.characterName
                 or ""
-            shade:SetText(code .. charName .. "|r")
+            shade:SetText(regionCode .. charName .. "|r")
             shade:Show()
             name:SetAlpha(0)
-            d.stockNameHidden = true
+            cardData.stockNameHidden = true
         else
             if shade then
                 shade:Hide()
             end
-            if d.stockNameHidden then
+            if cardData.stockNameHidden then
                 name:SetAlpha(1)
-                d.stockNameHidden = nil
+                cardData.stockNameHidden = nil
             end
         end
     end
 
-    UpdateStockRegion(cardFrame, d, accountInfo)
+    UpdateStockRegion(cardFrame, cardData, account)
 end
 
 -------------------------------------------------------------------------------
@@ -1769,47 +1769,47 @@ local function DecorateStockRow(btnFrame, restore)
     if not (isBNet or isWoW) or not btnFrame.id then
         return
     end
-    local d = GetFFD(btnFrame)
-    d.legacy = true
+    local cardData = GetFFD(btnFrame)
+    cardData.legacy = true
     if not btnFrame:IsVisible() then
-        d.stale = true
+        cardData.stale = true
         return
     end
-    d.stale = nil
+    cardData.stale = nil
     if not Enabled() then
         return
     end
 
     -- Every decoration off: stand down whatever is still painted and read no
     -- friend data at all.
-    local p = Settings()
-    if p and p.showClassIcons == false and not p.classColorNames and p.showRegionIcons == false then
-        if d.stockClassIcon then
-            d.stockClassIcon:Hide()
+    local parts = Settings()
+    if parts and parts.showClassIcons == false and not parts.classColorNames and parts.showRegionIcons == false then
+        if cardData.stockClassIcon then
+            cardData.stockClassIcon:Hide()
         end
-        if d.stockLogoOff and restore and btnFrame.gameIcon then
+        if cardData.stockLogoOff and restore and btnFrame.gameIcon then
             btnFrame.gameIcon:SetAlpha(1)
         end
-        d.stockLogoOff = nil
-        if d.stockName then
-            d.stockName:Hide()
+        cardData.stockLogoOff = nil
+        if cardData.stockName then
+            cardData.stockName:Hide()
         end
-        if d.stockNameHidden and btnFrame.name then
+        if cardData.stockNameHidden and btnFrame.name then
             btnFrame.name:SetAlpha(1)
         end
-        d.stockNameHidden = nil
-        if d.regionMark then
-            d.regionMark:Hide()
+        cardData.stockNameHidden = nil
+        if cardData.regionMark then
+            cardData.regionMark:Hide()
         end
         return
     end
 
-    local accountInfo, gi, details, class
+    local account, gameInfo, details, class
     if isBNet then
-        accountInfo = C_BattleNet.GetFriendAccountInfo(btnFrame.id)
-        gi = accountInfo and accountInfo.gameAccountInfo
-        if IsSameProjectOnline(gi) then
-            class = (gi.classFilename ~= "" and gi.classFilename) or GetClassFile(accountInfo)
+        account = C_BattleNet.GetFriendAccountInfo(btnFrame.id)
+        gameInfo = account and account.gameAccountInfo
+        if IsSameProjectOnline(gameInfo) then
+            class = (gameInfo.classFilename ~= "" and gameInfo.classFilename) or GetClassFile(account)
         end
     else
         details = C_FriendList.GetFriendInfoByIndex(btnFrame.id)
@@ -1824,38 +1824,38 @@ local function DecorateStockRow(btnFrame, restore)
     -- update, so only an options pass has to give it back.
     local logo = btnFrame.gameIcon
     if logo then
-        local icon = d.stockClassIcon
-        local style = (p and p.iconStyle) or "modern"
+        local glyph = cardData.stockClassIcon
+        local styleName = (parts and parts.iconStyle) or "modern"
         local hasArt = (isWoW or logo:IsShown())
             and class
-            and not (p and p.showClassIcons == false)
+            and not (parts and parts.showClassIcons == false)
             and (
-                (style == "blizzard" and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class])
-                or (style ~= "blizzard" and CLASS_SPRITE_COORDS[class])
+                (styleName == "blizzard" and CLASS_ICON_TCOORDS and CLASS_ICON_TCOORDS[class])
+                or (styleName ~= "blizzard" and CLASS_SPRITE_COORDS[class])
             )
         if hasArt then
-            if not icon then
-                icon = btnFrame:CreateTexture(nil, "OVERLAY")
-                icon:SetAllPoints(logo)
-                d.stockClassIcon = icon
+            if not glyph then
+                glyph = btnFrame:CreateTexture(nil, "OVERLAY")
+                glyph:SetAllPoints(logo)
+                cardData.stockClassIcon = glyph
             end
-            if d.stockIconClass ~= class or d.stockIconStyle ~= style then
-                d.stockIconClass, d.stockIconStyle = class, style
-                SetClassIconTex(icon, style, class)
+            if cardData.stockIconClass ~= class or cardData.stockIconStyle ~= styleName then
+                cardData.stockIconClass, cardData.stockIconStyle = class, styleName
+                SetClassIconTex(glyph, styleName, class)
             end
-            icon:Show()
+            glyph:Show()
             if isBNet then
                 logo:SetAlpha(0)
-                d.stockLogoOff = true
+                cardData.stockLogoOff = true
             end
         else
-            if icon then
-                icon:Hide()
+            if glyph then
+                glyph:Hide()
             end
-            if d.stockLogoOff and restore then
+            if cardData.stockLogoOff and restore then
                 logo:SetAlpha(1)
             end
-            d.stockLogoOff = nil
+            cardData.stockLogoOff = nil
         end
     end
 
@@ -1866,38 +1866,38 @@ local function DecorateStockRow(btnFrame, restore)
     -- A friend Blizzard greys out as unable to group keeps its grey.
     local name = btnFrame.name
     if name then
-        local code = class and p and p.classColorNames and ClassColorCode(class)
+        local regionCode = class and parts and parts.classColorNames and ClassColorCode(class)
         if
-            code
+            regionCode
             and isBNet
             and CanCooperateWithGameAccount
-            and not CanCooperateWithGameAccount(accountInfo)
+            and not CanCooperateWithGameAccount(account)
         then
-            code = nil
+            regionCode = nil
         end
         local textValue
-        if code and isBNet then
+        if regionCode and isBNet then
             local acct = FriendsFrame_GetBNetAccountNameAndStatus
-                and FriendsFrame_GetBNetAccountNameAndStatus(accountInfo, true)
-            local char = gi.characterName
-            if char and char ~= "" and FriendsFrame_GetFormattedCharacterName then
-                char = FriendsFrame_GetFormattedCharacterName(
-                    char,
+                and FriendsFrame_GetBNetAccountNameAndStatus(account, true)
+            local charName = gameInfo.characterName
+            if charName and charName ~= "" and FriendsFrame_GetFormattedCharacterName then
+                charName = FriendsFrame_GetFormattedCharacterName(
+                    charName,
                     nil,
-                    gi.clientProgram,
-                    gi.timerunningSeasonID
+                    gameInfo.clientProgram,
+                    gameInfo.timerunningSeasonID
                 )
             end
-            if acct and char and char ~= "" then
-                textValue = acct .. " " .. code .. "(" .. char .. ")|r"
+            if acct and charName and charName ~= "" then
+                textValue = acct .. " " .. regionCode .. "(" .. charName .. ")|r"
             end
-        elseif code and details and details.name and details.level and FRIENDS_LEVEL_TEMPLATE then
-            textValue = code
+        elseif regionCode and details and details.name and details.level and FRIENDS_LEVEL_TEMPLATE then
+            textValue = regionCode
                 .. details.name
                 .. "|r, "
                 .. format(FRIENDS_LEVEL_TEMPLATE, details.level, details.className)
         end
-        local shade = d.stockName
+        local shade = cardData.stockName
         if textValue then
             if not shade then
                 shade = btnFrame:CreateFontString(nil, "OVERLAY")
@@ -1911,7 +1911,7 @@ local function DecorateStockRow(btnFrame, restore)
                 shade:SetJustifyH(name:GetJustifyH())
                 shade:SetJustifyV(name:GetJustifyV())
                 shade:SetWordWrap(name:CanWordWrap())
-                d.stockName = shade
+                cardData.stockName = shade
             end
             -- Colour only: a region's alpha and its colour alpha are one
             -- channel on this client, and Blizzard's name sits at our alpha 0
@@ -1922,28 +1922,28 @@ local function DecorateStockRow(btnFrame, restore)
             shade:SetText(textValue)
             shade:Show()
             name:SetAlpha(0)
-            d.stockNameHidden = true
+            cardData.stockNameHidden = true
         else
             if shade then
                 shade:Hide()
             end
-            if d.stockNameHidden then
+            if cardData.stockNameHidden then
                 name:SetAlpha(1)
-                d.stockNameHidden = nil
+                cardData.stockNameHidden = nil
             end
         end
     end
 
-    UpdateStockRegion(btnFrame, d, accountInfo)
+    UpdateStockRegion(btnFrame, cardData, account)
 end
 
 -- The list shows: catch up the rows Blizzard updated, or an options pass
 -- skipped, while it was hidden (the latter with that pass's logo restore).
 local function CatchUpStaleRows()
-    for widget, d in pairs(FFD) do
-        if d.stale then
-            local restore = d.staleRestore
-            d.staleRestore = nil
+    for widget, cardData in pairs(FFD) do
+        if cardData.stale then
+            local restore = cardData.staleRestore
+            cardData.staleRestore = nil
             DecorateStockRow(widget, restore)
         end
     end
@@ -1995,9 +1995,9 @@ function Kit.StartTiles(hgt)
         if FriendsFrame_UpdateFriendButton then
             hooksecurefunc("FriendsFrame_UpdateFriendButton", function(btnFrame)
                 -- Blizzard has just re-set its logo alpha itself.
-                local d = FFD[btnFrame]
-                if d then
-                    d.staleRestore = nil
+                local cardData = FFD[btnFrame]
+                if cardData then
+                    cardData.staleRestore = nil
                 end
                 DecorateStockRow(btnFrame)
             end)
@@ -2019,11 +2019,11 @@ function Kit.StartTiles(hgt)
     -- routes through SetSelected on the card. Post-hooking it means we never
     -- read the provider or the selection behaviour ourselves.
     hooksecurefunc(FriendsListSocialCardMixin, "SetSelected", function(cardFrame, selected)
-        local d = GetFFD(cardFrame)
-        d.selected = selected and true or false
-        if d.selBar then
-            d.selBar:SetShown(d.selected)
-            d.selFill:SetShown(d.selected)
+        local cardData = GetFFD(cardFrame)
+        cardData.selected = selected and true or false
+        if cardData.selBar then
+            cardData.selBar:SetShown(cardData.selected)
+            cardData.selFill:SetShown(cardData.selected)
         end
     end)
 end
@@ -2038,15 +2038,15 @@ function Kit.RedecorateTiles()
     if not func then
         return
     end
-    for widget, d in pairs(FFD) do
-        if d.legacy then
+    for widget, cardData in pairs(FFD) do
+        if cardData.legacy then
             -- A row kept shown under a hidden list (another Friends sub-tab)
             -- is caught up when the list shows; a released row is
             -- re-initialised by Blizzard when the pool reuses it.
             if widget:IsVisible() then
                 DecorateStockRow(widget, true)
             elseif widget:IsShown() then
-                d.stale, d.staleRestore = true, true
+                cardData.stale, cardData.staleRestore = true, true
             end
         elseif widget.IsVisible and widget:IsVisible() and widget.elementData then
             func(widget)
@@ -2061,29 +2061,29 @@ end
 --  is registered only while the toggle is on; GROUP_ROSTER_UPDATE only
 --  between an accept and its popup cleanup.
 -------------------------------------------------------------------------------
-local autoAcceptFrame, autoAcceptSettings
+local acceptWatcher, autoAcceptSettings
 local autoAcceptHidePopup = false
 
 local function AutoAcceptOnEvent(self, evt, _, _, _, _, _, _, inviterGUID)
     if evt == "PARTY_INVITE_REQUEST" then
-        local fp = autoAcceptSettings and autoAcceptSettings()
-        if not fp or fp.enabled == false or not fp.autoAcceptFriendInvites then
+        local friendPane = autoAcceptSettings and autoAcceptSettings()
+        if not friendPane or friendPane.enabled == false or not friendPane.autoAcceptFriendInvites then
             return
         end
         if not inviterGUID or inviterGUID == "" or IsInGroup() then
             return
         end
-        local isFriend = false
+        local friended = false
         if C_BattleNet and C_BattleNet.GetGameAccountInfoByGUID then
-            isFriend = C_BattleNet.GetGameAccountInfoByGUID(inviterGUID) ~= nil
+            friended = C_BattleNet.GetGameAccountInfoByGUID(inviterGUID) ~= nil
         end
-        if not isFriend and C_FriendList and C_FriendList.IsFriend then
-            isFriend = C_FriendList.IsFriend(inviterGUID)
+        if not friended and C_FriendList and C_FriendList.IsFriend then
+            friended = C_FriendList.IsFriend(inviterGUID)
         end
-        if not isFriend and fp.autoAcceptGuildInvites then
-            isFriend = IsGuildMember(inviterGUID)
+        if not friended and friendPane.autoAcceptGuildInvites then
+            friended = IsGuildMember(inviterGUID)
         end
-        if isFriend then
+        if friended then
             AcceptGroup()
             autoAcceptHidePopup = true
             self:RegisterEvent("GROUP_ROSTER_UPDATE")
@@ -2104,18 +2104,18 @@ end
 -- time the toggle is on.
 function Kit.SyncAutoAccept(prefs)
     autoAcceptSettings = prefs
-    local fp = prefs and prefs()
-    local on = fp and fp.enabled ~= false and fp.autoAcceptFriendInvites
-    if on and not autoAcceptFrame then
-        autoAcceptFrame = CreateFrame("Frame")
-        autoAcceptFrame:SetScript("OnEvent", AutoAcceptOnEvent)
+    local friendPane = prefs and prefs()
+    local on = friendPane and friendPane.enabled ~= false and friendPane.autoAcceptFriendInvites
+    if on and not acceptWatcher then
+        acceptWatcher = CreateFrame("Frame")
+        acceptWatcher:SetScript("OnEvent", AutoAcceptOnEvent)
     end
-    if not autoAcceptFrame then
+    if not acceptWatcher then
         return
     end
     if on then
-        autoAcceptFrame:RegisterEvent("PARTY_INVITE_REQUEST")
+        acceptWatcher:RegisterEvent("PARTY_INVITE_REQUEST")
     else
-        autoAcceptFrame:UnregisterEvent("PARTY_INVITE_REQUEST")
+        acceptWatcher:UnregisterEvent("PARTY_INVITE_REQUEST")
     end
 end
