@@ -48,6 +48,13 @@ local function Refresh()
         _G._CUI_BattleRes_Apply()
     end
 end
+-- Row setters over Set: the key written with the row's value, then Refresh() for the Then form.
+local function SetRowThen(key)
+    return function(v)
+        Set(key, v)
+        Refresh()
+    end
+end
 
 local SHAPE_VALUES = {
     none = "None",
@@ -225,10 +232,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
         getValue = function()
             return Cfg("iconSize") or 40
         end,
-        setValue = function(val)
-            Set("iconSize", val)
-            Refresh()
-        end,
+        setValue = SetRowThen("iconSize"),
     })
     posY = posY - hgt
 
@@ -245,10 +249,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
         getValue = function()
             return Cfg("shape") or "none"
         end,
-        setValue = function(val)
-            Set("shape", val)
-            Refresh()
-        end,
+        setValue = SetRowThen("shape"),
     }, {
         type = "multiSwatch",
         text = "Border Color",
@@ -290,10 +291,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
             getValue = function()
                 return Cfg("iconZoom") or 11
             end,
-            setValue = function(val)
-                Set("iconZoom", val)
-                Refresh()
-            end,
+            setValue = SetRowThen("iconZoom"),
         }
     )
     posY = posY - hgt
@@ -313,10 +311,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
         getValue = function()
             return Cfg("durationSize") or 12
         end,
-        setValue = function(val)
-            Set("durationSize", val)
-            Refresh()
-        end,
+        setValue = SetRowThen("durationSize"),
     }, {
         type = "slider",
         text = "Count Size",
@@ -331,10 +326,7 @@ local function BuildBattleResPage(page, hostFrame, yOffset)
         getValue = function()
             return Cfg("countSize") or 11
         end,
-        setValue = function(val)
-            Set("countSize", val)
-            Refresh()
-        end,
+        setValue = SetRowThen("countSize"),
     })
     posY = posY - hgt
 
@@ -507,10 +499,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
         getValue = function()
             return Cfg("iconSize") or 40
         end,
-        setValue = function(val)
-            Set("iconSize", val)
-            Refresh()
-        end,
+        setValue = SetRowThen("iconSize"),
     })
     posY = posY - hgt
 
@@ -527,10 +516,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             getValue = function()
                 return Cfg("shape") or "none"
             end,
-            setValue = function(val)
-                Set("shape", val)
-                Refresh()
-            end,
+            setValue = SetRowThen("shape"),
         }, {
             type = "multiSwatch",
             text = "Border Color",
@@ -574,10 +560,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                 getValue = function()
                     return Cfg("iconZoom") or 11
                 end,
-                setValue = function(val)
-                    Set("iconZoom", val)
-                    Refresh()
-                end,
+                setValue = SetRowThen("iconZoom"),
             })
         posY = posY - hgt
 
@@ -593,10 +576,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             getValue = function()
                 return Cfg("durationSize") or 12
             end,
-            setValue = function(val)
-                Set("durationSize", val)
-                Refresh()
-            end,
+            setValue = SetRowThen("durationSize"),
         }, {
             type = "slider",
             text = "Count Size",
@@ -609,10 +589,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             getValue = function()
                 return Cfg("countSize") or 11
             end,
-            setValue = function(val)
-                Set("countSize", val)
-                Refresh()
-            end,
+            setValue = SetRowThen("countSize"),
         })
         posY = posY - hgt
 
@@ -690,10 +667,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
             getValue = function()
                 return Cfg("textSize") or 14
             end,
-            setValue = function(val)
-                Set("textSize", val)
-                Refresh()
-            end,
+            setValue = SetRowThen("textSize"),
         })
         posY = posY - hgt
 
@@ -788,10 +762,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                 getValue = function()
                     return Cfg("font") or "__global"
                 end,
-                setValue = function(val)
-                    Set("font", val)
-                    Refresh()
-                end,
+                setValue = SetRowThen("font"),
             }, {
                 type = "dropdown",
                 text = "Font Outline",
@@ -804,10 +775,7 @@ _G._CUI_BuildBattleResSection = function(hostFrame, yOffset, W, Pix)
                 getValue = function()
                     return Cfg("outlineMode") or "__global"
                 end,
-                setValue = function(val)
-                    Set("outlineMode", val)
-                    Refresh()
-                end,
+                setValue = SetRowThen("outlineMode"),
             })
             posY = posY - hgt
         end

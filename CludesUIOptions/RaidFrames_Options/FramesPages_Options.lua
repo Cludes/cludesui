@@ -415,6 +415,18 @@ local function BuildMainPage(page, hostFrame, yOffset)
     local groupGrowthValues, groupGrowthOrder, ReadGroupGrowth =
         environ.groupGrowthValues, environ.groupGrowthOrder, environ.ReadGroupGrowth
     local SGet, SGetPx, SSet, SVal = environ.SGet, environ.SGetPx, environ.SSet, environ.SVal
+    -- A row getter over SVal: the key's value, or the default given.
+    local function SValRow(key, default)
+        return function()
+            return SVal(key, default)
+        end
+    end
+    -- Row setters over SSet: the key written with the row's value.
+    local function SSetRow(key)
+        return function(v)
+            SSet(key, v)
+        end
+    end
     local SWrite, optionState = environ.SWrite, environ.optState
     local W = CludesUI.Widgets
     local _, hgt, heading
@@ -464,24 +476,16 @@ local function BuildMainPage(page, hostFrame, yOffset)
         min = 40,
         max = 300,
         step = 1,
-        getValue = function()
-            return SVal("frameWidth", 72)
-        end,
-        setValue = function(v)
-            SSet("frameWidth", v)
-        end,
+        getValue = SValRow("frameWidth", 72),
+        setValue = SSetRow("frameWidth"),
     }, {
         type = "slider",
         text = "20 Man Frame Height",
         min = 20,
         max = 150,
         step = 1,
-        getValue = function()
-            return SVal("frameHeight", 46)
-        end,
-        setValue = function(v)
-            SSet("frameHeight", v)
-        end,
+        getValue = SValRow("frameHeight", 46),
+        setValue = SSetRow("frameHeight"),
     })
     posY = posY - hgt
 
@@ -1031,12 +1035,8 @@ local function BuildMainPage(page, hostFrame, yOffset)
         end,
         disabledTooltip = "Compact Mode",
         requireState = "disabled",
-        getValue = function()
-            return SVal("cellSpacing", 2)
-        end,
-        setValue = function(v)
-            SSet("cellSpacing", v)
-        end,
+        getValue = SValRow("cellSpacing", 2),
+        setValue = SSetRow("cellSpacing"),
     }, {
         type = "slider",
         pixel = true,
@@ -1049,12 +1049,8 @@ local function BuildMainPage(page, hostFrame, yOffset)
         end,
         disabledTooltip = "Grid Mode",
         requireState = "disabled",
-        getValue = function()
-            return SVal("groupSpacing", 8)
-        end,
-        setValue = function(v)
-            SSet("groupSpacing", v)
-        end,
+        getValue = SValRow("groupSpacing", 8),
+        setValue = SSetRow("groupSpacing"),
     })
     posY = posY - hgt
     if not CludesUI._prebuilding then
@@ -1199,9 +1195,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
                         )
                         return dsx
                     end,
-                    set = function(v)
-                        SSet("borderTextureShiftX", v)
-                    end,
+                    set = SSetRow("borderTextureShiftX"),
                 },
                 {
                     type = "slider",
@@ -1221,19 +1215,13 @@ local function BuildMainPage(page, hostFrame, yOffset)
                         )
                         return dsy
                     end,
-                    set = function(v)
-                        SSet("borderTextureShiftY", v)
-                    end,
+                    set = SSetRow("borderTextureShiftY"),
                 },
                 {
                     type = "toggle",
                     label = "Show Behind",
-                    get = function()
-                        return SVal("borderBehind", false)
-                    end,
-                    set = function(v)
-                        SSet("borderBehind", v)
-                    end,
+                    get = SValRow("borderBehind", false),
+                    set = SSetRow("borderBehind"),
                 },
             },
         })
@@ -1267,12 +1255,8 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     min = 0,
                     max = CludesUI.ROUNDED_MAX_RADIUS,
                     step = 1,
-                    get = function()
-                        return SVal("cornerRadius", 0)
-                    end,
-                    set = function(v)
-                        SSet("cornerRadius", v)
-                    end,
+                    get = SValRow("cornerRadius", 0),
+                    set = SSetRow("cornerRadius"),
                 },
             }, function()
                 return SGet("cornerMask")
@@ -1372,9 +1356,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         end,
         disabledTooltip = "Party Frames Show When Solo",
         requireState = "disabled",
-        getValue = function()
-            return SVal("showWhenSolo", false)
-        end,
+        getValue = SValRow("showWhenSolo", false),
         setValue = function(v)
             SSet("showWhenSolo", v)
             if mod.UpdateVisibility then
@@ -1627,9 +1609,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         text = "Unit Growth",
         values = growthValues,
         order = allGrowthOrder,
-        getValue = function()
-            return SVal("unitGrowth", "DOWN")
-        end,
+        getValue = SValRow("unitGrowth", "DOWN"),
         setValue = function(v)
             db.profile.unitGrowth = v
             if SVal("mergeGroups", false) then
@@ -1813,9 +1793,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         }, {
             type = "toggle",
             text = "Merge Groups",
-            getValue = function()
-                return SVal("mergeGroups", false)
-            end,
+            getValue = SValRow("mergeGroups", false),
             -- Custom Group Order only applies to separated groups, so a flip that
             -- changes whether it applies rebuilds the Show Groups dropdown.
             setValue = CludesUI.DependentSetValue(function()
@@ -1927,34 +1905,22 @@ local function BuildMainPage(page, hostFrame, yOffset)
                     type = "toggle",
                     label = "Hide Empty Groups",
                     tooltip = "Collapse subgroups that have no members so the remaining groups close ranks. For example, if only groups 1, 2, 3 and 6 have players, they show with no gaps instead of leaving empty space where groups 4 and 5 would be. Real raid frames only.",
-                    get = function()
-                        return SVal("hideEmptyGroups", true)
-                    end,
-                    set = function(v)
-                        SSet("hideEmptyGroups", v)
-                    end,
+                    get = SValRow("hideEmptyGroups", true),
+                    set = SSetRow("hideEmptyGroups"),
                 },
                 {
                     type = "toggle",
                     label = "Hide Groups 5-8 in Mythic Raid",
                     tooltip = "Mythic raids allow only 20 players (groups 1-4), so hide groups 5-8 while inside one. Groups 1-4 still follow Show Groups, and Show Groups applies as normal everywhere else.",
-                    get = function()
-                        return SVal("mythicRaidHideGroups", false)
-                    end,
-                    set = function(v)
-                        SSet("mythicRaidHideGroups", v)
-                    end,
+                    get = SValRow("mythicRaidHideGroups", false),
+                    set = SSetRow("mythicRaidHideGroups"),
                 },
                 {
                     type = "toggle",
                     label = "Exclude Hidden from Size",
                     tooltip = "When using custom raid sizes, don't count members in hidden groups toward the raid-size breakpoint. For example, if you hide groups 7 and 8, a full 40-man raid is sized as if it were 24-man instead of jumping to the 30-man frame size. Has no effect unless you have custom raid sizes set up.",
-                    get = function()
-                        return SVal("excludeHiddenGroupsFromSize", true)
-                    end,
-                    set = function(v)
-                        SSet("excludeHiddenGroupsFromSize", v)
-                    end,
+                    get = SValRow("excludeHiddenGroupsFromSize", true),
+                    set = SSetRow("excludeHiddenGroupsFromSize"),
                 },
                 {
                     type = "toggle",
@@ -2046,6 +2012,12 @@ local function BuildPartyPage(page, hostFrame, yOffset)
     local BuildPreviewModeRow, BuildVisualSections, db, optionState =
         environ.BuildPreviewModeRow, environ.BuildVisualSections, environ.db, environ.optState
     local Pix, SVal = environ.PP, environ.SVal
+    -- A row getter over SVal: the key's value, or the default given.
+    local function SValRow(key, default)
+        return function()
+            return SVal(key, default)
+        end
+    end
     local W = CludesUI.Widgets
     local _, hgt, heading
     local row
@@ -2304,9 +2276,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
         end,
         disabledTooltip = "Raid Frames Show When Solo",
         requireState = "disabled",
-        getValue = function()
-            return SVal("partyShowWhenSolo", false)
-        end,
+        getValue = SValRow("partyShowWhenSolo", false),
         setValue = function(v)
             PSSet("partyShowWhenSolo", v)
             CludesUI:RefreshPage()
@@ -2452,9 +2422,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
             min = 40,
             max = 300,
             step = 1,
-            getValue = function()
-                return SVal("partyFrameWidth", 125)
-            end,
+            getValue = SValRow("partyFrameWidth", 125),
             setValue = function(v)
                 PSSet("partyFrameWidth", v)
             end,
@@ -2465,9 +2433,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
             min = 20,
             max = 150,
             step = 1,
-            getValue = function()
-                return SVal("partyFrameHeight", 60)
-            end,
+            getValue = SValRow("partyFrameHeight", 60),
             setValue = function(v)
                 PSSet("partyFrameHeight", v)
             end,

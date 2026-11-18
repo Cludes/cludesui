@@ -43,6 +43,12 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         FT.Cfg()[key] = val
         FT.ApplyStyle()
     end
+    -- Row setters over Set: the key written with the row's value.
+    local function SetRow(key)
+        return function(v)
+            Set(key, v)
+        end
+    end
 
     local function TextCogRows(prefixText)
         return {
@@ -182,9 +188,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
             getValue = function()
                 return FT.Get("width")
             end,
-            setValue = function(val)
-                Set("width", val)
-            end,
+            setValue = SetRow("width"),
         },
         -- The track's own key (trackHeight), not the retired bar's height.
         {
@@ -198,9 +202,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
             getValue = function()
                 return FT.Get("trackHeight")
             end,
-            setValue = function(val)
-                Set("trackHeight", val)
-            end,
+            setValue = SetRow("trackHeight"),
         }
     )
     posY = posY - hgt
@@ -305,9 +307,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                     get = function()
                         return FT.Get("borderTextureShiftX") or 0
                     end,
-                    set = function(val)
-                        Set("borderTextureShiftX", val)
-                    end,
+                    set = SetRow("borderTextureShiftX"),
                 },
                 {
                     type = "slider",
@@ -318,9 +318,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                     get = function()
                         return FT.Get("borderTextureShiftY") or 0
                     end,
-                    set = function(val)
-                        Set("borderTextureShiftY", val)
-                    end,
+                    set = SetRow("borderTextureShiftY"),
                 },
                 offsetX,
                 offsetY,
@@ -330,9 +328,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                     get = function()
                         return FT.Get("borderBehind")
                     end,
-                    set = function(val)
-                        Set("borderBehind", val)
-                    end,
+                    set = SetRow("borderBehind"),
                 },
             },
         })
@@ -367,9 +363,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         getValue = function()
             return FT.Get("texture")
         end,
-        setValue = function(val)
-            Set("texture", val)
-        end,
+        setValue = SetRow("texture"),
     }, {
         type = "dropdown",
         text = "Background Texture",
@@ -380,9 +374,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         getValue = function()
             return FT.Get("bgTexture")
         end,
-        setValue = function(val)
-            Set("bgTexture", val)
-        end,
+        setValue = SetRow("bgTexture"),
     })
     posY = posY - hgt
 
@@ -400,9 +392,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         getValue = function()
             return FT.Get("fillOpacity")
         end,
-        setValue = function(val)
-            Set("fillOpacity", val)
-        end,
+        setValue = SetRow("fillOpacity"),
     }, {
         type = "slider",
         text = "Background",
@@ -583,9 +573,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                 get = function()
                     return FT.Get("exitBorder")
                 end,
-                set = function(val)
-                    Set("exitBorder", val)
-                end,
+                set = SetRow("exitBorder"),
             },
             {
                 type = "toggle",
@@ -598,9 +586,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                 get = function()
                     return FT.Get("exitBorderCustom")
                 end,
-                set = function(val)
-                    Set("exitBorderCustom", val)
-                end,
+                set = SetRow("exitBorderCustom"),
             },
             offsetX,
             offsetY,
@@ -617,9 +603,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
         getValue = function()
             return FT.Get("showEndCaps")
         end,
-        setValue = function(val)
-            Set("showEndCaps", val)
-        end,
+        setValue = SetRow("showEndCaps"),
     }, {
         type = "toggle",
         text = "Show Separator",
@@ -651,9 +635,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                 get = function()
                     return FT.Get("separatorHeight")
                 end,
-                set = function(val)
-                    Set("separatorHeight", val)
-                end,
+                set = SetRow("separatorHeight"),
             },
             {
                 type = "toggle",
@@ -667,9 +649,7 @@ _G._CUI_BuildFlightTimerPage = function(page, hostFrame, yOffset)
                 get = function()
                     return FT.Get("customSeparator")
                 end,
-                set = function(val)
-                    Set("customSeparator", val)
-                end,
+                set = SetRow("customSeparator"),
             },
         },
     })

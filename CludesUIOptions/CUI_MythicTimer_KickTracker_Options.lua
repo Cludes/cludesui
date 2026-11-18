@@ -31,6 +31,12 @@ local function Get(key, fallback)
     end
     return val
 end
+-- A row getter over Get: the key's value, or the default given.
+local function GetRow(key, default)
+    return function()
+        return Get(key, default)
+    end
+end
 
 -- The header preview's state and builder (ns._MT_Preview), made on the
 -- page's first build.
@@ -462,9 +468,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             disabledTooltip = REQ_PLATES,
             values = ICON_STYLE_VALUES,
             order = ICON_STYLE_ORDER,
-            getValue = function()
-                return Get("iconStyle", "kick")
-            end,
+            getValue = GetRow("iconStyle", "kick"),
             setValue = SetRow("iconStyle"),
         })
         posY = posY - hgt
@@ -477,9 +481,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             step = 1,
             disabled = PlatesOff,
             disabledTooltip = REQ_PLATES,
-            getValue = function()
-                return Get("size", 28)
-            end,
+            getValue = GetRow("size", 28),
             setValue = SetRow("size"),
         }, {
             type = "dropdown",
@@ -489,9 +491,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             disabledTooltip = REQ_PLATES,
             values = POSITION_VALUES,
             order = POSITION_ORDER,
-            getValue = function()
-                return Get("anchor", "LEFT")
-            end,
+            getValue = GetRow("anchor", "LEFT"),
             setValue = SetPosition,
         })
         posY = posY - hgt
@@ -510,9 +510,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         step = 1,
                         tooltip = "On CludesUI nameplates.",
                         hidden = NoCUIPlates,
-                        get = function()
-                            return Get("offsetX", -4)
-                        end,
+                        get = GetRow("offsetX", -4),
                         set = SetRow("offsetX"),
                     },
                     {
@@ -523,9 +521,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         step = 1,
                         tooltip = "On CludesUI nameplates.",
                         hidden = NoCUIPlates,
-                        get = function()
-                            return Get("offsetY", 0)
-                        end,
+                        get = GetRow("offsetY", 0),
                         set = SetRow("offsetY"),
                     },
                     {
@@ -536,9 +532,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         step = 1,
                         tooltip = "On Blizzard's or another addon's nameplates.",
                         hidden = CUIPlatesOn,
-                        get = function()
-                            return Get("otherOffsetX", 0)
-                        end,
+                        get = GetRow("otherOffsetX", 0),
                         set = SetRow("otherOffsetX"),
                     },
                     {
@@ -549,9 +543,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         step = 1,
                         tooltip = "On Blizzard's or another addon's nameplates.",
                         hidden = CUIPlatesOn,
-                        get = function()
-                            return Get("otherOffsetY", 0)
-                        end,
+                        get = GetRow("otherOffsetY", 0),
                         set = SetRow("otherOffsetY"),
                     },
                 },
@@ -627,9 +619,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         label = "Timer Position",
                         values = TIMER_POS_VALUES,
                         order = TIMER_POS_ORDER,
-                        get = function()
-                            return Get("timerPos", "center")
-                        end,
+                        get = GetRow("timerPos", "center"),
                         set = SetRow("timerPos"),
                     },
                     {
@@ -638,9 +628,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         min = 6,
                         max = 24,
                         step = 1,
-                        get = function()
-                            return Get("timerSize", 11)
-                        end,
+                        get = GetRow("timerSize", 11),
                         set = SetRow("timerSize"),
                     },
                     {
@@ -649,9 +637,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         min = -20,
                         max = 20,
                         step = 1,
-                        get = function()
-                            return Get("timerX", 0)
-                        end,
+                        get = GetRow("timerX", 0),
                         set = SetRow("timerX"),
                     },
                     {
@@ -660,9 +646,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         min = -20,
                         max = 20,
                         step = 1,
-                        get = function()
-                            return Get("timerY", 0)
-                        end,
+                        get = GetRow("timerY", 0),
                         set = SetRow("timerY"),
                     },
                 },
@@ -712,9 +696,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             pixel = true,
             disabled = BarsOff,
             disabledTooltip = REQ_BARS,
-            getValue = function()
-                return Get("barWidth", 200)
-            end,
+            getValue = GetRow("barWidth", 200),
             setValue = SetRow("barWidth"),
         })
         posY = posY - hgt
@@ -728,9 +710,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             pixel = true,
             disabled = BarsOff,
             disabledTooltip = REQ_BARS,
-            getValue = function()
-                return Get("barHeight", 22)
-            end,
+            getValue = GetRow("barHeight", 22),
             setValue = SetRow("barHeight"),
         }, {
             type = "slider",
@@ -741,9 +721,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             pixel = true,
             disabled = BarsOff,
             disabledTooltip = REQ_BARS,
-            getValue = function()
-                return Get("barSpacing", 2)
-            end,
+            getValue = GetRow("barSpacing", 2),
             setValue = SetRow("barSpacing"),
         })
         posY = posY - hgt
@@ -773,9 +751,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             disabledTooltip = REQ_BARS,
             values = texValues,
             order = texOrder,
-            getValue = function()
-                return Get("texture", "none")
-            end,
+            getValue = GetRow("texture", "none"),
             setValue = SetRow("texture"),
         })
         posY = posY - hgt
@@ -853,9 +829,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             pixel = true,
             disabled = BarsOff,
             disabledTooltip = REQ_BARS,
-            getValue = function()
-                return Get("barBorderSize", 0)
-            end,
+            getValue = GetRow("barBorderSize", 0),
             setValue = SetRow("barBorderSize"),
         })
         posY = posY - hgt
@@ -939,9 +913,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         min = 6,
                         max = 24,
                         step = 1,
-                        get = function()
-                            return Get("barNameSize", 11)
-                        end,
+                        get = GetRow("barNameSize", 11),
                         set = function(val)
                             Set("barNameSize", val)
                             Set("barTimerSize", val)

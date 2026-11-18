@@ -135,6 +135,12 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
         end
         return v
     end
+    -- A row getter over PV: the key's value, or the default given.
+    local function PVRow(key, default)
+        return function()
+            return PV(key, default)
+        end
+    end
     local function Refresh()
         if mod._RefreshProxyModes then
             mod._RefreshProxyModes()
@@ -350,9 +356,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 type = "toggle",
                 label = "Clickable Portrait",
                 tooltip = "Clicking or hovering the detached portrait acts like clicking or hovering the frame's bars.",
-                get = function()
-                    return PV("partyPortraitClickable", false)
-                end,
+                get = PVRow("partyPortraitClickable", false),
                 set = function(v)
                     PtSet("partyPortraitClickable", v or nil)
                 end,
@@ -399,9 +403,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
         end,
         disabledTooltip = "Only available in Detached or Inside modes",
         rawTooltip = true,
-        getValue = function()
-            return PV("partyPortraitSize", 0)
-        end,
+        getValue = PVRow("partyPortraitSize", 0),
         setValue = function(v)
             PtSet("partyPortraitSize", v)
         end,
@@ -443,9 +445,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 return "Inside positions require Detached mode"
             end
         end,
-        getValue = function()
-            return PV("partyPortraitSide", "left")
-        end,
+        getValue = PVRow("partyPortraitSide", "left"),
         setValue = function(v)
             PtSet("partyPortraitSide", v)
             CludesUI:RefreshPage()
@@ -461,9 +461,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 min = 50,
                 max = 100,
                 step = 1,
-                get = function()
-                    return PV("partyPortraitArtScale", 100)
-                end,
+                get = PVRow("partyPortraitArtScale", 100),
                 set = function(v)
                     PtSet("partyPortraitArtScale", v)
                 end,
@@ -475,9 +473,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 max = mod.RF_PT_ZOOM3D_MAX,
                 step = 1,
                 tooltip = "Above 300 the camera pulls back to show the whole character.",
-                get = function()
-                    return PV("partyPortrait3dZoom", 100)
-                end,
+                get = PVRow("partyPortrait3dZoom", 100),
                 set = function(v)
                     PtSet("partyPortrait3dZoom", v)
                 end,
@@ -494,9 +490,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                         or not IsInside(PV("partyPortraitSide", "left"))
                 end,
                 disabledTooltip = "This option requires an Inside position",
-                get = function()
-                    return PV("partyPortraitCharScale", 100)
-                end,
+                get = PVRow("partyPortraitCharScale", 100),
                 set = function(v)
                     PtSet("partyPortraitCharScale", v)
                 end,
@@ -512,9 +506,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 min = -100,
                 max = 100,
                 step = 1,
-                get = function()
-                    return PV("partyPortraitX", 0)
-                end,
+                get = PVRow("partyPortraitX", 0),
                 set = function(v)
                     PtSet("partyPortraitX", v)
                 end,
@@ -525,9 +517,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 min = -100,
                 max = 100,
                 step = 1,
-                get = function()
-                    return PV("partyPortraitY", 0)
-                end,
+                get = PVRow("partyPortraitY", 0),
                 set = function(v)
                     PtSet("partyPortraitY", v)
                 end,
@@ -567,9 +557,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 return "None shape requires 3D Art Style"
             end
         end,
-        getValue = function()
-            return PV("partyPortraitShape", "portrait")
-        end,
+        getValue = PVRow("partyPortraitShape", "portrait"),
         setValue = function(v)
             PtSet("partyPortraitShape", v)
         end,
@@ -633,9 +621,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 min = 1,
                 max = 7,
                 step = 1,
-                get = function()
-                    return PV("partyPortraitBorderSize", 7)
-                end,
+                get = PVRow("partyPortraitBorderSize", 7),
                 set = function(v)
                     PtSet("partyPortraitBorderSize", v)
                 end,
@@ -646,9 +632,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 min = 0,
                 max = 100,
                 step = 1,
-                get = function()
-                    return PV("partyPortraitBorderOpacity", 100)
-                end,
+                get = PVRow("partyPortraitBorderOpacity", 100),
                 set = function(v)
                     PtSet("partyPortraitBorderOpacity", v)
                 end,
@@ -673,6 +657,12 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
             return d
         end
         return v
+    end
+    -- A row getter over PV: the key's value, or the default given.
+    local function PVRow(key, default)
+        return function()
+            return PV(key, default)
+        end
     end
     -- The party preview draws its own target frames (the real ones are dimmed under it).
     local function Preview()
@@ -755,9 +745,7 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
         values = { class = "Class Color", dark = "Dark Mode", classic = "Classic", custom = "Custom Color" },
         order = { "class", "dark", "classic", "custom" },
         tooltip = "Class Color uses the class color for players and the reaction color for NPCs.",
-        getValue = function()
-            return PV("partyTargetHealthColorMode", "class")
-        end,
+        getValue = PVRow("partyTargetHealthColorMode", "class"),
         setValue = function(v)
             PtSet("partyTargetHealthColorMode", v)
             CludesUI:RefreshPage()
@@ -773,9 +761,7 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
         end,
         disabledTooltip = DARK_TIP,
         rawTooltip = true,
-        getValue = function()
-            return PV("partyTargetBgDarkness", 50)
-        end,
+        getValue = PVRow("partyTargetBgDarkness", 50),
         setValue = function(v)
             PtSet("partyTargetBgDarkness", v)
         end,
@@ -903,9 +889,7 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
         min = 20,
         max = 300,
         step = 1,
-        getValue = function()
-            return PV("partyTargetWidth", 70)
-        end,
+        getValue = PVRow("partyTargetWidth", 70),
         setValue = function(v)
             LaySet("partyTargetWidth", v)
         end,
@@ -915,9 +899,7 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
         min = 10,
         max = 150,
         step = 1,
-        getValue = function()
-            return PV("partyTargetHeight", 33)
-        end,
+        getValue = PVRow("partyTargetHeight", 33),
         setValue = function(v)
             LaySet("partyTargetHeight", v)
         end,
@@ -975,9 +957,7 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
                 min = -100,
                 max = 100,
                 step = 1,
-                get = function()
-                    return PV("partyTargetOffsetX", 0)
-                end,
+                get = PVRow("partyTargetOffsetX", 0),
                 set = function(v)
                     LaySet("partyTargetOffsetX", v)
                 end,
@@ -988,9 +968,7 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
                 min = -100,
                 max = 100,
                 step = 1,
-                get = function()
-                    return PV("partyTargetOffsetY", 0)
-                end,
+                get = PVRow("partyTargetOffsetY", 0),
                 set = function(v)
                     LaySet("partyTargetOffsetY", v)
                 end,
@@ -1001,7 +979,6 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
 end
 
 CludesUI.AtLogin(function()
-
     mod._InitCUIModule = function()
         if not CludesUI or not CludesUI.RegisterModule then
             return

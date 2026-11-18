@@ -54,6 +54,12 @@ CludesUI.AtOptionsLogin(function()
     local function Set(k, val)
         DB()[k] = val
     end
+    -- Row setters over Set: the key written with the row's value.
+    local function SetRow(key)
+        return function(v)
+            Set(key, v)
+        end
+    end
 
     -- All settings are picked up on the next refresh cycle (0.3s combat,
     -- 2s idle). Just Set() and go -- except the WoW Forever look's Border
@@ -197,9 +203,7 @@ CludesUI.AtOptionsLogin(function()
                         getValue = function()
                             return Cfg("refreshRate") or 1
                         end,
-                        setValue = function(val)
-                            Set("refreshRate", val)
-                        end,
+                        setValue = SetRow("refreshRate"),
                         fmt = function(val)
                             return format("%.2fs", val)
                         end,
@@ -214,9 +218,7 @@ CludesUI.AtOptionsLogin(function()
                     getValue = function()
                         return Cfg("refreshRate") or 1
                     end,
-                    setValue = function(val)
-                        Set("refreshRate", val)
-                    end,
+                    setValue = SetRow("refreshRate"),
                     fmt = function(val)
                         return format("%.2fs", val)
                     end,
@@ -1715,9 +1717,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return Cfg("showHoverTooltip") ~= false
                 end,
-                setValue = function(val)
-                    Set("showHoverTooltip", val)
-                end,
+                setValue = SetRow("showHoverTooltip"),
             },
             DMBlizzGate({
                 type = "slider",
@@ -1855,9 +1855,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             return (Cfg("hoverTooltipScale") or 100)
                         end,
-                        set = function(val)
-                            Set("hoverTooltipScale", val)
-                        end,
+                        set = SetRow("hoverTooltipScale"),
                     },
                     {
                         type = "dropdown",
@@ -1872,9 +1870,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             return Cfg("breakdownAnchorPoint") or "row"
                         end,
-                        set = function(val)
-                            Set("breakdownAnchorPoint", val)
-                        end,
+                        set = SetRow("breakdownAnchorPoint"),
                     },
                     {
                         type = "toggle",
@@ -1883,9 +1879,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             return Cfg("showAllBreakdownSpells") ~= false
                         end,
-                        set = function(val)
-                            Set("showAllBreakdownSpells", val)
-                        end,
+                        set = SetRow("showAllBreakdownSpells"),
                     },
                 },
                 anchorTo = region._control,
@@ -2645,9 +2639,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function()
                 return Cfg("showSpellTooltips") ~= false
             end,
-            setValue = function(val)
-                Set("showSpellTooltips", val)
-            end,
+            setValue = SetRow("showSpellTooltips"),
         }, { type = "label", text = "Show/Hide Windows Keybind" })
 
         if not CludesUI._prebuilding then
