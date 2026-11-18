@@ -556,6 +556,17 @@ function CludesUI.AtOptionsLogin(setup)
     end)
 end
 
+-- The player's class colour as r, g, b (white when it cannot be read): the
+-- getValue of the options' "Class Colored" swatches.
+function CludesUI.PlayerClassRGB()
+    local _, classFile = UnitClass("player")
+    local cc = classFile and CludesUI.GetClassColor(classFile)
+    if cc then
+        return cc.r, cc.g, cc.b
+    end
+    return 1, 1, 1
+end
+
 -- Gives a widget a fixed hover tooltip, in place of any hover scripts it had. The show and hide go through CludesUI at hover
 -- time, as a hand-written pair of scripts would.
 function CludesUI.HoverTip(widget, text)

@@ -979,14 +979,7 @@ local function BuildMiniTextAndSize(
                 {
                     tooltip = "Class Colored",
                     hasAlpha = false,
-                    getValue = function()
-                        local _, ct = UnitClass("player")
-                        local cc = ct and CludesUI.GetClassColor(ct)
-                        if cc then
-                            return cc.r, cc.g, cc.b
-                        end
-                        return 1, 1, 1
-                    end,
+                    getValue = CludesUI.PlayerClassRGB,
                     setValue = function() end,
                     onClick = function()
                         MSet(sepClassKey, true)

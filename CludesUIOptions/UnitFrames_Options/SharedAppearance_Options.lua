@@ -3040,14 +3040,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                             {
                                 tooltip = "Class Colored",
                                 hasAlpha = false,
-                                getValue = function()
-                                    local _, ct = UnitClass("player")
-                                    local cc = ct and CludesUI.GetClassColor(ct)
-                                    if cc then
-                                        return cc.r, cc.g, cc.b
-                                    end
-                                    return 1, 1, 1
-                                end,
+                                getValue = CludesUI.PlayerClassRGB,
                                 setValue = function() end,
                                 onClick = function()
                                     SSet("btbLeftTargetSepClassColor", true)
@@ -3299,14 +3292,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                             {
                                 tooltip = "Class Colored",
                                 hasAlpha = false,
-                                getValue = function()
-                                    local _, ct = UnitClass("player")
-                                    local cc = ct and CludesUI.GetClassColor(ct)
-                                    if cc then
-                                        return cc.r, cc.g, cc.b
-                                    end
-                                    return 1, 1, 1
-                                end,
+                                getValue = CludesUI.PlayerClassRGB,
                                 setValue = function() end,
                                 onClick = function()
                                     SSet("btbRightTargetSepClassColor", true)
@@ -3613,14 +3599,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                             {
                                 tooltip = "Class Colored",
                                 hasAlpha = false,
-                                getValue = function()
-                                    local _, ct = UnitClass("player")
-                                    local cc = ct and CludesUI.GetClassColor(ct)
-                                    if cc then
-                                        return cc.r, cc.g, cc.b
-                                    end
-                                    return 1, 1, 1
-                                end,
+                                getValue = CludesUI.PlayerClassRGB,
                                 setValue = function() end,
                                 onClick = function()
                                     SSet("btbCenterTargetSepClassColor", true)

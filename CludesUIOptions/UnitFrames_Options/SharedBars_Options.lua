@@ -976,14 +976,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                                 {
                                     tooltip = "Class Colored",
                                     hasAlpha = false,
-                                    getValue = function()
-                                        local _, ct = UnitClass("player")
-                                        local cc = ct and CludesUI.GetClassColor(ct)
-                                        if cc then
-                                            return cc.r, cc.g, cc.b
-                                        end
-                                        return 1, 1, 1
-                                    end,
+                                    getValue = CludesUI.PlayerClassRGB,
                                     setValue = function() end,
                                     onClick = function()
                                         SSet("leftTextTargetSepClassColor", true)
@@ -1361,14 +1354,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                                 {
                                     tooltip = "Class Colored",
                                     hasAlpha = false,
-                                    getValue = function()
-                                        local _, ct = UnitClass("player")
-                                        local cc = ct and CludesUI.GetClassColor(ct)
-                                        if cc then
-                                            return cc.r, cc.g, cc.b
-                                        end
-                                        return 1, 1, 1
-                                    end,
+                                    getValue = CludesUI.PlayerClassRGB,
                                     setValue = function() end,
                                     onClick = function()
                                         SSet("rightTextTargetSepClassColor", true)
@@ -1742,14 +1728,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                                 {
                                     tooltip = "Class Colored",
                                     hasAlpha = false,
-                                    getValue = function()
-                                        local _, ct = UnitClass("player")
-                                        local cc = ct and CludesUI.GetClassColor(ct)
-                                        if cc then
-                                            return cc.r, cc.g, cc.b
-                                        end
-                                        return 1, 1, 1
-                                    end,
+                                    getValue = CludesUI.PlayerClassRGB,
                                     setValue = function() end,
                                     onClick = function()
                                         SSet("centerTextTargetSepClassColor", true)
@@ -2115,14 +2094,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                                 {
                                     tooltip = "Class Colored",
                                     hasAlpha = false,
-                                    getValue = function()
-                                        local _, ct = UnitClass("player")
-                                        local cc = ct and CludesUI.GetClassColor(ct)
-                                        if cc then
-                                            return cc.r, cc.g, cc.b
-                                        end
-                                        return 1, 1, 1
-                                    end,
+                                    getValue = CludesUI.PlayerClassRGB,
                                     setValue = function() end,
                                     onClick = function()
                                         SSet("extraTextTargetSepClassColor", true)
