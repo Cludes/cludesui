@@ -453,6 +453,14 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
     local tDimB = CludesUI.TEXT_DIM_B or 0.7
     local tDimA = CludesUI.TEXT_DIM_A or 0.85
 
+    -- A flyout's fill (the menu colour) and rounded border.
+    local function PaintFlyoutBackdrop(flyout)
+        local fill = flyout:CreateTexture(nil, "BACKGROUND")
+        fill:SetAllPoints()
+        fill:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
+        CludesUI.MakeRoundedBorder(flyout, 1, 1, 1, mBrdA, fill, nil, true)
+    end
+
     local menuW = 210
     local ITEM_H = 26
     local MAX_H = 400 -- full picker scrolls past this; the per-spell menu has no scroll and sizes to its rows
@@ -2830,10 +2838,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         sub:ClearAllPoints()
                         sub:SetPoint("TOPLEFT", row, "TOPRIGHT", 2, 0)
 
-                        local subBg = sub:CreateTexture(nil, "BACKGROUND")
-                        subBg:SetAllPoints()
-                        subBg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
-                        CludesUI.MakeRoundedBorder(sub, 1, 1, 1, mBrdA, subBg, nil, true)
+                        PaintFlyoutBackdrop(sub)
 
                         local subInner = CreateFrame("Frame", nil, sub)
                         subInner:SetWidth(subW)
@@ -4761,10 +4766,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 sub:SetClampedToScreen(true)
                                 sub:EnableMouse(true)
                                 sub:SetPoint("TOPLEFT", row, "TOPRIGHT", 2, 0)
-                                local subBg = sub:CreateTexture(nil, "BACKGROUND")
-                                subBg:SetAllPoints()
-                                subBg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
-                                CludesUI.MakeRoundedBorder(sub, 1, 1, 1, mBrdA, subBg, nil, true)
+                                PaintFlyoutBackdrop(sub)
                                 local labels = {}
                                 local subH = 4
 
@@ -6748,10 +6750,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 _potionsSub:ClearAllPoints()
                 _potionsSub:SetPoint("TOPLEFT", potItem, "TOPRIGHT", 2, 0)
 
-                local subBg = _potionsSub:CreateTexture(nil, "BACKGROUND")
-                subBg:SetAllPoints()
-                subBg:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
-                CludesUI.MakeRoundedBorder(_potionsSub, 1, 1, 1, mBrdA, subBg, nil, true)
+                PaintFlyoutBackdrop(_potionsSub)
 
                 local subInner = CreateFrame("Frame", nil, _potionsSub)
                 subInner:SetWidth(subW)
