@@ -807,6 +807,122 @@ local function ShowEquipmentSlotPopup(barId, onAdded)
 end
 
 ---------------------------------------------------------------------------
+--  Shared by the buff pickers below: their menu frame, its dividers and
+--  footer, and the step that sizes, places and opens it.
+---------------------------------------------------------------------------
+
+-- A picker already open closes first; true when it was open on this same
+-- anchor, so the click only toggled it shut.
+local function ClosePickerMenu(optionState, anchor)
+    local open = optionState._spellPickerMenu
+    if not (open and open:IsShown()) then
+        return false
+    end
+    open:Hide()
+    return open._anchorFrame == anchor and open._anchorGen == PoolGen(anchor)
+end
+
+-- The picker's kept frame (one per poolKey for the session, dressed again on
+-- each open) with its fill and border, and the inner frame its rows stack in.
+local function NewPickerMenu(optionState, poolKey, width)
+    local menu = PoolKept(optionState, poolKey, "Frame", UIParent)
+    menu:SetFrameStrata("FULLSCREEN_DIALOG")
+    menu:SetFrameLevel(300)
+    menu:SetClampedToScreen(true)
+    menu:SetSize(width, 10)
+    local fill = menu:CreateTexture(nil, "BACKGROUND")
+    fill:SetAllPoints()
+    fill:SetColorTexture(
+        CludesUI.DD_BG_R or 0.075,
+        CludesUI.DD_BG_G or 0.113,
+        CludesUI.DD_BG_B or 0.141,
+        CludesUI.DD_BG_HA or 0.98
+    )
+    CludesUI.MakeRoundedBorder(menu, 1, 1, 1, CludesUI.DD_BRD_A or 0.20, fill, nil, true)
+    local rows = CreateFrame("Frame", nil, menu)
+    rows:SetWidth(width)
+    rows:SetPoint("TOPLEFT")
+    return menu, rows
+end
+
+-- A faint rule across the rows at height y; returns the height below it.
+local function AddPickerDivider(rows, y)
+    local rule = rows:CreateTexture(nil, "ARTWORK")
+    rule:SetHeight(1)
+    rule:SetColorTexture(1, 1, 1, 0.10)
+    rule:SetPoint("TOPLEFT", rows, "TOPLEFT", 1, -y - 4)
+    rule:SetPoint("TOPRIGHT", rows, "TOPRIGHT", -1, -y - 4)
+    return y + 9
+end
+
+-- The two-line accent footer ("<question>" over "Add in Blizzard CDM") that
+-- closes the picker and opens Blizzard's Cooldown Manager settings. Returns
+-- the height below it.
+local function AddBlizzardCDMFooter(menu, rows, y, question)
+    local FOOTER_H = 38
+    local env = mod._CDMO_OptEnv
+    local footer = CreateFrame("Button", nil, rows)
+    footer:SetHeight(FOOTER_H)
+    footer:SetPoint("TOPLEFT", rows, "TOPLEFT", 1, -y)
+    footer:SetPoint("TOPRIGHT", rows, "TOPRIGHT", -1, -y)
+    footer:SetFrameLevel(menu:GetFrameLevel() + 2)
+    local text = footer:CreateFontString(nil, "OVERLAY")
+    text:SetFont(env.FONT_PATH, 11, env.GetCDMOptOutline())
+    text:SetAllPoints()
+    text:SetJustifyH("CENTER")
+    text:SetJustifyV("MIDDLE")
+    local ar, ag, ab = CludesUI.GetAccentColor()
+    text:SetTextColor(ar, ag, ab, 1)
+    text:SetText(CludesUI.L(question) .. "\n" .. CludesUI.L("Add in Blizzard CDM"))
+    footer:SetScript("OnEnter", function()
+        text:SetTextColor(1, 1, 1, 1)
+    end)
+    footer:SetScript("OnLeave", function()
+        local r, g, b = CludesUI.GetAccentColor()
+        text:SetTextColor(r, g, b, 1)
+    end)
+    footer:SetScript("OnClick", function()
+        menu:Hide()
+        if mod.OpenBlizzardCDMTab then
+            mod.OpenBlizzardCDMTab(true)
+        end
+    end)
+    return y + FOOTER_H
+end
+
+-- Sizes the picker to its rows (scrolling past maxH), hangs it under the
+-- anchor, records it as the open picker, and shows it; a left click
+-- anywhere but the picker or its anchor closes it.
+local function OpenPickerMenu(optionState, menu, rows, y, width, maxH, anchor)
+    rows:SetHeight(y + 4)
+    menu:SetSize(width, math.min(y + 4, maxH))
+    if y + 4 > maxH then
+        local scroller = CreateFrame("ScrollFrame", nil, menu)
+        scroller:SetPoint("TOPLEFT", 0, -1)
+        scroller:SetPoint("BOTTOMRIGHT", 0, 1)
+        scroller:SetFrameLevel(menu:GetFrameLevel() + 1)
+        scroller:EnableMouseWheel(true)
+        scroller:SetScrollChild(rows)
+        rows:SetWidth(width)
+        CludesUI.AttachSmoothScrollbar(scroller, { step = 40, thumb = false })
+    end
+    menu:ClearAllPoints()
+    menu:SetPoint("TOP", anchor, "BOTTOM", 0, -4)
+    menu._anchorFrame = anchor
+    menu._anchorGen = PoolGen(anchor)
+    optionState._spellPickerMenu = menu
+    menu:SetScript("OnUpdate", function(m)
+        if not m:IsMouseOver() and not anchor:IsMouseOver() and IsMouseButtonDown("LeftButton") then
+            m:Hide()
+        end
+    end)
+    menu:SetScript("OnHide", function(m)
+        m:SetScript("OnUpdate", nil)
+    end)
+    menu:Show()
+end
+
+---------------------------------------------------------------------------
 --  Buff Bar Spell Picker
 --  Shows ONLY spells from CDM buff categories (2, 3).
 --  None grayed out. Selecting moves the spell to the target bar.
@@ -815,19 +931,10 @@ local function ShowBuffBarPicker(anchor, targetBarKey, onChanged)
     local environ = mod._CDMO_OptEnv
     local FONT_PATH, GetCDMOptOutline, RefreshCDPreview, optionState =
         environ.FONT_PATH, environ.GetCDMOptOutline, environ.RefreshCDPreview, environ.optState
-    if optionState._spellPickerMenu and optionState._spellPickerMenu:IsShown() then
-        local open = optionState._spellPickerMenu
-        open:Hide()
-        if open._anchorFrame == anchor and open._anchorGen == PoolGen(anchor) then
-            return
-        end
+    if ClosePickerMenu(optionState, anchor) then
+        return
     end
 
-    local mBgR = CludesUI.DD_BG_R or 0.075
-    local mBgG = CludesUI.DD_BG_G or 0.113
-    local mBgB = CludesUI.DD_BG_B or 0.141
-    local mBgA = CludesUI.DD_BG_HA or 0.98
-    local mBrdA = CludesUI.DD_BRD_A or 0.20
     local hlA = CludesUI.DD_ITEM_HL_A or 0.08
     local tDimR = CludesUI.DD_ITEM_R or 0.75
     local tDimG = CludesUI.DD_ITEM_G or 0.75
@@ -855,20 +962,7 @@ local function ShowBuffBarPicker(anchor, targetBarKey, onChanged)
     -- a custom spell ID) are always available below.
 
     -- Build menu (one kept frame for the session, dressed again on every open)
-    local dropMenu = PoolKept(optionState, "buffBarPicker", "Frame", UIParent)
-    dropMenu:SetFrameStrata("FULLSCREEN_DIALOG")
-    dropMenu:SetFrameLevel(300)
-    dropMenu:SetClampedToScreen(true)
-    dropMenu:SetSize(menuW, 10)
-
-    local bgTex = dropMenu:CreateTexture(nil, "BACKGROUND")
-    bgTex:SetAllPoints()
-    bgTex:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
-    CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, mBrdA, bgTex, nil, true)
-
-    local inner = CreateFrame("Frame", nil, dropMenu)
-    inner:SetWidth(menuW)
-    inner:SetPoint("TOPLEFT")
+    local dropMenu, inner = NewPickerMenu(optionState, "buffBarPicker", menuW)
 
     local mH = 4
 
@@ -1001,12 +1095,7 @@ local function ShowBuffBarPicker(anchor, targetBarKey, onChanged)
 
     -- Divider below Custom Spell ID, separating it from the presets/list.
     do
-        local csDiv = inner:CreateTexture(nil, "ARTWORK")
-        csDiv:SetHeight(1)
-        csDiv:SetColorTexture(1, 1, 1, 0.10)
-        csDiv:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
-        csDiv:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
-        mH = mH + 9
+        mH = AddPickerDivider(inner, mH)
     end
 
     -- Preset buffs (potions, consumables, Bloodlust, etc.) added as cast-timer
@@ -1090,12 +1179,7 @@ local function ShowBuffBarPicker(anchor, targetBarKey, onChanged)
         -- Divider between presets and the Blizzard-tracked buff list (none when
         -- no preset row was built: the Custom Spell ID divider already sits there).
         if #knownSpells > 0 and nPresetRows > 0 then
-            local pDiv = inner:CreateTexture(nil, "ARTWORK")
-            pDiv:SetHeight(1)
-            pDiv:SetColorTexture(1, 1, 1, 0.10)
-            pDiv:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
-            pDiv:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
-            mH = mH + 9
+            mH = AddPickerDivider(inner, mH)
         end
     end
 
@@ -1134,77 +1218,13 @@ local function ShowBuffBarPicker(anchor, targetBarKey, onChanged)
     -- divider already separates the footer then.
     do
         if nPresetRows > 0 or #knownSpells > 0 then
-            local fDiv = inner:CreateTexture(nil, "ARTWORK")
-            fDiv:SetHeight(1)
-            fDiv:SetColorTexture(1, 1, 1, 0.10)
-            fDiv:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
-            fDiv:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
-            mH = mH + 9
+            mH = AddPickerDivider(inner, mH)
         end
 
-        local FOOTER_H = 38
-        local mbItem = CreateFrame("Button", nil, inner)
-        mbItem:SetHeight(FOOTER_H)
-        mbItem:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-        mbItem:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-        mbItem:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-
-        local mbFS = mbItem:CreateFontString(nil, "OVERLAY")
-        mbFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        mbFS:SetAllPoints()
-        mbFS:SetJustifyH("CENTER")
-        mbFS:SetJustifyV("MIDDLE")
-        local ar, ag, ab = CludesUI.GetAccentColor()
-        mbFS:SetTextColor(ar, ag, ab, 1)
-        mbFS:SetText(CludesUI.L("Missing Spells?") .. "\n" .. CludesUI.L("Add in Blizzard CDM"))
-
-        mbItem:SetScript("OnEnter", function()
-            mbFS:SetTextColor(1, 1, 1, 1)
-        end)
-        mbItem:SetScript("OnLeave", function()
-            local r, g, b = CludesUI.GetAccentColor()
-            mbFS:SetTextColor(r, g, b, 1)
-        end)
-        mbItem:SetScript("OnClick", function()
-            dropMenu:Hide()
-            if mod.OpenBlizzardCDMTab then
-                mod.OpenBlizzardCDMTab(true)
-            end
-        end)
-        mH = mH + FOOTER_H
+        mH = AddBlizzardCDMFooter(dropMenu, inner, mH, "Missing Spells?")
     end
 
-    inner:SetHeight(mH + 4)
-    local totalH = math.min(mH + 4, MAX_H)
-    dropMenu:SetSize(menuW, totalH)
-
-    -- Scroll if needed
-    if mH + 4 > MAX_H then
-        local scrollFrame = CreateFrame("ScrollFrame", nil, dropMenu)
-        scrollFrame:SetPoint("TOPLEFT", 0, -1)
-        scrollFrame:SetPoint("BOTTOMRIGHT", 0, 1)
-        scrollFrame:SetFrameLevel(dropMenu:GetFrameLevel() + 1)
-        scrollFrame:EnableMouseWheel(true)
-        scrollFrame:SetScrollChild(inner)
-        inner:SetWidth(menuW)
-        CludesUI.AttachSmoothScrollbar(scrollFrame, { step = 40, thumb = false })
-    end
-
-    dropMenu:ClearAllPoints()
-    dropMenu:SetPoint("TOP", anchor, "BOTTOM", 0, -4)
-    dropMenu._anchorFrame = anchor
-    dropMenu._anchorGen = PoolGen(anchor)
-    optionState._spellPickerMenu = dropMenu
-
-    dropMenu:SetScript("OnUpdate", function(m)
-        if not m:IsMouseOver() and not anchor:IsMouseOver() and IsMouseButtonDown("LeftButton") then
-            m:Hide()
-        end
-    end)
-    dropMenu:SetScript("OnHide", function(m)
-        m:SetScript("OnUpdate", nil)
-    end)
-    dropMenu:Show()
+    OpenPickerMenu(optionState, dropMenu, inner, mH, menuW, MAX_H, anchor)
 end
 
 -- Buff picker targeting a CD/UTILITY bar. A buff placed here is HOSTED
@@ -1221,19 +1241,10 @@ local function ShowBuffToCDPicker(anchor, targetBarKey, onChanged, onPicked)
     local environ = mod._CDMO_OptEnv
     local FONT_PATH, GetCDMOptOutline, optionState =
         environ.FONT_PATH, environ.GetCDMOptOutline, environ.optState
-    if optionState._spellPickerMenu and optionState._spellPickerMenu:IsShown() then
-        local open = optionState._spellPickerMenu
-        open:Hide()
-        if open._anchorFrame == anchor and open._anchorGen == PoolGen(anchor) then
-            return
-        end
+    if ClosePickerMenu(optionState, anchor) then
+        return
     end
 
-    local mBgR = CludesUI.DD_BG_R or 0.075
-    local mBgG = CludesUI.DD_BG_G or 0.113
-    local mBgB = CludesUI.DD_BG_B or 0.141
-    local mBgA = CludesUI.DD_BG_HA or 0.98
-    local mBrdA = CludesUI.DD_BRD_A or 0.20
     local hlA = CludesUI.DD_ITEM_HL_A or 0.08
     local tDimR = CludesUI.DD_ITEM_R or 0.75
     local tDimG = CludesUI.DD_ITEM_G or 0.75
@@ -1277,20 +1288,7 @@ local function ShowBuffToCDPicker(anchor, targetBarKey, onChanged, onPicked)
     end
 
     -- One kept frame for the session, dressed again on every open.
-    local dropMenu = PoolKept(optionState, "buffToCDPicker", "Frame", UIParent)
-    dropMenu:SetFrameStrata("FULLSCREEN_DIALOG")
-    dropMenu:SetFrameLevel(300)
-    dropMenu:SetClampedToScreen(true)
-    dropMenu:SetSize(menuW, 10)
-
-    local bgTex = dropMenu:CreateTexture(nil, "BACKGROUND")
-    bgTex:SetAllPoints()
-    bgTex:SetColorTexture(mBgR, mBgG, mBgB, mBgA)
-    CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, mBrdA, bgTex, nil, true)
-
-    local inner = CreateFrame("Frame", nil, dropMenu)
-    inner:SetWidth(menuW)
-    inner:SetPoint("TOPLEFT")
+    local dropMenu, inner = NewPickerMenu(optionState, "buffToCDPicker", menuW)
 
     local mH = 4
 
@@ -1352,12 +1350,7 @@ local function ShowBuffToCDPicker(anchor, targetBarKey, onChanged, onPicked)
 
     -- Divider below Custom Spell ID.
     do
-        local csDiv = inner:CreateTexture(nil, "ARTWORK")
-        csDiv:SetHeight(1)
-        csDiv:SetColorTexture(1, 1, 1, 0.10)
-        csDiv:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
-        csDiv:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
-        mH = mH + 9
+        mH = AddPickerDivider(inner, mH)
     end
 
     -- Class buff rows.
@@ -1442,73 +1435,12 @@ local function ShowBuffToCDPicker(anchor, targetBarKey, onChanged, onPicked)
 
     -- "Missing Buffs?" footer -- opens Blizzard's CDM to Display more buffs.
     do
-        local fDiv = inner:CreateTexture(nil, "ARTWORK")
-        fDiv:SetHeight(1)
-        fDiv:SetColorTexture(1, 1, 1, 0.10)
-        fDiv:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
-        fDiv:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
-        mH = mH + 9
+        mH = AddPickerDivider(inner, mH)
 
-        local FOOTER_H = 38
-        local mbItem = CreateFrame("Button", nil, inner)
-        mbItem:SetHeight(FOOTER_H)
-        mbItem:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH)
-        mbItem:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH)
-        mbItem:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-        local mbFS = mbItem:CreateFontString(nil, "OVERLAY")
-        mbFS:SetFont(FONT_PATH, 11, GetCDMOptOutline())
-        mbFS:SetAllPoints()
-        mbFS:SetJustifyH("CENTER")
-        mbFS:SetJustifyV("MIDDLE")
-        local ar, ag, ab = CludesUI.GetAccentColor()
-        mbFS:SetTextColor(ar, ag, ab, 1)
-        mbFS:SetText(CludesUI.L("Missing Buffs?") .. "\n" .. CludesUI.L("Add in Blizzard CDM"))
-        mbItem:SetScript("OnEnter", function()
-            mbFS:SetTextColor(1, 1, 1, 1)
-        end)
-        mbItem:SetScript("OnLeave", function()
-            local r, g, b = CludesUI.GetAccentColor()
-            mbFS:SetTextColor(r, g, b, 1)
-        end)
-        mbItem:SetScript("OnClick", function()
-            dropMenu:Hide()
-            if mod.OpenBlizzardCDMTab then
-                mod.OpenBlizzardCDMTab(true)
-            end
-        end)
-        mH = mH + FOOTER_H
+        mH = AddBlizzardCDMFooter(dropMenu, inner, mH, "Missing Buffs?")
     end
 
-    inner:SetHeight(mH + 4)
-    local totalH = math.min(mH + 4, MAX_H)
-    dropMenu:SetSize(menuW, totalH)
-
-    if mH + 4 > MAX_H then
-        local scrollFrame = CreateFrame("ScrollFrame", nil, dropMenu)
-        scrollFrame:SetPoint("TOPLEFT", 0, -1)
-        scrollFrame:SetPoint("BOTTOMRIGHT", 0, 1)
-        scrollFrame:SetFrameLevel(dropMenu:GetFrameLevel() + 1)
-        scrollFrame:EnableMouseWheel(true)
-        scrollFrame:SetScrollChild(inner)
-        inner:SetWidth(menuW)
-        CludesUI.AttachSmoothScrollbar(scrollFrame, { step = 40, thumb = false })
-    end
-
-    dropMenu:ClearAllPoints()
-    dropMenu:SetPoint("TOP", anchor, "BOTTOM", 0, -4)
-    dropMenu._anchorFrame = anchor
-    dropMenu._anchorGen = PoolGen(anchor)
-    optionState._spellPickerMenu = dropMenu
-
-    dropMenu:SetScript("OnUpdate", function(m)
-        if not m:IsMouseOver() and not anchor:IsMouseOver() and IsMouseButtonDown("LeftButton") then
-            m:Hide()
-        end
-    end)
-    dropMenu:SetScript("OnHide", function(m)
-        m:SetScript("OnUpdate", nil)
-    end)
-    dropMenu:Show()
+    OpenPickerMenu(optionState, dropMenu, inner, mH, menuW, MAX_H, anchor)
 end
 
 -- The one-number popups (a title, a grey hint, the entry box, Save and
