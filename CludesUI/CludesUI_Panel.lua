@@ -1111,16 +1111,30 @@ local function BuildSidebar()
         btn._hoverIndicator:Hide()
     end
 
+    -- A fixed nav row (not an addon) at height y down the sidebar, with the
+    -- shared row decoration.
+    local function NewNavButton(y)
+        local btn = CreateFrame("Button", nil, sidebar)
+        btn:SetSize(SIDEBAR_W, NAV_ROW_H)
+        btn:SetPoint("TOPLEFT", sidebar, "TOPLEFT", 0, y)
+        btn:SetFrameLevel(sidebar:GetFrameLevel() + 1)
+        DecorateSidebarButton(btn)
+        return btn
+    end
+
+    -- The resting look of a row that is always available: full caption
+    -- colour and an undimmed icon.
+    local function ShowNavEnabled(icon, label)
+        label:SetTextColor(NAV_ENABLED_TEXT.r, NAV_ENABLED_TEXT.g, NAV_ENABLED_TEXT.b, NAV_ENABLED_TEXT.a)
+        icon:SetDesaturated(false)
+        icon:SetAlpha(NAV_ENABLED_ICON_A)
+    end
+
     -------------------------------------------------------------------
     --  Unlock Mode button  (always top, not a module -- just triggers unlock)
     -------------------------------------------------------------------
     do
-        local btn = CreateFrame("Button", nil, sidebar)
-        btn:SetSize(SIDEBAR_W, NAV_ROW_H)
-        btn:SetPoint("TOPLEFT", sidebar, "TOPLEFT", 0, NAV_TOP)
-        btn:SetFrameLevel(sidebar:GetFrameLevel() + 1)
-
-        DecorateSidebarButton(btn)
+        local btn = NewNavButton(NAV_TOP)
 
         local icon, label = AddNavIconAndLabel(
             btn,
@@ -1130,9 +1144,7 @@ local function BuildSidebar()
         )
 
         -- Always "loaded" appearance
-        label:SetTextColor(NAV_ENABLED_TEXT.r, NAV_ENABLED_TEXT.g, NAV_ENABLED_TEXT.b, NAV_ENABLED_TEXT.a)
-        icon:SetDesaturated(false)
-        icon:SetAlpha(NAV_ENABLED_ICON_A)
+        ShowNavEnabled(icon, label)
 
         local hlTex = SolidTex(btn, "HIGHLIGHT", 1, 1, 1, 0)
         hlTex:SetAllPoints()
@@ -1174,12 +1186,7 @@ local function BuildSidebar()
     -------------------------------------------------------------------
     local GLOBAL_KEY = "_CUIGlobal"
     do
-        local btn = CreateFrame("Button", nil, sidebar)
-        btn:SetSize(SIDEBAR_W, NAV_ROW_H)
-        btn:SetPoint("TOPLEFT", sidebar, "TOPLEFT", 0, NAV_TOP - NAV_ROW_H)
-        btn:SetFrameLevel(sidebar:GetFrameLevel() + 1)
-
-        DecorateSidebarButton(btn)
+        local btn = NewNavButton(NAV_TOP - NAV_ROW_H)
 
         local icon, label = AddNavIconAndLabel(
             btn,
@@ -1196,9 +1203,7 @@ local function BuildSidebar()
         btn._dlIcon = dlIcon
 
         -- Always "loaded" -- global settings is built-in
-        label:SetTextColor(NAV_ENABLED_TEXT.r, NAV_ENABLED_TEXT.g, NAV_ENABLED_TEXT.b, NAV_ENABLED_TEXT.a)
-        icon:SetDesaturated(false)
-        icon:SetAlpha(NAV_ENABLED_ICON_A)
+        ShowNavEnabled(icon, label)
         btn._folder = GLOBAL_KEY
         btn._loaded = true
 
@@ -1261,12 +1266,7 @@ local function BuildSidebar()
     --  Patch Notes button  (own page -- selects the _CUIPatchNotes module)
     -------------------------------------------------------------------
     do
-        local btn = CreateFrame("Button", nil, sidebar)
-        btn:SetSize(SIDEBAR_W, NAV_ROW_H)
-        btn:SetPoint("TOPLEFT", sidebar, "TOPLEFT", 0, NAV_TOP - NAV_ROW_H * 3)
-        btn:SetFrameLevel(sidebar:GetFrameLevel() + 1)
-
-        DecorateSidebarButton(btn)
+        local btn = NewNavButton(NAV_TOP - NAV_ROW_H * 3)
 
         local icon, label = AddNavIconAndLabel(
             btn,
@@ -1275,9 +1275,7 @@ local function BuildSidebar()
             CludesUI.L("Patch Notes")
         )
 
-        label:SetTextColor(NAV_ENABLED_TEXT.r, NAV_ENABLED_TEXT.g, NAV_ENABLED_TEXT.b, NAV_ENABLED_TEXT.a)
-        icon:SetDesaturated(false)
-        icon:SetAlpha(NAV_ENABLED_ICON_A)
+        ShowNavEnabled(icon, label)
 
         btn._folder = "_CUIPatchNotes"
         btn._loaded = true
@@ -1405,12 +1403,7 @@ local function BuildSidebar()
     --  Profiles button  (own page -- selects the _CUIProfiles module)
     -------------------------------------------------------------------
     do
-        local btn = CreateFrame("Button", nil, sidebar)
-        btn:SetSize(SIDEBAR_W, NAV_ROW_H)
-        btn:SetPoint("TOPLEFT", sidebar, "TOPLEFT", 0, NAV_TOP - NAV_ROW_H * 2)
-        btn:SetFrameLevel(sidebar:GetFrameLevel() + 1)
-
-        DecorateSidebarButton(btn)
+        local btn = NewNavButton(NAV_TOP - NAV_ROW_H * 2)
 
         local icon, label = AddNavIconAndLabel(
             btn,
@@ -1419,9 +1412,7 @@ local function BuildSidebar()
             CludesUI.L("Profiles")
         )
 
-        label:SetTextColor(NAV_ENABLED_TEXT.r, NAV_ENABLED_TEXT.g, NAV_ENABLED_TEXT.b, NAV_ENABLED_TEXT.a)
-        icon:SetDesaturated(false)
-        icon:SetAlpha(NAV_ENABLED_ICON_A)
+        ShowNavEnabled(icon, label)
 
         btn._folder = "_CUIProfiles"
         btn._loaded = true
