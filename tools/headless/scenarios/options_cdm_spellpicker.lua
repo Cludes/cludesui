@@ -172,8 +172,17 @@ for _, key in ipairs({ bars[1].key, "buffs" }) do
             row = RowsOf(menu)[i]
             local item = row and ItemsOf(menu, row)[j]
             if item then
-                local ok, err = pcall(item["\0scripts"].OnClick, item, "LeftButton")
                 local store = mod.GetSpellSettingsStore and mod.GetSpellSettingsStore(key == "buffs" and "buffs" or key)
+                -- An item carrying a colour swatch: the swatch's first-click hook
+                -- (PreClick) run on its own before the item's own click, the
+                -- picker left closed.
+                if rawget(item, "_refreshSwatch") then
+                    for _, sw in ipairs(Buttons(item, function(f) return f ~= item and f["\0scripts"].PreClick ~= nil end)) do
+                        local ok2, err2 = pcall(sw["\0scripts"].PreClick, sw, "LeftButton")
+                        OUT:write("== swatch " .. key .. " " .. i .. "." .. j .. (ok2 and "" or (" ERR " .. tostring(err2))) .. " " .. Dump(store and store[774], 0) .. "\n")
+                    end
+                end
+                local ok, err = pcall(item["\0scripts"].OnClick, item, "LeftButton")
                 OUT:write("== click " .. key .. " " .. i .. "." .. j .. (ok and "" or (" ERR " .. tostring(err))) .. " " .. Dump(store and store[774], 0) .. "\n")
             end
         end
