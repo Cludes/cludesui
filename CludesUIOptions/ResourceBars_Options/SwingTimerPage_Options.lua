@@ -93,6 +93,17 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             CludesUI.NotifyElementResized("ERB_SwingTimer")
         end
     end
+    -- A setting row's getter for one swing timer key: its value, or default when
+    -- it is unset (no default: the value as stored, nil without a profile).
+    local function Getter(key, default)
+        return function()
+            local p = DB()
+            if default == nil then
+                return p and p.swingTimer[key]
+            end
+            return p and p.swingTimer[key] or default
+        end
+    end
     -- A setting row's setter for one swing timer key: written (when the profile
     -- exists), the swing timer redrawn, and with alsoPage the page rebuilt too.
     local function Setter(key, alsoPage)
@@ -126,10 +137,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Enable Swing Timer",
         tooltip = "One bar per weapon that can swing, each filling over the time to the next auto attack.",
-        getValue = function()
-            local p = DB()
-            return p and p.swingTimer.enabled
-        end,
+        getValue = Getter("enabled"),
         setValue = Setter("enabled", true),
     }, {
         type = "dropdown",
@@ -139,10 +147,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabledTooltip = ST_TIP,
         values = sStrataValues,
         order = sStrataOrder,
-        getValue = function()
-            local p = DB()
-            return p and p.swingTimer.frameStrata or "MEDIUM"
-        end,
+        getValue = Getter("frameStrata", "MEDIUM"),
         setValue = Setter("frameStrata"),
     })
     posY = posY - hgt
@@ -237,10 +242,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabled = shDis,
         disabledTooltip = shTip,
         rawTooltip = shRaw,
-        getValue = function()
-            local p = DB()
-            return p and p.swingTimer.height or 12
-        end,
+        getValue = Getter("height", 12),
         setValue = Setter("height"),
     }, {
         type = "slider",
@@ -251,10 +253,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabled = swDis,
         disabledTooltip = swTip,
         rawTooltip = swRaw,
-        getValue = function()
-            local p = DB()
-            return p and p.swingTimer.width or 220
-        end,
+        getValue = Getter("width", 220),
         setValue = Setter("width"),
     })
     posY = posY - hgt
@@ -271,10 +270,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         tooltip = "Gap between the weapon rows.",
         disabled = stOff,
         disabledTooltip = ST_TIP,
-        getValue = function()
-            local p = DB()
-            return p and p.swingTimer.rowSpacing or 2
-        end,
+        getValue = Getter("rowSpacing", 2),
         setValue = Setter("rowSpacing"),
     }, {
         type = "slider",
@@ -284,10 +280,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         step = 1,
         disabled = stOff,
         disabledTooltip = ST_TIP,
-        getValue = function()
-            local p = DB()
-            return p and p.swingTimer.textSize or 11
-        end,
+        getValue = Getter("textSize", 11),
         setValue = Setter("textSize"),
     })
     posY = posY - hgt
@@ -349,10 +342,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         tooltip = "Hide the bar while no swing is running.",
         disabled = stOff,
         disabledTooltip = ST_TIP,
-        getValue = function()
-            local p = DB()
-            return p and p.swingTimer.hideWhenIdle
-        end,
+        getValue = Getter("hideWhenIdle"),
         setValue = Setter("hideWhenIdle"),
     })
     posY = posY - hgt
@@ -489,10 +479,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 disabledTooltip = ST_TIP,
                 values = btValues,
                 order = btOrder,
-                getValue = function()
-                    local p = DB()
-                    return p and p.swingTimer.borderTexture or "solid"
-                end,
+                getValue = Getter("borderTexture", "solid"),
                 setValue = function(val)
                     local p = DB()
                     if not p then
@@ -658,10 +645,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         min = 0,
                         max = CludesUI.ROUNDED_MAX_RADIUS,
                         step = 1,
-                        get = function()
-                            local p = DB()
-                            return p and p.swingTimer.cornerRadius or 0
-                        end,
+                        get = Getter("cornerRadius", 0),
                         set = Setter("cornerRadius"),
                     },
                 }, function()
@@ -782,10 +766,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     {
                         type = "toggle",
                         label = "Show Behind",
-                        get = function()
-                            local p = DB()
-                            return p and p.swingTimer.borderBehind or false
-                        end,
+                        get = Getter("borderBehind", false),
                         set = function(val)
                             local p = DB()
                             if not p then
@@ -964,10 +945,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                 {
                     type = "toggle",
                     label = "Enable Gradient",
-                    get = function()
-                        local p = DB()
-                        return p and p.swingTimer.gradientEnabled
-                    end,
+                    get = Getter("gradientEnabled"),
                     set = Setter("gradientEnabled", true),
                 },
                 {
@@ -975,10 +953,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     label = "Gradient Direction",
                     values = { HORIZONTAL = "Horizontal", VERTICAL = "Vertical" },
                     order = { "HORIZONTAL", "VERTICAL" },
-                    get = function()
-                        local p = DB()
-                        return p and p.swingTimer.gradientDir or "HORIZONTAL"
-                    end,
+                    get = Getter("gradientDir", "HORIZONTAL"),
                     set = Setter("gradientDir"),
                 },
             },
@@ -1014,10 +989,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabledTooltip = ST_TIP,
         values = texValues,
         order = texOrder,
-        getValue = function()
-            local p = DB()
-            return p and p.swingTimer.texture or "none"
-        end,
+        getValue = Getter("texture", "none"),
         setValue = Setter("texture"),
     }, {
         type = "toggle",
@@ -1025,10 +997,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         tooltip = "Start each row full and drain it as the swing timer elapses, instead of filling it up.",
         disabled = stOff,
         disabledTooltip = ST_TIP,
-        getValue = function()
-            local p = DB()
-            return p and p.swingTimer.depleteFill
-        end,
+        getValue = Getter("depleteFill"),
         setValue = Setter("depleteFill"),
     })
     posY = posY - hgt
@@ -1041,10 +1010,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         tooltip = "Show a small glowing spark that moves along the leading edge of the fill while a swing is running.",
         disabled = stOff,
         disabledTooltip = ST_TIP,
-        getValue = function()
-            local p = DB()
-            return p and p.swingTimer.showSpark
-        end,
+        getValue = Getter("showSpark"),
         setValue = Setter("showSpark"),
     }, {
         type = "dropdown",
@@ -1110,10 +1076,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     min = 1,
                     max = 32,
                     step = 1,
-                    get = function()
-                        local p = DB()
-                        return p and p.swingTimer.sparkWidth or 8
-                    end,
+                    get = Getter("sparkWidth", 8),
                     set = Setter("sparkWidth"),
                 },
                 {
@@ -1124,10 +1087,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                     max = 20,
                     step = 1,
                     tooltip = "How far the spark reaches past the top and bottom of the bar.",
-                    get = function()
-                        local p = DB()
-                        return p and p.swingTimer.sparkOverhang or 0
-                    end,
+                    get = Getter("sparkOverhang", 0),
                     set = Setter("sparkOverhang"),
                 },
                 {
@@ -1346,10 +1306,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabledTooltip = ST_TIP,
         values = { off = "Off", queued = "Queued Only", full = "Full" },
         order = { "off", "queued", "full" },
-        getValue = function()
-            local p = DB()
-            return p and p.swingTimer.attackState or "queued"
-        end,
+        getValue = Getter("attackState", "queued"),
         setValue = Setter("attackState", true),
     })
     posY = posY - hgt
@@ -1463,10 +1420,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
         disabledTooltip = ST_TIP,
         values = { off = "Off", segments = "Segments", windup = "Wind-Up Bar" },
         order = { "off", "segments", "windup" },
-        getValue = function()
-            local p = DB()
-            return p and p.swingTimer.moveGuide or "off"
-        end,
+        getValue = Getter("moveGuide", "off"),
         setValue = Setter("moveGuide", true),
     }, CludesUI.BlankRowCfg())
     posY = posY - hgt

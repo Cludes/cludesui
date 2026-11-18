@@ -83,6 +83,17 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         end
         UpdateCastBarPreview()
     end
+    -- A setting row's getter for one cast bar key: its value, or default when
+    -- it is unset (no default: the value as stored, nil without a profile).
+    local function Getter(key, default)
+        return function()
+            local p = DB()
+            if default == nil then
+                return p and p.castBar[key]
+            end
+            return p and p.castBar[key] or default
+        end
+    end
     -- A setting row's setter for one cast bar key: written (when the profile
     -- exists), the cast bar redrawn, and with alsoPage the page rebuilt too.
     local function Setter(key, alsoPage)
@@ -116,10 +127,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
     castEnableRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Enable Player Cast Bar",
-        getValue = function()
-            local p = DB()
-            return p and p.castBar.enabled
-        end,
+        getValue = Getter("enabled"),
         setValue = Setter("enabled", true),
     }, {
         type = "dropdown",
@@ -129,10 +137,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         disabledTooltip = "Player Cast Bar",
         values = cbStrataValues,
         order = cbStrataOrder,
-        getValue = function()
-            local p = DB()
-            return p and p.castBar.frameStrata or "MEDIUM"
-        end,
+        getValue = Getter("frameStrata", "MEDIUM"),
         setValue = Setter("frameStrata"),
     })
     posY = posY - hgt
@@ -151,10 +156,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         disabled = cbhDis,
         disabledTooltip = cbhTip,
         rawTooltip = cbhRaw,
-        getValue = function()
-            local p = DB()
-            return p and p.castBar.height or 20
-        end,
+        getValue = Getter("height", 20),
         setValue = Setter("height"),
     }, {
         type = "slider",
@@ -165,10 +167,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         disabled = cbwDis,
         disabledTooltip = cbwTip,
         rawTooltip = cbwRaw,
-        getValue = function()
-            local p = DB()
-            return p and p.castBar.width or 220
-        end,
+        getValue = Getter("width", 220),
         setValue = Setter("width"),
     })
     posY = posY - hgt
@@ -190,10 +189,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         text = "Show Spark",
         disabled = castOff,
         disabledTooltip = "Player Cast Bar",
-        getValue = function()
-            local p = DB()
-            return p and p.castBar.showSpark
-        end,
+        getValue = Getter("showSpark"),
         setValue = Setter("showSpark"),
     })
     posY = posY - hgt
@@ -300,10 +296,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     disabled = IconOnPortrait,
                     disabledTooltip = "Embed in Player Portrait",
                     requireState = "disabled",
-                    get = function()
-                        local p = DB()
-                        return p and p.castBar.iconOnRight
-                    end,
+                    get = Getter("iconOnRight"),
                     set = Setter("iconOnRight"),
                 },
                 {
@@ -320,10 +313,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         return FREE_TIP
                     end,
                     rawTooltip = true,
-                    get = function()
-                        local p = DB()
-                        return p and p.castBar.showIconDivider
-                    end,
+                    get = Getter("showIconDivider"),
                     set = Setter("showIconDivider"),
                 },
                 -- Border Art Divider: the divider in the border style's own art (the
@@ -363,10 +353,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         local p = DB()
                         return (p and p.castBar.showIconDivider) and true or false
                     end,
-                    get = function()
-                        local p = DB()
-                        return p and p.castBar.iconDividerArt or false
-                    end,
+                    get = Getter("iconDividerArt", false),
                     set = function(val)
                         local p = DB()
                         if not p then
@@ -396,10 +383,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         tooltip = "Keep the cast bar visible (sitting empty) when you are not casting, instead of hiding it.",
         disabled = castOff,
         disabledTooltip = "Player Cast Bar",
-        getValue = function()
-            local p = DB()
-            return p and p.castBar.alwaysShow
-        end,
+        getValue = Getter("alwaysShow"),
         setValue = Setter("alwaysShow"),
     }, {
         type = "toggle",
@@ -448,10 +432,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 disabledTooltip = "Player Cast Bar",
                 values = texValues,
                 order = texOrder,
-                getValue = function()
-                    local p = DB()
-                    return p and p.castBar.borderTexture or "solid"
-                end,
+                getValue = Getter("borderTexture", "solid"),
                 setValue = function(val)
                     local p = DB()
                     if not p then
@@ -726,10 +707,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     {
                         type = "toggle",
                         label = "Show Behind",
-                        get = function()
-                            local p = DB()
-                            return p and p.castBar.borderBehind or false
-                        end,
+                        get = Getter("borderBehind", false),
                         set = function(val)
                             local p = DB()
                             if not p then
@@ -751,10 +729,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         tooltip = "Grows the border past the bar's top edge on screen without resizing the bar.",
                         disabled = castOff,
                         disabledTooltip = "Player Cast Bar",
-                        get = function()
-                            local p = DB()
-                            return p and p.castBar.borderExtendTop or 0
-                        end,
+                        get = Getter("borderExtendTop", 0),
                         set = Setter("borderExtendTop", true),
                     },
                     {
@@ -766,10 +741,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         tooltip = "Grows the border past the bar's bottom edge on screen without resizing the bar.",
                         disabled = castOff,
                         disabledTooltip = "Player Cast Bar",
-                        get = function()
-                            local p = DB()
-                            return p and p.castBar.borderExtendBottom or 0
-                        end,
+                        get = Getter("borderExtendBottom", 0),
                         set = Setter("borderExtendBottom", true),
                     },
                     {
@@ -781,10 +753,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         tooltip = "Grows the border past the bar's left edge on screen without resizing the bar.",
                         disabled = castOff,
                         disabledTooltip = "Player Cast Bar",
-                        get = function()
-                            local p = DB()
-                            return p and p.castBar.borderExtendLeft or 0
-                        end,
+                        get = Getter("borderExtendLeft", 0),
                         set = Setter("borderExtendLeft", true),
                     },
                     {
@@ -796,10 +765,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         tooltip = "Grows the border past the bar's right edge on screen without resizing the bar.",
                         disabled = castOff,
                         disabledTooltip = "Player Cast Bar",
-                        get = function()
-                            local p = DB()
-                            return p and p.castBar.borderExtendRight or 0
-                        end,
+                        get = Getter("borderExtendRight", 0),
                         set = Setter("borderExtendRight", true),
                     },
                     -- Bottom Separator: None = off (edgeSep false); an art entry turns it
@@ -847,10 +813,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         disabledTooltip = function()
                             return castOff() and "Player Cast Bar" or "Bottom Separator"
                         end,
-                        get = function()
-                            local p = DB()
-                            return p and p.castBar.edgeSepY or 0
-                        end,
+                        get = Getter("edgeSepY", 0),
                         set = Setter("edgeSepY", true),
                     },
                 },
@@ -936,10 +899,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     disabled = gradientOff,
                     disabledTooltip = "Blizzard Style",
                     requireState = "disabled",
-                    get = function()
-                        local p = DB()
-                        return p and p.castBar.gradientEnabled
-                    end,
+                    get = Getter("gradientEnabled"),
                     set = Setter("gradientEnabled", true),
                 },
                 {
@@ -950,10 +910,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     requireState = "disabled",
                     values = { HORIZONTAL = "Horizontal", VERTICAL = "Vertical" },
                     order = { "HORIZONTAL", "VERTICAL" },
-                    get = function()
-                        local p = DB()
-                        return p and p.castBar.gradientDir or "HORIZONTAL"
-                    end,
+                    get = Getter("gradientDir", "HORIZONTAL"),
                     set = Setter("gradientDir"),
                 },
                 {
@@ -1227,10 +1184,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         disabledTooltip = "Player Cast Bar",
         values = texValues,
         order = texOrder,
-        getValue = function()
-            local p = DB()
-            return p and p.castBar.texture or "none"
-        end,
+        getValue = Getter("texture", "none"),
         setValue = Setter("texture"),
     }
     if CludesUI.BlizzStyle.Active("castbar") == "blizzard" then
@@ -1306,10 +1260,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     min = 8,
                     max = 24,
                     step = 1,
-                    get = function()
-                        local p = DB()
-                        return p and p.castBar.spellTextSize or 11
-                    end,
+                    get = Getter("spellTextSize", 11),
                     set = Setter("spellTextSize"),
                 },
                 {
@@ -1318,10 +1269,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     min = -100,
                     max = 100,
                     step = 1,
-                    get = function()
-                        local p = DB()
-                        return p and p.castBar.spellTextX or 0
-                    end,
+                    get = Getter("spellTextX", 0),
                     set = Setter("spellTextX"),
                 },
                 {
@@ -1330,20 +1278,14 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     min = -100,
                     max = 100,
                     step = 1,
-                    get = function()
-                        local p = DB()
-                        return p and p.castBar.spellTextY or 0
-                    end,
+                    get = Getter("spellTextY", 0),
                     set = Setter("spellTextY"),
                 },
                 {
                     type = "toggle",
                     label = "Show Full Spell Name",
                     tooltip = "Long spell names shrink to fit beside the duration instead of being cut off.",
-                    get = function()
-                        local p = DB()
-                        return p and p.castBar.fitSpellName
-                    end,
+                    get = Getter("fitSpellName"),
                     set = Setter("fitSpellName"),
                 },
             },
@@ -1424,10 +1366,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             return castOff() or not (p and p.castBar.showTimer)
         end,
         disabledTooltip = "Duration Text",
-        getValue = function()
-            local p = DB()
-            return p and p.castBar.showTotalDuration
-        end,
+        getValue = Getter("showTotalDuration"),
         setValue = Setter("showTotalDuration"),
     })
     posY = posY - hgt
@@ -1448,10 +1387,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     min = 8,
                     max = 24,
                     step = 1,
-                    get = function()
-                        local p = DB()
-                        return p and p.castBar.timerSize or 11
-                    end,
+                    get = Getter("timerSize", 11),
                     set = Setter("timerSize"),
                 },
                 {
@@ -1460,10 +1396,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     min = -100,
                     max = 100,
                     step = 1,
-                    get = function()
-                        local p = DB()
-                        return p and p.castBar.timerX or 0
-                    end,
+                    get = Getter("timerX", 0),
                     set = Setter("timerX"),
                 },
                 {
@@ -1472,10 +1405,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                     min = -100,
                     max = 100,
                     step = 1,
-                    get = function()
-                        local p = DB()
-                        return p and p.castBar.timerY or 0
-                    end,
+                    get = Getter("timerY", 0),
                     set = Setter("timerY"),
                 },
             },
@@ -1552,10 +1482,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             return castOff() or not (p and p.castBar.showSpellText)
         end,
         disabledTooltip = "Spell Text",
-        getValue = function()
-            local p = DB()
-            return p and p.castBar.showSpellRank
-        end,
+        getValue = Getter("showSpellRank"),
         setValue = function(val)
             local p = DB()
             if not p then
@@ -1618,10 +1545,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         text = "Enable Tick Markers",
         disabled = castOff,
         disabledTooltip = "Player Cast Bar",
-        getValue = function()
-            local p = DB()
-            return p and p.castBar.showChannelTicks
-        end,
+        getValue = Getter("showChannelTicks"),
         setValue = function(val)
             local p = DB()
             if not p then
@@ -1640,10 +1564,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         tooltip = "Shows tick marks on channeled spells. Only supported spells are shown.",
         disabled = marksOff,
         disabledTooltip = "Tick Markers",
-        getValue = function()
-            local p = DB()
-            return p and p.castBar.showTickMarks
-        end,
+        getValue = Getter("showTickMarks"),
         setValue = Setter("showTickMarks", true),
     })
     posY = posY - hgt
@@ -1679,10 +1600,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         tooltip = "Highlights the final damage tick. Requires a supported channeled spell.",
         disabled = marksOff,
         disabledTooltip = "Tick Markers",
-        getValue = function()
-            local p = DB()
-            return p and p.castBar.showLastTick
-        end,
+        getValue = Getter("showLastTick"),
         setValue = Setter("showLastTick", true),
     }, {
         type = "toggle",
@@ -1690,10 +1608,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         tooltip = "Changes the cast bar color based on the current empower stage. Colors transition from red (stage 1) through yellow to green (max stage).",
         disabled = castOff,
         disabledTooltip = "Player Cast Bar",
-        getValue = function()
-            local p = DB()
-            return p and p.castBar.coloredEmpowerStages
-        end,
+        getValue = Getter("coloredEmpowerStages"),
         setValue = Setter("coloredEmpowerStages"),
     })
     posY = posY - hgt
@@ -1738,10 +1653,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         tooltip = "Shows a colored overlay at the end of the cast bar representing your network latency for each spell. Helps you time spell queuing.",
         disabled = castOff,
         disabledTooltip = "Player Cast Bar",
-        getValue = function()
-            local p = DB()
-            return p and p.castBar.latencyEnabled
-        end,
+        getValue = Getter("latencyEnabled"),
         setValue = Setter("latencyEnabled", true),
     }, {
         type = "toggle",
@@ -1749,10 +1661,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         tooltip = "Appends your latency in milliseconds to the cast timer, e.g. 1.8 (42ms).",
         disabled = latOff,
         disabledTooltip = "Latency Overlay",
-        getValue = function()
-            local p = DB()
-            return p and p.castBar.latencyShowText
-        end,
+        getValue = Getter("latencyShowText"),
         setValue = Setter("latencyShowText"),
     })
     posY = posY - hgt

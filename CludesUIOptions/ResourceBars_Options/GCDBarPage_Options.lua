@@ -77,6 +77,17 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         end
         UpdateGCDPreview()
     end
+    -- A setting row's getter for one GCD bar key: its value, or default when
+    -- it is unset (no default: the value as stored, nil without a profile).
+    local function Getter(key, default)
+        return function()
+            local p = DB()
+            if default == nil then
+                return p and p.gcdBar[key]
+            end
+            return p and p.gcdBar[key] or default
+        end
+    end
     -- A setting row's setter for one GCD bar key: written (when the profile
     -- exists), the GCD bar redrawn, and with alsoPage the page rebuilt too.
     local function Setter(key, alsoPage)
@@ -111,10 +122,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Enable GCD Bar",
         tooltip = "Shows a bar that fills over the global cooldown.",
-        getValue = function()
-            local p = DB()
-            return p and p.gcdBar.enabled
-        end,
+        getValue = Getter("enabled"),
         setValue = Setter("enabled", true),
     }, {
         type = "dropdown",
@@ -124,10 +132,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         disabledTooltip = "GCD Bar",
         values = gStrataValues,
         order = gStrataOrder,
-        getValue = function()
-            local p = DB()
-            return p and p.gcdBar.frameStrata or "MEDIUM"
-        end,
+        getValue = Getter("frameStrata", "MEDIUM"),
         setValue = Setter("frameStrata"),
     })
     posY = posY - hgt
@@ -227,10 +232,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         disabled = ghDis,
         disabledTooltip = ghTip,
         rawTooltip = ghRaw,
-        getValue = function()
-            local p = DB()
-            return p and p.gcdBar.height or 12
-        end,
+        getValue = Getter("height", 12),
         setValue = Setter("height"),
     }, {
         type = "slider",
@@ -241,10 +243,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         disabled = gwDis,
         disabledTooltip = gwTip,
         rawTooltip = gwRaw,
-        getValue = function()
-            local p = DB()
-            return p and p.gcdBar.width or 220
-        end,
+        getValue = Getter("width", 220),
         setValue = Setter("width"),
     })
     posY = posY - hgt
@@ -262,10 +261,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             VERTICAL_DOWN = "Vertical (Down)",
         },
         order = { "HORIZONTAL", "HORIZONTAL_LEFT", "VERTICAL_UP", "VERTICAL_DOWN" },
-        getValue = function()
-            local p = DB()
-            return p and p.gcdBar.orientation or "HORIZONTAL"
-        end,
+        getValue = Getter("orientation", "HORIZONTAL"),
         setValue = Setter("orientation", true),
     }, {
         type = "toggle",
@@ -273,10 +269,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         tooltip = "Only show the GCD bar while in a dungeon, raid, arena or battleground.",
         disabled = gcdOff,
         disabledTooltip = "GCD Bar",
-        getValue = function()
-            local p = DB()
-            return p and p.gcdBar.instanceOnly
-        end,
+        getValue = Getter("instanceOnly"),
         setValue = Setter("instanceOnly"),
     })
     posY = posY - hgt
@@ -289,10 +282,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         tooltip = "Only show the GCD bar for instant-cast abilities. While hard-casting or channeling a spell, the bar stays hidden (the cast bar already shows that progress).",
         disabled = gcdOff,
         disabledTooltip = "GCD Bar",
-        getValue = function()
-            local p = DB()
-            return p and p.gcdBar.instantOnly
-        end,
+        getValue = Getter("instantOnly"),
         setValue = Setter("instantOnly"),
     }, {
         type = "toggle",
@@ -300,10 +290,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         tooltip = "Keep the GCD bar visible (sitting empty) when no global cooldown is running, instead of hiding it.",
         disabled = gcdOff,
         disabledTooltip = "GCD Bar",
-        getValue = function()
-            local p = DB()
-            return p and p.gcdBar.alwaysShow
-        end,
+        getValue = Getter("alwaysShow"),
         setValue = Setter("alwaysShow"),
     })
     posY = posY - hgt
@@ -357,10 +344,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 disabledTooltip = "GCD Bar",
                 values = btValues,
                 order = btOrder,
-                getValue = function()
-                    local p = DB()
-                    return p and p.gcdBar.borderTexture or "solid"
-                end,
+                getValue = Getter("borderTexture", "solid"),
                 setValue = function(val)
                     local p = DB()
                     if not p then
@@ -604,10 +588,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     {
                         type = "toggle",
                         label = "Show Behind",
-                        get = function()
-                            local p = DB()
-                            return p and p.gcdBar.borderBehind or false
-                        end,
+                        get = Getter("borderBehind", false),
                         set = function(val)
                             local p = DB()
                             if not p then
@@ -628,10 +609,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         tooltip = "Grows the border past the bar's top edge on screen without resizing the bar.",
                         disabled = gcdOff,
                         disabledTooltip = "GCD Bar",
-                        get = function()
-                            local p = DB()
-                            return p and p.gcdBar.borderExtendTop or 0
-                        end,
+                        get = Getter("borderExtendTop", 0),
                         set = Setter("borderExtendTop", true),
                     },
                     {
@@ -643,10 +621,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         tooltip = "Grows the border past the bar's bottom edge on screen without resizing the bar.",
                         disabled = gcdOff,
                         disabledTooltip = "GCD Bar",
-                        get = function()
-                            local p = DB()
-                            return p and p.gcdBar.borderExtendBottom or 0
-                        end,
+                        get = Getter("borderExtendBottom", 0),
                         set = Setter("borderExtendBottom", true),
                     },
                     {
@@ -658,10 +633,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         tooltip = "Grows the border past the bar's left edge on screen without resizing the bar.",
                         disabled = gcdOff,
                         disabledTooltip = "GCD Bar",
-                        get = function()
-                            local p = DB()
-                            return p and p.gcdBar.borderExtendLeft or 0
-                        end,
+                        get = Getter("borderExtendLeft", 0),
                         set = Setter("borderExtendLeft", true),
                     },
                     {
@@ -673,10 +645,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         tooltip = "Grows the border past the bar's right edge on screen without resizing the bar.",
                         disabled = gcdOff,
                         disabledTooltip = "GCD Bar",
-                        get = function()
-                            local p = DB()
-                            return p and p.gcdBar.borderExtendRight or 0
-                        end,
+                        get = Getter("borderExtendRight", 0),
                         set = Setter("borderExtendRight", true),
                     },
                     -- Bottom Separator: None = off (edgeSep false); an art entry turns it
@@ -724,10 +693,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         disabledTooltip = function()
                             return gcdOff() and "GCD Bar" or "Bottom Separator"
                         end,
-                        get = function()
-                            local p = DB()
-                            return p and p.gcdBar.edgeSepY or 0
-                        end,
+                        get = Getter("edgeSepY", 0),
                         set = Setter("edgeSepY", true),
                     },
                 },
@@ -880,10 +846,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                 {
                     type = "toggle",
                     label = "Enable Gradient",
-                    get = function()
-                        local p = DB()
-                        return p and p.gcdBar.gradientEnabled
-                    end,
+                    get = Getter("gradientEnabled"),
                     set = Setter("gradientEnabled", true),
                 },
                 {
@@ -891,10 +854,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                     label = "Gradient Direction",
                     values = { HORIZONTAL = "Horizontal", VERTICAL = "Vertical" },
                     order = { "HORIZONTAL", "VERTICAL" },
-                    get = function()
-                        local p = DB()
-                        return p and p.gcdBar.gradientDir or "HORIZONTAL"
-                    end,
+                    get = Getter("gradientDir", "HORIZONTAL"),
                     set = Setter("gradientDir"),
                 },
             },
@@ -971,10 +931,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         disabledTooltip = "GCD Bar",
         values = texValues,
         order = texOrder,
-        getValue = function()
-            local p = DB()
-            return p and p.gcdBar.texture or "none"
-        end,
+        getValue = Getter("texture", "none"),
         setValue = Setter("texture"),
     }, {
         type = "toggle",
@@ -982,10 +939,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         tooltip = "Show a small glowing spark that moves along the leading edge of the fill.",
         disabled = gcdOff,
         disabledTooltip = "GCD Bar",
-        getValue = function()
-            local p = DB()
-            return p and p.gcdBar.showSpark
-        end,
+        getValue = Getter("showSpark"),
         setValue = Setter("showSpark"),
     })
     posY = posY - hgt
@@ -1006,10 +960,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         tooltip = "Start the bar full and drain it as the global cooldown elapses, instead of filling it up.",
         disabled = gcdOff,
         disabledTooltip = "GCD Bar",
-        getValue = function()
-            local p = DB()
-            return p and p.gcdBar.depleteFill
-        end,
+        getValue = Getter("depleteFill"),
         setValue = Setter("depleteFill"),
     }, { type = "spacer" })
     posY = posY - hgt
