@@ -533,6 +533,16 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
     inner:SetPoint("TOPLEFT")
 
     local mH = 4
+    -- A faint full-width rule across the menu at its current bottom, which
+    -- then moves down past it.
+    local function AddMenuDivider()
+        local rule = inner:CreateTexture(nil, "ARTWORK")
+        rule:SetHeight(1)
+        rule:SetColorTexture(1, 1, 1, 0.10)
+        rule:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
+        rule:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
+        mH = mH + 9
+    end
     local allItems = {}
 
     -- "Remove Spell" option at top (right-click on existing icon only). The default
@@ -2301,12 +2311,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 end
 
                 -- Divider
-                local div1 = inner:CreateTexture(nil, "ARTWORK")
-                div1:SetHeight(1)
-                div1:SetColorTexture(1, 1, 1, 0.10)
-                div1:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
-                div1:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
-                mH = mH + 9
+                AddMenuDivider()
 
                 local GLOW_ITEMS = GlowStyleItems("Default", 0)
                 local ACTIVE_GLOW_ITEMS = GlowStyleItems("None")
@@ -6537,12 +6542,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
 
     -- Divider after Remove Spell (only in full picker mode)
     if slotIndex then
-        local div = inner:CreateTexture(nil, "ARTWORK")
-        div:SetHeight(1)
-        div:SetColorTexture(1, 1, 1, 0.10)
-        div:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
-        div:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
-        mH = mH + 9
+        AddMenuDivider()
     end
 
     -- The picker's own entries (hovering one leaves an open flyout alone).
@@ -6612,12 +6612,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
 
     if not isBuffBar and not isCustomBuff then
         -- Divider below Custom Spell ID (CD/utility bars only -- custom buff bars have their own divider before presets)
-        local csDiv = inner:CreateTexture(nil, "ARTWORK")
-        csDiv:SetHeight(1)
-        csDiv:SetColorTexture(1, 1, 1, 0.10)
-        csDiv:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
-        csDiv:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
-        mH = mH + 9
+        AddMenuDivider()
     end
 
     -- Trinket slots + potion presets for CD/utility bars only (not buff bars, not custom buff bars)
@@ -6875,24 +6870,14 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
         end
 
         -- Divider after trinkets/potions
-        local trDiv = inner:CreateTexture(nil, "ARTWORK")
-        trDiv:SetHeight(1)
-        trDiv:SetColorTexture(1, 1, 1, 0.10)
-        trDiv:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
-        trDiv:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
-        mH = mH + 9
+        AddMenuDivider()
     end
 
     -- Presets (Heroism, potions, etc.) -- flat list in custom buff bar picker.
     -- Skipped with its divider when the list is empty (WoW Forever has none).
     if isCustomBuff and #mod.BUFF_BAR_PRESETS > 0 then
         -- Divider before presets
-        local psDiv = inner:CreateTexture(nil, "ARTWORK")
-        psDiv:SetHeight(1)
-        psDiv:SetColorTexture(1, 1, 1, 0.10)
-        psDiv:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
-        psDiv:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
-        mH = mH + 9
+        AddMenuDivider()
 
         local _, _pClass = UnitClass("player")
         for _, preset in ipairs(mod.BUFF_BAR_PRESETS) do
@@ -7024,12 +7009,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
     end
 
     local function MakeDivider()
-        local div = inner:CreateTexture(nil, "ARTWORK")
-        div:SetHeight(1)
-        div:SetColorTexture(1, 1, 1, 0.10)
-        div:SetPoint("TOPLEFT", inner, "TOPLEFT", 1, -mH - 4)
-        div:SetPoint("TOPRIGHT", inner, "TOPRIGHT", -1, -mH - 4)
-        mH = mH + 9
+        AddMenuDivider()
     end
 
     -- The spell list. Custom buff bars have none (their Custom Spell ID entry is
