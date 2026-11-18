@@ -93,9 +93,9 @@ local function EP(key)
     if bl and bl[key] ~= nil then
         return bl[key]
     end
-    local br = BR()
-    if br and br[key] ~= nil then
-        return br[key]
+    local borderRing = BR()
+    if borderRing and borderRing[key] ~= nil then
+        return borderRing[key]
     end
     return APP_DEFAULTS[key]
 end
@@ -105,9 +105,9 @@ local function EP_borderColor()
     if bl and bl.borderColor ~= nil then
         return bl.borderColor
     end
-    local br = BR()
-    if br and br.borderColor ~= nil then
-        return br.borderColor
+    local borderRing = BR()
+    if borderRing and borderRing.borderColor ~= nil then
+        return borderRing.borderColor
     end
     return { r = 0, g = 0, b = 0, a = 1 }
 end
@@ -140,9 +140,9 @@ local function RP_color()
     return 1, 1, 1
 end
 
-local widget, iconTex, borderTex, durationFS, countFS, cooldownFrame
-local textOverlay, buffTextOverlay, readyFS -- text layers (see CreateBloodlustFrame for the level stack)
-local buffOverlay, buffTex, buffCooldown, buffDurationFS, buffBorderTex -- the 40s active-lust overlay (sits on top of the debuff icon)
+local widget, iconTexture, borderTex, durationFS, countFS, cdFrame
+local textOverlay, buffTextOverlay, readyText -- text layers (see CreateBloodlustFrame for the level stack)
+local buffShade, buffTexture, buffCd, buffDurationFS, buffBorderTex -- the 40s active-lust overlay (sits on top of the debuff icon)
 local _satedActive = false
 local _readyShown = false -- ready label currently rendered (idempotence for the 0.5s poll)
 local _previewOwner -- options page frame driving the live preview (nil = none)
@@ -203,10 +203,10 @@ local _applyShapeOutline = mod.QoL_ApplyShapeOutline
 -- icon's border. level pins the PP strip container (see CreateBloodlustFrame).
 local function _applyBorder(owner, shapeTex, level)
     local Pix = CludesUI and CludesUI.PP
-    local shape = EP("shape") or "none"
+    local shapeKey = EP("shape") or "none"
     local bs = BORDER_PX[EP("borderSize") or "thin"] or 1
 
-    if shape == "none" or shape == "cropped" then
+    if shapeKey == "none" or shapeKey == "cropped" then
         shapeTex:Hide()
         _applyShapeOutline(owner, nil, 0)
         if Pix then
@@ -233,24 +233,24 @@ local function _applyBorder(owner, shapeTex, level)
     end
     shapeTex:Hide()
     local region, g, b, a = _resolveBorderColor()
-    _applyShapeOutline(owner, shape, bs, region, g, b, a)
+    _applyShapeOutline(owner, shapeKey, bs, region, g, b, a)
 end
 
 -- Configure the buff overlay (texture coords + optional shape mask) so it
 -- visually matches the debuff icon underneath it. The overlay owns its OWN mask
 -- so the debuff icon's mask lifecycle is never touched.
 local function _applyBuffShape()
-    if not buffOverlay then
+    if not buffShade then
         return
     end
-    local shape = EP("shape") or "none"
+    local shapeKey = EP("shape") or "none"
 
-    buffOverlay:ClearAllPoints()
-    buffOverlay:SetAllPoints(widget)
-    buffTex:SetAllPoints(buffOverlay)
-    buffCooldown:ClearAllPoints()
-    buffCooldown:SetAllPoints(buffOverlay)
-    _applyBorder(buffOverlay, buffBorderTex, buffCooldown:GetFrameLevel() + 1)
+    buffShade:ClearAllPoints()
+    buffShade:SetAllPoints(widget)
+    buffTexture:SetAllPoints(buffShade)
+    buffCd:ClearAllPoints()
+    buffCd:SetAllPoints(buffShade)
+    _applyBorder(buffShade, buffBorderTex, buffCd:GetFrameLevel() + 1)
 
     -- Match the debuff icon's duration text exactly (font, size, position).
     buffDurationFS:SetFont(
@@ -267,41 +267,41 @@ local function _applyBuffShape()
         _snapOff(EP("durationOffsetY") or 0)
     )
 
-    if shape == "none" or shape == "cropped" then
-        if buffTex._mask then
-            if not buffCooldown:IsForbidden() then
-                pcall(buffCooldown.RemoveMaskTexture, buffCooldown, buffTex._mask)
-                pcall(buffCooldown.SetSwipeTexture, buffCooldown, "")
+    if shapeKey == "none" or shapeKey == "cropped" then
+        if buffTexture._mask then
+            if not buffCd:IsForbidden() then
+                pcall(buffCd.RemoveMaskTexture, buffCd, buffTexture._mask)
+                pcall(buffCd.SetSwipeTexture, buffCd, "")
             end
-            buffTex:RemoveMaskTexture(buffTex._mask)
-            buffTex._mask:SetTexture(nil)
-            buffTex._mask:Hide()
-            buffTex._mask = nil
+            buffTexture:RemoveMaskTexture(buffTexture._mask)
+            buffTexture._mask:SetTexture(nil)
+            buffTexture._mask:Hide()
+            buffTexture._mask = nil
         end
         local z = (EP("iconZoom") or 11) / 100
-        if shape == "cropped" then
-            buffTex:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
+        if shapeKey == "cropped" then
+            buffTexture:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
         elseif z > 0 then
-            buffTex:SetTexCoord(z, 1 - z, z, 1 - z)
+            buffTexture:SetTexCoord(z, 1 - z, z, 1 - z)
         else
-            buffTex:SetTexCoord(0, 1, 0, 1)
+            buffTexture:SetTexCoord(0, 1, 0, 1)
         end
         return
     end
 
-    local maskPath = SHAPE_MASKS[shape]
-    if maskPath then
-        if not buffTex._mask then
-            buffTex._mask = buffOverlay:CreateMaskTexture()
-            buffTex._mask:SetAllPoints(buffTex)
-            buffTex:AddMaskTexture(buffTex._mask)
+    local maskFile = SHAPE_MASKS[shapeKey]
+    if maskFile then
+        if not buffTexture._mask then
+            buffTexture._mask = buffShade:CreateMaskTexture()
+            buffTexture._mask:SetAllPoints(buffTexture)
+            buffTexture:AddMaskTexture(buffTexture._mask)
         end
-        buffTex._mask:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        buffTex._mask:Show()
-        buffTex:SetTexCoord(0, 1, 0, 1)
-        if not buffCooldown:IsForbidden() then
-            pcall(buffCooldown.AddMaskTexture, buffCooldown, buffTex._mask)
-            pcall(buffCooldown.SetSwipeTexture, buffCooldown, maskPath)
+        buffTexture._mask:SetTexture(maskFile, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        buffTexture._mask:Show()
+        buffTexture:SetTexCoord(0, 1, 0, 1)
+        if not buffCd:IsForbidden() then
+            pcall(buffCd.AddMaskTexture, buffCd, buffTexture._mask)
+            pcall(buffCd.SetSwipeTexture, buffCd, maskFile)
         end
     end
 end
@@ -312,23 +312,23 @@ local function ApplyShape()
     end
 
     local Pix = CludesUI and CludesUI.PP
-    local shape = EP("shape") or "none"
+    local shapeKey = EP("shape") or "none"
 
     local size = EP("iconSize") or 40
     local fw, fh = size, size
-    if shape == "cropped" then
+    if shapeKey == "cropped" then
         fh = math.floor(size * 0.80 + 0.5)
     end
     if Pix and Pix.Snap then
         fw, fh = Pix.Snap(fw), Pix.Snap(fh)
     end
     widget:SetSize(fw, fh)
-    iconTex:ClearAllPoints()
-    iconTex:SetAllPoints(widget)
+    iconTexture:ClearAllPoints()
+    iconTexture:SetAllPoints(widget)
 
-    if cooldownFrame then
-        cooldownFrame:ClearAllPoints()
-        cooldownFrame:SetAllPoints(widget)
+    if cdFrame then
+        cdFrame:ClearAllPoints()
+        cdFrame:SetAllPoints(widget)
     end
 
     -- Duration text (centered) and count text (bottom-right). Sated debuffs
@@ -365,22 +365,22 @@ local function ApplyShape()
     -- Ready label: same font family as the countdown it replaces, but its own
     -- size, colour and offset. Dropped back to hidden so the next poll re-renders
     -- it with the new style instead of leaving a stale string on screen.
-    if readyFS then
-        readyFS:SetFont(
+    if readyText then
+        readyText:SetFont(
             (CludesUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
             RP("readySize") or 12,
             (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
         )
-        readyFS:ClearAllPoints()
-        readyFS:SetPoint(
+        readyText:ClearAllPoints()
+        readyText:SetPoint(
             "CENTER",
             widget,
             "CENTER",
             _snapOff(RP("readyOffsetX") or 0),
             _snapOff(RP("readyOffsetY") or 0)
         )
-        readyFS:SetTextColor(RP_color())
-        readyFS:Hide()
+        readyText:SetTextColor(RP_color())
+        readyText:Hide()
         _readyShown = false
     end
 
@@ -393,29 +393,29 @@ local function ApplyShape()
     -----------------------------------------------------------------------
     --  BASE CASE: "none" or "cropped" -- plain texture, no mask
     -----------------------------------------------------------------------
-    if shape == "none" or shape == "cropped" then
-        if iconTex._mask then
-            if cooldownFrame and not cooldownFrame:IsForbidden() then
-                pcall(cooldownFrame.RemoveMaskTexture, cooldownFrame, iconTex._mask)
-                if cooldownFrame.SetSwipeTexture then
-                    pcall(cooldownFrame.SetSwipeTexture, cooldownFrame, "")
+    if shapeKey == "none" or shapeKey == "cropped" then
+        if iconTexture._mask then
+            if cdFrame and not cdFrame:IsForbidden() then
+                pcall(cdFrame.RemoveMaskTexture, cdFrame, iconTexture._mask)
+                if cdFrame.SetSwipeTexture then
+                    pcall(cdFrame.SetSwipeTexture, cdFrame, "")
                 end
             end
-            iconTex:RemoveMaskTexture(iconTex._mask)
-            iconTex._mask:SetTexture(nil)
-            iconTex._mask:ClearAllPoints()
-            iconTex._mask:SetSize(0.001, 0.001)
-            iconTex._mask:Hide()
-            iconTex._mask = nil
+            iconTexture:RemoveMaskTexture(iconTexture._mask)
+            iconTexture._mask:SetTexture(nil)
+            iconTexture._mask:ClearAllPoints()
+            iconTexture._mask:SetSize(0.001, 0.001)
+            iconTexture._mask:Hide()
+            iconTexture._mask = nil
         end
 
         local z = (EP("iconZoom") or 11) / 100
-        if shape == "cropped" then
-            iconTex:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
+        if shapeKey == "cropped" then
+            iconTexture:SetTexCoord(z, 1 - z, z + 0.10, 1 - z - 0.10)
         elseif z > 0 then
-            iconTex:SetTexCoord(z, 1 - z, z, 1 - z)
+            iconTexture:SetTexCoord(z, 1 - z, z, 1 - z)
         else
-            iconTex:SetTexCoord(0, 1, 0, 1)
+            iconTexture:SetTexCoord(0, 1, 0, 1)
         end
         return
     end
@@ -423,28 +423,28 @@ local function ApplyShape()
     -----------------------------------------------------------------------
     --  CUSTOM SHAPE: apply mask (the shape border is set by _applyBorder)
     -----------------------------------------------------------------------
-    local maskPath = SHAPE_MASKS[shape]
-    if maskPath then
-        if not iconTex._mask then
-            iconTex._mask = widget:CreateMaskTexture()
-            iconTex._mask:SetAllPoints(iconTex)
-            iconTex:AddMaskTexture(iconTex._mask)
+    local maskFile = SHAPE_MASKS[shapeKey]
+    if maskFile then
+        if not iconTexture._mask then
+            iconTexture._mask = widget:CreateMaskTexture()
+            iconTexture._mask:SetAllPoints(iconTexture)
+            iconTexture:AddMaskTexture(iconTexture._mask)
         end
-        iconTex._mask:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        iconTex._mask:Show()
-        iconTex:SetTexCoord(0, 1, 0, 1)
-        if cooldownFrame and not cooldownFrame:IsForbidden() then
-            pcall(cooldownFrame.AddMaskTexture, cooldownFrame, iconTex._mask)
-            if cooldownFrame.SetSwipeTexture then
-                pcall(cooldownFrame.SetSwipeTexture, cooldownFrame, maskPath)
+        iconTexture._mask:SetTexture(maskFile, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        iconTexture._mask:Show()
+        iconTexture:SetTexCoord(0, 1, 0, 1)
+        if cdFrame and not cdFrame:IsForbidden() then
+            pcall(cdFrame.AddMaskTexture, cdFrame, iconTexture._mask)
+            if cdFrame.SetSwipeTexture then
+                pcall(cdFrame.SetSwipeTexture, cdFrame, maskFile)
             end
         end
-    elseif cooldownFrame and not cooldownFrame:IsForbidden() then
-        if iconTex._mask then
-            pcall(cooldownFrame.RemoveMaskTexture, cooldownFrame, iconTex._mask)
+    elseif cdFrame and not cdFrame:IsForbidden() then
+        if iconTexture._mask then
+            pcall(cdFrame.RemoveMaskTexture, cdFrame, iconTexture._mask)
         end
-        if cooldownFrame.SetSwipeTexture then
-            pcall(cooldownFrame.SetSwipeTexture, cooldownFrame, "")
+        if cdFrame.SetSwipeTexture then
+            pcall(cdFrame.SetSwipeTexture, cdFrame, "")
         end
     end
 end
@@ -454,12 +454,12 @@ end
 --  icon, so the first time the tracker is enabled it appears next to Brez.
 -------------------------------------------------------------------------------
 local function _defaultLeftOfBrezCenter()
-    local br = BR()
+    local borderRing = BR()
     local brCX, brCY = 0, 200
-    if br and br.pos and br.pos.centerX and br.pos.centerY then
-        brCX, brCY = br.pos.centerX, br.pos.centerY
+    if borderRing and borderRing.pos and borderRing.pos.centerX and borderRing.pos.centerY then
+        brCX, brCY = borderRing.pos.centerX, borderRing.pos.centerY
     end
-    local brSize = (br and br.iconSize) or 40
+    local brSize = (borderRing and borderRing.iconSize) or 40
     local myW = EP("iconSize") or 40
     local gap = 6
     return brCX - (brSize * 0.5 + gap + myW * 0.5), brCY
@@ -519,9 +519,9 @@ local function _findSated()
         -- is up (Burning Rush proved this 2026-08-13 -- do NOT copy this probe
         -- as a general presence pattern; flagged ids need an engine container).
         -- We never read the (possibly secret) spellId back off the aura.
-        local aura = C_UnitAuras.GetPlayerAuraBySpellID(spellRef)
-        if aura then
-            return aura, spellRef
+        local auraInfo = C_UnitAuras.GetPlayerAuraBySpellID(spellRef)
+        if auraInfo then
+            return auraInfo, spellRef
         end
     end
     return nil
@@ -539,10 +539,10 @@ end
 
 -- Sync the expiry cache from the aura whenever the real value is readable
 -- (out of combat / unrestricted content).
-local function _syncSatedGuess(aura)
-    local exp = aura and aura.expirationTime
-    if exp and not issecretvalue(exp) and exp > 0 then
-        _satedExpiryGuess = exp
+local function _syncSatedGuess(auraInfo)
+    local expiresAt = auraInfo and auraInfo.expirationTime
+    if expiresAt and not issecretvalue(expiresAt) and expiresAt > 0 then
+        _satedExpiryGuess = expiresAt
     end
 end
 
@@ -550,7 +550,7 @@ end
 -- the swipe is set from a DurationObject (no value is read by us); under 12.1
 -- restrictions it falls back to the cached/self-timed expiry. The numeric
 -- countdown text is filled in by the ticker with the same fallback.
-local function _applyActiveAura(aura, spellRef)
+local function _applyActiveAura(auraInfo, spellRef)
     if not widget then
         return
     end
@@ -559,26 +559,26 @@ local function _applyActiveAura(aura, spellRef)
     if not texture and C_Spell and C_Spell.GetSpellTexture then
         texture = C_Spell.GetSpellTexture(PREVIEW_SPELL_ID)
     end
-    iconTex:SetTexture(texture or 136080)
+    iconTexture:SetTexture(texture or 136080)
 
-    if cooldownFrame then
-        local iid = aura.auraInstanceID
+    if cdFrame then
+        local iid = auraInfo.auraInstanceID
         if AurasRestricted() then
             -- Swipe from the cached expiry; SetCooldown with the same start
             -- and duration every pass is idempotent (no animation reset).
             if _satedExpiryGuess > GetTime() then
-                cooldownFrame:SetCooldown(_satedExpiryGuess - 600, 600)
+                cdFrame:SetCooldown(_satedExpiryGuess - 600, 600)
             end
         elseif iid and not issecretvalue(iid) and C_UnitAuras.GetAuraDuration then
             local durObj = C_UnitAuras.GetAuraDuration("player", iid)
             if durObj then
-                cooldownFrame:SetCooldownFromDurationObject(durObj)
+                cdFrame:SetCooldownFromDurationObject(durObj)
             end
         else
-            local dur = aura.duration
-            local exp = aura.expirationTime
-            if dur and exp and not issecretvalue(dur) and not issecretvalue(exp) and dur > 0 then
-                cooldownFrame:SetCooldown(exp - dur, dur)
+            local duration = auraInfo.duration
+            local expiresAt = auraInfo.expirationTime
+            if duration and expiresAt and not issecretvalue(duration) and not issecretvalue(expiresAt) and duration > 0 then
+                cdFrame:SetCooldown(expiresAt - duration, duration)
             end
         end
     end
@@ -635,11 +635,11 @@ end
 -- OnUpdate. The expiry check is every frame; the text refresh is throttled.
 local _buffAccum = 0
 local function _buffOnUpdate(_, elapsed)
-    local rem = _buffExpiry - GetTime()
-    if rem <= 0 then
+    local remaining = _buffExpiry - GetTime()
+    if remaining <= 0 then
         _buffExpiry = 0
-        buffOverlay:SetScript("OnUpdate", nil)
-        buffOverlay:Hide()
+        buffShade:SetScript("OnUpdate", nil)
+        buffShade:Hide()
         _setBuffDur("")
         -- The window is part of the visibility rule (ShouldShow keeps the icon up
         -- for it even with "Show when Sated" off), so its end has to re-evaluate
@@ -654,21 +654,21 @@ local function _buffOnUpdate(_, elapsed)
     _buffAccum = 0
     -- Buff window is only 40s, so show plain seconds ("40", "39", ...) with no
     -- leading "0:". ceil keeps each number on screen for its full second.
-    _setBuffDur(tostring(math.ceil(rem)))
+    _setBuffDur(tostring(math.ceil(remaining)))
 end
 
 local function _showBuffOverlay()
-    if not buffOverlay then
+    if not buffShade then
         return
     end
-    buffTex:SetTexture(_lustBuffIcon())
+    buffTexture:SetTexture(_lustBuffIcon())
     _applyBuffShape()
     _buffExpiry = GetTime() + 40
     _buffAccum = 0
-    buffCooldown:SetCooldown(GetTime(), 40)
+    buffCd:SetCooldown(GetTime(), 40)
     _setBuffDur("40")
-    buffOverlay:Show()
-    buffOverlay:SetScript("OnUpdate", _buffOnUpdate)
+    buffShade:Show()
+    buffShade:SetScript("OnUpdate", _buffOnUpdate)
 end
 
 -- Lockout gone: swap to the lust icon, clear the swipe and show the label in
@@ -677,15 +677,15 @@ local function _showReadyState()
     if _readyShown or not widget then
         return
     end
-    iconTex:SetTexture(_lustBuffIcon())
+    iconTexture:SetTexture(_lustBuffIcon())
     -- Clear(), never SetCooldown(0, 0): a zero-duration cooldown makes the widget
     -- hide itself, and the leftover swipe has to go either way.
-    if cooldownFrame then
-        cooldownFrame:Clear()
+    if cdFrame then
+        cdFrame:Clear()
     end
-    if readyFS then
-        readyFS:SetText(CludesUI.L("Ready"))
-        readyFS:Show()
+    if readyText then
+        readyText:SetText(CludesUI.L("Ready"))
+        readyText:Show()
     end
     _readyShown = true
 end
@@ -694,8 +694,8 @@ local function _hideReadyState()
     if not _readyShown then
         return
     end
-    if readyFS then
-        readyFS:Hide()
+    if readyText then
+        readyText:Hide()
     end
     _readyShown = false
 end
@@ -704,21 +704,21 @@ end
 -- ready state. The 40s buff overlay is its own texture and stays in colour.
 local _lastDesat = false
 local function _syncDesat()
-    if not iconTex then
+    if not iconTexture then
         return
     end
     local wanted = (RP("desaturateSated") and not _readyShown) and true or false
     if wanted ~= _lastDesat then
-        iconTex:SetDesaturated(wanted)
+        iconTexture:SetDesaturated(wanted)
         _lastDesat = wanted
     end
 end
 
 local function _hideBuffOverlay()
     _buffExpiry = 0
-    if buffOverlay then
-        buffOverlay:SetScript("OnUpdate", nil)
-        buffOverlay:Hide()
+    if buffShade then
+        buffShade:SetScript("OnUpdate", nil)
+        buffShade:Hide()
     end
     _setBuffDur("")
 end
@@ -810,9 +810,9 @@ local function _showPreviewLockout()
         -- The texture goes here for the same reason -- nothing about it changes
         -- between ticks.
         _previewExpiry = GetTime() + 600
-        iconTex:SetTexture(_lustBuffIcon())
-        if cooldownFrame then
-            cooldownFrame:SetCooldown(GetTime(), 600)
+        iconTexture:SetTexture(_lustBuffIcon())
+        if cdFrame then
+            cdFrame:SetCooldown(GetTime(), 600)
         end
     end
     _setDur(FormatTime(_previewExpiry - GetTime()))
@@ -825,8 +825,8 @@ local function PollSated()
     if not widget then
         return
     end
-    local aura, auraSid = _findSated()
-    if not aura then
+    local auraInfo, auraSid = _findSated()
+    if not auraInfo then
         _satedActive = false
         _satedExpiryGuess = 0
         if RP("showReady") then
@@ -863,13 +863,13 @@ local function PollSated()
         -- poll is also the safety net for a missed one): restore the debuff icon
         -- and its swipe, not just the text.
         _hideReadyState()
-        _applyActiveAura(aura, auraSid)
+        _applyActiveAura(auraInfo, auraSid)
     end
-    local exp = aura.expirationTime
-    if exp and not issecretvalue(exp) then
-        _syncSatedGuess(aura)
-        local rem = exp - GetTime()
-        _setDur(rem > 0 and FormatTime(rem) or "")
+    local expiresAt = auraInfo.expirationTime
+    if expiresAt and not issecretvalue(expiresAt) then
+        _syncSatedGuess(auraInfo)
+        local remaining = expiresAt - GetTime()
+        _setDur(remaining > 0 and FormatTime(remaining) or "")
     elseif _satedExpiryGuess > GetTime() then
         -- Real value secret (12.1 combat): count down on the cached expiry.
         _setDur(FormatTime(_satedExpiryGuess - GetTime()))
@@ -912,8 +912,8 @@ function UpdateVisibility()
         -- later path can surface them as if they were real lockout data.
         if _previewExpiry ~= 0 and not _previewActive() then
             _previewExpiry = 0
-            if cooldownFrame then
-                cooldownFrame:Clear()
+            if cdFrame then
+                cdFrame:Clear()
             end
             _setDur("")
         end
@@ -929,11 +929,11 @@ function _G._CUI_Bloodlust_SetPreviewOwner(frame)
 end
 
 local function _refreshSated()
-    local aura, spellRef = _findSated()
-    _satedActive = (aura ~= nil)
-    if aura then
-        _syncSatedGuess(aura)
-        _applyActiveAura(aura, spellRef)
+    local auraInfo, spellRef = _findSated()
+    _satedActive = (auraInfo ~= nil)
+    if auraInfo then
+        _syncSatedGuess(auraInfo)
+        _applyActiveAura(auraInfo, spellRef)
     else
         _satedExpiryGuess = 0
     end
@@ -974,9 +974,9 @@ local function _onEvent(_, evt, _, updateInfo)
             -- the cache is exact even while the real expiry is secret.
             -- Re-apply so the swipe picks it up now, not on the next event.
             _satedExpiryGuess = GetTime() + 600
-            local aura, spellRef = _findSated()
-            if aura then
-                _applyActiveAura(aura, spellRef)
+            local auraInfo, spellRef = _findSated()
+            if auraInfo then
+                _applyActiveAura(auraInfo, spellRef)
             end
             _showBuffOverlay()
         end
@@ -1040,19 +1040,19 @@ local function CreateBloodlustFrame()
     widget:SetSize(40, 40)
     widget:Hide()
 
-    iconTex = widget:CreateTexture(nil, "ARTWORK")
-    iconTex:SetAllPoints(widget)
-    iconTex:SetTexture(_lustBuffIcon() or 136080)
-    iconTex:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+    iconTexture = widget:CreateTexture(nil, "ARTWORK")
+    iconTexture:SetAllPoints(widget)
+    iconTexture:SetTexture(_lustBuffIcon() or 136080)
+    iconTexture:SetTexCoord(0.08, 0.92, 0.08, 0.92)
 
     borderTex = widget:CreateTexture(nil, "OVERLAY")
     borderTex:Hide()
 
-    cooldownFrame = CreateFrame("Cooldown", nil, widget, "CooldownFrameTemplate")
-    cooldownFrame:SetAllPoints(widget)
-    cooldownFrame:SetDrawEdge(false)
-    cooldownFrame:SetHideCountdownNumbers(true) -- we render our own duration text
-    cooldownFrame:SetFrameLevel(widget:GetFrameLevel() + 1)
+    cdFrame = CreateFrame("Cooldown", nil, widget, "CooldownFrameTemplate")
+    cdFrame:SetAllPoints(widget)
+    cdFrame:SetDrawEdge(false)
+    cdFrame:SetHideCountdownNumbers(true) -- we render our own duration text
+    cdFrame:SetFrameLevel(widget:GetFrameLevel() + 1)
 
     -- TWO text layers, one per state, so each state's text reads over its own
     -- border and swipe while the opaque 40s buff icon still covers the debuff
@@ -1075,14 +1075,14 @@ local function CreateBloodlustFrame()
 
     -- SetFont FIRST: SetText on a fontstring that has no font yet errors out, and
     -- this runs before ApplyShape ever styles it.
-    readyFS = textOverlay:CreateFontString(nil, "OVERLAY")
-    readyFS:SetFont(
+    readyText = textOverlay:CreateFontString(nil, "OVERLAY")
+    readyText:SetFont(
         (CludesUI.GetFontPath("extras")) or STANDARD_TEXT_FONT,
         12,
         (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     )
-    readyFS:SetText("")
-    readyFS:Hide()
+    readyText:SetText("")
+    readyText:Hide()
 
     countFS = textOverlay:CreateFontString(nil, "OVERLAY")
     countFS:SetFont(
@@ -1095,29 +1095,29 @@ local function CreateBloodlustFrame()
     -- 40s active-lust overlay. Sits ABOVE the debuff icon and its swipe; shown
     -- for 40s on a fresh debuff acquire, then hidden, revealing the untouched
     -- debuff icon underneath. We never modify the debuff icon itself.
-    buffOverlay = CreateFrame("Frame", nil, widget)
-    buffOverlay:SetAllPoints(widget)
-    buffOverlay:SetFrameLevel(cooldownFrame:GetFrameLevel() + 4)
-    buffOverlay:Hide()
+    buffShade = CreateFrame("Frame", nil, widget)
+    buffShade:SetAllPoints(widget)
+    buffShade:SetFrameLevel(cdFrame:GetFrameLevel() + 4)
+    buffShade:Hide()
 
-    buffTex = buffOverlay:CreateTexture(nil, "ARTWORK")
-    buffTex:SetAllPoints(buffOverlay)
+    buffTexture = buffShade:CreateTexture(nil, "ARTWORK")
+    buffTexture:SetAllPoints(buffShade)
 
-    buffBorderTex = buffOverlay:CreateTexture(nil, "OVERLAY")
+    buffBorderTex = buffShade:CreateTexture(nil, "OVERLAY")
     buffBorderTex:Hide()
 
-    buffCooldown = CreateFrame("Cooldown", nil, buffOverlay, "CooldownFrameTemplate")
-    buffCooldown:SetAllPoints(buffOverlay)
-    buffCooldown:SetDrawEdge(false)
-    buffCooldown:SetHideCountdownNumbers(true)
-    buffCooldown:SetReverse(true) -- active buff: starts bright and darkens as it runs out
-    buffCooldown:SetFrameLevel(buffOverlay:GetFrameLevel() + 1)
+    buffCd = CreateFrame("Cooldown", nil, buffShade, "CooldownFrameTemplate")
+    buffCd:SetAllPoints(buffShade)
+    buffCd:SetDrawEdge(false)
+    buffCd:SetHideCountdownNumbers(true)
+    buffCd:SetReverse(true) -- active buff: starts bright and darkens as it runs out
+    buffCd:SetFrameLevel(buffShade:GetFrameLevel() + 1)
 
     -- Parented to the overlay, not to frame: the 40s text hides with the window
     -- it belongs to instead of relying on every hide path to blank the string.
-    buffTextOverlay = CreateFrame("Frame", nil, buffOverlay)
-    buffTextOverlay:SetAllPoints(buffOverlay)
-    buffTextOverlay:SetFrameLevel(buffCooldown:GetFrameLevel() + 2)
+    buffTextOverlay = CreateFrame("Frame", nil, buffShade)
+    buffTextOverlay:SetAllPoints(buffShade)
+    buffTextOverlay:SetFrameLevel(buffCd:GetFrameLevel() + 2)
 
     buffDurationFS = buffTextOverlay:CreateFontString(nil, "OVERLAY")
     buffDurationFS:SetFont(

@@ -123,23 +123,23 @@ do
         local keyList = PF.TAB_KEY[context]
         v = setmetatable({}, {
             __index = function(_, k)
-                local raw = PF.Raw()
-                if not raw then
+                local rawValue = PF.Raw()
+                if not rawValue then
                     return nil
                 end
                 local tk = keyList[k]
                 if tk then
-                    local val = raw[tk]
+                    local val = rawValue[tk]
                     if val ~= nil then
                         return val
                     end
                 end
-                return raw[k]
+                return rawValue[k]
             end,
             __newindex = function(_, k, val)
-                local raw = PF.Raw()
-                if raw then
-                    raw[keyList[k] or k] = val
+                local rawValue = PF.Raw()
+                if rawValue then
+                    rawValue[keyList[k] or k] = val
                 end
             end,
         })
@@ -166,21 +166,21 @@ do
     -- Beside Owner: Show Pets on the Party tab with its Position on Beside Owner, while the party frames
     -- are the ones on screen.
     PF.OwnerChosen = function()
-        local raw = PF.Raw()
-        return (raw and raw.party == true and PF.PartyMode() and PF.View("party").position == "owner")
+        local rawValue = PF.Raw()
+        return (rawValue and rawValue.party == true and PF.PartyMode() and PF.View("party").position == "owner")
             or false
     end
 
     -- The pet header (Beside Owner leaves it down).
     PF.Wanted = function()
-        local raw = PF.Raw()
-        if not raw then
+        local rawValue = PF.Raw()
+        if not rawValue then
             return false
         end
         if PF.PartyMode() then
-            return raw.party == true and PF.View("party").position ~= "owner"
+            return rawValue.party == true and PF.View("party").position ~= "owner"
         end
-        return raw.raid == true
+        return rawValue.raid == true
     end
 
     -- Settings the pets are styled from: the party settings beside the party frames, else the raid's.
@@ -242,9 +242,9 @@ do
                     func(b, u)
                 end
             end
-            local sp = PF.selfPet
-            if sp:IsVisible() then
-                func(sp, "pet")
+            local petSettings = PF.selfPet
+            if petSettings:IsVisible() then
+                func(petSettings, "pet")
             end
         end
     end
@@ -336,15 +336,15 @@ do
 
     -- A group member's connection changed: re-read its pet's range.
     function mod._PF_OwnerRange(ownerFrame)
-        local pt = PF.shownEv and PF.PET_OF[ownerFrame]
-        if not pt then
+        local point = PF.shownEv and PF.PET_OF[ownerFrame]
+        if not point then
             return
         end
-        local b = PF.active and PF.byUnit[pt]
+        local b = PF.active and PF.byUnit[point]
         if b and b:IsVisible() then
             PF.ApplyRange(b)
         end
-        b = PF.ownerActive and PF.ownerByUnit[pt]
+        b = PF.ownerActive and PF.ownerByUnit[point]
         if b and b:IsVisible() then
             PF.ApplyRange(b)
         end
@@ -413,16 +413,16 @@ do
     -- owner entering or leaving a vehicle, which the pet token then stands for. Only that owner's pet
     -- buttons are re-checked. owner: the event's unit.
     PF.OnPetChanged = function(ownerFrame)
-        local pt = ownerFrame and PF.PET_OF[ownerFrame]
-        if not pt then
+        local point = ownerFrame and PF.PET_OF[ownerFrame]
+        if not point then
             return
         end
         if PF.active then
-            PF.Revalidate(PF.byUnit[pt])
+            PF.Revalidate(PF.byUnit[point])
         end
         if PF.ownerActive then
-            PF.Revalidate(PF.ownerByUnit[pt])
-            if pt == "pet" then
+            PF.Revalidate(PF.ownerByUnit[point])
+            if point == "pet" then
                 PF.Revalidate(PF.selfPet)
             end
         end
@@ -442,11 +442,11 @@ do
 
     -- The side a group attached beside the party frames takes, the Party Frames kit's flip included.
     PF.KitSide = function(place)
-        local before = place == "left"
+        local prior = place == "left"
         if mod.RF_PartyKit() then
-            before = mod.RF_KitAttach(saved.profile, before)
+            prior = mod.RF_KitAttach(saved.profile, prior)
         end
-        return before
+        return prior
     end
 
     -- The pet group goes after Friendly Boss and Extra Frames when they sit on the same side. Beside
@@ -642,8 +642,8 @@ do
     -- Header buttons: five in one column beside the party frames, all forty (eight columns) once raid
     -- pets are on. The column count caps what the header shows, so it never makes a button itself.
     PF.Capacity = function()
-        local raw = PF.Raw()
-        return (raw and raw.raid == true) and PF.MAX or 5
+        local rawValue = PF.Raw()
+        return (rawValue and rawValue.raid == true) and PF.MAX or 5
     end
 
     -- A header makes children only while visible, so the buttons up to the capacity are made up front
@@ -825,13 +825,13 @@ do
         end
         PF.ownerBuilt = true
         -- Your pet hangs off the container, not the self button, so it can outlive Hide Self.
-        local sp = CreateFrame("Button", nil, mod._partyContainerFrame, "SecureUnitButtonTemplate")
-        sp:SetAttribute("unit", "pet")
-        sp:Hide()
-        PF.StyleButton(sp)
-        FB.src[sp] = PF.PartySource
-        PF.selfPet = sp
-        PF.ownerButtons[1] = sp
+        local petSettings = CreateFrame("Button", nil, mod._partyContainerFrame, "SecureUnitButtonTemplate")
+        petSettings:SetAttribute("unit", "pet")
+        petSettings:Hide()
+        PF.StyleButton(petSettings)
+        FB.src[petSettings] = PF.PartySource
+        PF.selfPet = petSettings
+        PF.ownerButtons[1] = petSettings
         for _, ownerFrame in ipairs(mod._partyAllButtons) do
             if ownerFrame ~= mod._partySelfButton then
                 local b = CreateFrame("Button", nil, ownerFrame, "SecureUnitButtonTemplate")
@@ -842,7 +842,7 @@ do
                 FB.src[b] = PF.PartySource
                 PF.ownerButtons[#PF.ownerButtons + 1] = b
                 SecureHandlerSetFrameRef(ownerFrame, "pfpet", b)
-                SecureHandlerSetFrameRef(ownerFrame, "pfself", sp)
+                SecureHandlerSetFrameRef(ownerFrame, "pfself", petSettings)
             end
         end
         PF.EnsureTrackers(PF.SMALL_TRACKERS)
@@ -904,11 +904,11 @@ do
     -- Party frame size (the raid frame size under the Party Frames layout, whose size is its portrait
     -- box, as Friendly Boss does).
     PF.PartySize = function(s)
-        local wid, hgt, sp = mod.RF_PartyDims(saved.profile)
+        local wid, hgt, petSettings = mod.RF_PartyDims(saved.profile)
         if mod.RF_PartyKit() then
-            wid, hgt, sp = s.frameWidth or 125, s.frameHeight or 60, s.cellSpacing or -1
+            wid, hgt, petSettings = s.frameWidth or 125, s.frameHeight or 60, s.cellSpacing or -1
         end
-        return wid, hgt, sp
+        return wid, hgt, petSettings
     end
 
     -- A tab's pet size (its frames' size plus that tab's Extra Width/Height), spacing and growth: the
@@ -916,18 +916,18 @@ do
     -- Free Move takes the tab's Growth Direction when one is set, its columns turned across it.
     PF.Geometry = function(context)
         local s = mod._scaledProfile or saved.profile
-        local wid, hgt, sp, unitGrowth, groupGrowth
+        local wid, hgt, petSettings, unitGrowth, groupGrowth
         if context == "party" then
-            wid, hgt, sp = PF.PartySize(s)
+            wid, hgt, petSettings = PF.PartySize(s)
             unitGrowth = mod._PartyGrowth(saved.profile)
             groupGrowth = (unitGrowth == "RIGHT" or unitGrowth == "LEFT") and "DOWN" or "RIGHT"
         else
-            wid, hgt, sp = s.frameWidth or 125, s.frameHeight or 60, s.cellSpacing or -1
+            wid, hgt, petSettings = s.frameWidth or 125, s.frameHeight or 60, s.cellSpacing or -1
             unitGrowth, groupGrowth =
                 mod._RFEffectiveGrowth(s.unitGrowth or "DOWN", s.groupGrowth or "RIGHT", true)
         end
         if mod.RF_CompactOn(context == "party" and mod._partyProxy or s, context == "party") then
-            sp = mod.RF_OnePixel(context == "party")
+            petSettings = mod.RF_OnePixel(context == "party")
         end
         local v = PF.View(context)
         local fg = v.position == "free" and v.freeGrowth
@@ -940,24 +940,24 @@ do
         wid = PixelSnap(math.max(10, wid + (v.extraWidth or 0)))
         hgt = PixelSnap(math.max(10, hgt + (v.extraHeight or 0)))
         -- Same grid as FB.FreePin: the pet header's own scale.
-        sp = CludesUI.PP.SnapForES(sp, (PF.container or UIParent):GetEffectiveScale())
-        return wid, hgt, sp, unitGrowth, groupGrowth
+        petSettings = CludesUI.PP.SnapForES(petSettings, (PF.container or UIParent):GetEffectiveScale())
+        return wid, hgt, petSettings, unitGrowth, groupGrowth
     end
 
     -- Pet Side, fitted to the party frames' orientation: across the stack only (Left/Right beside
     -- stacked frames, Above/Below horizontal ones), so a pet never lands on the next frame. A choice
     -- that no longer fits reads as the default until it fits again. s: the profile (or preview view).
     PF.OwnerSide = function(s)
-        local raw = PF.Raw()
-        local side = raw and raw.ownerSide
+        local rawValue = PF.Raw()
+        local edgeSide = rawValue and rawValue.ownerSide
         if s.partyHorizontal then
-            if side ~= "above" and side ~= "below" then
-                side = "below"
+            if edgeSide ~= "above" and edgeSide ~= "below" then
+                edgeSide = "below"
             end
-        elseif side ~= "left" and side ~= "right" then
-            side = "right"
+        elseif edgeSide ~= "left" and edgeSide ~= "right" then
+            edgeSide = "right"
         end
-        return side
+        return edgeSide
     end
     function mod.PF_OwnerSide()
         return PF.OwnerSide(saved.profile)
@@ -966,46 +966,46 @@ do
     -- The side the pets take and the extra gap: the Party Frames kit moves them off its outside auras
     -- as it does the Friendly Boss group.
     PF.ResolveOwnerSide = function(s)
-        local side = PF.OwnerSide(s)
+        local edgeSide = PF.OwnerSide(s)
         local extra = 0
         if mod.RF_PartyKit() then
-            local before = side == "left" or side == "above"
-            before, extra = mod.RF_KitAttach(s, before)
+            local prior = edgeSide == "left" or edgeSide == "above"
+            prior, extra = mod.RF_KitAttach(s, prior)
             if s.partyHorizontal then
-                side = before and "above" or "below"
+                edgeSide = prior and "above" or "below"
             else
-                side = before and "left" or "right"
+                edgeSide = prior and "left" or "right"
             end
         end
-        return side, extra
+        return edgeSide, extra
     end
 
-    PF.OwnerPoint = function(b, ownerFrame, side, gap)
-        if side == "left" then
-            b:SetPoint("TOPRIGHT", ownerFrame, "TOPLEFT", -gap, 0)
-        elseif side == "below" then
-            b:SetPoint("TOPLEFT", ownerFrame, "BOTTOMLEFT", 0, -gap)
-        elseif side == "above" then
-            b:SetPoint("BOTTOMLEFT", ownerFrame, "TOPLEFT", 0, gap)
+    PF.OwnerPoint = function(b, ownerFrame, edgeSide, spacing)
+        if edgeSide == "left" then
+            b:SetPoint("TOPRIGHT", ownerFrame, "TOPLEFT", -spacing, 0)
+        elseif edgeSide == "below" then
+            b:SetPoint("TOPLEFT", ownerFrame, "BOTTOMLEFT", 0, -spacing)
+        elseif edgeSide == "above" then
+            b:SetPoint("BOTTOMLEFT", ownerFrame, "TOPLEFT", 0, spacing)
         else
-            b:SetPoint("TOPLEFT", ownerFrame, "TOPRIGHT", gap, 0)
+            b:SetPoint("TOPLEFT", ownerFrame, "TOPRIGHT", spacing, 0)
         end
     end
 
     -- Size, side and style of the Beside Owner pets: only what changed is touched (the party layout pass
     -- runs this on every roster edge). restyle (a settings reload) checks the style inputs, and restyles
     -- the fonts, textures and borders only when they changed; a size change alone resizes. OOC only.
-    PF.OwnerLayout = function(restyle)
-        local wid, hgt, sp = PF.Geometry("party")
-        local side, extra = PF.ResolveOwnerSide(saved.profile)
-        local baseGap = PixelSnap(sp)
-        local gap = baseGap + PixelSnap(extra)
+    PF.OwnerLayout = function(needsRestyle)
+        local wid, hgt, petSettings = PF.Geometry("party")
+        local edgeSide, extra = PF.ResolveOwnerSide(saved.profile)
+        local baseGap = PixelSnap(petSettings)
+        local spacing = baseGap + PixelSnap(extra)
         local resized = wid ~= PF.ownerW or hgt ~= PF.ownerH
-        local moved = side ~= PF.ownerSideCur or gap ~= PF.ownerGap
-        PF.ownerW, PF.ownerH, PF.ownerSideCur, PF.ownerGap, PF.ownerBaseGap = wid, hgt, side, gap, baseGap
+        local moved = edgeSide ~= PF.ownerSideCur or spacing ~= PF.ownerGap
+        PF.ownerW, PF.ownerH, PF.ownerSideCur, PF.ownerGap, PF.ownerBaseGap = wid, hgt, edgeSide, spacing, baseGap
         local s, texPath
         local restyled = false
-        if restyle then
+        if needsRestyle then
             s = PF.PartySource()
             texPath = ResolveHealthTexture(s)
             restyled = PF.StyleChanged("owner", s, texPath)
@@ -1027,7 +1027,7 @@ do
                 local o = PF.ownerOf[b]
                 if o then
                     b:ClearAllPoints()
-                    PF.OwnerPoint(b, o, side, gap)
+                    PF.OwnerPoint(b, o, edgeSide, spacing)
                 end
             end
         end
@@ -1067,7 +1067,7 @@ do
             end
             return
         end
-        local grow = mod._PartyGrowth(saved.profile)
+        local growDir = mod._PartyGrowth(saved.profile)
         local _, _, psp = mod.RF_PartyDims(saved.profile)
         -- The party frames' pitch: spacing, plus the room party target frames along the stack take.
         local slotGap = PixelSnap(psp) + mod.PT_AlongPitch(saved.profile)
@@ -1076,25 +1076,25 @@ do
             and mode == PF.spMode
             and PF.ownerSideCur == PF.spSide
             and PF.ownerGap == PF.spGap
-            and grow == PF.spGrow
+            and growDir == PF.spGrow
             and slotGap == PF.spSlotGap
         then
             return
         end
         PF.spMode, PF.spSide, PF.spGap, PF.spGrow, PF.spSlotGap =
-            mode, PF.ownerSideCur, PF.ownerGap, grow, slotGap
+            mode, PF.ownerSideCur, PF.ownerGap, growDir, slotGap
         if mode == "hidden" then
-            local pt, rp, posX, posY, base
-            if grow == "UP" then
-                pt, rp, posX, posY, base = "BOTTOMLEFT", "TOPLEFT", 0, slotGap, "BOTTOMLEFT"
-            elseif grow == "RIGHT" then
-                pt, rp, posX, posY, base = "TOPLEFT", "TOPRIGHT", slotGap, 0, "TOPLEFT"
-            elseif grow == "LEFT" then
-                pt, rp, posX, posY, base = "TOPRIGHT", "TOPLEFT", -slotGap, 0, "TOPRIGHT"
+            local point, rp, posX, posY, base
+            if growDir == "UP" then
+                point, rp, posX, posY, base = "BOTTOMLEFT", "TOPLEFT", 0, slotGap, "BOTTOMLEFT"
+            elseif growDir == "RIGHT" then
+                point, rp, posX, posY, base = "TOPLEFT", "TOPRIGHT", slotGap, 0, "TOPLEFT"
+            elseif growDir == "LEFT" then
+                point, rp, posX, posY, base = "TOPRIGHT", "TOPLEFT", -slotGap, 0, "TOPRIGHT"
             else
-                pt, rp, posX, posY, base = "TOPLEFT", "BOTTOMLEFT", 0, -slotGap, "TOPLEFT"
+                point, rp, posX, posY, base = "TOPLEFT", "BOTTOMLEFT", 0, -slotGap, "TOPLEFT"
             end
-            b:SetAttribute("pf-pt", pt)
+            b:SetAttribute("pf-pt", point)
             b:SetAttribute("pf-rp", rp)
             b:SetAttribute("pf-x", posX)
             b:SetAttribute("pf-y", posY)
@@ -1109,7 +1109,7 @@ do
             end
             b:ClearAllPoints()
             if last then
-                b:SetPoint(pt, last, rp, posX, posY)
+                b:SetPoint(point, last, rp, posX, posY)
             else
                 b:SetPoint(base, heading, base, 0, 0)
             end
@@ -1133,16 +1133,16 @@ do
 
     -- The room the Beside Owner pets take on the side a group attaches to the party frames (horizontal:
     -- the party frames' orientation; before: left, or above horizontal frames).
-    function mod.PF_OwnerReserve(horizontal, before)
-        local side = PF.ownerActive and PF.ownerSideCur
-        if not side then
+    function mod.PF_OwnerReserve(horizontal, prior)
+        local edgeSide = PF.ownerActive and PF.ownerSideCur
+        if not edgeSide then
             return 0
         end
         if horizontal then
-            if (before and side == "above") or (not before and side == "below") then
+            if (prior and edgeSide == "above") or (not prior and edgeSide == "below") then
                 return PF.ownerH + PF.ownerBaseGap
             end
-        elseif (before and side == "left") or (not before and side == "right") then
+        elseif (prior and edgeSide == "left") or (not prior and edgeSide == "right") then
             return PF.ownerW + PF.ownerBaseGap
         end
         return 0
@@ -1233,16 +1233,16 @@ do
     -- is touched: restyle (a settings or profile reload) and a party/raid flip restyle only when the
     -- style inputs changed, a size change alone resizes, and buttons off screen catch up as they show.
     -- Both also repaint the pets on screen, whose paint reads the settings too. OOC only.
-    PF.Layout = function(restyle)
+    PF.Layout = function(needsRestyle)
         local context = PF.Ctx()
         local party = context == "party"
-        local wid, hgt, sp, unitGrowth, groupGrowth = PF.Geometry(context)
+        local wid, hgt, petSettings, unitGrowth, groupGrowth = PF.Geometry(context)
         local heading = PF.container
         local resized = wid ~= PF.w or hgt ~= PF.h
-        PF.w, PF.h, PF.sp, PF.unitGrowth, PF.groupGrowth = wid, hgt, sp, unitGrowth, groupGrowth
+        PF.w, PF.h, PF.sp, PF.unitGrowth, PF.groupGrowth = wid, hgt, petSettings, unitGrowth, groupGrowth
         local flipped = PF.styleCtx ~= context
         local restyled = false
-        if restyle or flipped then
+        if needsRestyle or flipped then
             PF.styleCtx = context
             local ss = PF.StyleSource()
             restyled =
@@ -1268,7 +1268,7 @@ do
         end
         -- Before the header re-runs below: the pets it re-assigns paint in their unit hook, and the
         -- ones it shows as they show.
-        if restyle or flipped then
+        if needsRestyle or flipped then
             PF.RepaintShown(PF.buttons)
         end
 
@@ -1284,9 +1284,9 @@ do
         end
         -- Beside the party frames the pets keep the party frames' pitch, which party target frames along
         -- the stack open (the kit's pets take the raid frame size, which never lines up with them).
-        local pitch = sp
+        local pitch = petSettings
         if party and not mod.RF_PartyKit() and PF.View("party").position ~= "free" then
-            pitch = sp + mod.PT_AlongPitch(saved.profile)
+            pitch = petSettings + mod.PT_AlongPitch(saved.profile)
         end
         local anchorPoint, xOff, yOff = mod._RFHeaderPoint(unitGrowth, pitch)
         local solo = (party and saved.profile.partyShowWhenSolo) and true or nil
@@ -1326,20 +1326,20 @@ do
     -- Free Move: the header is pinned at the corner its pets grow from, so pet 1 stays put as pets come
     -- and go. The overlay covers five pets; until its first drag they are centred on freePos. ctx: the
     -- tab whose spot and size this is.
-    PF.FreeCorner = function(set, context)
-        local wid, hgt, sp, unitGrowth, groupGrowth = PF.Geometry(context)
+    PF.FreeCorner = function(keySet, context)
+        local wid, hgt, petSettings, unitGrowth, groupGrowth = PF.Geometry(context)
         local vertical = unitGrowth ~= "RIGHT" and unitGrowth ~= "LEFT"
         local hDir = vertical and groupGrowth or unitGrowth
         local vDir = vertical and unitGrowth or groupGrowth
         if vertical then
-            hgt = 5 * hgt + 4 * sp
+            hgt = 5 * hgt + 4 * petSettings
         else
-            wid = 5 * wid + 4 * sp
+            wid = 5 * wid + 4 * petSettings
         end
-        local region = set.freeRect
+        local region = keySet.freeRect
         local corner, posX, posY = FB.CornerPin(hDir, vDir, region)
         if not region then
-            local p = set.freePos
+            local p = keySet.freePos
             local cx, cy = p and p.x or 100, p and p.y or 0
             posX = (hDir == "LEFT") and (cx + wid / 2) or (cx - wid / 2)
             posY = (vDir == "UP") and (cy - hgt / 2) or (cy + hgt / 2)
@@ -1347,8 +1347,8 @@ do
         return corner, posX, posY, wid, hgt
     end
 
-    PF.FreeAnchor = function(c, set)
-        local corner, posX, posY = PF.FreeCorner(set, PF.Ctx())
+    PF.FreeAnchor = function(c, keySet)
+        local corner, posX, posY = PF.FreeCorner(keySet, PF.Ctx())
         FB.FreePin(c, corner, posX, posY)
         return true
     end
@@ -1366,8 +1366,8 @@ do
         end
     end
 
-    PF.PlaceMover = function(m, set)
-        local corner, posX, posY, wid, hgt = PF.FreeCorner(set, PF.moverCtx or PF.Ctx())
+    PF.PlaceMover = function(m, keySet)
+        local corner, posX, posY, wid, hgt = PF.FreeCorner(keySet, PF.moverCtx or PF.Ctx())
         m:SetSize(wid, hgt)
         FB.FreePin(m, corner, posX, posY)
     end
@@ -1396,12 +1396,12 @@ do
         if not (m and m:IsShown() and PF.moverCtx == context) then
             return
         end
-        local set = PF.MoverSettings()
-        if not set then
+        local keySet = PF.MoverSettings()
+        if not keySet then
             return
         end
         m:ClearAllPoints()
-        PF.PlaceMover(m, set)
+        PF.PlaceMover(m, keySet)
     end
 
     -- Options preview: made-up pets beside the preview frames, on the same visuals. Plain frames, built
@@ -1429,8 +1429,8 @@ do
         PF.pvStyle = s
         c.texPath = ResolveHealthTexture(s)
         c.bgc = s.customBgColor or PF.DEFAULT_BG
-        local raw = PF.Raw()
-        c.hc = raw and raw.healthColor
+        local rawValue = PF.Raw()
+        c.hc = rawValue and rawValue.healthColor
         c.opacity = (s.healthBarOpacity or 100) / 100
         return c
     end
@@ -1483,55 +1483,55 @@ do
     -- Beside Owner preview: the pet size, side and gap as the real pets take them, the room it needs
     -- around the party frames (pads), and with Hide Self the slot after the last frame (sp: the party
     -- frames' spacing). s: the preview's view; w, h, sp: its party frame size and spacing.
-    PF.OwnerPreviewSpec = function(s, wid, hgt, sp)
-        local pw, ph, gap = wid, hgt, sp
+    PF.OwnerPreviewSpec = function(s, wid, hgt, petSettings)
+        local pw, ph, spacing = wid, hgt, petSettings
         if mod.RF_PartyKit() then
-            pw, ph, gap =
+            pw, ph, spacing =
                 PixelSnap(s.frameWidth or 125), PixelSnap(s.frameHeight or 60), PixelSnap(s.cellSpacing or -1)
         end
         local v = PF.View("party")
         pw = PixelSnap(math.max(10, pw + (v.extraWidth or 0)))
         ph = PixelSnap(math.max(10, ph + (v.extraHeight or 0)))
-        local side, extra = PF.ResolveOwnerSide(s)
-        gap = gap + PixelSnap(extra)
+        local edgeSide, extra = PF.ResolveOwnerSide(s)
+        spacing = spacing + PixelSnap(extra)
         local max = math.max
         local specInfo = {
             owner = true,
             w = pw,
             h = ph,
-            side = side,
-            gap = gap,
+            side = edgeSide,
+            gap = spacing,
             padL = 0,
             padT = 0,
             padR = 0,
             padB = 0,
         }
-        if side == "right" then
-            specInfo.padR, specInfo.padB = gap + pw, max(0, ph - hgt)
-        elseif side == "left" then
-            specInfo.padL, specInfo.padB = gap + pw, max(0, ph - hgt)
-        elseif side == "below" then
-            specInfo.padB, specInfo.padR = gap + ph, max(0, pw - wid)
+        if edgeSide == "right" then
+            specInfo.padR, specInfo.padB = spacing + pw, max(0, ph - hgt)
+        elseif edgeSide == "left" then
+            specInfo.padL, specInfo.padB = spacing + pw, max(0, ph - hgt)
+        elseif edgeSide == "below" then
+            specInfo.padB, specInfo.padR = spacing + ph, max(0, pw - wid)
         else
-            specInfo.padT, specInfo.padR = gap + ph, max(0, pw - wid)
+            specInfo.padT, specInfo.padR = spacing + ph, max(0, pw - wid)
         end
         if s.partyHideSelf then
-            local grow = mod._PartyGrowth(s)
+            local growDir = mod._PartyGrowth(s)
             specInfo.selfSlot = true
             -- The next slot: the party frames' pitch, party target frames along the stack included.
-            sp = sp + mod.PT_AlongPitch(s, s.partyShowTargets == true)
-            if grow == "UP" then
-                specInfo.sPt, specInfo.sRp, specInfo.sX, specInfo.sY = "BOTTOMLEFT", "TOPLEFT", 0, sp
-                specInfo.padT, specInfo.padR = max(specInfo.padT, sp + ph), max(specInfo.padR, pw - wid)
-            elseif grow == "RIGHT" then
-                specInfo.sPt, specInfo.sRp, specInfo.sX, specInfo.sY = "TOPLEFT", "TOPRIGHT", sp, 0
-                specInfo.padR, specInfo.padB = max(specInfo.padR, sp + pw), max(specInfo.padB, ph - hgt)
-            elseif grow == "LEFT" then
-                specInfo.sPt, specInfo.sRp, specInfo.sX, specInfo.sY = "TOPRIGHT", "TOPLEFT", -sp, 0
-                specInfo.padL, specInfo.padB = max(specInfo.padL, sp + pw), max(specInfo.padB, ph - hgt)
+            petSettings = petSettings + mod.PT_AlongPitch(s, s.partyShowTargets == true)
+            if growDir == "UP" then
+                specInfo.sPt, specInfo.sRp, specInfo.sX, specInfo.sY = "BOTTOMLEFT", "TOPLEFT", 0, petSettings
+                specInfo.padT, specInfo.padR = max(specInfo.padT, petSettings + ph), max(specInfo.padR, pw - wid)
+            elseif growDir == "RIGHT" then
+                specInfo.sPt, specInfo.sRp, specInfo.sX, specInfo.sY = "TOPLEFT", "TOPRIGHT", petSettings, 0
+                specInfo.padR, specInfo.padB = max(specInfo.padR, petSettings + pw), max(specInfo.padB, ph - hgt)
+            elseif growDir == "LEFT" then
+                specInfo.sPt, specInfo.sRp, specInfo.sX, specInfo.sY = "TOPRIGHT", "TOPLEFT", -petSettings, 0
+                specInfo.padL, specInfo.padB = max(specInfo.padL, petSettings + pw), max(specInfo.padB, ph - hgt)
             else
-                specInfo.sPt, specInfo.sRp, specInfo.sX, specInfo.sY = "TOPLEFT", "BOTTOMLEFT", 0, -sp
-                specInfo.padB, specInfo.padR = max(specInfo.padB, sp + ph), max(specInfo.padR, pw - wid)
+                specInfo.sPt, specInfo.sRp, specInfo.sX, specInfo.sY = "TOPLEFT", "BOTTOMLEFT", 0, -petSettings
+                specInfo.padB, specInfo.padR = max(specInfo.padB, petSettings + ph), max(specInfo.padR, pw - wid)
             end
         end
         return specInfo
@@ -1543,86 +1543,86 @@ do
     -- Beside Owner (Party tab) returns its own spec instead (spec.owner, see PF.OwnerPreviewSpec).
     -- w, h, sp: the preview's frame size and spacing; ptSpec: the preview's party target frames
     -- (ns.PT_PreviewSpec), whose room the pets clear as the real ones do.
-    function mod.PF_PreviewSpec(party, s, wid, hgt, sp, boxW, boxH, ptSpec)
-        local raw = PF.Raw()
-        if not raw or raw[party and "party" or "raid"] ~= true then
+    function mod.PF_PreviewSpec(party, s, wid, hgt, petSettings, boxW, boxH, ptSpec)
+        local rawValue = PF.Raw()
+        if not rawValue or rawValue[party and "party" or "raid"] ~= true then
             return
         end
-        local set = PF.View(party and "party" or "raid")
-        if set.position == "free" then
+        local keySet = PF.View(party and "party" or "raid")
+        if keySet.position == "free" then
             return
         end
-        if set.position == "owner" then
+        if keySet.position == "owner" then
             if party then
-                return PF.OwnerPreviewSpec(s, wid, hgt, sp)
+                return PF.OwnerPreviewSpec(s, wid, hgt, petSettings)
             end
             return
         end
-        local before = set.position == "left"
-        local gap, grow, side
+        local prior = keySet.position == "left"
+        local spacing, growDir, edgeSide
         if party then
-            gap = s.groupSpacing or -1
+            spacing = s.groupSpacing or -1
             if mod.RF_PartyKit() then
                 local extra
-                before, extra = mod.RF_KitAttach(s, before)
-                gap = gap + extra
+                prior, extra = mod.RF_KitAttach(s, prior)
+                spacing = spacing + extra
             end
-            gap = gap + mod.PT_PreviewReserve(ptSpec, s.partyHorizontal, before)
-            grow = mod._PartyGrowth(s)
+            spacing = spacing + mod.PT_PreviewReserve(ptSpec, s.partyHorizontal, prior)
+            growDir = mod._PartyGrowth(s)
             if mod.RF_PartyKit() then
-                wid, hgt, sp =
+                wid, hgt, petSettings =
                     PixelSnap(s.frameWidth or 125),
                     PixelSnap(s.frameHeight or 60),
                     PixelSnap(s.cellSpacing or -1)
             else
                 -- The party frames' pitch, party target frames along the stack included (PF.Layout's).
-                sp = sp + mod.PT_AlongPitch(s, s.partyShowTargets == true)
+                petSettings = petSettings + mod.PT_AlongPitch(s, s.partyShowTargets == true)
             end
             if s.partyHorizontal then
-                side = before and "UP" or "DOWN"
+                edgeSide = prior and "UP" or "DOWN"
             else
-                side = before and "LEFT" or "RIGHT"
+                edgeSide = prior and "LEFT" or "RIGHT"
             end
         else
-            gap = mod.RF_GroupSpacing(s)
-            grow = s.unitGrowth or "DOWN"
-            side = s.groupGrowth or "RIGHT"
+            spacing = mod.RF_GroupSpacing(s)
+            growDir = s.unitGrowth or "DOWN"
+            edgeSide = s.groupGrowth or "RIGHT"
             -- The grid flow ends in the rightmost column too, so the pets hang off
             -- the same edge a plain RIGHT run uses -- FB.Anchor agrees. Read raw,
             -- PF.OPPOSITE would return nil for it and the side would fall through
             -- to the vertical branch, drawing the pets above the groups.
-            if side == "DOWNRIGHT" then
-                side = "RIGHT"
+            if edgeSide == "DOWNRIGHT" then
+                edgeSide = "RIGHT"
             end
-            if before then
-                side = PF.OPPOSITE[side]
+            if prior then
+                edgeSide = PF.OPPOSITE[edgeSide]
             end
         end
 
-        local specInfo = { n = party and 3 or 5, sp = sp, grow = grow, before = before }
-        specInfo.w = PixelSnap(math.max(10, wid + (set.extraWidth or 0)))
-        specInfo.h = PixelSnap(math.max(10, hgt + (set.extraHeight or 0)))
-        if grow == "RIGHT" or grow == "LEFT" then
-            specInfo.bw, specInfo.bh = specInfo.n * specInfo.w + (specInfo.n - 1) * sp, specInfo.h
+        local specInfo = { n = party and 3 or 5, sp = petSettings, grow = growDir, before = prior }
+        specInfo.w = PixelSnap(math.max(10, wid + (keySet.extraWidth or 0)))
+        specInfo.h = PixelSnap(math.max(10, hgt + (keySet.extraHeight or 0)))
+        if growDir == "RIGHT" or growDir == "LEFT" then
+            specInfo.bw, specInfo.bh = specInfo.n * specInfo.w + (specInfo.n - 1) * petSettings, specInfo.h
         else
-            specInfo.bw, specInfo.bh = specInfo.w, specInfo.n * specInfo.h + (specInfo.n - 1) * sp
+            specInfo.bw, specInfo.bh = specInfo.w, specInfo.n * specInfo.h + (specInfo.n - 1) * petSettings
         end
         specInfo.ox, specInfo.oy = 0, 0
         -- Party stacks that grow up or left start at the box's bottom or right edge.
-        if party and grow == "UP" then
+        if party and growDir == "UP" then
             specInfo.oy = specInfo.bh - boxH
         end
-        if party and grow == "LEFT" then
+        if party and growDir == "LEFT" then
             specInfo.ox = boxW - specInfo.bw
         end
-        if side == "RIGHT" then
-            specInfo.ox = boxW + gap
-        elseif side == "LEFT" then
-            specInfo.ox = -gap - specInfo.bw
-        elseif side == "DOWN" then
-            specInfo.oy = -(boxH + gap)
+        if edgeSide == "RIGHT" then
+            specInfo.ox = boxW + spacing
+        elseif edgeSide == "LEFT" then
+            specInfo.ox = -spacing - specInfo.bw
+        elseif edgeSide == "DOWN" then
+            specInfo.oy = -(boxH + spacing)
         else
-            specInfo.oy = gap + specInfo.bh
+            specInfo.oy = spacing + specInfo.bh
         end
         return specInfo
     end
@@ -1693,33 +1693,33 @@ do
         PF.pvBlockOn = enabled or nil
         local heading = PF.container
         if enabled and PF.active and heading then
-            local blk = PF.hdrBlock
-            if not blk then
+            local block = PF.hdrBlock
+            if not block then
                 -- Under the header's parent, so it hides with the header's pet-battle and solo hide.
-                blk = CreateFrame("Frame", nil, PF.hider)
-                blk:EnableMouse(true)
-                PF.hdrBlock = blk
+                block = CreateFrame("Frame", nil, PF.hider)
+                block:EnableMouse(true)
+                PF.hdrBlock = block
             end
-            blk:SetAllPoints(heading)
-            blk:SetFrameStrata(heading:GetFrameStrata())
-            blk:SetFrameLevel(heading:GetFrameLevel() + 50)
-            blk:Show()
+            block:SetAllPoints(heading)
+            block:SetFrameStrata(heading:GetFrameStrata())
+            block:SetFrameLevel(heading:GetFrameLevel() + 50)
+            block:Show()
         elseif PF.hdrBlock then
             PF.hdrBlock:Hide()
         end
         for _, b in ipairs(PF.ownerButtons) do
-            local blk = PF.pvBlock[b]
+            local block = PF.pvBlock[b]
             if enabled and PF.ownerActive then
-                if not blk then
-                    blk = CreateFrame("Frame", nil, b)
-                    blk:SetAllPoints(b)
-                    blk:EnableMouse(true)
-                    PF.pvBlock[b] = blk
+                if not block then
+                    block = CreateFrame("Frame", nil, b)
+                    block:SetAllPoints(b)
+                    block:EnableMouse(true)
+                    PF.pvBlock[b] = block
                 end
-                blk:SetFrameLevel(b:GetFrameLevel() + 50)
-                blk:Show()
-            elseif blk then
-                blk:Hide()
+                block:SetFrameLevel(b:GetFrameLevel() + 50)
+                block:Show()
+            elseif block then
+                block:Hide()
             end
         end
     end
@@ -1760,11 +1760,11 @@ do
         if not PF.active then
             return
         end
-        local set = PF.Settings()
-        if not set or set.position == "free" then
+        local keySet = PF.Settings()
+        if not keySet or keySet.position == "free" then
             return
         end
-        if (PF.ChainAnchor(set) or false) ~= PF.chainTgt then
+        if (PF.ChainAnchor(keySet) or false) ~= PF.chainTgt then
             PF.Anchor()
         end
     end
@@ -1815,21 +1815,21 @@ do
     -- deferred through combat like the other groups. restyle: a raid settings or profile reload, which
     -- restyles only the pets styled from the raid settings (the party reload that follows it restyles
     -- the others, see ns.PF_PartyRestyle).
-    function mod.PF_Apply(restyle)
+    function mod.PF_Apply(needsRestyle)
         if not saved or not saved.profile then
             return
         end
-        local raw = PF.Raw()
-        if not raw then
+        local rawValue = PF.Raw()
+        if not rawValue then
             return
         end
         if InCombatLockdown() then
             PF.applyDirty = true
-            PF.restyleDirty = PF.restyleDirty or restyle
+            PF.restyleDirty = PF.restyleDirty or needsRestyle
             return
         end
         -- This pass covers a roster change or a combat-deferred apply still waiting for the flush.
-        restyle = restyle or PF.restyleDirty
+        needsRestyle = needsRestyle or PF.restyleDirty
         PF.dirty, PF.applyDirty, PF.restyleDirty = nil, nil, nil
 
         -- Beside Owner. Chosen before the party frames exist (early login), neither kind comes up: the
@@ -1882,7 +1882,7 @@ do
         -- Layout also registers the parent's hide (PF.SetHider) and repaints the pets on screen on a
         -- restyle; the header shows last, laid out, its pets painting as they show. The roster's own
         -- re-assignments paint in the buttons' unit hook.
-        PF.Layout((restyle and PF.Ctx() == "raid") or edge)
+        PF.Layout((needsRestyle and PF.Ctx() == "raid") or edge)
         mod.PF_ReAnchor()
         if not PF.container:IsShown() then
             PF.container:Show()
@@ -1897,8 +1897,8 @@ do
     -- mark the pets dirty (in combat too), and the raid frames' roster pass, zone-in settle and combat
     -- end each flush once, after their own layout. Both toggles off, nothing is marked.
     function mod.PF_MarkDirty()
-        local raw = PF.Raw()
-        if raw and (raw.party == true or raw.raid == true) then
+        local rawValue = PF.Raw()
+        if rawValue and (rawValue.party == true or rawValue.raid == true) then
             PF.dirty = true
         end
     end

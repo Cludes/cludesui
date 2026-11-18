@@ -84,14 +84,14 @@ end
 --   "secondsGcd" -> tenths counting down to the window, Barrage count inside it
 -- Counting GCDs before the window opens and counting Barrages inside it are
 -- different questions, so they are separately answerable.
-local function PhaseMode(phase)
+local function PhaseMode(phaseNum)
     local p = P()
     local m = p and p.countMode
     if m == "gcd" then
         return "gcd"
     end
     if m == "secondsGcd" then
-        return (phase == "soul") and "gcd" or "seconds"
+        return (phaseNum == "soul") and "gcd" or "seconds"
     end
     return "seconds"
 end
@@ -157,9 +157,9 @@ end
 
 local function GetASFont()
     local p = P()
-    local key = (p and p.font) or "__global"
-    if key ~= "__global" and CludesUI and CludesUI.ResolveFontName then
-        local filePath = CludesUI.ResolveFontName(key)
+    local cacheKey = (p and p.font) or "__global"
+    if cacheKey ~= "__global" and CludesUI and CludesUI.ResolveFontName then
+        local filePath = CludesUI.ResolveFontName(cacheKey)
         if filePath then
             return filePath
         end
@@ -169,14 +169,14 @@ end
 
 local function GetASOutline()
     local p = P()
-    local mode = (p and p.outlineMode) or "__global"
-    if mode == "outline" then
+    local modeName = (p and p.outlineMode) or "__global"
+    if modeName == "outline" then
         return (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG"
     end
-    if mode == "thick" then
+    if modeName == "thick" then
         return (CludesUI.SlugFlag("THICKOUTLINE, SLUG")) or "THICKOUTLINE, SLUG"
     end
-    if mode == "none" then
+    if modeName == "none" then
         return ""
     end
     return (CludesUI.GetFontOutlineFlag("resourceBars"))
@@ -188,7 +188,7 @@ end
 -- setters do not render). The primed object resolves BLACK, so the instance
 -- color is always re-stated afterwards -- it is also the fallback tint if the
 -- engine ever refuses the color curve.
-local function ApplyFsLook(phase, fontStr)
+local function ApplyFsLook(phaseNum, fontStr)
     if not fontStr then
         return
     end
@@ -196,7 +196,7 @@ local function ApplyFsLook(phase, fontStr)
     CludesUI.PrimeFontShadow(fontStr, flags == "")
     fontStr:SetFont(GetASFont(), TextSize(), flags)
     local region, g, b
-    if phase == "soul" then
+    if phaseNum == "soul" then
         region, g, b = SoulColor()
     else
         region, g, b = PreColor()
@@ -323,10 +323,10 @@ end
 local BAND_EPS = 0.0001
 local BAND_MAX = 24
 
-local function GcdBandPoints(fmt, gcd, upTo, firstLabel)
+local function GcdBandPoints(fmt, gcdInfo, upTo, firstLabel)
     local pts = {}
     for num = 1, BAND_MAX do
-        local t = (num == 1) and 0 or ((num - 1) * gcd + BAND_EPS)
+        local t = (num == 1) and 0 or ((num - 1) * gcdInfo + BAND_EPS)
         if num > 1 and t >= upTo then
             break
         end
@@ -343,9 +343,9 @@ end
 -- to build leaves SetDurationText with no formatter at all, and the engine
 -- default renders bare whole seconds.
 local surgeFmtCache = {}
-local function SurgeFormatter(mode, thr, gcd)
-    local key = mode .. "|" .. thr .. "|" .. tostring(gcd or 0)
-    local cached = surgeFmtCache[key]
+local function SurgeFormatter(modeName, thresholdVal, gcdInfo)
+    local cacheKey = modeName .. "|" .. thresholdVal .. "|" .. tostring(gcdInfo or 0)
+    local cached = surgeFmtCache[cacheKey]
     if cached ~= nil then
         return cached or nil
     end
@@ -354,32 +354,32 @@ local function SurgeFormatter(mode, thr, gcd)
     local Down = Enum and Enum.NumericRuleFormatRounding and Enum.NumericRuleFormatRounding.Down
     local soulInCount = CludesUI.L("Soul in %d")
     local soulInTenths = CludesUI.L("Soul in %.1f")
-    local attempts
-    if mode == "gcd" then
-        attempts = {
-            GcdBandPoints(soulInCount, gcd, thr, string.format(soulInCount, 1)),
+    local tries
+    if modeName == "gcd" then
+        tries = {
+            GcdBandPoints(soulInCount, gcdInfo, thresholdVal, string.format(soulInCount, 1)),
             {
                 {
                     threshold = 0,
                     format = soulInCount,
                     step = 1,
                     rounding = Up,
-                    components = { { div = gcd } },
+                    components = { { div = gcdInfo } },
                 },
             },
             { { threshold = 0, format = soulInTenths, step = 0.1, rounding = Down } },
             { { threshold = 0, format = "%.1f", step = 0.1, rounding = Down } },
         }
     else
-        attempts = {
+        tries = {
             { { threshold = 0, format = soulInTenths, step = 0.1, rounding = Down } },
             { { threshold = 0, format = "%.1f", step = 0.1, rounding = Down } },
         }
     end
     local hides = { "", " ", false }
 
-    for a = 1, #attempts do
-        local base = attempts[a]
+    for a = 1, #tries do
+        local base = tries[a]
         for hgt = 1, #hides do
             local points = {}
             for i = 1, #base do
@@ -388,16 +388,16 @@ local function SurgeFormatter(mode, thr, gcd)
             -- Every band sits strictly below thr (GcdBandPoints stops there),
             -- so the hide rule always lands last and never duplicates a threshold.
             if hides[hgt] then
-                points[#points + 1] = { threshold = thr, format = hides[hgt] }
+                points[#points + 1] = { threshold = thresholdVal, format = hides[hgt] }
             end
             local frame = NewFormatter(points)
             if frame then
-                surgeFmtCache[key] = frame
+                surgeFmtCache[cacheKey] = frame
                 return frame
             end
         end
     end
-    surgeFmtCache[key] = false
+    surgeFmtCache[cacheKey] = false
     return nil
 end
 
@@ -407,9 +407,9 @@ end
 -- the band table is generated a little past that for headroom.
 local SOUL_BAND_MAX_S = 6
 local soulFmtCache = {}
-local function SoulFormatter(mode, gcd)
-    local key = mode .. "|" .. tostring(gcd or 0)
-    local cached = soulFmtCache[key]
+local function SoulFormatter(modeName, gcdInfo)
+    local cacheKey = modeName .. "|" .. tostring(gcdInfo or 0)
+    local cached = soulFmtCache[cacheKey]
     if cached ~= nil then
         return cached or nil
     end
@@ -417,23 +417,23 @@ local function SoulFormatter(mode, gcd)
     local Up = Enum and Enum.NumericRuleFormatRounding and Enum.NumericRuleFormatRounding.Up
     local Down = Enum and Enum.NumericRuleFormatRounding and Enum.NumericRuleFormatRounding.Down
     local frame
-    if mode == "gcd" then
+    if modeName == "gcd" then
         local lastText = CludesUI.L("LAST")
-        frame = NewFormatter(GcdBandPoints("%d", gcd, SOUL_BAND_MAX_S, lastText))
+        frame = NewFormatter(GcdBandPoints("%d", gcdInfo, SOUL_BAND_MAX_S, lastText))
         if not frame then
             -- Divisor fallback. If the literal-only "LAST" band is what was
             -- refused, the same ceil renders a "1" there instead -- still red,
             -- because the color flip rides the curve, not the text.
             local total = {
-                threshold = gcd + BAND_EPS,
+                threshold = gcdInfo + BAND_EPS,
                 format = "%d",
                 step = 1,
                 rounding = Up,
-                components = { { div = gcd } },
+                components = { { div = gcdInfo } },
             }
             frame = NewFormatter({ { threshold = 0, format = lastText }, total })
                 or NewFormatter({
-                    { threshold = 0, format = "%d", step = 1, rounding = Up, components = { { div = gcd } } },
+                    { threshold = 0, format = "%d", step = 1, rounding = Up, components = { { div = gcdInfo } } },
                     total,
                 })
         end
@@ -441,7 +441,7 @@ local function SoulFormatter(mode, gcd)
     if not frame then
         frame = NewFormatter({ { threshold = 0, format = "%.1f", step = 0.1, rounding = Down } })
     end
-    soulFmtCache[key] = frame or false
+    soulFmtCache[cacheKey] = frame or false
     return frame
 end
 
@@ -455,61 +455,61 @@ end
 -- bounded rather than unbounded-but-small: past the cap it starts over, and
 -- the settled color is rebuilt once on the next apply.
 local CURVE_CACHE_MAX = 64
-local curveCache, curveCacheN = {}, 0
-local curvePts
+local curves, curveCacheN = {}, 0
+local curvePoints
 local function BuildCurve()
     local c = C_CurveUtil.CreateColorCurve()
     c:SetType(Enum.LuaCurveType.Step)
-    for i = 1, #curvePts do
-        local pt = curvePts[i]
-        c:AddPoint(pt[1], CreateColor(pt[2], pt[3], pt[4], pt[5]))
+    for i = 1, #curvePoints do
+        local point = curvePoints[i]
+        c:AddPoint(point[1], CreateColor(point[2], point[3], point[4], point[5]))
     end
     return c
 end
 
-local function StepCurve(key, points)
-    local cached = curveCache[key]
+local function StepCurve(cacheKey, points)
+    local cached = curves[cacheKey]
     if cached ~= nil then
         return cached or nil
     end
     if not (C_CurveUtil and C_CurveUtil.CreateColorCurve and Enum and Enum.LuaCurveType) then
-        curveCache[key] = false
+        curves[cacheKey] = false
         return nil
     end
-    curvePts = points
-    local success, curve = pcall(BuildCurve)
-    curvePts = nil
-    if not success or not curve then
-        curveCache[key] = false
+    curvePoints = points
+    local success, colorCurve = pcall(BuildCurve)
+    curvePoints = nil
+    if not success or not colorCurve then
+        curves[cacheKey] = false
         return nil
     end
     if curveCacheN >= CURVE_CACHE_MAX then
-        curveCache, curveCacheN = {}, 0
+        curves, curveCacheN = {}, 0
     end
-    curveCache[key] = curve
+    curves[cacheKey] = colorCurve
     curveCacheN = curveCacheN + 1
-    return curve
+    return colorCurve
 end
 
 -- Visible below the threshold, alpha 0 above it: the second, independent hide
 -- for the pre-Soul text (the formatter's empty-format rule is the first).
-local function SurgeCurve(thr)
+local function SurgeCurve(thresholdVal)
     local region, g, b = PreColor()
-    local key = string.format("s|%d|%.3f|%.3f|%.3f", thr, region, g, b)
-    return StepCurve(key, { { 0, region, g, b, 1 }, { thr, region, g, b, 0 } })
+    local cacheKey = string.format("s|%d|%.3f|%.3f|%.3f", thresholdVal, region, g, b)
+    return StepCurve(cacheKey, { { 0, region, g, b, 1 }, { thresholdVal, region, g, b, 0 } })
 end
 
 -- Seconds mode is one flat color; GCD mode flips to the Last color for the
 -- final Barrage. Two points either way -- a one-point curve has no band.
-local function SoulCurve(mode, gcd)
+local function SoulCurve(modeName, gcdInfo)
     local sr, sg, scrollBar = SoulColor()
-    if mode ~= "gcd" then
-        local key = string.format("c|%.3f|%.3f|%.3f", sr, sg, scrollBar)
-        return StepCurve(key, { { 0, sr, sg, scrollBar, 1 }, { 60, sr, sg, scrollBar, 1 } })
+    if modeName ~= "gcd" then
+        local cacheKey = string.format("c|%.3f|%.3f|%.3f", sr, sg, scrollBar)
+        return StepCurve(cacheKey, { { 0, sr, sg, scrollBar, 1 }, { 60, sr, sg, scrollBar, 1 } })
     end
     local lr, lg, lb = LastColor()
-    local key = string.format("l|%.2f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f", gcd, sr, sg, scrollBar, lr, lg, lb)
-    return StepCurve(key, { { 0, lr, lg, lb, 1 }, { gcd + 0.0001, sr, sg, scrollBar, 1 } })
+    local cacheKey = string.format("l|%.2f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f", gcdInfo, sr, sg, scrollBar, lr, lg, lb)
+    return StepCurve(cacheKey, { { 0, lr, lg, lb, 1 }, { gcdInfo + 0.0001, sr, sg, scrollBar, 1 } })
 end
 
 -------------------------------------------------------------------------------
@@ -523,17 +523,17 @@ end
 --  time, which is the accepted degradation.
 -------------------------------------------------------------------------------
 
-local function StampFor(phase, mode, thr, gcd)
-    if phase == "surge" then
+local function StampFor(phaseNum, modeName, thresholdVal, gcdInfo)
+    if phaseNum == "surge" then
         local region, g, b = PreColor()
-        return string.format("%s|%d|%.2f|%.3f|%.3f|%.3f", mode, thr, gcd or 0, region, g, b)
+        return string.format("%s|%d|%.2f|%.3f|%.3f|%.3f", modeName, thresholdVal, gcdInfo or 0, region, g, b)
     end
     local sr, sg, scrollBar = SoulColor()
     local lr, lg, lb = LastColor()
     return string.format(
         "%s|%.2f|%.3f|%.3f|%.3f|%.3f|%.3f|%.3f",
-        mode,
-        gcd or 0,
+        modeName,
+        gcdInfo or 0,
         sr,
         sg,
         scrollBar,
@@ -543,33 +543,33 @@ local function StampFor(phase, mode, thr, gcd)
     )
 end
 
-local function BindPhase(phase, force)
+local function BindPhase(phaseNum, force)
     local AK = CludesUI.AuraKit
-    local st = S.ph[phase]
-    if not (AK and st.btn and st.fs) then
+    local state = S.ph[phaseNum]
+    if not (AK and state.btn and state.fs) then
         return
     end
 
-    local mode = PhaseMode(phase)
-    local thr = Thr()
-    local gcd = (mode == "gcd") and GetGcdLen() or nil
-    local stamp = StampFor(phase, mode, thr, gcd)
-    if not force and st.stamp == stamp then
+    local modeName = PhaseMode(phaseNum)
+    local thresholdVal = Thr()
+    local gcdInfo = (modeName == "gcd") and GetGcdLen() or nil
+    local stamp = StampFor(phaseNum, modeName, thresholdVal, gcdInfo)
+    if not force and state.stamp == stamp then
         return
     end
 
-    local fmt, curve
-    if phase == "surge" then
-        fmt, curve = SurgeFormatter(mode, thr, gcd), SurgeCurve(thr)
+    local fmt, colorCurve
+    if phaseNum == "surge" then
+        fmt, colorCurve = SurgeFormatter(modeName, thresholdVal, gcdInfo), SurgeCurve(thresholdVal)
     else
-        fmt, curve = SoulFormatter(mode, gcd), SoulCurve(mode, gcd)
+        fmt, colorCurve = SoulFormatter(modeName, gcdInfo), SoulCurve(modeName, gcdInfo)
     end
 
-    local success, full = AK.SetDurationTextSafe(st.btn, st.fs, AK.BuildDurationTextOpts(fmt, curve))
-    if success and (full or not curve) then
-        st.stamp = stamp
+    local success, full = AK.SetDurationTextSafe(state.btn, state.fs, AK.BuildDurationTextOpts(fmt, colorCurve))
+    if success and (full or not colorCurve) then
+        state.stamp = stamp
     else
-        st.stamp = nil
+        state.stamp = nil
         S.dirty = true
     end
 end
@@ -590,16 +590,16 @@ end
 local SURGE_INCLUDE = { [SURGE_AURA_ID] = true, [SURGE_CAST_ID] = true }
 local SOUL_INCLUDE = { [SOUL_AURA_ID] = true }
 
-local function BuildPhase(phase, include)
+local function BuildPhase(phaseNum, include)
     local AK = CludesUI.AuraKit
-    local st = S.ph[phase]
-    if st.container then
+    local state = S.ph[phaseNum]
+    if state.container then
         return
     end
 
     local boxHolder = AK.CreateContainerShell(S.proxy, { point = { "CENTER" } })
     AK.AddSlotToContainer(boxHolder, {
-        key = phase,
+        key = phaseNum,
         filter = { "HELPFUL" },
         candidateFilters = { includeSpellIDs = include },
         style = STYLE_KEY,
@@ -617,7 +617,7 @@ local function BuildPhase(phase, include)
             if btnFrame.SetMouseMotionEnabled then
                 btnFrame:SetMouseMotionEnabled(false)
             end
-            st.btn = btnFrame
+            state.btn = btnFrame
 
             -- ARMORED: an uncaught error here aborts the engine's
             -- CreateFrameBatch and kills the slot. Failures land in S.fsErr.
@@ -628,10 +628,10 @@ local function BuildPhase(phase, include)
                 local fontStr = tc:CreateFontString(nil, "OVERLAY")
                 -- Font BEFORE registration (the engine SetText()s every
                 -- registered string; an unfonted FontString hard-errors).
-                ApplyFsLook(phase, fontStr)
+                ApplyFsLook(phaseNum, fontStr)
                 fontStr:SetPoint("CENTER", btnFrame, "CENTER", 0, 0)
-                st.fs = fontStr
-                BindPhase(phase, true)
+                state.fs = fontStr
+                BindPhase(phaseNum, true)
             end)
             if not okFS then
                 S.fsErr = errFS
@@ -641,7 +641,7 @@ local function BuildPhase(phase, include)
     AK.FinishContainer(boxHolder, "player")
     -- One container-level set lifts the whole engine subtree above the proxy.
     boxHolder:SetFrameLevel(S.proxy:GetFrameLevel() + 1)
-    st.container = boxHolder
+    state.container = boxHolder
 end
 
 -- POSITION ONLY. Unlock mode owns the frame's placement for as long as the
@@ -664,24 +664,24 @@ local function ApplyPosition()
 
     local p = P()
     local place = (p and p.unlockPos) or DEFAULT_POS
-    local pt = place.point or "CENTER"
+    local point = place.point or "CENTER"
     local px, py = place.x or 0, place.y or 0
     local PPa = CludesUI and CludesUI.PP
     if PPa then
-        local es = S.proxy:GetEffectiveScale()
+        local effScale = S.proxy:GetEffectiveScale()
         -- CENTER anchor with stored CENTER offsets: SnapCenterForDim gives
         -- odd-pixel-dim frames the +0.5 offset that lands edges on whole pixels.
-        local isCenterAnchor = (pt == "CENTER") and (place.relPoint == "CENTER" or place.relPoint == nil)
+        local isCenterAnchor = (point == "CENTER") and (place.relPoint == "CENTER" or place.relPoint == nil)
         if isCenterAnchor and PPa.SnapCenterForDim then
-            px = PPa.SnapCenterForDim(px, S.proxy:GetWidth() or 0, es)
-            py = PPa.SnapCenterForDim(py, S.proxy:GetHeight() or 0, es)
+            px = PPa.SnapCenterForDim(px, S.proxy:GetWidth() or 0, effScale)
+            py = PPa.SnapCenterForDim(py, S.proxy:GetHeight() or 0, effScale)
         elseif PPa.SnapForES then
-            px = PPa.SnapForES(px, es)
-            py = PPa.SnapForES(py, es)
+            px = PPa.SnapForES(px, effScale)
+            py = PPa.SnapForES(py, effScale)
         end
     end
     S.proxy:ClearAllPoints()
-    S.proxy:SetPoint(pt, UIParent, place.relPoint or pt, px, py)
+    S.proxy:SetPoint(point, UIParent, place.relPoint or point, px, py)
 end
 
 -- LOOK ONLY: size, fonts, colors, duration bindings. Safe to run at any time,
@@ -695,13 +695,13 @@ local function ApplyLook()
     -- Font/size/color live on OUR regions, but they are children of an engine
     -- aura button, so post-creation writes are denied under aura secrecy like
     -- any other write into that subtree: pcall and defer to the lift.
-    for phase, st in pairs(S.ph) do
-        if st.fs then
-            if not pcall(ApplyFsLook, phase, st.fs) then
+    for phaseNum, state in pairs(S.ph) do
+        if state.fs then
+            if not pcall(ApplyFsLook, phaseNum, state.fs) then
                 S.dirty = true
             end
         end
-        BindPhase(phase)
+        BindPhase(phaseNum)
     end
 end
 
@@ -769,8 +769,8 @@ end
 -- Sample look and text, shared with the options preview header. The font is
 -- set again only when it changed; returns the text size and whether it did.
 local function StyleSample(fontStr)
-    local font, flags, size, mode = GetASFont(), GetASOutline(), TextSize(), PhaseMode("surge")
-    local stamp = font .. "|" .. size .. "|" .. flags .. "|" .. mode
+    local font, flags, size, modeName = GetASFont(), GetASOutline(), TextSize(), PhaseMode("surge")
+    local stamp = font .. "|" .. size .. "|" .. flags .. "|" .. modeName
     local changed = fontStr._asStamp ~= stamp
     if changed then
         CludesUI.PrimeFontShadow(fontStr, flags == "")
@@ -779,7 +779,7 @@ local function StyleSample(fontStr)
     end
     fontStr:SetTextColor(PreColor())
     fontStr:SetText(
-        mode == "gcd" and string.format(CludesUI.L("Soul in %d"), 3)
+        modeName == "gcd" and string.format(CludesUI.L("Soul in %d"), 3)
             or string.format(CludesUI.L("Soul in %.1f"), 3.2)
     )
     return size, changed
@@ -829,35 +829,35 @@ end
 local SOUL_LEN, DEMO_GAP, DEMO_GCD_AGE = 4, 1, 5
 
 -- ceil(left / gcd) with the band boundary rule of GcdBandPoints.
-local function DemoGcdCount(leftX, gcd)
-    local num = math.floor((leftX - BAND_EPS) / gcd) + 1
+local function DemoGcdCount(leftX, gcdInfo)
+    local num = math.floor((leftX - BAND_EPS) / gcdInfo) + 1
     return (num < 1) and 1 or num
 end
 
-local function DemoText(fontStr, t, gcd)
-    local thr = Thr()
-    t = t % (thr + SOUL_LEN + DEMO_GAP)
-    if t >= thr + SOUL_LEN then
+local function DemoText(fontStr, t, gcdInfo)
+    local thresholdVal = Thr()
+    t = t % (thresholdVal + SOUL_LEN + DEMO_GAP)
+    if t >= thresholdVal + SOUL_LEN then
         fontStr:SetText("")
         return
     end
     local region, g, b
-    if t < thr then
+    if t < thresholdVal then
         -- The hide rule owns thr itself: the first visible value is below it.
-        local leftX = math.min(thr - t, thr - 0.01)
+        local leftX = math.min(thresholdVal - t, thresholdVal - 0.01)
         if PhaseMode("surge") == "gcd" then
-            fontStr:SetFormattedText(CludesUI.L("Soul in %d"), DemoGcdCount(leftX, gcd))
+            fontStr:SetFormattedText(CludesUI.L("Soul in %d"), DemoGcdCount(leftX, gcdInfo))
         else
             fontStr:SetFormattedText(CludesUI.L("Soul in %.1f"), math.floor(leftX * 10) / 10)
         end
         region, g, b = PreColor()
     else
-        local leftX = thr + SOUL_LEN - t
+        local leftX = thresholdVal + SOUL_LEN - t
         if PhaseMode("soul") ~= "gcd" then
             fontStr:SetFormattedText("%.1f", math.floor(leftX * 10) / 10)
             region, g, b = SoulColor()
         else
-            local num = DemoGcdCount(leftX, gcd)
+            local num = DemoGcdCount(leftX, gcdInfo)
             if num == 1 then
                 fontStr:SetText(CludesUI.L("LAST"))
                 region, g, b = LastColor()

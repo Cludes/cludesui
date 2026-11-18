@@ -6,8 +6,8 @@ local _, mod = ...
 -- CUI_DEBUFF_COLORS: declarative aura slots own visibility. Never read aura
 -- payloads, inspect secure button visibility, or infer debuffs from casts.
 local bundles = {} -- plate -> its tint bundle (reused when its unit changes)
-local config
-local worker
+local settings
+local job
 local pendingRefresh = false
 local WHITE = "Interface\\Buttons\\WHITE8x8"
 local STYLE = "np:debuffColorPresence"
@@ -36,12 +36,12 @@ for _, spell in ipairs(mod.DebuffColorPresets) do
     mod.DebuffColorPresetByID[spell[1]] = spell
 end
 
-local function Value(key)
+local function Value(colorKey)
     local p = mod.NP_GetProfile()
-    if p and p[key] ~= nil then
-        return p[key]
+    if p and p[colorKey] ~= nil then
+        return p[colorKey]
     end
-    return mod.defaults[key]
+    return mod.defaults[colorKey]
 end
 
 -------------------------------------------------------------------------------
@@ -95,49 +95,49 @@ end
 -- A saved list as fresh tables: singles = { { spell, color, missing } },
 -- combos = { { spells = { ids }, color } }.
 function DC.Parse(s)
-    local singles, combos = {}, {}
+    local singles, comboList = {}, {}
     if type(s) ~= "string" then
-        return singles, combos
+        return singles, comboList
     end
     local singlePart, comboPart = s:match("^([^/]*)/?(.*)$")
     for record in singlePart:gmatch("[^;]+") do
         if #singles == DC.MAX_SINGLES then
             break
         end
-        local miss, ident, color = record:match("^(!?)(%d*):?(.*)$")
+        local miss, ident, rgb = record:match("^(!?)(%d*):?(.*)$")
         singles[#singles + 1] = {
             spell = DC.SpellID(ident) or 0,
-            color = ParseColor(color, DC.SINGLE_COLOR),
+            color = ParseColor(rgb, DC.SINGLE_COLOR),
             missing = miss == "!" or nil,
         }
     end
     for record in comboPart:gmatch("[^;]+") do
-        if #combos == DC.MAX_COMBOS then
+        if #comboList == DC.MAX_COMBOS then
             break
         end
-        local ids, color = record:match("^([%d%+]*):?(.*)$")
-        local spells = {}
+        local ids, rgb = record:match("^([%d%+]*):?(.*)$")
+        local spellSet = {}
         for ident in ids:gmatch("%d+") do
             ident = DC.SpellID(ident)
-            if ident and #spells < DC.MAX_COMBO_SPELLS then
-                spells[#spells + 1] = ident
+            if ident and #spellSet < DC.MAX_COMBO_SPELLS then
+                spellSet[#spellSet + 1] = ident
             end
         end
-        combos[#combos + 1] = { spells = spells, color = ParseColor(color, DC.COMBO_COLOR) }
+        comboList[#comboList + 1] = { spells = spellSet, color = ParseColor(rgb, DC.COMBO_COLOR) }
     end
-    return singles, combos
+    return singles, comboList
 end
 
 -- The string to save (nil once both lists are empty).
-function DC.Encode(singles, combos)
-    if #singles == 0 and #combos == 0 then
+function DC.Encode(singles, comboList)
+    if #singles == 0 and #comboList == 0 then
         return nil
     end
     local s, c = {}, {}
     for index, e in ipairs(singles) do
         s[index] = (e.missing and "!" or "") .. e.spell .. ":" .. ColorText(e.color)
     end
-    for index, e in ipairs(combos) do
+    for index, e in ipairs(comboList) do
         c[index] = table.concat(e.spells, "+") .. ":" .. ColorText(e.color)
     end
     return table.concat(s, ";") .. "/" .. table.concat(c, ";")
@@ -161,9 +161,9 @@ function DC.Mode(get)
     return get("debuffColorsBorder") == true and "border" or "nameplate"
 end
 
-local function Distinct(spells)
+local function Distinct(spellSet)
     local result, seen = {}, {}
-    for _, ident in ipairs(spells) do
+    for _, ident in ipairs(spellSet) do
         if not seen[ident] then
             seen[ident] = true
             result[#result + 1] = ident
@@ -260,7 +260,7 @@ end
 
 local function ReadConfig()
     local _, class = UnitClass("player")
-    local singles, combos = DC.Read(class or "")
+    local singles, comboList = DC.Read(class or "")
     local playerOnly = Value("debuffColorsPlayerOnly") ~= false
     local c = {
         enabled = Value("debuffColorsEnabled") == true,
@@ -281,11 +281,11 @@ local function ReadConfig()
     elseif mode == "name" then
         c.name, c.channel = true, "name"
     else
-        local key = Value("healthBarTexture")
+        local colorKey = Value("healthBarTexture")
         if mode == "texture" then
-            key = Value("debuffColorsTexture") or key
+            colorKey = Value("debuffColorsTexture") or colorKey
         end
-        c.texture = CludesUI.ResolveTexturePath(mod.healthBarTextures, key, WHITE)
+        c.texture = CludesUI.ResolveTexturePath(mod.healthBarTextures, colorKey, WHITE)
         c.channel = "health"
         parts[#parts + 1] = tostring(c.texture)
     end
@@ -298,9 +298,9 @@ local function ReadConfig()
     -- show beneath itself, so only its highest entry gets a slot.
     local ranked, seen, missing = {}, {}, 0
     for _, e in ipairs(singles) do
-        local key = (e.missing and "!" or "") .. e.spell
-        if e.spell > 0 and not seen[key] and not (e.missing and missing == DC.MAX_MISSING) then
-            seen[key] = true
+        local colorKey = (e.missing and "!" or "") .. e.spell
+        if e.spell > 0 and not seen[colorKey] and not (e.missing and missing == DC.MAX_MISSING) then
+            seen[colorKey] = true
             ranked[#ranked + 1] = e
             if e.missing then
                 missing = missing + 1
@@ -321,11 +321,11 @@ local function ReadConfig()
             c.anyMissing = true
         end
     end
-    for index = #combos, 1, -1 do
-        local spells = Distinct(combos[index].spells)
-        if #spells >= 2 then
-            c.combos[#c.combos + 1] = { spells = spells, color = combos[index].color }
-            parts[#parts + 1] = "c" .. table.concat(spells, "+") .. ":" .. ColorText(combos[index].color)
+    for index = #comboList, 1, -1 do
+        local spellSet = Distinct(comboList[index].spells)
+        if #spellSet >= 2 then
+            c.combos[#c.combos + 1] = { spells = spellSet, color = comboList[index].color }
+            parts[#parts + 1] = "c" .. table.concat(spellSet, "+") .. ":" .. ColorText(comboList[index].color)
         end
     end
     -- Color Border on a plate with no border has nothing to show.
@@ -340,17 +340,17 @@ end
 -- shared slot nests the rest of each combo in the same bottom-to-top order,
 -- so nothing draws in a different order. Each sharer saves a root slot and,
 -- on every mob carrying the shared debuff, a live nested container.
-local function GroupComboRuns(combos)
+local function GroupComboRuns(comboList)
     local runs, index = {}, 1
-    while index <= #combos do
+    while index <= #comboList do
         local common = {}
-        for _, ident in ipairs(combos[index].spells) do
+        for _, ident in ipairs(comboList[index].spells) do
             common[ident] = true
         end
         local jdx = index
-        while jdx < #combos do
+        while jdx < #comboList do
             local both, any = {}, false
-            for _, ident in ipairs(combos[jdx + 1].spells) do
+            for _, ident in ipairs(comboList[jdx + 1].spells) do
                 if common[ident] then
                     both[ident], any = true, true
                 end
@@ -363,7 +363,7 @@ local function GroupComboRuns(combos)
         -- The run's first combo keeps its own spell order where it can, so a
         -- combo with no neighbour to share with builds exactly as saved.
         local first
-        for _, ident in ipairs(combos[index].spells) do
+        for _, ident in ipairs(comboList[index].spells) do
             if common[ident] then
                 first = ident
                 break
@@ -371,13 +371,13 @@ local function GroupComboRuns(combos)
         end
         local run = {}
         for k = index, jdx do
-            local spells = { first }
-            for _, ident in ipairs(combos[k].spells) do
+            local spellSet = { first }
+            for _, ident in ipairs(comboList[k].spells) do
                 if ident ~= first then
-                    spells[#spells + 1] = ident
+                    spellSet[#spellSet + 1] = ident
                 end
             end
-            run[#run + 1] = { spells = spells, color = combos[k].color }
+            run[#run + 1] = { spells = spellSet, color = comboList[k].color }
         end
         runs[#runs + 1] = run
         index = jdx + 1
@@ -457,13 +457,13 @@ end
 
 -- Shown on an engaged enemy: an assistable unit's debuffs cannot be spell-filtered.
 -- nameGated: Color Name's Missing rows (see NameKit).
-local function SyncGate(kit)
-    local open = not UnitCanAssist("player", kit.unit, true, true) and Engaged(kit.unit)
-    if open ~= kit.open then
-        kit.open = open
-        kit.gate:SetShown(open)
-        if kit.nameGated then
-            kit.nameGated:SetShown(open)
+local function SyncGate(colorKit)
+    local open = not UnitCanAssist("player", colorKit.unit, true, true) and Engaged(colorKit.unit)
+    if open ~= colorKit.open then
+        colorKit.open = open
+        colorKit.gate:SetShown(open)
+        if colorKit.nameGated then
+            colorKit.nameGated:SetShown(open)
         end
     end
 end
@@ -471,9 +471,9 @@ end
 local function RunResync(self)
     self:Hide()
     self:SetScript("OnUpdate", nil)
-    for _, kit in pairs(kits) do
-        if kit.unit then
-            SyncGate(kit)
+    for _, colorKit in pairs(kits) do
+        if colorKit.unit then
+            SyncGate(colorKit)
         end
     end
 end
@@ -492,9 +492,9 @@ local function RequestResync()
 end
 
 local function Kit(backing)
-    local kit = kits[backing]
-    if kit then
-        return kit
+    local colorKit = kits[backing]
+    if colorKit then
+        return colorKit
     end
     -- Only aspect-bearing objects may anchor to a container that holds a group,
     -- and the aspect is inherited at creation: the masks are born in the gate,
@@ -508,28 +508,28 @@ local function Kit(backing)
     hider:Hide()
     local owner = CreateFrame("Frame", nil, gate)
     owner:SetAllPoints(gate)
-    kit = { gate = gate, hider = hider, host = owner, sensors = {}, looks = {}, used = 0 }
+    colorKit = { gate = gate, hider = hider, host = owner, sensors = {}, looks = {}, used = 0 }
     gate:SetScript("OnEvent", function()
-        SyncGate(kit)
+        SyncGate(colorKit)
     end)
-    kits[backing] = kit
-    return kit
+    kits[backing] = colorKit
+    return colorKit
 end
 
 -- Sensor n, pointed at spell. Its mask takes two anchors and a width: a single
 -- point and a size draws displaced inside the plate (see PlaceArrow).
-local function PointSensor(kit, num, spell)
+local function PointSensor(colorKit, num, spell)
     local AK = CludesUI.AuraKit
-    local filter, ids = AK.Filter(unpack(config.filterTokens)), { includeSpellIDs = { [spell] = true } }
-    local s = kit.sensors[num]
+    local filter, ids = AK.Filter(unpack(settings.filterTokens)), { includeSpellIDs = { [spell] = true } }
+    local s = colorKit.sensors[num]
     if not s then
         local c = AK.CreateContainerShell(
-            kit.hider,
-            { point = { "TOPLEFT", kit.hider, "TOPLEFT", -(REACH + 1), REACH } }
+            colorKit.hider,
+            { point = { "TOPLEFT", colorKit.hider, "TOPLEFT", -(REACH + 1), REACH } }
         )
         AK.AddGroupToContainer(c, {
             key = SENSOR_KEY,
-            filter = config.filterTokens,
+            filter = settings.filterTokens,
             maxFrameCount = 1,
             style = STYLE,
             candidateFilters = ids,
@@ -538,13 +538,13 @@ local function PointSensor(kit, num, spell)
                 btnFrame:EnableMouse(false)
             end,
         })
-        local mask = kit.gate:CreateMaskTexture()
-        mask:SetTexture(WHITE, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        mask:SetPoint("TOPLEFT", c, "TOPRIGHT", 0, 0)
-        mask:SetPoint("BOTTOMLEFT", c, "BOTTOMRIGHT", 0, 1 - SPAN)
-        mask:SetWidth(SPAN)
-        s = { container = c, mask = mask, n = num }
-        kit.sensors[num] = s
+        local maskTex = colorKit.gate:CreateMaskTexture()
+        maskTex:SetTexture(WHITE, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        maskTex:SetPoint("TOPLEFT", c, "TOPRIGHT", 0, 0)
+        maskTex:SetPoint("BOTTOMLEFT", c, "BOTTOMRIGHT", 0, 1 - SPAN)
+        maskTex:SetWidth(SPAN)
+        s = { container = c, mask = maskTex, n = num }
+        colorKit.sensors[num] = s
     elseif s.spell ~= spell or s.filter ~= filter then
         s.container:SetAuraGroupFilterString(SENSOR_KEY, filter)
         s.container:SetAuraGroupCandidateFilters(SENSOR_KEY, ids)
@@ -555,38 +555,38 @@ local function PointSensor(kit, num, spell)
 end
 
 -- Sensors the bundle did not use are switched off (no UNIT_AURA work).
-local function ParkSensors(kit)
-    for num = kit.used + 1, #kit.sensors do
-        CludesUI.AuraKit.SetGroupCap(kit.sensors[num].container, SENSOR_KEY, 0)
+local function ParkSensors(colorKit)
+    for num = colorKit.used + 1, #colorKit.sensors do
+        CludesUI.AuraKit.SetGroupCap(colorKit.sensors[num].container, SENSOR_KEY, 0)
     end
 end
 
 -- The gate's events only while a Missing row reads it (Color Name binds a kit
 -- for its sensors alone).
-local function BindKit(kit, unitToken)
-    for num = 1, kit.used do
-        local s = kit.sensors[num]
+local function BindKit(colorKit, unitToken)
+    for num = 1, colorKit.used do
+        local s = colorKit.sensors[num]
         if s.unit ~= unitToken then
             s.unit = unitToken
             s.container:SetUnit(unitToken)
         end
     end
-    kit.hider:Show()
-    kit.unit, kit.open = unitToken, nil
-    if config.anyMissing then
-        kit.gate:RegisterUnitEvent("UNIT_FLAGS", unitToken)
-        kit.gate:RegisterUnitEvent("UNIT_THREAT_LIST_UPDATE", unitToken)
-        SyncGate(kit)
+    colorKit.hider:Show()
+    colorKit.unit, colorKit.open = unitToken, nil
+    if settings.anyMissing then
+        colorKit.gate:RegisterUnitEvent("UNIT_FLAGS", unitToken)
+        colorKit.gate:RegisterUnitEvent("UNIT_THREAT_LIST_UPDATE", unitToken)
+        SyncGate(colorKit)
     end
 end
 
-local function ParkKit(kit)
-    kit.unit, kit.open = nil, nil
-    kit.gate:UnregisterAllEvents()
-    kit.gate:Hide()
-    kit.hider:Hide()
-    if kit.nameGated then
-        kit.nameGated:Hide()
+local function ParkKit(colorKit)
+    colorKit.unit, colorKit.open = nil, nil
+    colorKit.gate:UnregisterAllEvents()
+    colorKit.gate:Hide()
+    colorKit.hider:Hide()
+    if colorKit.nameGated then
+        colorKit.nameGated:Hide()
     end
 end
 
@@ -636,15 +636,15 @@ local function CreateTintContainer(b, hostFrame)
 end
 
 -- The health fill's tint: the bar's own texture in the color, over the fill.
-local function PaintTint(tint, b, color)
-    tint:SetTexture(b.config.texture)
-    tint:SetVertexColor(color.r, color.g, color.b, 1)
-    tint:ClearAllPoints()
-    tint:SetPoint("TOPLEFT", b.fill, "TOPLEFT", 0, 0)
-    tint:SetPoint("BOTTOMRIGHT", b.fill, "BOTTOMRIGHT", 0, 0)
+local function PaintTint(tintTex, b, rgb)
+    tintTex:SetTexture(b.config.texture)
+    tintTex:SetVertexColor(rgb.r, rgb.g, rgb.b, 1)
+    tintTex:ClearAllPoints()
+    tintTex:SetPoint("TOPLEFT", b.fill, "TOPLEFT", 0, 0)
+    tintTex:SetPoint("BOTTOMRIGHT", b.fill, "BOTTOMRIGHT", 0, 0)
 end
 
-local function MakeTintInit(b, color, sublevel)
+local function MakeTintInit(b, rgb, subLayer)
     local initialized = setmetatable({}, { __mode = "k" })
     return function(btnFrame)
         if initialized[btnFrame] then
@@ -655,10 +655,10 @@ local function MakeTintInit(b, color, sublevel)
         -- regions may become forbidden; never read or repaint them on rebind.
         btnFrame:SetFrameLevel(b.level)
         btnFrame:EnableMouse(false)
-        local tint = btnFrame:CreateTexture(nil, "ARTWORK", nil, sublevel)
-        PaintTint(tint, b, color)
+        local tintTex = btnFrame:CreateTexture(nil, "ARTWORK", nil, subLayer)
+        PaintTint(tintTex, b, rgb)
         if b.mask then
-            tint:AddMaskTexture(b.mask)
+            tintTex:AddMaskTexture(b.mask)
         end
     end
 end
@@ -696,56 +696,56 @@ local function NewBorderCopy(hostFrame, specInfo, sensorMask)
     if specInfo.strata then
         frame:SetFrameStrata(specInfo.strata)
     end
-    local mask
+    local maskTex
     if sensorMask then
-        mask = frame:CreateMaskTexture()
-        mask:SetTexture(WHITE, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
-        mask:SetAllPoints(sensorMask)
+        maskTex = frame:CreateMaskTexture()
+        maskTex:SetTexture(WHITE, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
+        maskTex:SetAllPoints(sensorMask)
     end
     local pieces = {}
     if specInfo.kind == "strips" then
         frame:SetIgnoreParentScale(true)
         frame:SetScale(1)
         for index = 1, 4 do
-            local tx = frame:CreateTexture(nil, "OVERLAY")
-            if tx.SetSnapToPixelGrid then
-                tx:SetSnapToPixelGrid(false)
-                tx:SetTexelSnappingBias(0)
+            local texture = frame:CreateTexture(nil, "OVERLAY")
+            if texture.SetSnapToPixelGrid then
+                texture:SetSnapToPixelGrid(false)
+                texture:SetTexelSnappingBias(0)
             end
-            pieces[index] = tx
+            pieces[index] = texture
         end
     else
-        for key, coords in pairs(CludesUI.SECRET_BORDER_UV) do
-            local tx = frame:CreateTexture(nil, "OVERLAY")
-            tx:SetTexCoord(unpack(coords))
-            pieces[key] = tx
+        for colorKey, coords in pairs(CludesUI.SECRET_BORDER_UV) do
+            local texture = frame:CreateTexture(nil, "OVERLAY")
+            texture:SetTexCoord(unpack(coords))
+            pieces[colorKey] = texture
         end
     end
-    if mask then
-        for _, tx in pairs(pieces) do
-            tx:AddMaskTexture(mask)
+    if maskTex then
+        for _, texture in pairs(pieces) do
+            texture:AddMaskTexture(maskTex)
         end
     end
     return frame, pieces
 end
 
-local function LayStrip(tx, frame, p1, y1, p2, y2, width, height)
-    tx:SetPoint(p1, frame, p1, 0, y1)
-    tx:SetPoint(p2, frame, p2, 0, y2)
+local function LayStrip(texture, frame, p1, y1, p2, y2, width, height)
+    texture:SetPoint(p1, frame, p1, 0, y1)
+    texture:SetPoint(p2, frame, p2, 0, y2)
     if width then
-        tx:SetWidth(width)
+        texture:SetWidth(width)
     else
-        tx:SetHeight(height)
+        texture:SetHeight(height)
     end
 end
 
 -- Colors a copy and lays it over owner (the bar's rect), on OVERLAY sublevel.
-local function DressBorderCopy(frame, pieces, specInfo, ownerFrame, color, sublevel)
+local function DressBorderCopy(frame, pieces, specInfo, ownerFrame, rgb, subLayer)
     frame:ClearAllPoints()
     frame:SetAllPoints(ownerFrame)
-    for _, tx in pairs(pieces) do
-        tx:SetDrawLayer("OVERLAY", sublevel)
-        tx:ClearAllPoints()
+    for _, texture in pairs(pieces) do
+        texture:SetDrawLayer("OVERLAY", subLayer)
+        texture:ClearAllPoints()
     end
     if specInfo.kind == "strips" then
         local success, es = pcall(frame.GetEffectiveScale, frame)
@@ -754,17 +754,17 @@ local function DressBorderCopy(frame, pieces, specInfo, ownerFrame, color, suble
         end
         local one = CludesUI.PP.perfect / es
         local t = math.max(one, math.floor(specInfo.px + 0.5) * one)
-        for _, tx in ipairs(pieces) do
-            tx:SetColorTexture(color.r, color.g, color.b, 1)
+        for _, texture in ipairs(pieces) do
+            texture:SetColorTexture(rgb.r, rgb.g, rgb.b, 1)
         end
         LayStrip(pieces[1], frame, "TOPLEFT", 0, "TOPRIGHT", 0, nil, t)
         LayStrip(pieces[2], frame, "BOTTOMLEFT", 0, "BOTTOMRIGHT", 0, nil, t)
         LayStrip(pieces[3], frame, "TOPLEFT", -t, "BOTTOMLEFT", t, t)
         LayStrip(pieces[4], frame, "TOPRIGHT", -t, "BOTTOMRIGHT", t, t)
     else
-        for _, tx in pairs(pieces) do
-            tx:SetTexture(specInfo.path, true, true)
-            tx:SetVertexColor(color.r, color.g, color.b, 1)
+        for _, texture in pairs(pieces) do
+            texture:SetTexture(specInfo.path, true, true)
+            texture:SetVertexColor(rgb.r, rgb.g, rgb.b, 1)
         end
         local edge, aL, aT, aR, aB = CludesUI.SecretBorderGeometry(
             frame,
@@ -784,12 +784,12 @@ local function DressBorderCopy(frame, pieces, specInfo, ownerFrame, color, suble
 end
 
 -- A slot's copy, built in the creation window only.
-local function MakeBorderInit(b, color, sublevel)
+local function MakeBorderInit(b, rgb, subLayer)
     local initialized = setmetatable({}, { __mode = "k" })
     local rank = 0
     if not b.config.border.strata then
-        rank = (sublevel == 7 and 2) or (sublevel == 5 and 1) or 0
-        sublevel = 7
+        rank = (subLayer == 7 and 2) or (subLayer == 5 and 1) or 0
+        subLayer = 7
     end
     return function(btnFrame)
         if initialized[btnFrame] then
@@ -801,17 +801,17 @@ local function MakeBorderInit(b, color, sublevel)
         local specInfo = b.config.border
         local frame, pieces = NewBorderCopy(btnFrame, specInfo)
         frame:SetFrameLevel(CopyLevel(b, specInfo, rank))
-        DressBorderCopy(frame, pieces, specInfo, b.holder, color, sublevel)
+        DressBorderCopy(frame, pieces, specInfo, b.holder, rgb, subLayer)
     end
 end
 
 -- What a slot shows while its debuffs are up: the health fill's tint (Color
 -- Nameplate) or the border in the color (Color Border).
-local function ColorInit(b, color, sublevel)
+local function ColorInit(b, rgb, subLayer)
     if b.config.border then
-        return MakeBorderInit(b, color, sublevel)
+        return MakeBorderInit(b, rgb, subLayer)
     end
-    return MakeTintInit(b, color, sublevel)
+    return MakeTintInit(b, rgb, subLayer)
 end
 
 -- Missing row n draws on the kit's host through sensor n's mask: a tint on
@@ -819,47 +819,47 @@ end
 -- ranked over every other copy by n. These frames are ours, unlike the slots'
 -- engine buttons, so each is built once (a copy once per border style) and
 -- dressed again on every rebuild.
-local function DressLook(b, sensor, color, sublevel)
-    local kit, num = b.kit, sensor.n
-    local look = kit.looks[num]
+local function DressLook(b, sensor, rgb, subLayer)
+    local colorKit, num = b.kit, sensor.n
+    local look = colorKit.looks[num]
     if not look then
         look = { copies = {} }
-        kit.looks[num] = look
+        colorKit.looks[num] = look
     end
     local specInfo = b.config.border
     if not specInfo then
-        local tint = look.tint
-        if not tint then
-            tint = kit.host:CreateTexture(nil, "OVERLAY")
+        local tintTex = look.tint
+        if not tintTex then
+            tintTex = colorKit.host:CreateTexture(nil, "OVERLAY")
             if b.mask then
-                tint:AddMaskTexture(b.mask)
+                tintTex:AddMaskTexture(b.mask)
             end
-            tint:AddMaskTexture(sensor.mask)
-            look.tint = tint
+            tintTex:AddMaskTexture(sensor.mask)
+            look.tint = tintTex
         end
-        tint:SetDrawLayer("OVERLAY", sublevel)
-        PaintTint(tint, b, color)
-        tint:Show()
+        tintTex:SetDrawLayer("OVERLAY", subLayer)
+        PaintTint(tintTex, b, rgb)
+        tintTex:Show()
         return
     end
     local rank = 0
     if not specInfo.strata then
-        rank, sublevel = 2, 7
+        rank, subLayer = 2, 7
     end
     local style = specInfo.kind .. (specInfo.strata or "")
     local copy = look.copies[style]
     if not copy then
-        local frame, pieces = NewBorderCopy(kit.host, specInfo, sensor.mask)
+        local frame, pieces = NewBorderCopy(colorKit.host, specInfo, sensor.mask)
         copy = { frame = frame, pieces = pieces }
         look.copies[style] = copy
     end
     copy.frame:SetFrameLevel(CopyLevel(b, specInfo, rank) + num)
-    DressBorderCopy(copy.frame, copy.pieces, specInfo, kit.host, color, sublevel)
+    DressBorderCopy(copy.frame, copy.pieces, specInfo, colorKit.host, rgb, subLayer)
     copy.frame:Show()
 end
 
-local function HideLooks(kit)
-    for _, look in ipairs(kit.looks) do
+local function HideLooks(colorKit)
+    for _, look in ipairs(colorKit.looks) do
         if look.tint then
             look.tint:Hide()
         end
@@ -869,9 +869,9 @@ local function HideLooks(kit)
     end
 end
 
-local function AddTintSlot(b, boxHolder, key, spell, initialize)
+local function AddTintSlot(b, boxHolder, colorKey, spell, initialize)
     CludesUI.AuraKit.AddSlotToContainer(boxHolder, {
-        key = key,
+        key = colorKey,
         filter = b.config.filterTokens,
         style = STYLE,
         candidateFilters = { includeSpellIDs = { [spell] = true } },
@@ -901,34 +901,34 @@ end
 -- A combo nests one slot per spell, each inside the previous spell's engine
 -- button: the tint in the innermost slot renders only while EVERY engine
 -- button above it is shown.
-local function AddComboSlot(b, boxHolder, key, combo, depth)
+local function AddComboSlot(b, boxHolder, colorKey, combo, depth)
     local spell = combo.spells[depth]
     if depth == #combo.spells then
-        AddTintSlot(b, boxHolder, key .. "_" .. depth, spell, ColorInit(b, combo.color, 7))
+        AddTintSlot(b, boxHolder, colorKey .. "_" .. depth, spell, ColorInit(b, combo.color, 7))
         return
     end
     AddTintSlot(
         b,
         boxHolder,
-        key .. "_" .. depth,
+        colorKey .. "_" .. depth,
         spell,
         MakeNestInit(b, function(nested)
-            AddComboSlot(b, nested, key, combo, depth + 1)
+            AddComboSlot(b, nested, colorKey, combo, depth + 1)
         end)
     )
 end
 
 -- A run's combos share their first slot; its nested container holds the rest
 -- of each combo, declared bottom to top like the runs themselves.
-local function AddComboRun(b, boxHolder, key, run)
+local function AddComboRun(b, boxHolder, colorKey, run)
     AddTintSlot(
         b,
         boxHolder,
-        key,
+        colorKey,
         run[1].spells[1],
         MakeNestInit(b, function(nested)
             for index, combo in ipairs(run) do
-                AddComboSlot(b, nested, key .. "_" .. index, combo, 2)
+                AddComboSlot(b, nested, colorKey .. "_" .. index, combo, 2)
             end
         end)
     )
@@ -951,68 +951,68 @@ local nameKits = {} -- plate -> { root, gated, chains, used, attached }
 -- root rides the name's host (MirrorName); gated holds the Missing rows and is
 -- shown with the kit's gate. Born with the aspect: only such frames may anchor
 -- to a container that holds a group, and their clips inherit it.
-local function NameKit(backing, kit)
-    local nk = nameKits[backing]
-    if not nk then
+local function NameKit(backing, colorKit)
+    local kitKey = nameKits[backing]
+    if not kitKey then
         local root = CreateFrame("Frame", nil, backing, "DisableUntrustedLayoutScriptsTemplate")
         root:SetAllPoints(backing.health)
         root:Hide()
         local gated = CreateFrame("Frame", nil, root)
         gated:SetAllPoints(root)
-        nk = { root = root, gated = gated, chains = {}, used = 0 }
-        nameKits[backing] = nk
+        kitKey = { root = root, gated = gated, chains = {}, used = 0 }
+        nameKits[backing] = kitKey
     end
-    kit.nameGated = nk.gated
-    nk.gated:SetShown(kit.open == true)
-    return nk
+    colorKit.nameGated = kitKey.gated
+    kitKey.gated:SetShown(colorKit.open == true)
+    return kitKey
 end
 
 -- Row i's chain: depth clips, each inside the last, the copy in the innermost.
 -- Pooled by index; a row that needs more clips adds them.
-local function Chain(nk, index, depth, hostFrame)
-    local ch = nk.chains[index]
-    if not ch then
-        ch = { clips = {} }
-        nk.chains[index] = ch
+local function Chain(kitKey, index, depth, hostFrame)
+    local channel = kitKey.chains[index]
+    if not channel then
+        channel = { clips = {} }
+        kitKey.chains[index] = channel
     end
-    local clips = ch.clips
+    local clips = channel.clips
     for skinData = 1, depth do
         local wanted = (skinData == 1) and hostFrame or clips[skinData - 1]
-        local clip = clips[skinData]
-        if not clip then
-            clip = CreateFrame("Frame", nil, wanted)
-            clip:SetClipsChildren(true)
-            clips[skinData] = clip
-        elseif clip:GetParent() ~= wanted then
-            clip:SetParent(wanted)
+        local clipFrame = clips[skinData]
+        if not clipFrame then
+            clipFrame = CreateFrame("Frame", nil, wanted)
+            clipFrame:SetClipsChildren(true)
+            clips[skinData] = clipFrame
+        elseif clipFrame:GetParent() ~= wanted then
+            clipFrame:SetParent(wanted)
         end
-        clip:Show()
+        clipFrame:Show()
     end
     for skinData = depth + 1, #clips do
         clips[skinData]:Hide()
     end
-    ch.depth = depth
+    channel.depth = depth
     local inner = clips[depth]
-    if not ch.copy then
-        ch.copy = inner:CreateFontString(nil, "OVERLAY")
-    elseif ch.copy:GetParent() ~= inner then
-        ch.copy:SetParent(inner)
+    if not channel.copy then
+        channel.copy = inner:CreateFontString(nil, "OVERLAY")
+    elseif channel.copy:GetParent() ~= inner then
+        channel.copy:SetParent(inner)
     end
-    return ch
+    return channel
 end
 
 -- A clip open while its debuff is up (the sensor's container SPAN wide), or
 -- for a Missing row while it is absent (a single pixel; the mask's placement).
-local function AnchorClip(clip, sensor, missing)
+local function AnchorClip(clipFrame, sensor, missing)
     local c = sensor.container
-    clip:ClearAllPoints()
+    clipFrame:ClearAllPoints()
     if missing then
-        clip:SetPoint("TOPLEFT", c, "TOPRIGHT", 0, CLIP_REACH)
-        clip:SetPoint("BOTTOMLEFT", c, "BOTTOMRIGHT", 0, -CLIP_REACH)
-        clip:SetWidth(SPAN)
+        clipFrame:SetPoint("TOPLEFT", c, "TOPRIGHT", 0, CLIP_REACH)
+        clipFrame:SetPoint("BOTTOMLEFT", c, "BOTTOMRIGHT", 0, -CLIP_REACH)
+        clipFrame:SetWidth(SPAN)
     else
-        clip:SetPoint("TOPLEFT", c, "TOPLEFT", 0, CLIP_REACH)
-        clip:SetPoint("BOTTOMRIGHT", c, "BOTTOMRIGHT", 0, -CLIP_REACH)
+        clipFrame:SetPoint("TOPLEFT", c, "TOPLEFT", 0, CLIP_REACH)
+        clipFrame:SetPoint("BOTTOMRIGHT", c, "BOTTOMRIGHT", 0, -CLIP_REACH)
     end
 end
 
@@ -1020,16 +1020,16 @@ end
 -- frame takes the root's strata itself, parents first: on the flattened plate a
 -- frame that only inherits it renders in the plate's own batch, under the name,
 -- and a parent's strata change resets its children's strata and levels.
-local function LevelChains(nk)
-    local strata, base = nk.root:GetFrameStrata(), nk.root:GetFrameLevel()
-    nk.gated:SetFrameStrata(strata)
-    nk.gated:SetFrameLevel(base)
-    for index = 1, nk.used do
-        local ch = nk.chains[index]
-        for skinData = 1, ch.depth do
-            local clip = ch.clips[skinData]
-            clip:SetFrameStrata(strata)
-            clip:SetFrameLevel(base + (index - 1) * CHAIN_STEP + skinData)
+local function LevelChains(kitKey)
+    local strata, base = kitKey.root:GetFrameStrata(), kitKey.root:GetFrameLevel()
+    kitKey.gated:SetFrameStrata(strata)
+    kitKey.gated:SetFrameLevel(base)
+    for index = 1, kitKey.used do
+        local channel = kitKey.chains[index]
+        for skinData = 1, channel.depth do
+            local clipFrame = channel.clips[skinData]
+            clipFrame:SetFrameStrata(strata)
+            clipFrame:SetFrameLevel(base + (index - 1) * CHAIN_STEP + skinData)
         end
     end
 end
@@ -1046,12 +1046,12 @@ end
 -- families gives the name a plain font, and the copies take it the same way.
 local function MirrorName(backing, shownOnly)
     local b = bundles[backing]
-    local nk = b and b.nameKit
-    if not nk then
+    local kitKey = b and b.nameKit
+    if not kitKey then
         return
     end
-    local name, root = backing.name, nk.root
-    root:SetShown(nk.attached == true and name:IsShown())
+    local name, root = backing.name, kitKey.root
+    root:SetShown(kitKey.attached == true and name:IsShown())
     if shownOnly then
         return
     end
@@ -1063,7 +1063,7 @@ local function MirrorName(backing, shownOnly)
     end
     root:SetFrameStrata(owner:GetFrameStrata())
     root:SetFrameLevel(owner:GetFrameLevel() + 1)
-    LevelChains(nk)
+    LevelChains(kitKey)
     local fam = name:GetFontObject()
     if not (fam and CludesUI._fontFamilySet[fam]) then
         fam = nil
@@ -1077,8 +1077,8 @@ local function MirrorName(backing, shownOnly)
     local jh, jv = name:GetJustifyH(), name:GetJustifyV()
     local wrap, nsWrap, lines = name:CanWordWrap(), name:CanNonSpaceWrap(), name:GetMaxLines()
     local textValue = name:GetText()
-    for index = 1, nk.used do
-        local fontStr = nk.chains[index].copy
+    for index = 1, kitKey.used do
+        local fontStr = kitKey.chains[index].copy
         if fam then
             if fontStr:GetFontObject() ~= fam then
                 fontStr:SetFontObject(fam)
@@ -1122,37 +1122,37 @@ end
 
 -- One sensor per debuff spell, shared by every row that names it.
 local function CreateNameBundle(backing)
-    local kit = Kit(backing)
+    local colorKit = Kit(backing)
     -- Nothing of Color Name draws on the kit's host: hide the tints and border
     -- copies a Missing row left there in another mode, or they show again
     -- whenever the gate opens for the name's own Missing rows.
-    HideLooks(kit)
-    local nk = NameKit(backing, kit)
-    local b = { config = config, kit = kit, nameKit = nk, containers = {} }
-    kit.used = 0
+    HideLooks(colorKit)
+    local kitKey = NameKit(backing, colorKit)
+    local b = { config = settings, kit = colorKit, nameKit = kitKey, containers = {} }
+    colorKit.used = 0
     local sensorOf = {}
-    for index, e in ipairs(config.nameEntries) do
-        local ch = Chain(nk, index, #e.spells, e.missing and nk.gated or nk.root)
+    for index, e in ipairs(settings.nameEntries) do
+        local channel = Chain(kitKey, index, #e.spells, e.missing and kitKey.gated or kitKey.root)
         for skinData, spell in ipairs(e.spells) do
             local s = sensorOf[spell]
             if not s then
-                kit.used = kit.used + 1
-                s = PointSensor(kit, kit.used, spell)
+                colorKit.used = colorKit.used + 1
+                s = PointSensor(colorKit, colorKit.used, spell)
                 sensorOf[spell] = s
             end
-            AnchorClip(ch.clips[skinData], s, e.missing)
+            AnchorClip(channel.clips[skinData], s, e.missing)
         end
-        local fontStr = ch.copy
+        local fontStr = channel.copy
         fontStr:ClearAllPoints()
         fontStr:SetAllPoints(backing.name)
         fontStr:SetTextColor(e.color.r, e.color.g, e.color.b, 1)
     end
-    nk.used = #config.nameEntries
-    for index = nk.used + 1, #nk.chains do
-        nk.chains[index].clips[1]:Hide()
+    kitKey.used = #settings.nameEntries
+    for index = kitKey.used + 1, #kitKey.chains do
+        kitKey.chains[index].clips[1]:Hide()
     end
-    ParkSensors(kit)
-    LevelChains(nk)
+    ParkSensors(colorKit)
+    LevelChains(kitKey)
     bundles[backing] = b
     return b
 end
@@ -1160,16 +1160,16 @@ end
 -- The tints share one frame level (the target/focus/hover patterns sit one
 -- level up), so a later-declared slot draws on top: ReadConfig orders them.
 local function CreateBundle(backing)
-    if config.name then
+    if settings.name then
         return CreateNameBundle(backing)
     end
     local b = {
-        config = config,
+        config = settings,
         fill = backing.health:GetStatusBarTexture(),
         mask = backing._absorbMask,
         level = backing.health:GetFrameLevel(),
         containers = {},
-        kit = config.anyMissing and Kit(backing) or nil,
+        kit = settings.anyMissing and Kit(backing) or nil,
     }
     -- Tint shares the fill's frame level; CUI's text, target/focus patterns,
     -- border and absorb effects keep their own higher layers.
@@ -1179,16 +1179,16 @@ local function CreateBundle(backing)
     b.holder:EnableMouse(false)
     b.holder:Hide()
     local root = CreateTintContainer(b, b.holder)
-    local kit = b.kit
-    if kit then
-        kit.used = 0
-        kit.host:SetFrameLevel(b.level)
-        HideLooks(kit)
+    local colorKit = b.kit
+    if colorKit then
+        colorKit.used = 0
+        colorKit.host:SetFrameLevel(b.level)
+        HideLooks(colorKit)
     end
-    for index, single in ipairs(config.singles) do
+    for index, single in ipairs(settings.singles) do
         if single.missing then
-            kit.used = kit.used + 1
-            DressLook(b, PointSensor(kit, kit.used, single.spell), single.color, single.sublevel)
+            colorKit.used = colorKit.used + 1
+            DressLook(b, PointSensor(colorKit, colorKit.used, single.spell), single.color, single.sublevel)
         else
             AddTintSlot(
                 b,
@@ -1199,10 +1199,10 @@ local function CreateBundle(backing)
             )
         end
     end
-    if kit then
-        ParkSensors(kit)
+    if colorKit then
+        ParkSensors(colorKit)
     end
-    for index, run in ipairs(config.comboRuns) do
+    for index, run in ipairs(settings.comboRuns) do
         AddComboRun(b, root, "CUI_DEBUFF_COMBO_" .. index, run)
     end
     bundles[backing] = b
@@ -1299,17 +1299,17 @@ local function Detach(backing)
 end
 
 local function EnsureWorker()
-    if worker then
-        return worker
+    if job then
+        return job
     end
-    worker = CreateFrame("Frame")
-    worker:Hide()
+    job = CreateFrame("Frame")
+    job:Hide()
     -- PLAYER_REGEN_ENABLED, held only while a combat-deferred refresh waits;
     -- DISPLAY_SIZE_CHANGED, held only while border strips are built (they are
     -- sized in physical pixels, so a resolution change redraws them);
     -- GROUP_ROSTER_UPDATE and UNIT_PET (yours or your group's), held only while
     -- a Missing row exists (who counts as engaged).
-    worker:SetScript("OnEvent", function(self, evt, unitToken)
+    job:SetScript("OnEvent", function(self, evt, unitToken)
         if evt == "DISPLAY_SIZE_CHANGED" then
             mod.DebuffColors_RequestRefresh()
             return
@@ -1329,11 +1329,11 @@ local function EnsureWorker()
             mod.DebuffColors_Refresh()
         end
     end)
-    return worker
+    return job
 end
 
 function mod.DebuffColors_Refresh()
-    if not config and Value("debuffColorsEnabled") ~= true then
+    if not settings and Value("debuffColorsEnabled") ~= true then
         return
     end
     -- Profile/spec swaps can arrive in combat. Rebuilding secure decoration is
@@ -1345,26 +1345,26 @@ function mod.DebuffColors_Refresh()
     end
     pendingRefresh = false
     local nextConfig = ReadConfig()
-    if config and config.fingerprint == nextConfig.fingerprint then
+    if settings and settings.fingerprint == nextConfig.fingerprint then
         return
     end
-    config = nextConfig
+    settings = nextConfig
     -- Clear active AND currently pooled bundles so a later plate reuse cannot bind
     -- a previous profile's spells or colors.
     for backing, b in pairs(bundles) do
         ReleaseBundle(b)
         bundles[backing] = nil
     end
-    if config.enabled and config.any then
-        config.comboRuns = GroupComboRuns(config.combos)
-        if config.name then
-            config.nameEntries = NameEntries(config)
+    if settings.enabled and settings.any then
+        settings.comboRuns = GroupComboRuns(settings.combos)
+        if settings.name then
+            settings.nameEntries = NameEntries(settings)
         end
         local AK = CludesUI.AuraKit
         AK.styles[STYLE] = AK.styles[STYLE] or { noRegions = true, noTooltips = true }
         mod.DebuffColors_Attach, mod.DebuffColors_Detach = Attach, Detach
         mod.DebuffColors_Threat = Threat
-        mod.DebuffColors_NameChanged = config.name and MirrorName or nil
+        mod.DebuffColors_NameChanged = settings.name and MirrorName or nil
         for unitToken, backing in pairs(mod.plates) do
             Attach(backing, unitToken)
         end
@@ -1377,30 +1377,30 @@ function mod.DebuffColors_Refresh()
         -- applied state the next refresh compares against.
         mod.DebuffColors_Attach, mod.DebuffColors_Detach = nil, nil
         mod.DebuffColors_Threat, mod.DebuffColors_NameChanged = nil, nil
-        if not config.enabled then
-            config = nil
+        if not settings.enabled then
+            settings = nil
         end
-        if worker then
-            worker:UnregisterEvent("PLAYER_REGEN_ENABLED")
-            worker:SetScript("OnUpdate", nil)
-            worker:Hide()
+        if job then
+            job:UnregisterEvent("PLAYER_REGEN_ENABLED")
+            job:SetScript("OnUpdate", nil)
+            job:Hide()
         end
     end
     -- A border color is drawn in whole pixels, on the grid its key names: slices
     -- rebuild through the shared re-apply on a UI scale change, strips on a
     -- resolution change.
-    local border = config and config.any and config.border
+    local border = settings and settings.any and settings.border
     CludesUI.RegisterPxReapply(
         DC,
         (border and border.kind == "slices") and mod.DebuffColors_RequestRefresh or nil
     )
     engagersStale = true
-    local watchRoster = config and config.any and config.anyMissing
+    local watchRoster = settings and settings.any and settings.anyMissing
     for _, evt in ipairs({ "GROUP_ROSTER_UPDATE", "UNIT_PET" }) do
         if watchRoster then
             EnsureWorker():RegisterEvent(evt)
-        elseif worker then
-            worker:UnregisterEvent(evt)
+        elseif job then
+            job:UnregisterEvent(evt)
         end
     end
     if not watchRoster and resync then
@@ -1409,8 +1409,8 @@ function mod.DebuffColors_Refresh()
     end
     if border and border.kind == "strips" then
         EnsureWorker():RegisterEvent("DISPLAY_SIZE_CHANGED")
-    elseif worker then
-        worker:UnregisterEvent("DISPLAY_SIZE_CHANGED")
+    elseif job then
+        job:UnregisterEvent("DISPLAY_SIZE_CHANGED")
     end
 end
 
@@ -1426,7 +1426,7 @@ end
 -- bundle, so while one is dragged the refresh waits for its release (the
 -- slider runs the deferred checks once).
 function mod.DebuffColors_RequestRefresh()
-    if not config and Value("debuffColorsEnabled") ~= true then
+    if not settings and Value("debuffColorsEnabled") ~= true then
         return
     end
     if CludesUI._sliderDragging then

@@ -171,18 +171,18 @@ do
     end
 
     FB.ShouldBeActive = function()
-        local fb = FB.Settings()
-        if not fb then
+        local fallback = FB.Settings()
+        if not fallback then
             return false
         end
         -- Arena never has friendly bosses; an empty group there only takes room beside the party frames.
         if mod._InArena() then
             return false
         end
-        if fb.display == "always" then
+        if fallback.display == "always" then
             return true
         end
-        if fb.display == "healers" then
+        if fallback.display == "healers" then
             -- WoW Forever: a class that can heal counts as its healing spec.
             if CludesUI.IS_FOREVER then
                 local _, pClass = UnitClass("player")
@@ -333,14 +333,14 @@ do
     -- gradient modes read as damage states, and many NPCs carry real class tokens (a friendly add can
     -- come out yellow).
     FB.PaintBarColor = function(b, ownerFrame, s)
-        local health = b._health
+        local healthBar = b._health
         local fbc = (ownerFrame.ColorSettings or ownerFrame.Settings)()
         fbc = fbc and fbc.healthColor
-        local fillTex = health:GetStatusBarTexture()
+        local fillTex = healthBar:GetStatusBarTexture()
         if fillTex then
             fillTex:SetAlpha(1)
         end
-        health:SetStatusBarColor(
+        healthBar:SetStatusBarColor(
             fbc and fbc.r or 23 / 255,
             fbc and fbc.g or 172 / 255,
             fbc and fbc.b or 49 / 255,
@@ -367,9 +367,9 @@ do
     -- and name events only, so Custom's power, absorb, group and target tags refresh here, not on
     -- their own events. No level and no Power Text here (no power bar).
     FB.PaintHealth = function(b, unitToken, s, full)
-        local health = b._health
+        local healthBar = b._health
         local pct = GetSafeHealthPercent(unitToken)
-        health:SetMinMaxValues(0, 100)
+        healthBar:SetMinMaxValues(0, 100)
         local smooth = s.smoothBars
             and Enum
             and Enum.StatusBarInterpolation
@@ -378,13 +378,13 @@ do
         -- the texts keep the current-health pct. Dead units are not special-cased: there
         -- is no status colour here, so a full bar is what tells a dead unit apart.
         local barPct = pct
-        if health._cuiInv then
+        if healthBar._cuiInv then
             barPct = GetSafeHealthPercent(unitToken, true)
         end
         if smooth then
-            health:SetValue(barPct, smooth)
+            healthBar:SetValue(barPct, smooth)
         else
-            health:SetValue(barPct)
+            healthBar:SetValue(barPct)
         end
 
         local st = FB.txs[b]
@@ -441,22 +441,22 @@ do
         end
         b._bg = backdrop
 
-        local health = CreateFrame("StatusBar", nil, b)
-        health:SetFrameLevel(b:GetFrameLevel() + 2)
-        health:SetPoint("TOPLEFT", b, "TOPLEFT", 0, 0)
-        health:SetPoint("TOPRIGHT", b, "TOPRIGHT", 0, 0)
+        local healthBar = CreateFrame("StatusBar", nil, b)
+        healthBar:SetFrameLevel(b:GetFrameLevel() + 2)
+        healthBar:SetPoint("TOPLEFT", b, "TOPLEFT", 0, 0)
+        healthBar:SetPoint("TOPRIGHT", b, "TOPRIGHT", 0, 0)
         if Pix then
-            Pix.DisablePixelSnap(health)
+            Pix.DisablePixelSnap(healthBar)
         end
-        health:SetMinMaxValues(0, 100)
-        health:SetValue(100)
-        b._health = health
+        healthBar:SetMinMaxValues(0, 100)
+        healthBar:SetValue(100)
+        b._health = healthBar
 
         local carrier = CreateFrame("Frame", nil, b)
-        carrier:SetAllPoints(health)
+        carrier:SetAllPoints(healthBar)
         carrier:SetFrameLevel(b:GetFrameLevel() + mod.LVL_TEXT)
         if texts then
-            FB.txs[b] = { textCarrier = carrier, _txHost = health, _txFB = true }
+            FB.txs[b] = { textCarrier = carrier, _txHost = healthBar, _txFB = true }
         else
             local nameFS = carrier:CreateFontString(nil, "OVERLAY")
             nameFS:SetWordWrap(false)
@@ -533,8 +533,8 @@ do
 
             -- Re-render when the slot controller reassigns this slot's unit mid-combat (a boss
             -- spawning/despawning reflows the slots without an OnShow on already-visible buttons).
-            b:HookScript("OnAttributeChanged", function(self, name)
-                if name == "unit" and self:IsVisible() then
+            b:HookScript("OnAttributeChanged", function(self, label)
+                if label == "unit" and self:IsVisible() then
                     -- Containers first (same rationale as the OnShow hook).
                     if mod.RFC_OnUnitAssigned then
                         local skinData = GetFFD(self)
@@ -628,9 +628,9 @@ do
     -- The pitch between the group's buttons. Attached beside Compact frames it takes their one
     -- pixel, so its rows stay level with theirs: the party frames' where FB.Anchor slots it in
     -- beside them (outside a raid, with Show in Dungeons on), else the raid groups'.
-    FB.Pitch = function(fbset, s)
-        if fbset and fbset.position ~= "free" then
-            local party = (not IsInRaid() or mod._PartyInRaid()) and fbset.showInDungeons == true
+    FB.Pitch = function(fallbackSet, s)
+        if fallbackSet and fallbackSet.position ~= "free" then
+            local party = (not IsInRaid() or mod._PartyInRaid()) and fallbackSet.showInDungeons == true
             if mod.RF_CompactOn(saved.profile, party) then
                 return mod.RF_OnePixel(party)
             end
@@ -649,25 +649,25 @@ do
             return
         end
         local s = mod._scaledProfile or saved.profile
-        local fbset = ownerFrame.Settings()
+        local fallbackSet = ownerFrame.Settings()
         -- Per-group size offset on the shared raid frame size (Extra Width/Height sliders; clamped so a negative offset can't invert a small frame).
-        local wid = PixelSnap(math.max(10, (s.frameWidth or 125) + ((fbset and fbset.extraWidth) or 0)))
-        local hgt = PixelSnap(math.max(10, (s.frameHeight or 60) + ((fbset and fbset.extraHeight) or 0)))
-        local sp = FB.Pitch(fbset, s)
+        local wid = PixelSnap(math.max(10, (s.frameWidth or 125) + ((fallbackSet and fallbackSet.extraWidth) or 0)))
+        local hgt = PixelSnap(math.max(10, (s.frameHeight or 60) + ((fallbackSet and fallbackSet.extraHeight) or 0)))
+        local sp = FB.Pitch(fallbackSet, s)
         ownerFrame.pitch = sp
         -- Free Move ignores the raid growth settings: vertical stack by default, horizontal via the
         -- Horizontal Frames cog. Attached modes keep stacking like a real group (unitGrowth).
-        local grow
-        if fbset and fbset.position == "free" then
-            grow = fbset.freeHorizontal and "RIGHT" or "DOWN"
+        local growDir
+        if fallbackSet and fallbackSet.position == "free" then
+            growDir = fallbackSet.freeHorizontal and "RIGHT" or "DOWN"
         else
-            grow = s.unitGrowth or "DOWN"
+            growDir = s.unitGrowth or "DOWN"
         end
         local texPath = ResolveHealthTexture()
         local bgc = s.customBgColor or { r = 17 / 255, g = 17 / 255, b = 17 / 255 }
 
         local stepW, stepH = 0, 0
-        if grow == "DOWN" or grow == "UP" then
+        if growDir == "DOWN" or growDir == "UP" then
             ownerFrame.container:SetSize(wid, hgt * 5 + sp * 4)
             stepH = hgt + sp
         else
@@ -679,11 +679,11 @@ do
             b:SetSize(wid, hgt)
             b:ClearAllPoints()
             local off = index - 1
-            if grow == "UP" then
+            if growDir == "UP" then
                 b:SetPoint("BOTTOMLEFT", ownerFrame.container, "BOTTOMLEFT", 0, off * stepH)
-            elseif grow == "LEFT" then
+            elseif growDir == "LEFT" then
                 b:SetPoint("TOPRIGHT", ownerFrame.container, "TOPRIGHT", -off * stepW, 0)
-            elseif grow == "RIGHT" then
+            elseif growDir == "RIGHT" then
                 b:SetPoint("TOPLEFT", ownerFrame.container, "TOPLEFT", off * stepW, 0)
             else -- DOWN
                 b:SetPoint("TOPLEFT", ownerFrame.container, "TOPLEFT", 0, -off * stepH)
@@ -761,8 +761,8 @@ do
     -- with the container's size so odd-pixel dimensions still put both edges on whole pixels.
     FB.FreePin = function(c, anchorPoint, posX, posY)
         local P = CludesUI.PP
-        local ux, uy = UIParent:GetCenter()
-        if ux then
+        local unitX, unitY = UIParent:GetCenter()
+        if unitX then
             local es = c:GetEffectiveScale()
             if anchorPoint == "CENTER" then
                 -- A secret size falls back to the even (whole-pixel) centre.
@@ -773,11 +773,11 @@ do
                 if issecretvalue(hgt) then
                     hgt = nil
                 end
-                posX = P.SnapCenterForDim(ux + posX, wid, es) - ux
-                posY = P.SnapCenterForDim(uy + posY, hgt, es) - uy
+                posX = P.SnapCenterForDim(unitX + posX, wid, es) - unitX
+                posY = P.SnapCenterForDim(unitY + posY, hgt, es) - unitY
             else
-                posX = P.SnapForES(ux + posX, es) - ux
-                posY = P.SnapForES(uy + posY, es) - uy
+                posX = P.SnapForES(unitX + posX, es) - unitX
+                posY = P.SnapForES(unitY + posY, es) - unitY
             end
         end
         FB.Pin(c, anchorPoint, UIParent, "CENTER", posX, posY)
@@ -796,11 +796,11 @@ do
             return
         end
         local s = saved.profile
-        local fb = ownerFrame.Settings()
+        local fallback = ownerFrame.Settings()
         local c = ownerFrame.container
         -- A group's pitch follows the frames it sits beside (owner.Pitch: the boss group, the
         -- Extra Frames): re-lay it once that moved.
-        if ownerFrame.Pitch and ownerFrame.pitch ~= ownerFrame.Pitch(fb, mod._scaledProfile or s) then
+        if ownerFrame.Pitch and ownerFrame.pitch ~= ownerFrame.Pitch(fallback, mod._scaledProfile or s) then
             if ownerFrame.Layout then
                 ownerFrame.Layout()
             else
@@ -808,8 +808,8 @@ do
             end
         end
 
-        if fb.position ~= "free" then
-            local anchorHdr
+        if fallback.position ~= "free" then
+            local anchorHeader
             -- Chain rule: when the boss group (owner == FB) and Extra Frames attach to the SAME side,
             -- the boss group anchors to the extra container instead of the raid -- order raid -> extra
             -- -> boss (mirrored on "left"). Extra Frames always anchor to the raid; ns.XF_Apply re-runs
@@ -819,53 +819,53 @@ do
                 local xs = xf and xf.Settings and xf.Settings()
                 if
                     xs
-                    and xs.position == fb.position
+                    and xs.position == fallback.position
                     and xf.built
                     and xf.container
                     and xf.container:IsShown()
                 then
-                    anchorHdr = xf.container
+                    anchorHeader = xf.container
                 end
             end
             -- Owners placed after other attached groups on the same side (the pet frames), which
             -- remember the group they followed (owner.chainTgt).
-            if not anchorHdr and ownerFrame.ChainAnchor then
-                anchorHdr = ownerFrame.ChainAnchor(fb)
-                ownerFrame.chainTgt = anchorHdr or false
+            if not anchorHeader and ownerFrame.ChainAnchor then
+                anchorHeader = ownerFrame.ChainAnchor(fallback)
+                ownerFrame.chainTgt = anchorHeader or false
                 -- Beside the party frames the chain runs on the party attach axis, not the raid growth,
                 -- with the same kit side and clearance, and the corner the party stack grows from.
-                if anchorHdr and ownerFrame.attachParty then
-                    local gap = s.groupSpacing or -1
-                    local before = (fb.position == "left")
+                if anchorHeader and ownerFrame.attachParty then
+                    local spacing = s.groupSpacing or -1
+                    local before = (fallback.position == "left")
                     if mod.RF_PartyKit() then
                         local extra
                         before, extra = mod.RF_KitAttach(s, before)
-                        gap = gap + extra
+                        spacing = spacing + extra
                     end
-                    local grow = mod._PartyGrowth(s)
-                    if grow == "UP" then
+                    local growDir = mod._PartyGrowth(s)
+                    if growDir == "UP" then
                         if before then
-                            FB.Pin(c, "BOTTOMRIGHT", anchorHdr, "BOTTOMLEFT", -gap, 0)
+                            FB.Pin(c, "BOTTOMRIGHT", anchorHeader, "BOTTOMLEFT", -spacing, 0)
                         else
-                            FB.Pin(c, "BOTTOMLEFT", anchorHdr, "BOTTOMRIGHT", gap, 0)
+                            FB.Pin(c, "BOTTOMLEFT", anchorHeader, "BOTTOMRIGHT", spacing, 0)
                         end
-                    elseif grow == "LEFT" then
+                    elseif growDir == "LEFT" then
                         if before then
-                            FB.Pin(c, "BOTTOMRIGHT", anchorHdr, "TOPRIGHT", 0, gap)
+                            FB.Pin(c, "BOTTOMRIGHT", anchorHeader, "TOPRIGHT", 0, spacing)
                         else
-                            FB.Pin(c, "TOPRIGHT", anchorHdr, "BOTTOMRIGHT", 0, -gap)
+                            FB.Pin(c, "TOPRIGHT", anchorHeader, "BOTTOMRIGHT", 0, -spacing)
                         end
                     elseif s.partyHorizontal then
                         if before then
-                            FB.Pin(c, "BOTTOMLEFT", anchorHdr, "TOPLEFT", 0, gap)
+                            FB.Pin(c, "BOTTOMLEFT", anchorHeader, "TOPLEFT", 0, spacing)
                         else
-                            FB.Pin(c, "TOPLEFT", anchorHdr, "BOTTOMLEFT", 0, -gap)
+                            FB.Pin(c, "TOPLEFT", anchorHeader, "BOTTOMLEFT", 0, -spacing)
                         end
                     else
                         if before then
-                            FB.Pin(c, "TOPRIGHT", anchorHdr, "TOPLEFT", -gap, 0)
+                            FB.Pin(c, "TOPRIGHT", anchorHeader, "TOPLEFT", -spacing, 0)
                         else
-                            FB.Pin(c, "TOPLEFT", anchorHdr, "TOPRIGHT", gap, 0)
+                            FB.Pin(c, "TOPLEFT", anchorHeader, "TOPRIGHT", spacing, 0)
                         end
                     end
                     return
@@ -877,23 +877,23 @@ do
             -- only and keeps the raid path. Party frames off screen leaves nothing to attach to: this
             -- branch anchors nothing and the free position below takes over.
             if
-                not anchorHdr
+                not anchorHeader
                 and (not IsInRaid() or mod._PartyInRaid())
-                and ((ownerFrame == FB and fb.showInDungeons == true) or ownerFrame.attachParty)
+                and ((ownerFrame == FB and fallback.showInDungeons == true) or ownerFrame.attachParty)
             then
                 local pc = mod._partyContainerFrame
                 if pc and pc:IsShown() then
-                    local gap = s.groupSpacing or -1
-                    local before = (fb.position == "left")
+                    local spacing = s.groupSpacing or -1
+                    local before = (fallback.position == "left")
                     -- Party Frames kit: clear the auras it draws outside the frames.
                     if mod.RF_PartyKit() then
                         local extra
                         before, extra = mod.RF_KitAttach(s, before)
-                        gap = gap + extra
+                        spacing = spacing + extra
                     end
                     -- The group clears the party target frames on its side, and the boss group the
                     -- Beside Owner pets there too (the pet header is down while those are up).
-                    gap = gap
+                    spacing = spacing
                         + mod.PT_Reserve(
                             s.partyHorizontal,
                             before,
@@ -903,19 +903,19 @@ do
                     -- the stack away from the container's top-left.
                     if ownerFrame ~= FB then
                         local first = mod._partyFirstSlot or pc
-                        local grow = mod._PartyGrowth(s)
-                        if grow == "UP" then
+                        local growDir = mod._PartyGrowth(s)
+                        if growDir == "UP" then
                             if before then
-                                FB.Pin(c, "BOTTOMRIGHT", first, "BOTTOMLEFT", -gap, 0)
+                                FB.Pin(c, "BOTTOMRIGHT", first, "BOTTOMLEFT", -spacing, 0)
                             else
-                                FB.Pin(c, "BOTTOMLEFT", first, "BOTTOMRIGHT", gap, 0)
+                                FB.Pin(c, "BOTTOMLEFT", first, "BOTTOMRIGHT", spacing, 0)
                             end
                             return
-                        elseif grow == "LEFT" then
+                        elseif growDir == "LEFT" then
                             if before then
-                                FB.Pin(c, "BOTTOMRIGHT", first, "TOPRIGHT", 0, gap)
+                                FB.Pin(c, "BOTTOMRIGHT", first, "TOPRIGHT", 0, spacing)
                             else
-                                FB.Pin(c, "TOPRIGHT", first, "BOTTOMRIGHT", 0, -gap)
+                                FB.Pin(c, "TOPRIGHT", first, "BOTTOMRIGHT", 0, -spacing)
                             end
                             return
                         end
@@ -926,22 +926,22 @@ do
                     -- either way, so the perpendicular attach point is the same.
                     if s.partyHorizontal then
                         if before then
-                            FB.Pin(c, "BOTTOMLEFT", pc, "TOPLEFT", 0, gap)
+                            FB.Pin(c, "BOTTOMLEFT", pc, "TOPLEFT", 0, spacing)
                         else
-                            FB.Pin(c, "TOPLEFT", pc, "BOTTOMLEFT", 0, -gap)
+                            FB.Pin(c, "TOPLEFT", pc, "BOTTOMLEFT", 0, -spacing)
                         end
                     else
                         if before then
-                            FB.Pin(c, "TOPRIGHT", pc, "TOPLEFT", -gap, 0)
+                            FB.Pin(c, "TOPRIGHT", pc, "TOPLEFT", -spacing, 0)
                         else
-                            FB.Pin(c, "TOPLEFT", pc, "TOPRIGHT", gap, 0)
+                            FB.Pin(c, "TOPLEFT", pc, "TOPRIGHT", spacing, 0)
                         end
                     end
                     return
                 end
-            elseif not anchorHdr and s.mergeGroups then
-                anchorHdr = mod._flatHeader
-            elseif not anchorHdr then
+            elseif not anchorHeader and s.mergeGroups then
+                anchorHeader = mod._flatHeader
+            elseif not anchorHeader then
                 -- The boss group slots in before the first / after the last group that is BOTH enabled
                 -- in Show Groups AND populated. With none populated (not in a raid yet), fall back to
                 -- the Show Groups bounds alone.
@@ -962,58 +962,58 @@ do
                 end
                 local first, last
                 local groupOrder = s.customGroupOrder and mod._RFValidatedGroupOrder(s.groupOrder)
-                for slot = 1, 8 do
-                    local gi = groupOrder and groupOrder[slot] or slot
-                    if vg[gi] ~= false and separatedHdrs[gi] and occupied[gi] then
+                for slotIndex = 1, 8 do
+                    local growInfo = groupOrder and groupOrder[slotIndex] or slotIndex
+                    if vg[growInfo] ~= false and separatedHdrs[growInfo] and occupied[growInfo] then
                         if not first then
-                            first = separatedHdrs[gi]
+                            first = separatedHdrs[growInfo]
                         end
-                        last = separatedHdrs[gi]
+                        last = separatedHdrs[growInfo]
                     end
                 end
                 if not first then
-                    for slot = 1, 8 do
-                        local gi = groupOrder and groupOrder[slot] or slot
-                        if vg[gi] ~= false and separatedHdrs[gi] then
+                    for slotIndex = 1, 8 do
+                        local growInfo = groupOrder and groupOrder[slotIndex] or slotIndex
+                        if vg[growInfo] ~= false and separatedHdrs[growInfo] then
                             if not first then
-                                first = separatedHdrs[gi]
+                                first = separatedHdrs[growInfo]
                             end
-                            last = separatedHdrs[gi]
+                            last = separatedHdrs[growInfo]
                         end
                     end
                 end
-                anchorHdr = (fb.position == "left") and first or last
+                anchorHeader = (fallback.position == "left") and first or last
             end
-            if anchorHdr then
+            if anchorHeader then
                 -- Slot in along the group growth axis exactly like a real group.
-                local gap = s.groupSpacing or -1
-                local grow = s.groupGrowth or "RIGHT"
-                local before = (fb.position == "left")
-                if grow == "RIGHT" or grow == "DOWNRIGHT" then
+                local spacing = s.groupSpacing or -1
+                local growDir = s.groupGrowth or "RIGHT"
+                local before = (fallback.position == "left")
+                if growDir == "RIGHT" or growDir == "DOWNRIGHT" then
                     -- The grid flow's last group also ends in the rightmost column,
                     -- so it slots in along the same edge as a plain RIGHT run.
                     if before then
-                        FB.Pin(c, "TOPRIGHT", anchorHdr, "TOPLEFT", -gap, 0)
+                        FB.Pin(c, "TOPRIGHT", anchorHeader, "TOPLEFT", -spacing, 0)
                     else
-                        FB.Pin(c, "TOPLEFT", anchorHdr, "TOPRIGHT", gap, 0)
+                        FB.Pin(c, "TOPLEFT", anchorHeader, "TOPRIGHT", spacing, 0)
                     end
-                elseif grow == "LEFT" then
+                elseif growDir == "LEFT" then
                     if before then
-                        FB.Pin(c, "TOPLEFT", anchorHdr, "TOPRIGHT", gap, 0)
+                        FB.Pin(c, "TOPLEFT", anchorHeader, "TOPRIGHT", spacing, 0)
                     else
-                        FB.Pin(c, "TOPRIGHT", anchorHdr, "TOPLEFT", -gap, 0)
+                        FB.Pin(c, "TOPRIGHT", anchorHeader, "TOPLEFT", -spacing, 0)
                     end
-                elseif grow == "DOWN" then
+                elseif growDir == "DOWN" then
                     if before then
-                        FB.Pin(c, "BOTTOMLEFT", anchorHdr, "TOPLEFT", 0, gap)
+                        FB.Pin(c, "BOTTOMLEFT", anchorHeader, "TOPLEFT", 0, spacing)
                     else
-                        FB.Pin(c, "TOPLEFT", anchorHdr, "BOTTOMLEFT", 0, -gap)
+                        FB.Pin(c, "TOPLEFT", anchorHeader, "BOTTOMLEFT", 0, -spacing)
                     end
                 else -- UP
                     if before then
-                        FB.Pin(c, "TOPLEFT", anchorHdr, "BOTTOMLEFT", 0, -gap)
+                        FB.Pin(c, "TOPLEFT", anchorHeader, "BOTTOMLEFT", 0, -spacing)
                     else
-                        FB.Pin(c, "BOTTOMLEFT", anchorHdr, "TOPLEFT", 0, gap)
+                        FB.Pin(c, "BOTTOMLEFT", anchorHeader, "TOPLEFT", 0, spacing)
                     end
                 end
                 return
@@ -1022,10 +1022,10 @@ do
         end
 
         -- Owner-specific free anchoring (Extra Frames pins the grid's growth corner so the group grows away from it); CENTER pin otherwise.
-        if ownerFrame.FreeAnchor and ownerFrame.FreeAnchor(c, fb) then
+        if ownerFrame.FreeAnchor and ownerFrame.FreeAnchor(c, fallback) then
             return
         end
-        local p = fb.freePos or {}
+        local p = fallback.freePos or {}
         FB.FreePin(c, "CENTER", p.x or 100, p.y or 0)
     end
 
@@ -1038,8 +1038,8 @@ do
         if not FB.built then
             return
         end
-        local fb = FB.Settings and FB.Settings()
-        if fb and fb.showInDungeons == true then
+        local fallback = FB.Settings and FB.Settings()
+        if fallback and fallback.showInDungeons == true then
             FB.Anchor()
         end
     end
@@ -1050,8 +1050,8 @@ do
         if not saved or not saved.profile then
             return
         end
-        local fb = FB.Settings()
-        if not fb then
+        local fallback = FB.Settings()
+        if not fallback then
             return
         end
         if InCombatLockdown() then
@@ -1091,7 +1091,7 @@ do
         -- Add Friendly Boss Group -- opt-in, so existing users keep raid-only behavior). Dungeon
         -- encounters expose the same healable bossN tokens. The toggle's setter re-runs FB_Apply,
         -- so re-registering here applies the flip live in either direction.
-        local groupCond = (fb.showInDungeons == true) and "[@raid1,exists][@party1,exists] 1; 0"
+        local groupCond = (fallback.showInDungeons == true) and "[@raid1,exists][@party1,exists] 1; 0"
             or "[@raid1,exists] 1; 0"
         RegisterAttributeDriver(FB.controller, "state-ingroup", groupCond)
         for index = 1, 5 do
@@ -1170,12 +1170,12 @@ do
         if not set then
             return
         end
-        local ux, uy = UIParent:GetCenter()
+        local unitX, unitY = UIParent:GetCenter()
         local l, b, mw, mh = mover:GetRect()
-        if not (ux and l) then
+        if not (unitX and l) then
             return
         end
-        set.freeRect = { left = l - ux, right = l + mw - ux, bottom = b - uy, top = b + mh - uy }
+        set.freeRect = { left = l - unitX, right = l + mw - unitX, bottom = b - unitY, top = b + mh - unitY }
     end
 
     -- Free Move drag overlay (unlock-mode look, TOOLTIP strata so it floats above the options panel).
@@ -1191,8 +1191,8 @@ do
         -- Owners whose overlay can place another context's spot (the pet frames' Party and Raid tabs)
         -- read the overlay's settings, and bring their live group up to date themselves.
         local moverSettings = ownerFrame.MoverSettings or ownerFrame.Settings
-        local fb = moverSettings()
-        if not fb or fb.position ~= "free" then
+        local fallback = moverSettings()
+        if not fallback or fallback.position ~= "free" then
             return
         end
         if ownerFrame.MoverPrep then
@@ -1233,13 +1233,13 @@ do
             m:SetScript("OnDragStop", function(self)
                 self:StopMovingOrSizing()
                 local cx, cy = self:GetCenter()
-                local ux, uy = UIParent:GetCenter()
-                if cx and ux then
+                local unitX, unitY = UIParent:GetCenter()
+                if cx and unitX then
                     local set = (ownerFrame.MoverSettings or ownerFrame.Settings)()
                     if set then
                         set.freePos = {
-                            x = math.floor(cx - ux + 0.5),
-                            y = math.floor(cy - uy + 0.5),
+                            x = math.floor(cx - unitX + 0.5),
+                            y = math.floor(cy - unitY + 0.5),
                         }
                     end
                 end
@@ -1282,26 +1282,26 @@ do
     -- Standing event frame: exists even while inactive so a spec change can activate display="healers" without a /reload.
     -- The engage, target and roster listeners run only while the group is up (FB.SyncGroupEvents, from FB_Apply).
     do
-        local ev = mod.TakeShell()
-        ev:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-        ev:RegisterEvent("PLAYER_REGEN_ENABLED")
-        ev:RegisterEvent("PLAYER_ENTERING_WORLD")
+        local eventName = mod.TakeShell()
+        eventName:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+        eventName:RegisterEvent("PLAYER_REGEN_ENABLED")
+        eventName:RegisterEvent("PLAYER_ENTERING_WORLD")
         FB.SyncGroupEvents = function(enabled)
             if FB.groupEv == enabled then
                 return
             end
             FB.groupEv = enabled
             if enabled then
-                ev:RegisterEvent("INSTANCE_ENCOUNTER_ENGAGE_UNIT")
-                ev:RegisterEvent("GROUP_ROSTER_UPDATE")
-                ev:RegisterEvent("PLAYER_TARGET_CHANGED")
+                eventName:RegisterEvent("INSTANCE_ENCOUNTER_ENGAGE_UNIT")
+                eventName:RegisterEvent("GROUP_ROSTER_UPDATE")
+                eventName:RegisterEvent("PLAYER_TARGET_CHANGED")
             else
-                ev:UnregisterEvent("INSTANCE_ENCOUNTER_ENGAGE_UNIT")
-                ev:UnregisterEvent("GROUP_ROSTER_UPDATE")
-                ev:UnregisterEvent("PLAYER_TARGET_CHANGED")
+                eventName:UnregisterEvent("INSTANCE_ENCOUNTER_ENGAGE_UNIT")
+                eventName:UnregisterEvent("GROUP_ROSTER_UPDATE")
+                eventName:UnregisterEvent("PLAYER_TARGET_CHANGED")
             end
         end
-        ev:SetScript("OnEvent", function(_, evt)
+        eventName:SetScript("OnEvent", function(_, evt)
             if not saved then
                 return
             end
@@ -1350,7 +1350,7 @@ do
                 end
             end
         end)
-        FB.eventFrame = ev
+        FB.eventFrame = eventName
     end
 end -- FB scope block
 
