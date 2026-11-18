@@ -685,7 +685,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 end
                 return not enabled
             end
-            local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+            local colorSwatch, paintSwatch = CludesUI.BuildColorSwatch(
                 rightRegion,
                 castColorRow:GetFrameLevel() + 3,
                 function()
@@ -708,10 +708,10 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 CludesUI.HideWidgetTooltip()
             end)
             CludesUI.RegisterWidgetRefresh(function()
-                local off = midColorOff()
-                colorSwatch:SetAlpha(off and 0.15 or 1)
-                colorSwatch:EnableMouse(not off)
-                updateSwatch()
+                local isOff = midColorOff()
+                colorSwatch:SetAlpha(isOff and 0.15 or 1)
+                colorSwatch:EnableMouse(not isOff)
+                paintSwatch()
             end)
             colorSwatch:SetAlpha(midColorOff() and 0.15 or 1)
             colorSwatch:EnableMouse(not midColorOff())
@@ -951,7 +951,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             local region = swatchRegion
             local control = region and region._control
             if control and CludesUI.BuildColorSwatch then
-                local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+                local colorSwatch, paintSwatch = CludesUI.BuildColorSwatch(
                     region,
                     row3:GetFrameLevel() + 3,
                     function()
@@ -976,13 +976,13 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 -- Blizzard Style uses the stock interrupted fill art, so the flash colour is
                 -- inert there: the build and every refresh grey the swatch out alike.
                 local function ApplyFlashSwatchState()
-                    local off = flashOff() or mod.NP_BlizzOnly()
-                    colorSwatch:SetAlpha(off and 0.15 or 1)
-                    colorSwatch:EnableMouse(not off)
+                    local isOff = flashOff() or mod.NP_BlizzOnly()
+                    colorSwatch:SetAlpha(isOff and 0.15 or 1)
+                    colorSwatch:EnableMouse(not isOff)
                 end
                 CludesUI.RegisterWidgetRefresh(function()
                     ApplyFlashSwatchState()
-                    updateSwatch()
+                    paintSwatch()
                 end)
                 ApplyFlashSwatchState()
             end
@@ -1010,15 +1010,15 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     -- Preview the right-arrow texture on the right of each dropdown row.
     arrowVals._menuOpts = {
         itemHeight = 26,
-        icon = function(key)
-            local st = mod.TARGET_ARROW_STYLES[key]
+        icon = function(settingKey)
+            local st = mod.TARGET_ARROW_STYLES[settingKey]
             if not st then
                 return nil
             end -- "none" has no preview
             return mod.TARGET_ARROW_DIR .. st.l .. ".png"
         end,
-        iconWidth = function(key)
-            local st = mod.TARGET_ARROW_STYLES[key]
+        iconWidth = function(settingKey)
+            local st = mod.TARGET_ARROW_STYLES[settingKey]
             if not st then
                 return nil
             end
@@ -1062,8 +1062,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     cursorY = cursorY - height
 
     -- Target Effect: multi-select checkbox dropdown (CUI Glow/Border Color/Highlight), independent toggles; data model live-converts from the legacy targetGlowStyle string (see ns.GetTargetGlow* in the core file).
-    local refreshTargetBorderSwatch -- fwd decl; assigned when the swatch builds
-    local refreshTargetGlowSwatch -- fwd decl; assigned when the glow swatch builds
+    local paintTargetBorder -- fwd decl; assigned when the swatch builds
+    local paintTargetGlow -- fwd decl; assigned when the glow swatch builds
     local refreshTargetHighlightCog -- fwd decl; assigned when the cog builds
     if not CludesUI._prebuilding then
         local leftRegion = targetGlowRow._leftRegion
@@ -1136,11 +1136,11 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     fp:ApplyTarget()
                 end
                 UpdatePreview()
-                if refreshTargetBorderSwatch then
-                    refreshTargetBorderSwatch()
+                if paintTargetBorder then
+                    paintTargetBorder()
                 end
-                if refreshTargetGlowSwatch then
-                    refreshTargetGlowSwatch()
+                if paintTargetGlow then
+                    paintTargetGlow()
                 end
                 if refreshTargetHighlightCog then
                     refreshTargetHighlightCog()
@@ -1263,7 +1263,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         end
 
         -- Inline Border Color swatch: edits targetBorderColor (default white), tints the custom border; dimmed+non-interactive unless Border Color is checked.
-        local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+        local colorSwatch, paintSwatch = CludesUI.BuildColorSwatch(
             leftRegion,
             leftRegion:GetFrameLevel() + 5,
             function()
@@ -1287,14 +1287,14 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         leftRegion._lastInline = colorSwatch
         -- Tooltip so the swatch's purpose is clear (shown while interactive, i.e. Border Color on).
         CludesUI.HoverTip(colorSwatch, "Border Color")
-        refreshTargetBorderSwatch = function()
-            local off = not mod.GetTargetGlowBorderColor()
-            colorSwatch:SetAlpha(off and 0.15 or 1)
-            colorSwatch:EnableMouse(not off)
-            updateSwatch()
+        paintTargetBorder = function()
+            local isOff = not mod.GetTargetGlowBorderColor()
+            colorSwatch:SetAlpha(isOff and 0.15 or 1)
+            colorSwatch:EnableMouse(not isOff)
+            paintSwatch()
         end
-        CludesUI.RegisterWidgetRefresh(refreshTargetBorderSwatch)
-        refreshTargetBorderSwatch()
+        CludesUI.RegisterWidgetRefresh(paintTargetBorder)
+        paintTargetBorder()
 
         -- Inline Glow Color swatch: edits targetGlowColor (default the signature blue), tints the CUI background glow; dimmed+non-interactive unless CUI Glow is checked.
         local glowSwatch, updateGlowSwatch = CludesUI.BuildColorSwatch(
@@ -1317,14 +1317,14 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         Pix.Point(glowSwatch, "RIGHT", leftRegion._lastInline or leftRegion._control, "LEFT", -8, 0)
         leftRegion._lastInline = glowSwatch
         CludesUI.HoverTip(glowSwatch, "Glow Color")
-        refreshTargetGlowSwatch = function()
-            local off = not mod.GetTargetGlowCludesUI()
-            glowSwatch:SetAlpha(off and 0.15 or 1)
-            glowSwatch:EnableMouse(not off)
+        paintTargetGlow = function()
+            local isOff = not mod.GetTargetGlowCludesUI()
+            glowSwatch:SetAlpha(isOff and 0.15 or 1)
+            glowSwatch:EnableMouse(not isOff)
             updateGlowSwatch()
         end
-        CludesUI.RegisterWidgetRefresh(refreshTargetGlowSwatch)
-        refreshTargetGlowSwatch()
+        CludesUI.RegisterWidgetRefresh(paintTargetGlow)
+        paintTargetGlow()
     end
 
     -- Inline cog (arrow scale), beside the control; the swatches sit left of it
@@ -1377,22 +1377,22 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         local arrowOff = function()
             return DBVal("showTargetArrows") ~= true
         end
-        local customSwatch, updateCustom, classSwatch, updateClass
-        local function refreshArrowSwatches()
+        local customColorSwatch, updateCustom, classColorSwatch, updateClass
+        local function paintArrowSwatches()
             if updateCustom then
                 updateCustom()
             end
             if updateClass then
                 updateClass()
             end
-            local off = arrowOff()
+            local isOff = arrowOff()
             local useClass = DBVal("targetArrowClassColor") == true
-            customSwatch:SetAlpha(off and 0.15 or (useClass and 0.3 or 1))
-            classSwatch:SetAlpha(off and 0.15 or (useClass and 1 or 0.3))
-            customSwatch:SetMouseClickEnabled(not off)
-            classSwatch:SetMouseClickEnabled(not off)
+            customColorSwatch:SetAlpha(isOff and 0.15 or (useClass and 0.3 or 1))
+            classColorSwatch:SetAlpha(isOff and 0.15 or (useClass and 1 or 0.3))
+            customColorSwatch:SetMouseClickEnabled(not isOff)
+            classColorSwatch:SetMouseClickEnabled(not isOff)
         end
-        customSwatch, updateCustom = CludesUI.BuildColorSwatch(
+        customColorSwatch, updateCustom = CludesUI.BuildColorSwatch(
             rightRegion,
             rightRegion:GetFrameLevel() + 5,
             function()
@@ -1406,14 +1406,14 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     backing:ApplyTarget()
                 end
                 UpdatePreview()
-                refreshArrowSwatches()
+                paintArrowSwatches()
             end,
             nil,
             20
         )
-        Pix.Point(customSwatch, "RIGHT", rightRegion._lastInline or rightRegion._control, "LEFT", -8, 0)
-        local origCustomClick = customSwatch:GetScript("OnClick")
-        customSwatch:SetScript("OnClick", function(self, ...)
+        Pix.Point(customColorSwatch, "RIGHT", rightRegion._lastInline or rightRegion._control, "LEFT", -8, 0)
+        local origCustomClick = customColorSwatch:GetScript("OnClick")
+        customColorSwatch:SetScript("OnClick", function(self, ...)
             if arrowOff() then
                 return
             end
@@ -1423,15 +1423,15 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     backing:ApplyTarget()
                 end
                 UpdatePreview()
-                refreshArrowSwatches()
+                paintArrowSwatches()
                 return
             end
             if origCustomClick then
                 origCustomClick(self, ...)
             end
         end)
-        CludesUI.HoverTip(customSwatch, "Custom Color")
-        classSwatch, updateClass = CludesUI.BuildColorSwatch(
+        CludesUI.HoverTip(customColorSwatch, "Custom Color")
+        classColorSwatch, updateClass = CludesUI.BuildColorSwatch(
             rightRegion,
             rightRegion:GetFrameLevel() + 5,
             function()
@@ -1446,9 +1446,9 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             nil,
             20
         )
-        Pix.Point(classSwatch, "RIGHT", customSwatch, "LEFT", -8, 0)
-        rightRegion._lastInline = classSwatch
-        classSwatch:SetScript("OnClick", function()
+        Pix.Point(classColorSwatch, "RIGHT", customColorSwatch, "LEFT", -8, 0)
+        rightRegion._lastInline = classColorSwatch
+        classColorSwatch:SetScript("OnClick", function()
             if arrowOff() then
                 return
             end
@@ -1457,11 +1457,11 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 backing:ApplyTarget()
             end
             UpdatePreview()
-            refreshArrowSwatches()
+            paintArrowSwatches()
         end)
-        CludesUI.HoverTip(classSwatch, "Class Color")
-        CludesUI.RegisterWidgetRefresh(refreshArrowSwatches)
-        refreshArrowSwatches()
+        CludesUI.HoverTip(classColorSwatch, "Class Color")
+        CludesUI.RegisterWidgetRefresh(paintArrowSwatches)
+        paintArrowSwatches()
     end
 
     -- Eye icon to the left of the Target Glow Style dropdown to toggle glow on preview
@@ -1499,14 +1499,14 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     end
 
     -- Enable Target Color ---- Target Texture
-    local isTargetColorDisabled = function()
+    local targetColorOff = function()
         local saved = DB()
         if saved and saved.targetColorEnabled ~= nil then
             return not saved.targetColorEnabled
         end
         return not defaultSet.targetColorEnabled
     end
-    local isTargetTextureNone = function()
+    local targetTexNone = function()
         return (DBVal("targetOverlayTexture") or defaultSet.targetOverlayTexture) == "none"
     end
     -- No Tint: the target texture pattern becomes the bar's own fill texture (SetStatusBarTexture) instead of a tinted overlay, so the color swatch/opacity below stop applying.
@@ -1517,14 +1517,14 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         end
         return val
     end
-    local isFocusColorDisabled = function()
+    local focusColorOff = function()
         local saved = DB()
         if saved and saved.focusColorEnabled ~= nil then
             return not saved.focusColorEnabled
         end
         return not defaultSet.focusColorEnabled
     end
-    local isFocusTextureNone = function()
+    local focusTexNone = function()
         return (DBVal("focusOverlayTexture") or defaultSet.focusOverlayTexture) == "none"
     end
     local isFocusNoTint = function()
@@ -1535,11 +1535,11 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         return val
     end
 
-    local targetPrev, focusPrev
+    local targetPreview, focusPreview
     local function RefreshFocusPreview()
         RefreshAllPlates()
-        if focusPrev and focusPrev.UpdateOverlay then
-            focusPrev.UpdateOverlay()
+        if focusPreview and focusPreview.UpdateOverlay then
+            focusPreview.UpdateOverlay()
         end
     end
 
@@ -1557,16 +1557,16 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         setValue = function(val)
             DB().targetColorEnabled = val
             RefreshAllPlates()
-            if targetPrev then
+            if targetPreview then
                 if val then
-                    targetPrev.SetColorOverride(nil)
+                    targetPreview.SetColorOverride(nil)
                 else
-                    targetPrev.SetColorOverride(function()
+                    targetPreview.SetColorOverride(function()
                         return DBColor("enemyInCombat")
                     end)
                 end
-                targetPrev.UpdateColor()
-                targetPrev.SetDisabled(not val)
+                targetPreview.UpdateColor()
+                targetPreview.SetDisabled(not val)
             end
             CludesUI:RefreshPage()
         end,
@@ -1583,16 +1583,16 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         setValue = function(val)
             DB().focusColorEnabled = val
             RefreshAllPlates()
-            if focusPrev then
+            if focusPreview then
                 if val then
-                    focusPrev.SetColorOverride(nil)
+                    focusPreview.SetColorOverride(nil)
                 else
-                    focusPrev.SetColorOverride(function()
+                    focusPreview.SetColorOverride(function()
                         return DBColor("enemyInCombat")
                     end)
                 end
-                focusPrev.UpdateColor()
-                focusPrev.SetDisabled(not val)
+                focusPreview.UpdateColor()
+                focusPreview.SetDisabled(not val)
             end
             CludesUI:RefreshPage()
         end,
@@ -1608,11 +1608,11 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         local targetColorSet = function(r, g, b)
             DB().target = { r = r, g = g, b = b }
             RefreshAllPlates()
-            if targetPrev then
-                targetPrev.UpdateColor()
+            if targetPreview then
+                targetPreview.UpdateColor()
             end
         end
-        local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+        local colorSwatch, paintSwatch = CludesUI.BuildColorSwatch(
             leftRegion,
             leftRegion:GetFrameLevel() + 5,
             targetColorGet,
@@ -1622,14 +1622,14 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         )
         Pix.Point(colorSwatch, "RIGHT", leftRegion._control, "LEFT", -12, 0)
         CludesUI.RegisterWidgetRefresh(function()
-            local off = isTargetColorDisabled()
-            colorSwatch:SetAlpha(off and 0.15 or 1)
-            colorSwatch:EnableMouse(not off)
-            updateSwatch()
+            local isOff = targetColorOff()
+            colorSwatch:SetAlpha(isOff and 0.15 or 1)
+            colorSwatch:EnableMouse(not isOff)
+            paintSwatch()
         end)
-        local off = isTargetColorDisabled()
-        colorSwatch:SetAlpha(off and 0.15 or 1)
-        colorSwatch:EnableMouse(not off)
+        local isOff = targetColorOff()
+        colorSwatch:SetAlpha(isOff and 0.15 or 1)
+        colorSwatch:EnableMouse(not isOff)
     end
 
     -- Inline Focus Color swatch
@@ -1641,11 +1641,11 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         local focusColorSet = function(r, g, b)
             DB().focus = { r = r, g = g, b = b }
             RefreshAllPlates()
-            if focusPrev then
-                focusPrev.UpdateColor()
+            if focusPreview then
+                focusPreview.UpdateColor()
             end
         end
-        local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+        local colorSwatch, paintSwatch = CludesUI.BuildColorSwatch(
             rightRegion,
             rightRegion:GetFrameLevel() + 5,
             focusColorGet,
@@ -1655,14 +1655,14 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         )
         Pix.Point(colorSwatch, "RIGHT", rightRegion._control, "LEFT", -12, 0)
         CludesUI.RegisterWidgetRefresh(function()
-            local off = isFocusColorDisabled()
-            colorSwatch:SetAlpha(off and 0.15 or 1)
-            colorSwatch:EnableMouse(not off)
-            updateSwatch()
+            local isOff = focusColorOff()
+            colorSwatch:SetAlpha(isOff and 0.15 or 1)
+            colorSwatch:EnableMouse(not isOff)
+            paintSwatch()
         end)
-        local off = isFocusColorDisabled()
-        colorSwatch:SetAlpha(off and 0.15 or 1)
-        colorSwatch:EnableMouse(not off)
+        local isOff = focusColorOff()
+        colorSwatch:SetAlpha(isOff and 0.15 or 1)
+        colorSwatch:EnableMouse(not isOff)
     end
 
     -- Target Texture ---- Focus Texture
@@ -1698,14 +1698,14 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         end
         ovtValues._menuOpts = {
             itemHeight = 28,
-            background = function(key)
-                if not key or key == "none" or key == "---" then
+            background = function(settingKey)
+                if not settingKey or settingKey == "none" or settingKey == "---" then
                     return nil
                 end
-                if mod.OVERLAY_STRIPE_KEYS and mod.OVERLAY_STRIPE_KEYS[key] then
-                    return "Interface\\AddOns\\CludesUINameplates\\Media\\" .. key .. ".png"
+                if mod.OVERLAY_STRIPE_KEYS and mod.OVERLAY_STRIPE_KEYS[settingKey] then
+                    return "Interface\\AddOns\\CludesUINameplates\\Media\\" .. settingKey .. ".png"
                 end
-                return mod.healthBarTextures and mod.healthBarTextures[key]
+                return mod.healthBarTextures and mod.healthBarTextures[settingKey]
             end,
         }
     end
@@ -1720,8 +1720,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         setValue = function(val)
             DB().targetOverlayTexture = val
             RefreshAllPlates()
-            if targetPrev and targetPrev.UpdateOverlay then
-                targetPrev.UpdateOverlay()
+            if targetPreview and targetPreview.UpdateOverlay then
+                targetPreview.UpdateOverlay()
             end
             CludesUI:RefreshPage()
         end,
@@ -1736,8 +1736,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         setValue = function(val)
             DB().focusOverlayTexture = val
             RefreshAllPlates()
-            if focusPrev and focusPrev.UpdateOverlay then
-                focusPrev.UpdateOverlay()
+            if focusPreview and focusPreview.UpdateOverlay then
+                focusPreview.UpdateOverlay()
             end
             CludesUI:RefreshPage()
         end,
@@ -1749,7 +1749,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     if not CludesUI._prebuilding then
         local leftRegion = textureDualRow._leftRegion
         CludesUI.BuildInlineCog(leftRegion, {
-            disabled = isTargetTextureNone,
+            disabled = targetTexNone,
             disabledTooltip = "a Target Texture",
             title = "Target Texture",
             rows = {
@@ -1767,8 +1767,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     set = function(val)
                         DB().targetOverlayAlpha = val / 100
                         RefreshAllPlates()
-                        if targetPrev and targetPrev.UpdateOverlay then
-                            targetPrev.UpdateOverlay()
+                        if targetPreview and targetPreview.UpdateOverlay then
+                            targetPreview.UpdateOverlay()
                         end
                     end,
                 },
@@ -1785,8 +1785,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     set = function(val)
                         DB().targetOverlayFullBgAlpha = val
                         RefreshAllPlates()
-                        if targetPrev and targetPrev.UpdateOverlay then
-                            targetPrev.UpdateOverlay()
+                        if targetPreview and targetPreview.UpdateOverlay then
+                            targetPreview.UpdateOverlay()
                         end
                     end,
                 },
@@ -1798,8 +1798,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     set = function(val)
                         DB().targetOverlayNoTint = val
                         RefreshAllTextures()
-                        if targetPrev and targetPrev.UpdateOverlay then
-                            targetPrev.UpdateOverlay()
+                        if targetPreview and targetPreview.UpdateOverlay then
+                            targetPreview.UpdateOverlay()
                         end
                     end,
                 },
@@ -1817,11 +1817,11 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         local targetTexColorSet = function(r, g, b)
             DB().targetOverlayColor = { r = r, g = g, b = b }
             RefreshAllPlates()
-            if targetPrev and targetPrev.UpdateOverlay then
-                targetPrev.UpdateOverlay()
+            if targetPreview and targetPreview.UpdateOverlay then
+                targetPreview.UpdateOverlay()
             end
         end
-        local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+        local colorSwatch, paintSwatch = CludesUI.BuildColorSwatch(
             leftRegion,
             leftRegion:GetFrameLevel() + 5,
             targetTexColorGet,
@@ -1832,21 +1832,21 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         Pix.Point(colorSwatch, "RIGHT", leftRegion._lastInline or leftRegion._control, "LEFT", -8, 0)
         leftRegion._lastInline = colorSwatch
         CludesUI.RegisterWidgetRefresh(function()
-            local off = isTargetTextureNone() or isTargetNoTint()
-            colorSwatch:SetAlpha(off and 0.15 or 1)
-            colorSwatch:EnableMouse(not off)
-            updateSwatch()
+            local isOff = targetTexNone() or isTargetNoTint()
+            colorSwatch:SetAlpha(isOff and 0.15 or 1)
+            colorSwatch:EnableMouse(not isOff)
+            paintSwatch()
         end)
-        local off = isTargetTextureNone() or isTargetNoTint()
-        colorSwatch:SetAlpha(off and 0.15 or 1)
-        colorSwatch:EnableMouse(not off)
+        local isOff = targetTexNone() or isTargetNoTint()
+        colorSwatch:SetAlpha(isOff and 0.15 or 1)
+        colorSwatch:EnableMouse(not isOff)
     end
 
     -- Inline Focus Texture cog (Opacity + No Tint), beside the control; the swatch sits left of it
     if not CludesUI._prebuilding then
         local rightRegion = textureDualRow._rightRegion
         CludesUI.BuildInlineCog(rightRegion, {
-            disabled = isFocusTextureNone,
+            disabled = focusTexNone,
             disabledTooltip = "a Focus Texture",
             title = "Focus Texture",
             rows = {
@@ -1906,11 +1906,11 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         local focusTexColorSet = function(r, g, b)
             DB().focusOverlayColor = { r = r, g = g, b = b }
             RefreshAllPlates()
-            if focusPrev and focusPrev.UpdateOverlay then
-                focusPrev.UpdateOverlay()
+            if focusPreview and focusPreview.UpdateOverlay then
+                focusPreview.UpdateOverlay()
             end
         end
-        local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+        local colorSwatch, paintSwatch = CludesUI.BuildColorSwatch(
             rightRegion,
             rightRegion:GetFrameLevel() + 5,
             focusTexColorGet,
@@ -1921,19 +1921,19 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         Pix.Point(colorSwatch, "RIGHT", rightRegion._lastInline or rightRegion._control, "LEFT", -8, 0)
         rightRegion._lastInline = colorSwatch
         CludesUI.RegisterWidgetRefresh(function()
-            local off = isFocusTextureNone() or isFocusNoTint()
-            colorSwatch:SetAlpha(off and 0.15 or 1)
-            colorSwatch:EnableMouse(not off)
-            updateSwatch()
+            local isOff = focusTexNone() or isFocusNoTint()
+            colorSwatch:SetAlpha(isOff and 0.15 or 1)
+            colorSwatch:EnableMouse(not isOff)
+            paintSwatch()
         end)
-        local off = isFocusTextureNone() or isFocusNoTint()
-        colorSwatch:SetAlpha(off and 0.15 or 1)
-        colorSwatch:EnableMouse(not off)
+        local isOff = focusTexNone() or isFocusNoTint()
+        colorSwatch:SetAlpha(isOff and 0.15 or 1)
+        colorSwatch:EnableMouse(not isOff)
     end
 
     -- Target Preview ---- Focus Preview
-    local previewDualRow
-    previewDualRow, height = W:DualRow(
+    local previewRow
+    previewRow, height = W:DualRow(
         hostFrame,
         cursorY,
         { type = "label", text = "Target Preview" },
@@ -1944,16 +1944,16 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     -- The two bars sit at their half's right edge: the row's child anchored to that
     -- half, moved. Page reuse: the row's children of its earlier dresses stay among
     -- them, idle, and the deferred pass stops once the row was dressed again.
-    local previewRowGen = PoolGen(previewDualRow)
+    local previewRowGen = PoolGen(previewRow)
     if not CludesUI._prebuilding then
-        targetPrev = LazyColorPreviewBar(previewDualRow, "health", "target", previewDualRow._leftRegion)
+        targetPreview = LazyColorPreviewBar(previewRow, "health", "target", previewRow._leftRegion)
         do
             local function RepositionTargetBar()
-                if PoolGen(previewDualRow) ~= previewRowGen then
+                if PoolGen(previewRow) ~= previewRowGen then
                     return
                 end
-                local region = previewDualRow._leftRegion
-                for _, childFrame in ipairs({ previewDualRow:GetChildren() }) do
+                local region = previewRow._leftRegion
+                for _, childFrame in ipairs({ previewRow:GetChildren() }) do
                     if
                         childFrame.GetNumPoints
                         and childFrame:GetNumPoints() > 0
@@ -1968,27 +1968,27 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     end
                 end
             end
-            previewDualRow:HookScript("OnShow", RepositionTargetBar)
+            previewRow:HookScript("OnShow", RepositionTargetBar)
             C_Timer.After(0, RepositionTargetBar)
         end
-        if isTargetColorDisabled() then
-            targetPrev.SetColorOverride(function()
+        if targetColorOff() then
+            targetPreview.SetColorOverride(function()
                 return DBColor("enemyInCombat")
             end)
         end
-        targetPrev.SetDisabled(isTargetColorDisabled())
-        targetPrev.UpdateColor()
+        targetPreview.SetDisabled(targetColorOff())
+        targetPreview.UpdateColor()
     end
 
     if not CludesUI._prebuilding then
-        focusPrev = LazyColorPreviewBar(previewDualRow, "health", "focus", previewDualRow._rightRegion)
+        focusPreview = LazyColorPreviewBar(previewRow, "health", "focus", previewRow._rightRegion)
         do
             local function RepositionFocusBar()
-                if PoolGen(previewDualRow) ~= previewRowGen then
+                if PoolGen(previewRow) ~= previewRowGen then
                     return
                 end
-                local region = previewDualRow._rightRegion
-                for _, childFrame in ipairs({ previewDualRow:GetChildren() }) do
+                local region = previewRow._rightRegion
+                for _, childFrame in ipairs({ previewRow:GetChildren() }) do
                     if
                         childFrame.GetNumPoints
                         and childFrame:GetNumPoints() > 0
@@ -2003,20 +2003,20 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     end
                 end
             end
-            previewDualRow:HookScript("OnShow", RepositionFocusBar)
+            previewRow:HookScript("OnShow", RepositionFocusBar)
             C_Timer.After(0, RepositionFocusBar)
         end
-        if isFocusColorDisabled() then
-            focusPrev.SetColorOverride(function()
+        if focusColorOff() then
+            focusPreview.SetColorOverride(function()
                 return DBColor("enemyInCombat")
             end)
         end
-        focusPrev.SetDisabled(isFocusColorDisabled())
-        focusPrev.UpdateColor()
+        focusPreview.SetDisabled(focusColorOff())
+        focusPreview.UpdateColor()
     end
 
     -- Hover Texture (+ Hover Effect opacity slider + color swatch): the mouseover highlight overlay and its opacity/color, at the bottom of this section.
-    local hoverOverlayValues, hoverOverlayOrder = {}, {}
+    local hoverOverlayValues, hoverOrder = {}, {}
     do
         local STRIPE_ORDER = {
             "striped-v2",
@@ -2035,17 +2035,17 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             ["striped-tiny"] = "Tiny Stripes",
         }
         hoverOverlayValues.none = "None"
-        hoverOverlayOrder[#hoverOverlayOrder + 1] = "none"
-        hoverOverlayOrder[#hoverOverlayOrder + 1] = "---"
+        hoverOrder[#hoverOrder + 1] = "none"
+        hoverOrder[#hoverOrder + 1] = "---"
         for _, keyName in ipairs(STRIPE_ORDER) do
             hoverOverlayValues[keyName] = STRIPE_NAMES[keyName]
-            hoverOverlayOrder[#hoverOverlayOrder + 1] = keyName
+            hoverOrder[#hoverOrder + 1] = keyName
         end
-        hoverOverlayOrder[#hoverOverlayOrder + 1] = "---"
+        hoverOrder[#hoverOrder + 1] = "---"
         for _, keyName in ipairs(hbtOrder) do
             -- "none" is already prepended above; skip the copy from hbtOrder (which starts with "none") so it shows only once.
             if keyName ~= "none" then
-                hoverOverlayOrder[#hoverOverlayOrder + 1] = keyName
+                hoverOrder[#hoverOrder + 1] = keyName
                 if keyName ~= "---" then
                     hoverOverlayValues[keyName] = hbtValues[keyName]
                 end
@@ -2053,14 +2053,14 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         end
         hoverOverlayValues._menuOpts = {
             itemHeight = 28,
-            background = function(key)
-                if not key or key == "none" or key == "---" then
+            background = function(settingKey)
+                if not settingKey or settingKey == "none" or settingKey == "---" then
                     return nil
                 end
-                if mod.OVERLAY_STRIPE_KEYS and mod.OVERLAY_STRIPE_KEYS[key] then
-                    return "Interface\\AddOns\\CludesUINameplates\\Media\\" .. key .. ".png"
+                if mod.OVERLAY_STRIPE_KEYS and mod.OVERLAY_STRIPE_KEYS[settingKey] then
+                    return "Interface\\AddOns\\CludesUINameplates\\Media\\" .. settingKey .. ".png"
                 end
-                return mod.healthBarTextures and mod.healthBarTextures[key]
+                return mod.healthBarTextures and mod.healthBarTextures[settingKey]
             end,
         }
     end
@@ -2071,7 +2071,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             text = "Hover Texture",
             tooltip = "Uses the Hover Effect color and opacity. Set to None for the flat hover highlight.",
             values = hoverOverlayValues,
-            order = hoverOverlayOrder,
+            order = hoverOrder,
             getValue = function()
                 return DBVal("hoverOverlayTexture") or defaultSet.hoverOverlayTexture
             end,
@@ -2102,8 +2102,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             if rightRegion._control then
                 rightRegion._control:Hide()
             end
-            local refreshHoverBorderSwatch
-            local refreshHoverGlowSwatch
+            local paintHoverBorder
+            local paintHoverGlow
             local refreshHoverCog
             local hoverItems = {
                 { key = "cludesui", label = "CUI Glow" },
@@ -2157,11 +2157,11 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                         end
                     end
                     mod.RefreshHoverEffect()
-                    if refreshHoverBorderSwatch then
-                        refreshHoverBorderSwatch()
+                    if paintHoverBorder then
+                        paintHoverBorder()
                     end
-                    if refreshHoverGlowSwatch then
-                        refreshHoverGlowSwatch()
+                    if paintHoverGlow then
+                        paintHoverGlow()
                     end
                     if refreshHoverCog then
                         refreshHoverCog()
@@ -2281,14 +2281,14 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             Pix.Point(hvBSwatch, "RIGHT", rightRegion._lastInline or rightRegion._control, "LEFT", -8, 0)
             rightRegion._lastInline = hvBSwatch
             CludesUI.HoverTip(hvBSwatch, "Border Color")
-            refreshHoverBorderSwatch = function()
-                local off = not mod.GetHoverGlowBorderColor()
-                hvBSwatch:SetAlpha(off and 0.15 or 1)
-                hvBSwatch:EnableMouse(not off)
+            paintHoverBorder = function()
+                local isOff = not mod.GetHoverGlowBorderColor()
+                hvBSwatch:SetAlpha(isOff and 0.15 or 1)
+                hvBSwatch:EnableMouse(not isOff)
                 hvUpdateBSwatch()
             end
-            CludesUI.RegisterWidgetRefresh(refreshHoverBorderSwatch)
-            refreshHoverBorderSwatch()
+            CludesUI.RegisterWidgetRefresh(paintHoverBorder)
+            paintHoverBorder()
 
             -- Inline Glow Color swatch: dimmed unless CUI Glow is checked.
             local hvGSwatch, hvUpdateGSwatch = CludesUI.BuildColorSwatch(
@@ -2308,14 +2308,14 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             Pix.Point(hvGSwatch, "RIGHT", rightRegion._lastInline or rightRegion._control, "LEFT", -8, 0)
             rightRegion._lastInline = hvGSwatch
             CludesUI.HoverTip(hvGSwatch, "Glow Color")
-            refreshHoverGlowSwatch = function()
-                local off = not mod.GetHoverGlowCludesUI()
-                hvGSwatch:SetAlpha(off and 0.15 or 1)
-                hvGSwatch:EnableMouse(not off)
+            paintHoverGlow = function()
+                local isOff = not mod.GetHoverGlowCludesUI()
+                hvGSwatch:SetAlpha(isOff and 0.15 or 1)
+                hvGSwatch:EnableMouse(not isOff)
                 hvUpdateGSwatch()
             end
-            CludesUI.RegisterWidgetRefresh(refreshHoverGlowSwatch)
-            refreshHoverGlowSwatch()
+            CludesUI.RegisterWidgetRefresh(paintHoverGlow)
+            paintHoverGlow()
 
             -- Inline Hover Texture cog (Full alpha on empty part of bar), left of the dropdown; disabled while set to None.
             local leftRegion = hoverRow._leftRegion
@@ -2355,7 +2355,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     classResourceHeader, height = W:SectionHeader(hostFrame, "CLASS RESOURCE", cursorY)
     cursorY = cursorY - height
 
-    local function classPowerDisabled()
+    local function classPowerOff()
         return DBVal("showClassPower") ~= true
     end
 
@@ -2380,12 +2380,12 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     }, {
         type = "multiSwatch",
         text = "Fill Color",
-        disabled = classPowerDisabled,
+        disabled = classPowerOff,
         disabledTooltip = "Show Class Resource",
         swatches = {
             {
                 tooltip = "Custom Color",
-                disabled = classPowerDisabled,
+                disabled = classPowerOff,
                 disabledTooltip = "Show Class Resource",
                 getValue = function()
                     local c = (DB() and DB().classPowerCustomColor) or defaultSet.classPowerCustomColor
@@ -2422,7 +2422,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             },
             {
                 tooltip = "Class Color",
-                disabled = classPowerDisabled,
+                disabled = classPowerOff,
                 disabledTooltip = "Show Class Resource",
                 getValue = function()
                     local _, ct = UnitClass("player")
@@ -2452,7 +2452,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
     cursorY = cursorY - height
 
     -- Rows 2-4 are HIDDEN entirely while Show Class Resource is off (the toggle's DependentSetValue forces the rebuild on flips).
-    if not classPowerDisabled() then
+    if not classPowerOff() then
         -- Row 2: Position (with inline cog for X/Y) | Size
         local classResourceRow2
         classResourceRow2, height = W:DualRow(hostFrame, cursorY, {
@@ -2490,7 +2490,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             local leftRegion = classResourceRow2._leftRegion
             CludesUI.BuildInlineCog(leftRegion, {
                 anchorTo = leftRegion._control,
-                disabled = classPowerDisabled,
+                disabled = classPowerOff,
                 disabledTooltip = "Show Class Resource",
                 isOpen = CogPopupOpen,
                 show = function(self)
@@ -2611,8 +2611,8 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
         -- Inline thickness cog + border color swatch on the Border toggle
         if not CludesUI._prebuilding then
             local region = classResourceRow4._rightRegion
-            local function borderOff()
-                return classPowerDisabled() or DBVal("classPowerBorder") ~= true
+            local function noBorder()
+                return classPowerOff() or DBVal("classPowerBorder") ~= true
             end
             local colorGet = function()
                 local c = (DB() and DB().classPowerBorderColor) or defaultSet.classPowerBorderColor
@@ -2625,7 +2625,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             end
 
             CludesUI.BuildInlineCog(region, {
-                disabled = borderOff,
+                disabled = noBorder,
                 disabledTooltip = "Border",
                 title = "Border Settings",
                 rows = {
@@ -2647,19 +2647,19 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 },
             })
 
-            local colorSwatch, updateSwatch =
+            local colorSwatch, paintSwatch =
                 CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, colorGet, colorSet, nil, 20)
             Pix.Point(colorSwatch, "RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
             region._lastInline = colorSwatch
             CludesUI.RegisterWidgetRefresh(function()
-                local off = borderOff()
-                colorSwatch:SetAlpha(off and 0.15 or 1)
-                colorSwatch:EnableMouse(not off)
-                updateSwatch()
+                local isOff = noBorder()
+                colorSwatch:SetAlpha(isOff and 0.15 or 1)
+                colorSwatch:EnableMouse(not isOff)
+                paintSwatch()
             end)
-            local off = borderOff()
-            colorSwatch:SetAlpha(off and 0.15 or 1)
-            colorSwatch:EnableMouse(not off)
+            local isOff = noBorder()
+            colorSwatch:SetAlpha(isOff and 0.15 or 1)
+            colorSwatch:EnableMouse(not isOff)
         end
     end -- close Class Resource hidden-while-disabled gate
 
@@ -2777,7 +2777,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                     },
                 },
             })
-            local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
+            local colorSwatch, paintSwatch = CludesUI.BuildColorSwatch(
                 regionFrame,
                 regionFrame:GetFrameLevel() + 5,
                 colorGet,
@@ -2788,7 +2788,7 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             Pix.Point(colorSwatch, "RIGHT", regionFrame._lastInline or regionFrame._control, "LEFT", -8, 0)
             regionFrame._lastInline = colorSwatch
             CludesUI.RegisterWidgetRefresh(function()
-                updateSwatch()
+                paintSwatch()
             end)
         end
 
@@ -3143,12 +3143,12 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
             end
             UpdatePreview()
         end
-        local stSwatch, stUpdate =
+        local stateSwatch, stUpdate =
             CludesUI.BuildColorSwatch(rightRegion, rightRegion:GetFrameLevel() + 5, stColorGet, stColorSet, nil, 20)
-        Pix.Point(stSwatch, "RIGHT", ccSwatch, "LEFT", -9, 0)
-        rightRegion._lastInline = stSwatch
-        stSwatch._eabOrigClick = stSwatch:GetScript("OnClick")
-        stSwatch:SetScript("OnClick", function(self)
+        Pix.Point(stateSwatch, "RIGHT", ccSwatch, "LEFT", -9, 0)
+        rightRegion._lastInline = stateSwatch
+        stateSwatch._eabOrigClick = stateSwatch:GetScript("OnClick")
+        stateSwatch:SetScript("OnClick", function(self)
             local saved = DB()
             local classColor = saved and saved.castTargetClassColor
             if classColor == nil then
@@ -3167,25 +3167,25 @@ local function BuildDisplayBars(hostFrame, cursorY, context)
                 self._eabOrigClick(self)
             end
         end)
-        CludesUI.HoverTip(stSwatch, "Custom Color")
+        CludesUI.HoverTip(stateSwatch, "Custom Color")
 
         CludesUI.RegisterWidgetRefresh(function()
             local saved = DB()
-            local isCC = saved and saved.castTargetClassColor
-            if isCC == nil then
-                isCC = defaultSet.castTargetClassColor
+            local ccMode = saved and saved.castTargetClassColor
+            if ccMode == nil then
+                ccMode = defaultSet.castTargetClassColor
             end
-            stSwatch:SetAlpha(isCC and 0.3 or 1)
-            ccSwatch:SetAlpha(isCC and 1 or 0.3)
+            stateSwatch:SetAlpha(ccMode and 0.3 or 1)
+            ccSwatch:SetAlpha(ccMode and 1 or 0.3)
             stUpdate()
             ccUpdate()
         end)
-        local isCC = (DB() and DB().castTargetClassColor)
-        if isCC == nil then
-            isCC = defaultSet.castTargetClassColor
+        local ccMode = (DB() and DB().castTargetClassColor)
+        if ccMode == nil then
+            ccMode = defaultSet.castTargetClassColor
         end
-        stSwatch:SetAlpha(isCC and 0.3 or 1)
-        ccSwatch:SetAlpha(isCC and 1 or 0.3)
+        stateSwatch:SetAlpha(ccMode and 0.3 or 1)
+        ccSwatch:SetAlpha(ccMode and 1 or 0.3)
     end
     cursorY = cursorY - height
 
