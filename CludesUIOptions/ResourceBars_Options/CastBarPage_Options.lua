@@ -83,6 +83,21 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
         end
         UpdateCastBarPreview()
     end
+    -- A setting row's setter for one cast bar key: written (when the profile
+    -- exists), the cast bar redrawn, and with alsoPage the page rebuilt too.
+    local function Setter(key, alsoPage)
+        return function(val)
+            local p = DB()
+            if not p then
+                return
+            end
+            p.castBar[key] = val
+            RefreshCast()
+            if alsoPage then
+                CludesUI:RefreshPage()
+            end
+        end
+    end
 
     local castSection
     castSection, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
@@ -105,15 +120,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.castBar.enabled
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.castBar.enabled = val
-            RefreshCast()
-            CludesUI:RefreshPage()
-        end,
+        setValue = Setter("enabled", true),
     }, {
         type = "dropdown",
         text = "Frame Strata",
@@ -126,14 +133,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.castBar.frameStrata or "MEDIUM"
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.castBar.frameStrata = val
-            RefreshCast()
-        end,
+        setValue = Setter("frameStrata"),
     })
     posY = posY - hgt
     -- (No position cog here: the cast bar is positioned via Unlock Mode; the old X/Y offset cog wrote anchor keys the runtime never reads.)
@@ -155,14 +155,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.castBar.height or 20
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.castBar.height = val
-            RefreshCast()
-        end,
+        setValue = Setter("height"),
     }, {
         type = "slider",
         text = "Width",
@@ -176,14 +169,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.castBar.width or 220
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.castBar.width = val
-            RefreshCast()
-        end,
+        setValue = Setter("width"),
     })
     posY = posY - hgt
 
@@ -198,15 +184,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.castBar.showIcon ~= false
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.castBar.showIcon = val
-            RefreshCast()
-            CludesUI:RefreshPage()
-        end,
+        setValue = Setter("showIcon", true),
     }, {
         type = "toggle",
         text = "Show Spark",
@@ -216,14 +194,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.castBar.showSpark
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.castBar.showSpark = val
-            RefreshCast()
-        end,
+        setValue = Setter("showSpark"),
     })
     posY = posY - hgt
     -- Inline cog on Show Spell Icon
@@ -333,14 +304,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.castBar.iconOnRight
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.castBar.iconOnRight = val
-                        RefreshCast()
-                    end,
+                    set = Setter("iconOnRight"),
                 },
                 {
                     type = "toggle",
@@ -360,14 +324,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.castBar.showIconDivider
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.castBar.showIconDivider = val
-                        RefreshCast()
-                    end,
+                    set = Setter("showIconDivider"),
                 },
                 -- Border Art Divider: the divider in the border style's own art (the
                 -- Pixels styles); any other style keeps the solid line.
@@ -443,14 +400,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.castBar.alwaysShow
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.castBar.alwaysShow = val
-            RefreshCast()
-        end,
+        setValue = Setter("alwaysShow"),
     }, {
         type = "toggle",
         text = "Smooth Bar Animation",
@@ -805,15 +755,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                             local p = DB()
                             return p and p.castBar.borderExtendTop or 0
                         end,
-                        set = function(val)
-                            local p = DB()
-                            if not p then
-                                return
-                            end
-                            p.castBar.borderExtendTop = val
-                            RefreshCast()
-                            CludesUI:RefreshPage()
-                        end,
+                        set = Setter("borderExtendTop", true),
                     },
                     {
                         type = "slider",
@@ -828,15 +770,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                             local p = DB()
                             return p and p.castBar.borderExtendBottom or 0
                         end,
-                        set = function(val)
-                            local p = DB()
-                            if not p then
-                                return
-                            end
-                            p.castBar.borderExtendBottom = val
-                            RefreshCast()
-                            CludesUI:RefreshPage()
-                        end,
+                        set = Setter("borderExtendBottom", true),
                     },
                     {
                         type = "slider",
@@ -851,15 +785,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                             local p = DB()
                             return p and p.castBar.borderExtendLeft or 0
                         end,
-                        set = function(val)
-                            local p = DB()
-                            if not p then
-                                return
-                            end
-                            p.castBar.borderExtendLeft = val
-                            RefreshCast()
-                            CludesUI:RefreshPage()
-                        end,
+                        set = Setter("borderExtendLeft", true),
                     },
                     {
                         type = "slider",
@@ -874,15 +800,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                             local p = DB()
                             return p and p.castBar.borderExtendRight or 0
                         end,
-                        set = function(val)
-                            local p = DB()
-                            if not p then
-                                return
-                            end
-                            p.castBar.borderExtendRight = val
-                            RefreshCast()
-                            CludesUI:RefreshPage()
-                        end,
+                        set = Setter("borderExtendRight", true),
                     },
                     -- Bottom Separator: None = off (edgeSep false); an art entry turns it
                     -- on with that art. Across the whole bar, icon included.
@@ -933,15 +851,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                             local p = DB()
                             return p and p.castBar.edgeSepY or 0
                         end,
-                        set = function(val)
-                            local p = DB()
-                            if not p then
-                                return
-                            end
-                            p.castBar.edgeSepY = val
-                            RefreshCast()
-                            CludesUI:RefreshPage()
-                        end,
+                        set = Setter("edgeSepY", true),
                     },
                 },
             })
@@ -978,14 +888,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                 local p = DB()
                 return p and (p.castBar.fillOpacity or 100) or 100
             end,
-            setValue = function(val)
-                local p = DB()
-                if not p then
-                    return
-                end
-                p.castBar.fillOpacity = val
-                RefreshCast()
-            end,
+            setValue = Setter("fillOpacity"),
         },
         mod.ERB_CastBlizzOnlyGate({
             type = "slider",
@@ -1037,15 +940,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.castBar.gradientEnabled
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.castBar.gradientEnabled = val
-                        RefreshCast()
-                        CludesUI:RefreshPage()
-                    end,
+                    set = Setter("gradientEnabled", true),
                 },
                 {
                     type = "dropdown",
@@ -1059,14 +954,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.castBar.gradientDir or "HORIZONTAL"
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.castBar.gradientDir = val
-                        RefreshCast()
-                    end,
+                    set = Setter("gradientDir"),
                 },
                 {
                     type = "toggle",
@@ -1076,14 +964,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.castBar.outOfRangeGray == true
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.castBar.outOfRangeGray = val
-                        RefreshCast()
-                    end,
+                    set = Setter("outOfRangeGray"),
                 },
                 -- Each override's color row shows only while that override is on.
                 {
@@ -1097,14 +978,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.castBar.channelOverride == true
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.castBar.channelOverride = val
-                        RefreshCast()
-                    end,
+                    set = Setter("channelOverride"),
                 },
                 {
                     type = "colorpicker",
@@ -1142,14 +1016,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.castBar.uninterruptibleOverride == true
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.castBar.uninterruptibleOverride = val
-                        RefreshCast()
-                    end,
+                    set = Setter("uninterruptibleOverride"),
                 },
                 {
                     type = "colorpicker",
@@ -1364,14 +1231,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.castBar.texture or "none"
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.castBar.texture = val
-            RefreshCast()
-        end,
+        setValue = Setter("texture"),
     }
     if CludesUI.BlizzStyle.Active("castbar") == "blizzard" then
         CludesUI.BlizzStyle.Gate("castbar", castTexCfg)
@@ -1450,14 +1310,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.castBar.spellTextSize or 11
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.castBar.spellTextSize = val
-                        RefreshCast()
-                    end,
+                    set = Setter("spellTextSize"),
                 },
                 {
                     type = "slider",
@@ -1469,14 +1322,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.castBar.spellTextX or 0
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.castBar.spellTextX = val
-                        RefreshCast()
-                    end,
+                    set = Setter("spellTextX"),
                 },
                 {
                     type = "slider",
@@ -1488,14 +1334,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.castBar.spellTextY or 0
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.castBar.spellTextY = val
-                        RefreshCast()
-                    end,
+                    set = Setter("spellTextY"),
                 },
                 {
                     type = "toggle",
@@ -1505,14 +1344,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.castBar.fitSpellName
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.castBar.fitSpellName = val
-                        RefreshCast()
-                    end,
+                    set = Setter("fitSpellName"),
                 },
             },
         })
@@ -1596,14 +1428,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.castBar.showTotalDuration
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.castBar.showTotalDuration = val
-            RefreshCast()
-        end,
+        setValue = Setter("showTotalDuration"),
     })
     posY = posY - hgt
     -- Inline cog (RESIZE) on Duration Text for timer size + x/y
@@ -1627,14 +1452,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.castBar.timerSize or 11
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.castBar.timerSize = val
-                        RefreshCast()
-                    end,
+                    set = Setter("timerSize"),
                 },
                 {
                     type = "slider",
@@ -1646,14 +1464,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.castBar.timerX or 0
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.castBar.timerX = val
-                        RefreshCast()
-                    end,
+                    set = Setter("timerX"),
                 },
                 {
                     type = "slider",
@@ -1665,14 +1476,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.castBar.timerY or 0
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.castBar.timerY = val
-                        RefreshCast()
-                    end,
+                    set = Setter("timerY"),
                 },
             },
         })
@@ -1840,15 +1644,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.castBar.showTickMarks
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.castBar.showTickMarks = val
-            RefreshCast()
-            CludesUI:RefreshPage()
-        end,
+        setValue = Setter("showTickMarks", true),
     })
     posY = posY - hgt
 
@@ -1887,15 +1683,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.castBar.showLastTick
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.castBar.showLastTick = val
-            RefreshCast()
-            CludesUI:RefreshPage()
-        end,
+        setValue = Setter("showLastTick", true),
     }, {
         type = "toggle",
         text = "Colored Empowered Stages",
@@ -1906,14 +1694,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.castBar.coloredEmpowerStages
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.castBar.coloredEmpowerStages = val
-            RefreshCast()
-        end,
+        setValue = Setter("coloredEmpowerStages"),
     })
     posY = posY - hgt
 
@@ -1961,15 +1742,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.castBar.latencyEnabled
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.castBar.latencyEnabled = val
-            RefreshCast()
-            CludesUI:RefreshPage()
-        end,
+        setValue = Setter("latencyEnabled", true),
     }, {
         type = "toggle",
         text = "Show Latency Text",
@@ -1980,14 +1753,7 @@ function mod.ERB_BuildCastBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.castBar.latencyShowText
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.castBar.latencyShowText = val
-            RefreshCast()
-        end,
+        setValue = Setter("latencyShowText"),
     })
     posY = posY - hgt
 

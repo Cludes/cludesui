@@ -77,6 +77,21 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
         end
         UpdateGCDPreview()
     end
+    -- A setting row's setter for one GCD bar key: written (when the profile
+    -- exists), the GCD bar redrawn, and with alsoPage the page rebuilt too.
+    local function Setter(key, alsoPage)
+        return function(val)
+            local p = DB()
+            if not p then
+                return
+            end
+            p.gcdBar[key] = val
+            RefreshGCD()
+            if alsoPage then
+                CludesUI:RefreshPage()
+            end
+        end
+    end
 
     local _sec
     _sec, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
@@ -100,15 +115,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.gcdBar.enabled
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.gcdBar.enabled = val
-            RefreshGCD()
-            CludesUI:RefreshPage()
-        end,
+        setValue = Setter("enabled", true),
     }, {
         type = "dropdown",
         text = "Frame Strata",
@@ -121,14 +128,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.gcdBar.frameStrata or "MEDIUM"
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.gcdBar.frameStrata = val
-            RefreshGCD()
-        end,
+        setValue = Setter("frameStrata"),
     })
     posY = posY - hgt
     -- Inline position cog (X/Y + unlock) on Enable
@@ -231,14 +231,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.gcdBar.height or 12
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.gcdBar.height = val
-            RefreshGCD()
-        end,
+        setValue = Setter("height"),
     }, {
         type = "slider",
         text = "Width",
@@ -252,14 +245,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.gcdBar.width or 220
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.gcdBar.width = val
-            RefreshGCD()
-        end,
+        setValue = Setter("width"),
     })
     posY = posY - hgt
 
@@ -280,15 +266,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.gcdBar.orientation or "HORIZONTAL"
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.gcdBar.orientation = val
-            RefreshGCD()
-            CludesUI:RefreshPage()
-        end,
+        setValue = Setter("orientation", true),
     }, {
         type = "toggle",
         text = "Instance Only",
@@ -299,14 +277,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.gcdBar.instanceOnly
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.gcdBar.instanceOnly = val
-            RefreshGCD()
-        end,
+        setValue = Setter("instanceOnly"),
     })
     posY = posY - hgt
 
@@ -322,14 +293,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.gcdBar.instantOnly
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.gcdBar.instantOnly = val
-            RefreshGCD()
-        end,
+        setValue = Setter("instantOnly"),
     }, {
         type = "toggle",
         text = "Always Show",
@@ -340,14 +304,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.gcdBar.alwaysShow
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.gcdBar.alwaysShow = val
-            RefreshGCD()
-        end,
+        setValue = Setter("alwaysShow"),
     })
     posY = posY - hgt
     -- Inline cog on Always Show: idle fill appearance
@@ -675,15 +632,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                             local p = DB()
                             return p and p.gcdBar.borderExtendTop or 0
                         end,
-                        set = function(val)
-                            local p = DB()
-                            if not p then
-                                return
-                            end
-                            p.gcdBar.borderExtendTop = val
-                            RefreshGCD()
-                            CludesUI:RefreshPage()
-                        end,
+                        set = Setter("borderExtendTop", true),
                     },
                     {
                         type = "slider",
@@ -698,15 +647,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                             local p = DB()
                             return p and p.gcdBar.borderExtendBottom or 0
                         end,
-                        set = function(val)
-                            local p = DB()
-                            if not p then
-                                return
-                            end
-                            p.gcdBar.borderExtendBottom = val
-                            RefreshGCD()
-                            CludesUI:RefreshPage()
-                        end,
+                        set = Setter("borderExtendBottom", true),
                     },
                     {
                         type = "slider",
@@ -721,15 +662,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                             local p = DB()
                             return p and p.gcdBar.borderExtendLeft or 0
                         end,
-                        set = function(val)
-                            local p = DB()
-                            if not p then
-                                return
-                            end
-                            p.gcdBar.borderExtendLeft = val
-                            RefreshGCD()
-                            CludesUI:RefreshPage()
-                        end,
+                        set = Setter("borderExtendLeft", true),
                     },
                     {
                         type = "slider",
@@ -744,15 +677,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                             local p = DB()
                             return p and p.gcdBar.borderExtendRight or 0
                         end,
-                        set = function(val)
-                            local p = DB()
-                            if not p then
-                                return
-                            end
-                            p.gcdBar.borderExtendRight = val
-                            RefreshGCD()
-                            CludesUI:RefreshPage()
-                        end,
+                        set = Setter("borderExtendRight", true),
                     },
                     -- Bottom Separator: None = off (edgeSep false); an art entry turns it
                     -- on with that art.
@@ -803,15 +728,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                             local p = DB()
                             return p and p.gcdBar.edgeSepY or 0
                         end,
-                        set = function(val)
-                            local p = DB()
-                            if not p then
-                                return
-                            end
-                            p.gcdBar.edgeSepY = val
-                            RefreshGCD()
-                            CludesUI:RefreshPage()
-                        end,
+                        set = Setter("edgeSepY", true),
                     },
                 },
             })
@@ -967,15 +884,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.gcdBar.gradientEnabled
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.gcdBar.gradientEnabled = val
-                        RefreshGCD()
-                        CludesUI:RefreshPage()
-                    end,
+                    set = Setter("gradientEnabled", true),
                 },
                 {
                     type = "dropdown",
@@ -986,14 +895,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.gcdBar.gradientDir or "HORIZONTAL"
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.gcdBar.gradientDir = val
-                        RefreshGCD()
-                    end,
+                    set = Setter("gradientDir"),
                 },
             },
         })
@@ -1073,14 +975,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.gcdBar.texture or "none"
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.gcdBar.texture = val
-            RefreshGCD()
-        end,
+        setValue = Setter("texture"),
     }, {
         type = "toggle",
         text = "Show Spark",
@@ -1091,14 +986,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.gcdBar.showSpark
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.gcdBar.showSpark = val
-            RefreshGCD()
-        end,
+        setValue = Setter("showSpark"),
     })
     posY = posY - hgt
     -- Inline cog on Bar Texture: Textured Background (greyed with the dropdown).
@@ -1122,14 +1010,7 @@ function mod.ERB_BuildGCDBarPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.gcdBar.depleteFill
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.gcdBar.depleteFill = val
-            RefreshGCD()
-        end,
+        setValue = Setter("depleteFill"),
     }, { type = "spacer" })
     posY = posY - hgt
 

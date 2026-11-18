@@ -93,6 +93,21 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             CludesUI.NotifyElementResized("ERB_SwingTimer")
         end
     end
+    -- A setting row's setter for one swing timer key: written (when the profile
+    -- exists), the swing timer redrawn, and with alsoPage the page rebuilt too.
+    local function Setter(key, alsoPage)
+        return function(val)
+            local p = DB()
+            if not p then
+                return
+            end
+            p.swingTimer[key] = val
+            RefreshST()
+            if alsoPage then
+                CludesUI:RefreshPage()
+            end
+        end
+    end
 
     local _sec
     _sec, hgt = W:SectionHeader(hostFrame, "LAYOUT", posY)
@@ -115,15 +130,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.swingTimer.enabled
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.swingTimer.enabled = val
-            RefreshST()
-            CludesUI:RefreshPage()
-        end,
+        setValue = Setter("enabled", true),
     }, {
         type = "dropdown",
         text = "Frame Strata",
@@ -136,14 +143,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.swingTimer.frameStrata or "MEDIUM"
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.swingTimer.frameStrata = val
-            RefreshST()
-        end,
+        setValue = Setter("frameStrata"),
     })
     posY = posY - hgt
     -- Inline position cog (X/Y + unlock) on Enable, as on the GCD Bar page
@@ -241,14 +241,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.swingTimer.height or 12
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.swingTimer.height = val
-            RefreshST()
-        end,
+        setValue = Setter("height"),
     }, {
         type = "slider",
         text = "Width",
@@ -262,14 +255,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.swingTimer.width or 220
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.swingTimer.width = val
-            RefreshST()
-        end,
+        setValue = Setter("width"),
     })
     posY = posY - hgt
 
@@ -289,14 +275,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.swingTimer.rowSpacing or 2
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.swingTimer.rowSpacing = val
-            RefreshST()
-        end,
+        setValue = Setter("rowSpacing"),
     }, {
         type = "slider",
         text = "Text Size",
@@ -309,14 +288,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.swingTimer.textSize or 11
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.swingTimer.textSize = val
-            RefreshST()
-        end,
+        setValue = Setter("textSize"),
     })
     posY = posY - hgt
     if not CludesUI._prebuilding then
@@ -381,14 +353,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.swingTimer.hideWhenIdle
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.swingTimer.hideWhenIdle = val
-            RefreshST()
-        end,
+        setValue = Setter("hideWhenIdle"),
     })
     posY = posY - hgt
     -- Inline cog on Visibility: Forms and Talents. A druid picks the forms the
@@ -697,14 +662,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                             local p = DB()
                             return p and p.swingTimer.cornerRadius or 0
                         end,
-                        set = function(val)
-                            local p = DB()
-                            if not p then
-                                return
-                            end
-                            p.swingTimer.cornerRadius = val
-                            RefreshST()
-                        end,
+                        set = Setter("cornerRadius"),
                     },
                 }, function()
                     local p = DB()
@@ -1010,15 +968,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.swingTimer.gradientEnabled
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.swingTimer.gradientEnabled = val
-                        RefreshST()
-                        CludesUI:RefreshPage()
-                    end,
+                    set = Setter("gradientEnabled", true),
                 },
                 {
                     type = "dropdown",
@@ -1029,14 +979,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.swingTimer.gradientDir or "HORIZONTAL"
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.swingTimer.gradientDir = val
-                        RefreshST()
-                    end,
+                    set = Setter("gradientDir"),
                 },
             },
         })
@@ -1075,14 +1018,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.swingTimer.texture or "none"
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.swingTimer.texture = val
-            RefreshST()
-        end,
+        setValue = Setter("texture"),
     }, {
         type = "toggle",
         text = "Deplete Fill",
@@ -1093,14 +1029,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.swingTimer.depleteFill
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.swingTimer.depleteFill = val
-            RefreshST()
-        end,
+        setValue = Setter("depleteFill"),
     })
     posY = posY - hgt
 
@@ -1116,14 +1045,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.swingTimer.showSpark
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.swingTimer.showSpark = val
-            RefreshST()
-        end,
+        setValue = Setter("showSpark"),
     }, {
         type = "dropdown",
         text = "Tracked Weapons",
@@ -1192,14 +1114,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.swingTimer.sparkWidth or 8
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.swingTimer.sparkWidth = val
-                        RefreshST()
-                    end,
+                    set = Setter("sparkWidth"),
                 },
                 {
                     type = "slider",
@@ -1213,14 +1128,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.swingTimer.sparkOverhang or 0
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.swingTimer.sparkOverhang = val
-                        RefreshST()
-                    end,
+                    set = Setter("sparkOverhang"),
                 },
                 {
                     type = "multiswatch",
@@ -1291,14 +1199,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.swingTimer.alwaysShowRows == true
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.swingTimer.alwaysShowRows = val
-                        RefreshST()
-                    end,
+                    set = Setter("alwaysShowRows"),
                 },
                 {
                     type = "toggle",
@@ -1313,14 +1214,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.swingTimer.hideLabelNoWeapon == true
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.swingTimer.hideLabelNoWeapon = val
-                        RefreshST()
-                    end,
+                    set = Setter("hideLabelNoWeapon"),
                 },
                 {
                     type = "toggle",
@@ -1330,14 +1224,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.swingTimer.shieldRow == true
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.swingTimer.shieldRow = val
-                        RefreshST()
-                    end,
+                    set = Setter("shieldRow"),
                 },
                 {
                     type = "toggle",
@@ -1355,14 +1242,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.swingTimer.combineHands == true
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.swingTimer.combineHands = val
-                        RefreshST()
-                    end,
+                    set = Setter("combineHands"),
                 },
             },
         })
@@ -1379,14 +1259,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.swingTimer.showTime ~= false
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.swingTimer.showTime = val
-            RefreshST()
-        end,
+        setValue = Setter("showTime"),
     }, {
         type = "toggle",
         text = "Show Weapon Label",
@@ -1397,14 +1270,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.swingTimer.showLabel ~= false
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.swingTimer.showLabel = val
-            RefreshST()
-        end,
+        setValue = Setter("showLabel"),
     })
     posY = posY - hgt
 
@@ -1471,14 +1337,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.swingTimer.rangeCheck ~= false
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.swingTimer.rangeCheck = val
-            RefreshST()
-        end,
+        setValue = Setter("rangeCheck"),
     }, {
         type = "segmented",
         text = "Attack State",
@@ -1491,15 +1350,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.swingTimer.attackState or "queued"
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.swingTimer.attackState = val
-            RefreshST()
-            CludesUI:RefreshPage()
-        end,
+        setValue = Setter("attackState", true),
     })
     posY = posY - hgt
     if not CludesUI._prebuilding then
@@ -1569,14 +1420,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.swingTimer.queueMainHandOnly == true
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.swingTimer.queueMainHandOnly = val
-                        RefreshST()
-                    end,
+                    set = Setter("queueMainHandOnly"),
                 },
             },
         })
@@ -1623,15 +1467,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
             local p = DB()
             return p and p.swingTimer.moveGuide or "off"
         end,
-        setValue = function(val)
-            local p = DB()
-            if not p then
-                return
-            end
-            p.swingTimer.moveGuide = val
-            RefreshST()
-            CludesUI:RefreshPage()
-        end,
+        setValue = Setter("moveGuide", true),
     }, CludesUI.BlankRowCfg())
     posY = posY - hgt
     if not CludesUI._prebuilding then
@@ -1667,14 +1503,7 @@ function mod.ERB_BuildSwingTimerPage(page, hostFrame, yOffset)
                         local p = DB()
                         return p and p.swingTimer.moveCue == true
                     end,
-                    set = function(val)
-                        local p = DB()
-                        if not p then
-                            return
-                        end
-                        p.swingTimer.moveCue = val
-                        RefreshST()
-                    end,
+                    set = Setter("moveCue"),
                 },
             },
         })
