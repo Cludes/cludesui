@@ -536,6 +536,27 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             return BD()[key] or default
         end
     end
+    local function BDFieldIs(key)
+        return function()
+            return BD()[key] == true
+        end
+    end
+    local function BDFieldGet(key)
+        return function()
+            return BD()[key]
+        end
+    end
+    -- Row accessors over BD(): a key read (or its default) and written.
+    local function BDField(key)
+        return function(v)
+            BD()[key] = v
+        end
+    end
+    local function BDFieldOr(key, default)
+        return function()
+            return BD()[key] or default
+        end
+    end
     local function BDFieldGet(key)
         return function()
             return BD()[key]
@@ -1357,9 +1378,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         opacityRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Bar Background",
-            getValue = function()
-                return BD().barBgEnabled == true
-            end,
+            getValue = BDFieldIs("barBgEnabled"),
             setValue = function(v)
                 BD().barBgEnabled = v
                 RebuildBars()
@@ -1707,9 +1726,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         label = "Fade Out of Combat",
                         tooltip = "Dims this bar while out of combat.",
                         rawTooltip = true,
-                        get = function()
-                            return BD().oocFadeEnabled == true
-                        end,
+                        get = BDFieldIs("oocFadeEnabled"),
                         set = function(v)
                             BD().oocFadeEnabled = v
                             if mod.CDMApplyVisibility then
@@ -1922,9 +1939,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 end,
                 disabledTooltip = "Disabled while Always Show Buffs is enabled (on the bar, or on any individual buff)",
                 rawTooltip = true,
-                getValue = function()
-                    return BD().hidePlaceholderIcon == true
-                end,
+                getValue = BDFieldIs("hidePlaceholderIcon"),
                 setValue = function(v)
                     BD().hidePlaceholderIcon = v
                     RebuildBars(true)
@@ -2344,9 +2359,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             type = "toggle",
             text = "Show on Target",
             tooltip = "Show the FocusKick bar on your current target's nameplate instead of your focus target's nameplate.",
-            getValue = function()
-                return BD().focusKickUseTarget == true
-            end,
+            getValue = BDFieldIs("focusKickUseTarget"),
             setValue = function(v)
                 BD().focusKickUseTarget = v
                 if mod.ApplyFocusKickAnchor then
@@ -2628,9 +2641,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 end,
                 disabledTooltip = "Disabled while Keep Buffs in Same Place is enabled",
                 rawTooltip = true,
-                getValue = function()
-                    return BD().showInactiveBuffIcons == true
-                end,
+                getValue = BDFieldIs("showInactiveBuffIcons"),
                 setValue = function(v)
                     BD().showInactiveBuffIcons = v
                     RebuildBars(true)
@@ -3919,9 +3930,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     type = "toggle",
                     label = "Show Item Quality",
                     tooltip = "Show the crafted quality rank on tracked items, matching the rank icon on the action bars. Items with no crafted quality are unaffected.",
-                    get = function()
-                        return BD().showItemQuality == true
-                    end,
+                    get = BDFieldIs("showItemQuality"),
                     set = function(v)
                         BD().showItemQuality = v
                         if mod.FullCDMRebuild then
@@ -4073,9 +4082,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 type = "toggle",
                 text = "Suppress GCD",
                 tooltip = "Hide the brief GCD swipe that flashes when you cast any spell. The actual ability cooldown swipe still shows.",
-                getValue = function()
-                    return BD().suppressGCD == true
-                end,
+                getValue = BDFieldIs("suppressGCD"),
                 setValue = function(v)
                     BD().suppressGCD = v and true or false
                     Refresh()
@@ -4140,9 +4147,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         {
                             type = "toggle",
                             label = "Background",
-                            get = function()
-                                return BD().pixelGlowBackground == true
-                            end,
+                            get = BDFieldIs("pixelGlowBackground"),
                             set = function(v)
                                 BD().pixelGlowBackground = v and true or nil
                                 mod.BuildAllCDMBars()
@@ -4205,9 +4210,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             type = "toggle",
             text = "Only Show Numbers",
             tooltip = "Hide this bar's icons and show only the duration text.",
-            getValue = function()
-                return BD().onlyShowNumbers == true
-            end,
+            getValue = BDFieldIs("onlyShowNumbers"),
             setValue = function(v)
                 BD().onlyShowNumbers = v and true or nil
                 mod.BuildAllCDMBars()
@@ -4256,9 +4259,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     {
                         type = "toggle",
                         label = "Background",
-                        get = function()
-                            return BD().buffGlowBackground == true
-                        end,
+                        get = BDFieldIs("buffGlowBackground"),
                         set = function(v)
                             BD().buffGlowBackground = v and true or nil
                             mod.BuildAllCDMBars()
@@ -4302,9 +4303,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             type = "toggle",
             text = "Charges/Stacks Only (No Icon)",
             tooltip = "Hide this bar's icon art, cooldown swipe, recharge edge and cooldown text, leaving only the charge or stack count.",
-            getValue = function()
-                return BD().chargesOnly == true
-            end,
+            getValue = BDFieldIs("chargesOnly"),
             setValue = function(v)
                 BD().chargesOnly = v and true or nil
                 mod.BuildAllCDMBars()
@@ -4314,9 +4313,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             type = "toggle",
             text = "Hide Charge Count at 0",
             tooltip = "Hide the charge number while a spell has no charges left, instead of showing a 0. The number returns as soon as a charge comes back.",
-            getValue = function()
-                return BD().hideZeroChargeText == true
-            end,
+            getValue = BDFieldIs("hideZeroChargeText"),
             setValue = function(v)
                 BD().hideZeroChargeText = v and true or nil
                 mod.BuildAllCDMBars()
@@ -4345,9 +4342,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             type = "toggle",
             text = "Hide Items if Missing",
             tooltip = "Hide consumable items (potions, healthstone) from the bar when you have none in your bags, instead of showing them dimmed. They reappear automatically once you have the item again.",
-            getValue = function()
-                return BD().hideItemsIfMissing == true
-            end,
+            getValue = BDFieldIs("hideItemsIfMissing"),
             setValue = function(v)
                 BD().hideItemsIfMissing = v
                 if mod.FullCDMRebuild then
@@ -4361,9 +4356,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             local _, tth = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Show Tooltip on Hover",
-                getValue = function()
-                    return BD().showTooltip == true
-                end,
+                getValue = BDFieldIs("showTooltip"),
                 setValue = function(v)
                     BD().showTooltip = v
                     mod.ApplyCDMTooltipState(BD().key)
@@ -4376,9 +4369,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             kbRow, hgt = W:DualRow(hostFrame, posY, {
                 type = "toggle",
                 text = "Show Tooltip on Hover",
-                getValue = function()
-                    return BD().showTooltip == true
-                end,
+                getValue = BDFieldIs("showTooltip"),
                 setValue = function(v)
                     BD().showTooltip = v
                     mod.ApplyCDMTooltipState(BD().key)
@@ -4387,9 +4378,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             }, {
                 type = "toggle",
                 text = "Show Keybind",
-                getValue = function()
-                    return BD().showKeybind == true
-                end,
+                getValue = BDFieldIs("showKeybind"),
                 setValue = function(v)
                     local b = BD()
                     b.showKeybind = v
@@ -4470,9 +4459,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             type = "toggle",
             text = "Show Non-On Use Trinkets",
             tooltip = "Show equipped trinkets even if they don't have an on-use effect.",
-            getValue = function()
-                return BD().showPassiveTrinkets == true
-            end,
+            getValue = BDFieldIs("showPassiveTrinkets"),
             setValue = function(v)
                 BD().showPassiveTrinkets = v
                 if mod.FullCDMRebuild then
@@ -4771,9 +4758,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 type = "toggle",
                 text = "Mirror Key Presses",
                 tooltip = "When you press an ability's keybind, show the action button's \"pushed down\" look on its icon on this bar -- even while the ability is on cooldown.",
-                getValue = function()
-                    return BD().pressMirror == true
-                end,
+                getValue = BDFieldIs("pressMirror"),
                 setValue = function(v)
                     BD().pressMirror = v
                     if mod.ClearCdmPressPush then
@@ -4860,9 +4845,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 type = "toggle",
                 text = "Always Show Cooldown Edge",
                 tooltip = "Show the rotating cooldown edge on every cooldown in this bar, not just while a charge is recharging. Hide Recharge Edge still overrides this for individual charge spells.",
-                getValue = function()
-                    return BD().showCooldownEdge == true
-                end,
+                getValue = BDFieldIs("showCooldownEdge"),
                 setValue = function(v)
                     BD().showCooldownEdge = v and true or nil
                     mod.BuildAllCDMBars()

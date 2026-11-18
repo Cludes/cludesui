@@ -5002,6 +5002,18 @@ CludesUI.AtOptionsLogin(function()
         end
         CludesUI:RefreshPage()
     end
+    -- Row setters over EDR_Set: the key written with the row's value, then EDR_Rebuild() for the Then form.
+    local function EDR_SetRow(key)
+        return function(v)
+            EDR_Set(key, v)
+        end
+    end
+    local function EDR_SetRowThen(key)
+        return function(v)
+            EDR_Set(key, v)
+            EDR_Rebuild()
+        end
+    end
     local function EDR_Redraw()
         if mod.edrRedraw then
             mod.edrRedraw()
@@ -5625,10 +5637,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function()
                 return EDR_Cfg("hideInCombat") == true
             end,
-            setValue = function(val)
-                EDR_Set("hideInCombat", val)
-                EDR_Rebuild()
-            end,
+            setValue = EDR_SetRowThen("hideInCombat"),
         })
         posY = posY - hgt
 
@@ -5680,10 +5689,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return not EDR_WSOff()
                 end,
-                setValue = function(val)
-                    EDR_Set("showWhirlingSurge", val)
-                    EDR_Rebuild()
-                end,
+                setValue = EDR_SetRowThen("showWhirlingSurge"),
             }, {
                 type = "toggle",
                 text = "Show Icon Cooldown Text",
@@ -5736,10 +5742,7 @@ CludesUI.AtOptionsLogin(function()
                             get = function()
                                 return EDR_Cfg("iconSize") or EDR_AutoIconSize()
                             end,
-                            set = function(val)
-                                EDR_Set("iconSize", val)
-                                EDR_Rebuild()
-                            end,
+                            set = EDR_SetRowThen("iconSize"),
                         },
                     },
                 })
@@ -5776,10 +5779,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return EDR_Cfg("stackSpacing")
                 end,
-                setValue = function(val)
-                    EDR_Set("stackSpacing", val)
-                    EDR_Rebuild()
-                end,
+                setValue = EDR_SetRowThen("stackSpacing"),
             })
             posY = posY - hgt
             if not CludesUI._prebuilding then
@@ -5791,9 +5791,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             return EDR_Cfg("chargeSound") == true
                         end,
-                        set = function(val)
-                            EDR_Set("chargeSound", val)
-                        end,
+                        set = EDR_SetRow("chargeSound"),
                     },
                 }
                 if EDR_IsGems() then
@@ -5806,10 +5804,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             return EDR_Cfg("classicScale") or 1
                         end,
-                        set = function(val)
-                            EDR_Set("classicScale", val)
-                            EDR_Rebuild()
-                        end,
+                        set = EDR_SetRowThen("classicScale"),
                     }
                 end
                 CludesUI.BuildInlineCog(vigorRow._leftRegion, { title = "Vigor", rows = vigorRows })
@@ -5823,10 +5818,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return EDR_Cfg("width")
                 end,
-                setValue = function(val)
-                    EDR_Set("width", val)
-                    EDR_Rebuild()
-                end,
+                setValue = EDR_SetRowThen("width"),
             }, {
                 type = "slider",
                 pixel = true,
@@ -5837,10 +5829,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return EDR_Cfg("gap")
                 end,
-                setValue = function(val)
-                    EDR_Set("gap", val)
-                    EDR_Rebuild()
-                end,
+                setValue = EDR_SetRowThen("gap"),
             })
             posY = posY - hgt
             -- Border Size: the CludesUI border and its colour on the
@@ -5952,10 +5941,7 @@ CludesUI.AtOptionsLogin(function()
                         getValue = function()
                             return EDR_Cfg("skyridingHeight")
                         end,
-                        setValue = function(val)
-                            EDR_Set("skyridingHeight", val)
-                            EDR_Rebuild()
-                        end,
+                        setValue = EDR_SetRowThen("skyridingHeight"),
                     }, {
                         type = "multiSwatch",
                         text = "Charge Color",
@@ -6002,10 +5988,7 @@ CludesUI.AtOptionsLogin(function()
                         getValue = function()
                             return EDR_Cfg("secondWindHeight")
                         end,
-                        setValue = function(val)
-                            EDR_Set("secondWindHeight", val)
-                            EDR_Rebuild()
-                        end,
+                        setValue = EDR_SetRowThen("secondWindHeight"),
                     }, {
                         type = "multiSwatch",
                         text = "Second Wind Color",
@@ -6059,10 +6042,7 @@ CludesUI.AtOptionsLogin(function()
                     getValue = function()
                         return EDR_Cfg("speedHeight")
                     end,
-                    setValue = function(val)
-                        EDR_Set("speedHeight", val)
-                        EDR_Rebuild()
-                    end,
+                    setValue = EDR_SetRowThen("speedHeight"),
                 }, {
                     type = "toggle",
                     text = "Thrill Color Change",
