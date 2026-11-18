@@ -5558,6 +5558,20 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         end
                     else -- regular Blizzard-tracked cooldown: full per-spell menu
                         local customDisabledTip = "Not available for custom injected spells"
+                        -- On a custom injected spell, a row that does not apply to it is
+                        -- dimmed, and hovering it shows why in place of its flyout.
+                        AB.DimForCustom = function(row)
+                            if not (isCustomInjected and row) then
+                                return
+                            end
+                            row:SetAlpha(0.35)
+                            row:SetScript("OnEnter", function()
+                                CludesUI.ShowWidgetTooltip(row, customDisabledTip)
+                            end)
+                            row:SetScript("OnLeave", function()
+                                CludesUI.HideWidgetTooltip()
+                            end)
+                        end
 
                         -- Custom-shaped bars always render Shape Glow, so the per-spell proc
                         -- glow choice is locked (custom = any Icon Shape other than None/Cropped).
@@ -5798,15 +5812,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end,
                             },
                         })
-                        if isCustomInjected and activeRow then
-                            activeRow:SetAlpha(0.35)
-                            activeRow:SetScript("OnEnter", function()
-                                CludesUI.ShowWidgetTooltip(activeRow, customDisabledTip)
-                            end)
-                            activeRow:SetScript("OnLeave", function()
-                                CludesUI.HideWidgetTooltip()
-                            end)
-                        end
+                        AB.DimForCustom(activeRow)
 
                         -- 3. Active State Glow (default = nil / none)
                         local glowRow = MakeSubnavRow(
@@ -5838,15 +5844,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 },
                             }
                         )
-                        if isCustomInjected and glowRow then
-                            glowRow:SetAlpha(0.35)
-                            glowRow:SetScript("OnEnter", function()
-                                CludesUI.ShowWidgetTooltip(glowRow, customDisabledTip)
-                            end)
-                            glowRow:SetScript("OnLeave", function()
-                                CludesUI.HideWidgetTooltip()
-                            end)
-                        end
+                        AB.DimForCustom(glowRow)
 
                         -- 3a. Max Charges Glow (default = nil/none), 1:1 with Active State Glow:
                         -- glows the icon while a charge spell is at max charges. Shares the unified Glow Effect Color below. The stored key stays maxStacksGlow (label-only rename).
@@ -5876,15 +5874,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 },
                             }
                         )
-                        if isCustomInjected and maxStacksGlowRow then
-                            maxStacksGlowRow:SetAlpha(0.35)
-                            maxStacksGlowRow:SetScript("OnEnter", function()
-                                CludesUI.ShowWidgetTooltip(maxStacksGlowRow, customDisabledTip)
-                            end)
-                            maxStacksGlowRow:SetScript("OnLeave", function()
-                                CludesUI.HideWidgetTooltip()
-                            end)
-                        end
+                        AB.DimForCustom(maxStacksGlowRow)
 
                         -- 3b. Non Active State (default = nil/none): desaturates the icon when its active-state is NOT active -- the mirror of the runtime's active-branch SetDesaturated(false).
                         local NONACTIVE_ITEMS = {
@@ -5917,15 +5907,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 },
                             }
                         )
-                        if isCustomInjected and nonActiveRow then
-                            nonActiveRow:SetAlpha(0.35)
-                            nonActiveRow:SetScript("OnEnter", function()
-                                CludesUI.ShowWidgetTooltip(nonActiveRow, customDisabledTip)
-                            end)
-                            nonActiveRow:SetScript("OnLeave", function()
-                                CludesUI.HideWidgetTooltip()
-                            end)
-                        end
+                        AB.DimForCustom(nonActiveRow)
 
                         -- 3c. Cooldown Saturation (default = nil/none): suppresses the grey-out
                         -- Blizzard applies while the spell is on cooldown -- grouped with Non Active State above because both own the icon's saturation.
@@ -5986,15 +5968,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 },
                             }
                         )
-                        if isCustomInjected and cdSatRow then
-                            cdSatRow:SetAlpha(0.35)
-                            cdSatRow:SetScript("OnEnter", function()
-                                CludesUI.ShowWidgetTooltip(cdSatRow, customDisabledTip)
-                            end)
-                            cdSatRow:SetScript("OnLeave", function()
-                                CludesUI.HideWidgetTooltip()
-                            end)
-                        end
+                        AB.DimForCustom(cdSatRow)
 
                         -- 4. Cooldown State Effect (default = nil / none): the hide single-select
                         -- (cdStateEffect) plus the "+ Glow" choices beside it (cdStateGlow, see
@@ -6076,15 +6050,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             },
                         })
                         dropMenu._cseRow = cdStateRow
-                        if isCustomInjected and cdStateRow then
-                            cdStateRow:SetAlpha(0.35)
-                            cdStateRow:SetScript("OnEnter", function()
-                                CludesUI.ShowWidgetTooltip(cdStateRow, customDisabledTip)
-                            end)
-                            cdStateRow:SetScript("OnLeave", function()
-                                CludesUI.HideWidgetTooltip()
-                            end)
-                        end
+                        AB.DimForCustom(cdStateRow)
 
                         -- 4b. Glow Style: the style the CD Ready and On CD glows use, shown only
                         -- while a glow is picked in Cooldown State Effect.
@@ -6298,15 +6264,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         )
                         -- Custom-injected spells drive their cd-state through the Fake-Active engine,
                         -- not the SetDesaturated/GetSpellCooldown edge this sound rides, so dim the row for them (same as Cooldown State Effect above).
-                        if isCustomInjected and cdReadySoundRow then
-                            cdReadySoundRow:SetAlpha(0.35)
-                            cdReadySoundRow:SetScript("OnEnter", function()
-                                CludesUI.ShowWidgetTooltip(cdReadySoundRow, customDisabledTip)
-                            end)
-                            cdReadySoundRow:SetScript("OnLeave", function()
-                                CludesUI.HideWidgetTooltip()
-                            end)
-                        end
+                        AB.DimForCustom(cdReadySoundRow)
 
                         -- 5. Glow Effect Color (unified color for all glow types)
                         local GLOW_COLOR_ITEMS = {
