@@ -301,7 +301,7 @@ local function MakeSnappers()
         end
         return result
     end
-    local function snapPos(list)
+    local function snapPosition(list)
         if type(list) ~= "table" then
             return
         end
@@ -317,14 +317,14 @@ local function MakeSnappers()
             return
         end
         for _, place in pairs(map) do
-            snapPos(place)
+            snapPosition(place)
         end
     end
-    local function snapAnchors(anchors)
-        if type(anchors) ~= "table" then
+    local function snapAnchors(anchorMap)
+        if type(anchorMap) ~= "table" then
             return
         end
-        for _, details in pairs(anchors) do
+        for _, details in pairs(anchorMap) do
             if type(details) == "table" then
                 if details.offsetX then
                     details.offsetX = snap(details.offsetX)
@@ -335,7 +335,7 @@ local function MakeSnappers()
             end
         end
     end
-    return snapPos, snapPosMap, snapAnchors, snap
+    return snapPosition, snapPosMap, snapAnchors, snap
 end
 
 -- Snap all positions in a single profile data table. Called per profile by the
@@ -344,7 +344,7 @@ local function SnapProfilePositions(profileRec)
     if type(profileRec) ~= "table" then
         return
     end
-    local snapPos, snapPosMap, snapAnchors = MakeSnappers()
+    local snapPosition, snapPosMap, snapAnchors = MakeSnappers()
 
     local ul = profileRec.unlockLayout
     if ul then
@@ -375,23 +375,23 @@ local function SnapProfilePositions(profileRec)
     if type(resBarsCfg) == "table" then
         for _, section in pairs(resBarsCfg) do
             if type(section) == "table" and section.unlockPos then
-                snapPos(section.unlockPos)
+                snapPosition(section.unlockPos)
             end
         end
     end
 
     local abr = addonStores.CludesUIAuraBuffReminders
     if type(abr) == "table" and abr.unlockPos then
-        snapPos(abr.unlockPos)
+        snapPosition(abr.unlockPos)
     end
 
     local cursor = addonStores.CludesUICursor
     if type(cursor) == "table" then
         if cursor.gcd then
-            snapPos(cursor.gcd.pos)
+            snapPosition(cursor.gcd.pos)
         end
         if cursor.cast then
-            snapPos(cursor.cast.pos)
+            snapPosition(cursor.cast.pos)
         end
     end
 end
@@ -403,9 +403,9 @@ CludesUI.SnapProfilePositions = SnapProfilePositions
 -- (cdm_per_profile_spell_store_v1), CDM data lives at profiles[name].specProfiles,
 -- not the flat legacy store -- global-scope bodies call this for LIVE data.
 local function CollectSpecProfiles(assignments)
-    local out = {}
+    local result = {}
     if type(assignments) ~= "table" then
-        return out
+        return result
     end
     local profileSet = assignments.profiles
     if type(profileSet) == "table" then
@@ -414,13 +414,13 @@ local function CollectSpecProfiles(assignments)
             if type(specList) == "table" then
                 for _, specProfData in pairs(specList) do
                     if type(specProfData) == "table" then
-                        out[#out + 1] = specProfData
+                        result[#result + 1] = specProfData
                     end
                 end
             end
         end
     end
-    return out
+    return result
 end
 
 --------------------------------------------------------------------------------
@@ -525,9 +525,9 @@ CludesUI.RegisterMigration({
             end
             for index = #storage, 1, -1 do
                 local e = storage[index]
-                local def = type(e) == "table" and e.values and e.values.default
-                if type(def) == "table" then
-                    for fieldKey in pairs(def) do
+                local default = type(e) == "table" and e.values and e.values.default
+                if type(default) == "table" then
+                    for fieldKey in pairs(default) do
                         if type(fieldKey) == "string" and fieldKey:sub(1, #PREFIX) == PREFIX then
                             table.remove(storage, index)
                             break
@@ -674,13 +674,13 @@ CludesUI.RegisterMigration({
         end
 
         -- Auto-seeded buckets have no `meta`; only they are consolidation candidates.
-        local seeded = {}
+        local wasSeeded = {}
         for name, specBucket in pairs(assignments.profiles) do
             if type(specBucket) == "table" and not specBucket.meta then
-                seeded[#seeded + 1] = name
+                wasSeeded[#wasSeeded + 1] = name
             end
         end
-        if #seeded <= 1 then
+        if #wasSeeded <= 1 then
             return
         end -- nothing to collapse
 
@@ -692,12 +692,12 @@ CludesUI.RegisterMigration({
         -- Active profile first so its name is the kept representative for the live
         -- setup; the rest alphabetically for determinism.
         local activeName = saved.activeProfile or "Default"
-        table.sort(seeded)
+        table.sort(wasSeeded)
         local ordered = {}
         if assignments.profiles[activeName] and not assignments.profiles[activeName].meta then
             ordered[#ordered + 1] = activeName
         end
-        for _, num in ipairs(seeded) do
+        for _, num in ipairs(wasSeeded) do
             if num ~= activeName then
                 ordered[#ordered + 1] = num
             end
@@ -917,7 +917,7 @@ CludesUI.RegisterMigration({
     scope = "global",
     description = "Snap global unlock anchors and spec-profile TBB positions/sizes to the physical pixel grid.",
     body = function(context)
-        local snapPos, snapPosMap, snapAnchors, snapVal = MakeSnappers()
+        local snapPosition, snapPosMap, snapAnchors, snapVal = MakeSnappers()
         local function roundFields(list, keyList)
             if not list then
                 return
@@ -937,16 +937,16 @@ CludesUI.RegisterMigration({
             if tbbPos then
                 for _, place in pairs(tbbPos) do
                     if type(place) == "table" then
-                        snapPos(place)
+                        snapPosition(place)
                     end
                 end
             end
-            local tbb = specData.trackedBuffBars
-            local tbbBars = tbb and tbb.bars
+            local trackingBars = specData.trackedBuffBars
+            local tbbBars = trackingBars and trackingBars.bars
             if tbbBars then
-                for _, bar in ipairs(tbbBars) do
-                    if type(bar) == "table" then
-                        roundFields(bar, { "width", "height" })
+                for _, barCfg in ipairs(tbbBars) do
+                    if type(barCfg) == "table" then
+                        roundFields(barCfg, { "width", "height" })
                     end
                 end
             end
@@ -959,7 +959,7 @@ CludesUI.RegisterMigration({
     scope = "profile",
     description = "Snap all per-profile positions and sizes to the physical pixel grid. Runs on each profile individually so imported profiles are covered.",
     body = function(context)
-        local snapPos, snapPosMap, _, snapVal = MakeSnappers()
+        local snapPosition, snapPosMap, _, snapVal = MakeSnappers()
         local function roundFields(list, keyList)
             if not list then
                 return
@@ -975,7 +975,7 @@ CludesUI.RegisterMigration({
                 return
             end
             roundFields(section, sizeKeys)
-            snapPos(section.unlockPos)
+            snapPosition(section.unlockPos)
         end
 
         local addonStores = context.profile.addons
@@ -1034,21 +1034,21 @@ CludesUI.RegisterMigration({
             end
         end
 
-        local dm = addonStores.CludesUIDamageMeters
-        if dm then
-            snapPos(dm.unlockPos)
-            roundFields(dm, { "dmWidth", "dmHeight" })
+        local meterCfg = addonStores.CludesUIDamageMeters
+        if meterCfg then
+            snapPosition(meterCfg.unlockPos)
+            roundFields(meterCfg, { "dmWidth", "dmHeight" })
         end
 
-        local chat = addonStores.CludesUIChat
-        if chat then
-            snapPos(chat.unlockPos)
-            roundFields(chat, { "chatWidth", "chatHeight" })
+        local chatCfg = addonStores.CludesUIChat
+        if chatCfg then
+            snapPosition(chatCfg.unlockPos)
+            roundFields(chatCfg, { "chatWidth", "chatHeight" })
         end
 
         local abr = addonStores.CludesUIAuraBuffReminders
         if abr and abr.display then
-            snapPos(abr.display.unlockPos)
+            snapPosition(abr.display.unlockPos)
             roundFields(abr.display, { "iconSize", "iconSpacing" })
         end
     end,
@@ -1278,8 +1278,8 @@ CludesUI.RegisterMigration({
     body = function(context)
         -- Idempotent: nil to nil. Pure legacy cleanup -- frame-tree serialization
         -- into TBB configs is gone, so no live code writes these fields.
-        local tbb = context.specProfile.trackedBuffBars
-        local tbbBars = tbb and tbb.bars
+        local trackingBars = context.specProfile.trackedBuffBars
+        local tbbBars = trackingBars and trackingBars.bars
         if type(tbbBars) ~= "table" then
             return
         end
@@ -1671,12 +1671,12 @@ CludesUI.RegisterMigration({
         end
 
         -- Clean removed presets from TBB. Other popular presets (potions etc.) are kept.
-        local tbb = context.specProfile.trackedBuffBars
-        if tbb and type(tbb.bars) == "table" then
-            for index = #tbb.bars, 1, -1 do
-                local bar = tbb.bars[index]
-                if bar.popularKey and removedPopularKeys[bar.popularKey] then
-                    table.remove(tbb.bars, index)
+        local trackingBars = context.specProfile.trackedBuffBars
+        if trackingBars and type(trackingBars.bars) == "table" then
+            for index = #trackingBars.bars, 1, -1 do
+                local barCfg = trackingBars.bars[index]
+                if barCfg.popularKey and removedPopularKeys[barCfg.popularKey] then
+                    table.remove(trackingBars.bars, index)
                 end
             end
         end
@@ -1743,8 +1743,8 @@ CludesUI.RegisterMigration({
     body = function(context)
         -- Self-gating: predicate false once targeting anchors are cleared. Buff key
         -- set unions ALL profiles, so inactive-profile buff bars count too.
-        local anchors = context.db.unlockAnchors
-        if not anchors then
+        local anchorMap = context.db.unlockAnchors
+        if not anchorMap then
             return
         end
 
@@ -1769,9 +1769,9 @@ CludesUI.RegisterMigration({
         -- AuraBuff Reminders is also dynamic regardless of profile.
         buffKeys["EABR_Reminders"] = true
 
-        for childKey, details in pairs(anchors) do
+        for childKey, details in pairs(anchorMap) do
             if details.target and buffKeys[details.target] then
-                anchors[childKey] = nil
+                anchorMap[childKey] = nil
             end
         end
     end,
@@ -1937,9 +1937,9 @@ CludesUI.RegisterMigration({
         local profileSet = context.db.profiles
         if type(profileSet) == "table" then
             for _, profileRec in pairs(profileSet) do
-                local mt = profileRec and profileRec.addons and profileRec.addons.CludesUIMythicTimer
-                if type(mt) == "table" then
-                    mt.bestRuns = nil
+                local timerCfg = profileRec and profileRec.addons and profileRec.addons.CludesUIMythicTimer
+                if type(timerCfg) == "table" then
+                    timerCfg.bestRuns = nil
                 end
             end
         end
@@ -2027,14 +2027,14 @@ CludesUI.RegisterMigration({
     scope = "profile",
     description = "Move Chat Bubbles settings from the Chat module profile to the profile root (Blizz UI Enhanced).",
     body = function(context)
-        local chat = context.profile.addons and context.profile.addons.CludesUIChat
-        if not chat or type(chat.chatBubbles) ~= "table" then
+        local chatCfg = context.profile.addons and context.profile.addons.CludesUIChat
+        if not chatCfg or type(chatCfg.chatBubbles) ~= "table" then
             return
         end
         if context.profile.chatBubbles == nil then
-            context.profile.chatBubbles = chat.chatBubbles
+            context.profile.chatBubbles = chatCfg.chatBubbles
         end
-        chat.chatBubbles = nil
+        chatCfg.chatBubbles = nil
     end,
 })
 
@@ -2190,7 +2190,7 @@ CludesUI.RegisterMigration({
             return
         end
         local positions = ufStore.positions or ufStore.unlockPositions
-        local anchors = CludesUIDB and CludesUIDB.unlockAnchors
+        local anchorMap = CludesUIDB and CludesUIDB.unlockAnchors
 
         local playerS = ufStore.player
         if playerS then
@@ -2215,18 +2215,18 @@ CludesUI.RegisterMigration({
         end
 
         -- Default unlock anchors only for cast bars with no position and no anchor.
-        if anchors then
+        if anchorMap then
             local CASTBAR_DEFAULTS = {
                 { key = "playerCastbar", target = "player" },
                 { key = "targetCastbar", target = "target" },
                 { key = "focusCastbar", target = "focus" },
             }
-            for _, def in ipairs(CASTBAR_DEFAULTS) do
-                local hasPos = positions and positions[def.key]
-                local hasAnchor = anchors[def.key]
+            for _, default in ipairs(CASTBAR_DEFAULTS) do
+                local hasPos = positions and positions[default.key]
+                local hasAnchor = anchorMap[default.key]
                 if not hasPos and not hasAnchor then
-                    anchors[def.key] = {
-                        target = def.target,
+                    anchorMap[default.key] = {
+                        target = default.target,
                         side = "BOTTOM",
                         offsetX = 0,
                         offsetY = 0,
@@ -2284,14 +2284,14 @@ CludesUI.RegisterMigration({
     scope = "global",
     description = "Remove anchor relationships involving MicroBar, BagBar, and QueueStatus (Blizzard-owned frames that cannot participate in anchor chains).",
     body = function(context)
-        local anchors = context.db.unlockAnchors
-        if not anchors then
+        local anchorMap = context.db.unlockAnchors
+        if not anchorMap then
             return
         end
         local BLIZZ_OWNED = { MicroBar = true, BagBar = true, QueueStatus = true }
-        for childKey, details in pairs(anchors) do
+        for childKey, details in pairs(anchorMap) do
             if BLIZZ_OWNED[childKey] or (details.target and BLIZZ_OWNED[details.target]) then
-                anchors[childKey] = nil
+                anchorMap[childKey] = nil
             end
         end
     end,
@@ -2302,8 +2302,8 @@ CludesUI.RegisterMigration({
     scope = "profile",
     description = "Reset stale QueueStatus (LFG eye) visibility/mouseover settings to neutral. CUI used to control the eye's visibility but now only controls its position; old saved values (e.g. barVisibility 'mouseover' with mouseoverAlpha 0) could leave the eye permanently invisible with no UI left to restore it.",
     body = function(context)
-        local ab = context.profile.addons and context.profile.addons.CludesUIActionBars
-        local qs = ab and ab.bars and ab.bars.QueueStatus
+        local barsCfg = context.profile.addons and context.profile.addons.CludesUIActionBars
+        local qs = barsCfg and barsCfg.bars and barsCfg.bars.QueueStatus
         if type(qs) ~= "table" then
             return
         end
@@ -2446,8 +2446,8 @@ CludesUI.RegisterMigration({
     scope = "profile",
     description = "Set explicit growDirection on anchored CDM/AB bars to match their anchor side.",
     body = function(context)
-        local anchors = CludesUIDB and CludesUIDB.unlockAnchors
-        if not anchors then
+        local anchorMap = CludesUIDB and CludesUIDB.unlockAnchors
+        if not anchorMap then
             return
         end
 
@@ -2459,19 +2459,19 @@ CludesUI.RegisterMigration({
         local cdmStore = context.profile.addons and context.profile.addons.CludesUICooldownManager
         local cdmBars = cdmStore and cdmStore.cdmBars and cdmStore.cdmBars.bars
         if cdmBars then
-            for _, bar in ipairs(cdmBars) do
-                local anchorKey = "CDM_" .. bar.key
-                local ai = anchors[anchorKey]
-                if ai and ai.side and not bar.growDirection then
-                    bar.growDirection = "CENTER"
+            for _, barCfg in ipairs(cdmBars) do
+                local anchorKey = "CDM_" .. barCfg.key
+                local ai = anchorMap[anchorKey]
+                if ai and ai.side and not barCfg.growDirection then
+                    barCfg.growDirection = "CENTER"
                 end
             end
         end
         -- growEdge promotion is handled by cdm_clear_stale_growedge_v1, run after.
 
         -- Action bars
-        local ab = context.profile.addons and context.profile.addons.CludesUIActionBars
-        local abBars = ab and ab.bars
+        local barsCfg = context.profile.addons and context.profile.addons.CludesUIActionBars
+        local abBars = barsCfg and barsCfg.bars
         if abBars then
             local AB_KEYS = {
                 MainBar = true,
@@ -2485,7 +2485,7 @@ CludesUI.RegisterMigration({
             }
             for barId, conf in pairs(abBars) do
                 if AB_KEYS[barId] then
-                    local ai = anchors[barId]
+                    local ai = anchorMap[barId]
                     if ai and ai.side then
                         local current = conf.growDirection
                         -- Only migrate bars at default ("up" or nil)
@@ -2546,12 +2546,12 @@ CludesUI.RegisterMigration({
         if not barList then
             return
         end
-        for _, bar in ipairs(barList) do
-            if bar.anchorFirstRow then
-                if bar.rowGrowDirection == nil then
-                    bar.rowGrowDirection = bar.verticalOrientation and "RIGHT" or "DOWN"
+        for _, barCfg in ipairs(barList) do
+            if barCfg.anchorFirstRow then
+                if barCfg.rowGrowDirection == nil then
+                    barCfg.rowGrowDirection = barCfg.verticalOrientation and "RIGHT" or "DOWN"
                 end
-                bar.anchorFirstRow = nil
+                barCfg.anchorFirstRow = nil
             end
         end
     end,
@@ -2595,28 +2595,28 @@ CludesUI.RegisterMigration({
     description = "Migrate power bar threshold settings into per-spec thresholdSpecs entries.",
     body = function(context)
         local resBarsCfg = context.profile.addons and context.profile.addons.CludesUIResourceBars
-        local pri = resBarsCfg and resBarsCfg.primary
-        if not pri then
+        local primaryCfg = resBarsCfg and resBarsCfg.primary
+        if not primaryCfg then
             return
         end
-        if pri.thresholdSpecs then
+        if primaryCfg.thresholdSpecs then
             return
         end
-        if pri.thresholdEnabled then
-            pri.thresholdSpecs = {
+        if primaryCfg.thresholdEnabled then
+            primaryCfg.thresholdSpecs = {
                 {
                     specIDs = { 0 },
                     thresholdEnabled = true,
-                    thresholdPct = pri.thresholdPct or 30,
-                    thresholdPartialOnly = pri.thresholdPartialOnly or false,
-                    thresholdR = pri.thresholdR or 1.0,
-                    thresholdG = pri.thresholdG or 0.2,
-                    thresholdB = pri.thresholdB or 0.2,
-                    thresholdA = pri.thresholdA or 1,
+                    thresholdPct = primaryCfg.thresholdPct or 30,
+                    thresholdPartialOnly = primaryCfg.thresholdPartialOnly or false,
+                    thresholdR = primaryCfg.thresholdR or 1.0,
+                    thresholdG = primaryCfg.thresholdG or 0.2,
+                    thresholdB = primaryCfg.thresholdB or 0.2,
+                    thresholdA = primaryCfg.thresholdA or 1,
                 },
             }
         else
-            pri.thresholdSpecs = {}
+            primaryCfg.thresholdSpecs = {}
         end
     end,
 })
@@ -2627,27 +2627,27 @@ CludesUI.RegisterMigration({
     description = "Migrate health bar threshold settings into per-spec thresholdSpecs entries.",
     body = function(context)
         local resBarsCfg = context.profile.addons and context.profile.addons.CludesUIResourceBars
-        local hp = resBarsCfg and resBarsCfg.health
-        if not hp then
+        local healthCfg = resBarsCfg and resBarsCfg.health
+        if not healthCfg then
             return
         end
-        if hp.thresholdSpecs then
+        if healthCfg.thresholdSpecs then
             return
         end
-        if hp.thresholdEnabled then
-            hp.thresholdSpecs = {
+        if healthCfg.thresholdEnabled then
+            healthCfg.thresholdSpecs = {
                 {
                     specIDs = { 0 },
                     thresholdEnabled = true,
-                    thresholdPct = hp.thresholdPct or 30,
-                    thresholdR = hp.thresholdR or 1.0,
-                    thresholdG = hp.thresholdG or 0.2,
-                    thresholdB = hp.thresholdB or 0.2,
-                    thresholdA = hp.thresholdA or 1,
+                    thresholdPct = healthCfg.thresholdPct or 30,
+                    thresholdR = healthCfg.thresholdR or 1.0,
+                    thresholdG = healthCfg.thresholdG or 0.2,
+                    thresholdB = healthCfg.thresholdB or 0.2,
+                    thresholdA = healthCfg.thresholdA or 1,
                 },
             }
         else
-            hp.thresholdSpecs = {}
+            healthCfg.thresholdSpecs = {}
         end
     end,
 })
@@ -2657,8 +2657,8 @@ CludesUI.RegisterMigration({
     scope = "profile",
     description = "Convert AB bars with default UP growth to CENTER (UP now has real edge preservation).",
     body = function(context)
-        local ab = context.profile.addons and context.profile.addons.CludesUIActionBars
-        local abBars = ab and ab.bars
+        local barsCfg = context.profile.addons and context.profile.addons.CludesUIActionBars
+        local abBars = barsCfg and barsCfg.bars
         if not abBars then
             return
         end
@@ -2682,8 +2682,8 @@ CludesUI.RegisterMigration({
     scope = "profile",
     description = "Advanced Fade is on while a condition is checked: carry the conditions of bars whose switch was on to advancedFadeConditions and drop the switch and the old conditions key.",
     body = function(context)
-        local ab = context.profile.addons and context.profile.addons.CludesUIActionBars
-        local abBars = ab and ab.bars
+        local barsCfg = context.profile.addons and context.profile.addons.CludesUIActionBars
+        local abBars = barsCfg and barsCfg.bars
         if type(abBars) ~= "table" then
             return
         end
@@ -2691,15 +2691,15 @@ CludesUI.RegisterMigration({
             if type(conf) == "table" and (conf.advancedFadeEnabled ~= nil or conf.fadeConditions ~= nil) then
                 local old = conf.fadeConditions
                 if conf.advancedFadeEnabled == true and type(old) == "table" then
-                    local out
+                    local result
                     for k, val in pairs(old) do
                         if val then
-                            out = out or {}
-                            out[k] = true
+                            result = result or {}
+                            result[k] = true
                         end
                     end
-                    if out then
-                        conf.advancedFadeConditions = out
+                    if result then
+                        conf.advancedFadeConditions = result
                     end
                 end
                 conf.advancedFadeEnabled = nil
@@ -3716,20 +3716,20 @@ function CludesUI.MigrateCdmSpellSettingsShape(specProfile, barsCfg)
                     end
                 end
                 if seed then
-                    local copy = {}
+                    local duplicate = {}
                     for k, val in pairs(seed) do
-                        copy[k] = val
+                        duplicate[k] = val
                     end
-                    barCfg.barSettings = copy
+                    barCfg.barSettings = duplicate
                     for _, spellRef in ipairs(barCfg.assignedSpells) do
                         local e = storage[spellRef]
                         if type(e) == "table" then
-                            if CdmFlatSettingsEqual(e, copy) then
+                            if CdmFlatSettingsEqual(e, duplicate) then
                                 storage[spellRef] = nil
                             else
                                 -- Divergent override: block seed keys it lacks
                                 -- so the new bar tier can't bleed through.
-                                for k in pairs(copy) do
+                                for k in pairs(duplicate) do
                                     if e[k] == nil then
                                         e[k] = false
                                     end
@@ -3894,15 +3894,15 @@ function CludesUI.MigrateCdmThresholdText(cdmStore, specProfiles)
                                                 )
                                             )
                                         then
-                                            local st = specProfile.spellSettingsBuff
-                                            if type(st) ~= "table" then
-                                                st = {}
-                                                specProfile.spellSettingsBuff = st
+                                            local settingsTbl = specProfile.spellSettingsBuff
+                                            if type(settingsTbl) ~= "table" then
+                                                settingsTbl = {}
+                                                specProfile.spellSettingsBuff = settingsTbl
                                             end
-                                            local e = st[spellRef]
+                                            local e = settingsTbl[spellRef]
                                             if type(e) ~= "table" then
                                                 e = {}
-                                                st[spellRef] = e
+                                                settingsTbl[spellRef] = e
                                             end
                                             Stamp(e)
                                         end
@@ -4013,13 +4013,13 @@ CludesUI.RegisterMigration({
         end
         for _, profileRec in pairs(saved.profiles) do
             if type(profileRec) == "table" and type(profileRec.addons) == "table" then
-                local mt = profileRec.addons.CludesUIMythicTimer
-                if type(mt) == "table" then
-                    if mt.enemyBarTexture == nil and mt.barTexture ~= nil then
-                        mt.enemyBarTexture = mt.barTexture
+                local timerCfg = profileRec.addons.CludesUIMythicTimer
+                if type(timerCfg) == "table" then
+                    if timerCfg.enemyBarTexture == nil and timerCfg.barTexture ~= nil then
+                        timerCfg.enemyBarTexture = timerCfg.barTexture
                     end
-                    if mt.enemyBarBgTexture == nil and mt.barBgTexture ~= nil then
-                        mt.enemyBarBgTexture = mt.barBgTexture
+                    if timerCfg.enemyBarBgTexture == nil and timerCfg.barBgTexture ~= nil then
+                        timerCfg.enemyBarBgTexture = timerCfg.barBgTexture
                     end
                 end
             end
@@ -4137,15 +4137,15 @@ migrationFrame:SetScript("OnEvent", function(self, event, addonName)
     -- it forward before the defaults merge overwrites it.
     if CludesUIDB and CludesUIDB.profiles then
         for _, profileRec in pairs(CludesUIDB.profiles) do
-            local dm = profileRec.addons
+            local meterCfg = profileRec.addons
                 and profileRec.addons.CludesUIDamageMeters
                 and profileRec.addons.CludesUIDamageMeters.dm
-            if dm and dm.fontSize and dm.fontSize ~= 11 then
-                if dm.leftFontSize == nil then
-                    dm.leftFontSize = dm.fontSize
+            if meterCfg and meterCfg.fontSize and meterCfg.fontSize ~= 11 then
+                if meterCfg.leftFontSize == nil then
+                    meterCfg.leftFontSize = meterCfg.fontSize
                 end
-                if dm.rightFontSize == nil then
-                    dm.rightFontSize = dm.fontSize
+                if meterCfg.rightFontSize == nil then
+                    meterCfg.rightFontSize = meterCfg.fontSize
                 end
             end
         end
@@ -4349,15 +4349,15 @@ do
     -- defaults as edits). Skips threshold/disabledSpecs/enabled/numeric keys and
     -- table-shape mismatches; an emitted leaf involves nil only when neither side
     -- nor defaults define it (renderers already tolerate that as absent).
-    local function DiffSection(simple, copy, defaults, prefixText, out)
+    local function DiffSection(simple, duplicate, defaults, prefixText, result)
         simple = type(simple) == "table" and simple or {}
-        copy = type(copy) == "table" and copy or {}
+        duplicate = type(duplicate) == "table" and duplicate or {}
         defaults = type(defaults) == "table" and defaults or {}
         local keyList = {}
         for k in pairs(simple) do
             keyList[k] = true
         end
-        for k in pairs(copy) do
+        for k in pairs(duplicate) do
             keyList[k] = true
         end
         for k in pairs(defaults) do
@@ -4365,7 +4365,7 @@ do
         end
         for k in pairs(keyList) do
             if type(k) ~= "number" and not RB_SKIP_KEYS[k] then
-                local sv, cv, dv = simple[k], copy[k], defaults[k]
+                local sv, cv, dv = simple[k], duplicate[k], defaults[k]
                 local effS = (sv == nil) and dv or sv
                 local effC = (cv == nil) and dv or cv
                 local filePath = prefixText and (prefixText .. PS .. tostring(k)) or tostring(k)
@@ -4375,10 +4375,10 @@ do
                         type(cv) == "table" and cv or nil,
                         type(dv) == "table" and dv or nil,
                         filePath,
-                        out
+                        result
                     )
                 elseif type(effS) ~= "table" and type(effC) ~= "table" and effS ~= effC then
-                    out[filePath] = true
+                    result[filePath] = true
                 end
             end
         end
@@ -4548,13 +4548,13 @@ do
                 local copyBySpec = {}
                 local specsWithDiffs = {}
                 for _, e in ipairs(activeAdv) do
-                    local copy = e[section.key]
-                    if type(copy) == "table" then
-                        MergeThresholds(simple, copy, e.specID, backup)
-                        copyBySpec[e.specID] = copy
-                        local out = {}
-                        DiffSection(simple, copy, defaults, nil, out)
-                        for filePath in pairs(out) do
+                    local duplicate = e[section.key]
+                    if type(duplicate) == "table" then
+                        MergeThresholds(simple, duplicate, e.specID, backup)
+                        copyBySpec[e.specID] = duplicate
+                        local result = {}
+                        DiffSection(simple, duplicate, defaults, nil, result)
+                        for filePath in pairs(result) do
                             union[filePath] = true
                             specsWithDiffs[e.specID] = true
                         end
@@ -4564,8 +4564,8 @@ do
                 -- 2) Effective enables: advanced copies fold their own enabled
                 --    + disabledSpecs; Simple disabledSpecs cover non-copy specs.
                 local effEnable = {}
-                for specId, copy in pairs(copyBySpec) do
-                    local eff = SectionEff(section, copy, defaults, specId)
+                for specId, duplicate in pairs(copyBySpec) do
+                    local eff = SectionEff(section, duplicate, defaults, specId)
                     if eff ~= simpleEff then
                         effEnable[specId] = eff
                         specsWithDiffs[specId] = true
@@ -4598,17 +4598,17 @@ do
                         default[fieldKey] = (val == nil or type(val) == "table") and NIL_SENT or val
                     end
                     local valuesBySpec = {}
-                    for specId, copy in pairs(copyBySpec) do
+                    for specId, duplicate in pairs(copyBySpec) do
                         local m = {}
                         for filePath in pairs(union) do
-                            local val = GetPathEff(copy, defaults, filePath)
+                            local val = GetPathEff(duplicate, defaults, filePath)
                             local fieldKey = RB_FOLDER .. FS .. section.key .. PS .. filePath
                             m[fieldKey] = (val == nil or type(val) == "table") and NIL_SENT or val
                         end
                         if union["enabled"] then
                             -- effective enable (section truthiness + the
                             -- copy's own disabledSpecs folded in)
-                            m[enabledFkey] = SectionEff(section, copy, defaults, specId)
+                            m[enabledFkey] = SectionEff(section, duplicate, defaults, specId)
                         end
                         valuesBySpec[specId] = m
                     end
@@ -4750,14 +4750,14 @@ CludesUI.RegisterMigration({
         -- what the panel renders at. Testing the SNAPPED value keeps the reset
         -- honest: a display rounding back to 1.00 has nothing to correct and must
         -- not fire the overwrite branch.
-        local seeded = math.max(1, math.min(physH / 1440, 2))
+        local wasSeeded = math.max(1, math.min(physH / 1440, 2))
         if CludesUI.SnapPanelScale then
-            seeded = CludesUI.SnapPanelScale(seeded)
+            wasSeeded = CludesUI.SnapPanelScale(wasSeeded)
         end
 
-        if seeded > 1 then
+        if wasSeeded > 1 then
             -- Above the reference: one-time reset (see above).
-            saved.panelScale = seeded
+            saved.panelScale = wasSeeded
             return
         end
 
@@ -4771,8 +4771,8 @@ CludesUI.RegisterMigration({
         if not isDefault and not isV1Residue then
             return
         end
-        if seeded ~= (current or 1.0) then
-            saved.panelScale = seeded
+        if wasSeeded ~= (current or 1.0) then
+            saved.panelScale = wasSeeded
         end
     end,
 })
@@ -4986,11 +4986,11 @@ CludesUI.RegisterMigration({
     description = "Give the Power Bar's per-form threshold mode its own Moonkin entry instead of sharing Caster's.",
     body = function(context)
         local resBarsCfg = context.profile.addons and context.profile.addons.CludesUIResourceBars
-        local pri = resBarsCfg and resBarsCfg.primary
-        if not pri or not pri.thresholdFormMode then
+        local primaryCfg = resBarsCfg and resBarsCfg.primary
+        if not primaryCfg or not primaryCfg.thresholdFormMode then
             return
         end
-        local entries = pri.thresholdSpecs
+        local entries = primaryCfg.thresholdSpecs
         if type(entries) ~= "table" or #entries == 0 then
             return
         end
@@ -5260,9 +5260,9 @@ CludesUI.RegisterMigration({
                         if type(addon.dm) ~= "table" then
                             addon.dm = {}
                         end
-                        local dm = addon.dm
-                        dm.barHeight = conv(dm.barHeight, 18)
-                        local sh = dm.spellHistory
+                        local meterCfg = addon.dm
+                        meterCfg.barHeight = conv(meterCfg.barHeight, 18)
+                        local sh = meterCfg.spellHistory
                         if type(sh) == "table" then
                             sh.shBarHeight = conv(sh.shBarHeight, 20)
                             sh.iconSize = conv(sh.iconSize, 36)
@@ -5301,9 +5301,9 @@ CludesUI.RegisterMigration({
                 end
                 if not stamps[ID] then
                     local resBarsCfg = type(profileRec.addons) == "table" and profileRec.addons.CludesUIResourceBars
-                    local st = type(resBarsCfg) == "table" and resBarsCfg.swingTimer
-                    if type(st) == "table" and st.visibility == "always" and st.visibilityModes == nil then
-                        st.visibility = "in_combat"
+                    local settingsTbl = type(resBarsCfg) == "table" and resBarsCfg.swingTimer
+                    if type(settingsTbl) == "table" and settingsTbl.visibility == "always" and settingsTbl.visibilityModes == nil then
+                        settingsTbl.visibility = "in_combat"
                     end
                     stamps[ID] = true
                 end
@@ -5327,23 +5327,23 @@ CludesUI.RegisterMigration({
     body = function(context)
         local profileRec = context.profile
         local resBarsCfg = type(profileRec.addons) == "table" and profileRec.addons.CludesUIResourceBars
-        local st = type(resBarsCfg) == "table" and resBarsCfg.swingTimer
-        if type(st) ~= "table" then
+        local settingsTbl = type(resBarsCfg) == "table" and resBarsCfg.swingTimer
+        if type(settingsTbl) ~= "table" then
             return
         end
-        if st.activeHighlight or st.pendingEnabled then
-            st.attackState = "full"
-        elseif st.queueHighlight == false then
-            st.attackState = "off"
+        if settingsTbl.activeHighlight or settingsTbl.pendingEnabled then
+            settingsTbl.attackState = "full"
+        elseif settingsTbl.queueHighlight == false then
+            settingsTbl.attackState = "off"
         end
-        if st.latencyEnabled then
-            st.moveGuide = "segments"
-            if st.latencyR == nil then
-                st.latencyR, st.latencyG, st.latencyB, st.latencyA = 0.835, 0.290, 0.290, 1
+        if settingsTbl.latencyEnabled then
+            settingsTbl.moveGuide = "segments"
+            if settingsTbl.latencyR == nil then
+                settingsTbl.latencyR, settingsTbl.latencyG, settingsTbl.latencyB, settingsTbl.latencyA = 0.835, 0.290, 0.290, 1
             end
         end
-        st.queueHighlight, st.activeHighlight, st.pendingEnabled = nil, nil, nil
-        st.latencyEnabled, st.smoothTiming = nil, nil
+        settingsTbl.queueHighlight, settingsTbl.activeHighlight, settingsTbl.pendingEnabled = nil, nil, nil
+        settingsTbl.latencyEnabled, settingsTbl.smoothTiming = nil, nil
     end,
 })
 
@@ -5368,8 +5368,8 @@ if CludesUI.IS_FOREVER == true then
                 local resBarsCfg = type(profileRec) == "table"
                     and type(profileRec.addons) == "table"
                     and profileRec.addons.CludesUIResourceBars
-                local st = type(resBarsCfg) == "table" and resBarsCfg.swingTimer
-                local texture = type(st) == "table" and st.texture or nil
+                local settingsTbl = type(resBarsCfg) == "table" and resBarsCfg.swingTimer
+                local texture = type(settingsTbl) == "table" and settingsTbl.texture or nil
                 local slots = texture ~= nil and resBarsCfg._styleSlots
                 if type(slots) == "table" then
                     for _, slot in pairs(slots) do
@@ -5470,8 +5470,8 @@ if CludesUI.IS_FOREVER == true then
                 end
             end
         end
-        local tbb = profileTbl.trackedBuffBars
-        return type(tbb) == "table" and type(tbb.bars) == "table" and #tbb.bars > 0
+        local trackingBars = profileTbl.trackedBuffBars
+        return type(trackingBars) == "table" and type(trackingBars.bars) == "table" and #trackingBars.bars > 0
     end
 
     local function HasEntries(t)
@@ -5485,8 +5485,8 @@ if CludesUI.IS_FOREVER == true then
         if HasEntries(profileTbl.spellSettingsCD) or HasEntries(profileTbl.spellSettingsBuff) then
             return true
         end
-        local tbb = profileTbl.trackedBuffBars
-        if type(tbb) == "table" and HasEntries(tbb.bars) then
+        local trackingBars = profileTbl.trackedBuffBars
+        if type(trackingBars) == "table" and HasEntries(trackingBars.bars) then
             return true
         end
         local glows = profileTbl.barGlows
@@ -5596,11 +5596,11 @@ if CludesUI.IS_FOREVER == true then
             -- Cooldowns, Utility and Buffs bars first.
             local placedNames, placedIds = {}, {}
             for index, edge in ipairs(barList) do
-                local def = DEFAULT_BARS[index]
-                local key = edge.key or (def and def.key)
-                local barType = edge.barType or (def and def.barType)
+                local default = DEFAULT_BARS[index]
+                local key = edge.key or (default and default.key)
+                local barType = edge.barType or (default and default.barType)
                 local enabled = edge.enabled
-                if enabled == nil and def then
+                if enabled == nil and default then
                     enabled = true
                 end
                 local barCfg = key
@@ -5710,10 +5710,10 @@ do
                 if type(val) == "table" then
                     FixTree(val, 0)
                 elseif val == 0 and fieldKey:sub(-#ZOOM_LEAF) == ZOOM_LEAF then
-                    local bar = fieldKey:sub(1, -#ZOOM_LEAF - 1)
-                    local shape = map[bar .. SHAPE_LEAF]
+                    local barCfg = fieldKey:sub(1, -#ZOOM_LEAF - 1)
+                    local shape = map[barCfg .. SHAPE_LEAF]
                     if shape == nil and pab then
-                        local t = BarAt(pab, bar:sub(#PAB_PREFIX + 1))
+                        local t = BarAt(pab, barCfg:sub(#PAB_PREFIX + 1))
                         shape = t and t.iconShape
                     end
                     if shape ~= NIL_SENT and Shaped(shape) then
@@ -5962,10 +5962,10 @@ do
                                     end
                                 end
                             end
-                            local def = valueList.default
-                            if type(def) == "table" then
+                            local default = valueList.default
+                            if type(default) == "table" then
                                 local hit, leftX = false, false
-                                for fieldKey in pairs(def) do
+                                for fieldKey in pairs(default) do
                                     if Cleared(fieldKey, markOnly) then
                                         hit = true
                                     else
@@ -5988,9 +5988,9 @@ do
                 return
             end
             for index = 1, #list do
-                local bar = list[index]
-                if type(bar) == "table" and bar.id ~= nil then
-                    set[bar.id] = true
+                local barCfg = list[index]
+                if type(barCfg) == "table" and barCfg.id ~= nil then
+                    set[barCfg.id] = true
                 end
             end
         end
@@ -6003,9 +6003,9 @@ do
             local buffIds, debuffIds = {}, {}
             CollectIds(s.customBuffBars, buffIds)
             CollectIds(s.customDebuffBars, debuffIds)
-            local st = s.pabSpecBars
-            if type(st) == "table" then
-                for _, barKey in pairs(st) do
+            local settingsTbl = s.pabSpecBars
+            if type(settingsTbl) == "table" then
+                for _, barKey in pairs(settingsTbl) do
                     if type(barKey) == "table" then
                         CollectIds(barKey.buffBars, buffIds)
                         CollectIds(barKey.debuffBars, debuffIds)
@@ -6014,7 +6014,7 @@ do
                 -- Every bucket (role buckets included) loses its buff bars and the
                 -- per-spec disables of removed buff bars; an id a debuff bar also
                 -- carries keeps its entry.
-                for _, barKey in pairs(st) do
+                for _, barKey in pairs(settingsTbl) do
                     if type(barKey) == "table" then
                         local bb = barKey.buffBars
                         if type(bb) == "table" and next(bb) ~= nil then
@@ -6078,11 +6078,11 @@ do
         -- store is marked before its profile's forks are first read.
         local function TrustForks(profileSaved)
             local s, c = profileSaved.specBmOverrides, profileSaved.condBmOverrides
-            local sT, cT = type(s) == "table", type(c) == "table"
-            if not (sT or cT) then
+            local swingCfg, cT = type(s) == "table", type(c) == "table"
+            if not (swingCfg or cT) then
                 return
             end
-            if (sT and s[KEY] ~= nil) or (cT and c[KEY] ~= nil) then
+            if (swingCfg and s[KEY] ~= nil) or (cT and c[KEY] ~= nil) then
                 return
             end
             local addonStores = profileSaved.addons
@@ -6094,7 +6094,7 @@ do
             if not ClientOK() then
                 return
             end
-            if sT then
+            if swingCfg then
                 s[KEY] = 1
             end
             if cT then
@@ -6142,14 +6142,14 @@ do
             if type(b) ~= "table" or key == nil then
                 return false
             end
-            local specs, seeded = b.specs, b.seeded
+            local specs, wasSeeded = b.specs, b.seeded
             local barKey = type(specs) == "table" and specs[key] or nil
             if
                 type(barKey) == "table"
                 and type(barKey.inds) == "table"
                 and type(barKey.nextId) == "number"
-                and type(seeded) == "table"
-                and seeded[key]
+                and type(wasSeeded) == "table"
+                and wasSeeded[key]
             then
                 return true
             end
@@ -6160,9 +6160,9 @@ do
                 specs = {}
                 b.specs = specs
             end
-            if type(seeded) ~= "table" then
-                seeded = {}
-                b.seeded = seeded
+            if type(wasSeeded) ~= "table" then
+                wasSeeded = {}
+                b.seeded = wasSeeded
             end
             if type(barKey) ~= "table" then
                 specs[key] = { nextId = 1000001, inds = {} }
@@ -6182,7 +6182,7 @@ do
                     barKey.nextId = topY + 1
                 end
             end
-            seeded[key] = true
+            wasSeeded[key] = true
             return true
         end
 
@@ -6208,14 +6208,14 @@ do
                 return
             end
             local s, c = profileTbl.specBmOverrides, profileTbl.condBmOverrides
-            local sT, cT = type(s) == "table", type(c) == "table"
-            if not (sT or cT) then
+            local swingCfg, cT = type(s) == "table", type(c) == "table"
+            if not (swingCfg or cT) then
                 return
             end
-            local sM, cM = sT and s[KEY] ~= nil, cT and c[KEY] ~= nil
+            local sM, cM = swingCfg and s[KEY] ~= nil, cT and c[KEY] ~= nil
             if sM or cM then
-                if ((sT and not sM) or (cT and not cM)) and ClientOK() then
-                    if sT and not sM then
+                if ((swingCfg and not sM) or (cT and not cM)) and ClientOK() then
+                    if swingCfg and not sM then
                         s[KEY] = 1
                     end
                     if cT and not cM then
@@ -6231,7 +6231,7 @@ do
                 return
             end
             local layers = {}
-            if sT then
+            if swingCfg then
                 if type(s.layouts) == "table" then
                     for _, l in pairs(s.layouts) do
                         if type(l) == "table" then
@@ -6257,7 +6257,7 @@ do
             for index = 1, #layers do
                 layers[index].bm2 = blanks[index]
             end
-            if sT then
+            if swingCfg then
                 s[KEY] = 1
             end
             if cT then
@@ -6290,32 +6290,32 @@ do
         end
         -- A fork root (st) has such a layer: its layouts, or the spec root's
         -- banked baseline.
-        local function ForkHasGroups(st)
-            if type(st) ~= "table" then
+        local function ForkHasGroups(settingsTbl)
+            if type(settingsTbl) ~= "table" then
                 return false
             end
-            if type(st.layouts) == "table" then
-                for _, l in pairs(st.layouts) do
+            if type(settingsTbl.layouts) == "table" then
+                for _, l in pairs(settingsTbl.layouts) do
                     if LayerHasGroups(l) then
                         return true
                     end
                 end
             end
-            return LayerHasGroups(st.baselineLayout)
+            return LayerHasGroups(settingsTbl.baselineLayout)
         end
 
         -- Adds the two starter groups to the "allspecs" bucket of a v2 payload
         -- (the live store or a layer's), marked seeded. ids = preset key ->
         -- filter id in the profile's filter library. Fresh tables every call.
         local function SeedAllSpecs(pay, ids)
-            local specs, seeded = pay.specs, pay.seeded
+            local specs, wasSeeded = pay.specs, pay.seeded
             if type(specs) ~= "table" then
                 specs = {}
                 pay.specs = specs
             end
-            if type(seeded) ~= "table" then
-                seeded = {}
-                pay.seeded = seeded
+            if type(wasSeeded) ~= "table" then
+                wasSeeded = {}
+                pay.seeded = wasSeeded
             end
             local barKey = specs.allspecs
             if type(barKey) ~= "table" then
@@ -6367,7 +6367,7 @@ do
             inds[#inds + 1] = center
             inds[#inds + 1] = corner
             barKey.nextId = num + 2
-            seeded.allspecs = true
+            wasSeeded.allspecs = true
         end
 
         -- The layer the last Buff Manager paint copied into a live store,
@@ -6523,14 +6523,14 @@ do
         function FvBW.ProcessUF(ufStore, profileTbl, mode)
             local ufT = type(ufStore) == "table"
             local s = ufT and ufStore.playerAuraBars or nil
-            local sT = type(s) == "table"
+            local swingCfg = type(s) == "table"
             local strip, clear
-            if sT and s[KEY] ~= nil then
+            if swingCfg and s[KEY] ~= nil then
                 if mode ~= "import" then
                     return
                 end
                 strip = "mark"
-            elseif sT then
+            elseif swingCfg then
                 clear = true
                 if mode ~= "live" then
                     strip = "full"
@@ -6550,13 +6550,13 @@ do
             end
             local plan = { n = 0, rm = {} }
             local success, err =
-                pcall(PlanUF, clear and ufT and ufStore or nil, clear and sT and s or nil, profileTbl, strip, plan)
+                pcall(PlanUF, clear and ufT and ufStore or nil, clear and swingCfg and s or nil, profileTbl, strip, plan)
             if success then
                 Commit(plan)
             else
                 Log(err)
             end
-            if clear and sT then
+            if clear and swingCfg then
                 s[KEY] = 1
             end
         end
@@ -6680,20 +6680,20 @@ do
                 minimapCfg.mapSize = 200
             end
         end
-        local chat = Sub(Sub(addonStores, "CludesUIChat"), "chat")
-        if chat._chatPosOwnership ~= 1 then
-            chat._chatPosOwnership = 1
-            chat.chatPosition = nil
+        local chatCfg = Sub(Sub(addonStores, "CludesUIChat"), "chat")
+        if chatCfg._chatPosOwnership ~= 1 then
+            chatCfg._chatPosOwnership = 1
+            chatCfg.chatPosition = nil
         end
-        if chat.chatPosition == nil then
-            chat.chatPosition = { point = "BOTTOMLEFT", relPoint = "BOTTOMLEFT", x = 63.33, y = 108.17 }
+        if chatCfg.chatPosition == nil then
+            chatCfg.chatPosition = { point = "BOTTOMLEFT", relPoint = "BOTTOMLEFT", x = 63.33, y = 108.17 }
         end
-        if chat.extendBgBehindTabs == nil then
-            chat.extendBgBehindTabs = false
+        if chatCfg.extendBgBehindTabs == nil then
+            chatCfg.extendBgBehindTabs = false
         end
-        local ab = Sub(addonStores, "CludesUIActionBars")
-        if ab.useBlizzardDataBars == nil then
-            ab.useBlizzardDataBars = false
+        local barsCfg = Sub(addonStores, "CludesUIActionBars")
+        if barsCfg.useBlizzardDataBars == nil then
+            barsCfg.useBlizzardDataBars = false
         end
     end
 

@@ -178,11 +178,11 @@ end
 -- Hidden 1x1 frame preloads the saved theme into VRAM: no 1-frame bg flash on first open.
 do
     local mp = "Interface\\AddOns\\CludesUI\\media\\"
-    local preload = CreateFrame("Frame")
-    preload:SetSize(1, 1)
-    preload:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -10000, 10000)
-    preload:Show()
-    local baseTex = preload:CreateTexture()
+    local preloadFn = CreateFrame("Frame")
+    preloadFn:SetSize(1, 1)
+    preloadFn:SetPoint("TOPLEFT", UIParent, "TOPLEFT", -10000, 10000)
+    preloadFn:Show()
+    local baseTex = preloadFn:CreateTexture()
     baseTex:SetTexture(mp .. "backgrounds\\cui-bg.png")
     baseTex:SetAllPoints()
     -- The saved theme is known only once SavedVariables load, so the PLAYER_LOGIN
@@ -191,12 +191,12 @@ do
     function CludesUI._PreloadLazyThemeBG(skinName)
         skinName = ResolveFactionTheme(skinName)
         local file = THEME_BG_FILES[skinName] or THEME_BG_FILES["CludesUI"]
-        local texture = preload:CreateTexture()
+        local texture = preloadFn:CreateTexture()
         texture:SetTexture(mp .. file)
         texture:SetAllPoints()
         local shade = CludesUI.THEME_ACCENT_OVERLAYS[skinName]
         if shade then
-            local ovTex = preload:CreateTexture()
+            local ovTex = preloadFn:CreateTexture()
             ovTex:SetTexture(mp .. shade.file)
             ovTex:SetAllPoints()
         end
@@ -607,21 +607,21 @@ function CludesUI.CreatePortalFlyout(options)
     local function NewButton(name, size)
         local button = CreateFrame("Button", name, portalMenu, "SecureActionButtonTemplate")
         button:SetSize(size, size)
-        local icon = button:CreateTexture(nil, "ARTWORK")
-        icon:SetAllPoints()
-        icon:SetTexCoord(6 / 64, 58 / 64, 6 / 64, 58 / 64)
-        button.icon = icon
+        local glyph = button:CreateTexture(nil, "ARTWORK")
+        glyph:SetAllPoints()
+        glyph:SetTexCoord(6 / 64, 58 / 64, 6 / 64, 58 / 64)
+        button.icon = glyph
         if Pix and Pix.CreateBorder then
             Pix.CreateBorder(button, 0, 0, 0, 1, 1, "OVERLAY", 7)
         end
-        local cd = CreateFrame("Cooldown", nil, button, "CooldownFrameTemplate")
-        cd:SetAllPoints()
-        cd:SetHideCountdownNumbers(true)
-        cd:SetDrawSwipe(true)
-        cd:SetDrawBling(false)
-        cd:SetDrawEdge(false)
-        button.cooldown = cd
-        return button, cd
+        local cooldown = CreateFrame("Cooldown", nil, button, "CooldownFrameTemplate")
+        cooldown:SetAllPoints()
+        cooldown:SetHideCountdownNumbers(true)
+        cooldown:SetDrawSwipe(true)
+        cooldown:SetDrawBling(false)
+        cooldown:SetDrawEdge(false)
+        button.cooldown = cooldown
+        return button, cooldown
     end
 
     local function AddHighlights(button)
@@ -641,7 +641,7 @@ function CludesUI.CreatePortalFlyout(options)
         local spellId = e.spellID
         local col = (i - 1) % COLS
         local row = floor((i - 1) / COLS)
-        local button, cd = NewButton(options.name .. "Portal" .. i, BTN_SIZE)
+        local button, cooldown = NewButton(options.name .. "Portal" .. i, BTN_SIZE)
         button:SetPoint(
             "TOPLEFT",
             portalMenu,
@@ -659,7 +659,7 @@ function CludesUI.CreatePortalFlyout(options)
         if short then
             local labelFrame = CreateFrame("Frame", nil, button)
             labelFrame:SetAllPoints()
-            labelFrame:SetFrameLevel(cd:GetFrameLevel() + 2)
+            labelFrame:SetFrameLevel(cooldown:GetFrameLevel() + 2)
             local labelText = labelFrame:CreateFontString(nil, "OVERLAY", nil)
             if CludesUI.PrimeFontShadow then
                 CludesUI.PrimeFontShadow(labelText, true)
@@ -1152,16 +1152,16 @@ CludesUI.HELD_BACK_ADDONS = {
 }
 -- The set the running client leaves out.
 do
-    local hidden = {}
+    local hiddenSet = {}
     for folder in
         pairs((CUI_CLIENT_FOREVER == true) and CludesUI.FOREVER_HIDDEN_ADDONS or CludesUI.FOREVER_ONLY_ADDONS)
     do
-        hidden[folder] = true
+        hiddenSet[folder] = true
     end
     for folder in pairs(CludesUI.HELD_BACK_ADDONS) do
-        hidden[folder] = true
+        hiddenSet[folder] = true
     end
-    CludesUI._CLIENT_HIDDEN_ADDONS = hidden
+    CludesUI._CLIENT_HIDDEN_ADDONS = hiddenSet
 end
 -- The profile import/export checklists read the profile data map, which stays
 -- complete (it drives the data itself); they list through this view instead.
@@ -1169,25 +1169,25 @@ function CludesUI.VisibleProfileAddons(map)
     if type(map) ~= "table" then
         return map
     end
-    local hidden = CludesUI._CLIENT_HIDDEN_ADDONS
+    local hiddenSet = CludesUI._CLIENT_HIDDEN_ADDONS
     local result = {}
     for _, record in ipairs(map) do
-        if not hidden[record.folder] then
+        if not hiddenSet[record.folder] then
             result[#result + 1] = record
         end
     end
     return result
 end
 do
-    local hidden = CludesUI._CLIENT_HIDDEN_ADDONS
+    local hiddenSet = CludesUI._CLIENT_HIDDEN_ADDONS
     for i = #ADDON_ROSTER, 1, -1 do
-        if hidden[ADDON_ROSTER[i].folder] then
+        if hiddenSet[ADDON_ROSTER[i].folder] then
             table.remove(ADDON_ROSTER, i)
         end
     end
     for _, set in ipairs(CludesUI.ADDON_GROUPS) do
         for mi = #set.members, 1, -1 do
-            if hidden[set.members[mi]] then
+            if hiddenSet[set.members[mi]] then
                 table.remove(set.members, mi)
             end
         end
@@ -1204,11 +1204,11 @@ CludesUI._FOREVER_ICON = {
     [7549094] = 136249, -- Bags "Gear Enhancements": classic enchantment icon
     [7548925] = 134332, -- Bags "Professions": classic trade-skill icon
 }
-function CludesUI.ClientIcon(icon)
+function CludesUI.ClientIcon(glyph)
     if CUI_CLIENT_FOREVER ~= true then
-        return icon
+        return glyph
     end
-    return CludesUI._FOREVER_ICON[icon] or icon
+    return CludesUI._FOREVER_ICON[glyph] or glyph
 end
 
 -- The trash can on a delete button: Blizzard's atlas where the client has it,
@@ -1256,12 +1256,12 @@ do
     -- an empty section only looks broken.
     local coreGroups = {}
     for _, set in ipairs(CludesUI.ADDON_GROUPS) do
-        local members = {}
+        local memberList = {}
         for i, folder in ipairs(set.members) do
-            members[i] = folder
+            memberList[i] = folder
         end
-        if #members > 0 then
-            coreGroups[#coreGroups + 1] = { key = set.key, label = set.label, members = members }
+        if #memberList > 0 then
+            coreGroups[#coreGroups + 1] = { key = set.key, label = set.label, members = memberList }
         end
     end
     CUI_NS.navInfo = navInfo
@@ -1309,8 +1309,8 @@ do
         if regDepth > 0 or loginWindow then
             return true
         end
-        local loadedOrLoading, loaded = IsAddOnLoaded("CludesUIOptions")
-        return loadedOrLoading and not loaded
+        local loadedOrLoading, isLoaded = IsAddOnLoaded("CludesUIOptions")
+        return loadedOrLoading and not isLoaded
     end
     -- The suite's pages always register through the real RegisterModule. An
     -- addon that replaced or hooked the public one (to slip pages into the
@@ -1749,7 +1749,7 @@ function CludesUI.BuildFullName(charName, realmName)
     end
 
     -- Character names hold no hyphen, so the first one splits name from realm.
-    local base, suffix = charName:match("^([^%-]+)%-(.+)$")
+    local base, tail = charName:match("^([^%-]+)%-(.+)$")
     base = base or charName
 
     if type(realmName) == "string" and not (issecretvalue and issecretvalue(realmName)) then
@@ -1758,29 +1758,29 @@ function CludesUI.BuildFullName(charName, realmName)
             return base .. "-" .. realm
         end
     end
-    if not suffix then
+    if not tail then
         return base
     end
 
     -- Collapse proven repetition only -- a realm may hold a hyphen ("Azjol-Nerub").
     local segs = {}
-    for seg in suffix:gmatch("[^%-]+") do
+    for seg in tail:gmatch("[^%-]+") do
         if segs[#segs] ~= seg then
             segs[#segs + 1] = seg
         end
     end
-    suffix = table.concat(segs, "-")
+    tail = table.concat(segs, "-")
     -- A doubled multi-word realm has no adjacent repeats; a half-split catches it.
-    local half = (#suffix - 1) / 2
+    local half = (#tail - 1) / 2
     if
         half > 0
         and half == math.floor(half)
-        and suffix:sub(half + 1, half + 1) == "-"
-        and suffix:sub(1, half) == suffix:sub(half + 2)
+        and tail:sub(half + 1, half + 1) == "-"
+        and tail:sub(1, half) == tail:sub(half + 2)
     then
-        suffix = suffix:sub(1, half)
+        tail = tail:sub(1, half)
     end
-    return base .. "-" .. suffix
+    return base .. "-" .. tail
 end
 
 -- A friend or guild note for display. Older Friends builds wrote a "||<tag>:Group||" tag
@@ -2175,13 +2175,13 @@ do
             mc.b or 0.1,
             prefs and (prefs.maxHealthOpacity or 100) / 100 or 1
         )
-        local fill = bar:GetStatusBarTexture()
-        if fill then
-            fill:SetDrawLayer("ARTWORK", 3)
-            fill:SetHorizTile(tiled)
-            fill:SetVertTile(tiled)
+        local fillTex = bar:GetStatusBarTexture()
+        if fillTex then
+            fillTex:SetDrawLayer("ARTWORK", 3)
+            fillTex:SetHorizTile(tiled)
+            fillTex:SetVertTile(tiled)
         end
-        return fill
+        return fillTex
     end
 end
 
@@ -3108,10 +3108,10 @@ do
             end
         end
 
-        local blizz = _G["PlayerFrame"]
-        if blizz and blizz.IsVisible and blizz:IsVisible() then
-            _cachedPlayerFrame = blizz
-            return blizz
+        local stockFrame = _G["PlayerFrame"]
+        if stockFrame and stockFrame.IsVisible and stockFrame:IsVisible() then
+            _cachedPlayerFrame = stockFrame
+            return stockFrame
         end
 
         return nil
@@ -3184,9 +3184,9 @@ do
     -- Get the correct icon for a toy (not the base "learn" item icon)
     local function ToyIcon(ident)
         if C_ToyBox and C_ToyBox.GetToyInfo then
-            local _, _, icon = C_ToyBox.GetToyInfo(ident)
-            if icon then
-                return icon
+            local _, _, glyph = C_ToyBox.GetToyInfo(ident)
+            if glyph then
+                return glyph
             end
         end
         return C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(ident) or 134414
@@ -3288,8 +3288,8 @@ do
         end
 
         if #owned == 0 then
-            local icon = C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(6948) or 134414
-            return "item", 6948, icon
+            local glyph = C_Item and C_Item.GetItemIconByID and C_Item.GetItemIconByID(6948) or 134414
+            return "item", 6948, glyph
         end
         local choice = owned[math.random(#owned)]
         return "item", choice, ToyIcon(choice)
@@ -3492,14 +3492,14 @@ function CludesUI.AttachSmoothScrollbar(scrollFrame, options)
             smoothFrame:Show()
         end
     end
-    local function PadArrow(anchorPoint, icon, delta)
+    local function PadArrow(anchorPoint, glyph, delta)
         local b = Pool.CreateFrame("Button", nil, padSteps)
         b:SetSize(rail:GetWidth() + 10, 14)
         b:SetPoint(anchorPoint, rail, anchorPoint, 0, 0)
         b:SetFrameLevel(rail:GetFrameLevel() + 1)
         SolidTex(b, "BACKGROUND", 0, 0, 0, 0.6):SetAllPoints()
         local texture = b:CreateTexture(nil, "ARTWORK")
-        texture:SetTexture(ICONS_PATH .. icon)
+        texture:SetTexture(ICONS_PATH .. glyph)
         texture:SetSize(14, 14)
         texture:SetPoint("CENTER")
         texture:SetAlpha(0.6)
@@ -3793,21 +3793,21 @@ if not CludesUI.ResolveActiveAccent then
         local themeR, themeG, themeB = CludesUI.ResolveThemeColor(skinName)
         local saved = CludesUIDB
         local p = saved and saved.profiles and saved.profiles[saved.activeProfile or "Default"]
-        local acc = p and p.cuiAccent
+        local accent = p and p.cuiAccent
         -- 1) per-profile cuiAccent
-        if acc and acc.useClass then
+        if accent and accent.useClass then
             local c = (CludesUI.GetRawClassColor and CludesUI.GetRawClassColor(playerClass))
                 or CLASS_COLOR_MAP[playerClass]
             if c then
                 return c.r, c.g, c.b
             end
         end
-        if acc and acc.custom then
-            local ca = acc.custom
+        if accent and accent.custom then
+            local ca = accent.custom
             return ca.r or themeR, ca.g or themeG, ca.b or themeB
         end
         -- 2) frozen global root (only when no explicit per-profile cuiAccent)
-        if (not acc) and saved and saved.useClassAccentColor then
+        if (not accent) and saved and saved.useClassAccentColor then
             local c = (CludesUI.GetRawClassColor and CludesUI.GetRawClassColor(playerClass))
                 or CLASS_COLOR_MAP[playerClass]
             if c then
@@ -4315,21 +4315,21 @@ do
             if not versions then
                 return
             end
-            local loaded = {}
+            local isLoaded = {}
             for name, ver in pairs(versions) do
-                loaded[#loaded + 1] = { name = name, version = ver }
+                isLoaded[#isLoaded + 1] = { name = name, version = ver }
             end
-            if #loaded < 2 then
+            if #isLoaded < 2 then
                 return
             end
-            local newest = loaded[1].version
-            for i = 2, #loaded do
-                if loaded[i].version > newest then
-                    newest = loaded[i].version
+            local newest = isLoaded[1].version
+            for i = 2, #isLoaded do
+                if isLoaded[i].version > newest then
+                    newest = isLoaded[i].version
                 end
             end
             local outdated = {}
-            for _, details in ipairs(loaded) do
+            for _, details in ipairs(isLoaded) do
                 if details.version ~= newest then
                     outdated[#outdated + 1] = details.name
                 end
@@ -4739,7 +4739,7 @@ CludesUI._RunConflictCheck = function()
         for _, record in ipairs(conflicts) do
             local moduleActive = not record.moduleCheck or record.moduleCheck()
             if record.addon ~= CUI_HOST_ADDON and IsLoaded(record.addon) and moduleActive then
-                local affected = {}
+                local touched = {}
                 if record.targets == "all" then
                     local allTargets = {
                         "CludesUIActionBars",
@@ -4752,18 +4752,18 @@ CludesUI._RunConflictCheck = function()
                     }
                     for _, name in ipairs(allTargets) do
                         if not exempt[name] and IsLoaded(name) then
-                            affected[#affected + 1] = name
+                            touched[#touched + 1] = name
                         end
                     end
                 else
                     for _, t in ipairs(record.targets) do
                         if IsLoaded(t) then
-                            affected[#affected + 1] = t
+                            touched[#touched + 1] = t
                         end
                     end
                 end
-                if #affected > 0 then
-                    loading[#loading + 1] = { entry = record, affected = affected }
+                if #touched > 0 then
+                    loading[#loading + 1] = { entry = record, affected = touched }
                 end
             end
         end
@@ -4783,14 +4783,14 @@ CludesUI._RunConflictCheck = function()
             if not item then
                 return
             end
-            local record, affected = item.entry, item.affected
+            local record, touched = item.entry, item.affected
             -- Skip any conflict the user permanently dismissed previously.
             if dismissed[record.addon] then
                 ShowNextConflict()
                 return
             end
             local nameList = {}
-            for _, a in ipairs(affected) do
+            for _, a in ipairs(touched) do
                 -- Prefer the module's registered display title; fall back to stripping the CludesUI prefix from the folder name.
                 local displayName = (modules[a] and modules[a].title) or a:gsub("^CludesUI", "")
                 nameList[#nameList + 1] = displayName
@@ -5036,13 +5036,13 @@ function CludesUI.BuildStatusBadge(hostFrame, textValue, name, options)
 
     if dotted then
         -- Pulsing accent "LED" dot (recording-indicator vibe)
-        local dot = f:CreateTexture(nil, "ARTWORK")
-        dot:SetTexture("Interface\\Buttons\\WHITE8x8")
-        dot:SetVertexColor(accentColor.r, accentColor.g, accentColor.b, 1)
-        dot:SetSize(7, 7)
-        dot:SetPoint("LEFT", f, "LEFT", 9, 0)
-        DisablePixelSnap(dot)
-        local ag = dot:CreateAnimationGroup()
+        local dotTex = f:CreateTexture(nil, "ARTWORK")
+        dotTex:SetTexture("Interface\\Buttons\\WHITE8x8")
+        dotTex:SetVertexColor(accentColor.r, accentColor.g, accentColor.b, 1)
+        dotTex:SetSize(7, 7)
+        dotTex:SetPoint("LEFT", f, "LEFT", 9, 0)
+        DisablePixelSnap(dotTex)
+        local ag = dotTex:CreateAnimationGroup()
         ag:SetLooping("BOUNCE")
         local pulse = ag:CreateAnimation("Alpha")
         pulse:SetFromAlpha(1)
@@ -5055,7 +5055,7 @@ function CludesUI.BuildStatusBadge(hostFrame, textValue, name, options)
         f:SetScript("OnHide", function()
             ag:Stop()
         end)
-        labelText:SetPoint("LEFT", dot, "RIGHT", 8, 0)
+        labelText:SetPoint("LEFT", dotTex, "RIGHT", 8, 0)
         -- Size to content: dotPad(9) + dot(7) + gap(8) + text + rightPad(12)
         f:SetWidth(9 + 7 + 8 + labelText:GetStringWidth() + 12)
     else
@@ -5064,10 +5064,10 @@ function CludesUI.BuildStatusBadge(hostFrame, textValue, name, options)
     end
 
     if onClick then
-        local tooltip = options.tooltip
+        local tipText = options.tooltip
         f:SetScript("OnEnter", function(self)
             wash:SetColorTexture(accentColor.r, accentColor.g, accentColor.b, 0.16)
-            local tipText = tooltip
+            local tipText = tipText
             if type(tipText) == "function" then
                 tipText = tipText()
             end
@@ -5270,7 +5270,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
     --  window in one pass: Blizzard turns the pointer off after that press.
     ---------------------------------------------------------------------------
     do
-        local escFrames = {}
+        local escapeFrames = {}
         local escOpts = {} -- [frame] = its opts (a shared empty table when none)
         local escModal = {} -- registered non-padOnly frames with a modal opt
         local padShown = {} -- padOnly frames that count, in show order
@@ -5294,8 +5294,8 @@ initFrame:SetScript("OnEvent", function(self, evt)
         end
 
         local function AnyOpen()
-            for i = 1, #escFrames do
-                local f = escFrames[i]
+            for i = 1, #escapeFrames do
+                local f = escapeFrames[i]
                 if f:IsShown() and not IsModal(f) then
                     return true
                 end
@@ -5374,8 +5374,8 @@ initFrame:SetScript("OnEvent", function(self, evt)
                         closeList[n] = f
                     end
                 end
-                for i = #escFrames, 1, -1 do
-                    local f = escFrames[i]
+                for i = #escapeFrames, 1, -1 do
+                    local f = escapeFrames[i]
                     if f:IsShown() and not IsModal(f) then
                         n = n + 1
                         closeList[n] = f
@@ -5404,8 +5404,8 @@ initFrame:SetScript("OnEvent", function(self, evt)
                     return
                 end
             end
-            for i = #escFrames, 1, -1 do
-                local f = escFrames[i]
+            for i = #escapeFrames, 1, -1 do
+                local f = escapeFrames[i]
                 if f:IsShown() and not IsModal(f) then
                     CloseOne(f)
                     if AnyOpen() then
@@ -5461,7 +5461,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
             if options.modal then
                 escModal[#escModal + 1] = widget
             end
-            escFrames[#escFrames + 1] = widget
+            escapeFrames[#escapeFrames + 1] = widget
             widget:HookScript("OnShow", RefreshProxy)
             widget:HookScript("OnHide", RefreshProxy)
         end
@@ -5475,9 +5475,9 @@ initFrame:SetScript("OnEvent", function(self, evt)
                 return
             end
             escOpts[widget] = nil
-            for i = #escFrames, 1, -1 do
-                if escFrames[i] == widget then
-                    table.remove(escFrames, i)
+            for i = #escapeFrames, 1, -1 do
+                if escapeFrames[i] == widget then
+                    table.remove(escapeFrames, i)
                 end
             end
             for i = #escModal, 1, -1 do
@@ -5667,22 +5667,22 @@ initFrame:SetScript("OnEvent", function(self, evt)
             end
 
             -- Find the Shop button to anchor below (fall back to Options)
-            local anchorBtn
+            local anchorButton
             for menuBtn in GameMenuFrame.buttonPool:EnumerateActive() do
                 local textValue = menuBtn:GetText()
                 if textValue == BLIZZARD_STORE then
-                    anchorBtn = menuBtn
+                    anchorButton = menuBtn
                     break
                 elseif textValue == GAMEMENU_OPTIONS then
-                    anchorBtn = menuBtn
+                    anchorButton = menuBtn
                 end
             end
-            if not anchorBtn then
+            if not anchorButton then
                 return
             end
 
             -- Match our buttons to the Blizzard button size
-            local anchorW, anchorH = anchorBtn:GetWidth(), anchorBtn:GetHeight()
+            local anchorW, anchorH = anchorButton:GetWidth(), anchorButton:GetHeight()
             if anchorW and anchorW > 0 then
                 button:SetSize(anchorW, anchorH or 35)
                 unlockButton:SetSize(anchorW, anchorH or 35)
@@ -5690,7 +5690,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
 
             -- Position our buttons in a chain below the anchor
             local extraH = 0
-            local lastBtn = anchorBtn
+            local lastBtn = anchorButton
             local cuiFont = CludesUI.GetFontPath() or "Fonts\\FRIZQT__.TTF"
             local btnFontSize = 13
             -- Branded two-tone labels are the default (native mode, or when BlizzardSkin is not
@@ -5749,7 +5749,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
             end
 
             -- Push all Blizzard buttons below the anchor down
-            local anchorBottom = anchorBtn:GetBottom()
+            local anchorBottom = anchorButton:GetBottom()
             if anchorBottom then
                 for menuBtn in GameMenuFrame.buttonPool:EnumerateActive() do
                     local topY = menuBtn:GetTop()
@@ -5839,8 +5839,8 @@ initFrame:SetScript("OnEvent", function(self, evt)
         end
 
         -- Shared dedup check: only scan last 5 lines (we add at most 3)
-        local function hasDupLine(tooltip, name, tag)
-            local n = tooltip:NumLines()
+        local function hasDupLine(tipText, name, tag)
+            local n = tipText:NumLines()
             local start = n - 4
             if start < 1 then
                 start = 1
@@ -5926,7 +5926,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
             end)
         end
 
-        local function SpellIDTooltipHook(tooltip, info)
+        local function SpellIDTooltipHook(tipText, info)
             if not CludesUI.SpellIDOn() then
                 return
             end
@@ -5948,27 +5948,27 @@ initFrame:SetScript("OnEvent", function(self, evt)
             then
                 return
             end
-            if not tooltip or not tooltip.GetName then
+            if not tipText or not tipText.GetName then
                 return
             end
-            local success, name = pcall(tooltip.GetName, tooltip)
+            local success, name = pcall(tipText.GetName, tipText)
             if not success or not name then
                 return
             end
-            if hasDupLine(tooltip, name, "SpellID") then
+            if hasDupLine(tipText, name, "SpellID") then
                 return
             end
-            tooltip:AddDoubleLine("SpellID", tostring(info.id), 1, 1, 1, 1, 1, 1)
+            tipText:AddDoubleLine("SpellID", tostring(info.id), 1, 1, 1, 1, 1, 1)
             if CludesUIDB.showIconID ~= false then
                 local iconID = C_Spell.GetSpellTexture(info.id)
                 if iconID then
-                    tooltip:AddDoubleLine("IconID", tostring(iconID), 1, 1, 1, 1, 1, 1)
+                    tipText:AddDoubleLine("IconID", tostring(iconID), 1, 1, 1, 1, 1, 1)
                 end
             end
-            tooltip:Show()
+            tipText:Show()
         end
 
-        local function ItemIDTooltipHook(tooltip, info)
+        local function ItemIDTooltipHook(tipText, info)
             if not CludesUI.SpellIDOn() then
                 return
             end
@@ -5981,10 +5981,10 @@ initFrame:SetScript("OnEvent", function(self, evt)
             if _isSecret and _isSecret(info.id) then
                 return
             end
-            if not tooltip or not tooltip.GetName then
+            if not tipText or not tipText.GetName then
                 return
             end
-            local success, name = pcall(tooltip.GetName, tooltip)
+            local success, name = pcall(tipText.GetName, tipText)
             if not success or not name then
                 return
             end
@@ -5992,7 +5992,7 @@ initFrame:SetScript("OnEvent", function(self, evt)
             if name == "ItemSocketingDescription" then
                 return
             end
-            if hasDupLine(tooltip, name, "ItemID") then
+            if hasDupLine(tipText, name, "ItemID") then
                 return
             end
             local showItem = CludesUIDB.showItemID ~= false
@@ -6001,19 +6001,19 @@ initFrame:SetScript("OnEvent", function(self, evt)
                 return
             end
             if showItem then
-                tooltip:AddDoubleLine("ItemID", tostring(info.id), 1, 1, 1, 1, 1, 1)
+                tipText:AddDoubleLine("ItemID", tostring(info.id), 1, 1, 1, 1, 1, 1)
             end
             if showIcon then
                 local iconID = C_Item.GetItemIconByID and C_Item.GetItemIconByID(info.id)
                     or (GetItemIcon and GetItemIcon(info.id))
                 if iconID then
-                    tooltip:AddDoubleLine("IconID", tostring(iconID), 1, 1, 1, 1, 1, 1)
+                    tipText:AddDoubleLine("IconID", tostring(iconID), 1, 1, 1, 1, 1, 1)
                 end
             end
-            tooltip:Show()
+            tipText:Show()
         end
 
-        local function ItemIdMaxStackHook(tooltip, info)
+        local function ItemIdMaxStackHook(tipText, info)
             if not (CludesUIDB and CludesUIDB.showItemMaxStacks) then
                 return
             end
@@ -6026,42 +6026,42 @@ initFrame:SetScript("OnEvent", function(self, evt)
             if _isSecret and _isSecret(info.id) then
                 return
             end
-            if not tooltip or not tooltip.GetName then
+            if not tipText or not tipText.GetName then
                 return
             end
-            local success, name = pcall(tooltip.GetName, tooltip)
+            local success, name = pcall(tipText.GetName, tipText)
             if not success or not name then
                 return
             end
             if name == "ItemSocketingDescription" then
                 return
             end
-            if hasDupLine(tooltip, name, "Max Stack") then
+            if hasDupLine(tipText, name, "Max Stack") then
                 return
             end
 
             -- 8th return of GetItemInfo is the native max stack size; nil while the item is uncached (the line then appears on the next hover).
             local _, _, _, _, _, _, _, maxStack = C_Item.GetItemInfo(info.id)
             if maxStack and maxStack > 1 then
-                tooltip:AddDoubleLine("Max Stack", tostring(maxStack), 1, 1, 1, 1, 1, 1)
-                tooltip:Show()
+                tipText:AddDoubleLine("Max Stack", tostring(maxStack), 1, 1, 1, 1, 1, 1)
+                tipText:Show()
             end
         end
 
         -- Macros surface as their own tooltip type, so the Spell hook above never fires for
         -- them (GetSpell() also returns nil on a macro tooltip). The spell #showtooltip resolved
         -- to (honoring conditionals) is exposed as the FIRST tooltip line's tooltipID, read from the tooltip data.
-        local function MacroSpellIDTooltipHook(tooltip, _data)
+        local function MacroSpellIDTooltipHook(tipText, _data)
             if not CludesUI.SpellIDOn() then
                 return
             end
             if not IsSpellIDModifierHeld() then
                 return
             end
-            if not tooltip or not tooltip.GetName or not tooltip.GetTooltipData then
+            if not tipText or not tipText.GetName or not tipText.GetTooltipData then
                 return
             end
-            local success, details = pcall(tooltip.GetTooltipData, tooltip)
+            local success, details = pcall(tipText.GetTooltipData, tipText)
             if not success or type(details) ~= "table" or not details.lines then
                 return
             end
@@ -6073,21 +6073,21 @@ initFrame:SetScript("OnEvent", function(self, evt)
             if _isSecret and _isSecret(spellId) then
                 return
             end
-            local okN, name = pcall(tooltip.GetName, tooltip)
+            local okN, name = pcall(tipText.GetName, tipText)
             if not okN or not name then
                 return
             end
-            if hasDupLine(tooltip, name, "SpellID") then
+            if hasDupLine(tipText, name, "SpellID") then
                 return
             end
-            tooltip:AddDoubleLine("SpellID", tostring(spellId), 1, 1, 1, 1, 1, 1)
+            tipText:AddDoubleLine("SpellID", tostring(spellId), 1, 1, 1, 1, 1, 1)
             if CludesUIDB.showIconID ~= false then
                 local iconID = C_Spell.GetSpellTexture(spellId)
                 if iconID then
-                    tooltip:AddDoubleLine("IconID", tostring(iconID), 1, 1, 1, 1, 1, 1)
+                    tipText:AddDoubleLine("IconID", tostring(iconID), 1, 1, 1, 1, 1, 1)
                 end
             end
-            tooltip:Show()
+            tipText:Show()
         end
 
         TooltipDataProcessor.AddTooltipPostCall(Enum.TooltipDataType.Spell, SpellIDTooltipHook)

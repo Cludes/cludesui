@@ -208,28 +208,28 @@ end
 
 -- Re-key an addons table from this build's local db.folder keys to canonical
 -- keys (used on export). Unknown keys pass through unchanged.
-local function AddonsToCanon(addons)
-    if type(addons) ~= "table" then
-        return addons
+local function AddonsToCanon(addonMap)
+    if type(addonMap) ~= "table" then
+        return addonMap
     end
-    local result = {}
-    for k, v in pairs(addons) do
-        result[FOLDER_TO_CANON[k] or k] = v
+    local output = {}
+    for k, v in pairs(addonMap) do
+        output[FOLDER_TO_CANON[k] or k] = v
     end
-    return result
+    return output
 end
 
 -- Re-key an addons table from canonical keys to this build's local db.folder
 -- keys (used on import). Unknown keys pass through unchanged.
-local function CanonToLocal(addons)
-    if type(addons) ~= "table" then
-        return addons
+local function CanonToLocal(addonMap)
+    if type(addonMap) ~= "table" then
+        return addonMap
     end
-    local result = {}
-    for k, v in pairs(addons) do
-        result[CANON_TO_FOLDER[k] or k] = v
+    local output = {}
+    for k, v in pairs(addonMap) do
+        output[CANON_TO_FOLDER[k] or k] = v
     end
-    return result
+    return output
 end
 
 -------------------------------------------------------------------------------
@@ -256,12 +256,12 @@ local PRIVATE_ADDON_KEYS = {
 -- Strip account data from an addons table, in place. Accepts either keyspace
 -- (local folder keys before canonicalization on export, canonical keys in a
 -- decoded payload), so one pass serves both directions.
-local function StripPrivateAddonData(addons)
-    if type(addons) ~= "table" then
+local function StripPrivateAddonData(addonMap)
+    if type(addonMap) ~= "table" then
         return
     end
     for moduleFolder, keyList in pairs(PRIVATE_ADDON_KEYS) do
-        local blob = addons[moduleFolder] or addons[FOLDER_TO_CANON[moduleFolder] or moduleFolder]
+        local blob = addonMap[moduleFolder] or addonMap[FOLDER_TO_CANON[moduleFolder] or moduleFolder]
         if type(blob) == "table" then
             for _, key in ipairs(keyList) do
                 blob[key] = nil
@@ -448,12 +448,12 @@ local deserializeOps = 0
 -- A truncated s/n token (no delimiter, so no way to advance) flags the parse
 -- and jumps past the end, so every enclosing table loop stops. Not error():
 -- the async decode yields mid-parse, which a pcall would forbid.
-local function Malformed(encoded)
+local function Malformed(packed)
     Serializer._malformed = true
-    return nil, #encoded + 1
+    return nil, #packed + 1
 end
 
-local function DeserializeValue(encoded, place)
+local function DeserializeValue(packed, place)
     if deserializeYieldHook then
         deserializeOps = deserializeOps + 1
         if deserializeOps >= 2048 then
@@ -461,25 +461,25 @@ local function DeserializeValue(encoded, place)
             deserializeYieldHook(place)
         end
     end
-    local tag = encoded:sub(place, place)
+    local tag = packed:sub(place, place)
     if tag == "s" then
         -- Find the colon after the length
-        local colonPos = encoded:find(":", place + 1, true)
+        local colonPos = packed:find(":", place + 1, true)
         if not colonPos then
-            return Malformed(encoded)
+            return Malformed(packed)
         end
-        local len = tonumber(encoded:sub(place + 1, colonPos - 1))
+        local len = tonumber(packed:sub(place + 1, colonPos - 1))
         if not len or not (len >= 0) then
-            return Malformed(encoded)
+            return Malformed(packed)
         end -- negative/NaN would not advance
-        local val = encoded:sub(colonPos + 1, colonPos + len)
+        local val = packed:sub(colonPos + 1, colonPos + len)
         return val, colonPos + len + 1
     elseif tag == "n" then
-        local semi = encoded:find(";", place + 1, true)
+        local semi = packed:find(";", place + 1, true)
         if not semi then
-            return Malformed(encoded)
+            return Malformed(packed)
         end
-        return tonumber(encoded:sub(place + 1, semi - 1)), semi + 1
+        return tonumber(packed:sub(place + 1, semi - 1)), semi + 1
     elseif tag == "T" then
         return true, place + 1
     elseif tag == "F" then
@@ -490,22 +490,22 @@ local function DeserializeValue(encoded, place)
         local tbl = {}
         local position = 1
         local p = place + 1
-        while p <= #encoded do
-            local c = encoded:sub(p, p)
+        while p <= #packed do
+            local c = packed:sub(p, p)
             if c == "}" then
                 return tbl, p + 1
             elseif c == "K" then
                 -- Key-value pair
                 local key, val
-                key, p = DeserializeValue(encoded, p + 1)
-                val, p = DeserializeValue(encoded, p)
+                key, p = DeserializeValue(packed, p + 1)
+                val, p = DeserializeValue(packed, p)
                 if key ~= nil then
                     tbl[key] = val
                 end
             else
                 -- Array element
                 local val
-                val, p = DeserializeValue(encoded, p)
+                val, p = DeserializeValue(packed, p)
                 tbl[position] = val
                 position = position + 1
             end
@@ -515,15 +515,15 @@ local function DeserializeValue(encoded, place)
     return nil, place + 1
 end
 
-function Serializer.Deserialize(encoded)
-    if not encoded or #encoded == 0 then
+function Serializer.Deserialize(packed)
+    if not packed or #packed == 0 then
         return nil
     end
     -- The flag is shared module state and the async decode yields mid-parse: a
     -- decode run while another is parked keeps that one's flag as it found it.
     local prev = Serializer._malformed
     Serializer._malformed = nil
-    local val, _ = DeserializeValue(encoded, 1)
+    local val, _ = DeserializeValue(packed, 1)
     local bad = Serializer._malformed
     Serializer._malformed = prev
     if bad then
@@ -564,12 +564,12 @@ local function DeepCopy(src, seen)
     return duplicate
 end
 
-local function DeepMerge(dst, src)
+local function DeepMerge(destination, src)
     for k, v in pairs(src) do
-        if type(v) == "table" and type(dst[k]) == "table" then
-            DeepMerge(dst[k], v)
+        if type(v) == "table" and type(destination[k]) == "table" then
+            DeepMerge(destination[k], v)
         else
-            dst[k] = DeepCopy(v)
+            destination[k] = DeepCopy(v)
         end
     end
 end
@@ -588,16 +588,16 @@ CludesUI._DeepCopy = DeepCopy
 -- `stale` set of keys NOT in the live registry (deleted/other-spec bars) so the
 -- caller can prune dead edges. Use at EXPORT time (needs the exporter registry).
 function CludesUI.BuildLayoutKeyToFolder(layout)
-    local reg = CludesUI._unlockRegisteredElements or {}
-    local k2f, stale = {}, {}
+    local registry = CludesUI._unlockRegisteredElements or {}
+    local keyToFolder, stale = {}, {}
     local function add(key)
-        if type(key) ~= "string" or k2f[key] ~= nil then
+        if type(key) ~= "string" or keyToFolder[key] ~= nil then
             return
         end
-        local elem = reg[key]
+        local elem = registry[key]
         local moduleFolder = ResolveKeyToFolder(key, elem and elem.folder)
         if moduleFolder then
-            k2f[key] = moduleFolder
+            keyToFolder[key] = moduleFolder
         end
         if not elem then
             stale[key] = true
@@ -625,7 +625,7 @@ function CludesUI.BuildLayoutKeyToFolder(layout)
             end
         end
     end
-    return k2f, stale
+    return keyToFolder, stale
 end
 
 -- Match extras (widthMatchExtra / heightMatchExtra: childKey -> px) mean
@@ -634,18 +634,18 @@ end
 -- link in `links`. OverlayLinkedExtras gives every child linked in `links` its
 -- extra from `extras`; a child without one there loses the extra `dst` held.
 local function CopyLinkedExtras(extras, links)
-    local result = {}
+    local output = {}
     if type(extras) == "table" and type(links) == "table" then
         for childFrame, px in pairs(extras) do
             if links[childFrame] ~= nil then
-                result[childFrame] = px
+                output[childFrame] = px
             end
         end
     end
-    return result
+    return output
 end
 
-local function OverlayLinkedExtras(dst, links, extras)
+local function OverlayLinkedExtras(destination, links, extras)
     if type(links) ~= "table" then
         return
     end
@@ -653,7 +653,7 @@ local function OverlayLinkedExtras(dst, links, extras)
         extras = nil
     end
     for childFrame in pairs(links) do
-        dst[childFrame] = extras and extras[childFrame] or nil
+        destination[childFrame] = extras and extras[childFrame] or nil
     end
 end
 
@@ -663,12 +663,12 @@ end
 -- that guarantees no retained relationship references an excluded module.
 -- k2f/stale may be passed (e.g. import-side, built from payload meta) or omitted
 -- (export-side, built from the live registry).
-function CludesUI.FilterLayoutToFolders(layout, folderSet, k2f)
+function CludesUI.FilterLayoutToFolders(layout, folderSet, keyToFolder)
     if type(layout) ~= "table" then
         return layout
     end
-    if not k2f then
-        k2f = CludesUI.BuildLayoutKeyToFolder(layout)
+    if not keyToFolder then
+        keyToFolder = CludesUI.BuildLayoutKeyToFolder(layout)
     end
     -- Classification is by the static resolver (registry-independent) so this can
     -- never over-drop just because the unlock registry isn't fully populated yet.
@@ -679,7 +679,7 @@ function CludesUI.FilterLayoutToFolders(layout, folderSet, k2f)
         if type(key) ~= "string" then
             return false
         end
-        local f = k2f[key]
+        local f = keyToFolder[key]
         if not f then
             return false
         end -- unclassifiable -> drop
@@ -692,7 +692,7 @@ function CludesUI.FilterLayoutToFolders(layout, folderSet, k2f)
     -- module: a link TO one travels with its child's module. Target only -- a screen
     -- edge is never an anchor child or a size-match endpoint.
     local isEdge = CludesUI.IsScreenEdgeKey
-    local result = { anchors = {}, widthMatch = {}, heightMatch = {}, phantomBounds = {} }
+    local output = { anchors = {}, widthMatch = {}, heightMatch = {}, phantomBounds = {} }
     if type(layout.anchors) == "table" then
         for childFrame, details in pairs(layout.anchors) do
             if
@@ -700,28 +700,28 @@ function CludesUI.FilterLayoutToFolders(layout, folderSet, k2f)
                 and endpointOK(childFrame)
                 and (endpointOK(details.target) or (isEdge and isEdge(details.target)))
             then
-                result.anchors[childFrame] = DeepCopy(details)
+                output.anchors[childFrame] = DeepCopy(details)
             end
         end
     end
     if type(layout.widthMatch) == "table" then
         for childFrame, target in pairs(layout.widthMatch) do
             if endpointOK(childFrame) and endpointOK(target) then
-                result.widthMatch[childFrame] = target
+                output.widthMatch[childFrame] = target
             end
         end
     end
     if type(layout.heightMatch) == "table" then
         for childFrame, target in pairs(layout.heightMatch) do
             if endpointOK(childFrame) and endpointOK(target) then
-                result.heightMatch[childFrame] = target
+                output.heightMatch[childFrame] = target
             end
         end
     end
     -- An extra survives only where its link did.
-    result.widthMatchExtra = CopyLinkedExtras(layout.widthMatchExtra, result.widthMatch)
-    result.heightMatchExtra = CopyLinkedExtras(layout.heightMatchExtra, result.heightMatch)
-    return result
+    output.widthMatchExtra = CopyLinkedExtras(layout.widthMatchExtra, output.widthMatch)
+    output.heightMatchExtra = CopyLinkedExtras(layout.heightMatchExtra, output.heightMatch)
+    return output
 end
 
 -- Union-find over modules: two folders share a component if any LIVE, non-no-
@@ -729,9 +729,9 @@ end
 -- folderToMembers[folder] = { set of folders in folder's component }. A folder
 -- with no cross-module edge is absent (treat as a singleton: just itself).
 -- Drives the hard-couple checkbox auto-toggle. k2f/stale may be passed in.
-function CludesUI.BuildModuleComponents(layout, k2f)
-    if not k2f then
-        k2f = CludesUI.BuildLayoutKeyToFolder(layout)
+function CludesUI.BuildModuleComponents(layout, keyToFolder)
+    if not keyToFolder then
+        keyToFolder = CludesUI.BuildLayoutKeyToFolder(layout)
     end
     local hostFrame = {}
     local function find(posX)
@@ -756,7 +756,7 @@ function CludesUI.BuildModuleComponents(layout, k2f)
         if type(c) ~= "string" or type(t) ~= "string" then
             return
         end
-        local fc, ft = k2f[c], k2f[t]
+        local fc, ft = keyToFolder[c], keyToFolder[t]
         if not fc or not ft then
             return
         end
@@ -809,9 +809,9 @@ end
 -- whole layout. Matches selectedImports' CANON keyspace.
 function CludesUI.BuildImportKeyToFolder(layout, metaK2F)
     metaK2F = metaK2F or {}
-    local k2f = {}
+    local keyToFolder = {}
     local function add(key)
-        if type(key) ~= "string" or k2f[key] ~= nil then
+        if type(key) ~= "string" or keyToFolder[key] ~= nil then
             return
         end
         local f = metaK2F[key]
@@ -822,7 +822,7 @@ function CludesUI.BuildImportKeyToFolder(layout, metaK2F)
             end
         end
         if f then
-            k2f[key] = f
+            keyToFolder[key] = f
         end
     end
     if type(layout) == "table" then
@@ -847,7 +847,7 @@ function CludesUI.BuildImportKeyToFolder(layout, metaK2F)
             end
         end
     end
-    return k2f
+    return keyToFolder
 end
 
 -- IMPORT merge: build the new profile's unlockLayout by merging the imported
@@ -862,7 +862,7 @@ function CludesUI.MergeImportedLayout(base, incoming, importedFolders)
     base = (type(base) == "table") and base or {}
     incoming = (type(incoming) == "table") and incoming or {}
     importedFolders = importedFolders or {}
-    local result = {
+    local output = {
         anchors = DeepCopy(base.anchors or {}),
         widthMatch = DeepCopy(base.widthMatch or {}),
         heightMatch = DeepCopy(base.heightMatch or {}),
@@ -877,44 +877,44 @@ function CludesUI.MergeImportedLayout(base, incoming, importedFolders)
         local f = baseK2F[childFrame]
         return f ~= nil and importedFolders[f] == true
     end
-    for childFrame in pairs(result.anchors) do
+    for childFrame in pairs(output.anchors) do
         if childImported(childFrame) then
-            result.anchors[childFrame] = nil
+            output.anchors[childFrame] = nil
         end
     end
-    for childFrame in pairs(result.widthMatch) do
+    for childFrame in pairs(output.widthMatch) do
         if childImported(childFrame) then
-            result.widthMatch[childFrame] = nil
+            output.widthMatch[childFrame] = nil
         end
     end
-    for childFrame in pairs(result.heightMatch) do
+    for childFrame in pairs(output.heightMatch) do
         if childImported(childFrame) then
-            result.heightMatch[childFrame] = nil
+            output.heightMatch[childFrame] = nil
         end
     end
     -- 2) Overlay the imported entries (already filtered to the imported modules).
     if type(incoming.anchors) == "table" then
         for childFrame, details in pairs(incoming.anchors) do
-            result.anchors[childFrame] = DeepCopy(details)
+            output.anchors[childFrame] = DeepCopy(details)
         end
     end
     if type(incoming.widthMatch) == "table" then
         for childFrame, t in pairs(incoming.widthMatch) do
-            result.widthMatch[childFrame] = t
+            output.widthMatch[childFrame] = t
         end
     end
     if type(incoming.heightMatch) == "table" then
         for childFrame, t in pairs(incoming.heightMatch) do
-            result.heightMatch[childFrame] = t
+            output.heightMatch[childFrame] = t
         end
     end
     -- 3) Match extras follow their links: a kept base link keeps its extra, an
     --    imported link brings the import's extra (or none).
-    result.widthMatchExtra = CopyLinkedExtras(base.widthMatchExtra, result.widthMatch)
-    result.heightMatchExtra = CopyLinkedExtras(base.heightMatchExtra, result.heightMatch)
-    OverlayLinkedExtras(result.widthMatchExtra, incoming.widthMatch, incoming.widthMatchExtra)
-    OverlayLinkedExtras(result.heightMatchExtra, incoming.heightMatch, incoming.heightMatchExtra)
-    return result
+    output.widthMatchExtra = CopyLinkedExtras(base.widthMatchExtra, output.widthMatch)
+    output.heightMatchExtra = CopyLinkedExtras(base.heightMatchExtra, output.heightMatch)
+    OverlayLinkedExtras(output.widthMatchExtra, incoming.widthMatch, incoming.widthMatchExtra)
+    OverlayLinkedExtras(output.heightMatchExtra, incoming.heightMatch, incoming.heightMatchExtra)
+    return output
 end
 
 -- Build the (filtered) unlockLayout + canonical keyToFolder meta to embed in an
@@ -934,12 +934,12 @@ function CludesUI.BuildExportUnlockLayout(unlockLayout, includeLayout, folderSet
             folderSet[record.folder] = true
         end
     end
-    local k2f = CludesUI.BuildLayoutKeyToFolder(unlockLayout)
-    local filtered = CludesUI.FilterLayoutToFolders(unlockLayout, folderSet, k2f)
+    local keyToFolder = CludesUI.BuildLayoutKeyToFolder(unlockLayout)
+    local filtered = CludesUI.FilterLayoutToFolders(unlockLayout, folderSet, keyToFolder)
     local meta = { keyToFolder = {} }
     local function addMeta(key)
         if type(key) == "string" and meta.keyToFolder[key] == nil then
-            local localF = k2f[key]
+            local localF = keyToFolder[key]
             if localF then
                 meta.keyToFolder[key] = FOLDER_TO_CANON[localF] or localF
             end
@@ -1130,8 +1130,8 @@ local function RepointAllDBs(profName)
     -- members of the module's group; a profile outside the group never pushes into it.
     local sm = CludesUIDB.syncedModules
     if sm then
-        local reg = CludesUI.Lite and CludesUI.Lite._dbRegistry
-        local outName = reg and reg[1] and reg[1]._profileName or "Default"
+        local registry = CludesUI.Lite and CludesUI.Lite._dbRegistry
+        local outName = registry and registry[1] and registry[1]._profileName or "Default"
         local outProf = CludesUIDB.profiles[outName]
         if outProf and outProf.addons and outName ~= profName then
             for moduleFolder, syncTargets in pairs(sm) do
@@ -1152,13 +1152,13 @@ local function RepointAllDBs(profName)
                             exclusions = m
                         end
                     end
-                    local dst = profileRec.addons[moduleFolder]
+                    local destination = profileRec.addons[moduleFolder]
                     if not (exclusions and next(exclusions)) then
                         profileRec.addons[moduleFolder] = DeepCopy(outProf.addons[moduleFolder])
-                    elseif type(dst) == "table" then
+                    elseif type(destination) == "table" then
                         -- Overlay leaf-by-leaf so excluded keys (including
                         -- nested and wildcard paths) keep the dest's values
-                        CludesUI._SelectiveOverlay(outProf.addons[moduleFolder], dst, exclusions, DeepCopy)
+                        CludesUI._SelectiveOverlay(outProf.addons[moduleFolder], destination, exclusions, DeepCopy)
                     else
                         -- First sync to this profile: no dest values to preserve
                         profileRec.addons[moduleFolder] =
@@ -1406,9 +1406,9 @@ function CludesUI.SnapshotAllAddons()
         -- it from every full-profile export. IsModuleAddonLoaded resolves through
         -- the hostAddon, matching the per-addon export path (ExportProfile).
         if CludesUI.IsModuleAddonLoaded(record.folder) then
-            local profile = GetAddonProfile(record)
-            if profile then
-                body.addons[record.folder] = DeepCopy(profile)
+            local activeProfile = GetAddonProfile(record)
+            if activeProfile then
+                body.addons[record.folder] = DeepCopy(activeProfile)
             end
         end
     end
@@ -1518,17 +1518,17 @@ function CludesUI.ApplyProfileData(profileRec)
         if layoutSnap and IsAddonLoaded(record.folder) then
             local saved = dbByFolder[record.folder]
             if saved then
-                local profile = saved.profile
+                local activeProfile = saved.profile
                 -- CDM spell content (barSpells, TBB, barGlows) lives in the
                 -- per-profile store at spellAssignments.profiles[name], NOT in
                 -- this profile blob. No save/restore needed here: ImportProfile
                 -- sets the new profile's bucket directly, and on a profile switch
                 -- the live accessor + RefreshAllAddons rebuild pick it up.
-                for k in pairs(profile) do
-                    profile[k] = nil
+                for k in pairs(activeProfile) do
+                    activeProfile[k] = nil
                 end
                 for k, v in pairs(layoutSnap) do
-                    profile[k] = DeepCopy(v)
+                    activeProfile[k] = DeepCopy(v)
                 end
                 -- Pre-dropdown imports carry showPlayerAbsorb as the legacy boolean
                 -- toggle. The conversion migrations are SKIPPED for imported profiles
@@ -1539,7 +1539,7 @@ function CludesUI.ApplyProfileData(profileRec)
                 -- texture instead of honouring the setting. Normalise on the way in,
                 -- matching the mapping the migrations use.
                 if record.folder == "CludesUIUnitFrames" then
-                    for _, unitCfg in pairs(profile) do
+                    for _, unitCfg in pairs(activeProfile) do
                         if type(unitCfg) == "table" then
                             local v = unitCfg.showPlayerAbsorb
                             if v == true then
@@ -1556,12 +1556,12 @@ function CludesUI.ApplyProfileData(profileRec)
                 -- DeepCopy(current), which inherits the current profile's
                 -- migration flags), so forward-copy here -- BEFORE
                 -- DeepMergeDefaults would otherwise fill in DEFAULT minis.
-                if record.folder == "CludesUIUnitFrames" and type(profile.totPet) == "table" then
-                    if profile.targettarget == nil then
-                        profile.targettarget = DeepCopy(profile.totPet)
+                if record.folder == "CludesUIUnitFrames" and type(activeProfile.totPet) == "table" then
+                    if activeProfile.targettarget == nil then
+                        activeProfile.targettarget = DeepCopy(activeProfile.totPet)
                     end
-                    if profile.focustarget == nil then
-                        profile.focustarget = DeepCopy(profile.totPet)
+                    if activeProfile.focustarget == nil then
+                        activeProfile.focustarget = DeepCopy(activeProfile.totPet)
                     end
                 end
                 -- Old-profile imports carry customized boss regular text keys
@@ -1571,8 +1571,8 @@ function CludesUI.ApplyProfileData(profileRec)
                 -- migration (uf_boss_simple_text_seed_v1) is SKIPPED for
                 -- imported profiles (inherited migration flags), so
                 -- forward-copy here BEFORE the merge masks the nil keys.
-                if record.folder == "CludesUIUnitFrames" and type(profile.boss) == "table" then
-                    local b = profile.boss
+                if record.folder == "CludesUIUnitFrames" and type(activeProfile.boss) == "table" then
+                    local b = activeProfile.boss
                     if
                         b.simpleDebuffCooldownTextSize == nil
                         and type(b.debuffCooldownTextSize) == "number"
@@ -1601,10 +1601,10 @@ function CludesUI.ApplyProfileData(profileRec)
                 -- the legacy key from the resolver.
                 if
                     record.folder == "CludesUIBags"
-                    and profile.bagDefaultBagType == nil
-                    and profile.bagDefaultOneBag == true
+                    and activeProfile.bagDefaultBagType == nil
+                    and activeProfile.bagDefaultOneBag == true
                 then
-                    profile.bagDefaultBagType = "onebag"
+                    activeProfile.bagDefaultBagType = "onebag"
                 end
                 -- Pre-split imports carry the legacy single miniboss color but no
                 -- boss color. The mini-boss/boss split migration is SKIPPED for
@@ -1613,18 +1613,18 @@ function CludesUI.ApplyProfileData(profileRec)
                 -- changes the user's boss nameplates.
                 if
                     record.folder == "CludesUINameplates"
-                    and profile.boss == nil
-                    and type(profile.miniboss) == "table"
+                    and activeProfile.boss == nil
+                    and type(activeProfile.miniboss) == "table"
                 then
-                    profile.boss = DeepCopy(profile.miniboss)
+                    activeProfile.boss = DeepCopy(activeProfile.miniboss)
                 end
                 -- Pre-dropdown imports carry the legacy coordsBelow / clockInside /
                 -- zoneInside toggles but none of the new mode keys. The minimap
                 -- migrations are SKIPPED for imported profiles (inherited migration
                 -- flags), so forward-copy here BEFORE DeepMergeDefaults fills the new
                 -- defaults and masks the legacy keys.
-                if record.folder == "CludesUIMinimap" and type(profile.minimap) == "table" then
-                    local minimapCfg = profile.minimap
+                if record.folder == "CludesUIMinimap" and type(activeProfile.minimap) == "table" then
+                    local minimapCfg = activeProfile.minimap
                     if minimapCfg.coordsMode == nil then
                         if minimapCfg.coordsBelow then
                             minimapCfg.coordsMode = "always"
@@ -1667,10 +1667,10 @@ function CludesUI.ApplyProfileData(profileRec)
                 -- pinned-row behavior survives the import.
                 if
                     record.folder == "CludesUICooldownManager"
-                    and type(profile.cdmBars) == "table"
-                    and type(profile.cdmBars.bars) == "table"
+                    and type(activeProfile.cdmBars) == "table"
+                    and type(activeProfile.cdmBars.bars) == "table"
                 then
-                    for _, bar in ipairs(profile.cdmBars.bars) do
+                    for _, bar in ipairs(activeProfile.cdmBars.bars) do
                         if bar.anchorFirstRow then
                             if bar.rowGrowDirection == nil then
                                 bar.rowGrowDirection = bar.verticalOrientation and "RIGHT" or "DOWN"
@@ -1680,14 +1680,14 @@ function CludesUI.ApplyProfileData(profileRec)
                     end
                 end
                 if saved._profileDefaults then
-                    CludesUI.Lite.DeepMergeDefaults(profile, saved._profileDefaults)
+                    CludesUI.Lite.DeepMergeDefaults(activeProfile, saved._profileDefaults)
                 end
                 -- Ensure per-unit bg colors are never nil after import
                 if record.folder == "CludesUIUnitFrames" then
                     local UF_UNITS = { "player", "target", "focus", "boss", "pet", "totPet" }
                     local DEF_BG = 17 / 255
                     for _, uKey in ipairs(UF_UNITS) do
-                        local s = profile[uKey]
+                        local s = activeProfile[uKey]
                         if s and s.customBgColor == nil then
                             s.customBgColor = { r = DEF_BG, g = DEF_BG, b = DEF_BG }
                         end
@@ -2224,9 +2224,9 @@ function CludesUI.ProfileChangesFont(profileRec)
     if not profileRec or not profileRec.fonts then
         return false
     end
-    local cur = CludesUI.GetFontsDB()
-    local curFont = cur.global or CludesUI.DEFAULT_FONT_NAME
-    local curOutline = cur.outlineMode or "shadow"
+    local current = CludesUI.GetFontsDB()
+    local curFont = current.global or CludesUI.DEFAULT_FONT_NAME
+    local curOutline = current.outlineMode or "shadow"
     local newFont = profileRec.fonts.global or CludesUI.DEFAULT_FONT_NAME
     local newOutline = profileRec.fonts.outlineMode or "shadow"
     -- "none" and "shadow" are both drop-shadow (no outline) -- treat as identical
@@ -2248,8 +2248,8 @@ function CludesUI.ProfileChangesWindowSkins(profileRec)
     if type(profileRec) ~= "table" then
         return false
     end
-    local cur = CludesUI.GetActiveProfileData()
-    local a = (cur and cur.disableWindowSkins) and true or false
+    local current = CludesUI.GetActiveProfileData()
+    local a = (current and current.disableWindowSkins) and true or false
     local b = profileRec.disableWindowSkins and true or false
     if a ~= b then
         return true
@@ -2435,26 +2435,26 @@ end
 -- module's latched key ("forever" where its Forever latch says the variant
 -- renders), or Action Bars' live flags. nil with no getter (Action Bars: no
 -- profile yet).
-local function RenderedStyleOf(f, mns)
+local function RenderedStyleOf(f, moduleNames)
     if f.active then
-        local func = mns[f.active]
+        local func = moduleNames[f.active]
         if not func then
             return nil
         end
-        local cur = func()
-        if cur ~= "blizzard" and cur ~= "classic" then
-            cur = "cui"
+        local current = func()
+        if current ~= "blizzard" and current ~= "classic" then
+            current = "cui"
         end
         -- The WoW Forever variant renders under a "blizzard" latch.
-        if cur == "blizzard" and f.foreverActive and CludesUI.IS_FOREVER then
-            local ff = mns[f.foreverActive]
+        if current == "blizzard" and f.foreverActive and CludesUI.IS_FOREVER then
+            local ff = moduleNames[f.foreverActive]
             if ff and ff() then
-                cur = "forever"
+                current = "forever"
             end
         end
-        return cur
+        return current
     end
-    local ABAR = mns.EAB
+    local ABAR = moduleNames.EAB
     local p = ABAR and ABAR.db and ABAR.db.profile
     if p then
         return StyleKeyOfFlags(p, f)
@@ -2465,13 +2465,13 @@ function CludesUI.ProfileChangesStyle(profileRec)
     if type(profileRec) ~= "table" or type(profileRec.addons) ~= "table" then
         return false
     end
-    local reg = CludesUI._ModuleNS
-    if not reg then
+    local registry = CludesUI._ModuleNS
+    if not registry then
         return false
     end
     -- Bags' WoW Forever style: the incoming profile's own Bags pick, else the
     -- look most of its modules use (BagsForeverWanted).
-    local bags = CludesUI.IS_FOREVER and reg.CludesUIBags
+    local bags = CludesUI.IS_FOREVER and registry.CludesUIBags
     if bags and bags.BagsForeverWanted then
         local incoming = profileRec.addons.CludesUIBags
         local wanted =
@@ -2482,20 +2482,20 @@ function CludesUI.ProfileChangesStyle(profileRec)
     end
     for i = 1, #STYLE_FLAGS do
         local f = STYLE_FLAGS[i]
-        local mns = reg[f.folder]
-        if mns and not (f.retailOnly and CludesUI.IS_FOREVER) then
-            local cur = RenderedStyleOf(f, mns)
-            if cur ~= nil then
+        local moduleNames = registry[f.folder]
+        if moduleNames and not (f.retailOnly and CludesUI.IS_FOREVER) then
+            local current = RenderedStyleOf(f, moduleNames)
+            if current ~= nil then
                 local incoming = profileRec.addons[f.data or f.folder]
                 if f.sub and type(incoming) == "table" then
                     incoming = incoming[f.sub]
                 end
-                if cur ~= StyleKeyOfFlags(incoming, f) then
+                if current ~= StyleKeyOfFlags(incoming, f) then
                     return true
                 end
                 -- `extra`: a reload-gated choice under the same style (the
                 -- module's own getter compares it; true = it would change).
-                local extra = f.extra and mns[f.extra]
+                local extra = f.extra and moduleNames[f.extra]
                 if type(extra) == "function" and extra(type(incoming) == "table" and incoming or nil) then
                     return true
                 end
@@ -2512,22 +2512,22 @@ end
 --- Blizzard look, so it fits both; with only such surfaces loaded, the
 --- Forever flag the look switch sets beside the Blizzard one tells them apart.
 function CludesUI.RenderedLook()
-    local reg = CludesUI._ModuleNS
-    if not reg then
+    local registry = CludesUI._ModuleNS
+    if not registry then
         return nil
     end
     local style, eitherBlizz
     for i = 1, #STYLE_FLAGS do
         local f = STYLE_FLAGS[i]
-        local mns = reg[f.folder]
-        if mns and not (f.retailOnly and CludesUI.IS_FOREVER) then
-            local cur = RenderedStyleOf(f, mns)
-            if cur == "blizzard" and not f.forever and CludesUI.IS_FOREVER then
+        local moduleNames = registry[f.folder]
+        if moduleNames and not (f.retailOnly and CludesUI.IS_FOREVER) then
+            local current = RenderedStyleOf(f, moduleNames)
+            if current == "blizzard" and not f.forever and CludesUI.IS_FOREVER then
                 eitherBlizz = f
-            elseif cur ~= nil then
+            elseif current ~= nil then
                 if style == nil then
-                    style = cur
-                elseif style ~= cur then
+                    style = current
+                elseif style ~= current then
                     return false
                 end
             end
@@ -2560,24 +2560,24 @@ end
 --- RenderedLook reads it); the Classic flag wins. Bags' WoW Forever style
 --- follows it while the profile has no Bags style picked. false off the Forever
 --- client and with no loaded surface. Reads settings only.
-function CludesUI.ForeverLookMajority(addons)
+function CludesUI.ForeverLookMajority(addonMap)
     if not CludesUI.IS_FOREVER then
         return false
     end
-    if addons == nil then
+    if addonMap == nil then
         local p = CludesUI.GetActiveProfileData()
-        addons = p and p.addons
+        addonMap = p and p.addons
     end
-    local reg = CludesUI._ModuleNS
-    if type(addons) ~= "table" or not reg then
+    local registry = CludesUI._ModuleNS
+    if type(addonMap) ~= "table" or not registry then
         return false
     end
     local sum, forever = 0, 0
     for i = 1, #STYLE_FLAGS do
         local f = STYLE_FLAGS[i]
-        if reg[f.folder] and not f.retailOnly then
+        if registry[f.folder] and not f.retailOnly then
             sum = sum + 1
-            local t = addons[f.data or f.folder]
+            local t = addonMap[f.data or f.folder]
             if f.sub and type(t) == "table" then
                 t = t[f.sub]
             end
@@ -2615,8 +2615,8 @@ local EXPORT_PREFIX = "!CUI_"
 local FOREIGN_PREFIX = "!E" .. "UI_"
 local OLD_UP, OLD_CAP, OLD_LOW = "ELLES" .. "MERE", "Elles" .. "mere", "elles" .. "mere"
 
-local function IsForeignString(importStr)
-    return importStr:sub(1, #FOREIGN_PREFIX) == FOREIGN_PREFIX
+local function IsForeignString(importText)
+    return importText:sub(1, #FOREIGN_PREFIX) == FOREIGN_PREFIX
 end
 
 local function TranslateForeignName(s)
@@ -2646,11 +2646,11 @@ local function TranslateForeignPayload(v)
     if t ~= "table" then
         return v
     end
-    local result = {}
+    local output = {}
     for k, val in pairs(v) do
-        result[TranslateForeignPayload(k)] = TranslateForeignPayload(val)
+        output[TranslateForeignPayload(k)] = TranslateForeignPayload(val)
     end
-    return result
+    return output
 end
 
 --- Stamps the client an export string is made on at the payload root:
@@ -2695,10 +2695,10 @@ function CludesUI.ForeverAliasCDMSpecs(layoutSnap)
     end
     local classes = CludesUI.ForeverClasses()
     for c = 1, #classes do
-        local token = classes[c]
-        local lk = tostring(CludesUI.FOREVER_CLASS_SPEC[token])
+        local nameToken = classes[c]
+        local lk = tostring(CludesUI.FOREVER_CLASS_SPEC[nameToken])
         if layoutSnap[lk] ~= nil then
-            layoutSnap[tostring(CludesUI.ForeverClassSpecIDs(token)[1])] = layoutSnap[lk]
+            layoutSnap[tostring(CludesUI.ForeverClassSpecIDs(nameToken)[1])] = layoutSnap[lk]
             layoutSnap[lk] = nil
         end
     end
@@ -2716,11 +2716,11 @@ function CludesUI.ForeverDropShadowedLegacy(inherited, incoming)
     end
     local classes = CludesUI.ForeverClasses()
     for c = 1, #classes do
-        local token = classes[c]
-        local lk = tostring(CludesUI.FOREVER_CLASS_SPEC[token])
+        local nameToken = classes[c]
+        local lk = tostring(CludesUI.FOREVER_CLASS_SPEC[nameToken])
         -- A string carrying the Forever key overlays it; nothing shadows it.
         if incoming[lk] == nil then
-            local ids = CludesUI.ForeverClassSpecIDs(token)
+            local ids = CludesUI.ForeverClassSpecIDs(nameToken)
             local first
             for i = 1, #ids do
                 if incoming[tostring(ids[i])] ~= nil then
@@ -2766,9 +2766,9 @@ local function SnapshotProfileCDMSpells(profName, includedFolders, cdmSpecs)
     -- cdmSpecs (a set keyed by string specKey) limits the export to the chosen
     -- specs; nil = every spec with data.
     local layoutSnap = {}
-    for specKey, specProf in pairs(bucket.specProfiles) do
-        if type(specProf) == "table" and (not cdmSpecs or cdmSpecs[specKey]) then
-            local duplicate = DeepCopy(specProf)
+    for specKey, specProfile in pairs(bucket.specProfiles) do
+        if type(specProfile) == "table" and (not cdmSpecs or cdmSpecs[specKey]) then
+            local duplicate = DeepCopy(specProfile)
             if type(duplicate.barSpells) == "table" then
                 duplicate.barSpells.__ghost_cd = nil
             end
@@ -3047,14 +3047,14 @@ local function SnapshotBlizzSkinGlobals()
     if not CludesUIDB then
         return nil
     end
-    local result = {}
+    local output = {}
     for _, k in ipairs(BLIZZ_SKIN_GLOBAL_KEYS) do
         local v = CludesUIDB[k]
         if v ~= nil then
-            result[k] = DeepCopy(v)
+            output[k] = DeepCopy(v)
         end
     end
-    return result
+    return output
 end
 
 -- Apply an imported bundle: every allowlisted key takes the bundle's value,
@@ -3277,9 +3277,9 @@ function CludesUI.ExportProfile(
     if not LibDeflate then
         return nil
     end
-    local compressed = LibDeflate:CompressDeflate(serialized)
-    local encoded = LibDeflate:EncodeForPrint(compressed)
-    return EXPORT_PREFIX .. encoded
+    local deflated = LibDeflate:CompressDeflate(serialized)
+    local packed = LibDeflate:EncodeForPrint(deflated)
+    return EXPORT_PREFIX .. packed
 end
 
 -- Public: re-encode a decoded payload back to an import string.
@@ -3294,9 +3294,9 @@ function CludesUI.EncodePayload(bundle)
     if not LibDeflate then
         return nil
     end
-    local compressed = LibDeflate:CompressDeflate(serialized)
-    local encoded = LibDeflate:EncodeForPrint(compressed)
-    return EXPORT_PREFIX .. encoded
+    local deflated = LibDeflate:CompressDeflate(serialized)
+    local packed = LibDeflate:EncodeForPrint(deflated)
+    return EXPORT_PREFIX .. packed
 end
 
 -------------------------------------------------------------------------------
@@ -3401,9 +3401,9 @@ local function KeepOwn(ownValue)
 end
 -- A pointer to one profile: the recipient's stands; the string's is taken only
 -- when the recipient has none and it names the carried profile.
-local function OwnOrCarried(ownValue, encoded, name)
-    if ownValue == nil and encoded == name then
-        return encoded
+local function OwnOrCarried(ownValue, packed, name)
+    if ownValue == nil and packed == name then
+        return packed
     end
     return ownValue
 end
@@ -3412,12 +3412,12 @@ local FULL_IMPORT_MERGE = {
     lastSpecByChar = KeepOwn,
     lastNonSpecProfile = OwnOrCarried,
     colorsPullFrom = OwnOrCarried,
-    colorsSectionPullFrom = function(ownValue, encoded, name)
+    colorsSectionPullFrom = function(ownValue, packed, name)
         if type(ownValue) ~= "table" then
             ownValue = {}
         end
-        if type(encoded) == "table" then
-            for section, p in pairs(encoded) do
+        if type(packed) == "table" then
+            for section, p in pairs(packed) do
                 if p == name and ownValue[section] == nil then
                     ownValue[section] = p
                 end
@@ -3425,11 +3425,11 @@ local FULL_IMPORT_MERGE = {
         end
         return ownValue
     end,
-    profileKeybinds = function(ownValue, encoded, name)
+    profileKeybinds = function(ownValue, packed, name)
         if type(ownValue) ~= "table" then
             ownValue = {}
         end
-        local key = type(encoded) == "table" and encoded[name]
+        local key = type(packed) == "table" and packed[name]
         if key then
             for num, k in pairs(ownValue) do
                 if k == key and num ~= name then
@@ -3440,20 +3440,20 @@ local FULL_IMPORT_MERGE = {
         end
         return ownValue
     end,
-    spellAssignments = function(ownValue, encoded, name)
-        if type(encoded) ~= "table" then
+    spellAssignments = function(ownValue, packed, name)
+        if type(packed) ~= "table" then
             return ownValue
         end
         if type(ownValue) ~= "table" then
             ownValue = {}
         end
         local profiles = type(ownValue.profiles) == "table" and ownValue.profiles or {}
-        for k, v in pairs(encoded) do
+        for k, v in pairs(packed) do
             if k ~= "profiles" then
                 ownValue[k] = v
             end
         end
-        profiles[name] = type(encoded.profiles) == "table" and encoded.profiles[name] or nil
+        profiles[name] = type(packed.profiles) == "table" and packed.profiles[name] or nil
         ownValue.profiles = profiles
         return ownValue
     end,
@@ -3474,15 +3474,15 @@ function CludesUI.ExportFullAccountData()
     end
     local saved = GetProfilesDB()
     local activeName = saved.activeProfile or "Default"
-    local result = {}
+    local output = {}
     for k, v in pairs(CludesUIDB) do
         if k ~= "profiles" and not FULL_EXPORT_EXCLUDED[k] then
-            result[k] = DeepCopy(v)
+            output[k] = DeepCopy(v)
         end
     end
     -- ONLY the active profile travels; the exporter's other profiles are
     -- their own business and would overwrite same-named profiles on import.
-    result.profiles = {}
+    output.profiles = {}
     local profileTbl = saved.profiles and saved.profiles[activeName]
     if profileTbl then
         local duplicate = DeepCopy(profileTbl)
@@ -3500,21 +3500,21 @@ function CludesUI.ExportFullAccountData()
         -- profile can still carry them there, and they are excluded from a
         -- full export at every address they have ever lived at.
         StripPrivateAddonData(duplicate.addons)
-        result.profiles[activeName] = duplicate
+        output.profiles[activeName] = duplicate
     end
-    result.activeProfile = activeName
-    result.profileOrder = { activeName }
+    output.activeProfile = activeName
+    output.profileOrder = { activeName }
     local bundle = {
-        version = CludesUI.LayoutExportVersion(result),
+        version = CludesUI.LayoutExportVersion(output),
         type = FULL_EXPORT_TYPE,
         fullExport = true, -- the routing stamp the import flow reads
         profileName = activeName,
-        data = result,
+        data = output,
     }
     CludesUI.StampPayloadClient(bundle)
     local serialized = Serializer.Serialize(bundle)
-    local compressed = LibDeflate:CompressDeflate(serialized)
-    return EXPORT_PREFIX .. LibDeflate:EncodeForPrint(compressed)
+    local deflated = LibDeflate:CompressDeflate(serialized)
+    return EXPORT_PREFIX .. LibDeflate:EncodeForPrint(deflated)
 end
 
 --- True for a decoded payload produced by ExportFullAccountData. The import
@@ -3584,11 +3584,11 @@ function CludesUI.ImportFullAccountData(bundle)
         end
     end
     for k, merge in pairs(FULL_IMPORT_MERGE) do
-        local encoded = CludesUIDB[k]
-        if encoded == ownValue[k] then
-            encoded = nil
+        local packed = CludesUIDB[k]
+        if packed == ownValue[k] then
+            packed = nil
         end -- not carried, or refused above
-        CludesUIDB[k] = merge(ownValue[k], encoded, activeName)
+        CludesUIDB[k] = merge(ownValue[k], packed, activeName)
     end
     if fvSweep then
         if type(CludesUIDB._migrations) ~= "table" then
@@ -3698,13 +3698,13 @@ end
 function CludesUI.GetCDMSpecInfo()
     local spellAssign = CludesUIDB and CludesUIDB.spellAssignments
     local specProfiles = spellAssign and spellAssign.specProfiles or {}
-    local result = {}
+    local output = {}
     local numSpecs = GetNumSpecializations and GetNumSpecializations() or 0
     for i = 1, numSpecs do
         local specId, sName, _, sIcon = C_SpecializationInfo.GetSpecializationInfo(i)
         if specId then
             local key = tostring(specId)
-            result[#result + 1] = {
+            output[#output + 1] = {
                 key = key,
                 name = sName or ("Spec " .. key),
                 icon = sIcon,
@@ -3712,7 +3712,7 @@ function CludesUI.GetCDMSpecInfo()
             }
         end
     end
-    return result
+    return output
 end
 
 -------------------------------------------------------------------------------
@@ -3740,7 +3740,7 @@ end
 --- ticked keeps the keys the picker was opened with, and a newly ticked class
 --- = its resolved key (the player's class: opts.foreverActiveKey). Specs of
 --- classes Forever lacks pass through.
-function CludesUI.ForeverCDMSelection(assignments, options, result)
+function CludesUI.ForeverCDMSelection(assignments, options, output)
     local spellAssign = CludesUIDB and CludesUIDB.spellAssignments
     local b = spellAssign and spellAssign.profiles and spellAssign.profiles[CludesUIDB.activeProfile or "Default"]
     local sp = (b and b.specProfiles) or {}
@@ -3765,36 +3765,36 @@ function CludesUI.ForeverCDMSelection(assignments, options, result)
     end
     local done = {}
     for ident in pairs(assignments) do
-        local token = CludesUI.SpecClassOf(ident)
-        local ids = CludesUI.ForeverClassSpecIDs(token)
+        local nameToken = CludesUI.SpecClassOf(ident)
+        local ids = CludesUI.ForeverClassSpecIDs(nameToken)
         if not ids then
-            result[tostring(ident)] = true
-        elseif not done[token] then
-            done[token] = true
+            output[tostring(ident)] = true
+        elseif not done[nameToken] then
+            done[nameToken] = true
             local any = false
             if options.foreverAllKeys then
                 for i = 1, #ids do
                     local k = tostring(ids[i])
                     if sp[k] ~= nil then
-                        result[k] = true
+                        output[k] = true
                         any = true
                     end
                 end
-                local lk = tostring(CludesUI.FOREVER_CLASS_SPEC[token])
+                local lk = tostring(CludesUI.FOREVER_CLASS_SPEC[nameToken])
                 if sp[lk] ~= nil then
-                    result[lk] = true
+                    output[lk] = true
                     any = true
                 end
-            elseif opened[token] then
-                for _, k in ipairs(opened[token]) do
-                    result[k] = true
+            elseif opened[nameToken] then
+                for _, k in ipairs(opened[nameToken]) do
+                    output[k] = true
                 end
                 any = true
             end
             if not any then
-                local k = (token == player) and options.foreverActiveKey
-                    or tostring(CludesUI.ForeverClassSpec(token, CludesUI.SpecHasStringEntry, sp, true))
-                result[k] = true
+                local k = (nameToken == player) and options.foreverActiveKey
+                    or tostring(CludesUI.ForeverClassSpec(nameToken, CludesUI.SpecHasStringEntry, sp, true))
+                output[k] = true
             end
         end
     end
@@ -3937,40 +3937,40 @@ function CludesUI.ExportCurrentProfile(includeLayout, includeCDM, cdmSpecs)
     if not LibDeflate then
         return nil
     end
-    local compressed = LibDeflate:CompressDeflate(serialized)
-    local encoded = LibDeflate:EncodeForPrint(compressed)
-    return EXPORT_PREFIX .. encoded
+    local deflated = LibDeflate:CompressDeflate(serialized)
+    local packed = LibDeflate:EncodeForPrint(deflated)
+    return EXPORT_PREFIX .. packed
 end
 
-function CludesUI.DecodeImportString(importStr)
-    if not importStr or #importStr < 5 then
+function CludesUI.DecodeImportString(importText)
+    if not importText or #importText < 5 then
         return nil, "Invalid string"
     end
     -- Detect old CDM bar layout strings (format removed in 5.1.2)
-    if importStr:sub(1, 8) == "!CUICDM_" then
+    if importText:sub(1, 8) == "!CUICDM_" then
         return nil,
             "This is an old CDM Bar Layout string. This format is no longer supported. Use the standard profile import instead."
     end
-    if importStr:sub(1, #EXPORT_PREFIX) ~= EXPORT_PREFIX and not IsForeignString(importStr) then
+    if importText:sub(1, #EXPORT_PREFIX) ~= EXPORT_PREFIX and not IsForeignString(importText) then
         return nil, "Not a valid CludesUI string. Make sure you copied the entire string."
     end
     if not LibDeflate then
         return nil, "LibDeflate not available"
     end
-    local encoded = importStr:sub(#EXPORT_PREFIX + 1)
-    local decoded = LibDeflate:DecodeForPrint(encoded)
+    local packed = importText:sub(#EXPORT_PREFIX + 1)
+    local decoded = LibDeflate:DecodeForPrint(packed)
     if not decoded then
         return nil, "Failed to decode string"
     end
-    local decompressed = LibDeflate:DecompressDeflate(decoded)
-    if not decompressed then
+    local inflated = LibDeflate:DecompressDeflate(decoded)
+    if not inflated then
         return nil, "Failed to decompress data"
     end
-    local bundle = Serializer.Deserialize(decompressed)
+    local bundle = Serializer.Deserialize(inflated)
     if not bundle or type(bundle) ~= "table" then
         return nil, "Failed to deserialize data"
     end
-    if IsForeignString(importStr) then
+    if IsForeignString(importText) then
         bundle = TranslateForeignPayload(bundle)
     end
     if not bundle.version or bundle.version < 3 then
@@ -4017,8 +4017,8 @@ do
     local driver -- shared OnUpdate frame, hidden while idle
     local isActive -- state table of the in-flight run, or nil
 
-    local function StopRun(run)
-        if isActive == run then
+    local function StopRun(runText)
+        if isActive == runText then
             isActive = nil
             Serializer.SetYieldHook(nil)
             if driver then
@@ -4027,20 +4027,20 @@ do
         end
     end
 
-    function CludesUI.DecodeImportStringAsync(importStr, onDone, onProgress)
+    function CludesUI.DecodeImportStringAsync(importText, onDone, onProgress)
         -- Cheap validations first (same messages as DecodeImportString).
-        if not importStr or #importStr < 5 then
+        if not importText or #importText < 5 then
             onDone(nil, "Invalid string")
             return nil
         end
-        if importStr:sub(1, 8) == "!CUICDM_" then
+        if importText:sub(1, 8) == "!CUICDM_" then
             onDone(
                 nil,
                 "This is an old CDM Bar Layout string. This format is no longer supported. Use the standard profile import instead."
             )
             return nil
         end
-        if importStr:sub(1, #EXPORT_PREFIX) ~= EXPORT_PREFIX and not IsForeignString(importStr) then
+        if importText:sub(1, #EXPORT_PREFIX) ~= EXPORT_PREFIX and not IsForeignString(importText) then
             onDone(nil, "Not a valid CludesUI string. Make sure you copied the entire string.")
             return nil
         end
@@ -4052,8 +4052,8 @@ do
         if isActive then
             StopRun(isActive)
         end
-        local run = {}
-        isActive = run
+        local runText = {}
+        isActive = runText
 
         local sliceStart = 0
         local function Yield(frac)
@@ -4063,7 +4063,7 @@ do
             -- Only ever yield our own coroutine: the Serializer hook stays
             -- installed while this run is parked, and a synchronous
             -- Deserialize from elsewhere must never be yielded.
-            if coroutine.running() ~= run.co then
+            if coroutine.running() ~= runText.co then
                 return
             end
             if debugprofilestop() - sliceStart > BUDGET_MS then
@@ -4071,13 +4071,13 @@ do
             end
         end
 
-        run.co = coroutine.create(function()
-            local encoded = importStr:sub(#EXPORT_PREFIX + 1)
+        runText.co = coroutine.create(function()
+            local packed = importText:sub(#EXPORT_PREFIX + 1)
 
             -- Printable decode in slices (block codec: 4 chars -> 3 bytes,
             -- so any 4-char boundary is a clean cut; the tail of the final
             -- slice is handled by the codec itself).
-            local sum = #encoded
+            local sum = #packed
             local pieces, pn = {}, 0
             local i = 1
             while i <= sum do
@@ -4085,7 +4085,7 @@ do
                 if jdx > sum then
                     jdx = sum
                 end
-                local piece = LibDeflate:DecodeForPrint(encoded:sub(i, jdx))
+                local piece = LibDeflate:DecodeForPrint(packed:sub(i, jdx))
                 if not piece then
                     return nil, "Failed to decode string"
                 end
@@ -4101,7 +4101,7 @@ do
             -- Decompress: native inflate when the client provides it, else
             -- LibDeflate (single call). A native failure of any kind just
             -- falls through to the library path.
-            local decompressed
+            local inflated
             if
                 C_EncodingUtil
                 and C_EncodingUtil.DecompressString
@@ -4112,30 +4112,30 @@ do
                 local success, res =
                     pcall(C_EncodingUtil.DecompressString, decoded, Enum.CompressionMethod.Deflate)
                 if success and type(res) == "string" and #res > 0 then
-                    decompressed = res
+                    inflated = res
                 end
             end
-            if not decompressed then
-                decompressed = LibDeflate:DecompressDeflate(decoded)
+            if not inflated then
+                inflated = LibDeflate:DecompressDeflate(decoded)
             end
-            if not decompressed then
+            if not inflated then
                 return nil, "Failed to decompress data"
             end
             decoded = nil
             Yield(0.5)
 
             -- Deserialize with the cooperative hook installed.
-            local dtotal = #decompressed
+            local dtotal = #inflated
             Serializer.SetYieldHook(function(place)
                 Yield(0.5 + (place / dtotal) * 0.5)
             end)
-            local bundle = Serializer.Deserialize(decompressed)
+            local bundle = Serializer.Deserialize(inflated)
             Serializer.SetYieldHook(nil)
 
             if not bundle or type(bundle) ~= "table" then
                 return nil, "Failed to deserialize data"
             end
-            if IsForeignString(importStr) then
+            if IsForeignString(importText) then
                 bundle = TranslateForeignPayload(bundle)
             end
             if not bundle.version or bundle.version < 3 then
@@ -4154,21 +4154,21 @@ do
         end)
 
         local function Step()
-            if isActive ~= run then
+            if isActive ~= runText then
                 if driver then
                     driver:Hide()
                 end
                 return
             end
             sliceStart = debugprofilestop()
-            local success, bundle, perr = coroutine.resume(run.co)
+            local success, bundle, perr = coroutine.resume(runText.co)
             if not success then
-                StopRun(run)
+                StopRun(runText)
                 onDone(nil, "Failed to read import data")
                 return
             end
-            if coroutine.status(run.co) == "dead" then
-                StopRun(run)
+            if coroutine.status(runText.co) == "dead" then
+                StopRun(runText)
                 onDone(bundle, perr)
             end
         end
@@ -4180,10 +4180,10 @@ do
         driver:SetScript("OnUpdate", Step)
         driver:Show()
 
-        run.Cancel = function()
-            StopRun(run)
+        runText.Cancel = function()
+            StopRun(runText)
         end
-        return run
+        return runText
     end
 end
 
@@ -4285,8 +4285,8 @@ local function FixupImportedClassColors()
     if not rbEntry or not IsAddonLoaded(rbEntry.folder) then
         return
     end
-    local profile = GetAddonProfile(rbEntry)
-    if not profile then
+    local activeProfile = GetAddonProfile(rbEntry)
+    if not activeProfile then
         return
     end
 
@@ -4297,12 +4297,12 @@ local function FixupImportedClassColors()
     local cc = classColors and classColors[class]
 
     -- Health bar: reset to importer's class color
-    if profile.health then
-        profile.health.customColored = false
+    if activeProfile.health then
+        activeProfile.health.customColored = false
         if cc then
-            profile.health.fillR = cc.r
-            profile.health.fillG = cc.g
-            profile.health.fillB = cc.b
+            activeProfile.health.fillR = cc.r
+            activeProfile.health.fillG = cc.g
+            activeProfile.health.fillB = cc.b
         end
     end
 end
@@ -4356,32 +4356,32 @@ local function BuildImportedCDMSpellBucket(profName, activeName, incomingSpecs, 
     if CludesUI then
         CludesUI._cdmImportGhostDeferred = true
     end
-    for specKey, specProf in pairs(DeepCopy(incomingSpecs)) do
-        bucket.specProfiles[specKey] = specProf
-        if type(specProf) == "table" then
-            if type(specProf.barSpells) == "table" then
-                specProf.barSpells.__ghost_cd = nil
+    for specKey, specProfile in pairs(DeepCopy(incomingSpecs)) do
+        bucket.specProfiles[specKey] = specProfile
+        if type(specProfile) == "table" then
+            if type(specProfile.barSpells) == "table" then
+                specProfile.barSpells.__ghost_cd = nil
             end
-            specProf._barFilterModelV6 = nil -- re-run the migration on activate
-            specProf._importGhostMode = true -- ghost tracked-but-unplaced spells
-            specProf._dormantMerged = true -- imported data is already current-model
+            specProfile._barFilterModelV6 = nil -- re-run the migration on activate
+            specProfile._importGhostMode = true -- ghost tracked-but-unplaced spells
+            specProfile._dormantMerged = true -- imported data is already current-model
             -- Old-format strings (pre tiered-settings) carry per-bar
             -- spellSettings; transform NOW so the live session reads the
             -- new shape (the registered migration also covers it on the
             -- next reload -- both idempotent, flag lives in the bucket).
-            CludesUI.MigrateCdmSpellSettingsShape(specProf, importedBarsCfg)
+            CludesUI.MigrateCdmSpellSettingsShape(specProfile, importedBarsCfg)
             -- Hosted-buff settings moved family stores (CD -> BUFF);
             -- relocate old-format imports the same way (idempotent).
-            CludesUI.MigrateCdmHostedBuffSettings(specProf)
+            CludesUI.MigrateCdmHostedBuffSettings(specProfile)
             -- Collided-buff cooldownID claims moved from the
             -- assignedBuffCdIDs side-table to cd-claim markers inside
             -- assignedSpells; convert old-format imports too (idempotent),
             -- or their claims sit unread and the slots silently unclaim.
-            CludesUI.MigrateCdmBuffCdClaims(specProf)
+            CludesUI.MigrateCdmBuffCdClaims(specProfile)
             -- Strings exported before _buffDisplayOrderUserModified existed carry a
             -- drag-arranged buffDisplayOrder without the flag; stamp it or the first
             -- live reconcile resyncs the imported order to Blizzard order (idempotent).
-            CludesUI.MigrateCdmBuffOrderUserFlag(specProf)
+            CludesUI.MigrateCdmBuffOrderUserFlag(specProfile)
         end
     end
 end
@@ -4393,8 +4393,8 @@ end
 --- override store that owns it, it would pin that element on Never/Always/Mouseover with
 --- nothing able to write it back. A marker the recipient's OWN override still owns is
 --- restored by that override's next apply, so stripping is safe in both directions.
-local function StripStrandedVisOverrides(addons)
-    if type(addons) ~= "table" then
+local function StripStrandedVisOverrides(addonMap)
+    if type(addonMap) ~= "table" then
         return
     end
     local seen = {}
@@ -4410,7 +4410,7 @@ local function StripStrandedVisOverrides(addons)
             end
         end
     end
-    for _, layoutSnap in pairs(addons) do
+    for _, layoutSnap in pairs(addonMap) do
         if type(layoutSnap) == "table" then
             walk(layoutSnap)
         end
@@ -4419,7 +4419,7 @@ end
 
 --- Import a profile string. Returns: success, errorMsg
 --- The caller must provide a name for the new profile.
-function CludesUI.ImportProfile(importStr, profName)
+function CludesUI.ImportProfile(importText, profName)
     -- A concurrent silent import (e.g. the Wago path) invalidates any pending
     -- INTERACTIVE import session: its selection UI is stale against the
     -- profile data this call is about to change. The interactive flow's own
@@ -4437,10 +4437,10 @@ function CludesUI.ImportProfile(importStr, profName)
     -- The options import page decodes asynchronously and passes the table,
     -- which skips a full re-encode/re-decode of the data at commit time.
     local bundle, err
-    if type(importStr) == "table" then
-        bundle = importStr
+    if type(importText) == "table" then
+        bundle = importText
     else
-        bundle, err = CludesUI.DecodeImportString(importStr)
+        bundle, err = CludesUI.DecodeImportString(importText)
     end
     if not bundle then
         return false, err
@@ -4638,10 +4638,10 @@ function CludesUI.ImportProfile(importStr, profName)
             baseUL.phantomBounds = baseUL.phantomBounds or {}
             baseUL.widthMatchExtra = baseUL.widthMatchExtra or {}
             baseUL.heightMatchExtra = baseUL.heightMatchExtra or {}
-            local function overlayLive(dst, live)
+            local function overlayLive(destination, live)
                 if type(live) == "table" then
                     for k, v in pairs(live) do
-                        dst[k] = DeepCopy(v)
+                        destination[k] = DeepCopy(v)
                     end
                 end
             end
@@ -5007,19 +5007,19 @@ function CludesUI.SaveCurrentAsProfile(name)
     if not CludesUIDB.syncedModules then
         CludesUIDB.syncedModules = {}
     end
-    local bagsGroup = CludesUIDB.syncedModules.CludesUIBags
+    local bagGroup = CludesUIDB.syncedModules.CludesUIBags
     if profileCountBefore == 1 then
         -- First second profile: create the default Bags group
-        if type(bagsGroup) ~= "table" then
-            bagsGroup = {}
-            CludesUIDB.syncedModules.CludesUIBags = bagsGroup
+        if type(bagGroup) ~= "table" then
+            bagGroup = {}
+            CludesUIDB.syncedModules.CludesUIBags = bagGroup
         end
-        bagsGroup[current] = true
-        bagsGroup[name] = true
-    elseif type(bagsGroup) == "table" and bagsGroup[current] then
+        bagGroup[current] = true
+        bagGroup[name] = true
+    elseif type(bagGroup) == "table" and bagGroup[current] then
         -- A copy of a bags-synced profile joins the group. Copies of a
         -- profile the user deliberately removed from it stay out.
-        bagsGroup[name] = true
+        bagGroup[name] = true
     end
 
     -- Switch to the new profile using the standard path so the outgoing
@@ -5359,8 +5359,8 @@ do
                         -- Resolve via the unified function
                         local target = ResolveSpecProfile()
                         if target then
-                            local cur = (CludesUIDB and CludesUIDB.activeProfile) or "Default"
-                            if cur ~= target then
+                            local current = (CludesUIDB and CludesUIDB.activeProfile) or "Default"
+                            if current ~= target then
                                 local fontChange = CludesUI.ProfileChangesFont(CludesUIDB.profiles[target])
                                 local skinsChange =
                                     CludesUI.ProfileChangesWindowSkins(CludesUIDB.profiles[target])
@@ -5701,15 +5701,15 @@ function CludesUI.AttachImportPasteAbsorber(inputBox, onRetry)
     inputBox:SetMaxLetters(0)
     inputBox:SetMaxBytes(CAP)
 
-    local buf, bufN, lastN = {}, 0, 0
+    local buf, bufferCount, lastN = {}, 0, 0
     local captured
     local settingText = false
 
     local function Finalize()
         inputBox:SetScript("OnUpdate", nil)
-        local s = strtrim(table.concat(buf, "", 1, bufN))
+        local s = strtrim(table.concat(buf, "", 1, bufferCount))
         wipe(buf)
-        bufN, lastN = 0, 0
+        bufferCount, lastN = 0, 0
         local boxText = inputBox:GetText() or ""
         if #s > #boxText then
             -- The box rejected part of the paste; the buffer holds all of it.
@@ -5736,17 +5736,17 @@ function CludesUI.AttachImportPasteAbsorber(inputBox, onRetry)
     end
 
     inputBox:HookScript("OnChar", function(_, c)
-        bufN = bufN + 1
-        buf[bufN] = c
-        if bufN == 1 then
+        bufferCount = bufferCount + 1
+        buf[bufferCount] = c
+        if bufferCount == 1 then
             lastN = 0
             -- Finalize on the first frame where no further characters
             -- arrived (a paste delivers its whole burst before then).
             inputBox:SetScript("OnUpdate", function()
-                if bufN == lastN then
+                if bufferCount == lastN then
                     Finalize()
                 else
-                    lastN = bufN
+                    lastN = bufferCount
                 end
             end)
         end
@@ -5901,10 +5901,10 @@ local function BuildStringPopup(title, subtitle, readOnly, onConfirm, confirmLab
         confirmBtn:SetPoint("BOTTOMRIGHT", dialog, "BOTTOM", -4, 14)
         confirmBtn:SetFrameLevel(dialog:GetFrameLevel() + 2)
         CludesUI.MakeStyledButton(confirmBtn, confirmLabel or "Import", 11, CludesUI.WB_COLOURS, function()
-            local encoded = absorber and absorber.GetText() or inputBox:GetText()
-            if encoded and #encoded > 0 then
+            local packed = absorber and absorber.GetText() or inputBox:GetText()
+            if packed and #packed > 0 then
                 shade:Hide()
-                onConfirm(encoded)
+                onConfirm(packed)
             end
         end)
 
@@ -5972,11 +5972,11 @@ end
 --  Same auto-highlight behavior as ShowExportPopup, but the caller supplies the
 --  title and subtitle (e.g. for the preset "Copy Blizz Edit Mode" string).
 -------------------------------------------------------------------------------
-function CludesUI:ShowCopyPopup(title, subtitle, encoded)
+function CludesUI:ShowCopyPopup(title, subtitle, packed)
     local shade, inputBox, RefreshHeight = BuildStringPopup(title or "Copy", subtitle or "", true, nil, nil)
 
-    inputBox._readOnly = encoded or ""
-    inputBox:SetText(encoded or "")
+    inputBox._readOnly = packed or ""
+    inputBox:SetText(packed or "")
     RefreshHeight()
 
     shade:Show()
@@ -6104,9 +6104,9 @@ function CludesUI:ShowImportPopup(onImport, title, subtitle)
         title or "Import Profile",
         subtitle or "Paste an CludesUI profile string below",
         false,
-        function(encoded)
+        function(packed)
             if onImport then
-                onImport(encoded)
+                onImport(packed)
             end
         end,
         "Import"
@@ -6339,24 +6339,24 @@ function CludesUI.ImportProfileSilent(options)
     end
 
     -- Normalize + guard the disable set.
-    local disable
+    local disabled
     if type(options.disableAddons) == "table" then
-        disable = {}
+        disabled = {}
         for _, moduleFolder in ipairs(options.disableAddons) do
             if type(moduleFolder) == "string" then
-                disable[moduleFolder] = true
+                disabled[moduleFolder] = true
             end
         end
-        disable["CludesUI"] = nil
+        disabled["CludesUI"] = nil
     end
 
-    if disable then
+    if disabled then
         -- Partition profile-data modules into stripped vs kept (canonical keys,
         -- matching the payload), resolving hosted sub-modules through their host addon.
         local keepCanon, stripCanon = {}, {}
         for _, e in ipairs(ADDON_DB_MAP) do
             local canon = FOLDER_TO_CANON[e.folder] or e.folder
-            if disable[e.folder] or (e.hostAddon and disable[e.hostAddon]) then
+            if disabled[e.folder] or (e.hostAddon and disabled[e.hostAddon]) then
                 stripCanon[canon] = true
             else
                 keepCanon[canon] = true
@@ -6368,12 +6368,12 @@ function CludesUI.ImportProfileSilent(options)
             end
         end
         -- CDM spell layouts live outside the addon blob.
-        if disable["CludesUICooldownManager"] then
+        if disabled["CludesUICooldownManager"] then
             bundle.data.cdmSpells = nil
         end
         -- The account-global window/tooltip skin bundle belongs to the skin
         -- module; a pack that replaces it must not apply the bundle.
-        if disable["CludesUIBlizzardSkin"] then
+        if disabled["CludesUIBlizzardSkin"] then
             bundle.data.blizzSkinGlobals = nil
             bundle.data.applyBlizzSkinGlobals = nil
         end
@@ -6382,8 +6382,8 @@ function CludesUI.ImportProfileSilent(options)
         local layout = bundle.data.unlockLayout
         if layout then
             local meta = bundle.data.unlockLayoutMeta
-            local k2f = CludesUI.BuildImportKeyToFolder(layout, meta and meta.keyToFolder)
-            bundle.data.unlockLayout = CludesUI.FilterLayoutToFolders(layout, keepCanon, k2f)
+            local keyToFolder = CludesUI.BuildImportKeyToFolder(layout, meta and meta.keyToFolder)
+            bundle.data.unlockLayout = CludesUI.FilterLayoutToFolders(layout, keepCanon, keyToFolder)
         end
     end
     -- Meta is transport-only; never let it persist into the profile.
@@ -6413,7 +6413,7 @@ function CludesUI.ImportProfileSilent(options)
     -- Apply the pack's folder composition (takes effect at the caller's
     -- reload). Enabling sweeps the whole suite so children added after a
     -- pack shipped default ON instead of ending up in neither set.
-    if disable and C_AddOns and C_AddOns.EnableAddOn then
+    if disabled and C_AddOns and C_AddOns.EnableAddOn then
         local exists = C_AddOns.DoesAddOnExist
         local seen = {}
         local function apply(moduleFolder)
@@ -6424,7 +6424,7 @@ function CludesUI.ImportProfileSilent(options)
             if exists and not exists(moduleFolder) then
                 return
             end
-            if disable[moduleFolder] then
+            if disabled[moduleFolder] then
                 C_AddOns.DisableAddOn(moduleFolder)
             else
                 C_AddOns.EnableAddOn(moduleFolder)

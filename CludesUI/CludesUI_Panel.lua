@@ -65,8 +65,8 @@ CUI_NS.sidebarButtons = sidebarButtons
 local currentModule, activePage
 local _lastPagePerModule = {}
 local scrollTarget = 0
-local isSmoothing = false
-local smoothFrame
+local smoothing = false
+local smoother
 local UpdateScrollThumb
 local suppressScrollRangeChanged = false
 local lastHeaderPadded = false
@@ -553,8 +553,8 @@ local function BuildFrame()
     -- ease-in-out curve as the accent transition, so both animations track visually.
     local bgFadeTicker = CreateFrame("Frame", nil, backdrop)
     bgFadeTicker:Hide()
-    bgFadeTicker:SetScript("OnUpdate", function(self, elapsed)
-        bgFadeProgress = bgFadeProgress + elapsed / BG_FADE_DURATION
+    bgFadeTicker:SetScript("OnUpdate", function(self, timePassed)
+        bgFadeProgress = bgFadeProgress + timePassed / BG_FADE_DURATION
         -- The accent overlay sits above both layers, so it is driven here only while
         -- a theme that has one is entering (dir 1) or leaving (dir -1).
         local overlay = backdrop._accentOverlayDir and backdrop._accentOverlay
@@ -1519,13 +1519,13 @@ local function BuildSidebar()
         sbBg
     )
 
-    local sbEdit = CreateFrame("EditBox", nil, sidebarSearchFrame)
-    sbEdit:SetAllPoints()
-    sbEdit:SetAutoFocus(false)
-    sbEdit:SetFont(CludesUI.EXPRESSWAY, 13, "")
-    sbEdit:SetTextColor(1, 1, 1, 1)
-    sbEdit:SetTextInsets(10, 24, 0, 0)
-    sbEdit:SetMaxLetters(40)
+    local sidebarEdit = CreateFrame("EditBox", nil, sidebarSearchFrame)
+    sidebarEdit:SetAllPoints()
+    sidebarEdit:SetAutoFocus(false)
+    sidebarEdit:SetFont(CludesUI.EXPRESSWAY, 13, "")
+    sidebarEdit:SetTextColor(1, 1, 1, 1)
+    sidebarEdit:SetTextInsets(10, 24, 0, 0)
+    sidebarEdit:SetMaxLetters(40)
 
     local sbPlaceholder = MakeFont(sidebarSearchFrame, 12, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.3)
     sbPlaceholder:SetPoint("LEFT", sidebarSearchFrame, "LEFT", 10, 0)
@@ -1534,7 +1534,7 @@ local function BuildSidebar()
     local sbClearBtn = CreateFrame("Button", nil, sidebarSearchFrame)
     sbClearBtn:SetSize(20, 20)
     sbClearBtn:SetPoint("RIGHT", sidebarSearchFrame, "RIGHT", -4, 0)
-    sbClearBtn:SetFrameLevel(sbEdit:GetFrameLevel() + 2)
+    sbClearBtn:SetFrameLevel(sidebarEdit:GetFrameLevel() + 2)
     sbClearBtn:Hide()
     local sbClearLabel = MakeFont(sbClearBtn, 15, nil, TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.35)
     sbClearLabel:SetPoint("CENTER")
@@ -1546,8 +1546,8 @@ local function BuildSidebar()
         sbClearLabel:SetTextColor(TEXT_DIM.r, TEXT_DIM.g, TEXT_DIM.b, 0.35)
     end)
     sbClearBtn:SetScript("OnClick", function()
-        sbEdit:SetText("")
-        sbEdit:ClearFocus()
+        sidebarEdit:SetText("")
+        sidebarEdit:ClearFocus()
     end)
 
     local function _sbBorderHover(a)
@@ -1559,24 +1559,24 @@ local function BuildSidebar()
     sidebarSearchFrame:SetScript("OnLeave", function()
         _sbBorderHover(0.10)
     end)
-    sbEdit:SetScript("OnEditFocusGained", function()
+    sidebarEdit:SetScript("OnEditFocusGained", function()
         _sbBorderHover(0.15)
     end)
-    sbEdit:SetScript("OnEditFocusLost", function()
+    sidebarEdit:SetScript("OnEditFocusLost", function()
         _sbBorderHover(0.10)
     end)
-    sbEdit:SetScript("OnEscapePressed", function(self)
+    sidebarEdit:SetScript("OnEscapePressed", function(self)
         self:SetText("")
         self:ClearFocus()
     end)
-    sbEdit:SetScript("OnEnterPressed", function(self)
+    sidebarEdit:SetScript("OnEnterPressed", function(self)
         self:ClearFocus()
     end)
 
-    CludesUI._sidebarSearchBox = sbEdit
+    CludesUI._sidebarSearchBox = sidebarEdit
     CludesUI._sidebarSearchText = ""
 
-    sbEdit:SetScript("OnTextChanged", function(self)
+    sidebarEdit:SetScript("OnTextChanged", function(self)
         local text = self:GetText() or ""
         if text == "" then
             sbPlaceholder:Show()
@@ -1707,7 +1707,7 @@ local function BuildSidebar()
     -- main content scroll. Rounding in the direction of travel keeps the lerp monotonic
     -- so it never bounces at settlement. Fractional offsets leave glyphs on sub-pixel
     -- positions and the rasterizer picks different pixels per frame: 1px scroll jitter.
-    addonSmoothFrame:SetScript("OnUpdate", function(_, elapsed)
+    addonSmoothFrame:SetScript("OnUpdate", function(_, timePassed)
         local cur = addonScroller:GetVerticalScroll()
         local scrollMax = CludesUI.SafeScrollRange(addonScroller) or 0
         local zoom = addonScroller:GetEffectiveScale()
@@ -1722,7 +1722,7 @@ local function BuildSidebar()
             addonSmoothFrame:Hide()
             return
         end
-        local nextScroll = cur + diff * math.min(1, ADDON_SMOOTH_SPEED * elapsed)
+        local nextScroll = cur + diff * math.min(1, ADDON_SMOOTH_SPEED * timePassed)
         nextScroll = math.max(0, math.min(scrollMax, nextScroll))
         if diff > 0 then
             nextScroll = math.ceil(nextScroll * zoom) / zoom
@@ -2376,16 +2376,16 @@ local function BuildSidebar()
         rail:SetColorTexture(1, 1, 1, 0.10)
 
         -- Thumb (sits on top of track, hides the line behind it)
-        local thumb = CreateFrame("Frame", nil, opacityFrame)
-        thumb:SetFrameLevel(opacityFrame:GetFrameLevel() + 2)
+        local knob = CreateFrame("Frame", nil, opacityFrame)
+        knob:SetFrameLevel(opacityFrame:GetFrameLevel() + 2)
 
         -- Thumb texture (ARTWORK layer, above track's BACKGROUND)
-        local thumbTex = thumb:CreateTexture(nil, "ARTWORK")
+        local thumbTex = knob:CreateTexture(nil, "ARTWORK")
         thumbTex:SetAllPoints()
         thumbTex:SetColorTexture(1, 1, 1, 0.25)
 
         -- Solid blocker behind thumb to hide the track line
-        local thumbBlocker = thumb:CreateTexture(nil, "BORDER")
+        local thumbBlocker = knob:CreateTexture(nil, "BORDER")
         thumbBlocker:SetPoint("TOPLEFT", thumbTex, "TOPLEFT", 0, 0)
         thumbBlocker:SetPoint("BOTTOMRIGHT", thumbTex, "BOTTOMRIGHT", 0, 0)
         thumbBlocker:SetColorTexture(DARK_BG.r, DARK_BG.g, DARK_BG.b, 1)
@@ -2410,11 +2410,11 @@ local function BuildSidebar()
             -- Thumb position: MIN at the bottom / left end, MAX at the top / right end
             local frac = (alpha - MIN_ALPHA) / (MAX_ALPHA - MIN_ALPHA)
             local pos = frac * (TrackLength() - THUMB_H)
-            thumb:ClearAllPoints()
+            knob:ClearAllPoints()
             if horizontal then
-                thumb:SetPoint("LEFT", rail, "LEFT", pos, 0)
+                knob:SetPoint("LEFT", rail, "LEFT", pos, 0)
             else
-                thumb:SetPoint("BOTTOM", rail, "BOTTOM", 0, pos)
+                knob:SetPoint("BOTTOM", rail, "BOTTOM", 0, pos)
             end
         end
 
@@ -2438,7 +2438,7 @@ local function BuildSidebar()
         local dragging = false
         local function StartDrag()
             dragging = true
-            thumb:SetScript("OnUpdate", function()
+            knob:SetScript("OnUpdate", function()
                 if not dragging then
                     return
                 end
@@ -2450,15 +2450,15 @@ local function BuildSidebar()
         end
         local function StopDrag()
             dragging = false
-            thumb:SetScript("OnUpdate", nil)
+            knob:SetScript("OnUpdate", nil)
         end
-        thumb:EnableMouse(true)
-        thumb:SetScript("OnMouseDown", function(_, button)
+        knob:EnableMouse(true)
+        knob:SetScript("OnMouseDown", function(_, button)
             if button == "LeftButton" then
                 StartDrag()
             end
         end)
-        thumb:SetScript("OnMouseUp", function(_, button)
+        knob:SetScript("OnMouseUp", function(_, button)
             if button == "LeftButton" then
                 StopDrag()
             end
@@ -2503,7 +2503,7 @@ local function BuildSidebar()
                 rail:SetSize(SLIDER_W, TRACK_W)
                 rail:SetPoint("LEFT", opacityFrame, "LEFT", 0, 0)
                 rail:SetPoint("RIGHT", opacityFrame, "RIGHT", 0, 0)
-                thumb:SetSize(THUMB_H, THUMB_W)
+                knob:SetSize(THUMB_H, THUMB_W)
                 trackFrame:SetPoint("TOPLEFT", rail, "TOPLEFT", 0, THUMB_W / 2)
                 trackFrame:SetPoint("BOTTOMRIGHT", rail, "BOTTOMRIGHT", 0, -(THUMB_W / 2))
             else
@@ -2512,7 +2512,7 @@ local function BuildSidebar()
                 rail:SetSize(TRACK_W, SLIDER_H)
                 rail:SetPoint("TOP", opacityFrame, "TOP", 0, -16)
                 rail:SetPoint("BOTTOM", opacityFrame, "BOTTOM", 0, 0)
-                thumb:SetSize(THUMB_W, THUMB_H)
+                knob:SetSize(THUMB_W, THUMB_H)
                 trackFrame:SetPoint("TOPLEFT", rail, "TOPLEFT", -(THUMB_W / 2), 0)
                 trackFrame:SetPoint("BOTTOMRIGHT", rail, "BOTTOMRIGHT", (THUMB_W / 2), 0)
             end
@@ -2757,39 +2757,39 @@ local function BuildContent()
     contentScroll:SetScrollChild(contentChild)
 
     -- Thin scrollbar  (hidden when content fits)
-    local scrollTrack = CreateFrame("Frame", nil, contentScroll)
-    scrollTrack:SetWidth(4)
-    scrollTrack:SetPoint("TOPRIGHT", contentScroll, "TOPRIGHT", -12, -4)
-    scrollTrack:SetPoint("BOTTOMRIGHT", contentScroll, "BOTTOMRIGHT", -12, 4)
-    scrollTrack:SetFrameLevel(contentScroll:GetFrameLevel() + 1)
-    scrollTrack:Hide()
+    local thumbRail = CreateFrame("Frame", nil, contentScroll)
+    thumbRail:SetWidth(4)
+    thumbRail:SetPoint("TOPRIGHT", contentScroll, "TOPRIGHT", -12, -4)
+    thumbRail:SetPoint("BOTTOMRIGHT", contentScroll, "BOTTOMRIGHT", -12, 4)
+    thumbRail:SetFrameLevel(contentScroll:GetFrameLevel() + 1)
+    thumbRail:Hide()
 
-    local trackBg = SolidTex(scrollTrack, "BACKGROUND", 1, 1, 1, 0.02)
+    local trackBg = SolidTex(thumbRail, "BACKGROUND", 1, 1, 1, 0.02)
     trackBg:SetAllPoints()
 
-    local scrollThumb = CreateFrame("Button", nil, scrollTrack)
-    scrollThumb:SetWidth(4)
-    scrollThumb:SetHeight(60)
-    scrollThumb:SetPoint("TOP", scrollTrack, "TOP", 0, 0)
-    scrollThumb:SetFrameLevel(scrollTrack:GetFrameLevel() + 1)
-    scrollThumb:EnableMouse(true)
+    local thumbKnob = CreateFrame("Button", nil, thumbRail)
+    thumbKnob:SetWidth(4)
+    thumbKnob:SetHeight(60)
+    thumbKnob:SetPoint("TOP", thumbRail, "TOP", 0, 0)
+    thumbKnob:SetFrameLevel(thumbRail:GetFrameLevel() + 1)
+    thumbKnob:EnableMouse(true)
     -- Register for drag so the thumb captures drag events before hitArea
-    scrollThumb:RegisterForDrag("LeftButton")
-    scrollThumb:SetScript("OnDragStart", function() end)
-    scrollThumb:SetScript("OnDragStop", function() end)
+    thumbKnob:RegisterForDrag("LeftButton")
+    thumbKnob:SetScript("OnDragStart", function() end)
+    thumbKnob:SetScript("OnDragStop", function() end)
 
     -- Invisible wider hit area so the scrollbar is easier to grab
     local scrollHitArea = CreateFrame("Button", nil, contentScroll)
     scrollHitArea:SetWidth(16)
     scrollHitArea:SetPoint("TOPRIGHT", contentScroll, "TOPRIGHT", -6, -4)
     scrollHitArea:SetPoint("BOTTOMRIGHT", contentScroll, "BOTTOMRIGHT", -6, 4)
-    scrollHitArea:SetFrameLevel(scrollTrack:GetFrameLevel() + 2)
+    scrollHitArea:SetFrameLevel(thumbRail:GetFrameLevel() + 2)
     scrollHitArea:EnableMouse(true)
     scrollHitArea:RegisterForDrag("LeftButton")
     scrollHitArea:SetScript("OnDragStart", function() end)
     scrollHitArea:SetScript("OnDragStop", function() end)
 
-    local thumbTex = SolidTex(scrollThumb, "ARTWORK", 1, 1, 1, 0.27)
+    local thumbTex = SolidTex(thumbKnob, "ARTWORK", 1, 1, 1, 0.27)
     thumbTex:SetAllPoints()
 
     local SCROLL_STEP = 60
@@ -2799,38 +2799,38 @@ local function BuildContent()
 
     -- Smooth scroll state
     scrollTarget = 0
-    isSmoothing = false
+    smoothing = false
 
     local function StopScrollDrag()
         if not isDragging then
             return
         end
         isDragging = false
-        scrollThumb:SetScript("OnUpdate", nil)
+        thumbKnob:SetScript("OnUpdate", nil)
     end
 
     UpdateScrollThumb = function()
         local scrollMax = CludesUI.SafeScrollRange(contentScroll)
         if scrollMax <= 0 then
-            scrollTrack:Hide()
+            thumbRail:Hide()
             return
         end
-        scrollTrack:Show()
-        local trackH = scrollTrack:GetHeight()
+        thumbRail:Show()
+        local trackH = thumbRail:GetHeight()
         local visH = contentScroll:GetHeight()
         local visibleRatio = visH / (visH + scrollMax)
         local thumbH = math.max(30, trackH * visibleRatio)
-        scrollThumb:SetHeight(thumbH)
+        thumbKnob:SetHeight(thumbH)
         local scrollRatio = (tonumber(contentScroll:GetVerticalScroll()) or 0) / scrollMax
         local maxThumbTravel = trackH - thumbH
-        scrollThumb:ClearAllPoints()
-        scrollThumb:SetPoint("TOP", scrollTrack, "TOP", 0, -(scrollRatio * maxThumbTravel))
+        thumbKnob:ClearAllPoints()
+        thumbKnob:SetPoint("TOP", thumbRail, "TOP", 0, -(scrollRatio * maxThumbTravel))
     end
 
     -- Smooth scroll OnUpdate: lerp toward scrollTarget then stop
-    smoothFrame = CreateFrame("Frame")
-    smoothFrame:Hide()
-    smoothFrame:SetScript("OnUpdate", function(_, elapsed)
+    smoother = CreateFrame("Frame")
+    smoother:Hide()
+    smoother:SetScript("OnUpdate", function(_, timePassed)
         local cur = contentScroll:GetVerticalScroll()
         local scrollMax = CludesUI.SafeScrollRange(contentScroll)
         -- Snap max downward so we never try to scroll past a pixel-aligned boundary
@@ -2843,11 +2843,11 @@ local function BuildContent()
             -- Close enough -- snap to target and stop
             contentScroll:SetVerticalScroll(scrollTarget)
             UpdateScrollThumb()
-            isSmoothing = false
-            smoothFrame:Hide()
+            smoothing = false
+            smoother:Hide()
             return
         end
-        local nextScroll = cur + diff * math.min(1, SMOOTH_SPEED * elapsed)
+        local nextScroll = cur + diff * math.min(1, SMOOTH_SPEED * timePassed)
         -- Clamp to valid range
         nextScroll = math.max(0, math.min(scrollMax, nextScroll))
         -- Round toward the target so the last frames approach monotonically, never bouncing
@@ -2872,9 +2872,9 @@ local function BuildContent()
         scrollTarget = math.floor(scrollTarget * zoom + 0.5) / zoom
         -- Re-clamp after snapping (rounding could push above max)
         scrollTarget = math.min(scrollTarget, scrollMax)
-        if not isSmoothing then
-            isSmoothing = true
-            smoothFrame:Show()
+        if not smoothing then
+            smoothing = true
+            smoother:Show()
         end
     end
     CludesUI.SmoothScrollTo = SmoothScrollTo
@@ -2882,7 +2882,7 @@ local function BuildContent()
     -- Current content scroll offset: the in-flight target while animating, else the
     -- settled position. Lets callers capture and restore scroll across a page rebuild.
     function CludesUI.GetContentScroll()
-        if isSmoothing then
+        if smoothing then
             return scrollTarget or 0
         end
         return (contentScroll and tonumber(contentScroll:GetVerticalScroll())) or 0
@@ -2897,7 +2897,7 @@ local function BuildContent()
             return
         end
         -- Accumulate on top of the current target (not current position) for responsive chained scrolls
-        local base = isSmoothing and scrollTarget or self:GetVerticalScroll()
+        local base = smoothing and scrollTarget or self:GetVerticalScroll()
         SmoothScrollTo(base - delta * SCROLL_STEP)
     end)
     contentScroll:SetScript("OnScrollRangeChanged", function(self)
@@ -2923,12 +2923,12 @@ local function BuildContent()
             return
         end
         -- Cancel any smooth animation during drag
-        isSmoothing = false
-        smoothFrame:Hide()
+        smoothing = false
+        smoother:Hide()
         local _, cursorY = GetCursorPosition()
         cursorY = cursorY / self:GetEffectiveScale()
         local deltaY = dragStartY - cursorY
-        local trackH = scrollTrack:GetHeight()
+        local trackH = thumbRail:GetHeight()
         local maxThumbTravel = trackH - self:GetHeight()
         if maxThumbTravel <= 0 then
             return
@@ -2944,19 +2944,19 @@ local function BuildContent()
         UpdateScrollThumb()
     end
 
-    scrollThumb:SetScript("OnMouseDown", function(self, button)
+    thumbKnob:SetScript("OnMouseDown", function(self, button)
         if button ~= "LeftButton" then
             return
         end
-        isSmoothing = false
-        smoothFrame:Hide()
+        smoothing = false
+        smoother:Hide()
         isDragging = true
         local _, cursorY = GetCursorPosition()
         dragStartY = cursorY / self:GetEffectiveScale()
         dragStartScroll = contentScroll:GetVerticalScroll()
         self:SetScript("OnUpdate", ScrollThumbOnUpdate)
     end)
-    scrollThumb:SetScript("OnMouseUp", function(_, button)
+    thumbKnob:SetScript("OnMouseUp", function(_, button)
         if button ~= "LeftButton" then
             return
         end
@@ -2969,18 +2969,18 @@ local function BuildContent()
             return
         end
         -- Cancel any smooth animation
-        isSmoothing = false
-        smoothFrame:Hide()
+        smoothing = false
+        smoother:Hide()
         local scrollMax = CludesUI.SafeScrollRange(contentScroll)
         if scrollMax <= 0 then
             return
         end
         -- Jump to cursor position
         local _, centerY = GetCursorPosition()
-        centerY = centerY / scrollTrack:GetEffectiveScale()
-        local top = scrollTrack:GetTop() or 0
-        local trackH = scrollTrack:GetHeight()
-        local thumbH = scrollThumb:GetHeight()
+        centerY = centerY / thumbRail:GetEffectiveScale()
+        local top = thumbRail:GetTop() or 0
+        local trackH = thumbRail:GetHeight()
+        local thumbH = thumbKnob:GetHeight()
         if trackH <= thumbH then
             return
         end
@@ -2996,7 +2996,7 @@ local function BuildContent()
         isDragging = true
         dragStartY = centerY
         dragStartScroll = nextScroll
-        scrollThumb:SetScript("OnUpdate", ScrollThumbOnUpdate)
+        thumbKnob:SetScript("OnUpdate", ScrollThumbOnUpdate)
     end)
     scrollHitArea:SetScript("OnMouseUp", function(_, button)
         if button ~= "LeftButton" then
@@ -3006,11 +3006,11 @@ local function BuildContent()
     end)
     -- Controller cursor: pointer-position controls are never stops, and its own
     -- scrolling of the content moves the thumb (the lerp and drag paint their own).
-    CludesUI.PadHint(scrollThumb, "nodeignore")
+    CludesUI.PadHint(thumbKnob, "nodeignore")
     CludesUI.PadHint(scrollHitArea, "nodeignore")
     if CludesUI.PadCP() then
         contentScroll:HookScript("OnVerticalScroll", function()
-            if not isSmoothing and not isDragging then
+            if not smoothing and not isDragging then
                 UpdateScrollThumb()
             end
         end)
@@ -3288,7 +3288,7 @@ local function BuildContent()
         if delta ~= 0 and contentScroll then
             local adjusted = math.max(0, savedScroll + delta)
             contentScroll:SetVerticalScroll(adjusted)
-            if isSmoothing then
+            if smoothing then
                 scrollTarget = math.max(0, savedTarget + delta)
             else
                 scrollTarget = adjusted
@@ -3412,16 +3412,16 @@ local function BuildFooter(rightW, rightX)
         local bg = SolidTex(button, "BACKGROUND", DARK_BG.r, DARK_BG.g, DARK_BG.b, 0.92)
         bg:SetAllPoints()
         local brd = CludesUI.MakeRoundedBorder(button, brdR, brdG, brdB, brdA, bg, 2)
-        local lbl = MakeFont(button, 13, nil, textR, textG, textB)
-        lbl:SetAlpha(textA)
-        lbl:SetPoint("CENTER")
-        lbl:SetText(CludesUI.L(label))
-        button._label = lbl
+        local captionText = MakeFont(button, 13, nil, textR, textG, textB)
+        captionText:SetAlpha(textA)
+        captionText:SetPoint("CENTER")
+        captionText:SetText(CludesUI.L(label))
+        button._label = captionText
         do
             local FADE_DUR = 0.1
             local fadeProgress, target = 0, 0
             local function Apply(t)
-                lbl:SetTextColor(
+                captionText:SetTextColor(
                     lerp(textR, textHR, t),
                     lerp(textG, textHG, t),
                     lerp(textB, textHB, t),
@@ -3434,9 +3434,9 @@ local function BuildFooter(rightW, rightX)
                     lerp(brdA, brdHA, t)
                 )
             end
-            local function OnUpdate(self, elapsed)
+            local function OnUpdate(self, timePassed)
                 local dir = (target == 1) and 1 or -1
-                fadeProgress = fadeProgress + dir * (elapsed / FADE_DUR)
+                fadeProgress = fadeProgress + dir * (timePassed / FADE_DUR)
                 if (dir == 1 and fadeProgress >= 1) or (dir == -1 and fadeProgress <= 0) then
                     fadeProgress = target
                     self:SetScript("OnUpdate", nil)
@@ -3582,53 +3582,53 @@ local function BuildFooter(rightW, rightX)
         local SOCIAL_FADE = 0.1
 
         -- Reusable link popup (created once, shared by all social icons)
-        local linkPopup, linkBackdrop
+        local linkDialog, linkShade
         local function HideLinkPopup()
-            if linkPopup then
-                linkPopup:Hide()
+            if linkDialog then
+                linkDialog:Hide()
             end
-            if linkBackdrop then
-                linkBackdrop:Hide()
+            if linkShade then
+                linkShade:Hide()
             end
         end
         local function ShowLinkPopup(url, anchorBtn)
-            if not linkPopup then
+            if not linkDialog then
                 -- Controller cursor: overlay parent (UIParent unless a controller cursor is loaded).
                 local overlayParent = CludesUI.OverlayParent()
-                linkBackdrop = CreateFrame("Button", nil, overlayParent)
-                linkBackdrop:SetFrameStrata("DIALOG")
-                linkBackdrop:SetFrameLevel(499)
-                linkBackdrop:SetAllPoints(UIParent)
-                local bdTex = linkBackdrop:CreateTexture(nil, "BACKGROUND")
+                linkShade = CreateFrame("Button", nil, overlayParent)
+                linkShade:SetFrameStrata("DIALOG")
+                linkShade:SetFrameLevel(499)
+                linkShade:SetAllPoints(UIParent)
+                local bdTex = linkShade:CreateTexture(nil, "BACKGROUND")
                 bdTex:SetAllPoints()
                 bdTex:SetColorTexture(0, 0, 0, 0.20)
-                local fadeIn = linkBackdrop:CreateAnimationGroup()
+                local fadeIn = linkShade:CreateAnimationGroup()
                 fadeIn:SetToFinalAlpha(true)
                 local a = fadeIn:CreateAnimation("Alpha")
                 a:SetFromAlpha(0)
                 a:SetToAlpha(1)
                 a:SetDuration(0.2)
-                linkBackdrop._fadeIn = fadeIn
-                linkBackdrop:RegisterForClicks("AnyUp")
-                linkBackdrop:SetScript("OnClick", HideLinkPopup)
-                linkBackdrop:Hide()
+                linkShade._fadeIn = fadeIn
+                linkShade:RegisterForClicks("AnyUp")
+                linkShade:SetScript("OnClick", HideLinkPopup)
+                linkShade:Hide()
 
-                linkPopup = CreateFrame("Frame", nil, overlayParent)
-                linkPopup:SetFrameStrata("DIALOG")
-                linkPopup:SetFrameLevel(500)
-                linkPopup:SetSize(380, 72)
-                local popFade = linkPopup:CreateAnimationGroup()
+                linkDialog = CreateFrame("Frame", nil, overlayParent)
+                linkDialog:SetFrameStrata("DIALOG")
+                linkDialog:SetFrameLevel(500)
+                linkDialog:SetSize(380, 72)
+                local popFade = linkDialog:CreateAnimationGroup()
                 popFade:SetToFinalAlpha(true)
                 local pa = popFade:CreateAnimation("Alpha")
                 pa:SetFromAlpha(0)
                 pa:SetToAlpha(1)
                 pa:SetDuration(0.2)
-                linkPopup._fadeIn = popFade
+                linkDialog._fadeIn = popFade
 
-                local bg = SolidTex(linkPopup, "BACKGROUND", DARK_BG.r, DARK_BG.g, DARK_BG.b, 0.97)
+                local bg = SolidTex(linkDialog, "BACKGROUND", DARK_BG.r, DARK_BG.g, DARK_BG.b, 0.97)
                 bg:SetAllPoints()
                 CludesUI.MakeRoundedBorder(
-                    linkPopup,
+                    linkDialog,
                     BORDER_COLOR.r,
                     BORDER_COLOR.g,
                     BORDER_COLOR.b,
@@ -3637,7 +3637,7 @@ local function BuildFooter(rightW, rightX)
                 )
 
                 local hintText = MakeFont(
-                    linkPopup,
+                    linkDialog,
                     11,
                     nil,
                     TEXT_SECTION.r,
@@ -3645,10 +3645,10 @@ local function BuildFooter(rightW, rightX)
                     TEXT_SECTION.b,
                     TEXT_SECTION.a
                 )
-                hintText:SetPoint("TOP", linkPopup, "TOP", 0, -10)
+                hintText:SetPoint("TOP", linkDialog, "TOP", 0, -10)
                 hintText:SetText("Press Ctrl+C to copy, then Escape to close")
 
-                local eb = CreateFrame("EditBox", nil, linkPopup)
+                local eb = CreateFrame("EditBox", nil, linkDialog)
                 eb:SetSize(340, 26)
                 eb:SetPoint("TOP", hintText, "BOTTOM", 0, -8)
                 eb:SetFontObject(GameFontHighlight)
@@ -3666,32 +3666,32 @@ local function BuildFooter(rightW, rightX)
                 eb:SetScript("OnMouseUp", function(self)
                     self:HighlightText()
                 end)
-                linkPopup:EnableMouse(true)
-                linkPopup:SetScript("OnMouseDown", function()
-                    linkPopup._eb:SetFocus()
-                    linkPopup._eb:HighlightText()
+                linkDialog:EnableMouse(true)
+                linkDialog:SetScript("OnMouseDown", function()
+                    linkDialog._eb:SetFocus()
+                    linkDialog._eb:HighlightText()
                 end)
-                linkPopup._eb = eb
+                linkDialog._eb = eb
                 -- Controller cursor: the backdrop blocks what is under it without being a stop.
-                CludesUI.TrackOverlay(linkBackdrop)
-                CludesUI.TrackOverlay(linkPopup)
-                CludesUI.PadHint(linkBackdrop, "nodepass")
+                CludesUI.TrackOverlay(linkShade)
+                CludesUI.TrackOverlay(linkDialog)
+                CludesUI.PadHint(linkShade, "nodepass")
                 -- Controller cursor: its cancel press clicks the backdrop, which closes.
                 if CludesUI.PadCP() then
-                    linkPopup.CloseButton = linkBackdrop
+                    linkDialog.CloseButton = linkShade
                 end
             end
-            linkPopup._eb:SetText(url)
-            linkPopup:ClearAllPoints()
-            linkPopup:SetPoint("BOTTOM", anchorBtn, "TOP", 0, 8)
-            linkBackdrop:SetAlpha(0)
-            linkBackdrop:Show()
-            linkBackdrop._fadeIn:Play()
-            linkPopup:SetAlpha(0)
-            linkPopup:Show()
-            linkPopup._fadeIn:Play()
-            linkPopup._eb:SetFocus()
-            linkPopup._eb:HighlightText()
+            linkDialog._eb:SetText(url)
+            linkDialog:ClearAllPoints()
+            linkDialog:SetPoint("BOTTOM", anchorBtn, "TOP", 0, 8)
+            linkShade:SetAlpha(0)
+            linkShade:Show()
+            linkShade._fadeIn:Play()
+            linkDialog:SetAlpha(0)
+            linkDialog:Show()
+            linkDialog._fadeIn:Play()
+            linkDialog._eb:SetFocus()
+            linkDialog._eb:HighlightText()
         end
         -- The same copy box for a link elsewhere in the panel (url, the frame it
         -- opens above): the CUI Legends page's Twitch link.
@@ -3732,9 +3732,9 @@ local function BuildFooter(rightW, rightX)
             local function Apply(t)
                 texture:SetAlpha(lerp(SOCIAL_ALPHA, SOCIAL_HOVER, t))
             end
-            local function OnUpdate(self, elapsed)
+            local function OnUpdate(self, timePassed)
                 local dir = (target == 1) and 1 or -1
-                fadeProgress = fadeProgress + dir * (elapsed / SOCIAL_FADE)
+                fadeProgress = fadeProgress + dir * (timePassed / SOCIAL_FADE)
                 if (dir == 1 and fadeProgress >= 1) or (dir == -1 and fadeProgress <= 0) then
                     fadeProgress = target
                     self:SetScript("OnUpdate", nil)
@@ -3771,21 +3771,21 @@ local function BuildFooter(rightW, rightX)
         bg:SetAllPoints()
         local brd =
             CludesUI.MakeRoundedBorder(button, CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b, 0.7, bg, 2)
-        local lbl = MakeFont(button, 13, nil, CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b)
-        lbl:SetAlpha(0.7)
-        lbl:SetPoint("CENTER")
-        lbl:SetText(CludesUI.L("Close"))
+        local captionText = MakeFont(button, 13, nil, CLUDES_GREEN.r, CLUDES_GREEN.g, CLUDES_GREEN.b)
+        captionText:SetAlpha(0.7)
+        captionText:SetPoint("CENTER")
+        captionText:SetText(CludesUI.L("Close"))
         -- Hover animation reads from CLUDES_GREEN live
         local FADE_DUR = 0.1
         local fadeProgress, target = 0, 0
         local function Apply(t)
             local EG = CLUDES_GREEN
-            lbl:SetTextColor(EG.r, EG.g, EG.b, lerp(0.7, 1, t))
+            captionText:SetTextColor(EG.r, EG.g, EG.b, lerp(0.7, 1, t))
             brd:SetColor(EG.r, EG.g, EG.b, lerp(0.7, 1, t))
         end
-        local function OnUpdate(self, elapsed)
+        local function OnUpdate(self, timePassed)
             local dir = (target == 1) and 1 or -1
-            fadeProgress = fadeProgress + dir * (elapsed / FADE_DUR)
+            fadeProgress = fadeProgress + dir * (timePassed / FADE_DUR)
             if (dir == 1 and fadeProgress >= 1) or (dir == -1 and fadeProgress <= 0) then
                 fadeProgress = target
                 self:SetScript("OnUpdate", nil)
@@ -3809,7 +3809,7 @@ local function BuildFooter(rightW, rightX)
         RegAccent({
             type = "callback",
             fn = function(r, g, b)
-                lbl:SetTextColor(r, g, b, lerp(0.7, 1, fadeProgress))
+                captionText:SetTextColor(r, g, b, lerp(0.7, 1, fadeProgress))
                 brd:SetColor(r, g, b, lerp(0.7, 1, fadeProgress))
             end,
         })
@@ -3997,13 +3997,13 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
             searchBg
         )
 
-        local editBox = CreateFrame("EditBox", nil, searchFrame)
-        editBox:SetAllPoints()
-        editBox:SetAutoFocus(false)
-        editBox:SetFont(CludesUI.EXPRESSWAY, 13, "")
-        editBox:SetTextColor(STYLE.TEXT_WHITE_R, STYLE.TEXT_WHITE_G, STYLE.TEXT_WHITE_B, 1)
-        editBox:SetTextInsets(10, 24, 0, 0)
-        editBox:SetMaxLetters(40)
+        local inputBox = CreateFrame("EditBox", nil, searchFrame)
+        inputBox:SetAllPoints()
+        inputBox:SetAutoFocus(false)
+        inputBox:SetFont(CludesUI.EXPRESSWAY, 13, "")
+        inputBox:SetTextColor(STYLE.TEXT_WHITE_R, STYLE.TEXT_WHITE_G, STYLE.TEXT_WHITE_B, 1)
+        inputBox:SetTextInsets(10, 24, 0, 0)
+        inputBox:SetMaxLetters(40)
 
         local placeholder =
             MakeFont(searchFrame, 12, nil, STYLE.TEXT_DIM_R, STYLE.TEXT_DIM_G, STYLE.TEXT_DIM_B, 0.3)
@@ -4014,7 +4014,7 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
         local clearBtn = CreateFrame("Button", nil, searchFrame)
         clearBtn:SetSize(20, 20)
         clearBtn:SetPoint("RIGHT", searchFrame, "RIGHT", -4, 0)
-        clearBtn:SetFrameLevel(editBox:GetFrameLevel() + 2)
+        clearBtn:SetFrameLevel(inputBox:GetFrameLevel() + 2)
         clearBtn:Hide()
         local clearLabel =
             MakeFont(clearBtn, 15, nil, STYLE.TEXT_DIM_R, STYLE.TEXT_DIM_G, STYLE.TEXT_DIM_B, 0.35)
@@ -4027,8 +4027,8 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
             clearLabel:SetTextColor(STYLE.TEXT_DIM_R, STYLE.TEXT_DIM_G, STYLE.TEXT_DIM_B, 0.35)
         end)
         clearBtn:SetScript("OnClick", function()
-            editBox:SetText("")
-            editBox:ClearFocus()
+            inputBox:SetText("")
+            inputBox:ClearFocus()
         end)
 
         -- Disabled (a page the inline search cannot filter, SelectPage): greyed
@@ -4046,7 +4046,7 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
         end)
         tabStrip._setSearchDisabled = function(off)
             if off then
-                editBox:ClearFocus()
+                inputBox:ClearFocus()
             end
             searchFrame:SetAlpha(off and 0.3 or 1)
             searchBlock:SetShown(off)
@@ -4059,15 +4059,15 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
         searchFrame:SetScript("OnLeave", function()
             searchBrd:SetColor(STYLE.BORDER_R, STYLE.BORDER_G, STYLE.BORDER_B, 0.10)
         end)
-        editBox:SetScript("OnEditFocusGained", function()
+        inputBox:SetScript("OnEditFocusGained", function()
             searchBrd:SetColor(STYLE.BORDER_R, STYLE.BORDER_G, STYLE.BORDER_B, 0.15)
         end)
-        editBox:SetScript("OnEditFocusLost", function()
+        inputBox:SetScript("OnEditFocusLost", function()
             searchBrd:SetColor(STYLE.BORDER_R, STYLE.BORDER_G, STYLE.BORDER_B, 0.10)
         end)
 
         local searchDebounceTimer
-        editBox:SetScript("OnTextChanged", function(self, userInput)
+        inputBox:SetScript("OnTextChanged", function(self, userInput)
             local text = self:GetText() or ""
             if text == "" then
                 placeholder:Show()
@@ -4089,16 +4089,16 @@ BuildTabs = function(pageNames, disabledPages, disabledTooltips)
             end
         end)
 
-        editBox:SetScript("OnEscapePressed", function(self)
+        inputBox:SetScript("OnEscapePressed", function(self)
             self:SetText("")
             self:ClearFocus()
         end)
 
-        editBox:SetScript("OnEnterPressed", function(self)
+        inputBox:SetScript("OnEnterPressed", function(self)
             self:ClearFocus()
         end)
 
-        tabStrip._searchBox = editBox
+        tabStrip._searchBox = inputBox
         tabStrip._searchFrame = searchFrame
 
         -- Spec Override capture toggle (left of the search box). All look
@@ -4221,15 +4221,15 @@ local function PlaySearchHighlight(pulse, targetFrame)
     pulse:SetFrameLevel(targetFrame:GetFrameLevel() + 5)
     pulse:SetAlpha(0)
     pulse:Show()
-    local elapsed = 0
+    local timePassed = 0
     pulse:SetScript("OnUpdate", function(self, dt)
-        elapsed = elapsed + dt
-        if elapsed >= 0.3 then
+        timePassed = timePassed + dt
+        if timePassed >= 0.3 then
             self:SetAlpha(0.5)
             self:SetScript("OnUpdate", nil)
             return
         end
-        self:SetAlpha(0.5 * (elapsed / 0.3))
+        self:SetAlpha(0.5 * (timePassed / 0.3))
     end)
 end
 
@@ -4341,9 +4341,9 @@ function CludesUI:NavigateToElementSettings(moduleName, pageTitle, sectionName, 
         -- A label equal to the text first, so "Sidebar Icons" lands on its own slot rather
         -- than on an earlier "Sidebar Icons Color"; then the first label containing it.
         for _, region in ipairs(regions) do
-            local lbl = region._label
-            if lbl and lbl.GetText then
-                local t = lbl:GetText()
+            local captionText = region._label
+            if captionText and captionText.GetText then
+                local t = captionText:GetText()
                 if t and t ~= "" and (t == text or t == locText) then
                     return region
                 end
@@ -4353,9 +4353,9 @@ function CludesUI:NavigateToElementSettings(moduleName, pageTitle, sectionName, 
             return nil
         end
         for _, region in ipairs(regions) do
-            local lbl = region._label
-            if lbl and lbl.GetText then
-                local t = lbl:GetText()
+            local captionText = region._label
+            if captionText and captionText.GetText then
+                local t = captionText:GetText()
                 if
                     t
                     and t ~= ""
@@ -4658,9 +4658,9 @@ function CludesUI:ApplyInlineSearch(query, skipHighlights)
         contentFrame:SetHeight(cachedPage.totalH + 30)
         if contentScroll and contentScroll.SetVerticalScroll then
             scrollTarget = 0
-            isSmoothing = false
-            if smoothFrame then
-                smoothFrame:Hide()
+            smoothing = false
+            if smoother then
+                smoother:Hide()
             end
             contentScroll:SetVerticalScroll(0)
             UpdateScrollThumb()
@@ -4944,9 +4944,9 @@ function CludesUI:ApplyInlineSearch(query, skipHighlights)
 
     if contentScroll and contentScroll.SetVerticalScroll then
         scrollTarget = 0
-        isSmoothing = false
-        if smoothFrame then
-            smoothFrame:Hide()
+        smoothing = false
+        if smoother then
+            smoother:Hide()
         end
         contentScroll:SetVerticalScroll(0)
         UpdateScrollThumb()
@@ -5079,35 +5079,35 @@ function CludesUI:CreateSplitColumns(parent, yOffset)
     -- Pooled with the page on a page-pool host (CludesUI_FramePool.lua).
     local NewFrame = CUI_NS.PoolCreateFrame or CreateFrame
 
-    local splitFrame = NewFrame("Frame", nil, parent)
-    splitFrame:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, yOffset or 0)
-    splitFrame:SetWidth(totalW)
-    splitFrame:SetHeight(1) -- caller sets final height
+    local columns = NewFrame("Frame", nil, parent)
+    columns:SetPoint("TOPLEFT", parent, "TOPLEFT", 0, yOffset or 0)
+    columns:SetWidth(totalW)
+    columns:SetHeight(1) -- caller sets final height
 
-    local leftCol = NewFrame("Frame", nil, splitFrame)
-    leftCol:SetPoint("TOPLEFT", splitFrame, "TOPLEFT", 0, 0)
+    local leftCol = NewFrame("Frame", nil, columns)
+    leftCol:SetPoint("TOPLEFT", columns, "TOPLEFT", 0, 0)
     leftCol:SetSize(colW, 1)
 
-    local divider = splitFrame:CreateTexture(nil, "ARTWORK")
+    local divider = columns:CreateTexture(nil, "ARTWORK")
     divider:SetColorTexture(1, 1, 1, 0.08)
     divider:SetWidth(DIV_W)
-    divider:SetPoint("TOP", splitFrame, "TOP", 0, 0)
-    divider:SetPoint("BOTTOM", splitFrame, "BOTTOM", 0, 0)
+    divider:SetPoint("TOP", columns, "TOP", 0, 0)
+    divider:SetPoint("BOTTOM", columns, "BOTTOM", 0, 0)
 
-    local rightCol = NewFrame("Frame", nil, splitFrame)
-    rightCol:SetPoint("TOPRIGHT", splitFrame, "TOPRIGHT", 0, 0)
+    local rightCol = NewFrame("Frame", nil, columns)
+    rightCol:SetPoint("TOPRIGHT", columns, "TOPRIGHT", 0, 0)
     rightCol:SetSize(colW, 1)
 
-    splitFrame._leftCol = leftCol
-    splitFrame._rightCol = rightCol
-    splitFrame._divider = divider
-    splitFrame._colW = colW
+    columns._leftCol = leftCol
+    columns._rightCol = rightCol
+    columns._divider = divider
+    columns._colW = colW
 
     -- Mark columns with split parent so RowBg can extend backgrounds full width
-    leftCol._splitParent = splitFrame
-    rightCol._splitParent = splitFrame
+    leftCol._splitParent = columns
+    rightCol._splitParent = columns
 
-    return leftCol, rightCol, splitFrame
+    return leftCol, rightCol, columns
 end
 
 -------------------------------------------------------------------------------
@@ -5828,9 +5828,9 @@ function CludesUI:SelectPage(pageTitle)
     -- Reset scroll to top on tab switch
     if contentScroll and contentScroll.SetVerticalScroll then
         scrollTarget = 0
-        isSmoothing = false
-        if smoothFrame then
-            smoothFrame:Hide()
+        smoothing = false
+        if smoother then
+            smoother:Hide()
         end
         contentScroll:SetVerticalScroll(0)
         UpdateScrollThumb()
@@ -5907,9 +5907,9 @@ function CludesUI:RefreshPage(force)
 
     RunPagePass(pageKey, activePage, moduleList[currentModule], true)
 
-    isSmoothing = false
-    if smoothFrame then
-        smoothFrame:Hide()
+    smoothing = false
+    if smoother then
+        smoother:Hide()
     end
     if contentScroll then
         -- The range is stale right after the height change; recompute it so a
@@ -5950,9 +5950,9 @@ CludesUI:RegisterOnShow(RunDeferredRefresh)
 function CludesUI:ScrollToTop()
     if contentScroll and contentScroll.SetVerticalScroll then
         scrollTarget = 0
-        isSmoothing = false
-        if smoothFrame then
-            smoothFrame:Hide()
+        smoothing = false
+        if smoother then
+            smoother:Hide()
         end
         contentScroll:SetVerticalScroll(0)
         UpdateScrollThumb()
@@ -6179,30 +6179,30 @@ end
 local function RefreshSidebarStates()
     -- Refresh global settings button state (unchanged -- still a dedicated
     -- always-visible row above the grouped scroll area).
-    local globalBtn = sidebarButtons["_CUIGlobal"]
-    if globalBtn then
+    local globalButton = sidebarButtons["_CUIGlobal"]
+    if globalButton then
         if "_CUIGlobal" == currentModule then
-            globalBtn._label:SetTextColor(
+            globalButton._label:SetTextColor(
                 NAV_SELECTED_TEXT.r,
                 NAV_SELECTED_TEXT.g,
                 NAV_SELECTED_TEXT.b,
                 NAV_SELECTED_TEXT.a
             )
-            globalBtn._icon:SetTexture(globalBtn._iconOff)
-            globalBtn._icon:SetDesaturated(false)
-            globalBtn._icon:SetAlpha(NAV_SELECTED_ICON_A)
-            globalBtn._iconGlow:Show()
+            globalButton._icon:SetTexture(globalButton._iconOff)
+            globalButton._icon:SetDesaturated(false)
+            globalButton._icon:SetAlpha(NAV_SELECTED_ICON_A)
+            globalButton._iconGlow:Show()
         else
-            globalBtn._label:SetTextColor(
+            globalButton._label:SetTextColor(
                 NAV_ENABLED_TEXT.r,
                 NAV_ENABLED_TEXT.g,
                 NAV_ENABLED_TEXT.b,
                 NAV_ENABLED_TEXT.a
             )
-            globalBtn._icon:SetTexture(globalBtn._iconOff)
-            globalBtn._icon:SetDesaturated(false)
-            globalBtn._icon:SetAlpha(NAV_ENABLED_ICON_A)
-            globalBtn._iconGlow:Hide()
+            globalButton._icon:SetTexture(globalButton._iconOff)
+            globalButton._icon:SetDesaturated(false)
+            globalButton._icon:SetAlpha(NAV_ENABLED_ICON_A)
+            globalButton._iconGlow:Hide()
         end
     end
 
@@ -6406,9 +6406,9 @@ local function ShowSidebarUnlockTip()
             end,
         })
         -- Center horizontally on the Unlock Mode label text
-        local lbl = anchor._label
-        if lbl then
-            tip:SetPoint("TOP", lbl, "BOTTOM", 0, -12)
+        local captionText = anchor._label
+        if captionText then
+            tip:SetPoint("TOP", captionText, "BOTTOM", 0, -12)
         else
             tip:SetPoint("TOP", anchor, "BOTTOM", 60, -12)
         end
