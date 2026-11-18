@@ -822,6 +822,26 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                     highlight:SetAlpha(0)
                     return arrow, highlight
                 end
+                -- A colour swatch at the right of a flyout item (the item then never
+                -- takes part in Spec Overrides capture): getColor returns r, g, b, a,
+                -- setColor takes a pick, withAlpha offers an opacity slider, and
+                -- onFirstClick, when given, runs on each click before the picker opens.
+                AB.ItemSwatch = function(si, getColor, setColor, withAlpha, onFirstClick)
+                    si._noCapture = true
+                    local swatchBtn, refreshSwatch = CludesUI.BuildColorSwatch(
+                        si,
+                        si:GetFrameLevel() + 3,
+                        getColor,
+                        setColor,
+                        withAlpha,
+                        14
+                    )
+                    swatchBtn:SetPoint("RIGHT", si, "RIGHT", -8, 0)
+                    si._refreshSwatch = refreshSwatch
+                    if onFirstClick then
+                        swatchBtn:HookScript("PreClick", onFirstClick)
+                    end
+                end
                 AB.NewMenuRow = function(caption)
                     local row = CreateFrame("Button", nil, inner)
                     row:SetHeight(ITEM_H)
@@ -846,10 +866,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         if item.val ~= "custom" then
                             return
                         end
-                        si._noCapture = true
-                        local swatchBtn, refreshSwatch = CludesUI.BuildColorSwatch(
+                        AB.ItemSwatch(
                             si,
-                            si:GetFrameLevel() + 3,
                             function()
                                 return ss[rKey] or 1, ss[gKey] or g, ss[bKey] or b, 1
                             end,
@@ -860,20 +878,17 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end
                             end,
                             false,
-                            14
+                            function()
+                                EnsureSS()
+                                ss[key] = "custom"
+                                if not ss[rKey] then
+                                    ss[rKey], ss[gKey], ss[bKey] = 1, g, b
+                                end
+                                if sub._refreshSelection then
+                                    sub._refreshSelection()
+                                end
+                            end
                         )
-                        swatchBtn:SetPoint("RIGHT", si, "RIGHT", -8, 0)
-                        si._refreshSwatch = refreshSwatch
-                        swatchBtn:HookScript("PreClick", function()
-                            EnsureSS()
-                            ss[key] = "custom"
-                            if not ss[rKey] then
-                                ss[rKey], ss[gKey], ss[bKey] = 1, g, b
-                            end
-                            if sub._refreshSelection then
-                                sub._refreshSelection()
-                            end
-                        end)
                     end
                 end
                 AB.CustomColorApply = function(key, g, b)
@@ -3479,10 +3494,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                             end)
                         elseif item.val == "color" then
                             -- Inline color swatch (same shape as the Active State swipe swatch): picking a color also enables the toggle.
-                            si._noCapture = true
-                            local swatchBtn, refreshSwatch = CludesUI.BuildColorSwatch(
+                            AB.ItemSwatch(
                                 si,
-                                si:GetFrameLevel() + 3,
                                 function()
                                     return acc.get("thresholdColorR") or 1,
                                         acc.get("thresholdColorG") or 0.2,
@@ -3496,23 +3509,20 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                     acc.refresh()
                                 end,
                                 false,
-                                14
+                                function()
+                                    acc.set("thresholdColorEnabled", true)
+                                    if not acc.get("thresholdColorR") then
+                                        acc.set("thresholdColorR", 1)
+                                        acc.set("thresholdColorG", 0.2)
+                                        acc.set("thresholdColorB", 0.2)
+                                    end
+                                    -- Keep the dropdown AND flyout open (OnUpdate cpOpen guard); re-highlight the now-on toggle.
+                                    if sub._refreshSelection then
+                                        sub._refreshSelection()
+                                    end
+                                    acc.refresh()
+                                end
                             )
-                            swatchBtn:SetPoint("RIGHT", si, "RIGHT", -8, 0)
-                            si._refreshSwatch = refreshSwatch
-                            swatchBtn:HookScript("PreClick", function()
-                                acc.set("thresholdColorEnabled", true)
-                                if not acc.get("thresholdColorR") then
-                                    acc.set("thresholdColorR", 1)
-                                    acc.set("thresholdColorG", 0.2)
-                                    acc.set("thresholdColorB", 0.2)
-                                end
-                                -- Keep the dropdown AND flyout open (OnUpdate cpOpen guard); re-highlight the now-on toggle.
-                                if sub._refreshSelection then
-                                    sub._refreshSelection()
-                                end
-                                acc.refresh()
-                            end)
                         end
                     end)
                 end
@@ -4666,21 +4676,11 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         -- Right-aligned colour swatch on a subnav item.
                         -- Per-spell settings are outside Spec Overrides, so the swatch opts out of capture.
                         local function MakeColorSwatch(si, getR, getG, getB, onChanged)
-                            si._noCapture = true
-                            local sw, refreshSwatch = CludesUI.BuildColorSwatch(
-                                si,
-                                si:GetFrameLevel() + 3,
-                                function()
-                                    return getR(), getG(), getB(), 1
-                                end,
-                                function(r, g, b)
-                                    onChanged(r, g, b)
-                                end,
-                                false,
-                                14
-                            )
-                            sw:SetPoint("RIGHT", si, "RIGHT", -8, 0)
-                            si._refreshSwatch = refreshSwatch
+                            AB.ItemSwatch(si, function()
+                                return getR(), getG(), getB(), 1
+                            end, function(r, g, b)
+                                onChanged(r, g, b)
+                            end, false)
                         end
 
                         -- Combat Potion Icon (the three combat potion presets): the order the
@@ -5668,10 +5668,8 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         end, function(si, item, sub)
                             if item.val == "custom" then
                                 -- Clickable color swatch on right (opens color picker)
-                                si._noCapture = true
-                                local swatchBtn, refreshSwatch = CludesUI.BuildColorSwatch(
+                                AB.ItemSwatch(
                                     si,
-                                    si:GetFrameLevel() + 3,
                                     function()
                                         return ss.activeSwipeR or 1,
                                             ss.activeSwipeG or 0.776,
@@ -5688,39 +5686,34 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         end
                                     end,
                                     true,
-                                    14
+                                    function()
+                                        -- Persist before mutating: for a spell with no saved settings yet
+                                        -- (e.g. a freshly added Hero-talent spell like Wither/Celestial
+                                        -- Conduit), `ss` is a throwaway {} -- without EnsureSS the picked
+                                        -- colour is written to a temporary table and lost, so the swipe never changes and reverts to default on reopen.
+                                        EnsureSS()
+                                        -- Ensure custom mode is selected. SetOwn: a plain nil write would inherit a bar-tier "none"/class value instead of meaning custom.
+                                        SetOwn("activeSwipeMode", nil)
+                                        SetOwn("activeSwipeClassColor", nil)
+                                        if not ss.activeSwipeR then
+                                            ss.activeSwipeR = 1
+                                            ss.activeSwipeG = 0.776
+                                            ss.activeSwipeB = 0.376
+                                            ss.activeSwipeA = 0.7
+                                        end
+                                        -- Keep the dropdown AND flyout open (OnUpdate cpOpen guard); re-highlight the now-selected Custom row.
+                                        if sub._refreshSelection then
+                                            sub._refreshSelection()
+                                        end
+                                        if mod.QueueReanchor then
+                                            mod.QueueReanchor()
+                                        end
+                                    end
                                 )
-                                swatchBtn:SetPoint("RIGHT", si, "RIGHT", -8, 0)
-                                si._refreshSwatch = refreshSwatch
-                                swatchBtn:HookScript("PreClick", function()
-                                    -- Persist before mutating: for a spell with no saved settings yet
-                                    -- (e.g. a freshly added Hero-talent spell like Wither/Celestial
-                                    -- Conduit), `ss` is a throwaway {} -- without EnsureSS the picked
-                                    -- colour is written to a temporary table and lost, so the swipe never changes and reverts to default on reopen.
-                                    EnsureSS()
-                                    -- Ensure custom mode is selected. SetOwn: a plain nil write would inherit a bar-tier "none"/class value instead of meaning custom.
-                                    SetOwn("activeSwipeMode", nil)
-                                    SetOwn("activeSwipeClassColor", nil)
-                                    if not ss.activeSwipeR then
-                                        ss.activeSwipeR = 1
-                                        ss.activeSwipeG = 0.776
-                                        ss.activeSwipeB = 0.376
-                                        ss.activeSwipeA = 0.7
-                                    end
-                                    -- Keep the dropdown AND flyout open (OnUpdate cpOpen guard); re-highlight the now-selected Custom row.
-                                    if sub._refreshSelection then
-                                        sub._refreshSelection()
-                                    end
-                                    if mod.QueueReanchor then
-                                        mod.QueueReanchor()
-                                    end
-                                end)
                             elseif item.activeBorder then
                                 -- Border Color swatch (mirrors CD Swipe Color): the swatch picks the color and enables the override; the row itself toggles it on/off (handled in the item loop).
-                                si._noCapture = true
-                                local swatchBtn, refreshSwatch = CludesUI.BuildColorSwatch(
+                                AB.ItemSwatch(
                                     si,
-                                    si:GetFrameLevel() + 3,
                                     function()
                                         return ss.activeBorderR or 1,
                                             ss.activeBorderG or 0.776,
@@ -5740,27 +5733,24 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                         end
                                     end,
                                     true,
-                                    14
+                                    function()
+                                        EnsureSS()
+                                        ss.activeBorderEnabled = true
+                                        if not ss.activeBorderR then
+                                            ss.activeBorderR = 1
+                                            ss.activeBorderG = 0.776
+                                            ss.activeBorderB = 0.376
+                                            ss.activeBorderA = 1
+                                        end
+                                        -- Keep the dropdown AND flyout open (OnUpdate cpOpen guard). The border toggle row manages its own highlight, so no selection refresh here.
+                                        if mod.RefreshCDMIconAppearance then
+                                            mod.RefreshCDMIconAppearance(barId)
+                                        end
+                                        if mod.QueueReanchor then
+                                            mod.QueueReanchor()
+                                        end
+                                    end
                                 )
-                                swatchBtn:SetPoint("RIGHT", si, "RIGHT", -8, 0)
-                                si._refreshSwatch = refreshSwatch
-                                swatchBtn:HookScript("PreClick", function()
-                                    EnsureSS()
-                                    ss.activeBorderEnabled = true
-                                    if not ss.activeBorderR then
-                                        ss.activeBorderR = 1
-                                        ss.activeBorderG = 0.776
-                                        ss.activeBorderB = 0.376
-                                        ss.activeBorderA = 1
-                                    end
-                                    -- Keep the dropdown AND flyout open (OnUpdate cpOpen guard). The border toggle row manages its own highlight, so no selection refresh here.
-                                    if mod.RefreshCDMIconAppearance then
-                                        mod.RefreshCDMIconAppearance(barId)
-                                    end
-                                    if mod.QueueReanchor then
-                                        mod.QueueReanchor()
-                                    end
-                                end)
                             end
                         end, {
                             apply = {
