@@ -513,6 +513,12 @@ end
 -- nothing to browse. Used by BOTH the default Buffs bar and every custom buff bar
 -- (unified onto one model).
 local function BuildAssignedBuffsFields(widget, fontFile, sy, conf, apply, isDefault)
+    -- Row accessors over conf: a key read (or its default) and written.
+    local function ConfFieldGet(key)
+        return function()
+            return conf[key]
+        end
+    end
     local W = CludesUI.Widgets
     local Pix = CludesUI.PanelPP
     local _, hh = 0, 0
@@ -652,9 +658,7 @@ local function BuildAssignedBuffsFields(widget, fontFile, sy, conf, apply, isDef
                     onClick = function()
                         CludesUI.ShowSpellBlacklistPopup({
                             title = "Buff Blacklist",
-                            get = function()
-                                return conf.blacklist
-                            end,
+                            get = ConfFieldGet("blacklist"),
                             add = function(ident)
                                 conf.blacklist = conf.blacklist or {}
                                 conf.blacklist[ident] = true
@@ -1239,6 +1243,18 @@ end
 -- here (Sort Method's option set is now shared between buffs/debuffs, see
 -- SORT_METHOD_VALUES' doc comment) but kept for callers/future per-polarity fields.
 local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
+    -- Row accessors over conf: a key read (or its default) and written.
+    local function ConfFieldThen(key)
+        return function(v)
+            conf[key] = v
+            apply()
+        end
+    end
+    local function ConfFieldOr(key, default)
+        return function()
+            return conf[key] or default
+        end
+    end
     local W = CludesUI.Widgets
     local Pix = CludesUI.PanelPP
     local _, hh = 0, 0
@@ -1254,21 +1270,14 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
         max = 400,
         step = 1,
         trackWidth = 120,
-        getValue = function()
-            return conf.iconSize or 32
-        end,
-        setValue = function(val)
-            conf.iconSize = val
-            apply()
-        end,
+        getValue = ConfFieldOr("iconSize", 32),
+        setValue = ConfFieldThen("iconSize"),
     }, {
         type = "dropdown",
         text = "Growth Direction",
         values = GROW_DIR_VALUES,
         order = GROW_DIR_ORDER,
-        getValue = function()
-            return conf.growDirection or "LEFT"
-        end,
+        getValue = ConfFieldOr("growDirection", "LEFT"),
         setValue = function(val)
             -- Change the wrap direction to be a valid value from the new growth direction
             if val == "UP" or val == "DOWN" then
@@ -1292,25 +1301,15 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
         text = "Sort Method",
         values = SORT_METHOD_VALUES,
         order = SORT_METHOD_ORDER,
-        getValue = function()
-            return conf.sortMethod or "Default"
-        end,
-        setValue = function(val)
-            conf.sortMethod = val
-            apply()
-        end,
+        getValue = ConfFieldOr("sortMethod", "Default"),
+        setValue = ConfFieldThen("sortMethod"),
     }, {
         type = "dropdown",
         text = "Sort Direction",
         values = SORT_DIR_VALUES,
         order = SORT_DIR_ORDER,
-        getValue = function()
-            return conf.sortDirection or "Normal"
-        end,
-        setValue = function(val)
-            conf.sortDirection = val
-            apply()
-        end,
+        getValue = ConfFieldOr("sortDirection", "Normal"),
+        setValue = ConfFieldThen("sortDirection"),
     })
     sy = sy - hh
     do
@@ -1324,13 +1323,8 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
                     min = 0,
                     max = 0.20,
                     step = 0.01,
-                    get = function()
-                        return conf.iconZoom or 0.055
-                    end,
-                    set = function(val)
-                        conf.iconZoom = val
-                        apply()
-                    end,
+                    get = ConfFieldOr("iconZoom", 0.055),
+                    set = ConfFieldThen("iconZoom"),
                 },
             },
         })
@@ -1348,13 +1342,8 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
                     label = "Icon Wrap",
                     values = ICON_WRAP_VALUES,
                     order = ICON_WRAP_ORDER,
-                    get = function()
-                        return conf.iconWrapDirection or "LEFT"
-                    end,
-                    set = function(val)
-                        conf.iconWrapDirection = val
-                        apply()
-                    end,
+                    get = ConfFieldOr("iconWrapDirection", "LEFT"),
+                    set = ConfFieldThen("iconWrapDirection"),
                     itemDisabled = function(val)
                         if conf.growDirection == "LEFT" or conf.growDirection == "RIGHT" then
                             return val == "LEFT" or val == "RIGHT"
@@ -1383,20 +1372,14 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
         getValue = function()
             return conf.durationShow ~= false
         end,
-        setValue = function(val)
-            conf.durationShow = val
-            apply()
-        end,
+        setValue = ConfFieldThen("durationShow"),
     }, {
         type = "toggle",
         text = "Stacks",
         getValue = function()
             return conf.stackShow ~= false
         end,
-        setValue = function(val)
-            conf.stackShow = val
-            apply()
-        end,
+        setValue = ConfFieldThen("stackShow"),
     })
     sy = sy - hh
     do
@@ -1410,13 +1393,8 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
                     min = 6,
                     max = 60,
                     step = 1,
-                    get = function()
-                        return conf.durationTextSize or 11
-                    end,
-                    set = function(val)
-                        conf.durationTextSize = val
-                        apply()
-                    end,
+                    get = ConfFieldOr("durationTextSize", 11),
+                    set = ConfFieldThen("durationTextSize"),
                 },
                 {
                     type = "slider",
@@ -1424,13 +1402,8 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return conf.durationOffsetX or 0
-                    end,
-                    set = function(val)
-                        conf.durationOffsetX = val
-                        apply()
-                    end,
+                    get = ConfFieldOr("durationOffsetX", 0),
+                    set = ConfFieldThen("durationOffsetX"),
                 },
                 {
                     type = "slider",
@@ -1438,26 +1411,16 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return conf.durationOffsetY or 0
-                    end,
-                    set = function(val)
-                        conf.durationOffsetY = val
-                        apply()
-                    end,
+                    get = ConfFieldOr("durationOffsetY", 0),
+                    set = ConfFieldThen("durationOffsetY"),
                 },
                 {
                     type = "dropdown",
                     label = "Position",
                     values = AURA_POINT_VALUES,
                     order = AURA_POINT_ORDER,
-                    get = function()
-                        return conf.durationPosition or "CENTER"
-                    end,
-                    set = function(val)
-                        conf.durationPosition = val
-                        apply()
-                    end,
+                    get = ConfFieldOr("durationPosition", "CENTER"),
+                    set = ConfFieldThen("durationPosition"),
                 },
                 {
                     type = "toggle",
@@ -1507,13 +1470,8 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
                     min = 6,
                     max = 60,
                     step = 1,
-                    get = function()
-                        return conf.stackTextSize or 11
-                    end,
-                    set = function(val)
-                        conf.stackTextSize = val
-                        apply()
-                    end,
+                    get = ConfFieldOr("stackTextSize", 11),
+                    set = ConfFieldThen("stackTextSize"),
                 },
                 {
                     type = "slider",
@@ -1521,13 +1479,8 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return conf.stackOffsetX or 0
-                    end,
-                    set = function(val)
-                        conf.stackOffsetX = val
-                        apply()
-                    end,
+                    get = ConfFieldOr("stackOffsetX", 0),
+                    set = ConfFieldThen("stackOffsetX"),
                 },
                 {
                     type = "slider",
@@ -1535,26 +1488,16 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return conf.stackOffsetY or 0
-                    end,
-                    set = function(val)
-                        conf.stackOffsetY = val
-                        apply()
-                    end,
+                    get = ConfFieldOr("stackOffsetY", 0),
+                    set = ConfFieldThen("stackOffsetY"),
                 },
                 {
                     type = "dropdown",
                     label = "Position",
                     values = AURA_POINT_VALUES,
                     order = AURA_POINT_ORDER,
-                    get = function()
-                        return conf.stackPosition or "BOTTOMRIGHT"
-                    end,
-                    set = function(val)
-                        conf.stackPosition = val
-                        apply()
-                    end,
+                    get = ConfFieldOr("stackPosition", "BOTTOMRIGHT"),
+                    set = ConfFieldThen("stackPosition"),
                 },
             },
         })
@@ -1573,18 +1516,25 @@ local function BuildCoreFields(widget, fontFile, sy, conf, apply, isBuff)
 end
 
 local function FontOutlineField(conf, apply)
+    -- Row accessors over conf: a key read (or its default) and written.
+    local function ConfFieldThen(key)
+        return function(v)
+            conf[key] = v
+            apply()
+        end
+    end
+    local function ConfFieldOr(key, default)
+        return function()
+            return conf[key] or default
+        end
+    end
     return {
         type = "dropdown",
         text = "Font Outline",
         values = FONT_OUTLINE_VALUES,
         order = FONT_OUTLINE_ORDER,
-        getValue = function()
-            return conf.fontOutline or "default"
-        end,
-        setValue = function(val)
-            conf.fontOutline = val
-            apply()
-        end,
+        getValue = ConfFieldOr("fontOutline", "default"),
+        setValue = ConfFieldThen("fontOutline"),
     }
 end
 
@@ -1593,6 +1543,18 @@ end
 -- Spacing (+row-spacing cog); Icon Shape | Icon Zoom; remaining toggles are
 -- packed by polarity without placeholder slots.
 local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
+    -- Row accessors over conf: a key read (or its default) and written.
+    local function ConfFieldThen(key)
+        return function(v)
+            conf[key] = v
+            apply()
+        end
+    end
+    local function ConfFieldOr(key, default)
+        return function()
+            return conf[key] or default
+        end
+    end
     local W = CludesUI.Widgets
     local Pix = CludesUI.PanelPP
     local _, hh = 0, 0
@@ -1665,9 +1627,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
             rawTooltip = true,
             values = textureValues,
             order = textureOrder,
-            getValue = function()
-                return conf.borderTexture or "solid"
-            end,
+            getValue = ConfFieldOr("borderTexture", "solid"),
             setValue = function(val)
                 conf.borderTexture = val
                 conf.borderTextureOffset = nil
@@ -1754,10 +1714,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                 get = function()
                     return conf.borderBehind == true
                 end,
-                set = function(val)
-                    conf.borderBehind = val
-                    apply()
-                end,
+                set = ConfFieldThen("borderBehind"),
             },
         }
         -- Debuff bars only: their engine dispel ring can take this border's art.
@@ -1936,10 +1893,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
         getValue = function()
             return conf.iconsPerRow or (isBuff and 11 or 8)
         end,
-        setValue = function(val)
-            conf.iconsPerRow = val
-            apply()
-        end,
+        setValue = ConfFieldThen("iconsPerRow"),
     }, {
         type = "slider",
         text = "Spacing",
@@ -1947,13 +1901,8 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
         max = 20,
         step = 1,
         trackWidth = 120,
-        getValue = function()
-            return conf.padding or 5
-        end,
-        setValue = function(val)
-            conf.padding = val
-            apply()
-        end,
+        getValue = ConfFieldOr("padding", 5),
+        setValue = ConfFieldThen("padding"),
     })
     sy = sy - hh
     do
@@ -2073,13 +2022,8 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                     min = -5,
                     max = 20,
                     step = 1,
-                    get = function()
-                        return conf.rowSpacing or 12
-                    end,
-                    set = function(val)
-                        conf.rowSpacing = val
-                        apply()
-                    end,
+                    get = ConfFieldOr("rowSpacing", 12),
+                    set = ConfFieldThen("rowSpacing"),
                 },
             },
         })
@@ -2103,10 +2047,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                     get = function()
                         return conf.maxRows or (isBuff and 3 or 2)
                     end,
-                    set = function(val)
-                        conf.maxRows = val
-                        apply()
-                    end,
+                    set = ConfFieldThen("maxRows"),
                 },
                 {
                     type = "slider",
@@ -2117,10 +2058,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                     get = function()
                         return conf.maxTotal or (isBuff and 32 or 16)
                     end,
-                    set = function(val)
-                        conf.maxTotal = val
-                        apply()
-                    end,
+                    set = ConfFieldThen("maxTotal"),
                 },
             },
         })
@@ -2144,9 +2082,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                     return "This option requires the Border Style to be set to Solid"
                 end
             end,
-            getValue = function()
-                return conf.iconShape or "none"
-            end,
+            getValue = ConfFieldOr("iconShape", "none"),
             setValue = function(val)
                 local wasShaped = IsMaskShape(conf.iconShape)
                 conf.iconShape = val
@@ -2205,10 +2141,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                     get = function()
                         return mod.PAB_CropPercent(conf)
                     end,
-                    set = function(val)
-                        conf.iconCropPercent = val
-                        apply()
-                    end,
+                    set = ConfFieldThen("iconCropPercent"),
                 },
             },
         })
@@ -2300,10 +2233,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
         getValue = function()
             return conf.showSwipe ~= false
         end,
-        setValue = function(val)
-            conf.showSwipe = val
-            apply()
-        end,
+        setValue = ConfFieldThen("showSwipe"),
     }, {
         type = "toggle",
         text = "Show Tooltips",
@@ -2311,10 +2241,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
         getValue = function()
             return conf.showTooltips ~= false
         end,
-        setValue = function(val)
-            conf.showTooltips = val
-            apply()
-        end,
+        setValue = ConfFieldThen("showTooltips"),
     })
     sy = sy - hh
     do
@@ -2331,10 +2258,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
                     get = function()
                         return conf.reverseSwipe ~= false
                     end,
-                    set = function(val)
-                        conf.reverseSwipe = val
-                        apply()
-                    end,
+                    set = ConfFieldThen("reverseSwipe"),
                 },
             },
         })
@@ -2350,10 +2274,7 @@ local function BuildDisplayFields(widget, fontFile, sy, conf, apply, isBuff)
             getValue = function()
                 return conf.rightClickCancel ~= false
             end,
-            setValue = function(val)
-                conf.rightClickCancel = val
-                apply()
-            end,
+            setValue = ConfFieldThen("rightClickCancel"),
         })
         sy = sy - hh
     end
@@ -2378,6 +2299,18 @@ local DISPEL_ICON_POS_ORDER =
     { "none", "topleft", "top", "topright", "left", "center", "right", "bottomleft", "bottom", "bottomright" }
 
 local function BuildDispelColorFields(widget, fontFile, sy, conf, apply)
+    -- Row accessors over conf: a key read (or its default) and written.
+    local function ConfFieldThen(key)
+        return function(v)
+            conf[key] = v
+            apply()
+        end
+    end
+    local function ConfFieldOr(key, default)
+        return function()
+            return conf[key] or default
+        end
+    end
     local W = CludesUI.Widgets
     local Pix = CludesUI.PanelPP
     local _, hh = 0, 0
@@ -2397,9 +2330,7 @@ local function BuildDispelColorFields(widget, fontFile, sy, conf, apply)
             tooltip = "Shows the debuff's dispel type icon (Magic, Curse, Disease, Poison, Bleed) on the bar.",
             values = DISPEL_ICON_POS_VALUES,
             order = DISPEL_ICON_POS_ORDER,
-            getValue = function()
-                return conf.dispelIconPosition or "none"
-            end,
+            getValue = ConfFieldOr("dispelIconPosition", "none"),
             setValue = function(val)
                 conf.dispelIconPosition = val
                 apply()
@@ -2421,13 +2352,8 @@ local function BuildDispelColorFields(widget, fontFile, sy, conf, apply)
                     min = 8,
                     max = 48,
                     step = 1,
-                    get = function()
-                        return conf.dispelIconSize or 16
-                    end,
-                    set = function(val)
-                        conf.dispelIconSize = val
-                        apply()
-                    end,
+                    get = ConfFieldOr("dispelIconSize", 16),
+                    set = ConfFieldThen("dispelIconSize"),
                 },
                 {
                     type = "slider",
@@ -2435,13 +2361,8 @@ local function BuildDispelColorFields(widget, fontFile, sy, conf, apply)
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return conf.dispelIconOffsetX or 0
-                    end,
-                    set = function(val)
-                        conf.dispelIconOffsetX = val
-                        apply()
-                    end,
+                    get = ConfFieldOr("dispelIconOffsetX", 0),
+                    set = ConfFieldThen("dispelIconOffsetX"),
                 },
                 {
                     type = "slider",
@@ -2449,13 +2370,8 @@ local function BuildDispelColorFields(widget, fontFile, sy, conf, apply)
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return conf.dispelIconOffsetY or 0
-                    end,
-                    set = function(val)
-                        conf.dispelIconOffsetY = val
-                        apply()
-                    end,
+                    get = ConfFieldOr("dispelIconOffsetY", 0),
+                    set = ConfFieldThen("dispelIconOffsetY"),
                 },
             },
         })
