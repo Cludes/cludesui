@@ -154,22 +154,22 @@ function mod.GetSlotQuestFlags(bag, slot)
 end
 
 function mod.SetForeverSlotQuestBorder(button, isQuest, isStarter)
-    local border = button._fvQuestBorder
+    local edgeTex = button._fvQuestBorder
     if isQuest then
-        if not border then
-            border = button:CreateTexture(nil, "OVERLAY", nil, 2)
-            border:SetPoint("TOPLEFT", button, "TOPLEFT")
-            border:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, -1)
-            button._fvQuestBorder = border
+        if not edgeTex then
+            edgeTex = button:CreateTexture(nil, "OVERLAY", nil, 2)
+            edgeTex:SetPoint("TOPLEFT", button, "TOPLEFT")
+            edgeTex:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", 0, -1)
+            button._fvQuestBorder = edgeTex
         end
         local asset = isStarter and TEXTURE_ITEM_QUEST_BANG or TEXTURE_ITEM_QUEST_BORDER
-        if border._asset ~= asset then
-            border._asset = asset
-            border:SetTexture(asset)
+        if edgeTex._asset ~= asset then
+            edgeTex._asset = asset
+            edgeTex:SetTexture(asset)
         end
-        border:Show()
-    elseif border then
-        border:Hide()
+        edgeTex:Show()
+    elseif edgeTex then
+        edgeTex:Hide()
     end
 end
 
@@ -329,29 +329,29 @@ function mod.SkinItemButton(button, options)
         end
     end
 
-    local ht, pt
+    local ht, point
     if options.flatHighlight then
         ht = button.HighlightTexture or button:GetHighlightTexture()
         if ht then
             ht:SetTexture(nil)
             ht:SetColorTexture(1, 1, 1, 0.08)
         end
-        pt = button.PushedTexture or button:GetPushedTexture()
+        point = button.PushedTexture or button:GetPushedTexture()
     else
         ht = button:GetHighlightTexture()
-        pt = button:GetPushedTexture()
+        point = button:GetPushedTexture()
     end
     if ht then
         ht:ClearAllPoints()
         ht:SetAllPoints(button)
     end
-    if pt then
-        pt:SetAtlas(nil)
-        pt:SetTexture("Interface\\AddOns\\CludesUIBags\\Media\\highlight-3.png")
-        pt:SetTexCoord(0, 1, 0, 1)
-        pt:ClearAllPoints()
-        pt:SetAllPoints(button)
-        pt:SetVertexColor(0.973, 0.839, 0.604, 1)
+    if point then
+        point:SetAtlas(nil)
+        point:SetTexture("Interface\\AddOns\\CludesUIBags\\Media\\highlight-3.png")
+        point:SetTexCoord(0, 1, 0, 1)
+        point:ClearAllPoints()
+        point:SetAllPoints(button)
+        point:SetVertexColor(0.973, 0.839, 0.604, 1)
     end
 
     if button.NormalTexture then
@@ -488,21 +488,21 @@ function mod.AttachGridScrollbar(owner, scrollFrame, clamp, rawWheel)
     local SCROLL_STEP = 40 -- pixels per mouse wheel tick
     local THUMB_MIN_H = 20 -- minimum thumb height
 
-    local track = CreateFrame("Button", nil, owner)
-    track:SetWidth(SCROLLBAR_HIT_W)
-    track:SetFrameLevel(scrollFrame:GetFrameLevel() + 5)
+    local rail = CreateFrame("Button", nil, owner)
+    rail:SetWidth(SCROLLBAR_HIT_W)
+    rail:SetFrameLevel(scrollFrame:GetFrameLevel() + 5)
 
-    local trackBg = track:CreateTexture(nil, "BACKGROUND")
-    trackBg:SetWidth(SCROLLBAR_W)
-    trackBg:SetPoint("TOP", track, "TOP", 0, 0)
-    trackBg:SetPoint("BOTTOM", track, "BOTTOM", 0, 0)
-    trackBg:SetPoint("RIGHT", track, "RIGHT", 0, 0)
-    trackBg:SetColorTexture(1, 1, 1, 0.06)
+    local railBg = rail:CreateTexture(nil, "BACKGROUND")
+    railBg:SetWidth(SCROLLBAR_W)
+    railBg:SetPoint("TOP", rail, "TOP", 0, 0)
+    railBg:SetPoint("BOTTOM", rail, "BOTTOM", 0, 0)
+    railBg:SetPoint("RIGHT", rail, "RIGHT", 0, 0)
+    railBg:SetColorTexture(1, 1, 1, 0.06)
 
-    local thumb = track:CreateTexture(nil, "ARTWORK")
-    thumb:SetWidth(SCROLLBAR_W)
-    thumb:SetColorTexture(1, 1, 1, 0.25)
-    thumb:Hide()
+    local knob = rail:CreateTexture(nil, "ARTWORK")
+    knob:SetWidth(SCROLLBAR_W)
+    knob:SetColorTexture(1, 1, 1, 0.25)
+    knob:Hide()
 
     local _isDragging = false
     local _dragStartY = 0
@@ -513,15 +513,15 @@ function mod.AttachGridScrollbar(owner, scrollFrame, clamp, rawWheel)
         if not scrollRange or scrollRange <= 0 then
             return nil
         end
-        local trackH = track:GetHeight()
+        local trackH = rail:GetHeight()
         local ext = scrollFrame:GetHeight() / (scrollFrame:GetHeight() + scrollRange)
-        local thumbH = math.max(THUMB_MIN_H, trackH * ext)
-        local maxTravel = trackH - thumbH
-        if maxTravel <= 0 then
+        local knobHeight = math.max(THUMB_MIN_H, trackH * ext)
+        local travelMax = trackH - knobHeight
+        if travelMax <= 0 then
             return nil
         end
-        local pct = scrollFrame:GetVerticalScroll() / scrollRange
-        return pct, thumbH, maxTravel, scrollRange
+        local percent = scrollFrame:GetVerticalScroll() / scrollRange
+        return percent, knobHeight, travelMax, scrollRange
     end
 
     local function UpdateThumb()
@@ -532,17 +532,17 @@ function mod.AttachGridScrollbar(owner, scrollFrame, clamp, rawWheel)
                 scrollFrame:SetVerticalScroll(range)
             end
         end
-        local pct, thumbH, maxTravel = GetScrollMetrics()
-        if not pct then
-            thumb:Hide()
-            trackBg:Hide()
+        local percent, knobHeight, travelMax = GetScrollMetrics()
+        if not percent then
+            knob:Hide()
+            railBg:Hide()
             return
         end
-        thumb:SetHeight(thumbH)
-        thumb:ClearAllPoints()
-        thumb:SetPoint("TOPRIGHT", track, "TOPRIGHT", 0, -(pct * maxTravel))
-        thumb:Show()
-        trackBg:Show()
+        knob:SetHeight(knobHeight)
+        knob:ClearAllPoints()
+        knob:SetPoint("TOPRIGHT", rail, "TOPRIGHT", 0, -(percent * travelMax))
+        knob:Show()
+        railBg:Show()
     end
 
     -- On the scroll frame and on host (items might not cover the full area)
@@ -579,69 +579,69 @@ function mod.AttachGridScrollbar(owner, scrollFrame, clamp, rawWheel)
         if not IsMouseButtonDown("LeftButton") then
             _isDragging = false
             self:Hide()
-            thumb:SetColorTexture(1, 1, 1, 0.25)
+            knob:SetColorTexture(1, 1, 1, 0.25)
             return
         end
-        local pct, thumbH, maxTravel, scrollRange = GetScrollMetrics()
-        if not pct then
+        local percent, knobHeight, travelMax, scrollRange = GetScrollMetrics()
+        if not percent then
             _isDragging = false
             self:Hide()
             return
         end
-        local scale = track:GetEffectiveScale()
-        local _, cy = GetCursorPosition()
-        local deltaY = (_dragStartY - cy / scale)
-        local deltaPct = deltaY / maxTravel
+        local zoom = rail:GetEffectiveScale()
+        local _, midY = GetCursorPosition()
+        local deltaY = (_dragStartY - midY / zoom)
+        local deltaPct = deltaY / travelMax
         local newPct = math.max(0, math.min(1, _dragStartPct + deltaPct))
         scrollFrame:SetVerticalScroll(newPct * scrollRange)
         UpdateThumb()
     end)
 
-    track:RegisterForDrag("LeftButton")
-    track:SetScript("OnMouseDown", function(_, btnFrame)
+    rail:RegisterForDrag("LeftButton")
+    rail:SetScript("OnMouseDown", function(_, btnFrame)
         if btnFrame ~= "LeftButton" then
             return
         end
-        local pct, thumbH, maxTravel, scrollRange = GetScrollMetrics()
-        if not pct then
+        local percent, knobHeight, travelMax, scrollRange = GetScrollMetrics()
+        if not percent then
             return
         end
 
-        local scale = track:GetEffectiveScale()
-        local _, cy = GetCursorPosition()
-        local trackTop = track:GetTop() * scale
-        local cursorLocalY = (trackTop - cy) / scale
+        local zoom = rail:GetEffectiveScale()
+        local _, midY = GetCursorPosition()
+        local trackTop = rail:GetTop() * zoom
+        local cursorLocalY = (trackTop - midY) / zoom
 
         -- Check if cursor is on the thumb
-        local thumbTop = pct * maxTravel
-        local thumbBot = thumbTop + thumbH
+        local thumbTop = percent * travelMax
+        local thumbBot = thumbTop + knobHeight
         if cursorLocalY >= thumbTop and cursorLocalY <= thumbBot then
             _isDragging = true
-            _dragStartY = cy / scale
-            _dragStartPct = pct
+            _dragStartY = midY / zoom
+            _dragStartPct = percent
             dragUpdate:Show()
         else
             -- Click on track: jump to position
-            local clickPct = math.max(0, math.min(1, (cursorLocalY - thumbH / 2) / maxTravel))
+            local clickPct = math.max(0, math.min(1, (cursorLocalY - knobHeight / 2) / travelMax))
             scrollFrame:SetVerticalScroll(clickPct * scrollRange)
             UpdateThumb()
             _isDragging = true
-            _dragStartY = cy / scale
+            _dragStartY = midY / zoom
             _dragStartPct = clickPct
             dragUpdate:Show()
         end
     end)
 
-    track:SetScript("OnMouseUp", function()
+    rail:SetScript("OnMouseUp", function()
         _isDragging = false
     end)
 
-    track:SetScript("OnEnter", function()
-        thumb:SetColorTexture(1, 1, 1, 0.4)
+    rail:SetScript("OnEnter", function()
+        knob:SetColorTexture(1, 1, 1, 0.4)
     end)
-    track:SetScript("OnLeave", function()
+    rail:SetScript("OnLeave", function()
         if not _isDragging then
-            thumb:SetColorTexture(1, 1, 1, 0.25)
+            knob:SetColorTexture(1, 1, 1, 0.25)
         end
     end)
 
@@ -653,11 +653,11 @@ function mod.AttachGridScrollbar(owner, scrollFrame, clamp, rawWheel)
     -- controller is in use.
     local padUp, padDown, padOn
     local function PadSteps()
-        local show = padOn and trackBg:IsShown() or false
+        local show = padOn and railBg:IsShown() or false
         padUp:SetShown(show)
         padDown:SetShown(show)
     end
-    function track.PadSync(enabled)
+    function rail.PadSync(enabled)
         enabled = enabled and true or false
         if not padUp then
             if not enabled then
@@ -666,25 +666,25 @@ function mod.AttachGridScrollbar(owner, scrollFrame, clamp, rawWheel)
             padUp, padDown = mod.PadStepButtons(owner, SCROLLBAR_HIT_W, function(delta)
                 OnWheel(nil, delta)
             end)
-            padUp:SetFrameLevel(track:GetFrameLevel() + 1)
-            padDown:SetFrameLevel(track:GetFrameLevel() + 1)
-            padUp:SetPoint("TOP", track, "TOP", 0, 0)
-            padDown:SetPoint("BOTTOM", track, "BOTTOM", 0, 0)
-            hooksecurefunc(trackBg, "Show", PadSteps)
-            hooksecurefunc(trackBg, "Hide", PadSteps)
+            padUp:SetFrameLevel(rail:GetFrameLevel() + 1)
+            padDown:SetFrameLevel(rail:GetFrameLevel() + 1)
+            padUp:SetPoint("TOP", rail, "TOP", 0, 0)
+            padDown:SetPoint("BOTTOM", rail, "BOTTOM", 0, 0)
+            hooksecurefunc(railBg, "Show", PadSteps)
+            hooksecurefunc(railBg, "Hide", PadSteps)
             scrollFrame:HookScript("OnVerticalScroll", function()
                 UpdateThumb()
             end)
-            CUI.PadHint(track, "nodeignore")
+            CUI.PadHint(rail, "nodeignore")
         end
         if enabled == padOn then
             return
         end
         padOn = enabled
-        trackBg:SetColorTexture(1, 1, 1, enabled and 0.15 or 0.06)
+        railBg:SetColorTexture(1, 1, 1, enabled and 0.15 or 0.06)
         PadSteps()
     end
-    return track, thumb, UpdateThumb
+    return rail, knob, UpdateThumb
 end
 
 -------------------------------------------------------------------------------
@@ -730,18 +730,18 @@ do
     -- of the collapse arrow: shown while a controller is in use, the sidebar
     -- is expanded and its entries overflow. Each click runs the sidebar's own
     -- wheel handler once (one entry). Called at the window's show edge.
-    local function SidebarStepsUpdate(st)
-        local show = st.on and not BP()[st.key] and (st.child:GetHeight() - st.sf:GetHeight()) > 0.5
-        st.up:SetShown(show)
-        st.down:SetShown(show)
+    local function SidebarStepsUpdate(state)
+        local show = state.on and not BP()[state.key] and (state.child:GetHeight() - state.sf:GetHeight()) > 0.5
+        state.up:SetShown(show)
+        state.down:SetShown(show)
     end
 
     function mod.PadSidebarSync(heading, scrollFrame, childFrame, dbKey, enabled)
         if not (heading and scrollFrame and childFrame) then
             return
         end
-        local st = heading._padSteps
-        if not st then
+        local state = heading._padSteps
+        if not state then
             if not enabled then
                 return
             end
@@ -753,17 +753,17 @@ do
             end)
             down:SetPoint("RIGHT", heading, "RIGHT", -22, 0)
             up:SetPoint("RIGHT", down, "LEFT", -2, 0)
-            st = { up = up, down = down, sf = scrollFrame, child = childFrame, key = dbKey }
-            heading._padSteps = st
+            state = { up = up, down = down, sf = scrollFrame, child = childFrame, key = dbKey }
+            heading._padSteps = state
             -- The rebuild sets the list height; the window can resize it too.
             local function Update()
-                SidebarStepsUpdate(st)
+                SidebarStepsUpdate(state)
             end
             hooksecurefunc(childFrame, "SetHeight", Update)
             scrollFrame:HookScript("OnSizeChanged", Update)
         end
-        st.on = enabled and true or false
-        SidebarStepsUpdate(st)
+        state.on = enabled and true or false
+        SidebarStepsUpdate(state)
     end
 
     -- Blizzard's bag frames live under a hidden parent. One that its own
@@ -823,8 +823,8 @@ local QUEST_BORDER_COLOR = { r = 1.0, g = 0.82, b = 0.0 }
 --  repeated splits into empty slots until the remainder is at most the chosen size.
 -------------------------------------------------------------------------------
 do
-    local dialog
-    local job -- { bag, slot, itemID, size, targets, window, ops, pending, issuedAt }
+    local dialogFrame
+    local task -- { bag, slot, itemID, size, targets, window, ops, pending, issuedAt }
     local StepJob
 
     -- Container and guild bank slots share the dialog and job; only the API differs.
@@ -865,16 +865,16 @@ do
     }
 
     local function StopJob()
-        job = nil
+        task = nil
     end
 
     -- Polled on a short timer. The new stack's slot can still read empty for a
     -- moment after the source count has updated, so slots already used as a
     -- destination are skipped for the rest of the job.
     local function Later()
-        local this = job
+        local this = task
         C_Timer.After(0.05, function()
-            if job == this then
+            if task == this then
                 StepJob()
             end
         end)
@@ -883,21 +883,21 @@ do
     -- One split per server round trip: issue, wait for the source stack to
     -- settle at the expected count, repeat.
     StepJob = function()
-        if not job then
+        if not task then
             return
         end
-        if not job.window:IsVisible() then
+        if not task.window:IsVisible() then
             StopJob()
             return
         end
-        local ops = job.ops
-        local details = ops.info(job.bag, job.slot)
-        if not details or details.itemID ~= job.itemID then
+        local opList = task.ops
+        local details = opList.info(task.bag, task.slot)
+        if not details or details.itemID ~= task.itemID then
             StopJob()
             return
         end
-        if details.isLocked or (job.pending and details.stackCount ~= job.pending) then
-            if GetTime() - job.issuedAt > 2 then
+        if details.isLocked or (task.pending and details.stackCount ~= task.pending) then
+            if GetTime() - task.issuedAt > 2 then
                 ClearCursor()
                 StopJob()
             else
@@ -905,26 +905,26 @@ do
             end
             return
         end
-        job.pending = nil
-        if details.stackCount <= job.size then
+        task.pending = nil
+        if details.stackCount <= task.size then
             StopJob()
             return
         end
-        for _, bagID in ipairs(job.targets) do
-            for s = 1, ops.numSlots(bagID) do
+        for _, bagID in ipairs(task.targets) do
+            for s = 1, opList.numSlots(bagID) do
                 local key = bagID * 1000 + s
-                if not job.used[key] and not ops.info(bagID, s) then
-                    job.used[key] = true
+                if not task.used[key] and not opList.info(bagID, s) then
+                    task.used[key] = true
                     ClearCursor()
-                    ops.split(job.bag, job.slot, job.size)
-                    ops.pickup(bagID, s)
+                    opList.split(task.bag, task.slot, task.size)
+                    opList.pickup(bagID, s)
                     -- Single placed split: one issue, no settle polling.
-                    if job.once then
+                    if task.once then
                         StopJob()
                         return
                     end
-                    job.pending = details.stackCount - job.size
-                    job.issuedAt = GetTime()
+                    task.pending = details.stackCount - task.size
+                    task.issuedAt = GetTime()
                     Later()
                     return
                 end
@@ -935,15 +935,15 @@ do
 
     -- once = a single split placed into the first empty target slot (the views
     -- that draw no empty slots have nowhere to drop a cursor stack).
-    local function StartJob(bag, slot, itemId, size, targets, window, ops, once)
-        job = {
+    local function StartJob(bag, slot, itemId, size, targets, window, opList, once)
+        task = {
             bag = bag,
             slot = slot,
             itemID = itemId,
             size = size,
             targets = targets,
             window = window,
-            ops = ops,
+            ops = opList,
             used = {},
             issuedAt = GetTime(),
             once = once,
@@ -953,10 +953,10 @@ do
 
     -- Closing the window a dialog or job belongs to ends it; other windows are unaffected.
     local function WindowHidden(win)
-        if dialog and dialog._window == win then
-            dialog:Hide()
+        if dialogFrame and dialogFrame._window == win then
+            dialogFrame:Hide()
         end
-        if job and job.window == win then
+        if task and task.window == win then
             StopJob()
         end
         -- Closing the bags ends every session unmerge; the next open merges again.
@@ -968,31 +968,31 @@ do
     -- Re-checks the slot the dialog was opened on after every repaint: pooled
     -- buttons get repurposed, and the count can change under us.
     local function Validate()
-        if not dialog or not dialog:IsShown() then
+        if not dialogFrame or not dialogFrame:IsShown() then
             return
         end
-        local ownerFrame = dialog._owner
+        local ownerFrame = dialogFrame._owner
         if
             not ownerFrame:IsVisible()
-            or dialog._ops.ownerBag(ownerFrame) ~= dialog._bag
-            or ownerFrame:GetID() ~= dialog._slot
+            or dialogFrame._ops.ownerBag(ownerFrame) ~= dialogFrame._bag
+            or ownerFrame:GetID() ~= dialogFrame._slot
         then
-            dialog:Hide()
+            dialogFrame:Hide()
             return
         end
-        local details = dialog._ops.info(dialog._bag, dialog._slot)
+        local details = dialogFrame._ops.info(dialogFrame._bag, dialogFrame._slot)
         if
             not details
-            or details.itemID ~= dialog._itemID
+            or details.itemID ~= dialogFrame._itemID
             or not details.stackCount
             or details.stackCount < 2
         then
-            dialog:Hide()
+            dialogFrame:Hide()
             return
         end
-        if details.stackCount ~= dialog._max then
-            dialog:SetRange(1, details.stackCount)
-            dialog:SetValue(dialog:Current())
+        if details.stackCount ~= dialogFrame._max then
+            dialogFrame:SetRange(1, details.stackCount)
+            dialogFrame:SetValue(dialogFrame:Current())
         end
     end
 
@@ -1020,10 +1020,10 @@ do
     end
 
     local function DoSplit(auto)
-        local skinData = dialog
-        local bag, slot, num, ops = skinData._bag, skinData._slot, skinData:Current(), skinData._ops
+        local skinData = dialogFrame
+        local bag, slot, num, opList = skinData._bag, skinData._slot, skinData:Current(), skinData._ops
         skinData:Hide()
-        local details = ops.info(bag, slot)
+        local details = opList.info(bag, slot)
         if
             not details
             or details.isLocked
@@ -1048,10 +1048,10 @@ do
             end
         end
         if auto or skinData._placeOnce then
-            StartJob(bag, slot, details.itemID, num, skinData._targets, skinData._window, ops, not auto)
+            StartJob(bag, slot, details.itemID, num, skinData._targets, skinData._window, opList, not auto)
         else
             ClearCursor()
-            ops.split(bag, slot, num)
+            opList.split(bag, slot, num)
         end
     end
 
@@ -1081,18 +1081,18 @@ do
                 Pix.CreateBorder(eb, 0.15, 0.15, 0.15, 1)
             end
         end,
-        close = function(close)
-            close:SetSize(12, 12)
-            close:SetPoint("TOPRIGHT", close:GetParent(), "TOPRIGHT", -9, -9)
-            close.icon = close:CreateTexture(nil, "OVERLAY")
-            close.icon:SetAllPoints()
-            close.icon:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
-            close.icon:SetAlpha(0.7)
-            close:SetScript("OnEnter", function()
-                close.icon:SetAlpha(0.9)
+        close = function(closeBtn)
+            closeBtn:SetSize(12, 12)
+            closeBtn:SetPoint("TOPRIGHT", closeBtn:GetParent(), "TOPRIGHT", -9, -9)
+            closeBtn.icon = closeBtn:CreateTexture(nil, "OVERLAY")
+            closeBtn.icon:SetAllPoints()
+            closeBtn.icon:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
+            closeBtn.icon:SetAlpha(0.7)
+            closeBtn:SetScript("OnEnter", function()
+                closeBtn.icon:SetAlpha(0.9)
             end)
-            close:SetScript("OnLeave", function()
-                close.icon:SetAlpha(0.7)
+            closeBtn:SetScript("OnLeave", function()
+                closeBtn.icon:SetAlpha(0.7)
             end)
         end,
     }
@@ -1158,7 +1158,7 @@ do
     -- Runs from the slot PostClick hooks, after Blizzard's OnModifiedClick has
     -- opened StackSplitFrame on this button (its lock/count/cursor checks passed).
     -- targets: bagIDs Auto Split may fill, in order; window: closing it aborts a job.
-    function CUI_Bags.ShowStackSplitter(ownerFrame, targets, window, ops)
+    function CUI_Bags.ShowStackSplitter(ownerFrame, targets, window, opList)
         -- Always on in the bags window's All Items (0) and category (> 0) views:
         -- they draw no empty slots, so Blizzard's cursor split has nowhere to
         -- land and a plain Split places its stack instead. Everywhere else the
@@ -1174,21 +1174,21 @@ do
         -- Its OnHide leaves .owner on the owner button and writes a flag onto
         -- it, which nothing reads on a click path.
         CUI.TakeStackSplit()
-        ops = ops or containerOps
-        local bag, slot = ops.ownerBag(ownerFrame), ownerFrame:GetID()
-        local details = ops.info(bag, slot)
+        opList = opList or containerOps
+        local bag, slot = opList.ownerBag(ownerFrame), ownerFrame:GetID()
+        local details = opList.info(bag, slot)
         if not details or not details.itemID then
             return
         end
-        dialog = dialog or CreateDialog()
+        dialogFrame = dialogFrame or CreateDialog()
         StopJob()
-        dialog._owner, dialog._bag, dialog._slot, dialog._itemID = ownerFrame, bag, slot, details.itemID
-        dialog._targets, dialog._window, dialog._ops = targets, window, ops
-        dialog._placeOnce = placeOnce
-        dialog:SetRange(1, maxStack)
-        dialog:SetValue(1)
-        dialog:Open(ownerFrame)
-        dialog:FocusInput()
+        dialogFrame._owner, dialogFrame._bag, dialogFrame._slot, dialogFrame._itemID = ownerFrame, bag, slot, details.itemID
+        dialogFrame._targets, dialogFrame._window, dialogFrame._ops = targets, window, opList
+        dialogFrame._placeOnce = placeOnce
+        dialogFrame:SetRange(1, maxStack)
+        dialogFrame:SetValue(1)
+        dialogFrame:Open(ownerFrame)
+        dialogFrame:FocusInput()
     end
 
     -- Blizzard's guild bank buttons open StackSplitFrame the same way ours do,

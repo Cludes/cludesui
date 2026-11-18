@@ -98,8 +98,8 @@ end
 --  Build (once per owner, under a stock style)
 -------------------------------------------------------------------------------
 -- `power`: the owner's power StatusBar (ours), for the Classic divider.
-function mod.RF_StockBuild(ownerFrame, st, power)
-    if st.stockEdge or not (mod.RF_Stock and mod.RF_Stock()) then
+function mod.RF_StockBuild(ownerFrame, stockStyle, powerBar)
+    if stockStyle.stockEdge or not (mod.RF_Stock and mod.RF_Stock()) then
         return
     end
     local Pix = CludesUI.PP or CludesUI.PanelPP
@@ -110,37 +110,37 @@ function mod.RF_StockBuild(ownerFrame, st, power)
     -- page pool, CludesUI_FramePool.lua) these pieces are pooled with it and
     -- handed out again by its next build; on every other owner a plain new frame.
     local CreateFrame = POOL.CreateFrame
-    local classic = mod.RF_Classic()
+    local classicArt = mod.RF_Classic()
     -- The edge rides the CludesUI base border's level (+8): above the
     -- health, absorbs and dispel overlay, under the raised hover border and
     -- the text. Its own frame, because the stood-down border frame is hidden.
-    local edge = CreateFrame("Frame", nil, ownerFrame)
-    edge:SetAllPoints(ownerFrame)
-    edge:SetFrameLevel(ownerFrame:GetFrameLevel() + 8)
-    edge:EnableMouse(false)
-    st.stockEdge = edge
-    if classic then
-        Pix.CreateBorder(edge, 0, 0, 0, 1, 1)
-        ColorSides(edge, CLASSIC_INNER)
-        local outer = CreateFrame("Frame", nil, edge)
-        outer:EnableMouse(false)
-        st.stockEdgeOuter = outer
-        Pix.CreateBorder(outer, 0, 0, 0, 1, 1)
-        ColorSides(outer, CLASSIC_OUTER)
-        if power then
-            local grey = power:CreateTexture(nil, "OVERLAY", nil, 6)
-            grey:SetTexture(WHITE)
-            grey:SetVertexColor(DIV_GREY[1], DIV_GREY[2], DIV_GREY[3], 1)
-            local black = power:CreateTexture(nil, "OVERLAY", nil, 6)
-            black:SetTexture(WHITE)
-            black:SetVertexColor(DIV_BLACK[1], DIV_BLACK[2], DIV_BLACK[3], 1)
+    local edgeTex = CreateFrame("Frame", nil, ownerFrame)
+    edgeTex:SetAllPoints(ownerFrame)
+    edgeTex:SetFrameLevel(ownerFrame:GetFrameLevel() + 8)
+    edgeTex:EnableMouse(false)
+    stockStyle.stockEdge = edgeTex
+    if classicArt then
+        Pix.CreateBorder(edgeTex, 0, 0, 0, 1, 1)
+        ColorSides(edgeTex, CLASSIC_INNER)
+        local outerFrame = CreateFrame("Frame", nil, edgeTex)
+        outerFrame:EnableMouse(false)
+        stockStyle.stockEdgeOuter = outerFrame
+        Pix.CreateBorder(outerFrame, 0, 0, 0, 1, 1)
+        ColorSides(outerFrame, CLASSIC_OUTER)
+        if powerBar then
+            local greyColor = powerBar:CreateTexture(nil, "OVERLAY", nil, 6)
+            greyColor:SetTexture(WHITE)
+            greyColor:SetVertexColor(DIV_GREY[1], DIV_GREY[2], DIV_GREY[3], 1)
+            local blackColor = powerBar:CreateTexture(nil, "OVERLAY", nil, 6)
+            blackColor:SetTexture(WHITE)
+            blackColor:SetVertexColor(DIV_BLACK[1], DIV_BLACK[2], DIV_BLACK[3], 1)
             if Pix.DisablePixelSnap then
-                Pix.DisablePixelSnap(grey)
-                Pix.DisablePixelSnap(black)
+                Pix.DisablePixelSnap(greyColor)
+                Pix.DisablePixelSnap(blackColor)
             end
-            grey:Hide()
-            black:Hide()
-            st.stockDiv = { grey, black, power }
+            greyColor:Hide()
+            blackColor:Hide()
+            stockStyle.stockDiv = { greyColor, blackColor, powerBar }
         end
     else
         local region, g, b = BLIZZ_EDGE_R, BLIZZ_EDGE_G, BLIZZ_EDGE_B
@@ -148,53 +148,53 @@ function mod.RF_StockBuild(ownerFrame, st, power)
         if type(backdrop) == "table" and backdrop.GetRGB then
             region, g, b = backdrop:GetRGB()
         end
-        Pix.CreateBorder(edge, region, g, b, 1, 1)
+        Pix.CreateBorder(edgeTex, region, g, b, 1, 1)
     end
     -- Highlights: textures made on first need (login budget).
     local highlight = CreateFrame("Frame", nil, ownerFrame)
     highlight:SetAllPoints(ownerFrame)
     highlight:SetFrameLevel(ownerFrame:GetFrameLevel() + (mod.LVL_RAISE or 10))
     highlight:EnableMouse(false)
-    st.stockHl = highlight
-    mod.RF_StockSeat(st)
+    stockStyle.stockHl = highlight
+    mod.RF_StockSeat(stockStyle)
 end
 
 -- Re-seat the pieces that are sized in physical pixels (the Classic outer
 -- ring and divider); every border restyle runs it.
-function mod.RF_StockSeat(st)
-    local edge = st.stockEdge
-    if not edge then
+function mod.RF_StockSeat(stockStyle)
+    local edgeTex = stockStyle.stockEdge
+    if not edgeTex then
         return
     end
-    edge:Show()
-    local outer = st.stockEdgeOuter
-    if outer then
-        local px = PX(edge)
-        outer:ClearAllPoints()
-        outer:SetPoint("TOPLEFT", edge, "TOPLEFT", -px, px)
-        outer:SetPoint("BOTTOMRIGHT", edge, "BOTTOMRIGHT", px, -px)
+    edgeTex:Show()
+    local outerFrame = stockStyle.stockEdgeOuter
+    if outerFrame then
+        local pixel = PX(edgeTex)
+        outerFrame:ClearAllPoints()
+        outerFrame:SetPoint("TOPLEFT", edgeTex, "TOPLEFT", -pixel, pixel)
+        outerFrame:SetPoint("BOTTOMRIGHT", edgeTex, "BOTTOMRIGHT", pixel, -pixel)
     end
 end
 
 -- Classic divider on the power bar's top edge (the caller shows it only
 -- while the power bar is shown; its textures hide with the bar).
-function mod.RF_StockDivider(st)
-    local div = st.stockDiv
+function mod.RF_StockDivider(stockStyle)
+    local div = stockStyle.stockDiv
     if not div then
         return false
     end
-    local grey, black, power = div[1], div[2], div[3]
-    local px = PX(power)
-    grey:ClearAllPoints()
-    grey:SetPoint("BOTTOMLEFT", power, "TOPLEFT", 0, 0)
-    grey:SetPoint("BOTTOMRIGHT", power, "TOPRIGHT", 0, 0)
-    grey:SetHeight(px)
-    black:ClearAllPoints()
-    black:SetPoint("TOPLEFT", power, "TOPLEFT", 0, 0)
-    black:SetPoint("TOPRIGHT", power, "TOPRIGHT", 0, 0)
-    black:SetHeight(px)
-    grey:Show()
-    black:Show()
+    local greyColor, blackColor, powerBar = div[1], div[2], div[3]
+    local pixel = PX(powerBar)
+    greyColor:ClearAllPoints()
+    greyColor:SetPoint("BOTTOMLEFT", powerBar, "TOPLEFT", 0, 0)
+    greyColor:SetPoint("BOTTOMRIGHT", powerBar, "TOPRIGHT", 0, 0)
+    greyColor:SetHeight(pixel)
+    blackColor:ClearAllPoints()
+    blackColor:SetPoint("TOPLEFT", powerBar, "TOPLEFT", 0, 0)
+    blackColor:SetPoint("TOPRIGHT", powerBar, "TOPRIGHT", 0, 0)
+    blackColor:SetHeight(pixel)
+    greyColor:Show()
+    blackColor:Show()
     return true
 end
 
@@ -208,9 +208,9 @@ local function ClassicHlOK()
     return _classicHlOK
 end
 
-local function MakeHl(st, layer, atlas, tc)
-    local texture = st.stockHl:CreateTexture(nil, layer)
-    texture:SetAllPoints(st.stockHl)
+local function MakeHl(stockStyle, layer, atlas, tc)
+    local texture = stockStyle.stockHl:CreateTexture(nil, layer)
+    texture:SetAllPoints(stockStyle.stockHl)
     if mod.RF_Classic() and ClassicHlOK() then
         texture:SetTexture(CLASSIC_HL)
         texture:SetTexCoord(tc[1], tc[2], tc[3], tc[4])
@@ -222,24 +222,24 @@ local function MakeHl(st, layer, atlas, tc)
 end
 
 -- The stock selection ring (the target), memoised on st.
-function mod.RF_StockTarget(st, on)
-    if not st.stockHl then
+function mod.RF_StockTarget(stockStyle, on)
+    if not stockStyle.stockHl then
         return
     end
     on = on and true or false
-    if st._stSel == on then
+    if stockStyle._stSel == on then
         return
     end
-    st._stSel = on
-    local texture = st._stSelTex
+    stockStyle._stSel = on
+    local texture = stockStyle._stSelTex
     if not texture then
         if not on then
             return
         end
         -- Follows the frame's alpha (stock ignores it for the range fade,
         -- but this module also hides whole containers with alpha).
-        texture = MakeHl(st, "OVERLAY", SEL_ATLAS, CLASSIC_SEL_TC)
-        st._stSelTex = texture
+        texture = MakeHl(stockStyle, "OVERLAY", SEL_ATLAS, CLASSIC_SEL_TC)
+        stockStyle._stSelTex = texture
     end
     texture:SetShown(on)
 end
@@ -247,27 +247,27 @@ end
 -- The stock aggro rim in the stock threat colour; `status` nil hides it.
 -- Memoised on the status. Blizzard Style takes 12.1's own two colours
 -- (gaining / high threat); Classic the pre-10.0 status colours.
-function mod.RF_StockAggro(st, status)
-    if not st.stockHl then
+function mod.RF_StockAggro(stockStyle, status)
+    if not stockStyle.stockHl then
         return
     end
-    if st._stAgg == status then
+    if stockStyle._stAgg == status then
         return
     end
-    st._stAgg = status
-    local texture = st._stAggTex
+    stockStyle._stAgg = status
+    local texture = stockStyle._stAggTex
     if not texture then
         if not status then
             return
         end
-        texture = MakeHl(st, "ARTWORK", AGG_ATLAS, CLASSIC_AGG_TC)
-        st._stAggTex = texture
+        texture = MakeHl(stockStyle, "ARTWORK", AGG_ATLAS, CLASSIC_AGG_TC)
+        stockStyle._stAggTex = texture
     end
     if status then
         local region, g, b
         -- The stock party frame (the Party Frames kit's Flash) colours its
         -- aggro by threat status too.
-        if (mod.RF_Classic() or st.kit) and GetThreatStatusColor then
+        if (mod.RF_Classic() or stockStyle.kit) and GetThreatStatusColor then
             region, g, b = GetThreatStatusColor(status)
         else
             local c = (status == 3) and _G.HIGH_THREAT_COLOR or _G.GAINING_THREAT_COLOR
@@ -291,8 +291,8 @@ end
 -- hover colour on the stood-down border frame `bf`. Its exact size counts only
 -- while it was set against Solid (the texture drawn here).
 local SOLID_S = { borderTexture = "solid" }
-function mod.RF_StockHighlight(st, bf, s, hover, target)
-    mod.RF_StockTarget(st, target)
+function mod.RF_StockHighlight(stockStyle, bf, s, hover, target)
+    mod.RF_StockTarget(stockStyle, target)
     if hover then
         local c = s.hoverBorderColor
         local hs = s.hoverBorderSize or 1
@@ -333,8 +333,8 @@ function mod.RF_SeedStock(p, styleKey)
         return
     end
     p.stockRaidSeeded = true
-    local classic = styleKey == "classic"
-    SeedBoth(p, "healthBarTexture", classic and "blizzardRaid" or "blizzardRaidModern")
+    local classicArt = styleKey == "classic"
+    SeedBoth(p, "healthBarTexture", classicArt and "blizzardRaid" or "blizzardRaidModern")
     -- Stock frames stack flush: the edges meet in one seam (the Party
     -- page's own spacing too, when it keeps one).
     p.cellSpacing, p.groupSpacing = 0, 0
@@ -345,12 +345,12 @@ function mod.RF_SeedStock(p, styleKey)
     -- the opacity its dropdown pairs with it; each with the Blizzard Glow
     -- Line its pick sets: on for Default Blizz Frames, off for Classic's).
     SeedBoth(p, "roleIconStyle", "classicCircle")
-    SeedBoth(p, "absorbStyle", classic and "blizzard" or "blizzardModern")
-    SeedBoth(p, "absorbGlowLine", not classic)
-    if classic then
+    SeedBoth(p, "absorbStyle", classicArt and "blizzard" or "blizzardModern")
+    SeedBoth(p, "absorbGlowLine", not classicArt)
+    if classicArt then
         SeedBoth(p, "absorbOpacity", 90)
     end
-    SeedBoth(p, "healAbsorbStyle", classic and "blizzard" or "healBlizzModern")
+    SeedBoth(p, "healAbsorbStyle", classicArt and "blizzard" or "healBlizzModern")
 end
 
 -- A texture saved as the shared-media "Blizzard Raid Bar" before the native
@@ -586,14 +586,14 @@ local function KitBmProxy(indicator)
 end
 -- The run's position point and growth for `mode` ("RIGHT" | "LEFT" |
 -- "ABOVE") and the indicator kind.
-local function RunSpec(mode, kind)
-    if mode == "ABOVE" then
-        if kind == "icon" then
+local function RunSpec(modeName, kindName)
+    if modeName == "ABOVE" then
+        if kindName == "icon" then
             return "TOPLEFT", "RIGHT"
         end
         return "TOPRIGHT", "LEFT"
     end
-    return ((kind == "icon") and "TOP" or "BOTTOM") .. mode, mode
+    return ((kindName == "icon") and "TOP" or "BOTTOM") .. modeName, modeName
 end
 -- `size` the element size, `lead` the reserved run length before it,
 -- `ox`/`oy` the user's X/Y (all unscaled: the Buff Manager applies its own
@@ -601,20 +601,20 @@ end
 -- one gap outside the frame edge (a chain's first element lands INSIDE its
 -- position corner, so its own size pushes it out); members only continue
 -- the run.
-local function PlaceRun(p, mode, kind, first, size, ox, oy, lead)
-    local anchorPoint, grow = RunSpec(mode, kind)
+local function PlaceRun(p, modeName, kindName, first, size, ox, oy, lead)
+    local anchorPoint, grow = RunSpec(modeName, kindName)
     p.position, p.growDirection = anchorPoint, grow
     if not first then
         p.offsetX, p.offsetY = 0, 0
         return
     end
     lead = lead or 0
-    if mode == "ABOVE" then
+    if modeName == "ABOVE" then
         p.offsetX = ((grow == "LEFT") and -lead or lead) + ox
         p.offsetY = size + KIT_BUFF_GAP + oy
     else
         local result = lead + size + KIT_BUFF_GAP
-        p.offsetX = ((mode == "LEFT") and -result or result) + ox
+        p.offsetX = ((modeName == "LEFT") and -result or result) + ox
         p.offsetY = oy
     end
 end
@@ -671,7 +671,7 @@ function mod.RF_KitBmView(inds, noPublish)
     local result = {}
     local chainMode = mod.RFC_BmChainMode
     local prof = mod.db and mod.db.profile
-    local mode = mod.RF_KitBuffMode(prof)
+    local modeName = mod.RF_KitBuffMode(prof)
     local buffSize = mod.RF_KitBuffSize(prof)
     local ox = (prof and prof.partyKitBuffX) or 0
     local oy = (prof and prof.partyKitBuffY) or 0
@@ -681,23 +681,23 @@ function mod.RF_KitBmView(inds, noPublish)
     local anyIcon, maxSq = false, 0
     for index = 1, #inds do
         local indicator = inds[index]
-        local kind = indicator.type or "icon"
+        local kindName = indicator.type or "icon"
         if indicator.enabled and indicator.spells and #indicator.spells > 0 then
-            if kind == "icon" then
+            if kindName == "icon" then
                 anyIcon = true
-            elseif kind == "square" and (indicator.size or 18) > maxSq then
+            elseif kindName == "square" and (indicator.size or 18) > maxSq then
                 maxSq = indicator.size or 18
             end
         end
         if
             indicator.enabled
-            and (kind == "icon" or kind == "square")
+            and (kindName == "icon" or kindName == "square")
             and not (chainMode and chainMode(indicator) == "g")
         then
-            local size = (kind == "icon") and buffSize or (indicator.size or 18)
+            local size = (kindName == "icon") and buffSize or (indicator.size or 18)
             local length = (indicator.spells and #indicator.spells or 0) * (size + (indicator.spacing or 0))
             leads = leads or {}
-            if kind == "icon" then
+            if kindName == "icon" then
                 leads[indicator] = leadIcon
                 leadIcon = leadIcon + length
             else
@@ -711,7 +711,7 @@ function mod.RF_KitBmView(inds, noPublish)
     if not noPublish and (anyIcon ~= mod._kitAboveIcon or maxSq ~= mod._kitAboveSq) then
         local was = mod.RF_KitAboveUnits(prof)
         mod._kitAboveIcon, mod._kitAboveSq = anyIcon, maxSq
-        if mode == "ABOVE" and mod.RF_KitAboveUnits(prof) ~= was and not mod._kitAbovePending then
+        if modeName == "ABOVE" and mod.RF_KitAboveUnits(prof) ~= was and not mod._kitAbovePending then
             mod._kitAbovePending = true
             C_Timer.After(0, mod._KitAboveFlush)
         end
@@ -719,19 +719,19 @@ function mod.RF_KitBmView(inds, noPublish)
     -- Above the frame both runs start on one line from opposite ends: the
     -- squares take the next line up so the two can never collide.
     local sqOy = oy
-    if mode == "ABOVE" and anyIcon then
+    if modeName == "ABOVE" and anyIcon then
         sqOy = oy + buffSize + KIT_BUFF_GAP
     end
     local iconRoot, squareRoot
     for index = 1, #inds do
         local indicator = inds[index]
-        local kind = indicator.type or "icon"
+        local kindName = indicator.type or "icon"
         local record = indicator
-        if indicator.enabled and (kind == "icon" or kind == "square") then
+        if indicator.enabled and (kindName == "icon" or kindName == "square") then
             local p = KitBmProxy(indicator)
             -- Buff Size sets every buff icon; squares keep their own size.
             local size
-            if kind == "icon" then
+            if kindName == "icon" then
                 p.size = buffSize
                 size = buffSize
             else
@@ -739,7 +739,7 @@ function mod.RF_KitBmView(inds, noPublish)
                 size = indicator.size or 18
             end
             local reserve, root, runOy
-            if kind == "icon" then
+            if kindName == "icon" then
                 reserve, root, runOy = leadIcon, iconRoot, oy
             else
                 reserve, root, runOy = leadSquare, squareRoot, sqOy
@@ -748,21 +748,21 @@ function mod.RF_KitBmView(inds, noPublish)
             local hasSpells = indicator.spells and #indicator.spells > 0
             p._kitAnchor = nil
             -- Above the frame, wrapped lines stack upward, away from it.
-            if mode == "ABOVE" then
+            if modeName == "ABOVE" then
                 p.wrapUp = true
             else
                 p.wrapUp = nil
             end
             if not chain then
                 -- Fixed slots: their own reserved cells at the run's start.
-                PlaceRun(p, mode, kind, true, size, ox, runOy, leads and leads[indicator] or 0)
+                PlaceRun(p, modeName, kindName, true, size, ox, runOy, leads and leads[indicator] or 0)
             elseif hasSpells and root and root.id ~= nil then
-                PlaceRun(p, mode, kind, false)
+                PlaceRun(p, modeName, kindName, false)
                 p._kitAnchor = root.id
             else
-                PlaceRun(p, mode, kind, true, size, ox, runOy, reserve)
+                PlaceRun(p, modeName, kindName, true, size, ox, runOy, reserve)
                 if hasSpells and not root then
-                    if kind == "icon" then
+                    if kindName == "icon" then
                         iconRoot = indicator
                     else
                         squareRoot = indicator
@@ -838,11 +838,11 @@ function mod.RF_KitAttach(s, before)
         end
         return before, (over > 0) and over or 0
     end
-    local mode = mod.RF_KitBuffMode(s)
-    if mode == "RIGHT" and not before then
+    local modeName = mod.RF_KitBuffMode(s)
+    if modeName == "RIGHT" and not before then
         return true, 0
     end
-    if mode == "LEFT" and before then
+    if modeName == "LEFT" and before then
         return false, 0
     end
     return before, 0
@@ -870,12 +870,12 @@ function mod.RF_KitSpot(spot, regionFrame, rel, ox, oy)
 end
 
 -- The leader icon at its stock spot (it has no anchor closure of its own).
-function mod.RF_KitLeader(st, s)
-    local li, g = st.leaderIcon or st._leaderIcon, st.kitG
-    if not (li and g and st.kitOwner) then
+function mod.RF_KitLeader(stockStyle, s)
+    local li, g = stockStyle.leaderIcon or stockStyle._leaderIcon, stockStyle.kitG
+    if not (li and g and stockStyle.kitOwner) then
         return
     end
-    mod.RF_KitSpot(g.lead, li, st.kitOwner, s and s.leaderIconOffsetX, s and s.leaderIconOffsetY)
+    mod.RF_KitSpot(g.lead, li, stockStyle.kitOwner, s and s.leaderIconOffsetX, s and s.leaderIconOffsetY)
 end
 
 local function Place(regionFrame, ownerFrame, region)
@@ -962,29 +962,29 @@ end
 
 -- Masks go on each fill OBJECT once (AddMaskTexture is additive); a texture
 -- swap that replaces the object re-seats on the next pass.
-local function SeatFillMasks(st)
-    local hm = st.kitHMask
+local function SeatFillMasks(stockStyle)
+    local hm = stockStyle.kitHMask
     if hm then
-        local fillTex = st.kitHealth:GetStatusBarTexture()
-        if fillTex and st._kitHFill ~= fillTex then
-            local old = st._kitHFill
+        local fillTex = stockStyle.kitHealth:GetStatusBarTexture()
+        if fillTex and stockStyle._kitHFill ~= fillTex then
+            local old = stockStyle._kitHFill
             if old then
                 pcall(old.RemoveMaskTexture, old, hm)
             end
             fillTex:AddMaskTexture(hm)
-            st._kitHFill = fillTex
+            stockStyle._kitHFill = fillTex
         end
     end
-    local pm, power = st.kitPMask, st.kitPower
-    if pm and power then
-        local fillTex = power:GetStatusBarTexture()
-        if fillTex and st._kitPFill ~= fillTex then
-            local old = st._kitPFill
+    local pm, powerBar = stockStyle.kitPMask, stockStyle.kitPower
+    if pm and powerBar then
+        local fillTex = powerBar:GetStatusBarTexture()
+        if fillTex and stockStyle._kitPFill ~= fillTex then
+            local old = stockStyle._kitPFill
             if old then
                 pcall(old.RemoveMaskTexture, old, pm)
             end
             fillTex:AddMaskTexture(pm)
-            st._kitPFill = fillTex
+            stockStyle._kitPFill = fillTex
         end
     end
 end
@@ -1014,29 +1014,29 @@ local function PreviewSpots(frame, s, g)
     end
 end
 
-local function Seat(ownerFrame, st, g)
-    local health, power = st.kitHealth, st.kitPower
-    Place(st.kitHost, ownerFrame, g.host)
+local function Seat(ownerFrame, stockStyle, g)
+    local health, powerBar = stockStyle.kitHealth, stockStyle.kitPower
+    Place(stockStyle.kitHost, ownerFrame, g.host)
     Place(health, ownerFrame, g.health)
-    Place(power, ownerFrame, g.power)
-    Place(st.kitArt, ownerFrame, g.art)
-    Place(st._stAggTex, ownerFrame, g.flash)
-    Place(st._kitHov, ownerFrame, g.glow)
-    Place(st._kitSel, ownerFrame, g.glow)
-    Place(st.kitPortrait, ownerFrame, g.portrait)
-    Place(st.kitBack, ownerFrame, g.back)
-    SeatMask(st.kitHMask, health, g.health)
-    SeatMask(st.kitPMask, power, g.power)
-    SeatBevel(st.kitHShade, health, g.health.h)
-    SeatBevel(st.kitPShade, power, g.power.h)
+    Place(powerBar, ownerFrame, g.power)
+    Place(stockStyle.kitArt, ownerFrame, g.art)
+    Place(stockStyle._stAggTex, ownerFrame, g.flash)
+    Place(stockStyle._kitHov, ownerFrame, g.glow)
+    Place(stockStyle._kitSel, ownerFrame, g.glow)
+    Place(stockStyle.kitPortrait, ownerFrame, g.portrait)
+    Place(stockStyle.kitBack, ownerFrame, g.back)
+    SeatMask(stockStyle.kitHMask, health, g.health)
+    SeatMask(stockStyle.kitPMask, powerBar, g.power)
+    SeatBevel(stockStyle.kitHShade, health, g.health.h)
+    SeatBevel(stockStyle.kitPShade, powerBar, g.power.h)
 end
 
 -- Build once per owner (StyleButton for the header and self buttons, before
 -- every anchor closure and the aura containers; CreatePreviewFrame for the
 -- party preview). `health`/`power` are the owner's bars (ours), `bdr` its
 -- stood-down border frame.
-function mod.RF_KitBuild(ownerFrame, st, health, power, bdr)
-    if st.kit or not health then
+function mod.RF_KitBuild(ownerFrame, stockStyle, health, powerBar, bdr)
+    if stockStyle.kit or not health then
         return
     end
     local kit = mod.RF_PartyKit()
@@ -1045,8 +1045,8 @@ function mod.RF_KitBuild(ownerFrame, st, health, power, bdr)
         return
     end
     local Pix = CludesUI.PP or CludesUI.PanelPP
-    st.kit = kit
-    st.kitOwner, st.kitHealth, st.kitPower = ownerFrame, health, power
+    stockStyle.kit = kit
+    stockStyle.kitOwner, stockStyle.kitHealth, stockStyle.kitPower = ownerFrame, health, powerBar
     -- Unlock mode's settings link for the party mover: the kit's size lives
     -- in Frame Scale (the Frame Width row is hidden). Latched per session.
     local map = CludesUI._ELEMENT_SETTINGS_MAP
@@ -1064,7 +1064,7 @@ function mod.RF_KitBuild(ownerFrame, st, health, power, bdr)
     -- protected in combat, and the bars must stay movable out of it.
     local owner = CreateFrame("Frame", nil, ownerFrame)
     owner:EnableMouse(false)
-    st.kitHost = owner
+    stockStyle.kitHost = owner
     health._cuiKitRef = owner
     owner._cuiHealth = health
     -- The stood-down border frame follows the visible frame.
@@ -1075,34 +1075,34 @@ function mod.RF_KitBuild(ownerFrame, st, health, power, bdr)
 
     -- Under the bars: portrait (+ the Blizzard art, Flash and glows; the
     -- vanilla plaque, Flash and glows under Classic).
-    local under = CreateFrame("Frame", nil, ownerFrame)
-    under:EnableMouse(false)
-    st.kitUnder = under
-    local portrait = under:CreateTexture(nil, "BACKGROUND", nil, 1)
-    local pmask = under:CreateMaskTexture()
+    local underlay = CreateFrame("Frame", nil, ownerFrame)
+    underlay:EnableMouse(false)
+    stockStyle.kitUnder = underlay
+    local portrait = underlay:CreateTexture(nil, "BACKGROUND", nil, 1)
+    local pmask = underlay:CreateMaskTexture()
     pmask:SetAtlas("CircleMask")
     pmask:SetAllPoints(portrait)
     portrait:AddMaskTexture(pmask)
-    st.kitPortrait = portrait
+    stockStyle.kitPortrait = portrait
     local art, flash, hov, sel
     if K.artAbove then
         -- Classic: the Flash glows out from under the whole silhouette.
-        flash = under:CreateTexture(nil, "BACKGROUND", nil, -4)
-        hov = under:CreateTexture(nil, "BACKGROUND", nil, -3)
-        sel = under:CreateTexture(nil, "BACKGROUND", nil, -2)
-        local back = under:CreateTexture(nil, "BACKGROUND", nil, 2)
+        flash = underlay:CreateTexture(nil, "BACKGROUND", nil, -4)
+        hov = underlay:CreateTexture(nil, "BACKGROUND", nil, -3)
+        sel = underlay:CreateTexture(nil, "BACKGROUND", nil, -2)
+        local back = underlay:CreateTexture(nil, "BACKGROUND", nil, 2)
         back:SetColorTexture(0, 0, 0, 0.5)
-        st.kitBack = back
+        stockStyle.kitBack = back
         local over = CreateFrame("Frame", nil, ownerFrame)
         over:EnableMouse(false)
-        st.kitOver = over
+        stockStyle.kitOver = over
         art = over:CreateTexture(nil, "ARTWORK")
     else
         -- Blizzard: rim glows over the art, all under the bars.
-        art = under:CreateTexture(nil, "ARTWORK", nil, 0)
-        flash = under:CreateTexture(nil, "ARTWORK", nil, 1)
-        hov = under:CreateTexture(nil, "ARTWORK", nil, 2)
-        sel = under:CreateTexture(nil, "ARTWORK", nil, 3)
+        art = underlay:CreateTexture(nil, "ARTWORK", nil, 0)
+        flash = underlay:CreateTexture(nil, "ARTWORK", nil, 1)
+        hov = underlay:CreateTexture(nil, "ARTWORK", nil, 2)
+        sel = underlay:CreateTexture(nil, "ARTWORK", nil, 3)
     end
     SetArt(art, K.art)
     SetArt(flash, K.flash)
@@ -1119,12 +1119,12 @@ function mod.RF_KitBuild(ownerFrame, st, health, power, bdr)
         Pix.DisablePixelSnap(sel)
         Pix.DisablePixelSnap(portrait)
     end
-    st.kitArt = art
+    stockStyle.kitArt = art
     -- The stock aggro path (RF_PaintThreat -> RF_StockAggro) drives the
     -- Flash: stockHl marks stock highlights, the Flash is its aggro texture.
-    st.stockHl = under
-    st._stAggTex = flash
-    st._kitHov, st._kitSel = hov, sel
+    stockStyle.stockHl = underlay
+    stockStyle._stAggTex = flash
+    stockStyle._kitHov, stockStyle._kitSel = hov, sel
 
     -- Blizzard: the stock rounded masks and bevel, on the bars themselves
     -- (the mana mask shapes the bar's own background too). The retail masks
@@ -1132,24 +1132,24 @@ function mod.RF_KitBuild(ownerFrame, st, health, power, bdr)
     if K.health.mask then
         local hm = health:CreateMaskTexture()
         CludesUI.StockMask(hm, K.health.mask)
-        st.kitHMask = hm
+        stockStyle.kitHMask = hm
         if K.bevel then
-            st.kitHShade = MakeBevel(health, hm)
+            stockStyle.kitHShade = MakeBevel(health, hm)
         end
-        if power and K.power.mask then
-            local pm = power:CreateMaskTexture()
+        if powerBar and K.power.mask then
+            local pm = powerBar:CreateMaskTexture()
             CludesUI.StockMask(pm, K.power.mask)
-            st.kitPMask = pm
-            local pbg = st.powerBg or st._powerBg
+            stockStyle.kitPMask = pm
+            local pbg = stockStyle.powerBg or stockStyle._powerBg
             if pbg then
                 pbg:AddMaskTexture(pm)
             end
             if K.bevel then
-                st.kitPShade = MakeBevel(power, pm)
+                stockStyle.kitPShade = MakeBevel(powerBar, pm)
             end
         end
     end
-    mod.RF_ApplyPartyKit(ownerFrame, st, mod._scaledPartyProxy, nil, true)
+    mod.RF_ApplyPartyKit(ownerFrame, stockStyle, mod._scaledPartyProxy, nil, true)
 end
 
 -- The kit pass: portrait (when a unit is given), geometry (when the scale
@@ -1157,44 +1157,44 @@ end
 -- would touch a frame made protected in combat is deferred to combat end
 -- (main file flush -> ReloadPartyFrames); the portrait is a plain paint on
 -- our own texture and always runs.
-function mod.RF_ApplyPartyKit(ownerFrame, st, s, unitToken, force)
-    if not st.kit then
+function mod.RF_ApplyPartyKit(ownerFrame, stockStyle, s, unitToken, force)
+    if not stockStyle.kit then
         return
     end
     if unitToken then
-        mod.RF_KitPortrait(st, unitToken)
+        mod.RF_KitPortrait(stockStyle, unitToken)
     end
     local g = mod.RF_KitGeom(s and s.partyKitScale)
     if not g then
         return
     end
-    local health, power, owner = st.kitHealth, st.kitPower, st.kitHost
+    local health, powerBar, owner = stockStyle.kitHealth, stockStyle.kitPower, stockStyle.kitHost
     -- The pixel grid the seat pass snaps to joins the memo (a live UI-scale
     -- change re-seats on the next pass).
     local P = CludesUI.PP
     local es = ownerFrame:GetEffectiveScale()
-    local px = ((P and P.perfect) or 0) / ((es and es > 0) and es or 1)
+    local pixel = ((P and P.perfect) or 0) / ((es and es > 0) and es or 1)
     local locked = InCombatLockdown()
-        and (health:IsProtected() or owner:IsProtected() or (power and power:IsProtected()))
-    if force or st.kitG ~= g or st.kitPx ~= px then
+        and (health:IsProtected() or owner:IsProtected() or (powerBar and powerBar:IsProtected()))
+    if force or stockStyle.kitG ~= g or stockStyle.kitPx ~= pixel then
         if locked then
             mod._partyKitDirtyInCombat = true
         else
-            Seat(ownerFrame, st, g)
-            st.kitG, st.kitPx = g, px
+            Seat(ownerFrame, stockStyle, g)
+            stockStyle.kitG, stockStyle.kitPx = g, pixel
             -- The spots scale with the frame: re-run what reads them.
-            if st.AnchorTexts then
-                st.AnchorTexts()
+            if stockStyle.AnchorTexts then
+                stockStyle.AnchorTexts()
             end
-            if st.AnchorRoleIcon then
-                st.AnchorRoleIcon()
+            if stockStyle.AnchorRoleIcon then
+                stockStyle.AnchorRoleIcon()
             end
-            if st.AnchorReadyCheck then
-                st.AnchorReadyCheck()
+            if stockStyle.AnchorReadyCheck then
+                stockStyle.AnchorReadyCheck()
             end
-            mod.RF_KitLeader(st, s)
+            mod.RF_KitLeader(stockStyle, s)
             -- A preview frame is its own state (RF_KitBuild(f, f, ...)).
-            if ownerFrame == st and s then
+            if ownerFrame == stockStyle and s then
                 PreviewSpots(ownerFrame, s, g)
             end
         end
@@ -1203,27 +1203,27 @@ function mod.RF_ApplyPartyKit(ownerFrame, st, s, unitToken, force)
     -- the bars at their creation offsets first, so the art keeps its place
     -- under (Blizzard) or over (Classic) them.
     local L = ownerFrame:GetFrameLevel()
-    if health:GetFrameLevel() ~= L + 2 or (power and power:GetFrameLevel() ~= L + 3) then
+    if health:GetFrameLevel() ~= L + 2 or (powerBar and powerBar:GetFrameLevel() ~= L + 3) then
         if locked then
             mod._partyKitDirtyInCombat = true
         else
             SetLevel(health, L + 2)
-            SetLevel(power, L + 3)
+            SetLevel(powerBar, L + 3)
         end
     end
-    SetLevel(st.kitUnder, L + 1)
+    SetLevel(stockStyle.kitUnder, L + 1)
     -- Classic art: over the bars and absorbs (health +3), tying only the
     -- absorb spark host, under the border (+8), text and auras.
-    SetLevel(st.kitOver, L + 6)
-    SeatFillMasks(st)
+    SetLevel(stockStyle.kitOver, L + 6)
+    SeatFillMasks(stockStyle)
 end
 
 -- The stock portrait in the PORTRAIT section's Art Style (the portrait or
 -- the class art; a model cannot take the socket's round mask), re-
 -- desaturated after every paint (offline state is owned by the health-
 -- background pass).
-function mod.RF_KitPortrait(st, unitToken)
-    local texture = st.kitPortrait
+function mod.RF_KitPortrait(stockStyle, unitToken)
+    local texture = stockStyle.kitPortrait
     if not texture then
         return
     end
@@ -1238,7 +1238,7 @@ function mod.RF_KitPortrait(st, unitToken)
         texture:SetTexCoord(0, 1, 0, 1)
         SetPortraitTexture(texture, unitToken)
     end
-    texture:SetDesaturated(st._kitDesat or false)
+    texture:SetDesaturated(stockStyle._kitDesat or false)
 end
 
 -- Options preview: the player's own portrait in the player's slot, the
@@ -1268,8 +1268,8 @@ end
 -- Hover and target: the art-tracing glow (stock has neither), hover in the
 -- user's hover colour, target in the stock selection colour; target draws
 -- over hover. The stood-down border frame stays clear.
-function mod.RF_KitHighlight(st, bf, s, hover, target)
-    local hov, sel = st._kitHov, st._kitSel
+function mod.RF_KitHighlight(stockStyle, bf, s, hover, target)
+    local hov, sel = stockStyle._kitHov, stockStyle._kitSel
     if not hov then
         return
     end

@@ -54,9 +54,9 @@ do
     end
     -- Both key forms land: Blizzard's table carries string tokens plus numeric
     -- aliases, and the painter looks up number-first, token-second.
-    for key, c in pairs(PowerBarColor) do
+    for tagKey, c in pairs(PowerBarColor) do
         if type(c) == "table" and c.r then
-            colors.power[key] = CreateColor(c.r, c.g, c.b)
+            colors.power[tagKey] = CreateColor(c.r, c.g, c.b)
         end
     end
     -- Dispel colors keyed by the game's dispel-type indices (the aura rows'
@@ -78,8 +78,8 @@ do
     -- behavior users already see), native interpolation via the bar's own
     -- .smoothing, then the shared secret-safe color chain.
     local function PaintHealth(widget, unitToken, evt)
-        local element = widget.Health
-        if not element or not unitToken then
+        local part = widget.Health
+        if not part or not unitToken then
             return
         end
         -- A UNIT_HEALTH delivery for this token proves the unit exists (the
@@ -95,9 +95,9 @@ do
         end
         -- Bar bounds ride the max-health/identity events (Blizzard's own
         -- contract); a pure UNIT_HEALTH value tick pushes only the value.
-        if evt ~= "UNIT_HEALTH" or not element._maxSet then
-            element._maxSet = true
-            element:SetMinMaxValues(0, UnitHealthMax(unitToken))
+        if evt ~= "UNIT_HEALTH" or not part._maxSet then
+            part._maxSet = true
+            part:SetMinMaxValues(0, UnitHealthMax(unitToken))
         end
         -- A corpse fires no further UNIT_HEALTH, so the death tick's paint is the
         -- last one the bar gets: zero it from the dead flag (a plain boolean in
@@ -107,11 +107,11 @@ do
         -- UnitIsDead, not UnitIsDeadOrGhost: a ghost is at full health, and
         -- Blizzard's own bar reads it the same way (CompactUnitFrame_UpdateHealthColor).
         if not UnitIsConnected(unitToken) then
-            element:SetValue(UnitHealthMax(unitToken), element.smoothing)
+            part:SetValue(UnitHealthMax(unitToken), part.smoothing)
         elseif UnitIsDead(unitToken) then
-            element:SetValue(0)
+            part:SetValue(0)
         else
-            element:SetValue(UnitHealth(unitToken), element.smoothing)
+            part:SetValue(UnitHealth(unitToken), part.smoothing)
         end
         -- Color inputs (class/reaction/dark/disconnect/tap) change via their
         -- own events or identity repaints -- a pure health tick re-runs the
@@ -120,13 +120,13 @@ do
         -- never set by this engine; the dynamic modes live in PostUpdateColor
         -- (ns.UF_DynamicHealthColor) behind the unit's healthColorMode, so that
         -- setting is the gate that keeps a dynamic bar tracking every tick.
-        local unitKey = element._cuiUnitKey
+        local unitKey = part._cuiUnitKey
         local unitColorMode = unitKey and saved.profile[unitKey]
         unitColorMode = unitColorMode and unitColorMode.healthColorMode
         if
             evt ~= "UNIT_HEALTH"
-            or element.colorSmooth
-            or element.colorThreat
+            or part.colorSmooth
+            or part.colorThreat
             or (unitColorMode and unitColorMode ~= "none")
         then
             UF_SecretSafeHealthColor(widget, evt, unitToken)
@@ -140,57 +140,57 @@ do
     -- color with the bar's own PostUpdateColor/PostUpdate layered on top in
     -- the same order as before.
     local function PaintPower(widget, unitToken, evt)
-        local element = widget.Power
-        if not element or not unitToken or not UnitExists(unitToken) then
+        local part = widget.Power
+        if not part or not unitToken or not UnitExists(unitToken) then
             return
         end
         if not mod.Engine.ElementOn(widget, "Power") then
             return
         end
         local ptype
-        if element.displayAltPower and element.GetDisplayPower then
-            ptype = element:GetDisplayPower(unitToken)
+        if part.displayAltPower and part.GetDisplayPower then
+            ptype = part:GetDisplayPower(unitToken)
         end
-        element.displayType = ptype
-        local pnum, ptoken
+        part.displayType = ptype
+        local powerNum, ptoken
         if ptype then
-            pnum = ptype
+            powerNum = ptype
         else
-            pnum, ptoken = UnitPowerType(unitToken)
+            powerNum, ptoken = UnitPowerType(unitToken)
         end
         -- The resolved type for the value pass below, and its token in the
         -- power events' payload form for the engine's event filter. A secret
         -- type stashes nothing (no filter; the value pass paints in full).
-        if issecretvalue(pnum) then
-            element._cuiPNum, element._cuiPTok = nil, nil
+        if issecretvalue(powerNum) then
+            part._cuiPNum, part._cuiPTok = nil, nil
         else
-            element._cuiPNum = pnum
-            element._cuiPTok = (not issecretvalue(ptoken) and ptoken) or CludesUI.POWER_ENUM_TO_KEY[pnum]
+            part._cuiPNum = powerNum
+            part._cuiPTok = (not issecretvalue(ptoken) and ptoken) or CludesUI.POWER_ENUM_TO_KEY[powerNum]
         end
-        if element._manaRegenSpark then
-            CludesUI.ManaRegenSpark.SetMana("uf", not issecretvalue(pnum) and pnum == Enum.PowerType.Mana)
+        if part._manaRegenSpark then
+            CludesUI.ManaRegenSpark.SetMana("uf", not issecretvalue(powerNum) and powerNum == Enum.PowerType.Mana)
         end
-        local max = UnitPowerMax(unitToken, pnum)
-        element:SetMinMaxValues(0, max)
+        local max = UnitPowerMax(unitToken, powerNum)
+        part:SetMinMaxValues(0, max)
         local current
         if UnitIsConnected(unitToken) then
-            current = UnitPower(unitToken, pnum)
-            element:SetValue(current, element.smoothing)
+            current = UnitPower(unitToken, powerNum)
+            part:SetValue(current, part.smoothing)
         else
             current = max
-            element:SetValue(max, element.smoothing)
+            part:SetValue(max, part.smoothing)
         end
-        if element.colorPower then
-            local color = mod.Colors.power[pnum] or (ptoken and mod.Colors.power[ptoken])
+        if part.colorPower then
+            local color = mod.Colors.power[powerNum] or (ptoken and mod.Colors.power[ptoken])
             if color then
-                element:SetStatusBarColor(color:GetRGB())
+                part:SetStatusBarColor(color:GetRGB())
             end
         end
-        if element.PostUpdateColor then
-            element:PostUpdateColor(unitToken)
+        if part.PostUpdateColor then
+            part:PostUpdateColor(unitToken)
         end
-        if element.PostUpdate then
-            element:PostUpdate(unitToken, current, 0, max)
+        if part.PostUpdate then
+            part:PostUpdate(unitToken, current, 0, max)
         end
     end
     mod.Engine.SetPainter("power", PaintPower)
@@ -205,18 +205,18 @@ do
     -- and moves with SetValue. With no readable stashed type the full pass
     -- runs instead.
     mod.Engine.SetValuePainter(function(widget, unitToken)
-        local element = widget.Power
-        if not element or not unitToken or not UnitExists(unitToken) then
+        local part = widget.Power
+        if not part or not unitToken or not UnitExists(unitToken) then
             return
         end
         if not mod.Engine.ElementOn(widget, "Power") then
             return
         end
-        local pnum = element._cuiPNum
-        if pnum == nil then
+        local powerNum = part._cuiPNum
+        if powerNum == nil then
             PaintPower(widget, unitToken, "UNIT_POWER_FREQUENT")
         elseif UnitIsConnected(unitToken) then
-            element:SetValue(UnitPower(unitToken, pnum), element.smoothing)
+            part:SetValue(UnitPower(unitToken, powerNum), part.smoothing)
         end
         mod.UF_PaintPowerText(widget, unitToken)
     end)
@@ -246,8 +246,8 @@ do
             if not (saved and saved.profile) then
                 return false
             end
-            for _, key in ipairs(UNITS) do
-                if not mod.UF_DarkThemeOn(saved.profile[key]) then
+            for _, tagKey in ipairs(UNITS) do
+                if not mod.UF_DarkThemeOn(saved.profile[tagKey]) then
                     return false
                 end
             end
@@ -258,8 +258,8 @@ do
                 return
             end
             saved.profile.darkTheme = on
-            for _, key in ipairs(UNITS) do
-                local s = saved.profile[key]
+            for _, tagKey in ipairs(UNITS) do
+                local s = saved.profile[tagKey]
                 if s then
                     s.darkTheme = on
                 end
@@ -283,33 +283,33 @@ local function CUI_IsSmartPowerPercent(displayedPowerType)
     if CludesUI.IS_FOREVER then
         return false
     end
-    local _, cls = UnitClass("player")
-    if not cls then
+    local _, classFile = UnitClass("player")
+    if not classFile then
         return false
     end
     -- Druid/Monk shift displayed power with form/spec: percent only while the bar shows
     -- Mana (Druid caster/Tree/travel + Mistweaver); raw otherwise (Cat=Energy, Bear=Rage,
     -- Moonkin=Astral, WW/BRM=Energy, incl. Restoration weaving Cat/Bear). Prefer the
     -- caller-supplied displayed power, else the live primary power type.
-    if cls == "DRUID" or cls == "MONK" then
+    if classFile == "DRUID" or classFile == "MONK" then
         local pt = displayedPowerType or UnitPowerType("player")
         return pt == Enum.PowerType.Mana
     end
-    if cls == "PRIEST" or cls == "SHAMAN" then
+    if classFile == "PRIEST" or classFile == "SHAMAN" then
         return true
     end
     -- Paladin: Holy and Protection (mana-based specs).
-    if cls == "PALADIN" then
+    if classFile == "PALADIN" then
         local specInfo = GetSpecialization()
         return specInfo == 1 or specInfo == 2 -- Holy, Protection
     end
     -- Mage: only Arcane
-    if cls == "MAGE" then
+    if classFile == "MAGE" then
         local specInfo = GetSpecialization()
         return specInfo == 1 -- Arcane
     end
     -- Evoker: only Preservation
-    if cls == "EVOKER" then
+    if classFile == "EVOKER" then
         local specInfo = GetSpecialization()
         return specInfo == 2 -- Preservation
     end
@@ -691,10 +691,10 @@ mod.ResolveUnitNameColor = function(unitToken)
         return nil
     end
     if UnitIsPlayer(unitToken) or (UnitInPartyIsAI and UnitInPartyIsAI(unitToken)) then
-        local _, class = UnitClass(unitToken)
-        if not issecretvalue(class) and class then
+        local _, classKey = UnitClass(unitToken)
+        if not issecretvalue(classKey) and classKey then
             -- The suite's Class Colors (custom colors, Class Color Darken), as the health bar.
-            local c = CludesUI.GetClassColor(class)
+            local c = CludesUI.GetClassColor(classKey)
             if c then
                 return c.r, c.g, c.b
             end
@@ -705,10 +705,10 @@ mod.ResolveUnitNameColor = function(unitToken)
         if UnitIsTapDenied and UnitIsTapDenied(unitToken) then
             return 0.6, 0.6, 0.6
         end
-        local reaction = UnitReaction(unitToken, "player")
-        if reaction and not issecretvalue(reaction) then
-            local c = (mod.Colors and mod.Colors.reaction and mod.Colors.reaction[reaction])
-                or FACTION_BAR_COLORS[reaction]
+        local reactionId = UnitReaction(unitToken, "player")
+        if reactionId and not issecretvalue(reactionId) then
+            local c = (mod.Colors and mod.Colors.reaction and mod.Colors.reaction[reactionId])
+                or FACTION_BAR_COLORS[reactionId]
             if c then
                 return c.r, c.g, c.b
             end
@@ -724,13 +724,13 @@ end
 -- channels itself (that tag takes a secret hex from GenerateHexColor on its own and
 -- hands it to SetFormattedText untouched).
 -- Returns ok, r, g, b -- ok is a PLAIN boolean, r/g/b may be SECRET, only safe as setter args.
-local function ResolveRestrictedClassColor(unitToken, class)
-    local success, region, g, b = CludesUI.GetClassColorForRestrictedUnit(unitToken, class)
+local function ResolveRestrictedClassColor(unitToken, classKey)
+    local success, region, g, b = CludesUI.GetClassColorForRestrictedUnit(unitToken, classKey)
     if success then
         return true, region, g, b
     end
     if C_ClassColor and C_ClassColor.GetClassColor then
-        local c = C_ClassColor.GetClassColor(class)
+        local c = C_ClassColor.GetClassColor(classKey)
         if c then
             return true, c.r, c.g, c.b
         end
@@ -915,14 +915,14 @@ do
             -- The painter refuses an empty token, so a frame between units must
             -- not be blanked here either -- it would never get the value back.
             if type(frame) == "table" and frame._cuiTextZones and frame._cuiUnit and UnitExists(frame._cuiUnit) then
-                local zones = frame._cuiTextZones
-                for i = 1, #zones do
-                    local fontStr = zones[i].fs
+                local zoneList = frame._cuiTextZones
+                for i = 1, #zoneList do
+                    local fontStr = zoneList[i].fs
                     if fontStr and fontStr.SetText then
                         fontStr:SetText("")
                     end
                 end
-                if #zones > 0 then
+                if #zoneList > 0 then
                     mod.UF_PaintText(frame, frame._cuiUnit)
                 end
             end
@@ -1077,9 +1077,9 @@ TagFns.tgtcol = function(unitToken)
         -- target): GenerateHexColor's result may itself be secret, but still
         -- renders correctly through SetFormattedText's arg lane -- don't reject it.
         if UnitIsPlayer(tunit) and C_ClassColor and C_ClassColor.GetClassColor then
-            local _, class = UnitClass(tunit)
-            if issecretvalue(class) then
-                local cc = C_ClassColor.GetClassColor(class)
+            local _, classKey = UnitClass(tunit)
+            if issecretvalue(classKey) then
+                local cc = C_ClassColor.GetClassColor(classKey)
                 if cc and cc.GenerateHexColor then
                     local success, hex = pcall(cc.GenerateHexColor, cc)
                     if success and type(hex) == "string" then
@@ -1089,10 +1089,10 @@ TagFns.tgtcol = function(unitToken)
             end
         end
         -- Still nothing usable: the plain reaction colour instead of "".
-        local reaction = UnitReaction(tunit, "player")
-        if reaction and not issecretvalue(reaction) then
-            local c = (mod.Colors and mod.Colors.reaction and mod.Colors.reaction[reaction])
-                or FACTION_BAR_COLORS[reaction]
+        local reactionId = UnitReaction(tunit, "player")
+        if reactionId and not issecretvalue(reactionId) then
+            local c = (mod.Colors and mod.Colors.reaction and mod.Colors.reaction[reactionId])
+                or FACTION_BAR_COLORS[reactionId]
             if c then
                 region, g, b = c.r, c.g, c.b
             end
@@ -1168,16 +1168,16 @@ do
     -- _CUI_ globals; the compiled strings stay registered only while the tag
     -- engine still runs).
     P.perpp = function(u)
-        local pType = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
-        return scrollFrame("%d", UnitPowerPercent(u, pType, true, CurveConstants.ScaleTo100))
+        local powerKind = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
+        return scrollFrame("%d", UnitPowerPercent(u, powerKind, true, CurveConstants.ScaleTo100))
     end
     P.curpp = function(u)
-        local pType = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
-        return AbbreviateNumbers(UnitPower(u, pType))
+        local powerKind = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
+        return AbbreviateNumbers(UnitPower(u, powerKind))
     end
     P.maxpp = function(u)
-        local pType = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
-        return AbbreviateNumbers(UnitPowerMax(u, pType))
+        local powerKind = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
+        return AbbreviateNumbers(UnitPowerMax(u, powerKind))
     end
     -- Full numbers for the custom text tags ([hp], [hp:max], [pp], [pp:max]).
     -- %d formats a secret value like P.perpp does; [hp] names the status as
@@ -1201,12 +1201,12 @@ do
         return scrollFrame("%d", UnitHealthMax(u) or 0)
     end
     P.curppfull = function(u)
-        local pType = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
-        return scrollFrame("%d", UnitPower(u, pType))
+        local powerKind = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
+        return scrollFrame("%d", UnitPower(u, powerKind))
     end
     P.maxppfull = function(u)
-        local pType = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
-        return scrollFrame("%d", UnitPowerMax(u, pType))
+        local powerKind = _G._CUI_ResolvedPowerType[u] or UnitPowerType(u)
+        return scrollFrame("%d", UnitPowerMax(u, powerKind))
     end
     P.absorb = function(u)
         if not u or not UnitExists(u) then
@@ -1402,23 +1402,23 @@ do
     -- whatever the slot's own Name Format says. [name:last] and [target:last]
     -- show nothing for your own unit while your name is your first name alone
     -- (OwnSurnameHidden: WoW Forever, Blizzard's My Surname off).
-    local function Shaped(piece, mode, ofTarget)
-        if mode ~= "last" then
+    local function Shaped(piece, modeName, ofTarget)
+        if modeName ~= "last" then
             return function(unitToken)
-                return CludesUI.ShortName(piece(unitToken), mode)
+                return CludesUI.ShortName(piece(unitToken), modeName)
             end
         end
         return function(unitToken)
             if CludesUI.OwnSurnameHidden(ofTarget and unitToken and (unitToken .. "target") or unitToken) then
                 return ""
             end
-            return CludesUI.ShortName(piece(unitToken), mode)
+            return CludesUI.ShortName(piece(unitToken), modeName)
         end
     end
-    for _, mode in ipairs({ "first", "last", "abbr" }) do
-        P["name" .. mode] = Shaped(P.name, mode)
-        P["tgt" .. mode] = Shaped(P.tgtname, mode, true)
-        PIECE_READS[P["name" .. mode]] = "id"
+    for _, modeName in ipairs({ "first", "last", "abbr" }) do
+        P["name" .. modeName] = Shaped(P.name, modeName)
+        P["tgt" .. modeName] = Shaped(P.tgtname, modeName, true)
+        PIECE_READS[P["name" .. modeName]] = "id"
     end
 
     -- Custom content: the slot's own format string (<prefix>CustomFormat),
@@ -1460,25 +1460,25 @@ do
             if not parsed then
                 return nil
             end
-            local keyList, map, pieces = parsed.keys, TAG_CATALOG.map, {}
+            local keyList, map, pieceList = parsed.keys, TAG_CATALOG.map, {}
             local lvlCol = prefs.levelDifficultyColor
             for i = 1, #keyList do
-                local key = keyList[i]
-                if key == "level" and lvlCol then
-                    pieces[i] = prefs.levelDifficultyColorFriendly and P.levelcolall or P.levelcol
+                local tagKey = keyList[i]
+                if tagKey == "level" and lvlCol then
+                    pieceList[i] = prefs.levelDifficultyColorFriendly and P.levelcolall or P.levelcol
                 else
-                    pieces[i] = map[key]
+                    pieceList[i] = map[tagKey]
                 end
             end
             -- Static (identity repaints only) unless a tag reads a value.
             local static = true
-            for cls in pairs(parsed.reads) do
-                if cls ~= "id" then
+            for classFile in pairs(parsed.reads) do
+                if classFile ~= "id" then
                     static = nil
                     break
                 end
             end
-            return parsed.fmt, pieces, static
+            return parsed.fmt, pieceList, static
         end
         if contentFrame == "nametotarget" then
             return "%s%s%s%s", { P.name, mod.MakeTgtSepPiece(prefixText, prefs), P.tgtcol, P.tgtname }
@@ -1488,34 +1488,34 @@ do
         -- escape rides only while the slot is Class Colored; otherwise the
         -- name keeps the slot colour. Every piece is "" without a target.
         if contentFrame == "targetname" then
-            local pieces = {}
+            local pieceList = {}
             local pre = prefs[prefixText .. "TargetPrefix"]
             if type(pre) ~= "string" then
                 pre = "T:"
             end
             if pre ~= "" then
-                pieces[1] = mod.MakeTgtSepPiece(prefixText, prefs, pre .. " ")
+                pieceList[1] = mod.MakeTgtSepPiece(prefixText, prefs, pre .. " ")
             end
             if prefs[prefixText .. "ClassColor"] then
-                pieces[#pieces + 1] = P.tgtcol
+                pieceList[#pieceList + 1] = P.tgtcol
             end
-            pieces[#pieces + 1] = P.tgtname
-            return string.rep("%s", #pieces), pieces
+            pieceList[#pieceList + 1] = P.tgtname
+            return string.rep("%s", #pieceList), pieceList
         end
         local def = ZONE_STATIC[contentFrame]
         if not def then
             return nil
         end
-        local pieces = {}
+        local pieceList = {}
         local lvlCol = prefs and prefs.levelDifficultyColor
         for i = 2, #def do
-            local key = def[i]
-            if key == "level" and lvlCol then
-                key = prefs.levelDifficultyColorFriendly and "levelcolall" or "levelcol"
+            local tagKey = def[i]
+            if tagKey == "level" and lvlCol then
+                tagKey = prefs.levelDifficultyColorFriendly and "levelcolall" or "levelcol"
             end
-            pieces[#pieces + 1] = P[key]
+            pieceList[#pieceList + 1] = P[tagKey]
         end
-        return def[1], pieces, ZONE_IDENTITY[contentFrame] or nil
+        return def[1], pieceList, ZONE_IDENTITY[contentFrame] or nil
     end
 
     -- Name Format: a slot set to one (<prefix>NameFormat) gets short-name twins
@@ -1532,26 +1532,26 @@ do
         local twinsByMode = {}
         local base = mod.ContentToZone
         function mod.ContentToZone(contentFrame, prefixText, prefs)
-            local fmt, pieces, static = base(contentFrame, prefixText, prefs)
-            local mode = fmt and prefs and prefs[prefixText .. "NameFormat"]
-            if mode and CludesUI.IsNameFormat(mode) then
-                local twins = twinsByMode[mode]
+            local fmt, pieceList, static = base(contentFrame, prefixText, prefs)
+            local modeName = fmt and prefs and prefs[prefixText .. "NameFormat"]
+            if modeName and CludesUI.IsNameFormat(modeName) then
+                local twins = twinsByMode[modeName]
                 if not twins then
                     twins = {
                         [nameFn] = function(u)
-                            return short(nameFn(u), unitMode(mode, u))
+                            return short(nameFn(u), unitMode(modeName, u))
                         end,
                         [tgtFn] = function(u)
-                            return short(tgtFn(u), unitMode(mode, u and (u .. "target")))
+                            return short(tgtFn(u), unitMode(modeName, u and (u .. "target")))
                         end,
                     }
-                    twinsByMode[mode] = twins
+                    twinsByMode[modeName] = twins
                 end
-                for i = 1, #pieces do
-                    pieces[i] = twins[pieces[i]] or pieces[i]
+                for i = 1, #pieceList do
+                    pieceList[i] = twins[pieceList[i]] or pieceList[i]
                 end
             end
-            return fmt, pieces, static
+            return fmt, pieceList, static
         end
     end
 
@@ -1564,8 +1564,8 @@ do
     local scratch = {}
     local GetTime = GetTime
     local function PaintText(widget, unitToken, evt)
-        local zones = widget._cuiTextZones
-        if not zones then
+        local zoneList = widget._cuiTextZones
+        if not zoneList then
             return
         end
         -- An empty token renders every zone blank, and a boss frame outlives the
@@ -1580,16 +1580,16 @@ do
         if evt == "UNIT_FACTION" and mod.UF_RecolorTexts then
             mod.UF_RecolorTexts(widget, unitToken)
         end
-        local cls = evt ~= nil and VALUE_CLASS[evt]
+        local classFile = evt ~= nil and VALUE_CLASS[evt]
         local nowTime = GetTime()
-        for i = 1, #zones do
-            local z = zones[i]
-            if not cls or (not z.static and (z.any or z[cls]) and z.at ~= nowTime) then
+        for i = 1, #zoneList do
+            local z = zoneList[i]
+            if not classFile or (not z.static and (z.any or z[classFile]) and z.at ~= nowTime) then
                 z.at = nowTime
-                local pieces = z.pieces
-                local num = #pieces
+                local pieceList = z.pieces
+                local num = #pieceList
                 for k = 1, num do
-                    scratch[k] = pieces[k](unitToken)
+                    scratch[k] = pieceList[k](unitToken)
                 end
                 z.fs:SetFormattedText(z.fmt, unpack(scratch, 1, num))
             end
@@ -1601,17 +1601,17 @@ do
     -- Power-only text repaint for the power value pass: renders just the
     -- zones whose pieces read the unit's power (flagged when the zone is set).
     function mod.UF_PaintPowerText(widget, unitToken)
-        local zones = widget._cuiTextZones
-        if not zones then
+        local zoneList = widget._cuiTextZones
+        if not zoneList then
             return
         end
-        for i = 1, #zones do
-            local z = zones[i]
+        for i = 1, #zoneList do
+            local z = zoneList[i]
             if z.power then
-                local pieces = z.pieces
-                local num = #pieces
+                local pieceList = z.pieces
+                local num = #pieceList
                 for k = 1, num do
-                    scratch[k] = pieces[k](unitToken)
+                    scratch[k] = pieceList[k](unitToken)
                 end
                 z.fs:SetFormattedText(z.fmt, unpack(scratch, 1, num))
             end
@@ -1627,9 +1627,9 @@ do
     -- field per value class for PaintText's filter, any = an unlisted piece,
     -- power for the power value pass and roster for the roster pass.
     local function MarkReads(z)
-        local pieces = z.pieces
-        for i = 1, #pieces do
-            local region = PIECE_READS[pieces[i]]
+        local pieceList = z.pieces
+        for i = 1, #pieceList do
+            local region = PIECE_READS[pieceList[i]]
             if region == nil then
                 z.any = true
             elseif region ~= "id" then
@@ -1651,22 +1651,22 @@ do
     --- the zone (the position code hides the fontstring separately, as
     --- before). Zones are keyed by fontstring; re-apply replaces in place.
     function mod.SetTextZone(widget, fontStr, contentFrame, prefixText, prefs)
-        local zones = widget._cuiTextZones
-        if not zones then
-            zones = {}
-            widget._cuiTextZones = zones
+        local zoneList = widget._cuiTextZones
+        if not zoneList then
+            zoneList = {}
+            widget._cuiTextZones = zoneList
         end
-        local fmt, pieces, static
+        local fmt, pieceList, static
         if contentFrame then
-            fmt, pieces, static = mod.ContentToZone(contentFrame, prefixText, prefs)
+            fmt, pieceList, static = mod.ContentToZone(contentFrame, prefixText, prefs)
         end
-        for i = #zones, 1, -1 do
-            if zones[i].fs == fontStr then
-                table.remove(zones, i)
+        for i = #zoneList, 1, -1 do
+            if zoneList[i].fs == fontStr then
+                table.remove(zoneList, i)
             end
         end
         if fmt then
-            zones[#zones + 1] = MarkReads({ fs = fontStr, fmt = fmt, pieces = pieces, static = static })
+            zoneList[#zoneList + 1] = MarkReads({ fs = fontStr, fmt = fmt, pieces = pieceList, static = static })
         else
             fontStr:SetText("")
         end
@@ -1677,19 +1677,19 @@ do
 
     --- Raw-zone variant for callers that assemble their own format (the power
     --- percent text's curpp/perpp/smart combinations). nil fmt removes.
-    function mod.SetTextZoneRaw(widget, fontStr, fmt, pieces)
-        local zones = widget._cuiTextZones
-        if not zones then
-            zones = {}
-            widget._cuiTextZones = zones
+    function mod.SetTextZoneRaw(widget, fontStr, fmt, pieceList)
+        local zoneList = widget._cuiTextZones
+        if not zoneList then
+            zoneList = {}
+            widget._cuiTextZones = zoneList
         end
-        for i = #zones, 1, -1 do
-            if zones[i].fs == fontStr then
-                table.remove(zones, i)
+        for i = #zoneList, 1, -1 do
+            if zoneList[i].fs == fontStr then
+                table.remove(zoneList, i)
             end
         end
         if fmt then
-            zones[#zones + 1] = MarkReads({ fs = fontStr, fmt = fmt, pieces = pieces })
+            zoneList[#zoneList + 1] = MarkReads({ fs = fontStr, fmt = fmt, pieces = pieceList })
         else
             fontStr:SetText("")
         end
@@ -1708,19 +1708,19 @@ do
         self:Hide()
         local kept = false
         for _, frame in pairs(frameList) do
-            local zones = type(frame) == "table" and frame._cuiTextZones
-            if zones then
+            local zoneList = type(frame) == "table" and frame._cuiTextZones
+            if zoneList then
                 local unitToken = frame._cuiUnit
                 local live = unitToken and UnitExists(unitToken)
-                for i = 1, #zones do
-                    local z = zones[i]
+                for i = 1, #zoneList do
+                    local z = zoneList[i]
                     if z.roster then
                         kept = true
                         if live then
-                            local pieces = z.pieces
-                            local num = #pieces
+                            local pieceList = z.pieces
+                            local num = #pieceList
                             for k = 1, num do
-                                scratch[k] = pieces[k](unitToken)
+                                scratch[k] = pieceList[k](unitToken)
                             end
                             z.fs:SetFormattedText(z.fmt, unpack(scratch, 1, num))
                         end

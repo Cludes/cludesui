@@ -44,8 +44,8 @@ end
 -- The red warning for a decoded string made on a different UI scale or
 -- resolution (nil when both match). skipScale: the player already took the
 -- string's scale, so only the resolution can still be off.
-local function BuildScaleWarning(payload, skipScale)
-    local meta = payload and payload.meta
+local function BuildScaleWarning(bundle, skipScale)
+    local meta = bundle and bundle.meta
     if not meta then
         return nil
     end
@@ -77,8 +77,8 @@ end
 -- carries another UI scale asks once whether to take it. cont(takeScale)
 -- always runs (Escape and a click outside count as Keep Mine), so the page
 -- change can never stall; with true the options page drops its scale line.
-local function MaybeConfirmUIScale(payload, cont)
-    local data = payload and payload.data
+local function MaybeConfirmUIScale(bundle, cont)
+    local data = bundle and bundle.data
     local theirs = data and type(data.uiScale) == "number" and data.uiScale or nil
     local mine = MyScale()
     if not theirs or not ScalesDiffer(mine, theirs) then
@@ -175,37 +175,37 @@ local ROW_LOOK = {
 -- inactiveColor {r,g,b,a}, visuals (repaint list), onToggle(apply) after
 -- the value flips, linked() -> members, own key, display map, linkedTip(list),
 -- blockedTip (hover text on inactive rows; nil = silent).
-local function BuildAddonListRow(scrollChild, i, entry, totalW, o)
+local function BuildAddonListRow(scrollChild, i, entry, fullWidth, o)
     local EG = CludesUI.CLUDES_GREEN
-    local rowFrame = CreateFrame("Frame", nil, scrollChild)
-    rowFrame:SetSize(totalW, ROW_H_A)
-    rowFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -(i - 1) * ROW_H_A)
+    local lineFrame = CreateFrame("Frame", nil, scrollChild)
+    lineFrame:SetSize(fullWidth, ROW_H_A)
+    lineFrame:SetPoint("TOPLEFT", scrollChild, "TOPLEFT", 0, -(i - 1) * ROW_H_A)
     -- Alternate rows a shade darker.
-    local rowBg = rowFrame:CreateTexture(nil, "BACKGROUND")
+    local rowBg = lineFrame:CreateTexture(nil, "BACKGROUND")
     rowBg:SetAllPoints()
     rowBg:SetColorTexture(0, 0, 0, (i % 2 == 0) and 0.12 or 0.06)
 
-    local nameFs = CludesUI.MakeFont(rowFrame, 13, nil, 1, 1, 1, 0.9)
-    nameFs:SetPoint("TOPLEFT", rowFrame, "TOPLEFT", SIDE_PAD, -10)
-    nameFs:SetPoint("RIGHT", rowFrame, "RIGHT", -(CHK_SZ + STATUS_W + SIDE_PAD * 2 + 20), 0)
+    local nameFs = CludesUI.MakeFont(lineFrame, 13, nil, 1, 1, 1, 0.9)
+    nameFs:SetPoint("TOPLEFT", lineFrame, "TOPLEFT", SIDE_PAD, -10)
+    nameFs:SetPoint("RIGHT", lineFrame, "RIGHT", -(CHK_SZ + STATUS_W + SIDE_PAD * 2 + 20), 0)
     nameFs:SetJustifyH("LEFT")
     nameFs:SetWordWrap(false)
     nameFs:SetText(CludesUI.L(entry.display))
 
-    local descFs = CludesUI.MakeFont(rowFrame, 11, nil, 1, 1, 1, 0.30)
+    local descFs = CludesUI.MakeFont(lineFrame, 11, nil, 1, 1, 1, 0.30)
     descFs:SetPoint("TOPLEFT", nameFs, "BOTTOMLEFT", 0, -5)
     descFs:SetPoint("RIGHT", nameFs, "RIGHT", 0, 0)
     descFs:SetJustifyH("LEFT")
     descFs:SetWordWrap(false)
     descFs:SetText(CludesUI.L(entry.desc))
 
-    local statusFs = CludesUI.MakeFont(rowFrame, 11, nil, 1, 1, 1, 0.40)
-    statusFs:SetPoint("RIGHT", rowFrame, "RIGHT", -SIDE_PAD, 0)
+    local statusFs = CludesUI.MakeFont(lineFrame, 11, nil, 1, 1, 1, 0.40)
+    statusFs:SetPoint("RIGHT", lineFrame, "RIGHT", -SIDE_PAD, 0)
     statusFs:SetJustifyH("RIGHT")
 
     -- The box sits under the Include column header.
-    local boxFrame, tick, boxBorder, boxBg = CheckBox(rowFrame, true)
-    boxFrame:SetPoint("CENTER", rowFrame, "RIGHT", INCLUDE_CENTER_X, 0)
+    local boxFrame, tick, boxBorder, boxBg = CheckBox(lineFrame, true)
+    boxFrame:SetPoint("CENTER", lineFrame, "RIGHT", INCLUDE_CENTER_X, 0)
 
     local function ApplyRowVisual()
         local state = not o.active and "blocked" or (entry.getVal() and "included" or "skipped")
@@ -231,22 +231,22 @@ local function BuildAddonListRow(scrollChild, i, entry, totalW, o)
     ApplyRowVisual()
     o.visuals[#o.visuals + 1] = ApplyRowVisual
 
-    local hoverTex = rowFrame:CreateTexture(nil, "ARTWORK")
+    local hoverTex = lineFrame:CreateTexture(nil, "ARTWORK")
     hoverTex:SetAllPoints()
     hoverTex:SetColorTexture(1, 1, 1, 0.05)
     hoverTex:Hide()
 
     if not o.active then
         -- Inactive: the row swallows the mouse, and explains itself if it can.
-        local blockFrame = CreateFrame("Frame", nil, rowFrame)
+        local blockFrame = CreateFrame("Frame", nil, lineFrame)
         blockFrame:SetAllPoints()
-        blockFrame:SetFrameLevel(rowFrame:GetFrameLevel() + 5)
+        blockFrame:SetFrameLevel(lineFrame:GetFrameLevel() + 5)
         blockFrame:EnableMouse(true)
         local tip = o.blockedTip
         blockFrame:SetScript("OnEnter", function()
             if tip then
                 hoverTex:Show()
-                CludesUI.ShowWidgetTooltip(rowFrame, tip)
+                CludesUI.ShowWidgetTooltip(lineFrame, tip)
             end
         end)
         blockFrame:SetScript("OnLeave", function()
@@ -257,9 +257,9 @@ local function BuildAddonListRow(scrollChild, i, entry, totalW, o)
         end)
         return
     end
-    local clickBtn = CreateFrame("Button", nil, rowFrame)
-    clickBtn:SetAllPoints(rowFrame)
-    clickBtn:SetFrameLevel(rowFrame:GetFrameLevel() + 2)
+    local clickBtn = CreateFrame("Button", nil, lineFrame)
+    clickBtn:SetAllPoints(lineFrame)
+    clickBtn:SetFrameLevel(lineFrame:GetFrameLevel() + 2)
     clickBtn:SetScript("OnClick", function()
         entry.setVal(not entry.getVal())
         o.onToggle(ApplyRowVisual)
@@ -275,14 +275,14 @@ local function BuildAddonListRow(scrollChild, i, entry, totalW, o)
             return
         end
         local names = {}
-        for folder in pairs(members) do
-            if folder ~= own then
-                names[#names + 1] = CludesUI.L(display[folder] or folder)
+        for moduleFolder in pairs(members) do
+            if moduleFolder ~= own then
+                names[#names + 1] = CludesUI.L(display[moduleFolder] or moduleFolder)
             end
         end
         if #names > 0 then
             table.sort(names)
-            CludesUI.ShowWidgetTooltip(rowFrame, o.linkedTip(table.concat(names, ", ")))
+            CludesUI.ShowWidgetTooltip(lineFrame, o.linkedTip(table.concat(names, ", ")))
         end
     end)
     clickBtn:SetScript("OnLeave", function()
@@ -338,11 +338,11 @@ end
 -- switch, sliced by the watchdog). afterSwitch runs between the two. A profile
 -- that brings another font, window skins or style only takes full effect after
 -- a reload, so that asks for one; returns true when it asked.
-local function SwitchProfileAndAsk(name, profile, afterSwitch)
+local function SwitchProfileAndAsk(label, profile, afterSwitch)
     local font = CludesUI.ProfileChangesFont(profile)
     local skins = CludesUI.ProfileChangesWindowSkins(profile)
     local style = CludesUI.ProfileChangesStyle(profile)
-    CludesUI.SwitchProfile(name)
+    CludesUI.SwitchProfile(label)
     if afterSwitch then
         afterSwitch()
     end
@@ -382,9 +382,9 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         local sid = CurrentSpecID()
         local assigned = sid and CludesUI.GetSpecProfile(sid)
         if assigned and assigned ~= CludesUI.GetActiveProfileName() then
-            local _, profiles = CludesUI.GetProfileList()
-            if profiles and profiles[assigned] then
-                SwitchProfileAndAsk(assigned, profiles[assigned])
+            local _, profileList = CludesUI.GetProfileList()
+            if profileList and profileList[assigned] then
+                SwitchProfileAndAsk(assigned, profileList[assigned])
             end
         end
     end
@@ -417,7 +417,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         end
         return page
     end
-    local mainPage, importPage, pastePage = Page(true), Page(false), Page(false)
+    local mainPage, importView, pastePage = Page(true), Page(false), Page(false)
     parent = mainPage
     y = -10
 
@@ -485,32 +485,32 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     -- One menu per dropdown button, kept with the button: a build that dresses
     -- the button again dresses its menu again too. A press outside both closes it.
     local function MakeDropdownMenu(anchor, w)
-        local menu = PoolKept(anchor, "profilesMenu", "Frame", UIParent)
-        menu:SetFrameStrata("FULLSCREEN_DIALOG")
-        menu:SetFrameLevel(200)
-        menu:SetClampedToScreen(true)
-        menu:SetSize(w, 4)
-        menu:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -2)
-        menu:Hide()
-        local bg = menu:CreateTexture(nil, "BACKGROUND")
+        local dropMenu = PoolKept(anchor, "profilesMenu", "Frame", UIParent)
+        dropMenu:SetFrameStrata("FULLSCREEN_DIALOG")
+        dropMenu:SetFrameLevel(200)
+        dropMenu:SetClampedToScreen(true)
+        dropMenu:SetSize(w, 4)
+        dropMenu:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -2)
+        dropMenu:Hide()
+        local bg = dropMenu:CreateTexture(nil, "BACKGROUND")
         bg:SetAllPoints()
         bg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, 0.98)
-        CludesUI.MakeRoundedBorder(menu, 1, 1, 1, CludesUI.DD_BRD_A, bg, nil, true)
+        CludesUI.MakeRoundedBorder(dropMenu, 1, 1, 1, CludesUI.DD_BRD_A, bg, nil, true)
         local function WatchOutside(m)
             local away = not anchor:IsMouseOver() and not m:IsMouseOver()
             if away and (IsMouseButtonDown("LeftButton") or IsMouseButtonDown("RightButton")) then
                 m:Hide()
             end
         end
-        menu:SetScript("OnShow", function(self)
+        dropMenu:SetScript("OnShow", function(self)
             -- On UIParent, drawn at the panel's scale.
             self:SetScale(anchor:GetEffectiveScale() / UIParent:GetEffectiveScale())
             self:SetScript("OnUpdate", WatchOutside)
         end)
-        menu:SetScript("OnHide", function(self)
+        dropMenu:SetScript("OnHide", function(self)
             self:SetScript("OnUpdate", nil)
         end)
-        return menu
+        return dropMenu
     end
 
     -- Hoisted so the import callback can update it
@@ -544,50 +544,50 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         dimTex:SetAllPoints()
         dimTex:SetColorTexture(0, 0, 0, 0.25)
 
-        local popup = CreateFrame("Frame", nil, shade)
-        popup:SetFrameStrata("FULLSCREEN_DIALOG")
-        popup:SetFrameLevel(shade:GetFrameLevel() + 10)
-        popup:SetSize(320, 130)
-        popup:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
-        popup:EnableMouse(true)
-        popup:SetClampedToScreen(true)
-        popup._dimmer = shade
+        local dialog = CreateFrame("Frame", nil, shade)
+        dialog:SetFrameStrata("FULLSCREEN_DIALOG")
+        dialog:SetFrameLevel(shade:GetFrameLevel() + 10)
+        dialog:SetSize(320, 130)
+        dialog:SetPoint("CENTER", UIParent, "CENTER", 0, 60)
+        dialog:EnableMouse(true)
+        dialog:SetClampedToScreen(true)
+        dialog._dimmer = shade
         shade:SetScript("OnMouseDown", function()
-            if not popup:IsMouseOver() then
+            if not dialog:IsMouseOver() then
                 shade:Hide()
             end
         end)
 
-        local popBg = popup:CreateTexture(nil, "BACKGROUND")
+        local popBg = dialog:CreateTexture(nil, "BACKGROUND")
         popBg:SetAllPoints()
         popBg:SetColorTexture(0.062, 0.070, 0.082, 0.97)
-        CludesUI.MakeRoundedBorder(popup, 1, 1, 1, 0.20, popBg)
-        local title = CludesUI.MakeFont(popup, 14, nil, 1, 1, 1)
-        title:SetPoint("TOP", popup, "TOP", 0, -14)
-        popup._title = title
+        CludesUI.MakeRoundedBorder(dialog, 1, 1, 1, 0.20, popBg)
+        local title = CludesUI.MakeFont(dialog, 14, nil, 1, 1, 1)
+        title:SetPoint("TOP", dialog, "TOP", 0, -14)
+        dialog._title = title
 
         -- Reads and writes the profile the popup was last opened for.
-        local kbBtn, kbRefresh = CludesUI.BuildKeybindButton(popup, {
+        local kbBtn, kbRefresh = CludesUI.BuildKeybindButton(dialog, {
             w = 160,
             h = 30,
             font = 13,
             get = function()
-                return CludesUI.GetProfileKeybind(popup._profileName)
+                return CludesUI.GetProfileKeybind(dialog._profileName)
             end,
             set = function(value)
-                CludesUI.SetProfileKeybind(popup._profileName, value)
+                CludesUI.SetProfileKeybind(dialog._profileName, value)
             end,
         })
-        kbBtn:SetPoint("CENTER", popup, "CENTER", 0, -2)
-        popup._kbRefresh = kbRefresh
-        local hint = CludesUI.MakeFont(popup, 10, nil, 1, 1, 1, 0.35)
-        hint:SetPoint("BOTTOM", popup, "BOTTOM", 0, 12)
+        kbBtn:SetPoint("CENTER", dialog, "CENTER", 0, -2)
+        dialog._kbRefresh = kbRefresh
+        local hint = CludesUI.MakeFont(dialog, 10, nil, 1, 1, 1, 0.35)
+        hint:SetPoint("BOTTOM", dialog, "BOTTOM", 0, 12)
         hint:SetText(CludesUI.L("Left-click to set  |  Right-click to unbind  |  Esc to close"))
 
         -- kbBtn's own OnHide cancels a capture in progress.
-        popup:SetScript("OnHide", function()
-            if popup._dimmer then
-                popup._dimmer:Hide()
+        dialog:SetScript("OnHide", function()
+            if dialog._dimmer then
+                dialog._dimmer:Hide()
             end
         end)
         -- It sits on UIParent, so it closes with the panel, which closes as
@@ -598,9 +598,9 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                 shade:Hide()
             end
         end)
-        CludesUI.PopupTakeKeys(popup, shade)
+        CludesUI.PopupTakeKeys(dialog, shade)
         -- Escape closes it, unless the button is capturing (it then owns the keys).
-        popup:SetScript("OnKeyDown", function(self, key)
+        dialog:SetScript("OnKeyDown", function(self, key)
             if InCombatLockdown() then
                 return
             end
@@ -610,23 +610,23 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                 shade:Hide()
             end
         end)
-        return popup
+        return dialog
     end
 
     local function ShowProfileKeybindPopup(profileName)
-        local popup = profileKeybindPopup
-        if not popup then
-            popup = BuildKeybindPopup()
-            profileKeybindPopup = popup
-        elseif popup._dimmer:IsShown() then
+        local dialog = profileKeybindPopup
+        if not dialog then
+            dialog = BuildKeybindPopup()
+            profileKeybindPopup = dialog
+        elseif dialog._dimmer:IsShown() then
             -- Still open: closed first, cancelling a capture in progress.
-            popup._dimmer:Hide()
+            dialog._dimmer:Hide()
         end
-        popup._profileName = profileName
-        popup._title:SetText(CludesUI.Lf("Keybind: %1$s", profileName))
-        popup._kbRefresh()
-        popup:Show()
-        popup._dimmer:Show()
+        dialog._profileName = profileName
+        dialog._title:SetText(CludesUI.Lf("Keybind: %1$s", profileName))
+        dialog._kbRefresh()
+        dialog:Show()
+        dialog._dimmer:Show()
     end
 
     -- A button's border flashes red, fading back to its resting white over 0.7s.
@@ -724,7 +724,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     -- items, footerH, pickable(item) (what Select All picks), refreshAll()
     -- (every row and the count), visuals, row(item) -> that row's
     -- BuildAddonListRow options. Returns the y below the list.
-    local function ModuleListCard(host, pad, top, totalW, cfg)
+    local function ModuleListCard(host, pad, top, fullWidth, cfg)
         local HDR_H, COL_HDR_H, SCROLL_MAX_H = 72, 28, 285
         local items = cfg.items
         local contentH = #items * ROW_H_A
@@ -733,13 +733,13 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         local card = CreateFrame("Frame", nil, host)
         card:SetFrameLevel(host:GetFrameLevel())
-        PP.Size(card, totalW, HDR_H + COL_HDR_H + scrollH + 8 + cfg.footerH)
+        PP.Size(card, fullWidth, HDR_H + COL_HDR_H + scrollH + 8 + cfg.footerH)
         PP.Point(card, "TOPLEFT", host, "TOPLEFT", pad, y)
         card:EnableMouse(false)
         CludesUI.MakeRoundedCard(card, 0.10, 0.50)
 
         local hdrFrame = CreateFrame("Frame", nil, host)
-        PP.Size(hdrFrame, totalW, HDR_H)
+        PP.Size(hdrFrame, fullWidth, HDR_H)
         PP.Point(hdrFrame, "TOPLEFT", host, "TOPLEFT", pad, y)
         local hdrTitle = CludesUI.MakeFont(hdrFrame, 14, nil, 1, 1, 1, 0.9)
         PP.Point(hdrTitle, "TOPLEFT", hdrFrame, "TOPLEFT", SIDE_PAD, -20)
@@ -832,7 +832,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         -- Column titles over the name, the Include box and the status.
         local colHdrFrame = CreateFrame("Frame", nil, host)
-        PP.Size(colHdrFrame, totalW, COL_HDR_H)
+        PP.Size(colHdrFrame, fullWidth, COL_HDR_H)
         PP.Point(colHdrFrame, "TOPLEFT", host, "TOPLEFT", pad, y)
         for _, col in ipairs({
             { "Addon", "LEFT", "LEFT", SIDE_PAD },
@@ -848,13 +848,13 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         -- The rows, clipped to SCROLL_MAX_H and wheel-scrolled a row at a time.
         local scrollClip = CreateFrame("Frame", nil, host)
-        PP.Size(scrollClip, totalW, scrollH)
+        PP.Size(scrollClip, fullWidth, scrollH)
         PP.Point(scrollClip, "TOPLEFT", host, "TOPLEFT", pad, y)
         scrollClip:SetClipsChildren(true)
         local scroller = CreateFrame("ScrollFrame", nil, scrollClip)
         scroller:SetAllPoints()
         local scrollChild = CreateFrame("Frame", nil, scroller)
-        scrollChild:SetSize(totalW, contentH)
+        scrollChild:SetSize(fullWidth, contentH)
         scroller:SetScrollChild(scrollChild)
         local offset = 0
         scrollClip:EnableMouseWheel(true)
@@ -870,15 +870,15 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             o.visuals = cfg.visuals
             -- Linked modules toggle together, so every row repaints.
             o.onToggle = Refresh
-            BuildAddonListRow(scrollChild, i, entry, totalW, o)
+            BuildAddonListRow(scrollChild, i, entry, fullWidth, o)
         end
         return y - scrollH
     end
 
     -- A section footer under a module list: its frame and top rule.
-    local function FooterBar(host, pad, top, totalW, height)
+    local function FooterBar(host, pad, top, fullWidth, height)
         local footer = CreateFrame("Frame", nil, host)
-        PP.Size(footer, totalW, height)
+        PP.Size(footer, fullWidth, height)
         PP.Point(footer, "TOPLEFT", host, "TOPLEFT", pad, top)
         local rule = footer:CreateTexture(nil, "ARTWORK")
         rule:SetColorTexture(1, 1, 1, 0.10)
@@ -942,8 +942,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             end
         end
 
-        local menu = MakeDropdownMenu(dropdownBtn, 240)
-        menu:SetSize(240, #rows * 26 + 8)
+        local dropMenu = MakeDropdownMenu(dropdownBtn, 240)
+        dropMenu:SetSize(240, #rows * 26 + 8)
         local marks = {}
         local function RefreshMenu()
             for i, def in ipairs(rows) do
@@ -955,11 +955,11 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             RefreshSummary()
         end
         for i, def in ipairs(rows) do
-            local row = CreateFrame("Button", nil, menu)
+            local row = CreateFrame("Button", nil, dropMenu)
             row:SetHeight(26)
-            row:SetPoint("TOPLEFT", menu, "TOPLEFT", 4, -(4 + (i - 1) * 26))
-            row:SetPoint("RIGHT", menu, "RIGHT", -4, 0)
-            row:SetFrameLevel(menu:GetFrameLevel() + 1)
+            row:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 4, -(4 + (i - 1) * 26))
+            row:SetPoint("RIGHT", dropMenu, "RIGHT", -4, 0)
+            row:SetFrameLevel(dropMenu:GetFrameLevel() + 1)
             local hl = row:CreateTexture(nil, "ARTWORK")
             hl:SetAllPoints()
             hl:SetColorTexture(1, 1, 1, 1)
@@ -994,14 +994,14 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             end
         end
         -- HookScript: MakeDropdownMenu owns OnShow (scale, outside-click close).
-        menu:HookScript("OnShow", RefreshMenu)
+        dropMenu:HookScript("OnShow", RefreshMenu)
         dropdownBtn:SetScript("OnClick", function()
             RefreshSummary()
-            if menu:IsShown() then
-                menu:Hide()
+            if dropMenu:IsShown() then
+                dropMenu:Hide()
             else
                 RefreshMenu()
-                menu:Show()
+                dropMenu:Show()
             end
         end)
         RefreshSummary()
@@ -1013,121 +1013,121 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     -------------------------------------------------------------------
     ShowImportPage = function(
         exportString,
-        payload,
+        bundle,
         defaultName,
         editModeString,
         editModeLayoutName,
         applyImportedScale
     )
-        ClearPage(importPage)
+        ClearPage(importView)
 
         -- Optional Blizzard Edit Mode layout to apply alongside this import (preset path only; the manual paste path leaves these nil).
-        importPage._editModeString = editModeString
-        importPage._editModeLayoutName = editModeLayoutName
+        importView._editModeString = editModeString
+        importView._editModeLayoutName = editModeLayoutName
 
-        local scaleWarnText = BuildScaleWarning(payload, applyImportedScale)
+        local scaleWarnText = BuildScaleWarning(bundle, applyImportedScale)
         local includedAddons = {}
-        if payload and payload.data and payload.data.addons then
-            for folder in pairs(payload.data.addons) do
-                includedAddons[folder] = true
+        if bundle and bundle.data and bundle.data.addons then
+            for moduleFolder in pairs(bundle.data.addons) do
+                includedAddons[moduleFolder] = true
             end
         end
 
         -- Spec->profile assignments in the string gate the "Auto Assign to Specs" toggle (and grow the footer by one stacked row); without
         -- them the footer stays a compact single row.
-        local hasSpecAssign = payload
-            and payload.data
-            and type(payload.data.assignedSpecs) == "table"
-            and #payload.data.assignedSpecs > 0
+        local hasSpecAssign = bundle
+            and bundle.data
+            and type(bundle.data.assignedSpecs) == "table"
+            and #bundle.data.assignedSpecs > 0
 
         -- Does the string carry a UI scale? The adopt/keep decision was already made by MaybeConfirmUIScale before this page
         -- (applyImportedScale); this flag only gates the commit marker.
-        local hasUIScale = payload and payload.data and type(payload.data.uiScale) == "number"
+        local hasUIScale = bundle and bundle.data and type(bundle.data.uiScale) == "number"
 
         local ADDON_DB_MAP_LOCAL = CludesUI.VisibleProfileAddons(CludesUI._ADDON_DB_MAP)
         local PAD = CludesUI.CONTENT_PAD
-        local totalW = importPage:GetWidth() - PAD * 2
+        local fullWidth = importView:GetWidth() - PAD * 2
         -- The optional Auto Assign toggle stacks below the count row.
         local nFooterStack = (hasSpecAssign and 1 or 0)
         local FOOTER_H = 50 + nFooterStack * 24
 
-        local iy = -30
+        local itemY = -30
 
         local BACK_H = SubpageHeader(
-            importPage,
+            importView,
             PAD,
-            iy,
+            itemY,
             CludesUI.Lf("Importing %1$s", (defaultName or CludesUI.L("Profile")))
         )
 
-        iy = iy - BACK_H - 8
+        itemY = itemY - BACK_H - 8
 
         if scaleWarnText then
-            local warnFs = CludesUI.MakeFont(importPage, 13, nil, 0.9, 0.2, 0.2, 0.85)
-            PP.Point(warnFs, "TOP", importPage, "TOP", 0, iy)
-            PP.Point(warnFs, "LEFT", importPage, "LEFT", PAD, 0)
-            PP.Point(warnFs, "RIGHT", importPage, "RIGHT", -PAD, 0)
+            local warnFs = CludesUI.MakeFont(importView, 13, nil, 0.9, 0.2, 0.2, 0.85)
+            PP.Point(warnFs, "TOP", importView, "TOP", 0, itemY)
+            PP.Point(warnFs, "LEFT", importView, "LEFT", PAD, 0)
+            PP.Point(warnFs, "RIGHT", importView, "RIGHT", -PAD, 0)
             warnFs:SetText(scaleWarnText)
             warnFs:SetJustifyH("CENTER")
             warnFs:SetWordWrap(true)
-            iy = iy - 48
+            itemY = itemY - 48
         end
 
-        local editBox
+        local inputBox
         do
             local INPUT_H = 30
             local INPUT_W = 300
-            local nameLabel = CludesUI.MakeFont(importPage, 12, nil, 1, 1, 1, 0.45)
-            PP.Point(nameLabel, "TOPLEFT", importPage, "TOPLEFT", PAD, iy)
+            local nameLabel = CludesUI.MakeFont(importView, 12, nil, 1, 1, 1, 0.45)
+            PP.Point(nameLabel, "TOPLEFT", importView, "TOPLEFT", PAD, itemY)
             nameLabel:SetText(CludesUI.L("Profile Name"))
             nameLabel:SetJustifyH("LEFT")
 
-            iy = iy - 22
+            itemY = itemY - 22
 
-            local inputFrame = CreateFrame("Frame", nil, importPage)
+            local inputFrame = CreateFrame("Frame", nil, importView)
             PP.Size(inputFrame, INPUT_W, INPUT_H)
-            PP.Point(inputFrame, "TOPLEFT", importPage, "TOPLEFT", PAD, iy)
+            PP.Point(inputFrame, "TOPLEFT", importView, "TOPLEFT", PAD, itemY)
             local iBg = inputFrame:CreateTexture(nil, "BACKGROUND")
             iBg:SetAllPoints()
             iBg:SetColorTexture(CludesUI.DD_BG_R, CludesUI.DD_BG_G, CludesUI.DD_BG_B, CludesUI.DD_BG_A)
             local inputBrd = CludesUI.MakeRoundedBorder(inputFrame, 1, 1, 1, CludesUI.DD_BRD_A, iBg)
-            importPage._nameFlash = BuildErrorFlash(inputFrame, inputBrd)
+            importView._nameFlash = BuildErrorFlash(inputFrame, inputBrd)
 
-            editBox = CreateFrame("EditBox", nil, inputFrame)
-            editBox:SetPoint("TOPLEFT", 12, -1)
-            editBox:SetPoint("BOTTOMRIGHT", -12, 1)
-            editBox:SetFont(FONT, 12, CludesUI.GetFontOutlineFlag())
-            editBox:SetTextColor(1, 1, 1, 0.9)
-            editBox:SetAutoFocus(false)
-            editBox:SetMaxLetters(30)
+            inputBox = CreateFrame("EditBox", nil, inputFrame)
+            inputBox:SetPoint("TOPLEFT", 12, -1)
+            inputBox:SetPoint("BOTTOMRIGHT", -12, 1)
+            inputBox:SetFont(FONT, 12, CludesUI.GetFontOutlineFlag())
+            inputBox:SetTextColor(1, 1, 1, 0.9)
+            inputBox:SetAutoFocus(false)
+            inputBox:SetMaxLetters(30)
             if defaultName then
-                editBox:SetText(defaultName)
+                inputBox:SetText(defaultName)
             end
 
-            local placeholder = editBox:CreateFontString(nil, "ARTWORK")
+            local placeholder = inputBox:CreateFontString(nil, "ARTWORK")
             placeholder:SetFont(FONT, 12, CludesUI.GetFontOutlineFlag())
             placeholder:SetTextColor(1, 1, 1, 0.25)
-            placeholder:SetPoint("LEFT", editBox, "LEFT", 0, 0)
+            placeholder:SetPoint("LEFT", inputBox, "LEFT", 0, 0)
             placeholder:SetText(CludesUI.L("Profile name..."))
 
-            editBox:SetScript("OnTextChanged", function(self)
+            inputBox:SetScript("OnTextChanged", function(self)
                 if self:GetText() == "" then
                     placeholder:Show()
                 else
                     placeholder:Hide()
                 end
-                if importPage._nameError then
-                    importPage._nameError:Hide()
+                if importView._nameError then
+                    importView._nameError:Hide()
                 end
             end)
-            editBox:SetScript("OnEscapePressed", function(self)
+            inputBox:SetScript("OnEscapePressed", function(self)
                 self:ClearFocus()
             end)
-            editBox:SetScript("OnEnterPressed", function(self)
+            inputBox:SetScript("OnEnterPressed", function(self)
                 self:ClearFocus()
             end)
 
-            iy = iy - INPUT_H - 14
+            itemY = itemY - INPUT_H - 14
         end
 
         -- Import Addons section (mirrors per-addon export layout)
@@ -1138,7 +1138,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         -- only when the string carries override data; ON for full strings (or subsets exported with Overrides included), OFF otherwise.
         local stringHasOverrides = false
         do
-            local d = payload and payload.data
+            local d = bundle and bundle.data
             if d then
                 stringHasOverrides = d.specOverrides ~= nil
                     or d.condOverrides ~= nil
@@ -1153,21 +1153,21 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             end
         end
         local includeOverridesImport = stringHasOverrides
-                and (payload.data.overridesIncluded == true or (payload.data.partialImport ~= true and payload.data.overridesExcluded ~= true))
+                and (bundle.data.overridesIncluded == true or (bundle.data.partialImport ~= true and bundle.data.overridesExcluded ~= true))
             or false
         -- "Include Window Skins": the exporter's Blizz UI Enhanced account-global bundle (Window Skins + Tooltips, Menus & Popups).
         -- Default OFF and confirmation-gated -- it overwrites the recipient's settings across ALL profiles. Grayed out when string has none.
         local stringHasBlizzSkin = (
-            payload
-            and payload.data
-            and type(payload.data.blizzSkinGlobals) == "table"
+            bundle
+            and bundle.data
+            and type(bundle.data.blizzSkinGlobals) == "table"
         ) or false
         local includeWindowSkinsImport = false
         -- "Global Settings": the exporter's global appearance (fonts, custom colours, dark mode, accent, number format) and UI scale. Presence = deliberate
         -- include; this toggle is the recipient's opt-out. ON when carried, inert when the string has none.
         local stringHasGlobals = false
         do
-            local d = payload and payload.data
+            local d = bundle and bundle.data
             if d then
                 stringHasGlobals = d.fonts ~= nil
                     or d.customColors ~= nil
@@ -1187,20 +1187,20 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         local addonItems = {}
         for _, entry in ipairs(ADDON_DB_MAP_LOCAL) do
-            local folder = entry.folder
+            local moduleFolder = entry.folder
             -- Payload keys are CANONICAL (suite folder names); selectedImports is keyed by canon so it matches the payload + the strip loop
             -- in both suite and standalone builds. "loaded"/"desc" stay on the LOCAL folder so only this build's installed module is checkable.
-            local canon = entry.canon or folder
-            local loaded = CludesUI.IsModuleAddonLoaded(folder)
+            local canon = entry.canon or moduleFolder
+            local loaded = CludesUI.IsModuleAddonLoaded(moduleFolder)
             local inPayload = includedAddons[canon] or false
             local canImport = loaded and inPayload
             importCanImport[canon] = canImport
             CANON_DISPLAY[canon] = entry.display
             addonItems[#addonItems + 1] = {
-                folder = folder,
+                folder = moduleFolder,
                 canon = canon,
                 display = entry.display,
-                desc = ADDON_DESCS[folder] or "",
+                desc = ADDON_DESCS[moduleFolder] or "",
                 loaded = loaded,
                 inPayload = inPayload,
                 canImport = canImport,
@@ -1230,8 +1230,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         -- Module connectivity from the payload's layout + meta (both CANONICAL, matching selectedImports' keyspace). Drives the hard-couple
         -- above and the "linked" row affordance. stale={} -- sender already pruned dead edges.
         do
-            local ul = payload and payload.data and payload.data.unlockLayout
-            local meta = payload and payload.data and payload.data.unlockLayoutMeta
+            local ul = bundle and bundle.data and bundle.data.unlockLayout
+            local meta = bundle and bundle.data and bundle.data.unlockLayoutMeta
             importComponents = CludesUI.BuildModuleComponents(
                 ul,
                 CludesUI.BuildImportKeyToFolder(ul, meta and meta.keyToFolder)
@@ -1256,7 +1256,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             RefreshImportCount()
         end
 
-        iy = ModuleListCard(importPage, PAD, iy, totalW, {
+        itemY = ModuleListCard(importView, PAD, itemY, fullWidth, {
             title = "Import Addons",
             desc = "Choose which addons to import. Any addons not included will use your active profile's settings in the new profile.",
             items = addonItems,
@@ -1288,8 +1288,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         })
 
         -- Footer
-        iy = iy - 8
-        local footerFrame = FooterBar(importPage, PAD, iy, totalW, FOOTER_H)
+        itemY = itemY - 8
+        local footerFrame = FooterBar(importView, PAD, itemY, fullWidth, FOOTER_H)
 
         importCountFs = CludesUI.MakeFont(footerFrame, 12, nil, 1, 1, 1, 0.40)
         -- With Auto Assign present the footer has two rows, so the count sits on the upper one; otherwise it stays vertically centered.
@@ -1423,14 +1423,14 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         MakeAccentFade(importBtn, impLbl, impBrd)
         importBtn:SetScript("OnClick", function()
             -- Get profile name from the edit box
-            local nameBox = importPage._nameEditBox
-            local name = nameBox and strtrim(nameBox:GetText()) or ""
-            if name == "" then
-                if importPage._nameFlash then
-                    importPage._nameFlash()
+            local nameBox = importView._nameEditBox
+            local label = nameBox and strtrim(nameBox:GetText()) or ""
+            if label == "" then
+                if importView._nameFlash then
+                    importView._nameFlash()
                 end
-                if importPage._nameError then
-                    importPage._nameError:Show()
+                if importView._nameError then
+                    importView._nameError:Show()
                 end
                 if nameBox then
                     nameBox:SetFocus()
@@ -1443,14 +1443,14 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             -- same-name blob is never read, so nothing mixes) and unselected modules keep current values via merge-base-on-active. A name
             -- the USER edited into a collision keeps the protection below.
             local apiS = CludesUI._apiImportSession
-            local apiOverwrite = apiS and apiS.state ~= "done" and apiS.name == name
+            local apiOverwrite = apiS and apiS.state ~= "done" and apiS.name == label
             local _, existingProfiles = CludesUI.GetProfileList()
-            if existingProfiles and existingProfiles[name] and not apiOverwrite then
+            if existingProfiles and existingProfiles[label] and not apiOverwrite then
                 CludesUI:ShowConfirmPopup({
                     title = CludesUI.L("Name Taken"),
                     message = CludesUI.Lf(
                         'A profile named "%1$s" already exists. Please choose a different name.',
-                        name
+                        label
                     ),
                     confirmText = CludesUI.L("OK"),
                     hideCancel = true,
@@ -1461,107 +1461,107 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
             -- Filter on a private deep copy of the already-decoded payload: the strips below mutate it and the page must stay re-importable
             -- after a failed attempt (re-decoding would re-run the codec).
-            local filteredPayload = CludesUI._DeepCopy(payload)
+            local pickedBundle = CludesUI._DeepCopy(bundle)
             local isPartialImport = false
-            if filteredPayload and filteredPayload.data and filteredPayload.data.addons then
-                for folder in pairs(filteredPayload.data.addons) do
-                    if not selectedImports[folder] then
-                        filteredPayload.data.addons[folder] = nil
+            if pickedBundle and pickedBundle.data and pickedBundle.data.addons then
+                for moduleFolder in pairs(pickedBundle.data.addons) do
+                    if not selectedImports[moduleFolder] then
+                        pickedBundle.data.addons[moduleFolder] = nil
                         isPartialImport = true
                     end
                 end
             end
             -- CDM spell allocation is top-level (the per-module loop misses it): kept ONLY when the CDM module is selected, and then every
             -- spec in the string imports as-is (no spec picker).
-            if filteredPayload and filteredPayload.data then
+            if pickedBundle and pickedBundle.data then
                 if not selectedImports["CludesUICooldownManager"] then
-                    filteredPayload.data.cdmSpells = nil
+                    pickedBundle.data.cdmSpells = nil
                 end
             end
             -- Spec->profile assignments: top-level, applied by ImportProfile when present. Dropped wholesale unless "Auto Assign to Specs"
             -- is on (default off leaves the recipient's assignments alone).
-            if filteredPayload and filteredPayload.data and not autoAssignImport then
-                filteredPayload.data.assignedSpecs = nil
+            if pickedBundle and pickedBundle.data and not autoAssignImport then
+                pickedBundle.data.assignedSpecs = nil
             end
             -- UI scale (account-wide): applied by ImportProfile ONLY on the opt-in from MaybeConfirmUIScale. PRESENCE IS CONSENT at
             -- ImportProfile -- accepted keeps the payload's uiScale; declined or matching scales STRIP it so the user's own scale stands.
-            if filteredPayload and filteredPayload.data and hasUIScale and not applyImportedScale then
-                filteredPayload.data.uiScale = nil
-                filteredPayload.data.applyUIScale = nil
+            if pickedBundle and pickedBundle.data and hasUIScale and not applyImportedScale then
+                pickedBundle.data.uiScale = nil
+                pickedBundle.data.applyUIScale = nil
             end
             -- Layout relationships: keep only anchor/size-match edges with BOTH endpoints in the selected modules (per-element graph filter)
             -- via the payload's keyToFolder meta. selectedImports and the meta values are both CANONICAL, so they compare directly.
             -- stale={}: the sender pruned dead edges at export and the recipient's registry is irrelevant here; the "Include layout" toggle drops the whole thing separately.
-            if filteredPayload and filteredPayload.data then
-                local ul = filteredPayload.data.unlockLayout
+            if pickedBundle and pickedBundle.data then
+                local ul = pickedBundle.data.unlockLayout
                 if ul and includeLayoutImport then
-                    local meta = filteredPayload.data.unlockLayoutMeta
+                    local meta = pickedBundle.data.unlockLayoutMeta
                     -- payload meta wins; the static resolver fills gaps (and ALL keys for a meta-less string) so we never drop the layout.
                     local k2f = CludesUI.BuildImportKeyToFolder(ul, meta and meta.keyToFolder)
-                    filteredPayload.data.unlockLayout =
+                    pickedBundle.data.unlockLayout =
                         CludesUI.FilterLayoutToFolders(ul, selectedImports, k2f)
                 else
-                    filteredPayload.data.unlockLayout = nil
+                    pickedBundle.data.unlockLayout = nil
                 end
                 -- Meta is transient -- never overlay/persist it into the profile.
-                filteredPayload.data.unlockLayoutMeta = nil
+                pickedBundle.data.unlockLayoutMeta = nil
             end
             -- Global appearance (fonts, customColors, darkMode, cuiAccent, numberFormat) and scale ride the Include dropdown's "Global Settings" row (on
             -- by default when carried): unchecked strips them all so the merge keeps the recipient's look. Module deselection alone never
             -- strips them -- the store merge takes each key only when present.
-            if filteredPayload and filteredPayload.data and not includeGlobalsImport then
-                filteredPayload.data.fonts = nil
-                filteredPayload.data.customColors = nil
-                filteredPayload.data.darkMode = nil
-                filteredPayload.data.numberFormat = nil
-                filteredPayload.data.cuiAccent = nil
-                filteredPayload.data.uiScale = nil
-                filteredPayload.data.applyUIScale = nil
+            if pickedBundle and pickedBundle.data and not includeGlobalsImport then
+                pickedBundle.data.fonts = nil
+                pickedBundle.data.customColors = nil
+                pickedBundle.data.darkMode = nil
+                pickedBundle.data.numberFormat = nil
+                pickedBundle.data.cuiAccent = nil
+                pickedBundle.data.uiScale = nil
+                pickedBundle.data.applyUIScale = nil
             end
-            if isPartialImport and filteredPayload and filteredPayload.data then
+            if isPartialImport and pickedBundle and pickedBundle.data then
                 -- Overrides (values AND forks) are governed solely by the Include Overrides checkbox; module deselection never strips them
                 -- here. partialImport gates the override legacy keep-mine default at the store merge.
-                filteredPayload.data.partialImport = true
+                pickedBundle.data.partialImport = true
             end
             -- Unlock-layer FORKS are whole cross-module position layers, so "Include layout" must gate them exactly like unlockLayout above
             -- or the exporter's forks replace the recipient's group layouts (ApplyLayer rewrites live anchors and CDM/AB bar positions from
             -- them on the next apply). layoutExcluded tells the store merge to KEEP the recipient's forks (nil incoming must not read as wipe).
-            if filteredPayload and filteredPayload.data and not includeLayoutImport then
+            if pickedBundle and pickedBundle.data and not includeLayoutImport then
                 -- Baseline layout excluded; fork stores belong to the Include Overrides decision below, so they are not stripped here.
-                filteredPayload.data.layoutExcluded = true
+                pickedBundle.data.layoutExcluded = true
             end
             -- Include Overrides (all-or-nothing): checked -> stamp the marker so ImportProfile takes the exporter's whole override system
             -- even on subset strings; unchecked -> strip every override store and stamp the exclusion so nils read as "keep mine", not "wipe".
-            if filteredPayload and filteredPayload.data then
+            if pickedBundle and pickedBundle.data then
                 if includeOverridesImport then
-                    filteredPayload.data.overridesIncluded = true
-                    filteredPayload.data.overridesExcluded = nil
+                    pickedBundle.data.overridesIncluded = true
+                    pickedBundle.data.overridesExcluded = nil
                 else
-                    filteredPayload.data.specOverrides = nil
-                    filteredPayload.data.specOverrideGroups = nil
-                    filteredPayload.data.specOverrideNextId = nil
-                    filteredPayload.data.condOverrides = nil
-                    filteredPayload.data.condOverrideGroups = nil
-                    filteredPayload.data.condOverrideNextId = nil
-                    filteredPayload.data.specUnlockOverrides = nil
-                    filteredPayload.data.condUnlockOverrides = nil
-                    filteredPayload.data.specBmOverrides = nil
-                    filteredPayload.data.condBmOverrides = nil
-                    filteredPayload.data.specDmOverrides = nil
-                    filteredPayload.data.condDmOverrides = nil
-                    filteredPayload.data.unlockOverrideAnchors = nil
-                    filteredPayload.data.overridesExcluded = true
-                    filteredPayload.data.overridesIncluded = nil
+                    pickedBundle.data.specOverrides = nil
+                    pickedBundle.data.specOverrideGroups = nil
+                    pickedBundle.data.specOverrideNextId = nil
+                    pickedBundle.data.condOverrides = nil
+                    pickedBundle.data.condOverrideGroups = nil
+                    pickedBundle.data.condOverrideNextId = nil
+                    pickedBundle.data.specUnlockOverrides = nil
+                    pickedBundle.data.condUnlockOverrides = nil
+                    pickedBundle.data.specBmOverrides = nil
+                    pickedBundle.data.condBmOverrides = nil
+                    pickedBundle.data.specDmOverrides = nil
+                    pickedBundle.data.condDmOverrides = nil
+                    pickedBundle.data.unlockOverrideAnchors = nil
+                    pickedBundle.data.overridesExcluded = true
+                    pickedBundle.data.overridesIncluded = nil
                 end
             end
             -- Include Window Skins: checked -> stamp the opt-in so ImportProfile applies the Blizz UI Enhanced account-global bundle before
             -- the reload; unchecked -> strip the bundle so nothing can apply and the recipient keeps their settings.
-            if filteredPayload and filteredPayload.data then
+            if pickedBundle and pickedBundle.data then
                 if includeWindowSkinsImport and stringHasBlizzSkin then
-                    filteredPayload.data.applyBlizzSkinGlobals = true
+                    pickedBundle.data.applyBlizzSkinGlobals = true
                 else
-                    filteredPayload.data.blizzSkinGlobals = nil
-                    filteredPayload.data.applyBlizzSkinGlobals = nil
+                    pickedBundle.data.blizzSkinGlobals = nil
+                    pickedBundle.data.applyBlizzSkinGlobals = nil
                 end
             end
 
@@ -1577,26 +1577,26 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                 -- profile payload imports (ImportProfile refuses every other type), so the outcome is known now: the reload
                 -- is asked for first in the click (RequestReload; WoW Forever refused it after the import's own work) and the
                 -- import below runs before the client reloads.
-                if not apiSession and filteredPayload and filteredPayload.type == "full" then
+                if not apiSession and pickedBundle and pickedBundle.type == "full" then
                     CludesUI.RequestReload(
                         CludesUI.L("Profile Imported"),
-                        CludesUI.ImportReloadMessage(filteredPayload)
+                        CludesUI.ImportReloadMessage(pickedBundle)
                     )
                 end
                 if apiSession then
                     apiSession.committing = true
                 end
-                local ok, err, status = CludesUI.ImportProfile(filteredPayload, name)
+                local ok, err, status = CludesUI.ImportProfile(pickedBundle, label)
                 if apiSession then
                     apiSession.committing = nil
                 end
                 -- Apply the preset's Blizzard Edit Mode layout (if supplied) right before the reload so profile + layout land together.
                 -- pcall-guarded so a Blizzard Edit Mode error cannot block the reload. No-op on the manual paste path (no stored string).
-                if ok and importPage._editModeString then
+                if ok and importView._editModeString then
                     pcall(
                         CludesUI.ApplyPresetEditMode,
-                        importPage._editModeString,
-                        importPage._editModeLayoutName
+                        importView._editModeString,
+                        importView._editModeLayoutName
                     )
                 end
                 if ok and apiSession then
@@ -1606,7 +1606,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                         CludesUI.Print(
                             CludesUI.Lf(
                                 '"%1$s" was saved but cannot be loaded because this spec has an assigned profile.',
-                                name
+                                label
                             )
                         )
                     end
@@ -1620,7 +1620,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                         title = CludesUI.L("Profile Imported"),
                         content = CludesUI.Lf(
                             '"%1$s" was saved but cannot be loaded because this spec has an assigned profile. Switch specs or remove the spec assignment to use it.',
-                            name
+                            label
                         ),
                     })
                 elseif not ok then
@@ -1643,15 +1643,15 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         PP.Point(nameErrorFs, "TOPRIGHT", importBtn, "BOTTOMRIGHT", 0, -14)
         nameErrorFs:SetText(CludesUI.L("*Please enter a profile name"))
         nameErrorFs:Hide()
-        importPage._nameError = nameErrorFs
+        importView._nameError = nameErrorFs
 
         -- Store edit box reference for the import button callback
-        importPage._nameEditBox = editBox
+        importView._nameEditBox = inputBox
 
         -- Hide every other page so the import page never overlaps the one it was opened from (the main paste flow).
         mainPage:Hide()
         pastePage:Hide()
-        importPage:Show()
+        importView:Show()
     end
 
     -------------------------------------------------------------------
@@ -1661,7 +1661,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         ClearPage(pastePage)
 
         local PAD = CludesUI.CONTENT_PAD
-        local totalW = pastePage:GetWidth() - PAD * 2
+        local fullWidth = pastePage:GetWidth() - PAD * 2
         local py = -30
 
         local BACK_H = SubpageHeader(pastePage, PAD, py, CludesUI.L("Import Profile"))
@@ -1671,7 +1671,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         -- Big paste panel
         local PANEL_H = 200
         local panelFrame = CreateFrame("Frame", nil, pastePage)
-        PP.Size(panelFrame, totalW, PANEL_H)
+        PP.Size(panelFrame, fullWidth, PANEL_H)
         PP.Point(panelFrame, "TOPLEFT", pastePage, "TOPLEFT", PAD, py)
         local panelBg = panelFrame:CreateTexture(nil, "BACKGROUND")
         panelBg:SetAllPoints()
@@ -1682,18 +1682,18 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         pasteSF:SetPoint("TOPLEFT", 16, -12)
         pasteSF:SetPoint("BOTTOMRIGHT", -16, 12)
 
-        local pasteBox = CreateFrame("EditBox", nil, pasteSF)
-        pasteBox:SetWidth(totalW - 32)
-        pasteBox:SetFont(FONT, 11, CludesUI.GetFontOutlineFlag())
-        pasteBox:SetTextColor(1, 1, 1, 0.8)
-        pasteBox:SetAutoFocus(false)
-        pasteBox:SetMultiLine(true)
-        pasteSF:SetScrollChild(pasteBox)
+        local pasteInput = CreateFrame("EditBox", nil, pasteSF)
+        pasteInput:SetWidth(fullWidth - 32)
+        pasteInput:SetFont(FONT, 11, CludesUI.GetFontOutlineFlag())
+        pasteInput:SetTextColor(1, 1, 1, 0.8)
+        pasteInput:SetAutoFocus(false)
+        pasteInput:SetMultiLine(true)
+        pasteSF:SetScrollChild(pasteInput)
 
         -- Click anywhere on the panel to refocus the edit box
         panelFrame:EnableMouse(true)
         panelFrame:SetScript("OnMouseDown", function()
-            pasteBox:SetFocus()
+            pasteInput:SetFocus()
         end)
 
         local pastePlaceholder = pasteSF:CreateFontString(nil, "ARTWORK")
@@ -1702,17 +1702,17 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         pastePlaceholder:SetPoint("TOPLEFT", pasteSF, "TOPLEFT", 0, 0)
         pastePlaceholder:SetText(CludesUI.L("Paste your profile string here..."))
 
-        pasteBox:SetScript("OnTextChanged", function(self)
+        pasteInput:SetScript("OnTextChanged", function(self)
             if self:GetText() == "" then
                 pastePlaceholder:Show()
             else
                 pastePlaceholder:Hide()
             end
         end)
-        pasteBox:SetScript("OnEscapePressed", function(self)
+        pasteInput:SetScript("OnEscapePressed", function(self)
             self:ClearFocus()
         end)
-        pasteBox:SetScript("OnCursorChanged", function(self, _, cursorY, _, cursorH)
+        pasteInput:SetScript("OnCursorChanged", function(self, _, cursorY, _, cursorH)
             local vs = pasteSF:GetVerticalScroll()
             local h = pasteSF:GetHeight()
             local bottom = -cursorY + cursorH
@@ -1725,7 +1725,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         -- Large pastes go into a buffer (attached AFTER the handlers above so their scripts survive): the box only ever holds a short
         -- summary line, keeping paste instant with no letter-cap truncation.
-        local pasteAbsorber = CludesUI.AttachImportPasteAbsorber(pasteBox, function()
+        local pasteAbsorber = CludesUI.AttachImportPasteAbsorber(pasteInput, function()
             CludesUI:ShowInfoPopup({
                 title = CludesUI.L("Paste Interrupted"),
                 content = CludesUI.L(
@@ -1764,7 +1764,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             -- The paste page this decode belongs to: once it is dressed again
             -- (reopened, or the page rebuilt), the result is dropped.
             local btnGen = PoolGen(contBtn)
-            decodeRun = CludesUI.DecodeImportStringAsync(importStr, function(payload, err)
+            decodeRun = CludesUI.DecodeImportStringAsync(importStr, function(bundle, err)
                 if not SameDress(contBtn, btnGen) then
                     return
                 end
@@ -1773,7 +1773,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                 if not pastePage:IsVisible() then
                     return
                 end
-                if not payload then
+                if not bundle then
                     CludesUI:ShowInfoPopup({
                         title = CludesUI.L("Import Failed"),
                         content = err or CludesUI.L("Invalid import string."),
@@ -1782,15 +1782,15 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                 end
                 -- FULL ACCOUNT string: its own flow, routed BEFORE the normal import machinery sees the payload (no module selection,
                 -- include toggles, or store merging). Typed confirmation: it overwrites account-wide settings.
-                if CludesUI.IsFullAccountPayload(payload) then
+                if CludesUI.IsFullAccountPayload(bundle) then
                     pastePage:Hide()
                     local message = CludesUI.L(
                         "This string is a FULL ACCOUNT export. It replaces your account-wide settings with the sender's, including Utilities, Frame Bindings, Cooldown Manager spell setups, unlock anchors, UI scale, and spec assignments -- not just a profile. Your other profiles keep their own settings, but a profile with the same name is replaced."
                     )
                     -- Spell setups from the other client are skipped on import: say so.
-                    local data = payload.data
+                    local data = bundle.data
                     if
-                        CludesUI.PayloadFromOtherClient(payload)
+                        CludesUI.PayloadFromOtherClient(bundle)
                         and type(data) == "table"
                         and data.spellAssignments ~= nil
                     then
@@ -1810,19 +1810,19 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                         confirmText = CludesUI.L("Import & Reload"),
                         cancelText = CludesUI.L("Cancel"),
                         onConfirm = function()
-                            CludesUI.ImportFullAccountData(payload)
+                            CludesUI.ImportFullAccountData(bundle)
                         end,
                     })
                     return
                 end
                 pastePage:Hide()
                 local pageGen = PoolGen(pastePage)
-                MaybeConfirmUIScale(payload, function(applyScale)
+                MaybeConfirmUIScale(bundle, function(applyScale)
                     -- Not after a rebuild of the profiles page meanwhile.
                     if not SameDress(pastePage, pageGen) then
                         return
                     end
-                    ShowImportPage(importStr, payload, nil, nil, nil, applyScale)
+                    ShowImportPage(importStr, bundle, nil, nil, nil, applyScale)
                 end)
             end, function(frac)
                 if not SameDress(contBtn, btnGen) then
@@ -1834,7 +1834,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         mainPage:Hide()
         pastePage:Show()
-        pasteBox:SetFocus()
+        pasteInput:SetFocus()
     end
 
     -------------------------------------------------------------------
@@ -1872,27 +1872,27 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         local GAP = 40
         local ROW_H = PAD_Y + LABEL_H + 4 + CTRL_H + PAD_Y
 
-        local totalW = parent:GetWidth() - CludesUI.CONTENT_PAD * 2
-        local innerW = totalW - PAD_X * 2
+        local fullWidth = parent:GetWidth() - CludesUI.CONTENT_PAD * 2
+        local innerW = fullWidth - PAD_X * 2
         local DD_W = math.floor(innerW * 0.38)
         local BTN_W = math.floor((innerW - DD_W - GAP * 2) / 2)
 
-        local rowFrame = CreateFrame("Frame", nil, parent)
-        PP.Size(rowFrame, totalW, ROW_H)
-        PP.Point(rowFrame, "TOPLEFT", parent, "TOPLEFT", CludesUI.CONTENT_PAD, y)
+        local lineFrame = CreateFrame("Frame", nil, parent)
+        PP.Size(lineFrame, fullWidth, ROW_H)
+        PP.Point(lineFrame, "TOPLEFT", parent, "TOPLEFT", CludesUI.CONTENT_PAD, y)
 
         -- Background panel
-        local rowBrd = CludesUI.MakeRoundedCard(rowFrame, 0.10, 0.50)
+        local rowBrd = CludesUI.MakeRoundedCard(lineFrame, 0.10, 0.50)
         local rowBg = rowBrd.bg
 
         -- "Active Profile" label
-        local profLabel = CludesUI.MakeFont(rowFrame, 12, nil, EG.r, EG.g, EG.b, 0.7)
-        PP.Point(profLabel, "TOPLEFT", rowFrame, "TOPLEFT", PAD_X, -PAD_Y)
+        local profLabel = CludesUI.MakeFont(lineFrame, 12, nil, EG.r, EG.g, EG.b, 0.7)
+        PP.Point(profLabel, "TOPLEFT", lineFrame, "TOPLEFT", PAD_X, -PAD_Y)
         profLabel:SetText(CludesUI.L("Active Profile"))
         profLabel:SetJustifyH("LEFT")
 
         -- Active Profile dropdown
-        local dropdownBtn, ddLabelFS, _, _, ddPaint = MakeDropdown(rowFrame, DD_W, CTRL_H, function()
+        local dropdownBtn, ddLabelFS, _, _, ddPaint = MakeDropdown(lineFrame, DD_W, CTRL_H, function()
             return CludesUI.GetActiveProfileName()
         end)
         CludesUI._profileDDBtn = dropdownBtn
@@ -1900,48 +1900,48 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         PP.Point(dropdownBtn, "TOPLEFT", profLabel, "BOTTOMLEFT", 0, -6)
 
         -- Profile dropdown menu with inline rename/delete/keybind
-        local menu = MakeDropdownMenu(dropdownBtn, DD_W)
+        local dropMenu = MakeDropdownMenu(dropdownBtn, DD_W)
         local X_SZ = 14
         local menuItems = {}
 
         local function RebuildProfileMenu()
-            for _, itm in ipairs(menuItems) do
-                itm:Hide()
+            for _, entry in ipairs(menuItems) do
+                entry:Hide()
             end
-            local order, profiles = CludesUI.GetProfileList()
+            local order, profileList = CludesUI.GetProfileList()
             local menuH = 4
             local idx = 0
             local activeName = CludesUI.GetActiveProfileName()
             local sid = CurrentSpecID()
             local specAssigned = sid and CludesUI.GetSpecProfile(sid) or nil
-            for _, name in ipairs(order) do
-                if profiles[name] then
+            for _, label in ipairs(order) do
+                if profileList[label] then
                     idx = idx + 1
-                    local itm = menuItems[idx]
-                    if not itm then
-                        itm = CreateFrame("Button", nil, menu)
-                        itm:SetHeight(26)
-                        itm:SetFrameLevel(menu:GetFrameLevel() + 1)
-                        local caption = itm:CreateFontString(nil, "OVERLAY")
+                    local entry = menuItems[idx]
+                    if not entry then
+                        entry = CreateFrame("Button", nil, dropMenu)
+                        entry:SetHeight(26)
+                        entry:SetFrameLevel(dropMenu:GetFrameLevel() + 1)
+                        local caption = entry:CreateFontString(nil, "OVERLAY")
                         caption:SetFont(FONT, 13, CludesUI.GetFontOutlineFlag())
-                        caption:SetPoint("LEFT", itm, "LEFT", 10, 0)
-                        caption:SetPoint("RIGHT", itm, "RIGHT", -(X_SZ * 3 + 30), 0)
+                        caption:SetPoint("LEFT", entry, "LEFT", 10, 0)
+                        caption:SetPoint("RIGHT", entry, "RIGHT", -(X_SZ * 3 + 30), 0)
                         caption:SetJustifyH("LEFT")
                         caption:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-                        itm._lbl = caption
-                        local hl = itm:CreateTexture(nil, "ARTWORK")
+                        entry._lbl = caption
+                        local hl = entry:CreateTexture(nil, "ARTWORK")
                         hl:SetAllPoints()
                         hl:SetColorTexture(1, 1, 1, 1)
                         hl:SetAlpha(0)
-                        itm._hl = hl
+                        entry._hl = hl
 
                         -- Delete, Rename and Keybind icons at the right edge.
                         local icons = {}
                         local function Icon(file, anchor, rel, x)
-                            local b = CreateFrame("Button", nil, itm)
+                            local b = CreateFrame("Button", nil, entry)
                             b:SetSize(X_SZ, X_SZ)
                             b:SetPoint("RIGHT", anchor, rel, x, 0)
-                            b:SetFrameLevel(itm:GetFrameLevel() + 2)
+                            b:SetFrameLevel(entry:GetFrameLevel() + 2)
                             local texture = b:CreateTexture(nil, "OVERLAY")
                             texture:SetAllPoints()
                             Unsnapped(texture)
@@ -1950,10 +1950,10 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                             icons[#icons + 1] = b
                             return b
                         end
-                        local xBtn = Icon("cui-close.png", itm, "RIGHT", -8)
+                        local xBtn = Icon("cui-close.png", entry, "RIGHT", -8)
                         local editBtn = Icon("cui-edit.png", xBtn, "LEFT", -4)
                         local kbBtnI = Icon("cui-keybind-2.png", editBtn, "LEFT", -4)
-                        itm._xBtn, itm._editBtn, itm._kbBtn = xBtn, editBtn, kbBtnI
+                        entry._xBtn, entry._editBtn, entry._kbBtn = xBtn, editBtn, kbBtnI
 
                         -- The row lights while the mouse is on it or on one of its
                         -- icons (the icon under the mouse brightest), and dims
@@ -1966,86 +1966,86 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                                 b:SetAlpha(a)
                             end
                         end
-                        itm._light = function()
+                        entry._light = function()
                             caption:SetTextColor(1, 1, 1, 1)
                             hl:SetAlpha(CludesUI.DD_ITEM_HL_A)
                             IconAlpha(0.8)
                         end
-                        itm._dim = function()
+                        entry._dim = function()
                             caption:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
-                            hl:SetAlpha(itm._isSel and CludesUI.DD_ITEM_SEL_A or 0)
+                            hl:SetAlpha(entry._isSel and CludesUI.DD_ITEM_SEL_A or 0)
                             IconAlpha(0.4)
                         end
-                        itm._overIcon = OverIcon
+                        entry._overIcon = OverIcon
                         for b, tip in pairs({ [xBtn] = "Delete", [editBtn] = "Rename", [kbBtnI] = "Keybind" }) do
                             b:SetScript("OnEnter", function(self)
-                                itm._light()
+                                entry._light()
                                 self:SetAlpha(1)
                                 CludesUI.ShowWidgetTooltip(self, CludesUI.L(tip))
                             end)
                             b:SetScript("OnLeave", function(self)
-                                if itm:IsMouseOver() or OverIcon() then
+                                if entry:IsMouseOver() or OverIcon() then
                                     self:SetAlpha(0.8)
                                 else
-                                    itm._dim()
+                                    entry._dim()
                                 end
                                 CludesUI.HideWidgetTooltip()
                             end)
                         end
-                        menuItems[idx] = itm
+                        menuItems[idx] = entry
                     end
 
-                    itm:SetPoint("TOPLEFT", menu, "TOPLEFT", 1, -menuH)
-                    itm:SetPoint("TOPRIGHT", menu, "TOPRIGHT", -1, -menuH)
-                    itm._lbl:SetText(name)
-                    itm._isSel = (name == activeName)
-                    itm._hl:SetAlpha(itm._isSel and 0.04 or 0)
+                    entry:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -menuH)
+                    entry:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -menuH)
+                    entry._lbl:SetText(label)
+                    entry._isSel = (label == activeName)
+                    entry._hl:SetAlpha(entry._isSel and 0.04 or 0)
 
-                    local capName = name
+                    local capName = label
                     local specLocked = specAssigned and specAssigned ~= capName
 
                     if specLocked then
-                        itm._lbl:SetTextColor(1, 1, 1, 0.25)
-                        itm._xBtn:Hide()
-                        itm._editBtn:Hide()
-                        itm._kbBtn:Hide()
-                        itm:SetScript("OnClick", nil)
-                        itm:SetScript("OnEnter", function()
+                        entry._lbl:SetTextColor(1, 1, 1, 0.25)
+                        entry._xBtn:Hide()
+                        entry._editBtn:Hide()
+                        entry._kbBtn:Hide()
+                        entry:SetScript("OnClick", nil)
+                        entry:SetScript("OnEnter", function()
                             CludesUI.ShowWidgetTooltip(
-                                itm,
+                                entry,
                                 CludesUI.L(
                                     "Your current spec has an assigned profile so you cannot switch to another. Please unassign to switch."
                                 )
                             )
                         end)
-                        itm:SetScript("OnLeave", function()
+                        entry:SetScript("OnLeave", function()
                             CludesUI.HideWidgetTooltip()
                         end)
                     else
-                        local iLbl, iXBtn, iEditBtn, iKbBtnL = itm._lbl, itm._xBtn, itm._editBtn, itm._kbBtn
+                        local iLbl, iXBtn, iEditBtn, iKbBtnL = entry._lbl, entry._xBtn, entry._editBtn, entry._kbBtn
                         iLbl:SetTextColor(1, 1, 1, CludesUI.TEXT_DIM_A)
                         iEditBtn:Show()
                         iKbBtnL:Show()
                         if capName == activeName then
                             iXBtn:Hide()
                             iEditBtn:ClearAllPoints()
-                            iEditBtn:SetPoint("RIGHT", itm, "RIGHT", -8, 0)
+                            iEditBtn:SetPoint("RIGHT", entry, "RIGHT", -8, 0)
                         else
                             iXBtn:Show()
                             iEditBtn:ClearAllPoints()
                             iEditBtn:SetPoint("RIGHT", iXBtn, "LEFT", -4, 0)
                         end
-                        itm:SetScript("OnEnter", itm._light)
-                        itm:SetScript("OnLeave", function()
-                            if not itm._overIcon() then
-                                itm._dim()
+                        entry:SetScript("OnEnter", entry._light)
+                        entry:SetScript("OnLeave", function()
+                            if not entry._overIcon() then
+                                entry._dim()
                             end
                         end)
-                        itm:SetScript("OnClick", function()
+                        entry:SetScript("OnClick", function()
                             if capName == activeName then
                                 return
                             end
-                            menu:Hide()
+                            dropMenu:Hide()
                             local _, profs = CludesUI.GetProfileList()
                             local asked = SwitchProfileAndAsk(capName, profs and profs[capName], function()
                                 ddLabel:SetText(CludesUI.GetActiveProfileName())
@@ -2061,7 +2061,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                             if capName == activeName then
                                 return
                             end
-                            menu:Hide()
+                            dropMenu:Hide()
                             CludesUI:ShowConfirmPopup({
                                 title = CludesUI.L("Delete Profile"),
                                 message = CludesUI.Lf('Delete "%1$s"?', capName),
@@ -2074,7 +2074,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                             })
                         end)
                         iEditBtn:SetScript("OnClick", function()
-                            menu:Hide()
+                            dropMenu:Hide()
                             CludesUI:ShowInputPopup({
                                 title = CludesUI.L("Rename Profile"),
                                 message = CludesUI.Lf('Enter a new name for "%1$s":', capName),
@@ -2108,16 +2108,16 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                             })
                         end)
                         iKbBtnL:SetScript("OnClick", function()
-                            menu:Hide()
+                            dropMenu:Hide()
                             ShowProfileKeybindPopup(capName)
                         end)
                     end
 
-                    itm:Show()
+                    entry:Show()
                     menuH = menuH + 26
                 end
             end
-            menu:SetHeight(menuH + 4)
+            dropMenu:SetHeight(menuH + 4)
         end
 
         -- The dropdown stays lit while its menu is open.
@@ -2129,28 +2129,28 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         end
 
         dropdownBtn:SetScript("OnClick", function()
-            if menu:IsShown() then
-                menu:Hide()
+            if dropMenu:IsShown() then
+                dropMenu:Hide()
             else
                 RebuildProfileMenu()
-                menu:Show()
+                dropMenu:Show()
             end
         end)
         dropdownBtn:SetScript("OnEnter", function()
             ActiveApplyHover()
         end)
         dropdownBtn:SetScript("OnLeave", function()
-            if not menu:IsShown() then
+            if not dropMenu:IsShown() then
                 ActiveApplyNormal()
             end
         end)
         dropdownBtn:HookScript("OnHide", function()
-            menu:Hide()
+            dropMenu:Hide()
         end)
-        menu:HookScript("OnShow", function()
+        dropMenu:HookScript("OnShow", function()
             ActiveApplyHover()
         end)
-        menu:SetScript("OnHide", function(self)
+        dropMenu:SetScript("OnHide", function(self)
             self:SetScript("OnUpdate", nil)
             if dropdownBtn:IsMouseOver() then
                 ActiveApplyHover()
@@ -2161,17 +2161,17 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         -- The other two columns: a caption, then a plain button under it.
         local function Caption(text, anchor, x)
-            local fs = CludesUI.MakeFont(rowFrame, 12, nil, 1, 1, 1, 0.45)
+            local fs = CludesUI.MakeFont(lineFrame, 12, nil, 1, 1, 1, 0.45)
             PP.Point(fs, "LEFT", anchor, "LEFT", x, 0)
             fs:SetText(text)
             fs:SetJustifyH("LEFT")
             return fs
         end
         local function ColumnButton(caption, text, onClick)
-            local button = CreateFrame("Button", nil, rowFrame)
+            local button = CreateFrame("Button", nil, lineFrame)
             PP.Size(button, BTN_W, CTRL_H)
             PP.Point(button, "TOPLEFT", caption, "BOTTOMLEFT", 0, -6)
-            button:SetFrameLevel(rowFrame:GetFrameLevel() + 2)
+            button:SetFrameLevel(lineFrame:GetFrameLevel() + 2)
             CludesUI.MakeStyledButton(button, text, 11, PROF_BTN_COLOURS, onClick)
             return button
         end
@@ -2182,14 +2182,14 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         local function OpenSpecAssign()
             local db = CludesUIDB or {}
             db.specProfiles = db.specProfiles or {}
-            local order, profiles = CludesUI.GetProfileList()
+            local order, profileList = CludesUI.GetProfileList()
             local specsOf = {}
-            for _, name in ipairs(order) do
-                specsOf[name] = {}
+            for _, label in ipairs(order) do
+                specsOf[label] = {}
             end
-            for specID, name in pairs(db.specProfiles) do
-                if specsOf[name] then
-                    specsOf[name][specID] = true
+            for specID, label in pairs(db.specProfiles) do
+                if specsOf[label] then
+                    specsOf[label][specID] = true
                 end
             end
             local tempDB = { _profileSpecs = specsOf }
@@ -2199,18 +2199,18 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                 presetKey = CludesUI.GetActiveProfileName(),
                 allPresetKeys = function()
                     local list = {}
-                    for _, name in ipairs(order) do
-                        if profiles[name] then
-                            list[#list + 1] = { key = name, name = name }
+                    for _, label in ipairs(order) do
+                        if profileList[label] then
+                            list[#list + 1] = { key = label, name = label }
                         end
                     end
                     return list
                 end,
                 onDone = function()
                     db.specProfiles = {}
-                    for name, specSet in pairs(tempDB._profileSpecs) do
+                    for label, specSet in pairs(tempDB._profileSpecs) do
                         for specID in pairs(specSet) do
-                            db.specProfiles[specID] = name
+                            db.specProfiles[specID] = label
                         end
                     end
                     CludesUI:RefreshPage()
@@ -2227,18 +2227,18 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         -- New Profile: a copy of the current one under a new name, then a
         -- reload that switches to it (the copy is the reload's pre-work).
-        local function CopyProfile(name)
-            name = name and strtrim(name) or ""
-            if name == "" then
+        local function CopyProfile(label)
+            label = label and strtrim(label) or ""
+            if label == "" then
                 return
             end
-            local _, profiles = CludesUI.GetProfileList()
-            if profiles and profiles[name] then
+            local _, profileList = CludesUI.GetProfileList()
+            if profileList and profileList[label] then
                 CludesUI:ShowConfirmPopup({
                     title = CludesUI.L("Name Taken"),
                     message = CludesUI.Lf(
                         'A profile named "%1$s" already exists. Please choose a different name.',
-                        name
+                        label
                     ),
                     confirmText = CludesUI.L("OK"),
                     hideCancel = true,
@@ -2250,7 +2250,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                 CludesUI.L("Copy Profile"),
                 CludesUI.L("Reload to finish switching to the new profile."),
                 function()
-                    CludesUI.SaveCurrentAsProfile(name)
+                    CludesUI.SaveCurrentAsProfile(label)
                 end
             )
         end
@@ -2278,7 +2278,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     do
         local ADDON_DB_MAP_LOCAL = CludesUI.VisibleProfileAddons(CludesUI._ADDON_DB_MAP)
         local PAD = CludesUI.CONTENT_PAD
-        local totalW = parent:GetWidth() - PAD * 2
+        local fullWidth = parent:GetWidth() - PAD * 2
         -- Single footer row: count + "Include layout" + "Include Global Settings" side by side, Export button on the right.
         local FOOTER_H = 50
 
@@ -2309,19 +2309,19 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
 
         for _, entry in ipairs(ADDON_DB_MAP_LOCAL) do
             local loaded = CludesUI.IsModuleAddonLoaded(entry.folder)
-            local folder = entry.folder
+            local moduleFolder = entry.folder
             addonItems[#addonItems + 1] = {
-                folder = folder,
+                folder = moduleFolder,
                 display = entry.display,
-                desc = ADDON_DESCS[folder] or "",
+                desc = ADDON_DESCS[moduleFolder] or "",
                 loaded = loaded,
                 getVal = function()
-                    return selectedAddons[folder] or false
+                    return selectedAddons[moduleFolder] or false
                 end,
                 -- Hard-couple: (un)checking a module sets its whole connected component, gated to loaded (exportable) members.
                 setVal = function(value)
                     -- Layout OFF: relationships aren't exported, so skip the hard-couple and let each linked module be picked alone.
-                    local members = includeLayoutExport and exportComponents and exportComponents[folder]
+                    local members = includeLayoutExport and exportComponents and exportComponents[moduleFolder]
                     if members then
                         for f in pairs(members) do
                             if CludesUI.IsModuleAddonLoaded(f) then
@@ -2329,12 +2329,12 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                             end
                         end
                     else
-                        selectedAddons[folder] = value or nil
+                        selectedAddons[moduleFolder] = value or nil
                     end
                 end,
             }
             if loaded then
-                selectedAddons[folder] = true
+                selectedAddons[moduleFolder] = true
             end
         end
 
@@ -2356,7 +2356,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             RefreshFooterCount()
         end
 
-        y = ModuleListCard(parent, PAD, y, totalW, {
+        y = ModuleListCard(parent, PAD, y, fullWidth, {
             title = "Export Profile",
             desc = "Choose which addons to include in your exported profile. Check everything for a full profile export.",
             items = addonItems,
@@ -2390,7 +2390,7 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         -- Footer (inside the background panel)
         y = y - 8
 
-        local footerFrame = FooterBar(parent, PAD, y, totalW, FOOTER_H)
+        local footerFrame = FooterBar(parent, PAD, y, fullWidth, FOOTER_H)
 
         footerCountFs = CludesUI.MakeFont(footerFrame, 12, nil, 1, 1, 1, 0.40)
         -- Selection count, top-left of the footer. The Include dropdown and Export Profile button sit right-aligned on the same row.
@@ -2477,8 +2477,8 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
         exportSelBtn:SetScript("OnClick", function()
             local folders = {}
             local hasAny = false
-            for folder in pairs(selectedAddons) do
-                folders[folder] = true
+            for moduleFolder in pairs(selectedAddons) do
+                folders[moduleFolder] = true
                 hasAny = true
             end
             if not hasAny then
@@ -2532,27 +2532,27 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
     -- Reset the sub-page stack to the main Profiles view. The page wrapper is cached across tab switches, so a declined/replaced API
     -- session would otherwise leave its import page showing on the next visit.
     CludesUI._ProfilesResetToMain = function()
-        importPage:Hide()
+        importView:Hide()
         pastePage:Hide()
         mainPage:Show()
     end
 
     -- Continue an API session with its decoded payload: UI-scale prompt (at most once), then the normal selection page. Registered per
     -- build (latest wins) and re-resolved from the namespace by every async continuation, so decode + scale popup land on THIS build's live frames.
-    CludesUI._ProfilesApiProceed = function(payload)
+    CludesUI._ProfilesApiProceed = function(bundle)
         local s = CludesUI._apiImportSession
         if not s or s.state == "done" then
             return
         end
         if s.scaleAsked then
-            ShowImportPage(s.str, payload, s.name, nil, nil, s.applyScale)
+            ShowImportPage(s.str, bundle, s.name, nil, nil, s.applyScale)
         else
-            MaybeConfirmUIScale(payload, function(applyScale)
+            MaybeConfirmUIScale(bundle, function(applyScale)
                 s.scaleAsked = true
                 s.applyScale = applyScale
                 local go = CludesUI._ProfilesApiProceed
                 if go then
-                    go(payload)
+                    go(bundle)
                 end
             end)
         end
@@ -2571,13 +2571,13 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
             CludesUI._ProfilesApiProceed(s.payload)
         elseif not s.decoding then
             s.decoding = true
-            CludesUI.DecodeImportStringAsync(s.str, function(payload, err)
+            CludesUI.DecodeImportStringAsync(s.str, function(bundle, err)
                 s.decoding = nil
                 -- The session may have been declined or replaced while the decode was in flight; drop a stale result.
                 if CludesUI._apiImportSession ~= s or s.state == "done" then
                     return
                 end
-                if not payload then
+                if not bundle then
                     CludesUI:ShowInfoPopup({
                         title = CludesUI.L("Import Failed"),
                         content = err or CludesUI.L("Invalid import string."),
@@ -2585,10 +2585,10 @@ function _G._CUI_BuildProfilesPage(pageName, parent, yOffset)
                     CludesUI._FinishApiImportSession(false)
                     return
                 end
-                s.payload = payload
+                s.payload = bundle
                 local go = CludesUI._ProfilesApiProceed
                 if go then
-                    go(payload)
+                    go(bundle)
                 end
             end)
         end

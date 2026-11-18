@@ -141,12 +141,12 @@ function ABAR:ApplyShapesForBar(barId)
     local zoom = (s.iconZoom or self.db.profile.iconZoom or 5.5) / 100
     local brdSz = ResolveBorderThickness(s)
     local brdOn = brdSz > 0
-    local brdColor = s.shapeBorderColor or s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
-    local brdR, brdG, brdB, brdA = brdColor.r, brdColor.g, brdColor.b, brdColor.a or 1
+    local borderColor = s.shapeBorderColor or s.borderColor or { r = 0, g = 0, b = 0, a = 1 }
+    local brdR, brdG, brdB, brdA = borderColor.r, borderColor.g, borderColor.b, borderColor.a or 1
     if s.borderClassColor then
-        local _, ct = UnitClass("player")
-        if ct then
-            local cc = RAID_CLASS_COLORS[ct]
+        local _, countText = UnitClass("player")
+        if countText then
+            local cc = RAID_CLASS_COLORS[countText]
             if cc then
                 brdR, brdG, brdB = cc.r, cc.g, cc.b
             end
@@ -323,16 +323,16 @@ end
 -- The preset values are relative to the stock placement; a text with a position
 -- also carries that corner's stock spacing, as a position pick gives it.
 function ABAR.ApplyShapeTextOffsets(bs, kbX, kbY, ctX, ctY)
-    local ax, ay = 0, 0
+    local anchorX, anchorY = 0, 0
     if bs.keybindAnchor then
-        ax, ay = ABAR.StockTextOffsets("keybind", bs.keybindAnchor)
+        anchorX, anchorY = ABAR.StockTextOffsets("keybind", bs.keybindAnchor)
     end
-    bs.keybindOffsetX, bs.keybindOffsetY = kbX + ax, kbY + ay
-    ax, ay = 0, 0
+    bs.keybindOffsetX, bs.keybindOffsetY = kbX + anchorX, kbY + anchorY
+    anchorX, anchorY = 0, 0
     if bs.countAnchor then
-        ax, ay = ABAR.StockTextOffsets("count", bs.countAnchor)
+        anchorX, anchorY = ABAR.StockTextOffsets("count", bs.countAnchor)
     end
-    bs.countOffsetX, bs.countOffsetY = ctX + ax, ctY + ay
+    bs.countOffsetX, bs.countOffsetY = ctX + anchorX, ctY + anchorY
 end
 ABAR.TEXT_ANCHOR_JUSTIFY = {
     TOPLEFT = "LEFT",
@@ -418,11 +418,11 @@ function ABAR:ApplyFontsForBar(barId)
         end
 
         -- Keybind text
-        local hk = button.HotKey
-        if hk then
+        local hotkeyText = button.HotKey
+        if hotkeyText then
             if hideKB then
-                hk:SetText("")
-                hk:Hide()
+                hotkeyText:SetText("")
+                hotkeyText:Hide()
             else
                 -- Get binding text
                 local bindingAction
@@ -447,48 +447,48 @@ function ABAR:ApplyFontsForBar(barId)
                 if textValue == RANGE_INDICATOR or textValue == "\226\128\162" then
                     textValue = ""
                 end
-                hk:SetText(textValue)
-                hk:Show()
-                CludesUI.ApplyIconTextFont(hk, fontFile, kbSize, "actionBars")
-                hk:SetTextColor(kbColor.r, kbColor.g, kbColor.b)
+                hotkeyText:SetText(textValue)
+                hotkeyText:Show()
+                CludesUI.ApplyIconTextFont(hotkeyText, fontFile, kbSize, "actionBars")
+                hotkeyText:SetTextColor(kbColor.r, kbColor.g, kbColor.b)
                 -- Anchor unset (the default) = the stock placement below; the
                 -- nil test is the whole cost of the feature while it is off.
-                if not (kbAnchor and ABAR.PlaceButtonText(hk, button, kbAnchor, kbOX, kbOY)) then
-                    hk:ClearAllPoints()
-                    hk:SetPoint("TOPRIGHT", button, "TOPRIGHT", -1 + kbOX, -3 + kbOY)
-                    hk:SetPoint("TOPLEFT", button, "TOPLEFT", 4 + kbOX, -3 + kbOY)
-                    hk:SetJustifyH("RIGHT")
+                if not (kbAnchor and ABAR.PlaceButtonText(hotkeyText, button, kbAnchor, kbOX, kbOY)) then
+                    hotkeyText:ClearAllPoints()
+                    hotkeyText:SetPoint("TOPRIGHT", button, "TOPRIGHT", -1 + kbOX, -3 + kbOY)
+                    hotkeyText:SetPoint("TOPLEFT", button, "TOPLEFT", 4 + kbOX, -3 + kbOY)
+                    hotkeyText:SetJustifyH("RIGHT")
                 end
             end
         end
 
         -- Count / charges text
-        local ct = button.Count
-        if ct then
-            CludesUI.ApplyIconTextFont(ct, fontFile, ctSize, "actionBars")
-            ct:SetTextColor(ctColor.r, ctColor.g, ctColor.b)
-            if not (ctAnchor and ABAR.PlaceButtonText(ct, button, ctAnchor, ctOX, ctOY)) then
-                ct:ClearAllPoints()
-                ct:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -1 + ctOX, 4 + ctOY)
-                ct:SetJustifyH("RIGHT")
+        local countText = button.Count
+        if countText then
+            CludesUI.ApplyIconTextFont(countText, fontFile, ctSize, "actionBars")
+            countText:SetTextColor(ctColor.r, ctColor.g, ctColor.b)
+            if not (ctAnchor and ABAR.PlaceButtonText(countText, button, ctAnchor, ctOX, ctOY)) then
+                countText:ClearAllPoints()
+                countText:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -1 + ctOX, 4 + ctOY)
+                countText:SetJustifyH("RIGHT")
             end
         end
 
         -- Macro name text
-        local nm = button.Name
-        if nm then
+        local macroName = button.Name
+        if macroName then
             if hideMacro then
-                nm:SetAlpha(0)
+                macroName:SetAlpha(0)
             else
-                nm:SetAlpha(1)
-                CludesUI.PrimeFontShadow(nm, false)
-                nm:SetFont(fontFile, macroSize, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
-                nm:SetTextColor(macroColor.r, macroColor.g, macroColor.b)
-                if not (macroAnchor and ABAR.PlaceButtonText(nm, button, macroAnchor, macroOX, macroOY)) then
-                    nm:ClearAllPoints()
-                    nm:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 1 + macroOX, 4 + macroOY)
-                    nm:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -1 + macroOX, 4 + macroOY)
-                    nm:SetJustifyH("CENTER")
+                macroName:SetAlpha(1)
+                CludesUI.PrimeFontShadow(macroName, false)
+                macroName:SetFont(fontFile, macroSize, (CludesUI.SlugFlag("OUTLINE, SLUG")) or "OUTLINE, SLUG")
+                macroName:SetTextColor(macroColor.r, macroColor.g, macroColor.b)
+                if not (macroAnchor and ABAR.PlaceButtonText(macroName, button, macroAnchor, macroOX, macroOY)) then
+                    macroName:ClearAllPoints()
+                    macroName:SetPoint("BOTTOMLEFT", button, "BOTTOMLEFT", 1 + macroOX, 4 + macroOY)
+                    macroName:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", -1 + macroOX, 4 + macroOY)
+                    macroName:SetJustifyH("CENTER")
                 end
             end
         end
@@ -518,9 +518,9 @@ function ABAR:ReapplyHotkeyColors()
         local c = s and not s.hideKeybind and s.keybindFontColor
         if c and (c.r ~= 1 or c.g ~= 1 or c.b ~= 1) then
             for index = 1, #buttons do
-                local hk = buttons[index] and buttons[index].HotKey
-                if hk then
-                    hk:SetTextColor(c.r, c.g, c.b)
+                local hotkeyText = buttons[index] and buttons[index].HotKey
+                if hotkeyText then
+                    hotkeyText:SetTextColor(c.r, c.g, c.b)
                 end
             end
         end
@@ -715,9 +715,9 @@ function ABAR:ApplyEquippedBorder(changedOnly)
         return
     end
     for _, details in ipairs(BAR_CONFIG) do
-        local btns = barButtons[details.key]
-        if btns then
-            for _, button in ipairs(btns) do
+        local buttonList = barButtons[details.key]
+        if buttonList then
+            for _, button in ipairs(buttonList) do
                 local bd = button.Border
                 if bd and EFD(button).squared then
                     if enabled then
@@ -743,9 +743,9 @@ function ABAR:RefreshCountVisibility(barId)
     end
     for _, details in ipairs(BAR_CONFIG) do
         if not details.isStance and not details.isPetBar and (barId == nil or details.key == barId) then
-            local btns = barButtons[details.key]
-            if btns then
-                for _, button in ipairs(btns) do
+            local buttonList = barButtons[details.key]
+            if buttonList then
+                for _, button in ipairs(buttonList) do
                     if button.Count then
                         local action = button:GetAttribute("action")
                         if action and HasAction(action) then
@@ -774,8 +774,8 @@ end
 -- feedback plus a clean restore to full alpha at 100) and on the main apply. Same
 -- secret-safe curve detection as the live ACTIONBAR_UPDATE_COOLDOWN handler.
 function ABAR:ApplyCDAlphaAll()
-    local pdb = self.db and self.db.profile
-    local cdAlpha = (pdb and pdb.alphaWhenOnCD) or 100
+    local profileDB = self.db and self.db.profile
+    local cdAlpha = (profileDB and profileDB.alphaWhenOnCD) or 100
     local enabled = cdAlpha ~= 100
     -- This used to carry its own copy of the on-cooldown test, and the copy
     -- drifted: it treated ANY charge spell as being on a real cooldown, so
@@ -786,9 +786,9 @@ function ABAR:ApplyCDAlphaAll()
     -- the classifier declines to dim -- lands on a clean icon.
     for _, details in ipairs(BAR_CONFIG) do
         if not details.isStance and not details.isPetBar then
-            local btns = barButtons[details.key]
-            if btns then
-                for _, button in ipairs(btns) do
+            local buttonList = barButtons[details.key]
+            if buttonList then
+                for _, button in ipairs(buttonList) do
                     local iconTex = button and button.icon
                     if iconTex then
                         iconTex:SetAlpha(1)
@@ -803,23 +803,23 @@ function ABAR:ApplyCDAlphaAll()
 end
 
 function ABAR:ApplySlotBackgroundColor()
-    local pdb = self.db and self.db.profile
-    if not pdb then
+    local profileDB = self.db and self.db.profile
+    if not profileDB then
         return
     end
-    local c = pdb.slotBgColor or { r = 0.15, g = 0.15, b = 0.15 }
-    local a = pdb.slotBgOpacity
+    local c = profileDB.slotBgColor or { r = 0.15, g = 0.15, b = 0.15 }
+    local a = profileDB.slotBgOpacity
     if a == nil then
         a = 50
     end
     a = a / 100
     for _, details in ipairs(BAR_CONFIG) do
-        local btns = barButtons[details.key]
-        if btns then
-            for _, button in ipairs(btns) do
-                local bfd = button and EFD(button)
-                if bfd and bfd.slotBG then
-                    bfd.slotBG:SetColorTexture(c.r or 0.15, c.g or 0.15, c.b or 0.15, a)
+        local buttonList = barButtons[details.key]
+        if buttonList then
+            for _, button in ipairs(buttonList) do
+                local buttonData = button and EFD(button)
+                if buttonData and buttonData.slotBG then
+                    buttonData.slotBG:SetColorTexture(c.r or 0.15, c.g or 0.15, c.b or 0.15, a)
                 end
             end
         end
@@ -830,16 +830,16 @@ end
 -- idempotent (SetSwipeColor persists on the frame), so it runs on the main apply
 -- and on setting change. Defaults mirror the Blizzard look.
 function ABAR:ApplyCooldownSwipeColor()
-    local pdb = self.db and self.db.profile
-    if not pdb then
+    local profileDB = self.db and self.db.profile
+    if not profileDB then
         return
     end
-    local c = pdb.cdSwipeColor or { r = 0, g = 0, b = 0 }
-    local a = (pdb.cdSwipeAlpha or 80) / 100
+    local c = profileDB.cdSwipeColor or { r = 0, g = 0, b = 0 }
+    local a = (profileDB.cdSwipeAlpha or 80) / 100
     for _, details in ipairs(BAR_CONFIG) do
-        local btns = barButtons[details.key]
-        if btns then
-            for _, button in ipairs(btns) do
+        local buttonList = barButtons[details.key]
+        if buttonList then
+            for _, button in ipairs(buttonList) do
                 local cd = button and button.cooldown
                 if cd and cd.SetSwipeColor then
                     pcall(cd.SetSwipeColor, cd, c.r or 0, c.g or 0, c.b or 0, a)
@@ -865,35 +865,35 @@ function ABAR:ApplyBackgroundForBar(barId)
     end
 
     if not s.bgEnabled then
-        local background = barBackgrounds[barId]
-        if background then
-            background.fill:Hide()
+        local bgTex = barBackgrounds[barId]
+        if bgTex then
+            bgTex.fill:Hide()
             if CludesUI and CludesUI.ApplyBorderStyle then
-                CludesUI.ApplyBorderStyle(background.border, 0, 0, 0, 0, s.bgBorderTexture or "solid")
+                CludesUI.ApplyBorderStyle(bgTex.border, 0, 0, 0, 0, s.bgBorderTexture or "solid")
             else
-                background.border:Hide()
+                bgTex.border:Hide()
             end
         end
         return
     end
 
-    local background = barBackgrounds[barId]
-    if not background then
+    local bgTex = barBackgrounds[barId]
+    if not bgTex then
         local fillTex = widget:CreateTexture(nil, "BACKGROUND", nil, -1)
         local border = CreateFrame("Frame", nil, widget, "BackdropTemplate")
         border:EnableMouse(false)
         border:SetFrameLevel(math.max(0, widget:GetFrameLevel()))
-        background = { fill = fillTex, border = border }
-        barBackgrounds[barId] = background
+        bgTex = { fill = fillTex, border = border }
+        barBackgrounds[barId] = bgTex
     end
 
     local c = s.bgColor or { r = 0, g = 0, b = 0, a = 0.5 }
     local alpha = s.bgOpacity ~= nil and s.bgOpacity / 100 or c.a
-    background.fill:SetColorTexture(c.r, c.g, c.b, alpha)
+    bgTex.fill:SetColorTexture(c.r, c.g, c.b, alpha)
     -- bgPadX/bgPadY remain as fallbacks for profiles predating bgPadding.
-    local padding = s.bgPadding
-    local padX = padding ~= nil and padding or (s.bgPadX or 0)
-    local padY = padding ~= nil and padding or (s.bgPadY or 0)
+    local pad = s.bgPadding
+    local padX = pad ~= nil and pad or (s.bgPadX or 0)
+    local padY = pad ~= nil and pad or (s.bgPadY or 0)
     local multiplierX = math.max(1, math.min(4, math.floor((s.bgMultiplierX or 1) + 0.5)))
     local multiplierY = math.max(1, math.min(4, math.floor((s.bgMultiplierY or 1) + 0.5)))
     local directionX = s.bgExpandDirectionX or "right"
@@ -912,12 +912,12 @@ function ABAR:ApplyBackgroundForBar(barId)
     else
         topY = topY + growY
     end
-    background.fill:ClearAllPoints()
-    background.fill:SetPoint("TOPLEFT", widget, "TOPLEFT", leftX, topY)
-    background.fill:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", right, bottom)
-    background.fill:Show()
+    bgTex.fill:ClearAllPoints()
+    bgTex.fill:SetPoint("TOPLEFT", widget, "TOPLEFT", leftX, topY)
+    bgTex.fill:SetPoint("BOTTOMRIGHT", widget, "BOTTOMRIGHT", right, bottom)
+    bgTex.fill:Show()
 
-    local border = background.border
+    local border = bgTex.border
     border:SetFrameLevel(
         s.bgBorderBehind and math.max(0, widget:GetFrameLevel() - 1) or widget:GetFrameLevel()
     )
@@ -976,19 +976,19 @@ function ABAR:ApplyIconBackgroundForBar(barId)
         if not button then
             break
         end
-        local bfd = EFD(button)
+        local buttonData = EFD(button)
         if not show then
             -- Disabled (the default): build nothing. Only a clip left over
             -- from an earlier ON has anything to hide; every other reader of
             -- iconBg / iconBgClip (slot sync, shape masks) nil-checks.
-            if bfd.iconBgClip then
-                bfd.iconBgClip:Hide()
+            if buttonData.iconBgClip then
+                buttonData.iconBgClip:Hide()
             end
         else
             -- Only show icon background on empty slots
             local okHA, hasAction = pcall(button.HasAction, button)
             hasAction = okHA and hasAction
-            if not bfd.iconBgClip then
+            if not buttonData.iconBgClip then
                 local clip = CreateFrame("Frame", nil, button)
                 clip:SetAllPoints(button)
                 clip:SetClipsChildren(true)
@@ -1002,8 +1002,8 @@ function ABAR:ApplyIconBackgroundForBar(barId)
                 else
                     backdrop:SetAtlas("UI-HUD-ActionBar-IconFrame-Slot")
                 end
-                bfd.iconBgClip = clip
-                bfd.iconBg = backdrop
+                buttonData.iconBgClip = clip
+                buttonData.iconBg = backdrop
             end
             -- Auto-update on button events. ACTIONBAR_SLOT_CHANGED is not
             -- delivered to buttons (central dispatcher owns it and syncs the
@@ -1013,8 +1013,8 @@ function ABAR:ApplyIconBackgroundForBar(barId)
             -- session that never enables the feature never pays even its
             -- early-return. The EFD flag survives bar rebuilds that reuse
             -- the button frame, so the hook never stacks.
-            if not bfd.iconBgHooked then
-                bfd.iconBgHooked = true
+            if not buttonData.iconBgHooked then
+                buttonData.iconBgHooked = true
                 button:HookScript("OnEvent", function(self)
                     -- Feature gate FIRST: turned off later in the session, the
                     -- hook must cost one boolean. The apply pass hides a
@@ -1030,15 +1030,15 @@ function ABAR:ApplyIconBackgroundForBar(barId)
                     end
                 end)
             end
-            bfd.iconBg:ClearAllPoints()
-            bfd.iconBg:SetPoint("TOPLEFT", button, "TOPLEFT", -inset, inset)
-            bfd.iconBg:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", inset, -inset)
-            bfd.iconBg:SetAlpha(alpha)
+            buttonData.iconBg:ClearAllPoints()
+            buttonData.iconBg:SetPoint("TOPLEFT", button, "TOPLEFT", -inset, inset)
+            buttonData.iconBg:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", inset, -inset)
+            buttonData.iconBg:SetAlpha(alpha)
             -- Apply custom shape mask if active (shapes run before this)
-            if bfd.shapeMask and bfd.shapeApplied then
-                pcall(bfd.iconBg.AddMaskTexture, bfd.iconBg, bfd.shapeMask)
+            if buttonData.shapeMask and buttonData.shapeApplied then
+                pcall(buttonData.iconBg.AddMaskTexture, buttonData.iconBg, buttonData.shapeMask)
             end
-            bfd.iconBgClip:SetShown(not hasAction)
+            buttonData.iconBgClip:SetShown(not hasAction)
         end
     end
 end
@@ -1149,17 +1149,17 @@ function ABAR:ApplyAlwaysShowButtons(barId)
             if details.nativeMainBar then
                 EAB_VTABLE.MainBarPageSync.SetButtonConfig(button, true, showEmpty)
             end
-            local visible = showEmpty or quickKeybindVisible or not mod.AB_EmptySlot(button, details)
+            local isVisible = showEmpty or quickKeybindVisible or not mod.AB_EmptySlot(button, details)
 
-            local bfd = EFD(button)
-            if bfd.slotBG then
-                bfd.slotBG:SetShown(visible)
+            local buttonData = EFD(button)
+            if buttonData.slotBG then
+                buttonData.slotBG:SetShown(isVisible)
             end
-            if bfd.borders and not (bfd.shapeMask and bfd.shapeMask:IsShown()) then
-                bfd.borders:SetShown(visible)
+            if buttonData.borders and not (buttonData.shapeMask and buttonData.shapeMask:IsShown()) then
+                buttonData.borders:SetShown(isVisible)
             end
-            if bfd.shapeBorder then
-                bfd.shapeBorder:SetShown(visible and EFD(bfd.shapeBorder).wantsShow == true)
+            if buttonData.shapeBorder then
+                buttonData.shapeBorder:SetShown(isVisible and EFD(buttonData.shapeBorder).wantsShow == true)
             end
 
             -- Stamp the secure-side facts the restricted reveal needs
@@ -1175,7 +1175,7 @@ function ABAR:ApplyAlwaysShowButtons(barId)
                 button:SetAttributeNoHandler("eab-showempty", showEmpty and 1 or 0)
                 button:SetAttributeNoHandler("eab-click", clickable and 1 or 0)
             end
-            if not visible then
+            if not isVisible then
                 button:SetAlpha(0)
                 -- Invisible empty slots must not catch mouse events; statehidden
                 -- makes the secure UpdateShown snippet keep them hidden.
@@ -1196,7 +1196,7 @@ function ABAR:ApplyAlwaysShowButtons(barId)
                 -- Always restore button alpha to 1. The bar frame's own
                 -- alpha (via mouseover fade) handles overall visibility.
                 button:SetAlpha(1)
-                bfd.parkA0 = nil
+                buttonData.parkA0 = nil
                 -- Restore mouse state based on bar's click-through setting.
                 -- When click-through is on but mouseover is enabled, keep
                 -- mouse motion so OnEnter/OnLeave still fire for hover fade.

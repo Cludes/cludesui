@@ -43,11 +43,11 @@ local SetClassPowerType = Inner.SetClassPowerType
 --  events registered, no frames created. When on, a single watcher handles player
 --  UNIT_POWER_UPDATE and shows pips only on the current target's nameplate.
 -------------------------------------------------------------------------------
-local classPowerWatcher
+local powerWatcher
 local classPowerWatcherFrame -- created on first enable, reused after every disable
-local classPowerType -- Enum.PowerType value for the player's class resource, or nil
+local powerKind -- Enum.PowerType value for the player's class resource, or nil
 local classPowerMax = 0 -- max pips for the resource
-local classPowerFormReq -- required GetShapeshiftFormID() value, or nil if no form check needed
+local formRequired -- required GetShapeshiftFormID() value, or nil if no form check needed
 local CP_PIP_W, CP_PIP_H, CP_PIP_GAP = 8, 3, 2 -- pip geometry
 
 -- Optional pip shapes. Rectangle (default) and square are plain boxes (no mask); the rest are
@@ -114,11 +114,11 @@ end
 -- Class/power color from the CUI global system. Bar-type keys (_BAR suffix)
 -- return the power color; class resources return resource color > class color.
 local CP_DEFAULT_COLOR = { 1.00, 0.84, 0.30 }
-local function GetClassPipColor(class, powerKey)
+local function GetClassPipColor(class, powerName)
     if CludesUI then
-        if powerKey then
-            local alias = powerKey:match("^(.+)_BAR$")
-            local key = alias or powerKey
+        if powerName then
+            local alias = powerName:match("^(.+)_BAR$")
+            local key = alias or powerName
             local c = CludesUI.GetPowerColor(key)
             if c then
                 return { c.r, c.g, c.b }
@@ -128,9 +128,9 @@ local function GetClassPipColor(class, powerKey)
         if rc then
             return { rc.r, rc.g, rc.b }
         end
-        local cc = CludesUI.GetClassColor(class)
-        if cc then
-            return { cc.r, cc.g, cc.b }
+        local classColor = CludesUI.GetClassColor(class)
+        if classColor then
+            return { classColor.r, classColor.g, classColor.b }
         end
     end
     return CP_DEFAULT_COLOR
@@ -172,22 +172,22 @@ local CLASS_POWER_MAP = {
 -- Apply the configured shape + optional border to one pip (and its bg). rectangle/square: plain
 -- box, no mask, border = one solid box behind the pip. Other shapes: carve fill+bg with a mask,
 -- frame with the matching border texture. Idempotent. bSize is pip-local (pixel-snapped) units.
-function mod.ApplyPipShape(backing, pip, shape, borderOn, bc, bSize)
-    local backdrop = pip._bg
+function mod.ApplyPipShape(backing, pipTex, shape, borderOn, borderColor, bSize)
+    local backdrop = pipTex._bg
     -- Icon shapes draw real atlas art (set in the render): drop mask, borders, and the dark bg.
     if mod.CP_ICON_SHAPE[shape] then
-        if pip._shapeMask then
-            pcall(pip.RemoveMaskTexture, pip, pip._shapeMask)
+        if pipTex._shapeMask then
+            pcall(pipTex.RemoveMaskTexture, pipTex, pipTex._shapeMask)
             if backdrop then
-                pcall(backdrop.RemoveMaskTexture, backdrop, pip._shapeMask)
+                pcall(backdrop.RemoveMaskTexture, backdrop, pipTex._shapeMask)
             end
-            pip._shapeMask:Hide()
+            pipTex._shapeMask:Hide()
         end
-        if pip._border then
-            pip._border:Hide()
+        if pipTex._border then
+            pipTex._border:Hide()
         end
-        if pip._borderBox then
-            pip._borderBox:Hide()
+        if pipTex._borderBox then
+            pipTex._borderBox:Hide()
         end
         if backdrop then
             backdrop:Hide()
@@ -196,76 +196,76 @@ function mod.ApplyPipShape(backing, pip, shape, borderOn, bc, bSize)
     end
     local maskPath = mod.CP_SHAPE.MASKS[shape]
     if maskPath then
-        if not pip._shapeMask then
-            pip._shapeMask = backing:CreateMaskTexture()
+        if not pipTex._shapeMask then
+            pipTex._shapeMask = backing:CreateMaskTexture()
         end
-        local m = pip._shapeMask
+        local m = pipTex._shapeMask
         m:SetTexture(maskPath, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
         m:ClearAllPoints()
-        m:SetAllPoints(pip)
+        m:SetAllPoints(pipTex)
         m:Show()
-        pcall(pip.RemoveMaskTexture, pip, m)
-        pip:AddMaskTexture(m)
+        pcall(pipTex.RemoveMaskTexture, pipTex, m)
+        pipTex:AddMaskTexture(m)
         if backdrop then
             pcall(backdrop.RemoveMaskTexture, backdrop, m)
             backdrop:AddMaskTexture(m)
         end
-    elseif pip._shapeMask then
-        pcall(pip.RemoveMaskTexture, pip, pip._shapeMask)
+    elseif pipTex._shapeMask then
+        pcall(pipTex.RemoveMaskTexture, pipTex, pipTex._shapeMask)
         if backdrop then
-            pcall(backdrop.RemoveMaskTexture, backdrop, pip._shapeMask)
+            pcall(backdrop.RemoveMaskTexture, backdrop, pipTex._shapeMask)
         end
-        pip._shapeMask:Hide()
+        pipTex._shapeMask:Hide()
     end
 
     local borderPath = mod.CP_SHAPE.BORDERS[shape]
     if borderOn and borderPath then
         -- Masked shapes: matching outline texture, sized to the pip.
-        if not pip._border then
-            pip._border = backing:CreateTexture(nil, "OVERLAY", nil, 4)
+        if not pipTex._border then
+            pipTex._border = backing:CreateTexture(nil, "OVERLAY", nil, 4)
         end
-        local b = pip._border
+        local b = pipTex._border
         b:SetTexture(borderPath)
-        b:SetVertexColor(bc.r, bc.g, bc.b, bc.a or 1)
+        b:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a or 1)
         b:ClearAllPoints()
-        b:SetAllPoints(pip)
+        b:SetAllPoints(pipTex)
         b:Show()
-        if pip._borderBox then
-            pip._borderBox:Hide()
+        if pipTex._borderBox then
+            pipTex._borderBox:Hide()
         end
     elseif borderOn then
         -- Boxy shapes (rectangle/square): one solid box behind the pip, poking out bSize on
         -- every side as a uniform outline. A single texture rounds as one piece, staying crisp.
-        if pip._border then
-            pip._border:Hide()
+        if pipTex._border then
+            pipTex._border:Hide()
         end
-        if not pip._borderBox then
-            pip._borderBox = backing:CreateTexture(nil, "OVERLAY", nil, 1)
-            pip._borderBox:SetTexture(mod.CP_SHAPE.WHITE)
+        if not pipTex._borderBox then
+            pipTex._borderBox = backing:CreateTexture(nil, "OVERLAY", nil, 1)
+            pipTex._borderBox:SetTexture(mod.CP_SHAPE.WHITE)
         end
-        local box = pip._borderBox
-        box:SetVertexColor(bc.r, bc.g, bc.b, bc.a or 1)
+        local box = pipTex._borderBox
+        box:SetVertexColor(borderColor.r, borderColor.g, borderColor.b, borderColor.a or 1)
         box:ClearAllPoints()
-        box:SetPoint("TOPLEFT", pip, "TOPLEFT", -bSize, bSize)
-        box:SetPoint("BOTTOMRIGHT", pip, "BOTTOMRIGHT", bSize, -bSize)
+        box:SetPoint("TOPLEFT", pipTex, "TOPLEFT", -bSize, bSize)
+        box:SetPoint("BOTTOMRIGHT", pipTex, "BOTTOMRIGHT", bSize, -bSize)
         box:Show()
     else
-        if pip._border then
-            pip._border:Hide()
+        if pipTex._border then
+            pipTex._border:Hide()
         end
-        if pip._borderBox then
-            pip._borderBox:Hide()
+        if pipTex._borderBox then
+            pipTex._borderBox:Hide()
         end
     end
 end
 
 -- Hide a pip's shape decorations (textured border + solid border box).
-function mod.HidePipDecor(pip)
-    if pip._border then
-        pip._border:Hide()
+function mod.HidePipDecor(pipTex)
+    if pipTex._border then
+        pipTex._border:Hide()
     end
-    if pip._borderBox then
-        pip._borderBox:Hide()
+    if pipTex._borderBox then
+        pipTex._borderBox:Hide()
     end
 end
 
@@ -281,13 +281,13 @@ local function EnsureClassPowerPips(backing)
         backdrop:SetTexture(mod.CP_SHAPE.WHITE)
         backdrop:SetVertexColor(0.082, 0.082, 0.082, 1)
         backdrop:Hide()
-        local pip = backing:CreateTexture(nil, "OVERLAY", nil, 3)
-        pip:SetTexture(mod.CP_SHAPE.WHITE)
-        pip:SetVertexColor(1, 1, 1, 1)
-        Pix.Size(pip, CP_PIP_W, CP_PIP_H)
-        pip:Hide()
-        pip._bg = backdrop
-        backing._cpPips[i] = pip
+        local pipTex = backing:CreateTexture(nil, "OVERLAY", nil, 3)
+        pipTex:SetTexture(mod.CP_SHAPE.WHITE)
+        pipTex:SetVertexColor(1, 1, 1, 1)
+        Pix.Size(pipTex, CP_PIP_W, CP_PIP_H)
+        pipTex:Hide()
+        pipTex._bg = backdrop
+        backing._cpPips[i] = pipTex
     end
 end
 
@@ -313,7 +313,7 @@ local function UpdateClassPowerOnPlate(backing)
     if not backing or not backing._cpPips then
         return
     end
-    if not classPowerType or (classPowerFormReq and GetShapeshiftFormID() ~= classPowerFormReq) then
+    if not powerKind or (formRequired and GetShapeshiftFormID() ~= formRequired) then
         for i = 1, #backing._cpPips do
             backing._cpPips[i]:Hide()
             if backing._cpPips[i]._bg then
@@ -333,7 +333,7 @@ local function UpdateClassPowerOnPlate(backing)
     local cpYOff = mod.GetClassPowerYOffset()
     local cpXOff = mod.GetClassPowerXOffset()
     local cpPos = mod.GetClassPowerPos()
-    local bgCol = mod.GetClassPowerBgColor()
+    local bgColor = mod.GetClassPowerBgColor()
 
     -- Determine anchor: top or bottom of health bar, with cast bar avoidance
     local anchorPoint, anchorRelPoint, anchor, yDir
@@ -357,7 +357,7 @@ local function UpdateClassPowerOnPlate(backing)
     end
 
     -- Bar-type resource (Brewmaster Stagger): single StatusBar instead of pips
-    if classPowerType == "BREWMASTER_STAGGER" then
+    if powerKind == "BREWMASTER_STAGGER" then
         -- Hide all pips
         for i = 1, #backing._cpPips do
             backing._cpPips[i]:Hide()
@@ -391,12 +391,12 @@ local function UpdateClassPowerOnPlate(backing)
         -- Stagger color thresholds: green < 30%, yellow 30-60%, red > 60%
         if isSecretVal then
             -- Secret value: can't compare, use class color
-            local cpColor = GetClassPipColor(PLAYER_CLASS)
+            local pipColor = GetClassPipColor(PLAYER_CLASS)
             if not GetClassPowerClassColors() then
-                local cc = GetClassPowerCustomColor()
-                cpColor = { cc.r, cc.g, cc.b }
+                local classColor = GetClassPowerCustomColor()
+                pipColor = { classColor.r, classColor.g, classColor.b }
             end
-            barFrame:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
+            barFrame:SetStatusBarColor(pipColor[1], pipColor[2], pipColor[3], 1)
         else
             local pct = staggerCur / staggerMax
             if pct >= 0.6 then
@@ -408,13 +408,13 @@ local function UpdateClassPowerOnPlate(backing)
             end
         end
 
-        barFrame._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
+        barFrame._bg:SetColorTexture(bgColor.r, bgColor.g, bgColor.b, bgColor.a)
         barFrame:Show()
         return
     end
 
     -- Bar-type resource (Shadow Priest Insanity): single StatusBar
-    if classPowerType == "INSANITY_BAR" then
+    if powerKind == "INSANITY_BAR" then
         for i = 1, #backing._cpPips do
             backing._cpPips[i]:Hide()
             if backing._cpPips[i]._bg then
@@ -443,20 +443,20 @@ local function UpdateClassPowerOnPlate(backing)
         barFrame:SetMinMaxValues(0, maxI)
         barFrame:SetValue(current)
 
-        local cpColor = GetClassPipColor(PLAYER_CLASS, "INSANITY_BAR")
+        local pipColor = GetClassPipColor(PLAYER_CLASS, "INSANITY_BAR")
         if not GetClassPowerClassColors() then
-            local cc = GetClassPowerCustomColor()
-            cpColor = { cc.r, cc.g, cc.b }
+            local classColor = GetClassPowerCustomColor()
+            pipColor = { classColor.r, classColor.g, classColor.b }
         end
-        barFrame:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
+        barFrame:SetStatusBarColor(pipColor[1], pipColor[2], pipColor[3], 1)
 
-        barFrame._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
+        barFrame._bg:SetColorTexture(bgColor.r, bgColor.g, bgColor.b, bgColor.a)
         barFrame:Show()
         return
     end
 
     -- Bar-type resource (Hunter Focus for BM/MM): single StatusBar
-    if classPowerType == "FOCUS_BAR" then
+    if powerKind == "FOCUS_BAR" then
         for i = 1, #backing._cpPips do
             backing._cpPips[i]:Hide()
             if backing._cpPips[i]._bg then
@@ -485,20 +485,20 @@ local function UpdateClassPowerOnPlate(backing)
         barFrame:SetMinMaxValues(0, maxF)
         barFrame:SetValue(current)
 
-        local cpColor = GetClassPipColor(PLAYER_CLASS, "FOCUS_BAR")
+        local pipColor = GetClassPipColor(PLAYER_CLASS, "FOCUS_BAR")
         if not GetClassPowerClassColors() then
-            local cc = GetClassPowerCustomColor()
-            cpColor = { cc.r, cc.g, cc.b }
+            local classColor = GetClassPowerCustomColor()
+            pipColor = { classColor.r, classColor.g, classColor.b }
         end
-        barFrame:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
+        barFrame:SetStatusBarColor(pipColor[1], pipColor[2], pipColor[3], 1)
 
-        barFrame._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
+        barFrame._bg:SetColorTexture(bgColor.r, bgColor.g, bgColor.b, bgColor.a)
         barFrame:Show()
         return
     end
 
     -- Bar-type resource (Devourer soul fragments): single StatusBar
-    if classPowerType == "SOUL_FRAGMENTS_DEVOURER" then
+    if powerKind == "SOUL_FRAGMENTS_DEVOURER" then
         for i = 1, #backing._cpPips do
             backing._cpPips[i]:Hide()
             if backing._cpPips[i]._bg then
@@ -526,14 +526,14 @@ local function UpdateClassPowerOnPlate(backing)
         barFrame:SetMinMaxValues(0, maxC)
         barFrame:SetValue(current or 0)
 
-        local cpColor = GetClassPipColor(PLAYER_CLASS)
+        local pipColor = GetClassPipColor(PLAYER_CLASS)
         if not GetClassPowerClassColors() then
-            local cc = GetClassPowerCustomColor()
-            cpColor = { cc.r, cc.g, cc.b }
+            local classColor = GetClassPowerCustomColor()
+            pipColor = { classColor.r, classColor.g, classColor.b }
         end
-        barFrame:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
+        barFrame:SetStatusBarColor(pipColor[1], pipColor[2], pipColor[3], 1)
 
-        barFrame._bg:SetColorTexture(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
+        barFrame._bg:SetColorTexture(bgColor.r, bgColor.g, bgColor.b, bgColor.a)
         barFrame:Show()
         return
     end
@@ -543,29 +543,29 @@ local function UpdateClassPowerOnPlate(backing)
         backing._cpBar:Hide()
     end
 
-    local current, maxP
+    local current, pipCap
     local isSecret = false
     local npEngine = false
-    if classPowerType == "SOUL_FRAGMENTS_VENGEANCE" then
+    if powerKind == "SOUL_FRAGMENTS_VENGEANCE" then
         current = C_Spell and C_Spell.GetSpellCastCount and C_Spell.GetSpellCastCount(228477) or 0
-        maxP = 6
+        pipCap = 6
         isSecret = true
-    elseif classPowerType == "MAELSTROM_WEAPON" then
-        current, maxP = CludesUI.GetMaelstromWeapon()
-    elseif classPowerType == "TIP_OF_THE_SPEAR" then
-        current, maxP = CludesUI.GetTipOfTheSpear()
-    elseif classPowerType == "WHIRLWIND_STACKS" or classPowerType == "SWEEPING_STRIKES" then
+    elseif powerKind == "MAELSTROM_WEAPON" then
+        current, pipCap = CludesUI.GetMaelstromWeapon()
+    elseif powerKind == "TIP_OF_THE_SPEAR" then
+        current, pipCap = CludesUI.GetTipOfTheSpear()
+    elseif powerKind == "WHIRLWIND_STACKS" or powerKind == "SWEEPING_STRIKES" then
         -- Engine-slot display only (the cast-count simulator is retired):
         -- shared geometry below sizes the overlay, the pre-loop handoff
         -- positions it. Shaped/icon pip styles render the rectangle overlay
         -- for these two powers. Until the deferred build lands, Arm queues
         -- it and the row shows empty.
-        if _G._EWC and _G._EWC.EngineOn("np", classPowerType) then
+        if _G._EWC and _G._EWC.EngineOn("np", powerKind) then
             npEngine = true
-            current, maxP = 0, _G._EWC.MaxApps(classPowerType)
+            current, pipCap = 0, _G._EWC.MaxApps(powerKind)
         else
             if _G._EWC and mod._WCNP_Arm then
-                mod._WCNP_Arm(classPowerType)
+                mod._WCNP_Arm(powerKind)
             end
             for i = 1, #backing._cpPips do
                 backing._cpPips[i]:Hide()
@@ -575,7 +575,7 @@ local function UpdateClassPowerOnPlate(backing)
             end
             return
         end
-    elseif classPowerType == "ICICLES" then
+    elseif powerKind == "ICICLES" then
         local total = 0
         if C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
             local aura = C_UnitAuras.GetPlayerAuraBySpellID(205473)
@@ -586,7 +586,7 @@ local function UpdateClassPowerOnPlate(backing)
                 end
             end
         end
-        current, maxP = total, 5
+        current, pipCap = total, 5
     else
         -- Forever combo points belong to the target, and UnitPower still reports
         -- the previous target's count at the moment PLAYER_TARGET_CHANGED fires
@@ -594,21 +594,21 @@ local function UpdateClassPowerOnPlate(backing)
         -- event to correct it. Blizzard's own ComboFrame reads GetComboPoints.
         if
             CludesUI.IS_FOREVER == true
-            and classPowerType == Enum.PowerType.ComboPoints
+            and powerKind == Enum.PowerType.ComboPoints
             and GetComboPoints
         then
             current = GetComboPoints("player", "target") or 0
         else
-            current = UnitPower("player", classPowerType) or 0
+            current = UnitPower("player", powerKind) or 0
         end
-        maxP = UnitPowerMax("player", classPowerType) or classPowerMax
-        if maxP <= 0 then
-            maxP = classPowerMax
+        pipCap = UnitPowerMax("player", powerKind) or classPowerMax
+        if pipCap <= 0 then
+            pipCap = classPowerMax
         end
         -- Runes: UnitPower doesn't return ready-rune count; iterate cooldowns
-        if classPowerType == Enum.PowerType.Runes then
+        if powerKind == Enum.PowerType.Runes then
             current = 0
-            for i = 1, maxP do
+            for i = 1, pipCap do
                 local _, _, ready = GetRuneCooldown(i)
                 if ready then
                     current = current + 1
@@ -622,7 +622,7 @@ local function UpdateClassPowerOnPlate(backing)
     if not isSecret and issecretvalue and issecretvalue(current) then
         isSecret = true
     end
-    if maxP <= 0 then
+    if pipCap <= 0 then
         for i = 1, #backing._cpPips do
             backing._cpPips[i]:Hide()
             if backing._cpPips[i]._bg then
@@ -657,18 +657,18 @@ local function UpdateClassPowerOnPlate(backing)
     local scaledH = pipHPx * onePx
     local scaledGap = pipGapPx * onePx
     local stride = scaledW + scaledGap
-    local groupW = maxP * scaledW + (maxP - 1) * scaledGap
+    local groupW = pipCap * scaledW + (pipCap - 1) * scaledGap
     local halfGroup = math.floor((groupW / 2) / onePx + 0.5) * onePx
 
-    local cpColor = CP_DEFAULT_COLOR
+    local pipColor = CP_DEFAULT_COLOR
     if GetClassPowerClassColors() then
-        cpColor = GetClassPipColor(PLAYER_CLASS)
+        pipColor = GetClassPipColor(PLAYER_CLASS)
     else
-        local cc = GetClassPowerCustomColor()
-        cpColor = { cc.r, cc.g, cc.b }
+        local classColor = GetClassPowerCustomColor()
+        pipColor = { classColor.r, classColor.g, classColor.b }
     end
 
-    local emptyCol = mod.GetClassPowerEmptyColor()
+    local emptyColor = mod.GetClassPowerEmptyColor()
 
     local leftAnchor = (anchorPoint == "BOTTOM") and "BOTTOMLEFT" or "TOPLEFT"
 
@@ -687,21 +687,21 @@ local function UpdateClassPowerOnPlate(backing)
             scaledW,
             scaledGap,
             plateES,
-            cpColor,
-            emptyCol,
-            bgCol,
-            classPowerType
+            pipColor,
+            emptyColor,
+            bgColor,
+            powerKind
         )
         for i = 1, #backing._cpPips do
-            local pip = backing._cpPips[i]
-            pip:Hide()
-            if pip._bg then
-                pip._bg:Hide()
+            local pipTex = backing._cpPips[i]
+            pipTex:Hide()
+            if pipTex._bg then
+                pipTex._bg:Hide()
             end
-            if pip._secretBar then
-                pip._secretBar:Hide()
+            if pipTex._secretBar then
+                pipTex._secretBar:Hide()
             end
-            mod.HidePipDecor(pip)
+            mod.HidePipDecor(pipTex)
         end
         if backing._cpBar then
             backing._cpBar:Hide()
@@ -710,24 +710,24 @@ local function UpdateClassPowerOnPlate(backing)
     end
 
     for i = 1, #backing._cpPips do
-        local pip = backing._cpPips[i]
-        if i <= maxP then
-            pip:ClearAllPoints()
-            pip:SetSize(scaledW, scaledH)
+        local pipTex = backing._cpPips[i]
+        if i <= pipCap then
+            pipTex:ClearAllPoints()
+            pipTex:SetSize(scaledW, scaledH)
             -- (i-1)*stride is an exact integer multiple of physical pixels, so every pip lands on the same grid.
             local pipLeftX = (i - 1) * stride - halfGroup + cpXOff
-            pip:SetPoint(leftAnchor, anchor, anchorRelPoint, pipLeftX, yDir * cpYOff)
+            pipTex:SetPoint(leftAnchor, anchor, anchorRelPoint, pipLeftX, yDir * cpYOff)
 
             -- Background texture behind each pip
-            local backdrop = pip._bg
+            local backdrop = pipTex._bg
             if backdrop then
                 backdrop:ClearAllPoints()
-                backdrop:SetAllPoints(pip)
+                backdrop:SetAllPoints(pipTex)
                 -- Reset from any prior icon socket; holy power re-sets these below.
                 backdrop:SetTexture(mod.CP_SHAPE.WHITE)
                 backdrop:SetTexCoord(0, 1, 0, 1)
                 backdrop:SetDesaturated(false)
-                backdrop:SetVertexColor(bgCol.r, bgCol.g, bgCol.b, bgCol.a)
+                backdrop:SetVertexColor(bgColor.r, bgColor.g, bgColor.b, bgColor.a)
                 backdrop:Show()
             end
 
@@ -735,31 +735,31 @@ local function UpdateClassPowerOnPlate(backing)
             -- untouched default (plain rectangle, no border, no prior shape decor) so users who
             -- never enable a shape pay nothing; a pip that ever had a mask/border keeps those
             -- fields so it still routes through ApplyPipShape to clean up when reverted.
-            if cpShape ~= "rectangle" or cpBorderOn or pip._shapeMask or pip._border or pip._borderBox then
-                mod.ApplyPipShape(backing, pip, cpShape, cpBorderOn, cpBorderCol, borderPx)
+            if cpShape ~= "rectangle" or cpBorderOn or pipTex._shapeMask or pipTex._border or pipTex._borderBox then
+                mod.ApplyPipShape(backing, pipTex, cpShape, cpBorderOn, cpBorderCol, borderPx)
             end
 
             if isSecret then
-                if not pip._secretBar then
+                if not pipTex._secretBar then
                     local scrollBar = CreateFrame("StatusBar", nil, backing)
                     scrollBar:SetStatusBarTexture("Interface\\Buttons\\WHITE8X8")
                     scrollBar:SetFrameLevel(backing:GetFrameLevel() + 5)
-                    pip._secretBar = scrollBar
+                    pipTex._secretBar = scrollBar
                 end
-                local scrollBar = pip._secretBar
+                local scrollBar = pipTex._secretBar
                 scrollBar:ClearAllPoints()
-                scrollBar:SetAllPoints(pip)
+                scrollBar:SetAllPoints(pipTex)
                 scrollBar:SetMinMaxValues(i - 1, i)
                 scrollBar:SetValue(current)
-                scrollBar:SetStatusBarColor(cpColor[1], cpColor[2], cpColor[3], 1)
+                scrollBar:SetStatusBarColor(pipColor[1], pipColor[2], pipColor[3], 1)
                 scrollBar:Show()
-                pip:SetTexture(mod.CP_SHAPE.WHITE)
-                pip:SetTexCoord(0, 1, 0, 1)
-                pip:SetVertexColor(emptyCol.r, emptyCol.g, emptyCol.b, emptyCol.a)
-                pip:Show()
+                pipTex:SetTexture(mod.CP_SHAPE.WHITE)
+                pipTex:SetTexCoord(0, 1, 0, 1)
+                pipTex:SetVertexColor(emptyColor.r, emptyColor.g, emptyColor.b, emptyColor.a)
+                pipTex:Show()
             else
-                if pip._secretBar then
-                    pip._secretBar:Hide()
+                if pipTex._secretBar then
+                    pipTex._secretBar:Hide()
                 end
                 if iconKind == "holypower" then
                     -- Desaturated socket as the background, lit rune on top when filled. Point 5 reuses point 4 mirrored.
@@ -772,48 +772,48 @@ local function UpdateClassPowerOnPlate(backing)
                         if flip then
                             backdrop:SetTexCoord(1, 0, 0, 1)
                         end
-                        backdrop:SetVertexColor(1, 1, 1, bgCol.a)
+                        backdrop:SetVertexColor(1, 1, 1, bgColor.a)
                         backdrop:Show()
                     end
                     if i <= current then
-                        pip:SetAtlas("nameplates-holypower" .. position .. "-on")
+                        pipTex:SetAtlas("nameplates-holypower" .. position .. "-on")
                         if flip then
-                            pip:SetTexCoord(1, 0, 0, 1)
+                            pipTex:SetTexCoord(1, 0, 0, 1)
                         end
-                        pip:SetVertexColor(1, 1, 1, 1)
-                        pip:Show()
+                        pipTex:SetVertexColor(1, 1, 1, 1)
+                        pipTex:Show()
                     else
-                        pip:Hide()
+                        pipTex:Hide()
                     end
                 elseif iconKind then
                     -- Real resource art: the atlas defines the look, no tint.
-                    pip:SetAtlas(mod.GetPipIconAtlas(iconKind, i <= current, i))
+                    pipTex:SetAtlas(mod.GetPipIconAtlas(iconKind, i <= current, i))
                     if (i > current) and mod.CP_ICON_DIM_EMPTY[iconKind] then
-                        pip:SetVertexColor(0.35, 0.35, 0.35, 1) -- dim single-atlas empties
+                        pipTex:SetVertexColor(0.35, 0.35, 0.35, 1) -- dim single-atlas empties
                     else
-                        pip:SetVertexColor(1, 1, 1, 1)
+                        pipTex:SetVertexColor(1, 1, 1, 1)
                     end
-                    pip:Show()
+                    pipTex:Show()
                 else
-                    pip:SetTexture(mod.CP_SHAPE.WHITE)
-                    pip:SetTexCoord(0, 1, 0, 1)
+                    pipTex:SetTexture(mod.CP_SHAPE.WHITE)
+                    pipTex:SetTexCoord(0, 1, 0, 1)
                     if i <= current then
-                        pip:SetVertexColor(cpColor[1], cpColor[2], cpColor[3], 1)
+                        pipTex:SetVertexColor(pipColor[1], pipColor[2], pipColor[3], 1)
                     else
-                        pip:SetVertexColor(emptyCol.r, emptyCol.g, emptyCol.b, emptyCol.a)
+                        pipTex:SetVertexColor(emptyColor.r, emptyColor.g, emptyColor.b, emptyColor.a)
                     end
-                    pip:Show()
+                    pipTex:Show()
                 end
             end
         else
-            pip:Hide()
-            if pip._bg then
-                pip._bg:Hide()
+            pipTex:Hide()
+            if pipTex._bg then
+                pipTex._bg:Hide()
             end
-            if pip._secretBar then
-                pip._secretBar:Hide()
+            if pipTex._secretBar then
+                pipTex._secretBar:Hide()
             end
-            mod.HidePipDecor(pip)
+            mod.HidePipDecor(pipTex)
         end
     end
 end
@@ -855,7 +855,7 @@ end
 -- Arm: queue the deferred container build with belt colors (the handoff's
 -- Recolor stash wins once armed). Runs per poll tick until built: Sync
 -- early-outs on queued/built/latched-error, so it stays a few field tests.
-mod._WCNP_Arm = function(powerKey)
+mod._WCNP_Arm = function(powerName)
     local ewc = _G._EWC
     if not ewc then
         return
@@ -869,11 +869,11 @@ mod._WCNP_Arm = function(powerKey)
         local c = GetClassPipColor(PLAYER_CLASS) or CP_DEFAULT_COLOR
         o.r, o.g, o.b = c[1], c[2], c[3]
     else
-        local cc = GetClassPowerCustomColor()
-        o.r, o.g, o.b = cc.r, cc.g, cc.b
+        local classColor = GetClassPowerCustomColor()
+        o.r, o.g, o.b = classColor.r, classColor.g, classColor.b
     end
     o.a = 1
-    ewc.Sync("np", ewc.GetProxy("np"), powerKey, o)
+    ewc.Sync("np", ewc.GetProxy("np"), powerName, o)
 end
 
 mod._WCNP_Attach = function(
@@ -887,10 +887,10 @@ mod._WCNP_Attach = function(
     cellW,
     gapW,
     plateES,
-    cpColor,
-    emptyCol,
-    bgCol,
-    powerKey
+    pipColor,
+    emptyColor,
+    bgColor,
+    powerName
 )
     local ewc = _G._EWC
     if not ewc then
@@ -898,7 +898,7 @@ mod._WCNP_Attach = function(
     end
     local o = mod._wcnpOpts
     if not o then
-        mod._WCNP_Arm(powerKey)
+        mod._WCNP_Arm(powerName)
         o = mod._wcnpOpts
         if not o then
             return
@@ -908,7 +908,7 @@ mod._WCNP_Attach = function(
     local pES = p:GetEffectiveScale()
     local k = (pES and pES > 0 and plateES) and (plateES / pES) or 1
     local wid, hgt = groupW * k, scaledH * k
-    local dirty = not p:IsShown() or p._npPK ~= powerKey
+    local dirty = not p:IsShown() or p._npPK ~= powerName
     -- Geometry gate: reposition only when the layout actually moved (anchor
     -- frame swap on cast-bar avoidance, offsets, scale, cap changes).
     if
@@ -931,28 +931,28 @@ mod._WCNP_Attach = function(
     end
     -- Style gate: separator/empty/fill colors from the live settings.
     if
-        p._npSR ~= bgCol.r
-        or p._npSG ~= bgCol.g
-        or p._npSB ~= bgCol.b
-        or p._npSA ~= bgCol.a
-        or p._npER ~= emptyCol.r
-        or p._npEG ~= emptyCol.g
-        or p._npEB ~= emptyCol.b
-        or p._npEA ~= emptyCol.a
-        or p._npCR ~= cpColor[1]
-        or p._npCG ~= cpColor[2]
-        or p._npCB ~= cpColor[3]
+        p._npSR ~= bgColor.r
+        or p._npSG ~= bgColor.g
+        or p._npSB ~= bgColor.b
+        or p._npSA ~= bgColor.a
+        or p._npER ~= emptyColor.r
+        or p._npEG ~= emptyColor.g
+        or p._npEB ~= emptyColor.b
+        or p._npEA ~= emptyColor.a
+        or p._npCR ~= pipColor[1]
+        or p._npCG ~= pipColor[2]
+        or p._npCB ~= pipColor[3]
     then
-        p._npSR, p._npSG, p._npSB, p._npSA = bgCol.r, bgCol.g, bgCol.b, bgCol.a
-        p._npER, p._npEG, p._npEB, p._npEA = emptyCol.r, emptyCol.g, emptyCol.b, emptyCol.a
-        p._npCR, p._npCG, p._npCB = cpColor[1], cpColor[2], cpColor[3]
+        p._npSR, p._npSG, p._npSB, p._npSA = bgColor.r, bgColor.g, bgColor.b, bgColor.a
+        p._npER, p._npEG, p._npEB, p._npEA = emptyColor.r, emptyColor.g, emptyColor.b, emptyColor.a
+        p._npCR, p._npCG, p._npCB = pipColor[1], pipColor[2], pipColor[3]
         dirty = true
     end
     if dirty then
-        p._npPK = powerKey
-        o.r, o.g, o.b, o.a = cpColor[1], cpColor[2], cpColor[3], 1
+        p._npPK = powerName
+        o.r, o.g, o.b, o.a = pipColor[1], pipColor[2], pipColor[3], 1
         local s = o.sep
-        s.r, s.g, s.b, s.a = bgCol.r, bgCol.g, bgCol.b, bgCol.a
+        s.r, s.g, s.b, s.a = bgColor.r, bgColor.g, bgColor.b, bgColor.a
         s.w = gapW * k
         s.cellW = cellW * k
         s.gap = gapW * k
@@ -963,17 +963,17 @@ mod._WCNP_Attach = function(
             e = {}
             s.empty = e
         end
-        e.r, e.g, e.b, e.a = emptyCol.r, emptyCol.g, emptyCol.b, emptyCol.a
+        e.r, e.g, e.b, e.a = emptyColor.r, emptyColor.g, emptyColor.b, emptyColor.a
         s.emptyInset = 0
-        ewc.Sync("np", p, powerKey, o)
+        ewc.Sync("np", p, powerName, o)
     end
-    ewc.Recolor("np", powerKey, cpColor[1], cpColor[2], cpColor[3], 1)
+    ewc.Recolor("np", powerName, pipColor[1], pipColor[2], pipColor[3], 1)
 end
 
 -- Return the extra Y offset that elements above the health bar need to clear
 -- the class power pips (when pips are on top and visible on this plate).
 GetClassPowerTopPush = function(backing)
-    if not GetShowClassPower() or not classPowerType then
+    if not GetShowClassPower() or not powerKind then
         return 0
     end
     if mod.GetClassPowerPos() ~= "top" then
@@ -993,7 +993,7 @@ SetClassPowerTopPush(GetClassPowerTopPush)
 -- Find the target plate and update pips
 local function RefreshClassPower()
     -- Form check (e.g. Druid combo points only in cat form)
-    if classPowerFormReq and GetShapeshiftFormID() ~= classPowerFormReq then
+    if formRequired and GetShapeshiftFormID() ~= formRequired then
         -- Only need to hide pips on the target plate (others never have them)
         if mod._cachedTargetPlate then
             HideClassPowerOnPlate(mod._cachedTargetPlate)
@@ -1015,18 +1015,18 @@ end
 -- Called on target change and settings change (not on every power tick).
 local function RefreshClassPowerFull()
     -- Form check (e.g. Druid combo points only in cat form)
-    local formHidden = classPowerFormReq and GetShapeshiftFormID() ~= classPowerFormReq
+    local formHidden = formRequired and GetShapeshiftFormID() ~= formRequired
     -- PERF: only the target plate shows pips; only it needs reposition for cpPush
-    local tp = mod._cachedTargetPlate
-    if tp and tp.unit then
-        if not formHidden and UnitIsUnit(tp.unit, "target") then
-            EnsureClassPowerPips(tp)
-            UpdateClassPowerOnPlate(tp)
+    local powerTex = mod._cachedTargetPlate
+    if powerTex and powerTex.unit then
+        if not formHidden and UnitIsUnit(powerTex.unit, "target") then
+            EnsureClassPowerPips(powerTex)
+            UpdateClassPowerOnPlate(powerTex)
         else
-            HideClassPowerOnPlate(tp)
+            HideClassPowerOnPlate(powerTex)
         end
-        tp:RefreshNamePosition()
-        tp:UpdateRaidIcon()
+        powerTex:RefreshNamePosition()
+        powerTex:UpdateRaidIcon()
     end
 end
 
@@ -1036,7 +1036,7 @@ local ApplyClassPowerSetting
 
 -- Enable/disable the class power watcher
 local function EnableClassPowerWatcher()
-    if classPowerWatcher then
+    if powerWatcher then
         return
     end -- already active
     local details = CLASS_POWER_MAP[PLAYER_CLASS]
@@ -1061,28 +1061,28 @@ local function EnableClassPowerWatcher()
         end -- current spec has no trackable resource
     end
 
-    classPowerType = details[1]
-    SetClassPowerType(classPowerType)
+    powerKind = details[1]
+    SetClassPowerType(powerKind)
     classPowerMax = details[2]
     -- Druid Resto: cat form required. Feral always shows. On Forever there are no
     -- specs to tell them apart and combo points are cat-only for every druid.
     if CludesUI.IS_FOREVER == true then
-        classPowerFormReq = (PLAYER_CLASS == "DRUID") and (DRUID_CAT_FORM or 1) or nil
+        formRequired = (PLAYER_CLASS == "DRUID") and (DRUID_CAT_FORM or 1) or nil
     else
         local specIdx = C_SpecializationInfo and C_SpecializationInfo.GetSpecialization()
         local isResto = (PLAYER_CLASS == "DRUID" and specIdx == 4)
-        classPowerFormReq = isResto and (DRUID_CAT_FORM or 1) or nil
+        formRequired = isResto and (DRUID_CAT_FORM or 1) or nil
     end
     -- Every spec change and setting toggle runs Disable + Enable: the one frame is
     -- reused, since WoW never frees a frame.
     classPowerWatcherFrame = classPowerWatcherFrame or CreateFrame("Frame")
-    classPowerWatcher = classPowerWatcherFrame
-    classPowerWatcher:Show() -- Disable hides it; OnUpdate needs it shown
+    powerWatcher = classPowerWatcherFrame
+    powerWatcher:Show() -- Disable hides it; OnUpdate needs it shown
 
     -- String-type resources (custom-tracked): use OnUpdate poll + events
-    if type(classPowerType) == "string" then
+    if type(powerKind) == "string" then
         local elapsed = 0
-        classPowerWatcher:SetScript("OnUpdate", function(_, dt)
+        powerWatcher:SetScript("OnUpdate", function(_, dt)
             elapsed = elapsed + dt
             if elapsed < 0.1 then
                 return
@@ -1090,21 +1090,21 @@ local function EnableClassPowerWatcher()
             elapsed = 0
             RefreshClassPower()
         end)
-        classPowerWatcher:RegisterUnitEvent("UNIT_AURA", "player")
-        classPowerWatcher:RegisterEvent("PLAYER_TARGET_CHANGED")
-        classPowerWatcher:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+        powerWatcher:RegisterUnitEvent("UNIT_AURA", "player")
+        powerWatcher:RegisterEvent("PLAYER_TARGET_CHANGED")
+        powerWatcher:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
         -- Manual tracker events (Whirlwind, Bladestorm/Unhinged)
         -- so tracking works even without CludesUIResourceBars loaded.
-        classPowerWatcher:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
-        classPowerWatcher:RegisterEvent("PLAYER_DEAD")
-        classPowerWatcher:RegisterEvent("PLAYER_ALIVE")
-        classPowerWatcher:RegisterEvent("PLAYER_REGEN_ENABLED")
+        powerWatcher:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+        powerWatcher:RegisterEvent("PLAYER_DEAD")
+        powerWatcher:RegisterEvent("PLAYER_ALIVE")
+        powerWatcher:RegisterEvent("PLAYER_REGEN_ENABLED")
         -- Stagger max is based on player health, so track health changes too
-        if classPowerType == "BREWMASTER_STAGGER" then
-            classPowerWatcher:RegisterUnitEvent("UNIT_HEALTH", "player")
-            classPowerWatcher:RegisterUnitEvent("UNIT_MAXHEALTH", "player")
+        if powerKind == "BREWMASTER_STAGGER" then
+            powerWatcher:RegisterUnitEvent("UNIT_HEALTH", "player")
+            powerWatcher:RegisterUnitEvent("UNIT_MAXHEALTH", "player")
         end
-        classPowerWatcher:SetScript("OnEvent", function(_, evt, ...)
+        powerWatcher:SetScript("OnEvent", function(_, evt, ...)
             if evt == "PLAYER_SPECIALIZATION_CHANGED" then
                 -- The event carries a unit and is delivered for GROUP MEMBERS too, so
                 -- without this filter a raid full of spec swaps rebuilds the watcher
@@ -1125,23 +1125,23 @@ local function EnableClassPowerWatcher()
             end
         end)
     else
-        classPowerWatcher:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
-        classPowerWatcher:RegisterUnitEvent("UNIT_MAXPOWER", "player")
-        classPowerWatcher:RegisterEvent("PLAYER_TARGET_CHANGED")
-        classPowerWatcher:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-        if classPowerFormReq then
-            classPowerWatcher:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
+        powerWatcher:RegisterUnitEvent("UNIT_POWER_UPDATE", "player")
+        powerWatcher:RegisterUnitEvent("UNIT_MAXPOWER", "player")
+        powerWatcher:RegisterEvent("PLAYER_TARGET_CHANGED")
+        powerWatcher:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+        if formRequired then
+            powerWatcher:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
         end
         -- WoW Forever: combo points moving to a new target keep their count, so no
         -- power event fires; the light refresh below repaints the target plate.
-        if CludesUI.IS_FOREVER == true and classPowerType == Enum.PowerType.ComboPoints then
-            classPowerWatcher:RegisterEvent("COMBO_TARGET_CHANGED")
+        if CludesUI.IS_FOREVER == true and powerKind == Enum.PowerType.ComboPoints then
+            powerWatcher:RegisterEvent("COMBO_TARGET_CHANGED")
         end
         -- Runes need their own event for per-rune cooldown changes
-        if classPowerType == Enum.PowerType.Runes then
-            classPowerWatcher:RegisterEvent("RUNE_POWER_UPDATE")
+        if powerKind == Enum.PowerType.Runes then
+            powerWatcher:RegisterEvent("RUNE_POWER_UPDATE")
         end
-        classPowerWatcher:SetScript("OnEvent", function(_, evt, unitToken)
+        powerWatcher:SetScript("OnEvent", function(_, evt, unitToken)
             if evt == "PLAYER_SPECIALIZATION_CHANGED" then
                 -- Group members' spec events land here too; see the filter note in the
                 -- string-resource branch above.
@@ -1161,22 +1161,22 @@ local function EnableClassPowerWatcher()
 end
 
 DisableClassPowerWatcher = function()
-    if not classPowerWatcher then
+    if not powerWatcher then
         return
     end
-    classPowerWatcher:UnregisterAllEvents()
-    classPowerWatcher:SetScript("OnEvent", nil)
-    classPowerWatcher:SetScript("OnUpdate", nil)
-    classPowerWatcher:Hide()
-    classPowerWatcher = nil
-    classPowerFormReq = nil
+    powerWatcher:UnregisterAllEvents()
+    powerWatcher:SetScript("OnEvent", nil)
+    powerWatcher:SetScript("OnUpdate", nil)
+    powerWatcher:Hide()
+    powerWatcher = nil
+    formRequired = nil
     -- PERF: only target plate had pips; only it needs cleanup
-    local tp = mod._cachedTargetPlate
-    if tp then
-        HideClassPowerOnPlate(tp)
-        if tp.unit then
-            tp:RefreshNamePosition()
-            tp:UpdateRaidIcon()
+    local powerTex = mod._cachedTargetPlate
+    if powerTex then
+        HideClassPowerOnPlate(powerTex)
+        if powerTex.unit then
+            powerTex:RefreshNamePosition()
+            powerTex:UpdateRaidIcon()
         end
     end
 end

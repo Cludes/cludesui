@@ -86,10 +86,10 @@ do -- Count text visibility
     -- count while that is above 0 (Stacks), else its charges while it has
     -- more than one (Charges). A third return hands the zero rule the
     -- action's charge info once it was read here.
-    local function HiddenKind(s, action)
+    local function HiddenKind(s, actionSlot)
         local CA = C_ActionBar
         -- Never secret (none of the three carries a secrecy flag).
-        if CA.IsItemAction(action) or CA.IsConsumableAction(action) or CA.IsStackableAction(action) then
+        if CA.IsItemAction(actionSlot) or CA.IsConsumableAction(actionSlot) or CA.IsStackableAction(actionSlot) then
             if s.hideItemCount then
                 return "hide"
             end
@@ -104,59 +104,59 @@ do -- Count text visibility
         end
         -- maxCharges is never secret; the use count is while cooldowns are
         -- restricted.
-        local ci = CA.GetActionCharges(action)
+        local chargeInfo = CA.GetActionCharges(actionSlot)
         -- Only a plain table is handed on (the caller tests it for nil).
-        if not (type(ci) == "table" and not (issecretvalue and issecretvalue(ci))) then
-            ci = nil
+        if not (type(chargeInfo) == "table" and not (issecretvalue and issecretvalue(chargeInfo))) then
+            chargeInfo = nil
         end
-        local mc = ci and ci.maxCharges
-        if not (type(mc) == "number" and not (issecretvalue and issecretvalue(mc)) and mc > 1) then
+        local macroText = chargeInfo and chargeInfo.maxCharges
+        if not (type(macroText) == "number" and not (issecretvalue and issecretvalue(macroText)) and macroText > 1) then
             if hideStacks then
                 return "hide"
             end
-            return nil, nil, ci
+            return nil, nil, chargeInfo
         end
-        local uc = CA.GetActionUseCount(action)
+        local uc = CA.GetActionUseCount(actionSlot)
         if issecretvalue and issecretvalue(uc) then
             -- Telling the stacks from the charges needs the secret: Charges
             -- hidden rides it as the alpha, Stacks hidden fails open.
             if hideCharges then
                 return "gate", uc
             end
-            return nil, nil, ci
+            return nil, nil, chargeInfo
         end
         if type(uc) == "number" and uc > 0 then
             if hideStacks then
                 return "hide"
             end
-            return nil, nil, ci
+            return nil, nil, chargeInfo
         end
         if hideCharges then
             return "hide"
         end
-        return nil, nil, ci
+        return nil, nil, chargeInfo
     end
 
-    mod._EABZeroCountAlpha = function(fd, fontStr, val, action)
+    mod._EABZeroCountAlpha = function(frameData, fontStr, val, actionSlot)
         local pdb = ABAR.db and ABAR.db.profile
         -- The charge info HiddenKind read, reused by the zero rule below.
         local chargeInfo
         -- Charge Numbers: the profile read IS the gate (a cached flag would go
         -- stale across profiles and overrides); unset on every kind = no API call.
-        if action and pdb then
-            local barList, key = pdb.bars, fd.barKey
+        if actionSlot and pdb then
+            local barList, key = pdb.bars, frameData.barKey
             local s = barList and key and barList[key]
             if s and (s.hideChargeCount or s.hideStackCount or s.hideItemCount) then
                 local how, gate
-                how, gate, chargeInfo = HiddenKind(s, action)
+                how, gate, chargeInfo = HiddenKind(s, actionSlot)
                 if how == "hide" then
-                    if fd._zeroCountAlpha ~= 0 then
-                        fd._zeroCountAlpha = 0
+                    if frameData._zeroCountAlpha ~= 0 then
+                        frameData._zeroCountAlpha = 0
                         fontStr:SetAlpha(0)
                     end
                     return
                 elseif how == "gate" then
-                    fd._zeroCountAlpha = false
+                    frameData._zeroCountAlpha = false
                     fontStr:SetAlpha(gate)
                     return
                 end
@@ -166,15 +166,15 @@ do -- Count text visibility
             -- OFF fast path: reads + memo compare only, except healing a leftover hidden
             -- or secret-written stamp so a button can't stay stuck invisible after a
             -- toggle/profile switch.
-            local z = fd._zeroCountAlpha
+            local z = frameData._zeroCountAlpha
             if z == 0 or z == false then
-                fd._zeroCountAlpha = 1
+                frameData._zeroCountAlpha = 1
                 fontStr:SetAlpha(1)
             end
             return
         end
         local a = 1
-        if action then
+        if actionSlot then
             -- Charge spells route EXCLUSIVELY through the count: SetAlpha clamps
             -- to [0,1], so alpha := currentCharges hides at exactly 0 and shows
             -- at 1+ with no comparison needed. Never infer zero charges from an active
@@ -182,10 +182,10 @@ do -- Count text visibility
             -- would hide a real count. SetAlpha accepts secret numbers
             -- (AllowedWhenTainted), so the same write runs in and out of instanced combat;
             -- a secret count writes through with the memo dirtied, never stored/compared.
-            local ci = chargeInfo or (C_ActionBar.GetActionCharges and C_ActionBar.GetActionCharges(action))
-            local mc = ci and ci.maxCharges
-            if mc ~= nil and not (issecretvalue and issecretvalue(mc)) and mc > 1 then
-                local cc = ci.currentCharges
+            local chargeInfo = chargeInfo or (C_ActionBar.GetActionCharges and C_ActionBar.GetActionCharges(actionSlot))
+            local macroText = chargeInfo and chargeInfo.maxCharges
+            if macroText ~= nil and not (issecretvalue and issecretvalue(macroText)) and macroText > 1 then
+                local cooldownCount = chargeInfo.currentCharges
                 -- issecretvalue FIRST, and type() rather than == nil for the missing
                 -- case. The count is secret whenever cooldowns are restricted, and
                 -- comparing a secret to nil is the operation our own secret rules
@@ -193,18 +193,18 @@ do -- Count text visibility
                 -- belt the hazard, and a throw strands the count HIDDEN rather than
                 -- protecting it. Same defect and same fix as the CDM counterpart in
                 -- CludesUICdmHooks (EvalZeroChargeTextFrame).
-                if issecretvalue and issecretvalue(cc) then
-                    fd._zeroCountAlpha = false
-                    fontStr:SetAlpha(cc)
-                elseif type(cc) ~= "number" then
-                    if fd._zeroCountAlpha ~= 1 then
-                        fd._zeroCountAlpha = 1
+                if issecretvalue and issecretvalue(cooldownCount) then
+                    frameData._zeroCountAlpha = false
+                    fontStr:SetAlpha(cooldownCount)
+                elseif type(cooldownCount) ~= "number" then
+                    if frameData._zeroCountAlpha ~= 1 then
+                        frameData._zeroCountAlpha = 1
                         fontStr:SetAlpha(1)
                     end
                 else
-                    a = cc > 1 and 1 or cc
-                    if fd._zeroCountAlpha ~= a then
-                        fd._zeroCountAlpha = a
+                    a = cooldownCount > 1 and 1 or cooldownCount
+                    if frameData._zeroCountAlpha ~= a then
+                        frameData._zeroCountAlpha = a
                         fontStr:SetAlpha(a)
                     end
                 end
@@ -221,17 +221,17 @@ do -- Count text visibility
             if not (issecretvalue and issecretvalue(val)) and (val == 0 or val == "0") then
                 a = 0
             elseif
-                (IsConsumableAction and IsConsumableAction(action))
-                or (IsStackableAction and IsStackableAction(action))
+                (IsConsumableAction and IsConsumableAction(actionSlot))
+                or (IsStackableAction and IsStackableAction(actionSlot))
             then
-                local c = GetActionCount and GetActionCount(action)
+                local c = GetActionCount and GetActionCount(actionSlot)
                 if c ~= nil and not (issecretvalue and issecretvalue(c)) and c == 0 then
                     a = 0
                 end
             end
         end
-        if fd._zeroCountAlpha ~= a then
-            fd._zeroCountAlpha = a
+        if frameData._zeroCountAlpha ~= a then
+            frameData._zeroCountAlpha = a
             fontStr:SetAlpha(a)
         end
     end
@@ -347,11 +347,11 @@ end
 -- SetAtlas for a stock-look texture: CludesUI.StockAtlas (retail art
 -- where the Forever client swaps the name), native under the WoW Forever
 -- look. Plain SetAtlas on retail.
-function mod.AB_StockAtlas(texture, name, ...)
+function mod.AB_StockAtlas(texture, label, ...)
     if mod.AB_Forever() then
-        return texture:SetAtlas(name, ...)
+        return texture:SetAtlas(label, ...)
     end
-    return CludesUI.StockAtlas(texture, name, ...)
+    return CludesUI.StockAtlas(texture, label, ...)
 end
 
 -- The button shape the bar LAYOUT sizes for. Stock styles draw no custom
@@ -598,18 +598,18 @@ mod.BAR_LOOKUP = BAR_LOOKUP
 mod.ALL_BARS = ALL_BARS
 mod.EXTRA_BARS = EXTRA_BARS
 
-function ABAR.VisibilityCompat.ApplyMode(prefs, mode)
+function ABAR.VisibilityCompat.ApplyMode(prefs, modeName)
     if not prefs then
         return "always"
     end
 
-    mode = mode or "always"
-    prefs.barVisibility = mode
-    prefs.alwaysHidden = (mode == "never")
+    modeName = modeName or "always"
+    prefs.barVisibility = modeName
+    prefs.alwaysHidden = (modeName == "never")
 
     local wasMouseover = prefs.mouseoverEnabled
-    prefs.mouseoverEnabled = (mode == "mouseover")
-    if mode == "mouseover" then
+    prefs.mouseoverEnabled = (modeName == "mouseover")
+    if modeName == "mouseover" then
         if not prefs._savedBarAlpha then
             prefs._savedBarAlpha = prefs.mouseoverAlpha or 1
         end
@@ -619,9 +619,9 @@ function ABAR.VisibilityCompat.ApplyMode(prefs, mode)
         prefs._savedBarAlpha = nil
     end
 
-    prefs.combatHideEnabled = (mode == "out_of_combat")
-    prefs.combatShowEnabled = (mode == "in_combat")
-    return mode
+    prefs.combatHideEnabled = (modeName == "out_of_combat")
+    prefs.combatShowEnabled = (modeName == "in_combat")
+    return modeName
 end
 
 function ABAR.VisibilityCompat.Normalize(prefs)
@@ -666,10 +666,10 @@ function ABAR.VisibilityCompat.Copy(dst, source, dstNoGroupModes)
         return
     end
 
-    local mode = ABAR.VisibilityCompat.Normalize(source)
-    ABAR.VisibilityCompat.ApplyMode(dst, mode)
+    local modeName = ABAR.VisibilityCompat.Normalize(source)
+    ABAR.VisibilityCompat.ApplyMode(dst, modeName)
 
-    if mode == "mouseover" then
+    if modeName == "mouseover" then
         dst._savedBarAlpha = source._savedBarAlpha or source.mouseoverAlpha or 1
         dst.mouseoverAlpha = 0
     else
@@ -1240,8 +1240,8 @@ local function ResolveBorderThickness(s)
     if not record then
         record = mod.BORDER_THICKNESS["thin"]
     end
-    local shape = s.buttonShape or "none"
-    if shape ~= "none" and shape ~= "cropped" then
+    local shapeKey = s.buttonShape or "none"
+    if shapeKey ~= "none" and shapeKey ~= "cropped" then
         if thickness == "thin" and s.shapeBorderSize and s.shapeBorderSize ~= record.shape then
             return s.shapeBorderSize, nil
         end
@@ -1321,18 +1321,18 @@ local function ForceCooldownPaint(button)
     if not button then
         return
     end
-    local cd = button.cooldown
-    local action = button:GetAttribute("action")
-    if cd and action and HasAction(action) and C_ActionBar and C_ActionBar.GetActionCooldown then
-        local cdInfo = C_ActionBar.GetActionCooldown(action)
+    local cooldown = button.cooldown
+    local actionSlot = button:GetAttribute("action")
+    if cooldown and actionSlot and HasAction(actionSlot) and C_ActionBar and C_ActionBar.GetActionCooldown then
+        local cdInfo = C_ActionBar.GetActionCooldown(actionSlot)
         local durObj = cdInfo
             and cdInfo.isActive
             and C_ActionBar.GetActionCooldownDuration
-            and C_ActionBar.GetActionCooldownDuration(action)
+            and C_ActionBar.GetActionCooldownDuration(actionSlot)
         if durObj then
-            cd:SetCooldownFromDurationObject(durObj)
+            cooldown:SetCooldownFromDurationObject(durObj)
         else
-            cd:Clear()
+            cooldown:Clear()
         end
     end
 end
@@ -1352,8 +1352,8 @@ mod.PaintAssistCooldown = function(button, spellId)
     if not spellId then
         return ForceCooldownPaint(button)
     end
-    local cd = button and button.cooldown
-    if not cd then
+    local cooldown = button and button.cooldown
+    if not cooldown then
         return
     end
     local details = C_Spell and C_Spell.GetSpellCooldown and C_Spell.GetSpellCooldown(spellId)
@@ -1362,9 +1362,9 @@ mod.PaintAssistCooldown = function(button, spellId)
         and C_Spell.GetSpellCooldownDuration
         and C_Spell.GetSpellCooldownDuration(spellId)
     if durObj then
-        cd:SetCooldownFromDurationObject(durObj)
+        cooldown:SetCooldownFromDurationObject(durObj)
     else
-        cd:Clear()
+        cooldown:Clear()
     end
 end
 
