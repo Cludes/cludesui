@@ -443,14 +443,6 @@ local function EnsureAssignedSpells(barKeyE)
     return sd
 end
 
----------------------------------------------------------------------------
---  Custom Spell ID popup (ShowBuffBarPicker, ShowBuffToCDPicker, ShowSpellPicker),
---  on the shared input popup. onAdded(sid) runs after the customSpellIDs tag is
---  stored. withCharges (CD/utility) adds the Show Charges opt-in and rejects
---  spells the spell list already offers.
----------------------------------------------------------------------------
-local CUSTOM_SPELL_NOTE = { r = 0.9, g = 0.3, b = 0.3 }
-
 -- The number-entry popups below share one look, built by these. A popup is a
 -- dimmer over the whole screen (a click on it closes the popup) holding the
 -- dialog panel, centred a little above the middle.
@@ -547,6 +539,14 @@ local function NewDialogButton(dialog, caption, primary)
     end)
     return btn
 end
+
+---------------------------------------------------------------------------
+--  Custom Spell ID popup (ShowBuffBarPicker, ShowBuffToCDPicker, ShowSpellPicker),
+--  on the shared input popup. onAdded(sid) runs after the customSpellIDs tag is
+--  stored. withCharges (CD/utility) adds the Show Charges opt-in and rejects
+--  spells the spell list already offers.
+---------------------------------------------------------------------------
+local CUSTOM_SPELL_NOTE = { r = 0.9, g = 0.3, b = 0.3 }
 
 local function ShowCustomSpellIDPopup(barId, onAdded, withCharges)
     local function SpellOf(textValue)
