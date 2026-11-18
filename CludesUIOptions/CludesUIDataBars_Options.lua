@@ -317,8 +317,8 @@ CludesUI.AtOptionsLogin(function()
         })
     end
 
-    local function CreateBarFromTemplate(key)
-        mod.CreateBar(key)
+    local function CreateBarFromTemplate(barKey)
+        mod.CreateBar(barKey)
         _cardsExpanded = false
         HardRefresh()
     end
@@ -443,30 +443,30 @@ CludesUI.AtOptionsLogin(function()
         if _edbPopout then
             return _edbPopout
         end
-        local oc = CreateFrame("Frame", nil, UIParent)
-        oc:SetFrameStrata("FULLSCREEN_DIALOG")
-        oc:SetFrameLevel(10)
-        oc:SetClampedToScreen(true)
-        oc:Hide()
-        local backdrop = oc:CreateTexture(nil, "BACKGROUND")
+        local popout = CreateFrame("Frame", nil, UIParent)
+        popout:SetFrameStrata("FULLSCREEN_DIALOG")
+        popout:SetFrameLevel(10)
+        popout:SetClampedToScreen(true)
+        popout:Hide()
+        local backdrop = popout:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0, 0, 0, 0.9)
-        local title = CludesUI.MakeFont(oc, 13, nil, 1, 1, 1, 0.9)
-        title:SetPoint("TOP", oc, "TOP", 0, -7)
+        local title = CludesUI.MakeFont(popout, 13, nil, 1, 1, 1, 0.9)
+        title:SetPoint("TOP", popout, "TOP", 0, -7)
         title:SetText(L("Preview"))
-        oc._title = title
-        local hint = CludesUI.MakeFont(oc, 10, nil, 1, 1, 1, 0.4)
+        popout._title = title
+        local hintText = CludesUI.MakeFont(popout, 10, nil, 1, 1, 1, 0.4)
         -- Edge-anchored so the text wraps inside the narrow popout instead
         -- of spilling past its sides (height grows upward from the bottom).
-        hint:SetPoint("BOTTOMLEFT", oc, "BOTTOMLEFT", 8, 7)
-        hint:SetPoint("BOTTOMRIGHT", oc, "BOTTOMRIGHT", -8, 7)
-        hint:SetJustifyH("CENTER")
-        hint:SetText(L("Drag to Reorder. Click to Scroll. Right Click to Remove."))
-        oc._hint = hint
+        hintText:SetPoint("BOTTOMLEFT", popout, "BOTTOMLEFT", 8, 7)
+        hintText:SetPoint("BOTTOMRIGHT", popout, "BOTTOMRIGHT", -8, 7)
+        hintText:SetJustifyH("CENTER")
+        hintText:SetText(L("Drag to Reorder. Click to Scroll. Right Click to Remove."))
+        popout._hint = hintText
         -- Self-heal (runs ONLY while shown = zero cost hidden): hide when
         -- the panel closes or another page fronts, like the TBB popout.
         local acc = 0
-        oc:SetScript("OnUpdate", function(self, elapsed)
+        popout:SetScript("OnUpdate", function(self, elapsed)
             acc = acc + elapsed
             if acc < 0.25 then
                 return
@@ -476,8 +476,8 @@ CludesUI.AtOptionsLogin(function()
                 self:Hide()
             end
         end)
-        _edbPopout = oc
-        return oc
+        _edbPopout = popout
+        return popout
     end
 
     -- The popout sits on UIParent beside the panel: it folds away with the panel
@@ -520,7 +520,7 @@ CludesUI.AtOptionsLogin(function()
         if tDimA == nil then
             tDimA = 0.85
         end
-        local fy = -8
+        local rowY = -8
 
         local rowConf = SelectedBar()
         _edbPreviewHost = nil
@@ -535,7 +535,7 @@ CludesUI.AtOptionsLogin(function()
         local NEWBTN_W = 110
         local dropdownBtn = CreateFrame("Button", nil, heading)
         Pix.Size(dropdownBtn, ddW, DD_H)
-        Pix.Point(dropdownBtn, "TOPLEFT", heading, "TOPLEFT", (hdrW - (ddW + 10 + NEWBTN_W)) / 2, fy)
+        Pix.Point(dropdownBtn, "TOPLEFT", heading, "TOPLEFT", (hdrW - (ddW + 10 + NEWBTN_W)) / 2, rowY)
         dropdownBtn:SetFrameLevel(heading:GetFrameLevel() + 5)
         local ddBg = dropdownBtn:CreateTexture(nil, "BACKGROUND")
         ddBg:SetAllPoints()
@@ -583,11 +583,11 @@ CludesUI.AtOptionsLogin(function()
                     entry:SetHeight(ITEM_H)
                     entry:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
 
-                    local iLbl = CludesUI.MakeFont(entry, 11, nil, tDimR, tDimG, tDimB, tDimA)
-                    iLbl:SetJustifyH("LEFT")
-                    iLbl:SetWordWrap(false)
-                    iLbl:SetMaxLines(1)
-                    iLbl:SetPoint("LEFT", entry, "LEFT", 10, 0)
+                    local itemCaption = CludesUI.MakeFont(entry, 11, nil, tDimR, tDimG, tDimB, tDimA)
+                    itemCaption:SetJustifyH("LEFT")
+                    itemCaption:SetWordWrap(false)
+                    itemCaption:SetMaxLines(1)
+                    itemCaption:SetPoint("LEFT", entry, "LEFT", 10, 0)
 
                     local iHl = entry:CreateTexture(nil, "ARTWORK")
                     iHl:SetAllPoints()
@@ -599,11 +599,11 @@ CludesUI.AtOptionsLogin(function()
                     local function Rest()
                         delBtn:SetAlpha(0.75)
                         editBtn:SetAlpha(0.75)
-                        iLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+                        itemCaption:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                         iHl:SetAlpha(entry._isSel and selA or 0)
                     end
                     entry._rest = Rest
-                    entry._lbl = iLbl
+                    entry._lbl = itemCaption
                     local function OverAny()
                         return entry:IsMouseOver() or delBtn:IsMouseOver() or editBtn:IsMouseOver()
                     end
@@ -622,7 +622,7 @@ CludesUI.AtOptionsLogin(function()
                         icon:SetTexture(MEDIA_ICONS .. file)
                         button:SetScript("OnEnter", function(self)
                             self:SetAlpha(1)
-                            iLbl:SetTextColor(1, 1, 1, 1)
+                            itemCaption:SetTextColor(1, 1, 1, 1)
                             iHl:SetAlpha(hlA)
                             delBtn:SetAlpha(0.85)
                             editBtn:SetAlpha(0.85)
@@ -644,10 +644,10 @@ CludesUI.AtOptionsLogin(function()
                     end
                     delBtn = InlineIcon(entry, "RIGHT", -8, "cui-close.png", "Delete", PromptDeleteBar)
                     editBtn = InlineIcon(delBtn, "LEFT", -4, "cui-edit.png", "Rename", PromptRenameBar)
-                    iLbl:SetPoint("RIGHT", editBtn, "LEFT", -4, 0)
+                    itemCaption:SetPoint("RIGHT", editBtn, "LEFT", -4, 0)
 
                     entry:SetScript("OnEnter", function()
-                        iLbl:SetTextColor(1, 1, 1, 1)
+                        itemCaption:SetTextColor(1, 1, 1, 1)
                         iHl:SetAlpha(hlA)
                         delBtn:SetAlpha(1)
                         editBtn:SetAlpha(1)
@@ -674,31 +674,31 @@ CludesUI.AtOptionsLogin(function()
                 dropMenu._div = div
 
                 -- "+ Create New DataBar..." action row (expands the card strip)
-                local addItem = CreateFrame("Button", nil, dropMenu)
-                addItem:SetHeight(ITEM_H)
-                addItem:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                local addLbl = CludesUI.MakeFont(addItem, 11, nil, tDimR, tDimG, tDimB, tDimA)
-                addLbl:SetPoint("LEFT", addItem, "LEFT", 10, 0)
-                addLbl:SetJustifyH("LEFT")
-                addLbl:SetText(L("+ Create New DataBar..."))
-                local addHl = addItem:CreateTexture(nil, "ARTWORK")
+                local addEntry = CreateFrame("Button", nil, dropMenu)
+                addEntry:SetHeight(ITEM_H)
+                addEntry:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
+                local addCaption = CludesUI.MakeFont(addEntry, 11, nil, tDimR, tDimG, tDimB, tDimA)
+                addCaption:SetPoint("LEFT", addEntry, "LEFT", 10, 0)
+                addCaption:SetJustifyH("LEFT")
+                addCaption:SetText(L("+ Create New DataBar..."))
+                local addHl = addEntry:CreateTexture(nil, "ARTWORK")
                 addHl:SetAllPoints()
                 addHl:SetColorTexture(1, 1, 1, 1)
-                addItem:SetScript("OnEnter", function()
-                    addLbl:SetTextColor(1, 1, 1, 1)
+                addEntry:SetScript("OnEnter", function()
+                    addCaption:SetTextColor(1, 1, 1, 1)
                     addHl:SetAlpha(hlA)
                 end)
-                addItem:SetScript("OnLeave", function()
-                    addLbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+                addEntry:SetScript("OnLeave", function()
+                    addCaption:SetTextColor(tDimR, tDimG, tDimB, tDimA)
                     addHl:SetAlpha(0)
                 end)
-                addItem:SetScript("OnClick", function()
+                addEntry:SetScript("OnClick", function()
                     dropMenu:Hide()
                     _cardsExpanded = true
                     HeaderOnly()
                 end)
-                addItem._lbl, addItem._hl = addLbl, addHl
-                dropMenu._addItem = addItem
+                addEntry._lbl, addEntry._hl = addCaption, addHl
+                dropMenu._addItem = addEntry
 
                 CloseOnOutsideClick(dropMenu)
                 _edbMenus.bar = dropMenu
@@ -744,12 +744,12 @@ CludesUI.AtOptionsLogin(function()
                 div:Hide()
             end
 
-            local addItem = dropMenu._addItem
-            addItem:ClearAllPoints()
-            addItem:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -menuH)
-            addItem:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -menuH)
-            addItem._lbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
-            addItem._hl:SetAlpha(0)
+            local addEntry = dropMenu._addItem
+            addEntry:ClearAllPoints()
+            addEntry:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -menuH)
+            addEntry:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -menuH)
+            addEntry._lbl:SetTextColor(tDimR, tDimG, tDimB, tDimA)
+            addEntry._hl:SetAlpha(0)
             menuH = menuH + ITEM_H
 
             dropMenu:SetHeight(menuH + 4)
@@ -803,7 +803,7 @@ CludesUI.AtOptionsLogin(function()
 
         -- (Bar enable lives in the BAR SETTINGS section, not the header.)
 
-        fy = fy - DD_H - 10
+        rowY = rowY - DD_H - 10
 
         -----------------------------------------------------------------------
         --  Template card strip (expanded state)
@@ -815,41 +815,41 @@ CludesUI.AtOptionsLogin(function()
             local ch = 64
             local host = CreateFrame("Frame", nil, heading)
             Pix.Size(host, stripW, ch)
-            Pix.Point(host, "TOPLEFT", heading, "TOPLEFT", PAD, fy)
+            Pix.Point(host, "TOPLEFT", heading, "TOPLEFT", PAD, rowY)
             for i = 1, 4 do
                 MakeTemplateCard(host, (i - 1) * (cw + gap), 0, cw, ch, TEMPLATE_CARDS[i])
             end
-            fy = fy - ch - 12
+            rowY = rowY - ch - 12
         end
 
         -----------------------------------------------------------------------
         --  Zero bars: hint only, no preview
         -----------------------------------------------------------------------
         if not rowConf then
-            local hint = CludesUI.MakeFont(heading, 12, nil, 1, 1, 1, 0.4)
-            hint:SetPoint("TOPLEFT", heading, "TOPLEFT", PAD + 4, fy - 2)
-            hint:SetText(L("Create a DataBar to get started."))
-            fy = fy - 24
-            return math.abs(fy) + 6
+            local hintText = CludesUI.MakeFont(heading, 12, nil, 1, 1, 1, 0.4)
+            hintText:SetPoint("TOPLEFT", heading, "TOPLEFT", PAD + 4, rowY - 2)
+            hintText:SetText(L("Create a DataBar to get started."))
+            rowY = rowY - 24
+            return math.abs(rowY) + 6
         end
 
         -----------------------------------------------------------------------
         --  Interactive preview strip
         -----------------------------------------------------------------------
         -- Extra breathing room above the preview strip.
-        fy = fy - 10
+        rowY = rowY - 10
 
-        local vertical = rowConf.orientation == "V"
+        local isVertical = rowConf.orientation == "V"
         local stripLen, stripThick
         local stripParent = heading
-        if vertical then
+        if isVertical then
             -- Vertical: the strip lives in the docked overlay popout, which persists
             -- across header rebuilds. The strip and its add tile (parented to the
             -- popout too, not to the strip) are kept frames there (Pool.Kept, below):
             -- every header build dresses the same two again, so a rebuild never
             -- strands an old one beside the new.
-            local oc = GetPreviewPopout()
-            stripParent = oc
+            local popout = GetPreviewPopout()
+            stripParent = popout
             stripThick = STRIP_V_THICK
             stripLen = STRIP_V_LEN
             local scrollFrame = CludesUI._scrollFrame
@@ -869,35 +869,35 @@ CludesUI.AtOptionsLogin(function()
         -- title and hint and the add tile below (the extra tail room is for
         -- the bottom hint, which wraps inside the narrow popout) and docked
         -- left of the options window. Horizontal: a strip under the header.
-        local strip
-        if vertical then
-            local oc = stripParent
-            strip = Pool.Kept(_edbKeep, "popStrip", "Frame", oc)
-            Pix.Size(strip, stripThick, stripLen)
-            oc._strip = strip
-            Pix.Size(oc, math.max(stripThick + 90, 150), stripLen + stripThick + 92)
-            strip:ClearAllPoints()
-            strip:SetPoint("TOP", oc, "TOP", 0, -28)
-            strip:SetFrameLevel(oc:GetFrameLevel() + 3)
-            oc:ClearAllPoints()
+        local barStrip
+        if isVertical then
+            local popout = stripParent
+            barStrip = Pool.Kept(_edbKeep, "popStrip", "Frame", popout)
+            Pix.Size(barStrip, stripThick, stripLen)
+            popout._strip = barStrip
+            Pix.Size(popout, math.max(stripThick + 90, 150), stripLen + stripThick + 92)
+            barStrip:ClearAllPoints()
+            barStrip:SetPoint("TOP", popout, "TOP", 0, -28)
+            barStrip:SetFrameLevel(popout:GetFrameLevel() + 3)
+            popout:ClearAllPoints()
             local scrollFrame = CludesUI._scrollFrame
             if scrollFrame then
-                oc:SetPoint("RIGHT", scrollFrame, "LEFT", 0, 0)
+                popout:SetPoint("RIGHT", scrollFrame, "LEFT", 0, 0)
             else
-                oc:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+                popout:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
             end
-            oc:Show()
+            popout:Show()
         else
-            strip = CreateFrame("Frame", nil, stripParent)
-            Pix.Size(strip, stripLen, stripThick)
-            Pix.Point(strip, "TOPLEFT", heading, "TOPLEFT", PAD, fy)
-            strip:SetFrameLevel(heading:GetFrameLevel() + 3)
+            barStrip = CreateFrame("Frame", nil, stripParent)
+            Pix.Size(barStrip, stripLen, stripThick)
+            Pix.Point(barStrip, "TOPLEFT", heading, "TOPLEFT", PAD, rowY)
+            barStrip:SetFrameLevel(heading:GetFrameLevel() + 3)
         end
         -- Border handle set BEFORE the backdrop so the theme pass can fade
         -- it with Bar Opacity, exactly like the live bar.
-        strip._edbBorder = Pix.CreateBorder(strip, 0, 0, 0, 0.8, 1, "OVERLAY", 7)
-        mod.MakePreviewBackdrop(strip, rowConf.theme, not rowConf.hideBorder)
-        _edbPreviewHost = strip
+        barStrip._edbBorder = Pix.CreateBorder(barStrip, 0, 0, 0, 0.8, 1, "OVERLAY", 7)
+        mod.MakePreviewBackdrop(barStrip, rowConf.theme, not rowConf.hideBorder)
+        _edbPreviewHost = barStrip
 
         local stripUsable = stripLen - SEDGE * 2
         local blocks = rowConf.blocks
@@ -912,9 +912,9 @@ CludesUI.AtOptionsLogin(function()
         end
 
         if nShown == 0 then
-            local hintFS = CludesUI.MakeFont(strip, 11, nil, 1, 1, 1, 0.4)
-            hintFS:SetPoint("CENTER", strip, "CENTER", 0, 0)
-            if vertical then
+            local hintFS = CludesUI.MakeFont(barStrip, 11, nil, 1, 1, 1, 0.4)
+            hintFS:SetPoint("CENTER", barStrip, "CENTER", 0, 0)
+            if isVertical then
                 -- The vertical strip is only a few px wide; cap the hint to
                 -- the popout's inner width so it wraps instead of spilling.
                 hintFS:SetWidth(130)
@@ -932,8 +932,8 @@ CludesUI.AtOptionsLogin(function()
         local segBtns, shareFSs = {}, {}
         for i = 1, nBlocks do
             local b = blocks[i]
-            local button = CreateFrame("Button", nil, strip)
-            button:SetFrameLevel(strip:GetFrameLevel() + 5)
+            local button = CreateFrame("Button", nil, barStrip)
+            button:SetFrameLevel(barStrip:GetFrameLevel() + 5)
             local hb = Pix.CreateBorder(button, EGc.r, EGc.g, EGc.b, 1, 2, "OVERLAY", 7)
             hb:Hide()
             button._brd = hb
@@ -1000,9 +1000,9 @@ CludesUI.AtOptionsLogin(function()
         -- A 1px seam line at each boundary, shown where the two segments touch.
         local lines = {}
         for i = 1, nBlocks - 1 do
-            local line = strip:CreateTexture(nil, "OVERLAY", nil, 2)
+            local line = barStrip:CreateTexture(nil, "OVERLAY", nil, 2)
             line:SetColorTexture(1, 1, 1, 0.12)
-            if vertical then
+            if isVertical then
                 line:SetHeight(1)
             else
                 line:SetWidth(1)
@@ -1037,14 +1037,14 @@ CludesUI.AtOptionsLogin(function()
             -- marks real seams -- boundary lines draw only there.
             local segs = mod.SolveLayout(rowConf, barUsable, measure)
             for i = 1, #segs do
-                local seg = segs[i]
-                local rAt = seg.at or 0
+                local segment = segs[i]
+                local rAt = segment.at or 0
                 local a = floor(rAt * scale + 0.5)
-                local e = floor((rAt + seg.px) * scale + 0.5)
+                local e = floor((rAt + segment.px) * scale + 0.5)
                 -- Seam lines run between shown segments only: a hidden one
                 -- draws none and is skipped as a neighbor.
                 local nxt
-                if not BlockHidden(seg.block) then
+                if not BlockHidden(segment.block) then
                     local keyName = i + 1
                     while segs[keyName] and BlockHidden(segs[keyName].block) do
                         keyName = keyName + 1
@@ -1052,53 +1052,53 @@ CludesUI.AtOptionsLogin(function()
                     nxt = segs[keyName]
                 end
                 if nxt then
-                    local d = (nxt.at or 0) - (rAt + seg.px)
-                    seg._touch = d > -0.75 and d < 0.75
+                    local d = (nxt.at or 0) - (rAt + segment.px)
+                    segment._touch = d > -0.75 and d < 0.75
                 else
-                    seg._touch = false
+                    segment._touch = false
                 end
-                seg.pos = SEDGE + a
-                seg.px = e - a
+                segment.pos = SEDGE + a
+                segment.px = e - a
             end
             lastSegs = segs
             for i = 1, #segs do
-                local seg = segs[i]
-                local px = seg.px
+                local segment = segs[i]
+                local px = segment.px
                 if px < 1 then
                     px = 1
                 end
-                local cursor = seg.pos
+                local cursor = segment.pos
                 local button = segBtns[i]
                 if button then
                     button:ClearAllPoints()
-                    if vertical then
+                    if isVertical then
                         button:SetSize(stripThick, px)
-                        button:SetPoint("TOP", strip, "TOP", 0, -cursor)
+                        button:SetPoint("TOP", barStrip, "TOP", 0, -cursor)
                     else
                         button:SetSize(px, stripThick)
-                        button:SetPoint("LEFT", strip, "LEFT", cursor, 0)
+                        button:SetPoint("LEFT", barStrip, "LEFT", cursor, 0)
                     end
                     -- Base position for the drag-reorder nudge animation.
                     button._basePos = cursor
                     button._curOff = 0
                     button._tgtOff = 0
-                    if seg.isFill then
+                    if segment.isFill then
                         shareFSs[i]:SetText(L("fill"))
                     else
-                        shareFSs[i]:SetText(format("%.1f%%", mod.NormalizedShare(rowConf, seg.block.id)))
+                        shareFSs[i]:SetText(format("%.1f%%", mod.NormalizedShare(rowConf, segment.block.id)))
                     end
                 end
                 cursor = cursor + px
                 local lineTex = lines[i]
                 if lineTex then
-                    lineTex:SetShown(seg._touch and true or false)
+                    lineTex:SetShown(segment._touch and true or false)
                     lineTex:ClearAllPoints()
-                    if vertical then
-                        lineTex:SetPoint("LEFT", strip, "TOPLEFT", 0, -cursor)
-                        lineTex:SetPoint("RIGHT", strip, "TOPRIGHT", 0, -cursor)
+                    if isVertical then
+                        lineTex:SetPoint("LEFT", barStrip, "TOPLEFT", 0, -cursor)
+                        lineTex:SetPoint("RIGHT", barStrip, "TOPRIGHT", 0, -cursor)
                     else
-                        lineTex:SetPoint("TOP", strip, "TOPLEFT", cursor, 0)
-                        lineTex:SetPoint("BOTTOM", strip, "BOTTOMLEFT", cursor, 0)
+                        lineTex:SetPoint("TOP", barStrip, "TOPLEFT", cursor, 0)
+                        lineTex:SetPoint("BOTTOM", barStrip, "BOTTOMLEFT", cursor, 0)
                     end
                 end
             end
@@ -1112,17 +1112,17 @@ CludesUI.AtOptionsLogin(function()
         -- segments ease apart around the hovered boundary via a small animated nudge
         -- and an accent insertion line marks the drop point; release commits the move.
         -----------------------------------------------------------------------
-        local reorderLine = strip:CreateTexture(nil, "OVERLAY", nil, 7)
+        local dropLine = barStrip:CreateTexture(nil, "OVERLAY", nil, 7)
         do
             local ar2, ag2, ab3 = mod.GetAccent()
-            reorderLine:SetColorTexture(ar2, ag2, ab3, 0.9)
+            dropLine:SetColorTexture(ar2, ag2, ab3, 0.9)
         end
-        if vertical then
-            reorderLine:SetSize(stripThick, 2)
+        if isVertical then
+            dropLine:SetSize(stripThick, 2)
         else
-            reorderLine:SetSize(2, stripThick)
+            dropLine:SetSize(2, stripThick)
         end
-        reorderLine:Hide()
+        dropLine:Hide()
 
         local NUDGE = 6
         local animTicker
@@ -1132,9 +1132,9 @@ CludesUI.AtOptionsLogin(function()
             end
             -- A strip of the page pool that a newer header build dressed again
             -- holds that build's segments: the ticker ends with this build.
-            local gen = Pool.Gen(strip)
+            local gen = Pool.Gen(barStrip)
             animTicker = C_Timer.NewTicker(0.016, function()
-                if Pool.Gen(strip) ~= gen or Pool.IsIdle(strip) then
+                if Pool.Gen(barStrip) ~= gen or Pool.IsIdle(barStrip) then
                     animTicker:Cancel()
                     animTicker = nil
                     return
@@ -1153,10 +1153,10 @@ CludesUI.AtOptionsLogin(function()
                     scrollBar._curOff = current
                     if scrollBar._basePos then
                         scrollBar:ClearAllPoints()
-                        if vertical then
-                            scrollBar:SetPoint("TOP", strip, "TOP", 0, -(scrollBar._basePos + current))
+                        if isVertical then
+                            scrollBar:SetPoint("TOP", barStrip, "TOP", 0, -(scrollBar._basePos + current))
                         else
-                            scrollBar:SetPoint("LEFT", strip, "LEFT", scrollBar._basePos + current, 0)
+                            scrollBar:SetPoint("LEFT", barStrip, "LEFT", scrollBar._basePos + current, 0)
                         end
                     end
                 end
@@ -1169,14 +1169,14 @@ CludesUI.AtOptionsLogin(function()
 
         local function CursorStripPos()
             local cx, cy = GetCursorPosition()
-            local es = strip:GetEffectiveScale()
+            local es = barStrip:GetEffectiveScale()
             if not es or es == 0 then
                 es = 1
             end
-            if vertical then
-                return (strip:GetTop() or 0) - cy / es
+            if isVertical then
+                return (barStrip:GetTop() or 0) - cy / es
             end
-            return cx / es - (strip:GetLeft() or 0)
+            return cx / es - (barStrip:GetLeft() or 0)
         end
 
         local function ComputeInsertIdx()
@@ -1185,8 +1185,8 @@ CludesUI.AtOptionsLogin(function()
             end
             -- Before the first segment whose middle lies past the cursor.
             local place = CursorStripPos()
-            for keyName, seg in ipairs(lastSegs) do
-                if place < (seg.pos or 0) + (seg.px or 0) / 2 then
+            for keyName, segment in ipairs(lastSegs) do
+                if place < (segment.pos or 0) + (segment.px or 0) / 2 then
                     return keyName
                 end
             end
@@ -1233,7 +1233,7 @@ CludesUI.AtOptionsLogin(function()
             end
             EnsureAnimTicker()
             if noop then
-                reorderLine:Hide()
+                dropLine:Hide()
                 return
             end
             -- The insertion line: the target segment's leading edge, or the
@@ -1246,49 +1246,49 @@ CludesUI.AtOptionsLogin(function()
                 local last = lastSegs[#lastSegs]
                 linePos = (last.pos or SEDGE) + (last.px or 0)
             end
-            reorderLine:ClearAllPoints()
-            if vertical then
-                reorderLine:SetPoint("TOP", strip, "TOP", 0, -(linePos - 1))
+            dropLine:ClearAllPoints()
+            if isVertical then
+                dropLine:SetPoint("TOP", barStrip, "TOP", 0, -(linePos - 1))
             else
-                reorderLine:SetPoint("LEFT", strip, "LEFT", linePos - 1, 0)
+                dropLine:SetPoint("LEFT", barStrip, "LEFT", linePos - 1, 0)
             end
-            reorderLine:Show()
+            dropLine:Show()
         end
 
         -- Pickup ghost: a floating half-scale copy of the segment that rides
         -- the cursor while dragging (CDM preview pattern); the segment itself
         -- stays in place dimmed to 0.3.
-        local dragGhost
+        local dragShadow
         local function EnsureDragGhost()
-            if dragGhost then
-                return dragGhost
+            if dragShadow then
+                return dragShadow
             end
             -- One kept ghost for the session (Pool.Kept on UIParent): the first
             -- drag of each header build dresses it again.
-            dragGhost = Pool.Kept(_edbKeep, "dragGhost", "Frame", UIParent)
-            dragGhost:SetFrameStrata("TOOLTIP")
-            dragGhost:SetFrameLevel(500)
-            local gBg = dragGhost:CreateTexture(nil, "BACKGROUND")
+            dragShadow = Pool.Kept(_edbKeep, "dragGhost", "Frame", UIParent)
+            dragShadow:SetFrameStrata("TOOLTIP")
+            dragShadow:SetFrameLevel(500)
+            local gBg = dragShadow:CreateTexture(nil, "BACKGROUND")
             gBg:SetAllPoints()
             gBg:SetColorTexture(0.111, 0.103, 0.096, 0.95)
             local ar2, ag2, ab3 = mod.GetAccent()
-            CludesUI.MakeBorder(dragGhost, ar2, ag2, ab3, 0.9, Pix)
-            local gl = CludesUI.MakeFont(dragGhost, 10, nil, 1, 1, 1, 0.9)
+            CludesUI.MakeBorder(dragShadow, ar2, ag2, ab3, 0.9, Pix)
+            local gl = CludesUI.MakeFont(dragShadow, 10, nil, 1, 1, 1, 0.9)
             gl:SetPoint("CENTER")
-            dragGhost._lbl = gl
-            dragGhost:Hide()
-            return dragGhost
+            dragShadow._lbl = gl
+            dragShadow:Hide()
+            return dragShadow
         end
 
         local function FinishDrag()
-            strip:SetScript("OnUpdate", nil)
+            barStrip:SetScript("OnUpdate", nil)
             local from = dragIdx
             dragIdx = nil
             dragEndTime = GetTime()
-            if dragGhost then
-                dragGhost:Hide()
+            if dragShadow then
+                dragShadow:Hide()
             end
-            reorderLine:Hide()
+            dropLine:Hide()
             if from and segBtns[from] then
                 segBtns[from]:SetAlpha(1)
             end
@@ -1329,7 +1329,7 @@ CludesUI.AtOptionsLogin(function()
             ghost:Show()
             EnsureAnimTicker()
             -- Cursor follow + release detection (mouse-up can land anywhere).
-            strip:SetScript("OnUpdate", function()
+            barStrip:SetScript("OnUpdate", function()
                 if not IsMouseButtonDown("LeftButton") then
                     FinishDrag()
                     return
@@ -1337,9 +1337,9 @@ CludesUI.AtOptionsLogin(function()
                 local cx, cy = GetCursorPosition()
                 local sc = UIParent:GetEffectiveScale()
                 cx, cy = cx / sc, cy / sc
-                local gs = dragGhost:GetScale() or 1
-                dragGhost:ClearAllPoints()
-                dragGhost:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx / gs, cy / gs)
+                local gs = dragShadow:GetScale() or 1
+                dragShadow:ClearAllPoints()
+                dragShadow:SetPoint("CENTER", UIParent, "BOTTOMLEFT", cx / gs, cy / gs)
                 UpdateDragVisuals()
             end)
         end
@@ -1471,31 +1471,31 @@ CludesUI.AtOptionsLogin(function()
         -- square, 4px off the strip, dark fill, colored "+" glyph that
         -- lights up with an accent border on hover.
         -- Vertical: kept in the popout with the strip, under it.
-        local addBtn
-        if vertical then
-            addBtn = Pool.Kept(_edbKeep, "popAddBtn", "Button", stripParent)
-            Pix.Size(addBtn, stripThick, stripThick)
-            Pix.Point(addBtn, "TOP", strip, "BOTTOM", 0, -4)
+        local addButton
+        if isVertical then
+            addButton = Pool.Kept(_edbKeep, "popAddBtn", "Button", stripParent)
+            Pix.Size(addButton, stripThick, stripThick)
+            Pix.Point(addButton, "TOP", barStrip, "BOTTOM", 0, -4)
         else
-            addBtn = CreateFrame("Button", nil, stripParent)
-            Pix.Size(addBtn, stripThick, stripThick)
-            Pix.Point(addBtn, "LEFT", strip, "RIGHT", 4, 0)
+            addButton = CreateFrame("Button", nil, stripParent)
+            Pix.Size(addButton, stripThick, stripThick)
+            Pix.Point(addButton, "LEFT", barStrip, "RIGHT", 4, 0)
         end
-        addBtn:SetFrameLevel(strip:GetFrameLevel() + 2)
-        local addBg = addBtn:CreateTexture(nil, "BACKGROUND")
+        addButton:SetFrameLevel(barStrip:GetFrameLevel() + 2)
+        local addBg = addButton:CreateTexture(nil, "BACKGROUND")
         addBg:SetAllPoints()
         addBg:SetColorTexture(0.08, 0.08, 0.08, 0.6)
         if addBg.SetSnapToPixelGrid then
             addBg:SetSnapToPixelGrid(false)
             addBg:SetTexelSnappingBias(0)
         end
-        Pix.CreateBorder(addBtn, 0.3, 0.3, 0.3, 0.5, 1, "OVERLAY", 7)
-        local addLbl = CludesUI.MakeFont(addBtn, 22, nil, EGc.r, EGc.g, EGc.b, 0.7)
-        addLbl:SetPoint("CENTER", 0, 1)
-        addLbl:SetText("+")
-        local addHlCont = CreateFrame("Frame", nil, addBtn)
+        Pix.CreateBorder(addButton, 0.3, 0.3, 0.3, 0.5, 1, "OVERLAY", 7)
+        local addCaption = CludesUI.MakeFont(addButton, 22, nil, EGc.r, EGc.g, EGc.b, 0.7)
+        addCaption:SetPoint("CENTER", 0, 1)
+        addCaption:SetText("+")
+        local addHlCont = CreateFrame("Frame", nil, addButton)
         addHlCont:SetAllPoints()
-        addHlCont:SetFrameLevel(addBtn:GetFrameLevel() + 1)
+        addHlCont:SetFrameLevel(addButton:GetFrameLevel() + 1)
         local addBrd = Pix.CreateBorder(addHlCont, EGc.r, EGc.g, EGc.b, 1, 2, "OVERLAY", 7)
         addBrd:Hide()
 
@@ -1520,20 +1520,20 @@ CludesUI.AtOptionsLogin(function()
                     entry:SetPoint("TOPLEFT", dropMenu, "TOPLEFT", 1, -menuH)
                     entry:SetPoint("TOPRIGHT", dropMenu, "TOPRIGHT", -1, -menuH)
                     entry:SetFrameLevel(dropMenu:GetFrameLevel() + 2)
-                    local iLbl = CludesUI.MakeFont(entry, 11, nil, tDimR, tDimG, tDimB, tDimA)
-                    iLbl:SetPoint("LEFT", entry, "LEFT", 10, 0)
-                    iLbl:SetJustifyH("LEFT")
-                    iLbl:SetText(L(t.label))
+                    local itemCaption = CludesUI.MakeFont(entry, 11, nil, tDimR, tDimG, tDimB, tDimA)
+                    itemCaption:SetPoint("LEFT", entry, "LEFT", 10, 0)
+                    itemCaption:SetJustifyH("LEFT")
+                    itemCaption:SetText(L(t.label))
                     local iHl = entry:CreateTexture(nil, "ARTWORK")
                     iHl:SetAllPoints()
                     iHl:SetColorTexture(1, 1, 1, 1)
                     -- item._baseA / item._hoverA: this open's label alphas.
                     entry:SetScript("OnEnter", function()
-                        iLbl:SetTextColor(1, 1, 1, entry._hoverA)
+                        itemCaption:SetTextColor(1, 1, 1, entry._hoverA)
                         iHl:SetAlpha(hlA)
                     end)
                     entry:SetScript("OnLeave", function()
-                        iLbl:SetTextColor(tDimR, tDimG, tDimB, entry._baseA)
+                        itemCaption:SetTextColor(tDimR, tDimG, tDimB, entry._baseA)
                         iHl:SetAlpha(0)
                     end)
                     local typeKey = t.key
@@ -1557,7 +1557,7 @@ CludesUI.AtOptionsLogin(function()
                             end)
                         end
                     end)
-                    entry._typeKey, entry._lbl, entry._hl = typeKey, iLbl, iHl
+                    entry._typeKey, entry._lbl, entry._hl = typeKey, itemCaption, iHl
                     dropMenu._rows[#dropMenu._rows + 1] = entry
                     menuH = menuH + ITEM_H
                 end
@@ -1597,50 +1597,50 @@ CludesUI.AtOptionsLogin(function()
                 entry._hl:SetAlpha(0)
             end
             dropMenu._barId = rowConf.id
-            dropMenu._anchor = addBtn
+            dropMenu._anchor = addButton
             dropMenu:ClearAllPoints()
-            dropMenu:SetPoint("TOPRIGHT", addBtn, "BOTTOMRIGHT", 0, -2)
+            dropMenu:SetPoint("TOPRIGHT", addButton, "BOTTOMRIGHT", 0, -2)
             dropMenu:SetScript("OnUpdate", dropMenu._closeOutside)
             dropMenu:Show()
         end
-        addBtn:SetScript("OnClick", ToggleAddMenu)
-        addBtn:SetScript("OnEnter", function()
-            addLbl:SetTextColor(EGc.r, EGc.g, EGc.b, 1)
+        addButton:SetScript("OnClick", ToggleAddMenu)
+        addButton:SetScript("OnEnter", function()
+            addCaption:SetTextColor(EGc.r, EGc.g, EGc.b, 1)
             addBrd:Show()
-            CludesUI.ShowWidgetTooltip(addBtn, L("Add a block to this bar"))
+            CludesUI.ShowWidgetTooltip(addButton, L("Add a block to this bar"))
         end)
-        addBtn:SetScript("OnLeave", function()
-            addLbl:SetTextColor(EGc.r, EGc.g, EGc.b, 0.7)
+        addButton:SetScript("OnLeave", function()
+            addCaption:SetTextColor(EGc.r, EGc.g, EGc.b, 0.7)
             addBrd:Hide()
             CludesUI.HideWidgetTooltip()
         end)
-        addBtn:HookScript("OnHide", function()
+        addButton:HookScript("OnHide", function()
             if _edbMenus.add then
                 _edbMenus.add:Hide()
             end
         end)
 
-        if vertical then
+        if isVertical then
             -- The strip lives in the docked popout; the header only carries
             -- a pointer to it.
             local vh = CludesUI.MakeFont(heading, 12, nil, 1, 1, 1, 0.4)
-            vh:SetPoint("TOP", heading, "TOP", 0, fy - 2)
+            vh:SetPoint("TOP", heading, "TOP", 0, rowY - 2)
             vh:SetJustifyH("CENTER")
             vh:SetText(L("Vertical bar: the interactive preview is docked beside this window."))
-            fy = fy - 24
+            rowY = rowY - 24
         else
-            fy = fy - stripThick - 8
+            rowY = rowY - stripThick - 8
             -- Interaction hint directly below the preview (CDM preview pattern).
             local ph = CludesUI.MakeFont(heading, 11, nil, 0.62, 0.62, 0.62, 0.9)
-            ph:SetPoint("TOP", strip, "BOTTOM", 0, -8)
+            ph:SetPoint("TOP", barStrip, "BOTTOM", 0, -8)
             ph:SetWidth(stripLen - 20)
             ph:SetJustifyH("CENTER")
             ph:SetWordWrap(true)
             ph:SetText(L("Drag to Reorder. Click to Scroll. Right Click to Remove."))
-            fy = fy - 16 - 10
+            rowY = rowY - 16 - 10
         end
 
-        return math.abs(fy)
+        return math.abs(rowY)
     end
 
     ---------------------------------------------------------------------------
@@ -1678,12 +1678,12 @@ CludesUI.AtOptionsLogin(function()
             return regionFrame or m.target
         end
 
-        local function NavigateToSetting(key)
+        local function NavigateToSetting(barKey)
             local targets = hostFrame._edbClickTargets
             if not targets then
                 return
             end
-            local m = targets[key]
+            local m = targets[barKey]
             if not m or not m.section or not m.target then
                 return
             end
@@ -1694,7 +1694,7 @@ CludesUI.AtOptionsLogin(function()
             CludesUI.SmoothScrollTo(math.max(0, math.abs(headerY) - 40))
             local glowTarget = GlowTargetOf(m)
             if m.holdWhile then
-                _edbHeldGlowKey, _edbHeldGlowY = key, headerY
+                _edbHeldGlowKey, _edbHeldGlowY = barKey, headerY
             end
             -- A target of the page pool that is dressed again for another row by
             -- then belongs to a newer build (which re-arms its own glow).
@@ -1787,9 +1787,9 @@ CludesUI.AtOptionsLogin(function()
             Pix.Point(host, "TOPLEFT", hostFrame, "TOPLEFT", PADC, cursorY)
             host._isSectionHeader = true
             host._sectionName = "Create New DataBar"
-            local hint = CludesUI.MakeFont(host, 13, nil, 1, 1, 1, 0.55)
-            hint:SetPoint("TOPLEFT", host, "TOPLEFT", 4, -8)
-            hint:SetText(L("Create your first DataBar from a starter template, or start empty."))
+            local hintText = CludesUI.MakeFont(host, 13, nil, 1, 1, 1, 0.55)
+            hintText:SetPoint("TOPLEFT", host, "TOPLEFT", 4, -8)
+            hintText:SetText(L("Create your first DataBar from a starter template, or start empty."))
             for i = 1, 4 do
                 local col = (i - 1) % 2
                 local rowI = floor((i - 1) / 2)
@@ -1800,12 +1800,12 @@ CludesUI.AtOptionsLogin(function()
         end
 
         local barId = rowConf.id
-        local vertical = rowConf.orientation == "V"
-        local theme = rowConf.theme
-        if not theme then
-            theme =
+        local isVertical = rowConf.orientation == "V"
+        local skinName = rowConf.theme
+        if not skinName then
+            skinName =
                 { style = "cui", cuiAlpha = 0.5, modernColor = { r = 0.067, g = 0.067, b = 0.067, a = 0.95 } }
-            rowConf.theme = theme
+            rowConf.theme = skinName
         end
 
         local function Apply()
@@ -1822,26 +1822,26 @@ CludesUI.AtOptionsLogin(function()
         cursorY = cursorY - 15
         do
             local BTN_W, BTN_H = 150, 26
-            local seg = CludesUI.BuildSegmentedControl({
+            local segment = CludesUI.BuildSegmentedControl({
                 parent = hostFrame,
                 keys = { "auto", "even" },
                 labels = { auto = "Auto Sized", even = "Even Split" },
                 width = BTN_W * 2,
                 square = true,
                 height = BTN_H,
-                getChecked = function(key)
-                    return mod.BarSizingMode(rowConf) == key
+                getChecked = function(barKey)
+                    return mod.BarSizingMode(rowConf) == barKey
                 end,
-                onToggle = function(key)
-                    if mod.BarSizingMode(rowConf) == key then
+                onToggle = function(barKey)
+                    if mod.BarSizingMode(rowConf) == barKey then
                         return
                     end
-                    rowConf.sizingMode = key
+                    rowConf.sizingMode = barKey
                     mod.ApplyBar(barId)
                     HardRefresh()
                 end,
             })
-            seg:SetPoint("TOP", hostFrame, "TOP", 0, cursorY)
+            segment:SetPoint("TOP", hostFrame, "TOP", 0, cursorY)
             cursorY = cursorY - (BTN_H + 15)
         end
 
@@ -1965,19 +1965,19 @@ CludesUI.AtOptionsLogin(function()
             values = { cui = "CludesUI", modern = "Modern" },
             order = { "cui", "modern" },
             getValue = function()
-                if theme.style == "modern" then
+                if skinName.style == "modern" then
                     return "modern"
                 end
                 return "cui"
             end,
             setValue = function(val)
-                theme.style = val
+                skinName.style = val
                 -- Selecting Modern starts Bar Opacity at 95.
                 if val == "modern" then
-                    local c = theme.modernColor
+                    local c = skinName.modernColor
                     if not c then
                         c = { r = 0.067, g = 0.067, b = 0.067 }
-                        theme.modernColor = c
+                        skinName.modernColor = c
                     end
                     c.a = 0.95
                 end
@@ -1989,7 +1989,7 @@ CludesUI.AtOptionsLogin(function()
         CludesUI.BuildInlineCog(themeRow._rightRegion, {
             title = "CludesUI Background",
             disabled = function()
-                return theme.style ~= "cui"
+                return skinName.style ~= "cui"
             end,
             disabledTooltip = "the CludesUI theme",
             rows = {
@@ -2000,14 +2000,14 @@ CludesUI.AtOptionsLogin(function()
                     max = 100,
                     step = 1,
                     get = function()
-                        local a = theme.cuiAlpha
+                        local a = skinName.cuiAlpha
                         if a == nil then
                             a = 0.5
                         end
                         return floor(a * 100 + 0.5)
                     end,
                     set = function(val)
-                        theme.cuiAlpha = val / 100
+                        skinName.cuiAlpha = val / 100
                         mod.ApplyTheme(barId)
                         RefreshPreviewTheme()
                     end,
@@ -2028,17 +2028,17 @@ CludesUI.AtOptionsLogin(function()
             local btValues, btOrder = {}, {}
             local texNames = mod.barTextureNames or {}
             local texOrder = mod.barTextureOrder or {}
-            for _, key in ipairs(texOrder) do
-                if key ~= "---" then
-                    btValues[key] = texNames[key] or key
-                    btOrder[#btOrder + 1] = key
+            for _, barKey in ipairs(texOrder) do
+                if barKey ~= "---" then
+                    btValues[barKey] = texNames[barKey] or barKey
+                    btOrder[#btOrder + 1] = barKey
                 end
             end
             local texLookup = mod.barTextures or {}
             btValues._menuOpts = {
                 itemHeight = 28,
-                background = function(key)
-                    return texLookup[key]
+                background = function(barKey)
+                    return texLookup[barKey]
                 end,
             }
             return btValues, btOrder
@@ -2051,7 +2051,7 @@ CludesUI.AtOptionsLogin(function()
             -- Textures are a Modern-style feature; the CludesUI style
             -- always renders its own untextured art stack.
             disabled = function()
-                return (theme and theme.style) ~= "modern"
+                return (skinName and skinName.style) ~= "modern"
             end,
             disabledTooltip = "Modern Background Style is required.",
             values = btValues,
@@ -2110,30 +2110,30 @@ CludesUI.AtOptionsLogin(function()
             step = 1,
             tooltip = "Opacity of the bar's background; the swatch picks the Modern color.",
             getValue = function()
-                if theme.style == "modern" then
-                    local c = theme.modernColor
+                if skinName.style == "modern" then
+                    local c = skinName.modernColor
                     local a = c and c.a
                     if a == nil then
                         a = 0.95
                     end
                     return floor(a * 100 + 0.5)
                 end
-                local a = theme.cuiOpacity
+                local a = skinName.cuiOpacity
                 if a == nil then
                     a = 1
                 end
                 return floor(a * 100 + 0.5)
             end,
             setValue = function(val)
-                if theme.style == "modern" then
-                    local c = theme.modernColor
+                if skinName.style == "modern" then
+                    local c = skinName.modernColor
                     if not c then
                         c = { r = 0.067, g = 0.067, b = 0.067 }
-                        theme.modernColor = c
+                        skinName.modernColor = c
                     end
                     c.a = val / 100
                 else
-                    theme.cuiOpacity = val / 100
+                    skinName.cuiOpacity = val / 100
                 end
                 mod.ApplyTheme(barId)
                 RefreshPreviewTheme()
@@ -2146,7 +2146,7 @@ CludesUI.AtOptionsLogin(function()
             -- changes HardRefresh, so the state re-evaluates on switch.
             local region = opacityRow._leftRegion
             local colorSwatch = CludesUI.BuildColorSwatch(region, opacityRow:GetFrameLevel() + 3, function()
-                local c = theme.modernColor
+                local c = skinName.modernColor
                 if not c then
                     return 0.067, 0.067, 0.067
                 end
@@ -2164,10 +2164,10 @@ CludesUI.AtOptionsLogin(function()
                 end
                 return r, g, b2
             end, function(r, g, b2)
-                local c = theme.modernColor
+                local c = skinName.modernColor
                 if not c then
                     c = { a = 0.95 }
-                    theme.modernColor = c
+                    skinName.modernColor = c
                 end
                 c.r = r
                 c.g = g
@@ -2176,7 +2176,7 @@ CludesUI.AtOptionsLogin(function()
                 RefreshPreviewTheme()
             end, false, 20)
             Pix.Point(colorSwatch, "RIGHT", region._control, "LEFT", -8, 0)
-            if theme.style ~= "modern" then
+            if skinName.style ~= "modern" then
                 colorSwatch:SetAlpha(0.3)
                 SwatchCover(colorSwatch, "the Modern background style", 5)
             end
@@ -2188,7 +2188,7 @@ CludesUI.AtOptionsLogin(function()
         -- and cfg.thickness the cross-axis, unchanged -- the labels flip
         -- with orientation so users read screen terms.
         local lenLabel, fullLabel, thickLabel
-        if vertical then
+        if isVertical then
             lenLabel, fullLabel, thickLabel = "Height", "Full Screen Height", "Width"
         else
             lenLabel, fullLabel, thickLabel = "Width", "Full Screen Width", "Height"
@@ -2219,7 +2219,7 @@ CludesUI.AtOptionsLogin(function()
             values = { none = "None", bottom = "Bottom", top = "Top", left = "Left", right = "Right" },
             order = { "none", "bottom", "top", "left", "right" },
             itemDisabled = function(val)
-                if vertical then
+                if isVertical then
                     return val == "bottom" or val == "top"
                 end
                 return val == "left" or val == "right"
@@ -2320,15 +2320,15 @@ CludesUI.AtOptionsLogin(function()
             local blockId = b.id
             local s = b.settings
             -- Row accessors over s: a key read (or its default) and written.
-            local function SFieldThen(key)
+            local function SFieldThen(barKey)
                 return function(value)
-                    s[key] = value
+                    s[barKey] = value
                     Apply()
                 end
             end
-            local function SFieldOr(key, default)
+            local function SFieldOr(barKey, default)
                 return function()
-                    return s[key] or default
+                    return s[barKey] or default
                 end
             end
             if not s then
@@ -2354,7 +2354,7 @@ CludesUI.AtOptionsLogin(function()
             local sizingRow
             if barMode == "auto" and not isFillBlock then
                 local gapLLabel, gapRLabel
-                if vertical then
+                if isVertical then
                     gapLLabel, gapRLabel = "Top Gap", "Bottom Gap"
                 else
                     gapLLabel, gapRLabel = "Left Gap", "Right Gap"
@@ -2455,7 +2455,7 @@ CludesUI.AtOptionsLogin(function()
             -- Text Align + X/Y offsets (skipped for spacers)
             if not isSpacer then
                 local alignValues
-                if vertical then
+                if isVertical then
                     alignValues = { LEFT = "Top", CENTER = "Center", RIGHT = "Bottom" }
                 else
                     alignValues = { LEFT = "Left", CENTER = "Center", RIGHT = "Right" }
@@ -2887,16 +2887,16 @@ CludesUI.AtOptionsLogin(function()
             -- Toggle row for a setting whose default is ON: nil has to read as
             -- true, which the `== true` of MkToggle (further down) cannot
             -- express. Declared here because the icon row below needs it too.
-            local function MkToggleOn(labelText, key, tipText)
+            local function MkToggleOn(labelText, barKey, tipText)
                 return {
                     type = "toggle",
                     text = labelText,
                     tooltip = tipText,
                     getValue = function()
-                        return s[key] ~= false
+                        return s[barKey] ~= false
                     end,
                     setValue = function(val)
-                        s[key] = val and true or false
+                        s[barKey] = val and true or false
                         Apply()
                     end,
                 }
@@ -3214,26 +3214,26 @@ CludesUI.AtOptionsLogin(function()
 
             -- Type-specific rows (sequential DualRow fill; odd tail gets a
             -- blank label in the remaining slot)
-            local function MkToggle(labelText, key, tipText)
+            local function MkToggle(labelText, barKey, tipText)
                 return {
                     type = "toggle",
                     text = labelText,
                     tooltip = tipText,
                     getValue = function()
-                        return s[key] == true
+                        return s[barKey] == true
                     end,
                     setValue = function(val)
-                        s[key] = val and true or false
+                        s[barKey] = val and true or false
                         Apply()
                     end,
                 }
             end
 
-            local typeRows = {}
+            local typeRowList = {}
             -- Travel: its three click dropdowns, set by the row loop below.
             local travelClickDD
             if b.type == "audio" then
-                typeRows = {
+                typeRowList = {
                     {
                         type = "dropdown",
                         text = "Audio Channel",
@@ -3254,7 +3254,7 @@ CludesUI.AtOptionsLogin(function()
                 -- The two time toggles show the EFFECTIVE mode: untouched,
                 -- the clock follows the game's Time Manager CVars (same as
                 -- the minimap clock); toggling stores a per-block override.
-                typeRows = {
+                typeRowList = {
                     {
                         type = "toggle",
                         text = "Local Time",
@@ -3293,7 +3293,7 @@ CludesUI.AtOptionsLogin(function()
                     ),
                 }
             elseif b.type == "combat" then
-                typeRows = {
+                typeRowList = {
                     MkToggle(
                         "Show Only In Combat",
                         "onlyInCombat",
@@ -3301,7 +3301,7 @@ CludesUI.AtOptionsLogin(function()
                     ),
                 }
             elseif b.type == "ms" then
-                typeRows = {
+                typeRowList = {
                     {
                         type = "segmented",
                         text = "Latency",
@@ -3347,7 +3347,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 local INERT_TIP =
                     "This bar sizes its blocks itself, so the width is not this block's to choose."
-                typeRows = {
+                typeRowList = {
                     {
                         type = "segmented",
                         text = "Width",
@@ -3424,7 +3424,7 @@ CludesUI.AtOptionsLogin(function()
                     ),
                 }
             elseif b.type == "coords" then
-                typeRows = {
+                typeRowList = {
                     {
                         type = "dropdown",
                         text = "Decimals",
@@ -3447,7 +3447,7 @@ CludesUI.AtOptionsLogin(function()
                     ),
                 }
             elseif b.type == "gold" then
-                typeRows = {
+                typeRowList = {
                     MkToggle("Show Icon", "showIcons", "Shows the coin icon next to the amount."),
                     MkToggle("Show Bag Space", "showBagSpace", "Shows your free bag slots."),
                     -- Off (default) = the letter suffixes; on = coin textures.
@@ -3496,14 +3496,14 @@ CludesUI.AtOptionsLogin(function()
                 -- locale already gets K/M/B, so the toggle would be a no-op.
                 -- Mirrors the Damage Meters options row (CUI_DamageMeters_Options.lua).
                 if CludesUI.LocaleHasNumberAbbreviation() then
-                    typeRows[#typeRows + 1] = MkToggle(
+                    typeRowList[#typeRowList + 1] = MkToggle(
                         "Force English Units (K/M/B)",
                         "forceEnglishUnits",
                         "Always use K/M/B instead of localized units."
                     )
                 end
             elseif b.type == "profession" or b.type == "profession2" then
-                typeRows = {
+                typeRowList = {
                     {
                         type = "segmented",
                         text = "Text Display",
@@ -3514,7 +3514,7 @@ CludesUI.AtOptionsLogin(function()
                     },
                 }
             elseif b.type == "xprep" then
-                typeRows = {
+                typeRowList = {
                     {
                         type = "dropdown",
                         text = "Text Display",
@@ -3553,7 +3553,7 @@ CludesUI.AtOptionsLogin(function()
                     },
                 }
             elseif b.type == "spec" then
-                typeRows = {
+                typeRowList = {
                     MkToggle("Show Loadout Name", "showLoadout", "Shows the active talent loadout name."),
                     MkToggle("Uppercase Text", "useUppercase", "Renders the spec text in uppercase."),
                 }
@@ -3649,12 +3649,12 @@ CludesUI.AtOptionsLogin(function()
                     none = "None",
                 }
                 local TEXT_ORDER = { "location", "smart", "both", "cooldown", "none" }
-                typeRows = {}
+                typeRowList = {}
                 local clickVals, clickOrd = {}, {}
                 for button = 1, 3 do
                     local vals, ord = BuildClickValues(button, {}, {})
                     clickVals[button], clickOrd[button] = vals, ord
-                    typeRows[#typeRows + 1] = {
+                    typeRowList[#typeRowList + 1] = {
                         type = "dropdown",
                         text = CLICK_LABELS[button],
                         tooltip = CLICK_TIPS[button],
@@ -3673,7 +3673,7 @@ CludesUI.AtOptionsLogin(function()
                             CludesUI:RefreshPage()
                         end,
                     }
-                    typeRows[#typeRows + 1] = {
+                    typeRowList[#typeRowList + 1] = {
                         type = "dropdown",
                         text = TEXT_LABELS[button],
                         tooltip = "What the bar shows for this click.",
@@ -3695,9 +3695,9 @@ CludesUI.AtOptionsLogin(function()
                 end
                 -- Last, so each click keeps its choice and text on one row.
                 if travelIconCfg then
-                    typeRows[#typeRows + 1] = travelIconCfg
+                    typeRowList[#typeRowList + 1] = travelIconCfg
                 end
-                typeRows[#typeRows + 1] = MkToggle(
+                typeRowList[#typeRowList + 1] = MkToggle(
                     "Show Other Characters",
                     "altHearths",
                     "Lists your other characters' hearthstones in the tooltip, once each has logged in with this on."
@@ -3726,12 +3726,12 @@ CludesUI.AtOptionsLogin(function()
                 -- slot hosts the Enable Text toggle instead): anchors the
                 -- whole icon strip within the block's slot via b.align.
                 local mmAlignValues
-                if vertical then
+                if isVertical then
                     mmAlignValues = { LEFT = "Top", CENTER = "Center", RIGHT = "Bottom" }
                 else
                     mmAlignValues = { LEFT = "Left", CENTER = "Center", RIGHT = "Right" }
                 end
-                typeRows = {
+                typeRowList = {
                     {
                         type = "dropdown",
                         text = "Align Content",
@@ -3793,7 +3793,7 @@ CludesUI.AtOptionsLogin(function()
                     -- checklist dropdown appended after the shared row loop.
                 }
             elseif b.type == "supplies" then
-                typeRows = {
+                typeRowList = {
                     {
                         type = "dropdown",
                         text = "Visible Items",
@@ -3812,7 +3812,7 @@ CludesUI.AtOptionsLogin(function()
                 cValues._menuOpts = { searchable = true, itemHeight = 26 }
                 cValues[0] = L("Select a currency")
                 table.insert(cOrder, 1, 0)
-                typeRows = {
+                typeRowList = {
                     {
                         type = "dropdown",
                         text = "Currency",
@@ -3843,7 +3843,7 @@ CludesUI.AtOptionsLogin(function()
                     ),
                 }
             elseif b.type == "crests" then
-                typeRows = {
+                typeRowList = {
                     -- Placeholder: the checklist dropdown swaps into this slot
                     -- after the row loop (crestListRow capture), same idiom as
                     -- the gold tooltip checklist.
@@ -3912,7 +3912,7 @@ CludesUI.AtOptionsLogin(function()
                 }
             elseif b.type == "bags" then
                 -- Show Icon rides the Icon Color row's right slot above.
-                typeRows = {
+                typeRowList = {
                     {
                         type = "dropdown",
                         text = "Display",
@@ -3953,7 +3953,7 @@ CludesUI.AtOptionsLogin(function()
                     },
                 }
             elseif b.type == "mplussummary" then
-                typeRows = {
+                typeRowList = {
                     MkToggle(
                         "Hide When Empty",
                         "hideWhenEmpty",
@@ -3961,7 +3961,7 @@ CludesUI.AtOptionsLogin(function()
                     ),
                 }
             elseif b.type == "timeplayed" then
-                typeRows = {
+                typeRowList = {
                     MkToggle(
                         "Always Show Total",
                         "alwaysTotal",
@@ -3970,7 +3970,7 @@ CludesUI.AtOptionsLogin(function()
                 }
             elseif b.type == "ilvl" then
                 -- Prefix rides the Icon Color row's right slot above.
-                typeRows = {
+                typeRowList = {
                     {
                         type = "segmented",
                         text = "Item Level",
@@ -4019,7 +4019,7 @@ CludesUI.AtOptionsLogin(function()
                     lValues[s.source] = s.source .. " |cff808080(" .. L("not loaded") .. ")|r"
                     lOrder[#lOrder + 1] = s.source
                 end
-                typeRows = {
+                typeRowList = {
                     {
                         type = "dropdown",
                         text = "Plugin",
@@ -4107,15 +4107,15 @@ CludesUI.AtOptionsLogin(function()
                     end,
                 }
                 if b.type ~= "micromenu" then
-                    typeRows[#typeRows + 1] = iconStyleCfg
+                    typeRowList[#typeRowList + 1] = iconStyleCfg
                 end
             end
-            for keyName = 1, #typeRows, 2 do
-                local rightCfg = typeRows[keyName + 1]
+            for keyName = 1, #typeRowList, 2 do
+                local rightCfg = typeRowList[keyName + 1]
                 if not rightCfg then
                     rightCfg = { type = "label", text = "" }
                 end
-                row, height = W:DualRow(hostFrame, cursorY, typeRows[keyName], rightCfg)
+                row, height = W:DualRow(hostFrame, cursorY, typeRowList[keyName], rightCfg)
                 cursorY = cursorY - height
                 -- Travel: the first three rows hold the click dropdowns on their left.
                 if travelClickDD and keyName <= 5 then
@@ -4131,12 +4131,12 @@ CludesUI.AtOptionsLogin(function()
                         210,
                         regionFrame:GetFrameLevel() + 2,
                         mod.ClassResourceChoices,
-                        function(key)
-                            return mod.ClassResourceShown(s, key)
+                        function(barKey)
+                            return mod.ClassResourceShown(s, barKey)
                         end,
-                        function(key, value)
+                        function(barKey, value)
                             s.hiddenItems = s.hiddenItems or {}
-                            s.hiddenItems[key] = not value
+                            s.hiddenItems[barKey] = not value
                             Apply()
                         end,
                         nil,
@@ -4521,9 +4521,9 @@ CludesUI.AtOptionsLogin(function()
                     for _, el in ipairs(MM_ELEMENTS) do
                         labels[el.key] = el.label
                     end
-                    for _, key in ipairs(mod.GetMicroMenuOrder(s, {})) do
-                        if labels[key] then
-                            itemList[#itemList + 1] = { key = key, label = labels[key] }
+                    for _, barKey in ipairs(mod.GetMicroMenuOrder(s, {})) do
+                        if labels[barKey] then
+                            itemList[#itemList + 1] = { key = barKey, label = labels[barKey] }
                         end
                     end
                     local checkDrop, cbDDRefresh = CludesUI.BuildReorderCBDropdown(
@@ -4698,7 +4698,7 @@ CludesUI.AtOptionsLogin(function()
             CludesUI.PrintError("Cannot open options during combat.")
             return
         end
-        local key = "block:" .. blockId .. ":" .. settingKey
+        local barKey = "block:" .. blockId .. ":" .. settingKey
         CludesUI:NavigateToElementSettings("CludesUIDataBars", PAGE_DATABARS, nil, function()
             local p = Profile()
             if p then
@@ -4710,7 +4710,7 @@ CludesUI.AtOptionsLogin(function()
         -- delay NavigateToElementSettings uses for its own section lookup).
         C_Timer.After(0.05, function()
             if _edbNavigateFn then
-                _edbNavigateFn(key)
+                _edbNavigateFn(barKey)
             end
         end)
     end
