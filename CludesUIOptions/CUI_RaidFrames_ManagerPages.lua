@@ -1743,6 +1743,12 @@ local function BuildTileDetail(widget, fontFile, t)
         t[key] = val
         DmApply()
     end
+    -- Row setters over TSet: the key written with the row's value.
+    local function TSetRow(key)
+        return function(v)
+            TSet(key, v)
+        end
+    end
 
     if t.type == "icons" or t.type == "square" then
         -- Grid tiles (Icon / Square): the Base Icons pane layout 1:1, with
@@ -1817,9 +1823,7 @@ local function BuildTileDetail(widget, fontFile, t)
             getValue = function()
                 return t.size or 18
             end,
-            setValue = function(val)
-                TSet("size", val)
-            end,
+            setValue = TSetRow("size"),
         }, {
             type = "slider",
             text = "Max Debuffs",
@@ -1830,9 +1834,7 @@ local function BuildTileDetail(widget, fontFile, t)
             getValue = function()
                 return t.cap or 3
             end,
-            setValue = function(val)
-                TSet("cap", val)
-            end,
+            setValue = TSetRow("cap"),
         })
         sy = sy - hh
         do
@@ -1849,9 +1851,7 @@ local function BuildTileDetail(widget, fontFile, t)
                         get = function()
                             return TEff("iconZoom", "debuffIconZoom", 0.08)
                         end,
-                        set = function(val)
-                            TSet("iconZoom", val)
-                        end,
+                        set = TSetRow("iconZoom"),
                     },
                 },
             })
@@ -1880,9 +1880,7 @@ local function BuildTileDetail(widget, fontFile, t)
             getValue = function()
                 return t.growDirection or "CENTER"
             end,
-            setValue = function(val)
-                TSet("growDirection", val)
-            end,
+            setValue = TSetRow("growDirection"),
         })
         sy = sy - hh
         do
@@ -1899,9 +1897,7 @@ local function BuildTileDetail(widget, fontFile, t)
                         get = function()
                             return t.offsetX or 0
                         end,
-                        set = function(val)
-                            TSet("offsetX", val)
-                        end,
+                        set = TSetRow("offsetX"),
                     },
                     {
                         type = "slider",
@@ -1912,9 +1908,7 @@ local function BuildTileDetail(widget, fontFile, t)
                         get = function()
                             return t.offsetY or 0
                         end,
-                        set = function(val)
-                            TSet("offsetY", val)
-                        end,
+                        set = TSetRow("offsetY"),
                     },
                 },
             })
@@ -1935,9 +1929,7 @@ local function BuildTileDetail(widget, fontFile, t)
             getValue = function()
                 return t.iconsPerRow or 0
             end,
-            setValue = function(val)
-                TSet("iconsPerRow", val)
-            end,
+            setValue = TSetRow("iconsPerRow"),
         }, {
             type = "slider",
             pixel = true,
@@ -1949,9 +1941,7 @@ local function BuildTileDetail(widget, fontFile, t)
             getValue = function()
                 return t.spacing or 1
             end,
-            setValue = function(val)
-                TSet("spacing", val)
-            end,
+            setValue = TSetRow("spacing"),
         })
         sy = sy - hh
 
@@ -2000,9 +1990,7 @@ local function BuildTileDetail(widget, fontFile, t)
                         get = function()
                             return TEff("durTextSize", "debuffDurTextSize", 10)
                         end,
-                        set = function(val)
-                            TSet("durTextSize", val)
-                        end,
+                        set = TSetRow("durTextSize"),
                     },
                     {
                         type = "slider",
@@ -2013,9 +2001,7 @@ local function BuildTileDetail(widget, fontFile, t)
                         get = function()
                             return TEff("durTextOffsetX", "debuffDurTextOffsetX", 0)
                         end,
-                        set = function(val)
-                            TSet("durTextOffsetX", val)
-                        end,
+                        set = TSetRow("durTextOffsetX"),
                     },
                     {
                         type = "slider",
@@ -2026,9 +2012,7 @@ local function BuildTileDetail(widget, fontFile, t)
                         get = function()
                             return TEff("durTextOffsetY", "debuffDurTextOffsetY", 0)
                         end,
-                        set = function(val)
-                            TSet("durTextOffsetY", val)
-                        end,
+                        set = TSetRow("durTextOffsetY"),
                     },
                 },
             })
@@ -2057,9 +2041,7 @@ local function BuildTileDetail(widget, fontFile, t)
                         get = function()
                             return TEff("stacksTextSize", "debuffStacksTextSize", 11)
                         end,
-                        set = function(val)
-                            TSet("stacksTextSize", val)
-                        end,
+                        set = TSetRow("stacksTextSize"),
                     },
                     {
                         type = "slider",
@@ -2070,9 +2052,7 @@ local function BuildTileDetail(widget, fontFile, t)
                         get = function()
                             return TEff("stacksOffsetX", "debuffStacksOffsetX", 0)
                         end,
-                        set = function(val)
-                            TSet("stacksOffsetX", val)
-                        end,
+                        set = TSetRow("stacksOffsetX"),
                     },
                     {
                         type = "slider",
@@ -2083,9 +2063,7 @@ local function BuildTileDetail(widget, fontFile, t)
                         get = function()
                             return TEff("stacksOffsetY", "debuffStacksOffsetY", 0)
                         end,
-                        set = function(val)
-                            TSet("stacksOffsetY", val)
-                        end,
+                        set = TSetRow("stacksOffsetY"),
                     },
                 },
             })
@@ -2229,9 +2207,7 @@ local function BuildTileDetail(widget, fontFile, t)
             getValue = function()
                 return t.position or "bottom"
             end,
-            setValue = function(val)
-                TSet("position", val)
-            end,
+            setValue = TSetRow("position"),
         })
         sy = sy - hh
         do
@@ -2248,9 +2224,7 @@ local function BuildTileDetail(widget, fontFile, t)
                         get = function()
                             return t.offsetX or 0
                         end,
-                        set = function(val)
-                            TSet("offsetX", val)
-                        end,
+                        set = TSetRow("offsetX"),
                     },
                     {
                         type = "slider",
@@ -2261,9 +2235,7 @@ local function BuildTileDetail(widget, fontFile, t)
                         get = function()
                             return t.offsetY or 0
                         end,
-                        set = function(val)
-                            TSet("offsetY", val)
-                        end,
+                        set = TSetRow("offsetY"),
                     },
                     {
                         type = "dropdown",
@@ -2279,9 +2251,7 @@ local function BuildTileDetail(widget, fontFile, t)
                         get = function()
                             return t.frameLevel or "behindBorders"
                         end,
-                        set = function(val)
-                            TSet("frameLevel", val)
-                        end,
+                        set = TSetRow("frameLevel"),
                     },
                 },
             })
@@ -2316,9 +2286,7 @@ local function BuildTileDetail(widget, fontFile, t)
             getValue = function()
                 return t.width or 60
             end,
-            setValue = function(val)
-                TSet("width", val)
-            end,
+            setValue = TSetRow("width"),
         }, {
             type = "slider",
             text = isVert and "Width" or "Height",
@@ -2333,9 +2301,7 @@ local function BuildTileDetail(widget, fontFile, t)
             getValue = function()
                 return t.height or 5
             end,
-            setValue = function(val)
-                TSet("height", val)
-            end,
+            setValue = TSetRow("height"),
         })
         sy = sy - hh
         _, hh = W:DualRow(widget, sy, {
@@ -2372,9 +2338,7 @@ local function BuildTileDetail(widget, fontFile, t)
             getValue = function()
                 return t.barColorOpacity or 100
             end,
-            setValue = function(val)
-                TSet("barColorOpacity", val)
-            end,
+            setValue = TSetRow("barColorOpacity"),
         }, {
             type = "slider",
             text = "Background",
@@ -2385,9 +2349,7 @@ local function BuildTileDetail(widget, fontFile, t)
             getValue = function()
                 return t.barBgOpacity or 50
             end,
-            setValue = function(val)
-                TSet("barBgOpacity", val)
-            end,
+            setValue = TSetRow("barBgOpacity"),
         })
         sy = sy - hh
         do
@@ -2427,9 +2389,7 @@ local function BuildTileDetail(widget, fontFile, t)
                 getValue = function()
                     return t.opacity or 45
                 end,
-                setValue = function(val)
-                    TSet("opacity", val)
-                end,
+                setValue = TSetRow("opacity"),
             },
             CludesUI.MaxDurationDropdown(function()
                 return t.maxDurSec

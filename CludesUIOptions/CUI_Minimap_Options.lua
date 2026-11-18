@@ -30,7 +30,6 @@ local CreateFrame = CludesUI._Pool.CreateFrame
 local PoolIsIdle = CludesUI._Pool.IsIdle
 
 CludesUI.AtOptionsLogin(function()
-
     ---------------------------------------------------------------------------
     --  DB helpers
     ---------------------------------------------------------------------------
@@ -95,6 +94,12 @@ CludesUI.AtOptionsLogin(function()
         local m = MinimapDB()
         return m and m[key] or default
     end
+    -- A row getter over MapGet: the key's value, or the default given.
+    local function MapGetRow(key, default)
+        return function()
+            return MapGet(key, default)
+        end
+    end
     local function MapSet(key, v)
         local m = MinimapDB()
         if not m then
@@ -103,6 +108,12 @@ CludesUI.AtOptionsLogin(function()
         m[key] = v
         RefreshMinimap()
         return true
+    end
+    -- Row setters over MapSet: the key written with the row's value.
+    local function MapSetRow(key)
+        return function(v)
+            MapSet(key, v)
+        end
     end
 
     -- A cog slider over one minimap setting (min to max in steps of step).
@@ -330,9 +341,7 @@ CludesUI.AtOptionsLogin(function()
                     textured_circle = "Textured Circle",
                 },
                 order = { "square", "rectangular", "circle", "textured_circle" },
-                getValue = function()
-                    return MapGet("shape", "square")
-                end,
+                getValue = MapGetRow("shape", "square"),
                 setValue = function(v)
                     if not MapSet("shape", v) then
                         return
@@ -392,9 +401,7 @@ CludesUI.AtOptionsLogin(function()
             min = 100,
             max = 600,
             step = 1,
-            getValue = function()
-                return MapGet("mapSize", 140)
-            end,
+            getValue = MapGetRow("mapSize", 140),
             setValue = function(v)
                 local m = MinimapDB()
                 if not m then
@@ -441,12 +448,8 @@ CludesUI.AtOptionsLogin(function()
             max = 40,
             step = 1,
             tooltip = "Size of mail, calendar, tracking, and minimap button group toggle",
-            getValue = function()
-                return MapGet("interactableBtnSize", 21)
-            end,
-            setValue = function(v)
-                MapSet("interactableBtnSize", v)
-            end,
+            getValue = MapGetRow("interactableBtnSize", 21),
+            setValue = MapSetRow("interactableBtnSize"),
         })
         posY = posY - hgt
         -- Icon Size in a cog on Size: Blizzard's Edit Mode Icon Size (the scale of
@@ -896,21 +899,13 @@ CludesUI.AtOptionsLogin(function()
             max = 15,
             step = 1,
             tooltip = "Automatically zoom back out to maximum distance after this many seconds of no manual zoom change. 0 disables the reset.",
-            getValue = function()
-                return MapGet("zoomResetSeconds", 0)
-            end,
-            setValue = function(v)
-                MapSet("zoomResetSeconds", v)
-            end,
+            getValue = MapGetRow("zoomResetSeconds", 0),
+            setValue = MapSetRow("zoomResetSeconds"),
         }, {
             type = "toggle",
             text = "Rotate Minimap",
-            getValue = function()
-                return MapGet("rotateMinimap", false)
-            end,
-            setValue = function(v)
-                MapSet("rotateMinimap", v)
-            end,
+            getValue = MapGetRow("rotateMinimap", false),
+            setValue = MapSetRow("rotateMinimap"),
         })
         posY = posY - hgt
 
@@ -982,12 +977,8 @@ CludesUI.AtOptionsLogin(function()
             max = 40,
             step = 1,
             tooltip = "Size of addon minimap buttons in the flyout grid",
-            getValue = function()
-                return MapGet("addonBtnSize", 24)
-            end,
-            setValue = function(v)
-                MapSet("addonBtnSize", v)
-            end,
+            getValue = MapGetRow("addonBtnSize", 24),
+            setValue = MapSetRow("addonBtnSize"),
         })
         posY = posY - hgt
 
@@ -1129,9 +1120,7 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Mouseover Extra Buttons",
             tooltip = "When enabled, the extra buttons (Great Vault, M+ Portals, Friends Online, Group Button) and any ungrouped minimap buttons only show while the mouse is over the minimap. The M+ Portals flyout keeps them shown until it closes.",
-            getValue = function()
-                return MapGet("mouseoverExtraBtns", false)
-            end,
+            getValue = MapGetRow("mouseoverExtraBtns", false),
             setValue = function(v)
                 local m = MinimapDB()
                 if m then
@@ -1242,9 +1231,7 @@ CludesUI.AtOptionsLogin(function()
             max = 2.0,
             step = 0.01,
             tooltip = "Scales the M+ Portals flyout the portals button opens.",
-            getValue = function()
-                return MapGet("extraFlyoutScale", 1.0)
-            end,
+            getValue = MapGetRow("extraFlyoutScale", 1.0),
             setValue = function(v)
                 local m = MinimapDB()
                 if not m then
@@ -1285,9 +1272,7 @@ CludesUI.AtOptionsLogin(function()
             max = 30,
             step = 1,
             tooltip = "Max rows per section in the Friends Online tooltip (0 = the 30-row max). The cog can show each note under its row.",
-            getValue = function()
-                return MapGet("friendsMaxRows", 0)
-            end,
+            getValue = MapGetRow("friendsMaxRows", 0),
             setValue = function(v)
                 local m = MinimapDB()
                 if not m then
@@ -1302,9 +1287,7 @@ CludesUI.AtOptionsLogin(function()
             max = 2.0,
             step = 0.01,
             tooltip = "Scales the custom tooltips shown by the unique minimap buttons (Great Vault, friends, calendar, mail, tracking).",
-            getValue = function()
-                return MapGet("customTooltipScale", 1.0)
-            end,
+            getValue = MapGetRow("customTooltipScale", 1.0),
             setValue = function(v)
                 local m = MinimapDB()
                 if not m then
@@ -1323,9 +1306,7 @@ CludesUI.AtOptionsLogin(function()
                         type = "toggle",
                         label = "Show Notes",
                         tooltip = "Shows each guild or friend note on a second line under its row. The tooltip gets taller.",
-                        get = function()
-                            return MapGet("friendsShowNotes", false)
-                        end,
+                        get = MapGetRow("friendsShowNotes", false),
                         set = function(v)
                             local m = MinimapDB()
                             if not m then
@@ -1378,9 +1359,7 @@ CludesUI.AtOptionsLogin(function()
                 end
             end,
             getValue = BtnRowPos,
-            setValue = function(v)
-                MapSet("btnRowPosition", v)
-            end,
+            setValue = MapSetRow("btnRowPosition"),
         }, {
             type = "toggle",
             text = "Free Move Buttons",
@@ -1416,12 +1395,8 @@ CludesUI.AtOptionsLogin(function()
                         min = -20,
                         max = 40,
                         step = 1,
-                        get = function()
-                            return MapGet("btnRowSpacing", 0)
-                        end,
-                        set = function(v)
-                            MapSet("btnRowSpacing", v)
-                        end,
+                        get = MapGetRow("btnRowSpacing", 0),
+                        set = MapSetRow("btnRowSpacing"),
                     },
                     MapSlider("Distance from Map", "btnRowDistance", 0, -20, 60, 1),
                     {
@@ -1433,9 +1408,7 @@ CludesUI.AtOptionsLogin(function()
                             local m = MinimapDB()
                             return (m and m.flyoutGrowDir) or "auto"
                         end,
-                        set = function(v)
-                            MapSet("flyoutGrowDir", v)
-                        end,
+                        set = MapSetRow("flyoutGrowDir"),
                     },
                 },
             })
@@ -1555,9 +1528,7 @@ CludesUI.AtOptionsLogin(function()
                     local m = MinimapDB()
                     return (m and m.omniumFolioScale) or 0.75
                 end,
-                setValue = function(v)
-                    MapSet("omniumFolioScale", v)
-                end,
+                setValue = MapSetRow("omniumFolioScale"),
             })
             posY = posY - hgt
             if not CludesUI._prebuilding then
@@ -1584,9 +1555,7 @@ CludesUI.AtOptionsLogin(function()
                                 local m = MinimapDB()
                                 return (m and m.omniumFolioCorner) or "BOTTOMLEFT"
                             end,
-                            set = function(v)
-                                MapSet("omniumFolioCorner", v)
-                            end,
+                            set = MapSetRow("omniumFolioCorner"),
                         },
                         -- "X Offset" / "Y Offset" (not "X" / "Y"): labels under ~10px wide make
                         -- BuildCogPopup fall back to a 60px label column, which left the old cog
@@ -1601,9 +1570,7 @@ CludesUI.AtOptionsLogin(function()
                                 local m = MinimapDB()
                                 return (m and m.omniumFolioX) or 0
                             end,
-                            set = function(v)
-                                MapSet("omniumFolioX", v)
-                            end,
+                            set = MapSetRow("omniumFolioX"),
                         },
                         {
                             type = "slider",
@@ -1615,9 +1582,7 @@ CludesUI.AtOptionsLogin(function()
                                 local m = MinimapDB()
                                 return (m and m.omniumFolioY) or 0
                             end,
-                            set = function(v)
-                                MapSet("omniumFolioY", v)
-                            end,
+                            set = MapSetRow("omniumFolioY"),
                         },
                     },
                 })
@@ -1661,9 +1626,7 @@ CludesUI.AtOptionsLogin(function()
                 local m = MinimapDB()
                 return (m and m.addonCompartmentScale) or 0.9
             end,
-            setValue = function(v)
-                MapSet("addonCompartmentScale", v)
-            end,
+            setValue = MapSetRow("addonCompartmentScale"),
         })
         posY = posY - hgt
         if not CludesUI._prebuilding then
@@ -1687,9 +1650,7 @@ CludesUI.AtOptionsLogin(function()
                             local m = MinimapDB()
                             return (m and m.addonCompartmentCorner) or "TOPRIGHT"
                         end,
-                        set = function(v)
-                            MapSet("addonCompartmentCorner", v)
-                        end,
+                        set = MapSetRow("addonCompartmentCorner"),
                     },
                     {
                         type = "slider",
@@ -1701,9 +1662,7 @@ CludesUI.AtOptionsLogin(function()
                             local m = MinimapDB()
                             return (m and m.addonCompartmentX) or 0
                         end,
-                        set = function(v)
-                            MapSet("addonCompartmentX", v)
-                        end,
+                        set = MapSetRow("addonCompartmentX"),
                     },
                     {
                         type = "slider",
@@ -1715,9 +1674,7 @@ CludesUI.AtOptionsLogin(function()
                             local m = MinimapDB()
                             return (m and m.addonCompartmentY) or 0
                         end,
-                        set = function(v)
-                            MapSet("addonCompartmentY", v)
-                        end,
+                        set = MapSetRow("addonCompartmentY"),
                     },
                 },
             })
@@ -1758,9 +1715,7 @@ CludesUI.AtOptionsLogin(function()
                 local m = MinimapDB()
                 return m and m.scrollZoom
             end,
-            setValue = function(v)
-                MapSet("scrollZoom", v)
-            end,
+            setValue = MapSetRow("scrollZoom"),
         })
         posY = posY - hgt
         if not CludesUI._prebuilding then
@@ -1839,9 +1794,7 @@ CludesUI.AtOptionsLogin(function()
                     end
                 end,
                 getValue = ElementRowPos,
-                setValue = function(v)
-                    MapSet("elementRowPosition", v)
-                end,
+                setValue = MapSetRow("elementRowPosition"),
             }),
             {
                 type = "dropdown",
@@ -1859,9 +1812,7 @@ CludesUI.AtOptionsLogin(function()
                     return m and m.hideMail
                 end,
                 disabledTooltip = "Mail in Show Blizzard Elements",
-                getValue = function()
-                    return MapGet("mailPosition", "button")
-                end,
+                getValue = MapGetRow("mailPosition", "button"),
                 setValue = function(v)
                     if not MapSet("mailPosition", v) then
                         return
@@ -1909,12 +1860,8 @@ CludesUI.AtOptionsLogin(function()
                         min = -20,
                         max = 40,
                         step = 1,
-                        get = function()
-                            return MapGet("elementRowSpacing", 0)
-                        end,
-                        set = function(v)
-                            MapSet("elementRowSpacing", v)
-                        end,
+                        get = MapGetRow("elementRowSpacing", 0),
+                        set = MapSetRow("elementRowSpacing"),
                     },
                     MapSlider("Distance from Map", "elementRowDistance", 0, -20, 60, 1),
                 },
@@ -1993,12 +1940,8 @@ CludesUI.AtOptionsLogin(function()
                 return ClockMode() == "none"
             end,
             disabledTooltip = "Clock Style",
-            getValue = function()
-                return MapGet("clockPosition", "top")
-            end,
-            setValue = function(v)
-                MapSet("clockPosition", v)
-            end,
+            getValue = MapGetRow("clockPosition", "top"),
+            setValue = MapSetRow("clockPosition"),
         })
         posY = posY - hgt
         -- Inline cog on Clock Position for scale + X/Y offset
@@ -2019,9 +1962,7 @@ CludesUI.AtOptionsLogin(function()
                         min = 0.5,
                         max = 2.0,
                         step = 0.01,
-                        get = function()
-                            return MapGet("clockScale", 1.15)
-                        end,
+                        get = MapGetRow("clockScale", 1.15),
                         set = function(v)
                             local m = MinimapDB()
                             if not m then
@@ -2089,12 +2030,8 @@ CludesUI.AtOptionsLogin(function()
                     return LocationMode() == "none"
                 end,
                 disabledTooltip = "Zone Text Style",
-                getValue = function()
-                    return MapGet("locationPosition", "bottom")
-                end,
-                setValue = function(v)
-                    MapSet("locationPosition", v)
-                end,
+                getValue = MapGetRow("locationPosition", "bottom"),
+                setValue = MapSetRow("locationPosition"),
             })
         )
         posY = posY - hgt
@@ -2112,22 +2049,14 @@ CludesUI.AtOptionsLogin(function()
                     {
                         type = "toggle",
                         label = "Display Sub Zone",
-                        get = function()
-                            return MapGet("zoneShowSubZone", false)
-                        end,
-                        set = function(v)
-                            MapSet("zoneShowSubZone", v)
-                        end,
+                        get = MapGetRow("zoneShowSubZone", false),
+                        set = MapSetRow("zoneShowSubZone"),
                     },
                     {
                         type = "toggle",
                         label = "Reactive Coloring",
-                        get = function()
-                            return MapGet("zoneReactiveColor", false)
-                        end,
-                        set = function(v)
-                            MapSet("zoneReactiveColor", v)
-                        end,
+                        get = MapGetRow("zoneReactiveColor", false),
+                        set = MapSetRow("zoneReactiveColor"),
                     },
                 },
             })
@@ -2150,9 +2079,7 @@ CludesUI.AtOptionsLogin(function()
                         min = 0.5,
                         max = 2.0,
                         step = 0.01,
-                        get = function()
-                            return MapGet("locationScale", 1.15)
-                        end,
+                        get = MapGetRow("locationScale", 1.15),
                         set = function(v)
                             local m = MinimapDB()
                             if not m then
@@ -2210,9 +2137,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 return m.coordsPosition or (m.coordsBelow and "belowMap") or "topLeft"
             end,
-            setValue = function(v)
-                MapSet("coordsPosition", v)
-            end,
+            setValue = MapSetRow("coordsPosition"),
         })
         posY = posY - hgt
         -- Inline cog on Show Coordinates for decimal precision
@@ -2248,9 +2173,7 @@ CludesUI.AtOptionsLogin(function()
                         min = 0.5,
                         max = 2.0,
                         step = 0.01,
-                        get = function()
-                            return MapGet("coordsScale", 1.0)
-                        end,
+                        get = MapGetRow("coordsScale", 1.0),
                         set = function(v)
                             local m = MinimapDB()
                             if not m then
@@ -2278,9 +2201,7 @@ CludesUI.AtOptionsLogin(function()
         fpsRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Show FPS/MS",
-            getValue = function()
-                return MapGet("showFPS", false)
-            end,
+            getValue = MapGetRow("showFPS", false),
             setValue = function(v)
                 if not MapSet("showFPS", v) then
                     return
@@ -2294,12 +2215,8 @@ CludesUI.AtOptionsLogin(function()
             order = MAP_POS_ORDER,
             disabled = FpsOff,
             disabledTooltip = "Show FPS/MS",
-            getValue = function()
-                return MapGet("fpsPosition", "bottomLeft")
-            end,
-            setValue = function(v)
-                MapSet("fpsPosition", v)
-            end,
+            getValue = MapGetRow("fpsPosition", "bottomLeft"),
+            setValue = MapSetRow("fpsPosition"),
         })
         posY = posY - hgt
         -- Inline cog on Show FPS/MS (text size + which MS readouts show).
@@ -2326,19 +2243,13 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return sl
                         end,
-                        set = function(v)
-                            MapSet("fpsShowLocalMS", v)
-                        end,
+                        set = MapSetRow("fpsShowLocalMS"),
                     },
                     {
                         type = "toggle",
                         label = "Show World MS",
-                        get = function()
-                            return MapGet("fpsShowWorldMS", false)
-                        end,
-                        set = function(v)
-                            MapSet("fpsShowWorldMS", v)
-                        end,
+                        get = MapGetRow("fpsShowWorldMS", false),
+                        set = MapSetRow("fpsShowWorldMS"),
                     },
                     MapSlider("Update Interval", "fpsUpdateInterval", 3, 1, 5, 1),
                 },
@@ -2359,9 +2270,7 @@ CludesUI.AtOptionsLogin(function()
                         min = 0.5,
                         max = 2.0,
                         step = 0.01,
-                        get = function()
-                            return MapGet("fpsScale", 1.0)
-                        end,
+                        get = MapGetRow("fpsScale", 1.0),
                         set = function(v)
                             local m = MinimapDB()
                             if not m then
@@ -2404,9 +2313,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 return v
             end,
-            setValue = function(v)
-                MapSet("fpsHoverTooltip", v)
-            end,
+            setValue = MapSetRow("fpsHoverTooltip"),
         }, {
             type = "dropdown",
             text = "Show on Clock Hover",
@@ -2462,12 +2369,8 @@ CludesUI.AtOptionsLogin(function()
                 return not DiffTextOn()
             end,
             disabledTooltip = "Show Instance Difficulty as Text",
-            getValue = function()
-                return MapGet("diffTextPosition", "topLeft")
-            end,
-            setValue = function(v)
-                MapSet("diffTextPosition", v)
-            end,
+            getValue = MapGetRow("diffTextPosition", "topLeft"),
+            setValue = MapSetRow("diffTextPosition"),
         })
         posY = posY - hgt
         -- Inline cog on Difficulty Position for text size + X/Y offset

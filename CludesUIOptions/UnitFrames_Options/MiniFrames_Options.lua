@@ -76,12 +76,24 @@ local function BuildMiniTextAndSize(
         settingsTable[key] = val
         ReloadAndUpdate()
     end
+    -- Row setters over MSet: the key written with the row's value.
+    local function MSetRow(key)
+        return function(v)
+            MSet(key, v)
+        end
+    end
     local function MVal(key, default)
         local v = settingsTable[key]
         if v ~= nil then
             return v
         end
         return default
+    end
+    -- A row getter over MVal: the key's value, or the default given.
+    local function MValRow(key, default)
+        return function()
+            return MVal(key, default)
+        end
     end
 
     -- DISPLAY
@@ -497,12 +509,8 @@ local function BuildMiniTextAndSize(
                 end,
                 disabledTooltip = "Dark Mode",
                 requireState = "disabled",
-                getValue = function()
-                    return MVal("healthBarOpacity", 90)
-                end,
-                setValue = function(v)
-                    MSet("healthBarOpacity", v)
-                end,
+                getValue = MValRow("healthBarOpacity", 90),
+                setValue = MSetRow("healthBarOpacity"),
             }
             rightSlot2 = {
                 type = "slider",
@@ -510,12 +518,8 @@ local function BuildMiniTextAndSize(
                 min = 0,
                 max = 100,
                 step = 1,
-                getValue = function()
-                    return MVal("customBgAlpha", 100)
-                end,
-                setValue = function(v)
-                    MSet("customBgAlpha", v)
-                end,
+                getValue = MValRow("customBgAlpha", 100),
+                setValue = MSetRow("customBgAlpha"),
             }
         else
             -- "Fill Color" picker: Custom Colored Fill + Class Colored Fill.
@@ -588,12 +592,8 @@ local function BuildMiniTextAndSize(
                 end,
                 disabledTooltip = "Dark Mode",
                 requireState = "disabled",
-                getValue = function()
-                    return MVal("healthBarOpacity", 90)
-                end,
-                setValue = function(v)
-                    MSet("healthBarOpacity", v)
-                end,
+                getValue = MValRow("healthBarOpacity", 90),
+                setValue = MSetRow("healthBarOpacity"),
             }
         end
 
@@ -676,12 +676,8 @@ local function BuildMiniTextAndSize(
     local smoothBarsWidget = {
         type = "toggle",
         text = "Smooth Health Bars",
-        getValue = function()
-            return MVal("smoothBars", false)
-        end,
-        setValue = function(v)
-            MSet("smoothBars", v)
-        end,
+        getValue = MValRow("smoothBars", false),
+        setValue = MSetRow("smoothBars"),
     }
     local reverseFillWidget = {
         type = "toggle",
@@ -709,12 +705,8 @@ local function BuildMiniTextAndSize(
             min = 0,
             max = 100,
             step = 1,
-            getValue = function()
-                return MVal("customBgAlpha", 100)
-            end,
-            setValue = function(v)
-                MSet("customBgAlpha", v)
-            end,
+            getValue = MValRow("customBgAlpha", 100),
+            setValue = MSetRow("customBgAlpha"),
         }, reverseFillWidget)
         posY = posY - hgt
         -- inline bg colors - custom swatch + class swatch
@@ -835,9 +827,7 @@ local function BuildMiniTextAndSize(
                         get = function()
                             return MVal("blizzLevelSize", MVal("leftTextSize", settingsTable.textSize or 12))
                         end,
-                        set = function(v)
-                            MSet("blizzLevelSize", v)
-                        end,
+                        set = MSetRow("blizzLevelSize"),
                     },
                     {
                         type = "slider",
@@ -845,12 +835,8 @@ local function BuildMiniTextAndSize(
                         min = -150,
                         max = 150,
                         step = 1,
-                        get = function()
-                            return MVal("blizzLevelX", 0)
-                        end,
-                        set = function(v)
-                            MSet("blizzLevelX", v)
-                        end,
+                        get = MValRow("blizzLevelX", 0),
+                        set = MSetRow("blizzLevelX"),
                     },
                     {
                         type = "slider",
@@ -858,23 +844,15 @@ local function BuildMiniTextAndSize(
                         min = -150,
                         max = 150,
                         step = 1,
-                        get = function()
-                            return MVal("blizzLevelY", 0)
-                        end,
-                        set = function(v)
-                            MSet("blizzLevelY", v)
-                        end,
+                        get = MValRow("blizzLevelY", 0),
+                        set = MSetRow("blizzLevelY"),
                     },
                     {
                         type = "toggle",
                         label = "Difficulty Color",
                         tooltip = "Colors an attackable unit's level by difficulty, as the default UI does.",
-                        get = function()
-                            return MVal("blizzLevelDifficultyColor", true)
-                        end,
-                        set = function(v)
-                            MSet("blizzLevelDifficultyColor", v)
-                        end,
+                        get = MValRow("blizzLevelDifficultyColor", true),
+                        set = MSetRow("blizzLevelDifficultyColor"),
                     },
                 },
             })
@@ -1190,12 +1168,8 @@ local function BuildMiniTextAndSize(
                 min = 0,
                 max = 100,
                 step = 1,
-                getValue = function()
-                    return MVal("powerHeight", 6)
-                end,
-                setValue = function(v)
-                    MSet("powerHeight", v)
-                end,
+                getValue = MValRow("powerHeight", 6),
+                setValue = MSetRow("powerHeight"),
             }, true),
             CludesUI.BlizzStyle.Gate("unitframes", {
                 type = "toggle",
@@ -1222,12 +1196,8 @@ local function BuildMiniTextAndSize(
                     {
                         type = "toggle",
                         label = "Reverse Fill",
-                        get = function()
-                            return MVal("powerReverseFill", false)
-                        end,
-                        set = function(v)
-                            MSet("powerReverseFill", v)
-                        end,
+                        get = MValRow("powerReverseFill", false),
+                        set = MSetRow("powerReverseFill"),
                     },
                 },
             })
@@ -1243,24 +1213,16 @@ local function BuildMiniTextAndSize(
             min = 0,
             max = 100,
             step = 1,
-            getValue = function()
-                return MVal("customPowerBgAlpha", 100)
-            end,
-            setValue = function(v)
-                MSet("customPowerBgAlpha", v)
-            end,
+            getValue = MValRow("customPowerBgAlpha", 100),
+            setValue = MSetRow("customPowerBgAlpha"),
         }, {
             type = "slider",
             text = "Fill Color",
             min = 0,
             max = 100,
             step = 1,
-            getValue = function()
-                return MVal("powerBarOpacity", 100)
-            end,
-            setValue = function(v)
-                MSet("powerBarOpacity", v)
-            end,
+            getValue = MValRow("powerBarOpacity", 100),
+            setValue = MSetRow("powerBarOpacity"),
         })
         posY = posY - hgt
         -- Inline Power Colored + Custom background swatches on Bar Background
@@ -1421,9 +1383,7 @@ local function BuildMiniTextAndSize(
             text = "Text Position",
             values = { ["none"] = "None", ["left"] = "Left", ["right"] = "Right", ["center"] = "Center" },
             order = { "none", "---", "left", "right", "center" },
-            getValue = function()
-                return MVal("powerPercentText", "none")
-            end,
+            getValue = MValRow("powerPercentText", "none"),
             setValue = function(v)
                 MSet("powerPercentText", v)
                 CludesUI:RefreshPage()
@@ -1545,12 +1505,8 @@ local function BuildMiniTextAndSize(
                         min = 6,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return MVal("powerPercentSize", 9)
-                        end,
-                        set = function(v)
-                            MSet("powerPercentSize", v)
-                        end,
+                        get = MValRow("powerPercentSize", 9),
+                        set = MSetRow("powerPercentSize"),
                     },
                     {
                         type = "slider",
@@ -1558,12 +1514,8 @@ local function BuildMiniTextAndSize(
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return MVal("powerPercentX", 0)
-                        end,
-                        set = function(v)
-                            MSet("powerPercentX", v)
-                        end,
+                        get = MValRow("powerPercentX", 0),
+                        set = MSetRow("powerPercentX"),
                     },
                     {
                         type = "slider",
@@ -1571,12 +1523,8 @@ local function BuildMiniTextAndSize(
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return MVal("powerPercentY", 0)
-                        end,
-                        set = function(v)
-                            MSet("powerPercentY", v)
-                        end,
+                        get = MValRow("powerPercentY", 0),
+                        set = MSetRow("powerPercentY"),
                     },
                 },
             })
@@ -1591,12 +1539,8 @@ local function BuildMiniTextAndSize(
             max = 4,
             step = 1,
             trackWidth = 120,
-            getValue = function()
-                return MVal("powerBorderSize", 0)
-            end,
-            setValue = function(v)
-                MSet("powerBorderSize", v)
-            end,
+            getValue = MValRow("powerBorderSize", 0),
+            setValue = MSetRow("powerBorderSize"),
         }, { type = "label", text = "" })
         posY = posY - hgt
         if not CludesUI._prebuilding then

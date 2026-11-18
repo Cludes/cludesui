@@ -60,6 +60,12 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
     local W, SGetSupported, SSetSupported, SVal =
         context.W, context.SGetSupported, context.SSetSupported, context.SVal
     local SValSupported = context.SValSupported
+    -- A row getter over SValSupported: the key's value, or the default given.
+    local function SValSupportedRow(key, default)
+        return function()
+            return SValSupported(key, default)
+        end
+    end
     local hgt
 
     -------------------------------------------------------------------
@@ -902,9 +908,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
             text = "Spell Name",
             values = castTextPosValues,
             order = castTextPosOrder,
-            getValue = function()
-                return SValSupported("castSpellNameSide", "left")
-            end,
+            getValue = SValSupportedRow("castSpellNameSide", "left"),
             setValue = function(v)
                 local s = UNIT_DB_MAP[optionState.selectedUnit]()
                 s.castSpellNameSide = v
@@ -954,9 +958,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     min = 6,
                     max = 20,
                     step = 1,
-                    get = function()
-                        return SValSupported("castSpellNameSize", 11)
-                    end,
+                    get = SValSupportedRow("castSpellNameSize", 11),
                     set = function(v)
                         SSetSupported("castSpellNameSize", v)
                         ReloadAndUpdate()
@@ -969,9 +971,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return SValSupported("castSpellNameX", 0)
-                    end,
+                    get = SValSupportedRow("castSpellNameX", 0),
                     set = function(v)
                         SSetSupported("castSpellNameX", v)
                         ReloadAndUpdate()
@@ -984,9 +984,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return SValSupported("castSpellNameY", 0)
-                    end,
+                    get = SValSupportedRow("castSpellNameY", 0),
                     set = function(v)
                         SSetSupported("castSpellNameY", v)
                         ReloadAndUpdate()
@@ -997,9 +995,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     type = "toggle",
                     label = "Show Full Spell Name",
                     tooltip = "Long spell names shrink to fit beside the duration instead of being cut off.",
-                    get = function()
-                        return SValSupported("castFitSpellName", false)
-                    end,
+                    get = SValSupportedRow("castFitSpellName", false),
                     set = function(v)
                         SSetSupported("castFitSpellName", v)
                         ReloadAndUpdate()
@@ -1011,9 +1007,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     type = "toggle",
                     label = "Combine Spell Name and Target",
                     tooltip = "Appends the cast target to the spell name (Spell Name - Target), class colored, and disables the separate Spell Target display.",
-                    get = function()
-                        return SValSupported("castCombineNameTarget", false)
-                    end,
+                    get = SValSupportedRow("castCombineNameTarget", false),
                     set = function(v)
                         SSetSupported("castCombineNameTarget", v)
                         ReloadAndUpdate()
@@ -1053,9 +1047,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     min = 6,
                     max = 20,
                     step = 1,
-                    get = function()
-                        return SValSupported("castDurationSize", 10)
-                    end,
+                    get = SValSupportedRow("castDurationSize", 10),
                     set = function(v)
                         SSetSupported("castDurationSize", v)
                         ReloadAndUpdate()
@@ -1068,9 +1060,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return SValSupported("castDurationX", 0)
-                    end,
+                    get = SValSupportedRow("castDurationX", 0),
                     set = function(v)
                         SSetSupported("castDurationX", v)
                         ReloadAndUpdate()
@@ -1083,9 +1073,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return SValSupported("castDurationY", 0)
-                    end,
+                    get = SValSupportedRow("castDurationY", 0),
                     set = function(v)
                         SSetSupported("castDurationY", v)
                         ReloadAndUpdate()
@@ -1098,9 +1086,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                     type = "toggle",
                     label = "Full Craft Time",
                     tooltip = "While crafting several items at once, the duration shows the time left for the whole batch and the spell name shows the craft count.",
-                    get = function()
-                        return SValSupported("castFullCraftTime", false)
-                    end,
+                    get = SValSupportedRow("castFullCraftTime", false),
                     set = function(v)
                         SSetSupported("castFullCraftTime", v)
                         ReloadAndUpdate()
@@ -1186,9 +1172,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
         }, {
             type = "toggle",
             text = "Reverse Fill",
-            getValue = function()
-                return SValSupported("castReverseFill", false)
-            end,
+            getValue = SValSupportedRow("castReverseFill", false),
             setValue = function(v)
                 SSetSupported("castReverseFill", v)
                 ReloadAndUpdate()
@@ -1208,9 +1192,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                         min = 6,
                         max = 20,
                         step = 1,
-                        get = function()
-                            return SValSupported("castSpellTargetSize", 10)
-                        end,
+                        get = SValSupportedRow("castSpellTargetSize", 10),
                         set = function(v)
                             SSetSupported("castSpellTargetSize", v)
                             ReloadAndUpdate()
@@ -1223,9 +1205,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return SValSupported("castSpellTargetX", 0)
-                        end,
+                        get = SValSupportedRow("castSpellTargetX", 0),
                         set = function(v)
                             SSetSupported("castSpellTargetX", v)
                             ReloadAndUpdate()
@@ -1238,9 +1218,7 @@ function mod.UFO_BuildCastBarSection(hostFrame, posY, context)
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return SValSupported("castSpellTargetY", 0)
-                        end,
+                        get = SValSupportedRow("castSpellTargetY", 0),
                         set = function(v)
                             SSetSupported("castSpellTargetY", v)
                             ReloadAndUpdate()
@@ -1602,6 +1580,18 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
     local saved, frameList, optionState = environ.db, environ.frames, environ.optState
     local W, SApplySupport, SDB, SGet = context.W, context.SApplySupport, context.SDB, context.SGet
     local SSetSupported, SVal, SValSupported = context.SSetSupported, context.SVal, context.SValSupported
+    -- A row getter over SValSupported: the key's value, or the default given.
+    local function SValSupportedRow(key, default)
+        return function()
+            return SValSupported(key, default)
+        end
+    end
+    -- Row setters over SSetSupported: the key written with the row's value.
+    local function SSetSupportedRow(key)
+        return function(v)
+            SSetSupported(key, v)
+        end
+    end
     local _, hgt
 
     local sharedBuffDebuffHeader
@@ -1717,12 +1707,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
         step = 1,
         disabled = BuffDisabled,
         disabledTooltip = "Buff Display",
-        getValue = function()
-            return SValSupported("buffSize", 22)
-        end,
-        setValue = function(v)
-            SSetSupported("buffSize", v)
-        end,
+        getValue = SValSupportedRow("buffSize", 22),
+        setValue = SSetSupportedRow("buffSize"),
     })
     posY = posY - hgt
     SApplySupport(sharedAddRow2._leftRegion, "showBuffs")
@@ -1780,12 +1766,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                 return CludesUI.BlizzStyle.Label("unitframes")
             end,
             requireState = "disabled",
-            get = function()
-                return SValSupported("buffIconZoom", 0.07)
-            end,
-            set = function(v)
-                SSetSupported("buffIconZoom", v)
-            end,
+            get = SValSupportedRow("buffIconZoom", 0.07),
+            set = SSetSupportedRow("buffIconZoom"),
         }
         buffCogRows[#buffCogRows + 1] = {
             type = "toggle",
@@ -1803,9 +1785,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                 return optionState.selectedUnit ~= "player"
                     and SValSupported("buffDispelBorder", false) == true
             end,
-            set = function(v)
-                SSetSupported("buffDispelBorder", v)
-            end,
+            set = SSetSupportedRow("buffDispelBorder"),
         }
         CludesUI.BuildInlineCog(leftRgn, {
             disabled = BuffDisabled,
@@ -1845,12 +1825,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             trackWidth = 120,
             disabled = buffDurOff,
             disabledTooltip = buffDurTip,
-            getValue = function()
-                return SValSupported("buffCooldownTextSize", 10)
-            end,
-            setValue = function(v)
-                SSetSupported("buffCooldownTextSize", v)
-            end,
+            getValue = SValSupportedRow("buffCooldownTextSize", 10),
+            setValue = SSetSupportedRow("buffCooldownTextSize"),
         }, {
             type = "slider",
             text = "Buff Stack Size",
@@ -1859,12 +1835,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             step = 1,
             disabled = BuffDisabled,
             disabledTooltip = "Buff Display",
-            getValue = function()
-                return SValSupported("buffStackTextSize", 14)
-            end,
-            setValue = function(v)
-                SSetSupported("buffStackTextSize", v)
-            end,
+            getValue = SValSupportedRow("buffStackTextSize", 14),
+            setValue = SSetSupportedRow("buffStackTextSize"),
         })
         posY = posY - hgt
         -- Directions cog on Buff Duration Size (X/Y offsets) -- disabled with the row
@@ -1881,12 +1853,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SValSupported("buffCooldownTextOffsetX", 0)
-                        end,
-                        set = function(v)
-                            SSetSupported("buffCooldownTextOffsetX", v)
-                        end,
+                        get = SValSupportedRow("buffCooldownTextOffsetX", 0),
+                        set = SSetSupportedRow("buffCooldownTextOffsetX"),
                     },
                     {
                         type = "slider",
@@ -1894,12 +1862,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SValSupported("buffCooldownTextOffsetY", 0)
-                        end,
-                        set = function(v)
-                            SSetSupported("buffCooldownTextOffsetY", v)
-                        end,
+                        get = SValSupportedRow("buffCooldownTextOffsetY", 0),
+                        set = SSetSupportedRow("buffCooldownTextOffsetY"),
                     },
                     {
                         type = "slider",
@@ -1922,12 +1886,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineToggle({
                 region = sharedBuffRow2._leftRegion,
-                getValue = function()
-                    return SValSupported("buffShowCooldownText", false)
-                end,
-                setValue = function(v)
-                    SSetSupported("buffShowCooldownText", v)
-                end,
+                getValue = SValSupportedRow("buffShowCooldownText", false),
+                setValue = SSetSupportedRow("buffShowCooldownText"),
                 onToggle = function()
                     CludesUI:RefreshPage()
                 end,
@@ -1952,12 +1912,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                             center = "Center",
                         },
                         order = { "bottomright", "bottomleft", "topright", "topleft", "center" },
-                        get = function()
-                            return SValSupported("buffStackTextPosition", "bottomright")
-                        end,
-                        set = function(v)
-                            SSetSupported("buffStackTextPosition", v)
-                        end,
+                        get = SValSupportedRow("buffStackTextPosition", "bottomright"),
+                        set = SSetSupportedRow("buffStackTextPosition"),
                     },
                     {
                         type = "slider",
@@ -1965,12 +1921,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SValSupported("buffStackTextOffsetX", 0)
-                        end,
-                        set = function(v)
-                            SSetSupported("buffStackTextOffsetX", v)
-                        end,
+                        get = SValSupportedRow("buffStackTextOffsetX", 0),
+                        set = SSetSupportedRow("buffStackTextOffsetX"),
                     },
                     {
                         type = "slider",
@@ -1978,12 +1930,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SValSupported("buffStackTextOffsetY", 0)
-                        end,
-                        set = function(v)
-                            SSetSupported("buffStackTextOffsetY", v)
-                        end,
+                        get = SValSupportedRow("buffStackTextOffsetY", 0),
+                        set = SSetSupportedRow("buffStackTextOffsetY"),
                     },
                 },
             })
@@ -1997,9 +1945,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
         text = "Debuff Display",
         values = buffAnchorValues,
         order = buffAnchorOrder,
-        getValue = function()
-            return SValSupported("debuffAnchor", "bottomleft")
-        end,
+        getValue = SValSupportedRow("debuffAnchor", "bottomleft"),
         -- DependentSetValue: the Debuff Duration/Stack row (and, together
         -- with Buff Display, the filter row) hides while None; only the
         -- None <-> shown flip forces the full rebuild.
@@ -2019,12 +1965,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
         step = 1,
         disabled = DebuffDisabled,
         disabledTooltip = "Debuff Display",
-        getValue = function()
-            return SValSupported("debuffSize", 22)
-        end,
-        setValue = function(v)
-            SSetSupported("debuffSize", v)
-        end,
+        getValue = SValSupportedRow("debuffSize", 22),
+        setValue = SSetSupportedRow("debuffSize"),
     })
     posY = posY - hgt
     -- Cog on Debuffs Location: the shared settings rows, then Icon Zoom,
@@ -2062,12 +2004,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                 return CludesUI.BlizzStyle.Label("unitframes")
             end,
             requireState = "disabled",
-            get = function()
-                return SValSupported("debuffIconZoom", 0.07)
-            end,
-            set = function(v)
-                SSetSupported("debuffIconZoom", v)
-            end,
+            get = SValSupportedRow("debuffIconZoom", 0.07),
+            set = SSetSupportedRow("debuffIconZoom"),
         }
         debuffCogRows[#debuffCogRows + 1] = {
             type = "toggle",
@@ -2080,12 +2018,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                 return CludesUI.BlizzStyle.Label("unitframes")
             end,
             requireState = "disabled",
-            get = function()
-                return SValSupported("debuffDispelBorder", false)
-            end,
-            set = function(v)
-                SSetSupported("debuffDispelBorder", v)
-            end,
+            get = SValSupportedRow("debuffDispelBorder", false),
+            set = SSetSupportedRow("debuffDispelBorder"),
         }
         -- Player only: the Dispel Colors palette (the Dispel Overlay row's
         -- swatches) tints the player's dispel type borders.
@@ -2153,12 +2087,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             trackWidth = 120,
             disabled = debuffDurOff,
             disabledTooltip = debuffDurTip,
-            getValue = function()
-                return SValSupported("debuffCooldownTextSize", 10)
-            end,
-            setValue = function(v)
-                SSetSupported("debuffCooldownTextSize", v)
-            end,
+            getValue = SValSupportedRow("debuffCooldownTextSize", 10),
+            setValue = SSetSupportedRow("debuffCooldownTextSize"),
         }, {
             type = "slider",
             text = "Debuff Stack Size",
@@ -2167,12 +2097,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             step = 1,
             disabled = DebuffDisabled,
             disabledTooltip = "Debuff Display",
-            getValue = function()
-                return SValSupported("debuffStackTextSize", 14)
-            end,
-            setValue = function(v)
-                SSetSupported("debuffStackTextSize", v)
-            end,
+            getValue = SValSupportedRow("debuffStackTextSize", 14),
+            setValue = SSetSupportedRow("debuffStackTextSize"),
         })
         posY = posY - hgt
         -- Directions cog on Debuff Duration Size (X/Y offsets) -- disabled with the row
@@ -2189,12 +2115,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SValSupported("debuffCooldownTextOffsetX", 0)
-                        end,
-                        set = function(v)
-                            SSetSupported("debuffCooldownTextOffsetX", v)
-                        end,
+                        get = SValSupportedRow("debuffCooldownTextOffsetX", 0),
+                        set = SSetSupportedRow("debuffCooldownTextOffsetX"),
                     },
                     {
                         type = "slider",
@@ -2202,12 +2124,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SValSupported("debuffCooldownTextOffsetY", 0)
-                        end,
-                        set = function(v)
-                            SSetSupported("debuffCooldownTextOffsetY", v)
-                        end,
+                        get = SValSupportedRow("debuffCooldownTextOffsetY", 0),
+                        set = SSetSupportedRow("debuffCooldownTextOffsetY"),
                     },
                     {
                         type = "slider",
@@ -2230,12 +2148,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
         if not CludesUI._prebuilding then
             CludesUI.BuildInlineToggle({
                 region = sharedDebuffRow2._leftRegion,
-                getValue = function()
-                    return SValSupported("debuffShowCooldownText", false)
-                end,
-                setValue = function(v)
-                    SSetSupported("debuffShowCooldownText", v)
-                end,
+                getValue = SValSupportedRow("debuffShowCooldownText", false),
+                setValue = SSetSupportedRow("debuffShowCooldownText"),
                 onToggle = function()
                     CludesUI:RefreshPage()
                 end,
@@ -2260,12 +2174,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                             center = "Center",
                         },
                         order = { "bottomright", "bottomleft", "topright", "topleft", "center" },
-                        get = function()
-                            return SValSupported("debuffStackTextPosition", "bottomright")
-                        end,
-                        set = function(v)
-                            SSetSupported("debuffStackTextPosition", v)
-                        end,
+                        get = SValSupportedRow("debuffStackTextPosition", "bottomright"),
+                        set = SSetSupportedRow("debuffStackTextPosition"),
                     },
                     {
                         type = "slider",
@@ -2273,12 +2183,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SValSupported("debuffStackTextOffsetX", 0)
-                        end,
-                        set = function(v)
-                            SSetSupported("debuffStackTextOffsetX", v)
-                        end,
+                        get = SValSupportedRow("debuffStackTextOffsetX", 0),
+                        set = SSetSupportedRow("debuffStackTextOffsetX"),
                     },
                     {
                         type = "slider",
@@ -2286,12 +2192,8 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SValSupported("debuffStackTextOffsetY", 0)
-                        end,
-                        set = function(v)
-                            SSetSupported("debuffStackTextOffsetY", v)
-                        end,
+                        get = SValSupportedRow("debuffStackTextOffsetY", 0),
+                        set = SSetSupportedRow("debuffStackTextOffsetY"),
                     },
                 },
             })
@@ -2477,9 +2379,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                             get = function()
                                 return SVal("auraBorderBehind", false)
                             end,
-                            set = function(v)
-                                SSetSupported("auraBorderBehind", v)
-                            end,
+                            set = SSetSupportedRow("auraBorderBehind"),
                         },
                         {
                             type = "toggle",
@@ -2487,9 +2387,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                             get = function()
                                 return SVal("auraBorderBehindUnitFrame", false)
                             end,
-                            set = function(v)
-                                SSetSupported("auraBorderBehindUnitFrame", v)
-                            end,
+                            set = SSetSupportedRow("auraBorderBehindUnitFrame"),
                         },
                         {
                             type = "toggle",
@@ -2508,9 +2406,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
                             get = function()
                                 return SVal("auraBorderDispelTextured", false) == true
                             end,
-                            set = function(v)
-                                SSetSupported("auraBorderDispelTextured", v)
-                            end,
+                            set = SSetSupportedRow("auraBorderDispelTextured"),
                         },
                     },
                 })
@@ -3464,7 +3360,13 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
         -- Inline eyeball: preview a magic dispel overlay on the top player preview.
         if not CludesUI._prebuilding then
             local rgn = dispelRow._leftRegion
-            CludesUI.AddPreviewEye(rgn, optionState, "showDispelOverlayPreview", "dispel overlay", UpdatePreview)
+            CludesUI.AddPreviewEye(
+                rgn,
+                optionState,
+                "showDispelOverlayPreview",
+                "dispel overlay",
+                UpdatePreview
+            )
         end
         -- Inline cog on Dispel Overlay: Overlay Opacity
         if not CludesUI._prebuilding then

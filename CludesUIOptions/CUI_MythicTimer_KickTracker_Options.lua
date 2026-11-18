@@ -55,6 +55,12 @@ local function Set(key, val)
     c[key] = val
     Refresh()
 end
+-- Row setters over Set: the key written with the row's value.
+local function SetRow(key)
+    return function(v)
+        Set(key, v)
+    end
+end
 
 local function On()
     return Get("enabled", false) == true
@@ -459,9 +465,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             getValue = function()
                 return Get("iconStyle", "kick")
             end,
-            setValue = function(val)
-                Set("iconStyle", val)
-            end,
+            setValue = SetRow("iconStyle"),
         })
         posY = posY - hgt
 
@@ -476,9 +480,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             getValue = function()
                 return Get("size", 28)
             end,
-            setValue = function(val)
-                Set("size", val)
-            end,
+            setValue = SetRow("size"),
         }, {
             type = "dropdown",
             text = "Position",
@@ -511,9 +513,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         get = function()
                             return Get("offsetX", -4)
                         end,
-                        set = function(val)
-                            Set("offsetX", val)
-                        end,
+                        set = SetRow("offsetX"),
                     },
                     {
                         type = "slider",
@@ -526,9 +526,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         get = function()
                             return Get("offsetY", 0)
                         end,
-                        set = function(val)
-                            Set("offsetY", val)
-                        end,
+                        set = SetRow("offsetY"),
                     },
                     {
                         type = "slider",
@@ -541,9 +539,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         get = function()
                             return Get("otherOffsetX", 0)
                         end,
-                        set = function(val)
-                            Set("otherOffsetX", val)
-                        end,
+                        set = SetRow("otherOffsetX"),
                     },
                     {
                         type = "slider",
@@ -556,9 +552,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         get = function()
                             return Get("otherOffsetY", 0)
                         end,
-                        set = function(val)
-                            Set("otherOffsetY", val)
-                        end,
+                        set = SetRow("otherOffsetY"),
                     },
                 },
             })
@@ -636,9 +630,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         get = function()
                             return Get("timerPos", "center")
                         end,
-                        set = function(val)
-                            Set("timerPos", val)
-                        end,
+                        set = SetRow("timerPos"),
                     },
                     {
                         type = "slider",
@@ -649,9 +641,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         get = function()
                             return Get("timerSize", 11)
                         end,
-                        set = function(val)
-                            Set("timerSize", val)
-                        end,
+                        set = SetRow("timerSize"),
                     },
                     {
                         type = "slider",
@@ -662,9 +652,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         get = function()
                             return Get("timerX", 0)
                         end,
-                        set = function(val)
-                            Set("timerX", val)
-                        end,
+                        set = SetRow("timerX"),
                     },
                     {
                         type = "slider",
@@ -675,9 +663,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
                         get = function()
                             return Get("timerY", 0)
                         end,
-                        set = function(val)
-                            Set("timerY", val)
-                        end,
+                        set = SetRow("timerY"),
                     },
                 },
             })
@@ -729,9 +715,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             getValue = function()
                 return Get("barWidth", 200)
             end,
-            setValue = function(val)
-                Set("barWidth", val)
-            end,
+            setValue = SetRow("barWidth"),
         })
         posY = posY - hgt
 
@@ -747,9 +731,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             getValue = function()
                 return Get("barHeight", 22)
             end,
-            setValue = function(val)
-                Set("barHeight", val)
-            end,
+            setValue = SetRow("barHeight"),
         }, {
             type = "slider",
             text = "Bar Spacing",
@@ -762,9 +744,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             getValue = function()
                 return Get("barSpacing", 2)
             end,
-            setValue = function(val)
-                Set("barSpacing", val)
-            end,
+            setValue = SetRow("barSpacing"),
         })
         posY = posY - hgt
 
@@ -796,9 +776,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             getValue = function()
                 return Get("texture", "none")
             end,
-            setValue = function(val)
-                Set("texture", val)
-            end,
+            setValue = SetRow("texture"),
         })
         posY = posY - hgt
 
@@ -878,9 +856,7 @@ mod._KT_BuildPage = function(page, hostFrame, yOffset)
             getValue = function()
                 return Get("barBorderSize", 0)
             end,
-            setValue = function(val)
-                Set("barBorderSize", val)
-            end,
+            setValue = SetRow("barBorderSize"),
         })
         posY = posY - hgt
 

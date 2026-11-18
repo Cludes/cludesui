@@ -230,7 +230,19 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
         environ.db, environ.frames, environ.optState, environ.portraitArtValues
     local TexBgRowCfg = environ.TexBgRowCfg
     local W, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
+    -- Row setters over SSet: the key written with the row's value.
+    local function SSetRow(key)
+        return function(v)
+            SSet(key, v)
+        end
+    end
     local SVal = context.SVal
+    -- A row getter over SVal: the key's value, or the default given.
+    local function SValRow(key, default)
+        return function()
+            return SVal(key, default)
+        end
+    end
     local _, hgt
 
     -------------------------------------------------------------------
@@ -778,9 +790,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
                 {
                     type = "toggle",
                     label = "Show Behind",
-                    get = function()
-                        return SVal("borderBehind", false)
-                    end,
+                    get = SValRow("borderBehind", false),
                     set = function(v)
                         SSet("borderBehind", v)
                         ReloadAndUpdate()
@@ -807,9 +817,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
                     get = function()
                         return SVal("borderPowerSeam", false) == true
                     end,
-                    set = function(v)
-                        SSet("borderPowerSeam", v)
-                    end,
+                    set = SSetRow("borderPowerSeam"),
                 },
             },
         })
@@ -943,12 +951,8 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
                             min = 0,
                             max = CludesUI.ROUNDED_MAX_RADIUS,
                             step = 1,
-                            get = function()
-                                return SVal("cornerRadius", 0)
-                            end,
-                            set = function(v)
-                                SSet("cornerRadius", v)
-                            end,
+                            get = SValRow("cornerRadius", 0),
+                            set = SSetRow("cornerRadius"),
                         },
                     }, function()
                         return SGet("cornerMask")
@@ -1022,9 +1026,7 @@ function mod.UFO_BuildDisplaySection(hostFrame, posY, context)
         getValue = function()
             return SGet("frameStrata") or saved.profile.frameStrata or "MEDIUM"
         end,
-        setValue = function(v)
-            SSet("frameStrata", v)
-        end,
+        setValue = SSetRow("frameStrata"),
     })
     posY = posY - hgt
 
@@ -1550,7 +1552,20 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
     local portraitModeValues2, portraitNonPlayerOrder, portraitNonPlayerValues =
         environ.portraitModeValues2, environ.portraitNonPlayerOrder, environ.portraitNonPlayerValues
     local W, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
+    -- Row setters over SSet: the key written with the row's value, then UpdatePreview() for the Then form.
+    local function SSetRowThen(key)
+        return function(v)
+            SSet(key, v)
+            UpdatePreview()
+        end
+    end
     local SVal = context.SVal
+    -- A row getter over SVal: the key's value, or the default given.
+    local function SValRow(key, default)
+        return function()
+            return SVal(key, default)
+        end
+    end
     local _, hgt
 
     -------------------------------------------------------------------
@@ -1714,9 +1729,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                 type = "toggle",
                 label = "Custom Non-Player Portrait",
                 tooltip = "Pick what NPCs show in Class art instead of their 2D portrait.",
-                get = function()
-                    return SVal("portraitNonPlayerOn", false)
-                end,
+                get = SValRow("portraitNonPlayerOn", false),
                 set = function(v)
                     SSet("portraitNonPlayerOn", v or nil)
                     CludesUI:RefreshPage(true)
@@ -1734,9 +1747,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                 end,
                 disabledTooltip = "This option requires a border style with divider art and a Border Size above 0.",
                 rawTooltip = true,
-                get = function()
-                    return SVal("portraitSeparator", false)
-                end,
+                get = SValRow("portraitSeparator", false),
                 set = function(v)
                     SSet("portraitSeparator", v or nil)
                 end,
@@ -1747,9 +1758,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                 type = "toggle",
                 label = "Clickable Portrait",
                 tooltip = "Clicking or hovering the detached portrait acts like clicking or hovering the frame's bars.",
-                get = function()
-                    return SVal("detachedPortraitClickable", false)
-                end,
+                get = SValRow("detachedPortraitClickable", false),
                 set = function(v)
                     SSet("detachedPortraitClickable", v or nil)
                 end,
@@ -1788,9 +1797,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                 end,
                 disabledTooltip = "This option requires the 3D Art Style and a Shape other than None.",
                 rawTooltip = true,
-                get = function()
-                    return SVal("portrait3dBelowBorder", false)
-                end,
+                get = SValRow("portrait3dBelowBorder", false),
                 set = function(v)
                     SSet("portrait3dBelowBorder", v or nil)
                     UpdatePreview()
@@ -1856,9 +1863,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                         return "Attached Portrait Mode"
                     end
                 end,
-                getValue = function()
-                    return SVal("portraitNonPlayer", "2d")
-                end,
+                getValue = SValRow("portraitNonPlayer", "2d"),
                 setValue = function(v)
                     if
                         v == "3d"
@@ -1924,13 +1929,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
             end,
             disabledTooltip = "Only available in Detached or Inside modes",
             rawTooltip = true,
-            getValue = function()
-                return SVal("portraitSize", 0)
-            end,
-            setValue = function(v)
-                SSet("portraitSize", v)
-                UpdatePreview()
-            end,
+            getValue = SValRow("portraitSize", 0),
+            setValue = SSetRowThen("portraitSize"),
         }, {
             type = "dropdown",
             text = "Position",
@@ -1962,13 +1962,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                     return "Inside positions require Detached mode"
                 end
             end,
-            getValue = function()
-                return SVal("portraitSide", "left")
-            end,
-            setValue = function(v)
-                SSet("portraitSide", v)
-                UpdatePreview()
-            end,
+            getValue = SValRow("portraitSide", "left"),
+            setValue = SSetRowThen("portraitSide"),
         })
         posY = posY - hgt
         -- Sync icons: Portrait Size (left) and Portrait Side (right)
@@ -1989,13 +1984,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                         min = 50,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SVal("portraitArtScale", 100)
-                        end,
-                        set = function(v)
-                            SSet("portraitArtScale", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("portraitArtScale", 100),
+                        set = SSetRowThen("portraitArtScale"),
                     },
                     {
                         type = "slider",
@@ -2003,13 +1993,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                         min = 100,
                         max = 300,
                         step = 1,
-                        get = function()
-                            return SVal("portrait3dZoom", 100)
-                        end,
-                        set = function(v)
-                            SSet("portrait3dZoom", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("portrait3dZoom", 100),
+                        set = SSetRowThen("portrait3dZoom"),
                     },
                     {
                         type = "slider",
@@ -2028,13 +2013,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                             return "This option requires the Class Art Style."
                         end,
                         requireState = "disabled",
-                        get = function()
-                            return SVal("portraitClassZoom", 100)
-                        end,
-                        set = function(v)
-                            SSet("portraitClassZoom", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("portraitClassZoom", 100),
+                        set = SSetRowThen("portraitClassZoom"),
                     },
                     -- The stock styles keep their full art.
                     {
@@ -2048,9 +2028,7 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                             return CludesUI.BlizzStyle.Label("unitframes")
                         end,
                         requireState = "disabled",
-                        get = function()
-                            return SVal("portraitMirror", false)
-                        end,
+                        get = SValRow("portraitMirror", false),
                         set = function(v)
                             local unitKey, prefs = optionState.selectedUnit, SDB()
                             local function ApplyMirror()
@@ -2102,13 +2080,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SVal("portraitX", 0)
-                        end,
-                        set = function(v)
-                            SSet("portraitX", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("portraitX", 0),
+                        set = SSetRowThen("portraitX"),
                     },
                     {
                         type = "slider",
@@ -2116,13 +2089,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SVal("portraitY", 0)
-                        end,
-                        set = function(v)
-                            SSet("portraitY", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("portraitY", 0),
+                        set = SSetRowThen("portraitY"),
                     },
                 },
             })
@@ -2146,13 +2114,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                     return "None shape requires 3D Art Style"
                 end
             end,
-            getValue = function()
-                return SVal("detachedPortraitShape", "portrait")
-            end,
-            setValue = function(v)
-                SSet("detachedPortraitShape", v)
-                UpdatePreview()
-            end,
+            getValue = SValRow("detachedPortraitShape", "portrait"),
+            setValue = SSetRowThen("detachedPortraitShape"),
         }, {
             type = "multiSwatch",
             text = "Shape Border",
@@ -2228,13 +2191,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                         min = 1,
                         max = 7,
                         step = 1,
-                        get = function()
-                            return SVal("detachedPortraitBorderSize", 7)
-                        end,
-                        set = function(v)
-                            SSet("detachedPortraitBorderSize", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("detachedPortraitBorderSize", 7),
+                        set = SSetRowThen("detachedPortraitBorderSize"),
                     },
                     {
                         type = "slider",
@@ -2242,13 +2200,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                         min = 0,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SVal("detachedPortraitBorderOpacity", 100)
-                        end,
-                        set = function(v)
-                            SSet("detachedPortraitBorderOpacity", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("detachedPortraitBorderOpacity", 100),
+                        set = SSetRowThen("detachedPortraitBorderOpacity"),
                     },
                     {
                         type = "toggle",
@@ -2261,13 +2214,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                         end,
                         disabledTooltip = "This option requires the Class Colored Shape Border and Dark Mode.",
                         rawTooltip = true,
-                        get = function()
-                            return SVal("detachedPortraitUnitColorDark", false)
-                        end,
-                        set = function(v)
-                            SSet("detachedPortraitUnitColorDark", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("detachedPortraitUnitColorDark", false),
+                        set = SSetRowThen("detachedPortraitUnitColorDark"),
                     },
                     {
                         type = "dropdown",
@@ -2298,13 +2246,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                         end,
                         disabledTooltip = "This option requires a Circle or Pixels Circle Shape.",
                         rawTooltip = true,
-                        get = function()
-                            return SVal("detachedPortraitOuterRing", "none")
-                        end,
-                        set = function(v)
-                            SSet("detachedPortraitOuterRing", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("detachedPortraitOuterRing", "none"),
+                        set = SSetRowThen("detachedPortraitOuterRing"),
                     },
                     {
                         type = "slider",
@@ -2324,13 +2267,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                             return "This option requires an Outer Ring other than None."
                         end,
                         rawTooltip = true,
-                        get = function()
-                            return SVal("detachedPortraitOuterRingScale", 118)
-                        end,
-                        set = function(v)
-                            SSet("detachedPortraitOuterRingScale", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("detachedPortraitOuterRingScale", 118),
+                        set = SSetRowThen("detachedPortraitOuterRingScale"),
                     },
                     -- The 3D model draws over the shadow texture, so 2D and class art only.
                     {
@@ -2348,13 +2286,8 @@ function mod.UFO_BuildPortraitSection(hostFrame, posY, context)
                             return "This option requires a 2D Portrait or Class Art Style."
                         end,
                         rawTooltip = true,
-                        get = function()
-                            return SVal("detachedPortraitInnerShadow", false)
-                        end,
-                        set = function(v)
-                            SSet("detachedPortraitInnerShadow", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("detachedPortraitInnerShadow", false),
+                        set = SSetRowThen("detachedPortraitInnerShadow"),
                     },
                 },
             }
@@ -2588,6 +2521,19 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
     local classIconLocValues, classIconOrder, classIconValues, optionState =
         environ.classIconLocValues, environ.classIconOrder, environ.classIconValues, environ.optState
     local W, SGet, SSet, SVal = context.W, context.SGet, context.SSet, context.SVal
+    -- A row getter over SVal: the key's value, or the default given.
+    local function SValRow(key, default)
+        return function()
+            return SVal(key, default)
+        end
+    end
+    -- Row setters over SSet: the key written with the row's value, then UpdatePreview() for the Then form.
+    local function SSetRowThen(key)
+        return function(v)
+            SSet(key, v)
+            UpdatePreview()
+        end
+    end
     local _, hgt
 
     -------------------------------------------------------------------
@@ -2608,9 +2554,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
         sharedBtbToggleRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Enable Text Bar",
-            getValue = function()
-                return SVal("bottomTextBar", false)
-            end,
+            getValue = SValRow("bottomTextBar", false),
             -- DependentSetValue: Rows 2-4 below are hidden while the Text
             -- Bar is off; the flip forces the full rebuild.
             setValue = CludesUI.DependentSetValue(function()
@@ -2629,9 +2573,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                 return not SVal("bottomTextBar", false)
             end,
             disabledTooltip = "Text Bar",
-            getValue = function()
-                return SVal("btbPosition", "bottom")
-            end,
+            getValue = SValRow("btbPosition", "bottom"),
             setValue = function(v)
                 SSet("btbPosition", v)
                 UpdatePreview()
@@ -2721,13 +2663,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         min = -200,
                         max = 200,
                         step = 1,
-                        get = function()
-                            return SVal("btbX", 0)
-                        end,
-                        set = function(v)
-                            SSet("btbX", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("btbX", 0),
+                        set = SSetRowThen("btbX"),
                     },
                     {
                         type = "slider",
@@ -2735,13 +2672,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         min = -200,
                         max = 200,
                         step = 1,
-                        get = function()
-                            return SVal("btbY", 0)
-                        end,
-                        set = function(v)
-                            SSet("btbY", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("btbY", 0),
+                        set = SSetRowThen("btbY"),
                     },
                 },
             })
@@ -2765,13 +2697,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                 return not SVal("bottomTextBar", false)
             end,
             disabledTooltip = "Text Bar",
-            getValue = function()
-                return SVal("bottomTextBarHeight", 16)
-            end,
-            setValue = function(v)
-                SSet("bottomTextBarHeight", v)
-                UpdatePreview()
-            end,
+            getValue = SValRow("bottomTextBarHeight", 16),
+            setValue = SSetRowThen("bottomTextBarHeight"),
         }, {
             type = "slider",
             text = "Width",
@@ -2791,13 +2718,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                 end
                 return "This option requires the position setting to be detached"
             end,
-            getValue = function()
-                return SVal("btbWidth", 0)
-            end,
-            setValue = function(v)
-                SSet("btbWidth", v)
-                UpdatePreview()
-            end,
+            getValue = SValRow("btbWidth", 0),
+            setValue = SSetRowThen("btbWidth"),
         })
         posY = posY - hgt
         _sharedBtbWidthRgn = sharedBtbHeightRow._rightRegion
@@ -2891,9 +2813,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                 return not SVal("bottomTextBar", false)
             end,
             disabledTooltip = "Text Bar",
-            getValue = function()
-                return SVal("btbLeftContent", "none")
-            end,
+            getValue = SValRow("btbLeftContent", "none"),
             setValue = SetBtbLeft,
         }, {
             type = "dropdown",
@@ -2904,9 +2824,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                 return not SVal("bottomTextBar", false)
             end,
             disabledTooltip = "Text Bar",
-            getValue = function()
-                return SVal("btbRightContent", "none")
-            end,
+            getValue = SValRow("btbRightContent", "none"),
             setValue = SetBtbRight,
         })
         posY = posY - hgt
@@ -2951,13 +2869,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         min = 8,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SVal("btbLeftSize", 11)
-                        end,
-                        set = function(v)
-                            SSet("btbLeftSize", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("btbLeftSize", 11),
+                        set = SSetRowThen("btbLeftSize"),
                     },
                     {
                         type = "slider",
@@ -2965,13 +2878,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SVal("btbLeftX", 0)
-                        end,
-                        set = function(v)
-                            SSet("btbLeftX", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("btbLeftX", 0),
+                        set = SSetRowThen("btbLeftX"),
                     },
                     {
                         type = "slider",
@@ -2979,13 +2887,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         min = -60,
                         max = 60,
                         step = 1,
-                        get = function()
-                            return SVal("btbLeftY", 0)
-                        end,
-                        set = function(v)
-                            SSet("btbLeftY", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("btbLeftY", 0),
+                        set = SSetRowThen("btbLeftY"),
                     },
                     {
                         type = "slider",
@@ -2993,13 +2896,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         min = 20,
                         max = 200,
                         step = 5,
-                        get = function()
-                            return SVal("btbLeftWidthPct", 100)
-                        end,
-                        set = function(v)
-                            SSet("btbLeftWidthPct", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("btbLeftWidthPct", 100),
+                        set = SSetRowThen("btbLeftWidthPct"),
                     },
                     {
                         type = "multiswatch",
@@ -3056,9 +2954,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         type = "input",
                         label = "Separator",
                         inputWidth = 60,
-                        get = function()
-                            return SVal("btbLeftTargetSep", ">")
-                        end,
+                        get = SValRow("btbLeftTargetSep", ">"),
                         set = function(v)
                             v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
                             if v == "" then
@@ -3203,13 +3099,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         min = 8,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SVal("btbRightSize", 11)
-                        end,
-                        set = function(v)
-                            SSet("btbRightSize", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("btbRightSize", 11),
+                        set = SSetRowThen("btbRightSize"),
                     },
                     {
                         type = "slider",
@@ -3217,13 +3108,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SVal("btbRightX", 0)
-                        end,
-                        set = function(v)
-                            SSet("btbRightX", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("btbRightX", 0),
+                        set = SSetRowThen("btbRightX"),
                     },
                     {
                         type = "slider",
@@ -3231,13 +3117,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         min = -60,
                         max = 60,
                         step = 1,
-                        get = function()
-                            return SVal("btbRightY", 0)
-                        end,
-                        set = function(v)
-                            SSet("btbRightY", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("btbRightY", 0),
+                        set = SSetRowThen("btbRightY"),
                     },
                     {
                         type = "slider",
@@ -3245,13 +3126,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         min = 20,
                         max = 200,
                         step = 5,
-                        get = function()
-                            return SVal("btbRightWidthPct", 100)
-                        end,
-                        set = function(v)
-                            SSet("btbRightWidthPct", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("btbRightWidthPct", 100),
+                        set = SSetRowThen("btbRightWidthPct"),
                     },
                     {
                         type = "multiswatch",
@@ -3308,9 +3184,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         type = "input",
                         label = "Separator",
                         inputWidth = 60,
-                        get = function()
-                            return SVal("btbRightTargetSep", ">")
-                        end,
+                        get = SValRow("btbRightTargetSep", ">"),
                         set = function(v)
                             v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
                             if v == "" then
@@ -3456,9 +3330,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                 return not SVal("bottomTextBar", false)
             end,
             disabledTooltip = "Text Bar",
-            getValue = function()
-                return SVal("btbCenterContent", "none")
-            end,
+            getValue = SValRow("btbCenterContent", "none"),
             setValue = SetBtbCenter,
         }, {
             type = "dropdown",
@@ -3469,13 +3341,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                 return not SVal("bottomTextBar", false)
             end,
             disabledTooltip = "Text Bar",
-            getValue = function()
-                return SVal("btbClassIcon", "none")
-            end,
-            setValue = function(v)
-                SSet("btbClassIcon", v)
-                UpdatePreview()
-            end,
+            getValue = SValRow("btbClassIcon", "none"),
+            setValue = SSetRowThen("btbClassIcon"),
         })
         posY = posY - hgt
         if not CludesUI._prebuilding then
@@ -3510,13 +3377,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         min = 8,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SVal("btbCenterSize", 11)
-                        end,
-                        set = function(v)
-                            SSet("btbCenterSize", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("btbCenterSize", 11),
+                        set = SSetRowThen("btbCenterSize"),
                     },
                     {
                         type = "slider",
@@ -3524,13 +3386,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SVal("btbCenterX", 0)
-                        end,
-                        set = function(v)
-                            SSet("btbCenterX", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("btbCenterX", 0),
+                        set = SSetRowThen("btbCenterX"),
                     },
                     {
                         type = "slider",
@@ -3538,13 +3395,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         min = -60,
                         max = 60,
                         step = 1,
-                        get = function()
-                            return SVal("btbCenterY", 0)
-                        end,
-                        set = function(v)
-                            SSet("btbCenterY", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("btbCenterY", 0),
+                        set = SSetRowThen("btbCenterY"),
                     },
                     {
                         type = "slider",
@@ -3552,13 +3404,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         min = 20,
                         max = 200,
                         step = 5,
-                        get = function()
-                            return SVal("btbCenterWidthPct", 100)
-                        end,
-                        set = function(v)
-                            SSet("btbCenterWidthPct", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("btbCenterWidthPct", 100),
+                        set = SSetRowThen("btbCenterWidthPct"),
                     },
                     {
                         type = "multiswatch",
@@ -3615,9 +3462,7 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         type = "input",
                         label = "Separator",
                         inputWidth = 60,
-                        get = function()
-                            return SVal("btbCenterTargetSep", ">")
-                        end,
+                        get = SValRow("btbCenterTargetSep", ">"),
                         set = function(v)
                             v = tostring(v or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
                             if v == "" then
@@ -3762,26 +3607,16 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         min = 8,
                         max = 60,
                         step = 1,
-                        get = function()
-                            return SVal("btbClassIconSize", 14)
-                        end,
-                        set = function(v)
-                            SSet("btbClassIconSize", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("btbClassIconSize", 14),
+                        set = SSetRowThen("btbClassIconSize"),
                     },
                     {
                         type = "dropdown",
                         label = "Location",
                         values = classIconLocValues,
                         order = classIconLocOrder,
-                        get = function()
-                            return SVal("btbClassIconLocation", "left")
-                        end,
-                        set = function(v)
-                            SSet("btbClassIconLocation", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("btbClassIconLocation", "left"),
+                        set = SSetRowThen("btbClassIconLocation"),
                     },
                     {
                         type = "slider",
@@ -3789,13 +3624,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return SVal("btbClassIconX", 0)
-                        end,
-                        set = function(v)
-                            SSet("btbClassIconX", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("btbClassIconX", 0),
+                        set = SSetRowThen("btbClassIconX"),
                     },
                     {
                         type = "slider",
@@ -3803,13 +3633,8 @@ function mod.UFO_BuildTextBarSection(hostFrame, posY, context)
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return SVal("btbClassIconY", 0)
-                        end,
-                        set = function(v)
-                            SSet("btbClassIconY", v)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("btbClassIconY", 0),
+                        set = SSetRowThen("btbClassIconY"),
                     },
                 },
             })
@@ -3842,6 +3667,18 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
         context.W, context.SApplySupport, context.SDB, context.SGetSupported
     local SSetSupported, SValSupported, SVisible =
         context.SSetSupported, context.SValSupported, context.SVisible
+    -- A row getter over SValSupported: the key's value, or the default given.
+    local function SValSupportedRow(key, default)
+        return function()
+            return SValSupported(key, default)
+        end
+    end
+    -- Row setters over SSetSupported: the key written with the row's value.
+    local function SSetSupportedRow(key)
+        return function(v)
+            SSetSupported(key, v)
+        end
+    end
     local hgt
 
     local sharedAddHeader
@@ -3986,7 +3823,13 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
         -- (player + target only -- the focus row is dimmed with a tooltip)
         if SVisible("combatIndicatorStyle") and not CludesUI._prebuilding then
             local ciRgn = sharedAddRow1._leftRegion
-            CludesUI.AddPreviewEye(ciRgn, optionState, "showCombatIndicatorPreview", "combat indicator", UpdatePreview)
+            CludesUI.AddPreviewEye(
+                ciRgn,
+                optionState,
+                "showCombatIndicatorPreview",
+                "combat indicator",
+                UpdatePreview
+            )
 
             -- Cog popup for combat indicator settings
             -- "healthbar" is the long-standing stored value for centered-on-health-bar,
@@ -4051,9 +3894,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                         min = 8,
                         max = 64,
                         step = 1,
-                        get = function()
-                            return SValSupported("combatIndicatorSize", 22)
-                        end,
+                        get = SValSupportedRow("combatIndicatorSize", 22),
                         set = function(v)
                             SSetSupported("combatIndicatorSize", v)
                             ReloadAndUpdate()
@@ -4066,9 +3907,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                         min = -200,
                         max = 200,
                         step = 1,
-                        get = function()
-                            return SValSupported("combatIndicatorX", 0)
-                        end,
+                        get = SValSupportedRow("combatIndicatorX", 0),
                         set = function(v)
                             SSetSupported("combatIndicatorX", v)
                             ReloadAndUpdate()
@@ -4081,9 +3920,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                         min = -200,
                         max = 200,
                         step = 1,
-                        get = function()
-                            return SValSupported("combatIndicatorY", 0)
-                        end,
+                        get = SValSupportedRow("combatIndicatorY", 0),
                         set = function(v)
                             SSetSupported("combatIndicatorY", v)
                             ReloadAndUpdate()
@@ -4173,9 +4010,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
     sharedAddRow4, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Raid Marker",
-        getValue = function()
-            return SValSupported("raidMarkerEnabled", false)
-        end,
+        getValue = SValSupportedRow("raidMarkerEnabled", false),
         setValue = function(v)
             SSetSupported("raidMarkerEnabled", v)
             CludesUI:RefreshPage()
@@ -4188,12 +4023,8 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
         step = 1,
         disabled = raidMarkerOff,
         disabledTooltip = "Raid Marker",
-        getValue = function()
-            return SValSupported("raidMarkerSize", 28)
-        end,
-        setValue = function(v)
-            SSetSupported("raidMarkerSize", v)
-        end,
+        getValue = SValSupportedRow("raidMarkerSize", 28),
+        setValue = SSetSupportedRow("raidMarkerSize"),
     })
     posY = posY - hgt
     if not CludesUI._prebuilding then
@@ -4210,12 +4041,8 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                     label = "Position",
                     values = rmPosValues,
                     order = rmPosOrder,
-                    get = function()
-                        return SValSupported("raidMarkerAlign", "right")
-                    end,
-                    set = function(v)
-                        SSetSupported("raidMarkerAlign", v)
-                    end,
+                    get = SValSupportedRow("raidMarkerAlign", "right"),
+                    set = SSetSupportedRow("raidMarkerAlign"),
                 },
                 {
                     type = "slider",
@@ -4223,12 +4050,8 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                     min = -200,
                     max = 200,
                     step = 1,
-                    get = function()
-                        return SValSupported("raidMarkerX", 0)
-                    end,
-                    set = function(v)
-                        SSetSupported("raidMarkerX", v)
-                    end,
+                    get = SValSupportedRow("raidMarkerX", 0),
+                    set = SSetSupportedRow("raidMarkerX"),
                 },
                 {
                     type = "slider",
@@ -4236,12 +4059,8 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                     min = -200,
                     max = 200,
                     step = 1,
-                    get = function()
-                        return SValSupported("raidMarkerY", 0)
-                    end,
-                    set = function(v)
-                        SSetSupported("raidMarkerY", v)
-                    end,
+                    get = SValSupportedRow("raidMarkerY", 0),
+                    set = SSetSupportedRow("raidMarkerY"),
                 },
             },
         })
@@ -4280,9 +4099,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
         sharedAddRow5, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Leader Indicator",
-            getValue = function()
-                return SValSupported("leaderIndicatorEnabled", true)
-            end,
+            getValue = SValSupportedRow("leaderIndicatorEnabled", true),
             setValue = function(v)
                 SSetSupported("leaderIndicatorEnabled", v)
                 CludesUI:RefreshPage()
@@ -4295,12 +4112,8 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
             step = 1,
             disabled = leaderIndOff,
             disabledTooltip = "Leader Indicator",
-            getValue = function()
-                return SValSupported("leaderIndicatorSize", 16)
-            end,
-            setValue = function(v)
-                SSetSupported("leaderIndicatorSize", v)
-            end,
+            getValue = SValSupportedRow("leaderIndicatorSize", 16),
+            setValue = SSetSupportedRow("leaderIndicatorSize"),
         })
         posY = posY - hgt
         SApplySupport(sharedAddRow5._leftRegion, "leaderIndicatorEnabled")
@@ -4326,24 +4139,16 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                         tooltip = "Art used for the leader crown and the assistant icon.",
                         values = { blizzard = "Blizzard", pixels = "Pixels" },
                         order = { "blizzard", "pixels" },
-                        get = function()
-                            return SValSupported("leaderIndicatorStyle", "blizzard")
-                        end,
-                        set = function(v)
-                            SSetSupported("leaderIndicatorStyle", v)
-                        end,
+                        get = SValSupportedRow("leaderIndicatorStyle", "blizzard"),
+                        set = SSetSupportedRow("leaderIndicatorStyle"),
                     },
                     {
                         type = "dropdown",
                         label = "Position",
                         values = leaderPosValues,
                         order = leaderPosOrder,
-                        get = function()
-                            return SValSupported("leaderIndicatorPosition", "topleft")
-                        end,
-                        set = function(v)
-                            SSetSupported("leaderIndicatorPosition", v)
-                        end,
+                        get = SValSupportedRow("leaderIndicatorPosition", "topleft"),
+                        set = SSetSupportedRow("leaderIndicatorPosition"),
                     },
                     {
                         type = "slider",
@@ -4351,12 +4156,8 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                         min = -200,
                         max = 200,
                         step = 1,
-                        get = function()
-                            return SValSupported("leaderIndicatorX", 0)
-                        end,
-                        set = function(v)
-                            SSetSupported("leaderIndicatorX", v)
-                        end,
+                        get = SValSupportedRow("leaderIndicatorX", 0),
+                        set = SSetSupportedRow("leaderIndicatorX"),
                     },
                     {
                         type = "slider",
@@ -4364,12 +4165,8 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                         min = -200,
                         max = 200,
                         step = 1,
-                        get = function()
-                            return SValSupported("leaderIndicatorY", 0)
-                        end,
-                        set = function(v)
-                            SSetSupported("leaderIndicatorY", v)
-                        end,
+                        get = SValSupportedRow("leaderIndicatorY", 0),
+                        set = SSetSupportedRow("leaderIndicatorY"),
                     },
                 },
             })
@@ -4446,9 +4243,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                 end
                 return "This option only applies to the Badge style."
             end,
-            getValue = function()
-                return SValSupported("eliteIndicatorSize", 16)
-            end,
+            getValue = SValSupportedRow("eliteIndicatorSize", 16),
             setValue = function(v)
                 eliteSet("eliteIndicatorSize", v)
             end,
@@ -4526,9 +4321,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                         disabled = eliteDragon,
                         disabledTooltip = badgeOnly,
                         rawTooltip = true,
-                        get = function()
-                            return SValSupported("eliteIndicatorPosition", "topleft")
-                        end,
+                        get = SValSupportedRow("eliteIndicatorPosition", "topleft"),
                         set = function(v)
                             eliteSet("eliteIndicatorPosition", v)
                         end,
@@ -4542,9 +4335,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                         disabled = eliteDragon,
                         disabledTooltip = badgeOnly,
                         rawTooltip = true,
-                        get = function()
-                            return SValSupported("eliteIndicatorX", 0)
-                        end,
+                        get = SValSupportedRow("eliteIndicatorX", 0),
                         set = function(v)
                             eliteSet("eliteIndicatorX", v)
                         end,
@@ -4558,9 +4349,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                         disabled = eliteDragon,
                         disabledTooltip = badgeOnly,
                         rawTooltip = true,
-                        get = function()
-                            return SValSupported("eliteIndicatorY", 0)
-                        end,
+                        get = SValSupportedRow("eliteIndicatorY", 0),
                         set = function(v)
                             eliteSet("eliteIndicatorY", v)
                         end,
@@ -4614,12 +4403,8 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
             step = 1,
             disabled = factionIndOff,
             disabledTooltip = "Faction Indicator",
-            getValue = function()
-                return SValSupported("factionIndicatorSize", 18)
-            end,
-            setValue = function(v)
-                SSetSupported("factionIndicatorSize", v)
-            end,
+            getValue = SValSupportedRow("factionIndicatorSize", 18),
+            setValue = SSetSupportedRow("factionIndicatorSize"),
         })
         posY = posY - hgt
         SApplySupport(factionRow._leftRegion, "factionIndicatorMode")
@@ -4637,9 +4422,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                     get = function()
                         return SValSupported("factionIndicatorPvP", pvpDefault)
                     end,
-                    set = function(v)
-                        SSetSupported("factionIndicatorPvP", v)
-                    end,
+                    set = SSetSupportedRow("factionIndicatorPvP"),
                 },
             }
             if isTarget then
@@ -4650,9 +4433,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                     get = function()
                         return SValSupported("factionIndicatorPlayersOnly", false) == true
                     end,
-                    set = function(v)
-                        SSetSupported("factionIndicatorPlayersOnly", v)
-                    end,
+                    set = SSetSupportedRow("factionIndicatorPlayersOnly"),
                 }
             end
             CludesUI.BuildInlineCog(factionRow._leftRegion, {
@@ -4681,24 +4462,16 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                         label = "Icon Style",
                         values = CludesUI.FACTION_ART_LABELS,
                         order = CludesUI.FACTION_ART_ORDER,
-                        get = function()
-                            return SValSupported("factionIndicatorStyle", "pvp")
-                        end,
-                        set = function(v)
-                            SSetSupported("factionIndicatorStyle", v)
-                        end,
+                        get = SValSupportedRow("factionIndicatorStyle", "pvp"),
+                        set = SSetSupportedRow("factionIndicatorStyle"),
                     },
                     {
                         type = "dropdown",
                         label = "Position",
                         values = factionPosValues,
                         order = factionPosOrder,
-                        get = function()
-                            return SValSupported("factionIndicatorPosition", "topright")
-                        end,
-                        set = function(v)
-                            SSetSupported("factionIndicatorPosition", v)
-                        end,
+                        get = SValSupportedRow("factionIndicatorPosition", "topright"),
+                        set = SSetSupportedRow("factionIndicatorPosition"),
                     },
                     {
                         type = "slider",
@@ -4706,12 +4479,8 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                         min = -200,
                         max = 200,
                         step = 1,
-                        get = function()
-                            return SValSupported("factionIndicatorX", 0)
-                        end,
-                        set = function(v)
-                            SSetSupported("factionIndicatorX", v)
-                        end,
+                        get = SValSupportedRow("factionIndicatorX", 0),
+                        set = SSetSupportedRow("factionIndicatorX"),
                     },
                     {
                         type = "slider",
@@ -4719,12 +4488,8 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
                         min = -200,
                         max = 200,
                         step = 1,
-                        get = function()
-                            return SValSupported("factionIndicatorY", 0)
-                        end,
-                        set = function(v)
-                            SSetSupported("factionIndicatorY", v)
-                        end,
+                        get = SValSupportedRow("factionIndicatorY", 0),
+                        set = SSetSupportedRow("factionIndicatorY"),
                     },
                 },
             })

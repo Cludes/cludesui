@@ -57,6 +57,18 @@ CludesUI.AtOptionsLogin(function()
             EQT.ApplyMasterHeaderVisibility()
         end
     end
+    -- Row setters over Set: the key written with the row's value, then RefreshAll() for the Then form.
+    local function SetRow(key)
+        return function(v)
+            Set(key, v)
+        end
+    end
+    local function SetRowThen(key)
+        return function(v)
+            Set(key, v)
+            RefreshAll()
+        end
+    end
 
     local function BuildPage(_, hostFrame, yOffset)
         local W = CludesUI.Widgets
@@ -325,10 +337,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return Cfg("customScrollbar") or "always"
                 end,
-                setValue = function(val)
-                    Set("customScrollbar", val)
-                    RefreshAll()
-                end,
+                setValue = SetRowThen("customScrollbar"),
             })
             posY = posY - hgt
 
@@ -344,10 +353,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return Cfg("customClickAction") or "collapse"
                 end,
-                setValue = function(val)
-                    Set("customClickAction", val)
-                    RefreshAll()
-                end,
+                setValue = SetRowThen("customClickAction"),
             }, {
                 type = "toggle",
                 text = "Collapse Completed Quests",
@@ -357,10 +363,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return Cfg("customCollapseCompleted") or false
                 end,
-                setValue = function(val)
-                    Set("customCollapseCompleted", val)
-                    RefreshAll()
-                end,
+                setValue = SetRowThen("customCollapseCompleted"),
             })
             posY = posY - hgt
 
@@ -376,10 +379,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return Cfg("customQuestSpacing") or 4
                 end,
-                setValue = function(val)
-                    Set("customQuestSpacing", val)
-                    RefreshAll()
-                end,
+                setValue = SetRowThen("customQuestSpacing"),
             }, {
                 type = "slider",
                 text = "Objective Spacing",
@@ -391,10 +391,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return Cfg("customObjSpacing") or 1
                 end,
-                setValue = function(val)
-                    Set("customObjSpacing", val)
-                    RefreshAll()
-                end,
+                setValue = SetRowThen("customObjSpacing"),
             })
             posY = posY - hgt
 
@@ -408,10 +405,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return Cfg("customFocusClick") or false
                 end,
-                setValue = function(val)
-                    Set("customFocusClick", val)
-                    RefreshAll()
-                end,
+                setValue = SetRowThen("customFocusClick"),
             }, {
                 type = "toggle",
                 text = "Wrap Quest Names",
@@ -421,10 +415,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return Cfg("customWrapTitles") ~= false
                 end,
-                setValue = function(val)
-                    Set("customWrapTitles", val)
-                    RefreshAll()
-                end,
+                setValue = SetRowThen("customWrapTitles"),
             })
             posY = posY - hgt
 
@@ -438,10 +429,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return Cfg("customWrapObjectives") ~= false
                 end,
-                setValue = function(val)
-                    Set("customWrapObjectives", val)
-                    RefreshAll()
-                end,
+                setValue = SetRowThen("customWrapObjectives"),
             }, {
                 type = "slider",
                 text = "Zone Header Font Size",
@@ -453,10 +441,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return Cfg("customZoneFontSize") or 13
                 end,
-                setValue = function(val)
-                    Set("customZoneFontSize", val)
-                    RefreshAll()
-                end,
+                setValue = SetRowThen("customZoneFontSize"),
             })
             posY = posY - hgt
 
@@ -470,10 +455,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return Cfg("customItemButtons") or false
                 end,
-                setValue = function(val)
-                    Set("customItemButtons", val)
-                    RefreshAll()
-                end,
+                setValue = SetRowThen("customItemButtons"),
             }, {
                 type = "toggle",
                 text = "Flash Objective Updates",
@@ -483,10 +465,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return Cfg("customFlashUpdates") or false
                 end,
-                setValue = function(val)
-                    Set("customFlashUpdates", val)
-                    RefreshAll()
-                end,
+                setValue = SetRowThen("customFlashUpdates"),
             })
             posY = posY - hgt
 
@@ -579,10 +558,7 @@ CludesUI.AtOptionsLogin(function()
                                 get = function()
                                     return Cfg("customBgHover") or false
                                 end,
-                                set = function(val)
-                                    Set("customBgHover", val)
-                                    RefreshAll()
-                                end,
+                                set = SetRowThen("customBgHover"),
                             },
                             {
                                 type = "toggle",
@@ -595,9 +571,7 @@ CludesUI.AtOptionsLogin(function()
                                 get = function()
                                     return Cfg("customBgFade") ~= false
                                 end,
-                                set = function(val)
-                                    Set("customBgFade", val)
-                                end,
+                                set = SetRow("customBgFade"),
                             },
                         },
                     })
@@ -637,10 +611,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return Cfg("headerFontSize") or 13
                 end,
-                setValue = function(val)
-                    Set("headerFontSize", val)
-                    RefreshAll()
-                end,
+                setValue = SetRowThen("headerFontSize"),
             }, {
                 type = "slider",
                 text = "Title Font Size",
@@ -650,10 +621,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return Cfg("titleFontSize") or 12
                 end,
-                setValue = function(val)
-                    Set("titleFontSize", val)
-                    RefreshAll()
-                end,
+                setValue = SetRowThen("titleFontSize"),
             })
             posY = posY - hgt
 
@@ -669,10 +637,7 @@ CludesUI.AtOptionsLogin(function()
                     getValue = function()
                         return Cfg("objectiveFontSize") or 10
                     end,
-                    setValue = function(val)
-                        Set("objectiveFontSize", val)
-                        RefreshAll()
-                    end,
+                    setValue = SetRowThen("objectiveFontSize"),
                 }, {
                     type = "dropdown",
                     text = "Font",
@@ -1083,10 +1048,7 @@ CludesUI.AtOptionsLogin(function()
                             get = function()
                                 return Cfg("objDimAlpha") or 45
                             end,
-                            set = function(val)
-                                Set("objDimAlpha", val)
-                                RefreshAll()
-                            end,
+                            set = SetRowThen("objDimAlpha"),
                         },
                     },
                 })
@@ -1386,9 +1348,7 @@ CludesUI.AtOptionsLogin(function()
                 get = function()
                     return Cfg("autoAcceptPreventMulti") ~= false
                 end,
-                set = function(val)
-                    Set("autoAcceptPreventMulti", val)
-                end,
+                set = SetRow("autoAcceptPreventMulti"),
             },
             -- Hold Shift to Enable and Hold Shift to Skip are opposites: turning one on turns the other off.
             {
@@ -1423,9 +1383,7 @@ CludesUI.AtOptionsLogin(function()
                 get = function()
                     return Cfg("autoAcceptIgnoreTrivial") or false
                 end,
-                set = function(val)
-                    Set("autoAcceptIgnoreTrivial", val)
-                end,
+                set = SetRow("autoAcceptIgnoreTrivial"),
             },
         }
         -- WoW Forever has no older expansions to skip.
@@ -1436,9 +1394,7 @@ CludesUI.AtOptionsLogin(function()
                 get = function()
                     return Cfg("autoAcceptIgnoreOldExpansion") or false
                 end,
-                set = function(val)
-                    Set("autoAcceptIgnoreOldExpansion", val)
-                end,
+                set = SetRow("autoAcceptIgnoreOldExpansion"),
             }
         end
         CludesUI.BuildInlineCog(row._leftRegion, {
@@ -1507,9 +1463,7 @@ CludesUI.AtOptionsLogin(function()
                     get = function()
                         return Cfg("wowheadQuestClientLanguage") == true
                     end,
-                    set = function(val)
-                        Set("wowheadQuestClientLanguage", val)
-                    end,
+                    set = SetRow("wowheadQuestClientLanguage"),
                 },
                 {
                     type = "toggle",
@@ -1517,9 +1471,7 @@ CludesUI.AtOptionsLogin(function()
                     get = function()
                         return Cfg("wowheadQuestComments") == true
                     end,
-                    set = function(val)
-                        Set("wowheadQuestComments", val)
-                    end,
+                    set = SetRow("wowheadQuestComments"),
                 },
             },
         })

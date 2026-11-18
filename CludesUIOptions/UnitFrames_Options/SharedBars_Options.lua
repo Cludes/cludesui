@@ -33,7 +33,25 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
         environ.db, environ.healthTextOrder, environ.healthTextOrderPlayer, environ.healthTextOrderTargetFocus
     local healthTextValues, optionState = environ.healthTextValues, environ.optState
     local W, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
+    -- Row setters over SSet: the key written with the row's value, then UpdatePreview() for the Then form.
+    local function SSetRow(key)
+        return function(v)
+            SSet(key, v)
+        end
+    end
+    local function SSetRowThen(key)
+        return function(v)
+            SSet(key, v)
+            UpdatePreview()
+        end
+    end
     local SVal = context.SVal
+    -- A row getter over SVal: the key's value, or the default given.
+    local function SValRow(key, default)
+        return function()
+            return SVal(key, default)
+        end
+    end
     local _, hgt
 
     -------------------------------------------------------------------
@@ -61,12 +79,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
             disabled = ufhDis,
             disabledTooltip = ufhTip,
             rawTooltip = ufhRaw,
-            getValue = function()
-                return SVal("healthHeight", 46)
-            end,
-            setValue = function(val)
-                SSet("healthHeight", val)
-            end,
+            getValue = SValRow("healthHeight", 46),
+            setValue = SSetRow("healthHeight"),
         }),
         CludesUI.BlizzStyle.Gate("unitframes", {
             type = "slider",
@@ -77,12 +91,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
             disabled = ufwDis,
             disabledTooltip = ufwTip,
             rawTooltip = ufwRaw,
-            getValue = function()
-                return SVal("frameWidth", 181)
-            end,
-            setValue = function(val)
-                SSet("frameWidth", val)
-            end,
+            getValue = SValRow("frameWidth", 181),
+            setValue = SSetRow("frameWidth"),
         })
     )
     posY = posY - hgt
@@ -111,9 +121,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
             {
                 type = "toggle",
                 text = "Reverse Fill",
-                getValue = function()
-                    return SVal("healthReverseFill", false)
-                end,
+                getValue = SValRow("healthReverseFill", false),
                 setValue = function(val)
                     SSet("healthReverseFill", val)
                     ReloadAndUpdate()
@@ -140,9 +148,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                 {
                     type = "toggle",
                     label = "Reverse Fill",
-                    get = function()
-                        return SVal("healthReverseFill", false)
-                    end,
+                    get = SValRow("healthReverseFill", false),
                     set = function(val)
                         SSet("healthReverseFill", val)
                         ReloadAndUpdate()
@@ -155,9 +161,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                     type = "toggle",
                     label = "Vertical Fill",
                     tooltip = "Fill the health bar bottom-to-top instead of left-to-right. Reverse Fill flips it to top-to-bottom.",
-                    get = function()
-                        return SVal("healthVerticalFill", false)
-                    end,
+                    get = SValRow("healthVerticalFill", false),
                     -- A full rebuild: the size sliders' ranges follow Vertical Fill
                     -- (baked in at build), and the Absorbs Placement dropdowns
                     -- re-label for the new axis (cog popups bake labels in too).
@@ -291,9 +295,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
         min = 0,
         max = 100,
         step = 1,
-        getValue = function()
-            return SVal("customBgAlpha", 100)
-        end,
+        getValue = SValRow("customBgAlpha", 100),
         setValue = function(val)
             SSet("customBgAlpha", val)
             ReloadAndUpdate()
@@ -490,9 +492,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                         classReactive = "Class Reactive",
                     },
                     order = { "none", "classic", "customDynamic", "classReactive" },
-                    get = function()
-                        return SVal("healthColorMode", "none")
-                    end,
+                    get = SValRow("healthColorMode", "none"),
                     -- RefreshPage re-runs the stop swatches' show/hide pass.
                     set = function(val)
                         SSet("healthColorMode", val)
@@ -504,9 +504,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                 {
                     type = "toggle",
                     label = "Enable Gradient",
-                    get = function()
-                        return SVal("gradientEnabled", false)
-                    end,
+                    get = SValRow("gradientEnabled", false),
                     set = function(val)
                         SSet("gradientEnabled", val)
                         ReloadAndUpdate()
@@ -519,9 +517,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                     label = "Gradient Direction",
                     values = { HORIZONTAL = "Horizontal", VERTICAL = "Vertical" },
                     order = { "HORIZONTAL", "VERTICAL" },
-                    get = function()
-                        return SVal("gradientDir", "HORIZONTAL")
-                    end,
+                    get = SValRow("gradientDir", "HORIZONTAL"),
                     set = function(val)
                         SSet("gradientDir", val)
                         ReloadAndUpdate()
@@ -623,12 +619,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
     sharedOpacityRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Smooth Health Bars",
-        getValue = function()
-            return SVal("smoothBars", false)
-        end,
-        setValue = function(val)
-            SSet("smoothBars", val)
-        end,
+        getValue = SValRow("smoothBars", false),
+        setValue = SSetRow("smoothBars"),
     }, {
         type = "slider",
         text = "Fill Opacity",
@@ -640,13 +632,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
         end,
         disabledTooltip = "Dark Mode",
         requireState = "disabled",
-        getValue = function()
-            return SVal("healthBarOpacity", 90)
-        end,
-        setValue = function(val)
-            SSet("healthBarOpacity", val)
-            UpdatePreview()
-        end,
+        getValue = SValRow("healthBarOpacity", 90),
+        setValue = SSetRowThen("healthBarOpacity"),
     })
     posY = posY - hgt
     -- Sync icon: Bar Opacity (right)
@@ -667,9 +654,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
             type = "toggle",
             text = "Show Level",
             tooltip = "Shows the unit's level in the frame's level circle, as the default UI does.",
-            getValue = function()
-                return SVal("blizzShowLevel", true)
-            end,
+            getValue = SValRow("blizzShowLevel", true),
             setValue = function(val)
                 SSet("blizzShowLevel", val)
                 UpdatePreview()
@@ -695,10 +680,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                         get = function()
                             return SVal("blizzLevelSize", SVal("leftTextSize", SDB().textSize or 12))
                         end,
-                        set = function(val)
-                            SSet("blizzLevelSize", val)
-                            UpdatePreview()
-                        end,
+                        set = SSetRowThen("blizzLevelSize"),
                     },
                     {
                         type = "slider",
@@ -706,13 +688,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                         min = -150,
                         max = 150,
                         step = 1,
-                        get = function()
-                            return SVal("blizzLevelX", 0)
-                        end,
-                        set = function(val)
-                            SSet("blizzLevelX", val)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("blizzLevelX", 0),
+                        set = SSetRowThen("blizzLevelX"),
                     },
                     {
                         type = "slider",
@@ -720,13 +697,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                         min = -150,
                         max = 150,
                         step = 1,
-                        get = function()
-                            return SVal("blizzLevelY", 0)
-                        end,
-                        set = function(val)
-                            SSet("blizzLevelY", val)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("blizzLevelY", 0),
+                        set = SSetRowThen("blizzLevelY"),
                     },
                     -- The player's own level never takes a difficulty colour.
                     {
@@ -737,13 +709,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             return optionState.selectedUnit == "player"
                         end,
                         disabledTooltip = "This option does not apply to the player frame.",
-                        get = function()
-                            return SVal("blizzLevelDifficultyColor", true)
-                        end,
-                        set = function(val)
-                            SSet("blizzLevelDifficultyColor", val)
-                            UpdatePreview()
-                        end,
+                        get = SValRow("blizzLevelDifficultyColor", true),
+                        set = SSetRowThen("blizzLevelDifficultyColor"),
                     },
                 },
             })
@@ -763,9 +730,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
             order = (optionState.selectedUnit == "player" and healthTextOrderPlayer)
                 or ((optionState.selectedUnit == "target" or optionState.selectedUnit == "focus") and healthTextOrderTargetFocus)
                 or healthTextOrder,
-            getValue = function()
-                return SVal("leftTextContent", "name")
-            end,
+            getValue = SValRow("leftTextContent", "name"),
             setValue = function(val)
                 SSet("leftTextContent", val)
                 if mod.UF_IsUniqueContent(val) then
@@ -889,10 +854,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             get = function()
                                 return SVal("leftTextSize", SDB().textSize or 12)
                             end,
-                            set = function(val)
-                                SSet("leftTextSize", val)
-                                UpdatePreview()
-                            end,
+                            set = SSetRowThen("leftTextSize"),
                         },
                         {
                             type = "slider",
@@ -900,13 +862,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             min = -300,
                             max = 300,
                             step = 1,
-                            get = function()
-                                return SVal("leftTextX", 0)
-                            end,
-                            set = function(val)
-                                SSet("leftTextX", val)
-                                UpdatePreview()
-                            end,
+                            get = SValRow("leftTextX", 0),
+                            set = SSetRowThen("leftTextX"),
                         },
                         {
                             type = "slider",
@@ -914,13 +871,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             min = -300,
                             max = 300,
                             step = 1,
-                            get = function()
-                                return SVal("leftTextY", 0)
-                            end,
-                            set = function(val)
-                                SSet("leftTextY", val)
-                                UpdatePreview()
-                            end,
+                            get = SValRow("leftTextY", 0),
+                            set = SSetRowThen("leftTextY"),
                         },
                         {
                             type = "slider",
@@ -928,13 +880,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             min = 20,
                             max = 200,
                             step = 5,
-                            get = function()
-                                return SVal("leftTextWidthPct", 100)
-                            end,
-                            set = function(val)
-                                SSet("leftTextWidthPct", val)
-                                UpdatePreview()
-                            end,
+                            get = SValRow("leftTextWidthPct", 100),
+                            set = SSetRowThen("leftTextWidthPct"),
                         },
                         {
                             type = "multiswatch",
@@ -992,9 +939,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             type = "input",
                             label = "Separator",
                             inputWidth = 60,
-                            get = function()
-                                return SVal("leftTextTargetSep", ">")
-                            end,
+                            get = SValRow("leftTextTargetSep", ">"),
                             set = function(val)
                                 val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
                                 if val == "" then
@@ -1013,9 +958,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             label = "Prefix",
                             inputWidth = 60,
                             tooltip = "Text shown before the target's name.",
-                            get = function()
-                                return SVal("leftTextTargetPrefix", "T:")
-                            end,
+                            get = SValRow("leftTextTargetPrefix", "T:"),
                             set = function(val)
                                 -- Unlike Separator, empty is kept: no prefix.
                                 val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
@@ -1118,12 +1061,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                     CludesUI.AddCaptureAccessor(leftRgn, {
                         type = "toggle",
                         text = "Left Text Class Color",
-                        getValue = function()
-                            return SVal("leftTextClassColor", false)
-                        end,
-                        setValue = function(val)
-                            SSet("leftTextClassColor", val)
-                        end,
+                        getValue = SValRow("leftTextClassColor", false),
+                        setValue = SSetRow("leftTextClassColor"),
                     })
                 end
             end
@@ -1140,9 +1079,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
             order = (optionState.selectedUnit == "player" and healthTextOrderPlayer)
                 or ((optionState.selectedUnit == "target" or optionState.selectedUnit == "focus") and healthTextOrderTargetFocus)
                 or healthTextOrder,
-            getValue = function()
-                return SVal("rightTextContent", "both")
-            end,
+            getValue = SValRow("rightTextContent", "both"),
             setValue = function(val)
                 SSet("rightTextContent", val)
                 if mod.UF_IsUniqueContent(val) then
@@ -1267,10 +1204,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             get = function()
                                 return SVal("rightTextSize", SDB().textSize or 12)
                             end,
-                            set = function(val)
-                                SSet("rightTextSize", val)
-                                UpdatePreview()
-                            end,
+                            set = SSetRowThen("rightTextSize"),
                         },
                         {
                             type = "slider",
@@ -1278,13 +1212,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             min = -300,
                             max = 300,
                             step = 1,
-                            get = function()
-                                return SVal("rightTextX", 0)
-                            end,
-                            set = function(val)
-                                SSet("rightTextX", val)
-                                UpdatePreview()
-                            end,
+                            get = SValRow("rightTextX", 0),
+                            set = SSetRowThen("rightTextX"),
                         },
                         {
                             type = "slider",
@@ -1292,13 +1221,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             min = -300,
                             max = 300,
                             step = 1,
-                            get = function()
-                                return SVal("rightTextY", 0)
-                            end,
-                            set = function(val)
-                                SSet("rightTextY", val)
-                                UpdatePreview()
-                            end,
+                            get = SValRow("rightTextY", 0),
+                            set = SSetRowThen("rightTextY"),
                         },
                         {
                             type = "slider",
@@ -1306,13 +1230,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             min = 20,
                             max = 200,
                             step = 5,
-                            get = function()
-                                return SVal("rightTextWidthPct", 100)
-                            end,
-                            set = function(val)
-                                SSet("rightTextWidthPct", val)
-                                UpdatePreview()
-                            end,
+                            get = SValRow("rightTextWidthPct", 100),
+                            set = SSetRowThen("rightTextWidthPct"),
                         },
                         {
                             type = "multiswatch",
@@ -1370,9 +1289,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             type = "input",
                             label = "Separator",
                             inputWidth = 60,
-                            get = function()
-                                return SVal("rightTextTargetSep", ">")
-                            end,
+                            get = SValRow("rightTextTargetSep", ">"),
                             set = function(val)
                                 val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
                                 if val == "" then
@@ -1391,9 +1308,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             label = "Prefix",
                             inputWidth = 60,
                             tooltip = "Text shown before the target's name.",
-                            get = function()
-                                return SVal("rightTextTargetPrefix", "T:")
-                            end,
+                            get = SValRow("rightTextTargetPrefix", "T:"),
                             set = function(val)
                                 -- Unlike Separator, empty is kept: no prefix.
                                 val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
@@ -1497,12 +1412,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                     CludesUI.AddCaptureAccessor(rightRgn, {
                         type = "toggle",
                         text = "Right Text Class Color",
-                        getValue = function()
-                            return SVal("rightTextClassColor", false)
-                        end,
-                        setValue = function(val)
-                            SSet("rightTextClassColor", val)
-                        end,
+                        getValue = SValRow("rightTextClassColor", false),
+                        setValue = SSetRow("rightTextClassColor"),
                     })
                 end
             end
@@ -1519,9 +1430,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
             order = (optionState.selectedUnit == "player" and healthTextOrderPlayer)
                 or ((optionState.selectedUnit == "target" or optionState.selectedUnit == "focus") and healthTextOrderTargetFocus)
                 or healthTextOrder,
-            getValue = function()
-                return SVal("centerTextContent", "none")
-            end,
+            getValue = SValRow("centerTextContent", "none"),
             setValue = function(val)
                 SSet("centerTextContent", val)
                 ReloadAndUpdate()
@@ -1641,10 +1550,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             get = function()
                                 return SVal("centerTextSize", SDB().textSize or 12)
                             end,
-                            set = function(val)
-                                SSet("centerTextSize", val)
-                                UpdatePreview()
-                            end,
+                            set = SSetRowThen("centerTextSize"),
                         },
                         {
                             type = "slider",
@@ -1652,13 +1558,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             min = -300,
                             max = 300,
                             step = 1,
-                            get = function()
-                                return SVal("centerTextX", 0)
-                            end,
-                            set = function(val)
-                                SSet("centerTextX", val)
-                                UpdatePreview()
-                            end,
+                            get = SValRow("centerTextX", 0),
+                            set = SSetRowThen("centerTextX"),
                         },
                         {
                             type = "slider",
@@ -1666,13 +1567,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             min = -300,
                             max = 300,
                             step = 1,
-                            get = function()
-                                return SVal("centerTextY", 0)
-                            end,
-                            set = function(val)
-                                SSet("centerTextY", val)
-                                UpdatePreview()
-                            end,
+                            get = SValRow("centerTextY", 0),
+                            set = SSetRowThen("centerTextY"),
                         },
                         {
                             type = "slider",
@@ -1680,13 +1576,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             min = 20,
                             max = 200,
                             step = 5,
-                            get = function()
-                                return SVal("centerTextWidthPct", 100)
-                            end,
-                            set = function(val)
-                                SSet("centerTextWidthPct", val)
-                                UpdatePreview()
-                            end,
+                            get = SValRow("centerTextWidthPct", 100),
+                            set = SSetRowThen("centerTextWidthPct"),
                         },
                         {
                             type = "multiswatch",
@@ -1744,9 +1635,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             type = "input",
                             label = "Separator",
                             inputWidth = 60,
-                            get = function()
-                                return SVal("centerTextTargetSep", ">")
-                            end,
+                            get = SValRow("centerTextTargetSep", ">"),
                             set = function(val)
                                 val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
                                 if val == "" then
@@ -1765,9 +1654,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             label = "Prefix",
                             inputWidth = 60,
                             tooltip = "Text shown before the target's name.",
-                            get = function()
-                                return SVal("centerTextTargetPrefix", "T:")
-                            end,
+                            get = SValRow("centerTextTargetPrefix", "T:"),
                             set = function(val)
                                 -- Unlike Separator, empty is kept: no prefix.
                                 val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
@@ -1869,9 +1756,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
             order = (optionState.selectedUnit == "player" and healthTextOrderPlayer)
                 or ((optionState.selectedUnit == "target" or optionState.selectedUnit == "focus") and healthTextOrderTargetFocus)
                 or healthTextOrder,
-            getValue = function()
-                return SVal("extraTextContent", "none")
-            end,
+            getValue = SValRow("extraTextContent", "none"),
             setValue = function(val)
                 SSet("extraTextContent", val)
                 ReloadAndUpdate()
@@ -1989,9 +1874,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             label = "Alignment",
                             values = { ["left"] = "Left", ["right"] = "Right", ["center"] = "Center" },
                             order = { "left", "right", "center" },
-                            get = function()
-                                return SVal("extraTextAlign", "left")
-                            end,
+                            get = SValRow("extraTextAlign", "left"),
                             set = function(val)
                                 SSet("extraTextAlign", val)
                                 ReloadAndUpdate()
@@ -2007,10 +1890,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             get = function()
                                 return SVal("extraTextSize", SDB().textSize or 12)
                             end,
-                            set = function(val)
-                                SSet("extraTextSize", val)
-                                UpdatePreview()
-                            end,
+                            set = SSetRowThen("extraTextSize"),
                         },
                         {
                             type = "slider",
@@ -2018,13 +1898,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             min = -300,
                             max = 300,
                             step = 1,
-                            get = function()
-                                return SVal("extraTextX", 0)
-                            end,
-                            set = function(val)
-                                SSet("extraTextX", val)
-                                UpdatePreview()
-                            end,
+                            get = SValRow("extraTextX", 0),
+                            set = SSetRowThen("extraTextX"),
                         },
                         {
                             type = "slider",
@@ -2032,13 +1907,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             min = -300,
                             max = 300,
                             step = 1,
-                            get = function()
-                                return SVal("extraTextY", 0)
-                            end,
-                            set = function(val)
-                                SSet("extraTextY", val)
-                                UpdatePreview()
-                            end,
+                            get = SValRow("extraTextY", 0),
+                            set = SSetRowThen("extraTextY"),
                         },
                         {
                             type = "slider",
@@ -2046,13 +1916,8 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             min = 20,
                             max = 200,
                             step = 5,
-                            get = function()
-                                return SVal("extraTextWidthPct", 100)
-                            end,
-                            set = function(val)
-                                SSet("extraTextWidthPct", val)
-                                UpdatePreview()
-                            end,
+                            get = SValRow("extraTextWidthPct", 100),
+                            set = SSetRowThen("extraTextWidthPct"),
                         },
                         {
                             type = "multiswatch",
@@ -2110,9 +1975,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             type = "input",
                             label = "Separator",
                             inputWidth = 60,
-                            get = function()
-                                return SVal("extraTextTargetSep", ">")
-                            end,
+                            get = SValRow("extraTextTargetSep", ">"),
                             set = function(val)
                                 val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
                                 if val == "" then
@@ -2131,9 +1994,7 @@ function mod.UFO_BuildHealthBarSection(hostFrame, posY, context)
                             label = "Prefix",
                             inputWidth = 60,
                             tooltip = "Text shown before the target's name.",
-                            get = function()
-                                return SVal("extraTextTargetPrefix", "T:")
-                            end,
+                            get = SValRow("extraTextTargetPrefix", "T:"),
                             set = function(val)
                                 -- Unlike Separator, empty is kept: no prefix.
                                 val = tostring(val or ""):gsub("|", ""):gsub("^%s+", ""):gsub("%s+$", "")
@@ -2251,7 +2112,26 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
     local UNIT_DB_MAP, UpdatePreview, optionState =
         environ.UNIT_DB_MAP, environ.UpdatePreview, environ.optState
     local W, SDB, SGet, SSet = context.W, context.SDB, context.SGet, context.SSet
+    -- Row setters over SSet: the key written with the row's value, then UpdatePreview() for the Then form.
+    local function SSetRowThen(key)
+        return function(v)
+            SSet(key, v)
+            UpdatePreview()
+        end
+    end
     local SSetSupported, SVal, SValSupported = context.SSetSupported, context.SVal, context.SValSupported
+    -- A row getter over SValSupported: the key's value, or the default given.
+    local function SValSupportedRow(key, default)
+        return function()
+            return SValSupported(key, default)
+        end
+    end
+    -- A row getter over SVal: the key's value, or the default given.
+    local function SValRow(key, default)
+        return function()
+            return SVal(key, default)
+        end
+    end
     local _, hgt
 
     -------------------------------------------------------------------
@@ -2323,9 +2203,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
             min = 0,
             max = 100,
             step = 1,
-            getValue = function()
-                return SValSupported("powerHeight", 6)
-            end,
+            getValue = SValSupportedRow("powerHeight", 6),
             setValue = function(val)
                 SSetSupported("powerHeight", val)
                 ReloadAndUpdate()
@@ -2380,13 +2258,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
                     min = 0,
                     max = 400,
                     step = 1,
-                    get = function()
-                        return SVal("powerWidth", 0)
-                    end,
-                    set = function(val)
-                        SSet("powerWidth", val)
-                        UpdatePreview()
-                    end,
+                    get = SValRow("powerWidth", 0),
+                    set = SSetRowThen("powerWidth"),
                 },
                 {
                     type = "slider",
@@ -2394,13 +2267,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
                     min = -200,
                     max = 200,
                     step = 1,
-                    get = function()
-                        return SVal("powerX", 0)
-                    end,
-                    set = function(val)
-                        SSet("powerX", val)
-                        UpdatePreview()
-                    end,
+                    get = SValRow("powerX", 0),
+                    set = SSetRowThen("powerX"),
                 },
                 {
                     type = "slider",
@@ -2408,13 +2276,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
                     min = -200,
                     max = 200,
                     step = 1,
-                    get = function()
-                        return SVal("powerY", 0)
-                    end,
-                    set = function(val)
-                        SSet("powerY", val)
-                        UpdatePreview()
-                    end,
+                    get = SValRow("powerY", 0),
+                    set = SSetRowThen("powerY"),
                 },
             },
         })
@@ -2468,9 +2331,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
                 {
                     type = "toggle",
                     label = "Reverse Fill",
-                    get = function()
-                        return SVal("powerReverseFill", false)
-                    end,
+                    get = SValRow("powerReverseFill", false),
                     set = function(val)
                         SSet("powerReverseFill", val)
                         ReloadAndUpdate()
@@ -2529,13 +2390,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
         min = 0,
         max = 100,
         step = 1,
-        getValue = function()
-            return SVal("powerBarOpacity", 100)
-        end,
-        setValue = function(val)
-            SSet("powerBarOpacity", val)
-            UpdatePreview()
-        end,
+        getValue = SValRow("powerBarOpacity", 100),
+        setValue = SSetRowThen("powerBarOpacity"),
     })
     posY = posY - hgt
     if not CludesUI._prebuilding then
@@ -2688,9 +2544,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
         min = 0,
         max = 100,
         step = 1,
-        getValue = function()
-            return SVal("customPowerBgAlpha", 100)
-        end,
+        getValue = SValRow("customPowerBgAlpha", 100),
         setValue = function(val)
             SSet("customPowerBgAlpha", val)
             ReloadAndUpdate()
@@ -2863,9 +2717,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
                 {
                     type = "toggle",
                     label = "Enable Gradient",
-                    get = function()
-                        return SVal("powerGradientEnabled", false)
-                    end,
+                    get = SValRow("powerGradientEnabled", false),
                     set = function(val)
                         SSet("powerGradientEnabled", val)
                         ReloadAndUpdate()
@@ -2878,9 +2730,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
                     label = "Gradient Direction",
                     values = { HORIZONTAL = "Horizontal", VERTICAL = "Vertical" },
                     order = { "HORIZONTAL", "VERTICAL" },
-                    get = function()
-                        return SVal("powerGradientDir", "HORIZONTAL")
-                    end,
+                    get = SValRow("powerGradientDir", "HORIZONTAL"),
                     set = function(val)
                         SSet("powerGradientDir", val)
                         ReloadAndUpdate()
@@ -2899,9 +2749,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
         text = "Text Position",
         values = ppTextValues,
         order = ppTextOrder,
-        getValue = function()
-            return SVal("powerPercentText", "none")
-        end,
+        getValue = SValRow("powerPercentText", "none"),
         setValue = function(val)
             SSet("powerPercentText", val)
             ReloadAndUpdate()
@@ -2974,13 +2822,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
                 min = 6,
                 max = 100,
                 step = 1,
-                get = function()
-                    return SVal("powerPercentSize", 9)
-                end,
-                set = function(val)
-                    SSet("powerPercentSize", val)
-                    UpdatePreview()
-                end,
+                get = SValRow("powerPercentSize", 9),
+                set = SSetRowThen("powerPercentSize"),
             },
             {
                 type = "slider",
@@ -2988,13 +2831,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
                 min = -50,
                 max = 50,
                 step = 1,
-                get = function()
-                    return SVal("powerPercentX", 0)
-                end,
-                set = function(val)
-                    SSet("powerPercentX", val)
-                    UpdatePreview()
-                end,
+                get = SValRow("powerPercentX", 0),
+                set = SSetRowThen("powerPercentX"),
             },
             {
                 type = "slider",
@@ -3002,13 +2840,8 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
                 min = -50,
                 max = 50,
                 step = 1,
-                get = function()
-                    return SVal("powerPercentY", 0)
-                end,
-                set = function(val)
-                    SSet("powerPercentY", val)
-                    UpdatePreview()
-                end,
+                get = SValRow("powerPercentY", 0),
+                set = SSetRowThen("powerPercentY"),
             },
         }
         CludesUI.BuildInlineCog(ppRgn, {
@@ -3236,9 +3069,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
                 {
                     type = "toggle",
                     label = "Show Behind",
-                    get = function()
-                        return SVal("powerBorderBehind", false)
-                    end,
+                    get = SValRow("powerBorderBehind", false),
                     set = function(val)
                         SSet("powerBorderBehind", val)
                         ReloadAndUpdate()
@@ -3432,9 +3263,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function()
-                                return SVal("foreverFormBarX", 0)
-                            end,
+                            get = SValRow("foreverFormBarX", 0),
                             set = function(val)
                                 SetForm("foreverFormBarX", val)
                             end,
@@ -3445,9 +3274,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function()
-                                return SVal("foreverFormBarY", 0)
-                            end,
+                            get = SValRow("foreverFormBarY", 0),
                             set = function(val)
                                 SetForm("foreverFormBarY", val)
                             end,
@@ -3779,6 +3606,12 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
     local W, SApplySupport, SGetSupported, SSetSupported =
         context.W, context.SApplySupport, context.SGetSupported, context.SSetSupported
     local SValSupported = context.SValSupported
+    -- A row getter over SValSupported: the key's value, or the default given.
+    local function SValSupportedRow(key, default)
+        return function()
+            return SValSupported(key, default)
+        end
+    end
     local _, hgt
     local row
 
@@ -4031,9 +3864,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
                 end,
                 disabledTooltip = "Class Resource must be set to Modern",
                 rawTooltip = true,
-                getValue = function()
-                    return SValSupported("classPowerPosition", "top")
-                end,
+                getValue = SValSupportedRow("classPowerPosition", "top"),
                 setValue = function(val)
                     SSetSupported("classPowerPosition", val)
                     if mod.frames and mod.frames._toggleClassPower then
@@ -4053,9 +3884,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
                 end,
                 disabledTooltip = "Class Resource must be set to Modern",
                 rawTooltip = true,
-                getValue = function()
-                    return SValSupported("classPowerSize", 8)
-                end,
+                getValue = SValSupportedRow("classPowerSize", 8),
                 setValue = function(val)
                     SSetSupported("classPowerSize", val)
                     if mod.frames and mod.frames._toggleClassPower then
@@ -4088,9 +3917,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
                             min = -100,
                             max = 100,
                             step = 1,
-                            get = function()
-                                return SValSupported("classPowerBarX", 0)
-                            end,
+                            get = SValSupportedRow("classPowerBarX", 0),
                             set = function(val)
                                 SSetSupported("classPowerBarX", val)
                                 if mod.frames and mod.frames._toggleClassPower then
@@ -4106,9 +3933,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
                             min = -100,
                             max = 100,
                             step = 1,
-                            get = function()
-                                return SValSupported("classPowerBarY", 0)
-                            end,
+                            get = SValSupportedRow("classPowerBarY", 0),
                             set = function(val)
                                 SSetSupported("classPowerBarY", val)
                                 if mod.frames and mod.frames._toggleClassPower then
@@ -4153,9 +3978,7 @@ function mod.UFO_BuildClassResourceSection(hostFrame, posY, context)
                 end,
                 disabledTooltip = "Class Resource must be set to Modern",
                 rawTooltip = true,
-                getValue = function()
-                    return SValSupported("classPowerSpacing", 2)
-                end,
+                getValue = SValSupportedRow("classPowerSpacing", 2),
                 setValue = function(val)
                     SSetSupported("classPowerSpacing", val)
                     if mod.frames and mod.frames._toggleClassPower then
@@ -4272,7 +4095,19 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
         environ.UNIT_DB_MAP, environ.UpdatePreview, environ.db, environ.optState
     local W, SApplySupport, SGetSupported, SSetSupported =
         context.W, context.SApplySupport, context.SGetSupported, context.SSetSupported
+    -- Row setters over SSetSupported: the key written with the row's value.
+    local function SSetSupportedRow(key)
+        return function(v)
+            SSetSupported(key, v)
+        end
+    end
     local SValSupported = context.SValSupported
+    -- A row getter over SValSupported: the key's value, or the default given.
+    local function SValSupportedRow(key, default)
+        return function()
+            return SValSupported(key, default)
+        end
+    end
     local _, hgt
 
     -------------------------------------------------------------------
@@ -4435,9 +4270,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
             text = "Absorb Style",
             values = absorbStyleValues,
             order = absorbStyleOrder,
-            getValue = function()
-                return SValSupported("showPlayerAbsorb", "none")
-            end,
+            getValue = SValSupportedRow("showPlayerAbsorb", "none"),
             setValue = function(val)
                 if val == "clean" then
                     UNIT_DB_MAP[optionState.selectedUnit]().absorbOpacity = 30
@@ -4458,9 +4291,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
             end,
             disabledTooltip = "Absorb Style",
             getValue = EffAbsorbOpacity,
-            setValue = function(val)
-                SSetSupported("absorbOpacity", val)
-            end,
+            setValue = SSetSupportedRow("absorbOpacity"),
         })
         posY = posY - hgt
         SApplySupport(absorbRow._leftRegion, "showPlayerAbsorb")
@@ -4506,9 +4337,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
                             SyncAbsorbEdgeLabels()
                             return SValSupported("absorbEdgeMode", "overlay")
                         end,
-                        set = function(val)
-                            SSetSupported("absorbEdgeMode", val)
-                        end,
+                        set = SSetSupportedRow("absorbEdgeMode"),
                     },
                     {
                         type = "dropdown",
@@ -4593,12 +4422,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
                             return SValSupported("absorbGlowLine", false) ~= true
                         end,
                         disabledTooltip = "Blizzard Glow Line",
-                        get = function()
-                            return SValSupported("absorbGlowLineTexture", "blizzard")
-                        end,
-                        set = function(val)
-                            SSetSupported("absorbGlowLineTexture", val)
-                        end,
+                        get = SValSupportedRow("absorbGlowLineTexture", "blizzard"),
+                        set = SSetSupportedRow("absorbGlowLineTexture"),
                     },
                     -- Single global toggle (boss block key, nil = enabled):
                     -- boss frames render absorbs with the TARGET frame's
@@ -4676,9 +4501,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
             text = "Heal Absorb Style",
             values = absorbStyleValues,
             order = healAbsorbStyleOrder,
-            getValue = function()
-                return SValSupported("healAbsorbStyle", "clean")
-            end,
+            getValue = SValSupportedRow("healAbsorbStyle", "clean"),
             setValue = function(val)
                 if val == "clean" then
                     UNIT_DB_MAP[optionState.selectedUnit]().healAbsorbOpacity = 50
@@ -4698,12 +4521,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
                 return SValSupported("healAbsorbStyle", "clean") == "none"
             end,
             disabledTooltip = "Heal Absorb Style",
-            getValue = function()
-                return SValSupported("healAbsorbOpacity", 65)
-            end,
-            setValue = function(val)
-                SSetSupported("healAbsorbOpacity", val)
-            end,
+            getValue = SValSupportedRow("healAbsorbOpacity", 65),
+            setValue = SSetSupportedRow("healAbsorbOpacity"),
         })
         posY = posY - hgt
         SApplySupport(healAbsorbRow._leftRegion, "healAbsorbStyle")
@@ -4749,9 +4568,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
                             SyncHealAbsorbEdgeLabels()
                             return SValSupported("healAbsorbEdgeMode", "overlay")
                         end,
-                        set = function(val)
-                            SSetSupported("healAbsorbEdgeMode", val)
-                        end,
+                        set = SSetSupportedRow("healAbsorbEdgeMode"),
                     },
                     {
                         type = "slider",
@@ -4759,12 +4576,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
                         min = 0,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SValSupported("healAbsorbBgOpacity", 15)
-                        end,
-                        set = function(val)
-                            SSetSupported("healAbsorbBgOpacity", val)
-                        end,
+                        get = SValSupportedRow("healAbsorbBgOpacity", 15),
+                        set = SSetSupportedRow("healAbsorbBgOpacity"),
                     },
                 },
             })
@@ -4840,9 +4653,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
                 bottomLeft = "Bottom Left",
             },
             order = { "none", "aboveRight", "aboveLeft", "topRight", "topLeft", "bottomRight", "bottomLeft" },
-            getValue = function()
-                return SValSupported("absorbBarPosition", "none")
-            end,
+            getValue = SValSupportedRow("absorbBarPosition", "none"),
             setValue = function(val)
                 SSetSupported("absorbBarPosition", val)
                 CludesUI:RefreshPage()
@@ -4857,12 +4668,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
                 return SValSupported("absorbBarPosition", "none") == "none"
             end,
             disabledTooltip = "Absorb Bar",
-            getValue = function()
-                return SValSupported("absorbBarHeight", 4)
-            end,
-            setValue = function(val)
-                SSetSupported("absorbBarHeight", val)
-            end,
+            getValue = SValSupportedRow("absorbBarHeight", 4),
+            setValue = SSetSupportedRow("absorbBarHeight"),
         })
         posY = posY - hgt
         SApplySupport(absorbBarRow._leftRegion, "absorbBarPosition")
@@ -4916,9 +4723,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
                 "bottomRight",
                 "bottomLeft",
             },
-            getValue = function()
-                return SValSupported("healAbsorbBarPosition", "none")
-            end,
+            getValue = SValSupportedRow("healAbsorbBarPosition", "none"),
             setValue = function(val)
                 SSetSupported("healAbsorbBarPosition", val)
                 CludesUI:RefreshPage()
@@ -4933,12 +4738,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
                 return SValSupported("healAbsorbBarPosition", "none") == "none"
             end,
             disabledTooltip = "Heal Absorb Bar",
-            getValue = function()
-                return SValSupported("healAbsorbBarHeight", 4)
-            end,
-            setValue = function(val)
-                SSetSupported("healAbsorbBarHeight", val)
-            end,
+            getValue = SValSupportedRow("healAbsorbBarHeight", 4),
+            setValue = SSetSupportedRow("healAbsorbBarHeight"),
         })
         posY = posY - hgt
         SApplySupport(healAbsorbBarRow._leftRegion, "healAbsorbBarPosition")
@@ -4981,9 +4782,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
             text = "Max Health Style",
             values = absorbStyleValues,
             order = maxHealthStyleOrder,
-            getValue = function()
-                return SValSupported("maxHealthStyle", "none")
-            end,
+            getValue = SValSupportedRow("maxHealthStyle", "none"),
             setValue = function(val)
                 SSetSupported("maxHealthStyle", val)
                 CludesUI:RefreshPage()
@@ -4998,12 +4797,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
                 return SValSupported("maxHealthStyle", "none") == "none"
             end,
             disabledTooltip = "Max Health Style",
-            getValue = function()
-                return SValSupported("maxHealthOpacity", 100)
-            end,
-            setValue = function(val)
-                SSetSupported("maxHealthOpacity", val)
-            end,
+            getValue = SValSupportedRow("maxHealthOpacity", 100),
+            setValue = SSetSupportedRow("maxHealthOpacity"),
         })
         posY = posY - hgt
         SApplySupport(maxHealthRow._leftRegion, "maxHealthStyle")
@@ -5026,12 +4821,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
                         min = 0,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SValSupported("maxHealthBgOpacity", 100)
-                        end,
-                        set = function(val)
-                            SSetSupported("maxHealthBgOpacity", val)
-                        end,
+                        get = SValSupportedRow("maxHealthBgOpacity", 100),
+                        set = SSetSupportedRow("maxHealthBgOpacity"),
                     },
                 },
             })
@@ -5084,12 +4875,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
                 return SValSupported("healPrediction", false) ~= true
             end,
             disabledTooltip = "Heal Prediction",
-            getValue = function()
-                return SValSupported("healPredOpacity", 60)
-            end,
-            setValue = function(val)
-                SSetSupported("healPredOpacity", val)
-            end,
+            getValue = SValSupportedRow("healPredOpacity", 60),
+            setValue = SSetSupportedRow("healPredOpacity"),
         })
         posY = posY - hgt
         SApplySupport(healPredRow._leftRegion, "healPrediction")
@@ -5171,12 +4958,8 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
                 return SValSupported("healPrediction", false) ~= true
             end,
             disabledTooltip = "Heal Prediction",
-            getValue = function()
-                return SValSupported("healPredOverheal", 0)
-            end,
-            setValue = function(val)
-                SSetSupported("healPredOverheal", val)
-            end,
+            getValue = SValSupportedRow("healPredOverheal", 0),
+            setValue = SSetSupportedRow("healPredOverheal"),
         }, {
             type = "dropdown",
             text = "Heal Prediction Texture",
@@ -5186,9 +4969,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
                 return SValSupported("healPrediction", false) ~= true
             end,
             disabledTooltip = "Heal Prediction",
-            getValue = function()
-                return SValSupported("healPredTexture", "health")
-            end,
+            getValue = SValSupportedRow("healPredTexture", "health"),
             setValue = function(val)
                 SSetSupported("healPredTexture", val)
                 UpdatePreview()

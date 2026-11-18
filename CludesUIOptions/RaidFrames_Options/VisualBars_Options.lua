@@ -65,6 +65,18 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         environ.healthColorValues, environ.IsPreviewOff, environ.maxHealthStyleOrder
     local optionState, Pix, ReloadAndUpdate = environ.optState, environ.PP, environ.ReloadAndUpdate
     local SGet, SGetPx, SSet, SVal = environ.SGet, environ.SGetPx, environ.SSet, environ.SVal
+    -- A row getter over SVal: the key's value, or the default given.
+    local function SValRow(key, default)
+        return function()
+            return SVal(key, default)
+        end
+    end
+    -- Row setters over SSet: the key written with the row's value.
+    local function SSetRow(key)
+        return function(v)
+            SSet(key, v)
+        end
+    end
     local SWrite = environ.SWrite
     local TexBgRowCfg = environ.TexBgRowCfg
     local _, hgt
@@ -302,12 +314,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         text = "Health Bar Texture",
         values = hbtValues,
         order = hbtOrder,
-        getValue = function()
-            return SVal("healthBarTexture", "atrocity")
-        end,
-        setValue = function(val)
-            SSet("healthBarTexture", val)
-        end,
+        getValue = SValRow("healthBarTexture", "atrocity"),
+        setValue = SSetRow("healthBarTexture"),
     }, {
         type = "slider",
         text = "Fill Opacity",
@@ -319,12 +327,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         end,
         disabledTooltip = "Not available in Dark Mode",
         rawTooltip = true,
-        getValue = function()
-            return SVal("healthBarOpacity", 100)
-        end,
-        setValue = function(val)
-            SSet("healthBarOpacity", val)
-        end,
+        getValue = SValRow("healthBarOpacity", 100),
+        setValue = SSetRow("healthBarOpacity"),
     })
     -- Vertical Fill cog lives in the Health Bar party-sync section, so an unsynced party tab keeps its own value.
     if not CludesUI._prebuilding then
@@ -336,9 +340,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                     type = "toggle",
                     label = "Vertical Fill",
                     tooltip = "Fill the health bar bottom-to-top instead of left-to-right. Absorbs, heal prediction and the bar background follow the same axis.",
-                    get = function()
-                        return SVal("healthVerticalFill", false)
-                    end,
+                    get = SValRow("healthVerticalFill", false),
                     -- RefreshPage re-labels Absorbs Placement for the new axis; cog popups bake labels in on first build.
                     set = function(val)
                         SSet("healthVerticalFill", val)
@@ -349,12 +351,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                     type = "toggle",
                     label = "Fill Missing Health",
                     tooltip = "The bar fills with missing health, growing as the unit takes damage.",
-                    get = function()
-                        return SVal("healthInvertFill", false)
-                    end,
-                    set = function(val)
-                        SSet("healthInvertFill", val)
-                    end,
+                    get = SValRow("healthInvertFill", false),
+                    set = SSetRow("healthInvertFill"),
                 }),
                 TexBgRowCfg(SVal, SSet),
             },
@@ -368,9 +366,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         values = healthColorValues,
         order = healthColorOrder,
         tooltip = "Custom Dynamic Colors: the health bar smoothly blends between three colors you pick -- one for full health (100%), one for half (50%), and one for empty (0%) -- shifting through them as the unit takes damage or is healed.",
-        getValue = function()
-            return SVal("healthColorMode", "class")
-        end,
+        getValue = SValRow("healthColorMode", "class"),
         setValue = function(val)
             SSet("healthColorMode", val)
             -- "dark" feeds the Dark Mode conditional-override condition.
@@ -388,12 +384,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         end,
         disabledTooltip = "Not available in Dark Mode. Dark Mode colors can be adjusted in Global Settings -> Colors.",
         rawTooltip = true,
-        getValue = function()
-            return SVal("bgDarkness", 50)
-        end,
-        setValue = function(val)
-            SSet("bgDarkness", val)
-        end,
+        getValue = SValRow("bgDarkness", 50),
+        setValue = SSetRow("bgDarkness"),
     })
     posY = posY - hgt
     -- Fill Color's "dark" choice IS the Dark Mode condition's input, so lock the dropdown while a Dark Mode conditional is being edited -- else the override could capture a mode change that flips its own condition.
@@ -600,9 +592,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
     healPredRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Heal Prediction",
-        getValue = function()
-            return SVal("healPrediction", false)
-        end,
+        getValue = SValRow("healPrediction", false),
         setValue = function(val)
             SSet("healPrediction", val)
             CludesUI:RefreshPage()
@@ -617,12 +607,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
             return not SVal("healPrediction", false)
         end,
         disabledTooltip = "Heal Prediction",
-        getValue = function()
-            return SVal("healPredOpacity", 75)
-        end,
-        setValue = function(val)
-            SSet("healPredOpacity", val)
-        end,
+        getValue = SValRow("healPredOpacity", 75),
+        setValue = SSetRow("healPredOpacity"),
     })
     posY = posY - hgt
     editTargets.healPrediction = healPredRow
@@ -680,24 +666,16 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
     smoothThreatRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Smooth Health Bars",
-        getValue = function()
-            return SVal("smoothBars", true)
-        end,
-        setValue = function(val)
-            SSet("smoothBars", val)
-        end,
+        getValue = SValRow("smoothBars", true),
+        setValue = SSetRow("smoothBars"),
     }, {
         type = "slider",
         text = "Threat Borders",
         min = 0,
         max = 4,
         step = 1,
-        getValue = function()
-            return SVal("threatBorderSize", 2)
-        end,
-        setValue = function(val)
-            SSet("threatBorderSize", val)
-        end,
+        getValue = SValRow("threatBorderSize", 2),
+        setValue = SSetRow("threatBorderSize"),
     })
     posY = posY - hgt
     editTargets.threat = smoothThreatRow
@@ -832,9 +810,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         text = "Absorb Style",
         values = absorbStyleValues,
         order = absorbStyleOrder,
-        getValue = function()
-            return SVal("absorbStyle", "none")
-        end,
+        getValue = SValRow("absorbStyle", "none"),
         setValue = function(val)
             -- Blizzard Glow Line follows the pick: on with Default Blizz Frames, off when
             -- leaving it, else kept. A set value is stored explicitly, so a party that
@@ -870,12 +846,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
             return st == "none" or st == "blizzardModern"
         end,
         disabledTooltip = "Absorb Style",
-        getValue = function()
-            return SVal("absorbOpacity", 90)
-        end,
-        setValue = function(val)
-            SSet("absorbOpacity", val)
-        end,
+        getValue = SValRow("absorbOpacity", 90),
+        setValue = SSetRow("absorbOpacity"),
     })
     posY = posY - hgt
     editTargets.absorbs = absorbRow
@@ -923,9 +895,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                         SyncAbsorbEdgeLabels()
                         return SVal("absorbEdgeMode", "overlay")
                     end,
-                    set = function(val)
-                        SSet("absorbEdgeMode", val)
-                    end,
+                    set = SSetRow("absorbEdgeMode"),
                 },
                 {
                     type = "dropdown",
@@ -1068,12 +1038,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
             return CurAbsorbBarPos() == "none"
         end,
         disabledTooltip = "Absorb Bar",
-        getValue = function()
-            return SVal("absorbBarHeight", 4)
-        end,
-        setValue = function(val)
-            SSet("absorbBarHeight", val)
-        end,
+        getValue = SValRow("absorbBarHeight", 4),
+        setValue = SSetRow("absorbBarHeight"),
     })
     posY = posY - hgt
     if not CludesUI._prebuilding then
@@ -1099,12 +1065,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                     end,
                     disabledTooltip = "Only affects the vertical (Right/Left Edge) positions",
                     rawTooltip = true,
-                    get = function()
-                        return SVal("absorbBarGrowDir", "up")
-                    end,
-                    set = function(val)
-                        SSet("absorbBarGrowDir", val)
-                    end,
+                    get = SValRow("absorbBarGrowDir", "up"),
+                    set = SSetRow("absorbBarGrowDir"),
                 },
             },
         })
@@ -1147,9 +1109,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
         text = "Heal Absorb Style",
         values = absorbStyleValues,
         order = healAbsorbStyleOrder,
-        getValue = function()
-            return SVal("healAbsorbStyle", "clean")
-        end,
+        getValue = SValRow("healAbsorbStyle", "clean"),
         setValue = function(val)
             SSet("healAbsorbStyle", val)
             if val == "clean" then
@@ -1169,12 +1129,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
             return SVal("healAbsorbStyle", "clean") == "none"
         end,
         disabledTooltip = "Heal Absorb Style",
-        getValue = function()
-            return SVal("healAbsorbOpacity", 75)
-        end,
-        setValue = function(val)
-            SSet("healAbsorbOpacity", val)
-        end,
+        getValue = SValRow("healAbsorbOpacity", 75),
+        setValue = SSetRow("healAbsorbOpacity"),
     })
     posY = posY - hgt
     editTargets.healAbsorbs = healAbsorbRow
@@ -1208,9 +1164,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                         SyncHealAbsorbEdgeLabels()
                         return SVal("healAbsorbEdgeMode", "overlay")
                     end,
-                    set = function(val)
-                        SSet("healAbsorbEdgeMode", val)
-                    end,
+                    set = SSetRow("healAbsorbEdgeMode"),
                 },
                 {
                     type = "slider",
@@ -1218,12 +1172,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                     min = 0,
                     max = 100,
                     step = 1,
-                    get = function()
-                        return SVal("healAbsorbBgOpacity", 25)
-                    end,
-                    set = function(val)
-                        SSet("healAbsorbBgOpacity", val)
-                    end,
+                    get = SValRow("healAbsorbBgOpacity", 25),
+                    set = SSetRow("healAbsorbBgOpacity"),
                 },
                 {
                     type = "toggle",
@@ -1231,9 +1181,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                     get = function()
                         return SVal("healAbsorbOverDispel", false) == true
                     end,
-                    set = function(val)
-                        SSet("healAbsorbOverDispel", val)
-                    end,
+                    set = SSetRow("healAbsorbOverDispel"),
                 },
             },
         })
@@ -1332,12 +1280,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                 return CurHealAbsorbBarPos() == "none"
             end,
             disabledTooltip = "Heal Absorb Bar",
-            getValue = function()
-                return SVal("healAbsorbBarHeight", 4)
-            end,
-            setValue = function(val)
-                SSet("healAbsorbBarHeight", val)
-            end,
+            getValue = SValRow("healAbsorbBarHeight", 4),
+            setValue = SSetRow("healAbsorbBarHeight"),
         })
         posY = posY - hgt
         if not CludesUI._prebuilding then
@@ -1390,12 +1334,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                         end,
                         disabledTooltip = "Only affects the vertical (Right/Left Edge) positions",
                         rawTooltip = true,
-                        get = function()
-                            return SVal("healAbsorbBarGrowDir", "up")
-                        end,
-                        set = function(val)
-                            SSet("healAbsorbBarGrowDir", val)
-                        end,
+                        get = SValRow("healAbsorbBarGrowDir", "up"),
+                        set = SSetRow("healAbsorbBarGrowDir"),
                     },
                 },
             })
@@ -1421,9 +1361,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
             text = "Max Health Style",
             values = absorbStyleValues,
             order = maxHealthStyleOrder,
-            getValue = function()
-                return SVal("maxHealthStyle", "maxHealthStripes")
-            end,
+            getValue = SValRow("maxHealthStyle", "maxHealthStripes"),
             setValue = function(val)
                 SSet("maxHealthStyle", val)
                 CludesUI:RefreshPage()
@@ -1438,12 +1376,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                 return SVal("maxHealthStyle", "maxHealthStripes") == "none"
             end,
             disabledTooltip = "Max Health Style",
-            getValue = function()
-                return SVal("maxHealthOpacity", 100)
-            end,
-            setValue = function(val)
-                SSet("maxHealthOpacity", val)
-            end,
+            getValue = SValRow("maxHealthOpacity", 100),
+            setValue = SSetRow("maxHealthOpacity"),
         })
         posY = posY - hgt
         -- Cog carries backing opacity only; placement is fixed right-side.
@@ -1458,12 +1392,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                         min = 0,
                         max = 100,
                         step = 1,
-                        get = function()
-                            return SVal("maxHealthBgOpacity", 100)
-                        end,
-                        set = function(val)
-                            SSet("maxHealthBgOpacity", val)
-                        end,
+                        get = SValRow("maxHealthBgOpacity", 100),
+                        set = SSetRow("maxHealthBgOpacity"),
                     },
                 },
             })
@@ -1711,12 +1641,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                     return IsPowerOff()
                 end,
                 disabledTooltip = "Show Power Bar For",
-                getValue = function()
-                    return SVal("powerHeight", 4)
-                end,
-                setValue = function(val)
-                    SSet("powerHeight", val)
-                end,
+                getValue = SValRow("powerHeight", 4),
+                setValue = SSetRow("powerHeight"),
             })
         )
         posY = posY - hgt
@@ -1732,23 +1658,15 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                         type = "toggle",
                         label = "Icons Ignore Power Bar",
                         tooltip = "Anchor icons and text as if no power bar existed, so frames with and without one line up identically.",
-                        get = function()
-                            return SVal("powerUniformAnchors", false)
-                        end,
-                        set = function(val)
-                            SSet("powerUniformAnchors", val)
-                        end,
+                        get = SValRow("powerUniformAnchors", false),
+                        set = SSetRow("powerUniformAnchors"),
                     },
                     {
                         type = "toggle",
                         label = "Extend Health Bar Behind Power",
                         tooltip = "Health bar spans the full frame height and the power bar draws on top of it.",
-                        get = function()
-                            return SVal("extendHealthBehindPower", false)
-                        end,
-                        set = function(val)
-                            SSet("extendHealthBehindPower", val)
-                        end,
+                        get = SValRow("extendHealthBehindPower", false),
+                        set = SSetRow("extendHealthBehindPower"),
                     },
                 },
             })
@@ -1835,12 +1753,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                 return IsPowerOff() or SVal("powerBorderStyle", "cui") == "cui"
             end,
             disabledTooltip = "Show Power Bar For",
-            getValue = function()
-                return SVal("powerBorderSize", 1)
-            end,
-            setValue = function(val)
-                SSet("powerBorderSize", val)
-            end,
+            getValue = SValRow("powerBorderSize", 1),
+            setValue = SSetRow("powerBorderSize"),
         }
     end
     pwBdrRow, hgt = W:DualRow(
@@ -1855,9 +1769,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                 return IsPowerOff()
             end,
             disabledTooltip = "Show Power Bar For",
-            getValue = function()
-                return SVal("powerBorderStyle", "divider")
-            end,
+            getValue = SValRow("powerBorderStyle", "divider"),
             setValue = function(val)
                 SSet("powerBorderStyle", val)
                 CludesUI:RefreshPage(SVal("powerBorderMatchFrame", false) and CanMatchPowerBorder())
@@ -1880,9 +1792,7 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                     type = "toggle",
                     label = "Match Frame Border",
                     tooltip = "Uses the frame border's art, size and color.",
-                    get = function()
-                        return SVal("powerBorderMatchFrame", false)
-                    end,
+                    get = SValRow("powerBorderMatchFrame", false),
                     set = function(val)
                         SSet("powerBorderMatchFrame", val)
                         CludesUI:RefreshPage(true)
@@ -1897,12 +1807,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
                     end,
                     disabledTooltip = "Requires Match Frame Border and Divider.",
                     rawTooltip = true,
-                    get = function()
-                        return SVal("powerBorderMatchColor", false)
-                    end,
-                    set = function(val)
-                        SSet("powerBorderMatchColor", val)
-                    end,
+                    get = SValRow("powerBorderMatchColor", false),
+                    set = SSetRow("powerBorderMatchColor"),
                 }),
             },
         })
@@ -1973,12 +1879,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
             return IsPowerOff()
         end,
         disabledTooltip = "Show Power Bar For",
-        getValue = function()
-            return SVal("smoothPowerBars", true)
-        end,
-        setValue = function(val)
-            SSet("smoothPowerBars", val)
-        end,
+        getValue = SValRow("smoothPowerBars", true),
+        setValue = SSetRow("smoothPowerBars"),
     }, {
         type = "slider",
         text = "Background",
@@ -1989,12 +1891,8 @@ local function BuildVisualBars(hostFrame, posY, W, onSection, EYE)
             return IsPowerOff()
         end,
         disabledTooltip = "Show Power Bar For",
-        getValue = function()
-            return SVal("powerBgDarkness", 70)
-        end,
-        setValue = function(val)
-            SSet("powerBgDarkness", val)
-        end,
+        getValue = SValRow("powerBgDarkness", 70),
+        setValue = SSetRow("powerBgDarkness"),
     })
     posY = posY - hgt
     -- Power bg Custom + Power Colored swatch pair: clicking either toggles powerBgPowerColored, the inactive one dims (mirrors the health bg).
