@@ -36,14 +36,14 @@ end
 -------------------------------------------------------------------------------
 --  Apply custom shape to a CDM icon
 -------------------------------------------------------------------------------
-ApplyShapeToCDMIcon = function(iconTex, shape, barInfo, ssb)
+ApplyShapeToCDMIcon = function(iconTex, shapeKey, barInfo, shapeBorder)
     if not iconTex then
         return
     end
-    local fd = _getFD(iconTex)
-    local texture = fd and fd.tex or iconTex._tex
-    local cd = fd and fd.cooldown or iconTex._cooldown
-    local backdrop = fd and fd.bg or iconTex._bg
+    local frameData = _getFD(iconTex)
+    local texture = frameData and frameData.tex or iconTex._tex
+    local cooldown = frameData and frameData.cooldown or iconTex._cooldown
+    local backdrop = frameData and frameData.bg or iconTex._bg
     local zoom = barInfo.iconZoom or 0.08
     local borderSz = barInfo.borderSize or 1
     local brdR = barInfo.borderR or 0
@@ -59,61 +59,61 @@ ApplyShapeToCDMIcon = function(iconTex, shape, barInfo, ssb)
     -- Per-icon Border override (buff-family bars): size + color only, NEVER style. ssb is the
     -- resolved per-icon settings from RefreshCDMIconAppearance; nil for cd/utility bars and
     -- uncustomized icons, so this no-ops unless a buff icon has a per-icon border. Feeds both the square (ApplyBorderStyle) and shaped (shapeBorder) paths below.
-    if ssb then
-        if ssb.borderSize ~= nil then
-            borderSz = ssb.borderSize
+    if shapeBorder then
+        if shapeBorder.borderSize ~= nil then
+            borderSz = shapeBorder.borderSize
         end
-        if ssb.borderR ~= nil then
-            brdR = ssb.borderR
+        if shapeBorder.borderR ~= nil then
+            brdR = shapeBorder.borderR
         end
-        if ssb.borderG ~= nil then
-            brdG = ssb.borderG
+        if shapeBorder.borderG ~= nil then
+            brdG = shapeBorder.borderG
         end
-        if ssb.borderB ~= nil then
-            brdB = ssb.borderB
+        if shapeBorder.borderB ~= nil then
+            brdB = shapeBorder.borderB
         end
     end
 
-    local ifc = FC(iconTex)
+    local iconCache = FC(iconTex)
     -- Stock styles: the style's ring replaces every CUI shape and the square
     -- border, and the icon shows its full art (no zoom) exactly as the viewer
     -- draws it (rounded by the viewer mask under Blizzard Style, square under
     -- Classic WoW UI).
-    local blizzArt = ns.CdmBlizzIcons()
-    if blizzArt then
-        shape = "none"
+    local stockArt = ns.CdmBlizzIcons()
+    if stockArt then
+        shapeKey = "none"
         zoom = 0
     end
-    if shape == "none" or shape == "cropped" or not shape then
+    if shapeKey == "none" or shapeKey == "cropped" or not shapeKey then
         -- Remove shape mask if previously applied
-        if ifc.shapeMask then
-            local mask = ifc.shapeMask
+        if iconCache.shapeMask then
+            local mask = iconCache.shapeMask
             if texture then
                 pcall(texture.RemoveMaskTexture, texture, mask)
             end
             if backdrop then
                 pcall(backdrop.RemoveMaskTexture, backdrop, mask)
             end
-            if cd then
-                pcall(cd.RemoveMaskTexture, cd, mask)
+            if cooldown then
+                pcall(cooldown.RemoveMaskTexture, cooldown, mask)
             end
             mask:SetTexture(nil)
             mask:ClearAllPoints()
             mask:SetSize(0.001, 0.001)
             mask:Hide()
         end
-        if ifc.shapeBorder then
-            ifc.shapeBorder:Hide()
+        if iconCache.shapeBorder then
+            iconCache.shapeBorder:Hide()
         end
-        ifc.shapeApplied = nil
-        ifc.shapeName = nil
+        iconCache.shapeApplied = nil
+        iconCache.shapeName = nil
 
         -- Restore square borders (PP or textured via ApplyBorderStyle). The border lives on
         -- fd.borderFrame (child of icon) so Blizzard's secure frames are never tainted; PP.GetBorders(icon) is the fallback for CDM-owned frames that skip DecorateFrame's child wrapper.
-        local bdrTarget = (fd and fd.borderFrame) or iconTex
-        if blizzArt then
+        local bdrTarget = (frameData and frameData.borderFrame) or iconTex
+        if stockArt then
             -- Blizzard Style draws no CUI border (the ring overlay is the frame).
-        elseif fd and fd.borderFrame or CludesUI.PP.GetBorders(iconTex) then
+        elseif frameData and frameData.borderFrame or CludesUI.PP.GetBorders(iconTex) then
             local texKey = barInfo.borderTexture or "solid"
             -- Exact size (borderSizePx) belongs to the bar's own step: a per-icon
             -- override that differs from it fails the step compare and stays legacy,
@@ -121,8 +121,8 @@ ApplyShapeToCDMIcon = function(iconTex, shape, barInfo, ssb)
             local edgePx = CludesUI.BorderPx(barInfo.borderSizePx, borderSz, texKey)
             -- "Show Behind": set the border frame's level BEFORE styling so the
             -- textured backdrop inherits it. +13 = in front (+14 for the Pixels styles), level-1 = behind.
-            if fd and fd.borderFrame then
-                fd.borderFrame:SetFrameLevel(
+            if frameData and frameData.borderFrame then
+                frameData.borderFrame:SetFrameLevel(
                     barInfo.borderBehind and math.max(0, iconTex:GetFrameLevel() - 1)
                         or (iconTex:GetFrameLevel() + (CludesUI._pixelArtBorders[texKey] and 14 or 13))
                 )
@@ -151,18 +151,18 @@ ApplyShapeToCDMIcon = function(iconTex, shape, barInfo, ssb)
             texture:ClearAllPoints()
             texture:SetAllPoints(iconTex)
             local extraCrop = 0
-            if ifc.matchExpanded then
+            if iconCache.matchExpanded then
                 local baseW = barInfo.iconSize or 36
                 extraCrop = (1 - 2 * zoom) / (2 * (baseW + 1))
             end
-            if blizzArt then
+            if stockArt then
                 -- Full art, as the viewer draws it (rounded by the viewer mask
                 -- under Blizzard Style, square under Classic WoW UI).
                 if texture.SetSnapToPixelGrid then
                     texture:SetSnapToPixelGrid(true)
                 end
                 texture:SetTexCoord(0, 1, 0, 1)
-            elseif shape == "cropped" then
+            elseif shapeKey == "cropped" then
                 -- Cropped applies a heavy vertical TexCoord crop. With default pixel/texel
                 -- snapping the cropped image edge can round to a different physical pixel than
                 -- the unsnapped cooldown swipe (1px swipe/icon split at some effective scales), so snapping is disabled to render the exact rect. No size change.
@@ -184,12 +184,12 @@ ApplyShapeToCDMIcon = function(iconTex, shape, barInfo, ssb)
         end
 
         -- Restore cooldown: full frame so the swipe covers the entire icon
-        if cd then
-            cd:ClearAllPoints()
-            cd:SetAllPoints(iconTex)
-            pcall(cd.SetSwipeTexture, cd, ns.CdmSwipeFile())
-            if cd.SetUseCircularEdge then
-                pcall(cd.SetUseCircularEdge, cd, false)
+        if cooldown then
+            cooldown:ClearAllPoints()
+            cooldown:SetAllPoints(iconTex)
+            pcall(cooldown.SetSwipeTexture, cooldown, ns.CdmSwipeFile())
+            if cooldown.SetUseCircularEdge then
+                pcall(cooldown.SetUseCircularEdge, cooldown, false)
             end
         end
 
@@ -202,15 +202,15 @@ ApplyShapeToCDMIcon = function(iconTex, shape, barInfo, ssb)
     end
 
     -- Custom shape
-    local maskTex = CDM_SHAPES.masks[shape]
+    local maskTex = CDM_SHAPES.masks[shapeKey]
     if not maskTex then
         return
     end
 
-    if not ifc.shapeMask then
-        ifc.shapeMask = iconTex:CreateMaskTexture()
+    if not iconCache.shapeMask then
+        iconCache.shapeMask = iconTex:CreateMaskTexture()
     end
-    local mask = ifc.shapeMask
+    local mask = iconCache.shapeMask
     mask:SetTexture(maskTex, "CLAMPTOBLACKADDITIVE", "CLAMPTOBLACKADDITIVE")
     mask:Show()
 
@@ -221,8 +221,8 @@ ApplyShapeToCDMIcon = function(iconTex, shape, barInfo, ssb)
     if backdrop then
         pcall(backdrop.RemoveMaskTexture, backdrop, mask)
     end
-    if cd then
-        pcall(cd.RemoveMaskTexture, cd, mask)
+    if cooldown then
+        pcall(cooldown.RemoveMaskTexture, cooldown, mask)
     end
     if iconTex.OutOfRange then
         pcall(iconTex.OutOfRange.RemoveMaskTexture, iconTex.OutOfRange, mask)
@@ -242,8 +242,8 @@ ApplyShapeToCDMIcon = function(iconTex, shape, barInfo, ssb)
     end
 
     -- Expand icon beyond frame for shape
-    local shapeOffset = CDM_SHAPES.iconExpandOffsets[shape] or 0
-    local shapeDefault = CDM_SHAPES.zoomDefaults[shape] or 0.06
+    local shapeOffset = CDM_SHAPES.iconExpandOffsets[shapeKey] or 0
+    local shapeDefault = CDM_SHAPES.zoomDefaults[shapeKey] or 0.06
     local iconExp = CDM_SHAPES.iconExpand + shapeOffset + ((zoom - shapeDefault) * 200)
     if iconExp < 0 then
         iconExp = 0
@@ -265,16 +265,16 @@ ApplyShapeToCDMIcon = function(iconTex, shape, barInfo, ssb)
     end
 
     -- Expand texcoords for shape
-    local insetPx = CDM_SHAPES.insets[shape] or 17
+    local insetPx = CDM_SHAPES.insets[shapeKey] or 17
     local visRatio = (128 - 2 * insetPx) / 128
-    local expand = ((1 / visRatio) - 1) * 0.5
+    local growBy = ((1 / visRatio) - 1) * 0.5
     if texture then
-        texture:SetTexCoord(-expand, 1 + expand, -expand, 1 + expand)
+        texture:SetTexCoord(-growBy, 1 + growBy, -growBy, 1 + growBy)
     end
 
     -- Hide square borders (both PP and textured)
-    local bdrTarget2 = (fd and fd.borderFrame) or iconTex
-    if fd and fd.borderFrame or CludesUI.PP.GetBorders(iconTex) then
+    local bdrTarget2 = (frameData and frameData.borderFrame) or iconTex
+    if frameData and frameData.borderFrame or CludesUI.PP.GetBorders(iconTex) then
         CludesUI.PP.HideBorder(bdrTarget2)
         if CludesUI._bdBorderData then
             local bdFrame = CludesUI._bdBorderData[bdrTarget2]
@@ -287,44 +287,44 @@ ApplyShapeToCDMIcon = function(iconTex, shape, barInfo, ssb)
     -- Shape border texture (on a dedicated frame above the cooldown swipe).
     -- On an options preview slot (an options page pool host) the frame is
     -- pooled with the slot; on a live icon this is the plain CreateFrame.
-    if not ifc.shapeBorderFrame then
+    if not iconCache.shapeBorderFrame then
         local sbf = POOL.CreateFrame("Frame", nil, iconTex)
         sbf:SetAllPoints(iconTex)
         sbf:SetFrameLevel(iconTex:GetFrameLevel() + 2)
-        ifc.shapeBorderFrame = sbf
+        iconCache.shapeBorderFrame = sbf
     end
-    ifc.shapeBorderFrame:SetFrameLevel(iconTex:GetFrameLevel() + 2)
-    if not ifc.shapeBorder then
-        ifc.shapeBorder = ifc.shapeBorderFrame:CreateTexture(nil, "OVERLAY", nil, 6)
+    iconCache.shapeBorderFrame:SetFrameLevel(iconTex:GetFrameLevel() + 2)
+    if not iconCache.shapeBorder then
+        iconCache.shapeBorder = iconCache.shapeBorderFrame:CreateTexture(nil, "OVERLAY", nil, 6)
     end
-    local borderTex = ifc.shapeBorder
-    borderTex:ClearAllPoints()
-    borderTex:SetAllPoints(iconTex)
-    if borderSz > 0 and CDM_SHAPES.borders[shape] then
-        borderTex:SetTexture(CDM_SHAPES.borders[shape])
-        borderTex:SetVertexColor(brdR, brdG, brdB, brdA)
-        borderTex:SetSnapToPixelGrid(false)
-        borderTex:SetTexelSnappingBias(0)
-        borderTex:Show()
+    local edgeTex = iconCache.shapeBorder
+    edgeTex:ClearAllPoints()
+    edgeTex:SetAllPoints(iconTex)
+    if borderSz > 0 and CDM_SHAPES.borders[shapeKey] then
+        edgeTex:SetTexture(CDM_SHAPES.borders[shapeKey])
+        edgeTex:SetVertexColor(brdR, brdG, brdB, brdA)
+        edgeTex:SetSnapToPixelGrid(false)
+        edgeTex:SetTexelSnappingBias(0)
+        edgeTex:Show()
     else
-        borderTex:Hide()
+        edgeTex:Hide()
     end
 
     -- Apply mask to cooldown so swipe follows shape
-    if cd then
-        cd:ClearAllPoints()
-        cd:SetAllPoints(iconTex)
-        pcall(cd.AddMaskTexture, cd, mask)
-        if cd.SetSwipeTexture then
-            pcall(cd.SetSwipeTexture, cd, maskTex)
+    if cooldown then
+        cooldown:ClearAllPoints()
+        cooldown:SetAllPoints(iconTex)
+        pcall(cooldown.AddMaskTexture, cooldown, mask)
+        if cooldown.SetSwipeTexture then
+            pcall(cooldown.SetSwipeTexture, cooldown, maskTex)
         end
-        local useCircular = (shape ~= "square" and shape ~= "csquare")
-        if cd.SetUseCircularEdge then
-            pcall(cd.SetUseCircularEdge, cd, useCircular)
+        local useCircular = (shapeKey ~= "square" and shapeKey ~= "csquare")
+        if cooldown.SetUseCircularEdge then
+            pcall(cooldown.SetUseCircularEdge, cooldown, useCircular)
         end
-        local edgeScale = CDM_SHAPES.edgeScales[shape] or 0.60
-        if cd.SetEdgeScale then
-            pcall(cd.SetEdgeScale, cd, edgeScale)
+        local edgeScale = CDM_SHAPES.edgeScales[shapeKey] or 0.60
+        if cooldown.SetEdgeScale then
+            pcall(cooldown.SetEdgeScale, cooldown, edgeScale)
         end
     end
 
@@ -334,8 +334,8 @@ ApplyShapeToCDMIcon = function(iconTex, shape, barInfo, ssb)
         backdrop:SetAllPoints()
     end
 
-    ifc.shapeApplied = true
-    ifc.shapeName = shape
+    iconCache.shapeApplied = true
+    iconCache.shapeName = shapeKey
 end
 ns.ApplyShapeToCDMIcon = ApplyShapeToCDMIcon
 
@@ -346,35 +346,35 @@ ns.ApplyShapeToCDMIcon = ApplyShapeToCDMIcon
 -- swipe over a CDM icon during a custom active window. The overlay MUST copy the underlying
 -- icon's custom shape or a square icon/swipe is drawn over the shaped icon and the mask looks
 -- broken. Reuses the underlying shapeMask: masking is screen-space and the overlay covers the same region, so one mask serves both. A none/cropped shape clears any mask we added and restores a plain square swipe.
-function ns.ApplyShapeToOverlay(iconTex, oIcon, oCd, barInfo)
+function ns.ApplyShapeToOverlay(iconTex, origIcon, origCooldown, barInfo)
     if not iconTex then
         return
     end
-    local ifc = FC(iconTex)
-    local mask = ifc.shapeMask
-    local shape = ifc.shapeApplied and ifc.shapeName or nil
+    local iconCache = FC(iconTex)
+    local mask = iconCache.shapeMask
+    local shapeKey = iconCache.shapeApplied and iconCache.shapeName or nil
 
     -- Drop mask refs we added before (the shape may have changed / cleared).
     if mask then
-        if oIcon then
-            pcall(oIcon.RemoveMaskTexture, oIcon, mask)
+        if origIcon then
+            pcall(origIcon.RemoveMaskTexture, origIcon, mask)
         end
-        if oCd then
-            pcall(oCd.RemoveMaskTexture, oCd, mask)
+        if origCooldown then
+            pcall(origCooldown.RemoveMaskTexture, origCooldown, mask)
         end
     end
 
-    local maskTex = shape and CDM_SHAPES.masks[shape]
-    if not shape or shape == "none" or shape == "cropped" or not mask or not maskTex then
+    local maskTex = shapeKey and CDM_SHAPES.masks[shapeKey]
+    if not shapeKey or shapeKey == "none" or shapeKey == "cropped" or not mask or not maskTex then
         -- Square overlay. IconTexture already copied the underlying texcoords.
-        if oIcon then
-            oIcon:ClearAllPoints()
-            oIcon:SetAllPoints(oIcon:GetParent())
+        if origIcon then
+            origIcon:ClearAllPoints()
+            origIcon:SetAllPoints(origIcon:GetParent())
         end
-        if oCd then
-            pcall(oCd.SetSwipeTexture, oCd, "Interface\\AddOns\\CludesUI\\media\\white-square.png")
-            if oCd.SetUseCircularEdge then
-                pcall(oCd.SetUseCircularEdge, oCd, false)
+        if origCooldown then
+            pcall(origCooldown.SetSwipeTexture, origCooldown, "Interface\\AddOns\\CludesUI\\media\\white-square.png")
+            if origCooldown.SetUseCircularEdge then
+                pcall(origCooldown.SetUseCircularEdge, origCooldown, false)
             end
         end
         return
@@ -383,37 +383,37 @@ function ns.ApplyShapeToOverlay(iconTex, oIcon, oCd, barInfo)
     local zoom = (barInfo and barInfo.iconZoom) or 0.08
 
     -- Match the underlying tex geometry: point-expand + texcoord-expand.
-    local shapeOffset = CDM_SHAPES.iconExpandOffsets[shape] or 0
-    local shapeDefault = CDM_SHAPES.zoomDefaults[shape] or 0.06
+    local shapeOffset = CDM_SHAPES.iconExpandOffsets[shapeKey] or 0
+    local shapeDefault = CDM_SHAPES.zoomDefaults[shapeKey] or 0.06
     local iconExp = CDM_SHAPES.iconExpand + shapeOffset + ((zoom - shapeDefault) * 200)
     if iconExp < 0 then
         iconExp = 0
     end
     local halfIE = iconExp / 2
-    if oIcon then
-        oIcon:ClearAllPoints()
-        CludesUI.PP.Point(oIcon, "TOPLEFT", iconTex, "TOPLEFT", -halfIE, halfIE)
-        CludesUI.PP.Point(oIcon, "BOTTOMRIGHT", iconTex, "BOTTOMRIGHT", halfIE, -halfIE)
-        local insetPx = CDM_SHAPES.insets[shape] or 17
+    if origIcon then
+        origIcon:ClearAllPoints()
+        CludesUI.PP.Point(origIcon, "TOPLEFT", iconTex, "TOPLEFT", -halfIE, halfIE)
+        CludesUI.PP.Point(origIcon, "BOTTOMRIGHT", iconTex, "BOTTOMRIGHT", halfIE, -halfIE)
+        local insetPx = CDM_SHAPES.insets[shapeKey] or 17
         local visRatio = (128 - 2 * insetPx) / 128
-        local expand = ((1 / visRatio) - 1) * 0.5
-        oIcon:SetTexCoord(-expand, 1 + expand, -expand, 1 + expand)
-        oIcon:AddMaskTexture(mask)
+        local growBy = ((1 / visRatio) - 1) * 0.5
+        origIcon:SetTexCoord(-growBy, 1 + growBy, -growBy, 1 + growBy)
+        origIcon:AddMaskTexture(mask)
     end
-    if oCd then
-        oCd:ClearAllPoints()
-        oCd:SetAllPoints(iconTex)
-        pcall(oCd.AddMaskTexture, oCd, mask)
-        if oCd.SetSwipeTexture then
-            pcall(oCd.SetSwipeTexture, oCd, maskTex)
+    if origCooldown then
+        origCooldown:ClearAllPoints()
+        origCooldown:SetAllPoints(iconTex)
+        pcall(origCooldown.AddMaskTexture, origCooldown, mask)
+        if origCooldown.SetSwipeTexture then
+            pcall(origCooldown.SetSwipeTexture, origCooldown, maskTex)
         end
-        local useCircular = (shape ~= "square" and shape ~= "csquare")
-        if oCd.SetUseCircularEdge then
-            pcall(oCd.SetUseCircularEdge, oCd, useCircular)
+        local useCircular = (shapeKey ~= "square" and shapeKey ~= "csquare")
+        if origCooldown.SetUseCircularEdge then
+            pcall(origCooldown.SetUseCircularEdge, origCooldown, useCircular)
         end
-        local edgeScale = CDM_SHAPES.edgeScales[shape] or 0.60
-        if oCd.SetEdgeScale then
-            pcall(oCd.SetEdgeScale, oCd, edgeScale)
+        local edgeScale = CDM_SHAPES.edgeScales[shapeKey] or 0.60
+        if origCooldown.SetEdgeScale then
+            pcall(origCooldown.SetEdgeScale, origCooldown, edgeScale)
         end
     end
 end
@@ -430,10 +430,10 @@ local COOLDOWN_TEXT_POINTS = {
 }
 
 function ns.AnchorCooldownText(textValue, ownerFrame, position, posX, posY)
-    local points = COOLDOWN_TEXT_POINTS[position] or COOLDOWN_TEXT_POINTS.center
+    local pointList = COOLDOWN_TEXT_POINTS[position] or COOLDOWN_TEXT_POINTS.center
     textValue:ClearAllPoints()
-    textValue:SetPoint(points[1], ownerFrame, points[2], posX or 0, posY or 0)
-    textValue:SetJustifyH(points[3])
+    textValue:SetPoint(pointList[1], ownerFrame, pointList[2], posX or 0, posY or 0)
+    textValue:SetJustifyH(pointList[3])
 end
 
 -- Does this bar show Duration Text? The options row treats the key as ON
@@ -482,8 +482,8 @@ end
 -- (scale-compensated), colour, position, offset, show/hide. ssb is the resolved
 -- per-icon settings, falling back to the bar's (nil is fine). Call AFTER
 -- SetCooldown so Blizzard's countdown FontString exists.
-function ns.StyleOverlayCooldownText(oCd, barInfo, ssb, iconScale)
-    if not oCd then
+function ns.StyleOverlayCooldownText(origCooldown, barInfo, shapeBorder, iconScale)
+    if not origCooldown then
         return
     end
     iconScale = iconScale or 1
@@ -492,29 +492,29 @@ function ns.StyleOverlayCooldownText(oCd, barInfo, ssb, iconScale)
     end
     local fontScale = 1 / iconScale
     local showCD = ns.CdmDurationTextOn(barInfo)
-    if ssb and ssb.showCooldownText ~= nil then
-        showCD = ssb.showCooldownText
+    if shapeBorder and shapeBorder.showCooldownText ~= nil then
+        showCD = shapeBorder.showCooldownText
     end
-    oCd:SetHideCountdownNumbers(not showCD)
+    origCooldown:SetHideCountdownNumbers(not showCD)
     if not showCD then
         return
     end
     local cdFont = GetCDMFont()
-    local cdSize = ((ssb and ssb.cooldownFontSize) or (barInfo and barInfo.cooldownFontSize) or 12)
+    local cdSize = ((shapeBorder and shapeBorder.cooldownFontSize) or (barInfo and barInfo.cooldownFontSize) or 12)
         * fontScale
-    local cdR = (ssb and ssb.cooldownTextR) or (barInfo and barInfo.cooldownTextR) or 1
-    local cdG = (ssb and ssb.cooldownTextG) or (barInfo and barInfo.cooldownTextG) or 1
-    local cdB = (ssb and ssb.cooldownTextB) or (barInfo and barInfo.cooldownTextB) or 1
-    local cdPosition = (ssb and ssb.cooldownTextPosition)
+    local cdR = (shapeBorder and shapeBorder.cooldownTextR) or (barInfo and barInfo.cooldownTextR) or 1
+    local cdG = (shapeBorder and shapeBorder.cooldownTextG) or (barInfo and barInfo.cooldownTextG) or 1
+    local cdB = (shapeBorder and shapeBorder.cooldownTextB) or (barInfo and barInfo.cooldownTextB) or 1
+    local cdPosition = (shapeBorder and shapeBorder.cooldownTextPosition)
         or (barInfo and barInfo.cooldownTextPosition)
         or "center"
-    local cdX = (ssb and ssb.cooldownTextX) or (barInfo and barInfo.cooldownTextX) or 0
-    local cdY = (ssb and ssb.cooldownTextY) or (barInfo and barInfo.cooldownTextY) or 0
-    for _, region in pairs({ oCd:GetRegions() }) do
+    local cdX = (shapeBorder and shapeBorder.cooldownTextX) or (barInfo and barInfo.cooldownTextX) or 0
+    local cdY = (shapeBorder and shapeBorder.cooldownTextY) or (barInfo and barInfo.cooldownTextY) or 0
+    for _, region in pairs({ origCooldown:GetRegions() }) do
         if region and region.GetObjectType and region:GetObjectType() == "FontString" then
             CludesUI.ApplyIconTextFont(region, cdFont, cdSize, "cdm")
             region:SetTextColor(cdR, cdG, cdB)
-            ns.AnchorCooldownText(region, oCd, cdPosition, cdX, cdY)
+            ns.AnchorCooldownText(region, origCooldown, cdPosition, cdX, cdY)
         end
     end
 end
@@ -555,32 +555,32 @@ do
             end
             return CreateColor(region, g, b, 1):WrapTextInColorCode(fmt)
         end
-        local points = {}
+        local pointList = {}
         if dec then
             -- One decimal below the threshold, whole seconds above it.
-            points[#points + 1] = { threshold = 0, format = Wrap("%.1f"), rounding = Nearest }
+            pointList[#pointList + 1] = { threshold = 0, format = Wrap("%.1f"), rounding = Nearest }
         else
             -- Color-only: same whole-second text, wrapped below the threshold.
-            points[#points + 1] = { threshold = 0, format = Wrap("%d"), rounding = Up, step = 1 }
+            pointList[#pointList + 1] = { threshold = 0, format = Wrap("%d"), rounding = Up, step = 1 }
         end
-        points[#points + 1] = { threshold = seconds, format = "%d", rounding = Up, step = 1 }
+        pointList[#pointList + 1] = { threshold = seconds, format = "%d", rounding = Up, step = 1 }
         -- Larger units. Thresholds sit just above the unit boundary so an UP-rounded value in
         -- (59, 60] routes into the m:ss breakpoint rather than reading "60" for a moment (same for hours and days).
-        points[#points + 1] = {
+        pointList[#pointList + 1] = {
             threshold = 59.0001,
             format = "%d:%02d",
             rounding = Up,
             step = 1,
             components = { { div = 60 }, { mod = 60 } },
         }
-        points[#points + 1] = {
+        pointList[#pointList + 1] = {
             threshold = 3599.0001,
             format = "%dh",
             rounding = Up,
             step = 1,
             components = { { div = 3600 } },
         }
-        points[#points + 1] = {
+        pointList[#pointList + 1] = {
             threshold = 86399.0001,
             format = "%dd",
             rounding = Up,
@@ -588,7 +588,7 @@ do
             components = { { div = 86400 } },
         }
         local frame = C_StringUtil.CreateNumericRuleFormatter()
-        local success = pcall(frame.SetBreakpoints, frame, points)
+        local success = pcall(frame.SetBreakpoints, frame, pointList)
         if not success then
             return nil
         end
@@ -597,27 +597,27 @@ do
 
     -- Resolve a settings block's threshold config to a shared formatter, or nil when off. ss may
     -- be a per-spell family entry (tier-chained), a customActiveStates entry, or nil. Explicit false (tier blocking) reads as off through the tonumber/== true checks.
-    local function FormatterFor(ss)
-        if not ss then
+    local function FormatterFor(spellSettings)
+        if not spellSettings then
             return nil
         end
-        local seconds = tonumber(ss.thresholdSeconds) or 0
+        local seconds = tonumber(spellSettings.thresholdSeconds) or 0
         if seconds <= 0 then
             return nil
         end
         if seconds > 59 then
             seconds = 59
         end
-        local dec = ss.thresholdDecimals == true
-        local colour = ss.thresholdColorEnabled == true
+        local dec = spellSettings.thresholdDecimals == true
+        local colour = spellSettings.thresholdColorEnabled == true
         if not (dec or colour) then
             return nil
         end
         local region, g, b = 1, 0.2, 0.2
         if colour then
-            region = ss.thresholdColorR or 1
-            g = ss.thresholdColorG or 0.2
-            b = ss.thresholdColorB or 0.2
+            region = spellSettings.thresholdColorR or 1
+            g = spellSettings.thresholdColorG or 0.2
+            b = spellSettings.thresholdColorB or 0.2
         end
         local sig = string.format(
             "%d|%s|%s",
@@ -644,19 +644,19 @@ do
     end
 
     -- Attach or clear the resolved formatter on one Cooldown widget. Touches the widget only on a managed-state change, and never one it never managed.
-    function ns.ApplyThresholdFormatter(cd, ss)
-        if not (cd and cd.SetCountdownFormatter) then
+    function ns.ApplyThresholdFormatter(cooldown, spellSettings)
+        if not (cooldown and cooldown.SetCountdownFormatter) then
             return
         end
-        local frame = FormatterFor(ss)
+        local frame = FormatterFor(spellSettings)
         if frame then
-            if attached[cd] ~= frame then
-                attached[cd] = frame
-                cd:SetCountdownFormatter(frame)
+            if attached[cooldown] ~= frame then
+                attached[cooldown] = frame
+                cooldown:SetCountdownFormatter(frame)
             end
-        elseif attached[cd] then
-            attached[cd] = nil
-            cd:SetCountdownFormatter(nil)
+        elseif attached[cooldown] then
+            attached[cooldown] = nil
+            cooldown:SetCountdownFormatter(nil)
         end
     end
 
@@ -666,12 +666,12 @@ do
         if not spellRef then
             return nil
         end
-        local ss
+        local spellSettings
         if ns.ResolveSpellSettings then
-            ss = ns.ResolveSpellSettings(widget, spellRef, sd, barId)
+            spellSettings = ns.ResolveSpellSettings(widget, spellRef, sd, barId)
         end
-        if ss and (tonumber(ss.thresholdSeconds) or 0) > 0 then
-            return ss
+        if spellSettings and (tonumber(spellSettings.thresholdSeconds) or 0) > 0 then
+            return spellSettings
         end
         if ns.GetEffectiveCustomActiveState then
             local cas = ns.GetEffectiveCustomActiveState(spellRef)
@@ -732,8 +732,8 @@ function ns.StyleCustomChargeText(iconTex, barId)
         barInfo.stackCountB or 1
     )
     -- Parent onto the text overlay so it renders above the border.
-    local fd = _getFD(iconTex)
-    local txOverlay = (fd and fd.textOverlay) or iconTex._textOverlay
+    local frameData = _getFD(iconTex)
+    local txOverlay = (frameData and frameData.textOverlay) or iconTex._textOverlay
     if txOverlay then
         fontStr:SetParent(txOverlay)
     end
@@ -767,8 +767,8 @@ local function RefreshCDMIconAppearance(barId)
     local zoom = barInfo.iconZoom or 0.08
     -- Blizzard Style: full art, no CUI border/background; the ring overlay and
     -- rounded mask are (re)applied after the shape pass below.
-    local blizzArt = ns.CdmBlizzIcons()
-    if blizzArt then
+    local stockArt = ns.CdmBlizzIcons()
+    if stockArt then
         zoom = 0
     end
 
@@ -779,13 +779,13 @@ local function RefreshCDMIconAppearance(barId)
         -- attach to it (its bogus marker id never carries a real cooldown, so
         -- it would otherwise resolve as permanently ready and glow forever).
         if not iconTex._isEmptySlotFrame then
-            local fd = _getFD(iconTex)
-            local texture = fd and fd.tex or iconTex._tex
-            local cd = fd and fd.cooldown or iconTex._cooldown
-            local backdrop = fd and fd.bg or iconTex._bg
-            local glowOv = fd and fd.glowOverlay or iconTex._glowOverlay
-            local kbText = fd and fd.keybindText or iconTex._keybindText
-            local txOverlay = fd and fd.textOverlay or iconTex._textOverlay
+            local frameData = _getFD(iconTex)
+            local texture = frameData and frameData.tex or iconTex._tex
+            local cooldown = frameData and frameData.cooldown or iconTex._cooldown
+            local backdrop = frameData and frameData.bg or iconTex._bg
+            local glowOverlay = frameData and frameData.glowOverlay or iconTex._glowOverlay
+            local kbText = frameData and frameData.keybindText or iconTex._keybindText
+            local txOverlay = frameData and frameData.textOverlay or iconTex._textOverlay
             -- Scale compensation: fonts render at the frame's native scale, so multiply sizes by 1/scale to match the visual icon size.
             local iconScale = iconTex:GetScale() or 1
             if iconScale < 0.01 then
@@ -795,7 +795,7 @@ local function RefreshCDMIconAppearance(barId)
             -- Per-icon override settings (buff-family bars only). Resolved once and reused for Buff
             -- Glow + Duration Text + Charge/Stack below; nil = inherit the bar's value. Variant-aware:
             -- a setting stored under any spell in the icon's family (base/talent-override) resolves here -- options keys off the live/canonical id, which may differ from fc.spellID.
-            local ssb
+            local shapeBorder
             -- Canonical id for buff-family icons, hoisted so the Threshold Text block below can
             -- reuse it instead of re-walking GetCanonicalSpellIDForFrame a second time this pass.
             local sidb
@@ -834,7 +834,7 @@ local function RefreshCDMIconAppearance(barId)
             -- Buff per-spell settings resolve for any BUFF FRAME, not just buff-family bars: a hosted
             -- buff (real Blizzard buff frame reparented onto a CD/util bar, flagged fd._isBuffViewerFrame)
             -- and its inactive placeholder need the same resolution so their Buff Glow/Duration Text/Charge-Stack/Border/Desaturate match the active frame.
-            if isBuffFamilyBar or (fd and fd._isBuffViewerFrame) or iconTex._isPlaceholderFrame then
+            if isBuffFamilyBar or (frameData and frameData._isBuffViewerFrame) or iconTex._isPlaceholderFrame then
                 -- Per-icon Audio on Buff Gain/Loss: attach the gain+loss hooks once, only when the feature is in use anywhere.
                 if ns._cdmAnyBuffSound and ns.EnsureBuffSoundHook then
                     ns.EnsureBuffSoundHook(iconTex)
@@ -850,67 +850,67 @@ local function RefreshCDMIconAppearance(barId)
                 if sidb then
                     local sdb = ns.GetBarSpellData(barId)
                     -- Shared resolver: matches the key against the frame's full identity set (canon first, then resolvedSid/baseSpellID).
-                    ssb = ns.ResolveSpellSettings and ns.ResolveSpellSettings(iconTex, sidb, sdb, barId)
+                    shapeBorder = ns.ResolveSpellSettings and ns.ResolveSpellSettings(iconTex, sidb, sdb, barId)
                 end
                 -- Stash the effective Buff Glow on fd so the BuffTicker hot path reads it without a
                 -- per-tick lookup. Only restart the live glow when the effective value actually changed (no flicker on no-op rebuilds).
-                local nT = ssb and ssb.buffGlow -- nil = inherit, number = override (0 = None)
+                local nT = shapeBorder and shapeBorder.buffGlow -- nil = inherit, number = override (0 = None)
                 -- A false-block (per-spell "Off", or Exclude this spec/bar apply of an Off value) is
                 -- render-equivalent to nil: treat it as inherit, never as a value. Without this fd._bgT would be `false` and the BuffTicker's `effGlowType > 0` compares a boolean with a number and errors.
                 if nT == false then
                     nT = nil
                 end
-                local nColor = ssb and ssb.buffGlowColor -- nil / "class" / "custom"
+                local nColor = shapeBorder and shapeBorder.buffGlowColor -- nil / "class" / "custom"
                 local nR, nG, nB
-                if nColor == "custom" and ssb then
-                    nR, nG, nB = ssb.buffGlowColorR, ssb.buffGlowColorG, ssb.buffGlowColorB
+                if nColor == "custom" and shapeBorder then
+                    nR, nG, nB = shapeBorder.buffGlowColorR, shapeBorder.buffGlowColorG, shapeBorder.buffGlowColorB
                 end
                 -- Glow at Stacks: only with the per-spell toggle ON and a sane
                 -- comparison. Own custom frames expose no native applications
                 -- count, so they keep the normal presence glow.
                 local nThreshold, nOperator
-                if ssb and ssb.buffGlowStackEnabled then
+                if shapeBorder and shapeBorder.buffGlowStackEnabled then
                     -- Default 2 when the toggle is on before the input was ever
                     -- touched (matches the input's displayed default). A missing
                     -- operator keeps the original at-least behaviour.
-                    nThreshold = tonumber(ssb.buffGlowStackThreshold) or 2
+                    nThreshold = tonumber(shapeBorder.buffGlowStackThreshold) or 2
                     if nThreshold < 1 then
                         nThreshold = nil
                     end
-                    nOperator = ssb.buffGlowStackOperator or "gte"
+                    nOperator = shapeBorder.buffGlowStackOperator or "gte"
                 end
                 if iconTex._isCustomBuffFrame or not ns.StackGlow_Configure then
                     nThreshold, nOperator = nil, nil
                 end
                 -- Glow When Visible: the BuffTicker lights the glow whenever the icon is shown
                 -- (a Show When Missing placeholder included); Glow at Stacks wins over it.
-                local nVisible = (ssb and ssb.glowWhenVisible) or nil
-                if fd then
+                local nVisible = (shapeBorder and shapeBorder.glowWhenVisible) or nil
+                if frameData then
                     if
-                        fd._bgT ~= nT
-                        or fd._bgColor ~= nColor
-                        or fd._bgR ~= nR
-                        or fd._bgG ~= nG
-                        or fd._bgB ~= nB
-                        or fd._bgThreshold ~= nThreshold
-                        or fd._bgStackOperator ~= nOperator
-                        or fd._bgVisible ~= nVisible
+                        frameData._bgT ~= nT
+                        or frameData._bgColor ~= nColor
+                        or frameData._bgR ~= nR
+                        or frameData._bgG ~= nG
+                        or frameData._bgB ~= nB
+                        or frameData._bgThreshold ~= nThreshold
+                        or frameData._bgStackOperator ~= nOperator
+                        or frameData._bgVisible ~= nVisible
                     then
-                        fd._bgT = nT
-                        fd._bgColor = nColor
-                        fd._bgR = nR
-                        fd._bgG = nG
-                        fd._bgB = nB
-                        fd._bgThreshold = nThreshold
-                        fd._bgStackOperator = nOperator
-                        fd._bgVisible = nVisible
-                        if fd.buffGlowActive and fd.buffGlowOverlay then
-                            StopNativeGlow(fd.buffGlowOverlay)
-                            fd.buffGlowActive = false
+                        frameData._bgT = nT
+                        frameData._bgColor = nColor
+                        frameData._bgR = nR
+                        frameData._bgG = nG
+                        frameData._bgB = nB
+                        frameData._bgThreshold = nThreshold
+                        frameData._bgStackOperator = nOperator
+                        frameData._bgVisible = nVisible
+                        if frameData.buffGlowActive and frameData.buffGlowOverlay then
+                            StopNativeGlow(frameData.buffGlowOverlay)
+                            frameData.buffGlowActive = false
                         end
                     end
                     -- Per-icon Desaturate Inactive override, read by the BuffTicker.
-                    fd._desatOverride = (ssb and ssb.desatInactive) or nil
+                    frameData._desatOverride = (shapeBorder and shapeBorder.desatInactive) or nil
 
                     if nThreshold then
                         -- Style: the spell's effective Buff Glow (per-spell
@@ -938,11 +938,11 @@ local function RefreshCDMIconAppearance(barId)
                             sgR, sgG, sgB = barInfo.buffGlowR, barInfo.buffGlowG, barInfo.buffGlowB
                         end
                         ns.StackGlow_Configure(iconTex, nThreshold, nOperator, sgStyle, sgR, sgG, sgB, barInfo)
-                    elseif fd.stackGlow then
+                    elseif frameData.stackGlow then
                         ns.StackGlow_Configure(iconTex)
                     end
                 end
-            elseif fd and fd.stackGlow and ns.StackGlow_Configure then
+            elseif frameData and frameData.stackGlow and ns.StackGlow_Configure then
                 -- Blizzard viewer frames are pooled across cooldown and buff
                 -- families: retire a controller when its frame goes non-buff.
                 ns.StackGlow_Configure(iconTex)
@@ -958,22 +958,22 @@ local function RefreshCDMIconAppearance(barId)
             -- (icon+13) or the border draws over the number (most visible with edge-offset text);
             -- anchoring the number to cd (below) keeps the X/Y offset working. Side effect: the dark swipe lightly tints the thin border while active.
             -- The Pixels styles swap the two (cd +13, border +14): a square swipe over their line squares off its rounded corners.
-            if cd then
-                cd:ClearAllPoints()
-                cd:SetAllPoints(iconTex)
+            if cooldown then
+                cooldown:ClearAllPoints()
+                cooldown:SetAllPoints(iconTex)
                 -- Above the border (icon+13; below it at +13 under Pixels); still below glow (icon+16) / text (icon+23).
                 pcall(
-                    cd.SetFrameLevel,
-                    cd,
+                    cooldown.SetFrameLevel,
+                    cooldown,
                     iconTex:GetFrameLevel() + (CludesUI._pixelArtBorders[barInfo.borderTexture] and 13 or 14)
                 )
                 -- Per-icon Duration Text override (ssb) falls back to the bar's values. Only Show
                 -- Numbers no longer forces this on: hiding the duration (bar toggle or per-icon) under it leaves just the stack count.
                 local showCD = ns.CdmDurationTextOn(barInfo)
-                if ssb and ssb.showCooldownText ~= nil then
-                    showCD = ssb.showCooldownText
+                if shapeBorder and shapeBorder.showCooldownText ~= nil then
+                    showCD = shapeBorder.showCooldownText
                 end
-                cd:SetSwipeColor(0, 0, 0, barInfo.swipeAlpha or 0.7)
+                cooldown:SetSwipeColor(0, 0, 0, barInfo.swipeAlpha or 0.7)
                 -- Per-spell Reverse Swipe: flips this icon's swipe direction away from the bar default
                 -- (buffs fill up, cooldowns deplete). Entire block is gated by the session flag, so it
                 -- is ZERO cost/ZERO behavior change unless at least one spell has the toggle on -- the
@@ -993,7 +993,7 @@ local function RefreshCDMIconAppearance(barId)
                         or barId == "buffs"
                         or barInfo.barType == "custom_buff"
                         or (rfFc and rfFc.isHostedBuff)
-                        or (fd and fd._isBuffViewerFrame)
+                        or (frameData and frameData._isBuffViewerFrame)
                         or iconTex._isPlaceholderFrame
                     )
                             and true
@@ -1004,18 +1004,18 @@ local function RefreshCDMIconAppearance(barId)
                     if ns.EffectiveReverseSwipe then
                         rfReverse = ns.EffectiveReverseSwipe(iconTex, barId, rfBuff)
                     end
-                    cd:SetReverse(rfReverse)
+                    cooldown:SetReverse(rfReverse)
                     -- Keep the kind memo equal to what is RENDERED, so the
                     -- kind-gated re-asserts in the claim loops stay sound.
-                    if fd then
-                        fd._revKind = rfReverse
+                    if frameData then
+                        frameData._revKind = rfReverse
                     end
                 end
                 -- Per-spell Hide CD Swipe: removes the cooldown swipe entirely for cd/utility spells
                 -- (non-charge -- charge spells use "Hide Swipe (Charges)"). Gated by the session flag,
                 -- so zero cost unless someone enables it. Applied here for immediate feedback; the
                 -- SetDrawSwipe hook keeps it off against Blizzard's re-pushes. Re-asserts (not hide) each pass so toggling off restores the default swipe -- matching the hook's non-charge force-true.
-                if ns._cdmAnyHideCDSwipe and cd.SetDrawSwipe then
+                if ns._cdmAnyHideCDSwipe and cooldown.SetDrawSwipe then
                     local isCharge = type(iconTex.HasVisualDataSource_Charges) == "function"
                         and iconTex:HasVisualDataSource_Charges()
                     if not isCharge then
@@ -1032,13 +1032,13 @@ local function RefreshCDMIconAppearance(barId)
                                 hideSw = casH and casH.hideCDSwipe
                             end
                         end
-                        local fd = ns._hookFrameData and ns._hookFrameData[iconTex]
-                        if fd then
-                            fd._isProcessingOverride = true
+                        local frameData = ns._hookFrameData and ns._hookFrameData[iconTex]
+                        if frameData then
+                            frameData._isProcessingOverride = true
                         end
-                        cd:SetDrawSwipe(not hideSw)
-                        if fd then
-                            fd._isProcessingOverride = false
+                        cooldown:SetDrawSwipe(not hideSw)
+                        if frameData then
+                            frameData._isProcessingOverride = false
                         end
                     end
                 end
@@ -1059,7 +1059,7 @@ local function RefreshCDMIconAppearance(barId)
                     if ttSid and ns.ResolveThresholdTextSettings then
                         tooltip = ns.ResolveThresholdTextSettings(iconTex, ttSid, ns.GetBarSpellData(barId), barId)
                     end
-                    ns.ApplyThresholdFormatter(cd, tooltip)
+                    ns.ApplyThresholdFormatter(cooldown, tooltip)
                 end
                 -- Per-spell "Hide CD Text (Charges)" can additionally hide the recharge numbers while
                 -- a charge is in hand; the font block below still styles the text (using the bar's showCD) so it is ready when numbers return.
@@ -1067,38 +1067,38 @@ local function RefreshCDMIconAppearance(barId)
                 if ns.CdmShouldHideCountdown then
                     hideCD = ns.CdmShouldHideCountdown(iconTex, hideCD)
                 end
-                cd:SetHideCountdownNumbers(hideCD)
+                cooldown:SetHideCountdownNumbers(hideCD)
                 -- Apply cooldown text font directly.
                 if showCD then
                     local cdFont = GetCDMFont()
-                    local cdSize = ((ssb and ssb.cooldownFontSize) or barInfo.cooldownFontSize or 12)
+                    local cdSize = ((shapeBorder and shapeBorder.cooldownFontSize) or barInfo.cooldownFontSize or 12)
                         * fontScale
-                    local cdR = (ssb and ssb.cooldownTextR) or barInfo.cooldownTextR or 1
-                    local cdG = (ssb and ssb.cooldownTextG) or barInfo.cooldownTextG or 1
-                    local cdB = (ssb and ssb.cooldownTextB) or barInfo.cooldownTextB or 1
-                    local cdPosition = (ssb and ssb.cooldownTextPosition)
+                    local cdR = (shapeBorder and shapeBorder.cooldownTextR) or barInfo.cooldownTextR or 1
+                    local cdG = (shapeBorder and shapeBorder.cooldownTextG) or barInfo.cooldownTextG or 1
+                    local cdB = (shapeBorder and shapeBorder.cooldownTextB) or barInfo.cooldownTextB or 1
+                    local cdPosition = (shapeBorder and shapeBorder.cooldownTextPosition)
                         or barInfo.cooldownTextPosition
                         or "center"
-                    local cdX = (ssb and ssb.cooldownTextX) or barInfo.cooldownTextX or 0
-                    local cdY = (ssb and ssb.cooldownTextY) or barInfo.cooldownTextY or 0
+                    local cdX = (shapeBorder and shapeBorder.cooldownTextX) or barInfo.cooldownTextX or 0
+                    local cdY = (shapeBorder and shapeBorder.cooldownTextY) or barInfo.cooldownTextY or 0
                     -- Find Blizzard's countdown FontString on the Cooldown widget. Keep it ON the
                     -- widget (anchored to cd) so the user's position and X/Y offset work -- REPARENTING
                     -- it makes Blizzard's engine re-center and ignore both. Setting our own anchor also
                     -- overrides the engine's stale baseline (raw SetFont vs SetCountdownFont); off-center anchors are where a missed or stomped anchor first becomes visible.
-                    for _, region in pairs({ cd:GetRegions() }) do
+                    for _, region in pairs({ cooldown:GetRegions() }) do
                         if region and region.GetObjectType and region:GetObjectType() == "FontString" then
                             CludesUI.ApplyIconTextFont(region, cdFont, cdSize, "cdm")
                             region:SetTextColor(cdR, cdG, cdB)
-                            ns.AnchorCooldownText(region, cd, cdPosition, cdX, cdY)
+                            ns.AnchorCooldownText(region, cooldown, cdPosition, cdX, cdY)
                         end
                     end
                 end
             end
             -- Update border (PP or textured via ApplyBorderStyle)
-            local bdrTgt = (fd and fd.borderFrame) or iconTex
-            if blizzArt then
+            local bdrTgt = (frameData and frameData.borderFrame) or iconTex
+            if stockArt then
             -- Blizzard Style: no CUI border or background (ring + mask instead).
-            elseif fd and fd.borderFrame or CludesUI.PP.GetBorders(iconTex) then
+            elseif frameData and frameData.borderFrame or CludesUI.PP.GetBorders(iconTex) then
                 local textureKey = barInfo.borderTexture or "solid"
                 CludesUI.ApplyBorderStyle(
                     bdrTgt,
@@ -1119,7 +1119,7 @@ local function RefreshCDMIconAppearance(barId)
                 )
             end
             -- Update background
-            if backdrop and not blizzArt then
+            if backdrop and not stockArt then
                 backdrop:SetColorTexture(
                     barInfo.bgR or 0.08,
                     barInfo.bgG or 0.08,
@@ -1130,21 +1130,21 @@ local function RefreshCDMIconAppearance(barId)
             -- Style Blizzard's native stack/charge text elements: raise their sub-frames above our
             -- border frame by bumping frame level (safe -- they are Blizzard's own children of the icon and follow frame reuse). Per-icon Charge/Stack override (ssb) falls back to the bar's values.
             local scFont = GetCDMFont()
-            local scSize = ((ssb and ssb.stackCountSize) or barInfo.stackCountSize or 11) * fontScale
-            local scR = (ssb and ssb.stackCountR) or barInfo.stackCountR or 1
-            local scG = (ssb and ssb.stackCountG) or barInfo.stackCountG or 1
-            local scB = (ssb and ssb.stackCountB) or barInfo.stackCountB or 1
-            local scX = ((ssb and ssb.stackCountX) or barInfo.stackCountX or 0) * fontScale
-            local scY = ((ssb and ssb.stackCountY) or barInfo.stackCountY or 0) * fontScale
+            local scSize = ((shapeBorder and shapeBorder.stackCountSize) or barInfo.stackCountSize or 11) * fontScale
+            local scR = (shapeBorder and shapeBorder.stackCountR) or barInfo.stackCountR or 1
+            local scG = (shapeBorder and shapeBorder.stackCountG) or barInfo.stackCountG or 1
+            local scB = (shapeBorder and shapeBorder.stackCountB) or barInfo.stackCountB or 1
+            local scX = ((shapeBorder and shapeBorder.stackCountX) or barInfo.stackCountX or 0) * fontScale
+            local scY = ((shapeBorder and shapeBorder.stackCountY) or barInfo.stackCountY or 0) * fontScale
             -- Stack/charge/item-count text anchor. Default bottom-right keeps the historical +2 vertical nudge so existing bars stay pixel-identical; top and center positions sit flush with no baseline nudge.
             local scPoint
             scPoint, scY = ns.CdmStackAnchorPoint(
-                (ssb and ssb.stackCountPosition) or barInfo.stackCountPosition or "bottomright",
+                (shapeBorder and shapeBorder.stackCountPosition) or barInfo.stackCountPosition or "bottomright",
                 scY
             )
             local showItemCount = barInfo.showItemCount ~= false
-            if ssb and ssb.showItemCount ~= nil then
-                showItemCount = ssb.showItemCount
+            if shapeBorder and shapeBorder.showItemCount ~= nil then
+                showItemCount = shapeBorder.showItemCount
             end
             -- Show Item Count "Out of Combat" mode: bar-level combat gate applied on top of the
             -- resolved per-spell value. Combat edges re-run this restyle for OOC bars (ns.RefreshItemCountOOCBars), so the gate only ever reads the event-tracked combat flag.
@@ -1161,16 +1161,16 @@ local function RefreshCDMIconAppearance(barId)
             local csAlpha, appsAlpha
             if barInfo.barType == "buffs" or barInfo.barType == "custom_buff" then
                 local showCS = barInfo.showChargeStackText ~= false
-                if ssb and ssb.showChargeStackText ~= nil then
-                    showCS = ssb.showChargeStackText
+                if shapeBorder and shapeBorder.showChargeStackText ~= nil then
+                    showCS = shapeBorder.showChargeStackText
                 end
                 csAlpha = showCS and 1 or 0
                 appsAlpha = csAlpha
             else
                 -- A buff hosted on a cd/utility bar: only its stack counter, which that
                 -- bar's charge-text channel never writes, follows the per-spell toggle.
-                if fd and fd._isBuffViewerFrame then
-                    appsAlpha = (ssb and ssb.showChargeStackText == false) and 0 or 1
+                if frameData and frameData._isBuffViewerFrame then
+                    appsAlpha = (shapeBorder and shapeBorder.showChargeStackText == false) and 0 or 1
                 end
             end
             -- Text must render above borders. Levels are relative to the icon's own frame level (CdmHooks: border +13, text +23).
@@ -1227,9 +1227,9 @@ local function RefreshCDMIconAppearance(barId)
 
             -- Apply custom shape (overrides border/zoom set above). Pass the resolved per-icon
             -- settings so the buff-family Border override (size + color) applies on the authoritative border render, square or shaped.
-            local shape = barInfo.iconShape or "none"
-            ApplyShapeToCDMIcon(iconTex, shape, barInfo, ssb)
-            if blizzArt then
+            local shapeKey = barInfo.iconShape or "none"
+            ApplyShapeToCDMIcon(iconTex, shapeKey, barInfo, shapeBorder)
+            if stockArt then
                 ns.CdmApplyBlizzIconArt(iconTex)
             end
             -- A restyle just reset this icon's mask + border level out from under any live fake-active
@@ -1241,47 +1241,47 @@ local function RefreshCDMIconAppearance(barId)
             -- Reset glow so glow type change takes effect on next tick. Do NOT reset isActive -- that
             -- causes a 1-frame flash where the ticker sees the transition as "inactive" and un-desaturates
             -- the icon before re-detecting active on the next frame. Preserve proc glow and active state glow across rebuilds.
-            local ifd = _getFD(iconTex)
-            local hadProcGlow = ifd and ifd.procGlowActive
-            local hadActiveGlow = ifd and ifd._activeGlowOn
-            if hadProcGlow and glowOv then
+            local iconData = _getFD(iconTex)
+            local hadProcGlow = iconData and iconData.procGlowActive
+            local hadActiveGlow = iconData and iconData._activeGlowOn
+            if hadProcGlow and glowOverlay then
                 -- Stop then restart with per-spell settings
-                StopNativeGlow(glowOv)
-                if ifd then
-                    ifd.procGlowActive = false
+                StopNativeGlow(glowOverlay)
+                if iconData then
+                    iconData.procGlowActive = false
                 end
                 ShowProcGlow(iconTex)
                 -- A Blackout CD-state glow stays lit beside the proc on its own
                 -- overlay: take it down so the pass below restarts it with the
                 -- updated settings (or leaves it off when the effect is gone).
-                local bo = ifd.blackoutOverlay
-                if ifd._cdStateGlowOn and bo and bo._glowActive then
-                    StopNativeGlow(bo)
-                    ifd._cdStateGlowOn = false
+                local borderOffset = iconData.blackoutOverlay
+                if iconData._cdStateGlowOn and borderOffset and borderOffset._glowActive then
+                    StopNativeGlow(borderOffset)
+                    iconData._cdStateGlowOn = false
                 end
             elseif hadActiveGlow then
                 -- Don't touch: active glow is managed by the SetSwipeColor hook. Stopping it here causes a visible blink.
                 -- A Blackout CD-state glow has its own overlay: take only that one down,
                 -- so the pass below restarts it with the updated settings (or leaves it
                 -- off when the effect is gone).
-                local bo = ifd.blackoutOverlay
-                if ifd._cdStateGlowOn and bo and bo._glowActive then
-                    StopNativeGlow(bo)
-                    ifd._cdStateGlowOn = false
+                local borderOffset = iconData.blackoutOverlay
+                if iconData._cdStateGlowOn and borderOffset and borderOffset._glowActive then
+                    StopNativeGlow(borderOffset)
+                    iconData._cdStateGlowOn = false
                 end
-            elseif ifd and ifd._cdStateGlowOn then
+            elseif iconData and iconData._cdStateGlowOn then
                 -- cdState glow active: stop it so the desat hook restarts with the updated style. Also re-evaluate immediately for off-CD spells (desat hook won't fire for those).
-                ns.StopCdGlow(ifd)
-                ifd._cdStateGlowOn = false
-                local fc = _ecmeFC[iconTex]
-                local spellRef = fc and fc.spellID
-                local bk = fc and fc.barKey
+                ns.StopCdGlow(iconData)
+                iconData._cdStateGlowOn = false
+                local frameCache = _ecmeFC[iconTex]
+                local spellRef = frameCache and frameCache.spellID
+                local bk = frameCache and frameCache.barKey
                 if spellRef and bk then
                     local sd = ns.GetBarSpellData(bk)
                     -- Shared resolver: direct hit + full identity/override matching against the family store, with bar-tier fallback.
-                    local ss = ns.ResolveSpellSettings and ns.ResolveSpellSettings(iconTex, spellRef, sd, bk)
+                    local spellSettings = ns.ResolveSpellSettings and ns.ResolveSpellSettings(iconTex, spellRef, sd, bk)
                     -- The glow half of the effect (any hide beside it runs below).
-                    local glow = ns.CdStateGlowOf(ss, iconTex)
+                    local glow = ns.CdStateGlowOf(spellSettings, iconTex)
                     local isReadyGlow = (
                         glow == "pixelGlowReady"
                         or glow == "buttonGlowReady"
@@ -1289,7 +1289,7 @@ local function RefreshCDMIconAppearance(barId)
                         or glow == "buttonGlowReadyUsable"
                     )
                     local isOnCdGlow = glow == "glowOnCD"
-                    if (isReadyGlow or isOnCdGlow) and glowOv then
+                    if (isReadyGlow or isOnCdGlow) and glowOverlay then
                         local glowUsable = (glow == "pixelGlowReadyUsable" or glow == "buttonGlowReadyUsable")
                         local glowLive = spellRef
                         if C_SpellBook and C_SpellBook.FindSpellOverrideByID then
@@ -1297,36 +1297,36 @@ local function RefreshCDMIconAppearance(barId)
                         end
                         local cseInfo = C_Spell.GetSpellCooldown(glowLive)
                         -- Glow (On CD) wants the opposite cooldown state of the ready variants.
-                        local wantsGlow
+                        local needsGlow
                         if cseInfo then
                             local realCD = ns.CdmOnRealCD(iconTex, cseInfo)
                             if isOnCdGlow then
-                                wantsGlow = realCD
+                                needsGlow = realCD
                             else
-                                wantsGlow = not realCD
+                                needsGlow = not realCD
                             end
                         end
-                        if wantsGlow then
+                        if needsGlow then
                             -- Plain variants glow purely from cooldown state (legacy behavior, zero
                             -- extra reads). Resource Aware variants also require usability, except during the loading-screen settle window (API untrustworthy; the watched-set pass after the window corrects it).
-                            local isUsable = true
+                            local usable = true
                             if glowUsable then
                                 if ns._cdmSoundSuppressed and ns._cdmSoundSuppressed() then
-                                    isUsable = true
+                                    usable = true
                                 else
-                                    isUsable = C_Spell.IsSpellUsable and C_Spell.IsSpellUsable(glowLive)
+                                    usable = C_Spell.IsSpellUsable and C_Spell.IsSpellUsable(glowLive)
                                 end
                             end
-                            if isUsable == true then
-                                local style = ns.CdReadyGlowStyle(glow, ss)
-                                local cr, cg, callback = ns.CdReadyGlowColor(style, ss)
-                                ifd._cdStateGlowOn = ns.StartCdGlow(
-                                    ifd,
+                            if usable == true then
+                                local style = ns.CdReadyGlowStyle(glow, spellSettings)
+                                local cr, cg, callback = ns.CdReadyGlowColor(style, spellSettings)
+                                iconData._cdStateGlowOn = ns.StartCdGlow(
+                                    iconData,
                                     style,
                                     cr,
                                     cg,
                                     callback,
-                                    ns.CdReadyGlowAlpha(ss)
+                                    ns.CdReadyGlowAlpha(spellSettings)
                                 ) ~= nil
                             end
                         end
@@ -1347,58 +1347,58 @@ local function RefreshCDMIconAppearance(barId)
                         end
                     end
                 end
-            elseif glowOv then
-                ns.StopCdGlow(ifd)
-                if ifd then
-                    ifd.procGlowActive = false
+            elseif glowOverlay then
+                ns.StopCdGlow(iconData)
+                if iconData then
+                    iconData.procGlowActive = false
                 end
             end
 
             -- Apply initial cdState effect (hidden/glow) so the state is correct before the first desat tick and before the visibility system runs. Idempotent: re-evaluates current CD state.
-            local fc = _ecmeFC[iconTex]
-            local csSid = fc and fc.spellID
-            local csBk = fc and fc.barKey
+            local frameCache = _ecmeFC[iconTex]
+            local csSid = frameCache and frameCache.spellID
+            local csBk = frameCache and frameCache.barKey
             if csSid and csBk and csBk:sub(1, 7) ~= "__ghost" then
                 local csSd = ns.GetBarSpellData(csBk)
                 -- Shared resolver: direct hit + full identity/override matching
                 -- against the family store, with bar-tier fallback.
                 local csSs = ns.ResolveSpellSettings and ns.ResolveSpellSettings(iconTex, csSid, csSd, csBk)
                 -- The effect is a hide and a glow, each run on its own below.
-                local cse, csGlow = ns.CdStateOf(csSs, iconTex)
+                local cooldownEdge, csGlow = ns.CdStateOf(csSs, iconTex)
                 -- The hide effects run as their base mode plus flags (ns.CD_STATE_HIDE: Shift Icons, Hidden Until Usable, Hidden Outside Form/Stance), so the branches below stay as-is.
-                local m = cse and ns.CD_STATE_HIDE[cse]
+                local m = cooldownEdge and ns.CD_STATE_HIDE[cooldownEdge]
                 local cseShift, cseUsable, cseForm
                 if m then
-                    cse, cseShift, cseUsable, cseForm = m.base, m.shift, m.usable, m.form
+                    cooldownEdge, cseShift, cseUsable, cseForm = m.base, m.shift, m.usable, m.form
                 end
                 -- Stance Bar (CludesUICdmStanceBar.lua): one more hide reason. Alone,
                 -- it runs as Hidden (On CD) with the cooldown never read.
                 local stance = ns.CdmStanceBarOf(csSs, iconTex)
                 local stanceOnly = false
-                if stance and cse ~= "hiddenOnCD" and cse ~= "hiddenReady" and cse ~= "lowerAlphaOnCD" then
-                    cse, stanceOnly = "hiddenOnCD", true
+                if stance and cooldownEdge ~= "hiddenOnCD" and cooldownEdge ~= "hiddenReady" and cooldownEdge ~= "lowerAlphaOnCD" then
+                    cooldownEdge, stanceOnly = "hiddenOnCD", true
                 end
-                if cse or csGlow then
+                if cooldownEdge or csGlow then
                     local csLive = csSid
                     if C_SpellBook and C_SpellBook.FindSpellOverrideByID then
                         csLive = C_SpellBook.FindSpellOverrideByID(csSid) or csSid
                     end
                     -- realCD is the plain cooldown read the glow runs on; onCD is
                     -- what the hide runs on (the form alone, or unusable counting too).
-                    local realCD, onCD
+                    local realCD, onCooldown
                     if stanceOnly then
-                        onCD = false
+                        onCooldown = false
                     elseif cseForm then
                         -- Only the form decides; form changes re-arm through the form watch.
-                        onCD = ns.CdmSpellOutsideForm(csLive)
+                        onCooldown = ns.CdmSpellOutsideForm(csLive)
                         ns.WatchCdUsable(iconTex, true)
                     else
                         realCD = ns.CdmOnRealCD(iconTex, C_Spell.GetSpellCooldown(csLive))
-                        onCD = realCD
+                        onCooldown = realCD
                     end
                     if cseUsable then
-                        if not onCD then
-                            onCD = ns.CdmSpellNotUsable(csLive)
+                        if not onCooldown then
+                            onCooldown = ns.CdmSpellNotUsable(csLive)
                         end
                         -- Proc edges change only usability: SPELL_UPDATE_USABLE watch.
                         ns.WatchCdUsable(iconTex)
@@ -1411,50 +1411,50 @@ local function RefreshCDMIconAppearance(barId)
                     end
                     if sHide then
                         iconTex:SetAlpha(0)
-                        if fc then
-                            fc._cdStateHidden = true
+                        if frameCache then
+                            frameCache._cdStateHidden = true
                             if ns.SetCdStateShiftHidden then
-                                ns.SetCdStateShiftHidden(fc, sShift)
+                                ns.SetCdStateShiftHidden(frameCache, sShift)
                             end
                         end
-                    elseif cse == "hiddenOnCD" or cse == "hiddenReady" then
+                    elseif cooldownEdge == "hiddenOnCD" or cooldownEdge == "hiddenReady" then
                         local hide
-                        if cse == "hiddenOnCD" then
-                            hide = onCD and true or false
+                        if cooldownEdge == "hiddenOnCD" then
+                            hide = onCooldown and true or false
                         else
                             -- Hidden (CD Ready): on a charge spell "ready" means AT MAX charges, so the icon keeps tracking the recharge instead of vanishing with a charge still down (ns.CdmCdStateReady).
-                            hide = ns.CdmCdStateReady(csLive, onCD, csSs.chargeHideUntilSpent)
+                            hide = ns.CdmCdStateReady(csLive, onCooldown, csSs.chargeHideUntilSpent)
                             -- The refill-to-max edge fires no visual hook, so register the SPELL_UPDATE_CHARGES watch that re-hides the icon when it tops off. Self-skips non-charge spells.
                             ns.WatchCdStateChargeIfEnabled(iconTex)
                         end
-                        iconTex:SetAlpha(hide and 0 or IconShownAlpha(fc, barInfo))
-                        if fc then
-                            fc._cdStateHidden = hide or false
+                        iconTex:SetAlpha(hide and 0 or IconShownAlpha(frameCache, barInfo))
+                        if frameCache then
+                            frameCache._cdStateHidden = hide or false
                             if ns.SetCdStateShiftHidden then
-                                ns.SetCdStateShiftHidden(fc, cseShift and hide or false)
+                                ns.SetCdStateShiftHidden(frameCache, cseShift and hide or false)
                             end
                         end
-                    elseif cse == "lowerAlphaOnCD" then
+                    elseif cooldownEdge == "lowerAlphaOnCD" then
                         -- Identical to hiddenOnCD but with a customizable opacity instead of 0. Reuse
                         -- the _cdStateHidden flag as "cd-state owns this alpha" so the opacity appliers leave the lowered value alone. A visibility-hidden bar stays at 0 in both states.
-                        local csBase = IconShownAlpha(fc, barInfo)
+                        local csBase = IconShownAlpha(frameCache, barInfo)
                         iconTex:SetAlpha(
-                            csBase == 0 and 0 or (onCD and (csSs.cdStateLowerAlpha or 0.5) or csBase)
+                            csBase == 0 and 0 or (onCooldown and (csSs.cdStateLowerAlpha or 0.5) or csBase)
                         )
-                        if fc then
-                            fc._cdStateHidden = onCD or false
+                        if frameCache then
+                            frameCache._cdStateHidden = onCooldown or false
                             if ns.SetCdStateShiftHidden then
-                                ns.SetCdStateShiftHidden(fc, false)
+                                ns.SetCdStateShiftHidden(frameCache, false)
                             end
                         end
                     else
                         -- No hide effect: clear stale hidden state
-                        if fc and fc._cdStateHidden then
-                            fc._cdStateHidden = false
-                            iconTex:SetAlpha(IconShownAlpha(fc, barInfo))
+                        if frameCache and frameCache._cdStateHidden then
+                            frameCache._cdStateHidden = false
+                            iconTex:SetAlpha(IconShownAlpha(frameCache, barInfo))
                         end
-                        if fc and ns.SetCdStateShiftHidden then
-                            ns.SetCdStateShiftHidden(fc, false)
+                        if frameCache and ns.SetCdStateShiftHidden then
+                            ns.SetCdStateShiftHidden(frameCache, false)
                         end
                     end
                     if csGlow then
@@ -1463,7 +1463,7 @@ local function RefreshCDMIconAppearance(barId)
                         end
                         -- A live proc or active-state glow keeps the shared overlay:
                         -- ns.StartCdGlow lights only a Blackout beside it.
-                        if not ifd or not ifd._cdStateGlowOn then
+                        if not iconData or not iconData._cdStateGlowOn then
                             local isReadyGlow = (
                                 csGlow == "pixelGlowReady"
                                 or csGlow == "buttonGlowReady"
@@ -1471,22 +1471,22 @@ local function RefreshCDMIconAppearance(barId)
                                 or csGlow == "buttonGlowReadyUsable"
                             )
                             local isOnCdGlow = csGlow == "glowOnCD"
-                            local wantsGlow = (isOnCdGlow and realCD) or (isReadyGlow and not realCD)
-                            if wantsGlow and glowOv then
+                            local needsGlow = (isOnCdGlow and realCD) or (isReadyGlow and not realCD)
+                            if needsGlow and glowOverlay then
                                 -- Plain variants glow purely from cooldown state (legacy). Resource Aware variants also require usability outside the loading-screen settle window.
-                                local isUsable = true
+                                local usable = true
                                 if csGlow == "pixelGlowReadyUsable" or csGlow == "buttonGlowReadyUsable" then
                                     if ns._cdmSoundSuppressed and ns._cdmSoundSuppressed() then
-                                        isUsable = true
+                                        usable = true
                                     else
-                                        isUsable = C_Spell.IsSpellUsable and C_Spell.IsSpellUsable(csLive)
+                                        usable = C_Spell.IsSpellUsable and C_Spell.IsSpellUsable(csLive)
                                     end
                                 end
-                                if isUsable == true and ifd then
+                                if usable == true and iconData then
                                     local style = ns.CdReadyGlowStyle(csGlow, csSs)
                                     local cr, cg, callback = ns.CdReadyGlowColor(style, csSs)
-                                    ifd._cdStateGlowOn = ns.StartCdGlow(
-                                        ifd,
+                                    iconData._cdStateGlowOn = ns.StartCdGlow(
+                                        iconData,
                                         style,
                                         cr,
                                         cg,
@@ -1511,17 +1511,17 @@ local function RefreshCDMIconAppearance(barId)
                         then
                             watchGlow = true
                         end
-                        if watchGlow and glowOv and ns.CDGlowWatch then
+                        if watchGlow and glowOverlay and ns.CDGlowWatch then
                             ns.CDGlowWatch(iconTex)
                         end
                     end
-                elseif fc and (fc._cdStateHidden or fc._cdStateShiftHidden) then
+                elseif frameCache and (frameCache._cdStateHidden or frameCache._cdStateShiftHidden) then
                     -- A preset keeps its hidden state from the Fake-Active engine (its cdState lives in customActiveStates, not per-bar spellSettings), so don't clear it here or the icon flashes visible.
                     if not (ns.PresetHasCdState and ns.PresetHasCdState(iconTex)) then
-                        fc._cdStateHidden = false
-                        iconTex:SetAlpha(IconShownAlpha(fc, barInfo))
+                        frameCache._cdStateHidden = false
+                        iconTex:SetAlpha(IconShownAlpha(frameCache, barInfo))
                         if ns.SetCdStateShiftHidden then
-                            ns.SetCdStateShiftHidden(fc, false)
+                            ns.SetCdStateShiftHidden(frameCache, false)
                         end
                     end
                 end
@@ -1529,7 +1529,7 @@ local function RefreshCDMIconAppearance(barId)
             -- Ignore Resource Cost: repaint now, as a settings change brings no
             -- Blizzard tint write for the hook to follow (one flag read when unused).
             if ns._cdmAnyNoResourceTint and ns.CdmApplyResourceTint then
-                ns.CdmApplyResourceTint(iconTex, fd)
+                ns.CdmApplyResourceTint(iconTex, frameData)
             end
         end -- not icon._isEmptySlotFrame
         -- Only Show Numbers (bar setting): re-hide the icon art AFTER the passes above re-applied

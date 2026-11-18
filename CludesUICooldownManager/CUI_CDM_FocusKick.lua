@@ -35,40 +35,40 @@ local function EnsureFocusKickBar()
     end
     -- Desired position: directly after the "buffs" default bar and before any custom bars (skipping ghost bars).
     local barList = p.cdmBars.bars
-    local targetIdx
+    local goalIdx
     for index, b in ipairs(barList) do
         if b.key == "buffs" then
-            targetIdx = index + 1
+            goalIdx = index + 1
             break
         end
     end
-    if not targetIdx then
-        targetIdx = #barList + 1
+    if not goalIdx then
+        goalIdx = #barList + 1
     end
-    local existingIdx
+    local foundIdx
     for index, b in ipairs(barList) do
         if b.key == FOCUSKICK_BAR_KEY then
-            existingIdx = index
+            foundIdx = index
             break
         end
     end
-    if existingIdx then
+    if foundIdx then
         -- Backfill suppressGCD on existing FocusKick bars (default to on)
-        if barList[existingIdx].suppressGCD == nil then
-            barList[existingIdx].suppressGCD = true
+        if barList[foundIdx].suppressGCD == nil then
+            barList[foundIdx].suppressGCD = true
         end
-        if existingIdx == targetIdx or existingIdx == targetIdx - 1 then
+        if foundIdx == goalIdx or foundIdx == goalIdx - 1 then
             -- Already in the right spot relative to "buffs"
             return
         end
-        local record = table.remove(barList, existingIdx)
-        if existingIdx < targetIdx then
-            targetIdx = targetIdx - 1
+        local record = table.remove(barList, foundIdx)
+        if foundIdx < goalIdx then
+            goalIdx = goalIdx - 1
         end
-        table.insert(barList, targetIdx, record)
+        table.insert(barList, goalIdx, record)
         return
     end
-    table.insert(barList, targetIdx, {
+    table.insert(barList, goalIdx, {
         key = FOCUSKICK_BAR_KEY,
         name = "FocusKick",
         barType = "cooldowns",
@@ -138,9 +138,9 @@ local function EnsureFocusKickBar()
         focusCastSoundAnyCast = false,
         growDirection = "RIGHT",
     })
-    local sd = mod.GetBarSpellData(FOCUSKICK_BAR_KEY)
-    if sd then
-        sd.assignedSpells = {}
+    local spellData = mod.GetBarSpellData(FOCUSKICK_BAR_KEY)
+    if spellData then
+        spellData.assignedSpells = {}
     end
 end
 mod.EnsureFocusKickBar = EnsureFocusKickBar
@@ -204,10 +204,10 @@ local function ApplyFocusKickAnchor()
     if not edge then
         return
     end
-    local fkUnit = GetFocusKickUnit()
+    local kickUnit = GetFocusKickUnit()
     local backing = C_NamePlate
         and C_NamePlate.GetNamePlateForUnit
-        and C_NamePlate.GetNamePlateForUnit(fkUnit)
+        and C_NamePlate.GetNamePlateForUnit(kickUnit)
     if not backing then
         SetFocusKickAlpha(0)
         return
@@ -215,17 +215,17 @@ local function ApplyFocusKickAnchor()
     -- Prefer the scaled health bar from our custom NameplateFrame so the icon tracks Target/Cast
     -- scale changes. Fall back to the raw plate when the nameplates addon isn't loaded or the plate hasn't been decorated yet.
     local anchor = GetScaledPlateHealth(backing) or backing
-    local side = edge.nameplateAnchorSide or "LEFT"
+    local edgeSide = edge.nameplateAnchorSide or "LEFT"
     local ox = edge.nameplateOffsetX or 0
     local oy = edge.nameplateOffsetY or 0
     widget:ClearAllPoints()
-    if side == "LEFT" then
+    if edgeSide == "LEFT" then
         widget:SetPoint("RIGHT", anchor, "LEFT", ox, oy)
-    elseif side == "RIGHT" then
+    elseif edgeSide == "RIGHT" then
         widget:SetPoint("LEFT", anchor, "RIGHT", ox, oy)
-    elseif side == "TOP" then
+    elseif edgeSide == "TOP" then
         widget:SetPoint("BOTTOM", anchor, "TOP", ox, oy)
-    elseif side == "BOTTOM" then
+    elseif edgeSide == "BOTTOM" then
         widget:SetPoint("TOP", anchor, "BOTTOM", ox, oy)
     else
         widget:SetPoint("CENTER", anchor, "CENTER", ox, oy)
@@ -271,9 +271,9 @@ local function EnsureFocusKickProxy()
     _focusKickProxy:RegisterEvent("NAME_PLATE_UNIT_ADDED")
     _focusKickProxy:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
     _focusKickProxy:SetScript("OnEvent", function(self, evt, unitToken)
-        local fkUnit = GetFocusKickUnit()
+        local kickUnit = GetFocusKickUnit()
         if evt == "PLAYER_FOCUS_CHANGED" then
-            if fkUnit ~= "focus" then
+            if kickUnit ~= "focus" then
                 return
             end
             _focusKickLastPlateVisible = nil
@@ -282,7 +282,7 @@ local function EnsureFocusKickProxy()
                 self._arm()
             end
         elseif evt == "PLAYER_TARGET_CHANGED" then
-            if fkUnit ~= "target" then
+            if kickUnit ~= "target" then
                 return
             end
             _focusKickLastPlateVisible = nil
@@ -292,12 +292,12 @@ local function EnsureFocusKickProxy()
             end
         elseif evt == "NAME_PLATE_UNIT_REMOVED" then
             -- Only react when the tracked unit's plate is removed. Reacting to every plate removal caused the bar to flicker off during AoE when unrelated mobs died or faded.
-            if unitToken and (unitToken == fkUnit or UnitIsUnit(unitToken, fkUnit)) then
+            if unitToken and (unitToken == kickUnit or UnitIsUnit(unitToken, kickUnit)) then
                 _focusKickLastPlateVisible = nil
                 ApplyFocusKickAnchor()
             end
         elseif evt == "NAME_PLATE_UNIT_ADDED" then
-            if unitToken and (unitToken == fkUnit or UnitIsUnit(unitToken, fkUnit)) then
+            if unitToken and (unitToken == kickUnit or UnitIsUnit(unitToken, kickUnit)) then
                 _focusKickLastPlateVisible = nil
                 ApplyFocusKickAnchor()
                 if self._arm then
@@ -309,37 +309,37 @@ local function EnsureFocusKickProxy()
     -- Plate fade/occlusion has no event, so watching the tracked unit's plate visibility needs a
     -- poll -- but ONLY while a tracked unit exists, on a self-stopping anim ticker (the C engine
     -- sleeps between 0.1s fires) rather than a per-render-frame OnUpdate. The ticker stops itself the moment the unit is gone; the proxy's own events (focus/target changed, plate added) and EnsureFocusKickProxy re-arm it.
-    local fkTicker
+    local kickTicker
     local function FocusKickTick()
-        local fkUnit = GetFocusKickUnit()
-        if not UnitExists(fkUnit) then
+        local kickUnit = GetFocusKickUnit()
+        if not UnitExists(kickUnit) then
             return false
         end
         local backing = C_NamePlate
             and C_NamePlate.GetNamePlateForUnit
-            and C_NamePlate.GetNamePlateForUnit(fkUnit)
-        local visibleNow
+            and C_NamePlate.GetNamePlateForUnit(kickUnit)
+        local shownNow
         if backing then
             local alpha = backing:GetEffectiveAlpha() or 0
-            visibleNow = backing:IsVisible() and alpha > 0.01
+            shownNow = backing:IsVisible() and alpha > 0.01
         else
-            visibleNow = false
+            shownNow = false
         end
-        if visibleNow ~= _focusKickLastPlateVisible then
-            _focusKickLastPlateVisible = visibleNow
-            SetFocusKickAlpha(visibleNow and 1 or 0)
+        if shownNow ~= _focusKickLastPlateVisible then
+            _focusKickLastPlateVisible = shownNow
+            SetFocusKickAlpha(shownNow and 1 or 0)
         end
         return true
     end
     _focusKickProxy._arm = function()
-        if not fkTicker then
-            fkTicker = CludesUI.Tick.NewAnimTicker(_focusKickProxy, FocusKickTick, _FOCUSKICK_TICK_INTERVAL)
+        if not kickTicker then
+            kickTicker = CludesUI.Tick.NewAnimTicker(_focusKickProxy, FocusKickTick, _FOCUSKICK_TICK_INTERVAL)
         end
-        fkTicker.Start()
+        kickTicker.Start()
     end
     _focusKickProxy._stop = function()
-        if fkTicker then
-            fkTicker.Stop()
+        if kickTicker then
+            kickTicker.Stop()
         end
     end
     _focusKickProxy._arm()
@@ -452,17 +452,17 @@ local function EnsureFocusCastProxy()
         -- Never trust the registration alone: only the tracked unit's own casts
         -- count, it must exist, and it is never the player (no focus set, or
         -- focus/target on yourself, must stay silent).
-        local fkUnit = GetFocusKickUnit()
-        if castUnit ~= fkUnit then
+        local kickUnit = GetFocusKickUnit()
+        if castUnit ~= kickUnit then
             return
         end
-        if not UnitExists(fkUnit) or UnitIsUnit(fkUnit, "player") then
+        if not UnitExists(kickUnit) or UnitIsUnit(kickUnit, "player") then
             return
         end
         -- Enemies only: a friendly focus (raid member) casts constantly. A secret
         -- answer (protected content) cannot vouch either way, so it plays rather
         -- than silencing a real enemy focus.
-        local attackable = UnitCanAttack("player", fkUnit)
+        local attackable = UnitCanAttack("player", kickUnit)
         if not (issecretvalue and issecretvalue(attackable)) and not attackable then
             return
         end
@@ -498,9 +498,9 @@ local function EnsureFocusCastProxy()
         -- because it can hold spells this spec no longer has: "Include CDM Spell Layout" imports
         -- write another character's layout into these spec keys wholesale, and talent changes strand entries the same way. Either way, an uncastable interrupt reads as permanently ready below.
         if not spellId or spellId <= 0 then
-            local sd = mod.GetBarSpellData and mod.GetBarSpellData(FOCUSKICK_BAR_KEY)
-            if sd and sd.assignedSpells then
-                for _, spellRef in ipairs(sd.assignedSpells) do
+            local spellData = mod.GetBarSpellData and mod.GetBarSpellData(FOCUSKICK_BAR_KEY)
+            if spellData and spellData.assignedSpells then
+                for _, spellRef in ipairs(spellData.assignedSpells) do
                     if type(spellRef) == "number" and spellRef > 0 then
                         local castable = mod.ResolveCastableInterrupt(spellRef)
                         if castable then
@@ -577,8 +577,8 @@ do
     -- shadow the bar's own). A bar with a sound on its other edge only keeps
     -- this edge silent (false), so the Buffs bar is not asked either. A buff
     -- icon frame asks the tracking bars last.
-    local function PickBuffSoundKey(ss, spellRef, field, frame)
-        local k = ss and ss[field]
+    local function PickBuffSoundKey(spellSettings, spellRef, field, frame)
+        local k = spellSettings and spellSettings[field]
         if not k then
             local tbbOn = mod._tbbAnyBuffSound
             local bv = tbbOn and frame and _G.BuffBarCooldownViewer
@@ -675,19 +675,19 @@ do
         -- handles variant/override spells). Falls back to an id-only lookup for the
         -- FIRST gain after login, whose alert fires before DecorateFrame populates
         -- _ecmeFC -- keying off that context dropped the very first cue.
-        local ss
+        local spellSettings
         local fc = _ecmeFC[frame]
         local barId = fc and fc.barKey
         if barId then
-            local sd = mod.GetBarSpellData and mod.GetBarSpellData(barId)
-            ss = mod.ResolveSpellSettings and mod.ResolveSpellSettings(frame, spellRef, sd, barId)
+            local spellData = mod.GetBarSpellData and mod.GetBarSpellData(barId)
+            spellSettings = mod.ResolveSpellSettings and mod.ResolveSpellSettings(frame, spellRef, spellData, barId)
         end
         -- A silent edge still has to be recorded so it can cancel its partner, but only
         -- when the OTHER edge has a cue -- so the second lookup runs only on that path.
-        local key = PickBuffSoundKey(ss, spellRef, gainEdge and "buffActiveSoundKey" or "buffLostSoundKey", frame)
+        local key = PickBuffSoundKey(spellSettings, spellRef, gainEdge and "buffActiveSoundKey" or "buffLostSoundKey", frame)
         if
             not key
-            and not PickBuffSoundKey(ss, spellRef, gainEdge and "buffLostSoundKey" or "buffActiveSoundKey", frame)
+            and not PickBuffSoundKey(spellSettings, spellRef, gainEdge and "buffLostSoundKey" or "buffActiveSoundKey", frame)
         then
             return
         end
@@ -843,23 +843,23 @@ local function FocusReminderUnitMatches(unitToken)
     -- content; a secret can vouch nothing, so the signal is dropped, never
     -- compared -- this arm quietly stands down there while the mana arm
     -- above keeps carrying the feature.
-    local cls = UnitClassification and UnitClassification(unitToken)
-    if issecretvalue and issecretvalue(cls) then
-        cls = nil
+    local classFile = UnitClassification and UnitClassification(unitToken)
+    if issecretvalue and issecretvalue(classFile) then
+        classFile = nil
     end
-    if cls == "elite" or cls == "rareelite" or cls == "worldboss" then
+    if classFile == "elite" or classFile == "rareelite" or classFile == "worldboss" then
         local lvl = UnitLevel(unitToken)
-        local plvl = UnitLevel("player")
+        local playerLevel = UnitLevel("player")
         local lvlClean = lvl and not (issecretvalue and issecretvalue(lvl))
-        local plvlClean = plvl and not (issecretvalue and issecretvalue(plvl))
-        if lvlClean and (lvl == -1 or (plvlClean and lvl >= plvl + 1)) then
+        local plvlClean = playerLevel and not (issecretvalue and issecretvalue(playerLevel))
+        if lvlClean and (lvl == -1 or (plvlClean and lvl >= playerLevel + 1)) then
             return true
         end
     end
     return false
 end
-local function HideFocusReminder(token)
-    local fontStr = _focusReminders[token]
+local function HideFocusReminder(unitToken)
+    local fontStr = _focusReminders[unitToken]
     if fontStr and fontStr:IsShown() then
         fontStr:Hide()
     end
@@ -871,36 +871,36 @@ local function HideAllFocusReminders()
         end
     end
 end
-local function ShowFocusReminder(token)
+local function ShowFocusReminder(unitToken)
     -- Cheap rejects first
     if _focusKickHasFocus then
-        HideFocusReminder(token)
+        HideFocusReminder(unitToken)
         return
     end
     if not _focusKickInDungeon then
-        HideFocusReminder(token)
+        HideFocusReminder(unitToken)
         return
     end
     if _focusKickNoKick then
-        HideFocusReminder(token)
+        HideFocusReminder(unitToken)
         return
     end
     local edge = GetFocusKickBarData()
     if not edge or edge.focusReminderEnabled ~= true then
-        HideFocusReminder(token)
+        HideFocusReminder(unitToken)
         return
     end
-    if not FocusReminderUnitMatches(token) then
-        HideFocusReminder(token)
+    if not FocusReminderUnitMatches(unitToken) then
+        HideFocusReminder(unitToken)
         return
     end
-    local backing = C_NamePlate and C_NamePlate.GetNamePlateForUnit and C_NamePlate.GetNamePlateForUnit(token)
+    local backing = C_NamePlate and C_NamePlate.GetNamePlateForUnit and C_NamePlate.GetNamePlateForUnit(unitToken)
     if not backing then
-        HideFocusReminder(token)
+        HideFocusReminder(unitToken)
         return
     end
 
-    local fontStr = _focusReminders[token]
+    local fontStr = _focusReminders[unitToken]
     if not fontStr then
         local holderFrame = CreateFrame("Frame", nil, backing)
         holderFrame:SetSize(1, 1)
@@ -915,7 +915,7 @@ local function ShowFocusReminder(token)
         FRApplyFontShadow(fontStr)
         fontStr:SetText(_FOCUS_TEXT)
         fontStr._lastText = _FOCUS_TEXT
-        _focusReminders[token] = fontStr
+        _focusReminders[unitToken] = fontStr
     end
 
     -- Reparent only when the plate frame for this token actually changed
@@ -986,9 +986,9 @@ local function RefreshFocusReminders()
         return
     end
     for index = 1, 40 do
-        local token = "nameplate" .. index
-        if UnitExists(token) then
-            ShowFocusReminder(token)
+        local unitToken = "nameplate" .. index
+        if UnitExists(unitToken) then
+            ShowFocusReminder(unitToken)
         end
     end
 end
@@ -1009,12 +1009,12 @@ local _HEALER_NO_KICK = {
 
 local function UpdateFocusKickContext()
     local _, instanceType = IsInInstance()
-    local nowInDungeon = (instanceType == "party")
-    local specIndex = C_SpecializationInfo.GetSpecialization()
-    local specID = specIndex > 0 and C_SpecializationInfo.GetSpecializationInfo(specIndex)
-    local nowNoKick = specID and _HEALER_NO_KICK[specID] or false
-    local changed = (nowInDungeon ~= _focusKickInDungeon) or (nowNoKick ~= _focusKickNoKick)
-    _focusKickInDungeon = nowInDungeon
+    local inDungeonNow = (instanceType == "party")
+    local specIdx = C_SpecializationInfo.GetSpecialization()
+    local specId = specIdx > 0 and C_SpecializationInfo.GetSpecializationInfo(specIdx)
+    local nowNoKick = specId and _HEALER_NO_KICK[specId] or false
+    local changed = (inDungeonNow ~= _focusKickInDungeon) or (nowNoKick ~= _focusKickNoKick)
+    _focusKickInDungeon = inDungeonNow
     _focusKickNoKick = nowNoKick
     if changed then
         RefreshFocusReminders()
@@ -1083,21 +1083,21 @@ mod.EnsureFocusReminderProxy = EnsureFocusReminderProxy
 -- cost. Called from setup and from the tail of every BuildAllCDMBars, so assigning the first kick spell (or removing the last) flips the family on/off live.
 function mod.RefreshFocusKickProxies()
     local edge = barDataByKey and barDataByKey[FOCUSKICK_BAR_KEY]
-    local hasContent = false
+    local hasIcons = false
     -- "No spell data available" is NOT the same as "the bar is empty": GetBarSpellData returns nil
     -- while the active spec key is unresolved, which is exactly the loading-screen state. Treating
     -- that as empty ran the teardown below and UNREGISTERED a perfectly good proxy (sound dying after a port/zone until something rebuilt the bars). With the store not ready, leave the proxy exactly as it is; the next rebuild arms it.
-    local storeReady, soundWanted = true, false
+    local storeReady, playSound = true, false
     if edge and edge.enabled ~= false then
-        local sd = mod.GetBarSpellData and mod.GetBarSpellData(FOCUSKICK_BAR_KEY)
-        if not sd then
+        local spellData = mod.GetBarSpellData and mod.GetBarSpellData(FOCUSKICK_BAR_KEY)
+        if not spellData then
             storeReady = false
         end
-        local spells = sd and sd.assignedSpells
+        local spells = spellData and spellData.assignedSpells
         if spells then
             for _, spellRef in ipairs(spells) do
                 if type(spellRef) == "number" and spellRef > 0 then
-                    hasContent = true
+                    hasIcons = true
                     break
                 end
             end
@@ -1109,18 +1109,18 @@ function mod.RefreshFocusKickProxies()
         local sk = edge.focusCastSoundKey
         if sk and sk ~= "none" then
             local pick = edge.focusKickInterruptSpellID
-            soundWanted = (edge.focusCastSoundAnyCast == true)
+            playSound = (edge.focusCastSoundAnyCast == true)
                 or (type(pick) == "number" and pick > 0)
-                or hasContent
+                or hasIcons
         end
     end
 
-    if not hasContent and not storeReady then
+    if not hasIcons and not storeReady then
         -- Spell store unresolved: hold the current state rather than tearing down something that
         -- may still be correct, and COME BACK -- arming is otherwise a one-shot (its only callers
         -- are setup and the tail of BuildAllCDMBars), so a login/zone where the spec key has not
         -- resolved yet would leave the proxy unbuilt all session on a fully populated bar. An explicit interrupt spell id lives on the bar data, not the spell store, so the sound can arm right now; only the bar-content dependent parts have to wait.
-        if soundWanted then
+        if playSound then
             EnsureFocusCastProxy()
         end
         -- One pending retry at a time, self-cancelling.
@@ -1136,7 +1136,7 @@ function mod.RefreshFocusKickProxies()
         return
     end
     -- Icon-bearing parts of the family keep the original bar-content gate.
-    if hasContent then
+    if hasIcons then
         EnsureFocusKickProxy()
         _focusKickLastPlateVisible = nil
         ApplyFocusKickAnchor()
@@ -1156,7 +1156,7 @@ function mod.RefreshFocusKickProxies()
         end
     end
 
-    if soundWanted then
+    if playSound then
         EnsureFocusCastProxy()
     elseif _focusCastProxy then
         _focusCastProxy:UnregisterAllEvents()

@@ -153,8 +153,8 @@ function _tbbWake.Probe()
     if not (ECME and ECME.db) then
         return true
     end
-    local tbb = mod.GetTrackedBuffBars and mod.GetTrackedBuffBars()
-    local barList = tbb and tbb.bars
+    local trackBars = mod.GetTrackedBuffBars and mod.GetTrackedBuffBars()
+    local barList = trackBars and trackBars.bars
     if barList and C_UnitAuras and C_UnitAuras.GetPlayerAuraBySpellID then
         for _, conf in ipairs(barList) do
             if
@@ -275,14 +275,14 @@ function mod.TBBBarGroupID(conf)
     return (conf.grouped ~= false) and 1 or 0
 end
 
-function mod.TBBSetBarGroup(conf, gid)
+function mod.TBBSetBarGroup(conf, groupKey)
     if not conf then
         return
     end
-    gid = gid or 0
-    conf.groupId = gid
+    groupKey = groupKey or 0
+    conf.groupId = groupKey
     -- Legacy mirror: older versions only know one group ("checked" bars).
-    conf.grouped = (gid ~= 0)
+    conf.grouped = (groupKey ~= 0)
 end
 
 -- Sorted list of group ids currently used by at least one bar.
@@ -290,10 +290,10 @@ function mod.TBBGroupIDsInUse()
     local t = mod.GetTrackedBuffBars()
     local seen, entries = {}, {}
     for _, c in ipairs(t.bars or {}) do
-        local gid = mod.TBBBarGroupID(c)
-        if gid ~= 0 and not seen[gid] then
-            seen[gid] = true
-            entries[#entries + 1] = gid
+        local groupKey = mod.TBBBarGroupID(c)
+        if groupKey ~= 0 and not seen[groupKey] then
+            seen[groupKey] = true
+            entries[#entries + 1] = groupKey
         end
     end
     table.sort(entries)
@@ -307,11 +307,11 @@ function mod.TBBNextGroupID()
     for _, c in ipairs(t.bars or {}) do
         used[mod.TBBBarGroupID(c)] = true
     end
-    local gid = 1
-    while used[gid] do
-        gid = gid + 1
+    local groupKey = 1
+    while used[groupKey] do
+        groupKey = groupKey + 1
     end
-    return gid
+    return groupKey
 end
 
 -- Per-group settings live in tbb.groups[tostring(gid)]. Group 1 VIEWS the legacy keys
@@ -319,32 +319,32 @@ end
 -- writes keep those keys synced for old-version imports. gid->string memo below avoids a
 -- tostring allocation in the per-tick reflow.
 local _gidKeys = setmetatable({}, {
-    __index = function(t, gid)
-        local s = tostring(gid)
-        rawset(t, gid, s)
+    __index = function(t, groupKey)
+        local s = tostring(groupKey)
+        rawset(t, groupKey, s)
         return s
     end,
 })
 
-local function TBBGroupStore(tbb, gid, create)
-    if not tbb.groups then
+local function TBBGroupStore(trackBars, groupKey, create)
+    if not trackBars.groups then
         if not create then
             return nil
         end
-        tbb.groups = {}
+        trackBars.groups = {}
     end
-    local k = _gidKeys[gid]
-    local g = tbb.groups[k]
+    local k = _gidKeys[groupKey]
+    local g = trackBars.groups[k]
     if not g and create then
         g = {}
-        tbb.groups[k] = g
+        trackBars.groups[k] = g
     end
     return g
 end
 
 -- Internal reads take the tbb table directly so the per-tick reflow does not re-resolve the active spec profile per group.
-local function GroupGrowOf(tbb, gid)
-    local g = TBBGroupStore(tbb, gid, false)
+local function GroupGrowOf(trackBars, groupKey)
+    local g = TBBGroupStore(trackBars, groupKey, false)
     if g and g.globalKey then
         -- Global group: shared value from the profile registry. A stale key (entry deleted) falls through to the local values.
         local e = mod.TBBGlobalGroup and mod.TBBGlobalGroup(g.globalKey)
@@ -355,14 +355,14 @@ local function GroupGrowOf(tbb, gid)
     if g and g.grow then
         return g.grow
     end
-    if gid == 1 and tbb.groupGrowDirection then
-        return tbb.groupGrowDirection
+    if groupKey == 1 and trackBars.groupGrowDirection then
+        return trackBars.groupGrowDirection
     end
     return "DOWN"
 end
 
-local function GroupSpacingOf(tbb, gid)
-    local g = TBBGroupStore(tbb, gid, false)
+local function GroupSpacingOf(trackBars, groupKey)
+    local g = TBBGroupStore(trackBars, groupKey, false)
     if g and g.globalKey then
         local e = mod.TBBGlobalGroup and mod.TBBGlobalGroup(g.globalKey)
         if e and e.spacing ~= nil then
@@ -372,69 +372,69 @@ local function GroupSpacingOf(tbb, gid)
     if g and g.spacing ~= nil then
         return g.spacing
     end
-    if gid == 1 and tbb.groupSpacing ~= nil then
-        return tbb.groupSpacing
+    if groupKey == 1 and trackBars.groupSpacing ~= nil then
+        return trackBars.groupSpacing
     end
     return 2
 end
 
-function mod.TBBGroupGrow(gid)
-    return GroupGrowOf(mod.GetTrackedBuffBars(), gid)
+function mod.TBBGroupGrow(groupKey)
+    return GroupGrowOf(mod.GetTrackedBuffBars(), groupKey)
 end
 
-function mod.TBBSetGroupGrow(gid, val)
+function mod.TBBSetGroupGrow(groupKey, val)
     local t = mod.GetTrackedBuffBars()
-    local gkey = mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(gid)
-    if gkey then
-        local e = mod.TBBGlobalGroup(gkey)
+    local groupId = mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(groupKey)
+    if groupId then
+        local e = mod.TBBGlobalGroup(groupId)
         if e then
             e.grow = val
             SetReflowDirty(true)
         end
         return
     end
-    TBBGroupStore(t, gid, true).grow = val
-    if gid == 1 then
+    TBBGroupStore(t, groupKey, true).grow = val
+    if groupKey == 1 then
         t.groupGrowDirection = val
     end
     SetReflowDirty(true)
 end
 
-function mod.TBBGroupSpacing(gid)
-    return GroupSpacingOf(mod.GetTrackedBuffBars(), gid)
+function mod.TBBGroupSpacing(groupKey)
+    return GroupSpacingOf(mod.GetTrackedBuffBars(), groupKey)
 end
 
-function mod.TBBSetGroupSpacing(gid, val)
+function mod.TBBSetGroupSpacing(groupKey, val)
     local t = mod.GetTrackedBuffBars()
-    local gkey = mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(gid)
-    if gkey then
-        local e = mod.TBBGlobalGroup(gkey)
+    local groupId = mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(groupKey)
+    if groupId then
+        local e = mod.TBBGlobalGroup(groupId)
         if e then
             e.spacing = val
             SetReflowDirty(true)
         end
         return
     end
-    TBBGroupStore(t, gid, true).spacing = val
-    if gid == 1 then
+    TBBGroupStore(t, groupKey, true).spacing = val
+    if groupKey == 1 then
         t.groupSpacing = val
     end
     SetReflowDirty(true)
 end
 
 -- Clear a group's stored settings when its id is (re)claimed for a brand-new group, so a dissolved group's leftovers do not leak into it.
-function mod.TBBResetGroupSettings(gid)
+function mod.TBBResetGroupSettings(groupKey)
     local t = mod.GetTrackedBuffBars()
     if t.groups then
-        t.groups[_gidKeys[gid]] = nil
+        t.groups[_gidKeys[groupKey]] = nil
     end
     SetReflowDirty(true)
 end
 
 -- Optional user-given group name (Group Settings input). Empty/absent = nil, callers fall back to the default "Group N" label.
-function mod.TBBGroupName(gid)
+function mod.TBBGroupName(groupKey)
     local t = mod.GetTrackedBuffBars()
-    local g = TBBGroupStore(t, gid, false)
+    local g = TBBGroupStore(t, groupKey, false)
     if g and g.globalKey then
         local e = mod.TBBGlobalGroup and mod.TBBGlobalGroup(g.globalKey)
         if e and type(e.name) == "string" and e.name ~= "" then
@@ -448,26 +448,26 @@ function mod.TBBGroupName(gid)
     return nil
 end
 
-function mod.TBBSetGroupName(gid, name)
+function mod.TBBSetGroupName(groupKey, label)
     local t = mod.GetTrackedBuffBars()
-    local gkey = mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(gid)
-    if gkey then
+    local groupId = mod.TBBGroupGlobalKey and mod.TBBGroupGlobalKey(groupKey)
+    if groupId then
         -- Shared name lives in the registry and is never blanked: movers and dropdown rows on other specs need a concrete label.
-        local e = mod.TBBGlobalGroup(gkey)
+        local e = mod.TBBGlobalGroup(groupId)
         if e then
-            if type(name) == "string" and name ~= "" then
-                e.name = name
+            if type(label) == "string" and label ~= "" then
+                e.name = label
             end
         end
         return
     end
-    if type(name) ~= "string" or name == "" then
-        local g = TBBGroupStore(t, gid, false)
+    if type(label) ~= "string" or label == "" then
+        local g = TBBGroupStore(t, groupKey, false)
         if g then
             g.name = nil
         end
     else
-        TBBGroupStore(t, gid, true).name = name
+        TBBGroupStore(t, groupKey, true).name = label
     end
 end
 
@@ -499,29 +499,29 @@ do
         return TBBGlobalDB(false)
     end
 
-    function mod.TBBGlobalGroup(gkey)
-        local reg = TBBGlobalDB(false)
-        return reg and gkey and reg[gkey] or nil
+    function mod.TBBGlobalGroup(groupId)
+        local registry = TBBGlobalDB(false)
+        return registry and groupId and registry[groupId] or nil
     end
 
     -- The globalKey a per-spec group is linked to (nil = local group). A stale stamp whose registry entry was deleted reads as local.
-    function mod.TBBGroupGlobalKey(gid)
-        local g = TBBGroupStore(mod.GetTrackedBuffBars(), gid, false)
-        local gkey = g and g.globalKey
-        if gkey and mod.TBBGlobalGroup(gkey) then
-            return gkey
+    function mod.TBBGroupGlobalKey(groupKey)
+        local g = TBBGroupStore(mod.GetTrackedBuffBars(), groupKey, false)
+        local groupId = g and g.globalKey
+        if groupId and mod.TBBGlobalGroup(groupId) then
+            return groupId
         end
         return nil
     end
 
     -- Local gid linked to a global group on the ACTIVE spec (nil if none).
-    function mod.TBBLocalGidForGlobal(gkey)
+    function mod.TBBLocalGidForGlobal(groupId)
         local t = mod.GetTrackedBuffBars()
         if not t.groups then
             return nil
         end
         for k, g in pairs(t.groups) do
-            if g.globalKey == gkey then
+            if g.globalKey == groupId then
                 return tonumber(k)
             end
         end
@@ -531,13 +531,13 @@ do
     -- Find-or-create the active spec's local group for a global group. The id must dodge
     -- BOTH gids used by bars and gids held by memberless global links (TBBNextGroupID only
     -- scans bars; reusing a linked gid here would wipe another global group's link).
-    function mod.TBBEnsureLocalGroupForGlobal(gkey)
-        if not mod.TBBGlobalGroup(gkey) then
+    function mod.TBBEnsureLocalGroupForGlobal(groupId)
+        if not mod.TBBGlobalGroup(groupId) then
             return nil
         end
-        local gid = mod.TBBLocalGidForGlobal(gkey)
-        if gid then
-            return gid
+        local groupKey = mod.TBBLocalGidForGlobal(groupId)
+        if groupKey then
+            return groupKey
         end
         local t = mod.GetTrackedBuffBars()
         local used = {}
@@ -554,21 +554,21 @@ do
                 end
             end
         end
-        gid = 1
-        while used[gid] do
-            gid = gid + 1
+        groupKey = 1
+        while used[groupKey] do
+            groupKey = groupKey + 1
         end
-        mod.TBBResetGroupSettings(gid)
-        TBBGroupStore(t, gid, true).globalKey = gkey
-        return gid
+        mod.TBBResetGroupSettings(groupKey)
+        TBBGroupStore(t, groupKey, true).globalKey = groupId
+        return groupKey
     end
 
     -- Sorted registry keys (stable ordering for dropdown rows / movers).
     function mod.TBBGlobalGroupKeys()
-        local reg = TBBGlobalDB(false)
+        local registry = TBBGlobalDB(false)
         local entries = {}
-        if reg then
-            for k in pairs(reg) do
+        if registry then
+            for k in pairs(registry) do
                 entries[#entries + 1] = k
             end
             table.sort(entries, function(a, b)
@@ -589,15 +589,15 @@ do
     -- every build; the IsUnlockAnchored guard leaves it alone when the anchor
     -- system owns the TBBG_ key (same guard as the bar placement below).
     local tbbStandins = {}
-    function mod.TBBEnsureStandin(gk)
-        local record = mod.TBBGlobalGroup(gk)
+    function mod.TBBEnsureStandin(matchGroupKey)
+        local record = mod.TBBGlobalGroup(matchGroupKey)
         if not record then
             return nil
         end
-        local frame = tbbStandins[gk]
+        local frame = tbbStandins[matchGroupKey]
         if not frame then
             frame = CreateFrame("Frame", nil, UIParent)
-            tbbStandins[gk] = frame
+            tbbStandins[matchGroupKey] = frame
         end
         local PPl = CludesUI and CludesUI.PP
         local sn = PPl and PPl.Snap or function(val)
@@ -609,7 +609,7 @@ do
         -- on resolved frames -- an unconditional re-point per resolve fed the
         -- move-check timer a fresh SetPoint every frame, forever (audit-caught).
         -- getFrame must never mutate what it merely resolves.
-        local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("TBBG_" .. gk)
+        local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored("TBBG_" .. matchGroupKey)
         if anchored and frame:GetLeft() then
             return frame
         end
@@ -642,8 +642,8 @@ do
     -- cascade can land anchored children back at the true slot instead of
     -- stranding them shifted. A fresh session with the option off never creates
     -- one, preserving the legacy nil-frame behavior.
-    function mod.TBBStandinFrame(gk)
-        return tbbStandins[gk]
+    function mod.TBBStandinFrame(matchGroupKey)
+        return tbbStandins[matchGroupKey]
     end
 
     -- Whether ANY spec profile links this global key. A fully-orphaned entry
@@ -651,17 +651,17 @@ do
     -- shifting -- with no linked spec, no group settings page can reach the
     -- option to clear it (audit-caught). Bounded scan: specs x groups, only
     -- reached when the option is set and the ACTIVE spec is memberless.
-    local function TBBGlobalLinkedAnywhere(gkey)
-        local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-        if not sp then
+    local function TBBGlobalLinkedAnywhere(groupId)
+        local specRec = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
+        if not specRec then
             return false
         end
-        for _, prof in pairs(sp) do
-            local tbb = prof.trackedBuffBars
-            local groups = tbb and tbb.groups
+        for _, profileTbl in pairs(specRec) do
+            local trackBars = profileTbl.trackedBuffBars
+            local groups = trackBars and trackBars.groups
             if groups then
                 for _, g in pairs(groups) do
-                    if g.globalKey == gkey then
+                    if g.globalKey == groupId then
                         return true
                     end
                 end
@@ -674,16 +674,16 @@ do
     -- state): 0 while the active spec has an enabled member bar (the real
     -- anchor frame covers the slot), the option is off, or no spec links the
     -- entry at all; else +1/-1.
-    local function TBBShiftDirFor(record, gk)
+    local function TBBShiftDirFor(record, matchGroupKey)
         local mode = record and record.shiftNoBar
         if mode ~= "Up" and mode ~= "Down" then
             return 0
         end
-        local gid = mod.TBBLocalGidForGlobal(gk)
-        if gid and mod.TBBGroupAnchorIndex(gid) then
+        local groupKey = mod.TBBLocalGidForGlobal(matchGroupKey)
+        if groupKey and mod.TBBGroupAnchorIndex(groupKey) then
             return 0
         end
-        if not TBBGlobalLinkedAnywhere(gk) then
+        if not TBBGlobalLinkedAnywhere(matchGroupKey) then
             return 0
         end
         return (mode == "Up") and 1 or -1
@@ -706,21 +706,21 @@ do
             if type(targetKey) ~= "string" or targetKey:sub(1, 5) ~= "TBBG_" then
                 return 0
             end
-            local gk = targetKey:sub(6)
-            local record = mod.TBBGlobalGroup(gk)
-            local direction = TBBShiftDirFor(record, gk)
+            local matchGroupKey = targetKey:sub(6)
+            local record = mod.TBBGlobalGroup(matchGroupKey)
+            local direction = TBBShiftDirFor(record, matchGroupKey)
             if direction == 0 then
                 return 0
             end
             return direction, record.shiftNoBarExtraY or 0
         end,
         wants = function()
-            local reg = TBBGlobalDB(false)
-            if not reg then
+            local registry = TBBGlobalDB(false)
+            if not registry then
                 return false
             end
-            for gk, record in pairs(reg) do
-                if TBBShiftDirFor(record, gk) ~= 0 then
+            for matchGroupKey, record in pairs(registry) do
+                if TBBShiftDirFor(record, matchGroupKey) ~= 0 then
                     return true
                 end
             end
@@ -730,13 +730,13 @@ do
             if not CludesUI.PropagateAnchorChain then
                 return
             end
-            local reg = TBBGlobalDB(false)
-            if not reg then
+            local registry = TBBGlobalDB(false)
+            if not registry then
                 return
             end
-            for gk, record in pairs(reg) do
-                if TBBShiftDirFor(record, gk) ~= 0 then
-                    CludesUI.PropagateAnchorChain("TBBG_" .. gk)
+            for matchGroupKey, record in pairs(registry) do
+                if TBBShiftDirFor(record, matchGroupKey) ~= 0 then
+                    CludesUI.PropagateAnchorChain("TBBG_" .. matchGroupKey)
                 end
             end
         end,
@@ -745,42 +745,42 @@ do
     -- Opt in: seed the registry from the group's current per-spec settings and anchor
     -- position. Detach: materialize shared values back into the per-spec store so nothing
     -- moves; the registry entry persists for other specs (full removal is TBBDeleteGlobalGroup).
-    function mod.TBBSetGroupGlobal(gid, on)
+    function mod.TBBSetGroupGlobal(groupKey, on)
         local t = mod.GetTrackedBuffBars()
-        local g = TBBGroupStore(t, gid, true)
+        local g = TBBGroupStore(t, groupKey, true)
         if on then
             if g.globalKey and mod.TBBGlobalGroup(g.globalKey) then
                 return
             end
-            local reg, p = TBBGlobalDB(true)
-            if not reg then
+            local registry, p = TBBGlobalDB(true)
+            if not registry then
                 return
             end
             local ident = (p.tbbGlobalGroupNextId or 0) + 1
             p.tbbGlobalGroupNextId = ident
-            local gkey = "g" .. ident
+            local groupId = "g" .. ident
             local L = CludesUI and CludesUI.L
             local record = {
-                name = mod.TBBGroupName(gid) or ((L and L("Group") or "Group") .. " " .. gid),
-                grow = GroupGrowOf(t, gid),
-                spacing = GroupSpacingOf(t, gid),
+                name = mod.TBBGroupName(groupKey) or ((L and L("Group") or "Group") .. " " .. groupKey),
+                grow = GroupGrowOf(t, groupKey),
+                spacing = GroupSpacingOf(t, groupKey),
             }
-            local ai = mod.TBBGroupAnchorIndex(gid)
+            local ai = mod.TBBGroupAnchorIndex(groupKey)
             local place = ai and mod.GetTBBPositions()[tostring(ai)]
             if place and place.point then
                 record.pos = { point = place.point, relPoint = place.relPoint, x = place.x, y = place.y }
             end
-            reg[gkey] = record
-            g.globalKey = gkey
+            registry[groupId] = record
+            g.globalKey = groupId
         else
-            local gkey = g.globalKey
+            local groupId = g.globalKey
             g.globalKey = nil
-            local record = gkey and mod.TBBGlobalGroup(gkey)
+            local record = groupId and mod.TBBGlobalGroup(groupId)
             if record then
                 g.name = record.name
                 g.grow = record.grow
                 g.spacing = record.spacing
-                if gid == 1 then
+                if groupKey == 1 then
                     t.groupGrowDirection = record.grow
                     t.groupSpacing = record.spacing
                 end
@@ -788,7 +788,7 @@ do
                 if record.pos then
                     local posDB = mod.GetTBBPositions()
                     for jdx, c in ipairs(t.bars or {}) do
-                        if mod.TBBBarGroupID(c) == gid then
+                        if mod.TBBBarGroupID(c) == groupKey then
                             posDB[tostring(jdx)] = {
                                 point = record.pos.point,
                                 relPoint = record.pos.relPoint,
@@ -811,14 +811,14 @@ do
     local GROW_TO_SIDE = { UP = "TOP", DOWN = "BOTTOM", LEFT = "LEFT", RIGHT = "RIGHT" }
 
     -- Resolve an anchor target key to a group id IF the anchored side matches that group's growth direction (nil otherwise).
-    function mod.TBBExtentGidForTarget(targetKey, side)
-        if type(targetKey) ~= "string" or not side then
+    function mod.TBBExtentGidForTarget(targetKey, edgeSide)
+        if type(targetKey) ~= "string" or not edgeSide then
             return nil
         end
-        local gid
-        local gkey = targetKey:match("^TBBG_(.+)$")
-        if gkey then
-            gid = mod.TBBLocalGidForGlobal(gkey)
+        local groupKey
+        local groupId = targetKey:match("^TBBG_(.+)$")
+        if groupId then
+            groupKey = mod.TBBLocalGidForGlobal(groupId)
         else
             local position = tonumber(targetKey:match("^TBB_(%d+)$"))
             if not position then
@@ -826,62 +826,62 @@ do
             end
             local t = mod.GetTrackedBuffBars()
             local c = t.bars and t.bars[position]
-            gid = c and mod.TBBBarGroupID(c) or 0
-            if gid == 0 or position ~= mod.TBBGroupAnchorIndex(gid) then
+            groupKey = c and mod.TBBBarGroupID(c) or 0
+            if groupKey == 0 or position ~= mod.TBBGroupAnchorIndex(groupKey) then
                 return nil
             end
         end
-        if not gid then
+        if not groupKey then
             return nil
         end
-        local grow = (mod.TBBGroupGrow(gid) or "DOWN"):upper()
-        if side ~= "POINT" and GROW_TO_SIDE[grow] ~= side then
+        local grow = (mod.TBBGroupGrow(groupKey) or "DOWN"):upper()
+        if edgeSide ~= "POINT" and GROW_TO_SIDE[grow] ~= edgeSide then
             return nil
         end
-        return gid
+        return groupKey
     end
 
     -- Anchor-system hook: outermost visible member edge in UIParent space, or nil to use
     -- the target frame's own bounds. Inert while unlock mode or the placeholder preview owns positions.
-    function CludesUI._GetAnchorTargetExtent(targetKey, side)
+    function CludesUI._GetAnchorTargetExtent(targetKey, edgeSide)
         if CludesUI._unlockActive or mod._tbbPlaceholderMode then
             return nil
         end
-        local gid = mod.TBBExtentGidForTarget(targetKey, side)
-        if not gid then
+        local groupKey = mod.TBBExtentGidForTarget(targetKey, edgeSide)
+        if not groupKey then
             return nil
         end
         local t = mod.GetTrackedBuffBars()
         local uiS = UIParent:GetEffectiveScale()
-        local best
+        local bestMatch
         for i, c in ipairs(t.bars or {}) do
-            if c.enabled ~= false and mod.TBBBarGroupID(c) == gid then
+            if c.enabled ~= false and mod.TBBBarGroupID(c) == groupKey then
                 local frame = tbbFrames[i]
                 if frame and frame:IsShown() and frame:GetLeft() then
                     local fS = frame:GetEffectiveScale() / uiS
                     local val
-                    if side == "TOP" then
+                    if edgeSide == "TOP" then
                         val = (frame:GetTop() or 0) * fS
-                    elseif side == "BOTTOM" then
+                    elseif edgeSide == "BOTTOM" then
                         val = (frame:GetBottom() or 0) * fS
-                    elseif side == "LEFT" then
+                    elseif edgeSide == "LEFT" then
                         val = (frame:GetLeft() or 0) * fS
                     else
                         val = (frame:GetRight() or 0) * fS
                     end
-                    if not best then
-                        best = val
-                    elseif side == "TOP" or side == "RIGHT" then
-                        if val > best then
-                            best = val
+                    if not bestMatch then
+                        bestMatch = val
+                    elseif edgeSide == "TOP" or edgeSide == "RIGHT" then
+                        if val > bestMatch then
+                            bestMatch = val
                         end
-                    elseif val < best then
-                        best = val
+                    elseif val < bestMatch then
+                        bestMatch = val
                     end
                 end
             end
         end
-        return best
+        return bestMatch
     end
 
     -- gid -> anchored unlock key needing extent updates. Memo invalidation: the unlock
@@ -893,19 +893,19 @@ do
         if anchors then
             for _, details in pairs(anchors) do
                 if details.target then
-                    local gid = mod.TBBExtentGidForTarget(
+                    local groupKey = mod.TBBExtentGidForTarget(
                         details.target,
                         details.mode == "POINT" and "POINT" or details.side
                     )
-                    if gid then
-                        wid[gid] = details.target
+                    if groupKey then
+                        wid[groupKey] = details.target
                     end
                 end
                 local fb = details.fallback
                 if fb and fb.target then
-                    local gid = mod.TBBExtentGidForTarget(fb.target, fb.side)
-                    if gid then
-                        wid[gid] = fb.target
+                    local groupKey = mod.TBBExtentGidForTarget(fb.target, fb.side)
+                    if groupKey then
+                        wid[groupKey] = fb.target
                     end
                 end
             end
@@ -913,8 +913,8 @@ do
         return wid
     end
 
-    local function TBBExtentWatchKey(gid)
-        if not gid or gid == 0 then
+    local function TBBExtentWatchKey(groupKey)
+        if not groupKey or groupKey == 0 then
             return nil
         end
         local stamp = CludesUI._anchorLinksStamp or 0
@@ -924,13 +924,13 @@ do
             mod._tbbExtentWatch = wid
             mod._tbbExtentWatchStamp = stamp
         end
-        return wid[gid]
+        return wid[groupKey]
     end
 
     -- Called by the reflow only when a group's visible footprint actually changed
     -- (change-gated there, NOT per-tick). Queues batched anchor propagation for the unlock key.
-    function mod._NotifyTBBExtentChanged(gid)
-        local key = TBBExtentWatchKey(gid)
+    function mod._NotifyTBBExtentChanged(groupKey)
+        local key = TBBExtentWatchKey(groupKey)
         if not key then
             return
         end
@@ -941,36 +941,36 @@ do
 
     -- Remove a global group everywhere: every spec's linked group detaches with the shared
     -- values materialized locally (bars keep their positions), then the registry entry is deleted.
-    function mod.TBBDeleteGlobalGroup(gkey)
-        local reg = TBBGlobalDB(false)
-        local record = reg and reg[gkey]
+    function mod.TBBDeleteGlobalGroup(groupId)
+        local registry = TBBGlobalDB(false)
+        local record = registry and registry[groupId]
         if not record then
             return
         end
-        local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-        if sp then
-            for _, prof in pairs(sp) do
-                local tbb = prof.trackedBuffBars
-                if tbb and tbb.groups then
-                    for k, g in pairs(tbb.groups) do
-                        if g.globalKey == gkey then
+        local specRec = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
+        if specRec then
+            for _, profileTbl in pairs(specRec) do
+                local trackBars = profileTbl.trackedBuffBars
+                if trackBars and trackBars.groups then
+                    for k, g in pairs(trackBars.groups) do
+                        if g.globalKey == groupId then
                             g.globalKey = nil
                             g.name = record.name
                             g.grow = record.grow
                             g.spacing = record.spacing
                             if k == "1" then
-                                tbb.groupGrowDirection = record.grow
-                                tbb.groupSpacing = record.spacing
+                                trackBars.groupGrowDirection = record.grow
+                                trackBars.groupSpacing = record.spacing
                             end
                             SetReflowDirty(true)
                             if record.pos then
-                                if not prof.tbbPositions then
-                                    prof.tbbPositions = {}
+                                if not profileTbl.tbbPositions then
+                                    profileTbl.tbbPositions = {}
                                 end
                                 local kn = tonumber(k)
-                                for jdx, c in ipairs(tbb.bars or {}) do
+                                for jdx, c in ipairs(trackBars.bars or {}) do
                                     if mod.TBBBarGroupID(c) == kn then
-                                        prof.tbbPositions[tostring(jdx)] = {
+                                        profileTbl.tbbPositions[tostring(jdx)] = {
                                             point = record.pos.point,
                                             relPoint = record.pos.relPoint,
                                             x = record.pos.x,
@@ -984,27 +984,27 @@ do
                 end
             end
         end
-        reg[gkey] = nil
+        registry[groupId] = nil
         -- Retire the group's shift stand-in with it: a leftover frame would keep
         -- resolving through getFrame's session fallback and glue anchored
         -- elements to the deleted group's last position (audit-caught).
-        local scrollFrame = tbbStandins[gkey]
+        local scrollFrame = tbbStandins[groupId]
         if scrollFrame then
             scrollFrame:Hide()
-            tbbStandins[gkey] = nil
+            tbbStandins[groupId] = nil
         end
     end
 end
 
 -- "Auto-Add New to This Group": the flagged group receives a bar for every spell newly
 -- appearing in Blizzard's Tracked Bars section. At most ONE group holds the flag; enabling it clears the others.
-function mod.TBBGroupAutoAdd(gid)
+function mod.TBBGroupAutoAdd(groupKey)
     local t = mod.GetTrackedBuffBars()
-    local g = TBBGroupStore(t, gid, false)
+    local g = TBBGroupStore(t, groupKey, false)
     return g ~= nil and g.autoAdd == true
 end
 
-function mod.TBBSetGroupAutoAdd(gid, val)
+function mod.TBBSetGroupAutoAdd(groupKey, val)
     local t = mod.GetTrackedBuffBars()
     if val then
         if t.groups then
@@ -1012,9 +1012,9 @@ function mod.TBBSetGroupAutoAdd(gid, val)
                 g.autoAdd = nil
             end
         end
-        TBBGroupStore(t, gid, true).autoAdd = true
+        TBBGroupStore(t, groupKey, true).autoAdd = true
     else
-        local g = TBBGroupStore(t, gid, false)
+        local g = TBBGroupStore(t, groupKey, false)
         if g then
             g.autoAdd = nil
         end
@@ -1027,24 +1027,24 @@ function mod.TBBAutoAddGroupID()
     if not t.groups then
         return nil
     end
-    local best
+    local bestMatch
     for k, g in pairs(t.groups) do
         if g.autoAdd == true then
-            local gid = tonumber(k)
-            if gid and (not best or gid < best) then
-                best = gid
+            local groupKey = tonumber(k)
+            if groupKey and (not bestMatch or groupKey < bestMatch) then
+                bestMatch = groupKey
             end
         end
     end
-    return best
+    return bestMatch
 end
 
 -- Index of a group's anchor = its first enabled member (or nil if none). gid nil = group 1 (legacy callers).
-function mod.TBBGroupAnchorIndex(gid)
-    gid = gid or 1
+function mod.TBBGroupAnchorIndex(groupKey)
+    groupKey = groupKey or 1
     local t = mod.GetTrackedBuffBars()
     for i, c in ipairs(t.bars or {}) do
-        if c.enabled ~= false and mod.TBBBarGroupID(c) == gid then
+        if c.enabled ~= false and mod.TBBBarGroupID(c) == groupKey then
             return i
         end
     end
@@ -1052,12 +1052,12 @@ function mod.TBBGroupAnchorIndex(gid)
 end
 
 -- Member count: with gid, counts that group's bars (regardless of enabled); without, counts bars in ANY group (drives options disabled gates).
-function mod.TBBGroupedCount(gid)
+function mod.TBBGroupedCount(groupKey)
     local t = mod.GetTrackedBuffBars()
     local num = 0
     for _, c in ipairs(t.bars or {}) do
         local g = mod.TBBBarGroupID(c)
-        if (gid and g == gid) or (not gid and g ~= 0) then
+        if (groupKey and g == groupKey) or (not groupKey and g ~= 0) then
             num = num + 1
         end
     end
@@ -1070,16 +1070,16 @@ end
 -- its stored dims so on-screen proportions carry over. Runs every rebuild; the options
 -- Vertical Orientation toggle flips the whole group explicitly so deliberate flips
 -- never fight it.
-function mod.EnforceTBBGroupOrientation(tbb)
-    tbb = tbb or mod.GetTrackedBuffBars()
+function mod.EnforceTBBGroupOrientation(trackBars)
+    trackBars = trackBars or mod.GetTrackedBuffBars()
     local firstOrient = {}
-    for _, conf in ipairs(tbb.bars or {}) do
-        local gid = mod.TBBBarGroupID(conf)
-        if gid ~= 0 then
-            local wanted = firstOrient[gid]
+    for _, conf in ipairs(trackBars.bars or {}) do
+        local groupKey = mod.TBBBarGroupID(conf)
+        if groupKey ~= 0 then
+            local wanted = firstOrient[groupKey]
             local mine = conf.verticalOrientation and true or false
             if wanted == nil then
-                firstOrient[gid] = mine
+                firstOrient[groupKey] = mine
             elseif mine ~= wanted then
                 conf.width, conf.height = (conf.height or 24), (conf.width or 270)
                 conf.verticalOrientation = wanted
@@ -1220,17 +1220,17 @@ function mod.CopyTBBStyle(source, dst)
 end
 
 -- The bar whose style represents a group: its anchor, or (all members disabled) its first member.
-function mod.TBBGroupStyleSource(gid)
-    if not gid or gid == 0 then
+function mod.TBBGroupStyleSource(groupKey)
+    if not groupKey or groupKey == 0 then
         return nil
     end
     local t = mod.GetTrackedBuffBars()
-    local ai = mod.TBBGroupAnchorIndex(gid)
+    local ai = mod.TBBGroupAnchorIndex(groupKey)
     if ai then
         return t.bars[ai]
     end
     for _, c in ipairs(t.bars or {}) do
-        if mod.TBBBarGroupID(c) == gid then
+        if mod.TBBBarGroupID(c) == groupKey then
             return c
         end
     end
@@ -1256,8 +1256,8 @@ function mod.GetTBBStylePresets()
     end
     -- Same icon-footprint fold as GetTrackedBuffBars: legacy presets stored the FILL size rather than the icon-inclusive total.
     if not p._tbbPresetIconTotal then
-        for _, pr in ipairs(p.tbbStylePresets) do
-            local s = pr.style
+        for _, presetRec in ipairs(p.tbbStylePresets) do
+            local s = presetRec.style
             if s and (s.iconDisplay or "none") ~= "none" then
                 if s.verticalOrientation then
                     s.height = (s.height or 24) + (s.width or 270)
@@ -1271,42 +1271,42 @@ function mod.GetTBBStylePresets()
     return p.tbbStylePresets
 end
 
-function mod.FindTBBStylePreset(name)
-    if not name or name == "" then
+function mod.FindTBBStylePreset(label)
+    if not label or label == "" then
         return nil
     end
-    local presets = mod.GetTBBStylePresets()
-    if not presets then
+    local presetList = mod.GetTBBStylePresets()
+    if not presetList then
         return nil
     end
-    for _, pr in ipairs(presets) do
-        if pr.name == name then
-            return pr
+    for _, presetRec in ipairs(presetList) do
+        if presetRec.name == label then
+            return presetRec
         end
     end
     return nil
 end
 
 -- Save (or overwrite) a preset from a bar's current style, and associate the source bar with it.
-function mod.SaveTBBStylePreset(name, srcCfg)
-    if not name or name == "" or not srcCfg then
+function mod.SaveTBBStylePreset(label, srcCfg)
+    if not label or label == "" or not srcCfg then
         return nil
     end
-    local presets = mod.GetTBBStylePresets()
-    if not presets then
+    local presetList = mod.GetTBBStylePresets()
+    if not presetList then
         return nil
     end
     local style = {}
     mod.CopyTBBStyle(srcCfg, style)
-    local pr = mod.FindTBBStylePreset(name)
-    if pr then
-        pr.style = style
+    local presetRec = mod.FindTBBStylePreset(label)
+    if presetRec then
+        presetRec.style = style
     else
-        pr = { name = name, style = style }
-        presets[#presets + 1] = pr
+        presetRec = { name = label, style = style }
+        presetList[#presetList + 1] = presetRec
     end
-    srcCfg.stylePresetName = name
-    return pr
+    srcCfg.stylePresetName = label
+    return presetRec
 end
 
 function mod.ApplyTBBStylePresetToCfg(preset, conf)
@@ -1318,19 +1318,19 @@ function mod.ApplyTBBStylePresetToCfg(preset, conf)
 end
 
 -- Delete a saved preset. Bar associations (cfg.stylePresetName) are left in place and go inert: FindTBBStylePreset returns nil for a missing name.
-function mod.DeleteTBBStylePreset(name)
-    if not name or name == "" then
+function mod.DeleteTBBStylePreset(label)
+    if not label or label == "" then
         return false
     end
-    local presets = mod.GetTBBStylePresets()
-    if not presets then
+    local presetList = mod.GetTBBStylePresets()
+    if not presetList then
         return false
     end
-    for i, pr in ipairs(presets) do
-        if pr.name == name then
-            table.remove(presets, i)
+    for i, presetRec in ipairs(presetList) do
+        if presetRec.name == label then
+            table.remove(presetList, i)
             local p = ECME and ECME.db and ECME.db.profile
-            if p and p.tbbSelectedStylePreset == name then
+            if p and p.tbbSelectedStylePreset == label then
                 p.tbbSelectedStylePreset = nil
             end
             return true
@@ -1347,15 +1347,15 @@ function mod.RenameTBBStylePreset(oldName, newName)
     if oldName == newName or mod.FindTBBStylePreset(newName) then
         return false
     end
-    local pr = mod.FindTBBStylePreset(oldName)
-    if not pr then
+    local presetRec = mod.FindTBBStylePreset(oldName)
+    if not presetRec then
         return false
     end
-    pr.name = newName
-    local sp = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
-    if sp then
-        for _, prof in pairs(sp) do
-            local barList = type(prof) == "table" and prof.trackedBuffBars and prof.trackedBuffBars.bars
+    presetRec.name = newName
+    local specRec = mod.GetActiveSpecProfiles and mod.GetActiveSpecProfiles()
+    if specRec then
+        for _, profileTbl in pairs(specRec) do
+            local barList = type(profileTbl) == "table" and profileTbl.trackedBuffBars and profileTbl.trackedBuffBars.bars
             if barList then
                 for _, c in ipairs(barList) do
                     if c.stylePresetName == oldName then
@@ -1373,15 +1373,15 @@ function mod.RenameTBBStylePreset(oldName, newName)
 end
 
 -- New-bar resolution: the preset associated with a bar already in the target group (nil if none).
-function mod.ResolveTBBGroupPreset(tbb, gid)
-    if not gid or gid == 0 then
+function mod.ResolveTBBGroupPreset(trackBars, groupKey)
+    if not groupKey or groupKey == 0 then
         return nil
     end
-    for _, c in ipairs(tbb.bars or {}) do
-        if mod.TBBBarGroupID(c) == gid then
-            local pr = mod.FindTBBStylePreset(c.stylePresetName)
-            if pr then
-                return pr
+    for _, c in ipairs(trackBars.bars or {}) do
+        if mod.TBBBarGroupID(c) == groupKey then
+            local presetRec = mod.FindTBBStylePreset(c.stylePresetName)
+            if presetRec then
+                return presetRec
             end
         end
     end
@@ -1389,18 +1389,18 @@ function mod.ResolveTBBGroupPreset(tbb, gid)
 end
 
 -- New-bar fallback: a preset associated with any bar of this spec, else any saved preset (nil when none are saved).
-function mod.ResolveTBBFallbackPreset(tbb)
-    local presets = mod.GetTBBStylePresets()
-    if not presets or #presets == 0 then
+function mod.ResolveTBBFallbackPreset(trackBars)
+    local presetList = mod.GetTBBStylePresets()
+    if not presetList or #presetList == 0 then
         return nil
     end
-    for _, c in ipairs(tbb.bars or {}) do
-        local pr = mod.FindTBBStylePreset(c.stylePresetName)
-        if pr then
-            return pr
+    for _, c in ipairs(trackBars.bars or {}) do
+        local presetRec = mod.FindTBBStylePreset(c.stylePresetName)
+        if presetRec then
+            return presetRec
         end
     end
-    return presets[1]
+    return presetList[1]
 end
 
 -- Runtime reflow for grouped Tracking Bars: BuildTrackedBuffBars creates the static
@@ -1408,27 +1408,27 @@ end
 -- members are reflowed to leave no holes when a buff is inactive/hidden -- e.g. with
 -- configured order Buff 1/2/3 and only 2/3 active, Buff 2 sits at the group anchor.
 local _tbbReflowStates = {} -- gid -> pooled per-group reflow state
-local function GetReflowState(gid)
-    local st = _tbbReflowStates[gid]
-    if not st then
-        st = { visible = {}, lastIdx = {}, lastCount = 0, lastGrow = nil, lastSpacing = nil }
-        _tbbReflowStates[gid] = st
+local function GetReflowState(groupKey)
+    local state = _tbbReflowStates[groupKey]
+    if not state then
+        state = { visible = {}, lastIdx = {}, lastCount = 0, lastGrow = nil, lastSpacing = nil }
+        _tbbReflowStates[groupKey] = state
     end
-    return st
+    return state
 end
 local function ResetReflowStates()
-    for _, st in pairs(_tbbReflowStates) do
-        st.lastCount = -1
+    for _, state in pairs(_tbbReflowStates) do
+        state.lastCount = -1
     end
 end
 local _tbbReflowDone = {} -- reused per-tick "group handled" set
 
-local function ReflowGroup(tbb, gid, barList)
-    local st = GetReflowState(gid)
+local function ReflowGroup(trackBars, groupKey, barList)
+    local state = GetReflowState(groupKey)
 
     local anchorIdx
     for i, c in ipairs(barList) do
-        if c.enabled ~= false and mod.TBBBarGroupID(c) == gid then
+        if c.enabled ~= false and mod.TBBBarGroupID(c) == groupKey then
             anchorIdx = i
             break
         end
@@ -1437,20 +1437,20 @@ local function ReflowGroup(tbb, gid, barList)
         return
     end
 
-    local growDir = (GroupGrowOf(tbb, gid) or "DOWN"):upper()
-    local spacing = GroupSpacingOf(tbb, gid) or 2
+    local growDirection = (GroupGrowOf(trackBars, groupKey) or "DOWN"):upper()
+    local spacing = GroupSpacingOf(trackBars, groupKey) or 2
 
     -- Collect this group's enabled + visible bars in saved hierarchy order. A bar with
     -- hideWhenInactive=false is visible so it keeps its slot (shows inactive bars). Entry
     -- tables are pooled and reused across ticks: zero allocation in this every-16ms path.
-    local visible = st.visible
+    local visible = state.visible
     local total = 0
     for i, conf in ipairs(barList) do
         local frame = tbbFrames[i]
         if
             conf
             and conf.enabled ~= false
-            and mod.TBBBarGroupID(conf) == gid
+            and mod.TBBBarGroupID(conf) == groupKey
             and frame
             and frame._tbbReady
             and frame:IsShown()
@@ -1468,16 +1468,16 @@ local function ReflowGroup(tbb, gid, barList)
 
     if total == 0 then
         -- Group fully collapsed: anchored elements fall back to the anchor bar's own (hidden but resolvable) bounds. Notify once.
-        if st.lastCount ~= 0 and mod._NotifyTBBExtentChanged then
-            mod._NotifyTBBExtentChanged(gid)
+        if state.lastCount ~= 0 and mod._NotifyTBBExtentChanged then
+            mod._NotifyTBBExtentChanged(groupKey)
         end
-        st.lastCount = 0
+        state.lastCount = 0
         return
     end
 
     -- Re-anchor only when the visible member sequence or the grow/spacing tuple changes. Compared element-wise so no string is allocated per tick.
-    local lastIdx = st.lastIdx
-    local changed = total ~= st.lastCount or growDir ~= st.lastGrow or spacing ~= st.lastSpacing
+    local lastIdx = state.lastIdx
+    local changed = total ~= state.lastCount or growDirection ~= state.lastGrow or spacing ~= state.lastSpacing
     if not changed then
         for num = 1, total do
             if visible[num].idx ~= lastIdx[num] then
@@ -1489,9 +1489,9 @@ local function ReflowGroup(tbb, gid, barList)
     if not changed then
         return
     end
-    st.lastCount = total
-    st.lastGrow = growDir
-    st.lastSpacing = spacing
+    state.lastCount = total
+    state.lastGrow = growDirection
+    state.lastSpacing = spacing
     for num = 1, total do
         lastIdx[num] = visible[num].idx
     end
@@ -1514,13 +1514,13 @@ local function ReflowGroup(tbb, gid, barList)
     for num = 2, total do
         local frame = visible[num].frame
         frame:ClearAllPoints()
-        if growDir == "DOWN" then
+        if growDirection == "DOWN" then
             frame:SetPoint("TOP", previous, "BOTTOM", 0, -spacing)
-        elseif growDir == "UP" then
+        elseif growDirection == "UP" then
             frame:SetPoint("BOTTOM", previous, "TOP", 0, spacing)
-        elseif growDir == "RIGHT" then
+        elseif growDirection == "RIGHT" then
             frame:SetPoint("LEFT", previous, "RIGHT", spacing, 0)
-        elseif growDir == "LEFT" then
+        elseif growDirection == "LEFT" then
             frame:SetPoint("RIGHT", previous, "LEFT", -spacing, 0)
         else
             frame:SetPoint("TOP", previous, "BOTTOM", 0, -spacing)
@@ -1530,12 +1530,12 @@ local function ReflowGroup(tbb, gid, barList)
 
     -- Only reached when the visible sequence/grow/spacing actually changed: let elements anchored to the group's growth side re-read the moving edge.
     if mod._NotifyTBBExtentChanged then
-        mod._NotifyTBBExtentChanged(gid)
+        mod._NotifyTBBExtentChanged(groupKey)
     end
 end
 
-local function ReflowVisibleGroupedTBBars(tbb, barList)
-    if not (tbb and barList and tbbFrames) then
+local function ReflowVisibleGroupedTBBars(trackBars, barList)
+    if not (trackBars and barList and tbbFrames) then
         return
     end
     -- Never fight edit-preview (placeholder) or unlock-mode dragging: there BuildTrackedBuffBars and the unlock system own bar positions.
@@ -1546,10 +1546,10 @@ local function ReflowVisibleGroupedTBBars(tbb, barList)
     SetReflowDirty(false)
     wipe(_tbbReflowDone)
     for _, conf in ipairs(barList) do
-        local gid = mod.TBBBarGroupID(conf)
-        if gid ~= 0 and not _tbbReflowDone[gid] then
-            _tbbReflowDone[gid] = true
-            ReflowGroup(tbb, gid, barList)
+        local groupKey = mod.TBBBarGroupID(conf)
+        if groupKey ~= 0 and not _tbbReflowDone[groupKey] then
+            _tbbReflowDone[groupKey] = true
+            ReflowGroup(trackBars, groupKey, barList)
         end
     end
 end
