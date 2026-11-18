@@ -2984,3 +2984,18 @@ function Pool._DevVerifyReset()
     )
     return #result
 end
+
+-- An options row's eye toggle shell: a 26px glyph button at the left end of
+-- the region's inline controls (resting at 0.4 alpha) and the texture that
+-- fills it. The caller gives it its icon, click and hover.
+function CludesUI.NewInlineEye(region)
+    local eye = Pool.CreateFrame("Button", nil, region)
+    eye:SetSize(26, 26)
+    eye:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
+    eye:SetFrameLevel(region:GetFrameLevel() + 5)
+    CludesUI.SetGlyphAlpha(eye, 0.4)
+    region._lastInline = eye
+    local glyph = eye:CreateTexture(nil, "OVERLAY")
+    glyph:SetAllPoints()
+    return eye, glyph
+end

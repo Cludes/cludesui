@@ -3326,14 +3326,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
         -- Inline eyeball: preview the cost on the live preview. Session-only.
         if not CludesUI._prebuilding then
             local rgn = costRow._leftRegion
-            local eyeBtn = CreateFrame("Button", nil, rgn)
-            eyeBtn:SetSize(26, 26)
-            eyeBtn:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            eyeBtn:SetFrameLevel(rgn:GetFrameLevel() + 5)
-            CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-            rgn._lastInline = eyeBtn
-            local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
-            eyeTex:SetAllPoints()
+            local eyeBtn, eyeTex = CludesUI.NewInlineEye(rgn)
             local function RefreshCostEye()
                 eyeTex:SetTexture(
                     mod._ufShowPowerCostPreview and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON
@@ -4743,14 +4736,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
             local rgn = healAbsorbRow._leftRegion
             local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
             local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
-            local eyeBtn = CreateFrame("Button", nil, rgn)
-            eyeBtn:SetSize(26, 26)
-            eyeBtn:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            eyeBtn:SetFrameLevel(rgn:GetFrameLevel() + 5)
-            CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-            rgn._lastInline = eyeBtn
-            local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
-            eyeTex:SetAllPoints()
+            local eyeBtn, eyeTex = CludesUI.NewInlineEye(rgn)
             local function RefreshHealEye()
                 eyeTex:SetTexture(optionState.showHealAbsorbPreview and EYE_INVISIBLE or EYE_VISIBLE)
             end
@@ -5076,14 +5062,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
             -- Eyeball: shows a reduced maximum on the preview (session-only flag).
             local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
             local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
-            local eyeBtn = CreateFrame("Button", nil, rgn)
-            eyeBtn:SetSize(26, 26)
-            eyeBtn:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            eyeBtn:SetFrameLevel(rgn:GetFrameLevel() + 5)
-            CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-            rgn._lastInline = eyeBtn
-            local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
-            eyeTex:SetAllPoints()
+            local eyeBtn, eyeTex = CludesUI.NewInlineEye(rgn)
             local function RefreshMaxHealthEye()
                 eyeTex:SetTexture(optionState.showMaxHealthPreview and EYE_INVISIBLE or EYE_VISIBLE)
             end
@@ -5192,14 +5171,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
         -- Inline eyeball: preview heal prediction on the live preview. Session-only.
         if not CludesUI._prebuilding then
             local rgn = healPredRow._leftRegion
-            local eyeBtn = CreateFrame("Button", nil, rgn)
-            eyeBtn:SetSize(26, 26)
-            eyeBtn:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            eyeBtn:SetFrameLevel(rgn:GetFrameLevel() + 5)
-            CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-            rgn._lastInline = eyeBtn
-            local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
-            eyeTex:SetAllPoints()
+            local eyeBtn, eyeTex = CludesUI.NewInlineEye(rgn)
             local function RefreshPredEye()
                 eyeTex:SetTexture(
                     mod._ufShowHealPredPreview and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON

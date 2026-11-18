@@ -3466,14 +3466,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
             local rgn = dispelRow._leftRegion
             local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
             local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
-            local eyeBtn = CreateFrame("Button", nil, rgn)
-            eyeBtn:SetSize(26, 26)
-            eyeBtn:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-            eyeBtn:SetFrameLevel(rgn:GetFrameLevel() + 5)
-            CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-            rgn._lastInline = eyeBtn
-            local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
-            eyeTex:SetAllPoints()
+            local eyeBtn, eyeTex = CludesUI.NewInlineEye(rgn)
             local function RefreshDispelEye()
                 eyeTex:SetTexture(optionState.showDispelOverlayPreview and EYE_INVISIBLE or EYE_VISIBLE)
             end

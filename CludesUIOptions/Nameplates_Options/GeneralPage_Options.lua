@@ -1011,14 +1011,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
         local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
         local leftRgn = hitboxRow._leftRegion
-        local eyeBtn = CreateFrame("Button", nil, leftRgn)
-        eyeBtn:SetSize(26, 26)
-        eyeBtn:SetPoint("RIGHT", leftRgn._lastInline or leftRgn._control, "LEFT", -8, 0)
-        eyeBtn:SetFrameLevel(leftRgn:GetFrameLevel() + 5)
-        CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-        leftRgn._lastInline = eyeBtn
-        local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
-        eyeTex:SetAllPoints()
+        local eyeBtn, eyeTex = CludesUI.NewInlineEye(leftRgn)
         local function RefreshEyeIcon()
             eyeTex:SetTexture(mod._hitboxOverlayShown and EYE_INVISIBLE or EYE_VISIBLE)
         end

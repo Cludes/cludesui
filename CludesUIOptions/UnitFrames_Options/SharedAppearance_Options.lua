@@ -3988,14 +3988,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
             local ciRgn = sharedAddRow1._leftRegion
             local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
             local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
-            local eyeBtn = CreateFrame("Button", nil, ciRgn)
-            eyeBtn:SetSize(26, 26)
-            eyeBtn:SetPoint("RIGHT", ciRgn._lastInline or ciRgn._control, "LEFT", -8, 0)
-            eyeBtn:SetFrameLevel(ciRgn:GetFrameLevel() + 5)
-            CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-            ciRgn._lastInline = eyeBtn
-            local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
-            eyeTex:SetAllPoints()
+            local eyeBtn, eyeTex = CludesUI.NewInlineEye(ciRgn)
             local function RefreshCombatEye()
                 eyeTex:SetTexture(optionState.showCombatIndicatorPreview and EYE_INVISIBLE or EYE_VISIBLE)
             end
@@ -4175,14 +4168,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
             return
         end
         local eyes = mod._ufPvEyes
-        local eyeBtn = CreateFrame("Button", nil, rgn)
-        eyeBtn:SetSize(26, 26)
-        eyeBtn:SetPoint("RIGHT", rgn._lastInline or rgn._control, "LEFT", -8, 0)
-        eyeBtn:SetFrameLevel(rgn:GetFrameLevel() + 5)
-        CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-        rgn._lastInline = eyeBtn
-        local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
-        eyeTex:SetAllPoints()
+        local eyeBtn, eyeTex = CludesUI.NewInlineEye(rgn)
         local function RefreshEye()
             eyeTex:SetTexture(eyes[key] and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON)
         end

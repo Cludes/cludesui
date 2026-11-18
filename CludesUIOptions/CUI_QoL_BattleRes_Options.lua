@@ -406,14 +406,7 @@ end
 local function AttachPreviewEye(region, key, showTip, hideTip, setOwner, ownerFrame)
     local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
     local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
-    local eyeBtn = CreateFrame("Button", nil, region)
-    eyeBtn:SetSize(26, 26)
-    eyeBtn:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
-    eyeBtn:SetFrameLevel(region:GetFrameLevel() + 5)
-    CludesUI.SetGlyphAlpha(eyeBtn, 0.4)
-    region._lastInline = eyeBtn
-    local eyeTex = eyeBtn:CreateTexture(nil, "OVERLAY")
-    eyeTex:SetAllPoints()
+    local eyeBtn, eyeTex = CludesUI.NewInlineEye(region)
     local function RefreshEye()
         eyeTex:SetTexture(PreviewHidden(key) and EYE_VISIBLE or EYE_INVISIBLE)
     end
