@@ -59,11 +59,11 @@ local cells = {}
 -- Made in the main chunk so their handlers bill to this addon, whatever turns
 -- the window on (a login or the options page). Neither holds an event while
 -- the window is off or hidden.
-local eventFrame = CreateFrame("Frame")
+local watcher = CreateFrame("Frame")
 -- Only Show When Bag Space Is Low: a bag watcher of its own, listening while
 -- the option is on and the visibility setting lets the window show (shown or
 -- not, any bag change can cross the threshold).
-local bagSpaceWatch = CreateFrame("Frame")
+local bagSpaceWatcher = CreateFrame("Frame")
 local bagWatching = false
 local ctrlWatch = CreateFrame("Frame") -- MODIFIER_STATE_CHANGED while a cell is flagged
 local isActive = false -- shown, with its events registered
@@ -83,7 +83,7 @@ local dbHooked = false -- Auctionator's price-update callback registered
 -- Junk Marker changes need a new pick but no re-read (Bags asks for its pick
 -- through CludesUI._JunkItems.Refresh). recs[bag][slot] lives for the
 -- session; scanSlots[bag] = how many slots the last read covered.
-local recs, scanSlots, dirty = {}, {}, {}
+local recs, slotsToScan, isStale = {}, {}, {}
 local pending = {} -- [itemID] = true: item data not cached yet
 local failed = {} -- [itemID] = true: the client said the data will not load
 local best, bestN = {}, 0 -- the cheapest listable records, in display order
@@ -116,10 +116,10 @@ local GOLD_ICON = "|TInterface\\MoneyFrame\\UI-GoldIcon:12:12:1:0|t"
 local SILVER_ICON = "|TInterface\\MoneyFrame\\UI-SilverIcon:12:12:1:0|t"
 local COPPER_ICON = "|TInterface\\MoneyFrame\\UI-CopperIcon:12:12:1:0|t"
 
-local function FormatValue(copper, short)
-    local g = math.floor(copper / 10000)
-    local s = math.floor((copper % 10000) / 100)
-    local c = copper % 100
+local function FormatValue(copperValue, short)
+    local g = math.floor(copperValue / 10000)
+    local s = math.floor((copperValue % 10000) / 100)
+    local c = copperValue % 100
     if g > 0 then
         local result = BreakUpLargeNumbers(g) .. GOLD_ICON
         if s > 0 and not short then
@@ -176,13 +176,13 @@ local function Classify(details)
 end
 
 -- Quest items never list, including ones that start a quest (same check as Bags).
-local function IsQuestSlot(bag, slot)
-    local qi = C_Container.GetContainerItemQuestInfo(bag, slot)
-    return (qi and (qi.isQuestItem or qi.questID)) and true or false
+local function IsQuestSlot(bagId, slotId)
+    local quality = C_Container.GetContainerItemQuestInfo(bagId, slotId)
+    return (quality and (quality.isQuestItem or quality.questID)) and true or false
 end
 
-local function InEquipmentSet(bag, slot)
-    return C_Container.GetContainerItemEquipmentSetInfo(bag, slot) and true or false
+local function InEquipmentSet(bagId, slotId)
+    return C_Container.GetContainerItemEquipmentSetInfo(bagId, slotId) and true or false
 end
 
 -- Anything up to Maximum Quality, and anything marked with the Bags Junk
@@ -218,40 +218,40 @@ end
 -- Regular bags only: the reagent bag and specialty bags (quiver, ammo pouch,
 -- soul bag) hold things this delete list must never offer. A family of 0 is
 -- a general-purpose bag (the backpack included).
-local function ReadBag(bag)
-    dirty[bag] = nil
-    local _, family = GetContainerNumFreeSlots(bag)
-    local num = (family == 0) and GetContainerNumSlots(bag) or 0
-    scanSlots[bag] = num
-    local entries = recs[bag]
+local function ReadBag(bagId)
+    isStale[bagId] = nil
+    local _, family = GetContainerNumFreeSlots(bagId)
+    local num = (family == 0) and GetContainerNumSlots(bagId) or 0
+    slotsToScan[bagId] = num
+    local entries = recs[bagId]
     if not entries then
         entries = {}
-        recs[bag] = entries
+        recs[bagId] = entries
     end
-    for slot = 1, num do
-        local region = entries[slot]
+    for slotId = 1, num do
+        local region = entries[slotId]
         if not region then
-            region = { bag = bag, slot = slot }
-            entries[slot] = region
+            region = { bag = bagId, slot = slotId }
+            entries[slotId] = region
         end
         ReadSlot(region)
     end
 end
 
 local function DirtyAll()
-    for bag = 0, NUM_BAG_SLOTS do
-        dirty[bag] = true
+    for bagId = 0, NUM_BAG_SLOTS do
+        isStale[bagId] = true
     end
 end
 
 -- An item finished loading: re-read the bags it sits in.
 local function DirtyHolders(ident)
-    for bag = 0, NUM_BAG_SLOTS do
-        local entries = recs[bag]
-        for slot = 1, scanSlots[bag] or 0 do
-            local region = entries[slot]
+    for bagId = 0, NUM_BAG_SLOTS do
+        local entries = recs[bagId]
+        for slotId = 1, slotsToScan[bagId] or 0 do
+            local region = entries[slotId]
             if region.pending and region.id == ident then
-                dirty[bag] = true
+                isStale[bagId] = true
                 break
             end
         end
@@ -260,10 +260,10 @@ end
 
 -- A set edit or new prices fire no bag update: drop that remembered fact instead.
 local function Forget(key)
-    for bag = 0, NUM_BAG_SLOTS do
-        local entries = recs[bag]
-        for slot = 1, scanSlots[bag] or 0 do
-            entries[slot][key] = nil
+    for bagId = 0, NUM_BAG_SLOTS do
+        local entries = recs[bagId]
+        for slotId = 1, slotsToScan[bagId] or 0 do
+            entries[slotId][key] = nil
         end
     end
 end
@@ -286,8 +286,8 @@ local function Better(a, b)
 end
 
 -- Inserts r into the fixed best-N list holding n entries; returns the new count.
-local function Offer(region, num, limit)
-    if num < limit then
+local function Offer(region, num, cap)
+    if num < cap then
         num = num + 1
     elseif not Better(region, best[num]) then
         return num
@@ -304,34 +304,34 @@ end
 -- Picks the cheapest listable stacks from the read facts. The quest and set
 -- checks and the value run only for items that would otherwise list, once per
 -- read (set membership again after a set edit, the value after new prices).
-local function Select(limit)
+local function Select(cap)
     local maxQuality = Get("maxQuality")
     local cm = _G.CUI_CategoryManager
-    local ex = CludesUIDB.junkListExcluded
+    local excludedItems = CludesUIDB.junkListExcluded
     wipe(pending)
     local num = 0
-    for bag = 0, NUM_BAG_SLOTS do
-        local entries = recs[bag]
-        for slot = 1, scanSlots[bag] or 0 do
-            local region = entries[slot]
+    for bagId = 0, NUM_BAG_SLOTS do
+        local entries = recs[bagId]
+        for slotId = 1, slotsToScan[bagId] or 0 do
+            local region = entries[slotId]
             local ident, q = region.id, region.quality
             if region.pending then
                 if not failed[ident] then
                     pending[ident] = true
                 end
-            elseif q and not (ex and ex[ident]) and Listable(q, ident, maxQuality, cm) then
+            elseif q and not (excludedItems and excludedItems[ident]) and Listable(q, ident, maxQuality, cm) then
                 if region.quest == nil then
-                    region.quest = IsQuestSlot(bag, slot)
+                    region.quest = IsQuestSlot(bagId, slotId)
                 end
                 if not region.quest then
                     if region.inSet == nil then
-                        region.inSet = InEquipmentSet(bag, slot)
+                        region.inSet = InEquipmentSet(bagId, slotId)
                     end
                     if not region.inSet then
                         if region.total == nil then
                             region.total = StackValue(region)
                         end
-                        num = Offer(region, num, limit)
+                        num = Offer(region, num, cap)
                     end
                 end
             end
@@ -367,22 +367,22 @@ local function OnModifierChanged()
 end
 ctrlWatch:SetScript("OnEvent", OnModifierChanged)
 
-local function FlagSwap(cell)
-    if cell.swapped then
+local function FlagSwap(junkCell)
+    if junkCell.swapped then
         return
     end
-    cell.swapped = true
+    junkCell.swapped = true
     swapCount = swapCount + 1
     if swapCount == 1 then
         ctrlWatch:RegisterEvent("MODIFIER_STATE_CHANGED")
     end
 end
 
-local function UnflagSwap(cell)
-    if not cell.swapped then
+local function UnflagSwap(junkCell)
+    if not junkCell.swapped then
         return
     end
-    cell.swapped = nil
+    junkCell.swapped = nil
     swapCount = swapCount - 1
     if swapCount == 0 then
         ctrlWatch:UnregisterEvent("MODIFIER_STATE_CHANGED")
@@ -416,8 +416,8 @@ end
 -- The slot still holds the stack the player chose and it still qualifies: same
 -- item and count, not locked, no better than the quality they saw, and still no
 -- quest item, battle pet, keeper or equipment-set item.
-local function StillJunk(bag, slot, ident, count, maxQuality)
-    local details = GetContainerItemInfo(bag, slot)
+local function StillJunk(bagId, slotId, ident, count, maxQuality)
+    local details = GetContainerItemInfo(bagId, slotId)
     if not details or details.itemID ~= ident or details.isLocked or (details.stackCount or 1) ~= count then
         return false
     end
@@ -425,20 +425,20 @@ local function StillJunk(bag, slot, ident, count, maxQuality)
     if not q or q > maxQuality then
         return false
     end
-    return not IsQuestSlot(bag, slot) and not InEquipmentSet(bag, slot)
+    return not IsQuestSlot(bagId, slotId) and not InEquipmentSet(bagId, slotId)
 end
 
 -- DeleteCursorItem needs a hardware event, and the game refuses it from a
 -- confirmation popup's click: this runs only inside the stack's own Ctrl +
 -- Left Click. Never in combat or with anything already on the cursor.
-local function DeleteStack(bag, slot, ident, count, maxQuality)
+local function DeleteStack(bagId, slotId, ident, count, maxQuality)
     if InCombatLockdown() or GetCursorInfo() then
         return
     end
-    if not StillJunk(bag, slot, ident, count, maxQuality) then
+    if not StillJunk(bagId, slotId, ident, count, maxQuality) then
         return
     end
-    C_Container.PickupContainerItem(bag, slot)
+    C_Container.PickupContainerItem(bagId, slotId)
     local kind, cursorID = GetCursorInfo()
     if kind == "item" and cursorID == ident then
         DeleteCursorItem()
@@ -456,7 +456,7 @@ local function CloseConfirm()
     CludesUI:CloseConfirmPopup(confirmHandle)
     confirmHandle = nil
     if not armedCell then
-        eventFrame:UnregisterEvent("PLAYER_REGEN_DISABLED")
+        watcher:UnregisterEvent("PLAYER_REGEN_DISABLED")
     end
 end
 
@@ -468,33 +468,33 @@ end
 local ARM_SECS = 6
 
 local function Disarm()
-    local cell = armedCell
-    if not cell then
+    local junkCell = armedCell
+    if not junkCell then
         return
     end
     armedCell = nil
-    cell.armedUntil = nil
-    cell._arm:Hide()
+    junkCell.armedUntil = nil
+    junkCell._arm:Hide()
     if not confirmHandle then
-        eventFrame:UnregisterEvent("PLAYER_REGEN_DISABLED")
+        watcher:UnregisterEvent("PLAYER_REGEN_DISABLED")
     end
-    if GameTooltip:IsOwned(cell) then
-        ShowCellTooltip(cell)
+    if GameTooltip:IsOwned(junkCell) then
+        ShowCellTooltip(junkCell)
     end
 end
 
-local function Arm(cell)
+local function Arm(junkCell)
     Disarm()
-    armedCell = cell
+    armedCell = junkCell
     local untilT = GetTime() + ARM_SECS
-    cell.armedUntil = untilT
-    cell._arm:Show()
-    eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
-    if GameTooltip:IsOwned(cell) then
-        ShowCellTooltip(cell)
+    junkCell.armedUntil = untilT
+    junkCell._arm:Show()
+    watcher:RegisterEvent("PLAYER_REGEN_DISABLED")
+    if GameTooltip:IsOwned(junkCell) then
+        ShowCellTooltip(junkCell)
     end
     C_Timer.After(ARM_SECS, function()
-        if armedCell == cell and cell.armedUntil == untilT then
+        if armedCell == junkCell and junkCell.armedUntil == untilT then
             Disarm()
         end
     end)
@@ -502,10 +502,10 @@ end
 
 -- Rare or better also needs the delete word typed, as the game's own delete
 -- does; confirming arms the stack for its final Ctrl + Left Click.
-local function AskDelete(cell)
+local function AskDelete(junkCell)
     CloseConfirm()
-    local bag, slot, ident, count, q = cell.bag, cell.slot, cell.id, cell.count, cell.quality
-    local labelText = count > 1 and (cell.link .. " x" .. count) or cell.link
+    local bagId, slotId, ident, count, q = junkCell.bag, junkCell.slot, junkCell.id, junkCell.count, junkCell.quality
+    local labelText = count > 1 and (junkCell.link .. " x" .. count) or junkCell.link
     local handle
     handle = CludesUI:ShowConfirmPopup({
         title = CludesUI.L("Delete Junk Item"),
@@ -520,8 +520,8 @@ local function AskDelete(cell)
                 return
             end
             CloseConfirm()
-            if cell.id == ident and cell.bag == bag and cell.slot == slot and cell.count == count then
-                Arm(cell)
+            if junkCell.id == ident and junkCell.bag == bagId and junkCell.slot == slotId and junkCell.count == count then
+                Arm(junkCell)
             end
         end,
         onCancel = function()
@@ -532,30 +532,30 @@ local function AskDelete(cell)
     })
     confirmHandle = handle
     -- Closed at combat start: the popup's key handling is restricted in combat.
-    eventFrame:RegisterEvent("PLAYER_REGEN_DISABLED")
+    watcher:RegisterEvent("PLAYER_REGEN_DISABLED")
 end
 
 local function Exclude(ident)
-    local ex = CludesUIDB.junkListExcluded
-    if not ex then
-        ex = {}
-        CludesUIDB.junkListExcluded = ex
+    local excludedItems = CludesUIDB.junkListExcluded
+    if not excludedItems then
+        excludedItems = {}
+        CludesUIDB.junkListExcluded = excludedItems
     end
-    ex[ident] = true
+    excludedItems[ident] = true
     RequestRefresh()
 end
 
 -------------------------------------------------------------------------------
 --  Cells
 -------------------------------------------------------------------------------
-ShowCellTooltip = function(cell)
-    GameTooltip:SetOwner(cell, "ANCHOR_RIGHT")
-    GameTooltip:SetBagItem(cell.bag, cell.slot)
+ShowCellTooltip = function(junkCell)
+    GameTooltip:SetOwner(junkCell, "ANCHOR_RIGHT")
+    GameTooltip:SetBagItem(junkCell.bag, junkCell.slot)
     GameTooltip:AddLine(" ")
     -- No deletes in combat: the hint greys out there.
     if InCombatLockdown() then
         GameTooltip:AddLine(CludesUI.L("Ctrl + Left Click: delete"), 0.5, 0.5, 0.5)
-    elseif armedCell == cell then
+    elseif armedCell == junkCell then
         GameTooltip:AddLine(CludesUI.L("Ctrl + Left Click again to delete"), 1, 0.15, 0.15)
     else
         GameTooltip:AddLine(CludesUI.L("Ctrl + Left Click: delete"), 1, 0.3, 0.3)
@@ -641,53 +641,53 @@ local function AcquireCell(index)
 end
 
 -- Repaints one cell only where its stack changed.
-local function PaintCell(cell, region)
+local function PaintCell(junkCell, region)
     if not region then
-        if cell.id then
-            if armedCell == cell then
+        if junkCell.id then
+            if armedCell == junkCell then
                 Disarm()
             end
-            if GameTooltip:IsOwned(cell) then
+            if GameTooltip:IsOwned(junkCell) then
                 GameTooltip:Hide()
             end
-            UnflagSwap(cell)
-            cell.id = nil
-            cell:Hide()
+            UnflagSwap(junkCell)
+            junkCell.id = nil
+            junkCell:Hide()
         end
         return
     end
-    local moved = region.id ~= cell.id or region.bag ~= cell.bag or region.slot ~= cell.slot
-    local changed = moved or region.count ~= cell.count
+    local moved = region.id ~= junkCell.id or region.bag ~= junkCell.bag or region.slot ~= junkCell.slot
+    local changed = moved or region.count ~= junkCell.count
     -- An armed stack that left the cell (or changed size) is not the one confirmed.
-    if changed and armedCell == cell then
+    if changed and armedCell == junkCell then
         Disarm()
     end
-    if region.count ~= cell.count then
-        cell._count:SetText(region.count > 1 and region.count or "")
+    if region.count ~= junkCell.count then
+        junkCell._count:SetText(region.count > 1 and region.count or "")
     end
-    if region.icon ~= cell.icon then
-        cell._icon:SetTexture(region.icon)
+    if region.icon ~= junkCell.icon then
+        junkCell._icon:SetTexture(region.icon)
     end
     -- A price wider than its slot shows its largest coin alone, so prices never collide.
-    if region.total ~= cell.total or cell.fitW ~= priceFitW then
-        local fontStr = cell._price
+    if region.total ~= junkCell.total or junkCell.fitW ~= priceFitW then
+        local fontStr = junkCell._price
         fontStr:SetText(FormatValue(region.total))
         if fontStr:GetStringWidth() > priceFitW then
             fontStr:SetText(FormatValue(region.total, true))
         end
-        cell.fitW = priceFitW
+        junkCell.fitW = priceFitW
     end
     -- A different stack under the cursor while Ctrl is held: see the double-click guard.
-    if moved and cell.id and IsControlKeyDown() and cell:IsMouseOver() then
-        FlagSwap(cell)
+    if moved and junkCell.id and IsControlKeyDown() and junkCell:IsMouseOver() then
+        FlagSwap(junkCell)
     end
-    cell.id, cell.bag, cell.slot, cell.count = region.id, region.bag, region.slot, region.count
-    cell.icon, cell.total, cell.quality, cell.link = region.icon, region.total, region.quality, region.link
-    if not cell:IsShown() then
-        cell:Show()
+    junkCell.id, junkCell.bag, junkCell.slot, junkCell.count = region.id, region.bag, region.slot, region.count
+    junkCell.icon, junkCell.total, junkCell.quality, junkCell.link = region.icon, region.total, region.quality, region.link
+    if not junkCell:IsShown() then
+        junkCell:Show()
     end
-    if changed and GameTooltip:IsOwned(cell) then
-        ShowCellTooltip(cell)
+    if changed and GameTooltip:IsOwned(junkCell) then
+        ShowCellTooltip(junkCell)
     end
 end
 
@@ -716,50 +716,50 @@ end
 -- The window is its content, with no margin (it draws no art): the row of icons
 -- (or the title, when it is shown and wider), the title row when shown, then
 -- the icons and their prices. Icon Spacing is the gap between icons.
-local function WindowSize(limit)
-    local iconSz = Get("iconSize")
-    local rowW = limit * iconSz + (limit - 1) * Get("iconSpacing")
+local function WindowSize(cap)
+    local iconSize = Get("iconSize")
+    local rowW = cap * iconSize + (cap - 1) * Get("iconSpacing")
     local titled = Get("showFreeSlots") and true or false
     local wid = titled and math.max(rowW, TitleWidth()) or rowW
-    return Pix.Snap(wid), Pix.Snap((titled and TITLE_H or 0) + iconSz + 3 + PRICE_H), rowW
+    return Pix.Snap(wid), Pix.Snap((titled and TITLE_H or 0) + iconSize + 3 + PRICE_H), rowW
 end
 
 local lay = {} -- the geometry last applied
-local function Layout(limit)
-    local iconSz = Get("iconSize")
-    local pitch = iconSz + Get("iconSpacing")
+local function Layout(cap)
+    local iconSize = Get("iconSize")
+    local pitch = iconSize + Get("iconSpacing")
     local topY = Get("priceSide") == "top"
     local titled = Get("showFreeSlots") and true or false
     local mult = Pix.mult -- the pixel grid the size and the centre snap to (moves with the UI scale)
     if
-        iconSz == lay.icon
+        iconSize == lay.icon
         and pitch == lay.pitch
         and topY == lay.top
-        and limit == lay.limit
+        and cap == lay.limit
         and titled == lay.titled
         and mult == lay.mult
     then
         return
     end
-    lay.icon, lay.pitch, lay.top, lay.limit, lay.titled, lay.mult = iconSz, pitch, topY, limit, titled, mult
+    lay.icon, lay.pitch, lay.top, lay.limit, lay.titled, lay.mult = iconSize, pitch, topY, cap, titled, mult
     -- each price may use its icon's width plus the spacing (less 2 px of air) before it is shortened
     priceFitW = pitch - 2
-    local wid, hgt, rowW = WindowSize(limit)
+    local wid, hgt, rowW = WindowSize(cap)
     widget:SetSize(wid, hgt)
     -- The row centred in the window (wider only for the title).
     local x0 = math.floor((wid - rowW) / 2 + 0.5)
     local titleH = titled and TITLE_H or 0
     local y0 = -(titleH + (topY and (PRICE_H + 3) or 0))
-    for index = 1, limit do
-        local cell = AcquireCell(index)
-        cell:SetSize(iconSz, iconSz)
-        cell:ClearAllPoints()
-        cell:SetPoint("TOPLEFT", widget, "TOPLEFT", x0 + (index - 1) * pitch, y0)
-        cell._price:ClearAllPoints()
+    for index = 1, cap do
+        local junkCell = AcquireCell(index)
+        junkCell:SetSize(iconSize, iconSize)
+        junkCell:ClearAllPoints()
+        junkCell:SetPoint("TOPLEFT", widget, "TOPLEFT", x0 + (index - 1) * pitch, y0)
+        junkCell._price:ClearAllPoints()
         if topY then
-            cell._price:SetPoint("BOTTOM", cell, "TOP", 0, 3)
+            junkCell._price:SetPoint("BOTTOM", junkCell, "TOP", 0, 3)
         else
-            cell._price:SetPoint("TOP", cell, "BOTTOM", 0, -3)
+            junkCell._price:SetPoint("TOP", junkCell, "BOTTOM", 0, -3)
         end
     end
     emptyFS:ClearAllPoints()
@@ -773,11 +773,11 @@ end
 local function CountBagSlots()
     -- Same bags the list reads: regular bags only.
     local free, sum = 0, 0
-    for bag = 0, NUM_BAG_SLOTS do
-        local numFree, family = GetContainerNumFreeSlots(bag)
+    for bagId = 0, NUM_BAG_SLOTS do
+        local numFree, family = GetContainerNumFreeSlots(bagId)
         if family == 0 then
             free = free + (numFree or 0)
-            sum = sum + GetContainerNumSlots(bag)
+            sum = sum + GetContainerNumSlots(bagId)
         end
     end
     return free, sum
@@ -802,7 +802,7 @@ end
 local function OnEvent(_, evt, arg1, arg2)
     if evt == "BAG_UPDATE" then
         if arg1 and arg1 >= 0 and arg1 <= NUM_BAG_SLOTS then
-            dirty[arg1] = true
+            isStale[arg1] = true
         end
         return -- BAG_UPDATE_DELAYED ends the burst
     elseif evt == "PLAYER_REGEN_DISABLED" then
@@ -828,7 +828,7 @@ local function OnEvent(_, evt, arg1, arg2)
     end
     RequestRefresh()
 end
-eventFrame:SetScript("OnEvent", OnEvent)
+watcher:SetScript("OnEvent", OnEvent)
 
 local function BuildFrame()
     if widget then
@@ -900,14 +900,14 @@ Refresh = function()
     if ah and not dbHooked then
         HookPriceUpdates()
     end
-    for bag = 0, NUM_BAG_SLOTS do
-        if dirty[bag] then
-            ReadBag(bag)
+    for bagId = 0, NUM_BAG_SLOTS do
+        if isStale[bagId] then
+            ReadBag(bagId)
         end
     end
-    local limit = Limit()
-    Select(limit)
-    Layout(limit)
+    local cap = Limit()
+    Select(cap)
+    Layout(cap)
     for index = 1, #cells do
         PaintCell(cells[index], best[index])
     end
@@ -918,9 +918,9 @@ Refresh = function()
     if wanted ~= itemInfoOn then
         itemInfoOn = wanted
         if wanted then
-            eventFrame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+            watcher:RegisterEvent("GET_ITEM_INFO_RECEIVED")
         else
-            eventFrame:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
+            watcher:UnregisterEvent("GET_ITEM_INFO_RECEIVED")
         end
     end
     widget:Show()
@@ -937,16 +937,16 @@ local function SetActive(on)
     end
     isActive = on
     if on then
-        eventFrame:RegisterEvent("BAG_UPDATE")
-        eventFrame:RegisterEvent("BAG_UPDATE_DELAYED")
-        eventFrame:RegisterEvent("BAG_CONTAINER_UPDATE")
-        eventFrame:RegisterEvent("EQUIPMENT_SETS_CHANGED")
+        watcher:RegisterEvent("BAG_UPDATE")
+        watcher:RegisterEvent("BAG_UPDATE_DELAYED")
+        watcher:RegisterEvent("BAG_CONTAINER_UPDATE")
+        watcher:RegisterEvent("EQUIPMENT_SETS_CHANGED")
         DirtyAll() -- nothing was watched while inactive
         RequestRefresh()
         return
     end
     CloseConfirm()
-    eventFrame:UnregisterAllEvents()
+    watcher:UnregisterAllEvents()
     itemInfoOn = false
     wipe(pending)
     ClearSwapFlags()
@@ -962,22 +962,22 @@ end
 -- own edges (combat, group, zone...) and after every settings change.
 local function UpdateVisibility()
     local show = (widget and Enabled() and CludesUI.EvalVisibility(Read()) == true) and true or false
-    local watch = show and Get("onlyLowBagSpace") == true
-    if watch ~= bagWatching then
-        bagWatching = watch
-        if watch then
-            bagSpaceWatch:RegisterEvent("BAG_UPDATE_DELAYED")
-            bagSpaceWatch:RegisterEvent("BAG_CONTAINER_UPDATE")
+    local watching = show and Get("onlyLowBagSpace") == true
+    if watching ~= bagWatching then
+        bagWatching = watching
+        if watching then
+            bagSpaceWatcher:RegisterEvent("BAG_UPDATE_DELAYED")
+            bagSpaceWatcher:RegisterEvent("BAG_CONTAINER_UPDATE")
         else
-            bagSpaceWatch:UnregisterAllEvents()
+            bagSpaceWatcher:UnregisterAllEvents()
         end
     end
-    if watch then
+    if watching then
         show = CountBagSlots() < Get("freeSlotThreshold")
     end
     SetActive(show)
 end
-bagSpaceWatch:SetScript("OnEvent", UpdateVisibility)
+bagSpaceWatcher:SetScript("OnEvent", UpdateVisibility)
 
 local function Apply()
     if Enabled() then
@@ -1036,8 +1036,8 @@ F.Start(Apply, {
         if widget then
             return widget:GetWidth(), widget:GetHeight()
         end
-        local iconSz, num = Get("iconSize"), Limit()
-        return num * iconSz + (num - 1) * Get("iconSpacing"), iconSz + 3 + PRICE_H
+        local iconSize, num = Get("iconSize"), Limit()
+        return num * iconSize + (num - 1) * Get("iconSpacing"), iconSize + 3 + PRICE_H
     end,
     snap = true,
     noAnchorTarget = true,

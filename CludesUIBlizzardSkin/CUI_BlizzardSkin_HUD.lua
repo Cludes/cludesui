@@ -465,22 +465,22 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         end
         local tallest = barH
         for _, key in ipairs({ "BorderCenter", "BorderLeft", "BorderRight" }) do
-            local okT, t = pcall(HUDGet, barFrame, key)
-            if okT and t then
+            local texOk, t = pcall(HUDGet, barFrame, key)
+            if texOk and t then
                 local okH, hgt = pcall(t.GetHeight, t)
                 if okH and type(hgt) == "number" and hgt > tallest then
                     tallest = hgt
                 end
             end
         end
-        local pad = (tallest - barH) / 2
-        if pad < 0 then
-            pad = 0
+        local padding = (tallest - barH) / 2
+        if padding < 0 then
+            padding = 0
         end
-        if pad > MAX_VPAD then
-            pad = MAX_VPAD
+        if padding > MAX_VPAD then
+            padding = MAX_VPAD
         end
-        return pad
+        return padding
     end
 
     -- Minimum on-screen cover HEIGHT (real pixels) for PLATE-HOSTED bars, the cog
@@ -538,7 +538,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         return s
     end
 
-    local function AnchorCover(c, barFrame, pad)
+    local function AnchorCover(c, barFrame, padding)
         local s = CoverScale(barFrame, c)
         c:ClearAllPoints()
         if s <= 1 then
@@ -591,8 +591,8 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         -- SetParent on OUR OWN frame is still not a write into the widget tree;
         -- nothing on a Blizzard frame is modified. It also makes the cover
         -- inherit their scale and show/hide for free.
-        local okP, hostFrame = SafeRead(barFrame, "GetParent")
-        local c = CreateFrame("StatusBar", nil, (okP and hostFrame) or UIParent)
+        local pointOk, hostFrame = SafeRead(barFrame, "GetParent")
+        local c = CreateFrame("StatusBar", nil, (pointOk and hostFrame) or UIParent)
         -- Anchored, never re-parented: position needs no polling because the
         -- anchor does it, including when a nameplate moves.
         c.cuiPad = VPad(barFrame)
@@ -669,16 +669,16 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     end
     local function HideBarArt(barFrame)
         for idx = 1, #ART do
-            local okT, t = pcall(HUDGet, barFrame, ART[idx])
-            if okT and t then
+            local texOk, t = pcall(HUDGet, barFrame, ART[idx])
+            if texOk and t then
                 pcall(t.SetAlpha, t, 0)
             end
         end
-        local okP, hostFrame = SafeRead(barFrame, "GetParent")
-        if okP and hostFrame then
+        local pointOk, hostFrame = SafeRead(barFrame, "GetParent")
+        if pointOk and hostFrame then
             for idx = 1, #PARENT_ART do
-                local okT, t = pcall(HUDGet, hostFrame, PARENT_ART[idx])
-                if okT and t then
+                local texOk, t = pcall(HUDGet, hostFrame, PARENT_ART[idx])
+                if texOk and t then
                     pcall(t.SetAlpha, t, 0)
                 end
             end
@@ -691,11 +691,11 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         --
         -- Our cover is parented to the bar's PARENT, not the bar, so it is
         -- never in this list -- no risk of hiding ourselves.
-        local okK, kids = pcall(BarKids, barFrame)
-        if okK and kids then
-            for idx = 1, #kids do
-                local okT, t = pcall(HUDGet, kids[idx], "Tex")
-                if okT and t then
+        local keyOk, childList = pcall(BarKids, barFrame)
+        if keyOk and childList then
+            for idx = 1, #childList do
+                local texOk, t = pcall(HUDGet, childList[idx], "Tex")
+                if texOk and t then
                     pcall(t.SetAlpha, t, 0)
                 end
             end
@@ -799,9 +799,9 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         -- VPad re-measures four textures; the answer only moves if the bar's
         -- own height does, so it is cached against that.
         local hOk, curH = pcall(barFrame.GetHeight, barFrame)
-        local pad = c.cuiPad
+        local padding = c.cuiPad
         if not hOk or curH ~= c.cuiPadH then
-            pad = VPad(barFrame)
+            padding = VPad(barFrame)
             c.cuiPadH = hOk and curH or nil
         end
         -- Second trigger, PLATE covers with the size floor ON only: the bar's
@@ -819,10 +819,10 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         end
         local esMoved = (es ~= nil) ~= (c.cuiES ~= nil) or (es and c.cuiES and math.abs(es - c.cuiES) > 0.01)
         -- Third trigger: the floor itself (the cog's slider re-anchors live covers).
-        if pad ~= c.cuiPad or esMoved or c.cuiMin ~= HUD.minPx then
-            c.cuiPad = pad
+        if padding ~= c.cuiPad or esMoved or c.cuiMin ~= HUD.minPx then
+            c.cuiPad = padding
             c.cuiES = es
-            AnchorCover(c, barFrame, pad)
+            AnchorCover(c, barFrame, padding)
         end
 
         if not c:IsShown() then
@@ -915,24 +915,24 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         if not widget.GetChildren then
             return
         end
-        local okKids, kids = pcall(KidsOf, widget)
-        if not okKids or not kids then
+        local okKids, childList = pcall(KidsOf, widget)
+        if not okKids or not childList then
             return
         end
-        for idx = 1, #kids do
-            local ch = kids[idx]
+        for idx = 1, #childList do
+            local childFrame = childList[idx]
             -- Skip OUR OWN covers entirely -- not collected, not descended
             -- into. They are StatusBars living inside Blizzard's frames, so
             -- without this the sweep covers its own covers, every tick.
-            if ch and HUD.owned[ch] then
-                ch = nil
+            if childFrame and HUD.owned[childFrame] then
+                childFrame = nil
             end
-            if ch and ch.GetObjectType and not (ch.IsForbidden and ch:IsForbidden()) then
-                local okT, t = pcall(ch.GetObjectType, ch)
-                if okT and t == "StatusBar" then
-                    result[#result + 1] = ch
+            if childFrame and childFrame.GetObjectType and not (childFrame.IsForbidden and childFrame:IsForbidden()) then
+                local texOk, t = pcall(childFrame.GetObjectType, childFrame)
+                if texOk and t == "StatusBar" then
+                    result[#result + 1] = childFrame
                 else
-                    CollectBars(ch, depth + 1, result, seen)
+                    CollectBars(childFrame, depth + 1, result, seen)
                 end
             end
         end
@@ -958,23 +958,23 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         if up and up.GetNumChildren then
             okC, numKids = pcall(up.GetNumChildren, up)
         end
-        local okK, kids = false, nil
+        local keyOk, childList = false, nil
         if okC and type(numKids) == "number" and numKids <= 4000 then
-            okK, kids = pcall(KidsOf, up)
+            keyOk, childList = pcall(KidsOf, up)
         end
-        if okK and kids then
-            for idx = 1, #kids do
-                local ch = kids[idx]
-                if ch and ch.GetName and not (ch.IsForbidden and ch:IsForbidden()) then
-                    local okN, num = pcall(ch.GetName, ch)
-                    local okP, pools = pcall(HUDGet, ch, "widgetPools")
+        if keyOk and childList then
+            for idx = 1, #childList do
+                local childFrame = childList[idx]
+                if childFrame and childFrame.GetName and not (childFrame.IsForbidden and childFrame:IsForbidden()) then
+                    local okN, num = pcall(childFrame.GetName, childFrame)
+                    local pointOk, poolList = pcall(HUDGet, childFrame, "widgetPools")
                     local isWidget = (okN and type(num) == "string" and num:find("^UIWidget"))
-                        or (okP and pools ~= nil)
+                        or (pointOk and poolList ~= nil)
                     -- The tracker's own widget container is excluded on
                     -- purpose: its bars live inside a clipped scrolling layout,
                     -- so a UIParent-parented cover would float free of it.
                     if isWidget and not (okN and num == "ObjectiveTrackerUIWidgetContainer") then
-                        HUD.containers[#HUD.containers + 1] = ch
+                        HUD.containers[#HUD.containers + 1] = childFrame
                     end
                 end
             end
@@ -1004,7 +1004,7 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
     -- an unreadable id (or a secret one) means the registry cannot prove a
     -- foreign event foreign, so the gate must stand down. A container with NO
     -- set (nil id) stays exact -- no widget event can belong to it.
-    local function NoteContainerSet(c, exact)
+    local function NoteContainerSet(c, exactMatch)
         if not HUD.setHooked[c] then
             local okR, reg = pcall(HUDGet, c, "RegisterForWidgetSet")
             if okR then
@@ -1019,13 +1019,13 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
             return false
         end
         if spellRef == nil then
-            return exact
+            return exactMatch
         end
         if (_isSecretV and _isSecretV(spellRef)) or type(spellRef) ~= "number" then
             return false
         end
         HUD.setIds[spellRef] = true
-        return exact
+        return exactMatch
     end
 
     -- No CoverEnabled() check here on purpose. The setting is read ONCE, at
@@ -1038,9 +1038,9 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         wipe(seen)
         wipe(barList)
         wipe(HUD.setIds)
-        local exact = true
+        local exactMatch = true
         for idx = 1, #HUD.containers do
-            exact = NoteContainerSet(HUD.containers[idx], exact)
+            exactMatch = NoteContainerSet(HUD.containers[idx], exactMatch)
             CollectBars(HUD.containers[idx], 0, barList, seen)
         end
         -- Everything collected past this index came from a plate container.
@@ -1052,20 +1052,20 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         -- probe Discover uses; with CUI nameplates off it sits one level down,
         -- under the Blizzard unit frame's WidgetContainer key instead.
         for backing in pairs(HUD.plates) do
-            local okKids, kids = pcall(KidsOf, backing)
-            if okKids and kids then
-                for idx = 1, #kids do
-                    local ch = kids[idx]
-                    if ch and not (ch.IsForbidden and ch:IsForbidden()) then
-                        local okP, pools = pcall(HUDGet, ch, "widgetPools")
-                        if okP and pools ~= nil then
-                            exact = NoteContainerSet(ch, exact)
-                            CollectBars(ch, 0, barList, seen)
+            local okKids, childList = pcall(KidsOf, backing)
+            if okKids and childList then
+                for idx = 1, #childList do
+                    local childFrame = childList[idx]
+                    if childFrame and not (childFrame.IsForbidden and childFrame:IsForbidden()) then
+                        local pointOk, poolList = pcall(HUDGet, childFrame, "widgetPools")
+                        if pointOk and poolList ~= nil then
+                            exactMatch = NoteContainerSet(childFrame, exactMatch)
+                            CollectBars(childFrame, 0, barList, seen)
                         else
-                            local okW, wc = pcall(HUDGet, ch, "WidgetContainer")
-                            if okW and wc and not (wc.IsForbidden and wc:IsForbidden()) then
-                                exact = NoteContainerSet(wc, exact)
-                                CollectBars(wc, 0, barList, seen)
+                            local okW, watchCount = pcall(HUDGet, childFrame, "WidgetContainer")
+                            if okW and watchCount and not (watchCount.IsForbidden and watchCount:IsForbidden()) then
+                                exactMatch = NoteContainerSet(watchCount, exactMatch)
+                                CollectBars(watchCount, 0, barList, seen)
                             end
                         end
                     end
@@ -1073,10 +1073,10 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
             else
                 -- A plate whose children could not be read holds containers
                 -- the registry cannot see: gate stands down.
-                exact = false
+                exactMatch = false
             end
         end
-        HUD.setIdsExact = exact
+        HUD.setIdsExact = exactMatch
         for idx = 1, #barList do
             local isPlate = idx > nStatic
             Adopt(barList[idx], isPlate)
@@ -1343,15 +1343,15 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         end
 
         local skinData = GetFFD(button)
-        local style = button.style
-        if style then
-            if style.SetAtlas then
-                style:SetAtlas("")
+        local look = button.style
+        if look then
+            if look.SetAtlas then
+                look:SetAtlas("")
             end
-            if style.SetTexture then
-                style:SetTexture("")
+            if look.SetTexture then
+                look:SetTexture("")
             end
-            style:SetAlpha(0)
+            look:SetAlpha(0)
         end
         if button.icon then
             -- Square the icon and stretch it corner to corner: with the brass
@@ -1382,11 +1382,11 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         -- number font: they sit over the icon, where the panel font is unreadable.
     end
 
-    local eabEv = CreateFrame("Frame")
+    local extraButtonWatch = CreateFrame("Frame")
     local _eabUpdateHooked = false
-    eabEv:RegisterEvent("PLAYER_LOGIN")
-    eabEv:RegisterEvent("UPDATE_EXTRA_ACTIONBAR")
-    eabEv:SetScript("OnEvent", function()
+    extraButtonWatch:RegisterEvent("PLAYER_LOGIN")
+    extraButtonWatch:RegisterEvent("UPDATE_EXTRA_ACTIONBAR")
+    extraButtonWatch:SetScript("OnEvent", function()
         -- Hook install is unconditional so a mid-session enable takes effect on
         -- the button's next show; the strip and its catch-up timers are gated
         -- here so the default-off state never allocates per event.
@@ -1441,15 +1441,15 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
             return
         end
 
-        local style = frame.Style
-        if style then
-            if style.SetAtlas then
-                style:SetAtlas("")
+        local look = frame.Style
+        if look then
+            if look.SetAtlas then
+                look:SetAtlas("")
             end
-            if style.SetTexture then
-                style:SetTexture("")
+            if look.SetTexture then
+                look:SetTexture("")
             end
-            style:SetAlpha(0)
+            look:SetAlpha(0)
         end
 
         local sc = frame.SpellButtonContainer
@@ -1501,8 +1501,8 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         end
     end
 
-    local zaEv = CreateFrame("Frame")
-    zaEv:RegisterEvent("PLAYER_ENTERING_WORLD")
+    local zoneAbilityWatch = CreateFrame("Frame")
+    zoneAbilityWatch:RegisterEvent("PLAYER_ENTERING_WORLD")
     -- The texture kit is per zone, so every zone crossing re-applies .Style.
     for _, e in ipairs({
         "ZONE_CHANGED",
@@ -1510,9 +1510,9 @@ local GetFFD = Inner.GetFFD--  covers, and the extra action button.
         "ZONE_CHANGED_INDOORS",
         "SPELLS_CHANGED",
     }) do
-        pcall(zaEv.RegisterEvent, zaEv, e)
+        pcall(zoneAbilityWatch.RegisterEvent, zoneAbilityWatch, e)
     end
-    zaEv:SetScript("OnEvent", function()
+    zoneAbilityWatch:SetScript("OnEvent", function()
         -- Same shape as the extra action button's handler: hooks install
         -- unconditionally (the strip self-gates at near-zero cost), the strip
         -- and its catch-up timers only run with the feature ON -- zone changes

@@ -127,7 +127,7 @@ local function SkinChatFrame(castFrame)
             pcall(function()
                 castFrame:StopMovingOrSizing()
             end)
-            local dcf = CFD(castFrame)
+            local defaultChat = CFD(castFrame)
             -- Grab reference: the frame's last at-rest rect from the follower
             -- cache -- the capture has already scrambled the live rect by the
             -- time this post-hook runs. Fresh undocks (cache still says
@@ -136,8 +136,8 @@ local function SkinChatFrame(castFrame)
             -- feel. Immediate SetPoint pins the choice before this frame
             -- renders, so re-drags never flash at the guard's spot.
             local l, t
-            if not dcf._cfWasDocked and dcf._cfL and dcf._cfT then
-                l, t = dcf._cfL, dcf._cfT
+            if not defaultChat._cfWasDocked and defaultChat._cfL and defaultChat._cfT then
+                l, t = defaultChat._cfL, defaultChat._cfT
             else
                 l, t = castFrame:GetLeft(), castFrame:GetTop()
             end
@@ -154,15 +154,15 @@ local function SkinChatFrame(castFrame)
                 castFrame:ClearAllPoints()
                 castFrame:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", l, t)
             end)
-            dcf._tabDragOffX = l - mx / es
-            dcf._tabDragOffY = t - my / es
-            local tk = dcf._tabDragTicker
-            if not tk then
-                tk = CreateFrame("Frame")
-                tk:Hide()
-                tk:SetScript("OnUpdate", function()
+            defaultChat._tabDragOffX = l - mx / es
+            defaultChat._tabDragOffY = t - my / es
+            local texKey = defaultChat._tabDragTicker
+            if not texKey then
+                texKey = CreateFrame("Frame")
+                texKey:Hide()
+                texKey:SetScript("OnUpdate", function()
                     if castFrame.isDocked or not IsMouseButtonDown("LeftButton") then
-                        tk:Hide()
+                        texKey:Hide()
                         return
                     end
                     local cx, cy = GetCursorPosition()
@@ -179,13 +179,13 @@ local function SkinChatFrame(castFrame)
                         "TOPLEFT",
                         UIParent,
                         "BOTTOMLEFT",
-                        cx / es2 + dcf._tabDragOffX,
-                        cy / es2 + dcf._tabDragOffY
+                        cx / es2 + defaultChat._tabDragOffX,
+                        cy / es2 + defaultChat._tabDragOffY
                     )
                 end)
-                dcf._tabDragTicker = tk
+                defaultChat._tabDragTicker = texKey
             end
-            tk:Show()
+            texKey:Show()
         end)
     end
 
@@ -245,8 +245,8 @@ local function SkinChatFrame(castFrame)
         if CHAT.SB_Latch then
             CHAT.SB_Latch()
         end
-        local sidebar = CreateFrame("Frame", nil, UIParent)
-        sidebar:SetWidth(
+        local sideBar = CreateFrame("Frame", nil, UIParent)
+        sideBar:SetWidth(
             min(
                 100,
                 upper(
@@ -255,28 +255,28 @@ local function SkinChatFrame(castFrame)
                 )
             )
         )
-        sidebar:SetPoint("TOPRIGHT", CFD(castFrame).bg, "TOPLEFT", 0, 0)
-        sidebar:SetPoint("BOTTOMRIGHT", CFD(castFrame).bg, "BOTTOMLEFT", 0, 0)
+        sideBar:SetPoint("TOPRIGHT", CFD(castFrame).bg, "TOPLEFT", 0, 0)
+        sideBar:SetPoint("BOTTOMRIGHT", CFD(castFrame).bg, "BOTTOMLEFT", 0, 0)
         -- Stock column: MEDIUM, as Blizzard's own column buttons and the stock
         -- panel (the chat frame's toplevel LOW art would draw over it). WoW
         -- Forever strips that art and keeps the chat frame's strata, as the
         -- CludesUI look does: there Blizzard's chat menu button, seated
         -- over our Chat Menu icon, takes no click while the column sits a
         -- strata above the chat frame (field-measured).
-        sidebar:SetFrameStrata(
+        sideBar:SetFrameStrata(
             (CHAT.SB_KIT and mod.ChatStockArt()) and "MEDIUM" or castFrame:GetFrameStrata()
         )
-        sidebar:SetFrameLevel(castFrame:GetFrameLevel() + 1)
+        sideBar:SetFrameLevel(castFrame:GetFrameLevel() + 1)
 
-        local sbBg = sidebar:CreateTexture(nil, "BACKGROUND")
+        local sbBg = sideBar:CreateTexture(nil, "BACKGROUND")
         sbBg:SetAllPoints()
         sbBg:SetColorTexture(BG_R, BG_G, BG_B, mod.ChatStock() and 0 or BG_A)
         if CHAT.SB_KIT and CHAT.SB_KIT.backdrop then
-            CHAT.SB_BuildBackdrop(sidebar, CFD(castFrame))
+            CHAT.SB_BuildBackdrop(sideBar, CFD(castFrame))
         end
 
-        sidebar:EnableMouse(true)
-        sidebar:SetScript("OnEnter", function()
+        sideBar:EnableMouse(true)
+        sideBar:SetScript("OnEnter", function()
             local conf = CHAT.DB()
             if conf.sidebarVisibility == "mouseover" then
                 -- Fade target MUST be set before the layout pass: the icon
@@ -296,11 +296,11 @@ local function SkinChatFrame(castFrame)
                 end
             end
         end)
-        sidebar:SetScript("OnLeave", function()
+        sideBar:SetScript("OnLeave", function()
             local conf = CHAT.DB()
             if conf.sidebarVisibility == "mouseover" then
                 C_Timer.After(0, function()
-                    local over = sidebar:IsMouseOver()
+                    local over = sideBar:IsMouseOver()
                     if issecretvalue and issecretvalue(over) then
                         over = false
                     end
@@ -315,12 +315,12 @@ local function SkinChatFrame(castFrame)
         end)
 
         local onePx = (Pix and Pix.mult) or 1
-        local sbDiv = sidebar:CreateTexture(nil, "OVERLAY", nil, 7)
+        local sbDiv = sideBar:CreateTexture(nil, "OVERLAY", nil, 7)
         sbDiv._cuiOwned = true
         sbDiv:SetWidth(onePx)
         sbDiv:SetColorTexture(GetInnerBorderColor(CHAT.DB()))
-        sbDiv:SetPoint("TOPRIGHT", sidebar, "TOPRIGHT", 0, 0)
-        sbDiv:SetPoint("BOTTOMRIGHT", sidebar, "BOTTOMRIGHT", 0, 0)
+        sbDiv:SetPoint("TOPRIGHT", sideBar, "TOPRIGHT", 0, 0)
+        sbDiv:SetPoint("BOTTOMRIGHT", sideBar, "BOTTOMRIGHT", 0, 0)
         if Pix and Pix.DisablePixelSnap then
             Pix.DisablePixelSnap(sbDiv)
         end
@@ -390,44 +390,44 @@ local function SkinChatFrame(castFrame)
         -- Chain icons are created in the saved order (drag-to-reorder in the
         -- options dropdown; a new order takes effect on the next reload).
         local anchor = nil
-        local friendsBtn, friendsCount, durabilityBtn, durabilityPct, copyBtn, portalBtn, voiceBtn, settingsBtn
-        local guildBtn, guildCount, chatMenuBtn
+        local friendsButton, friendsOnline, durabilityButton, durability, copyBtn, portalBtn, voiceBtn, settingsButton
+        local guildButton, guildOnline, chatMenuBtn
 
         local function ChainAnchor(button)
             button:ClearAllPoints()
             if anchor then
                 button:SetPoint("TOP", anchor, "BOTTOM", 0, -ICON_SPACING)
             else
-                button:SetPoint("TOP", sidebar, "TOP", 0, -ICON_SPACING + iconTopShift)
+                button:SetPoint("TOP", sideBar, "TOP", 0, -ICON_SPACING + iconTopShift)
             end
         end
 
         local function CreateFriendsIcon()
-            friendsBtn = MakeSidebarIcon(sidebar, MEDIA .. "chat_friends.png", nil, nil, nil, "friends")
-            friendsBtn:SetSize(26, 26)
-            ChainAnchor(friendsBtn)
+            friendsButton = MakeSidebarIcon(sideBar, MEDIA .. "chat_friends.png", nil, nil, nil, "friends")
+            friendsButton:SetSize(26, 26)
+            ChainAnchor(friendsButton)
 
             if CHAT.SB_KIT then
-                friendsCount = CHAT.SB_MakeCount(friendsBtn, sidebar, "friends")
+                friendsOnline = CHAT.SB_MakeCount(friendsButton, sideBar, "friends")
             else
-                friendsCount = sidebar:CreateFontString(nil, "OVERLAY")
-                friendsCount:SetFont(GetFont(), 9, "")
-                friendsCount:SetTextColor(1, 1, 1, 0.5)
-                friendsCount:SetPoint("TOP", friendsBtn, "BOTTOM", 0, 7)
+                friendsOnline = sideBar:CreateFontString(nil, "OVERLAY")
+                friendsOnline:SetFont(GetFont(), 9, "")
+                friendsOnline:SetTextColor(1, 1, 1, 0.5)
+                friendsOnline:SetPoint("TOP", friendsButton, "BOTTOM", 0, 7)
             end
-            friendsCount:SetText("0")
+            friendsOnline:SetText("0")
 
-            friendsBtn:HookScript("OnEnter", function(self)
+            friendsButton:HookScript("OnEnter", function(self)
                 if not CHAT.SB_KIT then
-                    friendsCount:SetTextColor(1, 1, 1, 0.9)
+                    friendsOnline:SetTextColor(1, 1, 1, 0.9)
                 end
                 if not self._freeMoveJustDragged then
                     ShowSidebarIconTooltip(self, "Friends")
                 end
             end)
-            friendsBtn:HookScript("OnLeave", function(self)
+            friendsButton:HookScript("OnLeave", function(self)
                 if not CHAT.SB_KIT then
-                    friendsCount:SetTextColor(1, 1, 1, 0.5)
+                    friendsOnline:SetTextColor(1, 1, 1, 0.5)
                 end
                 HideSidebarIconTooltip(self)
             end)
@@ -443,18 +443,18 @@ local function SkinChatFrame(castFrame)
                 local sum = numOnline + wowOnline
                 if sum ~= fcLast then
                     fcLast = sum
-                    friendsCount:SetText(sum)
+                    friendsOnline:SetText(sum)
                 end
             end
 
-            local fcEvents = CreateFrame("Frame")
-            fcEvents:RegisterEvent("BN_FRIEND_LIST_SIZE_CHANGED")
-            fcEvents:RegisterEvent("BN_FRIEND_ACCOUNT_ONLINE")
-            fcEvents:RegisterEvent("BN_FRIEND_ACCOUNT_OFFLINE")
-            fcEvents:RegisterEvent("FRIENDLIST_UPDATE")
-            fcEvents:RegisterEvent("PLAYER_ENTERING_WORLD")
-            fcEvents:RegisterEvent("BN_CONNECTED")
-            fcEvents:RegisterEvent("BN_DISCONNECTED")
+            local friendEvents = CreateFrame("Frame")
+            friendEvents:RegisterEvent("BN_FRIEND_LIST_SIZE_CHANGED")
+            friendEvents:RegisterEvent("BN_FRIEND_ACCOUNT_ONLINE")
+            friendEvents:RegisterEvent("BN_FRIEND_ACCOUNT_OFFLINE")
+            friendEvents:RegisterEvent("FRIENDLIST_UPDATE")
+            friendEvents:RegisterEvent("PLAYER_ENTERING_WORLD")
+            friendEvents:RegisterEvent("BN_CONNECTED")
+            friendEvents:RegisterEvent("BN_DISCONNECTED")
             -- Recount inline on the exact edges -- the narrow account
             -- online/offline pair (the same field-proven set the DataBars
             -- micromenu count uses), NOT the BN_FRIEND_INFO_CHANGED presence
@@ -463,40 +463,40 @@ local function SkinChatFrame(castFrame)
             -- label only rewrites when the number changed. In combat nothing
             -- recounts at all -- the count defers itself once to the combat
             -- queue and settles on the regen edge.
-            fcEvents:SetScript("OnEvent", UpdateFriendsCount)
+            friendEvents:SetScript("OnEvent", UpdateFriendsCount)
 
-            CFD(castFrame).friendsCount = friendsCount
+            CFD(castFrame).friendsCount = friendsOnline
             -- A count inside its button (the stock QuickJoin plate) is not a
             -- tail: the chain hangs off the button.
-            anchor = friendsBtn._sbTailInside and friendsBtn or friendsCount
+            anchor = friendsButton._sbTailInside and friendsButton or friendsOnline
         end
 
         local function CreateGuildIcon()
-            guildBtn = MakeSidebarIcon(sidebar, MEDIA .. "chat_guild.png", nil, nil, nil, "guild")
-            guildBtn:SetSize(26, 26)
-            ChainAnchor(guildBtn)
+            guildButton = MakeSidebarIcon(sideBar, MEDIA .. "chat_guild.png", nil, nil, nil, "guild")
+            guildButton:SetSize(26, 26)
+            ChainAnchor(guildButton)
 
             if CHAT.SB_KIT then
-                guildCount = CHAT.SB_MakeCount(guildBtn, sidebar, "guild")
+                guildOnline = CHAT.SB_MakeCount(guildButton, sideBar, "guild")
             else
-                guildCount = sidebar:CreateFontString(nil, "OVERLAY")
-                guildCount:SetFont(GetFont(), 9, "")
-                guildCount:SetTextColor(1, 1, 1, 0.5)
-                guildCount:SetPoint("TOP", guildBtn, "BOTTOM", 0, 7)
+                guildOnline = sideBar:CreateFontString(nil, "OVERLAY")
+                guildOnline:SetFont(GetFont(), 9, "")
+                guildOnline:SetTextColor(1, 1, 1, 0.5)
+                guildOnline:SetPoint("TOP", guildButton, "BOTTOM", 0, 7)
             end
-            guildCount:SetText("0")
+            guildOnline:SetText("0")
 
-            guildBtn:HookScript("OnEnter", function(self)
+            guildButton:HookScript("OnEnter", function(self)
                 if not CHAT.SB_KIT then
-                    guildCount:SetTextColor(1, 1, 1, 0.9)
+                    guildOnline:SetTextColor(1, 1, 1, 0.9)
                 end
                 if not self._freeMoveJustDragged then
                     ShowSidebarIconTooltip(self, "Guild")
                 end
             end)
-            guildBtn:HookScript("OnLeave", function(self)
+            guildButton:HookScript("OnLeave", function(self)
                 if not CHAT.SB_KIT then
-                    guildCount:SetTextColor(1, 1, 1, 0.5)
+                    guildOnline:SetTextColor(1, 1, 1, 0.5)
                 end
                 HideSidebarIconTooltip(self)
             end)
@@ -507,7 +507,7 @@ local function SkinChatFrame(castFrame)
             local lastRoster = 0
             local function UpdateGuildCount()
                 if not IsInGuild() then
-                    guildCount:SetText(0)
+                    guildOnline:SetText(0)
                     return
                 end
                 local nowTime = GetTime()
@@ -516,7 +516,7 @@ local function SkinChatFrame(castFrame)
                     C_GuildInfo.GuildRoster()
                 end
                 local _, online = GetNumGuildMembers()
-                guildCount:SetText(online)
+                guildOnline:SetText(online)
             end
 
             local gcEvents = CreateFrame("Frame")
@@ -525,36 +525,36 @@ local function SkinChatFrame(castFrame)
             gcEvents:RegisterEvent("PLAYER_ENTERING_WORLD")
             gcEvents:SetScript("OnEvent", UpdateGuildCount)
 
-            CFD(castFrame).guildCount = guildCount
-            anchor = guildCount
+            CFD(castFrame).guildCount = guildOnline
+            anchor = guildOnline
         end
 
         local function CreateDurabilityIcon()
-            durabilityBtn =
-                MakeSidebarIcon(sidebar, MEDIA .. "chat_durability.png", nil, nil, nil, "durability")
-            ChainAnchor(durabilityBtn)
+            durabilityButton =
+                MakeSidebarIcon(sideBar, MEDIA .. "chat_durability.png", nil, nil, nil, "durability")
+            ChainAnchor(durabilityButton)
 
             if CHAT.SB_KIT then
-                durabilityPct = CHAT.SB_MakeCount(durabilityBtn, sidebar, "durability")
+                durability = CHAT.SB_MakeCount(durabilityButton, sideBar, "durability")
             else
-                durabilityPct = sidebar:CreateFontString(nil, "OVERLAY")
-                durabilityPct:SetFont(GetFont(), 9, "")
-                durabilityPct:SetTextColor(1, 1, 1, 0.5)
-                durabilityPct:SetPoint("TOP", durabilityBtn, "BOTTOM", 0, 0)
+                durability = sideBar:CreateFontString(nil, "OVERLAY")
+                durability:SetFont(GetFont(), 9, "")
+                durability:SetTextColor(1, 1, 1, 0.5)
+                durability:SetPoint("TOP", durabilityButton, "BOTTOM", 0, 0)
             end
-            durabilityPct:SetText("100%")
+            durability:SetText("100%")
 
-            durabilityBtn:HookScript("OnEnter", function(self)
+            durabilityButton:HookScript("OnEnter", function(self)
                 if not CHAT.SB_KIT then
-                    durabilityPct:SetTextColor(1, 1, 1, 0.9)
+                    durability:SetTextColor(1, 1, 1, 0.9)
                 end
                 if not self._freeMoveJustDragged then
                     ShowSidebarIconTooltip(self, "Equipment Durability")
                 end
             end)
-            durabilityBtn:HookScript("OnLeave", function(self)
+            durabilityButton:HookScript("OnLeave", function(self)
                 if not CHAT.SB_KIT then
-                    durabilityPct:SetTextColor(1, 1, 1, 0.5)
+                    durability:SetTextColor(1, 1, 1, 0.5)
                 end
                 HideSidebarIconTooltip(self)
             end)
@@ -574,11 +574,11 @@ local function SkinChatFrame(castFrame)
                 local txt = math.floor(lowest) .. "%"
                 if txt ~= lastDurText then
                     lastDurText = txt
-                    durabilityPct:SetText(txt)
+                    durability:SetText(txt)
                 end
                 -- Stock styles: the doll takes Blizzard's alert tint.
                 if CHAT.SB_KIT then
-                    CHAT.SB_DurabilityAlert(durabilityBtn)
+                    CHAT.SB_DurabilityAlert(durabilityButton)
                 end
             end
 
@@ -602,9 +602,9 @@ local function SkinChatFrame(castFrame)
                 C_Timer.After(0, FlushDurability)
             end)
 
-            CFD(castFrame).durabilityPct = durabilityPct
+            CFD(castFrame).durabilityPct = durability
             -- A percent inside its button is not a tail (as friends above).
-            anchor = durabilityBtn._sbTailInside and durabilityBtn or durabilityPct
+            anchor = durabilityButton._sbTailInside and durabilityButton or durability
         end
 
         -- Friends/Guild/Durability have bespoke creators (count or percent text
@@ -637,7 +637,7 @@ local function SkinChatFrame(castFrame)
                 local def = MIDDLE_DEFS[key]
                 if def and icfg[key] ~= false then
                     local button =
-                        MakeSidebarIcon(sidebar, def.path or (MEDIA .. def.tex), nil, nil, nil, def.key)
+                        MakeSidebarIcon(sideBar, def.path or (MEDIA .. def.tex), nil, nil, nil, def.key)
                     if def.size then
                         button:SetSize(def.size, def.size)
                     end
@@ -651,14 +651,14 @@ local function SkinChatFrame(castFrame)
         portalBtn = middleBtns["showPortals"]
         voiceBtn = middleBtns["showVoice"]
         chatMenuBtn = middleBtns["showChatMenu"]
-        settingsBtn = middleBtns["showSettings"]
+        settingsButton = middleBtns["showSettings"]
 
         -- Scroll is pinned to the sidebar bottom, outside the chain.
-        local scrollBtn = MakeSidebarIcon(sidebar, MEDIA .. "chat_scroll2.png", nil, nil, nil, "scroll")
-        scrollBtn:SetSize(22, 22)
-        scrollBtn:ClearAllPoints()
+        local scrollButton = MakeSidebarIcon(sideBar, MEDIA .. "chat_scroll2.png", nil, nil, nil, "scroll")
+        scrollButton:SetSize(22, 22)
+        scrollButton:ClearAllPoints()
         -- Stock column: its bottom-button slot, flush with the column's foot.
-        scrollBtn:SetPoint("BOTTOM", sidebar, "BOTTOM", 0, CHAT.SB_KIT and 0 or ICON_SPACING)
+        scrollButton:SetPoint("BOTTOM", sideBar, "BOTTOM", 0, CHAT.SB_KIT and 0 or ICON_SPACING)
 
         local function HookIconTooltip(button, labelText)
             button:HookScript("OnEnter", function(self)
@@ -676,10 +676,10 @@ local function SkinChatFrame(castFrame)
         if voiceBtn then
             HookIconTooltip(voiceBtn, "Voice/Channels")
         end
-        if settingsBtn then
-            HookIconTooltip(settingsBtn, "Settings")
+        if settingsButton then
+            HookIconTooltip(settingsButton, "Settings")
         end
-        HookIconTooltip(scrollBtn, "Scroll to Bottom")
+        HookIconTooltip(scrollButton, "Scroll to Bottom")
         -- No click of ours: Blizzard's own button takes it (ECHAT.AttachChatMenu).
         if chatMenuBtn then
             HookIconTooltip(chatMenuBtn, "Chat Menu")
@@ -687,7 +687,7 @@ local function SkinChatFrame(castFrame)
         end
 
         -- Scroll to bottom: acts on OUR message frame for the selected window.
-        scrollBtn:SetScript("OnClick", function()
+        scrollButton:SetScript("OnClick", function()
             local selected = GENERAL_CHAT_DOCK
                 and FCFDock_GetSelectedWindow
                 and FCFDock_GetSelectedWindow(GENERAL_CHAT_DOCK)
@@ -707,8 +707,8 @@ local function SkinChatFrame(castFrame)
             end)
         end
 
-        if friendsBtn then
-            friendsBtn:SetScript("OnClick", function()
+        if friendsButton then
+            friendsButton:SetScript("OnClick", function()
                 if InCombatLockdown() then
                     UIErrorsFrame:AddMessage(ERR_NOT_IN_COMBAT, 1.0, 0.3, 0.3, 1.0)
                     return
@@ -717,8 +717,8 @@ local function SkinChatFrame(castFrame)
             end)
         end
 
-        if guildBtn then
-            guildBtn:SetScript("OnClick", function()
+        if guildButton then
+            guildButton:SetScript("OnClick", function()
                 if InCombatLockdown() then
                     UIErrorsFrame:AddMessage(ERR_NOT_IN_COMBAT, 1.0, 0.3, 0.3, 1.0)
                     return
@@ -750,8 +750,8 @@ local function SkinChatFrame(castFrame)
             end
         end
 
-        if settingsBtn then
-            settingsBtn:SetScript("OnClick", function()
+        if settingsButton then
+            settingsButton:SetScript("OnClick", function()
                 if InCombatLockdown() then
                     return
                 end
@@ -786,29 +786,29 @@ local function SkinChatFrame(castFrame)
             end)
         end
 
-        local sbd = CFD(castFrame)
-        sbd.friendsBtn = friendsBtn
-        sbd.guildBtn = guildBtn
-        sbd.durabilityBtn = durabilityBtn
-        sbd.copyBtn = copyBtn
-        sbd.portalBtn = portalBtn
-        sbd.voiceBtn = voiceBtn
-        sbd.chatMenuBtn = chatMenuBtn
-        sbd.settingsBtn = settingsBtn
-        sbd.scrollBtn = scrollBtn
+        local sideBarData = CFD(castFrame)
+        sideBarData.friendsBtn = friendsButton
+        sideBarData.guildBtn = guildButton
+        sideBarData.durabilityBtn = durabilityButton
+        sideBarData.copyBtn = copyBtn
+        sideBarData.portalBtn = portalBtn
+        sideBarData.voiceBtn = voiceBtn
+        sideBarData.chatMenuBtn = chatMenuBtn
+        sideBarData.settingsBtn = settingsButton
+        sideBarData.scrollBtn = scrollButton
         -- Order snapshot for ApplySidebarIcons: live visibility toggles keep this
         -- session's layout; a changed saved order applies on reload.
-        sbd._iconChainOrder = chainOrder
+        sideBarData._iconChainOrder = chainOrder
         -- Stock kit: sizes, pads and free-move heights stamped before the
         -- login chain lays the column out and captures free-move naturals.
         if CHAT.SB_KIT then
-            CHAT.SB_ApplyScale(sbd, CHAT.DB().sidebarIconScale or 1, true)
+            CHAT.SB_ApplyScale(sideBarData, CHAT.DB().sidebarIconScale or 1, true)
             if CHAT.SB_FlashSync then
                 CHAT.SB_FlashSync()
             end
         end
 
-        CFD(castFrame).sidebar = sidebar
+        CFD(castFrame).sidebar = sideBar
     end
 
     -- Horizontal divider above the input field. The bg guard is load-bearing: a
@@ -919,8 +919,8 @@ local function SkinChatFrame(castFrame)
     -- Restyle Blizzard's resize button to align with our bg (undocked-capable
     -- frames only; ChatFrame1 gets OUR grip below -- Blizzard never shows the
     -- main window's own button, and ApplyLockChatSize keeps it dead).
-    local resizeBtn = castFrame ~= _G.ChatFrame1 and _G[name .. "ResizeButton"] or nil
-    if resizeBtn then
+    local resizeButton = castFrame ~= _G.ChatFrame1 and _G[name .. "ResizeButton"] or nil
+    if resizeButton then
         -- DEFERRED for the same reason panel placement is (PositionChatPanel):
         -- this runs from the skin pass, which fires while a temp whisper
         -- window is opening, and re-anchoring this button resolves geometry
@@ -931,18 +931,18 @@ local function SkinChatFrame(castFrame)
             -- strips Blizzard's frame art, so it takes ours.
             local stock = mod.ChatStockArt()
             if not stock then
-                resizeBtn:SetSize(18, 18)
-                resizeBtn:ClearAllPoints()
+                resizeButton:SetSize(18, 18)
+                resizeButton:ClearAllPoints()
                 -- Anchored to the CHAT FRAME, NEVER our panel: Blizzard anchors the chat
                 -- frame's own ScrollBar to this button (FCF_UpdateScrollbarAnchors), so
                 -- pointing it at our panel pulls an addon frame into Blizzard's chat layout
                 -- chain (an anchor cycle) and Edit Mode can no longer commit a chat move --
                 -- the drag releases unanchored and UpdateSystemAnchorInfo writes nil,
                 -- leaving chat unmovable and unresizable.
-                resizeBtn:SetPoint("BOTTOMRIGHT", castFrame, "BOTTOMRIGHT", -2, 2)
-                resizeBtn:SetFrameStrata("HIGH")
-                if resizeBtn.GetRegions then
-                    local regions = { resizeBtn:GetRegions() }
+                resizeButton:SetPoint("BOTTOMRIGHT", castFrame, "BOTTOMRIGHT", -2, 2)
+                resizeButton:SetFrameStrata("HIGH")
+                if resizeButton.GetRegions then
+                    local regions = { resizeButton:GetRegions() }
                     for ri = 1, #regions do
                         local regionFrame = regions[ri]
                         if regionFrame and regionFrame:IsObjectType("Texture") then
@@ -955,11 +955,11 @@ local function SkinChatFrame(castFrame)
                         end
                     end
                 end
-                resizeBtn:SetAlpha(0.4)
+                resizeButton:SetAlpha(0.4)
             end -- not stock
             -- Arms the interaction follower: a resize drag starts and stays on
             -- this button, and the panel must follow it live.
-            resizeBtn:HookScript("OnEnter", function(self)
+            resizeButton:HookScript("OnEnter", function(self)
                 if not stock then
                     self:SetAlpha(0.75)
                 end
@@ -967,7 +967,7 @@ local function SkinChatFrame(castFrame)
                     CHAT.FollowArm()
                 end
             end)
-            resizeBtn:HookScript("OnLeave", function(self)
+            resizeButton:HookScript("OnLeave", function(self)
                 if not stock then
                     self:SetAlpha(0.4)
                 end
@@ -1038,15 +1038,15 @@ local function SkinChatFrame(castFrame)
     -- Combat Log: replace Blizzard's filter tab bar with a dark bar matching
     -- the chat panel's width and style (the stock styles keep Blizzard's bar).
     if name == "ChatFrame2" and not stockArt then
-        local qbf = _G.CombatLogQuickButtonFrame_Custom
-        if qbf and not CFD(qbf).skinned then
-            CFD(qbf).skinned = true
+        local quickButtons = _G.CombatLogQuickButtonFrame_Custom
+        if quickButtons and not CFD(quickButtons).skinned then
+            CFD(quickButtons).skinned = true
             -- WoW Forever: the bar keeps Blizzard's seat, inside the kit's
             -- frame round the combat log (ApplyInputPosition), on its fill.
             local fv = mod.ChatForever()
 
-            if qbf.GetRegions then
-                local regions = { qbf:GetRegions() }
+            if quickButtons.GetRegions then
+                local regions = { quickButtons:GetRegions() }
                 for index = 1, #regions do
                     local regionFrame = regions[index]
                     if regionFrame and regionFrame:IsObjectType("Texture") then
@@ -1058,26 +1058,26 @@ local function SkinChatFrame(castFrame)
             -- Flush: filter bar bottom meets bg top (cf top + 3), width matches
             -- the panel.
             if not fv then
-                qbf:ClearAllPoints()
-                qbf:SetPoint("BOTTOMLEFT", castFrame, "TOPLEFT", -10, 3)
-                qbf:SetPoint("BOTTOMRIGHT", castFrame, "TOPRIGHT", 10, 3)
-                qbf:SetHeight(24)
+                quickButtons:ClearAllPoints()
+                quickButtons:SetPoint("BOTTOMLEFT", castFrame, "TOPLEFT", -10, 3)
+                quickButtons:SetPoint("BOTTOMRIGHT", castFrame, "TOPRIGHT", 10, 3)
+                quickButtons:SetHeight(24)
 
-                local qbfBg = qbf:CreateTexture(nil, "BACKGROUND")
+                local qbfBg = quickButtons:CreateTexture(nil, "BACKGROUND")
                 qbfBg:SetAllPoints()
                 qbfBg:SetColorTexture(BG_R, BG_G, BG_B, 1)
             end
 
             -- Bottom divider separating filter tabs from messages
             local onePx = (Pix and Pix.mult) or 1
-            local qbfDiv = qbf:CreateTexture(nil, "OVERLAY", nil, 7)
-            qbfDiv._cuiOwned = true
-            qbfDiv:SetHeight(onePx)
-            qbfDiv:SetColorTexture(1, 1, 1, 0.06)
-            qbfDiv:SetPoint("BOTTOMLEFT", qbf, "BOTTOMLEFT", 0, 0)
-            qbfDiv:SetPoint("BOTTOMRIGHT", qbf, "BOTTOMRIGHT", 0, 0)
+            local quickDivider = quickButtons:CreateTexture(nil, "OVERLAY", nil, 7)
+            quickDivider._cuiOwned = true
+            quickDivider:SetHeight(onePx)
+            quickDivider:SetColorTexture(1, 1, 1, 0.06)
+            quickDivider:SetPoint("BOTTOMLEFT", quickButtons, "BOTTOMLEFT", 0, 0)
+            quickDivider:SetPoint("BOTTOMRIGHT", quickButtons, "BOTTOMRIGHT", 0, 0)
             if Pix and Pix.DisablePixelSnap then
-                Pix.DisablePixelSnap(qbfDiv)
+                Pix.DisablePixelSnap(quickDivider)
             end
 
             -- Restyle filter buttons; accent-color the active one.
@@ -1102,8 +1102,8 @@ local function SkinChatFrame(castFrame)
                     end
                 end
             end
-            if qbf.GetChildren then
-                local children = { qbf:GetChildren() }
+            if quickButtons.GetChildren then
+                local children = { quickButtons:GetChildren() }
                 for index = 1, #children do
                     local button = children[index]
                     if
@@ -1133,7 +1133,7 @@ local function SkinChatFrame(castFrame)
 
             -- One-time alpha set. NEVER hooksecurefunc SetAlpha here -- that
             -- taints execution during whisper/tab processing.
-            qbf:SetAlpha(1)
+            quickButtons:SetAlpha(1)
 
             -- The chat bg is NOT extended upward: the filter bar has its own bg,
             -- and keeping both chat frame bgs the same size stops the visual

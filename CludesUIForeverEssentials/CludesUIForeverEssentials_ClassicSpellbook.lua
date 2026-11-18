@@ -30,12 +30,12 @@ local ESCAPE_NAME = "CUI_ClassicSpellbookEscape"
 -- Settings live in CludesUIDB.classicSpellbook; unset keys read these.
 local F = module.Feature("classicSpellbook", { enabled = false })
 
-local book, toggle, events
-local lines = {} -- shown skill lines: { name, icon, slots = { spellbook slot, ... } }
+local bookFrame, toggle, eventList
+local lineList = {} -- shown skill lines: { name, icon, slots = { spellbook slot, ... } }
 local line = 1 -- the selected skill line
 local pages = {} -- page per skill line (0: the search results), as the snippets last reported
 local newSearch -- the search text changed: its results open on page 1
-local query -- lowercase search text; nil when not searching
+local searchText -- lowercase search text; nil when not searching
 local stale -- the spellbook changed while the book was closed
 local boundKeys -- the keys the toggle holds, space separated
 local found = { slots = {} } -- the search results, shown as a line of their own
@@ -45,59 +45,59 @@ local pushed -- the snippet text the snippets last ran
 --  Spell data
 -------------------------------------------------------------------------------
 -- A search matches a spell's name, rank text or description.
-local function Matches(slot)
-    local info = C_SpellBook.GetSpellBookItemInfo(slot, BANK)
-    if not info then
+local function Matches(slotBtn)
+    local spellInfo = C_SpellBook.GetSpellBookItemInfo(slotBtn, BANK)
+    if not spellInfo then
         return false
     end
-    if info.name:lower():find(query, 1, true) then
+    if spellInfo.name:lower():find(searchText, 1, true) then
         return true
     end
-    if info.subName and info.subName:lower():find(query, 1, true) then
+    if spellInfo.subName and spellInfo.subName:lower():find(searchText, 1, true) then
         return true
     end
-    local text = C_SpellBook.GetSpellBookItemDescription(slot, BANK)
-    return text ~= nil and text:lower():find(query, 1, true) ~= nil
+    local label = C_SpellBook.GetSpellBookItemDescription(slotBtn, BANK)
+    return label ~= nil and label:lower():find(searchText, 1, true) ~= nil
 end
 
 -- Every learned spell of the player's own skill lines. The game's spellbook
 -- options (Hide Passives, Show All Spell Ranks) apply, except to a search,
 -- which looks through every spell as the game's own does.
 local function ReadLines()
-    wipe(lines)
+    wipe(lineList)
     wipe(found.slots)
-    local allRanks = query or GetCVarBool("ShowAllSpellRanks")
-    local passives = query or not GetCVarBool("spellBookHidePassives")
+    local allRanks = searchText or GetCVarBool("ShowAllSpellRanks")
+    local passives = searchText or not GetCVarBool("spellBookHidePassives")
     for i = 1, C_SpellBook.GetNumSpellBookSkillLines() do
-        local info = C_SpellBook.GetSpellBookSkillLineInfo(i)
-        if info and not info.shouldHide and not info.offSpecID then
-            local slots = {}
-            for slot = info.itemIndexOffset + 1, info.itemIndexOffset + info.numSpellBookItems do
+        local spellInfo = C_SpellBook.GetSpellBookSkillLineInfo(i)
+        if spellInfo and not spellInfo.shouldHide and not spellInfo.offSpecID then
+            local slotList = {}
+            for slotBtn = spellInfo.itemIndexOffset + 1, spellInfo.itemIndexOffset + spellInfo.numSpellBookItems do
                 if
-                    C_SpellBook.GetSpellBookItemType(slot, BANK) == Enum.SpellBookItemType.Spell
-                    and (allRanks or not C_SpellBook.IsSpellBookItemLowRank(slot, BANK))
-                    and (passives or not C_SpellBook.IsSpellBookItemPassive(slot, BANK))
+                    C_SpellBook.GetSpellBookItemType(slotBtn, BANK) == Enum.SpellBookItemType.Spell
+                    and (allRanks or not C_SpellBook.IsSpellBookItemLowRank(slotBtn, BANK))
+                    and (passives or not C_SpellBook.IsSpellBookItemPassive(slotBtn, BANK))
                 then
-                    slots[#slots + 1] = slot
-                    if query and Matches(slot) then
-                        found.slots[#found.slots + 1] = slot
+                    slotList[#slotList + 1] = slotBtn
+                    if searchText and Matches(slotBtn) then
+                        found.slots[#found.slots + 1] = slotBtn
                     end
                 end
             end
-            lines[#lines + 1] = { name = info.name, icon = info.iconID, slots = slots }
+            lineList[#lineList + 1] = { name = spellInfo.name, icon = spellInfo.iconID, slots = slotList }
         end
     end
-    if line > #lines then
+    if line > #lineList then
         line = 1
     end
 end
 
 -- The line on show: the search results while searching.
 local function Shown()
-    if query then
+    if searchText then
         return found, 0
     end
-    return lines[line], line
+    return lineList[line], line
 end
 
 local function PageCount()
@@ -128,11 +128,11 @@ local function SpellDrag(b)
 end
 
 local function NewSpellButton(i)
-    local b = CreateFrame("Button", nil, book, "SecureActionButtonTemplate")
+    local b = CreateFrame("Button", nil, bookFrame, "SecureActionButtonTemplate")
     b:SetSize(37, 37)
     -- Down the left column, then down the right one.
     local colour, row = math.floor((i - 1) / ROWS), (i - 1) % ROWS
-    b:SetPoint("TOPLEFT", book, "TOPLEFT", 34 + colour * 157, -85 - row * 51)
+    b:SetPoint("TOPLEFT", bookFrame, "TOPLEFT", 34 + colour * 157, -85 - row * 51)
     b:RegisterForClicks("AnyUp", "AnyDown") -- the action fires on whichever the client's key-down setting picks
     b:RegisterForDrag("LeftButton")
 
@@ -172,9 +172,9 @@ local function NewSpellButton(i)
 end
 
 -- What the button shows. What it casts is set by the AIM snippet.
-local function FillSpellButton(b, slot)
-    local info = slot and C_SpellBook.GetSpellBookItemInfo(slot, BANK)
-    local spellID = info and info.spellID
+local function FillSpellButton(b, slotBtn)
+    local spellInfo = slotBtn and C_SpellBook.GetSpellBookItemInfo(slotBtn, BANK)
+    local spellID = spellInfo and spellInfo.spellID
     if not spellID then
         b.slot, b.spellID, b.passive = nil, nil, nil
         b.icon:Hide()
@@ -183,31 +183,31 @@ local function FillSpellButton(b, slot)
         b.border:SetVertexColor(1, 1, 1)
         return
     end
-    b.slot, b.spellID, b.passive = slot, spellID, info.isPassive
-    b.icon:SetTexture(info.iconID)
+    b.slot, b.spellID, b.passive = slotBtn, spellID, spellInfo.isPassive
+    b.icon:SetTexture(spellInfo.iconID)
     b.icon:Show()
-    b.name:SetText(info.name)
+    b.name:SetText(spellInfo.name)
     b.name:Show()
-    local sub = info.subName
+    local sub = spellInfo.subName
     if not sub or sub == "" then
         sub = C_Spell.GetSpellSubtext(spellID)
     end
-    if (not sub or sub == "") and info.isPassive then
+    if (not sub or sub == "") and spellInfo.isPassive then
         sub = SPELL_PASSIVE
     end
     b.sub:SetText(sub or "")
     b.sub:Show()
-    local c = info.isPassive and PASSIVE_SPELL_FONT_COLOR or NORMAL_FONT_COLOR
+    local c = spellInfo.isPassive and PASSIVE_SPELL_FONT_COLOR or NORMAL_FONT_COLOR
     b.name:SetTextColor(c.r, c.g, c.b)
     -- A passive has no button frame, as in the vanilla book.
-    local v = info.isPassive and 0 or 1
+    local v = spellInfo.isPassive and 0 or 1
     b.border:SetVertexColor(v, v, v)
 end
 
 -- The cooldown swirls of the page on show. The duration goes straight from
 -- the game to the swirl: its numbers can be secret in combat.
 local function PaintCooldowns()
-    for _, b in ipairs(book.spells) do
+    for _, b in ipairs(bookFrame.spells) do
         local duration = b.slot
             and not b.passive
             and C_SpellBook.GetSpellBookItemCooldownDuration(b.slot, BANK)
@@ -249,8 +249,8 @@ local AIM = [[
     BOOK:CallMethod("Painted", LINE, page)
 ]]
 
-local function TabEnter(tab)
-    CludesUI.ShowWidgetTooltip(tab, tab.tooltip, { anchor = "right" })
+local function TabEnter(tabBtn)
+    CludesUI.ShowWidgetTooltip(tabBtn, tabBtn.tooltip, { anchor = "right" })
 end
 
 local function TabLeave()
@@ -265,28 +265,28 @@ end
 
 -- Out of combat only, like every frame made here. A click shows its line.
 local function NewTab(i)
-    local tab = CreateFrame("CheckButton", nil, book, "SecureFrameTemplate")
-    tab:SetSize(32, 32)
-    tab:SetPoint("TOPLEFT", book, "TOPRIGHT", -32, -65 - (i - 1) * 49)
-    local bgTex = tab:CreateTexture(nil, "BACKGROUND")
+    local tabBtn = CreateFrame("CheckButton", nil, bookFrame, "SecureFrameTemplate")
+    tabBtn:SetSize(32, 32)
+    tabBtn:SetPoint("TOPLEFT", bookFrame, "TOPRIGHT", -32, -65 - (i - 1) * 49)
+    local bgTex = tabBtn:CreateTexture(nil, "BACKGROUND")
     bgTex:SetTexture("Interface\\SpellBook\\SpellBook-SkillLineTab")
     bgTex:SetSize(64, 64)
     bgTex:SetPoint("TOPLEFT", -3, 11)
-    tab:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
-    tab:SetCheckedTexture("Interface\\Buttons\\CheckButtonHilight")
-    tab:GetCheckedTexture():SetBlendMode("ADD")
-    tab:SetScript("OnEnter", TabEnter)
-    tab:SetScript("OnLeave", TabLeave)
-    tab:SetScript("PostClick", TurnSound)
-    book:WrapScript(tab, "OnClick", ("LINE = %d\n"):format(i) .. AIM)
-    return tab
+    tabBtn:SetHighlightTexture("Interface\\Buttons\\ButtonHilight-Square", "ADD")
+    tabBtn:SetCheckedTexture("Interface\\Buttons\\CheckButtonHilight")
+    tabBtn:GetCheckedTexture():SetBlendMode("ADD")
+    tabBtn:SetScript("OnEnter", TabEnter)
+    tabBtn:SetScript("OnLeave", TabLeave)
+    tabBtn:SetScript("PostClick", TurnSound)
+    bookFrame:WrapScript(tabBtn, "OnClick", ("LINE = %d\n"):format(i) .. AIM)
+    return tabBtn
 end
 
 -- A click turns step pages; AIM keeps the page inside the line.
 local function NewArrow(direction, x, step)
-    local b = CreateFrame("Button", nil, book, "SecureFrameTemplate")
+    local b = CreateFrame("Button", nil, bookFrame, "SecureFrameTemplate")
     b:SetSize(32, 32)
-    b:SetPoint("CENTER", book, "BOTTOMLEFT", x, 105)
+    b:SetPoint("CENTER", bookFrame, "BOTTOMLEFT", x, 105)
     local texture = "Interface\\Buttons\\UI-SpellbookIcon-" .. direction .. "Page-"
     b.art = texture
     b:SetNormalTexture(texture .. "Up")
@@ -294,112 +294,112 @@ local function NewArrow(direction, x, step)
     b:SetDisabledTexture(texture .. "Disabled")
     b:SetHighlightTexture("Interface\\Buttons\\UI-Common-MouseHilight", "ADD")
     b:SetScript("PostClick", TurnSound)
-    book:WrapScript(b, "OnClick", ("PAGES[LINE] = (PAGES[LINE] or 1) + (%d)\n"):format(step) .. AIM)
+    bookFrame:WrapScript(b, "OnClick", ("PAGES[LINE] = (PAGES[LINE] or 1) + (%d)\n"):format(step) .. AIM)
     return b
 end
 
 -- An arrow with nowhere to go shows its disabled art and cannot be clicked. The arrows are
 -- secure frames, so only out of combat can they be disabled: combat starts with
 -- both enabled (the idle one clicks silently) and the fight's end syncs them.
-local function ArrowsFor(page)
-    local canPrev, canNext = page > 1, page < PageCount()
-    for arrow, can in pairs({ [book.prev] = canPrev, [book.next] = canNext }) do
+local function ArrowsFor(pageNum)
+    local canPrev, canNext = pageNum > 1, pageNum < PageCount()
+    for arrow, can in pairs({ [bookFrame.prev] = canPrev, [bookFrame.next] = canNext }) do
         arrow:SetNormalTexture(arrow.art .. (can and "Up" or "Disabled"))
         arrow.idle = not can
     end
     if InCombatLockdown() then
         CludesUI.CombatQueue.Defer(QUEUE_KEY .. "Arrows", function()
-            local _, key = Shown()
-            ArrowsFor(pages[key] or 1)
+            local _, spellKey = Shown()
+            ArrowsFor(pages[spellKey] or 1)
         end)
         return
     end
-    book.prev:SetEnabled(canPrev)
-    book.next:SetEnabled(canNext)
+    bookFrame.prev:SetEnabled(canPrev)
+    bookFrame.next:SetEnabled(canNext)
 end
 
 -- Draws the page on show. No protected call: it also runs in combat.
 local function Paint()
-    local l, key = Shown()
-    local page = pages[key] or 1
-    for i, b in ipairs(book.spells) do
-        FillSpellButton(b, l and l.slots[(page - 1) * PER_PAGE + i])
+    local l, spellKey = Shown()
+    local pageNum = pages[spellKey] or 1
+    for i, b in ipairs(bookFrame.spells) do
+        FillSpellButton(b, l and l.slots[(pageNum - 1) * PER_PAGE + i])
     end
-    for i, tab in ipairs(book.tabs) do
-        tab:SetChecked(not query and i == line)
+    for i, tabBtn in ipairs(bookFrame.tabs) do
+        tabBtn:SetChecked(not searchText and i == line)
     end
-    ArrowsFor(page)
-    book.pageText:SetFormattedText(PAGE_NUMBER, page)
+    ArrowsFor(pageNum)
+    bookFrame.pageText:SetFormattedText(PAGE_NUMBER, pageNum)
     PaintCooldowns()
 end
 
 -- AIM's report: the line and page now on show. A line of its own ends a search.
-local function Painted(_, shown, page)
+local function Painted(_, shown, pageNum)
     if shown > 0 then
         line = shown
-        if query then
-            query = nil
-            book.search:SetText("")
+        if searchText then
+            searchText = nil
+            bookFrame.search:SetText("")
         end
     end
-    pages[shown] = page
+    pages[shown] = pageNum
     Paint()
 end
 
 -- One line of the LINES table, as snippet text.
-local function LineText(out, key, slots)
-    out[#out + 1] = ("local t = newtable() LINES[%d] = t COUNTS[%d] = %d"):format(key, key, #slots)
-    for i, slot in ipairs(slots) do
-        local info = C_SpellBook.GetSpellBookItemInfo(slot, BANK)
-        local id = info and not info.isPassive and info.spellID or 0
-        out[#out + 1] = ("t[%d] = %d"):format(i, id)
+local function LineText(result, spellKey, slotList)
+    result[#result + 1] = ("local t = newtable() LINES[%d] = t COUNTS[%d] = %d"):format(spellKey, spellKey, #slotList)
+    for i, slotBtn in ipairs(slotList) do
+        local spellInfo = C_SpellBook.GetSpellBookItemInfo(slotBtn, BANK)
+        local id = spellInfo and not spellInfo.isPassive and spellInfo.spellID or 0
+        result[#result + 1] = ("t[%d] = %d"):format(i, id)
     end
 end
 
 -- Out of combat only: hands the snippets the spell lists and has them aim.
 local function Push()
-    for i, data in ipairs(lines) do
-        local tab = book.tabs[i]
-        if not tab then
-            tab = NewTab(i)
-            book.tabs[i] = tab
+    for i, data in ipairs(lineList) do
+        local tabBtn = bookFrame.tabs[i]
+        if not tabBtn then
+            tabBtn = NewTab(i)
+            bookFrame.tabs[i] = tabBtn
         end
-        tab:SetNormalTexture(data.icon)
-        tab.tooltip = data.name
-        tab:Show()
+        tabBtn:SetNormalTexture(data.icon)
+        tabBtn.tooltip = data.name
+        tabBtn:Show()
     end
-    for i = #lines + 1, #book.tabs do
-        book.tabs[i]:Hide()
+    for i = #lineList + 1, #bookFrame.tabs do
+        bookFrame.tabs[i]:Hide()
     end
 
-    local out = { "LINES = newtable() COUNTS = newtable()" }
-    for i, data in ipairs(lines) do
-        LineText(out, i, data.slots)
+    local result = { "LINES = newtable() COUNTS = newtable()" }
+    for i, data in ipairs(lineList) do
+        LineText(result, i, data.slots)
     end
-    if query then
-        LineText(out, 0, found.slots)
+    if searchText then
+        LineText(result, 0, found.slots)
     end
     local reset = newSearch
     if reset then
-        out[#out + 1] = "PAGES[0] = 1"
+        result[#result + 1] = "PAGES[0] = 1"
     end
     newSearch = nil
-    out[#out + 1] = ("LINE = %d"):format(query and 0 or line)
-    out[#out + 1] = AIM
+    result[#result + 1] = ("LINE = %d"):format(searchText and 0 or line)
+    result[#result + 1] = AIM
     -- The snippets already hold these lists (a refresh that found no change,
     -- as most of the ones a pull starts do): only the page is drawn again.
-    local text = table.concat(out, "\n")
-    if text == pushed and not reset then
+    local label = table.concat(result, "\n")
+    if label == pushed and not reset then
         Paint()
         return
     end
-    pushed = text
-    book:Execute(text)
+    pushed = label
+    bookFrame:Execute(label)
 end
 
 -- Rereads the spellbook and repaints; waits out combat.
 local function Refresh()
-    if not book then
+    if not bookFrame then
         return
     end
     if InCombatLockdown() then
@@ -423,7 +423,7 @@ end
 -- Cooldowns are followed only while the book is open.
 local function BookShown()
     PlaySound(SOUNDKIT.IG_SPELLBOOK_OPEN)
-    events:RegisterEvent("SPELL_UPDATE_COOLDOWN")
+    eventList:RegisterEvent("SPELL_UPDATE_COOLDOWN")
     PaintCooldowns()
     PlaceTalents()
     Refresh() -- also picks up a spellbook option changed in the game's own book
@@ -431,7 +431,7 @@ end
 
 local function BookHidden()
     PlaySound(SOUNDKIT.IG_SPELLBOOK_CLOSE)
-    events:UnregisterEvent("SPELL_UPDATE_COOLDOWN")
+    eventList:UnregisterEvent("SPELL_UPDATE_COOLDOWN")
     PlaceTalents()
 end
 
@@ -444,12 +444,12 @@ local function Changed()
 end
 
 local function SearchChanged(box)
-    local text = strtrim(box:GetText()):lower()
-    text = text ~= "" and text or nil
-    if text == query then
+    local label = strtrim(box:GetText()):lower()
+    label = label ~= "" and label or nil
+    if label == searchText then
         return
     end
-    query, newSearch = text, true
+    searchText, newSearch = label, true
     Changed()
 end
 
@@ -481,7 +481,7 @@ local TOGGLE_SNIPPET = [[
 -- of ours over it (module.MicroClickLayer). An addon's click cannot show the
 -- protected book in combat, so from a fight's start to its end the layer lets
 -- the clicks through to the game's button, which opens its own window.
-local microLayer
+local microButtons
 -- Our other panels that open the spellbook (the Data Bars micro menu block,
 -- Quickdraw) click CUI_SpellbookRoute: a secure click that goes to the book's
 -- toggle while the feature is on and to the game's Spellbook micro button
@@ -489,24 +489,24 @@ local microLayer
 local route
 
 local function Build()
-    if book then
+    if bookFrame then
         return
     end
-    book = CreateFrame("Frame", "CUI_ClassicSpellbook", UIParent, "SecureHandlerShowHideTemplate")
-    book:Hide()
-    book:SetSize(384, 512)
-    book:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 0, -104)
-    book:SetFrameStrata("MEDIUM")
-    book:SetToplevel(true)
-    book:EnableMouse(true)
-    book:SetHitRectInsets(0, 30, 0, 70)
+    bookFrame = CreateFrame("Frame", "CUI_ClassicSpellbook", UIParent, "SecureHandlerShowHideTemplate")
+    bookFrame:Hide()
+    bookFrame:SetSize(384, 512)
+    bookFrame:SetPoint("TOPLEFT", UIParent, "TOPLEFT", 0, -104)
+    bookFrame:SetFrameStrata("MEDIUM")
+    bookFrame:SetToplevel(true)
+    bookFrame:EnableMouse(true)
+    bookFrame:SetHitRectInsets(0, 30, 0, 70)
     -- Escape closes the open book, in combat too.
-    book:SetAttribute("_onshow", ([[ self:SetBindingClick(true, "ESCAPE", %q) ]]):format(ESCAPE_NAME))
-    book:SetAttribute("_onhide", [[ self:ClearBindings() ]])
-    book:HookScript("OnShow", BookShown)
-    book:HookScript("OnHide", BookHidden)
+    bookFrame:SetAttribute("_onshow", ([[ self:SetBindingClick(true, "ESCAPE", %q) ]]):format(ESCAPE_NAME))
+    bookFrame:SetAttribute("_onhide", [[ self:ClearBindings() ]])
+    bookFrame:HookScript("OnShow", BookShown)
+    bookFrame:HookScript("OnHide", BookHidden)
 
-    local portrait = book:CreateTexture(nil, "BACKGROUND")
+    local portrait = bookFrame:CreateTexture(nil, "BACKGROUND")
     portrait:SetTexture(ART .. "Spellbook-Icon")
     portrait:SetSize(58, 58)
     portrait:SetPoint("TOPLEFT", 10, -8)
@@ -516,25 +516,25 @@ local function Build()
         { "BotLeft", "BOTTOMLEFT", 256 },
         { "BotRight", "BOTTOMRIGHT", 128 },
     }) do
-        local texture = book:CreateTexture(nil, "ARTWORK")
+        local texture = bookFrame:CreateTexture(nil, "ARTWORK")
         texture:SetTexture(ART .. "UI-SpellbookPanel-" .. part[1])
         texture:SetSize(part[3], 256)
         texture:SetPoint(part[2])
     end
-    local title = book:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    local title = bookFrame:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     title:SetPoint("CENTER", 6, 230)
     title:SetText(SPELLBOOK)
-    book.pageText = book:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-    book.pageText:SetWidth(102)
-    book.pageText:SetPoint("BOTTOM", -14, 99) -- between the page arrows
+    bookFrame.pageText = bookFrame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+    bookFrame.pageText:SetWidth(102)
+    bookFrame.pageText:SetPoint("BOTTOM", -14, 99) -- between the page arrows
 
     toggle = CreateFrame("Button", TOGGLE_NAME, UIParent, "SecureHandlerClickTemplate")
-    toggle:SetFrameRef("book", book)
+    toggle:SetFrameRef("book", bookFrame)
     toggle:SetAttribute("_onclick", TOGGLE_SNIPPET)
 
     -- Escape also closes the talent window that stands beside the book.
     local escape = CreateFrame("Button", ESCAPE_NAME, UIParent, "SecureHandlerClickTemplate")
-    escape:SetFrameRef("book", book)
+    escape:SetFrameRef("book", bookFrame)
     escape:SetAttribute("_onclick", [[ self:GetFrameRef("book"):Hide() ]])
     escape:SetScript("PostClick", function()
         local talents = CludesUI._ClassicTalents
@@ -543,39 +543,39 @@ local function Build()
         end
     end)
 
-    local close = CreateFrame("Button", nil, book, "SecureHandlerClickTemplate")
-    close:SetSize(32, 32)
-    close:SetPoint("CENTER", book, "TOPRIGHT", -44, -25)
-    close:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
-    close:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
-    close:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight", "ADD")
-    close:SetFrameRef("book", book)
-    close:SetAttribute("_onclick", [[ self:GetFrameRef("book"):Hide() ]])
+    local closeBtn = CreateFrame("Button", nil, bookFrame, "SecureHandlerClickTemplate")
+    closeBtn:SetSize(32, 32)
+    closeBtn:SetPoint("CENTER", bookFrame, "TOPRIGHT", -44, -25)
+    closeBtn:SetNormalTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Up")
+    closeBtn:SetPushedTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Down")
+    closeBtn:SetHighlightTexture("Interface\\Buttons\\UI-Panel-MinimizeButton-Highlight", "ADD")
+    closeBtn:SetFrameRef("book", bookFrame)
+    closeBtn:SetAttribute("_onclick", [[ self:GetFrameRef("book"):Hide() ]])
 
     -- The game's own search box and options button, under the title.
-    book.options = CreateFrame("DropdownButton", nil, book, "UIPanelArrowDropdownButtonTemplate")
-    book.options:SetPoint("TOPRIGHT", -62, -47)
-    book.options:SetupMenu(OptionsMenu)
-    book.search = CreateFrame("EditBox", nil, book, "SearchBoxTemplate")
-    book.search:SetHeight(20)
-    book.search:SetPoint("TOPLEFT", 84, -42)
-    book.search:SetPoint("RIGHT", book.options, "LEFT", -6, 0)
-    book.search.Instructions:SetText(SPELLBOOK_SEARCH_INSTRUCTIONS)
-    book.search:HookScript("OnTextChanged", SearchChanged)
+    bookFrame.options = CreateFrame("DropdownButton", nil, bookFrame, "UIPanelArrowDropdownButtonTemplate")
+    bookFrame.options:SetPoint("TOPRIGHT", -62, -47)
+    bookFrame.options:SetupMenu(OptionsMenu)
+    bookFrame.search = CreateFrame("EditBox", nil, bookFrame, "SearchBoxTemplate")
+    bookFrame.search:SetHeight(20)
+    bookFrame.search:SetPoint("TOPLEFT", 84, -42)
+    bookFrame.search:SetPoint("RIGHT", bookFrame.options, "LEFT", -6, 0)
+    bookFrame.search.Instructions:SetText(SPELLBOOK_SEARCH_INSTRUCTIONS)
+    bookFrame.search:HookScript("OnTextChanged", SearchChanged)
 
-    book.tabs, book.spells = {}, {}
+    bookFrame.tabs, bookFrame.spells = {}, {}
     for i = 1, PER_PAGE do
-        book.spells[i] = NewSpellButton(i)
-        book:SetFrameRef("spell" .. i, book.spells[i])
+        bookFrame.spells[i] = NewSpellButton(i)
+        bookFrame:SetFrameRef("spell" .. i, bookFrame.spells[i])
     end
-    book.Painted = Painted
-    book:Execute([[
+    bookFrame.Painted = Painted
+    bookFrame:Execute([[
         BOOK, LINE = self, 1
         LINES, COUNTS, PAGES, SPELLS = newtable(), newtable(), newtable(), newtable()
         for i = 1, 12 do SPELLS[i] = self:GetFrameRef("spell" .. i) end
     ]])
-    book.prev = NewArrow("Prev", 50, -1)
-    book.next = NewArrow("Next", 314, 1)
+    bookFrame.prev = NewArrow("Prev", 50, -1)
+    bookFrame.next = NewArrow("Next", 314, 1)
     if CludesUI._ShifterAdopt then
         CludesUI._ShifterAdopt("CUI_ClassicSpellbook")
     end
@@ -583,19 +583,19 @@ end
 
 -- The click layer's click: out of combat, where an addon may show the book.
 local function MicroToggle()
-    if not book or InCombatLockdown() then
+    if not bookFrame or InCombatLockdown() then
         return
     end
-    if book:IsShown() then
-        book:Hide()
+    if bookFrame:IsShown() then
+        bookFrame:Hide()
     else
-        book:Show()
+        bookFrame:Show()
     end
 end
 
 local function MicroClicksBack()
-    if microLayer then
-        microLayer:SetMouseClickEnabled(true)
+    if microButtons then
+        microButtons:SetMouseClickEnabled(true)
     end
 end
 
@@ -637,8 +637,8 @@ local function Bind()
     end
     boundKeys = keys
     ClearOverrideBindings(toggle)
-    for key in keys:gmatch("%S+") do
-        SetOverrideBindingClick(toggle, true, key, TOGGLE_NAME)
+    for spellKey in keys:gmatch("%S+") do
+        SetOverrideBindingClick(toggle, true, spellKey, TOGGLE_NAME)
     end
 end
 
@@ -654,16 +654,16 @@ local function OnEvent(_, event)
         if stale then
             Refresh()
         end
-        if book then
-            book.prev:SetEnabled(true)
-            book.next:SetEnabled(true)
+        if bookFrame then
+            bookFrame.prev:SetEnabled(true)
+            bookFrame.next:SetEnabled(true)
         end
         -- The game's own window opens from the micro button until the fight ends.
-        if microLayer then
-            microLayer:SetMouseClickEnabled(false)
+        if microButtons then
+            microButtons:SetMouseClickEnabled(false)
             CludesUI.CombatQueue.Defer(QUEUE_KEY .. "Micro", MicroClicksBack)
         end
-    elseif book:IsShown() then
+    elseif bookFrame:IsShown() then
         Refresh()
     else
         stale = true
@@ -675,39 +675,39 @@ local function Apply()
         CludesUI.CombatQueue.Defer(QUEUE_KEY .. "Apply", Apply)
         return
     end
-    if events then
-        events:UnregisterAllEvents()
+    if eventList then
+        eventList:UnregisterAllEvents()
     end
     if not F.Enabled() then
-        if microLayer then
-            microLayer:Hide()
+        if microButtons then
+            microButtons:Hide()
         end
         AimRoute(false)
-        if book then
-            book:Hide()
+        if bookFrame then
+            bookFrame:Hide()
         end
         Bind()
         return
     end
-    if not events then
-        events = CreateFrame("Frame")
-        events:SetScript("OnEvent", OnEvent)
+    if not eventList then
+        eventList = CreateFrame("Frame")
+        eventList:SetScript("OnEvent", OnEvent)
     end
     Build()
     AimRoute(true)
-    if not microLayer then
-        microLayer = module.MicroClickLayer("SpellbookMicroButton", MicroToggle)
+    if not microButtons then
+        microButtons = module.MicroClickLayer("SpellbookMicroButton", MicroToggle)
     end
-    if microLayer then
-        microLayer:SetMouseClickEnabled(true)
-        microLayer:Show()
+    if microButtons then
+        microButtons:SetMouseClickEnabled(true)
+        microButtons:Show()
     end
-    events:RegisterEvent("SPELLS_CHANGED")
-    events:RegisterEvent("LEARNED_SPELL_IN_SKILL_LINE")
-    events:RegisterEvent("UPDATE_BINDINGS")
-    events:RegisterEvent("PLAYER_REGEN_DISABLED")
-    if book:IsShown() then
-        events:RegisterEvent("SPELL_UPDATE_COOLDOWN")
+    eventList:RegisterEvent("SPELLS_CHANGED")
+    eventList:RegisterEvent("LEARNED_SPELL_IN_SKILL_LINE")
+    eventList:RegisterEvent("UPDATE_BINDINGS")
+    eventList:RegisterEvent("PLAYER_REGEN_DISABLED")
+    if bookFrame:IsShown() then
+        eventList:RegisterEvent("SPELL_UPDATE_COOLDOWN")
     end
     Bind()
     Refresh()

@@ -79,13 +79,13 @@ function mod.PinCursorItem()
     if cursorType ~= "item" or not itemId then
         return false
     end
-    local pinned = PinnedItems(true)
-    if not pinned then
+    local isPinned = PinnedItems(true)
+    if not isPinned then
         ClearCursor()
         return true
     end
-    if not IsItemPinned(pinned, cursorLink, itemId) then
-        pinned[NormalizePinKey(cursorLink, itemId)] = IsGearItem(cursorLink) and 1 or 999
+    if not IsItemPinned(isPinned, cursorLink, itemId) then
+        isPinned[NormalizePinKey(cursorLink, itemId)] = IsGearItem(cursorLink) and 1 or 999
     end
     ClearCursor()
     CUI_Bags:RefreshInventory()
@@ -278,10 +278,10 @@ local function ExitAssignSelectMode()
         scrollFrame:SetFrameStrata(CUI_Bags:GetFrameStrata())
     end
     -- The coin goes back into the header's layer
-    local coin = wasJunk and CUI_Bags._junkBtn
-    if coin then
-        coin:SetFrameStrata(CUI_Bags:GetFrameStrata())
-        coin:SetFrameLevel(coin:GetParent():GetFrameLevel() + 1)
+    local coinTex = wasJunk and CUI_Bags._junkBtn
+    if coinTex then
+        coinTex:SetFrameStrata(CUI_Bags:GetFrameStrata())
+        coinTex:SetFrameLevel(coinTex:GetParent():GetFrameLevel() + 1)
     end
     -- Marks repainted only their own slots: sort them into place now (an open
     -- bank greys and regroups its copies too)
@@ -334,9 +334,9 @@ function mod.RepaintJunkItem(itemId)
     for _ = 1, 2 do
         for _, button in pairs(pool) do
             if button:IsShown() and button:GetParent():IsShown() then
-                local bag, slot = button:GetParent():GetID(), button:GetID()
-                if C_Container.GetContainerItemID(bag, slot) == itemId then
-                    local details = C_Container.GetContainerItemInfo(bag, slot)
+                local bagId, slotBtn = button:GetParent():GetID(), button:GetID()
+                if C_Container.GetContainerItemID(bagId, slotBtn) == itemId then
+                    local details = C_Container.GetContainerItemInfo(bagId, slotBtn)
                     if details then
                         if button._lvIcon then
                             mod.ListPaintJunk(button, details)
@@ -356,18 +356,18 @@ end
 
 -- junk: Junk Marker mode -- clicks toggle marks, the mode stays open, and only
 -- the bag window dims (the "+" assign dims the whole screen).
-EnterAssignSelectMode = function(catKey, junk)
+EnterAssignSelectMode = function(catKey, junkList)
     if mod.OfflineUp and mod.OfflineUp() then
         return
     end -- nothing live to pick while an alt or bank is up
     CUI_Bags._assignSelectMode = true
-    CUI_Bags._junkMode = junk or nil
+    CUI_Bags._junkMode = junkList or nil
     _assignSelectCatKey = catKey
 
-    local cacheKey = junk and "_assignOverlayBag" or "_assignOverlayFull"
+    local cacheKey = junkList and "_assignOverlayBag" or "_assignOverlayFull"
     if not CUI_Bags[cacheKey] then
-        local shade = CreateFrame("Frame", nil, junk and CUI_Bags or UIParent)
-        if junk then
+        local shade = CreateFrame("Frame", nil, junkList and CUI_Bags or UIParent)
+        if junkList then
             -- The bag's own strata: the item grid rides the scroll frame, raised
             -- to FULLSCREEN_DIALOG below, so only the bag behind the items dims.
             shade:SetFrameStrata(CUI_Bags:GetFrameStrata())
@@ -437,9 +437,9 @@ EnterAssignSelectMode = function(catKey, junk)
             ExitAssignSelectMode()
         end)
 
-        local hoverOv = castFrame:CreateTexture(nil, "OVERLAY")
-        hoverOv:SetColorTexture(1, 1, 1, 0.4)
-        hoverOv:Hide()
+        local hoverOverlay = castFrame:CreateTexture(nil, "OVERLAY")
+        hoverOverlay:SetColorTexture(1, 1, 1, 0.4)
+        hoverOverlay:Hide()
         local hoveredBtn = nil
         local savedR, savedG, savedB, savedA, savedBrdSize
 
@@ -455,8 +455,8 @@ EnterAssignSelectMode = function(catKey, junk)
             hoveredBtn = nil
             savedR = nil
             savedBrdSize = nil
-            hoverOv:ClearAllPoints()
-            hoverOv:Hide()
+            hoverOverlay:ClearAllPoints()
+            hoverOverlay:Hide()
         end
         castFrame._clearHover = ClearHover
 
@@ -486,9 +486,9 @@ EnterAssignSelectMode = function(catKey, junk)
                     local px2 = ((Pix and Pix.mult) or 1) * 2
                     SetInsetBorderThickness(button, px2)
                 end
-                hoverOv:ClearAllPoints()
-                hoverOv:SetAllPoints(button)
-                hoverOv:Show()
+                hoverOverlay:ClearAllPoints()
+                hoverOverlay:SetAllPoints(button)
+                hoverOverlay:Show()
                 hoveredBtn = button
             end
         end)
@@ -510,9 +510,9 @@ EnterAssignSelectMode = function(catKey, junk)
             local button = FindBtnUnderCursor()
             if button then
                 local bagID = button:GetParent():GetID()
-                local slotID = button:GetID()
-                if bagID and slotID and slotID > 0 then
-                    local details = C_Container.GetContainerItemInfo(bagID, slotID)
+                local slotId = button:GetID()
+                if bagID and slotId and slotId > 0 then
+                    local details = C_Container.GetContainerItemInfo(bagID, slotId)
                     if details and details.itemID and _assignSelectCatKey then
                         if junkMode then
                             -- Only the item's own slots repaint, so nothing moves under
@@ -549,10 +549,10 @@ EnterAssignSelectMode = function(catKey, junk)
     castFrame:Show()
     -- Junk Marker: the coin stays bright above the dim and takes its own
     -- clicks above the catcher (a click on it ends the mode)
-    local coin = junk and CUI_Bags._junkBtn
-    if coin then
-        coin:SetFrameStrata("FULLSCREEN_DIALOG")
-        coin:SetFrameLevel(castFrame:GetFrameLevel() + 1)
+    local coinTex = junkList and CUI_Bags._junkBtn
+    if coinTex then
+        coinTex:SetFrameStrata("FULLSCREEN_DIALOG")
+        coinTex:SetFrameLevel(castFrame:GetFrameLevel() + 1)
     end
 end
 
@@ -562,26 +562,26 @@ end
 -------------------------------------------------------------------------------
 do
     local function BuildButtons()
-        local header = CUI_Bags._bagsBtn:GetParent()
+        local headerBar = CUI_Bags._bagsBtn:GetParent()
         -- Placed by SyncHeaderIcons, left of the next shown header icon
-        local junk = CreateFrame("Button", nil, header)
-        junk:SetSize(22, 22)
+        local junkList = CreateFrame("Button", nil, headerBar)
+        junkList:SetSize(22, 22)
         -- Our own coin art (the item badge and the Junk category keep the game's
         -- coin). It sits inside a thin margin: drawn 24 px, the coin fills the button
-        junk.icon = junk:CreateTexture(nil, "OVERLAY")
-        junk.icon:SetTexture("Interface\\AddOns\\CludesUIBags\\Media\\gold.png")
-        junk.icon:SetSize(24, 24)
-        junk.icon:SetPoint("CENTER")
-        junk.icon:SetAlpha(0.9)
-        junk:SetScript("OnEnter", function(self)
+        junkList.icon = junkList:CreateTexture(nil, "OVERLAY")
+        junkList.icon:SetTexture("Interface\\AddOns\\CludesUIBags\\Media\\gold.png")
+        junkList.icon:SetSize(24, 24)
+        junkList.icon:SetPoint("CENTER")
+        junkList.icon:SetAlpha(0.9)
+        junkList:SetScript("OnEnter", function(self)
             self.icon:SetAlpha(1)
             CUI.ShowWidgetTooltip(self, CludesUI.L("Click items to mark or unmark them as junk."))
         end)
-        junk:SetScript("OnLeave", function(self)
+        junkList:SetScript("OnLeave", function(self)
             self.icon:SetAlpha(0.9)
             CUI.HideWidgetTooltip()
         end)
-        junk:SetScript("OnClick", function(self)
+        junkList:SetScript("OnClick", function(self)
             CUI.HideWidgetTooltip()
             -- Mark mode on: the coin ends it
             if CUI_Bags._junkMode then
@@ -613,34 +613,34 @@ do
         end)
         -- A double-click is one press: its second click runs this instead of
         -- OnClick, which would end the mode the first click started
-        junk:SetScript("OnDoubleClick", function() end)
-        CUI_Bags._junkBtn = junk
+        junkList:SetScript("OnDoubleClick", function() end)
+        CUI_Bags._junkBtn = junkList
 
-        local sell = CreateFrame("Button", nil, header)
-        sell:SetPoint("RIGHT", junk, "LEFT", -6, 0)
-        local backdrop = sell:CreateTexture(nil, "BACKGROUND")
+        local sellBtn = CreateFrame("Button", nil, headerBar)
+        sellBtn:SetPoint("RIGHT", junkList, "LEFT", -6, 0)
+        local backdrop = sellBtn:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0, 0, 0, 0.4)
-        sell.label = sell:CreateFontString(nil, "OVERLAY")
-        SetBagFont(sell.label, 10)
-        sell.label:SetPoint("CENTER")
-        sell.label:SetText(CludesUI.L("Sell Junk"))
-        sell.label:SetTextColor(0.85, 0.82, 0.55)
+        sellBtn.label = sellBtn:CreateFontString(nil, "OVERLAY")
+        SetBagFont(sellBtn.label, 10)
+        sellBtn.label:SetPoint("CENTER")
+        sellBtn.label:SetText(CludesUI.L("Sell Junk"))
+        sellBtn.label:SetTextColor(0.85, 0.82, 0.55)
         -- Sized to its label (translations run longer)
-        sell:SetSize(math.max(58, math.ceil(sell.label:GetStringWidth()) + 14), 18)
-        sell:SetScript("OnEnter", function(self)
+        sellBtn:SetSize(math.max(58, math.ceil(sellBtn.label:GetStringWidth()) + 14), 18)
+        sellBtn:SetScript("OnEnter", function(self)
             self.label:SetTextColor(1, 0.96, 0.66)
             CUI.ShowWidgetTooltip(self, CludesUI.L("Sells all your junk items."))
         end)
-        sell:SetScript("OnLeave", function(self)
+        sellBtn:SetScript("OnLeave", function(self)
             self.label:SetTextColor(0.85, 0.82, 0.55)
             CUI.HideWidgetTooltip()
         end)
-        sell:SetScript("OnClick", function()
+        sellBtn:SetScript("OnClick", function()
             CUI.HideWidgetTooltip()
             CUI_Bags:SellJunk()
         end)
-        CUI_Bags._sellJunkBtn = sell
+        CUI_Bags._sellJunkBtn = sellBtn
     end
 
     -- The header's icons (Bag Top Bar Icons), right to left from the search box:
@@ -692,9 +692,9 @@ do
         end
         -- The leftmost shown icon bounds the search on Forever and the title on CUI.
         if forever then
-            local search, header = self._searchBox, bags:GetParent()
+            local search, headerBar = self._searchBox, bags:GetParent()
             search:ClearAllPoints()
-            search:SetPoint("LEFT", header, "TOPLEFT", 45, header._foreverToolsY)
+            search:SetPoint("LEFT", headerBar, "TOPLEFT", 45, headerBar._foreverToolsY)
             search:SetPoint("RIGHT", edge, "LEFT", -6, 0)
         end
         if not junkOn and self._junkMode then
@@ -712,38 +712,38 @@ do
     -- refundable (Blizzard's own right-click never sells those without asking, and
     -- a fresh purchase of a marked item would otherwise go unasked). Returns how
     -- many junk items it kept back (the summary counts them as not sold).
-    local function GatherJunkSlots(slots, ids)
+    local function GatherJunkSlots(slotList, ids)
         local special = mod.SpecialBags()
         local setGear = CUI_CategoryManager:GetSetGearLookup()
-        local pinned = PinnedItems()
-        local kept = 0
-        for bag = 0, 5 do
-            if not (special and special[bag]) then
-                for slot = 1, C_Container.GetContainerNumSlots(bag) or 0 do
-                    local details = C_Container.GetContainerItemInfo(bag, slot)
+        local isPinned = PinnedItems()
+        local keptSet = 0
+        for bagId = 0, 5 do
+            if not (special and special[bagId]) then
+                for slotBtn = 1, C_Container.GetContainerNumSlots(bagId) or 0 do
+                    local details = C_Container.GetContainerItemInfo(bagId, slotBtn)
                     if
                         details
                         and details.itemID
                         and CUI_CategoryManager:IsJunk(details.itemID, details.quality)
                     then
                         local keep = details.hasNoValue
-                            or setGear[bag * 1000 + slot]
-                            or (pinned and IsItemPinned(pinned, details.hyperlink, details.itemID))
+                            or setGear[bagId * 1000 + slotBtn]
+                            or (isPinned and IsItemPinned(isPinned, details.hyperlink, details.itemID))
                         if not keep then
-                            local p = C_Container.GetContainerItemPurchaseInfo(bag, slot, false)
+                            local p = C_Container.GetContainerItemPurchaseInfo(bagId, slotBtn, false)
                             keep = p and p.refundSeconds and p.refundSeconds > 0
                         end
                         if keep then
-                            kept = kept + 1
+                            keptSet = keptSet + 1
                         else
-                            slots[#slots + 1] = bag * 1000 + slot
+                            slotList[#slotList + 1] = bagId * 1000 + slotBtn
                             ids[#ids + 1] = details.itemID
                         end
                     end
                 end
             end
         end
-        return kept
+        return keptSet
     end
 
     -- One item every 0.08 s, until the gathered slots run out, the merchant
@@ -758,19 +758,19 @@ do
             return
         end
         self._junkSelling = true
-        local slots, ids, values, sent = {}, {}, {}, {}
-        local kept = GatherJunkSlots(slots, ids)
+        local slotList, ids, values, sent = {}, {}, {}, {}
+        local keptSet = GatherJunkSlots(slotList, ids)
         local index, done = 0, false
         local function Landed(k)
-            local key = slots[k]
-            return C_Container.GetContainerItemID(math.floor(key / 1000), key % 1000) ~= ids[k]
+            local itemKey = slotList[k]
+            return C_Container.GetContainerItemID(math.floor(itemKey / 1000), itemKey % 1000) ~= ids[k]
         end
         local function InFlight()
             for num = 1, #sent do
                 local k = sent[num]
                 if not Landed(k) then
-                    local key = slots[k]
-                    local details = C_Container.GetContainerItemInfo(math.floor(key / 1000), key % 1000)
+                    local itemKey = slotList[k]
+                    local details = C_Container.GetContainerItemInfo(math.floor(itemKey / 1000), itemKey % 1000)
                     if details and details.isLocked then
                         return true
                     end
@@ -798,8 +798,8 @@ do
             -- Not sold: the junk kept back (no sell price, equipment sets, pins,
             -- refundable), and a gathered slot still holding its item (a sale
             -- refused or waiting on its confirmation, or the sweep cut short)
-            local leftX = kept
-            for k = 1, #slots do
+            local leftX = keptSet
+            for k = 1, #slotList do
                 if not Landed(k) then
                     leftX = leftX + 1
                 end
@@ -844,17 +844,17 @@ do
                 and not InCombatLockdown()
                 and not CursorHasItem()
             force = nil
-            while live and index < #slots do
+            while live and index < #slotList do
                 index = index + 1
-                local key = slots[index]
-                local bag, slot = math.floor(key / 1000), key % 1000
-                local details = C_Container.GetContainerItemInfo(bag, slot)
+                local itemKey = slotList[index]
+                local bagId, slotBtn = math.floor(itemKey / 1000), itemKey % 1000
+                local details = C_Container.GetContainerItemInfo(bagId, slotBtn)
                 -- Still the gathered item, and not locked
                 if details and details.itemID == ids[index] and not details.isLocked then
                     values[index] = ((details.hyperlink and select(11, GetItemInfo(details.hyperlink))) or 0)
                         * (details.stackCount or 1)
                     sent[#sent + 1] = index
-                    C_Container.UseContainerItem(bag, slot)
+                    C_Container.UseContainerItem(bagId, slotBtn)
                     C_Timer.After(0.08, step)
                     return
                 end
@@ -947,27 +947,27 @@ EnterPinSelectMode = function()
         end)
 
         -- Hover highlight: accent border (2px) + white overlay
-        local pinHoverOv = castFrame:CreateTexture(nil, "OVERLAY")
-        pinHoverOv:SetColorTexture(1, 1, 1, 0.4)
-        pinHoverOv:Hide()
+        local pinHover = castFrame:CreateTexture(nil, "OVERLAY")
+        pinHover:SetColorTexture(1, 1, 1, 0.4)
+        pinHover:Hide()
         local pinHoveredBtn = nil
-        local pinSavedR, pinSavedG, pinSavedB, pinSavedA
+        local pinRed, pinSavedG, pinSavedB, pinSavedA
         local pinSavedBrdSize
 
         local function ClearPinHover()
             if pinHoveredBtn then
-                if pinSavedR then
-                    SetInsetBorderColor(pinHoveredBtn, pinSavedR, pinSavedG, pinSavedB, pinSavedA)
+                if pinRed then
+                    SetInsetBorderColor(pinHoveredBtn, pinRed, pinSavedG, pinSavedB, pinSavedA)
                 end
                 if pinSavedBrdSize then
                     SetInsetBorderThickness(pinHoveredBtn, pinSavedBrdSize)
                 end
             end
             pinHoveredBtn = nil
-            pinSavedR = nil
+            pinRed = nil
             pinSavedBrdSize = nil
-            pinHoverOv:ClearAllPoints()
-            pinHoverOv:Hide()
+            pinHover:ClearAllPoints()
+            pinHover:Hide()
         end
         castFrame._clearHover = ClearPinHover
 
@@ -989,17 +989,17 @@ EnterPinSelectMode = function()
             end
             ClearPinHover()
             if button and button.icon and button.icon:IsShown() then
-                pinSavedR, pinSavedG, pinSavedB, pinSavedA, pinSavedBrdSize = GetInsetBorderStyle(button)
-                if pinSavedR then
+                pinRed, pinSavedG, pinSavedB, pinSavedA, pinSavedBrdSize = GetInsetBorderStyle(button)
+                if pinRed then
                     local ar, ag, ab = GetAccentRGB()
                     SetInsetBorderColor(button, ar, ag, ab, 1)
                     local Pix = CUI and CUI.PP
                     local px2 = ((Pix and Pix.mult) or 1) * 2
                     SetInsetBorderThickness(button, px2)
                 end
-                pinHoverOv:ClearAllPoints()
-                pinHoverOv:SetAllPoints(button)
-                pinHoverOv:Show()
+                pinHover:ClearAllPoints()
+                pinHover:SetAllPoints(button)
+                pinHover:Show()
                 pinHoveredBtn = button
             end
         end)
@@ -1013,19 +1013,19 @@ EnterPinSelectMode = function()
             local button = FindBtnUnderCursor()
             if button then
                 local bagID = button:GetParent():GetID()
-                local slotID = button:GetID()
-                if bagID and slotID and slotID > 0 then
-                    local details = C_Container.GetContainerItemInfo(bagID, slotID)
+                local slotId = button:GetID()
+                if bagID and slotId and slotId > 0 then
+                    local details = C_Container.GetContainerItemInfo(bagID, slotId)
                     if details and details.itemID then
-                        local pinned = PinnedItems(true)
-                        if not pinned then
+                        local isPinned = PinnedItems(true)
+                        if not isPinned then
                             ClearPinHover()
                             ExitPinSelectMode()
                             return
                         end
-                        local itemLink = C_Container.GetContainerItemLink(bagID, slotID)
+                        local itemLink = C_Container.GetContainerItemLink(bagID, slotId)
                         local pinKey = NormalizePinKey(itemLink, details.itemID)
-                        pinned[pinKey] = (pinned[pinKey] or 0) + 1
+                        isPinned[pinKey] = (isPinned[pinKey] or 0) + 1
                         ClearPinHover()
                         ExitPinSelectMode()
                         CUI_Bags:RefreshInventory()

@@ -100,12 +100,12 @@ function NameplateFrame:UpdateName()
     -- The slotted name-family variant decides what renders: name or a level+name
     -- combo (in the slot's materialized part colours). A nil slot keeps the plain-name
     -- write (RefreshNamePosition hides it).
-    local slot = mod.FindNameSlot()
-    local el = slot and GetTextSlot(slot) or "enemyName"
+    local slotRec = mod.FindNameSlot()
+    local el = slotRec and GetTextSlot(slotRec) or "enemyName"
     local name = CludesUI.WithSurname(UnitName(unitToken))
     if type(name) == "string" then
-        name = mod.NP_FormatName(name, slot, unitToken) -- the slot's Name Format
-        mod.SetNameElementText(self.name, el, name, unitToken, slot)
+        name = mod.NP_FormatName(name, slotRec, unitToken) -- the slot's Name Format
+        mod.SetNameElementText(self.name, el, name, unitToken, slotRec)
         -- Debuff coloring's Color Name copies follow the text (RefreshNamePosition
         -- passes it on too).
         if p and p.nameRaidMarkerEnabled == true then
@@ -125,16 +125,16 @@ end
 -- at Bottom.
 -- The Core Positions chain (ns.NP_CoreChain) places the first shown element of a shared
 -- slot with it too.
-local function PlaceSlotIcon(backing, frame, place, xOff, yOff, lift, sz)
+local function PlaceSlotIcon(backing, frame, place, xOff, yOff, lift, size)
     local cpPush = GetClassPowerTopPush(backing)
     frame:ClearAllPoints()
     if place == "top" then
         Pix.Point(frame, "BOTTOM", backing.health, "TOP", xOff, GetDebuffYOffset() + cpPush + yOff)
     elseif place == "left" then
-        local iconPush = mod.NP_SideIconPush(backing, "left", yOff, sz)
+        local iconPush = mod.NP_SideIconPush(backing, "left", yOff, size)
         Pix.Point(frame, "RIGHT", backing.health, "LEFT", -GetSideAuraXOffset() - iconPush + xOff, yOff)
     elseif place == "right" then
-        local iconPush = mod.NP_SideIconPush(backing, "right", yOff, sz)
+        local iconPush = mod.NP_SideIconPush(backing, "right", yOff, size)
         Pix.Point(frame, "LEFT", backing.health, "RIGHT", GetSideAuraXOffset() + iconPush + xOff, yOff)
     elseif place == "topleft" then
         Pix.Point(
@@ -163,8 +163,8 @@ mod.NP_PlaceSlotIcon = PlaceSlotIcon
 -- Whether the player is in a dungeon, raid, battleground or arena: there each Core Positions
 -- quest and rare element shows only while its own Show In Instances allows it.
 local function InInstance()
-    local _, iType = GetInstanceInfo()
-    return iType == "party" or iType == "raid" or iType == "pvp" or iType == "arena"
+    local _, iconType = GetInstanceInfo()
+    return iconType == "party" or iconType == "raid" or iconType == "pvp" or iconType == "arena"
 end
 -- The Rare/Quest frame: the Quest Indicator (the quest icon on a quest mob) takes priority
 -- over the Elite/Rare Indicator (the elite and rare marks), each half on while its box is
@@ -174,8 +174,8 @@ function NameplateFrame:UpdateClassification()
     if not self.unit then
         return
     end
-    local slot = GetClassificationSlot()
-    if slot == "none" then
+    local slotRec = GetClassificationSlot()
+    if slotRec == "none" then
         self.classFrame:Hide()
         self:UpdateNameWidth()
         return
@@ -186,17 +186,17 @@ function NameplateFrame:UpdateClassification()
     -- elite/rare mark instead.
     local rareOn = not (p and p.classificationHideRare) and (not inInstance or mod.NP_ShowInInstances("rare"))
     local questOn = mod.NP_QuestIconOn() and (not inInstance or mod.NP_ShowInInstances("quest"))
-    local sz
+    local size
     if questOn and mod.IsQuestMob(self.unit) then
         self.class:SetAtlas("Crosshair_Quest_64")
-        sz = mod.NP_ElementSize("quest")
+        size = mod.NP_ElementSize("quest")
     else
         if not rareOn then
             self.classFrame:Hide()
             self:UpdateNameWidth()
             return
         end
-        sz = GetRareEliteIconSize()
+        size = GetRareEliteIconSize()
         local c = UnitClassification(self.unit)
         -- Classic WoW UI carries elite rank in the plate's own art, so the
         -- indicator marks RARITY alone there: a plain elite shows nothing,
@@ -222,9 +222,9 @@ function NameplateFrame:UpdateClassification()
         end
     end
     local cxOff, cyOff = GetAuraSlotOffsets("classification")
-    self.classFrame._npSz = sz
-    Pix.Size(self.classFrame, sz, sz)
-    PlaceSlotIcon(self, self.classFrame, slot, cxOff, cyOff, 2, sz)
+    self.classFrame._npSz = size
+    Pix.Size(self.classFrame, size, size)
+    PlaceSlotIcon(self, self.classFrame, slotRec, cxOff, cyOff, 2, size)
     self.classFrame:Show()
     self:UpdateNameWidth()
 end
@@ -238,12 +238,12 @@ function NameplateFrame:UpdateClassification()
     if p and p.classificationIncludeFaction then
         self:UpdateFaction()
     end
-    local slot = GetClassificationSlot()
+    local slotRec = GetClassificationSlot()
     -- Its own chain pass is this one's when the two share the slot.
-    self:UpdateQuestText(slot)
+    self:UpdateQuestText(slotRec)
     -- Elements sharing the slot follow the indicator's show, hide and move.
     if mod.NP_CoreChain then
-        mod.NP_CoreChain(self, slot)
+        mod.NP_CoreChain(self, slotRec)
     end
 end
 
@@ -304,7 +304,7 @@ function mod.NP_QuestTypeIconLayout(counterW, counterH, fontSize, scale)
         iconSize
 end
 -- Hides the frame; the name width, the target arrows and the slot's other elements follow.
-local function QuestTextHide(self, chainedBy)
+local function QuestTextHide(self, chainParent)
     if self.questTextTypeIcon then
         QuestTextTypeIconHide(self)
     end
@@ -318,19 +318,19 @@ local function QuestTextHide(self, chainedBy)
     if last == "left" or last == "right" then
         PositionArrowsOutsideAuras(self)
     end
-    if mod.NP_CoreChain and last and last ~= chainedBy then
+    if mod.NP_CoreChain and last and last ~= chainParent then
         mod.NP_CoreChain(self, last)
     end
 end
-function NameplateFrame:UpdateQuestText(chainedBy)
-    local slot = mod.NP_GetQuestTextSlot()
+function NameplateFrame:UpdateQuestText(chainParent)
+    local slotRec = mod.NP_GetQuestTextSlot()
     local unitToken = self.unit
-    if slot == "none" or not unitToken then
-        QuestTextHide(self, chainedBy)
+    if slotRec == "none" or not unitToken then
+        QuestTextHide(self, chainParent)
         return
     end
     if (InInstance() and not mod.NP_ShowInInstances("questtext")) or not mod.IsQuestMob(unitToken) then
-        QuestTextHide(self, chainedBy)
+        QuestTextHide(self, chainParent)
         return
     end
     local textValue = mod.GetQuestObjectiveText(unitToken)
@@ -338,17 +338,17 @@ function NameplateFrame:UpdateQuestText(chainedBy)
     if not textValue then
         -- No readable count or percent: the quest icon, unless the Quest Indicator draws it.
         if mod.NP_QuestIconOn() then
-            QuestTextHide(self, chainedBy)
+            QuestTextHide(self, chainParent)
             return
         end
-        iconSz = mod.NP_ElementSize("quest", nil, slot)
+        iconSz = mod.NP_ElementSize("quest", nil, slotRec)
     end
     local frame = self.questTextFrame
     if not frame then
         -- The faction badge's tier, born in the plate's aspect holder like the other slot
         -- icons (PlatePool, coreHost), so a Core Positions chain can anchor it to an aura row.
         frame = CreateFrame("Frame", nil, self.coreHost or self)
-        frame:SetFrameStrata(mod.GetSlotRaiseStrata(slot) and "HIGH" or "MEDIUM")
+        frame:SetFrameStrata(mod.GetSlotRaiseStrata(slotRec) and "HIGH" or "MEDIUM")
         frame:SetFrameLevel(self.health:GetFrameLevel() + 2)
         frame:Hide()
         local fontStr = frame:CreateFontString(nil, "OVERLAY")
@@ -377,22 +377,22 @@ function NameplateFrame:UpdateQuestText(chainedBy)
         end
         wid, hgt = frame._qtW, frame._qtH
         if p and p.showQuestObjectiveTypeIcon == true then
-            local typeIcon = self.questTextTypeIcon
-            if not typeIcon then
-                typeIcon = frame:CreateTexture(nil, "ARTWORK")
-                typeIcon:SetAtlas("Crosshair_Quest_64")
-                self.questTextTypeIcon = typeIcon
+            local typeTex = self.questTextTypeIcon
+            if not typeTex then
+                typeTex = frame:CreateTexture(nil, "ARTWORK")
+                typeTex:SetAtlas("Crosshair_Quest_64")
+                self.questTextTypeIcon = typeTex
             end
             local objectiveType = mod.GetQuestObjectiveType(unitToken)
             local art = objectiveType == "monster" and "monster"
                 or (objectiveType == "item" and "item" or "generic")
             if frame._qtTypeIconArt ~= art then
                 if art == "monster" then
-                    typeIcon:SetTexture("Interface\\Icons\\INV_Sword_04")
+                    typeTex:SetTexture("Interface\\Icons\\INV_Sword_04")
                 elseif art == "item" then
-                    typeIcon:SetTexture("Interface\\Icons\\INV_Misc_Bag_08")
+                    typeTex:SetTexture("Interface\\Icons\\INV_Misc_Bag_08")
                 else
-                    typeIcon:SetAtlas("Crosshair_Quest_64")
+                    typeTex:SetAtlas("Crosshair_Quest_64")
                 end
                 frame._qtTypeIconArt = art
             end
@@ -402,13 +402,13 @@ function NameplateFrame:UpdateQuestText(chainedBy)
             if not frame._qtTypeIconOn or frame._qtTypeIconCounterW ~= frame._qtW or frame._qtTypeIconW ~= iconSize then
                 fontStr:ClearAllPoints()
                 fontStr:SetPoint("CENTER", frame, "CENTER", textX, 0)
-                typeIcon:ClearAllPoints()
-                typeIcon:SetSize(iconSize, iconSize)
-                typeIcon:SetPoint("LEFT", frame, "CENTER", iconX, 0)
+                typeTex:ClearAllPoints()
+                typeTex:SetSize(iconSize, iconSize)
+                typeTex:SetPoint("LEFT", frame, "CENTER", iconX, 0)
                 frame._qtTypeIconOn = true
                 frame._qtTypeIconCounterW, frame._qtTypeIconW = frame._qtW, iconSize
             end
-            typeIcon:Show()
+            typeTex:Show()
             wid, hgt = fullW, fullH
         elseif self.questTextTypeIcon then
             QuestTextTypeIconHide(self)
@@ -426,27 +426,27 @@ function NameplateFrame:UpdateQuestText(chainedBy)
     local lastW, lastSlot, wasShown = frame._npW, self._qtSlot, frame:IsShown()
     frame._npW, frame._npSz = wid, hgt
     Pix.Size(frame, wid, hgt)
-    local xOff, yOff = GetSlotOffsets(slot)
-    PlaceSlotIcon(self, frame, slot, xOff, yOff, 2, hgt)
-    self._qtSlot = slot
+    local xOff, yOff = GetSlotOffsets(slotRec)
+    PlaceSlotIcon(self, frame, slotRec, xOff, yOff, 2, hgt)
+    self._qtSlot = slotRec
     frame:Show()
     if not wasShown or lastW ~= wid then
         self:UpdateNameWidth()
     end
     -- A side slot pushes the target arrows out, like the classification icon.
     if
-        (not wasShown or lastSlot ~= slot or lastW ~= wid)
-        and (slot == "left" or slot == "right" or lastSlot == "left" or lastSlot == "right")
+        (not wasShown or lastSlot ~= slotRec or lastW ~= wid)
+        and (slotRec == "left" or slotRec == "right" or lastSlot == "left" or lastSlot == "right")
     then
         PositionArrowsOutsideAuras(self)
     end
     -- Elements sharing the slot follow its show and move (and close up where it left).
     if mod.NP_CoreChain then
-        if wasShown and lastSlot and lastSlot ~= slot and lastSlot ~= chainedBy then
+        if wasShown and lastSlot and lastSlot ~= slotRec and lastSlot ~= chainParent then
             mod.NP_CoreChain(self, lastSlot)
         end
-        if slot ~= chainedBy then
-            mod.NP_CoreChain(self, slot)
+        if slotRec ~= chainParent then
+            mod.NP_CoreChain(self, slotRec)
         end
     end
 end
@@ -456,10 +456,10 @@ end
 -- artOnly (the plate's own UNIT_FACTION): a badge already up in this slot only
 -- needs its art checked; every layout input moves through a layout caller.
 function NameplateFrame:UpdateFaction(artOnly)
-    local slot = mod.NP_GetFactionSlot()
+    local slotRec = mod.NP_GetFactionSlot()
     local unitToken = self.unit
     -- Zero cost while the slot is None: no badge frame, no events.
-    if unitToken and slot ~= "none" then
+    if unitToken and slotRec ~= "none" then
         -- Faction and PvP flag changes both arrive as UNIT_FACTION (the one event
         -- Blizzard's own unit frames repaint their PvP badge on).
         if self._factionEv ~= unitToken then
@@ -472,7 +472,7 @@ function NameplateFrame:UpdateFaction(artOnly)
             -- plate's aspect holder like the other slot icons (PlatePool, coreHost), so a
             -- Core Positions chain can anchor it to an aura row.
             local frame = CreateFrame("Frame", nil, self.coreHost or self)
-            frame:SetFrameStrata(mod.GetSlotRaiseStrata(slot) and "HIGH" or "MEDIUM")
+            frame:SetFrameStrata(mod.GetSlotRaiseStrata(slotRec) and "HIGH" or "MEDIUM")
             frame:SetFrameLevel(self.health:GetFrameLevel() + 2)
             frame:Hide()
             self.faction = frame:CreateTexture(nil, "ARTWORK")
@@ -483,11 +483,11 @@ function NameplateFrame:UpdateFaction(artOnly)
         self:UnregisterEvent("UNIT_FACTION")
         self._factionEv = nil
     end
-    local atlas, dim
-    if unitToken and slot ~= "none" then
-        atlas, dim = mod.NP_FactionBadge(unitToken)
+    local atlasName, dimmed
+    if unitToken and slotRec ~= "none" then
+        atlasName, dimmed = mod.NP_FactionBadge(unitToken)
     end
-    if not atlas then
+    if not atlasName then
         if self.factionFrame and self.factionFrame:IsShown() then
             self.factionFrame:Hide()
             self:UpdateNameWidth()
@@ -497,7 +497,7 @@ function NameplateFrame:UpdateFaction(artOnly)
             end
             -- Elements sharing the slot close up.
             if mod.NP_CoreChain then
-                mod.NP_CoreChain(self, slot)
+                mod.NP_CoreChain(self, slotRec)
             end
         end
         return
@@ -507,45 +507,45 @@ function NameplateFrame:UpdateFaction(artOnly)
     -- goes stale.
     local style = mod.NP_GetFactionStyle()
     local badge = CludesUI.FactionBadgeFor(style, unitToken)
-    if self._facArt ~= atlas or self._facStyle ~= style or self._facBadge ~= badge then
-        CludesUI.SetFactionArt(self.faction, style, atlas, badge)
-        self._facArt, self._facStyle, self._facBadge = atlas, style, badge
+    if self._facArt ~= atlasName or self._facStyle ~= style or self._facBadge ~= badge then
+        CludesUI.SetFactionArt(self.faction, style, atlasName, badge)
+        self._facArt, self._facStyle, self._facBadge = atlasName, style, badge
     end
-    if self._facDim ~= dim then
-        self.faction:SetDesaturated(dim)
-        self.faction:SetAlpha(dim and 0.6 or 1)
-        self._facDim = dim
+    if self._facDim ~= dimmed then
+        self.faction:SetDesaturated(dimmed)
+        self.faction:SetAlpha(dimmed and 0.6 or 1)
+        self._facDim = dimmed
     end
-    if artOnly and self._facSlot == slot and self.factionFrame:IsShown() then
+    if artOnly and self._facSlot == slotRec and self.factionFrame:IsShown() then
         return
     end
-    local fxOff, fyOff = GetSlotOffsets(slot)
-    local sz = mod.NP_GetFactionIconSize()
-    self.factionFrame._npSz = sz
-    Pix.Size(self.factionFrame, sz, sz)
+    local fxOff, fyOff = GetSlotOffsets(slotRec)
+    local size = mod.NP_GetFactionIconSize()
+    self.factionFrame._npSz = size
+    Pix.Size(self.factionFrame, size, size)
     -- "Rare/Quest + Faction" with the classification icon showing too: the faction
     -- badge stacks behind it, overlapping by 40% of the icon's current size
     -- (classification is a frame level above, so it draws on top); up, or down in the
     -- Bottom slot so it clears the cast bar.
     if p and p.classificationIncludeFaction and self.classFrame:IsShown() then
         local step = math.floor((self.classFrame._npSz or GetRareEliteIconSize()) * 0.6 + 0.5)
-        if slot == "bottom" then
+        if slotRec == "bottom" then
             step = -step
         end
-        if mod.NP_CoreChained and mod.NP_CoreChained(slot) then
+        if mod.NP_CoreChained and mod.NP_CoreChained(slotRec) then
             -- Other elements share the slot: the pair is one member of its chain, so the
             -- badge rides the indicator wherever the chain puts it.
             self.factionFrame:ClearAllPoints()
             Pix.Point(self.factionFrame, "BOTTOMLEFT", self.classFrame, "BOTTOMLEFT", 0, step)
         else
-            PlaceSlotIcon(self, self.factionFrame, slot, fxOff, fyOff + step, 2, sz)
+            PlaceSlotIcon(self, self.factionFrame, slotRec, fxOff, fyOff + step, 2, size)
         end
     else
-        PlaceSlotIcon(self, self.factionFrame, slot, fxOff, fyOff, 2, sz)
+        PlaceSlotIcon(self, self.factionFrame, slotRec, fxOff, fyOff, 2, size)
     end
     local wasShown = self.factionFrame:IsShown()
     local lastSlot = self._facSlot
-    self._facSlot = slot
+    self._facSlot = slotRec
     self.factionFrame:Show()
     if not wasShown then
         self:UpdateNameWidth()
@@ -553,14 +553,14 @@ function NameplateFrame:UpdateFaction(artOnly)
     -- A side-slot badge pushes the target arrows out, like the classification icon:
     -- re-flank them when it appears or moves into or out of a side slot.
     if
-        (not wasShown or lastSlot ~= slot)
-        and (slot == "left" or slot == "right" or lastSlot == "left" or lastSlot == "right")
+        (not wasShown or lastSlot ~= slotRec)
+        and (slotRec == "left" or slotRec == "right" or lastSlot == "left" or lastSlot == "right")
     then
         PositionArrowsOutsideAuras(self)
     end
     -- Elements sharing the slot follow the badge's show and move.
     if mod.NP_CoreChain then
-        mod.NP_CoreChain(self, slot)
+        mod.NP_CoreChain(self, slotRec)
     end
 end
 -- The room a name has in the Top slot: the bar minus the raid marker, the Rare/Quest
@@ -569,7 +569,7 @@ end
 -- Custom text naming the unit takes it too (AddCustomText, then UpdateNameWidth keeps it
 -- current).
 local function TopNameWidth(self, barW)
-    local nameW = barW
+    local nameWidth = barW
         - 2
             * math.max(
                 mod.NP_TopCornerTextWidth("textSlotTopLeft"),
@@ -577,51 +577,51 @@ local function TopNameWidth(self, barW)
             )
     local rmPos = GetRaidMarkerPos()
     if rmPos ~= "none" and self.raidFrame:IsShown() then
-        nameW = nameW - 2 * (GetRaidMarkerSize() - 2) - 7
+        nameWidth = nameWidth - 2 * (GetRaidMarkerSize() - 2) - 7
     end
     local clSlot = GetClassificationSlot()
     if clSlot ~= "none" and self.classFrame:IsShown() then
-        nameW = nameW - ((self.classFrame._npSz or GetRareEliteIconSize()) + 4)
+        nameWidth = nameWidth - ((self.classFrame._npSz or GetRareEliteIconSize()) + 4)
     end
     local qf = self.questTextFrame
     if qf and qf:IsShown() then
-        nameW = nameW - ((qf._npW or 0) + 4)
+        nameWidth = nameWidth - ((qf._npW or 0) + 4)
     end
     -- Stacked with the classification icon ("Rare/Quest + Faction") it takes
     -- no extra width; alone it reserves its own.
     local stacked = p and p.classificationIncludeFaction and self.classFrame:IsShown()
     if self.factionFrame and self.factionFrame:IsShown() and not stacked then
-        nameW = nameW - (mod.NP_GetFactionIconSize() + 4)
+        nameWidth = nameWidth - (mod.NP_GetFactionIconSize() + 4)
     end
-    return nameW
+    return nameWidth
 end
 mod.NP_TopNameWidth = TopNameWidth
 function NameplateFrame:UpdateNameWidth()
     local barW = GetHealthBarWidth()
     -- Width % scales the computed (bar-derived) width; 100 = historical behaviour.
     local pct = (p and p.enemyNameWidthPct) or defaultSet.enemyNameWidthPct
-    local nameSlot = mod.FindNameSlot()
-    local nameMarkerReserve = self._nameRaidMarkerShown == true
+    local nameSlotKey = mod.FindNameSlot()
+    local markerSpace = self._nameRaidMarkerShown == true
             and (((p and p.nameRaidMarkerSize) or defaultSet.nameRaidMarkerSize or 14) + 3)
         or 0
-    if nameSlot == "textSlotTop" then
+    if nameSlotKey == "textSlotTop" then
         -- Above the bar: reserve a fixed slot for the inline raid marker.
-        local nameW = TopNameWidth(self, barW) - nameMarkerReserve
-        Pix.Width(self.name, math.max(nameW * pct / 100, 20))
+        local nameWidth = TopNameWidth(self, barW) - markerSpace
+        Pix.Width(self.name, math.max(nameWidth * pct / 100, 20))
     elseif
-        nameSlot == "textSlotBottomLeft"
-        or nameSlot == "textSlotBottomRight"
-        or nameSlot == "textSlotTopLeft"
-        or nameSlot == "textSlotTopRight"
+        nameSlotKey == "textSlotBottomLeft"
+        or nameSlotKey == "textSlotBottomRight"
+        or nameSlotKey == "textSlotTopLeft"
+        or nameSlotKey == "textSlotTopRight"
     then
         -- On a corner of the bar the name never truncates: no width box (auto-sized).
         self.name:SetWidth(0)
-    elseif nameSlot then
+    elseif nameSlotKey then
         -- Inside the bar: estimate how much space health text occupies in
         -- opposing slots, then give the name everything that remains.
         local usedWidth = 0
         for _, key in ipairs(mod._npBarTextKeys) do
-            if key ~= nameSlot then
+            if key ~= nameSlotKey then
                 local el = GetTextSlot(key)
                 if el == "custom" then
                     usedWidth = usedWidth + mod.NP_CustomWidth(key)
@@ -630,8 +630,8 @@ function NameplateFrame:UpdateNameWidth()
                 end
             end
         end
-        local nameW = barW - usedWidth - nameMarkerReserve
-        Pix.Width(self.name, math.max(nameW * pct / 100, 20))
+        local nameWidth = barW - usedWidth - markerSpace
+        Pix.Width(self.name, math.max(nameWidth * pct / 100, 20))
     else
         -- Name not in any slot, use minimal width
         Pix.Width(self.name, math.max(barW * pct / 100, 20))
@@ -681,13 +681,13 @@ function NameplateFrame:RefreshCastIconSideReserve()
 end
 
 function NameplateFrame:RefreshNamePosition(localOnly)
-    local nameSlot = mod.FindNameSlot()
+    local nameSlotKey = mod.FindNameSlot()
     local nameYOff = GetNameYOffset()
     local nameMarkerShown
     local nameMarkerSize = (p and p.nameRaidMarkerSize) or defaultSet.nameRaidMarkerSize or 14
     if self.nameRaidFrame then
         local position
-        if p and p.nameRaidMarkerEnabled == true and nameSlot and self.unit then
+        if p and p.nameRaidMarkerEnabled == true and nameSlotKey and self.unit then
             position = GetRaidTargetIndex and GetRaidTargetIndex(self.unit)
         end
         if type(position) == "nil" then
@@ -701,52 +701,52 @@ function NameplateFrame:RefreshNamePosition(localOnly)
             nameMarkerShown = true
         end
     end
-    local nameMarkerReserve = nameMarkerShown and (nameMarkerSize + 3) or 0
-    local nameStrata = (p and nameSlot and p[nameSlot .. "Strata"]) or "MEDIUM"
+    local markerSpace = nameMarkerShown and (nameMarkerSize + 3) or 0
+    local nameStrata = (p and nameSlotKey and p[nameSlotKey .. "Strata"]) or "MEDIUM"
     self:UpdateNameWidth()
     self.name:ClearAllPoints()
-    if nameSlot == "textSlotLeft" then
-        local txOff, tyOff = GetTextSlotOffsets("textSlotLeft")
+    if nameSlotKey == "textSlotLeft" then
+        local textOffX, textOffY = GetTextSlotOffsets("textSlotLeft")
         SetFSFont(self.name, GetTextSlotSize("textSlotLeft"), GetNPOutline())
-        self.name:SetParent(mod.SlotTextHost(self, nameSlot, nameStrata))
-        Pix.Point(self.name, "LEFT", self.health, "LEFT", 4 + txOff + nameMarkerReserve, tyOff)
+        self.name:SetParent(mod.SlotTextHost(self, nameSlotKey, nameStrata))
+        Pix.Point(self.name, "LEFT", self.health, "LEFT", 4 + textOffX + markerSpace, textOffY)
         self.name:SetJustifyH("LEFT")
         self.name:Show()
-    elseif nameSlot == "textSlotCenter" then
-        local txOff, tyOff = GetTextSlotOffsets("textSlotCenter")
+    elseif nameSlotKey == "textSlotCenter" then
+        local textOffX, textOffY = GetTextSlotOffsets("textSlotCenter")
         SetFSFont(self.name, GetTextSlotSize("textSlotCenter"), GetNPOutline())
-        self.name:SetParent(mod.SlotTextHost(self, nameSlot, nameStrata))
-        self.name:SetPoint("CENTER", self.health, "CENTER", txOff + (nameMarkerReserve * 0.5), tyOff)
+        self.name:SetParent(mod.SlotTextHost(self, nameSlotKey, nameStrata))
+        self.name:SetPoint("CENTER", self.health, "CENTER", textOffX + (markerSpace * 0.5), textOffY)
         self.name:SetJustifyH("CENTER")
         self.name:Show()
-    elseif nameSlot == "textSlotRight" then
-        local txOff, tyOff = GetTextSlotOffsets("textSlotRight")
+    elseif nameSlotKey == "textSlotRight" then
+        local textOffX, textOffY = GetTextSlotOffsets("textSlotRight")
         SetFSFont(self.name, GetTextSlotSize("textSlotRight"), GetNPOutline())
-        self.name:SetParent(mod.SlotTextHost(self, nameSlot, nameStrata))
-        Pix.Point(self.name, "RIGHT", self.health, "RIGHT", -2 + txOff, tyOff)
+        self.name:SetParent(mod.SlotTextHost(self, nameSlotKey, nameStrata))
+        Pix.Point(self.name, "RIGHT", self.health, "RIGHT", -2 + textOffX, textOffY)
         self.name:SetJustifyH("RIGHT")
         self.name:Show()
     elseif
-        nameSlot == "textSlotBottomLeft"
-        or nameSlot == "textSlotBottomRight"
-        or nameSlot == "textSlotTopLeft"
-        or nameSlot == "textSlotTopRight"
+        nameSlotKey == "textSlotBottomLeft"
+        or nameSlotKey == "textSlotBottomRight"
+        or nameSlotKey == "textSlotTopLeft"
+        or nameSlotKey == "textSlotTopRight"
     then
-        local txOff, tyOff = GetTextSlotOffsets(nameSlot)
-        local slot =
-            HP_BAR_SLOTS[(nameSlot == "textSlotBottomLeft" and 4) or (nameSlot == "textSlotBottomRight" and 5) or (nameSlot == "textSlotTopLeft" and 6) or 7]
-        SetFSFont(self.name, GetTextSlotSize(nameSlot), GetNPOutline())
-        self.name:SetParent(mod.SlotTextHost(self, nameSlot, nameStrata))
+        local textOffX, textOffY = GetTextSlotOffsets(nameSlotKey)
+        local slotRec =
+            HP_BAR_SLOTS[(nameSlotKey == "textSlotBottomLeft" and 4) or (nameSlotKey == "textSlotBottomRight" and 5) or (nameSlotKey == "textSlotTopLeft" and 6) or 7]
+        SetFSFont(self.name, GetTextSlotSize(nameSlotKey), GetNPOutline())
+        self.name:SetParent(mod.SlotTextHost(self, nameSlotKey, nameStrata))
         self:PlaceSlotText(
             self.name,
-            slot,
-            txOff + ((slot.justify == "LEFT") and nameMarkerReserve or 0),
-            tyOff
+            slotRec,
+            textOffX + ((slotRec.justify == "LEFT") and markerSpace or 0),
+            textOffY
         )
-        self.name:SetJustifyH(slot.justify)
+        self.name:SetJustifyH(slotRec.justify)
         self.name:Show()
-    elseif nameSlot == "textSlotTop" then
-        local txOff, tyOff = GetTextSlotOffsets("textSlotTop")
+    elseif nameSlotKey == "textSlotTop" then
+        local textOffX, textOffY = GetTextSlotOffsets("textSlotTop")
         SetFSFont(self.name, GetTextSlotSize("textSlotTop"), GetNPOutline())
         self.name:SetParent(mod.SlotTextHost(self, "textSlotTop", nameStrata))
         local cpPush = GetClassPowerTopPush(self)
@@ -755,8 +755,8 @@ function NameplateFrame:RefreshNamePosition(localOnly)
             "BOTTOM",
             self.health,
             "TOP",
-            txOff + (nameMarkerReserve * 0.5),
-            4 + nameYOff + cpPush + tyOff
+            textOffX + (markerSpace * 0.5),
+            4 + nameYOff + cpPush + textOffY
         )
         self.name:SetJustifyH("CENTER")
         self.name:Show()
@@ -771,10 +771,10 @@ function NameplateFrame:RefreshNamePosition(localOnly)
         nameWrap = p.enemyNameWrap
     end
     if
-        nameSlot == "textSlotBottomLeft"
-        or nameSlot == "textSlotBottomRight"
-        or nameSlot == "textSlotTopLeft"
-        or nameSlot == "textSlotTopRight"
+        nameSlotKey == "textSlotBottomLeft"
+        or nameSlotKey == "textSlotBottomRight"
+        or nameSlotKey == "textSlotTopLeft"
+        or nameSlotKey == "textSlotTopRight"
     then
         nameWrap = false
     end
@@ -783,20 +783,20 @@ function NameplateFrame:RefreshNamePosition(localOnly)
     self.name:SetMaxLines(nameWrap and 2 or 1)
     mod.ReflowFontString(self.name)
     self:ApplyNameVisibility()
-    local nameRaid = self.nameRaidFrame
-    if nameRaid and self._nameRaidMarkerShown and self.name:IsShown() then
-        Pix.Size(nameRaid, nameMarkerSize, nameMarkerSize)
+    local raidMarker = self.nameRaidFrame
+    if raidMarker and self._nameRaidMarkerShown and self.name:IsShown() then
+        Pix.Size(raidMarker, nameMarkerSize, nameMarkerSize)
         -- Follows the name's host so the marker rides the slot's strata; the
         -- host's own SetFrameStrata (SlotTextHost) resets child frames, so
         -- re-assert AFTER parenting.
-        nameRaid:SetParent(mod.SlotTextHost(self, nameSlot, nameStrata))
-        nameRaid:SetFrameStrata(nameStrata)
-        nameRaid:SetFrameLevel(901)
-        nameRaid:ClearAllPoints()
-        nameRaid:SetPoint("RIGHT", self.name, "LEFT", -3, 0)
-        nameRaid:Show()
-    elseif nameRaid then
-        nameRaid:Hide()
+        raidMarker:SetParent(mod.SlotTextHost(self, nameSlotKey, nameStrata))
+        raidMarker:SetFrameStrata(nameStrata)
+        raidMarker:SetFrameLevel(901)
+        raidMarker:ClearAllPoints()
+        raidMarker:SetPoint("RIGHT", self.name, "LEFT", -3, 0)
+        raidMarker:Show()
+    elseif raidMarker then
+        raidMarker:Hide()
     end
     -- Debuff coloring's Color Name copies follow the name's host, font and wrapping.
     if mod.DebuffColors_NameChanged then
@@ -837,11 +837,11 @@ function NameplateFrame:UpdateRaidIcon()
         return
     end
     SetRaidTargetIconTexture(self.raid, position)
-    local sz = GetRaidMarkerSize()
-    self.raidFrame._npSz = sz
-    Pix.Size(self.raidFrame, sz, sz)
+    local size = GetRaidMarkerSize()
+    self.raidFrame._npSz = size
+    Pix.Size(self.raidFrame, size, size)
     local rxOff, ryOff = GetAuraSlotOffsets("raidMarker")
-    PlaceSlotIcon(self, self.raidFrame, place, rxOff, ryOff, 0, sz)
+    PlaceSlotIcon(self, self.raidFrame, place, rxOff, ryOff, 0, size)
     self.raidFrame:Show()
     self:UpdateNameWidth()
     -- Elements sharing the slot follow the marker's show and move.
@@ -853,14 +853,14 @@ function NameplateFrame:ApplyTarget()
     if not self.unit then
         return
     end
-    local isTarget = UnitIsUnit(self.unit, "target")
-    local flip = (self._isTarget == true) ~= (isTarget == true)
+    local targeted = UnitIsUnit(self.unit, "target")
+    local flip = (self._isTarget == true) ~= (targeted == true)
     -- The hash line is painted by the health pass from this cached flag, so a
     -- flip queues one coalesced repaint (only while the line is enabled).
     if flip and p and p.hashLineEnabled then
         self:MarkHealthDirty()
     end
-    self._isTarget = isTarget -- cached for hot-path hash line check
+    self._isTarget = targeted -- cached for hot-path hash line check
     -- The Threat Gap shows on the target's plate only: a flip repaints its text.
     if flip and mod._npTgapOn then
         mod.NP_UpdateThreatPct(self, self.unit)
@@ -870,14 +870,14 @@ function NameplateFrame:ApplyTarget()
     -- token swap and PLAYER_TARGET_CHANGED all funnel through this method. Gaining
     -- target claims the slot; a recycled plate that lost target frees it, so a
     -- stale entry can never skip the un-paint on the next target change.
-    if isTarget then
+    if targeted then
         mod._cachedTargetPlate = self
     elseif mod._cachedTargetPlate == self then
         mod._cachedTargetPlate = nil
     end
     -- CludesUI: background glow around the plate, tinted + faded with the
     -- target Glow Color/Opacity (re-applied on show so live edits update).
-    if isTarget and mod.GetTargetGlowCludesUI() then
+    if targeted and mod.GetTargetGlowCludesUI() then
         EnsureGlow(self)
         if self.glowTextures then
             local gc = mod.GetTargetGlowColor()
@@ -894,7 +894,7 @@ function NameplateFrame:ApplyTarget()
     -- on AND a size was snapshotted. Runs BEFORE Border Color so a rebuilt custom border gets
     -- its target tint right after. Restore is one-shot via self._targetBorderSized.
     local tbsz
-    if isTarget and mod.GetTargetGlowBorderSize() then
+    if targeted and mod.GetTargetGlowBorderSize() then
         tbsz = mod.GetTargetBorderSizeValue()
     end
     if tbsz then
@@ -909,7 +909,7 @@ function NameplateFrame:ApplyTarget()
         self:ApplyBorder()
     end
     -- Border Color: recolor the health bar border with the custom target color
-    if isTarget and mod.GetTargetGlowBorderColor() then
+    if targeted and mod.GetTargetGlowBorderColor() then
         if Pix then
             local bc = mod.GetTargetBorderColor()
             if mod.IsCustomBorderEnabled() then
@@ -943,11 +943,11 @@ function NameplateFrame:ApplyTarget()
     -- Blizzard Style: stock selection ring / deselected overlay. The classic
     -- plate marks its target through the CUI effects above alone.
     if mod.NP_Style() == "blizzard" then
-        mod.NP_ApplyBlizzSelection(self, isTarget)
+        mod.NP_ApplyBlizzSelection(self, targeted)
     end
     -- Highlight: translucent wash across the health bar (color + opacity are
     -- configurable; re-applied on show so live edits and pooled textures update)
-    if isTarget and mod.GetTargetGlowHighlight() then
+    if targeted and mod.GetTargetGlowHighlight() then
         EnsureTargetHighlight(self)
         local c = mod.GetTargetHighlightColor()
         self.targetHighlight:SetColorTexture(c.r, c.g, c.b, mod.GetTargetHighlightAlpha())
@@ -956,7 +956,7 @@ function NameplateFrame:ApplyTarget()
         self.targetHighlight:Hide()
     end
     if p and p.showTargetArrows then
-        if isTarget then
+        if targeted then
             EnsureArrows(self)
             local sc = p.targetArrowScale or 1.0
             local st = mod.ResolveTargetArrowStyle(p)
@@ -981,7 +981,7 @@ function NameplateFrame:ApplyTarget()
     end
     -- Class power pips: show on target, hide on others
     if GetShowClassPower() and classPowerType then
-        if isTarget then
+        if targeted then
             EnsureClassPowerPips(self)
             UpdateClassPowerOnPlate(self)
         else
@@ -1017,11 +1017,11 @@ function mod.ApplyHoverExtras(backing)
     if not backing or not backing.unit or not backing.health then
         return
     end
-    local isTarget = backing._isTarget
+    local targeted = backing._isTarget
     local any = false
     local wrapSync = false -- one cast bar wrap re-sync at the end, after size and colour
     -- CUI Glow (shared self.glow visual).
-    if mod.GetHoverGlowCludesUI() and not (isTarget and mod.GetTargetGlowCludesUI()) then
+    if mod.GetHoverGlowCludesUI() and not (targeted and mod.GetTargetGlowCludesUI()) then
         EnsureGlow(backing)
         if backing.glowTextures then
             local gc = mod.GetHoverGlowColor()
@@ -1048,7 +1048,7 @@ function mod.ApplyHoverExtras(backing)
             if
                 backing._threatBdOn
                 and not mod.GetHoverGlowBorderColor()
-                and not (isTarget and mod.GetTargetGlowBorderColor())
+                and not (targeted and mod.GetTargetGlowBorderColor())
             then
                 backing:ApplyBorderColor()
             end
@@ -1062,7 +1062,7 @@ function mod.ApplyHoverExtras(backing)
         end
     end
     -- Border Color (the target color wins).
-    if mod.GetHoverGlowBorderColor() and not (isTarget and mod.GetTargetGlowBorderColor()) then
+    if mod.GetHoverGlowBorderColor() and not (targeted and mod.GetTargetGlowBorderColor()) then
         if Pix then
             local bc = mod.GetHoverBorderColor()
             if mod.IsCustomBorderEnabled() then
