@@ -87,7 +87,19 @@ local anchor = CreateFrame("Button", nil, UIParent)
 anchor:SetSize(36, 36)
 anchor:SetPoint("CENTER")
 
+-- The picker and the icon menu follow the bar selected on the page (not the
+-- key they are given), so each pass selects its bar first: the Buffs pass
+-- then gets the buff-family menu.
+local function SelectBar(key)
+    local env = mod._CDMO_OptEnv
+    if not (env and env.optState) then return end
+    for i, b in ipairs(bars) do
+        if b.key == key then env.optState.selectedCDMBarIndex = i end
+    end
+end
+
 for _, key in ipairs({ bars[1].key, "buffs" }) do
+    SelectBar(key)
     if mod.AddTrackedSpell then
         pcall(mod.AddTrackedSpell, key, 774)
         pcall(mod.AddTrackedSpell, key, 33763)
@@ -146,6 +158,7 @@ local function HidePopups()
     end
 end
 for _, key in ipairs({ bars[1].key, "buffs" }) do
+    SelectBar(key)
     local function Open()
         if FindMenu() then mod.CDMO_ShowSpellPicker(anchor, key, 1, {}, function() end, true) end
         HidePopups()
