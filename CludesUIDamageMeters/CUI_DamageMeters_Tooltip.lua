@@ -205,10 +205,10 @@ local function EnsureTTBar(index)
         return _ttBars[index]
     end
     EnsureTooltipFrame()
-    local ttStride = TTStride()
+    local tipStride = TTStride()
     local b = NewTTRow(_ttFrame)
-    b.row:SetPoint("TOPLEFT", _ttFrame, "TOPLEFT", 0, -(TT_HDR_H + (index - 1) * ttStride))
-    b.row:SetPoint("TOPRIGHT", _ttFrame, "TOPRIGHT", 0, -(TT_HDR_H + (index - 1) * ttStride))
+    b.row:SetPoint("TOPLEFT", _ttFrame, "TOPLEFT", 0, -(TT_HDR_H + (index - 1) * tipStride))
+    b.row:SetPoint("TOPRIGHT", _ttFrame, "TOPRIGHT", 0, -(TT_HDR_H + (index - 1) * tipStride))
     _ttBars[index] = b
     return b
 end
@@ -222,8 +222,8 @@ local function HideTTTargets()
     if _ttFrame and _ttFrame._tgtDivider then
         _ttFrame._tgtDivider:Hide()
         _ttFrame._tgtLabel:Hide()
-        for ti = 1, 3 do
-            _ttFrame._tgtBars[ti].row:Hide()
+        for tipIndex = 1, 3 do
+            _ttFrame._tgtBars[tipIndex].row:Hide()
         end
     end
 end
@@ -231,7 +231,7 @@ end
 -- An Enemy Damage Taken attacker row (AggregateEnemyPlayers): spec icon or
 -- class art, class coloured fill, name and amount. A secret name or amount
 -- passes whole to the bar and text setters.
-local function PaintAttackerRow(b, p, maxAmt, texPath, texKey, numFmt)
+local function PaintAttackerRow(b, p, maxAmount, texFile, textureKey, numFmt)
     local specIcon = p.specIcon
     if specIcon and type(specIcon) == "number" and specIcon ~= 0 then
         b.spellIcon:SetTexture(specIcon)
@@ -252,8 +252,8 @@ local function PaintAttackerRow(b, p, maxAmt, texPath, texKey, numFmt)
         b.fill:ClearAllPoints()
         b.fill:SetAllPoints(b.row)
     end
-    ApplyBarTexture(b.fill, texPath, texKey)
-    b.fill:SetMinMaxValues(0, maxAmt)
+    ApplyBarTexture(b.fill, texFile, textureKey)
+    b.fill:SetMinMaxValues(0, maxAmount)
     b.fill:SetValue(p.total)
     local cc = p.class and RAID_CLASS_COLORS[p.class] and CUI.GetClassColor(p.class)
     if cc then
@@ -329,14 +329,14 @@ end
 -- 60-upvalue cap and reaches helpers through ns.
 mod.DMSeasonMobsHere = SeasonMobsHere
 
-local function FetchEnemy(session, sessionID, npcID)
+local function FetchEnemy(session, sessionID, npcId)
     local success, sd
     if sessionID then
         success, sd =
-            pcall(C_DamageMeter.GetCombatSessionSourceFromID, sessionID, ENEMY_DAMAGE_TAKEN, nil, npcID)
+            pcall(C_DamageMeter.GetCombatSessionSourceFromID, sessionID, ENEMY_DAMAGE_TAKEN, nil, npcId)
     else
         success, sd =
-            pcall(C_DamageMeter.GetCombatSessionSourceFromType, session, ENEMY_DAMAGE_TAKEN, nil, npcID)
+            pcall(C_DamageMeter.GetCombatSessionSourceFromType, session, ENEMY_DAMAGE_TAKEN, nil, npcId)
     end
     return success and sd or nil
 end
@@ -367,18 +367,18 @@ end
 
 -- The clips again from the fills' current edges: after every feed and once
 -- more on the next frame, so neither keeps the edge of a fill that moved.
-local function HangGatePanel(gp)
-    local clipA, clipB = gp.clipA, gp.clipB
-    clipA:ClearAllPoints()
-    clipA:SetPoint("TOPLEFT", gp.gateA, "TOPLEFT", 0, 0)
-    clipA:SetPoint("BOTTOMLEFT", gp.gateA, "BOTTOMLEFT", 0, 0)
-    clipA:SetPoint("TOPRIGHT", gp.fillA, "TOPRIGHT", 0, 0)
-    clipA:SetPoint("BOTTOMRIGHT", gp.fillA, "BOTTOMRIGHT", 0, 0)
-    clipB:ClearAllPoints()
-    clipB:SetPoint("TOPLEFT", gp.fillB, "TOPRIGHT", 0, 0)
-    clipB:SetPoint("BOTTOMLEFT", gp.fillB, "BOTTOMRIGHT", 0, 0)
-    clipB:SetPoint("TOPRIGHT", gp.gateB, "TOPRIGHT", 0, 0)
-    clipB:SetPoint("BOTTOMRIGHT", gp.gateB, "BOTTOMRIGHT", 0, 0)
+local function HangGatePanel(group)
+    local clipLeft, clipRight = group.clipA, group.clipB
+    clipLeft:ClearAllPoints()
+    clipLeft:SetPoint("TOPLEFT", group.gateA, "TOPLEFT", 0, 0)
+    clipLeft:SetPoint("BOTTOMLEFT", group.gateA, "BOTTOMLEFT", 0, 0)
+    clipLeft:SetPoint("TOPRIGHT", group.fillA, "TOPRIGHT", 0, 0)
+    clipLeft:SetPoint("BOTTOMRIGHT", group.fillA, "BOTTOMRIGHT", 0, 0)
+    clipRight:ClearAllPoints()
+    clipRight:SetPoint("TOPLEFT", group.fillB, "TOPRIGHT", 0, 0)
+    clipRight:SetPoint("BOTTOMLEFT", group.fillB, "BOTTOMRIGHT", 0, 0)
+    clipRight:SetPoint("TOPRIGHT", group.gateB, "TOPRIGHT", 0, 0)
+    clipRight:SetPoint("BOTTOMRIGHT", group.gateB, "BOTTOMRIGHT", 0, 0)
 end
 
 local function EnsureGateHost()
@@ -405,27 +405,27 @@ local function EnsureGateHost()
 end
 
 local function EnsureGatePanel(key)
-    local gp = _gatePanels[key]
-    if gp then
-        return gp
+    local group = _gatePanels[key]
+    if group then
+        return group
     end
-    gp = { data = {}, rows = {} }
-    gp.gateA, gp.fillA = NewGateBar(_gateHost)
-    gp.gateB, gp.fillB = NewGateBar(_gateHost)
-    gp.clipA = NewGateClip(_gateHost)
-    gp.clipB = NewGateClip(gp.clipA)
-    gp.body = CreateFrame("Frame", nil, gp.clipB)
-    gp.body:SetAllPoints(_gateHost)
-    gp.bg = gp.body:CreateTexture(nil, "BACKGROUND")
-    gp.bg:SetAllPoints()
-    _gatePanels[key] = gp
-    return gp
+    group = { data = {}, rows = {} }
+    group.gateA, group.fillA = NewGateBar(_gateHost)
+    group.gateB, group.fillB = NewGateBar(_gateHost)
+    group.clipA = NewGateClip(_gateHost)
+    group.clipB = NewGateClip(group.clipA)
+    group.body = CreateFrame("Frame", nil, group.clipB)
+    group.body:SetAllPoints(_gateHost)
+    group.bg = group.body:CreateTexture(nil, "BACKGROUND")
+    group.bg:SetAllPoints()
+    _gatePanels[key] = group
+    return group
 end
 
-local function ShowGatePanel(gp, isShown)
-    gp.gateA:SetShown(isShown)
-    gp.gateB:SetShown(isShown)
-    gp.clipA:SetShown(isShown)
+local function ShowGatePanel(group, isShown)
+    group.gateA:SetShown(isShown)
+    group.gateB:SetShown(isShown)
+    group.clipA:SetShown(isShown)
 end
 
 -- The tooltip's own background colour, opaque, so a panel covers the note.
@@ -441,7 +441,7 @@ end
 -- outside this season's dungeons (the row waits for combat to end), true
 -- otherwise: the panels, or the combat note when no listed mob is in the
 -- fight.
-local function GatedEnemyPreview(barFrame, curSession, curSessionID, ApplyTTHeader, ttStride, ttSp)
+local function GatedEnemyPreview(barFrame, curSession, curSessionID, ApplyTTHeader, tipStride, tipSpacing)
     local mobs = SeasonMobsHere()
     if not mobs then
         return false
@@ -452,67 +452,67 @@ local function GatedEnemyPreview(barFrame, curSession, curSessionID, ApplyTTHead
         _ttBars[bi].row:Hide()
     end
     local rowID = barFrame._src.sourceCreatureID
-    local used, tallest = 0, 0
+    local usedCount, tallest = 0, 0
     if rowID ~= nil then
         local duration = GetBreakdownDuration(curSession, curSessionID)
-        local texPath, texKey = GetBreakdownBarTexturePath()
+        local texFile, textureKey = GetBreakdownBarTexturePath()
         local numFmt = DB().numberFormat or 2
         local ttMax = TT_MAX()
         local bgR, bgG, bgB = TooltipBgRGB()
         for index = 1, #mobs do
-            if used == GATE_MAX then
+            if usedCount == GATE_MAX then
                 break
             end
-            local npcID = mobs[index]
-            local sd = FetchEnemy(curSession, curSessionID, npcID)
+            local npcId = mobs[index]
+            local sd = FetchEnemy(curSession, curSessionID, npcId)
             local spells = sd and sd.combatSpells
             if spells and #spells > 0 then
-                local gp = EnsureGatePanel(used + 1)
-                local players, num = AggregateEnemyPlayers(sd, duration, gp.data)
+                local group = EnsureGatePanel(usedCount + 1)
+                local players, num = AggregateEnemyPlayers(sd, duration, group.data)
                 if players then
-                    used = used + 1
+                    usedCount = usedCount + 1
                     if num > ttMax then
                         num = ttMax
                     end
                     if num > tallest then
                         tallest = num
                     end
-                    gp.gateA:SetMinMaxValues(npcID - 1, npcID)
-                    gp.gateA:SetValue(rowID)
-                    gp.gateB:SetMinMaxValues(npcID, npcID + 1)
-                    gp.gateB:SetValue(rowID)
-                    HangGatePanel(gp)
-                    gp.bg:SetColorTexture(bgR, bgG, bgB, 1)
-                    local maxAmt = players[1].total
-                    local rowList = gp.rows
+                    group.gateA:SetMinMaxValues(npcId - 1, npcId)
+                    group.gateA:SetValue(rowID)
+                    group.gateB:SetMinMaxValues(npcId, npcId + 1)
+                    group.gateB:SetValue(rowID)
+                    HangGatePanel(group)
+                    group.bg:SetColorTexture(bgR, bgG, bgB, 1)
+                    local maxAmount = players[1].total
+                    local rowList = group.rows
                     for ri = 1, math.max(num, #rowList) do
                         local b = rowList[ri]
                         if ri <= num then
                             if not b then
-                                b = NewTTRow(gp.body)
+                                b = NewTTRow(group.body)
                                 rowList[ri] = b
                             end
                             b.row:ClearAllPoints()
-                            b.row:SetPoint("TOPLEFT", gp.body, "TOPLEFT", 0, -((ri - 1) * ttStride))
-                            b.row:SetPoint("TOPRIGHT", gp.body, "TOPRIGHT", 0, -((ri - 1) * ttStride))
-                            PaintAttackerRow(b, players[ri], maxAmt, texPath, texKey, numFmt)
+                            b.row:SetPoint("TOPLEFT", group.body, "TOPLEFT", 0, -((ri - 1) * tipStride))
+                            b.row:SetPoint("TOPRIGHT", group.body, "TOPRIGHT", 0, -((ri - 1) * tipStride))
+                            PaintAttackerRow(b, players[ri], maxAmount, texFile, textureKey, numFmt)
                         else
                             b.row:Hide()
                         end
                     end
-                    ShowGatePanel(gp, true)
+                    ShowGatePanel(group, true)
                 end
             end
         end
     end
-    for key = used + 1, #_gatePanels do
+    for key = usedCount + 1, #_gatePanels do
         ShowGatePanel(_gatePanels[key], false)
     end
-    _gateUsed = used
+    _gateUsed = usedCount
     _ttFrame._combatMsg:SetText(CludesUI.L("Detailed information is\nsecret while in combat"))
-    local bodyH = math.max(40, tallest * ttStride - (tallest > 0 and ttSp or 0))
+    local bodyH = math.max(40, tallest * tipStride - (tallest > 0 and tipSpacing or 0))
     _ttFrame:SetSize(TT_WIDTH, TT_HDR_H + bodyH)
-    if used == 0 then
+    if usedCount == 0 then
         _gateHost:Hide()
         _ttFrame._combatMsg:Show()
         return true
@@ -545,16 +545,16 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
     end
 
     -- Reposition tooltip bars with physical-pixel spacing (only when the stride changes)
-    local ttSp = TTPhysicalPixels(1)
-    local ttStride = TTStride()
-    if ttStride ~= _ttLastStride then
-        _ttLastStride = ttStride
-        for ti = 1, #_ttBars do
-            local b = _ttBars[ti]
+    local tipSpacing = TTPhysicalPixels(1)
+    local tipStride = TTStride()
+    if tipStride ~= _ttLastStride then
+        _ttLastStride = tipStride
+        for tipIndex = 1, #_ttBars do
+            local b = _ttBars[tipIndex]
             if b then
                 b.row:ClearAllPoints()
-                b.row:SetPoint("TOPLEFT", _ttFrame, "TOPLEFT", 0, -(TT_HDR_H + (ti - 1) * ttStride))
-                b.row:SetPoint("TOPRIGHT", _ttFrame, "TOPRIGHT", 0, -(TT_HDR_H + (ti - 1) * ttStride))
+                b.row:SetPoint("TOPLEFT", _ttFrame, "TOPLEFT", 0, -(TT_HDR_H + (tipIndex - 1) * tipStride))
+                b.row:SetPoint("TOPRIGHT", _ttFrame, "TOPRIGHT", 0, -(TT_HDR_H + (tipIndex - 1) * tipStride))
             end
         end
     end
@@ -616,7 +616,7 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
             reversed[#reversed + 1] = raw[ri]
         end
         ApplyTTHeader(StripRealm(barFrame._src.name, barFrame._src), CludesUI.L("Death Recap"))
-        local texPath, texKey = GetBreakdownBarTexturePath()
+        local texFile, textureKey = GetBreakdownBarTexturePath()
         local deathTime = reversed[#reversed] and reversed[#reversed].timestamp
         if IsSecret(deathTime) then
             deathTime = nil
@@ -624,13 +624,13 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
         deathTime = deathTime or GetTime()
         local sum = #reversed
         local ttMax = TT_MAX()
-        local count = math.min(ttMax, sum)
-        local startIdx = sum - count -- skip oldest events, show last N
+        local total = math.min(ttMax, sum)
+        local startIdx = sum - total -- skip oldest events, show last N
         for index = 1, math.max(ttMax, #_ttBars) do
             local b = EnsureTTBar(index)
-            if index <= count then
-                local ev = reversed[startIdx + index]
-                local spID = ev.spellId
+            if index <= total then
+                local eventName = reversed[startIdx + index]
+                local spID = eventName.spellId
                 local spIcon
                 -- GetSpellTexture takes a secret id (AllowedWhenTainted); only
                 -- the id > 0 filter needs the value, so a secret id goes in whole.
@@ -647,13 +647,13 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
                 b.fill:SetPoint("BOTTOMRIGHT", b.row, "BOTTOMRIGHT", 0, 0)
                 -- HP fill: plain numbers keep the Lua-computed fraction; secret
                 -- ones go to the StatusBar whole, which divides engine-side.
-                local curHP = ev.currentHP or 0
+                local curHP = eventName.currentHP or 0
                 local hpPct
                 if not IsSecret(curHP) and not maxHPSecret and type(curHP) == "number" then
                     hpPct = maxHP > 0 and (curHP / maxHP) or 0
                     hpPct = math.min(1, math.max(0, hpPct))
                 end
-                ApplyBarTexture(b.fill, texPath, texKey)
+                ApplyBarTexture(b.fill, texFile, textureKey)
                 if hpPct then
                     b.fill:SetMinMaxValues(0, 1)
                     b.fill:SetValue(hpPct)
@@ -661,12 +661,12 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
                     b.fill:SetMinMaxValues(0, maxHPSecret or maxHP)
                     b.fill:SetValue(curHP)
                 end
-                local evType = ev.event or ""
+                local evType = eventName.event or ""
                 if IsSecret(evType) then
                     evType = ""
                 end
                 local isHeal = (evType == "SPELL_HEAL" or evType == "SPELL_PERIODIC_HEAL")
-                local isFatal = (index == count and not isHeal)
+                local isFatal = (index == total and not isHeal)
                 if isHeal then
                     b.fill:SetStatusBarColor(0.10, 0.50, 0.10)
                 else
@@ -674,33 +674,33 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
                 end
                 -- A secret name is KEPT: FontStrings display secrets, and the
                 -- fallback words would erase a name the engine will show.
-                local spellName = ev.spellName
-                local nameSecret = IsSecret(spellName)
-                if not nameSecret and (not spellName or spellName == "") then
+                local spellLabel = eventName.spellName
+                local nameSecret = IsSecret(spellLabel)
+                if not nameSecret and (not spellLabel or spellLabel == "") then
                     if isHeal then
-                        spellName = "Heal"
+                        spellLabel = "Heal"
                     elseif evType == "SWING_DAMAGE" then
-                        spellName = "Melee"
+                        spellLabel = "Melee"
                     else
-                        spellName = "Unknown"
+                        spellLabel = "Unknown"
                     end
                 end
                 b.label:SetTextColor(1, 1, 1)
                 b.amount:SetTextColor(1, 1, 1)
                 -- Label: time before death + spell name, engine-formatted so a
                 -- secret name never meets Lua concatenation.
-                local ts = ev.timestamp
+                local ts = eventName.timestamp
                 local td
                 if not IsSecret(ts) then
                     td = deathTime - (ts or deathTime)
                 end
                 if td then
-                    b.label:SetFormattedText("-%.1fs %s", td, spellName)
+                    b.label:SetFormattedText("-%.1fs %s", td, spellLabel)
                 else
-                    b.label:SetFormattedText("%s", spellName)
+                    b.label:SetFormattedText("%s", spellLabel)
                 end
                 -- Amount: damage/heal + overkill on killing blow + HP%
-                local amt = ev.amount or 0
+                local amt = eventName.amount or 0
                 local pctStr = hpPct and format(" (%.0f%%)", hpPct * 100) or ""
                 if IsSecret(amt) then
                     -- Secret amount: engine abbreviation, no sign/overkill dressing
@@ -708,7 +708,7 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
                 else
                     local amtStr = isHeal and ("+" .. AbbrevNumber(math.abs(amt)))
                         or ("-" .. AbbrevNumber(amt))
-                    local overkill = ev.overkill
+                    local overkill = eventName.overkill
                     if
                         isFatal
                         and overkill
@@ -732,7 +732,7 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
                 b.row:Hide()
             end
         end
-        _ttFrame:SetSize(TT_WIDTH, TT_HDR_H + count * ttStride - (count > 0 and ttSp or 0))
+        _ttFrame:SetSize(TT_WIDTH, TT_HDR_H + total * tipStride - (total > 0 and tipSpacing or 0))
         return true
     end
 
@@ -742,7 +742,7 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
         local cid = barFrame._src.sourceCreatureID
         -- Mid-fight the row's own ID is secret: this season's listed NPC IDs.
         if issecretvalue and (issecretvalue(unitGuid) or issecretvalue(cid)) then
-            return GatedEnemyPreview(barFrame, curSession, curSessionID, ApplyTTHeader, ttStride, ttSp)
+            return GatedEnemyPreview(barFrame, curSession, curSessionID, ApplyTTHeader, tipStride, tipSpacing)
         end
         local srcData
         if curSessionID and C_DamageMeter.GetCombatSessionSourceFromID then
@@ -757,20 +757,20 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
         end
 
         ApplyTTHeader(StripRealm(barFrame._src.name, barFrame._src) or "Unknown", L("Damage Taken"))
-        local texPath, texKey = GetBreakdownBarTexturePath()
-        local maxAmt = players[1].total
+        local texFile, textureKey = GetBreakdownBarTexturePath()
+        local maxAmount = players[1].total
         local ttMax = TT_MAX()
-        local count = math.min(ttMax, playerCount)
+        local total = math.min(ttMax, playerCount)
         local numFmt = DB().numberFormat or 2
         for index = 1, math.max(ttMax, #_ttBars) do
             local b = EnsureTTBar(index)
-            if index <= count then
-                PaintAttackerRow(b, players[index], maxAmt, texPath, texKey, numFmt)
+            if index <= total then
+                PaintAttackerRow(b, players[index], maxAmount, texFile, textureKey, numFmt)
             else
                 b.row:Hide()
             end
         end
-        _ttFrame:SetSize(TT_WIDTH, TT_HDR_H + count * ttStride - (count > 0 and ttSp or 0))
+        _ttFrame:SetSize(TT_WIDTH, TT_HDR_H + total * tipStride - (total > 0 and tipSpacing or 0))
         return true
     end
 
@@ -805,39 +805,39 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
     ApplyTTHeader(StripRealm(barFrame._src.name, barFrame._src), L(DM_TYPE_NAMES[curDMType] or "Damage Done"))
 
     wipe(_ttSorted)
-    for _, spell in ipairs(srcData.combatSpells) do
-        local amt = spell.totalAmount
+    for _, spellRec in ipairs(srcData.combatSpells) do
+        local amt = spellRec.totalAmount
         -- A secret amount is KEPT whole: StatusBar and FontString sinks take
         -- it, and zeroing it emptied every in-combat row. canPercent below is
         -- what keeps it out of Lua arithmetic.
         if not IsSecret(amt) and type(amt) ~= "number" then
             amt = 0
         end
-        _ttSorted[#_ttSorted + 1] = { spell = spell, amount = amt }
+        _ttSorted[#_ttSorted + 1] = { spell = spellRec, amount = amt }
     end
-    local maxAmt = _ttSorted[1] and _ttSorted[1].amount or 1
+    local maxAmount = _ttSorted[1] and _ttSorted[1].amount or 1
     local totalDmg = 0
-    local canPercent = type(maxAmt) == "number" and (not issecretvalue or not issecretvalue(maxAmt))
+    local canPercent = type(maxAmount) == "number" and (not issecretvalue or not issecretvalue(maxAmount))
     if canPercent then
         for _, e in ipairs(_ttSorted) do
             totalDmg = totalDmg + e.amount
         end
     end
-    local texPath, texKey = GetBreakdownBarTexturePath()
+    local texFile, textureKey = GetBreakdownBarTexturePath()
     local ttMax = TT_MAX()
-    local count = math.min(ttMax, #_ttSorted)
+    local total = math.min(ttMax, #_ttSorted)
     for index = 1, math.max(ttMax, #_ttBars) do
         local b = EnsureTTBar(index)
-        if index <= count then
+        if index <= total then
             local record = _ttSorted[index]
-            local spell = record.spell
+            local spellRec = record.spell
             local hasIcon = false
             -- A combatSpells spellID is secret in combat. GetSpellTexture takes a
             -- secret id (AllowedWhenTainted; Blizzard's own meter passes it straight
             -- in) but rejects some outright ("bad argument #1": open-world non-group
             -- participants), so a secret id goes through pcall and its result is
             -- tested by type() only, never by truthiness (it may come back secret).
-            local spID = spell.spellID
+            local spID = spellRec.spellID
             local getTex = C_Spell and C_Spell.GetSpellTexture
             if spID and getTex then
                 if IsSecret(spID) then
@@ -870,17 +870,17 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
                     b.fill:SetAllPoints(b.row)
                 end
             end
-            ApplyBarTexture(b.fill, texPath, texKey)
-            b.fill:SetMinMaxValues(0, maxAmt)
+            ApplyBarTexture(b.fill, texFile, textureKey)
+            b.fill:SetMinMaxValues(0, maxAmount)
             b.fill:SetValue(record.amount)
             b.fill:SetStatusBarColor(0x33 / 255, 0x33 / 255, 0x33 / 255)
-            local spellName
-            if spell.spellID then
+            local spellLabel
+            if spellRec.spellID then
                 -- GetSpellName takes a secret id, and a secret NAME is kept:
                 -- SetText displays it, where the old nil-out fell to "Unknown".
-                spellName = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spell.spellID)
+                spellLabel = C_Spell and C_Spell.GetSpellName and C_Spell.GetSpellName(spellRec.spellID)
             end
-            b.label:SetText(spellName or spell.creatureName or L("Unknown"))
+            b.label:SetText(spellLabel or spellRec.creatureName or L("Unknown"))
             if canPercent and totalDmg > 0 then
                 b.amount:SetText(
                     format("%s  %.1f%%", AbbrevNumber(record.amount), (record.amount / totalDmg) * 100)
@@ -911,31 +911,31 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
                 _ttFrame._tgtLabel:SetTextColor(0.6, 0.6, 0.6, 1)
                 _ttFrame._tgtLabel:SetText(CludesUI.L("Targets"))
                 _ttFrame._tgtBars = {}
-                for ti = 1, 3 do
-                    local tb = {}
-                    tb.row = CreateFrame("Frame", nil, _ttFrame)
-                    tb.row:SetHeight(TT_BAR_H)
-                    tb.fill = CreateFrame("StatusBar", nil, tb.row)
-                    tb.fill:SetAllPoints()
-                    tb.fill:SetMinMaxValues(0, 1)
-                    tb.fill:SetStatusBarTexture(BAR_TEX)
-                    local tf = CreateFrame("Frame", nil, tb.fill)
-                    tf:SetAllPoints(tb.fill)
-                    tf:SetFrameLevel(tb.fill:GetFrameLevel() + 2)
-                    tb.label = tf:CreateFontString(nil, "OVERLAY")
-                    tb.label:SetPoint("LEFT", tf, "LEFT", 2, 0)
-                    tb.label:SetJustifyH("LEFT")
-                    SetDMFont(tb.label, 10)
-                    tb.amount = tf:CreateFontString(nil, "OVERLAY")
-                    tb.amount:SetPoint("RIGHT", tf, "RIGHT", -2, 0)
-                    tb.amount:SetJustifyH("RIGHT")
-                    SetDMFont(tb.amount, 10)
-                    tb.label:SetPoint("RIGHT", tb.amount, "LEFT", -3, 0)
-                    tb.row:Hide()
-                    _ttFrame._tgtBars[ti] = tb
+                for tipIndex = 1, 3 do
+                    local textBlock = {}
+                    textBlock.row = CreateFrame("Frame", nil, _ttFrame)
+                    textBlock.row:SetHeight(TT_BAR_H)
+                    textBlock.fill = CreateFrame("StatusBar", nil, textBlock.row)
+                    textBlock.fill:SetAllPoints()
+                    textBlock.fill:SetMinMaxValues(0, 1)
+                    textBlock.fill:SetStatusBarTexture(BAR_TEX)
+                    local tf = CreateFrame("Frame", nil, textBlock.fill)
+                    tf:SetAllPoints(textBlock.fill)
+                    tf:SetFrameLevel(textBlock.fill:GetFrameLevel() + 2)
+                    textBlock.label = tf:CreateFontString(nil, "OVERLAY")
+                    textBlock.label:SetPoint("LEFT", tf, "LEFT", 2, 0)
+                    textBlock.label:SetJustifyH("LEFT")
+                    SetDMFont(textBlock.label, 10)
+                    textBlock.amount = tf:CreateFontString(nil, "OVERLAY")
+                    textBlock.amount:SetPoint("RIGHT", tf, "RIGHT", -2, 0)
+                    textBlock.amount:SetJustifyH("RIGHT")
+                    SetDMFont(textBlock.amount, 10)
+                    textBlock.label:SetPoint("RIGHT", textBlock.amount, "LEFT", -3, 0)
+                    textBlock.row:Hide()
+                    _ttFrame._tgtBars[tipIndex] = textBlock
                 end
             end
-            local baseY = -(TT_HDR_H + count * ttStride + ttSp * 2)
+            local baseY = -(TT_HDR_H + total * tipStride + tipSpacing * 2)
             _ttFrame._tgtDivider:ClearAllPoints()
             _ttFrame._tgtDivider:SetPoint("TOPLEFT", _ttFrame, "TOPLEFT", 0, baseY)
             _ttFrame._tgtDivider:SetPoint("TOPRIGHT", _ttFrame, "TOPRIGHT", 0, baseY)
@@ -946,25 +946,25 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
             _ttFrame._tgtLabel:Show()
             local tStartY = lblY - 10
             local tMaxAmt = targets[1].total
-            for ti = 1, 3 do
-                local tb = _ttFrame._tgtBars[ti]
-                if ti <= #targets then
-                    local t = targets[ti]
-                    tb.row:ClearAllPoints()
-                    tb.row:SetPoint("TOPLEFT", _ttFrame, "TOPLEFT", 0, tStartY - ((ti - 1) * ttStride))
-                    tb.row:SetPoint("TOPRIGHT", _ttFrame, "TOPRIGHT", 0, tStartY - ((ti - 1) * ttStride))
-                    ApplyBarTexture(tb.fill, texPath, texKey)
-                    tb.fill:SetMinMaxValues(0, tMaxAmt)
-                    tb.fill:SetValue(t.total)
-                    tb.fill:SetStatusBarColor(0xDD / 255, 0x31 / 255, 0x31 / 255)
-                    tb.label:SetTextColor(1, 1, 1)
-                    tb.amount:SetTextColor(1, 1, 1)
-                    tb.label:SetText(t.name)
-                    tb.amount:SetText(FormatBarValue(t.total, t.amountPerSecond, DB().numberFormat or 2))
-                    tb.row:Show()
+            for tipIndex = 1, 3 do
+                local textBlock = _ttFrame._tgtBars[tipIndex]
+                if tipIndex <= #targets then
+                    local t = targets[tipIndex]
+                    textBlock.row:ClearAllPoints()
+                    textBlock.row:SetPoint("TOPLEFT", _ttFrame, "TOPLEFT", 0, tStartY - ((tipIndex - 1) * tipStride))
+                    textBlock.row:SetPoint("TOPRIGHT", _ttFrame, "TOPRIGHT", 0, tStartY - ((tipIndex - 1) * tipStride))
+                    ApplyBarTexture(textBlock.fill, texFile, textureKey)
+                    textBlock.fill:SetMinMaxValues(0, tMaxAmt)
+                    textBlock.fill:SetValue(t.total)
+                    textBlock.fill:SetStatusBarColor(0xDD / 255, 0x31 / 255, 0x31 / 255)
+                    textBlock.label:SetTextColor(1, 1, 1)
+                    textBlock.amount:SetTextColor(1, 1, 1)
+                    textBlock.label:SetText(t.name)
+                    textBlock.amount:SetText(FormatBarValue(t.total, t.amountPerSecond, DB().numberFormat or 2))
+                    textBlock.row:Show()
                     ttTargetCount = ttTargetCount + 1
                 else
-                    tb.row:Hide()
+                    textBlock.row:Hide()
                 end
             end
         end
@@ -973,13 +973,13 @@ local function PopulatePreview(barFrame, curSession, curSessionID, curDMType)
     if ttTargetCount == 0 and _ttFrame and _ttFrame._tgtDivider then
         _ttFrame._tgtDivider:Hide()
         _ttFrame._tgtLabel:Hide()
-        for ti = 1, 3 do
-            _ttFrame._tgtBars[ti].row:Hide()
+        for tipIndex = 1, 3 do
+            _ttFrame._tgtBars[tipIndex].row:Hide()
         end
     end
-    local totalH = TT_HDR_H + count * ttStride - (count > 0 and ttSp or 0)
+    local totalH = TT_HDR_H + total * tipStride - (total > 0 and tipSpacing or 0)
     if ttTargetCount > 0 then
-        totalH = totalH + (ttSp * 2) + 1 + 10 + 10 + (ttTargetCount * ttStride)
+        totalH = totalH + (tipSpacing * 2) + 1 + 10 + 10 + (ttTargetCount * tipStride)
     end
     _ttFrame:SetSize(TT_WIDTH, totalH)
 

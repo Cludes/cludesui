@@ -124,17 +124,17 @@ CludesUI.EXPRESSWAY_FORCED_KEY = "__expressway"
 do
     local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
     if LSM then
-        for name, file in pairs(CludesUI.FONT_FILES) do
-            if file then
-                LSM:Register(LSM.MediaType.FONT, name, MEDIA_PATH .. "fonts\\" .. file)
+        for label, fontFile in pairs(CludesUI.FONT_FILES) do
+            if fontFile then
+                LSM:Register(LSM.MediaType.FONT, label, MEDIA_PATH .. "fonts\\" .. fontFile)
             end
         end
         -- Snapshot all currently registered SM fonts into the path lookup
         local smFonts = LSM:HashTable("font")
         if smFonts then
             CludesUI._smFontPaths = {}
-            for name, filePath in pairs(smFonts) do
-                CludesUI._smFontPaths[name] = filePath
+            for label, filePath in pairs(smFonts) do
+                CludesUI._smFontPaths[label] = filePath
             end
         end
         -- Listen for late-registered fonts from other addons
@@ -223,15 +223,15 @@ function CludesUI.GetFontsDB()
 end
 
 -- Resolve a font name to a full file path
-local function ResolveFontName(fontName)
+local function ResolveFontName(faceName)
     -- Blizzard Default: the client's own standard UI font. Handled before the
     -- glyph-restriction branch because STANDARD_TEXT_FONT is already
     -- locale-aware (the engine picks the right face per client language).
-    if fontName == CludesUI.BLIZZARD_FONT_KEY then
+    if faceName == CludesUI.BLIZZARD_FONT_KEY then
         return CludesUI.GetBlizzardFontPath()
     end
     -- Explicit Expressway override: bypasses the glyph-restriction mapping below.
-    if fontName == CludesUI.EXPRESSWAY_FORCED_KEY then
+    if faceName == CludesUI.EXPRESSWAY_FORCED_KEY then
         return MEDIA_PATH .. "fonts\\Expressway.TTF"
     end
     -- Glyph-restricted locales (CJK, Cyrillic): bundled fonts without coverage for the
@@ -243,54 +243,54 @@ local function ResolveFontName(fontName)
         -- Cyrillic locales: a bundled face with verified Cyrillic coverage renders ruRU
         -- text correctly, so honour the pick instead of forcing the system glyph font.
         -- Gated on LOCALE_SCRIPT, not on the fallback alone: CJK has no bundled coverage.
-        if CludesUI.LOCALE_SCRIPT == "cyrillic" and fontName and CludesUI.FONT_CYRILLIC[fontName] then
-            local cyrFile = CludesUI.FONT_FILES[fontName]
+        if CludesUI.LOCALE_SCRIPT == "cyrillic" and faceName and CludesUI.FONT_CYRILLIC[faceName] then
+            local cyrFile = CludesUI.FONT_FILES[faceName]
             if cyrFile then
                 return MEDIA_PATH .. "fonts\\" .. cyrFile
             end
         end
-        if fontName and not CludesUI.FONT_FILES[fontName] and not CludesUI.FONT_BLIZZARD[fontName] then
-            local smPath = CludesUI._smFontPaths and CludesUI._smFontPaths[fontName]
+        if faceName and not CludesUI.FONT_FILES[faceName] and not CludesUI.FONT_BLIZZARD[faceName] then
+            local smPath = CludesUI._smFontPaths and CludesUI._smFontPaths[faceName]
             if smPath then
                 return smPath
             end
             local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
-            if LSM and LSM:IsValid("font", fontName) then
-                local fetched = LSM:Fetch("font", fontName)
+            if LSM and LSM:IsValid("font", faceName) then
+                local fetched = LSM:Fetch("font", faceName)
                 if fetched then
                     if not CludesUI._smFontPaths then
                         CludesUI._smFontPaths = {}
                     end
-                    CludesUI._smFontPaths[fontName] = fetched
+                    CludesUI._smFontPaths[faceName] = fetched
                     return fetched
                 end
             end
         end
         return CludesUI.LOCALE_FONT_FALLBACK
     end
-    local bliz = CludesUI.FONT_BLIZZARD[fontName]
+    local bliz = CludesUI.FONT_BLIZZARD[faceName]
     if bliz then
         return bliz
     end
-    local file = CludesUI.FONT_FILES[fontName]
-    if file then
-        return MEDIA_PATH .. "fonts\\" .. file
+    local fontFile = CludesUI.FONT_FILES[faceName]
+    if fontFile then
+        return MEDIA_PATH .. "fonts\\" .. fontFile
     end
     -- SharedMedia fonts: path from _smFontPaths (populated at init)
-    local smPath = CludesUI._smFontPaths and CludesUI._smFontPaths[fontName]
+    local smPath = CludesUI._smFontPaths and CludesUI._smFontPaths[faceName]
     if smPath then
         return smPath
     end
     -- LSM fallback for late-loading SM addons not yet in _smFontPaths
-    if fontName then
+    if faceName then
         local LSM = LibStub and LibStub("LibSharedMedia-3.0", true)
         if LSM then
-            local fetched = LSM:Fetch("font", fontName)
+            local fetched = LSM:Fetch("font", faceName)
             if fetched then
                 if not CludesUI._smFontPaths then
                     CludesUI._smFontPaths = {}
                 end
-                CludesUI._smFontPaths[fontName] = fetched
+                CludesUI._smFontPaths[faceName] = fetched
                 return fetched
             end
         end
@@ -309,8 +309,8 @@ function CludesUI.CombatTextFontCoversLocale(key)
         return true
     end
     if locale == "ruRU" then
-        for name, file in pairs(CludesUI.FONT_FILES) do
-            if CludesUI.FONT_CYRILLIC[name] and key == MEDIA_PATH .. "fonts\\" .. file then
+        for label, fontFile in pairs(CludesUI.FONT_FILES) do
+            if CludesUI.FONT_CYRILLIC[label] and key == MEDIA_PATH .. "fonts\\" .. fontFile then
                 return true
             end
         end
@@ -352,8 +352,8 @@ CludesUI._moduleFontCache = {}
 CludesUI._moduleFontCacheVer = 0
 
 -- Resolve an addonKey to a moduleFonts entry (nil = global). Cached per-key, zero-alloc.
-function CludesUI.GetModuleFontEntry(addonKey)
-    if not addonKey then
+function CludesUI.GetModuleFontEntry(moduleKey)
+    if not moduleKey then
         return nil
     end
     local saved = CludesUI.GetFontsDB()
@@ -369,37 +369,37 @@ function CludesUI.GetModuleFontEntry(addonKey)
         CludesUI._moduleFontCacheVer = ver
     end
 
-    local cached = cache[addonKey]
+    local cached = cache[moduleKey]
     if cached ~= nil then
         return cached ~= false and cached or nil
     end
 
-    local folder = CludesUI._addonKeyToFolder[addonKey] or addonKey
+    local folder = CludesUI._addonKeyToFolder[moduleKey] or moduleKey
 
     for _, record in ipairs(mfList) do
         if record.folder == folder then
-            cache[addonKey] = record
+            cache[moduleKey] = record
             return record
         end
     end
-    cache[addonKey] = false
+    cache[moduleKey] = false
     return nil
 end
 
 -- Resolved font path for an addon key; falls back to the global font with no override.
-function CludesUI.GetFontPath(addonKey)
+function CludesUI.GetFontPath(moduleKey)
     local c = CludesUI._FontCacheReady().path
-    local k = addonKey or CludesUI._FONT_KEY_GLOBAL
-    local hit = c[k]
-    if hit then
-        return hit
+    local k = moduleKey or CludesUI._FONT_KEY_GLOBAL
+    local matched = c[k]
+    if matched then
+        return matched
     end
 
     local saved = CludesUI.GetFontsDB()
-    local override = CludesUI.GetModuleFontEntry(addonKey)
+    local overrideFont = CludesUI.GetModuleFontEntry(moduleKey)
     local filePath
-    if override and override.font and override.font ~= "__global" then
-        filePath = ResolveFontName(override.font)
+    if overrideFont and overrideFont.font and overrideFont.font ~= "__global" then
+        filePath = ResolveFontName(overrideFont.font)
     else
         filePath = ResolveFontName(saved.global or CludesUI.DEFAULT_FONT_NAME)
     end
@@ -408,64 +408,64 @@ function CludesUI.GetFontPath(addonKey)
 end
 
 -- Get the font name (not path) for an addon key.
-function CludesUI.GetFontName(addonKey)
+function CludesUI.GetFontName(moduleKey)
     local c = CludesUI._FontCacheReady().name
-    local k = addonKey or CludesUI._FONT_KEY_GLOBAL
-    local hit = c[k]
-    if hit then
-        return hit
+    local k = moduleKey or CludesUI._FONT_KEY_GLOBAL
+    local matched = c[k]
+    if matched then
+        return matched
     end
 
     local saved = CludesUI.GetFontsDB()
-    local override = CludesUI.GetModuleFontEntry(addonKey)
-    local name
-    if override and override.font and override.font ~= "__global" then
-        name = override.font
+    local overrideFont = CludesUI.GetModuleFontEntry(moduleKey)
+    local label
+    if overrideFont and overrideFont.font and overrideFont.font ~= "__global" then
+        label = overrideFont.font
     else
-        name = saved.global or CludesUI.DEFAULT_FONT_NAME
+        label = saved.global or CludesUI.DEFAULT_FONT_NAME
     end
-    c[k] = name
-    return name
+    c[k] = label
+    return label
 end
 
 -- Get the WoW font flag string for the outline mode.
 -- Pass an addonKey to get per-module override; nil returns the global setting.
 -- Returns: "OUTLINE, SLUG", "THICKOUTLINE, SLUG", or "" (none/shadow)
-function CludesUI.GetFontOutlineFlag(addonKey)
+function CludesUI.GetFontOutlineFlag(moduleKey)
     local c = CludesUI._FontCacheReady().outline
-    local k = addonKey or CludesUI._FONT_KEY_GLOBAL
+    local k = moduleKey or CludesUI._FONT_KEY_GLOBAL
     -- "" (no outline) is a legitimate result and truthy in Lua, so a presence test is a correct cache hit.
-    local hit = c[k]
-    if hit then
-        return hit
+    local matched = c[k]
+    if matched then
+        return matched
     end
 
     local saved = CludesUI.GetFontsDB()
-    local override = CludesUI.GetModuleFontEntry(addonKey)
+    local overrideFont = CludesUI.GetModuleFontEntry(moduleKey)
     local mode
-    if override and override.outline and override.outline ~= "__global" then
-        mode = override.outline
+    if overrideFont and overrideFont.outline and overrideFont.outline ~= "__global" then
+        mode = overrideFont.outline
     else
         mode = saved.outlineMode or "none"
     end
-    local flag = CludesUI.OutlineFlagForMode(mode)
-    c[k] = flag
-    return flag
+    local outlineFlag = CludesUI.OutlineFlagForMode(mode)
+    c[k] = outlineFlag
+    return outlineFlag
 end
 
 -- The WoW font flag for one outline mode ("outline", "thick"; anything else is
 -- none/shadow), slug-gated. For a feature with its own outline choice; resolve
 -- "__global" through GetFontOutlineFlag first.
 function CludesUI.OutlineFlagForMode(mode)
-    local flag
+    local outlineFlag
     if mode == "outline" then
-        flag = "OUTLINE, SLUG"
+        outlineFlag = "OUTLINE, SLUG"
     elseif mode == "thick" then
-        flag = "THICKOUTLINE, SLUG"
+        outlineFlag = "THICKOUTLINE, SLUG"
     else
-        flag = ""
+        outlineFlag = ""
     end
-    return CludesUI.SlugFlag(flag)
+    return CludesUI.SlugFlag(outlineFlag)
 end
 
 -- Per-profile "Never Show Slug": ON strips the SLUG token from every outline flag the
@@ -491,30 +491,30 @@ end
 
 -- Strip the SLUG token from a font outline flag:
 -- "OUTLINE, SLUG" -> "OUTLINE", "THICKOUTLINE, SLUG" -> "THICKOUTLINE", "" -> "".
-function CludesUI.StripSlugFlag(flag)
-    if not flag or flag == "" then
-        return flag or ""
+function CludesUI.StripSlugFlag(outlineFlag)
+    if not outlineFlag or outlineFlag == "" then
+        return outlineFlag or ""
     end
-    return (flag:gsub("%s*,%s*SLUG", ""))
+    return (outlineFlag:gsub("%s*,%s*SLUG", ""))
 end
 
 -- Central gate: strips SLUG from `flag` when "Never Show Slug" is on. Use at EVERY point
 -- a slug outline flag is produced (outline helpers, hardcoded icon-text literals).
-function CludesUI.SlugFlag(flag)
+function CludesUI.SlugFlag(outlineFlag)
     if CludesUI.IsSlugDisabled() then
-        return CludesUI.StripSlugFlag(flag)
+        return CludesUI.StripSlugFlag(outlineFlag)
     end
-    return flag
+    return outlineFlag
 end
 
 -- Returns true when the outline mode uses drop shadow instead of outline.
 -- Pass an addonKey to get per-module override; nil returns the global setting.
-function CludesUI.GetFontUseShadow(addonKey)
+function CludesUI.GetFontUseShadow(moduleKey)
     local saved = CludesUI.GetFontsDB()
-    local override = CludesUI.GetModuleFontEntry(addonKey)
+    local overrideFont = CludesUI.GetModuleFontEntry(moduleKey)
     local mode
-    if override and override.outline and override.outline ~= "__global" then
-        mode = override.outline
+    if overrideFont and overrideFont.outline and overrideFont.outline ~= "__global" then
+        mode = overrideFont.outline
     else
         mode = saved.outlineMode or "none"
     end
@@ -603,27 +603,27 @@ function CludesUI._FontPathCyrillic(filePath)
         return false
     end
     local c = CludesUI._fontPathCyr
-    local hit = c[filePath]
-    if hit ~= nil then
-        return hit
+    local matched = c[filePath]
+    if matched ~= nil then
+        return matched
     end
-    local yes = CludesUI._FONT_CLIENT_RU
-    if not yes then
+    local accepted = CludesUI._FONT_CLIENT_RU
+    if not accepted then
         local low = filePath:lower():gsub("/", "\\")
-        yes = (low == CludesUI._FONT_CYR_FILE:lower())
-        if not yes then
+        accepted = (low == CludesUI._FONT_CYR_FILE:lower())
+        if not accepted then
             local dir = (MEDIA_PATH .. "fonts\\"):lower()
-            for name in pairs(CludesUI.FONT_CYRILLIC) do
-                local file = CludesUI.FONT_FILES[name]
-                if file and low == dir .. file:lower() then
-                    yes = true
+            for label in pairs(CludesUI.FONT_CYRILLIC) do
+                local fontFile = CludesUI.FONT_FILES[label]
+                if fontFile and low == dir .. fontFile:lower() then
+                    accepted = true
                     break
                 end
             end
         end
     end
-    c[filePath] = yes
-    return yes
+    c[filePath] = accepted
+    return accepted
 end
 
 -- Whether a member of `alphabet` takes the face `path` (else it keeps a stock face):
@@ -644,9 +644,9 @@ end
 -- (see below).
 function CludesUI._FontPathLoads(filePath)
     local c = CludesUI._fontPathOK
-    local hit = c[filePath]
-    if hit ~= nil then
-        return hit
+    local matched = c[filePath]
+    if matched ~= nil then
+        return matched
     end
     local probe = CludesUI._fontProbe
     if not probe then
@@ -656,14 +656,14 @@ function CludesUI._FontPathLoads(filePath)
         CludesUI._fontProbe = probe
     end
     local success, loaded = pcall(probe.SetFont, probe, filePath, 12, "")
-    hit = success and loaded ~= false
+    matched = success and loaded ~= false
     -- On a fresh game start a file can fail before it is read: retested at login (see below).
-    if hit or CludesUI._fontRetryDone then
-        c[filePath] = hit
+    if matched or CludesUI._fontRetryDone then
+        c[filePath] = matched
     else
         CludesUI._FontRetryArm(filePath)
     end
-    return hit
+    return matched
 end
 
 -- Paths that failed before login finished, and the families built without them.
@@ -708,15 +708,15 @@ end
 -- and as their own font (a family built with the path has its roman member's).
 function CludesUI._FontFamiliesTakePath(filePath)
     local entries = CludesUI._fontFamPending
-    local alphabets = CludesUI._FONT_ALPHABETS
+    local alphabetList = CludesUI._FONT_ALPHABETS
     for idx = #entries, 1, -1 do
         local e = entries[idx]
         if e.path == filePath then
-            for a = 1, #alphabets do
-                local member = CludesUI._FontMemberTakesPath(alphabets[a], filePath)
-                    and e.fam:GetFontObjectForAlphabet(alphabets[a])
-                if member then
-                    pcall(member.SetFont, member, filePath, e.size, e.flags)
+            for a = 1, #alphabetList do
+                local memberKey = CludesUI._FontMemberTakesPath(alphabetList[a], filePath)
+                    and e.fam:GetFontObjectForAlphabet(alphabetList[a])
+                if memberKey then
+                    pcall(memberKey.SetFont, memberKey, filePath, e.size, e.flags)
                 end
             end
             pcall(e.fam.SetFont, e.fam, filePath, e.size, e.flags)
@@ -736,20 +736,20 @@ function CludesUI._DressFontFamily(fam, shadow)
     end
     fam:SetShadowColor(0, 0, 0, a)
     fam:SetShadowOffset(posX, posY)
-    local alphabets = CludesUI._FONT_ALPHABETS
-    for idx = 1, #alphabets do
-        local member = fam:GetFontObjectForAlphabet(alphabets[idx])
-        if member then
-            set[member] = true
-            member:SetShadowColor(0, 0, 0, a)
-            member:SetShadowOffset(posX, posY)
+    local alphabetList = CludesUI._FONT_ALPHABETS
+    for idx = 1, #alphabetList do
+        local memberKey = fam:GetFontObjectForAlphabet(alphabetList[idx])
+        if memberKey then
+            set[memberKey] = true
+            memberKey:SetShadowColor(0, 0, 0, a)
+            memberKey:SetShadowOffset(posX, posY)
         end
     end
 end
 
 -- Builds and caches the family for one key. A path the client cannot load takes the
 -- client's standard font.
-function CludesUI._BuildFontFamily(filePath, size, flags, shadow)
+function CludesUI._BuildFontFamily(filePath, size, outlineFlags, shadow)
     if type(filePath) ~= "string" or type(size) ~= "number" or not (size > 0) then
         return nil
     end
@@ -764,33 +764,33 @@ function CludesUI._BuildFontFamily(filePath, size, flags, shadow)
         byFlags = {}
         bySize[size] = byFlags
     end
-    local byShadow = byFlags[flags]
+    local byShadow = byFlags[outlineFlags]
     if not byShadow then
         byShadow = {}
-        byFlags[flags] = byShadow
+        byFlags[outlineFlags] = byShadow
     end
     local create = CreateFontFamily
     if type(create) ~= "function" then
         byShadow[shadow] = false
         return nil
     end
-    local face = filePath
+    local fontFace = filePath
     if not CludesUI._FontPathLoads(filePath) then
-        face = CludesUI.GetBlizzardFontPath()
+        fontFace = CludesUI.GetBlizzardFontPath()
     end
-    local alphabets = CludesUI._FONT_ALPHABETS
+    local alphabetList = CludesUI._FONT_ALPHABETS
     local members = {}
-    for idx = 1, #alphabets do
-        local alphabet = alphabets[idx]
-        local file = face
-        if not CludesUI._FontMemberTakesPath(alphabet, face) then
+    for idx = 1, #alphabetList do
+        local alphabet = alphabetList[idx]
+        local fontFile = fontFace
+        if not CludesUI._FontMemberTakesPath(alphabet, fontFace) then
             if alphabet == "russian" then
-                file = CludesUI._FONT_CYR_FILE
+                fontFile = CludesUI._FONT_CYR_FILE
             else
-                file = CludesUI.LocaleGlyphFont(CludesUI._FONT_CJK_LOCALE[alphabet])
+                fontFile = CludesUI.LocaleGlyphFont(CludesUI._FONT_CJK_LOCALE[alphabet])
             end
         end
-        members[idx] = { alphabet = alphabet, file = file, height = size, flags = flags }
+        members[idx] = { alphabet = alphabet, file = fontFile, height = size, flags = outlineFlags }
     end
     CludesUI._fontFamilyCount = CludesUI._fontFamilyCount + 1
     local success, fam = pcall(create, "CUIFontFamily" .. CludesUI._fontFamilyCount, members)
@@ -802,9 +802,9 @@ function CludesUI._BuildFontFamily(filePath, size, flags, shadow)
         return nil
     end
     byShadow[shadow] = fam
-    if face ~= filePath and CludesUI._fontPathPending[filePath] then
+    if fontFace ~= filePath and CludesUI._fontPathPending[filePath] then
         local entries = CludesUI._fontFamPending
-        entries[#entries + 1] = { fam = fam, path = filePath, size = size, flags = flags }
+        entries[#entries + 1] = { fam = fam, path = filePath, size = size, flags = outlineFlags }
     end
     return fam
 end
@@ -812,8 +812,8 @@ end
 -- The family font object for a face, size, outline flags and shadow, or nil when the
 -- client has no font families (or this one could not be made): the caller then sets
 -- the font the plain way. One family per key for the session.
-function CludesUI.GetFontFamily(filePath, size, flags, shadow)
-    flags = flags or ""
+function CludesUI.GetFontFamily(filePath, size, outlineFlags, shadow)
+    outlineFlags = outlineFlags or ""
     shadow = shadow and true or false
     -- Scaled texts (raid and party auto-resize, size offsets) hand fractional sizes:
     -- families are kept per quarter point, so a slider drag reuses a few of them (a
@@ -823,7 +823,7 @@ function CludesUI.GetFontFamily(filePath, size, flags, shadow)
     end
     local t = CludesUI._fontFamilies[filePath]
     t = t and t[size]
-    t = t and t[flags]
+    t = t and t[outlineFlags]
     local fam = t and t[shadow]
     if fam then
         return fam
@@ -831,21 +831,21 @@ function CludesUI.GetFontFamily(filePath, size, flags, shadow)
     if fam == false then
         return nil
     end
-    return CludesUI._BuildFontFamily(filePath, size, flags, shadow)
+    return CludesUI._BuildFontFamily(filePath, size, outlineFlags, shadow)
 end
 
 -- Sets a font string's font as a family (see the block above). A string already on
 -- that family is not touched. Its first switch from a font object that is not one
 -- of ours keeps the string's justification and text colour, which a template object
 -- may have given it. With no family: PrimeFontShadow, then a plain SetFont.
-function CludesUI.SetFontFamily(fontStr, filePath, size, flags, shadow)
+function CludesUI.SetFontFamily(fontStr, filePath, size, outlineFlags, shadow)
     if not (fontStr and fontStr.SetFontObject) then
         return
     end
-    local fam = CludesUI.GetFontFamily(filePath, size, flags, shadow)
+    local fam = CludesUI.GetFontFamily(filePath, size, outlineFlags, shadow)
     if not fam then
         CludesUI.PrimeFontShadow(fontStr, shadow)
-        fontStr:SetFont(filePath, size, flags)
+        fontStr:SetFont(filePath, size, outlineFlags)
         return
     end
     local current = fontStr:GetFontObject()
@@ -876,64 +876,64 @@ end
 -- members of their own. Read once per object.
 function CludesUI._FontObjectIsFamily(object)
     local c = CludesUI._fontObjIsFamily
-    local hit = c[object]
-    if hit ~= nil then
-        return hit
+    local matched = c[object]
+    if matched ~= nil then
+        return matched
     end
-    local yes = false
+    local accepted = false
     if object.GetFontObjectForAlphabet then
         local okR, roman = pcall(object.GetFontObjectForAlphabet, object, "roman")
         local okC, russian = pcall(object.GetFontObjectForAlphabet, object, "russian")
-        yes = (okR and okC and roman ~= nil and russian ~= nil and roman ~= russian) and true or false
+        accepted = (okR and okC and roman ~= nil and russian ~= nil and roman ~= russian) and true or false
     end
-    c[object] = yes
-    return yes
+    c[object] = accepted
+    return accepted
 end
 
 -- One member (or plain object): the face `path` when given, else its own; `size`
 -- when given, else its own size times `scale`; `flags` when given, else its own.
 -- A member already in `done` is skipped, so a member several alphabets or objects
 -- share changes once (a scale never compounds).
-function CludesUI._SetFontMemberFace(member, filePath, size, flags, scale, done)
-    if done[member] then
+function CludesUI._SetFontMemberFace(memberKey, filePath, size, outlineFlags, scale, done)
+    if done[memberKey] then
         return
     end
-    done[member] = true
-    local face, msize, mflags = member:GetFont()
+    done[memberKey] = true
+    local fontFace, msize, mflags = memberKey:GetFont()
     if not msize or msize <= 0 then
         return
     end
-    face = filePath or face
-    if not face then
+    fontFace = filePath or fontFace
+    if not fontFace then
         return
     end
-    pcall(member.SetFont, member, face, size or msize * (scale or 1), flags or mflags or "")
+    pcall(memberKey.SetFont, memberKey, fontFace, size or msize * (scale or 1), outlineFlags or mflags or "")
 end
 
 -- SetFontObjectFace's body with the caller's `done` set (a game text pass shares one
 -- set across every object it changes).
-function CludesUI._FontObjectFaceInto(object, filePath, size, flags, scale, done)
+function CludesUI._FontObjectFaceInto(object, filePath, size, outlineFlags, scale, done)
     if CludesUI._FontObjectIsFamily(object) then
-        local alphabets = CludesUI._FONT_ALPHABETS
-        for idx = 1, #alphabets do
-            local alphabet = alphabets[idx]
-            local success, member = pcall(object.GetFontObjectForAlphabet, object, alphabet)
-            if success and member then
-                local face = filePath
-                if face and not CludesUI._FontMemberTakesPath(alphabet, face) then
-                    face = nil
+        local alphabetList = CludesUI._FONT_ALPHABETS
+        for idx = 1, #alphabetList do
+            local alphabet = alphabetList[idx]
+            local success, memberKey = pcall(object.GetFontObjectForAlphabet, object, alphabet)
+            if success and memberKey then
+                local fontFace = filePath
+                if fontFace and not CludesUI._FontMemberTakesPath(alphabet, fontFace) then
+                    fontFace = nil
                 end
-                CludesUI._SetFontMemberFace(member, face, size, flags, scale, done)
+                CludesUI._SetFontMemberFace(memberKey, fontFace, size, outlineFlags, scale, done)
             end
         end
         -- The family's own font as well (it changes no member): GetFont() reads it and
         -- copies take it (the guild chat copies the main chat window's font). Only
         -- where the client's own alphabet takes the face.
         if not filePath or CludesUI._FontMemberTakesPath(CludesUI._FONT_CLIENT_OWN, filePath) then
-            CludesUI._SetFontMemberFace(object, filePath, size, flags, scale, done)
+            CludesUI._SetFontMemberFace(object, filePath, size, outlineFlags, scale, done)
         end
     else
-        CludesUI._SetFontMemberFace(object, filePath, size, flags, scale, done)
+        CludesUI._SetFontMemberFace(object, filePath, size, outlineFlags, scale, done)
     end
 end
 
@@ -943,13 +943,13 @@ end
 -- the others keep their own faces; `size` (nil: each member's own size times `scale`,
 -- default 1) and `flags` (nil: each member's own) go to every member. A plain object
 -- takes the same on itself.
-function CludesUI.SetFontObjectFace(object, filePath, size, flags, scale)
+function CludesUI.SetFontObjectFace(object, filePath, size, outlineFlags, scale)
     if not (object and type(object) == "table" and object.GetFont and object.SetFont) then
         return
     end
     local done = CludesUI._fontFaceDone
     wipe(done)
-    CludesUI._FontObjectFaceInto(object, filePath, size, flags, scale, done)
+    CludesUI._FontObjectFaceInto(object, filePath, size, outlineFlags, scale, done)
 end
 
 -- Each member's (or a plain object's) face, size and flags, and a family's own
@@ -962,24 +962,24 @@ function CludesUI.SnapshotFontObject(object)
     if CludesUI._FontObjectIsFamily(object) then
         local ownFace, ownSize, ownFlags = object:GetFont()
         snap.own = { face = ownFace, size = ownSize, flags = ownFlags }
-        local alphabets = CludesUI._FONT_ALPHABETS
-        for idx = 1, #alphabets do
-            local success, member = pcall(object.GetFontObjectForAlphabet, object, alphabets[idx])
-            if success and member then
-                local face, size, flags = member:GetFont()
-                snap[alphabets[idx]] = { face = face, size = size, flags = flags }
+        local alphabetList = CludesUI._FONT_ALPHABETS
+        for idx = 1, #alphabetList do
+            local success, memberKey = pcall(object.GetFontObjectForAlphabet, object, alphabetList[idx])
+            if success and memberKey then
+                local fontFace, size, outlineFlags = memberKey:GetFont()
+                snap[alphabetList[idx]] = { face = fontFace, size = size, flags = outlineFlags }
             end
         end
     else
-        local face, size, flags = object:GetFont()
-        snap.plain = { face = face, size = size, flags = flags }
+        local fontFace, size, outlineFlags = object:GetFont()
+        snap.plain = { face = fontFace, size = size, flags = outlineFlags }
     end
     return snap
 end
 
-function CludesUI._RestoreFontMember(member, s)
+function CludesUI._RestoreFontMember(memberKey, s)
     if s and s.face and s.size and s.size > 0 then
-        pcall(member.SetFont, member, s.face, s.size, s.flags or "")
+        pcall(memberKey.SetFont, memberKey, s.face, s.size, s.flags or "")
     end
 end
 
@@ -993,13 +993,13 @@ function CludesUI.RestoreFontObject(object, snap)
         return
     end
     CludesUI._RestoreFontMember(object, snap.own)
-    local alphabets = CludesUI._FONT_ALPHABETS
-    for idx = 1, #alphabets do
-        local s = snap[alphabets[idx]]
+    local alphabetList = CludesUI._FONT_ALPHABETS
+    for idx = 1, #alphabetList do
+        local s = snap[alphabetList[idx]]
         if s then
-            local success, member = pcall(object.GetFontObjectForAlphabet, object, alphabets[idx])
-            if success and member then
-                CludesUI._RestoreFontMember(member, s)
+            local success, memberKey = pcall(object.GetFontObjectForAlphabet, object, alphabetList[idx])
+            if success and memberKey then
+                CludesUI._RestoreFontMember(memberKey, s)
             end
         end
     end
@@ -1063,16 +1063,16 @@ function CludesUI.ApplyGlobalFontToGameText()
     -- follow the Combat Text Font setting alone, so the pass marks those two objects,
     -- their own fonts and every member as done and leaves them as they are.
     local keep = CludesUI._GAME_TEXT_KEEP
-    local alphabets = CludesUI._FONT_ALPHABETS
+    local alphabetList = CludesUI._FONT_ALPHABETS
     for k = 1, #keep do
         local object = _G[keep[k]]
         if object and type(object) == "table" then
             done[object] = true
             if object.GetFontObjectForAlphabet then
-                for a = 1, #alphabets do
-                    local success, member = pcall(object.GetFontObjectForAlphabet, object, alphabets[a])
-                    if success and member then
-                        done[member] = true
+                for a = 1, #alphabetList do
+                    local success, memberKey = pcall(object.GetFontObjectForAlphabet, object, alphabetList[a])
+                    if success and memberKey then
+                        done[memberKey] = true
                     end
                 end
             end
@@ -1108,9 +1108,9 @@ function CludesUI.ApplyGlobalFontToGameText()
                 if not (labelText and labelText.GetFont) then
                     return
                 end
-                local face, size, flags = labelText:GetFont() -- not in an and-chain, that keeps only face
-                if face == old and size then
-                    labelText:SetFont(filePath, size, flags or "")
+                local fontFace, size, outlineFlags = labelText:GetFont() -- not in an and-chain, that keeps only face
+                if fontFace == old and size then
+                    labelText:SetFont(filePath, size, outlineFlags or "")
                 end
             end)
         end)
@@ -1181,24 +1181,24 @@ end
 function CludesUI.GetIconTextOutlineFlag(moduleKey)
     local c = CludesUI._FontCacheReady().icon
     local k = moduleKey or CludesUI._FONT_KEY_GLOBAL
-    local hit = c[k]
-    if hit then
-        return hit
+    local matched = c[k]
+    if matched then
+        return matched
     end
 
     -- Per-profile (rides profile export); the account-global table is the read-time fallback.
     local f = CludesUI.GetFontsDB()
     local t = (f and f.outlineIconText) or (CludesUIDB and CludesUIDB.outlineIconText)
-    local flag
+    local outlineFlag
     if t and t[moduleKey] == false then
         -- Follows the outline mode, which is already slug-gated at the source.
-        flag = (CludesUI.GetFontOutlineFlag(moduleKey)) or ""
+        outlineFlag = (CludesUI.GetFontOutlineFlag(moduleKey)) or ""
     else
         -- Forced crisp outline; "Never Show Slug" still drops the slug token.
-        flag = CludesUI.SlugFlag("OUTLINE, SLUG")
+        outlineFlag = CludesUI.SlugFlag("OUTLINE, SLUG")
     end
-    c[k] = flag
-    return flag
+    c[k] = outlineFlag
+    return outlineFlag
 end
 
 -- Applies the icon-text outline flag AND the matching shadow in one call. Checked -> "OUTLINE,
@@ -1207,32 +1207,32 @@ function CludesUI.ApplyIconTextFont(fontStr, fontFile, size, moduleKey)
     if not (fontStr and fontStr.SetFont) then
         return
     end
-    local flag = CludesUI.GetIconTextOutlineFlag(moduleKey)
+    local outlineFlag = CludesUI.GetIconTextOutlineFlag(moduleKey)
     -- Prime the shadow FontObject before SetFont (see PrimeFontShadow).
-    CludesUI.PrimeFontShadow(fontStr, flag == "")
-    fontStr:SetFont(fontFile, size, flag)
+    CludesUI.PrimeFontShadow(fontStr, outlineFlag == "")
+    fontStr:SetFont(fontFile, size, outlineFlag)
 end
 
 -- Body text in a module's font: fontPath/flags default to the module's (nil key = global)
 -- font and outline; a "" flag (Drop Shadow/None) gets the drop shadow.
-function CludesUI.ApplyModuleFont(fontStr, fontFile, size, moduleKey, flags)
+function CludesUI.ApplyModuleFont(fontStr, fontFile, size, moduleKey, outlineFlags)
     if not (fontStr and fontStr.SetFont) then
         return
     end
-    flags = flags or CludesUI.GetFontOutlineFlag(moduleKey)
-    CludesUI.PrimeFontShadow(fontStr, flags == "")
-    fontStr:SetFont(fontFile or CludesUI.GetFontPath(moduleKey), size, flags)
+    outlineFlags = outlineFlags or CludesUI.GetFontOutlineFlag(moduleKey)
+    CludesUI.PrimeFontShadow(fontStr, outlineFlags == "")
+    fontStr:SetFont(fontFile or CludesUI.GetFontPath(moduleKey), size, outlineFlags)
 end
 
 -- ApplyModuleFont for a text that can show other players' writing: the same defaults
 -- (the module's font and outline; a "" flag gets the drop shadow) as a font family
 -- (SetFontFamily). Once a string has a family, no ApplyModuleFont may reach it.
-function CludesUI.ApplyModuleFontFamily(fontStr, fontFile, size, moduleKey, flags)
+function CludesUI.ApplyModuleFontFamily(fontStr, fontFile, size, moduleKey, outlineFlags)
     if not (fontStr and fontStr.SetFont) then
         return
     end
-    flags = flags or CludesUI.GetFontOutlineFlag(moduleKey)
-    CludesUI.SetFontFamily(fontStr, fontFile or CludesUI.GetFontPath(moduleKey), size, flags, flags == "")
+    outlineFlags = outlineFlags or CludesUI.GetFontOutlineFlag(moduleKey)
+    CludesUI.SetFontFamily(fontStr, fontFile or CludesUI.GetFontPath(moduleKey), size, outlineFlags, outlineFlags == "")
 end
 
 -- Build font dropdown values/order ("CUI Global Font" first) for W:DualRow configs.
@@ -1266,15 +1266,15 @@ function CludesUI.BuildFontDropdownData()
     }
     local sequence = { "__global", CludesUI.BLIZZARD_FONT_KEY, "---" }
     local FONT_DIR = CludesUI.MEDIA_PATH .. "fonts\\"
-    for _, name in ipairs(CludesUI.FONT_ORDER) do
-        if name == "---" then
+    for _, label in ipairs(CludesUI.FONT_ORDER) do
+        if label == "---" then
             sequence[#sequence + 1] = "---"
         else
-            local filePath = CludesUI.FONT_BLIZZARD[name]
-                or (FONT_DIR .. (CludesUI.FONT_FILES[name] or "Expressway.TTF"))
-            local displayName = (CludesUI.FONT_DISPLAY_NAMES and CludesUI.FONT_DISPLAY_NAMES[name]) or name
-            values[name] = { text = displayName, font = filePath }
-            sequence[#sequence + 1] = name
+            local filePath = CludesUI.FONT_BLIZZARD[label]
+                or (FONT_DIR .. (CludesUI.FONT_FILES[label] or "Expressway.TTF"))
+            local displayName = (CludesUI.FONT_DISPLAY_NAMES and CludesUI.FONT_DISPLAY_NAMES[label]) or label
+            values[label] = { text = displayName, font = filePath }
+            sequence[#sequence + 1] = label
         end
     end
     if CludesUI.AppendSharedMediaFonts then

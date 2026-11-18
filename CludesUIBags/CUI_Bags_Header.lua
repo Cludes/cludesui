@@ -38,7 +38,7 @@ function CUI_Bags:FitHeaderText()
     if not (heading and edge) then
         return
     end
-    local title, count = heading.title, heading.itemCount
+    local title, total = heading.title, heading.itemCount
     local tl, el = title:GetLeft(), edge:GetLeft()
     if not (tl and el) then
         return
@@ -51,40 +51,40 @@ function CUI_Bags:FitHeaderText()
     local tw = title:GetUnboundedStringWidth()
     if tw > room then
         title:SetWidth(math.max(room, 1))
-        count:SetAlpha(0)
+        total:SetAlpha(0)
         return
     end
     title:SetWidth(tw + 1)
     local countRoom = room - tw - 8
-    local first, second = (count:GetText() or ""):match("^([^\n]+)\n(.+)$")
+    local first, second = (total:GetText() or ""):match("^([^\n]+)\n(.+)$")
     if first then
         -- Each capacity line truncates independently instead of wrapping into the other.
         if not heading.slotLines then
             heading.slotLines = {}
             for i = 1, 2 do
-                local line = heading:CreateFontString(nil, "OVERLAY")
-                SetBagFont(line, 11)
-                line:SetWordWrap(false)
-                line:SetJustifyH("LEFT")
-                heading.slotLines[i] = line
+                local divider = heading:CreateFontString(nil, "OVERLAY")
+                SetBagFont(divider, 11)
+                divider:SetWordWrap(false)
+                divider:SetJustifyH("LEFT")
+                heading.slotLines[i] = divider
             end
         end
-        local _, size = count:GetFont()
-        local region, g, b = count:GetTextColor()
+        local _, size = total:GetFont()
+        local region, g, b = total:GetTextColor()
         for i = 1, 2 do
-            local line = heading.slotLines[i]
-            line:SetFont(count:GetFont())
-            line:SetTextColor(region, g, b, 1)
-            line:SetPoint("LEFT", title, "RIGHT", 8, i == 1 and size / 2 or -size / 2)
-            line:SetText(i == 1 and first or second)
-            line:SetWidth(math.max(math.min(line:GetUnboundedStringWidth() + 1, countRoom), 1))
-            line:SetShown(countRoom >= 16)
+            local divider = heading.slotLines[i]
+            divider:SetFont(total:GetFont())
+            divider:SetTextColor(region, g, b, 1)
+            divider:SetPoint("LEFT", title, "RIGHT", 8, i == 1 and size / 2 or -size / 2)
+            divider:SetText(i == 1 and first or second)
+            divider:SetWidth(math.max(math.min(divider:GetUnboundedStringWidth() + 1, countRoom), 1))
+            divider:SetShown(countRoom >= 16)
         end
-        count:SetAlpha(0)
+        total:SetAlpha(0)
         return
     end
-    count:SetWidth(math.max(math.min(count:GetUnboundedStringWidth() + 1, countRoom), 1))
-    count:SetAlpha(countRoom >= 16 and 1 or 0)
+    total:SetWidth(math.max(math.min(total:GetUnboundedStringWidth() + 1, countRoom), 1))
+    total:SetAlpha(countRoom >= 16 and 1 or 0)
 end
 
 local function CreateHeader()
@@ -92,88 +92,88 @@ local function CreateHeader()
         return
     end
     local forever = mod.BagsForever()
-    local header = CreateFrame("Frame", nil, CUI_Bags)
-    header:SetPoint("TOPLEFT", 1, -1)
-    header:SetPoint("TOPRIGHT", -1, -1)
+    local headerBar = CreateFrame("Frame", nil, CUI_Bags)
+    headerBar:SetPoint("TOPLEFT", 1, -1)
+    headerBar:SetPoint("TOPRIGHT", -1, -1)
     if forever then
-        mod.LayoutForeverBagHeader(header)
+        mod.LayoutForeverBagHeader(headerBar)
     else
-        header:SetHeight(HEADER_H)
+        headerBar:SetHeight(HEADER_H)
     end
-    header.bg = header:CreateTexture(nil, "BACKGROUND")
-    header.bg:SetAllPoints()
-    header.bg:SetColorTexture(0, 0, 0, 0.5)
+    headerBar.bg = headerBar:CreateTexture(nil, "BACKGROUND")
+    headerBar.bg:SetAllPoints()
+    headerBar.bg:SetColorTexture(0, 0, 0, 0.5)
 
-    header.title = header:CreateFontString(nil, "OVERLAY")
-    SetBagFont(header.title, 13)
-    header.title:SetPoint("LEFT", header, "LEFT", 8, 0)
-    header.title:SetText(CludesUI.L("Inventory"))
-    header.title:SetTextColor(1, 1, 1)
+    headerBar.title = headerBar:CreateFontString(nil, "OVERLAY")
+    SetBagFont(headerBar.title, 13)
+    headerBar.title:SetPoint("LEFT", headerBar, "LEFT", 8, 0)
+    headerBar.title:SetText(CludesUI.L("Inventory"))
+    headerBar.title:SetTextColor(1, 1, 1)
 
     -- Item count (updated by RefreshInventory)
-    header.itemCount = header:CreateFontString(nil, "OVERLAY")
-    SetBagFont(header.itemCount, 11)
-    header.itemCount:SetPoint("LEFT", header.title, "RIGHT", 8, 0)
-    header.itemCount:SetTextColor(0.6, 0.6, 0.6)
+    headerBar.itemCount = headerBar:CreateFontString(nil, "OVERLAY")
+    SetBagFont(headerBar.itemCount, 11)
+    headerBar.itemCount:SetPoint("LEFT", headerBar.title, "RIGHT", 8, 0)
+    headerBar.itemCount:SetTextColor(0.6, 0.6, 0.6)
 
     -- Title and count stop short of the header icons (CUI_Bags:FitHeaderText),
     -- refitted whenever either text, the title's spot or the header width changes.
-    header.title:SetWordWrap(false)
-    header.title:SetJustifyH("LEFT")
-    header.itemCount:SetWordWrap(false)
-    header.itemCount:SetJustifyH("LEFT")
+    headerBar.title:SetWordWrap(false)
+    headerBar.title:SetJustifyH("LEFT")
+    headerBar.itemCount:SetWordWrap(false)
+    headerBar.itemCount:SetJustifyH("LEFT")
     if not forever then
         local function Fit()
             CUI_Bags:FitHeaderText()
         end
-        hooksecurefunc(header.title, "SetText", Fit)
-        hooksecurefunc(header.title, "SetPoint", Fit)
-        hooksecurefunc(header.itemCount, "SetText", Fit)
-        header:HookScript("OnSizeChanged", Fit)
-        header:HookScript("OnShow", Fit)
+        hooksecurefunc(headerBar.title, "SetText", Fit)
+        hooksecurefunc(headerBar.title, "SetPoint", Fit)
+        hooksecurefunc(headerBar.itemCount, "SetText", Fit)
+        headerBar:HookScript("OnSizeChanged", Fit)
+        headerBar:HookScript("OnShow", Fit)
     end
 
-    local search = CreateFrame("EditBox", "CUI_BagSearchBox", header)
-    search:SetSize(160, 22)
-    search:SetPoint("RIGHT", -35, 0)
-    search:SetFont(GetFont(), 12, CUI.GetFontOutlineFlag("bags"))
-    search:SetAutoFocus(false)
-    search:SetTextInsets(5, 26, 0, 0)
-    search.bg = search:CreateTexture(nil, "BACKGROUND")
-    search.bg:SetAllPoints()
-    search.bg:SetColorTexture(0.02, 0.02, 0.02, 1)
+    local searchBox = CreateFrame("EditBox", "CUI_BagSearchBox", headerBar)
+    searchBox:SetSize(160, 22)
+    searchBox:SetPoint("RIGHT", -35, 0)
+    searchBox:SetFont(GetFont(), 12, CUI.GetFontOutlineFlag("bags"))
+    searchBox:SetAutoFocus(false)
+    searchBox:SetTextInsets(5, 26, 0, 0)
+    searchBox.bg = searchBox:CreateTexture(nil, "BACKGROUND")
+    searchBox.bg:SetAllPoints()
+    searchBox.bg:SetColorTexture(0.02, 0.02, 0.02, 1)
     if not forever and CUI.PanelPP then
-        CUI.PanelPP.CreateBorder(search, 0.25, 0.25, 0.25, 1, 1, "OVERLAY", 7)
+        CUI.PanelPP.CreateBorder(searchBox, 0.25, 0.25, 0.25, 1, 1, "OVERLAY", 7)
     end
 
-    local placeholder = search:CreateFontString(nil, "OVERLAY")
+    local placeholder = searchBox:CreateFontString(nil, "OVERLAY")
     SetBagFont(placeholder, 11)
-    placeholder:SetPoint("LEFT", search, "LEFT", 5, 0)
+    placeholder:SetPoint("LEFT", searchBox, "LEFT", 5, 0)
     placeholder:SetText(CludesUI.L("Search..."))
     placeholder:SetTextColor(0.4, 0.4, 0.4)
-    CUI_Bags._searchBox = search
+    CUI_Bags._searchBox = searchBox
 
-    local sort = CreateFrame("Button", nil, header)
-    sort:SetSize(24, 24)
-    sort:SetPoint("RIGHT", search, "LEFT", -13, 0)
-    sort.icon = sort:CreateTexture(nil, "OVERLAY")
-    sort.icon:SetAllPoints()
-    sort.icon:SetTexture("Interface\\AddOns\\CludesUIBags\\Media\\clean-up.png")
-    sort.icon:SetAlpha(0.9)
+    local sortBtn = CreateFrame("Button", nil, headerBar)
+    sortBtn:SetSize(24, 24)
+    sortBtn:SetPoint("RIGHT", searchBox, "LEFT", -13, 0)
+    sortBtn.icon = sortBtn:CreateTexture(nil, "OVERLAY")
+    sortBtn.icon:SetAllPoints()
+    sortBtn.icon:SetTexture("Interface\\AddOns\\CludesUIBags\\Media\\clean-up.png")
+    sortBtn.icon:SetAlpha(0.9)
 
     if forever then
-        header.bg:Hide()
-        mod.AddForeverBagPortrait(header, "Interface\\Icons\\Inv_misc_bag_08")
-        mod.SkinForeverBagTitle(header.title, header.itemCount)
-        sort:ClearAllPoints()
-        sort:SetPoint("RIGHT", header, "TOPRIGHT", -9, header._foreverToolsY)
+        headerBar.bg:Hide()
+        mod.AddForeverBagPortrait(headerBar, "Interface\\Icons\\Inv_misc_bag_08")
+        mod.SkinForeverBagTitle(headerBar.title, headerBar.itemCount)
+        sortBtn:ClearAllPoints()
+        sortBtn:SetPoint("RIGHT", headerBar, "TOPRIGHT", -9, headerBar._foreverToolsY)
     end
 
-    sort:SetScript("OnEnter", function(self)
+    sortBtn:SetScript("OnEnter", function(self)
         self.icon:SetAlpha(1)
         CUI.ShowWidgetTooltip(self, "Sort Items")
     end)
-    sort:SetScript("OnLeave", function(self)
+    sortBtn:SetScript("OnLeave", function(self)
         self.icon:SetAlpha(0.9)
         CUI.HideWidgetTooltip()
     end)
@@ -188,8 +188,8 @@ local function CreateHeader()
     -- moves items only out of combat.
     local function ApplySortEnabled()
         local enabled = not sortLocked and not (InCombatLockdown() and SortMovesItems())
-        sort:EnableMouse(enabled)
-        sort.icon:SetAlpha(enabled and 0.9 or 0.2)
+        sortBtn:EnableMouse(enabled)
+        sortBtn.icon:SetAlpha(enabled and 0.9 or 0.2)
     end
     -- A view switch in combat re-runs it from the refresh (FinishRefresh).
     CUI_Bags._applySortEnabled = ApplySortEnabled
@@ -212,7 +212,7 @@ local function CreateHeader()
     -- inheriting the first one's callbacks: EndDragDrop can unlock the button
     -- mid-run, and a stale callback clearing the live chain's OnEvent would
     -- strand it with refreshEnabled false (bags frozen until reload).
-    local consolidateFrame, retryFrame
+    local consolidator, retrier
     local function LockSort()
         sortLocked = true
         ApplySortEnabled()
@@ -288,8 +288,8 @@ local function CreateHeader()
                 if frame._runToken ~= token or frame._wait ~= wait then
                     return
                 end
-                StopWaiting(consolidateFrame)
-                StopWaiting(retryFrame)
+                StopWaiting(consolidator)
+                StopWaiting(retrier)
                 FinishSort()
             end)
         end
@@ -315,10 +315,10 @@ local function CreateHeader()
                 -- A WoW Forever special bag's stacks merge only with each other
                 -- (a key of their own), so nothing leaves or enters the bag.
                 local special = mod.SpecialBags()
-                for bag = 0, 5 do
-                    local numSlots = C_Container.GetContainerNumSlots(bag)
+                for bagId = 0, 5 do
+                    local numSlots = C_Container.GetContainerNumSlots(bagId)
                     for slot = 1, numSlots do
-                        local details = C_Container.GetContainerItemInfo(bag, slot)
+                        local details = C_Container.GetContainerItemInfo(bagId, slot)
                         if details and details.itemID and details.stackCount then
                             local maxStack = maxStackByID[details.itemID]
                             if not maxStack then
@@ -333,14 +333,14 @@ local function CreateHeader()
                             end
                             if maxStack > 1 and details.stackCount < maxStack then
                                 local key = details.itemID
-                                if special and special[bag] then
-                                    key = bag .. ":" .. key
+                                if special and special[bagId] then
+                                    key = bagId .. ":" .. key
                                 end
                                 if not stacks[key] then
                                     stacks[key] = {}
                                 end
                                 stacks[key][#stacks[key] + 1] = {
-                                    bag = bag,
+                                    bag = bagId,
                                     slot = slot,
                                     count = details.stackCount,
                                 }
@@ -384,27 +384,27 @@ local function CreateHeader()
             end
 
             local consolidateRetry = 0
-            if not consolidateFrame then
-                consolidateFrame = CreateFrame("Frame")
+            if not consolidator then
+                consolidator = CreateFrame("Frame")
             end
-            local runToken = {}
-            consolidateFrame._runToken = runToken
-            consolidateFrame:RegisterEvent("BAG_UPDATE")
-            ArmBackstop(consolidateFrame, runToken)
-            consolidateFrame:SetScript("OnEvent", function(self)
-                if self._runToken ~= runToken then
+            local runId = {}
+            consolidator._runToken = runId
+            consolidator:RegisterEvent("BAG_UPDATE")
+            ArmBackstop(consolidator, runId)
+            consolidator:SetScript("OnEvent", function(self)
+                if self._runToken ~= runId then
                     return
                 end
                 self._wait = nil
                 self:UnregisterAllEvents()
                 consolidateRetry = consolidateRetry + 1
                 C_Timer.After(0.15, function()
-                    if consolidateFrame._runToken ~= runToken then
+                    if consolidator._runToken ~= runId then
                         return
                     end
                     if consolidateRetry < 30 and DoOnePass() then
                         self:RegisterEvent("BAG_UPDATE")
-                        ArmBackstop(self, runToken)
+                        ArmBackstop(self, runId)
                     else
                         self:SetScript("OnEvent", nil)
                         onDone()
@@ -418,34 +418,34 @@ local function CreateHeader()
         -----------------------------------------------------------------------
 
         -- Scan, compute sorted order and execute all moves in one pass; re-scans every call so retries work from fresh state.
-        local function ComputeAndExecute(bagMin, bagMax)
+        local function ComputeAndExecute(firstBag, lastBag)
             if InCombatLockdown() then
                 return false
             end -- combat started: stop moving items
-            bagMin = bagMin or 0
-            bagMax = bagMax or 4
+            firstBag = firstBag or 0
+            lastBag = lastBag or 4
             local sum = 0
-            local sBag, sSlot, sKey, sID = {}, {}, {}, {}
+            local sBag, sSlot, sKey, slotId = {}, {}, {}, {}
 
             local itemList = {}
             -- A WoW Forever special bag adds no slots: its items stay put and
             -- nothing is moved into it.
             local special = mod.SpecialBags()
-            for bag = bagMin, bagMax do
-                local numSlots = (special and special[bag]) and 0 or C_Container.GetContainerNumSlots(bag)
+            for bagId = firstBag, lastBag do
+                local numSlots = (special and special[bagId]) and 0 or C_Container.GetContainerNumSlots(bagId)
                 for slot = 1, numSlots do
                     sum = sum + 1
-                    sBag[sum] = bag
+                    sBag[sum] = bagId
                     sSlot[sum] = slot
-                    local details = C_Container.GetContainerItemInfo(bag, slot)
+                    local details = C_Container.GetContainerItemInfo(bagId, slot)
                     if details then
-                        local link = C_Container.GetContainerItemLink(bag, slot)
+                        local link = C_Container.GetContainerItemLink(bagId, slot)
                         local key = link .. "\0" .. (details.stackCount or 0)
                         sKey[sum] = key
-                        sID[sum] = details.itemID
+                        slotId[sum] = details.itemID
                         itemList[#itemList + 1] = {
                             pos = sum,
-                            bag = bag,
+                            bag = bagId,
                             slot = slot,
                             info = details,
                             itemLink = link,
@@ -516,7 +516,7 @@ local function CreateHeader()
                 local s = whereIs[i]
                 if s ~= t then
                     local displaced = atPos[t]
-                    if displaced and sID[s] and sID[t] and sID[s] == sID[t] then
+                    if displaced and slotId[s] and slotId[t] and slotId[s] == slotId[t] then
                         -- Same itemID: skip to avoid merge, retry will resolve
                     else
                         moves[#moves + 1] = { sBag[s], sSlot[s], sBag[t], sSlot[t] }
@@ -526,7 +526,7 @@ local function CreateHeader()
                         end
                         atPos[t] = i
                         atPos[s] = displaced
-                        sID[s], sID[t] = sID[t], sID[s]
+                        slotId[s], slotId[t] = slotId[t], slotId[s]
                         sKey[s], sKey[t] = sKey[t], sKey[s]
                     end
                 end
@@ -562,36 +562,36 @@ local function CreateHeader()
             end)
         end
 
-        local function RunRetryLoop(bagMin, bagMax, onDone)
-            local moved = ComputeAndExecute(bagMin, bagMax)
+        local function RunRetryLoop(firstBag, lastBag, onDone)
+            local moved = ComputeAndExecute(firstBag, lastBag)
             if not moved then
                 onDone()
                 return
             end
 
             local retryCount = 0
-            if not retryFrame then
-                retryFrame = CreateFrame("Frame")
+            if not retrier then
+                retrier = CreateFrame("Frame")
             end
-            local runToken = {}
-            retryFrame._runToken = runToken
-            retryFrame:RegisterEvent("BAG_UPDATE")
-            ArmBackstop(retryFrame, runToken)
-            retryFrame:SetScript("OnEvent", function(self)
-                if self._runToken ~= runToken then
+            local runId = {}
+            retrier._runToken = runId
+            retrier:RegisterEvent("BAG_UPDATE")
+            ArmBackstop(retrier, runId)
+            retrier:SetScript("OnEvent", function(self)
+                if self._runToken ~= runId then
                     return
                 end
                 self._wait = nil
                 self:UnregisterAllEvents()
                 retryCount = retryCount + 1
                 C_Timer.After(0.15, function()
-                    if retryFrame._runToken ~= runToken then
+                    if retrier._runToken ~= runId then
                         return
                     end
-                    local moved = ComputeAndExecute(bagMin, bagMax)
+                    local moved = ComputeAndExecute(firstBag, lastBag)
                     if moved and retryCount < 15 then
                         self:RegisterEvent("BAG_UPDATE")
-                        ArmBackstop(self, runToken)
+                        ArmBackstop(self, runId)
                     else
                         self:SetScript("OnEvent", nil)
                         onDone()
@@ -623,8 +623,8 @@ local function CreateHeader()
                 end
                 return
             end
-            StopWaiting(consolidateFrame)
-            StopWaiting(retryFrame)
+            StopWaiting(consolidator)
+            StopWaiting(retrier)
             FinishSort(true)
         end)
         sortCombatStop:RegisterEvent("PLAYER_REGEN_DISABLED")
@@ -641,14 +641,14 @@ local function CreateHeader()
         -- Sort items per category and save the order
         local cats = CUI_CategoryManager:GetCategories()
         local tempItems = {}
-        for bag = 0, 5 do
-            local numSlots = C_Container.GetContainerNumSlots(bag)
+        for bagId = 0, 5 do
+            local numSlots = C_Container.GetContainerNumSlots(bagId)
             for slot = 1, numSlots do
-                local details = C_Container.GetContainerItemInfo(bag, slot)
+                local details = C_Container.GetContainerItemInfo(bagId, slot)
                 if details then
-                    local itemLink = C_Container.GetContainerItemLink(bag, slot)
+                    local itemLink = C_Container.GetContainerItemLink(bagId, slot)
                     tempItems[#tempItems + 1] =
-                        { bag = bag, slot = slot, info = details, itemLink = itemLink }
+                        { bag = bagId, slot = slot, info = details, itemLink = itemLink }
                 end
             end
         end
@@ -727,7 +727,7 @@ local function CreateHeader()
         C_Timer.After(3, UnlockSort)
     end
 
-    sort:SetScript("OnClick", function()
+    sortBtn:SetScript("OnClick", function()
         if sortLocked or (InCombatLockdown() and SortMovesItems()) then
             return
         end
@@ -786,27 +786,27 @@ local function CreateHeader()
         end
     end)
     CUI_Bags._doVisualSort = DoVisualSort
-    CUI_Bags._sortBtn = sort
+    CUI_Bags._sortBtn = sortBtn
     ApplySortEnabled() -- a /reload mid-combat builds the button locked
 
-    local bagsBtn = CreateFrame("Button", nil, header)
-    bagsBtn:SetSize(24, 24)
-    bagsBtn.icon = bagsBtn:CreateTexture(nil, "ARTWORK")
-    bagsBtn.icon:SetAllPoints()
-    bagsBtn.icon:SetAtlas("bag-main")
-    bagsBtn.icon:SetAlpha(0.9)
+    local bagsButton = CreateFrame("Button", nil, headerBar)
+    bagsButton:SetSize(24, 24)
+    bagsButton.icon = bagsButton:CreateTexture(nil, "ARTWORK")
+    bagsButton.icon:SetAllPoints()
+    bagsButton.icon:SetAtlas("bag-main")
+    bagsButton.icon:SetAlpha(0.9)
 
-    bagsBtn:SetScript("OnEnter", function(self)
+    bagsButton:SetScript("OnEnter", function(self)
         self.icon:SetAlpha(1)
         if not CUI_BagsWindow:IsVisible() and CUI.ShowWidgetTooltip then
             CUI.ShowWidgetTooltip(self, "Show Bags")
         end
     end)
-    bagsBtn:SetScript("OnLeave", function(self)
+    bagsButton:SetScript("OnLeave", function(self)
         self.icon:SetAlpha(0.9)
         CUI.HideWidgetTooltip()
     end)
-    bagsBtn:SetScript("OnClick", function()
+    bagsButton:SetScript("OnClick", function()
         if CUI_BagsWindow:IsVisible() then
             CUI_BagsWindow:Hide()
         else
@@ -815,28 +815,28 @@ local function CreateHeader()
             CUI_BagsWindow:RefreshBags()
         end
     end)
-    CUI_Bags._bagsBtn = bagsBtn
+    CUI_Bags._bagsBtn = bagsButton
     CUI_Bags:SyncHeaderIcons() -- places Sort / Show Bags / the coin (built only while on)
 
-    local clear = CreateFrame("Button", nil, search)
-    clear:SetSize(22, 22)
-    clear:SetPoint("RIGHT", search, "RIGHT", 0, 0)
-    clear.tex = clear:CreateFontString(nil, "OVERLAY")
-    SetBagFont(clear.tex, 14)
-    clear.tex:SetText("x")
-    clear.tex:SetPoint("CENTER", 0, 1)
-    clear.tex:SetTextColor(0.8, 0.8, 0.8)
+    local clearBtn = CreateFrame("Button", nil, searchBox)
+    clearBtn:SetSize(22, 22)
+    clearBtn:SetPoint("RIGHT", searchBox, "RIGHT", 0, 0)
+    clearBtn.tex = clearBtn:CreateFontString(nil, "OVERLAY")
+    SetBagFont(clearBtn.tex, 14)
+    clearBtn.tex:SetText("x")
+    clearBtn.tex:SetPoint("CENTER", 0, 1)
+    clearBtn.tex:SetTextColor(0.8, 0.8, 0.8)
     if forever then
-        mod.SkinForeverBagSearch(search, search.bg, placeholder, clear)
+        mod.SkinForeverBagSearch(searchBox, searchBox.bg, placeholder, clearBtn)
     end
-    clear:Hide()
-    clear:SetScript("OnClick", function()
-        search:SetText("")
-        search:ClearFocus()
+    clearBtn:Hide()
+    clearBtn:SetScript("OnClick", function()
+        searchBox:SetText("")
+        searchBox:ClearFocus()
         CUI_Bags.ClearSearch()
     end)
 
-    search:SetScript("OnEscapePressed", function(self)
+    searchBox:SetScript("OnEscapePressed", function(self)
         self:SetText("")
         self:ClearFocus()
         CUI_Bags.ClearSearch()
@@ -844,31 +844,31 @@ local function CreateHeader()
     -- SetItemSearch is client-global and the bank reads isFiltered too: the
     -- bags, the reagent bag and an open bank all repaint when the game reports
     -- the search (CUI_Bags.SetSearchText), so both windows show the same filter.
-    local searchChanged = CUI_Bags.WatchSearchBox(search, CUI_Bags.SetSearchText)
-    search:SetScript("OnTextChanged", function(self, userInput)
+    local searchChanged = CUI_Bags.WatchSearchBox(searchBox, CUI_Bags.SetSearchText)
+    searchBox:SetScript("OnTextChanged", function(self, userInput)
         local textValue = self:GetText()
         placeholder:SetShown(textValue == "")
-        clear:SetShown(textValue ~= "")
+        clearBtn:SetShown(textValue ~= "")
         searchChanged(userInput)
     end)
 
-    local close = CreateFrame("Button", nil, header)
-    close:SetSize(12, 12)
-    close:SetPoint("RIGHT", -9, 0)
-    close.icon = close:CreateTexture(nil, "OVERLAY")
-    close.icon:SetAllPoints()
-    close.icon:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
-    close.icon:SetAlpha(0.7)
-    close:SetScript("OnEnter", function()
-        close.icon:SetAlpha(0.9)
+    local closeBtn = CreateFrame("Button", nil, headerBar)
+    closeBtn:SetSize(12, 12)
+    closeBtn:SetPoint("RIGHT", -9, 0)
+    closeBtn.icon = closeBtn:CreateTexture(nil, "OVERLAY")
+    closeBtn.icon:SetAllPoints()
+    closeBtn.icon:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\cui-close.png")
+    closeBtn.icon:SetAlpha(0.7)
+    closeBtn:SetScript("OnEnter", function()
+        closeBtn.icon:SetAlpha(0.9)
     end)
-    close:SetScript("OnLeave", function()
-        close.icon:SetAlpha(0.7)
+    closeBtn:SetScript("OnLeave", function()
+        closeBtn.icon:SetAlpha(0.7)
     end)
     if forever then
-        mod.PositionForeverBagClose(close)
+        mod.PositionForeverBagClose(closeBtn)
     end
-    close:SetScript("OnClick", function()
+    closeBtn:SetScript("OnClick", function()
         CUI_Bags:Hide()
         CUI_BagsReagent:Hide()
         if not CludesUIDB then
@@ -880,26 +880,26 @@ local function CreateHeader()
             mod.PadReleaseBlizzBags()
         end
     end)
-    CUI_Bags._closeBtn = close -- Junk Marker mode lets a click on it through
+    CUI_Bags._closeBtn = closeBtn -- Junk Marker mode lets a click on it through
     -- Controller cursor: Cancel finds each window's close control.
     if CUI.PadCP() then
-        CUI_Bags.CloseButton = close
-        CUI_BagsWindow.CloseButton = bagsBtn
+        CUI_Bags.CloseButton = closeBtn
+        CUI_BagsWindow.CloseButton = bagsButton
     end
 
     -- Bottom-edge separator (1px physical pixel)
     if not forever then
         local Pix = CUI and CUI.PP
         local px = (Pix and Pix.mult) or 1
-        local hdrSep = header:CreateTexture(nil, "ARTWORK")
+        local hdrSep = headerBar:CreateTexture(nil, "ARTWORK")
         hdrSep:SetHeight(px)
-        hdrSep:SetPoint("BOTTOMLEFT", header, "BOTTOMLEFT", 0, 0)
-        hdrSep:SetPoint("BOTTOMRIGHT", header, "BOTTOMRIGHT", 0, 0)
+        hdrSep:SetPoint("BOTTOMLEFT", headerBar, "BOTTOMLEFT", 0, 0)
+        hdrSep:SetPoint("BOTTOMRIGHT", headerBar, "BOTTOMRIGHT", 0, 0)
         hdrSep:SetColorTexture(0.15, 0.15, 0.15, 1)
     end
 
-    CUI_Bags.Header = header
-    CUI_Bags._bagsBtn = bagsBtn
+    CUI_Bags.Header = headerBar
+    CUI_Bags._bagsBtn = bagsButton
 end
 
 Inner.CreateHeader = CreateHeader

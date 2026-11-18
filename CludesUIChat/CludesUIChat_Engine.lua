@@ -157,21 +157,21 @@ local function LayoutWindowSMF(castFrame)
     if not (window and window.smf and skinData.bg) then
         return
     end
-    local ins = skinData._bgIns
+    local inset = skinData._bgIns
     local il, ir, it, ib
-    if ins then
-        il, ir, it, ib = ins.l, ins.r, ins.t, ins.b
+    if inset then
+        il, ir, it, ib = inset.l, inset.r, inset.t, inset.b
     else
         il, ir, it, ib = -10, 10, 3, -6
     end
-    local smf = window.smf
-    smf:ClearAllPoints()
+    local messageFrame = window.smf
+    messageFrame:ClearAllPoints()
     -- _smfTopExtra: input-on-top overlays the top strip of the text area;
     -- our view hands that strip back. Line alignment with Blizzard's
     -- invisible text holds -- both render bottom-up from the same bottom
     -- edge, and the input covers the hidden lines' hit-zones.
-    smf:SetPoint("TOPLEFT", skinData.bg, "TOPLEFT", -il, -(it + 6 + (skinData._smfTopExtra or 0)))
-    smf:SetPoint("BOTTOMRIGHT", skinData.bg, "BOTTOMRIGHT", -ir, -ib)
+    messageFrame:SetPoint("TOPLEFT", skinData.bg, "TOPLEFT", -il, -(it + 6 + (skinData._smfTopExtra or 0)))
+    messageFrame:SetPoint("BOTTOMRIGHT", skinData.bg, "BOTTOMRIGHT", -ir, -ib)
 end
 CHAT.EngineLayoutWindows = function()
     for castFrame in pairs(WINS) do
@@ -213,15 +213,15 @@ end
 -- Track/thumb are our frames; drag runs a temporary OnUpdate on the track
 -- that self-removes on release (no recurring work otherwise).
 local function UpdateScrollbar(window)
-    local smf, track, thumb = window.smf, window.track, window.thumb
-    if not (smf and track and thumb) then
+    local messageFrame, rail, knob = window.smf, window.track, window.thumb
+    if not (messageFrame and rail and knob) then
         return
     end
-    local range = smf:GetMaxScrollRange()
-    local off = smf:GetScrollOffset()
+    local range = messageFrame:GetMaxScrollRange()
+    local off = messageFrame:GetScrollOffset()
     local show = (off > 0 or window.dragging) and range > 0
-    if track:IsShown() ~= show then
-        track:SetShown(show)
+    if rail:IsShown() ~= show then
+        rail:SetShown(show)
         -- Stock sidebar: the scroll button flashes while scrolled back.
         local fontStr = CHAT.SB_FlashSync
         if fontStr then
@@ -231,19 +231,19 @@ local function UpdateScrollbar(window)
     if not show then
         return
     end
-    local trackH = track:GetHeight()
-    if not trackH or trackH <= 0 then
+    local railHeight = rail:GetHeight()
+    if not railHeight or railHeight <= 0 then
         return
     end
-    local visible = smf:GetNumVisibleLines()
+    local visible = messageFrame:GetNumVisibleLines()
     local sum = range + visible
     local frac = sum > 0 and (visible / sum) or 1
-    local thumbH = max(16, trackH * frac)
-    thumb:SetHeight(thumbH)
+    local thumbH = max(16, railHeight * frac)
+    knob:SetHeight(thumbH)
     local pct = range > 0 and (off / range) or 0
-    thumb:ClearAllPoints()
+    knob:ClearAllPoints()
     -- offset 0 = bottom of history, so the thumb rides up as offset grows.
-    thumb:SetPoint("BOTTOM", track, "BOTTOM", 0, pct * (trackH - thumbH))
+    knob:SetPoint("BOTTOM", rail, "BOTTOM", 0, pct * (railHeight - thumbH))
 end
 
 -- Keep Blizzard's (invisible) view at the same offset so its hyperlink
@@ -259,44 +259,44 @@ local function SyncBlizzardScroll(window)
 end
 
 local function ScrollFromCursor(window)
-    local track, smf = window.track, window.smf
-    local trackH = track:GetHeight()
+    local rail, messageFrame = window.track, window.smf
+    local railHeight = rail:GetHeight()
     local thumbH = window.thumb:GetHeight() or 16
-    local travel = trackH - thumbH
+    local travel = railHeight - thumbH
     if travel <= 0 then
         return
     end
-    local bottom = track:GetBottom()
+    local bottom = rail:GetBottom()
     if not bottom then
         return
     end
-    local scale = track:GetEffectiveScale()
-    local _, cy = GetCursorPosition()
-    local localY = (cy / scale) - bottom - (window.dragOffset or thumbH / 2)
+    local scale = rail:GetEffectiveScale()
+    local _, midY = GetCursorPosition()
+    local localY = (midY / scale) - bottom - (window.dragOffset or thumbH / 2)
     local pct = max(0, min(1, localY / travel))
-    local range = smf:GetMaxScrollRange()
-    smf:SetScrollOffset(math.floor(pct * range + 0.5))
+    local range = messageFrame:GetMaxScrollRange()
+    messageFrame:SetScrollOffset(math.floor(pct * range + 0.5))
     SyncBlizzardScroll(window)
 end
 
 local function BuildScrollbar(window)
-    local track = CreateFrame("Button", nil, window.smf:GetParent())
-    track:SetWidth(8)
-    track:SetPoint("TOPRIGHT", window.smf, "TOPRIGHT", 7, 0)
-    track:SetPoint("BOTTOMRIGHT", window.smf, "BOTTOMRIGHT", 7, 0)
-    track:SetFrameLevel(window.smf:GetFrameLevel() + 2)
-    track:Hide()
-    local thumb = track:CreateTexture(nil, "ARTWORK")
+    local rail = CreateFrame("Button", nil, window.smf:GetParent())
+    rail:SetWidth(8)
+    rail:SetPoint("TOPRIGHT", window.smf, "TOPRIGHT", 7, 0)
+    rail:SetPoint("BOTTOMRIGHT", window.smf, "BOTTOMRIGHT", 7, 0)
+    rail:SetFrameLevel(window.smf:GetFrameLevel() + 2)
+    rail:Hide()
+    local knob = rail:CreateTexture(nil, "ARTWORK")
     -- WoW Forever: a bronze thumb to match the kit's frame.
     local fc = mod.ChatForever() and CHAT.FV.thumb
     if fc then
-        thumb:SetColorTexture(fc[1], fc[2], fc[3], fc[4])
+        knob:SetColorTexture(fc[1], fc[2], fc[3], fc[4])
     else
-        thumb:SetColorTexture(1, 1, 1, 0.27)
+        knob:SetColorTexture(1, 1, 1, 0.27)
     end
-    thumb:SetWidth(4)
-    thumb:SetPoint("BOTTOM", track, "BOTTOM", 0, 0)
-    window.track, window.thumb = track, thumb
+    knob:SetWidth(4)
+    knob:SetPoint("BOTTOM", rail, "BOTTOM", 0, 0)
+    window.track, window.thumb = rail, knob
 
     local function DragTick(self)
         if not IsMouseButtonDown("LeftButton") then
@@ -307,24 +307,24 @@ local function BuildScrollbar(window)
         end
         ScrollFromCursor(window)
     end
-    track:SetScript("OnMouseDown", function(self, btnFrame)
+    rail:SetScript("OnMouseDown", function(self, btnFrame)
         if btnFrame ~= "LeftButton" then
             return
         end
-        local thumbTop, thumbBottom = thumb:GetTop(), thumb:GetBottom()
+        local thumbTop, thumbBottom = knob:GetTop(), knob:GetBottom()
         local scale = self:GetEffectiveScale()
-        local _, cy = GetCursorPosition()
-        cy = cy / scale
-        if thumbTop and thumbBottom and cy <= thumbTop and cy >= thumbBottom then
-            window.dragOffset = cy - thumbBottom
+        local _, midY = GetCursorPosition()
+        midY = midY / scale
+        if thumbTop and thumbBottom and midY <= thumbTop and midY >= thumbBottom then
+            window.dragOffset = midY - thumbBottom
         else
-            window.dragOffset = (thumb:GetHeight() or 16) / 2
+            window.dragOffset = (knob:GetHeight() or 16) / 2
         end
         window.dragging = true
         ScrollFromCursor(window)
         self:SetScript("OnUpdate", DragTick)
     end)
-    track:SetScript("OnMouseUp", function(self)
+    rail:SetScript("OnMouseUp", function(self)
         window.dragging = nil
         self:SetScript("OnUpdate", nil)
         UpdateScrollbar(window)
@@ -359,14 +359,14 @@ local function CreateWindowSMF(castFrame)
     if not skinData.bg then
         return nil
     end
-    local smf = CreateFrame("ScrollingMessageFrame", nil, skinData.bg)
-    smf:SetMaxLines(128)
-    smf:SetFading(false)
-    smf:SetIndentedWordWrap(true)
-    smf:SetJustifyH("LEFT")
+    local messageFrame = CreateFrame("ScrollingMessageFrame", nil, skinData.bg)
+    messageFrame:SetMaxLines(128)
+    messageFrame:SetFading(false)
+    messageFrame:SetIndentedWordWrap(true)
+    messageFrame:SetJustifyH("LEFT")
     -- A bare intrinsic starts with scrolling disallowed; without this the
     -- mixin's ScrollUp/ScrollDown are no-ops.
-    smf:SetScrollAllowed(true)
+    messageFrame:SetScrollAllowed(true)
     -- No mouse at all -- ever. A bare SMF intrinsic dispatches NO mouse
     -- scripts (not the wheel, not OnMouseDown, not the hyperlink scripts;
     -- field-measured across all of them -- the engine simply does not route
@@ -375,22 +375,22 @@ local function CreateWindowSMF(castFrame)
     -- its own zones (the buffer write-back keeps them under our rendered
     -- lines); the scroll-method mirrors installed with the bridge copy its
     -- offset into this view.
-    smf:EnableMouse(false)
-    smf:EnableMouseWheel(false)
+    messageFrame:EnableMouse(false)
+    messageFrame:EnableMouseWheel(false)
 
-    local window = { cf = castFrame, smf = smf }
+    local window = { cf = castFrame, smf = messageFrame }
 
     -- +4: renders above every Blizzard frame in the panel stack (cf at
     -- bg+1, its FontStringContainer at bg+2). Mouse-transparent, so the
     -- altitude never affects input routing.
-    smf:SetFrameLevel(skinData.bg:GetFrameLevel() + 4)
+    messageFrame:SetFrameLevel(skinData.bg:GetFrameLevel() + 4)
 
     WINS[castFrame] = window
     BuildScrollbar(window)
-    smf:SetOnScrollChangedCallback(function()
+    messageFrame:SetOnScrollChangedCallback(function()
         UpdateScrollbar(window)
     end)
-    smf:AddOnDisplayRefreshedCallback(function()
+    messageFrame:AddOnDisplayRefreshedCallback(function()
         UpdateScrollbar(window)
     end)
     LayoutWindowSMF(castFrame)
@@ -438,11 +438,11 @@ local CJK_CLIENT_ALPHABET = ({
     zhCN = "simplifiedchinese",
     zhTW = "traditionalchinese",
 })[GetLocale()]
-local function CJKHeight(alphabet, size)
-    if alphabet == CJK_CLIENT_ALPHABET then
-        return size
+local function CJKHeight(alphabetName, px)
+    if alphabetName == CJK_CLIENT_ALPHABET then
+        return px
     end
-    return size + 2
+    return px + 2
 end
 -- Line spacing, per alphabet. Blizzard's chat family (ChatFontNormal ->
 -- NumberFont_Shadow_Med) pads its korean member with spacing="3" and gives
@@ -451,20 +451,20 @@ end
 -- the koKR report that produced CJKHeight. CreateFontFamilyMemberInfo has no
 -- spacing field, so it goes on the member object after creation.
 local CJK_SPACING = { korean = 3 }
-function CHAT.EngineFontFamily(ident, font, size, flags)
-    flags = flags or ""
-    local fam = FAMS[ident]
-    if fam == false then
+function CHAT.EngineFontFamily(ident, fontFile, px, fontFlags)
+    fontFlags = fontFlags or ""
+    local family = FAMS[ident]
+    if family == false then
         return nil
     end -- failed once; never retry-loop
-    if not fam then
+    if not family then
         if not CreateFontFamily then
             FAMS[ident] = false
             return nil
         end
         local members = {
-            { alphabet = "roman", file = font, height = size, flags = flags },
-            { alphabet = "russian", file = font, height = size, flags = flags },
+            { alphabet = "roman", file = fontFile, height = px, flags = fontFlags },
+            { alphabet = "russian", file = fontFile, height = px, flags = fontFlags },
         }
         -- CJK renders +2px: ideographs at latin point sizes read visibly
         -- smaller (dense glyphs, no ascender/descender whitespace). Not on the
@@ -472,10 +472,10 @@ function CHAT.EngineFontFamily(ident, font, size, flags)
         -- Client's own CJK alphabet uses the chosen font, not the stock
         -- file, since most chat text renders through it. Other CJK
         -- alphabets keep the stock file as a tofu fallback.
-        for alphabet, file in pairs(CJK_FILES) do
-            local memberFile = (alphabet == CJK_CLIENT_ALPHABET) and font or file
+        for alphabetName, file in pairs(CJK_FILES) do
+            local memberFile = (alphabetName == CJK_CLIENT_ALPHABET) and fontFile or file
             members[#members + 1] =
-                { alphabet = alphabet, file = memberFile, height = CJKHeight(alphabet, size), flags = flags }
+                { alphabet = alphabetName, file = memberFile, height = CJKHeight(alphabetName, px), flags = fontFlags }
         end
         local success, created = pcall(CreateFontFamily, "CUIChatFontFamily" .. ident, members)
         if not success or not created then
@@ -483,22 +483,22 @@ function CHAT.EngineFontFamily(ident, font, size, flags)
             return nil
         end
         FAMS[ident] = created
-        fam = created
+        family = created
     end
     local success = pcall(function()
-        fam:GetFontObjectForAlphabet("roman"):SetFont(font, size, flags)
-        fam:GetFontObjectForAlphabet("russian"):SetFont(font, size, flags)
-        for alphabet, file in pairs(CJK_FILES) do
-            local memberFile = (alphabet == CJK_CLIENT_ALPHABET) and font or file
-            local member = fam:GetFontObjectForAlphabet(alphabet)
-            member:SetFont(memberFile, CJKHeight(alphabet, size), flags)
-            member:SetSpacing(CJK_SPACING[alphabet] or 0)
+        family:GetFontObjectForAlphabet("roman"):SetFont(fontFile, px, fontFlags)
+        family:GetFontObjectForAlphabet("russian"):SetFont(fontFile, px, fontFlags)
+        for alphabetName, file in pairs(CJK_FILES) do
+            local memberFile = (alphabetName == CJK_CLIENT_ALPHABET) and fontFile or file
+            local member = family:GetFontObjectForAlphabet(alphabetName)
+            member:SetFont(memberFile, CJKHeight(alphabetName, px), fontFlags)
+            member:SetSpacing(CJK_SPACING[alphabetName] or 0)
         end
     end)
     if not success then
         return nil
     end
-    return fam
+    return family
 end
 
 function CHAT.EngineApplyFontTo(castFrame)
@@ -506,15 +506,15 @@ function CHAT.EngineApplyFontTo(castFrame)
     if not window then
         return
     end
-    local font = CHAT.EngineFontProvider and CHAT.EngineFontProvider()
-    local size = CHAT.EngineFontSizeProvider and CHAT.EngineFontSizeProvider(castFrame:GetID())
-    local flags = CHAT.EngineOutlineProvider and CHAT.EngineOutlineProvider()
-    if font and size then
-        local fam = CHAT.EngineFontFamily(castFrame:GetID(), font, size, flags or "")
-        if fam then
-            window.smf:SetFontObject(fam)
+    local fontFile = CHAT.EngineFontProvider and CHAT.EngineFontProvider()
+    local px = CHAT.EngineFontSizeProvider and CHAT.EngineFontSizeProvider(castFrame:GetID())
+    local fontFlags = CHAT.EngineOutlineProvider and CHAT.EngineOutlineProvider()
+    if fontFile and px then
+        local family = CHAT.EngineFontFamily(castFrame:GetID(), fontFile, px, fontFlags or "")
+        if family then
+            window.smf:SetFontObject(family)
         else
-            window.smf:SetFont(font, size, flags or "")
+            window.smf:SetFont(fontFile, px, fontFlags or "")
         end
         window.smf:SetShadowOffset(1, -1)
         window.smf:SetShadowColor(0, 0, 0, 0.8)
@@ -815,7 +815,7 @@ local function ColorRosterNames(textValue)
     end
     local lower = textValue:lower()
     local nProt = CollectProtected(textValue)
-    local nHits = 0
+    local hitCount = 0
     for nameLow, colorStr in pairs(ROSTER_LOW) do
         local nameLen = #nameLow
         local from = 1
@@ -835,19 +835,19 @@ local function ColorRosterNames(textValue)
                     end
                 end
                 if not blocked then
-                    nHits = nHits + 1
-                    _hitS[nHits] = s
-                    _hitE[nHits] = e
-                    _hitC[nHits] = colorStr
+                    hitCount = hitCount + 1
+                    _hitS[hitCount] = s
+                    _hitE[hitCount] = e
+                    _hitC[hitCount] = colorStr
                 end
             end
         end
     end
-    if nHits == 0 then
+    if hitCount == 0 then
         return textValue
     end
     -- Insertion sort by start position (hit counts are tiny).
-    for i = 2, nHits do
+    for i = 2, hitCount do
         local s, e, c = _hitS[i], _hitE[i], _hitC[i]
         local jdx = i - 1
         while jdx >= 1 and _hitS[jdx] > s do
@@ -856,25 +856,25 @@ local function ColorRosterNames(textValue)
         end
         _hitS[jdx + 1], _hitE[jdx + 1], _hitC[jdx + 1] = s, e, c
     end
-    local pieces, np, place = {}, 0, 1
-    for i = 1, nHits do
+    local pieces, nextPos, place = {}, 0, 1
+    for i = 1, hitCount do
         local s, e = _hitS[i], _hitE[i]
         if s >= place then
-            np = np + 1
-            pieces[np] = textValue:sub(place, s - 1)
-            np = np + 1
-            pieces[np] = "|c"
-            np = np + 1
-            pieces[np] = _hitC[i]
-            np = np + 1
-            pieces[np] = textValue:sub(s, e)
-            np = np + 1
-            pieces[np] = "|r"
+            nextPos = nextPos + 1
+            pieces[nextPos] = textValue:sub(place, s - 1)
+            nextPos = nextPos + 1
+            pieces[nextPos] = "|c"
+            nextPos = nextPos + 1
+            pieces[nextPos] = _hitC[i]
+            nextPos = nextPos + 1
+            pieces[nextPos] = textValue:sub(s, e)
+            nextPos = nextPos + 1
+            pieces[nextPos] = "|r"
             place = e + 1
         end
     end
-    np = np + 1
-    pieces[np] = textValue:sub(place)
+    nextPos = nextPos + 1
+    pieces[nextPos] = textValue:sub(place)
     return table.concat(pieces)
 end
 
@@ -1153,8 +1153,8 @@ local function RebuildWindowFromBuffer(castFrame)
     if not window then
         return
     end
-    local smf = window.smf
-    smf:Clear()
+    local messageFrame = window.smf
+    messageFrame:Clear()
     local num = castFrame:GetNumMessages()
     -- Stamp-all rebuilds stamp with each line's true arrival time: the SMF
     -- entry timestamp is GetTime()-domain (PackageEntry), converted here to
@@ -1195,10 +1195,10 @@ local function RebuildWindowFromBuffer(castFrame)
             then
                 record.message = display
             end
-            smf:AddMessage(display, region, g, b, chatTypeID, ExtractLineID(eventArgs), evt)
+            messageFrame:AddMessage(display, region, g, b, chatTypeID, ExtractLineID(eventArgs), evt)
         end
     end
-    smf:ScrollToBottom()
+    messageFrame:ScrollToBottom()
     SyncBlizzardScroll(window)
 end
 CHAT.EngineRebuildWindow = RebuildWindowFromBuffer
@@ -1446,10 +1446,10 @@ function CHAT.EngineGetMessageLines(castFrame, result)
     if not window then
         return 0
     end
-    local smf = window.smf
-    local num = smf:GetNumMessages()
+    local messageFrame = window.smf
+    local num = messageFrame:GetNumMessages()
     for i = 1, num do
-        result[#result + 1] = smf:GetMessageInfo(i)
+        result[#result + 1] = messageFrame:GetMessageInfo(i)
     end
     return num
 end

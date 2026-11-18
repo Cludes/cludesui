@@ -271,14 +271,14 @@ local function ShowIcon(iconIdx, m)
     activeIcons[#activeIcons + 1] = button
 end
 
-local function CollectRaidBuffs(missing, playerClass, inInstance, inCombat)
+local function CollectRaidBuffs(missing, classFile, instanceNow, combatNow)
     local rb = saved.profile.raidBuffs
     do
-        if not REMIND.SectionShows(rb.whereToShow, inInstance) then
+        if not REMIND.SectionShows(rb.whereToShow, instanceNow) then
             return
         end
         local _, iType = IsInInstance()
-        local inPvP = (iType == "pvp" or iType == "arena")
+        local pvpNow = (iType == "pvp" or iType == "arena")
         local sw = rb.showWhen or {}
         local othersMissing = sw.othersMissing ~= false
         local iAmMissing = sw.iAmMissing == true
@@ -289,70 +289,70 @@ local function CollectRaidBuffs(missing, playerClass, inInstance, inCombat)
         if iAmMissing and (IsInGroup() or IsInRaid()) then
             groupClasses = REMIND.BuildGroupClassSet()
         end
-        for _, buff in ipairs(RAID_BUFFS) do
-            if rb.enabled[buff.key] and not (buff.noPvP and inPvP) then
-                local iCast = (buff.class == playerClass) and Known(buff.castSpell)
+        for _, buffRec in ipairs(RAID_BUFFS) do
+            if rb.enabled[buffRec.key] and not (buffRec.noPvP and pvpNow) then
+                local iCast = (buffRec.class == classFile) and Known(buffRec.castSpell)
                 -- Provider view when I can cast it; receiver view when I can't
                 -- but a groupmate of the right class can (and my class benefits).
                 local doReceiver = not iCast
                     and iAmMissing
-                    and buff.check == "raid"
+                    and buffRec.check == "raid"
                     and groupClasses
-                    and groupClasses[buff.class]
-                    and REMIND.PlayerBenefitsFromBuff(buff)
+                    and groupClasses[buffRec.class]
+                    and REMIND.PlayerBenefitsFromBuff(buffRec)
                 if iCast or doReceiver then
                     -- In combat, skip buffs whose IDs are not all whitelisted
-                    local canCheck = true
-                    if inCombat then
-                        if buff.check == "huntersMark" then
-                            canCheck = true -- uses state flag, no aura reading needed
+                    local checkable = true
+                    if combatNow then
+                        if buffRec.check == "huntersMark" then
+                            checkable = true -- uses state flag, no aura reading needed
                         else
-                            for _, ident in ipairs(buff.buffIDs) do
+                            for _, ident in ipairs(buffRec.buffIDs) do
                                 if not NON_SECRET_SPELL_IDS[ident] then
-                                    canCheck = false
+                                    checkable = false
                                     break
                                 end
                             end
                         end
                     end
-                    if canCheck then
+                    if checkable then
                         local isMissing = false
-                        local groupHave, groupTotal
+                        local groupHave, groupSize
                         if iCast then
-                            if buff.check == "huntersMark" then
-                                isMissing = inCombat and _huntersMarkNeeded
-                            elseif othersMissing and buff.check == "raid" and (IsInGroup() or IsInRaid()) then
-                                groupHave, groupTotal = CountGroupBuffCoverage(buff.buffIDs, buff.benefit)
-                                isMissing = groupTotal > 0 and groupHave < groupTotal
+                            if buffRec.check == "huntersMark" then
+                                isMissing = combatNow and _huntersMarkNeeded
+                            elseif othersMissing and buffRec.check == "raid" and (IsInGroup() or IsInRaid()) then
+                                groupHave, groupSize = CountGroupBuffCoverage(buffRec.buffIDs, buffRec.benefit)
+                                isMissing = groupSize > 0 and groupHave < groupSize
                             else
-                                isMissing = not PlayerHasAuraByID(buff.buffIDs, "raidbuff")
+                                isMissing = not PlayerHasAuraByID(buffRec.buffIDs, "raidbuff")
                             end
                         else
                             -- Receiver view: only whether the player personally lacks it.
-                            isMissing = not PlayerHasAuraByID(buff.buffIDs, "raidbuff")
+                            isMissing = not PlayerHasAuraByID(buffRec.buffIDs, "raidbuff")
                         end
                         if isMissing then
                             local e = AcquireEntry()
-                            local sname = _G._CUABR_SpellName(buff.castSpell, buff.name)
-                            e.spellID = buff.castSpell
+                            local sname = _G._CUABR_SpellName(buffRec.castSpell, buffRec.name)
+                            e.spellID = buffRec.castSpell
                             e.label = ShortLabel(sname)
-                            if buff.check == "huntersMark" then
+                            if buffRec.check == "huntersMark" then
                                 e.unit = "target"
                             end
                             e.cat = "raidbuff"
-                            e.data = buff
-                            e.dismissKey = buff.key and ("raidbuff:" .. buff.key) or nil
-                            if groupTotal then
+                            e.data = buffRec
+                            e.dismissKey = buffRec.key and ("raidbuff:" .. buffRec.key) or nil
+                            if groupSize then
                                 e.groupHave = groupHave
-                                e.groupTotal = groupTotal
+                                e.groupTotal = groupSize
                             end
                             if doReceiver then
                                 -- Receiver reminders: texture mode, no cast; a
                                 -- left-click may ask the group for the buff.
                                 e.mode = "texture"
-                                e.texture = Tex(buff.castSpell)
+                                e.texture = Tex(buffRec.castSpell)
                                 if rb.requestOnClick then
-                                    e.requestKey = buff.key
+                                    e.requestKey = buffRec.key
                                     e.requestName = sname
                                 end
                             else
@@ -367,85 +367,85 @@ local function CollectRaidBuffs(missing, playerClass, inInstance, inCombat)
     end
 end
 
-local function CollectAuras(missing, playerClass, specID, inInstance, inCombat)
+local function CollectAuras(missing, classFile, specID, instanceNow, combatNow)
     local au = saved.profile.auras
     do
-        local auraSectionShows = REMIND.SectionShows(au.whereToShow, inInstance)
-        for _, aura in ipairs(AURAS) do
-            if aura.standalone then
+        local auraSectionShows = REMIND.SectionShows(au.whereToShow, instanceNow)
+        for _, auraInfo in ipairs(AURAS) do
+            if auraInfo.standalone then
             -- Handled by standalone system, skip
             elseif
-                au.enabled[aura.key]
-                and (aura.class == playerClass)
-                and (not aura.combatOnly or InCombat())
-                and ((aura.key == "soulstone" and REMIND.SectionShows(
+                au.enabled[auraInfo.key]
+                and (auraInfo.class == classFile)
+                and (not auraInfo.combatOnly or InCombat())
+                and ((auraInfo.key == "soulstone" and REMIND.SectionShows(
                     saved.profile.consumables.warlockWhereToShow,
-                    inInstance
-                )) or (aura.key ~= "soulstone" and auraSectionShows))
-                and ((aura.isStance and GetStanceState(aura.castSpell)) or (not aura.isStance and Known(
-                    aura.castSpell
+                    instanceNow
+                )) or (auraInfo.key ~= "soulstone" and auraSectionShows))
+                and ((auraInfo.isStance and GetStanceState(auraInfo.castSpell)) or (not auraInfo.isStance and Known(
+                    auraInfo.castSpell
                 )))
-                and not (aura.notIfKnown and Known(aura.notIfKnown))
-                and not (aura.requireTalent and not Known(aura.requireTalent))
-                and not (aura.noPvP and InPvPInstance())
+                and not (auraInfo.notIfKnown and Known(auraInfo.notIfKnown))
+                and not (auraInfo.requireTalent and not Known(auraInfo.requireTalent))
+                and not (auraInfo.noPvP and InPvPInstance())
             then
-                local specOk = true
-                if aura.specs then
-                    specOk = false
-                    for _, s in ipairs(aura.specs) do
+                local specMatches = true
+                if auraInfo.specs then
+                    specMatches = false
+                    for _, s in ipairs(auraInfo.specs) do
                         if s == specID then
-                            specOk = true
+                            specMatches = true
                             break
                         end
                     end
                 end
-                if specOk then
+                if specMatches then
                     -- Skip auras that require instance + group when not in both
-                    if aura.requireInstanceGroup and (not inInstance or not (IsInGroup() or IsInRaid())) then
-                        specOk = false
+                    if auraInfo.requireInstanceGroup and (not instanceNow or not (IsInGroup() or IsInRaid())) then
+                        specMatches = false
                     end
                     -- Skip auras that require a group when solo
-                    if aura.requireGroup and not (IsInGroup() or IsInRaid()) then
-                        specOk = false
+                    if auraInfo.requireGroup and not (IsInGroup() or IsInRaid()) then
+                        specMatches = false
                     end
                 end
-                if specOk then
+                if specMatches then
                     -- Restricted contexts (combat / M+): only track reminders
                     -- whose detection survives the aura lock -- stances/forms
                     -- (the shapeshift API is unrestricted) or auras whose buff
                     -- IDs are all whitelisted. combatOk entries keep their own
                     -- snapshot machinery. Everything else is skipped to avoid
                     -- false flashes.
-                    local canCheck = true
-                    if inCombat then
-                        if aura.isStance or aura.formSpellIDs then
-                            canCheck = true
-                        elseif aura.combatOk == false then
-                            canCheck = false
-                        elseif aura.buffIDs and aura.buffIDs[1] then
-                            for _, ident in ipairs(aura.buffIDs) do
+                    local checkable = true
+                    if combatNow then
+                        if auraInfo.isStance or auraInfo.formSpellIDs then
+                            checkable = true
+                        elseif auraInfo.combatOk == false then
+                            checkable = false
+                        elseif auraInfo.buffIDs and auraInfo.buffIDs[1] then
+                            for _, ident in ipairs(auraInfo.buffIDs) do
                                 if not NON_SECRET_SPELL_IDS[ident] then
-                                    canCheck = false
+                                    checkable = false
                                     break
                                 end
                             end
                         else
-                            canCheck = false
+                            checkable = false
                         end
                     end
-                    if canCheck then
+                    if checkable then
                         local isMissing = false
-                        if aura.check == "mineOnRaid" then
-                            if inCombat then
+                        if auraInfo.check == "mineOnRaid" then
+                            if combatNow then
                                 isMissing = false
                             else
-                                isMissing = not BuffExistsOnAnyGroupMember(aura.buffIDs)
+                                isMissing = not BuffExistsOnAnyGroupMember(auraInfo.buffIDs)
                                 if not (IsInGroup() or IsInRaid()) then
                                     isMissing = false
                                 end
                             end
-                        elseif aura.check == "ownOnRaid" then
-                            if aura.key == "som" then
+                        elseif auraInfo.check == "ownOnRaid" then
+                            if auraInfo.key == "som" then
                                 -- This cache is seeded OOC and a successful player cast
                                 -- can set it in combat; nil means unknown/suppress. A
                                 -- miss only reminds while someone is in reach to take it.
@@ -454,56 +454,56 @@ local function CollectAuras(missing, playerClass, specID, inInstance, inCombat)
                                     or REMIND.OwnOtherAuraNeedsRebuff(369459, "aura")
                                 )
                                     and REMIND.AnyReachableGroupMember()
-                            elseif inCombat then
-                                local cached = _preCombatOwnOnRaidCache[aura.buffIDs[1]]
+                            elseif combatNow then
+                                local cached = _preCombatOwnOnRaidCache[auraInfo.buffIDs[1]]
                                 isMissing = (cached == false)
                             else
-                                isMissing = not PlayerOwnBuffOnAnyGroupMember(aura.buffIDs)
+                                isMissing = not PlayerOwnBuffOnAnyGroupMember(auraInfo.buffIDs)
                             end
                             if not (IsInGroup() or IsInRaid()) then
                                 isMissing = false
                             end
-                        elseif aura.check == "ownGroupOrSelf" then
-                            local hasOwnBuff = REMIND.PlayerOwnBuffOnGroupOrSelf(aura.buffIDs)
+                        elseif auraInfo.check == "ownGroupOrSelf" then
+                            local hasOwnBuff = REMIND.PlayerOwnBuffOnGroupOrSelf(auraInfo.buffIDs)
                             isMissing = hasOwnBuff == false
-                            if isMissing and aura.key == "soulstone" then
+                            if isMissing and auraInfo.key == "soulstone" then
                                 -- On cooldown = nothing to cast, so no reminder. isActive is
                                 -- NeverSecret; duration can be secret in restricted content,
                                 -- where the reminder stays hidden until the next refresh edge.
                                 -- No event watches the cooldown: a one-shot timer covers the
                                 -- idle expiry, and the fight-end refresh (ENCOUNTER_END /
                                 -- REGEN_ENABLED) already covers a boss-reset clear.
-                                local cooldown = C_Spell.GetSpellCooldown(aura.castSpell)
+                                local cdInfo = C_Spell.GetSpellCooldown(auraInfo.castSpell)
                                 local remaining
-                                if cooldown and cooldown.isActive then
+                                if cdInfo and cdInfo.isActive then
                                     -- Ignore the ordinary GCD.
-                                    local duration = cooldown.duration
-                                    if isSecret(duration) then
+                                    local dur = cdInfo.duration
+                                    if isSecret(dur) then
                                         isMissing = false
-                                    elseif duration and duration > 1.5 then
+                                    elseif dur and dur > 1.5 then
                                         isMissing = false
-                                        local start = cooldown.startTime
+                                        local start = cdInfo.startTime
                                         if not isSecret(start) and type(start) == "number" then
-                                            remaining = start + duration - GetTime()
+                                            remaining = start + dur - GetTime()
                                         end
                                     end
                                 end
                                 REMIND.ArmSoulstoneCooldownRefresh(remaining)
                             end
-                        elseif aura.check == "playerSelfCast" then
-                            isMissing = not PlayerHasSelfCastAuraByID(aura.buffIDs)
-                        elseif aura.isStance then
+                        elseif auraInfo.check == "playerSelfCast" then
+                            isMissing = not PlayerHasSelfCastAuraByID(auraInfo.buffIDs)
+                        elseif auraInfo.isStance then
                             -- Stance is a shapeshift form: hide once it's the active stance
-                            local _, isActive = GetStanceState(aura.castSpell)
+                            local _, isActive = GetStanceState(auraInfo.castSpell)
                             isMissing = not isActive
                         else
                             -- Use instance-specific buff list if available and in instance
-                            local checkIDs = (inInstance and aura.instanceBuffIDs) or aura.buffIDs
+                            local checkIDs = (instanceNow and auraInfo.instanceBuffIDs) or auraInfo.buffIDs
                             -- When aura reads are restricted (PvP, combat, M+),
                             -- fall back to scanning the shapeshift form bar for
                             -- form-based auras whose buff IDs aren't readable.
-                            if aura.formSpellIDs and (inCombat or InPvPInstance()) then
-                                isMissing = not IsAnyShapeshiftFormActive(aura.formSpellIDs)
+                            if auraInfo.formSpellIDs and (combatNow or InPvPInstance()) then
+                                isMissing = not IsAnyShapeshiftFormActive(auraInfo.formSpellIDs)
                             else
                                 local hasIt = PlayerHasAuraByID(checkIDs, "aura")
                                 -- Some auras (e.g. Devotion Aura) go fully secret
@@ -512,8 +512,8 @@ local function CollectAuras(missing, playerClass, specID, inInstance, inCombat)
                                 -- provider of the same aura in the party); the ID
                                 -- lookup then can't see it at all. Fall back to a
                                 -- name scan before declaring it missing.
-                                if not hasIt and aura.nameFallback then
-                                    hasIt = PlayerHasBuffByName(aura.nameFallback)
+                                if not hasIt and auraInfo.nameFallback then
+                                    hasIt = PlayerHasBuffByName(auraInfo.nameFallback)
                                 end
                                 isMissing = not hasIt
                             end
@@ -521,11 +521,11 @@ local function CollectAuras(missing, playerClass, specID, inInstance, inCombat)
                         if isMissing then
                             local e = AcquireEntry()
                             e.mode = "spell"
-                            e.spellID = aura.castSpell
-                            e.label = ShortLabel(_G._CUABR_SpellName(aura.castSpell, aura.name))
+                            e.spellID = auraInfo.castSpell
+                            e.label = ShortLabel(_G._CUABR_SpellName(auraInfo.castSpell, auraInfo.name))
                             e.cat = "aura"
-                            e.data = aura
-                            e.dismissKey = "aura:" .. aura.key
+                            e.data = auraInfo
+                            e.dismissKey = "aura:" .. auraInfo.key
                             missing[#missing + 1] = e
                         end
                     end
@@ -537,7 +537,7 @@ end
 
 -- Weapon-enchant reminders shared by the OOC and restricted (M+/combat)
 -- passes -- the enchant summary API is combat-safe. Hung on EABR.
-function REMIND.EmitWeaponEnchantReminders(missing, co)
+function REMIND.EmitWeaponEnchantReminders(missing, collector)
     local hasMH, mhExpire, _, _, hasOH, ohExpire = REMIND.WeaponEnchants()
     for index = 1, 2 do
         local slot, has, expire
@@ -559,7 +559,7 @@ function REMIND.EmitWeaponEnchantReminders(missing, co)
                 shouldRemind = true
             end
         end
-        if shouldRemind and region.itemID and (co.showWithoutItem ~= false or region.hasBags) then
+        if shouldRemind and region.itemID and (collector.showWithoutItem ~= false or region.hasBags) then
             local bestItemID = region.itemID
             local e = AcquireEntry()
             e.mode = "macro"
@@ -584,23 +584,23 @@ end
 -- only while that reminder has zones listed and can show; it reads the map
 -- once when it starts and after each loading screen, and a map change that
 -- moves the player into or out of the listed zones asks for one refresh.
-local inkyMap = { on = false, key = "0", inZone = false }
+local inkyIndex = { on = false, key = "0", inZone = false }
 
 local function InkyMapRead(mapID)
-    inkyMap.key = tostring(mapID or 0)
-    local nowIn = (inkyMap.set and inkyMap.set[inkyMap.key]) and true or false
-    if nowIn ~= inkyMap.inZone then
-        inkyMap.inZone = nowIn
+    inkyIndex.key = tostring(mapID or 0)
+    local nowIn = (inkyIndex.set and inkyIndex.set[inkyIndex.key]) and true or false
+    if nowIn ~= inkyIndex.inZone then
+        inkyIndex.inZone = nowIn
         Inner.RequestRefresh()
     end
 end
 
 local function InkyMapWatch(wanted)
-    if wanted == inkyMap.on then
+    if wanted == inkyIndex.on then
         return
     end
-    inkyMap.on = wanted
-    local frame = inkyMap.frame
+    inkyIndex.on = wanted
+    local frame = inkyIndex.frame
     if not wanted then
         frame:UnregisterAllEvents()
         return
@@ -614,20 +614,20 @@ local function InkyMapWatch(wanted)
                 InkyMapRead(C_Map.GetBestMapForUnit("player"))
             end
         end)
-        inkyMap.frame = frame
+        inkyIndex.frame = frame
     end
     frame:RegisterEvent("PLAYER_MAP_CHANGED")
     frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-    inkyMap.key = tostring(C_Map.GetBestMapForUnit("player") or 0)
+    inkyIndex.key = tostring(C_Map.GetBestMapForUnit("player") or 0)
 end
 
-local function CollectConsumables(missing, playerClass, specID, inInstance, inKeystone, inCombat, inPvP)
-    local co = saved.profile.consumables
+local function CollectConsumables(missing, classFile, specID, instanceNow, inKeystone, combatNow, pvpNow)
+    local collector = saved.profile.consumables
     -- Class specials (poisons/rites/imbues/shields) follow the "Where to Show"
     -- of the player's class section.
-    local specialFields = REMIND.SPECIALS[playerClass]
+    local specialFields = REMIND.SPECIALS[classFile]
     local specialsActive =
-        REMIND.SectionShows(REMIND.SpecialsWhere(co, specialFields and specialFields.where), inInstance)
+        REMIND.SectionShows(REMIND.SpecialsWhere(collector, specialFields and specialFields.where), instanceNow)
     -- The trackable subset (weapon enchants, poisons, rites, imbues, Earth
     -- Shield) runs in combat / M+ too; where reminders appear is governed
     -- per-section by "Where to Show". Non-trackable emitters below either
@@ -635,9 +635,9 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
     -- their own combat gate.
     do
         -- Rebuilds the bag/equip-derived item cache only when inputs changed (bags, weapon, preferred-item setting); a clean refresh is 3 scalar compares. Resolved inside instances, or in the open world when the consumables section shows there; the dirty flag persists until the next eligible refresh consumes it.
-        local needResolve = inInstance and not inPvP
-        if not needResolve and not inPvP then
-            local ow = co.whereToShow
+        local needResolve = instanceNow and not pvpNow
+        if not needResolve and not pvpNow then
+            local ow = collector.whereToShow
             needResolve = (not ow) or (ow.open_world ~= false)
         end
         if needResolve then
@@ -647,7 +647,7 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
         -- === SPECIALS (per-class "Where to Show") ===
         if specialsActive then
             -- Rogue Poisons: unified scan counts active per category vs required (1 each, 2 with Dragon-Tempered Blades); shows the first enabled+known+missing poison per deficient category.
-            if playerClass == "ROGUE" then
+            if classFile == "ROGUE" then
                 local activeL, activeNL = 0, 0
                 local knownL, knownNL = 0, 0
                 local missingL, missingNL = nil, nil
@@ -659,16 +659,16 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
                         else
                             knownNL = knownNL + 1
                         end
-                        local aura = C_UnitAuras.GetPlayerAuraBySpellID(poison.castSpell)
-                        local active = aura
-                            and not IsUnderDuration(aura.duration, aura.expirationTime, "special")
+                        local auraInfo = C_UnitAuras.GetPlayerAuraBySpellID(poison.castSpell)
+                        local active = auraInfo
+                            and not IsUnderDuration(auraInfo.duration, auraInfo.expirationTime, "special")
                         if active then
                             if isLethal then
                                 activeL = activeL + 1
                             else
                                 activeNL = activeNL + 1
                             end
-                        elseif co.enabled[poison.key] then
+                        elseif collector.enabled[poison.key] then
                             if isLethal and not missingL then
                                 missingL = poison
                             elseif not isLethal and not missingNL then
@@ -703,9 +703,9 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
             end
 
             -- Paladin Rites
-            if playerClass == "PALADIN" then
+            if classFile == "PALADIN" then
                 for _, rite in ipairs(PALADIN_RITES) do
-                    if co.enabled[rite.key] and Known(rite.castSpell) then
+                    if collector.enabled[rite.key] and Known(rite.castSpell) then
                         local hasMH, mhExpire = REMIND.WeaponEnchants()
                         local show = false
                         if not hasMH then
@@ -735,11 +735,11 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
             end
 
             -- Shaman Imbues: matches each imbue's wepEnchID against both weapon slots; the enchant summary carries the specific enchant ID per hand (4th/8th return values).
-            if playerClass == "SHAMAN" then
+            if classFile == "SHAMAN" then
                 local hasMH, mhExpire, _, mhEnchID, hasOH, ohExpire, _, ohEnchID = REMIND.WeaponEnchants()
                 for _, imbue in ipairs(SHAMAN_IMBUES) do
                     if
-                        co.enabled[imbue.key]
+                        collector.enabled[imbue.key]
                         and Known(imbue.castSpell)
                         and (not imbue.requireShield or REMIND.HasShieldEquipped())
                     then
@@ -787,31 +787,31 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
                 end
 
                 -- Shaman Shields: talent-gated entries. Earth Shield self-buff (383648) is handled separately below (also OOC-only despite being whitelisted -- see that block); other shields' IDs are not whitelisted either, so they stay OOC-only.
-                for _, shield in ipairs(SHAMAN_SHIELDS) do
-                    local castID = shield.castSpellFn and shield.castSpellFn() or shield.castSpell
-                    if co.enabled[shield.key] ~= false and Known(castID) then
+                for _, shieldRec in ipairs(SHAMAN_SHIELDS) do
+                    local castID = shieldRec.castSpellFn and shieldRec.castSpellFn() or shieldRec.castSpell
+                    if collector.enabled[shieldRec.key] ~= false and Known(castID) then
                         local success = true
-                        if shield.requireTalent and not Known(shield.requireTalent) then
+                        if shieldRec.requireTalent and not Known(shieldRec.requireTalent) then
                             success = false
                         end
-                        if shield.excludeTalent and Known(shield.excludeTalent) then
+                        if shieldRec.excludeTalent and Known(shieldRec.excludeTalent) then
                             success = false
                         end
                         -- es_orbit and es_ally have their own block below
-                        if shield.key == "es_orbit" or shield.key == "es_ally" then
+                        if shieldRec.key == "es_orbit" or shieldRec.key == "es_ally" then
                             success = false
                         end
-                        if inCombat or inKeystone then
+                        if combatNow or inKeystone then
                             success = false
                         end
-                        if success and not PlayerHasAuraByID(shield.buffIDs, "special") then
+                        if success and not PlayerHasAuraByID(shieldRec.buffIDs, "special") then
                             local e = AcquireEntry()
                             e.mode = "spell"
                             e.spellID = castID
-                            e.label = ShortLabel(shield.name, "SHAMAN_SHIELD")
+                            e.label = ShortLabel(shieldRec.name, "SHAMAN_SHIELD")
                             e.cat = "consumable"
-                            e.data = shield
-                            e.dismissKey = "consumable:" .. shield.key
+                            e.data = shieldRec
+                            e.dismissKey = "consumable:" .. shieldRec.key
                             missing[#missing + 1] = e
                         end
                     end
@@ -824,18 +824,18 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
         -- there, and their presence cannot be read; the class specials above
         -- (poisons, rites, imbues, shields) are the player's own spells and
         -- still run.
-        if inPvP then
+        if pvpNow then
             InkyMapWatch(false)
         else
             -- Augment Runes: presence unverifiable in combat/M+ (suppress);
             -- otherwise try the read and remind when missing.
-            if co.enabled.augment_rune and REMIND.ConsumableShows(co, "augment_rune", inInstance) then
+            if collector.enabled.augment_rune and REMIND.ConsumableShows(collector, "augment_rune", instanceNow) then
                 local hasRuneBuff = REMIND.ConsumablePresenceUnverifiable()
                     or PlayerHasAuraByID(RUNE_BUFF_IDS)
                 if not hasRuneBuff then
                     local rr = REMIND._resolved.rune
                     local runeItem = rr.itemID
-                    if runeItem and (co.showWithoutItem ~= false or rr.hasBags) then
+                    if runeItem and (collector.showWithoutItem ~= false or rr.hasBags) then
                         local e = AcquireEntry()
                         e.mode = "item"
                         e.itemID = runeItem
@@ -855,7 +855,7 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
             -- combat-safe). Skipped if the player knows any imbue spell (Shaman
             -- imbues, Paladin rites). Rogues/DKs NOT excluded -- poisons are
             -- temp enchants too, and DKs can use oils alongside runeforges.
-            if co.enabled.weapon_enchant and REMIND.ConsumableShows(co, "weapon_enchant", inInstance) then
+            if collector.enabled.weapon_enchant and REMIND.ConsumableShows(collector, "weapon_enchant", instanceNow) then
                 local _hasImbueSpell = false
                 for _, spellRef in ipairs(_IMBUE_EXCLUDE_SPELLS) do
                     if IsSpellKnown(spellRef) then
@@ -864,17 +864,17 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
                     end
                 end
                 if not _hasImbueSpell then
-                    REMIND.EmitWeaponEnchantReminders(missing, co)
+                    REMIND.EmitWeaponEnchantReminders(missing, collector)
                 end
             end
 
             -- Flask / Food: remind only when absence is verifiable (the checks
             -- suppress under combat/M+/restriction instead of false-firing).
-            if co.enabled.flask and REMIND.ConsumableShows(co, "flask", inInstance) then
+            if collector.enabled.flask and REMIND.ConsumableShows(collector, "flask", instanceNow) then
                 if not PlayerHasFlaskBuff() then
                     local rf = REMIND._resolved.flask
                     local flaskItemID = rf.itemID
-                    if flaskItemID and (co.showWithoutItem ~= false or rf.hasBags) then
+                    if flaskItemID and (collector.showWithoutItem ~= false or rf.hasBags) then
                         local e = AcquireEntry()
                         e.mode = "item"
                         e.itemID = flaskItemID
@@ -890,10 +890,10 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
                 end
             end
 
-            if co.enabled.food and REMIND.ConsumableShows(co, "food", inInstance) then
+            if collector.enabled.food and REMIND.ConsumableShows(collector, "food", instanceNow) then
                 if not PlayerHasWellFed() then
                     local foodItemID = REMIND._resolved.food.itemID
-                    if foodItemID and (co.showWithoutItem ~= false or REMIND._resolved.food.hasBags) then
+                    if foodItemID and (collector.showWithoutItem ~= false or REMIND._resolved.food.hasBags) then
                         local e = AcquireEntry()
                         e.mode = "item"
                         e.itemID = foodItemID
@@ -916,23 +916,23 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
 
             -- Inky Black Potion (zone-specific)
             local inkyWatch = false
-            if co.enabled.inky_black and REMIND.ConsumableShows(co, "inky_black", inInstance) then
-                local zones = co.inkyBlackZones or ""
+            if collector.enabled.inky_black and REMIND.ConsumableShows(collector, "inky_black", instanceNow) then
+                local zones = collector.inkyBlackZones or ""
                 if zones ~= "" then
                     inkyWatch = true
                     -- Cache parsed zone set on the string itself
-                    if not co._inkyZoneSet or co._inkyZoneSrc ~= zones then
+                    if not collector._inkyZoneSet or collector._inkyZoneSrc ~= zones then
                         local s = {}
                         for zid in zones:gmatch("[^,%s]+") do
                             s[zid] = true
                         end
-                        co._inkyZoneSet = s
-                        co._inkyZoneSrc = zones
+                        collector._inkyZoneSet = s
+                        collector._inkyZoneSrc = zones
                     end
                     InkyMapWatch(true)
-                    inkyMap.set = co._inkyZoneSet
-                    inkyMap.inZone = co._inkyZoneSet[inkyMap.key] or false
-                    if inkyMap.inZone then
+                    inkyIndex.set = collector._inkyZoneSet
+                    inkyIndex.inZone = collector._inkyZoneSet[inkyIndex.key] or false
+                    if inkyIndex.inZone then
                         local hasPotion = REMIND._resolved.inky.hasPotion
                         if not PlayerHasInkyBlackness() and hasPotion then
                             local e = AcquireEntry()
@@ -963,15 +963,15 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
     -- live read nor the pre-combat snapshot can clear it) until combat ends.
     -- Suppress in combat/keystone instead, same as its ls_ws_orbit/
     -- shield_basic siblings just above.
-    if specialsActive and playerClass == "SHAMAN" then
+    if specialsActive and classFile == "SHAMAN" then
         local esOrbit = SHAMAN_SHIELDS[1] -- es_orbit entry
         if
-            co.enabled[esOrbit.key] ~= false
+            collector.enabled[esOrbit.key] ~= false
             and Known(esOrbit.castSpell)
             and esOrbit.requireTalent
             and Known(esOrbit.requireTalent)
         then
-            if not (inCombat or inKeystone) and not PlayerHasAuraByID(esOrbit.buffIDs) then
+            if not (combatNow or inKeystone) and not PlayerHasAuraByID(esOrbit.buffIDs) then
                 local e = AcquireEntry()
                 e.mode = "spell"
                 e.spellID = esOrbit.castSpell
@@ -988,8 +988,8 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
         -- Display-only: a click would self-cast, never reaching an ally.
         local esAlly = SHAMAN_SHIELDS[2] -- es_ally entry
         if
-            co.enabled[esAlly.key] == true
-            and not (inCombat or inKeystone)
+            collector.enabled[esAlly.key] == true
+            and not (combatNow or inKeystone)
             and (IsInGroup() or IsInRaid())
             and (REMIND._ownOtherAuraCache[974] == false or REMIND.OwnOtherAuraNeedsRebuff(974, "special"))
             and REMIND.AnyReachableGroupMember()
@@ -1015,10 +1015,10 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
     ---------------------------------------------------------------------------
     if
         (IsInGroup() or IsInRaid())
-        and REMIND.ConsumableShows(co, "healthstone", inInstance)
+        and REMIND.ConsumableShows(collector, "healthstone", instanceNow)
         and not (InCombat() and GetPlayerClass() ~= "WARLOCK")
     then
-        if co and co.enabled and co.enabled.healthstone ~= false then
+        if collector and collector.enabled and collector.enabled.healthstone ~= false then
             -- Only remind if a Warlock is in the group
             local hasWarlock = false
             if IsInRaid() then
@@ -1068,7 +1068,7 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
             co2
             and co2.enabled
             and co2.enabled.coaches_whistle ~= false
-            and REMIND.ConsumableShows(co2, "coaches_whistle", inInstance)
+            and REMIND.ConsumableShows(co2, "coaches_whistle", instanceNow)
             and REMIND._cachedDiffID ~= 208
             and (IsInGroup() or IsInRaid())
             and (GetInventoryItemID("player", 13) == 193718 or GetInventoryItemID("player", 14) == 193718)
@@ -1089,7 +1089,7 @@ local function CollectConsumables(missing, playerClass, specID, inInstance, inKe
     ---------------------------------------------------------------------------
     --  DK Runeforging (OOC only, check permanent enchant via item link)
     ---------------------------------------------------------------------------
-    if not inCombat and playerClass == "DEATHKNIGHT" then
+    if not combatNow and classFile == "DEATHKNIGHT" then
         local co3 = saved.profile.consumables
         if co3 and co3.enabled and co3.enabled.runeforge ~= false then
             local needsRune = false
