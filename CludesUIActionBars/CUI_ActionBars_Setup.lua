@@ -90,14 +90,14 @@ local function SyncEditModeIconCounts()
             if not cuiCount or cuiCount < 1 then
                 cuiCount = details.count
             end
-            local blizzBar = _G[details.blizzFrame]
-            if blizzBar and blizzBar.system == 0 and blizzBar.systemIndex then
-                desired[blizzBar.systemIndex] = cuiCount
+            local stockBar = _G[details.blizzFrame]
+            if stockBar and stockBar.system == 0 and stockBar.systemIndex then
+                desired[stockBar.systemIndex] = cuiCount
             end
             if details.nativeMainBar and _G.MainActionBar then
-                local mab = _G.MainActionBar
-                if mab.system == 0 and mab.systemIndex then
-                    desired[mab.systemIndex] = cuiCount
+                local mainBar = _G.MainActionBar
+                if mainBar.system == 0 and mainBar.systemIndex then
+                    desired[mainBar.systemIndex] = cuiCount
                 end
             end
         end
@@ -106,7 +106,7 @@ local function SyncEditModeIconCounts()
     -- Setting 2 = NumIcons. GetSettingValue(bar, 2) returns the actual count
     -- (6-12), so the raw layout value appears to be the actual count too.
     local ICON_COUNT_SETTING = 2
-    local changed = false
+    local didChange = false
 
     -- HideBarArt setting: force to 1 (hidden) on all action bar layouts
     local HIDE_BAR_ART_SETTING = Enum
@@ -118,22 +118,22 @@ local function SyncEditModeIconCounts()
     -- Each row is noted for Uninstall CUI: a raised count is put back when its earlier value is
     -- known, and bar art is noted every time (shown is Blizzard's default, the fallback for an
     -- account older than the record).
-    for layoutIndex, layout in ipairs(layoutInfo.layouts) do
-        if layoutIndex > numPresets and type(layout.systems) == "table" then
-            for _, sysInfo in ipairs(layout.systems) do
-                if sysInfo.system == 0 and sysInfo.systemIndex and type(sysInfo.settings) == "table" then
-                    local wanted = desired[sysInfo.systemIndex]
-                    for _, s in ipairs(sysInfo.settings) do
+    for layoutIndex, layoutInfo in ipairs(layoutInfo.layouts) do
+        if layoutIndex > numPresets and type(layoutInfo.systems) == "table" then
+            for _, systemInfo in ipairs(layoutInfo.systems) do
+                if systemInfo.system == 0 and systemInfo.systemIndex and type(systemInfo.settings) == "table" then
+                    local wanted = desired[systemInfo.systemIndex]
+                    for _, s in ipairs(systemInfo.settings) do
                         if wanted and s.setting == ICON_COUNT_SETTING and s.value < wanted then
-                            CludesUI.NoteEditModeSetting(layout, sysInfo, s.setting, s.value, wanted)
+                            CludesUI.NoteEditModeSetting(layoutInfo, systemInfo, s.setting, s.value, wanted)
                             s.value = wanted
-                            changed = true
+                            didChange = true
                         end
                         if HIDE_BAR_ART_SETTING and s.setting == HIDE_BAR_ART_SETTING then
-                            CludesUI.NoteEditModeSetting(layout, sysInfo, s.setting, s.value, 1, 0)
+                            CludesUI.NoteEditModeSetting(layoutInfo, systemInfo, s.setting, s.value, 1, 0)
                             if s.value ~= 1 then
                                 s.value = 1
-                                changed = true
+                                didChange = true
                             end
                         end
                     end
@@ -142,7 +142,7 @@ local function SyncEditModeIconCounts()
         end
     end
 
-    if changed then
+    if didChange then
         C_EditMode.SaveLayouts(layoutInfo)
     end
 end
@@ -220,19 +220,19 @@ function ABAR:FinishSetup()
             local positions = ABAR.db.profile.barPositions or {}
 
             for _, details in ipairs(BAR_CONFIG) do
-                local key = details.key
-                local buttons = barButtons[key]
-                local s = ABAR.db.profile.bars[key]
-                local slotOffset = BAR_SLOT_OFFSETS[key] or 0
+                local barKey = details.key
+                local buttons = barButtons[barKey]
+                local s = ABAR.db.profile.bars[barKey]
+                local slotOffset = BAR_SLOT_OFFSETS[barKey] or 0
                 if buttons then
-                    local btnLayout, frameW, frameH = ComputeBarLayout(key)
-                    local place = positions[key]
+                    local btnLayout, frameW, frameH = ComputeBarLayout(barKey)
+                    local place = positions[barKey]
                     local anchorPoint = place and place.point or "CENTER"
                     local relPoint = place and place.relPoint or "CENTER"
                     local px = place and place.x or 0
                     local py = place and place.y or 0
                     tinsert(barFrameData, {
-                        key = key,
+                        key = barKey,
                         w = frameW,
                         h = frameH,
                         point = anchorPoint,
@@ -247,7 +247,7 @@ function ABAR:FinishSetup()
                         local button = buttons[index]
                         if button and button._secureSlotIdx then
                             local actionSlot = 0
-                            if key == "MainBar" then
+                            if barKey == "MainBar" then
                                 -- For MainBar, actionSlot encodes the button index (1-12)
                                 actionSlot = index
                             elseif details.isPetBar then
@@ -257,7 +257,7 @@ function ABAR:FinishSetup()
                                 actionSlot = slotOffset + index
                             end
                             layoutData[button._secureSlotIdx] = {
-                                barKey = key,
+                                barKey = barKey,
                                 x = btnData.x,
                                 y = btnData.y,
                                 w = btnData.w,
@@ -320,9 +320,9 @@ function ABAR:FinishSetup()
             -- buttons that receive events natively.
             for _, details in ipairs(BAR_CONFIG) do
                 if not details.isStance and not details.isPetBar then
-                    local btns = barButtons[details.key]
-                    if btns then
-                        for _, b in ipairs(btns) do
+                    local buttonList = barButtons[details.key]
+                    if buttonList then
+                        for _, b in ipairs(buttonList) do
                             if not b._eabCountFixed then
                                 b._eabCountFixed = true
                                 if b.UpdateCount then
@@ -399,24 +399,24 @@ function ABAR:FinishSetup()
         if GetCursorInfo() then
             return
         end
-        for key in pairs(_gridSurfacedBars) do
-            local details = BAR_LOOKUP[key]
-            local s = ABAR.db.profile.bars[key]
-            local widget = barFrames[key]
+        for barKey in pairs(_gridSurfacedBars) do
+            local details = BAR_LOOKUP[barKey]
+            local s = ABAR.db.profile.bars[barKey]
+            local widget = barFrames[barKey]
             if details and s and widget then
                 if s.mouseoverEnabled then
                     -- The drag has fully ended (cursor cleared, checked above). If
                     -- the cursor is still over this bar, the spell was dropped here
                     -- (or you're just hovering it), so keep it shown and let the
                     -- normal OnLeave fade it on real exit. Otherwise hide as before.
-                    local status = hoverStates[key]
+                    local status = hoverStates[barKey]
                     if widget:IsMouseOver() then
                         if status then
                             status.isHovered = true
                             status.fadeDir = "in"
                         end
                         StopFade(widget, s._savedBarAlpha or 1)
-                        if key == "MainBar" then
+                        if barKey == "MainBar" then
                             SyncPagingAlpha(s._savedBarAlpha or 1)
                         end
                     else
@@ -425,7 +425,7 @@ function ABAR:FinishSetup()
                             status.fadeDir = "out"
                         end
                         StopFade(widget, 0)
-                        if key == "MainBar" then
+                        if barKey == "MainBar" then
                             SyncPagingAlpha(0)
                         end
                     end
@@ -504,11 +504,11 @@ function ABAR:FinishSetup()
                         -- Any visibility option at all counts: a bar the player cannot
                         -- see is a bar they cannot drop a spell onto, so surfacing one
                         -- that did not strictly need it is the harmless direction.
-                        local hasCondition = vis ~= "always" and vis ~= "never"
-                        if not hasCondition and CludesUI.VisHasAnyOption then
-                            hasCondition = CludesUI.VisHasAnyOption(s)
+                        local conditioned = vis ~= "always" and vis ~= "never"
+                        if not conditioned and CludesUI.VisHasAnyOption then
+                            conditioned = CludesUI.VisHasAnyOption(s)
                         end
-                        if hasCondition then
+                        if conditioned then
                             _gridSurfacedBars[details.key] = true
                             RegisterAttributeDriver(widget, "state-visibility", "show")
                             -- Keep the cache in sync with the stomp (same
@@ -668,9 +668,9 @@ function ABAR:FinishSetup()
                 if _quickKeybindState.open then
                     return
                 end
-                for key, status in pairs(hoverStates) do
+                for barKey, status in pairs(hoverStates) do
                     if not status.isHovered then
-                        EAB_VTABLE.Hover.FadeOut(key, status)
+                        EAB_VTABLE.Hover.FadeOut(barKey, status)
                     end
                 end
             end)
@@ -688,8 +688,8 @@ function ABAR:FinishSetup()
     -- while an unlock session is open or suspended for combat: its movers own
     -- the bars until Save & Exit or Cancel.
     do
-        local scaleFrame = mod.TakeShell()
-        scaleFrame._eabW, scaleFrame._eabH = UIParent:GetSize()
+        local scaler = mod.TakeShell()
+        scaler._eabW, scaler._eabH = UIParent:GetSize()
         local function ReapplySavedBarPositions()
             if CludesUI._unlockActive or CludesUI._unlockModeSessionActive then
                 return
@@ -702,24 +702,24 @@ function ABAR:FinishSetup()
             if reapply and adb then
                 local barList = ABAR.db.profile.bars
                 for _, details in ipairs(BAR_CONFIG) do
-                    local key = details.key
-                    local ai = adb[key]
-                    if ai and ai.target then
+                    local barKey = details.key
+                    local anchorInfo = adb[barKey]
+                    if anchorInfo and anchorInfo.target then
                         -- A growth bar with no captured pin keeps its LIVE
                         -- edge on a re-apply (the settle pass skips it for the
                         -- same reason), which would fix a clamped spot in place.
-                        local s = barList[key]
+                        local s = barList[barKey]
                         local gd = (s and s.growDirection or "up"):upper()
-                        if ai.mode == "POINT" or key == "StanceBar" or gd == "CENTER" or ai.refFor == gd then
-                            reapply(key)
+                        if anchorInfo.mode == "POINT" or barKey == "StanceBar" or gd == "CENTER" or anchorInfo.refFor == gd then
+                            reapply(barKey)
                         end
                     end
                 end
             end
         end
-        scaleFrame:RegisterEvent("UI_SCALE_CHANGED")
-        scaleFrame:RegisterEvent("DISPLAY_SIZE_CHANGED")
-        scaleFrame:SetScript("OnEvent", function(scrollFrame)
+        scaler:RegisterEvent("UI_SCALE_CHANGED")
+        scaler:RegisterEvent("DISPLAY_SIZE_CHANGED")
+        scaler:SetScript("OnEvent", function(scrollFrame)
             local wid, hgt = UIParent:GetSize()
             if wid == scrollFrame._eabW and hgt == scrollFrame._eabH then
                 return
@@ -784,20 +784,20 @@ function ABAR:FinishSetup()
         end
         wipe(_dragState.strataCache)
     end
-    local function SetDragVisible(show)
-        if _dragState.visible == show then
+    local function SetDragVisible(shouldShow)
+        if _dragState.visible == shouldShow then
             return
         end
-        _dragState.visible = show
+        _dragState.visible = shouldShow
         for _, details in ipairs(ALL_BARS) do
-            local key = details.key
-            local s = self.db.profile.bars[key]
+            local barKey = details.key
+            local s = self.db.profile.bars[barKey]
             if not s then -- skip bars without settings
             else
-                local widget = barFrames[key]
-                    or (details.isDataBar and dataBarFrames[key])
-                    or (details.isBlizzardMovable and blizzMovableHolders[key])
-                    or extraBarHolders[key]
+                local widget = barFrames[barKey]
+                    or (details.isDataBar and dataBarFrames[barKey])
+                    or (details.isBlizzardMovable and blizzMovableHolders[barKey])
+                    or extraBarHolders[barKey]
                     or (details.visibilityOnly and _G[details.frameName])
                 -- For extra bars, alpha is managed on the Blizzard frame directly
                 if details.visibilityOnly and not details.isDataBar and not details.isBlizzardMovable then
@@ -807,8 +807,8 @@ function ABAR:FinishSetup()
                     end
                 end
                 if widget then
-                    local status = hoverStates[key]
-                    if show then
+                    local status = hoverStates[barKey]
+                    if shouldShow then
                         -- Raise strata so bars render above the spellbook.
                         -- SetFrameStrata is protected on secure frames in combat,
                         -- so only do this out of combat.
@@ -825,7 +825,7 @@ function ABAR:FinishSetup()
                             if status then
                                 status.fadeDir = "in"
                             end
-                            if key == "MainBar" then
+                            if barKey == "MainBar" then
                                 SyncPagingAlpha(fullAlpha)
                             end
                         end
@@ -848,7 +848,7 @@ function ABAR:FinishSetup()
                                 if status then
                                     status.fadeDir = "out"
                                 end
-                                if key == "MainBar" then
+                                if barKey == "MainBar" then
                                     SyncPagingAlpha(0)
                                 end
                             end
@@ -891,7 +891,7 @@ function ABAR:FinishSetup()
                 -- overrides. Secure driver swaps are combat-blocked, so combat drags
                 -- leave Never bars hidden.
                 if not InCombatLockdown() and not _gridState._dragNeverForced then
-                    local forced
+                    local isForced
                     for _, details in ipairs(BAR_CONFIG) do
                         local s = ABAR.db.profile.bars[details.key]
                         if
@@ -903,12 +903,12 @@ function ABAR:FinishSetup()
                         then
                             ABAR._visOverride = ABAR._visOverride or {}
                             ABAR._visOverride[details.key] = "always"
-                            forced = forced or {}
-                            forced[details.key] = true
+                            isForced = isForced or {}
+                            isForced[details.key] = true
                         end
                     end
-                    if forced then
-                        _gridState._dragNeverForced = forced
+                    if isForced then
+                        _gridState._dragNeverForced = isForced
                         ABAR:RefreshRuntimeVisibility()
                     end
                 end
@@ -1241,9 +1241,9 @@ function ABAR:FinishSetup()
         if not InCombatLockdown() then
             for _, details in ipairs(BAR_CONFIG) do
                 if not details.isStance and not details.isPetBar then
-                    local btns = barButtons[details.key]
-                    if btns then
-                        for _, button in ipairs(btns) do
+                    local buttonList = barButtons[details.key]
+                    if buttonList then
+                        for _, button in ipairs(buttonList) do
                             if button then
                                 SetShowGridInsecure(button, false, SHOWGRID.GAME_EVENT)
                             end
@@ -1340,37 +1340,37 @@ function ABAR:FinishSetup()
             -- the heal touches exactly the changed buttons. The full sweep
             -- survives only for the cold start (nil signature: reload/profile
             -- flip/Never-set change), where "everything changed" is true.
-            local sig = {}
+            local signature = {}
             local isSecQ = issecretvalue
             local coldStart = mod._eabSpellsSig == nil
-            local changed, changedBars
+            local didChange, changedBars
             for _, details in ipairs(BAR_CONFIG) do
                 if not details.isStance and not details.isPetBar and not mod._eabBarNever[details.key] then
-                    local btns = barButtons[details.key]
-                    if btns then
-                        for _, button in ipairs(btns) do
+                    local buttonList = barButtons[details.key]
+                    if buttonList then
+                        for _, button in ipairs(buttonList) do
                             if button then
                                 local a = button:GetAttribute("action")
                                 local t2, ident, st
                                 if a then
                                     t2, ident, st = GetActionInfo(a)
                                 end
-                                local tok
+                                local bindToken
                                 if isSecQ and (isSecQ(t2) or isSecQ(ident) or isSecQ(st)) then
-                                    tok = "?"
+                                    bindToken = "?"
                                 else
-                                    tok = (t2 or "-") .. (ident or 0) .. (st or "")
+                                    bindToken = (t2 or "-") .. (ident or 0) .. (st or "")
                                 end
-                                sig[#sig + 1] = tok
+                                signature[#signature + 1] = bindToken
                                 local fd = EFD(button)
-                                if fd.spellsTok ~= tok then
-                                    fd.spellsTok = tok
+                                if fd.spellsTok ~= bindToken then
+                                    fd.spellsTok = bindToken
                                     if not coldStart then
-                                        if not changed then
-                                            changed = {}
+                                        if not didChange then
+                                            didChange = {}
                                             changedBars = {}
                                         end
-                                        changed[#changed + 1] = button
+                                        didChange[#didChange + 1] = button
                                         changedBars[details.key] = true
                                     end
                                 end
@@ -1379,20 +1379,20 @@ function ABAR:FinishSetup()
                     end
                 end
             end
-            sig = table.concat(sig, ",")
-            if sig == mod._eabSpellsSig then
+            signature = table.concat(signature, ",")
+            if signature == mod._eabSpellsSig then
                 return
             end
-            mod._eabSpellsSig = sig
+            mod._eabSpellsSig = signature
             if not coldStart then
                 -- Targeted heal: only the buttons whose content token
                 -- changed, and only their bars' AlwaysShow passes.
-                if changed then
-                    for key in pairs(changedBars) do
-                        self:ApplyAlwaysShowButtons(key)
+                if didChange then
+                    for barKey in pairs(changedBars) do
+                        self:ApplyAlwaysShowButtons(barKey)
                     end
-                    for index = 1, #changed do
-                        local button = changed[index]
+                    for index = 1, #didChange do
+                        local button = didChange[index]
                         EAB_VTABLE.ForceButtonRefresh(button, button:GetAttribute("action"))
                     end
                 end
@@ -1409,9 +1409,9 @@ function ABAR:FinishSetup()
             -- refresh path (ForceButtonRefresh; also handles the secret-safe variant).
             for _, details in ipairs(BAR_CONFIG) do
                 if not details.isStance and not details.isPetBar and not mod._eabBarNever[details.key] then
-                    local btns = barButtons[details.key]
-                    if btns then
-                        for _, button in ipairs(btns) do
+                    local buttonList = barButtons[details.key]
+                    if buttonList then
+                        for _, button in ipairs(buttonList) do
                             if button then
                                 EAB_VTABLE.ForceButtonRefresh(button, button:GetAttribute("action"))
                             end
@@ -1429,13 +1429,13 @@ function ABAR:FinishSetup()
     -- for slots whose contents stay put, so a numbered slot is probed against
     -- its last seen state first; slot 0 (every slot) always refreshes.
     local asbSlotFilled = {}
-    self:RegisterEvent("ACTIONBAR_SLOT_CHANGED", function(_, _, slot)
-        if slot and slot ~= 0 then
-            local filled = HasAction(slot) and true or false
-            if asbSlotFilled[slot] == filled then
+    self:RegisterEvent("ACTIONBAR_SLOT_CHANGED", function(_, _, slotIndex)
+        if slotIndex and slotIndex ~= 0 then
+            local filled = HasAction(slotIndex) and true or false
+            if asbSlotFilled[slotIndex] == filled then
                 return
             end
-            asbSlotFilled[slot] = filled
+            asbSlotFilled[slotIndex] = filled
         end
         QueueAlwaysShowButtonsRefresh()
     end)
@@ -1487,23 +1487,23 @@ function ABAR:FinishSetup()
                 -- Combat-safe path: update textures and visual state per-button
                 -- without touching protected frame operations (Show/Hide/SetParent).
                 -- This allows pet abilities to appear when summoning a pet mid-combat.
-                local hasPetBar = PetHasActionBar()
+                local petBarOn = PetHasActionBar()
                 -- Always Show Buttons off: the hide-empty rule by alpha alone, on
                 -- the buttons within the icon cutoff (Show, Hide and mouse are
                 -- protected here). A slot is empty only while a pet bar is out,
                 -- as in ns.AB_EmptySlot; a button hidden out of combat stays
                 -- parked until the regen pass lays the bar out again.
-                local petInfo, petS = BAR_LOOKUP["PetBar"], self.db.profile.bars["PetBar"]
+                local petData, petScale = BAR_LOOKUP["PetBar"], self.db.profile.bars["PetBar"]
                 local parkCut = 0
                 if
-                    petInfo
-                    and petS
-                    and petS.alwaysShowButtons == false
-                    and not (_gridState.shown or ShouldQuickKeybindSurfaceBar(petS))
+                    petData
+                    and petScale
+                    and petScale.alwaysShowButtons == false
+                    and not (_gridState.shown or ShouldQuickKeybindSurfaceBar(petScale))
                 then
-                    parkCut = petS.overrideNumIcons or petS.numIcons or petInfo.count
-                    if parkCut < 1 or parkCut > petInfo.count then
-                        parkCut = petInfo.count
+                    parkCut = petScale.overrideNumIcons or petScale.numIcons or petData.count
+                    if parkCut < 1 or parkCut > petData.count then
+                        parkCut = petData.count
                     end
                 end
                 for index = 1, NUM_PET_ACTION_SLOTS do
@@ -1518,13 +1518,13 @@ function ABAR:FinishSetup()
                         if index <= parkCut then
                             local pfd = EFD(button)
                             if not button:IsShown() then
-                                if hasPetBar and texture then
+                                if petBarOn and texture then
                                     mod._eabPetLayoutSig, mod._eabPetRegenHeal = nil, true
                                 end
-                            elseif hasPetBar and not texture then
+                            elseif petBarOn and not texture then
                                 if not pfd.parkA0 then
                                     button:SetAlpha(0)
-                                    mod._eabMarkParked(button, petInfo)
+                                    mod._eabMarkParked(button, petData)
                                     mod._eabPetLayoutSig, mod._eabPetRegenHeal = nil, true
                                 end
                             elseif pfd.parkA0 then
@@ -1533,7 +1533,7 @@ function ABAR:FinishSetup()
                                 mod._eabPetLayoutSig, mod._eabPetRegenHeal = nil, true
                             end
                         end
-                        if hasPetBar and texture then
+                        if petBarOn and texture then
                             if isToken then
                                 button.icon:SetTexture(_G[texture])
                             else
@@ -1662,35 +1662,35 @@ function ABAR:FinishSetup()
             -- pet buttons (LayoutBar, ApplyAlwaysShowButtons, the combat branch
             -- above) clears the memo, so it only ever holds what this pass drew;
             -- it is stored after the two passes, which clear it themselves.
-            local sig = PetHasActionBar() and "p" or "n"
+            local signature = PetHasActionBar() and "p" or "n"
             for index = 1, NUM_PET_ACTION_SLOTS do
-                sig = sig .. (GetPetActionInfo(index) and "1" or "0")
+                signature = signature .. (GetPetActionInfo(index) and "1" or "0")
             end
-            if sig ~= mod._eabPetLayoutSig then
+            if signature ~= mod._eabPetLayoutSig then
                 LayoutBar("PetBar")
                 self:ApplyAlwaysShowButtons("PetBar")
-                mod._eabPetLayoutSig = sig
+                mod._eabPetLayoutSig = signature
             end
             mod._eabPetRegenHeal = nil
             -- Re-register the state driver so the [pet] condition is always
             -- current after a pet summon, swap, or dismissal.
-            local petInfo = BAR_LOOKUP["PetBar"]
+            local petData = BAR_LOOKUP["PetBar"]
             local petFrame = barFrames["PetBar"]
-            local petS = self.db.profile.bars["PetBar"]
+            local petScale = self.db.profile.bars["PetBar"]
             -- Not while a runtime rule owns the driver (a surfacing override from
             -- the toggle keybind or the spellbook, or Hide Bar When Using
             -- Gamepad): RefreshRuntimeVisibility registered that string (an
             -- override keeps the [pet] term), and a plain rebuild here would
             -- stomp it on the reveal's own reconcile pass.
             if
-                petInfo
+                petData
                 and petFrame
-                and petS
-                and not ABAR.VisibilityCompat.IsNever(petS)
+                and petScale
+                and not ABAR.VisibilityCompat.IsNever(petScale)
                 and not (self._visOverride and self._visOverride.PetBar)
-                and not (self._padHide and petS.gamepadHideBar == true)
+                and not (self._padHide and petScale.gamepadHideBar == true)
             then
-                RegisterAttributeDriver(petFrame, "state-visibility", BuildVisibilityString(petInfo, petS))
+                RegisterAttributeDriver(petFrame, "state-visibility", BuildVisibilityString(petData, petScale))
             end
         end
     end

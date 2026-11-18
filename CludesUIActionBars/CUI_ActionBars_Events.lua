@@ -35,11 +35,11 @@ local meleeOn, repeatOn
 
 -- Keep attack flashing out of Blizzard's shared OnUpdate frame registry.
 function mod.AB_SetAttackFlash(button, flashing)
-    local fd = mod._eabFD[button]
+    local frameData = mod._eabFD[button]
     local flash = button.Flash
     if flashing and flash then
-        fd = fd or EFD(button)
-        local anim = fd.attackFlashAnim
+        frameData = frameData or EFD(button)
+        local anim = frameData.attackFlashAnim
         if not anim then
             anim = flash:CreateAnimationGroup()
             anim:SetLooping("REPEAT")
@@ -51,38 +51,38 @@ function mod.AB_SetAttackFlash(button, flashing)
                 phase:SetToAlpha(alpha)
                 phase:SetDuration(ATTACK_BUTTON_FLASH_TIME)
             end
-            fd.attackFlashAnim = anim
+            frameData.attackFlashAnim = anim
         end
         flash:Show()
         if not anim:IsPlaying() then
             anim:Play()
         end
-        fd.attackFlashing = true
-    elseif fd and fd.attackFlashing then
-        fd.attackFlashAnim:Stop()
+        frameData.attackFlashing = true
+    elseif frameData and frameData.attackFlashing then
+        frameData.attackFlashAnim:Stop()
         flash:Hide()
-        fd.attackFlashing = nil
+        frameData.attackFlashing = nil
     end
 end
 
 -- Content/reveal passes reconcile all slots; attack events only touch candidates.
-function mod.AB_SyncAttackState(button, action, onlyAttacks)
-    local hasAction = action and C_ActionBar.HasAction(action)
-    local attacking = hasAction and C_ActionBar.IsAttackAction(action)
-    local repeating = hasAction and C_ActionBar.IsAutoRepeatAction(action)
+function mod.AB_SyncAttackState(button, actionSlot, onlyAttacks)
+    local hasAction = actionSlot and C_ActionBar.HasAction(actionSlot)
+    local attacking = hasAction and C_ActionBar.IsAttackAction(actionSlot)
+    local repeating = hasAction and C_ActionBar.IsAutoRepeatAction(actionSlot)
     -- A stop event outranks a read that still reports auto-repeat.
     if repeatOn == false then
         repeating = false
     end
-    local fd = mod._eabFD[button]
+    local frameData = mod._eabFD[button]
     local checked = button:GetChecked()
     if issecretvalue and issecretvalue(checked) then
         checked = nil
     end
-    if onlyAttacks and not (attacking or repeating or checked or (fd and fd.attackFlashing)) then
+    if onlyAttacks and not (attacking or repeating or checked or (frameData and frameData.attackFlashing)) then
         return
     end
-    local current = hasAction and C_ActionBar.IsCurrentAction(action)
+    local current = hasAction and C_ActionBar.IsCurrentAction(actionSlot)
     -- An Attack action follows the melee events once one has fired.
     if attacking and meleeOn ~= nil then
         current = meleeOn
@@ -103,18 +103,18 @@ end
 -- Usable-tint mirror for ForceButtonRefresh, a named function so pcall passes
 -- args instead of allocating a closure per call (runs in the
 -- ACTIONBAR_SLOT_CHANGED storm path). On ns.
-mod._TintUsableIcon = function(iconTex, action)
-    local isUsable, noMana
+mod._TintUsableIcon = function(iconTex, actionSlot)
+    local usable, noMana
     if C_ActionBar and C_ActionBar.IsUsableAction then
-        isUsable, noMana = C_ActionBar.IsUsableAction(action)
+        usable, noMana = C_ActionBar.IsUsableAction(actionSlot)
     elseif IsUsableAction then
-        isUsable, noMana = IsUsableAction(action)
+        usable, noMana = IsUsableAction(actionSlot)
     end
-    if isUsable then
+    if usable then
         iconTex:SetVertexColor(1, 1, 1)
     elseif noMana then
         iconTex:SetVertexColor(0.5, 0.5, 1.0)
-    elseif isUsable ~= nil then
+    elseif usable ~= nil then
         iconTex:SetVertexColor(0.4, 0.4, 0.4)
     end
 end
@@ -127,12 +127,12 @@ end
 -- visible out of combat. The Blizzard frame stays permanently hidden via the
 -- UpdateAssistedCombatRotationFrame hook.
 function mod.EnsureAssistSpinner(button, rtf)
-    local fd = EFD(button)
-    local spin = fd.assistSpin
-    if not spin then
-        spin = CreateFrame("Frame", nil, button)
-        spin:SetPoint("CENTER", button, "CENTER")
-        local texture = spin:CreateTexture(nil, "OVERLAY")
+    local frameData = EFD(button)
+    local spinning = frameData.assistSpin
+    if not spinning then
+        spinning = CreateFrame("Frame", nil, button)
+        spinning:SetPoint("CENTER", button, "CENTER")
+        local texture = spinning:CreateTexture(nil, "OVERLAY")
         texture:SetAllPoints()
         -- The rotation-helper marker art, stretched to this frame's rect.
         -- Fallback: clone whatever Blizzard's own texture carries.
@@ -149,7 +149,7 @@ function mod.EnsureAssistSpinner(button, rtf)
                 end
             end
         end
-        fd.assistSpin = spin
+        frameData.assistSpin = spinning
     end
     -- Two-point anchor derives the rect from the button's, tracking every size/layout
     -- change with zero math and no re-apply pass. Scale-based sizing broke here because
@@ -157,14 +157,14 @@ function mod.EnsureAssistSpinner(button, rtf)
     -- User-adjustable outset (default 9px/side) makes the ring art's inset circle meet
     -- the button edge. Change-guarded so frequent hook calls cost two reads.
     local outset = (ABAR.db and ABAR.db.profile and ABAR.db.profile.obaIconOutset) or 9
-    if fd.assistSpinOutset ~= outset then
-        fd.assistSpinOutset = outset
-        spin:ClearAllPoints()
-        spin:SetPoint("TOPLEFT", button, "TOPLEFT", -outset, outset)
-        spin:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", outset, -outset)
+    if frameData.assistSpinOutset ~= outset then
+        frameData.assistSpinOutset = outset
+        spinning:ClearAllPoints()
+        spinning:SetPoint("TOPLEFT", button, "TOPLEFT", -outset, outset)
+        spinning:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", outset, -outset)
     end
-    spin:SetFrameLevel(rtf:GetFrameLevel())
-    return spin
+    spinning:SetFrameLevel(rtf:GetFrameLevel())
+    return spinning
 end
 
 -- Repaint the assist button's icon with the SUGGESTED spell's texture;
@@ -192,20 +192,20 @@ function mod.RepaintAssistIcons(suggestedSpell)
                     local button = buttons[index]
                     -- Raw read: only buttons that have ever hosted the
                     -- assist action carry a spinner entry.
-                    local fd = button and mod._eabFD[button]
-                    if fd and fd.assistSpin then
-                        local action = button.GetAttribute and button:GetAttribute("action") or button.action
+                    local frameData = button and mod._eabFD[button]
+                    if frameData and frameData.assistSpin then
+                        local actionSlot = button.GetAttribute and button:GetAttribute("action") or button.action
                         if
-                            action
-                            and HasAction(action)
+                            actionSlot
+                            and HasAction(actionSlot)
                             and C_ActionBar
                             and C_ActionBar.IsAssistedCombatAction
-                            and C_ActionBar.IsAssistedCombatAction(action)
+                            and C_ActionBar.IsAssistedCombatAction(actionSlot)
                         then
                             found = found + 1
                             local iconTex = button.icon or button.Icon
                             if iconTex then
-                                iconTex:SetTexture(texture or GetActionTexture(action))
+                                iconTex:SetTexture(texture or GetActionTexture(actionSlot))
                                 iconTex:SetShown(true)
                             end
                             -- This button's cooldown/charges mirror the suggested
@@ -295,15 +295,15 @@ function mod.RefreshAssistCooldowns(suggestedSpell)
             if buttons then
                 for index = 1, #buttons do
                     local button = buttons[index]
-                    local fd = button and mod._eabFD[button]
-                    if fd and fd.assistSpin then
-                        local action = button.GetAttribute and button:GetAttribute("action") or button.action
+                    local frameData = button and mod._eabFD[button]
+                    if frameData and frameData.assistSpin then
+                        local actionSlot = button.GetAttribute and button:GetAttribute("action") or button.action
                         if
-                            action
-                            and HasAction(action)
+                            actionSlot
+                            and HasAction(actionSlot)
                             and C_ActionBar
                             and C_ActionBar.IsAssistedCombatAction
-                            and C_ActionBar.IsAssistedCombatAction(action)
+                            and C_ActionBar.IsAssistedCombatAction(actionSlot)
                         then
                             mod.PaintAssistCooldown(button, suggestedSpell)
                         end
@@ -329,22 +329,22 @@ function mod.RefreshAssistSpinners()
                     local button = buttons[index]
                     -- Raw read (not EFD()): no per-button state allocation
                     -- for buttons that never built a spinner.
-                    local fd = button and mod._eabFD[button]
-                    local spin = fd and fd.assistSpin
-                    if spin then
-                        if fd.assistSpinOutset ~= outset then
-                            fd.assistSpinOutset = outset
-                            spin:ClearAllPoints()
-                            spin:SetPoint("TOPLEFT", button, "TOPLEFT", -outset, outset)
-                            spin:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", outset, -outset)
+                    local frameData = button and mod._eabFD[button]
+                    local spinning = frameData and frameData.assistSpin
+                    if spinning then
+                        if frameData.assistSpinOutset ~= outset then
+                            frameData.assistSpinOutset = outset
+                            spinning:ClearAllPoints()
+                            spinning:SetPoint("TOPLEFT", button, "TOPLEFT", -outset, outset)
+                            spinning:SetPoint("BOTTOMRIGHT", button, "BOTTOMRIGHT", outset, -outset)
                         end
-                        local action = button.GetAttribute and button:GetAttribute("action") or button.action
-                        local isAssist = action
+                        local actionSlot = button.GetAttribute and button:GetAttribute("action") or button.action
+                        local isAssist = actionSlot
                                 and C_ActionBar
                                 and C_ActionBar.IsAssistedCombatAction
-                                and C_ActionBar.IsAssistedCombatAction(action)
+                                and C_ActionBar.IsAssistedCombatAction(actionSlot)
                             or false
-                        spin:SetShown(enabled and isAssist)
+                        spinning:SetShown(enabled and isAssist)
                     end
                 end
             end
@@ -358,16 +358,16 @@ end
 -- Our button, so writing the Blizzard-expected field is safe; native paths
 -- still running (PEW full Update) reuse the same frame.
 function mod.EnsureChargeCooldown(button)
-    local chargeCd = CreateFrame("Cooldown", nil, button, "CooldownFrameTemplate")
-    chargeCd:SetHideCountdownNumbers(true)
-    chargeCd:SetDrawSwipe(false)
-    chargeCd:SetDrawEdge(true)
-    chargeCd:SetAllPoints(button)
-    chargeCd:SetFrameLevel(
+    local chargeCooldown = CreateFrame("Cooldown", nil, button, "CooldownFrameTemplate")
+    chargeCooldown:SetHideCountdownNumbers(true)
+    chargeCooldown:SetDrawSwipe(false)
+    chargeCooldown:SetDrawEdge(true)
+    chargeCooldown:SetAllPoints(button)
+    chargeCooldown:SetFrameLevel(
         (button.cooldown and button.cooldown:GetFrameLevel()) or (button:GetFrameLevel() + 1)
     )
-    button.chargeCooldown = chargeCd
-    return chargeCd
+    button.chargeCooldown = chargeCooldown
+    return chargeCooldown
 end
 
 -- Recharge-number visibility for one charge cooldown: extends "Show numbers
@@ -377,8 +377,8 @@ end
 -- unconditionally for that overlap, and un-hiding blindly would stack two
 -- countdowns in two fonts. cdInfo.isActive/isOnGCD are plain booleans (no
 -- secret comparisons). Cached per chargeCd so repeat calls are near-free.
-function mod.UpdateChargeNumbersVisibility(button, chargeCd, cdInfo, chargeInfo)
-    if not (chargeCd and chargeCd.SetHideCountdownNumbers) then
+function mod.UpdateChargeNumbersVisibility(button, chargeCooldown, cooldownInfo, charges)
+    if not (chargeCooldown and chargeCooldown.SetHideCountdownNumbers) then
         return
     end
     -- Occlusion: hide our recharge numbers only when the MAIN cooldown draws
@@ -392,20 +392,20 @@ function mod.UpdateChargeNumbersVisibility(button, chargeCd, cdInfo, chargeInfo)
     -- to re-evaluate. currentCharges is secret in instances: guarded read,
     -- secret falls to the isOnGCD term (NeverSecret per the docs).
     local zeroCharges = false
-    if chargeInfo then
-        local current = chargeInfo.currentCharges
+    if charges then
+        local current = charges.currentCharges
         if not (issecretvalue and issecretvalue(current)) and current == 0 then
             zeroCharges = true
         end
     end
     local hideNums = (ABAR.db.profile.showChargeRechargeNumbers == false)
         or (not GetCVarBool("countdownForCooldowns"))
-        or (cdInfo and cdInfo.isActive and (cdInfo.isOnGCD == false or zeroCharges) and true)
+        or (cooldownInfo and cooldownInfo.isActive and (cooldownInfo.isOnGCD == false or zeroCharges) and true)
         or false
-    local cfd = EFD(chargeCd)
+    local cfd = EFD(chargeCooldown)
     if cfd.rechargeNumbersHidden ~= hideNums then
         cfd.rechargeNumbersHidden = hideNums
-        chargeCd:SetHideCountdownNumbers(hideNums)
+        chargeCooldown:SetHideCountdownNumbers(hideNums)
         -- Lazily created charge cooldowns never pass through the login-time
         -- font application, so their countdown would render in Blizzard's
         -- default font. Queue the patch on un-hide; the FontString exists by
@@ -431,14 +431,14 @@ function mod.ApplyCooldownNumbersHidden()
     local hide = not GetCVarBool("countdownForCooldowns")
     local queued = false
     for _, details in ipairs(BAR_CONFIG) do
-        local btns = not details.isStance and not details.isPetBar and barButtons[details.key]
-        if btns then
-            for index = 1, #btns do
-                local button = btns[index]
-                local cd = button.cooldown
-                if cd then
-                    cd:SetHideCountdownNumbers(hide)
-                    if not hide and not EFD(cd).cdFontStamp then
+        local buttonList = not details.isStance and not details.isPetBar and barButtons[details.key]
+        if buttonList then
+            for index = 1, #buttonList do
+                local button = buttonList[index]
+                local cooldown = button.cooldown
+                if cooldown then
+                    cooldown:SetHideCountdownNumbers(hide)
+                    if not hide and not EFD(cooldown).cdFontStamp then
                         EAB_VTABLE.CooldownFonts.pending[button] = true
                         queued = true
                     end
@@ -462,8 +462,8 @@ end
 -- Refresh directly with secret-tolerant setters instead: icon (SetTexture accepts
 -- secrets), count, and the cooldown swipe via the same duration-object API the
 -- dispatcher's ACTIONBAR_UPDATE_COOLDOWN branch uses.
-function EAB_VTABLE.ForceButtonRefresh(button, action)
-    if not action then
+function EAB_VTABLE.ForceButtonRefresh(button, actionSlot)
+    if not actionSlot then
         return
     end
     local iconTex = button.icon or button.Icon
@@ -474,7 +474,7 @@ function EAB_VTABLE.ForceButtonRefresh(button, action)
         -- spell override can resolve late (zone in/out on a hero talent),
         -- making this paint the BASE texture; left unstamped, the memo
         -- diverges and the SPELL_UPDATE_ICON heal wrong-skips the repaint.
-        local texture = GetActionTexture(action)
+        local texture = GetActionTexture(actionSlot)
         iconTex:SetTexture(texture)
         EFD(button).lastIconTex = texture
         -- Blizzard's Update() HIDES the icon region for empty slots and only
@@ -482,7 +482,7 @@ function EAB_VTABLE.ForceButtonRefresh(button, action)
         -- nothing until hover runs Blizzard's Update. Gate on HasAction --
         -- the slot-filled boolean is the question being asked (the texture
         -- fileID is never secret, per the API docs on every client).
-        iconTex:SetShown(HasAction(action))
+        iconTex:SetShown(HasAction(actionSlot))
         -- Saturated baseline on every content change: desaturation is
         -- event/hover-managed and survives the slot emptying, so new content
         -- would inherit stale desat until mouseover; recompute below
@@ -507,41 +507,41 @@ function EAB_VTABLE.ForceButtonRefresh(button, action)
         if rfd.rangeTinted then
             rfd.usableState = nil
         else
-            pcall(mod._TintUsableIcon, iconTex, action)
+            pcall(mod._TintUsableIcon, iconTex, actionSlot)
         end
     end
     if button.Count and C_ActionBar and C_ActionBar.GetActionDisplayCount then
         -- No `or ""` on the raw return: it is secret while cooldowns are
         -- restricted, and coercing one before the guard is what strands the
         -- count. SetText accepts a secret, so only the plain nil needs healing.
-        local display = C_ActionBar.GetActionDisplayCount(action)
-        if not (issecretvalue and issecretvalue(display)) and display == nil then
-            display = ""
+        local displayMode = C_ActionBar.GetActionDisplayCount(actionSlot)
+        if not (issecretvalue and issecretvalue(displayMode)) and displayMode == nil then
+            displayMode = ""
         end
-        button.Count:SetText(display)
-        mod._EABZeroCountAlpha(EFD(button), button.Count, display, action)
+        button.Count:SetText(displayMode)
+        mod._EABZeroCountAlpha(EFD(button), button.Count, displayMode, actionSlot)
     end
     -- Macro/action text: with per-button events suppressed, a moved macro leaves its
     -- name stuck on the old slot (new slot blank) until hover runs Blizzard's Update.
     -- Mirror its logic: set name only for slots that use action text, clear otherwise.
     if button.Name and C_ActionBar and C_ActionBar.UsesActionText then
-        if C_ActionBar.UsesActionText(action) then
-            local nm = C_ActionBar.GetActionText and C_ActionBar.GetActionText(action)
+        if C_ActionBar.UsesActionText(actionSlot) then
+            local nm = C_ActionBar.GetActionText and C_ActionBar.GetActionText(actionSlot)
             button.Name:SetText(nm or "")
         else
             button.Name:SetText("")
         end
     end
-    local cd = button.cooldown
-    if cd and C_ActionBar and C_ActionBar.GetActionCooldown then
-        local cdInfo = C_ActionBar.GetActionCooldown(action)
-        if cdInfo and cdInfo.isActive then
-            local dur = C_ActionBar.GetActionCooldownDuration(action)
-            if dur and cd.SetCooldownFromDurationObject then
-                cd:SetCooldownFromDurationObject(dur)
+    local cooldown = button.cooldown
+    if cooldown and C_ActionBar and C_ActionBar.GetActionCooldown then
+        local cooldownInfo = C_ActionBar.GetActionCooldown(actionSlot)
+        if cooldownInfo and cooldownInfo.isActive then
+            local dur = C_ActionBar.GetActionCooldownDuration(actionSlot)
+            if dur and cooldown.SetCooldownFromDurationObject then
+                cooldown:SetCooldownFromDurationObject(dur)
             end
         else
-            cd:Clear()
+            cooldown:Clear()
         end
     end
     -- Desat / on-CD alpha are otherwise only recomputed by cooldown events
@@ -658,8 +658,8 @@ mod.RecomputeNeverBars = function()
         mod._slotBtnMapDirty = true
     end
 end
-mod.ApplyBarDormancy = function(key, dormant)
-    local details = BAR_LOOKUP[key]
+mod.ApplyBarDormancy = function(buttonKey, dormant)
+    local details = BAR_LOOKUP[buttonKey]
     -- Stance/pet bars reuse Blizzard buttons with their own event wiring,
     -- gated on frame visibility; on show edge just rerun their painters.
     if not details or details.isStance or details.isPetBar then
@@ -673,20 +673,20 @@ mod.ApplyBarDormancy = function(key, dormant)
         end
         return
     end
-    local btns = barButtons[key]
-    if not btns then
+    local buttonList = barButtons[buttonKey]
+    if not buttonList then
         return
     end
     dormant = dormant and true or false
-    if mod._eabBarDormant[key] == dormant then
+    if mod._eabBarDormant[buttonKey] == dormant then
         return
     end
-    mod._eabBarDormant[key] = dormant
+    mod._eabBarDormant[buttonKey] = dormant
     mod._cdFilledDirty = true -- either edge changes which buttons the tier/filled lists may include
     -- Range acquisition follows the same edges (defined later, hence the ns
     -- indirection): hidden bars stop generating range traffic.
     if mod._eabRangeBarDormancy then
-        mod._eabRangeBarDormancy(key, dormant)
+        mod._eabRangeBarDormancy(buttonKey, dormant)
     end
     -- Reveal: restore any proc glow that fired while dormant (GLOW_SHOW skipped this
     -- bar). Runs after the map flip so the queued rescan sees the bar as live.
@@ -701,11 +701,11 @@ mod.ApplyBarDormancy = function(key, dormant)
         -- strips); NEVER wrap btn.OnEvent -- the engine resolves the method at fire
         -- time and a replacement would taint every per-button dispatch.
         local entries = BUTTON_EVENT_LISTS.action
-        for _, button in ipairs(btns) do
-            local fd = EFD(button)
+        for _, button in ipairs(buttonList) do
+            local frameData = EFD(button)
             mod.AB_SetAttackFlash(button, false)
-            if not fd.evGated then
-                fd.evGated = true
+            if not frameData.evGated then
+                frameData.evGated = true
                 for _, ev in ipairs(entries) do
                     button:UnregisterEvent(ev)
                 end
@@ -713,10 +713,10 @@ mod.ApplyBarDormancy = function(key, dormant)
         end
         return
     end
-    for _, button in ipairs(btns) do
-        local fd = EFD(button)
-        if fd.evGated then
-            fd.evGated = nil
+    for _, button in ipairs(buttonList) do
+        local frameData = EFD(button)
+        if frameData.evGated then
+            frameData.evGated = nil
             ReRegisterButtonEvents(button, "action")
         end
         local a = button:GetAttribute("action")
@@ -735,10 +735,10 @@ mod.ApplyBarDormancy = function(key, dormant)
     -- A bar revealed OUT of Never was skipped by the AlwaysShow pass while
     -- gated (grid state can be stale for hide-empty configs); heal once
     -- here. Never reveals are settings-driven, so this runs unlocked.
-    if mod._eabBarNeverWas[key] then
-        mod._eabBarNeverWas[key] = nil
+    if mod._eabBarNeverWas[buttonKey] then
+        mod._eabBarNeverWas[buttonKey] = nil
         if ABAR.ApplyAlwaysShowButtons then
-            ABAR:ApplyAlwaysShowButtons(key)
+            ABAR:ApplyAlwaysShowButtons(buttonKey)
         end
     end
     -- Re-seed the cooldown walk for this bar exactly as a cast does: the
@@ -773,8 +773,8 @@ do
             return
         end
         _dispatcherSetup = true
-        local dispatcher = mod.TakeShell()
-        mod._cdDispatcher = dispatcher
+        local dispatch = mod.TakeShell()
+        mod._cdDispatcher = dispatch
         -- Cooldown-vs-GCD classification for the desaturate and on-CD-alpha
         -- channels. Both ask the same question -- is this button on a REAL
         -- cooldown, or only on the global cooldown? -- and both must answer it
@@ -818,7 +818,7 @@ do
                 end -- engine floor
                 -- Rounded to a 0.05 grid so continuous haste drift does not
                 -- rebuild the curves every frame.
-                local step = floor((length + 0.15) * 20 + 0.5) / 20
+                local stepIndex = floor((length + 0.15) * 20 + 0.5) / 20
                 -- The threshold tracks haste NOW, but a running cooldown's
                 -- TOTAL was fixed by the haste in force when it started. A
                 -- haste GAIN mid-GCD (Bloodlust, a large proc) shortens the
@@ -830,8 +830,8 @@ do
                 -- longer than any GCD it could still be measuring. The cost of
                 -- the hold is that a real cooldown inside the old and new
                 -- thresholds keeps its ready look for up to 2s.
-                if not _gcdStep or step >= _gcdStep or nowG >= (_gcdStepHold or 0) then
-                    _gcdStep = step
+                if not _gcdStep or stepIndex >= _gcdStep or nowG >= (_gcdStepHold or 0) then
+                    _gcdStep = stepIndex
                     _gcdStepHold = nowG + 2
                 end
             end
@@ -853,13 +853,13 @@ do
         -- when the player's GCD length changes.
         local desatCurve, desatCurveStep
         local function GetDesatCurve()
-            local step = GcdStep()
-            if desatCurveStep ~= step and C_CurveUtil and C_CurveUtil.CreateCurve then
+            local stepIndex = GcdStep()
+            if desatCurveStep ~= stepIndex and C_CurveUtil and C_CurveUtil.CreateCurve then
                 desatCurve = C_CurveUtil.CreateCurve()
                 desatCurve:SetType(Enum.LuaCurveType.Step)
                 desatCurve:AddPoint(0, 0)
-                desatCurve:AddPoint(step, 1)
-                desatCurveStep = step
+                desatCurve:AddPoint(stepIndex, 1)
+                desatCurveStep = stepIndex
             end
             return desatCurve
         end
@@ -867,18 +867,18 @@ do
         -- value above it. Rebuilt when the alpha setting or the GCD changes.
         local cdAlphaCurve, cdAlphaCurveFor, cdAlphaCurveStep
         local function GetCdAlphaCurve(cdAlpha)
-            local step = GcdStep()
+            local stepIndex = GcdStep()
             if
-                (cdAlphaCurveFor ~= cdAlpha or cdAlphaCurveStep ~= step)
+                (cdAlphaCurveFor ~= cdAlpha or cdAlphaCurveStep ~= stepIndex)
                 and C_CurveUtil
                 and C_CurveUtil.CreateCurve
             then
                 cdAlphaCurve = C_CurveUtil.CreateCurve()
                 cdAlphaCurve:SetType(Enum.LuaCurveType.Step)
                 cdAlphaCurve:AddPoint(0, 1)
-                cdAlphaCurve:AddPoint(step, cdAlpha / 100)
+                cdAlphaCurve:AddPoint(stepIndex, cdAlpha / 100)
                 cdAlphaCurveFor = cdAlpha
-                cdAlphaCurveStep = step
+                cdAlphaCurveStep = stepIndex
             end
             return cdAlphaCurve
         end
@@ -909,7 +909,7 @@ do
         -- TOTAL duration never decays, so the classification holds for the
         -- cooldown's entire life; the OnCooldownDone edge then restores the
         -- icon the moment the cooldown actually completes.
-        local function RefreshCooldownVisuals(button, action, cdInfo, durObj, chargeInfo)
+        local function RefreshCooldownVisuals(button, actionSlot, cooldownInfo, durationObj, charges)
             local desatOn = ABAR.db.profile.desaturateOnCooldown
             local cdAlpha = ABAR.db.profile.alphaWhenOnCD or 100
             local alphaOn = cdAlpha ~= 100
@@ -920,26 +920,26 @@ do
             if not iconTex then
                 return
             end
-            if not action then
-                action = button:GetAttribute("action")
-                if not action or not HasAction(action) then
+            if not actionSlot then
+                actionSlot = button:GetAttribute("action")
+                if not actionSlot or not HasAction(actionSlot) then
                     return
                 end
             end
-            if cdInfo == nil then
-                cdInfo = C_ActionBar.GetActionCooldown(action)
-                if cdInfo and cdInfo.isActive then
-                    durObj = C_ActionBar.GetActionCooldownDuration(action)
+            if cooldownInfo == nil then
+                cooldownInfo = C_ActionBar.GetActionCooldown(actionSlot)
+                if cooldownInfo and cooldownInfo.isActive then
+                    durationObj = C_ActionBar.GetActionCooldownDuration(actionSlot)
                 end
             end
-            if chargeInfo == nil then
-                chargeInfo = C_ActionBar.GetActionCharges(action)
+            if charges == nil then
+                charges = C_ActionBar.GetActionCharges(actionSlot)
             end
-            local useRealCurve = chargeInfo and chargeInfo.maxCharges and chargeInfo.maxCharges > 1
-            if not useRealCurve and GetActionInfo(action) == "item" then
+            local useRealCurve = charges and charges.maxCharges and charges.maxCharges > 1
+            if not useRealCurve and GetActionInfo(actionSlot) == "item" then
                 useRealCurve = true
             end
-            local active = cdInfo and cdInfo.isActive and durObj
+            local isActive = cooldownInfo and cooldownInfo.isActive and durationObj
             -- Banked-use gate, BOTH branches: uses remaining = ready look,
             -- with no reliance on the stale-prone isOnGCD flag. Charge
             -- spells read currentCharges (their recharge duration total is
@@ -950,16 +950,16 @@ do
             -- count fallback for the non-charge shape. Secret or zero values
             -- change nothing (fall to the existing classification).
             local banked = false
-            if active then
-                if useRealCurve and chargeInfo then
-                    local current = chargeInfo.currentCharges
+            if isActive then
+                if useRealCurve and charges then
+                    local current = charges.currentCharges
                     if not (issecretvalue and issecretvalue(current)) and type(current) == "number" and current > 0 then
                         banked = true
                     end
                 elseif not useRealCurve and GetActionCount and MountedNow() then
                     -- Mounted-only: the count shape exists only for vigor
                     -- abilities, so dismounted repaints skip the probe.
-                    local count = GetActionCount(action)
+                    local count = GetActionCount(actionSlot)
                     if not (issecretvalue and issecretvalue(count)) and type(count) == "number" and count > 0 then
                         banked = true
                     end
@@ -980,13 +980,13 @@ do
             -- toward the threshold, which then rejects the GCD anyway.
             if desatOn then
                 local val = 0
-                if active and not banked then
+                if isActive and not banked then
                     local curve = GetDesatCurve()
-                    if curve and durObj.EvaluateTotalDuration then
-                        if not useRealCurve or not cdInfo.isOnGCD then
-                            val = durObj:EvaluateTotalDuration(curve, 0)
+                    if curve and durationObj.EvaluateTotalDuration then
+                        if not useRealCurve or not cooldownInfo.isOnGCD then
+                            val = durationObj:EvaluateTotalDuration(curve, 0)
                         end
-                    elseif durObj.EvaluateRemainingDuration and not cdInfo.isOnGCD then
+                    elseif durationObj.EvaluateRemainingDuration and not cooldownInfo.isOnGCD then
                         -- Client without the total evaluator. Charge spells and
                         -- items keep the GCD-length step (remaining is
                         -- start-accurate and the Done edge fixes the tail);
@@ -996,7 +996,7 @@ do
                         -- works against a decaying duration.
                         local rc = useRealCurve and curve or desatCurveAny
                         if rc then
-                            val = durObj:EvaluateRemainingDuration(rc, 0)
+                            val = durationObj:EvaluateRemainingDuration(rc, 0)
                         end
                     end
                 end
@@ -1005,19 +1005,19 @@ do
             end
             if alphaOn then
                 local alphaSet = false
-                if active and not banked then
+                if isActive and not banked then
                     local curve = GetCdAlphaCurve(cdAlpha)
-                    if curve and durObj.EvaluateTotalDuration then
-                        if not useRealCurve or not cdInfo.isOnGCD then
-                            iconTex:SetAlpha(durObj:EvaluateTotalDuration(curve, 1) or 1)
+                    if curve and durationObj.EvaluateTotalDuration then
+                        if not useRealCurve or not cooldownInfo.isOnGCD then
+                            iconTex:SetAlpha(durationObj:EvaluateTotalDuration(curve, 1) or 1)
                             alphaSet = true
                         end
-                    elseif iconTex.SetAlphaFromBoolean and durObj.IsZero and not cdInfo.isOnGCD then
+                    elseif iconTex.SetAlphaFromBoolean and durationObj.IsZero and not cooldownInfo.isOnGCD then
                         -- Client without the total evaluator. IsZero() is a
                         -- secret boolean; SetAlphaFromBoolean consumes it
                         -- without any Lua comparison. This path has no GCD
                         -- threshold, so it leans on isOnGCD as before.
-                        iconTex:SetAlphaFromBoolean(durObj:IsZero(), 1, cdAlpha / 100)
+                        iconTex:SetAlphaFromBoolean(durationObj:IsZero(), 1, cdAlpha / 100)
                         alphaSet = true
                     end
                 end
@@ -1042,10 +1042,10 @@ do
         -- cooldowns grey immediately.
         ABAR._DesatSettingChanged = function(enabled)
             for _, details in ipairs(BAR_CONFIG) do
-                local btns = barButtons[details.key]
-                if btns then
-                    for index = 1, #btns do
-                        local button = btns[index]
+                local buttonList = barButtons[details.key]
+                if buttonList then
+                    for index = 1, #buttonList do
+                        local button = buttonList[index]
                         if button then
                             if enabled then
                                 RefreshCooldownVisuals(button)
@@ -1073,12 +1073,12 @@ do
         -- its update is unconditional. Its numeric SetCooldown path is closed to addon
         -- code (SecretArguments AllowedWhenUntainted), so the unconditional push goes
         -- through the duration-object sink.
-        local function PushButtonCooldown(button, visOn, ci, gDur)
-            local action = button:GetAttribute("action")
-            if not action or not HasAction(action) then
+        local function PushButtonCooldown(button, visOn, chargeData, gDur)
+            local actionSlot = button:GetAttribute("action")
+            if not actionSlot or not HasAction(actionSlot) then
                 return
             end
-            local fd = EFD(button)
+            local frameData = EFD(button)
             -- Assist host: its slot cooldown mirrors whatever the engine is
             -- suggesting at the instant it is read, so a slot-fed push here can
             -- land on a different ability than the icon the assist ticker
@@ -1087,45 +1087,45 @@ do
             -- ticker's fix must own this path too. The spinner read keeps the
             -- check a raw table lookup for every other button.
             if
-                fd.assistSpin
+                frameData.assistSpin
                 and C_ActionBar.IsAssistedCombatAction
-                and C_ActionBar.IsAssistedCombatAction(action)
+                and C_ActionBar.IsAssistedCombatAction(actionSlot)
             then
                 return mod.PaintAssistCooldown(button, mod._assistLastSuggest)
             end
-            local cd = button.cooldown
-            local durObj = gDur
-            local cdInfo = ci or C_ActionBar.GetActionCooldown(action)
-            local active = (cdInfo and cdInfo.isActive) and true or false
-            local cdReal = active and not cdInfo.isOnGCD
-            local cdClassFlip = cdReal ~= (fd.cdWasReal or false)
-            if cd then
-                if active then
+            local cooldown = button.cooldown
+            local durationObj = gDur
+            local cooldownInfo = chargeData or C_ActionBar.GetActionCooldown(actionSlot)
+            local isActive = (cooldownInfo and cooldownInfo.isActive) and true or false
+            local cdReal = isActive and not cooldownInfo.isOnGCD
+            local cdClassFlip = cdReal ~= (frameData.cdWasReal or false)
+            if cooldown then
+                if isActive then
                     -- PUSH-THROUGH: no change gate. A same-frame-as-cast push may hand
                     -- over a not-yet-populated (in combat SECRET, so uninspectable)
                     -- duration object -- fine because nothing gates: the cast kick's
                     -- next-frame pass and every capped pass while active re-deliver
                     -- fresh objects, so a provisional paint self-corrects within a
                     -- frame instead of being memo-stranded.
-                    if not durObj then
-                        durObj = C_ActionBar.GetActionCooldownDuration(action)
+                    if not durationObj then
+                        durationObj = C_ActionBar.GetActionCooldownDuration(actionSlot)
                     end
-                    if durObj then
-                        cd:SetCooldownFromDurationObject(durObj)
+                    if durationObj then
+                        cooldown:SetCooldownFromDurationObject(durationObj)
                     end
-                elseif fd.cdWasActive then
-                    cd:Clear()
+                elseif frameData.cdWasActive then
+                    cooldown:Clear()
                 end
             end
             -- Visuals (desat/alpha) ride the same doctrine: repaint on every
             -- push while active plus the falling edge -- cheap setters, and
             -- Blizzard's UpdateUsable stomps vertex state mid-cooldown, so
             -- change-gating here would recreate the stale-desat class.
-            if visOn and (active or (fd.cdWasActive or false) or fd.chargeWasLive or cdClassFlip) then
-                if active and not durObj then
-                    durObj = C_ActionBar.GetActionCooldownDuration(action)
+            if visOn and (isActive or (frameData.cdWasActive or false) or frameData.chargeWasLive or cdClassFlip) then
+                if isActive and not durationObj then
+                    durationObj = C_ActionBar.GetActionCooldownDuration(actionSlot)
                 end
-                RefreshCooldownVisuals(button, action, cdInfo or false, durObj, nil)
+                RefreshCooldownVisuals(button, actionSlot, cooldownInfo or false, durationObj, nil)
             end
             -- Charge recharge numbers ride the real-cooldown CLASS EDGE. The
             -- occlusion rule (hide charge numbers while a real main cooldown
@@ -1143,102 +1143,102 @@ do
                 mod.UpdateChargeNumbersVisibility(
                     button,
                     button.chargeCooldown,
-                    cdInfo,
-                    C_ActionBar.GetActionCharges(action)
+                    cooldownInfo,
+                    C_ActionBar.GetActionCharges(actionSlot)
                 )
             end
-            fd.cdWasActive = active
-            fd.cdWasReal = cdReal
-            if active then
+            frameData.cdWasActive = isActive
+            frameData.cdWasReal = cdReal
+            if isActive then
                 return true
             end
         end
-        dispatcher:RegisterEvent("ACTIONBAR_UPDATE_COOLDOWN")
-        dispatcher:RegisterEvent("SPELL_UPDATE_COOLDOWN") -- aliased to ACTIONBAR_UPDATE_COOLDOWN in the handler
+        dispatch:RegisterEvent("ACTIONBAR_UPDATE_COOLDOWN")
+        dispatch:RegisterEvent("SPELL_UPDATE_COOLDOWN") -- aliased to ACTIONBAR_UPDATE_COOLDOWN in the handler
         -- Dirty-trigger only (early return in handler): a player cast is the
         -- reliable herald of new cooldowns, re-arming the heartbeat walk
         -- below without running button work itself.
-        dispatcher:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
+        dispatch:RegisterUnitEvent("UNIT_SPELLCAST_SUCCEEDED", "player")
         -- Cancel heralds, same dirty-trigger shape: a cancelled cast REFUNDS the GCD,
         -- and a shortened cooldown fires no action-bar event (see SPELL_UPDATE_COOLDOWN
         -- alias note) -- the spell event accompanying the refund lands in the cancel's
         -- own frame, inside the cooldown API's transient-disagreement window. Without
         -- an owning edge the pushed swipe plays out full-length on the cancelled spell.
         -- Player-filtered: silent at idle.
-        dispatcher:RegisterUnitEvent("UNIT_SPELLCAST_STOP", "player")
-        dispatcher:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTED", "player")
-        dispatcher:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP", "player")
+        dispatch:RegisterUnitEvent("UNIT_SPELLCAST_STOP", "player")
+        dispatch:RegisterUnitEvent("UNIT_SPELLCAST_INTERRUPTED", "player")
+        dispatch:RegisterUnitEvent("UNIT_SPELLCAST_EMPOWER_STOP", "player")
         -- Press-time hot-lane triggers (handler's press branch): earliest
         -- edges observing a QUEUED press's cooldown-record update. Quiet
         -- outside active casting; the branch is a nil-check otherwise.
-        dispatcher:RegisterUnitEvent("UNIT_SPELLCAST_SENT", "player")
-        dispatcher:RegisterEvent("CURRENT_SPELL_CAST_CHANGED")
+        dispatch:RegisterUnitEvent("UNIT_SPELLCAST_SENT", "player")
+        dispatch:RegisterEvent("CURRENT_SPELL_CAST_CHANGED")
         -- QuietBroadcasters disables ActionBarActionEventsFrame, which normally
         -- delivers these edges and updates attack flash/checked state.
-        dispatcher:RegisterEvent("START_AUTOREPEAT_SPELL")
-        dispatcher:RegisterEvent("STOP_AUTOREPEAT_SPELL")
-        dispatcher:RegisterEvent("PLAYER_ENTER_COMBAT")
-        dispatcher:RegisterEvent("PLAYER_LEAVE_COMBAT")
+        dispatch:RegisterEvent("START_AUTOREPEAT_SPELL")
+        dispatch:RegisterEvent("STOP_AUTOREPEAT_SPELL")
+        dispatch:RegisterEvent("PLAYER_ENTER_COMBAT")
+        dispatch:RegisterEvent("PLAYER_LEAVE_COMBAT")
         -- ACTIONBAR_UPDATE_STATE deliberately NOT registered: every button's own
         -- Blizzard mixin receives it per button (BUTTON_EVENT_LISTS.action) and drives
         -- SetChecked natively -- a central checked walk is redundant (field-verified).
         -- C_ActionBar.RegisterActionUIButton was probed as a possible engine-side swipe
         -- driver; it paints NOTHING for our buttons (do not re-chase it).
-        dispatcher:RegisterEvent("ACTIONBAR_UPDATE_USABLE")
-        dispatcher:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
-        dispatcher:RegisterEvent("PLAYER_ENTERING_WORLD")
-        dispatcher:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
-        dispatcher:RegisterEvent("SPELL_UPDATE_CHARGES")
-        dispatcher:RegisterEvent("SPELL_UPDATE_ICON")
-        dispatcher:RegisterEvent("UPDATE_VEHICLE_ACTIONBAR")
-        dispatcher:RegisterEvent("UPDATE_OVERRIDE_ACTIONBAR")
+        dispatch:RegisterEvent("ACTIONBAR_UPDATE_USABLE")
+        dispatch:RegisterEvent("ACTIONBAR_SLOT_CHANGED")
+        dispatch:RegisterEvent("PLAYER_ENTERING_WORLD")
+        dispatch:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
+        dispatch:RegisterEvent("SPELL_UPDATE_CHARGES")
+        dispatch:RegisterEvent("SPELL_UPDATE_ICON")
+        dispatch:RegisterEvent("UPDATE_VEHICLE_ACTIONBAR")
+        dispatch:RegisterEvent("UPDATE_OVERRIDE_ACTIONBAR")
         -- Owning edges for Blizzard paging (page arrows, stealth/form bonus
         -- bars): these re-map action attributes, so must land in the
         -- infrequent branch as content edges -- nothing else heals the filled lists.
-        dispatcher:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
-        dispatcher:RegisterEvent("UPDATE_BONUS_ACTIONBAR")
-        dispatcher:RegisterEvent("PLAYER_TARGET_CHANGED")
-        dispatcher:RegisterEvent("CVAR_UPDATE") -- "Show numbers for cooldowns" toggled -> re-apply charge recharge numbers
+        dispatch:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
+        dispatch:RegisterEvent("UPDATE_BONUS_ACTIONBAR")
+        dispatch:RegisterEvent("PLAYER_TARGET_CHANGED")
+        dispatch:RegisterEvent("CVAR_UPDATE") -- "Show numbers for cooldowns" toggled -> re-apply charge recharge numbers
         -- Owning edge for item-count changes on buttons (loot, mail,
         -- vendoring -- none of which cast). Dirty-trigger via the infrequent
         -- branch; also forces the next walk's count pass.
-        dispatcher:RegisterEvent("BAG_UPDATE_DELAYED")
+        dispatch:RegisterEvent("BAG_UPDATE_DELAYED")
         -- Viewer DATA events (talent/hotfix/override re-curation): pure data signals,
         -- no dependency on CDM or the Blizzard viewer UI. Land in the infrequent
         -- branch, retiring button lists via ns._cdFilledDirty; the curated-set memo
         -- retires separately (ns._cdCuratedDirty) -- these three plus SPELLS_CHANGED
         -- and PEW are the ONLY edges that can change what the viewer curates.
-        dispatcher:RegisterEvent("COOLDOWN_VIEWER_DATA_LOADED")
-        dispatcher:RegisterEvent("COOLDOWN_VIEWER_TABLE_HOTFIXED")
-        dispatcher:RegisterEvent("COOLDOWN_VIEWER_SPELL_OVERRIDE_UPDATED")
+        dispatch:RegisterEvent("COOLDOWN_VIEWER_DATA_LOADED")
+        dispatch:RegisterEvent("COOLDOWN_VIEWER_TABLE_HOTFIXED")
+        dispatch:RegisterEvent("COOLDOWN_VIEWER_SPELL_OVERRIDE_UPDATED")
         -- Per-button content refresh for a changed slot. Shared by the
         -- dispatcher's SLOT_CHANGED full walk (arg1 == 0) and the
         -- slot->buttons fast path; on ns.
-        mod._eabSlotRefreshBtn = function(button, action)
+        mod._eabSlotRefreshBtn = function(button, actionSlot)
             -- Assisted-combat slot: its "content changes" are the manager
             -- re-stamping the suggestion (idle spam plus per rotation step in
             -- combat) and only the ICON can differ -- a full refresh would
             -- repaint count/cooldown/tint identically forever. Icon-only,
             -- secret-tolerant setters; cooldown swipes ride the COOLDOWN branch.
-            local _, _, subType = GetActionInfo(action)
+            local _, _, subType = GetActionInfo(actionSlot)
             if subType == "assistedcombat" then
                 local iconTex = button.icon or button.Icon -- same member resolution as ForceButtonRefresh
                 if iconTex then
-                    iconTex:SetTexture(GetActionTexture(action))
-                    iconTex:SetShown(HasAction(action))
+                    iconTex:SetTexture(GetActionTexture(actionSlot))
+                    iconTex:SetShown(HasAction(actionSlot))
                 end
             else
                 -- Slot CONTENTS changed while slot number stayed (spec swap,
                 -- drag-drop): needs the forced refresh path (ForceButtonRefresh).
-                EAB_VTABLE.ForceButtonRefresh(button, action)
-                mod.AB_SyncAttackState(button, action)
+                EAB_VTABLE.ForceButtonRefresh(button, actionSlot)
+                mod.AB_SyncAttackState(button, actionSlot)
                 -- Content changed: drop this slot's memos so every cached visual re-derives fresh.
                 local mfd = EFD(button)
                 mfd.lastCountText = nil
                 mfd.usableState = nil
                 -- Slot emptied: refresh leaves stale count text behind
                 -- (buttons no longer receive ACTIONBAR_SLOT_CHANGED themselves).
-                local filled = HasAction(action)
+                local filled = HasAction(actionSlot)
                 if button.Count and not filled then
                     button.Count:SetText("")
                 end
@@ -1260,7 +1260,7 @@ do
                 -- Equipped-item border, same edge: an item dragged on or off
                 -- kept the old border (or none) until a hover ran Blizzard's
                 -- Update.
-                mod.AB_SyncEquippedBorder(button, action)
+                mod.AB_SyncEquippedBorder(button, actionSlot)
             end
         end
         -- The cast kick: ONE authoritative next-frame pass, shared by the
@@ -1324,13 +1324,13 @@ do
             -- mixin UpdateAction on all ~140 buttons per tick. A charge tick can only
             -- move charge visuals: recharge swipe, count text, charge-aware desat.
             for _, button in ipairs(walkBtns) do
-                local action = button:GetAttribute("action")
-                if action and HasAction(action) then
-                    local fd = EFD(button)
+                local actionSlot = button:GetAttribute("action")
+                if actionSlot and HasAction(actionSlot) then
+                    local frameData = EFD(button)
                     -- Unconditional fetch: fires only on charge ticks, and
                     -- this branch is the SOLE owner of charge visuals.
-                    local chargeInfo = C_ActionBar.GetActionCharges(action)
-                    local chargeShown = (chargeInfo and chargeInfo.maxCharges and chargeInfo.maxCharges > 1)
+                    local charges = C_ActionBar.GetActionCharges(actionSlot)
+                    local chargeShown = (charges and charges.maxCharges and charges.maxCharges > 1)
                             and true
                         or false
                     if chargeShown then
@@ -1342,43 +1342,43 @@ do
                         -- repaint this one button now (push-or-clear, three C
                         -- calls) so the old countdown never ticks on a spell
                         -- back up; push-through walks re-derive the rest.
-                        local ci = C_ActionBar.GetActionCooldown(action)
-                        local cdReal = (ci and ci.isActive and not ci.isOnGCD) and true or false
-                        if cdReal ~= (fd.cdWasReal or false) then
+                        local chargeData = C_ActionBar.GetActionCooldown(actionSlot)
+                        local cdReal = (chargeData and chargeData.isActive and not chargeData.isOnGCD) and true or false
+                        if cdReal ~= (frameData.cdWasReal or false) then
                             -- Assist host: swipe follows the ticker's sample,
                             -- never the slot (see PushButtonCooldown).
                             if
-                                fd.assistSpin
+                                frameData.assistSpin
                                 and C_ActionBar.IsAssistedCombatAction
-                                and C_ActionBar.IsAssistedCombatAction(action)
+                                and C_ActionBar.IsAssistedCombatAction(actionSlot)
                             then
                                 mod.PaintAssistCooldown(button, mod._assistLastSuggest)
                             else
                                 ForceCooldownPaint(button)
                             end
-                            fd.cdWasReal = cdReal
+                            frameData.cdWasReal = cdReal
                         end
-                        local chargeCd = button.chargeCooldown
-                        if not chargeCd and chargeInfo.isActive then
-                            chargeCd = mod.EnsureChargeCooldown(button)
+                        local chargeCooldown = button.chargeCooldown
+                        if not chargeCooldown and charges.isActive then
+                            chargeCooldown = mod.EnsureChargeCooldown(button)
                         end
-                        if chargeCd then
+                        if chargeCooldown then
                             -- Off-GCD charge spends can hit 0 charges without
                             -- a COOLDOWN walk in between; keep the occlusion
                             -- rule current from the charge tick too.
-                            mod.UpdateChargeNumbersVisibility(button, chargeCd, ci, chargeInfo)
-                            if chargeInfo.isActive then
-                                local chargeDur = C_ActionBar.GetActionChargeDuration(action)
+                            mod.UpdateChargeNumbersVisibility(button, chargeCooldown, chargeData, charges)
+                            if charges.isActive then
+                                local chargeDur = C_ActionBar.GetActionChargeDuration(actionSlot)
                                 if chargeDur then
-                                    chargeCd:SetCooldownFromDurationObject(chargeDur)
+                                    chargeCooldown:SetCooldownFromDurationObject(chargeDur)
                                 end
                             else
-                                chargeCd:Clear()
+                                chargeCooldown:Clear()
                             end
                         end
                         -- nil (not false) cd args: the shared function re-fetches
                         -- main-cd state itself for these few charge buttons.
-                        RefreshCooldownVisuals(button, action, nil, nil, chargeInfo)
+                        RefreshCooldownVisuals(button, actionSlot, nil, nil, charges)
                     elseif button.chargeCooldown then
                         button.chargeCooldown:Clear() -- falling edge (temp charge expired, talent swap)
                     end
@@ -1396,22 +1396,22 @@ do
                         -- touch. A throw here aborts the walk, and this handler
                         -- is the SOLE owner of the count text, so the number
                         -- freezes at its last value.
-                        local display = C_ActionBar.GetActionDisplayCount(action)
-                        if issecretvalue and issecretvalue(display) then
-                            button.Count:SetText(display)
-                            fd.lastCountText = nil
+                        local displayMode = C_ActionBar.GetActionDisplayCount(actionSlot)
+                        if issecretvalue and issecretvalue(displayMode) then
+                            button.Count:SetText(displayMode)
+                            frameData.lastCountText = nil
                         else
-                            if display == nil then
-                                display = ""
+                            if displayMode == nil then
+                                displayMode = ""
                             end
-                            if fd.lastCountText ~= display then
-                                fd.lastCountText = display
-                                button.Count:SetText(display)
+                            if frameData.lastCountText ~= displayMode then
+                                frameData.lastCountText = displayMode
+                                button.Count:SetText(displayMode)
                             end
                         end
-                        mod._EABZeroCountAlpha(fd, button.Count, display, action)
+                        mod._EABZeroCountAlpha(frameData, button.Count, displayMode, actionSlot)
                     end
-                    fd.chargeWasLive = (chargeInfo and chargeInfo.isActive) and true or false
+                    frameData.chargeWasLive = (charges and charges.isActive) and true or false
                 end
             end
         end
@@ -1428,47 +1428,47 @@ do
         -- Used by the full walk below and the payload-targeted
         -- SPELL_UPDATE_ICON fast path; on ns.
         mod._cdIconHeal = function(button)
-            local action = button:GetAttribute("action")
-            if action and HasAction(action) then
-                local texture = GetActionTexture(action)
-                local fd = EFD(button)
-                if fd.lastIconTex ~= texture then
-                    fd.lastIconTex = texture
+            local actionSlot = button:GetAttribute("action")
+            if actionSlot and HasAction(actionSlot) then
+                local texture = GetActionTexture(actionSlot)
+                local frameData = EFD(button)
+                if frameData.lastIconTex ~= texture then
+                    frameData.lastIconTex = texture
                     -- Taint-safe refresh; avoids passing secret cooldown values through a tainted call.
-                    EAB_VTABLE.ForceButtonRefresh(button, action)
+                    EAB_VTABLE.ForceButtonRefresh(button, actionSlot)
                 end
             end
         end
-        local function DispWalkIcon(btns)
+        local function DispWalkIcon(buttonList)
             -- Spell overrides change the icon without changing the slot;
             -- heal is memoized per button (ns._cdIconHeal): a morph storm
             -- changes a handful of buttons, never the whole set -- before this memo, the walk ran full mixin UpdateAction on every populated button per pass, the heaviest single line in the module's worst frames.
             local heal = mod._cdIconHeal
-            for _, button in ipairs(btns) do
+            for _, button in ipairs(buttonList) do
                 heal(button)
             end
         end
-        local function DispWalkUsable(btns)
-            for _, button in ipairs(btns) do
-                local ufd = EFD(button)
-                if ufd.rangeTinted then
+        local function DispWalkUsable(buttonList)
+            for _, button in ipairs(buttonList) do
+                local usableData = EFD(button)
+                if usableData.rangeTinted then
                     -- Skip: range system owns vertex color for tinted buttons; force repaint once it releases.
-                    ufd.usableState = nil
+                    usableData.usableState = nil
                 else
-                    local action = button:GetAttribute("action")
-                    if action and HasAction(action) then
-                        local isUsable, notEnoughMana = IsUsableAction(action)
+                    local actionSlot = button:GetAttribute("action")
+                    if actionSlot and HasAction(actionSlot) then
+                        local usable, notEnoughMana = IsUsableAction(actionSlot)
                         -- Tri-state memo: USABLE storms with every
                         -- resource change while chain-casting;
                         -- unchanged buttons skip the vertex push.
-                        local ustate = (isUsable and 1) or (notEnoughMana and 2) or 3
-                        if ufd.usableState ~= ustate then
-                            ufd.usableState = ustate
+                        local usableState = (usable and 1) or (notEnoughMana and 2) or 3
+                        if usableData.usableState ~= usableState then
+                            usableData.usableState = usableState
                             local iconTex = button.icon
                             if iconTex then
-                                if ustate == 1 then
+                                if usableState == 1 then
                                     iconTex:SetVertexColor(1.0, 1.0, 1.0)
-                                elseif ustate == 2 then
+                                elseif usableState == 2 then
                                     iconTex:SetVertexColor(0.5, 0.5, 1.0)
                                 else
                                     iconTex:SetVertexColor(0.4, 0.4, 0.4)
@@ -1614,17 +1614,17 @@ do
                         local okS, set = pcall(C_CooldownViewer.GetCooldownViewerCategorySet, category)
                         if okS and type(set) == "table" then
                             for _, cdID in ipairs(set) do
-                                local okI, ci = pcall(C_CooldownViewer.GetCooldownViewerCooldownInfo, cdID)
-                                if okI and ci and ci.spellID then
-                                    mark(ci.spellID)
-                                    mark(ci.overrideSpellID)
-                                    if type(ci.linkedSpellIDs) == "table" then
-                                        for _, lid in ipairs(ci.linkedSpellIDs) do
+                                local okI, chargeData = pcall(C_CooldownViewer.GetCooldownViewerCooldownInfo, cdID)
+                                if okI and chargeData and chargeData.spellID then
+                                    mark(chargeData.spellID)
+                                    mark(chargeData.overrideSpellID)
+                                    if type(chargeData.linkedSpellIDs) == "table" then
+                                        for _, lid in ipairs(chargeData.linkedSpellIDs) do
                                             mark(lid)
                                         end
                                     end
                                     if C_Spell and C_Spell.GetBaseSpell then
-                                        mark(C_Spell.GetBaseSpell(ci.spellID))
+                                        mark(C_Spell.GetBaseSpell(chargeData.spellID))
                                     end
                                 end
                             end
@@ -1644,13 +1644,13 @@ do
                     -- can never disagree mid-transition. A bar flipping
                     -- visible rejoins on the next rebuild; its show-edge
                     -- reconcile repaints it meanwhile.
-                    local btns = not mod._eabBarDormant[details.key]
+                    local buttonList = not mod._eabBarDormant[details.key]
                             and not mod._eabBarNever[details.key]
                             and barButtons[details.key]
                         or nil
-                    if btns then
+                    if buttonList then
                         local entries = CdTakeTable()
-                        for _, button in ipairs(btns) do
+                        for _, button in ipairs(buttonList) do
                             local a = button:GetAttribute("action")
                             if a and HasAction(a) then
                                 entries[#entries + 1] = button
@@ -1724,15 +1724,15 @@ do
                     and ident > 0
                 then
                     if not only1 or ident == only1 or ident == only2 then
-                        local ci = _macCi[ident]
-                        if ci == nil then
-                            ci = C_Spell.GetSpellCooldown(ident) or false
-                            _macCi[ident] = ci
-                            if ci and ci.isActive then
+                        local chargeData = _macCi[ident]
+                        if chargeData == nil then
+                            chargeData = C_Spell.GetSpellCooldown(ident) or false
+                            _macCi[ident] = chargeData
+                            if chargeData and chargeData.isActive then
                                 _macDur[ident] = C_Spell.GetSpellCooldownDuration(ident)
                             end
                         end
-                        if PushButtonCooldown(button, visOn, ci or nil, _macDur[ident]) then
+                        if PushButtonCooldown(button, visOn, chargeData or nil, _macDur[ident]) then
                             live = true
                         end
                     end
@@ -1750,24 +1750,24 @@ do
         -- tier body -- one fetch + one duration object per probe, pushed to the group's
         -- buttons unconditionally. Payload events fire at chatter rate, so a probe
         -- costs a handful of sink calls on the one named group.
-        local function DispProbe(g, key)
+        local function DispProbe(g, buttonKey)
             local p = ABAR.db.profile
             local visOn = p.desaturateOnCooldown or (p.alphaWhenOnCD or 100) ~= 100
             local GetSpellCd = C_Spell and C_Spell.GetSpellCooldown
             local GetSpellCdDur = C_Spell and C_Spell.GetSpellCooldownDuration
             local live = false
-            local ci = GetSpellCd and GetSpellCd(key) or nil
+            local chargeData = GetSpellCd and GetSpellCd(buttonKey) or nil
             local gDur
-            if ci and ci.isActive then
+            if chargeData and chargeData.isActive then
                 live = true
                 if GetSpellCdDur then
-                    gDur = GetSpellCdDur(key)
+                    gDur = GetSpellCdDur(buttonKey)
                 end
             elseif not GetSpellCd then
                 live = true
             end
             for index = 1, #g do
-                if PushButtonCooldown(g[index], visOn, ci, gDur) then
+                if PushButtonCooldown(g[index], visOn, chargeData, gDur) then
                     live = true
                 end
             end
@@ -1812,13 +1812,13 @@ do
             -- painted with the ~1s GCD object: swipe sweeps too fast,
             -- finishes early, button sits swipe-less until a later
             -- repaint lands mid-cooldown.
-            local function RunGroup(g, spellRef, ci)
+            local function RunGroup(g, spellRef, chargeData)
                 local gDur
-                if ci and ci.isActive and GetSpellCdDur then
+                if chargeData and chargeData.isActive and GetSpellCdDur then
                     gDur = GetSpellCdDur(spellRef)
                 end
                 for index = 1, #g do
-                    if PushButtonCooldown(g[index], visOn, ci, gDur) then
+                    if PushButtonCooldown(g[index], visOn, chargeData, gDur) then
                         liveSeen = true
                     end
                 end
@@ -1832,12 +1832,12 @@ do
                     return
                 end
                 for spellRef, g in pairs(tier) do
-                    local ci = GetSpellCd and GetSpellCd(spellRef) or nil
-                    RunGroup(g, spellRef, ci)
+                    local chargeData = GetSpellCd and GetSpellCd(spellRef) or nil
+                    RunGroup(g, spellRef, chargeData)
                     -- Any active schedule (incl. the GCD, and secret
                     -- schedules -- isActive stays readable) keeps the
                     -- heartbeat awake for the END transition.
-                    if not GetSpellCd or (ci and ci.isActive) then
+                    if not GetSpellCd or (chargeData and chargeData.isActive) then
                         liveSeen = true
                     end
                 end
@@ -1880,9 +1880,9 @@ do
             local pH = ABAR.db.profile
             local visH = pH.desaturateOnCooldown or (pH.alphaWhenOnCD or 100) ~= 100
             PushButtonCooldown(b1, visH)
-            local b2 = mod._cdRecentBtn2
-            if b2 and b2 ~= b1 and (nowH - (mod._cdRecentBtn2At or 0)) < 3 then
-                PushButtonCooldown(b2, visH)
+            local otherBtn = mod._cdRecentBtn2
+            if otherBtn and otherBtn ~= b1 and (nowH - (mod._cdRecentBtn2At or 0)) < 3 then
+                PushButtonCooldown(otherBtn, visH)
             end
         end
         -- Physical-press paint (each button's PostClick hook): the client PREDICTS the
@@ -1936,7 +1936,7 @@ do
             -- normal and charge swipes hide, as on Blizzard's buttons. Alpha only:
             -- the push-through channel keeps feeding them underneath. Re-applied on
             -- every paint, so a charge frame built mid-overlay hides too.
-            local function SetReplace(button, fd, on)
+            local function SetReplace(button, frameData, on)
                 if on then
                     if button.cooldown then
                         button.cooldown:SetAlpha(0)
@@ -1944,15 +1944,15 @@ do
                     if button.chargeCooldown then
                         button.chargeCooldown:SetAlpha(0)
                     end
-                    fd.locReplace = true
-                elseif fd.locReplace then
+                    frameData.locReplace = true
+                elseif frameData.locReplace then
                     if button.cooldown then
                         button.cooldown:SetAlpha(1)
                     end
                     if button.chargeCooldown then
                         button.chargeCooldown:SetAlpha(1)
                     end
-                    fd.locReplace = nil
+                    frameData.locReplace = nil
                 end
             end
             -- An overlay that is over: the normal swipes come back.
@@ -1969,8 +1969,8 @@ do
             -- Falling edge of an overlay that ran its course: bookkeeping only, and
             -- only for one still listed, so a Clear() that fires this script
             -- (ClearLoC drops the button first) cannot re-enter it.
-            local function LoCDone(cd)
-                local b = cd:GetParent()
+            local function LoCDone(cooldown)
+                local b = cooldown:GetParent()
                 if b and isShown[b] then
                     EndLoC(b)
                 end
@@ -1981,27 +1981,27 @@ do
             -- only shows during a CC), so a shape change in the options follows at
             -- the next overlay. No edge line: a square edge would sweep across a
             -- round icon, and the dark swipe is the cue.
-            local function StyleLoC(button, loc, fd)
-                if not fd.locStyled then
-                    fd.locStyled = true
+            local function StyleLoC(button, loc, frameData)
+                if not frameData.locStyled then
+                    frameData.locStyled = true
                     loc:ClearAllPoints()
                     loc:SetAllPoints(button.cooldown or button)
                     loc:SetDrawEdge(false)
                     loc:HookScript("OnCooldownDone", LoCDone)
                 end
-                local mask = fd.shapeApplied and fd.shapeMask or nil
-                if fd.locMask ~= mask then
-                    if fd.locMask then
-                        pcall(loc.RemoveMaskTexture, loc, fd.locMask)
+                local mask = frameData.shapeApplied and frameData.shapeMask or nil
+                if frameData.locMask ~= mask then
+                    if frameData.locMask then
+                        pcall(loc.RemoveMaskTexture, loc, frameData.locMask)
                     end
                     if mask then
                         pcall(loc.AddMaskTexture, loc, mask)
                     end
-                    fd.locMask = mask
+                    frameData.locMask = mask
                 end
-                local texture = mask and fd.shapeMaskPath or nil
-                if fd.locTex ~= texture then
-                    fd.locTex = texture
+                local texture = mask and frameData.shapeMaskPath or nil
+                if frameData.locTex ~= texture then
+                    frameData.locTex = texture
                     pcall(loc.SetSwipeTexture, loc, texture or "")
                     pcall(loc.SetSwipeColor, loc, 0.17, 0, 0, 0.64)
                 end
@@ -2011,18 +2011,18 @@ do
                 if not loc then
                     return
                 end
-                local action = button:GetAttribute("action")
-                local details = action and HasAction(action) and GetLoCInfo(action)
+                local actionSlot = button:GetAttribute("action")
+                local details = actionSlot and HasAction(actionSlot) and GetLoCInfo(actionSlot)
                 if details and details.isActive then
-                    local fd = EFD(button)
-                    StyleLoC(button, loc, fd)
-                    local dur = GetLoCDuration(action)
+                    local frameData = EFD(button)
+                    StyleLoC(button, loc, frameData)
+                    local dur = GetLoCDuration(actionSlot)
                     if dur then
                         loc:SetCooldownFromDurationObject(dur)
                     end
                     isShown[button] = true
                     seen[button] = stamp
-                    SetReplace(button, fd, details.shouldReplaceNormalCooldown)
+                    SetReplace(button, frameData, details.shouldReplaceNormalCooldown)
                 end
             end
             -- One pass over the filled buttons of the shown bars: paint every
@@ -2030,12 +2030,12 @@ do
             -- or their slot or bar left the lists). With no loss of control active
             -- it only clears what still shows.
             mod._abLoCPass = function()
-                local active = GetLoCCount and GetLoCCount() or 0
-                if active == 0 and not next(isShown) then
+                local isActive = GetLoCCount and GetLoCCount() or 0
+                if isActive == 0 and not next(isShown) then
                     return
                 end
                 stamp = stamp + 1
-                if active > 0 then
+                if isActive > 0 then
                     local filled = mod._cdFilled
                     if (mod._cdFilledDirty and mod._cdRebuiltAt ~= GetTime()) or not filled then
                         DispRebuildLists()
@@ -2069,15 +2069,15 @@ do
                 C_Timer_After(0, DeferredLoCPass)
             end
             if GetLoCInfo and GetLoCDuration then
-                dispatcher:RegisterUnitEvent("LOSS_OF_CONTROL_ADDED", "player")
-                dispatcher:RegisterUnitEvent("LOSS_OF_CONTROL_UPDATE", "player")
+                dispatch:RegisterUnitEvent("LOSS_OF_CONTROL_ADDED", "player")
+                dispatch:RegisterUnitEvent("LOSS_OF_CONTROL_UPDATE", "player")
             end
         end
         -- Direct API calls bypass the mixin's OnEvent dispatch, which
         -- triggers UpdateButtonArt (noop + hook), icon bg hook, and other
         -- per-button overhead. With 60 populated buttons, the mixin path
         -- caused visible frame drops on high-frequency events.
-        dispatcher:SetScript("OnEvent", function(_, evt, arg1, arg2, arg3)
+        dispatch:SetScript("OnEvent", function(_, evt, firstArg, arg2, arg3)
             -- Loss of control overlay (ns._abLoCPass above): its own two edges,
             -- and a deferred re-pass when a loading screen ends (a reload mid-CC)
             -- or the bars' content changes under a showing overlay (a form shift
@@ -2097,7 +2097,7 @@ do
             end
             -- Cooldown numbers switched on or off: every action bar's main
             -- countdown at once (the charge countdowns follow in the bar loop).
-            if evt == "CVAR_UPDATE" and arg1 == "countdownForCooldowns" then
+            if evt == "CVAR_UPDATE" and firstArg == "countdownForCooldowns" then
                 mod.ApplyCooldownNumbersHidden()
             end
             if
@@ -2113,9 +2113,9 @@ do
                         or (
                             evt == "ACTIONBAR_SLOT_CHANGED"
                             and not (
-                                arg1
-                                and arg1 ~= 0
-                                and select(3, GetActionInfo(arg1)) == "assistedcombat"
+                                firstArg
+                                and firstArg ~= 0
+                                and select(3, GetActionInfo(firstArg)) == "assistedcombat"
                             )
                         )
                     )
@@ -2183,9 +2183,9 @@ do
                         and not mod._eabBarNever[details.key]
                         and not mod._eabBarDormant[details.key]
                     then
-                        local btns = barButtons[details.key]
-                        if btns then
-                            for _, button in ipairs(btns) do
+                        local buttonList = barButtons[details.key]
+                        if buttonList then
+                            for _, button in ipairs(buttonList) do
                                 mod.AB_SyncAttackState(button, button:GetAttribute("action"), true)
                             end
                         end
@@ -2208,25 +2208,25 @@ do
             -- secret value cannot be a table key.
             if
                 evt == "SPELL_UPDATE_COOLDOWN"
-                and arg1 ~= nil
+                and firstArg ~= nil
                 and not mod._cdFilledDirty
-                and not (issecretvalue and (issecretvalue(arg1) or issecretvalue(arg2)))
+                and not (issecretvalue and (issecretvalue(firstArg) or issecretvalue(arg2)))
             then
                 local fastT, slowT = mod._cdFastSpells, mod._cdSlowSpells
-                local key = arg1
-                local g = (fastT and fastT[key]) or (slowT and slowT[key])
+                local buttonKey = firstArg
+                local g = (fastT and fastT[buttonKey]) or (slowT and slowT[buttonKey])
                 if not g and arg2 ~= nil then
-                    key = arg2
-                    g = (fastT and fastT[key]) or (slowT and slowT[key])
+                    buttonKey = arg2
+                    g = (fastT and fastT[buttonKey]) or (slowT and slowT[buttonKey])
                 end
                 if g then
-                    DispProbe(g, key)
+                    DispProbe(g, buttonKey)
                 end
                 local mac = mod._cdMacroFast
                 if mac and mac[1] then
                     local p = ABAR.db.profile
                     local visOn = p.desaturateOnCooldown or (p.alphaWhenOnCD or 100) ~= 100
-                    if RunMacros(mac, visOn, arg1, arg2) then
+                    if RunMacros(mac, visOn, firstArg, arg2) then
                         mod._cdDirtyUntil = GetTime() + 2
                     end
                 end
@@ -2350,22 +2350,22 @@ do
                 -- stale memo can never wrongly skip.
                 if
                     not mod._cdFilledDirty
-                    and type(arg1) == "number"
-                    and not (issecretvalue and issecretvalue(arg1))
+                    and type(firstArg) == "number"
+                    and not (issecretvalue and issecretvalue(firstArg))
                 then
                     local fastT, slowT = mod._cdFastSpells, mod._cdSlowSpells
-                    local g1 = fastT and fastT[arg1]
-                    local g2 = slowT and slowT[arg1]
+                    local g1 = fastT and fastT[firstArg]
+                    local g2 = slowT and slowT[firstArg]
                     local ovr = C_SpellBook
                             and C_SpellBook.FindSpellOverrideByID
-                            and C_SpellBook.FindSpellOverrideByID(arg1)
+                            and C_SpellBook.FindSpellOverrideByID(firstArg)
                         or nil
                     if
                         not (
                             type(ovr) == "number"
                             and not (issecretvalue and issecretvalue(ovr))
                             and ovr > 0
-                            and ovr ~= arg1
+                            and ovr ~= firstArg
                         )
                     then
                         ovr = nil
@@ -2496,9 +2496,9 @@ do
                 if
                     not (
                         evt == "ACTIONBAR_SLOT_CHANGED"
-                        and arg1
-                        and arg1 ~= 0
-                        and select(3, GetActionInfo(arg1)) == "assistedcombat"
+                        and firstArg
+                        and firstArg ~= 0
+                        and select(3, GetActionInfo(firstArg)) == "assistedcombat"
                     )
                 then
                     mod._cdDirtyUntil = GetTime() + 2
@@ -2542,10 +2542,10 @@ do
                         -- dirty above still runs: tier groups key on the RESOLVED
                         -- spell, which this event flips.
                         local current = mod._cdCuratedMemo
-                        if issecretvalue and (issecretvalue(arg1) or issecretvalue(arg2)) then
+                        if issecretvalue and (issecretvalue(firstArg) or issecretvalue(arg2)) then
                             mod._cdCuratedDirty = true
-                        elseif current and arg1 and arg2 and current[arg1] ~= nil and current[arg2] == nil then
-                            current[arg2] = current[arg1]
+                        elseif current and firstArg and arg2 and current[firstArg] ~= nil and current[arg2] == nil then
+                            current[arg2] = current[firstArg]
                         end
                     elseif
                         evt == "COOLDOWN_VIEWER_DATA_LOADED"
@@ -2575,19 +2575,19 @@ do
                             then
                                 local list2 = barButtons[info2.key]
                                 if list2 then
-                                    for _, b2 in ipairs(list2) do
-                                        local a2 = b2:GetAttribute("action")
-                                        if a2 and HasAction(a2) and b2.Count then
+                                    for _, otherBtn in ipairs(list2) do
+                                        local a2 = otherBtn:GetAttribute("action")
+                                        if a2 and HasAction(a2) and otherBtn.Count then
                                             -- Guard before coercing: same
                                             -- ordering fix as the charge-tick
                                             -- handler; the `or ""` was ahead of
                                             -- the issecretvalue check.
                                             local d2 = C_ActionBar.GetActionDisplayCount(a2)
-                                            local f2 = EFD(b2)
+                                            local f2 = EFD(otherBtn)
                                             if issecretvalue and issecretvalue(d2) then
                                                 -- Secret string (combat): write through
                                                 -- and dirty the memo (never store one).
-                                                b2.Count:SetText(d2)
+                                                otherBtn.Count:SetText(d2)
                                                 f2.lastCountText = nil
                                             else
                                                 if d2 == nil then
@@ -2595,10 +2595,10 @@ do
                                                 end
                                                 if f2.lastCountText ~= d2 then
                                                     f2.lastCountText = d2
-                                                    b2.Count:SetText(d2)
+                                                    otherBtn.Count:SetText(d2)
                                                 end
                                             end
-                                            mod._EABZeroCountAlpha(f2, b2.Count, d2, a2)
+                                            mod._EABZeroCountAlpha(f2, otherBtn.Count, d2, a2)
                                         end
                                     end
                                 end
@@ -2618,23 +2618,23 @@ do
             -- slot number): a loadout swap changing talents/gear/bars at once can fire
             -- it repeatedly, and unthrottled that was a full ~140-button walk per
             -- firing with no coalescing (freeze reported via BTWLoadouts, Embrace 9.0.7).
-            if evt == "ACTIONBAR_SLOT_CHANGED" and arg1 then
+            if evt == "ACTIONBAR_SLOT_CHANGED" and firstArg then
                 local nowTime = GetTime()
                 local nextAt = mod._slotNext
                 if not nextAt then
                     nextAt = {}
                     mod._slotNext = nextAt
                 end
-                local at = nextAt[arg1] or 0
+                local at = nextAt[firstArg] or 0
                 if nowTime < at then
                     local pend = mod._slotPend
                     if not pend then
                         pend = {}
                         mod._slotPend = pend
                     end
-                    if not pend[arg1] then
-                        pend[arg1] = true
-                        local slot = arg1
+                    if not pend[firstArg] then
+                        pend[firstArg] = true
+                        local slot = firstArg
                         -- Built here, under this AB-born entry, so the timer
                         -- callback bills ActionBars. One closure per slot per
                         -- window (max ~4/sec), not per event.
@@ -2650,7 +2650,7 @@ do
                     end
                     return
                 end
-                nextAt[arg1] = nowTime + 0.25
+                nextAt[firstArg] = nowTime + 0.25
             end
             -- Assisted shine follows slot contents; coalesced (storm-safe)
             -- and belt-and-braces vs the OnActionChanged callback -- an
@@ -2706,9 +2706,9 @@ do
             local _ovrSlots
             if
                 evt == "COOLDOWN_VIEWER_SPELL_OVERRIDE_UPDATED"
-                and arg1
+                and firstArg
                 and C_ActionBar.FindSpellActionButtons
-                and not (issecretvalue and (issecretvalue(arg1) or (arg2 ~= nil and issecretvalue(arg2))))
+                and not (issecretvalue and (issecretvalue(firstArg) or (arg2 ~= nil and issecretvalue(arg2))))
             then
                 _ovrSlots = mod._eabOvrSlots
                 if _ovrSlots then
@@ -2717,7 +2717,7 @@ do
                     _ovrSlots = {}
                     mod._eabOvrSlots = _ovrSlots
                 end
-                local ok1, found1 = pcall(C_ActionBar.FindSpellActionButtons, arg1)
+                local ok1, found1 = pcall(C_ActionBar.FindSpellActionButtons, firstArg)
                 local ok2, found2 = true, nil
                 if arg2 then
                     ok2, found2 = pcall(C_ActionBar.FindSpellActionButtons, arg2)
@@ -2743,7 +2743,7 @@ do
                     _ovrSlots = nil
                 end -- lookup refused or secret: the full pass
             end
-            if evt == "ACTIONBAR_SLOT_CHANGED" and arg1 and arg1 ~= 0 then
+            if evt == "ACTIONBAR_SLOT_CHANGED" and firstArg and firstArg ~= 0 then
                 local smap = mod._slotBtnMap
                 if not smap or mod._slotBtnMapDirty then
                     mod._slotBtnMapDirty = nil
@@ -2753,30 +2753,30 @@ do
                         if not info2.isStance and not info2.isPetBar and not mod._eabBarNever[info2.key] then
                             local list2 = barButtons[info2.key]
                             if list2 then
-                                for _, b2 in ipairs(list2) do
-                                    local a2 = b2:GetAttribute("action")
+                                for _, otherBtn in ipairs(list2) do
+                                    local a2 = otherBtn:GetAttribute("action")
                                     if a2 then
                                         local bucket = smap[a2]
                                         if not bucket then
                                             bucket = {}
                                             smap[a2] = bucket
                                         end
-                                        bucket[#bucket + 1] = b2
+                                        bucket[#bucket + 1] = otherBtn
                                     end
                                 end
                             end
                         end
                     end
                 end
-                _slotFast = smap[arg1] or false
+                _slotFast = smap[firstArg] or false
                 if not mod._eabNoBtns then
                     mod._eabNoBtns = {}
                 end
                 if _slotFast then
-                    for _, b2 in ipairs(_slotFast) do
-                        local a2 = b2:GetAttribute("action")
-                        if a2 == arg1 then
-                            mod._eabSlotRefreshBtn(b2, a2)
+                    for _, otherBtn in ipairs(_slotFast) do
+                        local a2 = otherBtn:GetAttribute("action")
+                        if a2 == firstArg then
+                            mod._eabSlotRefreshBtn(otherBtn, a2)
                         end
                     end
                 end
@@ -2786,10 +2786,10 @@ do
                     -- Never/disabled bars pay NOTHING here, content classes included:
                     -- no runtime reveal edge exists, and the dormancy reveal reconcile
                     -- repaints from live state on the settings-driven reveal.
-                    local btns = (not mod._eabBarNever[details.key]) and barButtons[details.key] or nil
+                    local buttonList = (not mod._eabBarNever[details.key]) and barButtons[details.key] or nil
                     -- Repaint branches iterate the filled list; content
                     -- branches (SLOT_CHANGED, ICON, infrequent else) keep the full set.
-                    local walkBtns = (_filled and _filled[details.key]) or btns
+                    local walkBtns = (_filled and _filled[details.key]) or buttonList
                     -- Repaint walks skip bars not currently visible:
                     -- swipes/desat/checked state on hidden buttons render
                     -- nothing, engine-live swipes complete themselves, and a
@@ -2803,15 +2803,15 @@ do
                         or evt == "SPELL_UPDATE_CHARGES"
                     )
                         and not (barFrames[details.key] and barFrames[details.key]:IsVisible())
-                    if btns and not _barHidden then
+                    if buttonList and not _barHidden then
                         if evt == "ACTIONBAR_SLOT_CHANGED" then
                             -- Targeted events were resolved through the map
                             -- fast path above; only arg1 == 0 ("all slots")
                             -- still walks every button here.
-                            for _, button in ipairs((_slotFast == nil) and btns or mod._eabNoBtns) do
-                                local action = button:GetAttribute("action")
-                                if action and (arg1 == 0 or arg1 == action) then
-                                    mod._eabSlotRefreshBtn(button, action)
+                            for _, button in ipairs((_slotFast == nil) and buttonList or mod._eabNoBtns) do
+                                local actionSlot = button:GetAttribute("action")
+                                if actionSlot and (firstArg == 0 or firstArg == actionSlot) then
+                                    mod._eabSlotRefreshBtn(button, actionSlot)
                                 end
                             end
                         elseif evt == "ACTIONBAR_UPDATE_COOLDOWN" then
@@ -2825,16 +2825,16 @@ do
                             -- ns.ApplyCooldownNumbersHidden before this loop). Only
                             -- buttons that already own a charge cooldown pay the fetch,
                             -- so unrelated CVAR_UPDATEs stay near-free.
-                            for _, button in ipairs(btns) do
-                                local chargeCd = button.chargeCooldown
-                                if chargeCd then
-                                    local action = button:GetAttribute("action")
-                                    local success = action and HasAction(action)
+                            for _, button in ipairs(buttonList) do
+                                local chargeCooldown = button.chargeCooldown
+                                if chargeCooldown then
+                                    local actionSlot = button:GetAttribute("action")
+                                    local success = actionSlot and HasAction(actionSlot)
                                     mod.UpdateChargeNumbersVisibility(
                                         button,
-                                        chargeCd,
-                                        success and C_ActionBar.GetActionCooldown(action) or nil,
-                                        success and C_ActionBar.GetActionCharges(action) or nil
+                                        chargeCooldown,
+                                        success and C_ActionBar.GetActionCooldown(actionSlot) or nil,
+                                        success and C_ActionBar.GetActionCharges(actionSlot) or nil
                                     )
                                 end
                             end
@@ -2843,7 +2843,7 @@ do
                         elseif evt == "SPELL_UPDATE_CHARGES" then
                             DispWalkCharges(walkBtns)
                         elseif evt == "SPELL_UPDATE_ICON" then
-                            DispWalkIcon(btns)
+                            DispWalkIcon(buttonList)
                         else
                             -- Infrequent events: full update + usable refresh
                             -- (UpdateButtonArt is nooped, so desat may not
@@ -2896,7 +2896,7 @@ do
                                 _infreqStampNew = true
                             end
                             local canSetAttr = not InCombatLockdown()
-                            local infreqBtns = _infreqDup and mod._eabNoBtns or btns
+                            local infreqBtns = _infreqDup and mod._eabNoBtns or buttonList
                             if _ovrSlots then
                                 local pick = mod._eabOvrPick
                                 if pick then
@@ -2905,7 +2905,7 @@ do
                                     pick = {}
                                     mod._eabOvrPick = pick
                                 end
-                                for _, b in ipairs(btns) do
+                                for _, b in ipairs(buttonList) do
                                     local a = b:GetAttribute("action")
                                     if a then
                                         local take = _ovrSlots[a]
@@ -2938,7 +2938,7 @@ do
                                 -- cooldown refresh (measured 0.7ms per tab). Only the
                                 -- usable tri-state below can legitimately flip on a
                                 -- target swap, and it is memo-gated.
-                                local ufd = EFD(button)
+                                local usableData = EFD(button)
                                 if evt ~= "PLAYER_TARGET_CHANGED" then
                                     -- Taint-safe refresh; avoids passing secret cooldown values through a tainted call.
                                     local infreqAction = button:GetAttribute("action")
@@ -2952,28 +2952,28 @@ do
                                     end
                                     -- Classic WoW UI: a third such channel, the slot ring
                                     -- vs empty-slot art (one field read on every other look).
-                                    if ufd.classicArt then
+                                    if usableData.classicArt then
                                         mod.AB_ClassicSlotRing(
                                             button,
                                             infreqAction and HasAction(infreqAction)
                                         )
                                     end
                                 end
-                                if ufd.rangeTinted then
-                                    ufd.usableState = nil
+                                if usableData.rangeTinted then
+                                    usableData.usableState = nil
                                 else
-                                    local action = button:GetAttribute("action")
-                                    if action and HasAction(action) then
-                                        local isUsable, notEnoughMana = IsUsableAction(action)
+                                    local actionSlot = button:GetAttribute("action")
+                                    if actionSlot and HasAction(actionSlot) then
+                                        local usable, notEnoughMana = IsUsableAction(actionSlot)
                                         -- Same tri-state memo as the USABLE branch.
-                                        local ustate = (isUsable and 1) or (notEnoughMana and 2) or 3
-                                        if ufd.usableState ~= ustate then
-                                            ufd.usableState = ustate
+                                        local usableState = (usable and 1) or (notEnoughMana and 2) or 3
+                                        if usableData.usableState ~= usableState then
+                                            usableData.usableState = usableState
                                             local iconTex = button.icon
                                             if iconTex then
-                                                if ustate == 1 then
+                                                if usableState == 1 then
                                                     iconTex:SetVertexColor(1.0, 1.0, 1.0)
-                                                elseif ustate == 2 then
+                                                elseif usableState == 2 then
                                                     iconTex:SetVertexColor(0.5, 0.5, 1.0)
                                                 else
                                                     iconTex:SetVertexColor(0.4, 0.4, 0.4)
@@ -3023,11 +3023,11 @@ do
                 local eab1 = ExtraActionButton1
                 if eab1 and C_ActionBar.HasExtraActionBar() then
                     if evt == "ACTIONBAR_SLOT_CHANGED" then
-                        local action = eab1:GetAttribute("action")
-                        if action and (arg1 == 0 or arg1 == action) then
+                        local actionSlot = eab1:GetAttribute("action")
+                        if actionSlot and (firstArg == 0 or firstArg == actionSlot) then
                             -- Content changes keep the slot number (see the
                             -- main SLOT_CHANGED branch).
-                            EAB_VTABLE.ForceButtonRefresh(eab1, action)
+                            EAB_VTABLE.ForceButtonRefresh(eab1, actionSlot)
                         end
                     else
                         ForceCooldownPaint(eab1)

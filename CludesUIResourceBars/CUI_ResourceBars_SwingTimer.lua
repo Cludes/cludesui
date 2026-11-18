@@ -138,8 +138,8 @@ local AIM_COLOR = { r = 1, g = 0.82, b = 0.25 }
 
 -- Shell at FILE SCOPE (attribution rule, see _erbEventFrame in the main file):
 -- the OnEvent work bills ResourceBars. Children stay lazy.
-local shell = CreateFrame("Frame", "ERB_SwingTimerFrame", UIParent)
-shell:Hide()
+local shellFrame = CreateFrame("Frame", "ERB_SwingTimerFrame", UIParent)
+shellFrame:Hide()
 
 -- built, rows[i] (row frames in ROWS order), byType[swingType] = row, shown (rows
 -- stacked on screen; a combined off hand takes no slot), live (rows mid-swing),
@@ -244,18 +244,18 @@ local function CanSwing(swingType)
         return true
     end
     local _, oh, ranged = UnitAttackSpeed("player")
-    local speed
+    local swingSpeed
     if swingType == SWING.OffHand then
-        speed = oh
+        swingSpeed = oh
     elseif swingType == SWING.Ranged then
-        speed = ranged
+        swingSpeed = ranged
     else
         return false
     end
-    if not Plain(speed) then
+    if not Plain(swingSpeed) then
         return nil
     end
-    return type(speed) == "number" and speed > 0
+    return type(swingSpeed) == "number" and swingSpeed > 0
 end
 
 -- Shield in the off hand slot: it never swings but counts as an off hand.
@@ -280,31 +280,31 @@ end
 
 -- Rows a queued attack shows on: Main Hand, plus Off Hand unless Queued On Main
 -- Hand Only is on.
-local function QueueRow(def, conf)
-    return def.queue or (def.melee and not conf.queueMainHandOnly)
+local function QueueRow(defaults, conf)
+    return defaults.queue or (defaults.melee and not conf.queueMainHandOnly)
 end
 
 -- A row is shown while its toggle is on and its slot can swing: the live answer
 -- when it is plain, else the last one known for that row (a swing of its type
 -- is proof too, see PLAYER_SWING). Nothing known yet reads as no row. Always
 -- Show Rows shows every ticked row; row._canSwing keeps the real answer.
-local function RowWanted(def, conf, row)
-    if conf and conf[def.show] == false then
+local function RowWanted(defaults, conf, swingRow)
+    if conf and conf[defaults.show] == false then
         return false
     end
-    local can = CanSwing(def.type)
-    if can == nil then
-        can = row and row._canSwing or false
-    elseif row then
-        row._canSwing = can
+    local canSwing = CanSwing(defaults.type)
+    if canSwing == nil then
+        canSwing = swingRow and swingRow._canSwing or false
+    elseif swingRow then
+        swingRow._canSwing = canSwing
     end
     if conf and conf.alwaysShowRows then
         return true
     end
-    if not can and def.type == SWING.OffHand and ShieldOff(conf) then
+    if not canSwing and defaults.type == SWING.OffHand and ShieldOff(conf) then
         return true
     end
-    return can
+    return canSwing
 end
 
 -- Rows the frame would stack right now (from the live rows once built, from the
@@ -346,28 +346,28 @@ local function Size(conf)
     return conf.width or 220, num * hgt + (num - 1) * sp
 end
 
-local function RowColor(conf, def)
+local function RowColor(conf, defaults)
     if conf.classColored then
         local cc = mod.CLASS_COLORS and mod.CLASS_COLORS[select(2, UnitClass("player"))]
         if cc then
-            return cc[1], cc[2], cc[3], conf[def.key .. "A"] or 1
+            return cc[1], cc[2], cc[3], conf[defaults.key .. "A"] or 1
         end
     end
-    local k = def.key
+    local k = defaults.key
     return conf[k .. "R"] or 1, conf[k .. "G"] or 1, conf[k .. "B"] or 1, conf[k .. "A"] or 1
 end
 
 -- Spark tint: the row's own spark colour once set, else white. A combined off
 -- hand's spark is its whole display: unset, it takes the row's fill colour.
 -- unset: the tint it has without a colour of its own.
-local function SparkColor(conf, def, merged, unset)
-    local k = def.key .. "Spark"
+local function SparkColor(conf, defaults, merged, unset)
+    local k = defaults.key .. "Spark"
     local region = not unset and conf[k .. "R"]
     if region then
         return region, conf[k .. "G"] or 1, conf[k .. "B"] or 1, conf[k .. "A"] or 1
     end
     if merged then
-        return RowColor(conf, def)
+        return RowColor(conf, defaults)
     end
     return 1, 1, 1, 1
 end
@@ -436,83 +436,83 @@ end
 --  Rows
 -------------------------------------------------------------------------------
 
-local function BuildRow(def)
-    local row = CreateFrame("Frame", nil, shell)
-    row._def = def
+local function BuildRow(defaults)
+    local swingRow = CreateFrame("Frame", nil, shellFrame)
+    swingRow._def = defaults
 
-    local backdrop = row:CreateTexture(nil, "BACKGROUND")
+    local backdrop = swingRow:CreateTexture(nil, "BACKGROUND")
     backdrop:SetAllPoints()
-    row._bg = backdrop
+    swingRow._bg = backdrop
 
-    local bdr = CreateFrame("Frame", nil, row)
-    bdr:SetAllPoints(row)
-    bdr:SetFrameLevel(row:GetFrameLevel() + 5)
-    row._border = bdr
+    local borderTex = CreateFrame("Frame", nil, swingRow)
+    borderTex:SetAllPoints(swingRow)
+    borderTex:SetFrameLevel(swingRow:GetFrameLevel() + 5)
+    swingRow._border = borderTex
     local Pix = CludesUI and CludesUI.PP
     if Pix then
-        Pix.CreateBorder(bdr, 0, 0, 0, 1, 1)
+        Pix.CreateBorder(borderTex, 0, 0, 0, 1, 1)
     end
 
-    local clip = CreateFrame("Frame", nil, row)
-    clip:SetClipsChildren(true)
-    row._clip = clip
+    local clipper = CreateFrame("Frame", nil, swingRow)
+    clipper:SetClipsChildren(true)
+    swingRow._clip = clipper
 
-    local barFrame = CreateFrame("StatusBar", nil, clip)
+    local barFrame = CreateFrame("StatusBar", nil, clipper)
     barFrame:SetMinMaxValues(0, 1)
     barFrame:SetValue(0)
-    row._bar = barFrame
+    swingRow._bar = barFrame
     -- One duration object per row, re-set per swing and handed to the bar
     -- timer (the QoL timer's shape); never read back in Lua.
-    row._durObj = C_DurationUtil.CreateDuration()
+    swingRow._durObj = C_DurationUtil.CreateDuration()
 
     -- Spark (same texture/approach as the cast and GCD bars)
-    local sparkFrame = CreateFrame("Frame", nil, clip)
-    sparkFrame:SetAllPoints(barFrame)
-    sparkFrame:SetFrameLevel(barFrame:GetFrameLevel() + 2)
-    local spark = sparkFrame:CreateTexture(nil, "OVERLAY", nil, 1)
+    local sparkHolder = CreateFrame("Frame", nil, clipper)
+    sparkHolder:SetAllPoints(barFrame)
+    sparkHolder:SetFrameLevel(barFrame:GetFrameLevel() + 2)
+    local spark = sparkHolder:CreateTexture(nil, "OVERLAY", nil, 1)
     spark:SetTexture(mod.SPARK_TEX)
     spark:SetBlendMode("ADD")
-    row._spark = spark
-    row._sparkFrame = sparkFrame
+    swingRow._spark = spark
+    swingRow._sparkFrame = sparkHolder
 
     -- Text above the fill; the tag on the left, the countdown on the right.
-    local textFrame = CreateFrame("Frame", nil, row)
-    textFrame:SetAllPoints(row)
+    local textFrame = CreateFrame("Frame", nil, swingRow)
+    textFrame:SetAllPoints(swingRow)
     textFrame:SetFrameLevel(barFrame:GetFrameLevel() + 3)
-    row._textFrame = textFrame
+    swingRow._textFrame = textFrame
     -- Font before any SetText: a FontString with no font errors on SetText
     -- ("Font not set", seen on the Forever client). ApplyRowLook re-sizes it.
-    local tag = textFrame:CreateFontString(nil, "OVERLAY")
-    mod.SetRBFont(tag, mod.GetRBFont(), 11)
-    tag:SetPoint("LEFT", row, "LEFT", 4, 0)
-    tag:SetJustifyH("LEFT")
-    tag:SetWordWrap(false)
-    tag:SetText(def.tag)
-    row._tag = tag
-    local time = textFrame:CreateFontString(nil, "OVERLAY")
-    mod.SetRBFont(time, mod.GetRBFont(), 11)
-    time:SetPoint("RIGHT", row, "RIGHT", -4, 0)
-    time:SetJustifyH("RIGHT")
-    time:SetWordWrap(false)
-    time:SetText("")
-    row._time = time
+    local tagText = textFrame:CreateFontString(nil, "OVERLAY")
+    mod.SetRBFont(tagText, mod.GetRBFont(), 11)
+    tagText:SetPoint("LEFT", swingRow, "LEFT", 4, 0)
+    tagText:SetJustifyH("LEFT")
+    tagText:SetWordWrap(false)
+    tagText:SetText(defaults.tag)
+    swingRow._tag = tagText
+    local swingTime = textFrame:CreateFontString(nil, "OVERLAY")
+    mod.SetRBFont(swingTime, mod.GetRBFont(), 11)
+    swingTime:SetPoint("RIGHT", swingRow, "RIGHT", -4, 0)
+    swingTime:SetJustifyH("RIGHT")
+    swingTime:SetWordWrap(false)
+    swingTime:SetText("")
+    swingRow._time = swingTime
     -- The countdown, written engine-side from the row's duration object.
     local fmt = C_DurationUtil.CreateDurationTextBinding and TimeFormatter()
     if fmt then
         local b = C_DurationUtil.CreateDurationTextBinding()
-        b:SetFontString(time)
-        b:SetDuration(row._durObj)
+        b:SetFontString(swingTime)
+        b:SetDuration(swingRow._durObj)
         b:SetFormatter(fmt)
         b:SetUpdateInterval(0.05)
         b:SetExpiredText("")
         b:SetZeroDurationText("")
         b:SetEnabled(false)
-        row._timeBind = b
-        row._timeBindOn = false
+        swingRow._timeBind = b
+        swingRow._timeBindOn = false
     end
 
-    row._outOfRange = false
-    return row
+    swingRow._outOfRange = false
+    return swingRow
 end
 
 -- Out-of-range look: Blizzard dims the whole row to 0.4 and paints the text
@@ -520,36 +520,36 @@ end
 -- combined off-hand row keeps no bg, border or stock frame (alpha, not Hide: a
 -- border re-apply shows its frame again); its range dims the clip, i.e. its
 -- spark.
-local function ApplyRangeLook(row, conf)
+local function ApplyRangeLook(swingRow, conf)
     conf = conf or P()
-    local oor = row._outOfRange and not S.sample
-    local alpha = oor and ((conf and conf.outOfRangeAlpha) or 0.4) or 1
-    local frameAlpha = row._merged and 0 or alpha
-    row._bg:SetAlpha(frameAlpha)
-    row._border:SetAlpha(frameAlpha)
-    if row._blizzBarBg then
-        row._blizzBarBg:SetAlpha(frameAlpha)
+    local outOfRange = swingRow._outOfRange and not S.sample
+    local alpha = outOfRange and ((conf and conf.outOfRangeAlpha) or 0.4) or 1
+    local frameAlpha = swingRow._merged and 0 or alpha
+    swingRow._bg:SetAlpha(frameAlpha)
+    swingRow._border:SetAlpha(frameAlpha)
+    if swingRow._blizzBarBg then
+        swingRow._blizzBarBg:SetAlpha(frameAlpha)
     end
-    if row._classicArt then
-        row._classicArt:SetAlpha(frameAlpha)
+    if swingRow._classicArt then
+        swingRow._classicArt:SetAlpha(frameAlpha)
     end
-    row._clip:SetAlpha(alpha)
-    if oor then
-        row._tag:SetTextColor(1, 0.1, 0.1, 1)
-        row._time:SetTextColor(1, 0.1, 0.1, 1)
+    swingRow._clip:SetAlpha(alpha)
+    if outOfRange then
+        swingRow._tag:SetTextColor(1, 0.1, 0.1, 1)
+        swingRow._time:SetTextColor(1, 0.1, 0.1, 1)
     else
-        row._tag:SetTextColor(1, 1, 1, 1)
-        row._time:SetTextColor(1, 1, 1, 1)
+        swingRow._tag:SetTextColor(1, 1, 1, 1)
+        swingRow._time:SetTextColor(1, 1, 1, 1)
     end
 end
 
-local function SetOutOfRange(row, oor)
-    oor = oor and true or false
-    if row._outOfRange == oor then
+local function SetOutOfRange(swingRow, outOfRange)
+    outOfRange = outOfRange and true or false
+    if swingRow._outOfRange == outOfRange then
         return
     end
-    row._outOfRange = oor
-    ApplyRangeLook(row)
+    swingRow._outOfRange = outOfRange
+    ApplyRangeLook(swingRow)
 end
 
 -- Range tracking is one engine flag per swing type, and Blizzard's own timer
@@ -557,28 +557,28 @@ end
 -- this never dedupes: every row refresh and every target change re-asserts our
 -- answer, and a flip from the other frame can never leave a row undimmed.
 -- S.rangeOn is the memo UpdateRangeRow reads, not a send gate.
-local function SetRangeCheck(swingType, on)
-    on = on and true or false
-    S.rangeOn[swingType] = on
-    C_SwingTimer.EnableRangeCheck(swingType, on)
+local function SetRangeCheck(swingType, enabled)
+    enabled = enabled and true or false
+    S.rangeOn[swingType] = enabled
+    C_SwingTimer.EnableRangeCheck(swingType, enabled)
 end
 
 -- Re-read range for one row from the API (target change, row shown).
-local function UpdateRangeRow(row)
-    if not S.rangeOn[row._def.type] then
-        SetOutOfRange(row, false)
+local function UpdateRangeRow(swingRow)
+    if not S.rangeOn[swingRow._def.type] then
+        SetOutOfRange(swingRow, false)
         return
     end
     -- nil = no check could be made (no target, untargetable, no weapon): NOT out of range.
-    local inRange = C_SwingTimer.IsTargetWithinSwingRange(row._def.type)
-    SetOutOfRange(row, Plain(inRange) and inRange == false)
+    local inRange = C_SwingTimer.IsTargetWithinSwingRange(swingRow._def.type)
+    SetOutOfRange(swingRow, Plain(inRange) and inRange == false)
 end
 
 local function UpdateRangeAll()
     for i = 1, #S.rows do
-        local row = S.rows[i]
-        if row:IsShown() then
-            UpdateRangeRow(row)
+        local swingRow = S.rows[i]
+        if swingRow:IsShown() then
+            UpdateRangeRow(swingRow)
         end
     end
 end
@@ -588,14 +588,14 @@ end
 -- mid-swing (not while it waits: no edge moves). A combined off-hand
 -- row's spark IS the off-hand display: it ignores Show Spark and shows only
 -- mid-swing. Unlock movers up show both.
-local function UpdateSpark(row, conf)
-    local on
-    if row._merged then
-        on = row._live or S.sample
+local function UpdateSpark(swingRow, conf)
+    local enabled
+    if swingRow._merged then
+        enabled = swingRow._live or S.sample
     else
-        on = conf and conf.showSpark and ((row._live and not row._waiting) or S.sample)
+        enabled = conf and conf.showSpark and ((swingRow._live and not swingRow._waiting) or S.sample)
     end
-    row._spark:SetShown(on and true or false)
+    swingRow._spark:SetShown(enabled and true or false)
 end
 
 -- Zones mark the end of a running swing: GO (`lat`: the swing's last world
@@ -614,33 +614,33 @@ local function HideZone(z)
     end
 end
 
-local function HideZones(row)
-    local zones = row._zones
-    if zones then
-        HideZone(zones.lat)
-        HideZone(zones.aim)
+local function HideZones(swingRow)
+    local zoneList = swingRow._zones
+    if zoneList then
+        HideZone(zoneList.lat)
+        HideZone(zoneList.aim)
     end
 end
 
-local function StyleZone(row, key, on, texPath, region, g, b, a, backSub, frontSub)
-    local zones = row._zones
-    local z = zones and zones[key]
-    if not on or row._merged then
+local function StyleZone(swingRow, key, enabled, texPath, region, g, b, a, backSub, frontSub)
+    local zoneList = swingRow._zones
+    local z = zoneList and zoneList[key]
+    if not enabled or swingRow._merged then
         HideZone(z)
         return
     end
     if not z then
-        if not zones then
-            zones = {}
-            row._zones = zones
+        if not zoneList then
+            zoneList = {}
+            swingRow._zones = zoneList
         end
         z = {
-            back = row._clip:CreateTexture(nil, "ARTWORK", nil, backSub),
-            front = row._bar:CreateTexture(nil, "OVERLAY", nil, frontSub),
+            back = swingRow._clip:CreateTexture(nil, "ARTWORK", nil, backSub),
+            front = swingRow._bar:CreateTexture(nil, "OVERLAY", nil, frontSub),
         }
         z.back:Hide()
         z.front:Hide()
-        zones[key] = z
+        zoneList[key] = z
     end
     z.back:SetTexture(texPath)
     z.back:SetVertexColor(region, g, b, a)
@@ -650,12 +650,12 @@ end
 
 -- `deplete`: the phase ends on the left (its fill drains), else on the right.
 -- `offset`: seconds the zone sits back from that end (STILL, one latency).
-local function PlaceZone(row, z, conf, secs, dur, deplete, offset)
+local function PlaceZone(swingRow, z, conf, secs, dur, deplete, offset)
     if not (secs and secs > 0 and dur and dur > 0) then
         HideZone(z)
         return
     end
-    local wid = row._clip:GetWidth()
+    local wid = swingRow._clip:GetWidth()
     if not (wid and wid > 0) then
         wid = conf.width or 220
     end
@@ -671,19 +671,19 @@ local function PlaceZone(row, z, conf, secs, dur, deplete, offset)
     elseif zw > room then
         zw = room
     end
-    local zone = deplete and z.front or z.back
+    local zoneTex = deplete and z.front or z.back
     local other = deplete and z.back or z.front
     other:Hide()
-    zone:ClearAllPoints()
+    zoneTex:ClearAllPoints()
     if deplete then
-        zone:SetPoint("TOPLEFT", row._clip, "TOPLEFT", off, 0)
-        zone:SetPoint("BOTTOMLEFT", row._clip, "BOTTOMLEFT", off, 0)
+        zoneTex:SetPoint("TOPLEFT", swingRow._clip, "TOPLEFT", off, 0)
+        zoneTex:SetPoint("BOTTOMLEFT", swingRow._clip, "BOTTOMLEFT", off, 0)
     else
-        zone:SetPoint("TOPRIGHT", row._clip, "TOPRIGHT", -off, 0)
-        zone:SetPoint("BOTTOMRIGHT", row._clip, "BOTTOMRIGHT", -off, 0)
+        zoneTex:SetPoint("TOPRIGHT", swingRow._clip, "TOPRIGHT", -off, 0)
+        zoneTex:SetPoint("BOTTOMRIGHT", swingRow._clip, "BOTTOMRIGHT", -off, 0)
     end
-    zone:SetWidth(zw)
-    zone:Show()
+    zoneTex:SetWidth(zw)
+    zoneTex:Show()
 end
 
 -- World latency in seconds (home until world is measured), nil when unknown.
@@ -707,21 +707,21 @@ local function GuideOn(conf)
     return conf.moveGuide == "segments" or conf.moveGuide == "windup"
 end
 
-local function GuideRow(row, conf)
-    return GuideOn(conf) and S.aimClass and row._def.type == SWING.Ranged
+local function GuideRow(swingRow, conf)
+    return GuideOn(conf) and S.aimClass and swingRow._def.type == SWING.Ranged
 end
 
-local function WindRow(row, conf)
-    return conf.moveGuide == "windup" and GuideRow(row, conf)
+local function WindRow(swingRow, conf)
+    return conf.moveGuide == "windup" and GuideRow(swingRow, conf)
 end
 
-local function StillRow(row, conf)
-    return conf.moveGuide == "segments" and GuideRow(row, conf)
+local function StillRow(swingRow, conf)
+    return conf.moveGuide == "segments" and GuideRow(swingRow, conf)
 end
 
-local function StyleZones(row, conf, texPath)
+local function StyleZones(swingRow, conf, texPath)
     StyleZone(
-        row,
+        swingRow,
         "lat",
         GuideOn(conf),
         texPath,
@@ -734,9 +734,9 @@ local function StyleZones(row, conf, texPath)
     )
     local c = AIM_COLOR
     StyleZone(
-        row,
+        swingRow,
         "aim",
-        StillRow(row, conf),
+        StillRow(swingRow, conf),
         texPath,
         conf.aimR or c.r,
         conf.aimG or c.g,
@@ -750,34 +750,34 @@ end
 -- Both zones on a swing, from the latency read at its start (_rtt). A Wind-Up
 -- row's swing ends at its aim, not at the shot, so its GO waits for the aim
 -- phase (PlaceAimLatency).
-local function UpdateZones(row, conf, dur)
-    local zones = row._zones
-    if not zones then
+local function UpdateZones(swingRow, conf, dur)
+    local zoneList = swingRow._zones
+    if not zoneList then
         return
     end
-    local lat, aim = zones.lat, zones.aim
-    local rtt = row._rtt or NetLatency() or 0
+    local lat, aimTex = zoneList.lat, zoneList.aim
+    local rtt = swingRow._rtt or NetLatency() or 0
     if lat then
-        if GuideOn(conf) and not row._merged and not WindRow(row, conf) then
-            PlaceZone(row, lat, conf, rtt, dur, conf.depleteFill)
+        if GuideOn(conf) and not swingRow._merged and not WindRow(swingRow, conf) then
+            PlaceZone(swingRow, lat, conf, rtt, dur, conf.depleteFill)
         else
             HideZone(lat)
         end
     end
-    if aim then
-        if StillRow(row, conf) then
-            PlaceZone(row, aim, conf, AIM_TIME, dur, conf.depleteFill, rtt)
+    if aimTex then
+        if StillRow(swingRow, conf) then
+            PlaceZone(swingRow, aimTex, conf, AIM_TIME, dur, conf.depleteFill, rtt)
         else
-            HideZone(aim)
+            HideZone(aimTex)
         end
     end
 end
 
 -- GO at the end of an aim phase, which runs opposite to the swing.
-local function PlaceAimLatency(row, conf, from, to)
-    local lat = row._zones and row._zones.lat
-    if lat and GuideOn(conf) and not row._merged then
-        PlaceZone(row, lat, conf, NetLatency(), to - from, not conf.depleteFill)
+local function PlaceAimLatency(swingRow, conf, from, to)
+    local lat = swingRow._zones and swingRow._zones.lat
+    if lat and GuideOn(conf) and not swingRow._merged then
+        PlaceZone(swingRow, lat, conf, NetLatency(), to - from, not conf.depleteFill)
     end
 end
 
@@ -794,8 +794,8 @@ end
 
 -- The row's attack is on right now (melee rows: Auto Attack; Ranged: the
 -- auto-repeat shot).
-local function AttackOn(def)
-    if def.melee then
+local function AttackOn(defaults)
+    if defaults.melee then
         return S.meleeOn == true
     end
     return S.repeatOn == true
@@ -805,12 +805,12 @@ end
 -- State Full or on a guide row (a held shot). A hidden row (no weapon in the
 -- slot) never waits: it would count as live and hold the bar up under Hide
 -- When Idle.
-local function ShouldWait(row, conf)
-    return row:IsShown()
-            and row._canSwing ~= false
-            and not row._merged
-            and AttackOn(row._def)
-            and (StateFull(conf) or GuideRow(row, conf))
+local function ShouldWait(swingRow, conf)
+    return swingRow:IsShown()
+            and swingRow._canSwing ~= false
+            and not swingRow._merged
+            and AttackOn(swingRow._def)
+            and (StateFull(conf) or GuideRow(swingRow, conf))
             and true
         or false
 end
@@ -821,28 +821,28 @@ end
 -- static (RemainingTime paints empty, ElapsedTime full: the GCD bar's idle
 -- recipe), so the engine has nothing left to animate. The SetValue keeps the
 -- value channel coherent with what is drawn.
-local function IdleRow(row, conf)
-    if row._waiting or row._aiming then
-        row._waiting, row._aiming = nil, nil
+local function IdleRow(swingRow, conf)
+    if swingRow._waiting or swingRow._aiming then
+        swingRow._waiting, swingRow._aiming = nil, nil
         if conf then
-            ApplyRowFill(row, conf)
+            ApplyRowFill(swingRow, conf)
         end
     end
-    row._aimAt = nil
-    if row._live then
-        row._live = nil
+    swingRow._aimAt = nil
+    if swingRow._live then
+        swingRow._live = nil
         S.live = S.live - 1
-        UpdateSpark(row, conf)
+        UpdateSpark(swingRow, conf)
     end
-    row._end = nil
+    swingRow._end = nil
     local full = conf and conf.idleShowFill == true
-    local object = row._durObj
+    local object = swingRow._durObj
     object:SetTimeFromStart(GetTime() - 1, 1)
-    row._bar:SetTimerDuration(object, IMMEDIATE, full and DIR.ElapsedTime or DIR.RemainingTime)
-    row._bar:SetValue(full and 1 or 0)
-    SyncTimeText(row, conf)
-    row._time:SetText("")
-    HideZones(row)
+    swingRow._bar:SetTimerDuration(object, IMMEDIATE, full and DIR.ElapsedTime or DIR.RemainingTime)
+    swingRow._bar:SetValue(full and 1 or 0)
+    SyncTimeText(swingRow, conf)
+    swingRow._time:SetText("")
+    HideZones(swingRow)
 end
 
 -- Defined below the waiting state; ArmEdges schedules it at a swing's edges.
@@ -856,22 +856,22 @@ local END_SLACK = 0.05
 -- Wind-Up row's aim phase, the Text Cue's Still) and, with the Text Cue, the
 -- last latency (Go). Each runs EndEdge, which acts only on what is due, so a
 -- stale or repeated one does nothing.
-local function ArmEdges(row, conf)
-    local e = row._end
+local function ArmEdges(swingRow, conf)
+    local e = swingRow._end
     if not e then
         return
     end
     local nowTime = GetTime()
     C_Timer.After(math.max(e - nowTime, 0), EndEdge)
-    if not GuideRow(row, conf) then
+    if not GuideRow(swingRow, conf) then
         return
     end
-    local a = row._aimAt
-    if a and not row._aiming and (conf.moveCue or WindRow(row, conf)) then
+    local a = swingRow._aimAt
+    if a and not swingRow._aiming and (conf.moveCue or WindRow(swingRow, conf)) then
         C_Timer.After(math.max(a - nowTime, 0), EndEdge)
     end
     if conf.moveCue then
-        local go = e - (row._rtt or 0)
+        local go = e - (swingRow._rtt or 0)
         if go > nowTime then
             C_Timer.After(go - nowTime, EndEdge)
         end
@@ -881,24 +881,24 @@ end
 -- The Text Cue's Move countdown: a second binding on the row's time text, on a
 -- duration object that ends at Stop by, reading Still once it runs out. nil
 -- when the client refused the format.
-local function CueBind(row)
-    if row._cueBind then
-        return row._cueBind
+local function CueBind(swingRow)
+    if swingRow._cueBind then
+        return swingRow._cueBind
     end
-    local fmt = row._timeBind and CueFormatter()
+    local fmt = swingRow._timeBind and CueFormatter()
     if not fmt then
         return nil
     end
-    row._cueObj = C_DurationUtil.CreateDuration()
+    swingRow._cueObj = C_DurationUtil.CreateDuration()
     local b = C_DurationUtil.CreateDurationTextBinding()
-    b:SetFontString(row._time)
-    b:SetDuration(row._cueObj)
+    b:SetFontString(swingRow._time)
+    b:SetDuration(swingRow._cueObj)
     b:SetFormatter(fmt)
     b:SetUpdateInterval(0.05)
     b:SetExpiredText(CludesUI.L("Still"))
     b:SetZeroDurationText(CludesUI.L("Still"))
     b:SetEnabled(false)
-    row._cueBind, row._cueBindOn = b, false
+    swingRow._cueBind, swingRow._cueBindOn = b, false
     return b
 end
 
@@ -906,72 +906,72 @@ end
 -- the Text Cue on a guide row the seconds left to move until Stop by, then
 -- Still and, in the swing's last latency, Go. Every other state writes its own
 -- text with both bindings off. Runs at each edge and on a settings pass.
-function SyncTimeText(row, conf)
-    local b = row._timeBind
+function SyncTimeText(swingRow, conf)
+    local b = swingRow._timeBind
     if not b then
         return
     end
-    local phase
+    local phaseNum
     if
         conf
         and conf.showTime ~= false
-        and not row._merged
-        and row._live
-        and not row._waiting
+        and not swingRow._merged
+        and swingRow._live
+        and not swingRow._waiting
         and not S.sample
     then
-        phase = "swing"
-        if conf.moveCue and GuideRow(row, conf) then
+        phaseNum = "swing"
+        if conf.moveCue and GuideRow(swingRow, conf) then
             local nowTime = GetTime()
-            if row._end and row._end - nowTime <= (row._rtt or 0) + END_SLACK then
-                phase = "go"
-            elseif row._aiming or not (row._aimAt and row._start) or nowTime >= row._aimAt - END_SLACK then
-                phase = "still"
-            elseif CueBind(row) then
-                phase = "move"
+            if swingRow._end and swingRow._end - nowTime <= (swingRow._rtt or 0) + END_SLACK then
+                phaseNum = "go"
+            elseif swingRow._aiming or not (swingRow._aimAt and swingRow._start) or nowTime >= swingRow._aimAt - END_SLACK then
+                phaseNum = "still"
+            elseif CueBind(swingRow) then
+                phaseNum = "move"
             end
         end
     end
-    local swingOn = phase == "swing"
-    if swingOn then
+    local swinging = phaseNum == "swing"
+    if swinging then
         -- A Wind-Up row's bar runs only to Stop by; its countdown still runs to
         -- the shot, on a duration object of its own.
-        local target = row._durObj
-        if not row._aiming and row._start and row._end and WindRow(row, conf) then
-            local so = row._swingObj
-            if not so then
-                so = C_DurationUtil.CreateDuration()
-                row._swingObj = so
+        local target = swingRow._durObj
+        if not swingRow._aiming and swingRow._start and swingRow._end and WindRow(swingRow, conf) then
+            local swingOpts = swingRow._swingObj
+            if not swingOpts then
+                swingOpts = C_DurationUtil.CreateDuration()
+                swingRow._swingObj = swingOpts
             end
-            so:SetTimeFromStart(row._start, row._end - row._start)
-            target = so
+            swingOpts:SetTimeFromStart(swingRow._start, swingRow._end - swingRow._start)
+            target = swingOpts
         end
-        if target ~= row._bindObj then
-            row._bindObj = target
+        if target ~= swingRow._bindObj then
+            swingRow._bindObj = target
             b:SetDuration(target)
         end
     end
-    if swingOn ~= row._timeBindOn then
-        row._timeBindOn = swingOn
-        b:SetEnabled(swingOn)
+    if swinging ~= swingRow._timeBindOn then
+        swingRow._timeBindOn = swinging
+        b:SetEnabled(swinging)
     end
-    local callback = row._cueBind
-    local moveOn = phase == "move"
+    local callback = swingRow._cueBind
+    local moveOn = phaseNum == "move"
     if moveOn then
-        row._cueObj:SetTimeFromStart(row._start, math.max(row._aimAt - row._start, 0.01))
+        swingRow._cueObj:SetTimeFromStart(swingRow._start, math.max(swingRow._aimAt - swingRow._start, 0.01))
     end
-    if callback and moveOn ~= row._cueBindOn then
-        row._cueBindOn = moveOn
+    if callback and moveOn ~= swingRow._cueBindOn then
+        swingRow._cueBindOn = moveOn
         callback:SetEnabled(moveOn)
     end
-    if swingOn then
+    if swinging then
         b:UpdateFontString()
     elseif moveOn then
         callback:UpdateFontString()
-    elseif phase == "still" then
-        row._time:SetText(CludesUI.L("Still"))
-    elseif phase == "go" then
-        row._time:SetText(CludesUI.L("Go"))
+    elseif phaseNum == "still" then
+        swingRow._time:SetText(CludesUI.L("Still"))
+    elseif phaseNum == "go" then
+        swingRow._time:SetText(CludesUI.L("Go"))
     end
 end
 
@@ -985,42 +985,42 @@ end
 -- the latency read for this swing. A guide row's _aimAt is its Stop by point:
 -- AIM_TIME plus one latency before the shot. A Wind-Up row's bar is the reload
 -- only, up to _aimAt; a deadline there starts the aim phase.
-local function StartRow(row, dur, conf)
+local function StartRow(swingRow, dur, conf)
     if type(dur) ~= "number" or dur ~= dur or dur <= 0 or dur == math.huge then
         return
     end
     local nowTime = GetTime()
     local start = nowTime
-    local due = row._due
+    local due = swingRow._due
     if GuideOn(conf) and due then
         local late = nowTime - due
         if late > -SMOOTH_TOL and late < SMOOTH_TOL then
             start = due + late * SMOOTH_GAIN
         end
     end
-    row._end = start + dur
-    row._due = row._end
-    row._dur = dur
-    row._start = start
-    row._rtt = NetLatency() or 0
-    local wind = WindRow(row, conf)
-    row._aimAt = GuideRow(row, conf) and (row._end - AIM_TIME - row._rtt) or nil
-    if row._waiting or row._aiming then
-        row._waiting, row._aiming = nil, nil
-        ApplyRowFill(row, conf)
-        UpdateSpark(row, conf)
+    swingRow._end = start + dur
+    swingRow._due = swingRow._end
+    swingRow._dur = dur
+    swingRow._start = start
+    swingRow._rtt = NetLatency() or 0
+    local wind = WindRow(swingRow, conf)
+    swingRow._aimAt = GuideRow(swingRow, conf) and (swingRow._end - AIM_TIME - swingRow._rtt) or nil
+    if swingRow._waiting or swingRow._aiming then
+        swingRow._waiting, swingRow._aiming = nil, nil
+        ApplyRowFill(swingRow, conf)
+        UpdateSpark(swingRow, conf)
     end
-    if not row._live then
-        row._live = true
+    if not swingRow._live then
+        swingRow._live = true
         S.live = S.live + 1
-        UpdateSpark(row, conf)
+        UpdateSpark(swingRow, conf)
     end
-    local object = row._durObj
-    object:SetTimeFromStart(start, wind and math.max(row._aimAt - start, 0.01) or dur)
-    row._bar:SetTimerDuration(object, IMMEDIATE, conf.depleteFill and DIR.RemainingTime or DIR.ElapsedTime)
-    UpdateZones(row, conf, dur)
-    ArmEdges(row, conf)
-    SyncTimeText(row, conf)
+    local object = swingRow._durObj
+    object:SetTimeFromStart(start, wind and math.max(swingRow._aimAt - start, 0.01) or dur)
+    swingRow._bar:SetTimerDuration(object, IMMEDIATE, conf.depleteFill and DIR.RemainingTime or DIR.ElapsedTime)
+    UpdateZones(swingRow, conf, dur)
+    ArmEdges(swingRow, conf)
+    SyncTimeText(swingRow, conf)
     if conf.hideWhenIdle and S.live == 1 and mod.ST_UpdateVisibility then
         mod.ST_UpdateVisibility()
     end
@@ -1032,25 +1032,25 @@ end
 -- live (Hide When Idle keeps it) but has no deadline. The next swing
 -- (StartRow), an attack-stop edge (IdleRow) or a stop that restarts the aim
 -- (EnterAim) ends it, never a timer.
-local function EnterWaiting(row, conf)
-    row._waiting = true
-    row._aiming = nil
-    row._end = nil
-    if not row._live then
-        row._live = true
+local function EnterWaiting(swingRow, conf)
+    swingRow._waiting = true
+    swingRow._aiming = nil
+    swingRow._end = nil
+    if not swingRow._live then
+        swingRow._live = true
         S.live = S.live + 1
     end
-    local object = row._durObj
+    local object = swingRow._durObj
     object:SetTimeFromStart(GetTime() - 1, 1)
-    row._bar:SetTimerDuration(object, IMMEDIATE, DIR.ElapsedTime)
-    row._bar:SetValue(1)
-    SyncTimeText(row, conf)
-    row._time:SetText(
-        (conf.moveCue and conf.showTime ~= false and GuideRow(row, conf)) and CludesUI.L("Still") or ""
+    swingRow._bar:SetTimerDuration(object, IMMEDIATE, DIR.ElapsedTime)
+    swingRow._bar:SetValue(1)
+    SyncTimeText(swingRow, conf)
+    swingRow._time:SetText(
+        (conf.moveCue and conf.showTime ~= false and GuideRow(swingRow, conf)) and CludesUI.L("Still") or ""
     )
-    HideZones(row)
-    UpdateSpark(row, conf)
-    ApplyRowFill(row, conf)
+    HideZones(swingRow)
+    UpdateSpark(swingRow, conf)
+    ApplyRowFill(swingRow, conf)
 end
 
 -- Aim phase: the half second a wand or Auto Shot needs the player still, plus
@@ -1058,24 +1058,24 @@ end
 -- Still colour: a Wind-Up row's every swing from Stop by, and any guide row's
 -- restart after a held shot. It runs opposite to the swing so the two join
 -- (Deplete Fill: the reload drains, the aim fills), with GO at its end.
-local function EnterAim(row, conf, from, to)
-    row._waiting = nil
-    row._aiming = true
-    row._aimFrom = from
-    row._end = to
-    if not row._live then
-        row._live = true
+local function EnterAim(swingRow, conf, from, to)
+    swingRow._waiting = nil
+    swingRow._aiming = true
+    swingRow._aimFrom = from
+    swingRow._end = to
+    if not swingRow._live then
+        swingRow._live = true
         S.live = S.live + 1
     end
-    local object = row._durObj
+    local object = swingRow._durObj
     object:SetTimeFromStart(from, to - from)
-    row._bar:SetTimerDuration(object, IMMEDIATE, conf.depleteFill and DIR.ElapsedTime or DIR.RemainingTime)
-    HideZones(row)
-    PlaceAimLatency(row, conf, from, to)
-    UpdateSpark(row, conf)
-    ApplyRowFill(row, conf)
-    ArmEdges(row, conf)
-    SyncTimeText(row, conf)
+    swingRow._bar:SetTimerDuration(object, IMMEDIATE, conf.depleteFill and DIR.ElapsedTime or DIR.RemainingTime)
+    HideZones(swingRow)
+    PlaceAimLatency(swingRow, conf, from, to)
+    UpdateSpark(swingRow, conf)
+    ApplyRowFill(swingRow, conf)
+    ArmEdges(swingRow, conf)
+    SyncTimeText(swingRow, conf)
 end
 
 -- The edges, run by the deadlines ArmEdges schedules: a Wind-Up row's reload
@@ -1091,35 +1091,35 @@ function EndEdge()
     local nowTime = GetTime()
     local running = false
     for i = 1, #S.rows do
-        local row = S.rows[i]
+        local swingRow = S.rows[i]
         -- Wind-Up reload done at Stop by: the aim phase, held while moving, none
         -- once the shot is off (no shot is coming). Segments keeps its bar.
         if
-            row._live
-            and not row._waiting
-            and row._aimAt
-            and not row._aiming
-            and nowTime >= row._aimAt - END_SLACK
-            and WindRow(row, conf)
+            swingRow._live
+            and not swingRow._waiting
+            and swingRow._aimAt
+            and not swingRow._aiming
+            and nowTime >= swingRow._aimAt - END_SLACK
+            and WindRow(swingRow, conf)
         then
-            if not AttackOn(row._def) then
-                IdleRow(row, conf)
+            if not AttackOn(swingRow._def) then
+                IdleRow(swingRow, conf)
             elseif S.moving then
-                EnterWaiting(row, conf)
+                EnterWaiting(swingRow, conf)
             else
-                EnterAim(row, conf, row._aimAt, row._end)
+                EnterAim(swingRow, conf, swingRow._aimAt, swingRow._end)
             end
         end
-        if row._live and not row._waiting then
-            if row._end - nowTime <= END_SLACK then
-                if ShouldWait(row, conf) then
-                    EnterWaiting(row, conf)
+        if swingRow._live and not swingRow._waiting then
+            if swingRow._end - nowTime <= END_SLACK then
+                if ShouldWait(swingRow, conf) then
+                    EnterWaiting(swingRow, conf)
                 else
-                    IdleRow(row, conf)
+                    IdleRow(swingRow, conf)
                 end
             else
                 running = true
-                SyncTimeText(row, conf)
+                SyncTimeText(swingRow, conf)
             end
         end
     end
@@ -1138,22 +1138,22 @@ end
 -- Still colour (opaque) in an aim phase; the Waiting colour while the row waits
 -- under Attack State Full (each wins over the ones before). A combined
 -- off-hand row paints no fill: its bar keeps running under its spark, unseen.
-function ApplyRowFill(row, conf)
-    local fillTex = row._bar:GetStatusBarTexture()
-    if row._merged then
+function ApplyRowFill(swingRow, conf)
+    local fillTex = swingRow._bar:GetStatusBarTexture()
+    if swingRow._merged then
         mod.ApplyBarFlat(fillTex, 0, 0, 0, 0)
         return
     end
-    local def = row._def
-    local pend = row._waiting and StateFull(conf)
-    local aim = not pend and row._aiming
-    local q = not (pend or aim) and QueueRow(def, conf) and S.queued
-    local act = not (pend or aim or q) and S.active[def.melee and "melee" or "ranged"]
+    local defaults = swingRow._def
+    local pend = swingRow._waiting and StateFull(conf)
+    local aimTex = not pend and swingRow._aiming
+    local q = not (pend or aimTex) and QueueRow(defaults, conf) and S.queued
+    local act = not (pend or aimTex or q) and S.active[defaults.melee and "melee" or "ranged"]
     local fR, fG, fB, fA
     if pend then
         local c = PENDING_COLOR
         fR, fG, fB, fA = conf.pendingR or c.r, conf.pendingG or c.g, conf.pendingB or c.b, conf.pendingA or 1
-    elseif aim then
+    elseif aimTex then
         local c = AIM_COLOR
         fR, fG, fB, fA = conf.aimR or c.r, conf.aimG or c.g, conf.aimB or c.b, 1
     elseif q then
@@ -1168,9 +1168,9 @@ function ApplyRowFill(row, conf)
         local c = ACTIVE_COLOR
         fR, fG, fB, fA = conf.activeR or c.r, conf.activeG or c.g, conf.activeB or c.b, conf.activeA or 1
     else
-        fR, fG, fB, fA = RowColor(conf, def)
+        fR, fG, fB, fA = RowColor(conf, defaults)
     end
-    if conf.gradientEnabled and not (pend or aim or q or act) then
+    if conf.gradientEnabled and not (pend or aimTex or q or act) then
         mod.ApplyBarGradient(
             fillTex,
             conf.gradientDir or "HORIZONTAL",
@@ -1189,25 +1189,25 @@ function ApplyRowFill(row, conf)
 end
 
 -- The slot tag, or "Shield" on an Off Hand row with a shield equipped.
-local function TagText(row, conf)
-    if row._def.type == SWING.OffHand and row._canSwing == false and ShieldOff(conf) then
+local function TagText(swingRow, conf)
+    if swingRow._def.type == SWING.OffHand and swingRow._canSwing == false and ShieldOff(conf) then
         return CludesUI.L("Shield")
     end
-    return row._def.tag
+    return swingRow._def.tag
 end
 
 -- Slot tag, with the queued attack's name on the Main Hand row while one is queued.
 -- Written only when the slot text or the queued attack changed: RefreshRows runs
 -- this for every row on each weapon and attack speed change.
-local function ApplyRowTag(row, conf)
-    local def = row._def
-    local q = S.queued and QueueRow(def, conf) and S.queued.name or false
-    local base = q and def.tag or TagText(row, conf)
-    if base == row._tagBase and q == row._tagQueued then
+local function ApplyRowTag(swingRow, conf)
+    local defaults = swingRow._def
+    local q = S.queued and QueueRow(defaults, conf) and S.queued.name or false
+    local base = q and defaults.tag or TagText(swingRow, conf)
+    if base == swingRow._tagBase and q == swingRow._tagQueued then
         return
     end
-    row._tagBase, row._tagQueued = base, q
-    row._tag:SetText(q and (base .. " - " .. q) or base)
+    swingRow._tagBase, swingRow._tagQueued = base, q
+    swingRow._tag:SetText(q and (base .. " - " .. q) or base)
 end
 
 -- Which on-next-swing attack is queued right now (its S.queueSpells entry), or
@@ -1239,10 +1239,10 @@ local function PaintQueue(conf)
     end
     S.queued = queued
     for i = 1, #S.rows do
-        local row = S.rows[i]
-        if QueueRow(row._def, conf) then
-            ApplyRowFill(row, conf)
-            ApplyRowTag(row, conf)
+        local swingRow = S.rows[i]
+        if QueueRow(swingRow._def, conf) then
+            ApplyRowFill(swingRow, conf)
+            ApplyRowTag(swingRow, conf)
         end
     end
 end
@@ -1274,9 +1274,9 @@ local function PaintActive(conf)
     if not (conf and S.built) then
         return
     end
-    local on = StateFull(conf)
-    local melee = on and S.meleeOn == true
-    local ranged = on and S.repeatOn == true
+    local enabled = StateFull(conf)
+    local melee = enabled and S.meleeOn == true
+    local ranged = enabled and S.repeatOn == true
     local A = S.active
     local dMelee, dRanged = melee ~= A.melee, ranged ~= A.ranged
     if not (dMelee or dRanged) then
@@ -1284,9 +1284,9 @@ local function PaintActive(conf)
     end
     A.melee, A.ranged = melee, ranged
     for i = 1, #S.rows do
-        local row = S.rows[i]
-        if (row._def.melee and dMelee) or (not row._def.melee and dRanged) then
-            ApplyRowFill(row, conf)
+        local swingRow = S.rows[i]
+        if (swingRow._def.melee and dMelee) or (not swingRow._def.melee and dRanged) then
+            ApplyRowFill(swingRow, conf)
         end
     end
 end
@@ -1297,15 +1297,15 @@ end
 local function SyncWaiting(conf)
     local changed = false
     for i = 1, #S.rows do
-        local row = S.rows[i]
-        if not (row._live and not row._waiting) then
-            if ShouldWait(row, conf) then
-                if not row._waiting then
-                    EnterWaiting(row, conf)
+        local swingRow = S.rows[i]
+        if not (swingRow._live and not swingRow._waiting) then
+            if ShouldWait(swingRow, conf) then
+                if not swingRow._waiting then
+                    EnterWaiting(swingRow, conf)
                     changed = true
                 end
-            elseif row._waiting then
-                IdleRow(row, conf)
+            elseif swingRow._waiting then
+                IdleRow(swingRow, conf)
                 changed = true
             end
         end
@@ -1324,14 +1324,14 @@ local function Layout(conf)
     local wid = conf.width or 220
     local position = 0
     for i = 1, #S.rows do
-        local row = S.rows[i]
-        if row:IsShown() then
-            row:ClearAllPoints()
-            if row._merged then
-                row:SetAllPoints(S.byType[SWING.MainHand])
+        local swingRow = S.rows[i]
+        if swingRow:IsShown() then
+            swingRow:ClearAllPoints()
+            if swingRow._merged then
+                swingRow:SetAllPoints(S.byType[SWING.MainHand])
             else
-                row:SetPoint("TOPLEFT", shell, "TOPLEFT", 0, -position * (hgt + sp))
-                row:SetSize(wid, hgt)
+                swingRow:SetPoint("TOPLEFT", shellFrame, "TOPLEFT", 0, -position * (hgt + sp))
+                swingRow:SetSize(wid, hgt)
                 position = position + 1
             end
         end
@@ -1339,7 +1339,7 @@ local function Layout(conf)
     S.shown = position
     local num = math.max(position, 1)
     local totalH = num * hgt + (num - 1) * sp
-    shell:SetSize(wid, totalH)
+    shellFrame:SetSize(wid, totalH)
     local changed = S.lastH ~= nil and S.lastH ~= totalH
     S.lastH = totalH
     return changed
@@ -1350,9 +1350,9 @@ end
 -- use. Under Blizzard Style the bar-shape mask also takes the fill and the
 -- GO / STILL zones. A combined off-hand row is only a spark over the Main
 -- Hand row: its frame takes alpha 0 (ApplyRangeLook) and its bevel hides.
-local function StockChrome(row, conf, wid, hgt)
-    local barFrame = row._bar
-    if row._merged then
+local function StockChrome(swingRow, conf, wid, hgt)
+    local barFrame = swingRow._bar
+    if swingRow._merged then
         local sh = barFrame._blizzShadow
         if sh then
             for i = 1, 4 do
@@ -1361,13 +1361,13 @@ local function StockChrome(row, conf, wid, hgt)
         end
         return
     end
-    mod.ERB_ApplyBlizzBarChrome(row, barFrame, wid, hgt, false, mod.ERB_ClassicFrameK(conf))
-    local mask = row._blizzBarMask
+    mod.ERB_ApplyBlizzBarChrome(swingRow, barFrame, wid, hgt, false, mod.ERB_ClassicFrameK(conf))
+    local mask = swingRow._blizzBarMask
     if mask then
-        mod.ERB_SeatBlizzMask(row, barFrame)
-        local zones = row._zones
-        if zones then
-            for _, z in pairs(zones) do
+        mod.ERB_SeatBlizzMask(swingRow, barFrame)
+        local zoneList = swingRow._zones
+        if zoneList then
+            for _, z in pairs(zoneList) do
                 mod.ERB_MaskTex(z.back, mask)
                 mod.ERB_MaskTex(z.front, mask)
             end
@@ -1375,48 +1375,48 @@ local function StockChrome(row, conf, wid, hgt)
     end
     -- The vanilla frame art sits at the row's level + 9, over the bar's ends.
     if mod.ERB_BarsClassic() then
-        row._textFrame:SetFrameLevel(row:GetFrameLevel() + 10)
+        swingRow._textFrame:SetFrameLevel(swingRow:GetFrameLevel() + 10)
     end
 end
 
 -- Tag visibility: Show Weapon Label, not on a combined off hand, and with Hide
 -- Label Without Weapon not on a weaponless row (a shield keeps its tag).
-local function ApplyRowLabel(row, conf)
-    local show = conf.showLabel ~= false and not row._merged
+local function ApplyRowLabel(swingRow, conf)
+    local show = conf.showLabel ~= false and not swingRow._merged
     if
         show
         and conf.hideLabelNoWeapon
-        and row._canSwing == false
-        and not (row._def.type == SWING.OffHand and ShieldOff(conf))
+        and swingRow._canSwing == false
+        and not (swingRow._def.type == SWING.OffHand and ShieldOff(conf))
     then
         show = false
     end
-    ApplyRowTag(row, conf)
+    ApplyRowTag(swingRow, conf)
     if show then
-        row._tag:Show()
+        swingRow._tag:Show()
     else
-        row._tag:Hide()
+        swingRow._tag:Hide()
     end
 end
 
-local function ApplyRowLook(row, conf, wid, hgt)
-    row._restyle = nil
+local function ApplyRowLook(swingRow, conf, wid, hgt)
+    swingRow._restyle = nil
     local Pix = CludesUI.PP
     -- A stock style's frame (StockChrome) replaces the CUI border.
     local stock = mod.ST_Style() ~= "cui"
     local bs = (not stock and conf.borderSize) or 0
-    local bdr = row._border
-    local pl = row:GetFrameLevel()
-    bdr:SetFrameLevel(conf.borderBehind and math.max(0, pl - 1) or (pl + 5))
+    local borderTex = swingRow._border
+    local pl = swingRow:GetFrameLevel()
+    borderTex:SetFrameLevel(conf.borderBehind and math.max(0, pl - 1) or (pl + 5))
     -- Lost-rect recovery, see the cast bar border in the main file.
-    if not bdr:GetLeft() then
-        bdr:SetAllPoints(row)
+    if not borderTex:GetLeft() then
+        borderTex:SetAllPoints(swingRow)
     end
     if stock then
-        CludesUI.ApplyBorderStyle(bdr, 0, 0, 0, 0, 0, "solid")
+        CludesUI.ApplyBorderStyle(borderTex, 0, 0, 0, 0, 0, "solid")
     else
         CludesUI.ApplyBorderStyle(
-            bdr,
+            borderTex,
             bs,
             conf.borderR or 0,
             conf.borderG or 0,
@@ -1436,14 +1436,14 @@ local function ApplyRowLook(row, conf, wid, hgt)
 
     -- Clip + bar layout. The 1px inset keeps the fill from bleeding past the
     -- border; with no border there is nothing to clip to, so skip it.
-    local clip, barFrame = row._clip, row._bar
+    local clipper, barFrame = swingRow._clip, swingRow._bar
     local inset = (bs > 0 and Pix and Pix.mult) or 0
-    clip:ClearAllPoints()
-    clip:SetPoint("TOPLEFT", row, "TOPLEFT", inset, -inset)
-    clip:SetPoint("BOTTOMRIGHT", row, "BOTTOMRIGHT", -inset, inset)
-    clip:SetFrameLevel(pl + 1)
+    clipper:ClearAllPoints()
+    clipper:SetPoint("TOPLEFT", swingRow, "TOPLEFT", inset, -inset)
+    clipper:SetPoint("BOTTOMRIGHT", swingRow, "BOTTOMRIGHT", -inset, inset)
+    clipper:SetFrameLevel(pl + 1)
     barFrame:ClearAllPoints()
-    barFrame:SetAllPoints(clip)
+    barFrame:SetAllPoints(clipper)
 
     local texPath =
         CludesUI.ResolveTexturePath(_G._CURB_BarTextures, conf.texture, "Interface\\Buttons\\WHITE8x8")
@@ -1451,77 +1451,77 @@ local function ApplyRowLook(row, conf, wid, hgt)
     barFrame:SetOrientation("HORIZONTAL")
     barFrame:SetRotatesTexture(false)
     barFrame:SetReverseFill(false)
-    row._bg:SetTexture(nil)
-    row._bg:SetColorTexture(conf.bgR or 0, conf.bgG or 0, conf.bgB or 0, conf.bgA or 0.7)
-    StyleZones(row, conf, texPath)
+    swingRow._bg:SetTexture(nil)
+    swingRow._bg:SetColorTexture(conf.bgR or 0, conf.bgG or 0, conf.bgB or 0, conf.bgA or 0.7)
+    StyleZones(swingRow, conf, texPath)
     if stock then
-        StockChrome(row, conf, wid, hgt)
+        StockChrome(swingRow, conf, wid, hgt)
     end
 
-    ApplyRowFill(row, conf)
+    ApplyRowFill(swingRow, conf)
 
     -- Leading-edge spark: anchored to the fill texture's moving edge so it
     -- tracks the fill (the GCD bar's horizontal case). On a combined off-hand
     -- row it is the whole display. An overhang reaches past the bar's top and
     -- bottom: the spark leaves the bar's clip (and the rounded body) for a clip
     -- of its own, built on first use, that still cuts it at the bar's ends.
-    local spark, sparkFrame = row._spark, row._sparkFrame
+    local spark, sparkHolder = swingRow._spark, swingRow._sparkFrame
     local over = conf.sparkOverhang or 0
     if over > 0 then
-        local sc = row._sparkClip
-        if not sc then
-            sc = CreateFrame("Frame", nil, row)
-            sc:SetClipsChildren(true)
-            row._sparkClip = sc
+        local swingColor = swingRow._sparkClip
+        if not swingColor then
+            swingColor = CreateFrame("Frame", nil, swingRow)
+            swingColor:SetClipsChildren(true)
+            swingRow._sparkClip = swingColor
         end
-        sc:ClearAllPoints()
-        sc:SetPoint("TOPLEFT", clip, "TOPLEFT", 0, over)
-        sc:SetPoint("BOTTOMRIGHT", clip, "BOTTOMRIGHT", 0, -over)
-        sc:SetFrameLevel(barFrame:GetFrameLevel() + 1)
-        sparkFrame:SetParent(sc)
+        swingColor:ClearAllPoints()
+        swingColor:SetPoint("TOPLEFT", clipper, "TOPLEFT", 0, over)
+        swingColor:SetPoint("BOTTOMRIGHT", clipper, "BOTTOMRIGHT", 0, -over)
+        swingColor:SetFrameLevel(barFrame:GetFrameLevel() + 1)
+        sparkHolder:SetParent(swingColor)
     else
-        sparkFrame:SetParent(clip)
+        sparkHolder:SetParent(clipper)
     end
-    sparkFrame:SetFrameLevel(barFrame:GetFrameLevel() + 2)
+    sparkHolder:SetFrameLevel(barFrame:GetFrameLevel() + 2)
     spark:ClearAllPoints()
     spark:SetSize(conf.sparkWidth or 8, hgt + 2 * over)
     spark:SetPoint("CENTER", barFrame:GetStatusBarTexture(), "RIGHT", 0, 0)
-    spark:SetVertexColor(SparkColor(conf, row._def, row._merged))
-    UpdateSpark(row, conf)
+    spark:SetVertexColor(SparkColor(conf, swingRow._def, swingRow._merged))
+    UpdateSpark(swingRow, conf)
 
     local size = conf.textSize or 11
-    mod.SetRBFont(row._tag, mod.GetRBFont(), size)
-    mod.SetRBFont(row._time, mod.GetRBFont(), size)
+    mod.SetRBFont(swingRow._tag, mod.GetRBFont(), size)
+    mod.SetRBFont(swingRow._time, mod.GetRBFont(), size)
     -- Label on the left, time on the right, each with its own offsets.
-    row._tag:ClearAllPoints()
-    row._tag:SetPoint("LEFT", row, "LEFT", 4 + (conf.labelX or 0), conf.labelY or 0)
-    row._time:ClearAllPoints()
-    row._time:SetPoint("RIGHT", row, "RIGHT", -4 + (conf.timeX or 0), conf.timeY or 0)
-    ApplyRowTag(row, conf)
+    swingRow._tag:ClearAllPoints()
+    swingRow._tag:SetPoint("LEFT", swingRow, "LEFT", 4 + (conf.labelX or 0), conf.labelY or 0)
+    swingRow._time:ClearAllPoints()
+    swingRow._time:SetPoint("RIGHT", swingRow, "RIGHT", -4 + (conf.timeX or 0), conf.timeY or 0)
+    ApplyRowTag(swingRow, conf)
     -- A combined off-hand row shows no text; the Main Hand row keeps its own.
-    local merged = row._merged
-    ApplyRowLabel(row, conf)
+    local merged = swingRow._merged
+    ApplyRowLabel(swingRow, conf)
     if conf.showTime ~= false and not merged then
-        row._time:Show()
+        swingRow._time:Show()
     else
-        row._time:Hide()
+        swingRow._time:Hide()
     end
-    ApplyRangeLook(row, conf)
+    ApplyRangeLook(swingRow, conf)
     -- Rounded corners (CludesUI_RoundedCorners.lua; nothing at radius 0).
     -- A combined off-hand row is only a spark over the Main Hand row: no fill.
     -- The stock frames are square.
     local radius = (not stock and conf.cornerRadius) or 0
     if radius > 0 then
-        CludesUI.RoundCorners(row, radius, {
-            roots = { clip },
-            textures = { row._bg },
-            border = not merged and bdr or nil,
-            clip = clip,
+        CludesUI.RoundCorners(swingRow, radius, {
+            roots = { clipper },
+            textures = { swingRow._bg },
+            border = not merged and borderTex or nil,
+            clip = clipper,
             style = conf.borderTexture or "solid",
             corners = conf.cornerMask,
         })
     else
-        CludesUI.RoundCorners(row, 0)
+        CludesUI.RoundCorners(swingRow, 0)
     end
 end
 
@@ -1536,9 +1536,9 @@ end
 local function RestyleMarked(conf)
     local wid, hgt = conf.width or 220, conf.height or 12
     for i = 1, #S.rows do
-        local row = S.rows[i]
-        if row._restyle then
-            ApplyRowLook(row, conf, wid, hgt)
+        local swingRow = S.rows[i]
+        if swingRow._restyle then
+            ApplyRowLook(swingRow, conf, wid, hgt)
         end
     end
 end
@@ -1561,40 +1561,40 @@ local function RefreshRows(conf)
     local wantRange = conf.enabled and conf.rangeCheck ~= false
     local mhShown, marked = false, false
     for i = 1, #S.rows do
-        local row = S.rows[i]
-        local def = row._def
-        local can = RowWanted(def, conf, row)
-        ApplyRowLabel(row, conf)
-        if can then
-            if not row:IsShown() then
-                row._restyle = true
+        local swingRow = S.rows[i]
+        local defaults = swingRow._def
+        local canSwing = RowWanted(defaults, conf, swingRow)
+        ApplyRowLabel(swingRow, conf)
+        if canSwing then
+            if not swingRow:IsShown() then
+                swingRow._restyle = true
                 marked = true
             end
-            row:Show()
+            swingRow:Show()
         else
-            row:Hide()
-            if row._live then
-                IdleRow(row, conf)
+            swingRow:Hide()
+            if swingRow._live then
+                IdleRow(swingRow, conf)
             end
         end
-        if def.type == SWING.MainHand then
-            mhShown = can
+        if defaults.type == SWING.MainHand then
+            mhShown = canSwing
         end
         local merged = (
-            def.type == SWING.OffHand
-            and can
+            defaults.type == SWING.OffHand
+            and canSwing
             and mhShown
             and conf.combineHands
             and not ShieldOff(conf)
         )
                 and true
             or nil
-        if merged ~= row._merged then
-            row._merged = merged
-            row._restyle = true
+        if merged ~= swingRow._merged then
+            swingRow._merged = merged
+            swingRow._restyle = true
             marked = true
         end
-        SetRangeCheck(def.type, wantRange and can)
+        SetRangeCheck(defaults.type, wantRange and canSwing)
     end
     if Layout(conf) and CludesUI.NotifyElementResized then
         CludesUI.NotifyElementResized(UNLOCK_KEY)
@@ -1607,8 +1607,8 @@ end
 -- the CENTER offsets. Same three-way split as the GCD bar.
 local function ApplyPosition(conf)
     local wid, hgt = Size(conf)
-    shell:SetSize(wid, hgt)
-    if CludesUI._TryOverrideAnchor and CludesUI._TryOverrideAnchor(UNLOCK_KEY, shell) then
+    shellFrame:SetSize(wid, hgt)
+    if CludesUI._TryOverrideAnchor and CludesUI._TryOverrideAnchor(UNLOCK_KEY, shellFrame) then
         return
     end
     if CludesUI._unlockActive then
@@ -1617,16 +1617,16 @@ local function ApplyPosition(conf)
     local place = conf.unlockPos
     if place and place.point then
         local anchored = CludesUI.IsUnlockAnchored and CludesUI.IsUnlockAnchored(UNLOCK_KEY)
-        if anchored and shell:GetLeft() then
+        if anchored and shellFrame:GetLeft() then
             return
         end
         local rp = place.relPoint or place.point
-        local sx, sy = mod.SnapXY(place.x or 0, place.y or 0, shell, place)
-        shell:ClearAllPoints()
-        shell:SetPoint(place.point, UIParent, rp, sx, sy)
+        local sx, sy = mod.SnapXY(place.x or 0, place.y or 0, shellFrame, place)
+        shellFrame:ClearAllPoints()
+        shellFrame:SetPoint(place.point, UIParent, rp, sx, sy)
     else
-        shell:ClearAllPoints()
-        shell:SetPoint("CENTER", UIParent, "CENTER", conf.anchorX or 0, conf.anchorY or 0)
+        shellFrame:ClearAllPoints()
+        shellFrame:SetPoint("CENTER", UIParent, "CENTER", conf.anchorX or 0, conf.anchorY or 0)
     end
 end
 
@@ -1644,20 +1644,20 @@ local function ApplyMoveEvents(conf)
     if S.aimClass and GuideOn(conf) and S.repeatOn then
         if not S.moveEvents then
             S.moveEvents = true
-            shell:RegisterEvent("PLAYER_STARTED_MOVING")
-            shell:RegisterEvent("PLAYER_STOPPED_MOVING")
-            local speed = GetUnitSpeed("player")
-            S.moving = (Plain(speed) and speed > 0) and true or false
+            shellFrame:RegisterEvent("PLAYER_STARTED_MOVING")
+            shellFrame:RegisterEvent("PLAYER_STOPPED_MOVING")
+            local swingSpeed = GetUnitSpeed("player")
+            S.moving = (Plain(swingSpeed) and swingSpeed > 0) and true or false
         end
     elseif S.moveEvents then
         S.moveEvents = nil
-        shell:UnregisterEvent("PLAYER_STARTED_MOVING")
-        shell:UnregisterEvent("PLAYER_STOPPED_MOVING")
+        shellFrame:UnregisterEvent("PLAYER_STARTED_MOVING")
+        shellFrame:UnregisterEvent("PLAYER_STOPPED_MOVING")
         S.moving = false
     end
 end
 
-shell:SetScript("OnEvent", function(self, evt, a1, a2, a3)
+shellFrame:SetScript("OnEvent", function(self, evt, a1, a2, a3)
     local conf = P()
     if not (conf and conf.enabled and S.built) then
         return
@@ -1667,18 +1667,18 @@ shell:SetScript("OnEvent", function(self, evt, a1, a2, a3)
         if not (Plain(a1) and Plain(a2)) then
             return
         end
-        local row = S.byType[a2]
-        if row then
+        local swingRow = S.byType[a2]
+        if swingRow then
             -- A swing proves its slot can swing: a row hidden only because its
             -- speed read was restricted comes back with it.
-            if not row:IsShown() and not row._canSwing and conf[row._def.show] ~= false then
-                row._canSwing = true
+            if not swingRow:IsShown() and not swingRow._canSwing and conf[swingRow._def.show] ~= false then
+                swingRow._canSwing = true
                 if RefreshRows(conf) then
                     RestyleMarked(conf)
                 end
             end
-            if row:IsShown() then
-                StartRow(row, a1, conf)
+            if swingRow:IsShown() then
+                StartRow(swingRow, a1, conf)
             end
         end
         PaintQueue(conf)
@@ -1688,9 +1688,9 @@ shell:SetScript("OnEvent", function(self, evt, a1, a2, a3)
         S.repeatOn = evt == "START_AUTOREPEAT_SPELL"
         if not S.repeatOn then
             -- No shot is coming: an aim in progress ends with it.
-            local row = S.byType[SWING.Ranged]
-            if row and row._aiming then
-                IdleRow(row, conf)
+            local swingRow = S.byType[SWING.Ranged]
+            if swingRow and swingRow._aiming then
+                IdleRow(swingRow, conf)
             end
         end
         ApplyMoveEvents(conf)
@@ -1699,25 +1699,25 @@ shell:SetScript("OnEvent", function(self, evt, a1, a2, a3)
     elseif evt == "PLAYER_STARTED_MOVING" then
         -- Moving holds the shot: an aim in progress stops and waits.
         S.moving = true
-        local row = S.byType[SWING.Ranged]
-        if row and row._aiming then
-            EnterWaiting(row, conf)
+        local swingRow = S.byType[SWING.Ranged]
+        if swingRow and swingRow._aiming then
+            EnterWaiting(swingRow, conf)
         end
     elseif evt == "PLAYER_STOPPED_MOVING" then
         -- Standing still again: a shot held, or stopped for only after Stop by,
         -- fires AIM_TIME from now plus the round trip (the stop reaches the
         -- server, the swing comes back). Both guide styles show it as an aim.
         S.moving = false
-        local row = S.byType[SWING.Ranged]
-        if row and row._live and GuideRow(row, conf) and AttackOn(row._def) then
+        local swingRow = S.byType[SWING.Ranged]
+        if swingRow and swingRow._live and GuideRow(swingRow, conf) and AttackOn(swingRow._def) then
             local nowTime = GetTime()
-            if row._waiting or (row._aimAt and not row._aiming and nowTime >= row._aimAt) then
+            if swingRow._waiting or (swingRow._aimAt and not swingRow._aiming and nowTime >= swingRow._aimAt) then
                 local shot = nowTime + AIM_TIME + (NetLatency() or 0)
-                if row._end and row._end > shot then
-                    shot = row._end
+                if swingRow._end and swingRow._end > shot then
+                    shot = swingRow._end
                 end
-                EnterAim(row, conf, nowTime, shot)
-                row._due = shot
+                EnterAim(swingRow, conf, nowTime, shot)
+                swingRow._due = shot
             end
         end
     elseif evt == "PLAYER_ENTER_COMBAT" or evt == "PLAYER_LEAVE_COMBAT" then
@@ -1738,16 +1738,16 @@ shell:SetScript("OnEvent", function(self, evt, a1, a2, a3)
         if not (Plain(a1) and Plain(a2) and Plain(a3)) then
             return
         end
-        local row = S.byType[a1]
-        if row then
-            SetOutOfRange(row, a3 == true and a2 == false)
+        local swingRow = S.byType[a1]
+        if swingRow then
+            SetOutOfRange(swingRow, a3 == true and a2 == false)
         end
     elseif evt == "PLAYER_TARGET_CHANGED" then
         -- Re-assert the range flags before the re-read (see SetRangeCheck).
         local wantRange = conf.rangeCheck ~= false
         for i = 1, #S.rows do
-            local row = S.rows[i]
-            SetRangeCheck(row._def.type, wantRange and row:IsShown())
+            local swingRow = S.rows[i]
+            SetRangeCheck(swingRow._def.type, wantRange and swingRow:IsShown())
         end
         UpdateRangeAll()
     else
@@ -1777,13 +1777,13 @@ local function RegisterEvents()
         return
     end
     S.events = true
-    shell:RegisterEvent("PLAYER_SWING")
-    shell:RegisterEvent("PLAYER_SWING_RANGE_UPDATE")
-    shell:RegisterEvent("PLAYER_TARGET_CHANGED")
-    shell:RegisterEvent("WEAPON_SLOT_CHANGED")
-    shell:RegisterEvent("PLAYER_ENTERING_WORLD")
-    shell:RegisterEvent("PLAYER_DEAD")
-    shell:RegisterUnitEvent("UNIT_ATTACK_SPEED", "player")
+    shellFrame:RegisterEvent("PLAYER_SWING")
+    shellFrame:RegisterEvent("PLAYER_SWING_RANGE_UPDATE")
+    shellFrame:RegisterEvent("PLAYER_TARGET_CHANGED")
+    shellFrame:RegisterEvent("WEAPON_SLOT_CHANGED")
+    shellFrame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    shellFrame:RegisterEvent("PLAYER_DEAD")
+    shellFrame:RegisterUnitEvent("UNIT_ATTACK_SPEED", "player")
 end
 
 -- The queue paint's event is registered only while the highlight is on (it is
@@ -1793,9 +1793,9 @@ local function ApplyQueueEvents(conf)
         return
     end
     if QueueOn(conf) and #S.queueSpells > 0 then
-        shell:RegisterEvent("ACTIONBAR_UPDATE_STATE")
+        shellFrame:RegisterEvent("ACTIONBAR_UPDATE_STATE")
     else
-        shell:UnregisterEvent("ACTIONBAR_UPDATE_STATE")
+        shellFrame:UnregisterEvent("ACTIONBAR_UPDATE_STATE")
     end
 end
 
@@ -1805,9 +1805,9 @@ local function ApplyShieldEvents(conf)
         return
     end
     if ShieldAware(conf) then
-        shell:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+        shellFrame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
     else
-        shell:UnregisterEvent("PLAYER_EQUIPMENT_CHANGED")
+        shellFrame:UnregisterEvent("PLAYER_EQUIPMENT_CHANGED")
     end
 end
 
@@ -1818,15 +1818,15 @@ local function ApplyActiveEvents(conf)
         return
     end
     if TracksAttack(conf) then
-        shell:RegisterEvent("START_AUTOREPEAT_SPELL")
-        shell:RegisterEvent("STOP_AUTOREPEAT_SPELL")
-        shell:RegisterEvent("PLAYER_ENTER_COMBAT")
-        shell:RegisterEvent("PLAYER_LEAVE_COMBAT")
+        shellFrame:RegisterEvent("START_AUTOREPEAT_SPELL")
+        shellFrame:RegisterEvent("STOP_AUTOREPEAT_SPELL")
+        shellFrame:RegisterEvent("PLAYER_ENTER_COMBAT")
+        shellFrame:RegisterEvent("PLAYER_LEAVE_COMBAT")
     else
-        shell:UnregisterEvent("START_AUTOREPEAT_SPELL")
-        shell:UnregisterEvent("STOP_AUTOREPEAT_SPELL")
-        shell:UnregisterEvent("PLAYER_ENTER_COMBAT")
-        shell:UnregisterEvent("PLAYER_LEAVE_COMBAT")
+        shellFrame:UnregisterEvent("START_AUTOREPEAT_SPELL")
+        shellFrame:UnregisterEvent("STOP_AUTOREPEAT_SPELL")
+        shellFrame:UnregisterEvent("PLAYER_ENTER_COMBAT")
+        shellFrame:UnregisterEvent("PLAYER_LEAVE_COMBAT")
     end
 end
 
@@ -1836,7 +1836,7 @@ local function UnregisterEvents()
     end
     S.events = nil
     S.moveEvents, S.moving = nil, false
-    shell:UnregisterAllEvents()
+    shellFrame:UnregisterAllEvents()
 end
 
 -------------------------------------------------------------------------------
@@ -1848,11 +1848,11 @@ local function EnsureBuilt()
         return
     end
     S.built = true
-    shell:SetFrameLevel(15)
+    shellFrame:SetFrameLevel(15)
     for i = 1, #ROWS do
-        local row = BuildRow(ROWS[i])
-        S.rows[i] = row
-        S.byType[ROWS[i].type] = row
+        local swingRow = BuildRow(ROWS[i])
+        S.rows[i] = swingRow
+        S.byType[ROWS[i].type] = swingRow
     end
     local _, class = UnitClass("player")
     S.aimClass = AIM_CLASS[class]
@@ -1874,18 +1874,18 @@ local function EnsureBuilt()
         S.moHooked = true
         local proxy = {}
         proxy.GetRect = function()
-            return shell:GetRect()
+            return shellFrame:GetRect()
         end
         proxy.GetEffectiveScale = function()
-            return shell:GetEffectiveScale()
+            return shellFrame:GetEffectiveScale()
         end
         proxy.SetAlpha = function() end
         proxy.EnableMouse = function() end
         proxy.Show = function()
-            CludesUI.SetElementVisibility(shell, true)
+            CludesUI.SetElementVisibility(shellFrame, true)
         end
         proxy.Hide = function()
-            CludesUI.SetElementVisibility(shell, false)
+            CludesUI.SetElementVisibility(shellFrame, false)
         end
         CludesUI.RegisterMouseoverTarget(proxy, function()
             local ERB = mod.ERB
@@ -1906,17 +1906,17 @@ local function Teardown()
     S.seeded = nil -- the edges stop here: re-read on the next enable
     local conf = P()
     for i = 1, #S.rows do
-        local row = S.rows[i]
-        if row._live then
-            IdleRow(row, conf)
+        local swingRow = S.rows[i]
+        if swingRow._live then
+            IdleRow(swingRow, conf)
         end
-        SetRangeCheck(row._def.type, false)
+        SetRangeCheck(swingRow._def.type, false)
     end
     local ERB = mod.ERB
     if ERB and ERB._moEligible then
         ERB._moEligible[MO_KEY] = false
     end
-    CludesUI.SetElementVisibility(shell, false)
+    CludesUI.SetElementVisibility(shellFrame, false)
 end
 
 -- A running timer's events and attack state: the full apply and a resume
@@ -1951,54 +1951,54 @@ end
 -- at the next swing's end.
 local function PaintRows(conf)
     for i = 1, #S.rows do
-        local row = S.rows[i]
-        local object = row._durObj
+        local swingRow = S.rows[i]
+        local object = swingRow._durObj
         if S.sample then
             -- A combined off hand parks empty, so its spark shows at the far
             -- end from a full Main Hand bar's.
-            local oh = row._merged
+            local oh = swingRow._merged
             object:SetTimeFromStart(GetTime() - 1, 1)
-            row._bar:SetTimerDuration(object, IMMEDIATE, oh and DIR.RemainingTime or DIR.ElapsedTime)
-            row._bar:SetValue(oh and 0 or 1)
-            SyncTimeText(row, conf)
-            row._time:SetText("1.2")
-            UpdateZones(row, conf, row._dur or 2)
-        elseif row._live and not row._waiting and row._dur then
-            local guide, wind = GuideRow(row, conf), WindRow(row, conf)
-            if not guide and (row._aiming or row._aimAt) then
+            swingRow._bar:SetTimerDuration(object, IMMEDIATE, oh and DIR.RemainingTime or DIR.ElapsedTime)
+            swingRow._bar:SetValue(oh and 0 or 1)
+            SyncTimeText(swingRow, conf)
+            swingRow._time:SetText("1.2")
+            UpdateZones(swingRow, conf, swingRow._dur or 2)
+        elseif swingRow._live and not swingRow._waiting and swingRow._dur then
+            local guide, wind = GuideRow(swingRow, conf), WindRow(swingRow, conf)
+            if not guide and (swingRow._aiming or swingRow._aimAt) then
                 -- Movement Guide turned off mid-swing: back to one plain swing.
-                row._aiming, row._aimAt = nil, nil
-                ApplyRowFill(row, conf)
+                swingRow._aiming, swingRow._aimAt = nil, nil
+                ApplyRowFill(swingRow, conf)
             end
-            if row._aiming then
-                object:SetTimeFromStart(row._aimFrom, row._end - row._aimFrom)
-                row._bar:SetTimerDuration(
+            if swingRow._aiming then
+                object:SetTimeFromStart(swingRow._aimFrom, swingRow._end - swingRow._aimFrom)
+                swingRow._bar:SetTimerDuration(
                     object,
                     IMMEDIATE,
                     conf.depleteFill and DIR.ElapsedTime or DIR.RemainingTime
                 )
-                HideZones(row)
-                PlaceAimLatency(row, conf, row._aimFrom, row._end)
+                HideZones(swingRow)
+                PlaceAimLatency(swingRow, conf, swingRow._aimFrom, swingRow._end)
             else
-                local start = row._end - row._dur
-                row._start = start
+                local start = swingRow._end - swingRow._dur
+                swingRow._start = start
                 if guide then
-                    row._aimAt = row._end - AIM_TIME - (row._rtt or 0)
+                    swingRow._aimAt = swingRow._end - AIM_TIME - (swingRow._rtt or 0)
                 end
-                object:SetTimeFromStart(start, wind and math.max(row._aimAt - start, 0.01) or row._dur)
-                row._bar:SetTimerDuration(
+                object:SetTimeFromStart(start, wind and math.max(swingRow._aimAt - start, 0.01) or swingRow._dur)
+                swingRow._bar:SetTimerDuration(
                     object,
                     IMMEDIATE,
                     conf.depleteFill and DIR.RemainingTime or DIR.ElapsedTime
                 )
-                UpdateZones(row, conf, row._dur)
+                UpdateZones(swingRow, conf, swingRow._dur)
             end
-            ArmEdges(row, conf)
-            SyncTimeText(row, conf)
-        elseif ShouldWait(row, conf) then
-            EnterWaiting(row, conf)
+            ArmEdges(swingRow, conf)
+            SyncTimeText(swingRow, conf)
+        elseif ShouldWait(swingRow, conf) then
+            EnterWaiting(swingRow, conf)
         else
-            IdleRow(row, conf)
+            IdleRow(swingRow, conf)
         end
     end
 end
@@ -2057,7 +2057,7 @@ function mod.ST_UpdateVisibility()
     end
     ERB._moEligible = ERB._moEligible or {}
     ERB._moEligible[MO_KEY] = (vis == "mouseover")
-    CludesUI.SetElementVisibility(shell, vis == true)
+    CludesUI.SetElementVisibility(shellFrame, vis == true)
 end
 
 -- The colour a row's spark paints (by colour key), for the options swatch;
@@ -2069,8 +2069,8 @@ function mod.ST_SparkColor(key, unset)
     end
     for i = 1, #ROWS do
         if ROWS[i].key == key then
-            local row = S.rows[i]
-            return SparkColor(conf, ROWS[i], row and row._merged, unset)
+            local swingRow = S.rows[i]
+            return SparkColor(conf, ROWS[i], swingRow and swingRow._merged, unset)
         end
     end
     return 1, 1, 1, 1
@@ -2101,8 +2101,8 @@ function mod.ST_Apply()
     -- events, every row idle, alpha 0).
     local park = S.ruled and not CludesUI._unlockActive
     EnsureBuilt()
-    shell:SetFrameStrata(conf.frameStrata or "MEDIUM")
-    shell:Show()
+    shellFrame:SetFrameStrata(conf.frameStrata or "MEDIUM")
+    shellFrame:Show()
     if not park then
         Arm(conf)
     end
@@ -2154,8 +2154,8 @@ function mod.ST_MakeUnlockElement(MK, Rebuild)
         end
         conf.unlockPos = { point = anchorPoint, relPoint = relPoint or anchorPoint, x = posX, y = posY }
         if not CludesUI._unlockActive and S.built then
-            shell:ClearAllPoints()
-            shell:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
+            shellFrame:ClearAllPoints()
+            shellFrame:SetPoint(anchorPoint, UIParent, relPoint or anchorPoint, posX, posY)
         end
     end
     local function load()
@@ -2181,9 +2181,9 @@ function mod.ST_MakeUnlockElement(MK, Rebuild)
         if not (place and S.built) then
             return
         end
-        local sx, sy = mod.SnapXY(place.x, place.y, shell, place)
-        shell:ClearAllPoints()
-        shell:SetPoint(place.point, UIParent, place.relPoint or place.point, sx, sy)
+        local sx, sy = mod.SnapXY(place.x, place.y, shellFrame, place)
+        shellFrame:ClearAllPoints()
+        shellFrame:SetPoint(place.point, UIParent, place.relPoint or place.point, sx, sy)
     end
 
     return MK({
@@ -2192,7 +2192,7 @@ function mod.ST_MakeUnlockElement(MK, Rebuild)
         group = "Resource Bars",
         order = 508,
         getFrame = function()
-            return S.built and shell or nil
+            return S.built and shellFrame or nil
         end,
         isHidden = function()
             local conf = P()
