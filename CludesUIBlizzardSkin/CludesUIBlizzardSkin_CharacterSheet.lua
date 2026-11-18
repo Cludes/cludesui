@@ -54,18 +54,18 @@ end
 -- its InsetRight slot, replaces its list while the pane's own Show/Hide
 -- keeps driving visibility. Idempotent (compare-gated on the parked point).
 function mod.CharSheetParkStatsPane()
-    local pane, castFrame = _G.CharacterStatsPane, _G.CharacterFrame
-    if not (pane and castFrame) then
+    local panel, castFrame = _G.CharacterStatsPane, _G.CharacterFrame
+    if not (panel and castFrame) then
         return
     end
-    if pane:GetNumPoints() == 1 then
-        local _, rel, _, _, posY = pane:GetPoint(1)
+    if panel:GetNumPoints() == 1 then
+        local _, rel, _, _, posY = panel:GetPoint(1)
         if rel == castFrame and posY == -10000 then
             return
         end
     end
-    pane:ClearAllPoints()
-    pane:SetPoint("TOPLEFT", castFrame, "BOTTOMLEFT", 0, -10000)
+    panel:ClearAllPoints()
+    panel:SetPoint("TOPLEFT", castFrame, "BOTTOMLEFT", 0, -10000)
 end
 function mod.CharSheetBlizzColor()
     if not mod.CharSheetStock() then
@@ -90,27 +90,27 @@ local function GetDurabilityPercent()
     for slotId = 1, 18 do
         local current, mx = GetInventoryItemDurability(slotId)
         if current and mx and mx > 0 then
-            local pct = current / mx * 100
-            if pct < lowest then
-                lowest = pct
+            local percent = current / mx * 100
+            if percent < lowest then
+                lowest = percent
             end
         end
     end
     return math.floor(lowest)
 end
 
-local function GetDurabilityTextColor(pct)
-    if pct > 50 then
-        return (100 - pct) / 50, 1, 0
+local function GetDurabilityTextColor(percent)
+    if percent > 50 then
+        return (100 - percent) / 50, 1, 0
     end
-    return 1, pct / 50, 0
+    return 1, percent / 50, 0
 end
 
-local function FormatDurabilityText(pct, showLabel)
+local function FormatDurabilityText(percent, showLabel)
     if showLabel then
-        return L("Durability") .. ": " .. pct .. "%"
+        return L("Durability") .. ": " .. percent .. "%"
     end
-    return pct .. "%"
+    return percent .. "%"
 end
 
 -- "gear" = the 16 slots with ilvl/enchants/sockets.
@@ -196,9 +196,9 @@ local _ENCHANT_LINE_TYPE = (
 -- Pattern from ENCHANTED_TOOLTIP_LINE: escape magic chars, %s becomes the capture.
 local _ENCHANT_PATTERN
 do
-    local fmt = ENCHANTED_TOOLTIP_LINE
-    if fmt then
-        local head, tail = fmt:match("^(.-)%%s(.*)$")
+    local formatStr = ENCHANTED_TOOLTIP_LINE
+    if formatStr then
+        local head, tail = formatStr:match("^(.-)%%s(.*)$")
         if head then
             local function esc(s)
                 return (s:gsub("([%(%)%.%[%]%^%$%*%+%-%?%%])", "%%%1"))
@@ -1248,12 +1248,12 @@ local function SkinCharacterSheet()
             end
 
             if not GetFFD(tabBtn).activeHL then
-                local activeHL = tabBtn:CreateTexture(nil, "ARTWORK", nil, -6)
-                activeHL:SetAllPoints()
-                activeHL:SetColorTexture(1, 1, 1, 0.02)
-                activeHL:SetBlendMode("ADD")
-                activeHL:Hide()
-                GetFFD(tabBtn).activeHL = activeHL
+                local activeHighlight = tabBtn:CreateTexture(nil, "ARTWORK", nil, -6)
+                activeHighlight:SetAllPoints()
+                activeHighlight:SetColorTexture(1, 1, 1, 0.02)
+                activeHighlight:SetBlendMode("ADD")
+                activeHighlight:Hide()
+                GetFFD(tabBtn).activeHL = activeHighlight
             end
 
             -- Replace Blizzard's label with our own so font/size are under our control.
@@ -1279,19 +1279,19 @@ local function SkinCharacterSheet()
             end
 
             if not GetFFD(tabBtn).underline then
-                local underline = tabBtn:CreateTexture(nil, "OVERLAY", nil, 6)
+                local underlineTex = tabBtn:CreateTexture(nil, "OVERLAY", nil, 6)
                 if CludesUI and CludesUI.PanelPP and CludesUI.PanelPP.DisablePixelSnap then
-                    CludesUI.PanelPP.DisablePixelSnap(underline)
-                    underline:SetHeight(CludesUI.PanelPP.mult or 1)
+                    CludesUI.PanelPP.DisablePixelSnap(underlineTex)
+                    underlineTex:SetHeight(CludesUI.PanelPP.mult or 1)
                 else
-                    underline:SetHeight(1)
+                    underlineTex:SetHeight(1)
                 end
-                underline:SetPoint("BOTTOMLEFT", tabBtn, "BOTTOMLEFT", 0, 0)
-                underline:SetPoint("BOTTOMRIGHT", tabBtn, "BOTTOMRIGHT", 0, 0)
-                underline:SetColorTexture(ACC.r or 0.51, ACC.g or 0.784, ACC.b or 1, 1)
-                CludesUI.RegAccent({ type = "solid", obj = underline, a = 1 })
-                underline:Hide()
-                GetFFD(tabBtn).underline = underline
+                underlineTex:SetPoint("BOTTOMLEFT", tabBtn, "BOTTOMLEFT", 0, 0)
+                underlineTex:SetPoint("BOTTOMRIGHT", tabBtn, "BOTTOMRIGHT", 0, 0)
+                underlineTex:SetColorTexture(ACC.r or 0.51, ACC.g or 0.784, ACC.b or 1, 1)
+                CludesUI.RegAccent({ type = "solid", obj = underlineTex, a = 1 })
+                underlineTex:Hide()
+                GetFFD(tabBtn).underline = underlineTex
             end
         end
     end
@@ -1321,16 +1321,16 @@ local function SkinCharacterSheet()
 
     -- Faint background on the Reputation + Currency panes, idempotent. Anchored to the inner
     -- ScrollBox so it stays in the list area and never bleeds over the tab chrome.
-    local function _ensureTabBg(pane)
-        if not pane or GetFFD(pane).bg then
+    local function _ensureTabBg(panel)
+        if not panel or GetFFD(panel).bg then
             return
         end
-        local anchor = pane.ScrollBox or pane.scrollFrame or pane
-        local texture = pane:CreateTexture(nil, "BACKGROUND", nil, -7)
+        local anchorFrame = panel.ScrollBox or panel.scrollFrame or panel
+        local texture = panel:CreateTexture(nil, "BACKGROUND", nil, -7)
         texture:SetColorTexture(0, 0, 0, 0.1)
-        texture:SetPoint("TOPLEFT", anchor, "TOPLEFT", 10, -10)
-        texture:SetPoint("BOTTOMRIGHT", anchor, "BOTTOMRIGHT", -10, 0)
-        GetFFD(pane).bg = texture
+        texture:SetPoint("TOPLEFT", anchorFrame, "TOPLEFT", 10, -10)
+        texture:SetPoint("BOTTOMRIGHT", anchorFrame, "BOTTOMRIGHT", -10, 0)
+        GetFFD(panel).bg = texture
     end
     if not mod.CharSheetStock() then
         _ensureTabBg(_G.ReputationFrame)
@@ -1431,11 +1431,11 @@ local function SkinCharacterSheet()
         end
     end
 
-    local function _hookPaneOnShow(pane, isChar)
-        if not pane then
+    local function _hookPaneOnShow(panel, isChar)
+        if not panel then
             return
         end
-        pane:HookScript("OnShow", function()
+        panel:HookScript("OnShow", function()
             _ensureTabBg(_G.ReputationFrame)
             _ensureTabBg(_G.TokenFrame)
             ApplyTabVisibility(isChar)
@@ -1456,15 +1456,15 @@ local function SkinCharacterSheet()
         -- so the stats sidebar tab, Collapse/Expand and the Titles/Equipment
         -- sidebar tabs show and hide it natively. InsetRight keeps its own
         -- inset background, so no backdrop of ours.
-        local pane = _G.CharacterStatsPane
+        local panel = _G.CharacterStatsPane
         -- The login pass parks the pane only when the sheet skin was on at
         -- login; a skin turned on mid-session (reload declined) parks it here.
         mod.CharSheetParkStatsPane()
         local inset = widget.InsetRight or _G.CharacterFrameInsetRight
-        statsPane = CreateFrame("Frame", "CUI_CharSheet_StatsPanel", pane or widget)
+        statsPane = CreateFrame("Frame", "CUI_CharSheet_StatsPanel", panel or widget)
         statsPane:SetPoint("TOPLEFT", inset or widget, "TOPLEFT", 3, -3)
         statsPane:SetPoint("BOTTOMRIGHT", inset or widget, "BOTTOMRIGHT", -3, 2)
-        statsPane:SetFrameLevel((pane or widget):GetFrameLevel() + 5)
+        statsPane:SetFrameLevel((panel or widget):GetFrameLevel() + 5)
     else
         -- Stats panel: fixed-width column pinned down the right of the sheet.
         statsPane = CreateFrame("Frame", "CUI_CharSheet_StatsPanel", widget)
@@ -1526,9 +1526,9 @@ local function SkinCharacterSheet()
     -- specific instance (upgrade-track pieces); prefer ItemLocation (exact, uncached) then GetDetailedItemLevelInfo -- same precedence as CludesUIQoL.lua.
     local function GetEquippedItemLevel(slotFrame)
         if ItemLocation then
-            local loc = ItemLocation:CreateFromEquipmentSlot(slotFrame)
-            if loc and loc:IsValid() and C_Item.DoesItemExist(loc) then
-                return C_Item.GetCurrentItemLevel(loc) or 0
+            local itemLocation = ItemLocation:CreateFromEquipmentSlot(slotFrame)
+            if itemLocation and itemLocation:IsValid() and C_Item.DoesItemExist(itemLocation) then
+                return C_Item.GetCurrentItemLevel(itemLocation) or 0
             end
         end
         local linkText = GetInventoryItemLink("player", slotFrame)
@@ -1729,8 +1729,8 @@ local function SkinCharacterSheet()
     -- Returns true if the given item is appropriate for the player's current spec.
     -- Only weapons, shields, and armor are gated; rings/trinkets/necks/cloaks pass.
     local function IsItemUsableBySpec(linkText, equipLoc, classID, subclassID)
-        local specIndex = GetSpecialization and GetSpecialization()
-        local specID = specIndex and GetSpecializationInfo(specIndex)
+        local specIdx = GetSpecialization and GetSpecialization()
+        local specID = specIdx and GetSpecializationInfo(specIdx)
         local allow = specID and SPEC_EQUIP[specID]
         if not allow then
             return true
@@ -1785,7 +1785,7 @@ local function SkinCharacterSheet()
     end
 
     _ComputeBetterInventoryItems = function()
-        local betterItems = {}
+        local upgrades = {}
         local canDualWield = CanDualWield()
 
         -- A 2H main-hand leaves slot 17 empty, so GetEquippedItemLevel(17)=0 and any
@@ -1817,14 +1817,14 @@ local function SkinCharacterSheet()
                         C_Item.GetItemInfo(linkText)
                     -- ItemLocation first (exact, uncached); GetItemInfo's cached itemLevel
                     -- can be stale for a specific instance.
-                    local itemLevel
+                    local levelValue
                     if ItemLocation then
-                        local loc = ItemLocation:CreateFromBagAndSlot(bagSlot, slotIndex)
-                        if loc and loc:IsValid() and C_Item.DoesItemExist(loc) then
-                            itemLevel = C_Item.GetCurrentItemLevel(loc)
+                        local itemLocation = ItemLocation:CreateFromBagAndSlot(bagSlot, slotIndex)
+                        if itemLocation and itemLocation:IsValid() and C_Item.DoesItemExist(itemLocation) then
+                            levelValue = C_Item.GetCurrentItemLevel(itemLocation)
                         end
                     end
-                    itemLevel = tonumber(itemLevel) or tonumber(C_Item.GetDetailedItemLevelInfo(linkText))
+                    levelValue = tonumber(levelValue) or tonumber(C_Item.GetDetailedItemLevelInfo(linkText))
 
                     -- Weapons/armor only, matched via GetItemInfoInstant's locale-independent
                     -- classID/subclassID (Weapon=2, Armor=4) -- GetItemInfo's itemType/itemSubType
@@ -1832,7 +1832,7 @@ local function SkinCharacterSheet()
                     -- GetItemInfoInstant returns: 1 itemID, 2 itemType, 3 itemSubType, 4 itemEquipLoc, 5 iconFileID, 6 classID, 7 subClassID.
                     local _, _, _, _, _, classID, subclassID = C_Item.GetItemInfoInstant(linkText)
                     if
-                        itemLevel
+                        levelValue
                         and itemName
                         and (classID == Enum.ItemClass.Weapon or classID == Enum.ItemClass.Armor)
                         and equipSlot
@@ -1855,7 +1855,7 @@ local function SkinCharacterSheet()
                                     -- A one-hander cannot replace a shield/held item without dual wield.
                                     if not (slotFrame == 17 and (offHandBlocked or offHandWeaponBlocked)) then
                                         local equippedLevel = GetEquippedItemLevel(slotFrame)
-                                        if itemLevel > equippedLevel then
+                                        if levelValue > equippedLevel then
                                             isBetter = true
                                             break
                                         end
@@ -1863,9 +1863,9 @@ local function SkinCharacterSheet()
                                 end
 
                                 if isBetter then
-                                    table.insert(betterItems, {
+                                    table.insert(upgrades, {
                                         name = itemName,
-                                        level = itemLevel,
+                                        level = levelValue,
                                         rarity = itemRarity or 1,
                                         icon = itemIcon,
                                         slot = slotInfo.name,
@@ -1880,7 +1880,7 @@ local function SkinCharacterSheet()
 
         -- Keep only the single highest-ilvl candidate per slot
         local bestPerSlot = {}
-        for _, entry in ipairs(betterItems) do
+        for _, entry in ipairs(upgrades) do
             local current = bestPerSlot[entry.slot]
             if not current or entry.level > current.level then
                 bestPerSlot[entry.slot] = entry
@@ -1943,29 +1943,29 @@ local function SkinCharacterSheet()
     GetFFD(widget).durabilityHeaderLabel = durabilityHeaderLabel
 
     local function GetDurabilityHeaderAnchor()
-        local ffd = GetFFD(widget)
-        if ffd.mythicRatingLabel and ffd.mythicRatingLabel:IsShown() then
-            return ffd.mythicRatingLabel
+        local frameData = GetFFD(widget)
+        if frameData.mythicRatingLabel and frameData.mythicRatingLabel:IsShown() then
+            return frameData.mythicRatingLabel
         end
-        if ffd.pvpIlvlText and ffd.pvpIlvlText:IsShown() then
-            return ffd.pvpIlvlText
+        if frameData.pvpIlvlText and frameData.pvpIlvlText:IsShown() then
+            return frameData.pvpIlvlText
         end
-        return ffd.iLvlText
+        return frameData.iLvlText
     end
 
-    local function AnchorDurabilityFooterLabel(footerLabel)
-        if not footerLabel then
+    local function AnchorDurabilityFooterLabel(footerText)
+        if not footerText then
             return
         end
-        footerLabel:ClearAllPoints()
+        footerText:ClearAllPoints()
         local socketPanel = _G.CUI_CharSheet_SocketPanel
         local seasonPanel = _G.CUI_CharSheet_SeasonPanel
         if socketPanel and socketPanel:IsShown() then
-            footerLabel:SetPoint("RIGHT", socketPanel, "LEFT", -8, 0)
+            footerText:SetPoint("RIGHT", socketPanel, "LEFT", -8, 0)
         elseif seasonPanel and seasonPanel:IsShown() then
-            footerLabel:SetPoint("RIGHT", seasonPanel, "LEFT", -8, 0)
+            footerText:SetPoint("RIGHT", seasonPanel, "LEFT", -8, 0)
         else
-            footerLabel:SetPoint("RIGHT", widget, "BOTTOMRIGHT", -10, 6)
+            footerText:SetPoint("RIGHT", widget, "BOTTOMRIGHT", -10, 6)
         end
     end
 
@@ -1990,24 +1990,24 @@ local function SkinCharacterSheet()
     -- Zero cost while off or closed: the durability event is registered only
     -- while the feature is enabled AND the sheet is shown (OnShow/OnHide +
     -- the options toggle re-sync); the OnShow pass paints the first value.
-    local durEvents
+    local durabilityWatch
     local UpdateDurabilityDisplay
     local function SyncDurabilityEvents()
         local wanted = CludesUIDB and CludesUIDB.showCharSheetDurability and widget:IsShown()
         if wanted then
-            if not durEvents then
-                durEvents = CreateFrame("Frame")
-                durEvents:SetScript("OnEvent", function()
+            if not durabilityWatch then
+                durabilityWatch = CreateFrame("Frame")
+                durabilityWatch:SetScript("OnEvent", function()
                     UpdateDurabilityDisplay()
                 end)
             end
-            durEvents:RegisterEvent("UPDATE_INVENTORY_DURABILITY")
+            durabilityWatch:RegisterEvent("UPDATE_INVENTORY_DURABILITY")
             -- Self-repair items recalculate alerts without firing the durability
             -- event (Blizzard's DurabilityFrame itself rides the alert event).
-            durEvents:RegisterEvent("UPDATE_INVENTORY_ALERTS")
-        elseif durEvents then
-            durEvents:UnregisterEvent("UPDATE_INVENTORY_DURABILITY")
-            durEvents:UnregisterEvent("UPDATE_INVENTORY_ALERTS")
+            durabilityWatch:RegisterEvent("UPDATE_INVENTORY_ALERTS")
+        elseif durabilityWatch then
+            durabilityWatch:UnregisterEvent("UPDATE_INVENTORY_DURABILITY")
+            durabilityWatch:UnregisterEvent("UPDATE_INVENTORY_ALERTS")
         end
     end
 
@@ -2025,7 +2025,7 @@ local function SkinCharacterSheet()
 
         local modelLabel = durFfd.durabilityModelLabel
         local headerLabel = durFfd.durabilityHeaderLabel
-        local footerLabel = durFfd.durabilityFooterLabel
+        local footerText = durFfd.durabilityFooterLabel
         local overlayFrame = durFfd.durabilityOverlay
         local location = CludesUIDB.charSheetDurabilityLocation or "model"
         -- Blizzard's own frame has no free footer strip: the stock styles show
@@ -2034,26 +2034,26 @@ local function SkinCharacterSheet()
             location = "header"
         end
         local showLabel = CludesUIDB.charSheetDurabilityShowLabel ~= false
-        local pct = GetDurabilityPercent()
-        local region, g, button = GetDurabilityTextColor(pct)
-        local textValue = FormatDurabilityText(pct, showLabel)
+        local percent = GetDurabilityPercent()
+        local region, g, button = GetDurabilityTextColor(percent)
+        local textValue = FormatDurabilityText(percent, showLabel)
 
         HideAllDurabilityLabels()
 
         if location == "header" and headerLabel then
-            local anchor = GetDurabilityHeaderAnchor()
-            if anchor then
+            local anchorFrame = GetDurabilityHeaderAnchor()
+            if anchorFrame then
                 headerLabel:ClearAllPoints()
-                headerLabel:SetPoint("TOP", anchor, "BOTTOM", 0, -4)
+                headerLabel:SetPoint("TOP", anchorFrame, "BOTTOM", 0, -4)
             end
             headerLabel:SetText(textValue)
             headerLabel:SetTextColor(region, g, button, 1)
             headerLabel:Show()
-        elseif location == "footer" and footerLabel then
-            AnchorDurabilityFooterLabel(footerLabel)
-            footerLabel:SetText(textValue)
-            footerLabel:SetTextColor(region, g, button, 1)
-            footerLabel:Show()
+        elseif location == "footer" and footerText then
+            AnchorDurabilityFooterLabel(footerText)
+            footerText:SetText(textValue)
+            footerText:SetTextColor(region, g, button, 1)
+            footerText:Show()
         elseif modelLabel then
             modelLabel:SetText(textValue)
             modelLabel:SetTextColor(region, g, button, 1)
@@ -2079,18 +2079,18 @@ local function SkinCharacterSheet()
     iLvlButton:SetFrameLevel(statsPane:GetFrameLevel() + 3)
     iLvlButton:EnableMouse(true)
     iLvlButton:SetScript("OnEnter", function(self)
-        local betterItems = GetBetterInventoryItems()
+        local upgrades = GetBetterInventoryItems()
 
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:AddLine(L("Equipped Item Level"), 0.6, 0.2, 1, 1)
 
-        if #betterItems > 0 then
+        if #upgrades > 0 then
             GameTooltip:AddLine(" ")
             GameTooltip:AddLine(
                 string.format(
                     L("You have %d better item%s in inventory"),
-                    #betterItems,
-                    #betterItems == 1 and "" or "s"
+                    #upgrades,
+                    #upgrades == 1 and "" or "s"
                 ),
                 0.2,
                 1,
@@ -2099,15 +2099,15 @@ local function SkinCharacterSheet()
             GameTooltip:AddLine(" ")
 
             -- Show up to 10 items with icons and slots (slot on right side)
-            local maxShow = math.min(#betterItems, 10)
+            local maxShow = math.min(#upgrades, 10)
             for i = 1, maxShow do
-                local entry = betterItems[i]
+                local entry = upgrades[i]
                 local leftText = string.format("|T%s:16|t  %s (iLvl %d)", entry.icon, entry.name, entry.level)
                 GameTooltip:AddDoubleLine(leftText, L(entry.slot), 1, 1, 1, 0.7, 0.7, 0.7)
             end
 
-            if #betterItems > 10 then
-                GameTooltip:AddLine(string.format(L("  ... and %d more"), #betterItems - 10), 0.7, 0.7, 0.7)
+            if #upgrades > 10 then
+                GameTooltip:AddLine(string.format(L("  ... and %d more"), #upgrades - 10), 0.7, 0.7, 0.7)
             end
         else
             GameTooltip:AddLine(" ")
@@ -2116,10 +2116,10 @@ local function SkinCharacterSheet()
 
         -- Calculate minimum width based on longest item text
         local maxWidth = 250
-        if #betterItems > 0 then
-            local maxShow = math.min(#betterItems, 10)
+        if #upgrades > 0 then
+            local maxShow = math.min(#upgrades, 10)
             for i = 1, maxShow do
-                local entry = betterItems[i]
+                local entry = upgrades[i]
                 local textValue = string.format("%s (iLvl %d) - %s", entry.name, entry.level, L(entry.slot))
                 -- Rough estimate: ~6 pixels per character + icon space
                 local estimatedWidth = #textValue * 6 + 30
@@ -2166,8 +2166,8 @@ local function SkinCharacterSheet()
         -- Re-anchor M+ Score: below PvP ilvl when visible, below iLvl when not
         if GetFFD(widget).mythicRatingLabel then
             GetFFD(widget).mythicRatingLabel:ClearAllPoints()
-            local anchor = pvpVisible and pvpIlvlText or iLvlText
-            GetFFD(widget).mythicRatingLabel:SetPoint("TOP", anchor, "BOTTOM", 0, -4)
+            local anchorFrame = pvpVisible and pvpIlvlText or iLvlText
+            GetFFD(widget).mythicRatingLabel:SetPoint("TOP", anchorFrame, "BOTTOM", 0, -4)
         end
 
         -- M+ Score if enabled. PaperDollFrame:IsShown() is the truth-source for the
@@ -2314,11 +2314,11 @@ local function SkinCharacterSheet()
         track:SetFrameLevel(scroller:GetFrameLevel() + 2)
         track:Hide()
 
-        local thumb = CreateFrame("Button", nil, track)
-        thumb:SetWidth(SCROLLBAR_W)
-        thumb:SetHeight(THUMB_MIN_H)
-        thumb:EnableMouse(true)
-        local thumbTex = thumb:CreateTexture(nil, "ARTWORK")
+        local knob = CreateFrame("Button", nil, track)
+        knob:SetWidth(SCROLLBAR_W)
+        knob:SetHeight(THUMB_MIN_H)
+        knob:EnableMouse(true)
+        local thumbTex = knob:CreateTexture(nil, "ARTWORK")
         thumbTex:SetColorTexture(1, 1, 1, SCROLLBAR_ALPHA)
         thumbTex:SetAllPoints()
 
@@ -2336,13 +2336,13 @@ local function SkinCharacterSheet()
             end
             track:Show()
             local ext = math.min(1, viewH / contentH)
-            local pct = math.max(0, math.min(1, scroller:GetVerticalScroll() / maxScroll))
+            local percent = math.max(0, math.min(1, scroller:GetVerticalScroll() / maxScroll))
             local trackH = track:GetHeight()
             local thumbH = math.max(THUMB_MIN_H, trackH * ext)
-            thumb:SetHeight(thumbH)
+            knob:SetHeight(thumbH)
             local maxTravel = math.max(0, trackH - thumbH)
-            thumb:ClearAllPoints()
-            thumb:SetPoint("TOP", track, "TOP", 0, -(pct * maxTravel))
+            knob:ClearAllPoints()
+            knob:SetPoint("TOP", track, "TOP", 0, -(percent * maxTravel))
         end
         track._update = UpdateThumb
 
@@ -2390,12 +2390,12 @@ local function SkinCharacterSheet()
             posY = posY / UIParent:GetEffectiveScale()
             local dy = drag.startY - posY
             local trackH = track:GetHeight()
-            local maxTravel = math.max(1, trackH - thumb:GetHeight())
+            local maxTravel = math.max(1, trackH - knob:GetHeight())
             scroller:SetVerticalScroll(
                 math.max(0, math.min(maxScroll, drag.startScroll + (dy / maxTravel) * maxScroll))
             )
         end
-        thumb:SetScript("OnMouseDown", function(self, btnFrame)
+        knob:SetScript("OnMouseDown", function(self, btnFrame)
             if btnFrame ~= "LeftButton" then
                 return
             end
@@ -2405,7 +2405,7 @@ local function SkinCharacterSheet()
             drag.startScroll = scroller:GetVerticalScroll()
             self:SetScript("OnUpdate", _dragThumbOnUpdate)
         end)
-        thumb:SetScript("OnMouseUp", function(self, btnFrame)
+        knob:SetScript("OnMouseUp", function(self, btnFrame)
             if btnFrame == "LeftButton" then
                 drag.active = false
                 self:SetScript("OnUpdate", nil)
@@ -2496,9 +2496,9 @@ local function SkinCharacterSheet()
 
     -- Crest max: prefer the API's seasonal max, fall back to the table above.
     local function GetCrestMaxValue(currencyID)
-        local currencyInfo = C_CurrencyInfo.GetCurrencyInfo(currencyID)
-        if currencyInfo and currencyInfo.maxQuantity then
-            return currencyInfo.maxQuantity
+        local currency = C_CurrencyInfo.GetCurrencyInfo(currencyID)
+        if currency and currency.maxQuantity then
+            return currency.maxQuantity
         end
         return crestMaxValues[currencyID] or 3000
     end
@@ -2509,9 +2509,9 @@ local function SkinCharacterSheet()
         end -- Show by default if no condition
 
         if statShowWhen == "brewmaster" then
-            local specIndex = GetSpecialization()
-            if specIndex then
-                local specId = (GetSpecializationInfo(specIndex))
+            local specIdx = GetSpecialization()
+            if specIdx then
+                local specId = (GetSpecializationInfo(specIdx))
                 return specId == 268 -- Brewmaster Monk
             end
             return false
@@ -2998,29 +2998,29 @@ local function SkinCharacterSheet()
             if sectionInfo.sectionTitle == "Attributes" then
                 local newStats = GetFilteredAttributeStats()
 
-                local labelIndex = 0
+                local labelIdx = 0
                 for _, statRow in ipairs(sectionInfo.stats) do
                     if statRow.label then
-                        labelIndex = labelIndex + 1
+                        labelIdx = labelIdx + 1
 
-                        if newStats[labelIndex] then
+                        if newStats[labelIdx] then
                             -- Shown state respects the section's collapsed flag: a spec switch
                             -- refreshes row data while collapsed but must not force it visible.
-                            statRow.label:SetText(L(newStats[labelIndex].name))
+                            statRow.label:SetText(L(newStats[labelIdx].name))
                             statRow.label:SetShown(not sectionInfo.isCollapsed)
 
                             if statRow.value then
                                 for _, statsValueEntry in ipairs(GetFFD(widget).statsValues) do
                                     if statsValueEntry.value == statRow.value then
-                                        statsValueEntry.func = newStats[labelIndex].func
-                                        statsValueEntry.format = newStats[labelIndex].format or "%d"
-                                        local newValue = newStats[labelIndex].func()
+                                        statsValueEntry.func = newStats[labelIdx].func
+                                        statsValueEntry.format = newStats[labelIdx].format or "%d"
+                                        local newValue = newStats[labelIdx].func()
                                         if newValue ~= nil then
-                                            local fmt = statsValueEntry.format
-                                            if fmt:find("%%") then
-                                                statRow.value:SetText(format(fmt, newValue))
+                                            local formatStr = statsValueEntry.format
+                                            if formatStr:find("%%") then
+                                                statRow.value:SetText(format(formatStr, newValue))
                                             else
-                                                statRow.value:SetText(format(fmt, newValue))
+                                                statRow.value:SetText(format(formatStr, newValue))
                                             end
                                         end
                                         break
@@ -3036,7 +3036,7 @@ local function SkinCharacterSheet()
                         end
                     elseif statRow.divider then
                         -- Show dividers only between visible stats, and only when the section isn't collapsed.
-                        statRow.divider:SetShown(not sectionInfo.isCollapsed and labelIndex < #newStats)
+                        statRow.divider:SetShown(not sectionInfo.isCollapsed and labelIdx < #newStats)
                     end
                 end
 
@@ -3270,26 +3270,26 @@ local function SkinCharacterSheet()
             texture:SetHeight(onePixel)
         end
 
-        local leftBar = titleHolder:CreateTexture(nil, "ARTWORK")
-        leftBar:SetColorTexture(sectionRec.color.r, sectionRec.color.g, sectionRec.color.b, 0.8)
-        leftBar:SetPoint("LEFT", titleHolder, "LEFT", 0, 0)
-        leftBar:SetPoint("RIGHT", sectionTitle, "LEFT", -6, 0)
-        _snapSecLine(leftBar)
+        local leftStrip = titleHolder:CreateTexture(nil, "ARTWORK")
+        leftStrip:SetColorTexture(sectionRec.color.r, sectionRec.color.g, sectionRec.color.b, 0.8)
+        leftStrip:SetPoint("LEFT", titleHolder, "LEFT", 0, 0)
+        leftStrip:SetPoint("RIGHT", sectionTitle, "LEFT", -6, 0)
+        _snapSecLine(leftStrip)
 
-        local rightBar = titleHolder:CreateTexture(nil, "ARTWORK")
-        rightBar:SetColorTexture(sectionRec.color.r, sectionRec.color.g, sectionRec.color.b, 0.8)
-        rightBar:SetPoint("LEFT", sectionTitle, "RIGHT", 6, 0)
-        rightBar:SetPoint("RIGHT", titleHolder, "RIGHT", 0, 0)
-        _snapSecLine(rightBar)
+        local rightStrip = titleHolder:CreateTexture(nil, "ARTWORK")
+        rightStrip:SetColorTexture(sectionRec.color.r, sectionRec.color.g, sectionRec.color.b, 0.8)
+        rightStrip:SetPoint("LEFT", sectionTitle, "RIGHT", 6, 0)
+        rightStrip:SetPoint("RIGHT", titleHolder, "RIGHT", 0, 0)
+        _snapSecLine(rightStrip)
 
         -- Re-snap once after layout settles: GetEffectiveScale needs final parent
         -- positions, not ready on first build.
-        titleHolder._barResnap = { leftBar, rightBar }
+        titleHolder._barResnap = { leftStrip, rightStrip }
         local _ticks = 0
         titleHolder:SetScript("OnUpdate", function(self)
             _ticks = _ticks + 1
-            _snapSecLine(leftBar)
-            _snapSecLine(rightBar)
+            _snapSecLine(leftStrip)
+            _snapSecLine(rightStrip)
             if _ticks >= 2 then
                 self:SetScript("OnUpdate", nil)
             end
@@ -3315,8 +3315,8 @@ local function SkinCharacterSheet()
             settingKey = sectionRec.settingKey or sectionRec.title:gsub(" ", ""),
             colorKey = sectionRec.colorKey or sectionRec.title, -- DB key for custom color
             titleFS = sectionTitle,
-            leftBar = leftBar,
-            rightBar = rightBar,
+            leftBar = leftStrip,
+            rightBar = rightStrip,
         }
         table.insert(GetFFD(widget).statsSections, sectionInfo)
 
@@ -3329,17 +3329,17 @@ local function SkinCharacterSheet()
                 caption:SetPoint("TOPLEFT", sectionHolder, "TOPLEFT", 0, statYOffset)
                 caption:SetText(L(statRow.name))
 
-                local value = sectionHolder:CreateFontString(nil, "OVERLAY")
-                value:SetFont(fontFile, 10, "")
+                local amount = sectionHolder:CreateFontString(nil, "OVERLAY")
+                amount:SetFont(fontFile, 10, "")
                 -- "Blizzard UI Color" colours only the titles; values take the label grey.
                 if mod.CharSheetBlizzColor() then
-                    value:SetTextColor(0.7, 0.7, 0.7, 0.8)
+                    amount:SetTextColor(0.7, 0.7, 0.7, 0.8)
                 else
-                    value:SetTextColor(sectionRec.color.r, sectionRec.color.g, sectionRec.color.b, 1)
+                    amount:SetTextColor(sectionRec.color.r, sectionRec.color.g, sectionRec.color.b, 1)
                 end
-                value:SetPoint("TOPRIGHT", sectionHolder, "TOPRIGHT", 0, statYOffset)
-                value:SetJustifyH("RIGHT")
-                value:SetText("0")
+                amount:SetPoint("TOPRIGHT", sectionHolder, "TOPRIGHT", 0, statYOffset)
+                amount:SetJustifyH("RIGHT")
+                amount:SetText("0")
 
                 -- Tooltip overlay button spanning the full row width (label edge to
                 -- value edge) so hovering anywhere on the line fires it.
@@ -3350,8 +3350,8 @@ local function SkinCharacterSheet()
                 valueButton:EnableMouse(true)
 
                 valueButton:SetScript("OnEnter", function()
-                    local specIndex = GetSpecialization and GetSpecialization()
-                    local role = specIndex and GetSpecializationRole(specIndex) or nil
+                    local specIdx = GetSpecialization and GetSpecialization()
+                    local role = specIdx and GetSpecializationRole(specIdx) or nil
 
                     local statValue = statRow.func()
                     if issecretvalue(statValue) then
@@ -3375,10 +3375,10 @@ local function SkinCharacterSheet()
 
                     -- Currency (Crests)
                     if statRow.currencyID then
-                        local currencyInfo = C_CurrencyInfo.GetCurrencyInfo(statRow.currencyID)
-                        if currencyInfo then
-                            local earned = currencyInfo.totalEarned or 0
-                            local maximum = currencyInfo.maxQuantity or 0
+                        local currency = C_CurrencyInfo.GetCurrencyInfo(statRow.currencyID)
+                        if currency then
+                            local earned = currency.totalEarned or 0
+                            local maximum = currency.maxQuantity or 0
                             GameTooltip:AddLine(L(statRow.name) .. L(" Crests"), scR, scG, scB, 1)
                             GameTooltip:AddLine(string.format("%d / %d", earned, maximum), 1, 1, 1, true)
                         end
@@ -3407,12 +3407,12 @@ local function SkinCharacterSheet()
                         elseif statRow.name == "Mastery" then
                             -- Pull the spec's real mastery spell description instead of a generic line.
                             if
-                                specIndex
+                                specIdx
                                 and GetSpecializationMasterySpells
                                 and C_Spell
                                 and C_Spell.GetSpellDescription
                             then
-                                local masterySpell, masterySpell2 = GetSpecializationMasterySpells(specIndex)
+                                local masterySpell, masterySpell2 = GetSpecializationMasterySpells(specIdx)
                                 if masterySpell then
                                     description = C_Spell.GetSpellDescription(masterySpell) or ""
                                     if masterySpell2 then
@@ -3723,7 +3723,7 @@ local function SkinCharacterSheet()
                 end)
 
                 table.insert(GetFFD(widget).statsValues, {
-                    value = value,
+                    value = amount,
                     func = statRow.func,
                     rawFunc = statRow.rawFunc,
                     format = statRow.format or "%d",
@@ -3733,7 +3733,7 @@ local function SkinCharacterSheet()
                 -- Store for collapse/expand (showWhen etc kept for later visibility checks)
                 table.insert(sectionInfo.stats, {
                     label = caption,
-                    value = value,
+                    value = amount,
                     button = valueButton,
                     showWhen = statRow.showWhen,
                     showCrestKey = statRow.showCrestKey,
@@ -3756,7 +3756,7 @@ local function SkinCharacterSheet()
                         divider:SetHeight(1)
                     end
                     divider:SetPoint("LEFT", caption, "RIGHT", 10, 0)
-                    divider:SetPoint("RIGHT", value, "LEFT", -10, 0)
+                    divider:SetPoint("RIGHT", amount, "LEFT", -10, 0)
                     table.insert(sectionInfo.stats, { divider = divider })
                 end
 
@@ -3857,12 +3857,12 @@ local function SkinCharacterSheet()
             downButton:SetAlpha(DIV_ICON_ALPHA)
 
             -- Anchor the divider lines to hug the arrows
-            leftBar:ClearAllPoints()
-            leftBar:SetPoint("LEFT", upButton, "RIGHT", 6, 0)
-            leftBar:SetPoint("RIGHT", sectionTitle, "LEFT", -6, 0)
-            rightBar:ClearAllPoints()
-            rightBar:SetPoint("LEFT", sectionTitle, "RIGHT", 6, 0)
-            rightBar:SetPoint("RIGHT", downButton, "LEFT", -6, 0)
+            leftStrip:ClearAllPoints()
+            leftStrip:SetPoint("LEFT", upButton, "RIGHT", 6, 0)
+            leftStrip:SetPoint("RIGHT", sectionTitle, "LEFT", -6, 0)
+            rightStrip:ClearAllPoints()
+            rightStrip:SetPoint("LEFT", sectionTitle, "RIGHT", 6, 0)
+            rightStrip:SetPoint("RIGHT", downButton, "LEFT", -6, 0)
 
             upButton:SetScript("OnClick", function()
                 for i, sec in ipairs(GetFFD(widget).statsSections) do
@@ -3948,10 +3948,10 @@ local function SkinCharacterSheet()
                     end
                 else
                     local fn = (useRaw and statEntry.rawFunc) or statEntry.func
-                    local fmt = useRaw and "%d" or statEntry.format
+                    local formatStr = useRaw and "%d" or statEntry.format
                     local result = fn and fn()
                     if result ~= nil then
-                        statEntry.value:SetText(format(fmt, result))
+                        statEntry.value:SetText(format(formatStr, result))
                     else
                         statEntry.value:SetText("0")
                     end
@@ -3985,11 +3985,11 @@ local function SkinCharacterSheet()
     -- change storms several events in one frame. A spec-side event also
     -- re-filters the rows, which repaints every row itself.
     do
-        local flush = { pending = false, spec = false }
-        flush.run = function()
-            flush.pending = false
-            local specInfo = flush.spec
-            flush.spec = false
+        local flushFn = { pending = false, spec = false }
+        flushFn.run = function()
+            flushFn.pending = false
+            local specInfo = flushFn.spec
+            flushFn.spec = false
             if not widget:IsShown() then
                 return
             end
@@ -4002,13 +4002,13 @@ local function SkinCharacterSheet()
         end
         GetFFD(widget).queueStats = function(specInfo)
             if specInfo then
-                flush.spec = true
+                flushFn.spec = true
             end
-            if flush.pending then
+            if flushFn.pending then
                 return
             end
-            flush.pending = true
-            C_Timer.After(0, flush.run)
+            flushFn.pending = true
+            C_Timer.After(0, flushFn.run)
         end
     end
     statsEventFrame:SetScript("OnEvent", function(_, _, unitToken)
@@ -4072,9 +4072,9 @@ local function SkinCharacterSheet()
         local linkText = GetInventoryItemLink("player", slotFrame:GetID())
         local borderR, borderG, borderB = 0.4, 0.4, 0.4 -- Default dark gray
         if linkText then
-            local _, _, rarity = C_Item.GetItemInfo(linkText)
-            if rarity then
-                borderR, borderG, borderB = C_Item.GetItemQualityColor(rarity)
+            local _, _, quality = C_Item.GetItemInfo(linkText)
+            if quality then
+                borderR, borderG, borderB = C_Item.GetItemQualityColor(quality)
             end
         end
 
@@ -4152,8 +4152,8 @@ local function SkinCharacterSheet()
         -- switch and taint the Equipment Manager rows it builds next.
         local function SyncTopButtons()
             for _, button in ipairs(topButtonRegistry) do
-                local pane = GetPaperDollSideBarFrame and GetPaperDollSideBarFrame(button._paneIndex)
-                button._active = (pane and pane:IsShown()) == true
+                local panel = GetPaperDollSideBarFrame and GetPaperDollSideBarFrame(button._paneIndex)
+                button._active = (panel and panel:IsShown()) == true
                 button._disabled = (button._tab and not button._tab:IsEnabled()) == true
                 _paintTopButton(button)
                 if button._panel then
@@ -4200,19 +4200,19 @@ local function SkinCharacterSheet()
 
         -- Titles panel (same position and size as stats panel); SyncTopButtons
         -- shows it while Blizzard's Titles pane is the shown sidebar.
-        local titlesPanel = CreateFrame("Frame", "CUI_CharSheet_TitlesPanel", widget)
-        titlesPanel:SetWidth(190)
-        titlesPanel:SetPoint("TOPLEFT", statsPane, "TOPLEFT", 0, 0)
-        titlesPanel:SetPoint("BOTTOMLEFT", statsPane, "BOTTOMLEFT", 0, 0)
-        titlesPanel:SetFrameLevel(50)
-        titlesPanel:Hide()
-        GetFFD(widget).titlesPanel = titlesPanel
+        local titlesPane = CreateFrame("Frame", "CUI_CharSheet_TitlesPanel", widget)
+        titlesPane:SetWidth(190)
+        titlesPane:SetPoint("TOPLEFT", statsPane, "TOPLEFT", 0, 0)
+        titlesPane:SetPoint("BOTTOMLEFT", statsPane, "BOTTOMLEFT", 0, 0)
+        titlesPane:SetFrameLevel(50)
+        titlesPane:Hide()
+        GetFFD(widget).titlesPanel = titlesPane
 
         -- Titles panel has no backdrop of its own; it uses the shared statsBg.
 
-        local titleSearch = CreateFrame("EditBox", "CUI_CharSheet_TitlesSearchBox", titlesPanel)
+        local titleSearch = CreateFrame("EditBox", "CUI_CharSheet_TitlesSearchBox", titlesPane)
         titleSearch:SetSize(180, 24)
-        titleSearch:SetPoint("TOPLEFT", titlesPanel, "TOPLEFT", 0, -30)
+        titleSearch:SetPoint("TOPLEFT", titlesPane, "TOPLEFT", 0, -30)
         titleSearch:SetAutoFocus(false)
         titleSearch:SetMaxLetters(20)
 
@@ -4248,18 +4248,18 @@ local function SkinCharacterSheet()
             titleSearch:ClearFocus()
         end)
 
-        local titlesScrollFrame = CreateFrame("ScrollFrame", "CUI_CharSheet_TitlesScrollFrame", titlesPanel)
-        titlesScrollFrame:SetPoint("TOPLEFT", titlesPanel, "TOPLEFT", 0, -65)
-        titlesScrollFrame:SetPoint("BOTTOMRIGHT", titlesPanel, "BOTTOMRIGHT", 0, 0)
-        titlesScrollFrame:EnableMouseWheel(true)
+        local titlesScroller = CreateFrame("ScrollFrame", "CUI_CharSheet_TitlesScrollFrame", titlesPane)
+        titlesScroller:SetPoint("TOPLEFT", titlesPane, "TOPLEFT", 0, -65)
+        titlesScroller:SetPoint("BOTTOMRIGHT", titlesPane, "BOTTOMRIGHT", 0, 0)
+        titlesScroller:EnableMouseWheel(true)
 
-        local titlesScrollChild = CreateFrame("Frame", "CUI_CharSheet_TitlesScrollChild", titlesScrollFrame)
+        local titlesScrollChild = CreateFrame("Frame", "CUI_CharSheet_TitlesScrollChild", titlesScroller)
         titlesScrollChild:SetWidth(180)
-        titlesScrollFrame:SetScrollChild(titlesScrollChild)
+        titlesScroller:SetScrollChild(titlesScrollChild)
 
         -- Custom scrollbar (same shape as the stats scrollbar).
-        AttachCustomScrollbar(titlesScrollFrame, titlesScrollChild, {
-            trackOwner = titlesPanel,
+        AttachCustomScrollbar(titlesScroller, titlesScrollChild, {
+            trackOwner = titlesPane,
             topInset = -65, -- matches titlesScrollFrame's top anchor offset
         })
 
@@ -4410,7 +4410,7 @@ local function SkinCharacterSheet()
 
             PaintTitleSelection(GetCurrentTitle())
             titlesScrollChild:SetHeight(-offY)
-            titlesScrollFrame:SetVerticalScroll(0)
+            titlesScroller:SetVerticalScroll(0)
         end
 
         -- Alias: some call sites say RefreshTitlesList().
@@ -4467,7 +4467,7 @@ local function SkinCharacterSheet()
             RefreshTitlesList()
         end)
 
-        CreateCUIButton("Titles", L("Titles"), 2)._panel = titlesPanel
+        CreateCUIButton("Titles", L("Titles"), 2)._panel = titlesPane
         CreateCUIButton("Equipment", L("Equipment"), 3)
 
         -- Labels chain from the stats panel's TOPLEFT and span its full width.
@@ -4730,20 +4730,20 @@ local function SkinCharacterSheet()
     -- Create overlay frame for text labels (above model, transparent, no mouse input).
     -- Stock styles: a PaperDollFrame child (hides with the Character tab) above
     -- Blizzard's model scene and below its slot frame (PaperDollItemsFrame, 100).
-    local textOverlayFrame
+    local textLayer
     if mod.CharSheetStock() then
         local scene = _G.CharacterModelScene
-        textOverlayFrame = CreateFrame("Frame", "CUI_CharSheet_TextOverlay", _G.PaperDollFrame or widget)
-        textOverlayFrame:SetFrameLevel((scene and scene:GetFrameLevel() or 50) + 10)
+        textLayer = CreateFrame("Frame", "CUI_CharSheet_TextOverlay", _G.PaperDollFrame or widget)
+        textLayer:SetFrameLevel((scene and scene:GetFrameLevel() or 50) + 10)
     else
-        textOverlayFrame = CreateFrame("Frame", "CUI_CharSheet_TextOverlay", widget)
+        textLayer = CreateFrame("Frame", "CUI_CharSheet_TextOverlay", widget)
         -- Above the model, whose level PreSkin sets from CharacterFrame's.
         local model = GetFFD(widget).modelScene
-        textOverlayFrame:SetFrameLevel((model and model:GetFrameLevel() or widget:GetFrameLevel()) + 10)
+        textLayer:SetFrameLevel((model and model:GetFrameLevel() or widget:GetFrameLevel()) + 10)
     end
-    textOverlayFrame:EnableMouse(false)
-    textOverlayFrame:Show()
-    GetFFD(widget).textOverlayFrame = textOverlayFrame
+    textLayer:EnableMouse(false)
+    textLayer:Show()
+    GetFFD(widget).textOverlayFrame = textLayer
 
     -- Top-left eyeball toggle: temporarily hides all item slot text (item level,
     -- upgrade track, enchants) by alpha-ing the shared overlay. Session-only.
@@ -4798,7 +4798,7 @@ local function SkinCharacterSheet()
                 return skinData.statLetterLabel, skinData.statLetterTerLabel
             end
             if not statLetterFrame then
-                statLetterFrame = CreateFrame("Frame", nil, textOverlayFrame)
+                statLetterFrame = CreateFrame("Frame", nil, textLayer)
                 local headSlot = _G.CharacterHeadSlot
                 statLetterFrame:SetFrameLevel(math.max(100, headSlot and headSlot:GetFrameLevel() or 0) + 10)
                 statLetterFrame:EnableMouse(false)
@@ -4828,7 +4828,7 @@ local function SkinCharacterSheet()
             local slotFrame = _G[slotKey]
             if slotFrame and not GetFFD(slotFrame).itemLevelLabel and not skipLabels then
                 local itemLevelSize = CludesUIDB and CludesUIDB.charSheetItemLevelSize or 11
-                local caption = textOverlayFrame:CreateFontString(nil, "OVERLAY")
+                local caption = textLayer:CreateFontString(nil, "OVERLAY")
                 caption:SetFont(fontFile, itemLevelSize, "")
                 caption:SetTextColor(1, 1, 1, 0.8)
                 caption:SetJustifyH("CENTER")
@@ -4850,7 +4850,7 @@ local function SkinCharacterSheet()
             -- Create enchant labels
             if slotFrame and not GetFFD(slotFrame).enchantLabel and not skipLabels then
                 local enchantSize = CludesUIDB and CludesUIDB.charSheetEnchantSize or 9
-                local enchantLabel = textOverlayFrame:CreateFontString(nil, "OVERLAY")
+                local enchantLabel = textLayer:CreateFontString(nil, "OVERLAY")
                 enchantLabel:SetFont(fontFile, enchantSize, "")
                 enchantLabel:SetTextColor(1, 1, 1, 0.8)
 
@@ -4873,9 +4873,9 @@ local function SkinCharacterSheet()
                     enchantLabel:SetJustifyH("CENTER")
                 end
 
-                local hoverFrame = CreateFrame("Frame", nil, textOverlayFrame)
+                local hoverFrame = CreateFrame("Frame", nil, textLayer)
                 hoverFrame:SetSize(20, 20)
-                hoverFrame:SetFrameLevel(textOverlayFrame:GetFrameLevel() + 20)
+                hoverFrame:SetFrameLevel(textLayer:GetFrameLevel() + 20)
                 if tContains(leftColumnSlots, slotKey) then
                     hoverFrame:SetPoint("LEFT", slotFrame, "RIGHT", EX, -5)
                 elseif tContains(rightColumnSlots, slotKey) then
@@ -4895,7 +4895,7 @@ local function SkinCharacterSheet()
             -- Create upgrade track labels (positioned relative to itemlevel)
             if slotFrame and not GetFFD(slotFrame).upgradeTrackLabel and GetFFD(slotFrame).itemLevelLabel then
                 local upgradeTrackSize = CludesUIDB and CludesUIDB.charSheetUpgradeTrackSize or 11
-                local upgradeTrackLabel = textOverlayFrame:CreateFontString(nil, "OVERLAY")
+                local upgradeTrackLabel = textLayer:CreateFontString(nil, "OVERLAY")
                 upgradeTrackLabel:SetFont(fontFile, upgradeTrackSize, "")
                 upgradeTrackLabel:SetTextColor(1, 1, 1, 0.6)
                 upgradeTrackLabel:SetJustifyH("CENTER")
@@ -4923,9 +4923,9 @@ local function SkinCharacterSheet()
                 local linkText = GetInventoryItemLink("player", slotFrame:GetID())
                 local borderR, borderG, borderB = 0.4, 0.4, 0.4 -- Default dark gray
                 if linkText then
-                    local rarity = C_Item.GetItemQualityByID(linkText)
-                    if rarity then
-                        borderR, borderG, borderB = C_Item.GetItemQualityColor(rarity)
+                    local quality = C_Item.GetItemQualityByID(linkText)
+                    if quality then
+                        borderR, borderG, borderB = C_Item.GetItemQualityColor(quality)
                     end
                 end
                 if CludesUI and CludesUI.PanelPP then
@@ -5050,8 +5050,8 @@ local function SkinCharacterSheet()
         local GEM_INSET_Y = 2 * GEM_PP_MULT -- 2 physical pixels from slot's bottom edge
 
         -- Gem border color by rarity: rare+ gold, uncommon silver.
-        local function GemBorderColor(rarity)
-            if (rarity or 0) >= 3 then
+        local function GemBorderColor(quality)
+            if (quality or 0) >= 3 then
                 return 1.00, 0.82, 0.00, 1 -- gold
             end
             return 0.75, 0.75, 0.75, 1 -- silver
@@ -5118,9 +5118,9 @@ local function SkinCharacterSheet()
             local socketTextures, totalSockets, nGems, gemLinks = CUI_BuildSocketIconRow(invLink, passes)
 
             if totalSockets > 0 and nGems == 0 then
-                local iid = GetInventoryItemID("player", slotIndex)
-                if iid and iid > 0 and C_Item and C_Item.RequestLoadItemDataByID then
-                    C_Item.RequestLoadItemDataByID(iid)
+                local itemId = GetInventoryItemID("player", slotIndex)
+                if itemId and itemId > 0 and C_Item and C_Item.RequestLoadItemDataByID then
+                    C_Item.RequestLoadItemDataByID(itemId)
                 end
                 GetFFD(slotFrame).cuiGemPaintPasses = passes + 1
             else
@@ -5183,14 +5183,14 @@ local function SkinCharacterSheet()
 
                         -- Resolve gem rarity for border color.
                         local gemLink = GetFFD(slotFrame).gemLinks and GetFFD(slotFrame).gemLinks[i]
-                        local rarity = 2
+                        local quality = 2
                         if gemLink then
                             local _, _, region = C_Item.GetItemInfo(gemLink)
                             if region then
-                                rarity = region
+                                quality = region
                             end
                         end
-                        local region, g, button, a = GemBorderColor(rarity)
+                        local region, g, button, a = GemBorderColor(quality)
                         PP_GEM.SetBorderColor(gemIcon, region, g, button, a)
 
                         gemIcon:Show()
@@ -5277,9 +5277,9 @@ local function SkinCharacterSheet()
             for _, slotKey in ipairs(slotList) do
                 local sl = _G[slotKey]
                 if sl and sl.GetID then
-                    local iid = GetInventoryItemID("player", sl:GetID())
-                    if iid and iid > 0 then
-                        _equippedItemIDs[iid] = true
+                    local itemId = GetInventoryItemID("player", sl:GetID())
+                    if itemId and itemId > 0 then
+                        _equippedItemIDs[itemId] = true
                     end
                 end
             end
@@ -5302,16 +5302,16 @@ local function SkinCharacterSheet()
             end)
         end
 
-        local socketWatcher = CreateFrame("Frame")
-        socketWatcher:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
-        socketWatcher:RegisterEvent("PLAYER_ENTERING_WORLD")
+        local socketWatch = CreateFrame("Frame")
+        socketWatch:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+        socketWatch:RegisterEvent("PLAYER_ENTERING_WORLD")
         -- Hydration (2 global): must hear item load while Character is closed after
         -- /reload. UNIT_INVENTORY_CHANGED + SOCKET_INFO_UPDATE (2 OnShow-only) below.
         if CharSheetGemsActive() then
-            socketWatcher:RegisterEvent("TOOLTIP_DATA_UPDATE")
-            socketWatcher:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+            socketWatch:RegisterEvent("TOOLTIP_DATA_UPDATE")
+            socketWatch:RegisterEvent("GET_ITEM_INFO_RECEIVED")
         end
-        socketWatcher:SetScript("OnEvent", function(_, evt, arg1)
+        socketWatch:SetScript("OnEvent", function(_, evt, arg1)
             if not CharSheetGemsActive() then
                 return
             end
@@ -5340,8 +5340,8 @@ local function SkinCharacterSheet()
 
         widget:HookScript("OnShow", function()
             -- Non-hydration high-frequency events: only while the sheet is visible.
-            socketWatcher:RegisterEvent("UNIT_INVENTORY_CHANGED")
-            socketWatcher:RegisterEvent("SOCKET_INFO_UPDATE")
+            socketWatch:RegisterEvent("UNIT_INVENTORY_CHANGED")
+            socketWatch:RegisterEvent("SOCKET_INFO_UPDATE")
             -- Sockets and the container only matter on the Character tab.
             local isCharacterTab = (widget.selectedTab or 1) == 1
             if isCharacterTab then
@@ -5355,8 +5355,8 @@ local function SkinCharacterSheet()
         end)
 
         widget:HookScript("OnHide", function()
-            socketWatcher:UnregisterEvent("UNIT_INVENTORY_CHANGED")
-            socketWatcher:UnregisterEvent("SOCKET_INFO_UPDATE")
+            socketWatch:UnregisterEvent("UNIT_INVENTORY_CHANGED")
+            socketWatch:UnregisterEvent("SOCKET_INFO_UPDATE")
             if _socketRefreshTimer then
                 _socketRefreshTimer:Cancel()
                 _socketRefreshTimer = nil
@@ -5399,7 +5399,7 @@ local function SkinCharacterSheet()
         local isCharTab = mod.CharSheetStock() or (PaperDollFrame and PaperDollFrame:IsShown())
 
         local linkText = GetInventoryItemLink("player", slotFrame:GetID())
-        local itemLevel = ""
+        local levelValue = ""
         local enchantText = ""
         local upgradeTrackText = ""
         local upgradeTrackColor = { r = 1, g = 1, b = 1 }
@@ -5410,8 +5410,8 @@ local function SkinCharacterSheet()
             -- GetItemInfo's itemLevel is the cached base level, wrong for upgrade-track
             -- pieces (shows 219 for a 334 item); read the equipped instance instead.
             local _, _, quality = C_Item.GetItemInfo(linkText)
-            local ilvl = GetEquippedItemLevel(slotID)
-            itemLevel = (ilvl and ilvl > 0) and ilvl or ""
+            local itemLvl = GetEquippedItemLevel(slotID)
+            levelValue = (itemLvl and itemLvl > 0) and itemLvl or ""
             itemQuality = quality
 
             -- Enchant via C_TooltipInfo; upgrade track via C_Item (no tooltip).
@@ -5428,7 +5428,7 @@ local function SkinCharacterSheet()
             local showItemLevel = (not CludesUIDB) or (CludesUIDB.showItemLevel ~= false)
 
             if showItemLevel then
-                GetFFD(slotFrame).itemLevelLabel:SetText(tostring(itemLevel) or "")
+                GetFFD(slotFrame).itemLevelLabel:SetText(tostring(levelValue) or "")
                 GetFFD(slotFrame).itemLevelLabel:SetShown(isCharTab)
                 GetFFD(slotFrame).itemLevelLabel:SetTextColor(ilvlColor.r, ilvlColor.g, ilvlColor.b, 0.9)
             else
@@ -5589,7 +5589,7 @@ local function SkinCharacterSheet()
         end
         local enchantID = tonumber(linkText:match("item:%d+:(%d+)"))
         local enchantPending = enchantID and enchantID ~= 0 and enchantText == ""
-        return itemQuality ~= nil and itemLevel ~= "" and not enchantPending and not lettersPending
+        return itemQuality ~= nil and levelValue ~= "" and not enchantPending and not lettersPending
     end
 
     -- Slots whose last read came back incomplete (item or tooltip data still on
@@ -5655,38 +5655,38 @@ local function SkinCharacterSheet()
     end
 
     if not GetFFD(widget).itemLevelMonitor then
-        local monitor = CreateFrame("Frame")
-        GetFFD(widget).itemLevelMonitor = monitor
+        local watcher = CreateFrame("Frame")
+        GetFFD(widget).itemLevelMonitor = watcher
         -- No BAG_UPDATE_DELAYED: bag contents cannot change the displayed
         -- equipped-item info (ilvl / enchant / upgrade track). Registered only
         -- while the sheet is open; the OnShow pass catches up on the rest.
         local function watch(enabled)
             if enabled then
-                monitor:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
-                monitor:RegisterEvent("UNIT_INVENTORY_CHANGED")
-                monitor:RegisterEvent("SOCKET_INFO_UPDATE")
-                monitor:RegisterEvent("ITEM_UPGRADE_MASTER_UPDATE")
+                watcher:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
+                watcher:RegisterEvent("UNIT_INVENTORY_CHANGED")
+                watcher:RegisterEvent("SOCKET_INFO_UPDATE")
+                watcher:RegisterEvent("ITEM_UPGRADE_MASTER_UPDATE")
                 -- Item/tooltip data arriving late for a slot whose read came back
                 -- incomplete. Both storm in cities, so the handler drops them at once
                 -- while no slot waits (and an item that no slot waits on) and
                 -- debounces the rest.
-                monitor:RegisterEvent("GET_ITEM_INFO_RECEIVED")
-                monitor:RegisterEvent("TOOLTIP_DATA_UPDATE")
+                watcher:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+                watcher:RegisterEvent("TOOLTIP_DATA_UPDATE")
             else
-                monitor:UnregisterAllEvents()
+                watcher:UnregisterAllEvents()
             end
         end
         local retryTimer
         -- The equipment events storm (a set swap fires one per changed slot):
         -- one pass on the next frame for the whole burst, on a frame shown only
         -- while that pass is pending.
-        local flush = CreateFrame("Frame")
-        flush:Hide()
-        flush:SetScript("OnUpdate", function(self)
+        local flushFn = CreateFrame("Frame")
+        flushFn:Hide()
+        flushFn:SetScript("OnUpdate", function(self)
             self:Hide()
             RefreshAllSlotLabels()
         end)
-        monitor:SetScript("OnEvent", function(_, evt, arg1)
+        watcher:SetScript("OnEvent", function(_, evt, arg1)
             if evt == "GET_ITEM_INFO_RECEIVED" or evt == "TOOLTIP_DATA_UPDATE" then
                 if retryTimer or not next(waitLink) then
                     return
@@ -5706,7 +5706,7 @@ local function SkinCharacterSheet()
             if not (widget and widget:IsShown()) then
                 return
             end
-            flush:Show()
+            flushFn:Show()
         end)
         widget:HookScript("OnShow", function()
             watch(true)
@@ -5767,11 +5767,11 @@ local function EnsureCalcTab(widget)
     backdrop:SetAllPoints()
     backdrop:SetColorTexture(0.068, 0.056, 0.052, 1)
 
-    local activeHL = calcTabBtn:CreateTexture(nil, "ARTWORK", nil, -6)
-    activeHL:SetAllPoints()
-    activeHL:SetColorTexture(1, 1, 1, 0.02)
-    activeHL:SetBlendMode("ADD")
-    activeHL:Hide()
+    local activeHighlight = calcTabBtn:CreateTexture(nil, "ARTWORK", nil, -6)
+    activeHighlight:SetAllPoints()
+    activeHighlight:SetColorTexture(1, 1, 1, 0.02)
+    activeHighlight:SetBlendMode("ADD")
+    activeHighlight:Hide()
 
     local caption = calcTabBtn:CreateFontString(nil, "OVERLAY")
     caption:SetFont(fontFile, 9, "")
@@ -5780,18 +5780,18 @@ local function EnsureCalcTab(widget)
     caption:SetText("Upgrades")
 
     local ACC = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
-    local underline = calcTabBtn:CreateTexture(nil, "OVERLAY", nil, 6)
+    local underlineTex = calcTabBtn:CreateTexture(nil, "OVERLAY", nil, 6)
     if Pix and Pix.DisablePixelSnap then
-        Pix.DisablePixelSnap(underline)
-        underline:SetHeight(Pix.mult or 1)
+        Pix.DisablePixelSnap(underlineTex)
+        underlineTex:SetHeight(Pix.mult or 1)
     else
-        underline:SetHeight(1)
+        underlineTex:SetHeight(1)
     end
-    underline:SetPoint("BOTTOMLEFT", calcTabBtn, "BOTTOMLEFT", 0, 0)
-    underline:SetPoint("BOTTOMRIGHT", calcTabBtn, "BOTTOMRIGHT", 0, 0)
-    underline:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
-    underline:Hide()
-    CludesUI.RegAccent({ type = "solid", obj = underline, a = 1 })
+    underlineTex:SetPoint("BOTTOMLEFT", calcTabBtn, "BOTTOMLEFT", 0, 0)
+    underlineTex:SetPoint("BOTTOMRIGHT", calcTabBtn, "BOTTOMRIGHT", 0, 0)
+    underlineTex:SetColorTexture(ACC.r, ACC.g, ACC.b, 1)
+    underlineTex:Hide()
+    CludesUI.RegAccent({ type = "solid", obj = underlineTex, a = 1 })
 
     local function RefreshCalcTab()
         local found = _G["CUIUpgCalcFrame"]
@@ -5802,8 +5802,8 @@ local function EnsureCalcTab(widget)
         end
         local isOpen = found and found:IsShown()
         caption:SetTextColor(1, 1, 1, isOpen and 1 or 0.5)
-        underline:SetShown(isOpen)
-        activeHL:SetShown(isOpen)
+        underlineTex:SetShown(isOpen)
+        activeHighlight:SetShown(isOpen)
     end
     RefreshCalcTab()
 
@@ -5962,13 +5962,13 @@ do
             flyout.Highlight:SetAlpha(0)
         end
 
-        local anchor = flyout.buttonFrame
-        if anchor then
+        local anchorFrame = flyout.buttonFrame
+        if anchorFrame then
             -- Panel fades the strips it finds now; Blizzard adds more (bgN)
             -- as the flyout grows, so every strip is faded on every fill.
-            Skin.Panel(anchor)
-            for i = 1, anchor.numBGs or 0 do
-                local strip = anchor["bg" .. i]
+            Skin.Panel(anchorFrame)
+            for i = 1, anchorFrame.numBGs or 0 do
+                local strip = anchorFrame["bg" .. i]
                 if strip then
                     strip:SetAlpha(0)
                 end
@@ -6351,12 +6351,12 @@ function CludesUI._refreshCharacterSheetColors()
     end
 
     -- The item level follows the same toggle (Blizzard's yellow, else our purple).
-    local ilvl = GetFFD(charFrame).iLvlText
-    if ilvl then
+    local itemLvl = GetFFD(charFrame).iLvlText
+    if itemLvl then
         if blizzYellow then
-            ilvl:SetTextColor(blizzYellow.r, blizzYellow.g, blizzYellow.b, 1)
+            itemLvl:SetTextColor(blizzYellow.r, blizzYellow.g, blizzYellow.b, 1)
         else
-            ilvl:SetTextColor(0.6, 0.2, 1, 1)
+            itemLvl:SetTextColor(0.6, 0.2, 1, 1)
         end
     end
 end

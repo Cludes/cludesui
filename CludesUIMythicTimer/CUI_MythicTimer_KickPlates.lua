@@ -218,19 +218,19 @@ local PREVIEW_EVENTS = { "NAME_PLATE_UNIT_ADDED", "NAME_PLATE_UNIT_REMOVED" }
 --------------------------------------------------------------------------------
 local icons = {} -- key -> icon: a kicker's unit, "~" .. plate for a sample
 local onPlate = {} -- plate unit -> ordered list of the icons shown on it
-local detached = {} -- key -> icon whose plate went away (kept for its kicker)
+local isDetached = {} -- key -> icon whose plate went away (kept for its kicker)
 local free = {} -- parked icons, reused forever
-local park -- hidden holder parked icons hang from; built lazily
+local parked -- hidden holder parked icons hang from; built lazily
 local watchPark -- hidden holder parked cast watchers hang from (no aspect; EnsurePool)
 local rowsOK = false -- the park bears the aspect an object needs to anchor to an aura row (EnsurePool)
 local driverFrame -- hidden driver; built lazily
 local evt -- event frame; built lazily
 local driverAcc = 0
-local curMode = MODE_OFF
-local previewOn = false -- sample icons forced on the live plates (KT_SetPreview: the harness; no options caller)
-local previewSeq = 0 -- preview sample counter (class cycle, stagger)
-local styleGen = 0 -- bumped by a settings write and a UI scale change; an icon restyles when its stamp differs
-local measureFS -- off-screen font string that measures the inline draw factor; built lazily
+local currentMode = MODE_OFF
+local previewing = false -- sample icons forced on the live plates (KT_SetPreview: the harness; no options caller)
+local previewStep = 0 -- preview sample counter (class cycle, stagger)
+local styleStamp = 0 -- bumped by a settings write and a UI scale change; an icon restyles when its stamp differs
+local measureText -- off-screen font string that measures the inline draw factor; built lazily
 local liveCount = 0 -- icons on a plate (live or sample)
 local plateSeq = 0 -- arrival counter: an icon's `seq` on its plate orders it within its readiness group
 local Rails = {} -- marker defaults: a rail per marked plate (the Marker defaults section)
@@ -249,7 +249,7 @@ local Lift = { STRATA = "HIGH" }
 
 -- The options header's sample: two cells on a mock plate, built once and never
 -- in icons, free, onPlate or detached, nor counted in liveCount.
-local sampleIcons = {}
+local sampleList = {}
 local samplePlate
 local SAMPLE_CLASSES = { "WARRIOR", "MAGE" }
 local SAMPLE_CD_LEFT = 9 -- seconds left on the second sample's cooldown at each paint
@@ -258,21 +258,21 @@ local SAMPLE_PLATE_W, SAMPLE_PLATE_H = 150, 17 -- the mock plate while the namep
 -- Scale snapshot (SyncScale): UIParent's scale, which the icon renders at,
 -- and one physical pixel in scale-1 units (PP.perfect) it was taken with; one
 -- physical pixel in icon units; the icon format for the current size.
-local uiScale, perfect, onePx, iconFmt
+local uiZoom, perfect, onePx, iconFmt
 
 -- Settings snapshot, read by KT_Refresh before any icon can paint.
-local sSize, stackAnchor, sOffX, sOffY, sOthX, sOthY, sIconStyle
+local iconPx, stackAnchor, sOffX, sOffY, sOthX, sOthY, iconStyle
 local sClassBorder, sShowTimer, sTimerSize, sTimerPos, sTimerX, sTimerY, sSwipe, sDesat
 local sPawInset
 
 local function ReadSettings(conf)
-    sSize = floor(Clamp(tonumber(conf.size) or 28, 16, 48) + 0.5)
+    iconPx = floor(Clamp(tonumber(conf.size) or 28, 16, 48) + 0.5)
     stackAnchor = ANCHORS[conf.anchor] and conf.anchor or "LEFT"
     sOffX = tonumber(conf.offsetX) or -4
     sOffY = tonumber(conf.offsetY) or 0
     sOthX = tonumber(conf.otherOffsetX) or 0
     sOthY = tonumber(conf.otherOffsetY) or 0
-    sIconStyle = ICON_STYLES[conf.iconStyle] and conf.iconStyle or "kick"
+    iconStyle = ICON_STYLES[conf.iconStyle] and conf.iconStyle or "kick"
     sClassBorder = conf.classBorder ~= false
     sShowTimer = conf.showTimer ~= false
     sTimerSize = floor(Clamp(tonumber(conf.timerSize) or 11, 6, 24) + 0.5)
@@ -282,7 +282,7 @@ local function ReadSettings(conf)
     sSwipe = conf.swipe ~= false
     sDesat = conf.desaturate == true
     Lift.on = conf.aboveOverlap ~= false
-    sPawInset = floor(sSize * 0.18 + 0.5)
+    sPawInset = floor(iconPx * 0.18 + 0.5)
 end
 
 -- Scale-1 units one unit of inline size takes in the icon string (ICON_FONT
@@ -290,19 +290,19 @@ end
 -- holder under UIParent, where text can be measured. When the read fails, the
 -- share seen in game: a twelfth of the font size per unit.
 local function InlineFactor()
-    if not measureFS then
+    if not measureText then
         local holderFrame = CreateFrame("Frame", nil, UIParent)
         holderFrame:SetIgnoreParentScale(true)
         holderFrame:SetScale(1)
         holderFrame:SetSize(1, 1)
         holderFrame:SetPoint("TOPLEFT", UIParent, "BOTTOMRIGHT", 100, -100)
         holderFrame:SetAlpha(0)
-        measureFS = holderFrame:CreateFontString(nil, "ARTWORK")
-        measureFS:SetWordWrap(false)
-        measureFS:SetFont(ICON_FONT, ICON_SIZE, "")
-        measureFS:SetFormattedText(MEASURE_FMT, MEASURE_H, MEASURE_H)
+        measureText = holderFrame:CreateFontString(nil, "ARTWORK")
+        measureText:SetWordWrap(false)
+        measureText:SetFont(ICON_FONT, ICON_SIZE, "")
+        measureText:SetFormattedText(MEASURE_FMT, MEASURE_H, MEASURE_H)
     end
-    local wid = measureFS:GetStringWidth()
+    local wid = measureText:GetStringWidth()
     if type(wid) ~= "number" or wid <= 0 then
         return ICON_SIZE / 12
     end
@@ -314,17 +314,17 @@ end
 -- whether anything changed.
 local function SyncScale(force)
     local ui, px = UIParent:GetEffectiveScale(), Pix.perfect or 1
-    if not force and ui == uiScale and px == perfect then
+    if not force and ui == uiZoom and px == perfect then
         return false
     end
-    uiScale, perfect = ui, px
+    uiZoom, perfect = ui, px
     onePx = px / ui
     -- The area inside the border in physical pixels (the icon as PP.Size
     -- snaps it); the icon's inline size in scale-1 units: what it draws covers
     -- that area plus ICON_OVER pixels, rounded up, and the clip trims the
     -- rest. Texcoords widened by the overfill, centred, inside the aura
     -- icons' zoom: the clip trims the widening back off.
-    local innerPx = Pix.Scale(sSize) / onePx - 2 * BORDER_PX
+    local innerPx = Pix.Scale(iconPx) / onePx - 2 * BORDER_PX
     if innerPx < 1 then
         innerPx = 1
     end
@@ -336,7 +336,7 @@ local function SyncScale(force)
         l = 0
     end
     iconFmt = format(ICON_FMT, iconH, iconH, l, 64 - l, l, 64 - l)
-    styleGen = styleGen + 1
+    styleStamp = styleStamp + 1
     return true
 end
 
@@ -395,36 +395,36 @@ function Gate.New(hostFrame)
 end
 
 function Gate.NewClip(hostFrame)
-    local clip = CreateFrame("Frame", nil, hostFrame)
-    clip:SetClipsChildren(true)
-    clip:EnableMouse(false)
-    return clip
+    local clipFrame = CreateFrame("Frame", nil, hostFrame)
+    clipFrame:SetClipsChildren(true)
+    clipFrame:EnableMouse(false)
+    return clipFrame
 end
 
 -- The clip open while the fill is whole: from the gate's left edge to the
 -- fill's right edge, hung again after every feed so it never keeps the edge
 -- of a fill that moved.
-function Gate.HangWhole(clip, fillTex, gateRec)
-    clip:ClearAllPoints()
-    clip:SetPoint("TOPLEFT", gateRec, "TOPLEFT", 0, 0)
-    clip:SetPoint("BOTTOMLEFT", gateRec, "BOTTOMLEFT", 0, 0)
-    clip:SetPoint("TOPRIGHT", fillTex, "TOPRIGHT", 0, 0)
-    clip:SetPoint("BOTTOMRIGHT", fillTex, "BOTTOMRIGHT", 0, 0)
+function Gate.HangWhole(clipFrame, fillTex, gateRec)
+    clipFrame:ClearAllPoints()
+    clipFrame:SetPoint("TOPLEFT", gateRec, "TOPLEFT", 0, 0)
+    clipFrame:SetPoint("BOTTOMLEFT", gateRec, "BOTTOMLEFT", 0, 0)
+    clipFrame:SetPoint("TOPRIGHT", fillTex, "TOPRIGHT", 0, 0)
+    clipFrame:SetPoint("BOTTOMRIGHT", fillTex, "BOTTOMRIGHT", 0, 0)
 end
 
 -- The count at the element's placing as the value, the latest as the
 -- maximum: whole while the count did not move, short once it rose.
-function Gate.FeedWhole(gateRec, fillTex, clip, base, current)
+function Gate.FeedWhole(gateRec, fillTex, clipFrame, base, current)
     gateRec:SetMinMaxValues(0, current)
     gateRec:SetValue(base)
-    Gate.HangWhole(clip, fillTex, gateRec)
+    Gate.HangWhole(clipFrame, fillTex, gateRec)
 end
 
 -- Whole from plain values: the element shows.
-function Gate.ResetWhole(gateRec, fillTex, clip)
+function Gate.ResetWhole(gateRec, fillTex, clipFrame)
     gateRec:SetMinMaxValues(0, 1)
     gateRec:SetValue(1)
-    Gate.HangWhole(clip, fillTex, gateRec)
+    Gate.HangWhole(clipFrame, fillTex, gateRec)
 end
 
 -- A hidden element must not keep its slot either (the owner's blank spot,
@@ -485,34 +485,34 @@ end
 -- from. The reverse bar leads leftward and trails rightward, so the first
 -- bar's fill edge faces the second whichever way the row grows.
 function Gate.AnchorStep(plateRow, from, fromPoint, off, goesLeft)
-    local first, firstFill, secondary, secondFill
+    local firstPlate, firstFill, secondary, secondFill
     if goesLeft then
-        first, firstFill, secondary, secondFill = plateRow.rev, plateRow.revFill, plateRow.std, plateRow.stdFill
+        firstPlate, firstFill, secondary, secondFill = plateRow.rev, plateRow.revFill, plateRow.std, plateRow.stdFill
     else
-        first, firstFill, secondary, secondFill = plateRow.std, plateRow.stdFill, plateRow.rev, plateRow.revFill
+        firstPlate, firstFill, secondary, secondFill = plateRow.std, plateRow.stdFill, plateRow.rev, plateRow.revFill
     end
-    first:ClearAllPoints()
+    firstPlate:ClearAllPoints()
     secondary:ClearAllPoints()
     if goesLeft then
-        first:SetPoint("RIGHT", from, fromPoint, off, 0)
+        firstPlate:SetPoint("RIGHT", from, fromPoint, off, 0)
         secondary:SetPoint("RIGHT", firstFill, "LEFT", 0, 0)
         return secondFill, "RIGHT"
     end
-    first:SetPoint("LEFT", from, fromPoint, off, 0)
+    firstPlate:SetPoint("LEFT", from, fromPoint, off, 0)
     secondary:SetPoint("LEFT", firstFill, "RIGHT", 0, 0)
     return secondFill, "LEFT"
 end
 
 -- The pair's first bar v1 and its second v2 over the range (lo, hi).
 function Gate.FeedStep(plateRow, lo, hi, v1, v2, goesLeft)
-    local first, secondary
+    local firstPlate, secondary
     if goesLeft then
-        first, secondary = plateRow.rev, plateRow.std
+        firstPlate, secondary = plateRow.rev, plateRow.std
     else
-        first, secondary = plateRow.std, plateRow.rev
+        firstPlate, secondary = plateRow.std, plateRow.rev
     end
-    first:SetMinMaxValues(lo, hi)
-    first:SetValue(v1)
+    firstPlate:SetMinMaxValues(lo, hi)
+    firstPlate:SetValue(v1)
     secondary:SetMinMaxValues(lo, hi)
     secondary:SetValue(v2)
 end
@@ -644,7 +644,7 @@ local function PlateRatio(backing)
     if global <= 0 then
         global = 1
     end
-    return (uiScale or 1) / (global * (backing._curScale or 1))
+    return (uiZoom or 1) / (global * (backing._curScale or 1))
 end
 
 -- The side guest provider: for an CludesUI plate and a side ("left" /
@@ -680,9 +680,9 @@ local function SideGuest(backing, side, a0, a1)
     if not outer then
         return nil
     end
-    local ratio = PlateRatio(backing)
-    local gy = sOffY * ratio
-    local half = (sSize * ratio + (a1 - a0)) / 2
+    local scaleRatio = PlateRatio(backing)
+    local gy = sOffY * scaleRatio
+    local half = (iconPx * scaleRatio + (a1 - a0)) / 2
     if gy >= half or -gy >= half then
         return nil
     end
@@ -713,8 +713,8 @@ end
 -- nameplate (Blizzard's or another addon's plate hangs from it). A forbidden
 -- plate has no base frame to hand out: nothing shows.
 local function ResolveHost(unitToken)
-    local plates = NPPlates()
-    local backing = plates and plates[unitToken]
+    local plateList = NPPlates()
+    local backing = plateList and plateList[unitToken]
     if backing and backing.health then
         return backing, true
     end
@@ -759,7 +759,7 @@ local function ApplyText(btnFrame, skinData, style)
 end
 
 local function BuildStyle()
-    local px = Pix.Scale(sSize)
+    local px = Pix.Scale(iconPx)
     return {
         width = px,
         height = px,
@@ -822,9 +822,9 @@ local function PlaceEdge(b)
     local barH = m.GetHealthBarHeight()
     local push = 0
     if b.casting and m.NP_FullIconPush then
-        local ratio = PlateRatio(backing)
-        local mid = barH / 2 + b.oy * ratio
-        local half = sSize * ratio / 2
+        local scaleRatio = PlateRatio(backing)
+        local mid = barH / 2 + b.oy * scaleRatio
+        local half = iconPx * scaleRatio / 2
         local iconTex = m.NP_FullIconPush(backing, side, mid - half, mid + half)
         if iconTex > 0 and m.NP_FullIconPush(backing, side, b.rowY, b.rowY + b.rowH) == 0 then
             push = iconTex
@@ -883,22 +883,22 @@ local function AnchorIcon(b)
         PlaceEdge(b)
         rel = b.edge
     end
-    local ox, oy = b.ox, b.oy
+    local offX, offY = b.ox, b.oy
     local frame = b.wrap or b
     frame:ClearAllPoints()
     if b.isRail then
         if stackAnchor == "LEFT" then
-            Pix.Point(frame, "RIGHT", rel, "LEFT", ox, oy)
+            Pix.Point(frame, "RIGHT", rel, "LEFT", offX, offY)
         elseif stackAnchor == "RIGHT" then
-            Pix.Point(frame, "LEFT", rel, "RIGHT", ox, oy)
+            Pix.Point(frame, "LEFT", rel, "RIGHT", offX, offY)
         elseif stackAnchor == "TOP" then
-            Pix.Point(frame, "BOTTOMLEFT", rel, "TOP", ox - sSize / 2, oy)
+            Pix.Point(frame, "BOTTOMLEFT", rel, "TOP", offX - iconPx / 2, offY)
         else
-            Pix.Point(frame, "TOPLEFT", b.relBottom, "BOTTOM", ox - sSize / 2, oy)
+            Pix.Point(frame, "TOPLEFT", b.relBottom, "BOTTOM", offX - iconPx / 2, offY)
         end
         return
     end
-    local half = Pix.Scale(sSize) / 2
+    local half = Pix.Scale(iconPx) / 2
     local hang, previous = b.hang, b.prevEl
     if hang then
         local const = b.hangConst or 0
@@ -924,13 +924,13 @@ local function AnchorIcon(b)
         end
     else
         if stackAnchor == "LEFT" then
-            Pix.Point(frame, "RIGHT", rel, "LEFT", ox, oy)
+            Pix.Point(frame, "RIGHT", rel, "LEFT", offX, offY)
         elseif stackAnchor == "RIGHT" then
-            Pix.Point(frame, "LEFT", rel, "RIGHT", ox, oy)
+            Pix.Point(frame, "LEFT", rel, "RIGHT", offX, offY)
         elseif stackAnchor == "TOP" then
-            Pix.Point(frame, "BOTTOM", rel, "TOP", ox, oy)
+            Pix.Point(frame, "BOTTOM", rel, "TOP", offX, offY)
         else
-            Pix.Point(frame, "TOP", b.relBottom, "BOTTOM", ox, oy)
+            Pix.Point(frame, "TOP", b.relBottom, "BOTTOM", offX, offY)
         end
     end
     -- The count gate's clip hung again about the moved wrap; a fed gate is
@@ -1020,12 +1020,12 @@ local function SetIconLevels(b, layerStrata, frameLvl)
 end
 
 local function Place(b, owner, isCUI)
-    local rel, relBottom, ox, oy, layerStrata, frameLvl
+    local rel, relBottom, offX, offY, layerStrata, frameLvl
     if isCUI then
         rel = owner.health
         -- Bottom side sits under the cast bar (its rect resolves while hidden).
         relBottom = owner.cast or rel
-        ox, oy = sOffX, sOffY
+        offX, offY = sOffX, sOffY
         -- The plate's own strata keeps the icon inside its flattened render
         -- layer, at the level above every tier of ours (PLATE_TOP).
         layerStrata = owner:GetFrameStrata()
@@ -1035,7 +1035,7 @@ local function Place(b, owner, isCUI)
         b.row, b.rowY, b.rowH = SideRow(owner)
     else
         rel, relBottom = owner, owner
-        ox, oy = sOthX, sOthY
+        offX, offY = sOthX, sOthY
         layerStrata = owner:GetFrameStrata()
         frameLvl = owner:GetFrameLevel() + PLATE_TOP
         b.cuiPlate = nil
@@ -1049,7 +1049,7 @@ local function Place(b, owner, isCUI)
     end
     -- Placement stamp: a new kick on the same plate under the same style
     -- skips this pass.
-    b.placedHost, b.placedGen = owner, styleGen
+    b.placedHost, b.placedGen = owner, styleStamp
     local placed = b.wrap or b
     placed:SetParent(above or owner)
     if b.isRail then
@@ -1059,7 +1059,7 @@ local function Place(b, owner, isCUI)
     else
         SetIconLevels(b, layerStrata, frameLvl)
     end
-    b.rel, b.relBottom, b.ox, b.oy = rel, relBottom, ox, oy
+    b.rel, b.relBottom, b.ox, b.oy = rel, relBottom, offX, offY
     -- A Full Sized cast icon on the icon's side covers it during a cast.
     local iconFrame = isCUI and FullIconSide() == stackAnchor and owner.castIconFrame or nil
     WatchCast(b, iconFrame and owner.cast or nil, iconFrame)
@@ -1192,7 +1192,7 @@ local function PutOnPlate(b, unitToken, owner, isCUI)
             Rails.SetLiveHidden(b.kicker, true)
         end
     end
-    if b.placedHost ~= owner or b.placedGen ~= styleGen then
+    if b.placedHost ~= owner or b.placedGen ~= styleStamp then
         Place(b, owner, isCUI)
     else
         AnchorIcon(b)
@@ -1223,18 +1223,18 @@ local function StyleIcon(b)
     -- its rail or ghost instead (BuildIcon).
     local wrap = b.wrap
     if wrap then
-        if b.uiScale ~= uiScale then
-            wrap:SetScale(uiScale)
-            b.uiScale = uiScale
+        if b.uiScale ~= uiZoom then
+            wrap:SetScale(uiZoom)
+            b.uiScale = uiZoom
         end
-        local cellW = Pix.Scale(sSize)
+        local cellW = Pix.Scale(iconPx)
         wrap:SetSize(cellW, cellW)
         Gate.Size(b.gate, wrap, cellW)
         Gate.HangWhole(b.clip, b.fill, b.gate)
         -- The step pair from the wrap's inner edge, one pitch wide (the
         -- rail chains' own measure), and the row end frame at its end.
         local goesLeft = stackAnchor == "LEFT"
-        Gate.SizeStep(b.step, sSize + ICON_GAP, cellW)
+        Gate.SizeStep(b.step, iconPx + ICON_GAP, cellW)
         local ef, ep = Gate.AnchorStep(b.step, wrap, goesLeft and "RIGHT" or "LEFT", 0, goesLeft)
         b.endFill, b.endPoint = ef, ep
         b.rowEnd:SetSize(1, cellW)
@@ -1243,7 +1243,7 @@ local function StyleIcon(b)
     end
     Inset(b.iconClip, b, BORDER_PX * onePx)
     Inset(b.paw, b, sPawInset)
-    b.styleGen = styleGen
+    b.styleGen = styleStamp
 end
 
 -- The border in the kicker's colour while Class Color Border is on and the
@@ -1339,9 +1339,9 @@ local function KickerTexture(m)
     if not m then
         return nil
     end
-    if sIconStyle == "spec" then
+    if iconStyle == "spec" then
         return m.specIcon
-    elseif sIconStyle == "kick" then
+    elseif iconStyle == "kick" then
         return m.kick and C_Spell.GetSpellTexture(m.kick) or nil
     end
     return nil
@@ -1357,9 +1357,9 @@ local function Detach(b)
         b:Hide()
         local frame = b.wrap or b
         frame:ClearAllPoints()
-        frame:SetParent(park)
+        frame:SetParent(parked)
         b.edge:ClearAllPoints()
-        b.edge:SetParent(park)
+        b.edge:SetParent(parked)
         TakeOffPlate(b)
         b.cuiPlate, b.placedHost, b.placedGen, b.rel, b.relBottom, b.row = nil, nil, nil, nil, nil, nil
         if b.kicker then
@@ -1379,7 +1379,7 @@ local function Release(b)
     local key = b.key
     if key then
         icons[key] = nil
-        detached[key] = nil
+        isDetached[key] = nil
     end
     b.key, b.kicker, b.guid, b.kClass, b.kTex, b.preview, b.at = nil, nil, nil, nil, nil, nil, nil
     b.cdStart, b.cdDur, b.onTarget, b.waitTarget, b.seq, b.rdy = nil, nil, nil, nil, nil, nil
@@ -1397,7 +1397,7 @@ local function ReleaseAll()
     for _, b in pairs(icons) do
         Release(b)
     end
-    wipe(detached)
+    wipe(isDetached)
     wipe(onPlate)
     liveCount = 0
     Rails.ReleaseAll()
@@ -1429,7 +1429,7 @@ local function PlateGone(unitToken)
                 end
             elseif b.guid or b.waitTarget then
                 Detach(b)
-                detached[b.key] = b
+                isDetached[b.key] = b
             else
                 Release(b)
             end
@@ -1442,7 +1442,7 @@ end
 -- find the mob), and the icons on plates learn whether they sit on the
 -- target now.
 local function OnTargetChanged()
-    for key, b in pairs(detached) do
+    for key, b in pairs(isDetached) do
         if b.waitTarget then
             b.waitTarget = false
             if not b.guid then
@@ -1478,11 +1478,11 @@ local function PreviewTexture(classFile)
     if not classFile then
         return nil
     end
-    if sIconStyle == "spec" then
+    if iconStyle == "spec" then
         local ident = CLASS_IDS[classFile]
         local _, _, _, iconTex = GetSpecializationInfoForClassID(ident, 1)
         return iconTex
-    elseif sIconStyle == "kick" then
+    elseif iconStyle == "kick" then
         local spell = KD.ClassMainKick(classFile)
         return spell and C_Spell.GetSpellTexture(spell) or nil
     end
@@ -1490,8 +1490,8 @@ local function PreviewTexture(classFile)
 end
 
 local function RestartPreview(b)
-    previewSeq = previewSeq + 1
-    local classFile = PreviewClass(previewSeq)
+    previewStep = previewStep + 1
+    local classFile = PreviewClass(previewStep)
     PaintKicker(b, classFile, PreviewTexture(classFile))
     PaintCooldown(b, GetTime(), PREVIEW_CD)
     b.restartAt = GetTime() + PREVIEW_CD + PREVIEW_REST
@@ -1510,7 +1510,7 @@ local function DriverOnUpdate(self, elapsed)
     end
     driverAcc = 0
     local nowTime = GetTime()
-    local plates = NPPlates()
+    local plateList = NPPlates()
     for unitToken, entries in pairs(onPlate) do
         -- The nameplate module's plates are pooled and can change hands
         -- without a plate removal for this unit (a hostile unit turning
@@ -1518,7 +1518,7 @@ local function DriverOnUpdate(self, elapsed)
         -- have been handed out yet: follow the unit's current plate.
         -- A ghost placed again has its gates fed once more by Ghosts.Tick
         -- below (its fills' edges moved with it).
-        local p = plates and plates[unitToken]
+        local p = plateList and plateList[unitToken]
         for i = #entries, 1, -1 do
             local b = entries[i]
             if p ~= b.cuiPlate then
@@ -1551,7 +1551,7 @@ local function DriverOnUpdate(self, elapsed)
             end
         end
     end
-    Rails.Follow(plates)
+    Rails.Follow(plateList)
     if Ghosts.live[1] then
         Ghosts.Tick(nowTime)
     end
@@ -1581,22 +1581,22 @@ end
 -- clip the cell lives in, open over the cell while the gate's fill is whole
 -- (Gate.FeedWhole); the cell fills the wrap.
 local function BuildIcon(hostFrame)
-    local wrap, gateRec, fillTex, clip
+    local wrap, gateRec, fillTex, clipFrame
     if not hostFrame then
-        wrap = CreateFrame("Frame", nil, park)
+        wrap = CreateFrame("Frame", nil, parked)
         wrap:EnableMouse(false)
         wrap:SetIgnoreParentScale(true)
         gateRec, fillTex = Gate.New(wrap)
-        clip = Gate.NewClip(wrap)
+        clipFrame = Gate.NewClip(wrap)
     end
-    local b, skinData = AK.CreateStyledCell(hostFrame or clip, STYLE, CellExtra)
+    local b, skinData = AK.CreateStyledCell(hostFrame or clipFrame, STYLE, CellExtra)
     b.d = skinData
     if hostFrame then
         b.laneCell = true
     else
-        b.wrap, b.gate, b.fill, b.clip = wrap, gateRec, fillTex, clip
+        b.wrap, b.gate, b.fill, b.clip = wrap, gateRec, fillTex, clipFrame
         b:SetAllPoints(wrap)
-        Gate.HangWhole(clip, fillTex, gateRec)
+        Gate.HangWhole(clipFrame, fillTex, gateRec)
         -- The step pair the next element of the row hangs from (one pitch
         -- past the wrap while the icon shows), and the row end frame at its
         -- end for the target arrows (SideGuest); anchored by StyleIcon.
@@ -1605,7 +1605,7 @@ local function BuildIcon(hostFrame)
         b.rowEnd:SetSize(1, 1)
         -- The edge frame the icon hangs from past an aura row (PlaceEdge):
         -- born under the park for its aspect, lent to the plate while placed.
-        b.edge = CreateFrame("Frame", nil, park)
+        b.edge = CreateFrame("Frame", nil, parked)
         b.edge:SetSize(1, 1)
     end
     b:Hide()
@@ -1667,7 +1667,7 @@ local function BuildIcon(hostFrame)
 end
 
 local function EnsurePool()
-    if park then
+    if parked then
         return
     end
     -- The park is born with the aspect that lets an object anchor to an aura
@@ -1679,28 +1679,28 @@ local function EnsurePool()
     local success, holderFrame =
         pcall(CreateFrame, "Frame", nil, UIParent, "DisableUntrustedLayoutScriptsTemplate")
     if success and holderFrame then
-        park, rowsOK = holderFrame, true
+        parked, rowsOK = holderFrame, true
     else
-        park, rowsOK = CreateFrame("Frame", nil, UIParent), false
+        parked, rowsOK = CreateFrame("Frame", nil, UIParent), false
     end
-    park:Hide()
+    parked:Hide()
     -- The lift (Show Above Overlapping Nameplates): a shown holder under
     -- UIParent at its own strata, born as the park is, so what the park
     -- bears moves under it. An element placed under it leaves its plate's
     -- render tree and draws over every plate; its anchors to the plate's
     -- bar, its edge frame or the rail's shift edge still carry it along.
-    local okLift, lift = pcall(CreateFrame, "Frame", nil, UIParent, "DisableUntrustedLayoutScriptsTemplate")
-    if not (okLift and lift) then
-        lift = CreateFrame("Frame", nil, UIParent)
+    local okLift, liftPx = pcall(CreateFrame, "Frame", nil, UIParent, "DisableUntrustedLayoutScriptsTemplate")
+    if not (okLift and liftPx) then
+        liftPx = CreateFrame("Frame", nil, UIParent)
     end
-    lift:SetFrameStrata(Lift.STRATA)
-    lift:SetSize(1, 1)
-    lift:EnableMouse(false)
-    if lift.EnableMouseMotion then
-        lift:EnableMouseMotion(false)
+    liftPx:SetFrameStrata(Lift.STRATA)
+    liftPx:SetSize(1, 1)
+    liftPx:EnableMouse(false)
+    if liftPx.EnableMouseMotion then
+        liftPx:EnableMouseMotion(false)
     end
-    lift:Show()
-    Lift.frame = lift
+    liftPx:Show()
+    Lift.frame = liftPx
     -- The cast watchers' holder: a plain frame, since a watcher is born
     -- under a plate's cast bar without the aspect and cannot be moved under
     -- the park (WatchCast).
@@ -1739,9 +1739,9 @@ end
 local function ShowIcon(key, kicker, unitToken, owner, isCUI, classFile, texture, start, duration, preview)
     Ready()
     local b = icons[key] or Acquire(key, kicker)
-    detached[key] = nil
+    isDetached[key] = nil
     b.preview = preview
-    if b.styleGen ~= styleGen then
+    if b.styleGen ~= styleStamp then
         StyleIcon(b)
     end
     PutOnPlate(b, unitToken, owner, isCUI)
@@ -1789,12 +1789,12 @@ Ghosts.LEVELS = 5 -- frame levels a kit cell takes: icon, swipe, border, dispel,
 -- row's edge frame like an icon), with an edge frame of its own, rendering
 -- at UIParent's scale (Style). Sub-cells are built on demand (BuildSub).
 function Ghosts.Build()
-    local g = CreateFrame("Frame", nil, park)
+    local g = CreateFrame("Frame", nil, parked)
     g.isGhost = true
     g:Hide()
     g:EnableMouse(false)
     g:SetIgnoreParentScale(true)
-    g.edge = CreateFrame("Frame", nil, park)
+    g.edge = CreateFrame("Frame", nil, parked)
     g.edge:SetSize(1, 1)
     -- The row end frame at its chain's end (Ghosts.Chain), for the arrows.
     g.rowEnd = CreateFrame("Frame", nil, g)
@@ -1832,7 +1832,7 @@ function Ghosts.Chain(g)
         Gate.ShowStep(subRow.stepA, on)
         Gate.ShowStep(subRow.stepB, on)
     end
-    local undo = 2 * (sSize + ICON_GAP) * g.used
+    local undo = 2 * (iconPx + ICON_GAP) * g.used
     g.endFill, g.endPoint, g.endOffset = from, fp, goesLeft and undo or -undo
     g.rowEnd:ClearAllPoints()
     g.rowEnd:SetPoint(goesLeft and "LEFT" or "RIGHT", from, fp, g.endOffset, 0)
@@ -1867,19 +1867,19 @@ end
 function Ghosts.Size(g, subRow, cellW)
     Gate.Size(subRow.gate, g, cellW)
     Gate.Size(subRow.gateB, g, cellW)
-    Gate.SizeStep(subRow.stepA, sSize + ICON_GAP, cellW)
-    Gate.SizeStep(subRow.stepB, sSize + ICON_GAP, cellW)
+    Gate.SizeStep(subRow.stepA, iconPx + ICON_GAP, cellW)
+    Gate.SizeStep(subRow.stepB, iconPx + ICON_GAP, cellW)
 end
 
 -- The clip from the gate's fill edge to the gate's right edge, anchored again
 -- after every feed so it never keeps the edge of a fill that moved.
 function Ghosts.Hang(subRow)
-    local clip, fillTex, gateRec = subRow.clip, subRow.fill, subRow.gate
-    clip:ClearAllPoints()
-    clip:SetPoint("TOPLEFT", fillTex, "TOPRIGHT", 0, 0)
-    clip:SetPoint("BOTTOMLEFT", fillTex, "BOTTOMRIGHT", 0, 0)
-    clip:SetPoint("TOPRIGHT", gateRec, "TOPRIGHT", 0, 0)
-    clip:SetPoint("BOTTOMRIGHT", gateRec, "BOTTOMRIGHT", 0, 0)
+    local clipFrame, fillTex, gateRec = subRow.clip, subRow.fill, subRow.gate
+    clipFrame:ClearAllPoints()
+    clipFrame:SetPoint("TOPLEFT", fillTex, "TOPRIGHT", 0, 0)
+    clipFrame:SetPoint("BOTTOMLEFT", fillTex, "BOTTOMRIGHT", 0, 0)
+    clipFrame:SetPoint("TOPRIGHT", gateRec, "TOPRIGHT", 0, 0)
+    clipFrame:SetPoint("BOTTOMRIGHT", gateRec, "BOTTOMRIGHT", 0, 0)
 end
 
 -- The cell's count gate fed again as it was (its member's count after the
@@ -1912,19 +1912,19 @@ end
 function Ghosts.BuildSub(g, k)
     local gateRec, fillTex = Gate.New(g)
     gateRec:Hide()
-    local clip = Gate.NewClip(g)
-    clip:Hide()
-    local gateB, fillB = Gate.New(g)
-    gateB:Hide()
-    local clipB = Gate.NewClip(clip)
+    local clipFrame = Gate.NewClip(g)
+    clipFrame:Hide()
+    local gateBottom, fillB = Gate.New(g)
+    gateBottom:Hide()
+    local clipB = Gate.NewClip(clipFrame)
     local cellFrame = BuildIcon(clipB)
     cellFrame:ClearAllPoints()
     cellFrame:SetAllPoints(g)
     local subRow = {
         gate = gateRec,
         fill = fillTex,
-        clip = clip,
-        gateB = gateB,
+        clip = clipFrame,
+        gateB = gateBottom,
         fillB = fillB,
         clipB = clipB,
         cell = cellFrame,
@@ -1932,9 +1932,9 @@ function Ghosts.BuildSub(g, k)
         stepB = Gate.NewStep(g),
     }
     g.subs[k] = subRow
-    Ghosts.Size(g, subRow, Pix.Scale(sSize))
+    Ghosts.Size(g, subRow, Pix.Scale(iconPx))
     Ghosts.Hang(subRow)
-    Gate.HangWhole(clipB, fillB, gateB)
+    Gate.HangWhole(clipB, fillB, gateBottom)
     return subRow
 end
 
@@ -1961,11 +1961,11 @@ end
 -- Scale and size for the current style: the ghost renders at UIParent's
 -- scale like an icon and is one cell wide; its gates follow the cell width.
 function Ghosts.Style(g)
-    if g.uiScale ~= uiScale then
-        g:SetScale(uiScale)
-        g.uiScale = uiScale
+    if g.uiScale ~= uiZoom then
+        g:SetScale(uiZoom)
+        g.uiScale = uiZoom
     end
-    local cellW = Pix.Scale(sSize)
+    local cellW = Pix.Scale(iconPx)
     g:SetSize(cellW, cellW)
     g.rowEnd:SetSize(1, cellW)
     local subRows = g.subs
@@ -1973,7 +1973,7 @@ function Ghosts.Style(g)
         Ghosts.Size(g, subRows[k], cellW)
     end
     Ghosts.Chain(g)
-    g.styleGen = styleGen
+    g.styleGen = styleStamp
 end
 
 -- Place's strata and levels: the ghost and its gates at `lvl`, each sub-cell
@@ -2030,9 +2030,9 @@ function Ghosts.Unplace(g)
     WatchCast(g, nil)
     g:Hide()
     g:ClearAllPoints()
-    g:SetParent(park)
+    g:SetParent(parked)
     g.edge:ClearAllPoints()
-    g.edge:SetParent(park)
+    g.edge:SetParent(parked)
     TakeOffPlate(g)
     g.cuiPlate, g.placedHost, g.placedGen, g.rel, g.relBottom, g.row = nil, nil, nil, nil, nil, nil
     g.hang, g.hangConst, g.slotAt, g.feed = nil, nil, nil, nil
@@ -2140,7 +2140,7 @@ function Ghosts.Return(unitToken, unitGuid, isTarget)
                 end
                 if owner then
                     Ghosts.SetWaiting(g, false)
-                    if g.styleGen ~= styleGen then
+                    if g.styleGen ~= styleStamp then
                         Ghosts.Dress(g)
                     end
                     PutOnPlate(g, unitToken, owner, isCUI)
@@ -2179,13 +2179,13 @@ end
 -- t with their own cooldown. The ghost holds that span while the longest of
 -- them could still run (CdRunning: it sorts with the icons on cooldown).
 function Ghosts.Show(t, unitToken, owner, isCUI, units, before, after)
-    local num, longest = 0, 0
+    local num, longestText = 0, 0
     for i = 1, #units do
         local duration = Ghosts.Dur(units[i], before, after)
         if duration then
             num = num + 1
-            if duration > longest then
-                longest = duration
+            if duration > longestText then
+                longestText = duration
             end
         end
     end
@@ -2200,7 +2200,7 @@ function Ghosts.Show(t, unitToken, owner, isCUI, units, before, after)
     else
         g = Ghosts.Build()
     end
-    if g.styleGen ~= styleGen then
+    if g.styleGen ~= styleStamp then
         Ghosts.Style(g)
     end
     local subRows, k = g.subs, 0
@@ -2222,7 +2222,7 @@ function Ghosts.Show(t, unitToken, owner, isCUI, units, before, after)
             subRow.gateB:Show()
             Ghosts.Feed(subRow)
             local cellFrame = subRow.cell
-            if cellFrame.styleGen ~= styleGen then
+            if cellFrame.styleGen ~= styleStamp then
                 StyleIcon(cellFrame)
             end
             PaintKicker(cellFrame, (m and m.class) or UnitClassBase(u), KickerTexture(m))
@@ -2232,7 +2232,7 @@ function Ghosts.Show(t, unitToken, owner, isCUI, units, before, after)
         end
     end
     g.used = k
-    g.t, g.cdStart, g.cdDur, g.expireAt = t, t, longest, t + longest
+    g.t, g.cdStart, g.cdDur, g.expireAt = t, t, longestText, t + longestText
     Ghosts.Chain(g)
     local liveSet = Ghosts.live
     liveSet[#liveSet + 1] = g
@@ -2352,14 +2352,14 @@ function Ghosts.Dress(g)
     for k = 1, g.used do
         local subRow = subRows[k]
         local cellFrame = subRow.cell
-        if cellFrame.styleGen ~= styleGen then
+        if cellFrame.styleGen ~= styleStamp then
             StyleIcon(cellFrame)
         end
         local m = Ghosts.MemberOf(subRow)
         local texture = cellFrame.kTex
         if m then
             texture = KickerTexture(m)
-        elseif sIconStyle == "class" then
+        elseif iconStyle == "class" then
             texture = nil
         end
         PaintKicker(cellFrame, cellFrame.kClass, texture)
@@ -2374,7 +2374,7 @@ function Ghosts.Restyle()
     local liveSet = Ghosts.live
     for i = #liveSet, 1, -1 do
         local g = liveSet[i]
-        if g.styleGen ~= styleGen and g.unit then
+        if g.styleGen ~= styleStamp and g.unit then
             local owner, isCUI = ResolveHost(g.unit)
             if owner then
                 Ghosts.Dress(g)
@@ -2440,14 +2440,14 @@ function Ghosts.Supersede(kicker, start)
                 if num == 0 then
                     Ghosts.Release(g)
                 else
-                    local longest = 0
+                    local longestText = 0
                     for k = 1, num do
                         local skinData = subRows[k].cell.cdDur
-                        if skinData and skinData > longest then
-                            longest = skinData
+                        if skinData and skinData > longestText then
+                            longestText = skinData
                         end
                     end
-                    g.cdDur, g.expireAt = longest, g.t + longest
+                    g.cdDur, g.expireAt = longestText, g.t + longestText
                     -- Fewer cells: the chain, and the row after the ghost.
                     Ghosts.Chain(g)
                     if g.unit then
@@ -2463,12 +2463,12 @@ end
 -- kicked then that nobody was placed on. A plate joining the packet later
 -- (platesOnly) is simply new; one that has its ghost for t already is not.
 -- Every table is the engine's scratch, read here and never kept.
-function Ghosts.OnGate(t, units, before, after, plates, platesOnly)
-    if curMode ~= MODE_LIVE then
+function Ghosts.OnGate(t, units, before, after, plateList, platesOnly)
+    if currentMode ~= MODE_LIVE then
         return
     end
-    for i = 1, #plates do
-        local unitToken = plates[i]
+    for i = 1, #plateList do
+        local unitToken = plateList[i]
         if NAMEPLATE_UNITS[unitToken] and not Ghosts.Has(t, unitToken) and IsHostile(unitToken) then
             local owner, isCUI = ResolveHost(unitToken)
             if owner then
@@ -2487,7 +2487,7 @@ end
 -- member's icon moves to the plate with their cooldown. Any other kick
 -- arrives through the gate packet instead and shows as a ghost (Ghosts).
 local function OnKick(unitToken, who, _, _, _, _)
-    if curMode ~= MODE_LIVE or not who or not NAMEPLATE_UNITS[unitToken] then
+    if currentMode ~= MODE_LIVE or not who or not NAMEPLATE_UNITS[unitToken] then
         return
     end
     local nowTime = GetTime()
@@ -2518,7 +2518,7 @@ end
 -- A member's modeled cooldown moved: their icon follows, wherever it sits,
 -- and their cells in older ghosts leave (Ghosts.Supersede).
 local function OnCooldown(kicker, start, duration)
-    if curMode ~= MODE_LIVE then
+    if currentMode ~= MODE_LIVE then
         return
     end
     local b = icons[kicker]
@@ -2533,7 +2533,7 @@ end
 
 -- A member's spec or interrupt became known: their icon's picture may change.
 local function OnRoster()
-    if curMode ~= MODE_LIVE then
+    if currentMode ~= MODE_LIVE then
         return
     end
     for key, b in pairs(icons) do
@@ -2556,7 +2556,7 @@ local HANDLERS = { kick = OnKick, cooldown = OnCooldown, roster = OnRoster, gate
 -- for the count gates of their live icon, their cells in the ghosts and
 -- their lanes (each fed only once its own cooldown is over).
 function HANDLERS.counts(T, units, after)
-    if curMode ~= MODE_LIVE then
+    if currentMode ~= MODE_LIVE then
         return
     end
     for i = 1, #units do
@@ -2640,35 +2640,35 @@ local function SavedRecord()
     if type(CludesUIDB) ~= "table" then
         return nil
     end
-    local me = PlainString(UnitGUID("player"))
-    if not me then
+    local myGuid = PlainString(UnitGUID("player"))
+    if not myGuid then
         return nil
     end
-    local all = CludesUIDB.kickMarkers
-    if type(all) ~= "table" then
-        all = {}
-        CludesUIDB.kickMarkers = all
+    local allPlates = CludesUIDB.kickMarkers
+    if type(allPlates) ~= "table" then
+        allPlates = {}
+        CludesUIDB.kickMarkers = allPlates
     end
-    local rec = all[me]
-    if type(rec) ~= "table" then
-        rec = {}
-        all[me] = rec
+    local plateRec = allPlates[myGuid]
+    if type(plateRec) ~= "table" then
+        plateRec = {}
+        allPlates[myGuid] = plateRec
     end
-    return rec
+    return plateRec
 end
 
 -- Written only by Learn and Forget: a restore reads it and leaves it.
 local function SaveCache()
-    local rec = SavedRecord()
-    if not rec then
+    local plateRec = SavedRecord()
+    if not plateRec then
         return
     end
-    rec.inst = Rails.inst
+    plateRec.inst = Rails.inst
     local m = {}
-    for g, mk in pairs(Rails.markerOf) do
-        m[g] = mk
+    for g, markerKey in pairs(Rails.markerOf) do
+        m[g] = markerKey
     end
-    rec.m = m
+    plateRec.m = m
 end
 
 -- The cached kickers against the roster: members with a cached marker and an
@@ -2682,25 +2682,25 @@ function Rails.SyncKickers()
     if next(Rails.markerOf) == nil then
         return
     end
-    local used
+    local usedSet
     local units = KE.GROUP_UNITS
     for i = 1, #units do
         local unitToken = units[i]
         local m = KE.Member(unitToken)
-        local mk = m and m.guid and m.kick and Rails.markerOf[m.guid]
-        if mk then
-            used = used or {}
-            local laneRec = used[mk] or 0
-            used[mk] = laneRec + 1
-            entries[#entries + 1] = { unit = unitToken, marker = mk, lane = laneRec }
+        local markerKey = m and m.guid and m.kick and Rails.markerOf[m.guid]
+        if markerKey then
+            usedSet = usedSet or {}
+            local laneRec = usedSet[markerKey] or 0
+            usedSet[markerKey] = laneRec + 1
+            entries[#entries + 1] = { unit = unitToken, marker = markerKey, lane = laneRec }
             laneOf[unitToken] = #entries
         end
     end
 end
 
 -- A member's marker (0: they have none now).
-function Rails.Learn(unitGuid, marker)
-    Rails.markerOf[unitGuid] = (marker >= 1 and marker <= 8) and marker or nil
+function Rails.Learn(unitGuid, markerTex)
+    Rails.markerOf[unitGuid] = (markerTex >= 1 and markerTex <= 8) and markerTex or nil
     Rails.inst = MarkerInstance()
     SaveCache()
     Rails.SyncKickers()
@@ -2722,11 +2722,11 @@ local function RestoreMarkers()
     wipe(Rails.markerOf)
     local instance = MarkerInstance()
     Rails.inst = instance
-    local rec = SavedRecord()
-    if rec and instance and rec.inst == instance and type(rec.m) == "table" then
-        for g, mk in pairs(rec.m) do
-            if type(g) == "string" and type(mk) == "number" and mk >= 1 and mk <= 8 and mk == floor(mk) then
-                Rails.markerOf[g] = mk
+    local plateRec = SavedRecord()
+    if plateRec and instance and plateRec.inst == instance and type(plateRec.m) == "table" then
+        for g, markerKey in pairs(plateRec.m) do
+            if type(g) == "string" and type(markerKey) == "number" and markerKey >= 1 and markerKey <= 8 and markerKey == floor(markerKey) then
+                Rails.markerOf[g] = markerKey
             end
         end
     end
@@ -2770,13 +2770,13 @@ end
 -- clears a marker you no longer have. Before a key starts it goes through;
 -- inside one the lockdown drops it, and the result is not read.
 local function SendMarker(kind)
-    local me = PlainString(UnitGUID("player"))
-    local channel = Rails.Channel()
-    if not (me and channel) then
+    local myGuid = PlainString(UnitGUID("player"))
+    local channelling = Rails.Channel()
+    if not (myGuid and channelling) then
         return
     end
-    Rails.Learn(me, Rails.marker)
-    C_ChatInfo.SendAddonMessage(Rails.PREFIX, kind .. "\t" .. Rails.marker .. "\t" .. me, channel)
+    Rails.Learn(myGuid, Rails.marker)
+    C_ChatInfo.SendAddonMessage(Rails.PREFIX, kind .. "\t" .. Rails.marker .. "\t" .. myGuid, channelling)
 end
 
 -- A request on the edges where a client may have missed earlier sends: your
@@ -2815,12 +2815,12 @@ local function Reply()
 end
 
 local function BuildRail()
-    local track = CreateFrame("Frame", nil, park)
+    local track = CreateFrame("Frame", nil, parked)
     track.isRail = true
     track:Hide()
     track:EnableMouse(false)
     track:SetIgnoreParentScale(true)
-    track.edge = CreateFrame("Frame", nil, park)
+    track.edge = CreateFrame("Frame", nil, parked)
     track.edge:SetSize(1, 1)
     track.lanes = {}
     -- The shift chain (LayoutRail): its bar pairs, the edge at its end that
@@ -2850,8 +2850,8 @@ end
 -- the cell (so it rides the fill with it), its clip holding the cell: the
 -- marker gate draws at full alpha, since the cell is its descendant.
 local function BuildLane(track, i)
-    local clip = Gate.NewClip(track)
-    local gateRec = CreateFrame("StatusBar", nil, clip)
+    local clipFrame = Gate.NewClip(track)
+    local gateRec = CreateFrame("StatusBar", nil, clipFrame)
     gateRec:EnableMouse(false)
     gateRec:SetStatusBarTexture("Interface\\Buttons\\WHITE8x8")
     local fillTex = gateRec:GetStatusBarTexture()
@@ -2860,18 +2860,18 @@ local function BuildLane(track, i)
         fillTex:SetSnapToPixelGrid(false)
         fillTex:SetTexelSnappingBias(0)
     end
-    local gateB, fillB = Gate.New(gateRec)
+    local gateBottom, fillB = Gate.New(gateRec)
     local clipB = Gate.NewClip(gateRec)
     local cellFrame = BuildIcon(clipB)
     cellFrame:ClearAllPoints()
     cellFrame:SetPoint("LEFT", fillTex, "RIGHT", 0, 0)
     cellFrame.rail = track
-    Gate.HangWhole(clipB, fillB, gateB)
+    Gate.HangWhole(clipB, fillB, gateBottom)
     local laneRec = {
-        clip = clip,
+        clip = clipFrame,
         gate = gateRec,
         fill = fillTex,
-        gateB = gateB,
+        gateB = gateBottom,
         fillB = fillB,
         clipB = clipB,
         cell = cellFrame,
@@ -2917,7 +2917,7 @@ end
 -- fill (Gate.NewBar).
 local function ChainBar(track, reverse)
     local barFrame, fillTex = Gate.NewBar(track, reverse)
-    barFrame:SetSize(sSize + ICON_GAP, Pix.Scale(sSize))
+    barFrame:SetSize(iconPx + ICON_GAP, Pix.Scale(iconPx))
     barFrame:SetFrameStrata(track:GetFrameStrata())
     barFrame:SetFrameLevel(track:GetFrameLevel())
     return barFrame, fillTex
@@ -2954,30 +2954,30 @@ end
 -- range: a pair reaches its bars' width, and that width once more exactly on
 -- its marker. Returns the chain's end, the last fill's outer edge, and the
 -- offset left to apply there (the start's own, with no pair shown).
-local function AnchorChain(track, chain, used, goesLeft, from, fromPoint, off)
+local function AnchorChain(track, chain, usedSet, goesLeft, from, fromPoint, off)
     for p = 1, #chain do
         local plateRow = chain[p]
-        if p <= used then
-            local first, firstFill, secondary, secondFill
+        if p <= usedSet then
+            local firstPlate, firstFill, secondary, secondFill
             if goesLeft then
-                first, firstFill, secondary, secondFill = plateRow.rev, plateRow.revFill, plateRow.std, plateRow.stdFill
+                firstPlate, firstFill, secondary, secondFill = plateRow.rev, plateRow.revFill, plateRow.std, plateRow.stdFill
             else
-                first, firstFill, secondary, secondFill = plateRow.std, plateRow.stdFill, plateRow.rev, plateRow.revFill
+                firstPlate, firstFill, secondary, secondFill = plateRow.std, plateRow.stdFill, plateRow.rev, plateRow.revFill
             end
-            first:SetMinMaxValues(plateRow.marker - 1, plateRow.marker)
+            firstPlate:SetMinMaxValues(plateRow.marker - 1, plateRow.marker)
             secondary:SetMinMaxValues(plateRow.marker, plateRow.marker + 1)
-            first:ClearAllPoints()
+            firstPlate:ClearAllPoints()
             secondary:ClearAllPoints()
             if goesLeft then
-                first:SetPoint("RIGHT", from, fromPoint, off, 0)
+                firstPlate:SetPoint("RIGHT", from, fromPoint, off, 0)
                 secondary:SetPoint("RIGHT", firstFill, "LEFT", 0, 0)
                 from, fromPoint, off = secondFill, "RIGHT", 0
             else
-                first:SetPoint("LEFT", from, fromPoint, off, 0)
+                firstPlate:SetPoint("LEFT", from, fromPoint, off, 0)
                 secondary:SetPoint("LEFT", firstFill, "RIGHT", 0, 0)
                 from, fromPoint, off = secondFill, "LEFT", 0
             end
-            first:Show()
+            firstPlate:Show()
             secondary:Show()
         else
             plateRow.std:Hide()
@@ -3023,11 +3023,11 @@ end
 -- index to land inside it, each chain bar one slot pitch wide. The lanes'
 -- slots and the rail's own size are LayoutRail's.
 local function StyleRail(track)
-    if track.uiScale ~= uiScale then
-        track:SetScale(uiScale)
-        track.uiScale = uiScale
+    if track.uiScale ~= uiZoom then
+        track:SetScale(uiZoom)
+        track.uiScale = uiZoom
     end
-    local cellW = Pix.Scale(sSize)
+    local cellW = Pix.Scale(iconPx)
     local entries = Rails.kickers
     local built = false
     for i = 1, #entries do
@@ -3040,7 +3040,7 @@ local function StyleRail(track)
         laneRec.gate:SetSize(2 * RAIL_SPAN * cellW, cellW)
         laneRec.gate:ClearAllPoints()
         laneRec.gate:SetPoint("LEFT", laneRec.clip, "LEFT", -RAIL_SPAN * cellW, 0)
-        if laneRec.cell.styleGen ~= styleGen then
+        if laneRec.cell.styleGen ~= styleStamp then
             StyleIcon(laneRec.cell)
         end
         Gate.Size(laneRec.gateB, laneRec.cell, cellW)
@@ -3048,8 +3048,8 @@ local function StyleRail(track)
     end
     for p = 1, #track.chain do
         local plateRow = track.chain[p]
-        plateRow.std:SetSize(sSize + ICON_GAP, cellW)
-        plateRow.rev:SetSize(sSize + ICON_GAP, cellW)
+        plateRow.std:SetSize(iconPx + ICON_GAP, cellW)
+        plateRow.rev:SetSize(iconPx + ICON_GAP, cellW)
     end
     -- The hug chain's widths are LayoutRail's (one per marker); its frame is
     -- a line at the row's end, the icons' height, so the arrows meet it at
@@ -3063,7 +3063,7 @@ local function StyleRail(track)
     if built and track.placedHost then
         Rails.SetLevels(track, track:GetFrameStrata(), track:GetFrameLevel())
     end
-    track.styleGen, track.kickGen = styleGen, Rails.gen
+    track.styleGen, track.kickGen = styleStamp, Rails.gen
 end
 
 -- Each lane for the kicker it stands for: picture, cooldown, the gate's range
@@ -3142,15 +3142,15 @@ end
 -- the row's end, so a hidden icon's empty slot is never hugged either).
 LayoutRail = function(track, R, L, entries)
     local kickers, lanes = Rails.kickers, track.lanes
-    local pitch = sSize + ICON_GAP
-    local cellW = Pix.Scale(sSize)
+    local pitch = iconPx + ICON_GAP
+    local cellW = Pix.Scale(iconPx)
     local goesLeft = stackAnchor == "LEFT"
     local result = goesLeft and -1 or 1 -- along the row, away from the plate
     local inner = goesLeft and "RIGHT" or "LEFT"
     local readyBy, cdBy = track.readyBy, track.cdBy
     wipe(readyBy)
     wipe(cdBy)
-    local used, isShown = 0, 0
+    local usedSet, isShown = 0, 0
     for i = 1, #kickers do
         local k, laneRec = kickers[i], lanes[i]
         laneRec.shown = laneRec.kicker ~= nil and not Rails.liveHidden[k.unit]
@@ -3158,8 +3158,8 @@ LayoutRail = function(track, R, L, entries)
             local num = readyBy[k.marker] or 0
             laneRec.slotNo = R + 1 + num
             readyBy[k.marker] = num + 1
-            used = used + 1
-            local plateRow = track.chain[used] or BuildPair(track, used)
+            usedSet = usedSet + 1
+            local plateRow = track.chain[usedSet] or BuildPair(track, usedSet)
             plateRow.marker = k.marker
         end
     end
@@ -3197,9 +3197,9 @@ LayoutRail = function(track, R, L, entries)
         scrollFrame, sp, so = Gate.ElementEnd(entries[R])
     end
     -- The shift chain from it, and the edge at its end.
-    local from, fromPoint, off = AnchorChain(track, track.chain, used, goesLeft, scrollFrame, sp, so)
-    track.chainUsed = used
-    track.shiftConst = used * pitch
+    local from, fromPoint, off = AnchorChain(track, track.chain, usedSet, goesLeft, scrollFrame, sp, so)
+    track.chainUsed = usedSet
+    track.shiftConst = usedSet * pitch
     track.shift:ClearAllPoints()
     track.shift:SetPoint("CENTER", from, fromPoint, off, 0)
     -- The row end: after the last live icon, or the shift edge with the
@@ -3230,13 +3230,13 @@ LayoutRail = function(track, R, L, entries)
     -- lanes, and the hug frame its length back from the chain's end.
     local hugChain = track.hugChain
     local usedHug, wsum = 0, 0
-    for marker = 1, 8 do
-        local num = cdBy[marker] or 0
+    for markerTex = 1, 8 do
+        local num = cdBy[markerTex] or 0
         if num > 0 then
             local wid = num * pitch
             usedHug = usedHug + 1
             local plateRow = hugChain[usedHug] or BuildPair(track, usedHug, hugChain)
-            plateRow.marker = marker
+            plateRow.marker = markerTex
             plateRow.std:SetWidth(wid)
             plateRow.rev:SetWidth(wid)
             wsum = wsum + wid
@@ -3246,7 +3246,7 @@ LayoutRail = function(track, R, L, entries)
     track.hugUsed = usedHug
     track.hug:ClearAllPoints()
     track.hug:SetPoint(goesLeft and "LEFT" or "RIGHT", from, fromPoint, off - result * wsum, 0)
-    if (used > 0 or usedHug > 0) and track.unit then
+    if (usedSet > 0 or usedHug > 0) and track.unit then
         local position = GetRaidTargetIndex(track.unit)
         if type(position) == "number" then
             FeedChain(track, position)
@@ -3292,9 +3292,9 @@ function Rails.Release(unitToken)
     track.feed = nil
     track:Hide()
     track:ClearAllPoints()
-    track:SetParent(park)
+    track:SetParent(parked)
     track.edge:ClearAllPoints()
-    track.edge:SetParent(park)
+    track.edge:SetParent(parked)
     track.unit, track.cuiPlate, track.placedHost, track.placedGen = nil, nil, nil, nil
     track.rel, track.relBottom, track.row = nil, nil, nil
     Rails.free[#Rails.free + 1] = track
@@ -3318,7 +3318,7 @@ end
 -- A plate's rail: up while the plate is a marked hostile and a kicker is
 -- cached, its lanes dressed, every gate fed the plate's marker index.
 function Rails.SyncPlate(unitToken)
-    if curMode ~= MODE_LIVE or #Rails.kickers == 0 or not NAMEPLATE_UNITS[unitToken] then
+    if currentMode ~= MODE_LIVE or #Rails.kickers == 0 or not NAMEPLATE_UNITS[unitToken] then
         Rails.Release(unitToken)
         return
     end
@@ -3334,12 +3334,12 @@ function Rails.SyncPlate(unitToken)
     end
     Ready()
     local track = Rails.railOf[unitToken] or AcquireRail(unitToken)
-    if track.styleGen ~= styleGen or track.kickGen ~= Rails.gen then
+    if track.styleGen ~= styleStamp or track.kickGen ~= Rails.gen then
         StyleRail(track)
     end
     DressRail(track)
     track.unit = unitToken
-    if track.placedHost ~= owner or track.placedGen ~= styleGen then
+    if track.placedHost ~= owner or track.placedGen ~= styleStamp then
         Place(track, owner, isCUI)
     end
     LayoutPlate(unitToken)
@@ -3354,7 +3354,7 @@ end
 
 -- Every plate on screen (a marker moved, the cache or the roster changed).
 function Rails.SyncAll()
-    if curMode ~= MODE_LIVE or #Rails.kickers == 0 then
+    if currentMode ~= MODE_LIVE or #Rails.kickers == 0 then
         Rails.ReleaseAll()
         return
     end
@@ -3371,12 +3371,12 @@ end
 -- A kicker's live icon came onto a plate (hidden = true) or left every plate:
 -- their lane on every rail follows, and each rail's plate lays its icons out
 -- again (the lane's slot and the chain changed).
-function Rails.SetLiveHidden(kicker, hidden)
-    hidden = hidden == true
-    if (Rails.liveHidden[kicker] == true) == hidden then
+function Rails.SetLiveHidden(kicker, isHidden)
+    isHidden = isHidden == true
+    if (Rails.liveHidden[kicker] == true) == isHidden then
         return
     end
-    Rails.liveHidden[kicker] = hidden or nil
+    Rails.liveHidden[kicker] = isHidden or nil
     if not Rails.laneOf[kicker] then
         return
     end
@@ -3387,7 +3387,7 @@ function Rails.SetLiveHidden(kicker, hidden)
     end
     -- The lane back (the live icon's plate went): its count gate against the
     -- ghosts that may hold the kicker's kick meanwhile.
-    if not hidden then
+    if not isHidden then
         local current = KE.Count(kicker)
         if current ~= nil then
             Rails.Counts(kicker, current, GetTime())
@@ -3424,12 +3424,12 @@ function Rails.Counts(u, current, T)
 end
 
 -- The driver's pass: a rail follows its unit's plate as the icons do.
-function Rails.Follow(plates)
+function Rails.Follow(plateList)
     if Rails.count == 0 then
         return
     end
     for unitToken, track in pairs(Rails.railOf) do
-        local p = plates and plates[unitToken]
+        local p = plateList and plateList[unitToken]
         if p ~= track.cuiPlate then
             if p and p.health then
                 Place(track, p, true)
@@ -3491,11 +3491,11 @@ local function OnMarkerEvent(_, event, a1, a2, a3)
         if not textValue then
             return
         end
-        local kind, mk, unitGuid = textValue:match("^([FR])\t([0-8])\t(Player%-%d+%-%x+)$")
+        local kind, markerKey, unitGuid = textValue:match("^([FR])\t([0-8])\t(Player%-%d+%-%x+)$")
         if not kind or unitGuid == PlainString(UnitGUID("player")) then
             return
         end
-        Rails.Learn(unitGuid, tonumber(mk))
+        Rails.Learn(unitGuid, tonumber(markerKey))
         if kind == "R" then
             Reply()
         end
@@ -3570,9 +3570,9 @@ local function PreviewUnit(unitToken)
     if not owner then
         return
     end
-    previewSeq = previewSeq + 1
-    local off = ((previewSeq - 1) % 3) * PREVIEW_CD / 3
-    local classFile = PreviewClass(previewSeq)
+    previewStep = previewStep + 1
+    local off = ((previewStep - 1) % 3) * PREVIEW_CD / 3
+    local classFile = PreviewClass(previewStep)
     local b = ShowIcon(
         "~" .. unitToken,
         nil,
@@ -3607,24 +3607,24 @@ end
 -- A plate came: every waiting icon and ghost whose mob this is (by plain
 -- GUID, or the player's target while it counts on it) comes back onto it.
 local function OnPlateAdded(unitToken)
-    if curMode == MODE_PREVIEW then
+    if currentMode == MODE_PREVIEW then
         PreviewUnit(unitToken)
         return
     end
-    if next(detached) == nil and Ghosts.nWaiting == 0 then
+    if next(isDetached) == nil and Ghosts.nWaiting == 0 then
         return
     end
     local g = PlainString(UnitGUID(unitToken))
     local isTarget = IsTargetPlate(unitToken)
     local owner, isCUI
-    for key, b in pairs(detached) do
+    for key, b in pairs(isDetached) do
         if (g and b.guid == g) or (isTarget and b.waitTarget) then
             if not owner then
                 owner, isCUI = ResolveHost(unitToken)
             end
             if owner then
-                detached[key] = nil
-                if b.styleGen ~= styleGen then
+                isDetached[key] = nil
+                if b.styleGen ~= styleStamp then
                     StyleIcon(b)
                 end
                 PutOnPlate(b, unitToken, owner, isCUI)
@@ -3662,13 +3662,13 @@ end
 -- Every mode change drops what is showing: leaving live clears its icons,
 -- entering preview replaces them with samples, leaving preview clears those.
 local function SetMode(mode)
-    if mode == curMode then
+    if mode == currentMode then
         return
     end
-    if curMode == MODE_LIVE then
+    if currentMode == MODE_LIVE then
         KE.Unsubscribe(WHERE_KEY)
     end
-    curMode = mode
+    currentMode = mode
     if evt then
         evt:UnregisterAllEvents()
     end
@@ -3702,11 +3702,11 @@ end
 local function SyncState()
     local conf = Cfg()
     if not Enabled(conf) then
-        previewOn = false
+        previewing = false
         SetMode(MODE_OFF)
         return
     end
-    if previewOn then
+    if previewing then
         SetMode(MODE_PREVIEW)
         return
     end
@@ -3727,7 +3727,7 @@ local function OnWhere(event)
     if event == "RECHECK" then
         Rails.Settled(true)
     end
-    if event == "PLAYER_ENTERING_WORLD" and curMode == MODE_PREVIEW and liveCount == 0 then
+    if event == "PLAYER_ENTERING_WORLD" and currentMode == MODE_PREVIEW and liveCount == 0 then
         SeedPreview()
     end
 end
@@ -3740,7 +3740,7 @@ local function RestyleLive()
         AK.Restyle(STYLE)
     end
     for key, b in pairs(icons) do
-        if b.styleGen ~= styleGen and b.unit then
+        if b.styleGen ~= styleStamp and b.unit then
             local owner, isCUI = ResolveHost(b.unit)
             if owner then
                 StyleIcon(b)
@@ -3828,8 +3828,8 @@ end
 -- The line sent for a marker: the player's own with {marker} swapped for the
 -- raid marker (a function replacement, so a % in their text stays a %), the
 -- marker added at the end when their line has none, else the default.
-local function AnnounceLine(marker)
-    local token = "{rt" .. marker .. "}"
+local function AnnounceLine(markerTex)
+    local token = "{rt" .. markerTex .. "}"
     local conf = Cfg()
     local custom = conf and conf.announceText
     if type(custom) == "string" and custom ~= "" then
@@ -3844,15 +3844,15 @@ local function AnnounceLine(marker)
     return CludesUI.Lf("My Focus Kick is %s", token)
 end
 
-local function Announce(marker)
+local function Announce(markerTex)
     if not MythicDungeon() then
         return
     end
-    local channel = Rails.Channel()
-    if not channel then
+    local channelling = Rails.Channel()
+    if not channelling then
         return
     end
-    C_ChatInfo.SendChatMessage(AnnounceLine(marker), channel)
+    C_ChatInfo.SendChatMessage(AnnounceLine(markerTex), channelling)
     -- The same marker on the addon channel for the marker defaults (Rails):
     -- before the key starts, as here, it still goes through.
     SendMarker("F")
@@ -3862,18 +3862,18 @@ end
 -- a marker set or cleared inside a Mythic dungeon or key tells every client inside at once
 -- (the marker defaults need no ready check for it).
 local function SyncAnnounce(conf)
-    local marker = (conf and conf.enabled == true) and tonumber(conf.focusMarker) or 0
-    if not (marker and marker >= 1 and marker <= 8) then
-        marker = 0
+    local markerTex = (conf and conf.enabled == true) and tonumber(conf.focusMarker) or 0
+    if not (markerTex and markerTex >= 1 and markerTex <= 8) then
+        markerTex = 0
     end
-    announceMarker = marker
-    if marker ~= Rails.marker then
-        Rails.marker = marker
+    announceMarker = markerTex
+    if markerTex ~= Rails.marker then
+        Rails.marker = markerTex
         if Rails.on and MarkerInstance() then
             SendMarker("F")
         end
     end
-    if marker == 0 then
+    if markerTex == 0 then
         if announceFrame then
             announceFrame:UnregisterEvent("READY_CHECK")
         end
@@ -3905,7 +3905,7 @@ function mod.KT_Refresh()
     Rails.SyncEvents(Enabled(conf))
     if not Enabled(conf) then
         MTWhere.Unsubscribe(WHERE_KEY)
-        previewOn = false
+        previewing = false
         SetMode(MODE_OFF)
         return
     end
@@ -3926,12 +3926,12 @@ end
 -- refresh turns it back off otherwise, and reads the settings the samples
 -- paint with.
 function mod.KT_SetPreview(on)
-    previewOn = on == true
+    previewing = on == true
     mod.KT_Refresh()
 end
 
 function mod.KT_IsPreview()
-    return previewOn
+    return previewing
 end
 
 -- Where a kicker's icon sits: its plate unit, "waiting" while its plate is
@@ -3941,7 +3941,7 @@ function mod.KT_IconPlate(kicker)
     if not b then
         return nil
     end
-    return b.unit or (detached[kicker] and "waiting") or nil
+    return b.unit or (isDetached[kicker] and "waiting") or nil
 end
 
 -- The marker defaults, for /dump and the harness: the lanes on a plate's
@@ -3980,7 +3980,7 @@ function mod.KT_Dump()
     -- The engine first: which units' casts it hears and what it knows of
     -- each member (the warlock question of 2026-10-21).
     print("Kick Tracker engine: " .. KE.Listening())
-    local mode = (curMode == MODE_LIVE) and "live" or (curMode == MODE_PREVIEW) and "preview" or "off"
+    local mode = (currentMode == MODE_LIVE) and "live" or (currentMode == MODE_PREVIEW) and "preview" or "off"
     local cached = 0
     for _ in pairs(Rails.markerOf) do
         cached = cached + 1
@@ -4011,7 +4011,7 @@ function mod.KT_Dump()
             format(
                 "  icon %s: %s%s%s",
                 tostring(key),
-                b.unit or (detached[key] and "waiting") or "parked",
+                b.unit or (isDetached[key] and "waiting") or "parked",
                 b.onTarget and " (the target)" or "",
                 (b.cCur ~= nil) and " (count gate fed)" or ""
             )
@@ -4122,30 +4122,30 @@ function mod.KT_PaintSampleIcon(owner)
     -- that module is on (its plates are what the icons sit on), else the
     -- fallback plate and the other plates' offsets.
     local np = NPPlates() and CludesUI._ModuleNS.CludesUINameplates
-    local pw, ph, ox, oy = SAMPLE_PLATE_W, SAMPLE_PLATE_H, sOthX, sOthY
+    local pw, ph, offX, offY = SAMPLE_PLATE_W, SAMPLE_PLATE_H, sOthX, sOthY
     if np then
-        pw, ph, ox, oy = np.GetHealthBarWidth(), np.GetHealthBarHeight(), sOffX, sOffY
+        pw, ph, offX, offY = np.GetHealthBarWidth(), np.GetHealthBarHeight(), sOffX, sOffY
     end
     local backing = EnsureSamplePlate()
     backing:SetParent(owner)
     backing:SetSize(pw, ph)
     backing:Show()
     for i = 1, 2 do
-        local b = sampleIcons[i]
+        local b = sampleList[i]
         if not b then
             b = BuildIcon()
-            sampleIcons[i] = b
+            sampleList[i] = b
         end
         b.wrap:SetParent(backing)
         SetIconLevels(b, backing:GetFrameStrata(), backing:GetFrameLevel() + 2)
         b.rel, b.relBottom = backing, backing
-        b.ox, b.oy = ox, oy
+        b.ox, b.oy = offX, offY
         b.slot = i
         -- The second cell hangs from the first's end, as in a row.
-        b.hang, b.hangConst, b.prevEl = false, 0, (i == 2) and sampleIcons[1] or false
+        b.hang, b.hangConst, b.prevEl = false, 0, (i == 2) and sampleList[1] or false
         b.iconFrame, b.casting, b.row = nil, false, nil
         b.preview, b.unit, b.key = nil, nil, nil
-        if b.styleGen ~= styleGen then
+        if b.styleGen ~= styleStamp then
             StyleIcon(b)
         end
         AnchorIcon(b)
@@ -4162,18 +4162,18 @@ function mod.KT_PaintSampleIcon(owner)
     -- not the setting) in plate-centred units, where AnchorIcon puts them.
     -- The plate then sits off the host's centre by the scene's lean, so the
     -- whole scene is centred whichever side the icons take.
-    local cellFrame = Pix.Scale(sSize)
+    local cellFrame = Pix.Scale(iconPx)
     local along = 2 * cellFrame + ICON_GAP
     local bl, br, bt, bb = -pw / 2, pw / 2, ph / 2, -ph / 2
     local il, ir, it, ib
     if stackAnchor == "LEFT" then
-        il, ir, it, ib = bl + ox - along, bl + ox, oy + cellFrame / 2, oy - cellFrame / 2
+        il, ir, it, ib = bl + offX - along, bl + offX, offY + cellFrame / 2, offY - cellFrame / 2
     elseif stackAnchor == "RIGHT" then
-        il, ir, it, ib = br + ox, br + ox + along, oy + cellFrame / 2, oy - cellFrame / 2
+        il, ir, it, ib = br + offX, br + offX + along, offY + cellFrame / 2, offY - cellFrame / 2
     elseif stackAnchor == "TOP" then
-        il, ir, it, ib = ox - cellFrame / 2, ox + along - cellFrame / 2, bt + oy + cellFrame, bt + oy
+        il, ir, it, ib = offX - cellFrame / 2, offX + along - cellFrame / 2, bt + offY + cellFrame, bt + offY
     else
-        il, ir, it, ib = ox - cellFrame / 2, ox + along - cellFrame / 2, bb + oy, bb + oy - cellFrame
+        il, ir, it, ib = offX - cellFrame / 2, offX + along - cellFrame / 2, bb + offY, bb + offY - cellFrame
     end
     bl, br, bt, bb = min(bl, il), max(br, ir), max(bt, it), min(bb, ib)
     backing:ClearAllPoints()
