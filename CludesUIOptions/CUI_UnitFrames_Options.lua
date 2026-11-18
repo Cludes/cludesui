@@ -1340,6 +1340,19 @@ initFrame:SetScript("OnEvent", function(self)
         end
 
         local Pix = CludesUI.PanelPP
+        -- A click overlay (made by create) on every icon of a preview's buff or
+        -- debuff row, shown or not: each rides its icon, so icons that appear
+        -- later are clickable too.
+        local function OverlayEachIcon(create, icons, key, level)
+            if not icons then
+                return
+            end
+            for idx = 1, #icons do
+                if icons[idx] then
+                    create(icons[idx], key, false, level)
+                end
+            end
+        end
         -- Hangs a unit preview in the content header at height fy (its buff
         -- row's top padding above, in the preview's own scale), draws it, and
         -- returns the height 20 below it, past any buff row and the top of its
@@ -3696,20 +3709,8 @@ initFrame:SetScript("OnEvent", function(self)
                 -- overlay is a SetAllPoints child of its icon, so it hides/shows and
                 -- re-anchors with it. A prior ":IsShown()" guard tied clickability to
                 -- build-time visibility, so icons shown later (header is cached, not rebuilt) had no overlay.
-                if pv._buffIcons then
-                    for idx = 1, #pv._buffIcons do
-                        if pv._buffIcons[idx] then
-                            CreateHitOverlay(pv._buffIcons[idx], "buffIcon", false, baseLevel)
-                        end
-                    end
-                end
-                if pv._debuffIcons then
-                    for idx = 1, #pv._debuffIcons do
-                        if pv._debuffIcons[idx] then
-                            CreateHitOverlay(pv._debuffIcons[idx], "debuffIcon", false, baseLevel)
-                        end
-                    end
-                end
+                OverlayEachIcon(CreateHitOverlay, pv._buffIcons, "buffIcon", baseLevel)
+                OverlayEachIcon(CreateHitOverlay, pv._debuffIcons, "debuffIcon", baseLevel)
                 if pv._btbFrame then
                     local btbLevel = pv._btbFrame:GetFrameLevel() + 20
                     CreateHitOverlay(pv._btbFrame, "btbBar", false, btbLevel)
@@ -3947,20 +3948,8 @@ initFrame:SetScript("OnEvent", function(self)
                 -- so one shown later stays clickable without a header rebuild (the
                 -- other mini frames show none).
                 if selectedMiniUnit == "pet" then
-                    if pv._buffIcons then
-                        for idx = 1, #pv._buffIcons do
-                            if pv._buffIcons[idx] then
-                                CreateHitOverlay(pv._buffIcons[idx], "buffIcon", false, baseLevel)
-                            end
-                        end
-                    end
-                    if pv._debuffIcons then
-                        for idx = 1, #pv._debuffIcons do
-                            if pv._debuffIcons[idx] then
-                                CreateHitOverlay(pv._debuffIcons[idx], "debuffIcon", false, baseLevel)
-                            end
-                        end
-                    end
+                    OverlayEachIcon(CreateHitOverlay, pv._buffIcons, "buffIcon", baseLevel)
+                    OverlayEachIcon(CreateHitOverlay, pv._debuffIcons, "debuffIcon", baseLevel)
                 end
             end
 
@@ -4075,20 +4064,8 @@ initFrame:SetScript("OnEvent", function(self)
                 -- Buff/Debuff icons -> their aura settings (Simple Display or Location,
                 -- resolved at click time). Overlay every icon so newly shown ones stay
                 -- clickable without a header rebuild.
-                if pv._buffIcons then
-                    for idx = 1, #pv._buffIcons do
-                        if pv._buffIcons[idx] then
-                            CreateHitOverlay(pv._buffIcons[idx], "buffIcon", false, baseLevel)
-                        end
-                    end
-                end
-                if pv._debuffIcons then
-                    for idx = 1, #pv._debuffIcons do
-                        if pv._debuffIcons[idx] then
-                            CreateHitOverlay(pv._debuffIcons[idx], "debuffIcon", false, baseLevel)
-                        end
-                    end
-                end
+                OverlayEachIcon(CreateHitOverlay, pv._buffIcons, "buffIcon", baseLevel)
+                OverlayEachIcon(CreateHitOverlay, pv._debuffIcons, "debuffIcon", baseLevel)
             end
 
             return abs(posY)
