@@ -262,12 +262,7 @@ local function BuildMiniTextAndSize(
             end, true, 20)
             hoverSwatch:SetPoint("RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
             rightRgn._lastInline = hoverSwatch
-            hoverSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(hoverSwatch, "Hover")
-            end)
-            hoverSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(hoverSwatch, "Hover")
 
             local targetSwatch, updTarget = CludesUI.BuildColorSwatch(rightRgn, lvl, function()
                 local c = settingsTable.bossTargetBorderColor or { r = 1, g = 1, b = 1 }
@@ -279,12 +274,7 @@ local function BuildMiniTextAndSize(
             end, true, 20)
             targetSwatch:SetPoint("RIGHT", rightRgn._lastInline, "LEFT", -8, 0)
             rightRgn._lastInline = targetSwatch
-            targetSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(targetSwatch, "Target")
-            end)
-            targetSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(targetSwatch, "Target")
 
             -- Gray a swatch when its border state is off (still clickable so the
             -- color can be pre-set), matching the Raid Frames Hover Borders row.
@@ -1100,12 +1090,7 @@ local function BuildMiniTextAndSize(
                     MSet(classKey, true)
                     CludesUI:RefreshPage()
                 end)
-                classSw:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(classSw, "Class Colored")
-                end)
-                classSw:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                CludesUI.HoverTip(classSw, "Class Colored")
                 local sw, swUp = CludesUI.BuildColorSwatch(region, region:GetFrameLevel() + 5, function()
                     return MVal(key .. "ColorR", 1), MVal(key .. "ColorG", 1), MVal(key .. "ColorB", 1)
                 end, function(r, g, b)
@@ -1130,12 +1115,7 @@ local function BuildMiniTextAndSize(
                         stockClick(self, ...)
                     end
                 end)
-                sw:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(sw, "Custom Colored")
-                end)
-                sw:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                CludesUI.HoverTip(sw, "Custom Colored")
                 local function Dim()
                     local isNone, isClass = Off(), MVal(classKey, false)
                     sw:SetAlpha((isClass or isNone) and 0.3 or 1)
@@ -1519,12 +1499,7 @@ local function BuildMiniTextAndSize(
                     customOrigClick(self, ...)
                 end
             end)
-            customSw:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(customSw, "Custom Text Color")
-            end)
-            customSw:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(customSw, "Custom Text Color")
             local powerSw, powerSwUp = CludesUI.BuildColorSwatch(
                 region,
                 region:GetFrameLevel() + 5,
@@ -1548,12 +1523,7 @@ local function BuildMiniTextAndSize(
                 ReloadAndUpdate()
                 CludesUI:RefreshPage()
             end)
-            powerSw:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(powerSw, "Power Colored Text")
-            end)
-            powerSw:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(powerSw, "Power Colored Text")
             local function UpdSwatches()
                 local isPower = MVal("powerPercentTextPowerColor", false)
                 customSw:SetAlpha(isPower and 0.3 or 1)
@@ -1654,12 +1624,7 @@ local function BuildMiniTextAndSize(
                 20
             )
             Pix.Point(colorSwatch, "RIGHT", region._control, "LEFT", -8, 0)
-            colorSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(colorSwatch, "Border Color")
-            end)
-            colorSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(colorSwatch, "Border Color")
             region._lastInline = colorSwatch
             RegisterWidgetRefresh(updateSwatch)
         end

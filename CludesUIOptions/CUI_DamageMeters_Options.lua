@@ -823,12 +823,7 @@ initFrame:SetScript("OnEvent", function(self)
                     origIconClick(self, ...)
                 end
             end)
-            customSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color")
-            end)
-            customSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(customSwatch, "Custom Color")
 
             local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(
                 region,
@@ -854,12 +849,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 CludesUI:RefreshPage()
             end)
-            accentSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(accentSwatch, "Accent Color")
-            end)
-            accentSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(accentSwatch, "Accent Color")
             region._lastInline = accentSwatch
 
             -- Classic WoW UI paints every header icon with vanilla art that
@@ -977,12 +967,7 @@ initFrame:SetScript("OnEvent", function(self)
                     origHdrTextClick(self, ...)
                 end
             end)
-            customSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color")
-            end)
-            customSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(customSwatch, "Custom Color")
 
             local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(
                 region,
@@ -1004,12 +989,7 @@ initFrame:SetScript("OnEvent", function(self)
                 ApplyHdr()
                 CludesUI:RefreshPage()
             end)
-            accentSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(accentSwatch, "Accent Color")
-            end)
-            accentSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(accentSwatch, "Accent Color")
             region._lastInline = accentSwatch
 
             local function refreshHdrText()
@@ -1802,12 +1782,7 @@ initFrame:SetScript("OnEvent", function(self)
                     origClick(self, ...)
                 end
             end)
-            barBgSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(barBgSwatch, "Custom Color")
-            end)
-            barBgSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(barBgSwatch, "Custom Color")
 
             local barBgClassSwatch, barBgClassRefresh = CludesUI.BuildColorSwatch(
                 region,
@@ -1837,12 +1812,7 @@ initFrame:SetScript("OnEvent", function(self)
                 end
                 CludesUI:RefreshPage()
             end)
-            barBgClassSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(barBgClassSwatch, "Class Color")
-            end)
-            barBgClassSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(barBgClassSwatch, "Class Color")
 
             local function refreshBarBg()
                 barBgSwatchRefresh()
@@ -2106,12 +2076,7 @@ initFrame:SetScript("OnEvent", function(self)
                     origClick(self, ...)
                 end
             end)
-            customSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color")
-            end)
-            customSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(customSwatch, "Custom Color")
 
             local classSwatch, updateClass = CludesUI.BuildColorSwatch(
                 region,
@@ -2137,12 +2102,7 @@ initFrame:SetScript("OnEvent", function(self)
                 Refresh()
                 CludesUI:RefreshPage()
             end)
-            classSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(classSwatch, "Class Color")
-            end)
-            classSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(classSwatch, "Class Color")
             region._lastInline = classSwatch
 
             local function refreshLeft()
@@ -2233,12 +2193,7 @@ initFrame:SetScript("OnEvent", function(self)
                     origClick(self, ...)
                 end
             end)
-            customSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color")
-            end)
-            customSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(customSwatch, "Custom Color")
 
             local classSwatch, updateClass = CludesUI.BuildColorSwatch(
                 region,
@@ -2266,12 +2221,7 @@ initFrame:SetScript("OnEvent", function(self)
                 Refresh()
                 CludesUI:RefreshPage()
             end)
-            classSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(classSwatch, "Class Color")
-            end)
-            classSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(classSwatch, "Class Color")
 
             local function refreshRight()
                 updateCustom()
@@ -3405,12 +3355,7 @@ initFrame:SetScript("OnEvent", function(self)
                     origClick(self, ...)
                 end
             end)
-            customSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color")
-            end)
-            customSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(customSwatch, "Custom Color")
 
             local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(
                 region,
@@ -3432,12 +3377,7 @@ initFrame:SetScript("OnEvent", function(self)
                 RefreshSH()
                 CludesUI:RefreshPage()
             end)
-            accentSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(accentSwatch, "Accent Color")
-            end)
-            accentSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(accentSwatch, "Accent Color")
 
             local function MakeSwatchBlock(colorSwatch)
                 local block = CreateFrame("Frame", nil, colorSwatch)

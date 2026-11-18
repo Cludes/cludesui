@@ -2063,12 +2063,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 RefreshReminders()
                 CludesUI:RefreshPage()
             end)
-            accentSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(accentSwatch, "Accent Color")
-            end)
-            accentSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(accentSwatch, "Accent Color")
 
             -- Left (custom) swatch: color picker when accent mode is off
             local customSwatch, updateCustomSwatch = CludesUI.BuildColorSwatch(
@@ -2087,12 +2082,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 20
             )
             Pix.Point(customSwatch, "RIGHT", accentSwatch, "LEFT", -8, 0)
-            customSwatch:SetScript("OnEnter", function()
-                CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color")
-            end)
-            customSwatch:SetScript("OnLeave", function()
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.HoverTip(customSwatch, "Custom Color")
 
             -- Block overlay: while accent mode is active, clicking the custom swatch flips accent mode off instead of opening the color picker.
             local customBlock = CreateFrame("Button", nil, customSwatch)
@@ -3089,12 +3079,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     UpdateCDMPreview()
                     CludesUI:RefreshPage()
                 end)
-                classBorderSwatch:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(classBorderSwatch, "Class Colored")
-                end)
-                classBorderSwatch:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                CludesUI.HoverTip(classBorderSwatch, "Class Colored")
 
                 local UpdateBorderState
                 local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
@@ -3115,12 +3100,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     20
                 )
                 Pix.Point(colorSwatch, "RIGHT", classBorderSwatch, "LEFT", -8, 0)
-                colorSwatch:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(colorSwatch, "Custom Colored")
-                end)
-                colorSwatch:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                CludesUI.HoverTip(colorSwatch, "Custom Colored")
 
                 -- Clicking the custom swatch switches class color off AND opens
                 -- the color picker in the same click (a toggle-only first click
@@ -3596,12 +3576,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     UpdateCDMPreview()
                     CludesUI:RefreshPage()
                 end)
-                classBorderSwatch:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(classBorderSwatch, "Class Colored")
-                end)
-                classBorderSwatch:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                CludesUI.HoverTip(classBorderSwatch, "Class Colored")
 
                 -- Custom color swatch (left of class swatch)
                 local colorSwatch, updateSwatch = CludesUI.BuildColorSwatch(
@@ -3620,12 +3595,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     20
                 )
                 Pix.Point(colorSwatch, "RIGHT", classBorderSwatch, "LEFT", -8, 0)
-                colorSwatch:SetScript("OnEnter", function()
-                    CludesUI.ShowWidgetTooltip(colorSwatch, "Custom Color")
-                end)
-                colorSwatch:SetScript("OnLeave", function()
-                    CludesUI.HideWidgetTooltip()
-                end)
+                CludesUI.HoverTip(colorSwatch, "Custom Color")
 
                 -- Click the dimmed custom swatch to switch back from class color (no block overlay)
                 local origClick = colorSwatch:GetScript("OnClick")

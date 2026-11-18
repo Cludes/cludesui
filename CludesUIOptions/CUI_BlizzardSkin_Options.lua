@@ -3688,12 +3688,7 @@ initFrame:SetScript("OnEvent", function(self)
                 origClick(self, ...)
             end
         end)
-        customSwatch:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color")
-        end)
-        customSwatch:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        CludesUI.HoverTip(customSwatch, "Custom Color")
 
         local accentSwatch, updateAccent = CludesUI.BuildColorSwatch(
             region,
@@ -3713,12 +3708,7 @@ initFrame:SetScript("OnEvent", function(self)
             WSLookSet(key, "useCustom", false)
             CludesUI:RefreshPage()
         end)
-        accentSwatch:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(accentSwatch, "Accent Color")
-        end)
-        accentSwatch:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        CludesUI.HoverTip(accentSwatch, "Accent Color")
         region._lastInline = accentSwatch
 
         local function refreshPair()

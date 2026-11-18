@@ -834,12 +834,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
             Refresh()
             CludesUI:RefreshPage()
         end)
-        dmClassSwatch:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(dmClassSwatch, "Class Colored")
-        end)
-        dmClassSwatch:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        CludesUI.HoverTip(dmClassSwatch, "Class Colored")
 
         -- Custom Colored swatch (left of the class swatch): opens the picker;
         -- clicking while class color is active switches back to custom first.
@@ -873,12 +868,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 dmOrigClick(self, ...)
             end
         end)
-        dmSwatch:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(dmSwatch, "Custom Colored")
-        end)
-        dmSwatch:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        CludesUI.HoverTip(dmSwatch, "Custom Colored")
         local function UpdateDmSwatches()
             local off = DMSwatchesDisabled()
             local isClass = ma.textColorUseClass == true

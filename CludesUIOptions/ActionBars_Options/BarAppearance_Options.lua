@@ -655,12 +655,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
             SUpdatePreview()
             CludesUI:RefreshPage()
         end)
-        classBorderSwatch:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(classBorderSwatch, "Class Colored")
-        end)
-        classBorderSwatch:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        CludesUI.HoverTip(classBorderSwatch, "Class Colored")
 
         local customSwatch, updateCustomSwatch = CludesUI.BuildColorSwatch(
             rightRgn,
@@ -686,12 +681,7 @@ local function BuildBarAppearance(hostFrame, posY, context)
             20
         )
         Pix.Point(customSwatch, "RIGHT", classBorderSwatch, "LEFT", -8, 0)
-        customSwatch:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(customSwatch, "Custom Color")
-        end)
-        customSwatch:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        CludesUI.HoverTip(customSwatch, "Custom Color")
 
         -- Click the dimmed custom swatch to switch back from class color (no block overlay)
         local origClick = customSwatch:GetScript("OnClick")

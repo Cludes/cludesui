@@ -405,12 +405,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             end
             ApplyClassColored(false)
         end)
-        whiteSwatch:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(whiteSwatch, "White")
-        end)
-        whiteSwatch:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        CludesUI.HoverTip(whiteSwatch, "White")
         -- Class color swatch: player's class color; selects class-colored mode.
         classSwatch, updateClass = CludesUI.BuildColorSwatch(
             rightRgn,
@@ -435,12 +430,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             end
             ApplyClassColored(true)
         end)
-        classSwatch:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(classSwatch, "Class Color")
-        end)
-        classSwatch:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        CludesUI.HoverTip(classSwatch, "Class Color")
         CludesUI.RegisterWidgetRefresh(refreshNameSwatches)
         refreshNameSwatches()
     end

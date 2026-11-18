@@ -531,6 +531,17 @@ end
 CludesUI.ShowWidgetTooltip = ShowWidgetTooltip
 CludesUI.HideWidgetTooltip = HideWidgetTooltip
 
+-- Gives a widget a fixed hover tooltip, in place of any hover scripts it had. The show and hide go through CludesUI at hover
+-- time, as a hand-written pair of scripts would.
+function CludesUI.HoverTip(widget, text)
+    widget:SetScript("OnEnter", function()
+        CludesUI.ShowWidgetTooltip(widget, text)
+    end)
+    widget:SetScript("OnLeave", function()
+        CludesUI.HideWidgetTooltip()
+    end)
+end
+
 -------------------------------------------------------------------------------
 --  Theme / Accent / Per-Profile Accent
 -------------------------------------------------------------------------------

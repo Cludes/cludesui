@@ -60,12 +60,7 @@ local function AddSoundPreviewButton(si, item)
             PlaySoundFile(filePath, "Master")
         end
     end)
-    play:SetScript("OnEnter", function()
-        CludesUI.ShowWidgetTooltip(play, "Preview Sound")
-    end)
-    play:SetScript("OnLeave", function()
-        CludesUI.HideWidgetTooltip()
-    end)
+    CludesUI.HoverTip(play, "Preview Sound")
 end
 
 local function GlowStyleItems(inheritLabel, noneVal)

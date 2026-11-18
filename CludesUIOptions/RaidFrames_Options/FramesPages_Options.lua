@@ -1290,12 +1290,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         end, true, 20)
         borderSwatch:SetPoint("RIGHT", region._lastInline or region._control, "LEFT", -8, 0)
         region._lastInline = borderSwatch
-        borderSwatch:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(borderSwatch, "Border")
-        end)
-        borderSwatch:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        CludesUI.HoverTip(borderSwatch, "Border")
         CludesUI.RegisterWidgetRefresh(function()
             updBorder()
         end)
@@ -1518,12 +1513,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         hoverSwatch:SetPoint("RIGHT", rightRgn._lastInline or rightRgn._control, "LEFT", -8, 0)
         local hoverAnchor = rightRgn._lastInline or rightRgn._control -- memo: what Hover hangs from
         rightRgn._lastInline = hoverSwatch
-        hoverSwatch:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(hoverSwatch, "Hover")
-        end)
-        hoverSwatch:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        CludesUI.HoverTip(hoverSwatch, "Hover")
 
         local targetSwatch, updTarget = CludesUI.BuildColorSwatch(rightRgn, lvl, function()
             local c = SGet("targetBorderColor") or { r = 1, g = 1, b = 1 }
@@ -1535,12 +1525,7 @@ local function BuildMainPage(page, hostFrame, yOffset)
         end, true, 20)
         targetSwatch:SetPoint("RIGHT", rightRgn._lastInline, "LEFT", -8, 0)
         rightRgn._lastInline = targetSwatch
-        targetSwatch:SetScript("OnEnter", function()
-            CludesUI.ShowWidgetTooltip(targetSwatch, "Target")
-        end)
-        targetSwatch:SetScript("OnLeave", function()
-            CludesUI.HideWidgetTooltip()
-        end)
+        CludesUI.HoverTip(targetSwatch, "Target")
         -- Stock styles: the stock selection ring carries its own colour.
         local targetBlocked = CludesUI.BlizzStyle
                 and CludesUI.BlizzStyle.BlockInline("raidframes", targetSwatch)
