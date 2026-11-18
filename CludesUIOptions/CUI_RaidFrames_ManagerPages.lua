@@ -881,6 +881,18 @@ end
 local function BuildBaseDetailDM(widget, fontFile)
     local W = CludesUI.Widgets
     local p = DmProfile()
+    -- Row accessors over p: a key read (or its default) and written.
+    local function PFieldThen(key)
+        return function(v)
+            p[key] = v
+            DmApply()
+        end
+    end
+    local function PFieldOr(key, default)
+        return function()
+            return p[key] or default
+        end
+    end
     local dm = DmTable()
     if not (W and p and dm) then
         return 0
@@ -1333,13 +1345,8 @@ local function BuildBaseDetailDM(widget, fontFile)
         max = 80,
         step = 1,
         trackWidth = 120,
-        getValue = function()
-            return p.debuffSize or 18
-        end,
-        setValue = function(val)
-            p.debuffSize = val
-            DmApply()
-        end,
+        getValue = PFieldOr("debuffSize", 18),
+        setValue = PFieldThen("debuffSize"),
     }, {
         type = "slider",
         text = "Max Debuffs",
@@ -1347,13 +1354,8 @@ local function BuildBaseDetailDM(widget, fontFile)
         max = 10,
         step = 1,
         trackWidth = 120,
-        getValue = function()
-            return p.debuffCap or 3
-        end,
-        setValue = function(val)
-            p.debuffCap = val
-            DmApply()
-        end,
+        getValue = PFieldOr("debuffCap", 3),
+        setValue = PFieldThen("debuffCap"),
     })
     sy = sy - hh
     do
@@ -1367,13 +1369,8 @@ local function BuildBaseDetailDM(widget, fontFile)
                     min = 0,
                     max = 0.20,
                     step = 0.01,
-                    get = function()
-                        return p.debuffIconZoom or 0.08
-                    end,
-                    set = function(val)
-                        p.debuffIconZoom = val
-                        DmApply()
-                    end,
+                    get = PFieldOr("debuffIconZoom", 0.08),
+                    set = PFieldThen("debuffIconZoom"),
                 },
             },
         })
@@ -1386,9 +1383,7 @@ local function BuildBaseDetailDM(widget, fontFile)
         text = "Position",
         values = POS_VALUES,
         order = POS_ORDER,
-        getValue = function()
-            return p.debuffPosition or "bottomright"
-        end,
+        getValue = PFieldOr("debuffPosition", "bottomright"),
         setValue = function(val)
             p.debuffPosition = val
             p.debuffGrowDirection = DmDefaultGrow(val)
@@ -1400,13 +1395,8 @@ local function BuildBaseDetailDM(widget, fontFile)
         text = "Growth Direction",
         values = GROW_VALUES,
         order = GROW_ORDER,
-        getValue = function()
-            return p.debuffGrowDirection or "LEFT"
-        end,
-        setValue = function(val)
-            p.debuffGrowDirection = val
-            DmApply()
-        end,
+        getValue = PFieldOr("debuffGrowDirection", "LEFT"),
+        setValue = PFieldThen("debuffGrowDirection"),
     })
     sy = sy - hh
     do
@@ -1420,13 +1410,8 @@ local function BuildBaseDetailDM(widget, fontFile)
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return p.debuffOffsetX or 0
-                    end,
-                    set = function(val)
-                        p.debuffOffsetX = val
-                        DmApply()
-                    end,
+                    get = PFieldOr("debuffOffsetX", 0),
+                    set = PFieldThen("debuffOffsetX"),
                 },
                 {
                     type = "slider",
@@ -1434,13 +1419,8 @@ local function BuildBaseDetailDM(widget, fontFile)
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return p.debuffOffsetY or 0
-                    end,
-                    set = function(val)
-                        p.debuffOffsetY = val
-                        DmApply()
-                    end,
+                    get = PFieldOr("debuffOffsetY", 0),
+                    set = PFieldThen("debuffOffsetY"),
                 },
             },
         })
@@ -1458,13 +1438,8 @@ local function BuildBaseDetailDM(widget, fontFile)
         step = 1,
         trackWidth = 120,
         tooltip = "Wraps into a new row (or column for vertical growth) after this many icons; below 2 keeps one continuous run.",
-        getValue = function()
-            return p.debuffPerRow or 5
-        end,
-        setValue = function(val)
-            p.debuffPerRow = val
-            DmApply()
-        end,
+        getValue = PFieldOr("debuffPerRow", 5),
+        setValue = PFieldThen("debuffPerRow"),
     }, {
         type = "slider",
         pixel = true,
@@ -1473,13 +1448,8 @@ local function BuildBaseDetailDM(widget, fontFile)
         max = 10,
         step = 1,
         trackWidth = 120,
-        getValue = function()
-            return p.debuffSpacing or 1
-        end,
-        setValue = function(val)
-            p.debuffSpacing = val
-            DmApply()
-        end,
+        getValue = PFieldOr("debuffSpacing", 1),
+        setValue = PFieldThen("debuffSpacing"),
     })
     sy = sy - hh
 
@@ -1504,20 +1474,14 @@ local function BuildBaseDetailDM(widget, fontFile)
         getValue = function()
             return p.debuffShowDurText and true or false
         end,
-        setValue = function(val)
-            p.debuffShowDurText = val
-            DmApply()
-        end,
+        setValue = PFieldThen("debuffShowDurText"),
     }, {
         type = "toggle",
         text = "Show Stacks",
         getValue = function()
             return p.debuffShowStacks ~= false
         end,
-        setValue = function(val)
-            p.debuffShowStacks = val
-            DmApply()
-        end,
+        setValue = PFieldThen("debuffShowStacks"),
     })
     sy = sy - hh
     do
@@ -1531,13 +1495,8 @@ local function BuildBaseDetailDM(widget, fontFile)
                     min = 6,
                     max = 26,
                     step = 1,
-                    get = function()
-                        return p.debuffDurTextSize or 10
-                    end,
-                    set = function(val)
-                        p.debuffDurTextSize = val
-                        DmApply()
-                    end,
+                    get = PFieldOr("debuffDurTextSize", 10),
+                    set = PFieldThen("debuffDurTextSize"),
                 },
                 {
                     type = "slider",
@@ -1545,13 +1504,8 @@ local function BuildBaseDetailDM(widget, fontFile)
                     min = -20,
                     max = 20,
                     step = 1,
-                    get = function()
-                        return p.debuffDurTextOffsetX or 0
-                    end,
-                    set = function(val)
-                        p.debuffDurTextOffsetX = val
-                        DmApply()
-                    end,
+                    get = PFieldOr("debuffDurTextOffsetX", 0),
+                    set = PFieldThen("debuffDurTextOffsetX"),
                 },
                 {
                     type = "slider",
@@ -1559,13 +1513,8 @@ local function BuildBaseDetailDM(widget, fontFile)
                     min = -20,
                     max = 20,
                     step = 1,
-                    get = function()
-                        return p.debuffDurTextOffsetY or 0
-                    end,
-                    set = function(val)
-                        p.debuffDurTextOffsetY = val
-                        DmApply()
-                    end,
+                    get = PFieldOr("debuffDurTextOffsetY", 0),
+                    set = PFieldThen("debuffDurTextOffsetY"),
                 },
             },
         })
@@ -1591,13 +1540,8 @@ local function BuildBaseDetailDM(widget, fontFile)
                     min = 6,
                     max = 26,
                     step = 1,
-                    get = function()
-                        return p.debuffStacksTextSize or 11
-                    end,
-                    set = function(val)
-                        p.debuffStacksTextSize = val
-                        DmApply()
-                    end,
+                    get = PFieldOr("debuffStacksTextSize", 11),
+                    set = PFieldThen("debuffStacksTextSize"),
                 },
                 {
                     type = "slider",
@@ -1605,13 +1549,8 @@ local function BuildBaseDetailDM(widget, fontFile)
                     min = -20,
                     max = 20,
                     step = 1,
-                    get = function()
-                        return p.debuffStacksOffsetX or 0
-                    end,
-                    set = function(val)
-                        p.debuffStacksOffsetX = val
-                        DmApply()
-                    end,
+                    get = PFieldOr("debuffStacksOffsetX", 0),
+                    set = PFieldThen("debuffStacksOffsetX"),
                 },
                 {
                     type = "slider",
@@ -1619,13 +1558,8 @@ local function BuildBaseDetailDM(widget, fontFile)
                     min = -20,
                     max = 20,
                     step = 1,
-                    get = function()
-                        return p.debuffStacksOffsetY or 0
-                    end,
-                    set = function(val)
-                        p.debuffStacksOffsetY = val
-                        DmApply()
-                    end,
+                    get = PFieldOr("debuffStacksOffsetY", 0),
+                    set = PFieldThen("debuffStacksOffsetY"),
                 },
             },
         })
@@ -1664,10 +1598,7 @@ local function BuildBaseDetailDM(widget, fontFile)
         getValue = function()
             return p.debuffShowSwipe ~= false
         end,
-        setValue = function(val)
-            p.debuffShowSwipe = val
-            DmApply()
-        end,
+        setValue = PFieldThen("debuffShowSwipe"),
     })
     sy = sy - hh
 
@@ -1692,9 +1623,7 @@ local function BuildBaseDetailDM(widget, fontFile)
                     label = "Use Modifier",
                     values = { none = "None", shift = "Shift", control = "Control", alt = "Alt" },
                     order = { "none", "shift", "control", "alt" },
-                    get = function()
-                        return p.debuffTooltipModifier or "none"
-                    end,
+                    get = PFieldOr("debuffTooltipModifier", "none"),
                     set = function(val)
                         p.debuffTooltipModifier = val
                         DmApply()
@@ -1730,6 +1659,12 @@ local function BuildBaseDetailDM(widget, fontFile)
 end
 
 local function BuildTileDetail(widget, fontFile, t)
+    -- Row accessors over t: a key read (or its default) and written.
+    local function TFieldOr(key, default)
+        return function()
+            return t[key] or default
+        end
+    end
     local W = CludesUI.Widgets
     if not W then
         return 0
@@ -1820,9 +1755,7 @@ local function BuildTileDetail(widget, fontFile, t)
             max = 80,
             step = 1,
             trackWidth = 120,
-            getValue = function()
-                return t.size or 18
-            end,
+            getValue = TFieldOr("size", 18),
             setValue = TSetRow("size"),
         }, {
             type = "slider",
@@ -1831,9 +1764,7 @@ local function BuildTileDetail(widget, fontFile, t)
             max = 10,
             step = 1,
             trackWidth = 120,
-            getValue = function()
-                return t.cap or 3
-            end,
+            getValue = TFieldOr("cap", 3),
             setValue = TSetRow("cap"),
         })
         sy = sy - hh
@@ -1864,9 +1795,7 @@ local function BuildTileDetail(widget, fontFile, t)
             text = "Position",
             values = POS_VALUES,
             order = POS_ORDER,
-            getValue = function()
-                return t.position or "top"
-            end,
+            getValue = TFieldOr("position", "top"),
             setValue = function(val)
                 t.growDirection = DmDefaultGrow(val)
                 TSet("position", val)
@@ -1877,9 +1806,7 @@ local function BuildTileDetail(widget, fontFile, t)
             text = "Growth Direction",
             values = GROW_VALUES,
             order = GROW_ORDER,
-            getValue = function()
-                return t.growDirection or "CENTER"
-            end,
+            getValue = TFieldOr("growDirection", "CENTER"),
             setValue = TSetRow("growDirection"),
         })
         sy = sy - hh
@@ -1894,9 +1821,7 @@ local function BuildTileDetail(widget, fontFile, t)
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return t.offsetX or 0
-                        end,
+                        get = TFieldOr("offsetX", 0),
                         set = TSetRow("offsetX"),
                     },
                     {
@@ -1905,9 +1830,7 @@ local function BuildTileDetail(widget, fontFile, t)
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return t.offsetY or 0
-                        end,
+                        get = TFieldOr("offsetY", 0),
                         set = TSetRow("offsetY"),
                     },
                 },
@@ -1926,9 +1849,7 @@ local function BuildTileDetail(widget, fontFile, t)
             step = 1,
             trackWidth = 120,
             tooltip = "Wraps into a new row (or column for vertical growth) after this many icons; below 2 keeps one continuous run.",
-            getValue = function()
-                return t.iconsPerRow or 0
-            end,
+            getValue = TFieldOr("iconsPerRow", 0),
             setValue = TSetRow("iconsPerRow"),
         }, {
             type = "slider",
@@ -1938,9 +1859,7 @@ local function BuildTileDetail(widget, fontFile, t)
             max = 10,
             step = 1,
             trackWidth = 120,
-            getValue = function()
-                return t.spacing or 1
-            end,
+            getValue = TFieldOr("spacing", 1),
             setValue = TSetRow("spacing"),
         })
         sy = sy - hh
@@ -2190,9 +2109,7 @@ local function BuildTileDetail(widget, fontFile, t)
             text = "Orientation",
             values = { HORIZONTAL = "Horizontal", VERTICAL = "Vertical" },
             order = { "HORIZONTAL", "VERTICAL" },
-            getValue = function()
-                return t.orientation or "HORIZONTAL"
-            end,
+            getValue = TFieldOr("orientation", "HORIZONTAL"),
             -- Full rebuild: the Width/Height + Full toggle labels flip
             -- with the orientation.
             setValue = function(val)
@@ -2204,9 +2121,7 @@ local function BuildTileDetail(widget, fontFile, t)
             text = "Position",
             values = POS_VALUES,
             order = POS_ORDER,
-            getValue = function()
-                return t.position or "bottom"
-            end,
+            getValue = TFieldOr("position", "bottom"),
             setValue = TSetRow("position"),
         })
         sy = sy - hh
@@ -2221,9 +2136,7 @@ local function BuildTileDetail(widget, fontFile, t)
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return t.offsetX or 0
-                        end,
+                        get = TFieldOr("offsetX", 0),
                         set = TSetRow("offsetX"),
                     },
                     {
@@ -2232,9 +2145,7 @@ local function BuildTileDetail(widget, fontFile, t)
                         min = -50,
                         max = 50,
                         step = 1,
-                        get = function()
-                            return t.offsetY or 0
-                        end,
+                        get = TFieldOr("offsetY", 0),
                         set = TSetRow("offsetY"),
                     },
                     {
@@ -2248,9 +2159,7 @@ local function BuildTileDetail(widget, fontFile, t)
                             highest = "Highest",
                         },
                         order = { "behindBorders", "behindText", "medium", "high", "highest" },
-                        get = function()
-                            return t.frameLevel or "behindBorders"
-                        end,
+                        get = TFieldOr("frameLevel", "behindBorders"),
                         set = TSetRow("frameLevel"),
                     },
                 },
@@ -2259,9 +2168,7 @@ local function BuildTileDetail(widget, fontFile, t)
         _, hh = W:DualRow(widget, sy, {
             type = "toggle",
             text = "Reverse Fill",
-            getValue = function()
-                return t.reverseFill or false
-            end,
+            getValue = TFieldOr("reverseFill", false),
             setValue = function(val)
                 TSet("reverseFill", val and true or false)
             end,
@@ -2283,9 +2190,7 @@ local function BuildTileDetail(widget, fontFile, t)
             end,
             disabledTooltip = isVert and "Full Height Bar" or "Full Width Bar",
             requireState = "disabled",
-            getValue = function()
-                return t.width or 60
-            end,
+            getValue = TFieldOr("width", 60),
             setValue = TSetRow("width"),
         }, {
             type = "slider",
@@ -2298,18 +2203,14 @@ local function BuildTileDetail(widget, fontFile, t)
             end,
             disabledTooltip = isVert and "Full Width Bar" or "Full Height Bar",
             requireState = "disabled",
-            getValue = function()
-                return t.height or 5
-            end,
+            getValue = TFieldOr("height", 5),
             setValue = TSetRow("height"),
         })
         sy = sy - hh
         _, hh = W:DualRow(widget, sy, {
             type = "toggle",
             text = isVert and "Full Height Bar" or "Full Width Bar",
-            getValue = function()
-                return t.barFullWidth or false
-            end,
+            getValue = TFieldOr("barFullWidth", false),
             setValue = function(val)
                 TSet("barFullWidth", val and true or false)
                 CludesUI:RefreshPage()
@@ -2317,9 +2218,7 @@ local function BuildTileDetail(widget, fontFile, t)
         }, {
             type = "toggle",
             text = isVert and "Full Width Bar" or "Full Height Bar",
-            getValue = function()
-                return t.barFullHeight or false
-            end,
+            getValue = TFieldOr("barFullHeight", false),
             setValue = function(val)
                 TSet("barFullHeight", val and true or false)
                 CludesUI:RefreshPage()
@@ -2335,9 +2234,7 @@ local function BuildTileDetail(widget, fontFile, t)
             max = 100,
             step = 1,
             trackWidth = 120,
-            getValue = function()
-                return t.barColorOpacity or 100
-            end,
+            getValue = TFieldOr("barColorOpacity", 100),
             setValue = TSetRow("barColorOpacity"),
         }, {
             type = "slider",
@@ -2346,9 +2243,7 @@ local function BuildTileDetail(widget, fontFile, t)
             max = 100,
             step = 1,
             trackWidth = 120,
-            getValue = function()
-                return t.barBgOpacity or 50
-            end,
+            getValue = TFieldOr("barBgOpacity", 50),
             setValue = TSetRow("barBgOpacity"),
         })
         sy = sy - hh
@@ -2386,9 +2281,7 @@ local function BuildTileDetail(widget, fontFile, t)
                 min = 5,
                 max = 100,
                 step = 1,
-                getValue = function()
-                    return t.opacity or 45
-                end,
+                getValue = TFieldOr("opacity", 45),
                 setValue = TSetRow("opacity"),
             },
             CludesUI.MaxDurationDropdown(function()

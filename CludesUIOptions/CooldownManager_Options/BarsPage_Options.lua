@@ -525,6 +525,22 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         end
         return barInfo
     end
+    -- Row accessors over BD(): a key read (or its default) and written.
+    local function BDField(key)
+        return function(v)
+            BD()[key] = v
+        end
+    end
+    local function BDFieldOr(key, default)
+        return function()
+            return BD()[key] or default
+        end
+    end
+    local function BDFieldGet(key)
+        return function()
+            return BD()[key]
+        end
+    end
 
     local isDefault = (barInfo.key == "cooldowns" or barInfo.key == "utility" or barInfo.key == "buffs")
     local isBuffBar = mod.IsBarBuffFamily(barInfo)
@@ -1228,9 +1244,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 min = 1,
                 max = 6,
                 step = 1,
-                getValue = function()
-                    return BD().numRows or 1
-                end,
+                getValue = BDFieldOr("numRows", 1),
                 setValue = function(v)
                     local edge = BD()
                     edge.numRows = v
@@ -1481,9 +1495,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             return "Not available while this bar is anchored to another element"
                         end,
                         rawTooltip = true,
-                        get = function()
-                            return BD().rowGrowDirection or "CENTER"
-                        end,
+                        get = BDFieldOr("rowGrowDirection", "CENTER"),
                         set = function(v)
                             local edge = BD()
                             edge.rowGrowDirection = (v ~= "CENTER") and v or nil
@@ -1507,9 +1519,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         disabled = rowsNotTwo,
                         disabledTooltip = "This option requires exactly 2 rows",
                         rawTooltip = true,
-                        get = function()
-                            return BD().customTopRowEnabled
-                        end,
+                        get = BDFieldGet("customTopRowEnabled"),
                         set = function(v)
                             BD().customTopRowEnabled = v
                             if v then
@@ -1580,9 +1590,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             return "Disabled while Custom Second Row Size is enabled"
                         end,
                         rawTooltip = true,
-                        get = function()
-                            return BD().customTopRowSizeEnabled
-                        end,
+                        get = BDFieldGet("customTopRowSizeEnabled"),
                         set = function(v)
                             BD().customTopRowSizeEnabled = v
                             if v then
@@ -1613,9 +1621,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         rawTooltip = function()
                             return rowSizeMatched()
                         end,
-                        get = function()
-                            return BD().topRowSizeOffset or 0
-                        end,
+                        get = BDFieldOr("topRowSizeOffset", 0),
                         set = function(v)
                             if v == 0 then
                                 v = nil
@@ -1641,9 +1647,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             return "Disabled while Custom Base Row Size is enabled"
                         end,
                         rawTooltip = true,
-                        get = function()
-                            return BD().customBottomRowSizeEnabled
-                        end,
+                        get = BDFieldGet("customBottomRowSizeEnabled"),
                         set = function(v)
                             BD().customBottomRowSizeEnabled = v
                             if v then
@@ -1674,9 +1678,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         rawTooltip = function()
                             return rowSizeMatched()
                         end,
-                        get = function()
-                            return BD().bottomRowSizeOffset or 0
-                        end,
+                        get = BDFieldOr("bottomRowSizeOffset", 0),
                         set = function(v)
                             if v == 0 then
                                 v = nil
@@ -1824,9 +1826,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     return "Not available while a spell on this bar uses a Cooldown State Shift Icons setting"
                 end,
                 rawTooltip = true,
-                getValue = function()
-                    return BD().maxIcons or 0
-                end,
+                getValue = BDFieldOr("maxIcons", 0),
                 setValue = function(v)
                     if v == 0 then
                         v = nil
@@ -1889,9 +1889,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         local vertOrientCfg = {
             type = "toggle",
             text = "Vertical Orientation",
-            getValue = function()
-                return BD().verticalOrientation
-            end,
+            getValue = BDFieldGet("verticalOrientation"),
             setValue = function(v)
                 local edge = BD()
                 edge.verticalOrientation = v
@@ -1986,9 +1984,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             text = "Nameplate Anchor",
             values = NP_SIDE_VALUES,
             order = NP_SIDE_ORDER,
-            getValue = function()
-                return BD().nameplateAnchorSide or "LEFT"
-            end,
+            getValue = BDFieldOr("nameplateAnchorSide", "LEFT"),
             setValue = function(v)
                 BD().nameplateAnchorSide = v
                 ApplyAnchor()
@@ -2277,9 +2273,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             text = "Focus Cast Sound",
             values = soundValues,
             order = soundOrder,
-            getValue = function()
-                return BD().focusCastSoundKey or "none"
-            end,
+            getValue = BDFieldOr("focusCastSoundKey", "none"),
             setValue = function(v)
                 BD().focusCastSoundKey = v
                 -- Arm/disarm the cast proxy live (it is demand-gated on the sound).
@@ -2669,9 +2663,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             disabled = icsDis,
             disabledTooltip = icsTip,
             rawTooltip = true,
-            getValue = function()
-                return BD().iconSize or 36
-            end,
+            getValue = BDFieldOr("iconSize", 36),
             setValue = function(v)
                 local edge = BD()
                 edge.iconSize = v
@@ -2700,9 +2692,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         get = function()
                             return BD().desaturateInactiveBuffs ~= false
                         end,
-                        set = function(v)
-                            BD().desaturateInactiveBuffs = v
-                        end,
+                        set = BDField("desaturateInactiveBuffs"),
                     },
                 },
             })
@@ -2728,9 +2718,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             min = -10,
             max = 20,
             step = 1,
-            getValue = function()
-                return BD().spacing or 2
-            end,
+            getValue = BDFieldOr("spacing", 2),
             setValue = function(v)
                 local edge = BD()
                 edge.spacing = v
@@ -2766,9 +2754,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         return "This option requires the Border Style to be set to Solid"
                     end
                 end,
-                getValue = function()
-                    return BD().iconShape or "none"
-                end,
+                getValue = BDFieldOr("iconShape", "none"),
                 setValue = function(v)
                     local edge = BD()
                     edge.iconShape = v
@@ -2794,9 +2780,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 min = 0,
                 max = 0.20,
                 step = 0.01,
-                getValue = function()
-                    return BD().iconZoom or 0.08
-                end,
+                getValue = BDFieldOr("iconZoom", 0.08),
                 setValue = function(v)
                     BD().iconZoom = v
                     mod.RefreshCDMIconAppearance(BD().key)
@@ -2838,9 +2822,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             return "This option requires a non-custom shape to be selected"
                         end
                     end,
-                    getValue = function()
-                        return BD().borderThickness or "thin"
-                    end,
+                    getValue = BDFieldOr("borderThickness", "thin"),
                     setValue = function(v)
                         BD().borderThickness = v
                         BD().borderSize = BORDER_SIZES[v] or 1
@@ -2885,9 +2867,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     disabledTooltip = "This option requires a non-custom button shape",
                     values = texValues,
                     order = texOrder,
-                    getValue = function()
-                        return BD().borderTexture or "solid"
-                    end,
+                    getValue = BDFieldOr("borderTexture", "solid"),
                     setValue = function(v)
                         local edge = BD()
                         edge.borderTexture = v
@@ -3023,9 +3003,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         {
                             type = "toggle",
                             label = "Show Behind",
-                            get = function()
-                                return BD().borderBehind or false
-                            end,
+                            get = BDFieldOr("borderBehind", false),
                             set = function(v)
                                 BD().borderBehind = v == false and nil or v
                                 RebuildBars()
@@ -3205,9 +3183,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             disabled = icsDis2,
             disabledTooltip = icsTip2,
             rawTooltip = true,
-            getValue = function()
-                return BD().iconSize or 36
-            end,
+            getValue = BDFieldOr("iconSize", 36),
             setValue = function(v)
                 local edge = BD()
                 edge.iconSize = v
@@ -3225,9 +3201,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             min = -10,
             max = 20,
             step = 1,
-            getValue = function()
-                return BD().spacing or 2
-            end,
+            getValue = BDFieldOr("spacing", 2),
             setValue = function(v)
                 local edge = BD()
                 edge.spacing = v
@@ -3289,9 +3263,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     min = 0,
                     max = 20,
                     step = 1,
-                    get = function()
-                        return BD().minSizeIcons or 0
-                    end,
+                    get = BDFieldOr("minSizeIcons", 0),
                     set = function(v)
                         if v == 0 then
                             v = nil
@@ -3332,9 +3304,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             return "This option requires a non-custom shape to be selected"
                         end
                     end,
-                    getValue = function()
-                        return BD().borderThickness or "thin"
-                    end,
+                    getValue = BDFieldOr("borderThickness", "thin"),
                     setValue = function(v)
                         BD().borderThickness = v
                         BD().borderSize = BORDER_SIZES[v] or 1
@@ -3378,9 +3348,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     disabledTooltip = "This option requires a non-custom button shape",
                     values = texValues,
                     order = texOrder,
-                    getValue = function()
-                        return BD().borderTexture or "solid"
-                    end,
+                    getValue = BDFieldOr("borderTexture", "solid"),
                     setValue = function(v)
                         local edge = BD()
                         edge.borderTexture = v
@@ -3517,9 +3485,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         {
                             type = "toggle",
                             label = "Show Behind",
-                            get = function()
-                                return BD().borderBehind or false
-                            end,
+                            get = BDFieldOr("borderBehind", false),
                             set = function(v)
                                 BD().borderBehind = v == false and nil or v
                                 RebuildBars()
@@ -3730,9 +3696,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         return "This option requires the Border Style to be set to Solid"
                     end
                 end,
-                getValue = function()
-                    return BD().iconShape or "none"
-                end,
+                getValue = BDFieldOr("iconShape", "none"),
                 setValue = function(v)
                     local edge = BD()
                     edge.iconShape = v
@@ -3758,9 +3722,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 min = 0,
                 max = 0.20,
                 step = 0.01,
-                getValue = function()
-                    return BD().iconZoom or 0.08
-                end,
+                getValue = BDFieldOr("iconZoom", 0.08),
                 setValue = function(v)
                     BD().iconZoom = v
                     mod.RefreshCDMIconAppearance(BD().key)
@@ -3786,9 +3748,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         max = 30,
         step = 1,
         trackWidth = 120,
-        getValue = function()
-            return BD().cooldownFontSize or 12
-        end,
+        getValue = BDFieldOr("cooldownFontSize", 12),
         setValue = function(v)
             BD().cooldownFontSize = v
             mod.RefreshCDMIconAppearance(BD().key)
@@ -3802,9 +3762,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
         max = 30,
         step = 1,
         trackWidth = 120,
-        getValue = function()
-            return BD().stackCountSize or 11
-        end,
+        getValue = BDFieldOr("stackCountSize", 11),
         setValue = function(v)
             BD().stackCountSize = v
             mod.RefreshCDMIconAppearance(BD().key)
@@ -3838,9 +3796,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     label = "Position",
                     values = durationPositionValues,
                     order = durationPositionOrder,
-                    get = function()
-                        return BD().cooldownTextPosition or "center"
-                    end,
+                    get = BDFieldOr("cooldownTextPosition", "center"),
                     set = function(v)
                         BD().cooldownTextPosition = v
                         mod.RefreshCDMIconAppearance(BD().key)
@@ -3854,9 +3810,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return BD().cooldownTextX or 0
-                    end,
+                    get = BDFieldOr("cooldownTextX", 0),
                     set = function(v)
                         BD().cooldownTextX = v
                         mod.RefreshCDMIconAppearance(BD().key)
@@ -3869,9 +3823,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return BD().cooldownTextY or 0
-                    end,
+                    get = BDFieldOr("cooldownTextY", 0),
                     set = function(v)
                         BD().cooldownTextY = v
                         mod.RefreshCDMIconAppearance(BD().key)
@@ -4025,9 +3977,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         "right",
                         "center",
                     },
-                    get = function()
-                        return BD().stackCountPosition or "bottomright"
-                    end,
+                    get = BDFieldOr("stackCountPosition", "bottomright"),
                     set = function(v)
                         BD().stackCountPosition = v
                         mod.RefreshCDMIconAppearance(BD().key)
@@ -4040,9 +3990,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     min = -150,
                     max = 150,
                     step = 1,
-                    get = function()
-                        return BD().stackCountX or 0
-                    end,
+                    get = BDFieldOr("stackCountX", 0),
                     set = function(v)
                         BD().stackCountX = v
                         mod.RefreshCDMIconAppearance(BD().key)
@@ -4055,9 +4003,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                     min = -150,
                     max = 150,
                     step = 1,
-                    get = function()
-                        return BD().stackCountY or 0
-                    end,
+                    get = BDFieldOr("stackCountY", 0),
                     set = function(v)
                         BD().stackCountY = v
                         mod.RefreshCDMIconAppearance(BD().key)
@@ -4142,9 +4088,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                 step = 1,
                 trackWidth = 120,
                 tooltip = "Thickness of any Pixel Glow assigned to this bar's buttons. Assign glows by right-clicking an icon in the preview.",
-                getValue = function()
-                    return BD().pixelGlowThickness or 2
-                end,
+                getValue = BDFieldOr("pixelGlowThickness", 2),
                 setValue = function(v)
                     BD().pixelGlowThickness = v
                     mod.BuildAllCDMBars()
@@ -4167,9 +4111,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                             min = 2,
                             max = 16,
                             step = 1,
-                            get = function()
-                                return BD().pixelGlowLines or 8
-                            end,
+                            get = BDFieldOr("pixelGlowLines", 8),
                             set = function(v)
                                 BD().pixelGlowLines = v
                                 mod.BuildAllCDMBars()
@@ -4250,9 +4192,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             step = 1,
             trackWidth = 120,
             tooltip = "Thickness of the Pixel Glow applied to this bar's buff icons.",
-            getValue = function()
-                return BD().buffGlowThickness or 2
-            end,
+            getValue = BDFieldOr("buffGlowThickness", 2),
             setValue = function(v)
                 BD().buffGlowThickness = v
                 mod.BuildAllCDMBars()
@@ -4287,9 +4227,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
                         min = 2,
                         max = 16,
                         step = 1,
-                        get = function()
-                            return BD().buffGlowLines or 8
-                        end,
+                        get = BDFieldOr("buffGlowLines", 8),
                         set = function(v)
                             BD().buffGlowLines = v
                             mod.BuildAllCDMBars()
@@ -4857,9 +4795,7 @@ local function BuildCDMBarsPage(page, hostFrame, yOffset)
             tooltip = "Screen layer this bar and its icons render on.",
             values = CludesUI.FRAME_STRATA_LABELS,
             order = CludesUI.FRAME_STRATA_ORDER_FULL,
-            getValue = function()
-                return BD().barStrata or "MEDIUM"
-            end,
+            getValue = BDFieldOr("barStrata", "MEDIUM"),
             setValue = function(v)
                 BD().barStrata = v
                 mod.BuildAllCDMBars()

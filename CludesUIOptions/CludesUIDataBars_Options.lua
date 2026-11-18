@@ -27,7 +27,6 @@ end -- module disabled: no options page
 local PAGE_DATABARS = "Info Bar"
 
 CludesUI.AtOptionsLogin(function()
-
     local Pix = CludesUI.PP
     local L = CludesUI.L
     local Lf = CludesUI.Lf
@@ -2320,6 +2319,18 @@ CludesUI.AtOptionsLogin(function()
             local b = blocks[i]
             local blockId = b.id
             local s = b.settings
+            -- Row accessors over s: a key read (or its default) and written.
+            local function SFieldThen(key)
+                return function(v)
+                    s[key] = v
+                    Apply()
+                end
+            end
+            local function SFieldOr(key, default)
+                return function()
+                    return s[key] or default
+                end
+            end
             if not s then
                 s = {}
                 b.settings = s
@@ -3176,10 +3187,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return p
                         end,
-                        setValue = function(val)
-                            s.prefix = val
-                            Apply()
-                        end,
+                        setValue = SFieldThen("prefix"),
                     }
                 end
                 if b.type == "gold" then
@@ -3238,13 +3246,8 @@ CludesUI.AtOptionsLogin(function()
                             dialog = "Dialog",
                         },
                         order = { "master", "sfx", "music", "ambience", "dialog" },
-                        getValue = function()
-                            return s.channel or "master"
-                        end,
-                        setValue = function(val)
-                            s.channel = val
-                            Apply()
-                        end,
+                        getValue = SFieldOr("channel", "master"),
+                        setValue = SFieldThen("channel"),
                     },
                 }
             elseif b.type == "clock" then
@@ -3308,10 +3311,7 @@ CludesUI.AtOptionsLogin(function()
                         getValue = function()
                             return mod.LatencyMode(s)
                         end,
-                        setValue = function(val)
-                            s.latencyMode = val
-                            Apply()
-                        end,
+                        setValue = SFieldThen("latencyMode"),
                     },
                     -- Not MkToggle: the inline icon-color swatches below key
                     -- their disabled state off this toggle, so it has to
@@ -3438,10 +3438,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return p
                         end,
-                        setValue = function(val)
-                            s.precision = val
-                            Apply()
-                        end,
+                        setValue = SFieldThen("precision"),
                     },
                     MkToggleOn(
                         "Hide in Instance",
@@ -3512,13 +3509,8 @@ CludesUI.AtOptionsLogin(function()
                         text = "Text Display",
                         values = { name = "Name and Bar", values = "Values" },
                         order = { "name", "values" },
-                        getValue = function()
-                            return s.textDisplay or "name"
-                        end,
-                        setValue = function(val)
-                            s.textDisplay = val
-                            Apply()
-                        end,
+                        getValue = SFieldOr("textDisplay", "name"),
+                        setValue = SFieldThen("textDisplay"),
                     },
                 }
             elseif b.type == "xprep" then
@@ -3531,23 +3523,15 @@ CludesUI.AtOptionsLogin(function()
                         getValue = function()
                             return mod.GetXPRepTextDisplay(s)
                         end,
-                        setValue = function(val)
-                            s.textDisplay = val
-                            Apply()
-                        end,
+                        setValue = SFieldThen("textDisplay"),
                     },
                     {
                         type = "dropdown",
                         text = "Text Format",
                         values = { context = "With Level / Faction", plain = "Value Only" },
                         order = { "context", "plain" },
-                        getValue = function()
-                            return s.textFormat or "context"
-                        end,
-                        setValue = function(val)
-                            s.textFormat = val
-                            Apply()
-                        end,
+                        getValue = SFieldOr("textFormat", "context"),
+                        setValue = SFieldThen("textFormat"),
                         disabled = function()
                             return mod.GetXPRepTextDisplay(s) == "off"
                         end,
@@ -3565,10 +3549,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return m
                         end,
-                        setValue = function(val)
-                            s.mode = val
-                            Apply()
-                        end,
+                        setValue = SFieldThen("mode"),
                     },
                 }
             elseif b.type == "spec" then
@@ -3789,10 +3770,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return val
                         end,
-                        setValue = function(val)
-                            s.mainMenuSpacing = val
-                            Apply()
-                        end,
+                        setValue = SFieldThen("mainMenuSpacing"),
                     },
                     {
                         type = "slider",
@@ -3809,10 +3787,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return val
                         end,
-                        setValue = function(val)
-                            s.iconSpacing = val
-                            Apply()
-                        end,
+                        setValue = SFieldThen("iconSpacing"),
                     },
                     -- Individual button toggles live in the "Menu Elements"
                     -- checklist dropdown appended after the shared row loop.
@@ -3901,10 +3876,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return val
                         end,
-                        setValue = function(val)
-                            s.separator = val
-                            Apply()
-                        end,
+                        setValue = SFieldThen("separator"),
                     },
                     MkToggleOn("Show Icons", "showIcons", "Shows each crest's icon in front of its amount."),
                     -- Not an addition but a SWAP: the leading number stops
@@ -3952,13 +3924,8 @@ CludesUI.AtOptionsLogin(function()
                             usedTotal = "Used / Total",
                         },
                         order = { "free", "used", "freeTotal", "usedTotal" },
-                        getValue = function()
-                            return s.value or "free"
-                        end,
-                        setValue = function(val)
-                            s.value = val
-                            Apply()
-                        end,
+                        getValue = SFieldOr("value", "free"),
+                        setValue = SFieldThen("value"),
                     },
                     MkToggle(
                         "Include Reagent Bag",
@@ -3973,9 +3940,7 @@ CludesUI.AtOptionsLogin(function()
                         max = 50,
                         step = 1,
                         tooltip = "Colors the number when free slots drop below this many; the swatch picks the color. Zero turns it off.",
-                        getValue = function()
-                            return s.lowThreshold or 0
-                        end,
+                        getValue = SFieldOr("lowThreshold", 0),
                         setValue = function(val)
                             local wasOn = (s.lowThreshold or 0) > 0
                             s.lowThreshold = val
@@ -4019,10 +3984,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return val
                         end,
-                        setValue = function(val)
-                            s.value = val
-                            Apply()
-                        end,
+                        setValue = SFieldThen("value"),
                     },
                     {
                         type = "dropdown",
@@ -4037,10 +3999,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return p
                         end,
-                        setValue = function(val)
-                            s.precision = val
-                            Apply()
-                        end,
+                        setValue = SFieldThen("precision"),
                     },
                 }
             elseif b.type == "ldb" then
@@ -4067,9 +4026,7 @@ CludesUI.AtOptionsLogin(function()
                         tooltip = "Any LibDataBroker plugin registered right now. One block per plugin -- add the block again for a second one.",
                         values = lValues,
                         order = lOrder,
-                        getValue = function()
-                            return s.source or ""
-                        end,
+                        getValue = SFieldOr("source", ""),
                         setValue = function(val)
                             if val == "" then
                                 s.source = nil
@@ -4102,9 +4059,7 @@ CludesUI.AtOptionsLogin(function()
                         max = 400,
                         step = 5,
                         tooltip = "Holds the block at this width and clips longer text, so a plugin whose text keeps changing length never shifts the blocks beside it. Zero sizes the block to whatever the plugin currently says.",
-                        getValue = function()
-                            return s.maxWidth or 0
-                        end,
+                        getValue = SFieldOr("maxWidth", 0),
                         setValue = function(val)
                             if val == 0 then
                                 s.maxWidth = nil
@@ -4143,9 +4098,7 @@ CludesUI.AtOptionsLogin(function()
                         return s.showIcon == false
                     end,
                     disabledTooltip = b.type == "ilvl" and "Prefix: Icon" or "Show Icon",
-                    getValue = function()
-                        return s.iconStyle or "custom"
-                    end,
+                    getValue = SFieldOr("iconStyle", "custom"),
                     setValue = function(val)
                         s.iconStyle = val
                         Apply()

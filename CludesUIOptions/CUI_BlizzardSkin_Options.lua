@@ -29,6 +29,20 @@ local function Account()
     end
     return CludesUIDB
 end
+-- Row accessors over Account(): a key read (or its default) and written.
+local function AccountField(key)
+    return function(v)
+        Account()[key] = v
+    end
+end
+local function AccountFieldThen(key)
+    return function(v)
+        Account()[key] = v
+        if CludesUI._LootToast_Refresh then
+            CludesUI._LootToast_Refresh()
+        end
+    end
+end
 
 CludesUI.AtOptionsLogin(function()
     -- Page reuse (CludesUI_FramePool.lua): a frame made under a page pool
@@ -748,9 +762,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             return (CludesUIDB and CludesUIDB.tooltipShowModifier) or "none"
                         end,
-                        set = function(val)
-                            Account().tooltipShowModifier = val
-                        end,
+                        set = AccountField("tooltipShowModifier"),
                     },
                 },
             })
@@ -804,9 +816,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return (CludesUIDB and CludesUIDB.tooltipGrowthDirection) or "default"
                 end,
-                setValue = function(val)
-                    Account().tooltipGrowthDirection = val
-                end,
+                setValue = AccountField("tooltipGrowthDirection"),
             }
         )
         posY = posY - hgt
@@ -851,9 +861,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             return CludesUIDB and CludesUIDB.tooltipCursorPosition or "top"
                         end,
-                        set = function(val)
-                            Account().tooltipCursorPosition = val
-                        end,
+                        set = AccountField("tooltipCursorPosition"),
                     },
                     {
                         type = "slider",
@@ -864,9 +872,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             return (CludesUIDB and CludesUIDB.tooltipCursorOffsetX) or 0
                         end,
-                        set = function(val)
-                            Account().tooltipCursorOffsetX = val
-                        end,
+                        set = AccountField("tooltipCursorOffsetX"),
                     },
                     {
                         type = "slider",
@@ -877,9 +883,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             return (CludesUIDB and CludesUIDB.tooltipCursorOffsetY) or 0
                         end,
-                        set = function(val)
-                            Account().tooltipCursorOffsetY = val
-                        end,
+                        set = AccountField("tooltipCursorOffsetY"),
                     },
                 },
             })
@@ -1101,9 +1105,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             return not CludesUIDB or CludesUIDB.showIconID ~= false
                         end,
-                        set = function(val)
-                            Account().showIconID = val
-                        end,
+                        set = AccountField("showIconID"),
                     },
                     {
                         type = "toggle",
@@ -1111,9 +1113,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             return not CludesUIDB or CludesUIDB.showItemID ~= false
                         end,
-                        set = function(val)
-                            Account().showItemID = val
-                        end,
+                        set = AccountField("showItemID"),
                     },
                 },
             })
@@ -1179,9 +1179,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             return (CludesUIDB and CludesUIDB.itemStackModifier) or "none"
                         end,
-                        set = function(val)
-                            Account().itemStackModifier = val
-                        end,
+                        set = AccountField("itemStackModifier"),
                     },
                 },
             })
@@ -2273,9 +2271,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function()
                 return CludesUIDB and CludesUIDB.flyoutItemLevels or false
             end,
-            setValue = function(val)
-                Account().flyoutItemLevels = val
-            end,
+            setValue = AccountField("flyoutItemLevels"),
         }, flyoutStatsCfg or CludesUI.BlankRowCfg())
         posY = posY - hgt
 
@@ -2291,9 +2287,7 @@ CludesUI.AtOptionsLogin(function()
                 getValue = function()
                     return CludesUIDB and CludesUIDB.flyoutItemStatsTertiary == true or false
                 end,
-                setValue = function(val)
-                    Account().flyoutItemStatsTertiary = val
-                end,
+                setValue = AccountField("flyoutItemStatsTertiary"),
             }, {
                 type = "toggle",
                 text = "Hide Slot Flyout Arrows",
@@ -2388,9 +2382,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function()
                 return CludesUIDB and CludesUIDB.showAdjustedStats or false
             end,
-            setValue = function(val)
-                Account().showAdjustedStats = val
-            end,
+            setValue = AccountField("showAdjustedStats"),
         })
         posY = posY - hgt
         if not CludesUI._prebuilding then
@@ -3334,12 +3326,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function()
                 return not CludesUIDB or CludesUIDB.lootToastQualityStrip ~= false
             end,
-            setValue = function(val)
-                Account().lootToastQualityStrip = val
-                if CludesUI._LootToast_Refresh then
-                    CludesUI._LootToast_Refresh()
-                end
-            end,
+            setValue = AccountFieldThen("lootToastQualityStrip"),
         }, {
             type = "toggle",
             text = "Gold Toast Strip",
@@ -3347,12 +3334,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function()
                 return CludesUIDB and CludesUIDB.lootToastQualityStripMoney == true
             end,
-            setValue = function(val)
-                Account().lootToastQualityStripMoney = val
-                if CludesUI._LootToast_Refresh then
-                    CludesUI._LootToast_Refresh()
-                end
-            end,
+            setValue = AccountFieldThen("lootToastQualityStripMoney"),
         })
         posY = posY - hgt
 
@@ -3368,12 +3350,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function()
                 return CludesUIDB and CludesUIDB.lootToastScale or 1.0
             end,
-            setValue = function(val)
-                Account().lootToastScale = val
-                if CludesUI._LootToast_Refresh then
-                    CludesUI._LootToast_Refresh()
-                end
-            end,
+            setValue = AccountFieldThen("lootToastScale"),
         }, { type = "label", text = "" })
         posY = posY - hgt
 

@@ -27,6 +27,26 @@ local function Account()
     end
     return CludesUIDB
 end
+-- Row accessors over Account(): a key read (or its default) and written.
+local function AccountField(key)
+    return function(v)
+        Account()[key] = v
+    end
+end
+local function AccountFieldThen(key)
+    return function(v)
+        Account()[key] = v
+        CludesUI:RefreshPage()
+    end
+end
+local function AccountFieldThen2(key)
+    return function(v)
+        Account()[key] = v
+        if CludesUI._applyTargetDistanceFrame then
+            CludesUI._applyTargetDistanceFrame()
+        end
+    end
+end
 
 local PAGE_QOL = "QoL"
 local PAGE_CURSOR = "Cursor"
@@ -550,7 +570,6 @@ local function BuildSelfCombatTextSection(hostFrame, posY)
 end
 
 CludesUI.AtOptionsLogin(function()
-
     ---------------------------------------------------------------------------
     --  QoL Features page
     ---------------------------------------------------------------------------
@@ -895,10 +914,7 @@ CludesUI.AtOptionsLogin(function()
                     getValue = function()
                         return CludesUIDB and CludesUIDB.skipCinematics or false
                     end,
-                    setValue = function(val)
-                        Account().skipCinematics = val
-                        CludesUI:RefreshPage()
-                    end,
+                    setValue = AccountFieldThen("skipCinematics"),
                 }
             )
             posY = posY - hgt
@@ -989,9 +1005,7 @@ CludesUI.AtOptionsLogin(function()
                             get = function()
                                 return CludesUIDB and CludesUIDB.skipCinematicsAuto or false
                             end,
-                            set = function(val)
-                                Account().skipCinematicsAuto = val
-                            end,
+                            set = AccountField("skipCinematicsAuto"),
                         },
                     },
                     gap = 9,
@@ -1022,10 +1036,7 @@ CludesUI.AtOptionsLogin(function()
             getValue = function()
                 return CludesUIDB and CludesUIDB.autoFillDelete or false
             end,
-            setValue = function(val)
-                Account().autoFillDelete = val
-                CludesUI:RefreshPage()
-            end,
+            setValue = AccountFieldThen("autoFillDelete"),
         })
         posY = posY - hgt
 
@@ -1041,10 +1052,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 return CludesUIDB.autoRepair ~= false
             end,
-            setValue = function(val)
-                Account().autoRepair = val
-                CludesUI:RefreshPage()
-            end,
+            setValue = AccountFieldThen("autoRepair"),
         }, {
             type = "toggle",
             text = "Auto Sell Junk",
@@ -1055,9 +1063,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 return CludesUIDB.autoSellJunk ~= false
             end,
-            setValue = function(val)
-                Account().autoSellJunk = val
-            end,
+            setValue = AccountField("autoSellJunk"),
         })
         posY = posY - hgt
 
@@ -1080,9 +1086,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return CludesUIDB.autoRepairGuild ~= false
                         end,
-                        set = function(val)
-                            Account().autoRepairGuild = val
-                        end,
+                        set = AccountField("autoRepairGuild"),
                     },
                     -- Off (default) = short text "12o 34a"; on = coin icons.
                     {
@@ -1091,9 +1095,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             return CludesUIDB and CludesUIDB.repairCoinIcons == true
                         end,
-                        set = function(val)
-                            Account().repairCoinIcons = val
-                        end,
+                        set = AccountField("repairCoinIcons"),
                     },
                 },
                 gap = 9,
@@ -1173,9 +1175,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return CludesUIDB.autoGossipShiftSkip ~= false
                         end,
-                        set = function(val)
-                            Account().autoGossipShiftSkip = val
-                        end,
+                        set = AccountField("autoGossipShiftSkip"),
                     },
                     {
                         type = "toggle",
@@ -1186,9 +1186,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return CludesUIDB.autoGossipDisableInstance ~= false
                         end,
-                        set = function(val)
-                            Account().autoGossipDisableInstance = val
-                        end,
+                        set = AccountField("autoGossipDisableInstance"),
                     },
                     {
                         type = "toggle",
@@ -1196,9 +1194,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             return CludesUIDB and CludesUIDB.autoGossipIgnoreTrivial or false
                         end,
-                        set = function(val)
-                            Account().autoGossipIgnoreTrivial = val
-                        end,
+                        set = AccountField("autoGossipIgnoreTrivial"),
                     },
                 },
                 gap = 9,
@@ -1244,9 +1240,7 @@ CludesUI.AtOptionsLogin(function()
                     getValue = function()
                         return CludesUIDB and CludesUIDB.ahCurrentExpansion or false
                     end,
-                    setValue = function(val)
-                        Account().ahCurrentExpansion = val
-                    end,
+                    setValue = AccountField("ahCurrentExpansion"),
                 }
         )
         posY = posY - hgt
@@ -1692,9 +1686,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             return CludesUIDB and CludesUIDB.durWarnThreshold or 40
                         end,
-                        set = function(val)
-                            Account().durWarnThreshold = val
-                        end,
+                        set = AccountField("durWarnThreshold"),
                     },
                     CludesUI.IS_FOREVER and {
                         type = "toggle",
@@ -2398,12 +2390,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return "range"
                         end,
-                        set = function(val)
-                            Account().targetDistanceFormat = val
-                            if CludesUI._applyTargetDistanceFrame then
-                                CludesUI._applyTargetDistanceFrame()
-                            end
-                        end,
+                        set = AccountFieldThen2("targetDistanceFormat"),
                     },
                     {
                         type = "dropdown",
@@ -2417,12 +2404,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return "CENTER"
                         end,
-                        set = function(val)
-                            Account().targetDistanceAlign = val
-                            if CludesUI._applyTargetDistanceFrame then
-                                CludesUI._applyTargetDistanceFrame()
-                            end
-                        end,
+                        set = AccountFieldThen2("targetDistanceAlign"),
                     },
                     {
                         type = "slider",
@@ -2433,12 +2415,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             return (CludesUIDB and CludesUIDB.targetDistanceTextSize) or 18
                         end,
-                        set = function(val)
-                            Account().targetDistanceTextSize = val
-                            if CludesUI._applyTargetDistanceFrame then
-                                CludesUI._applyTargetDistanceFrame()
-                            end
-                        end,
+                        set = AccountFieldThen2("targetDistanceTextSize"),
                     },
                     {
                         type = "dropdown",
@@ -2449,12 +2426,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             return (CludesUIDB and CludesUIDB.targetDistanceStrata) or "HIGH"
                         end,
-                        set = function(val)
-                            Account().targetDistanceStrata = val
-                            if CludesUI._applyTargetDistanceFrame then
-                                CludesUI._applyTargetDistanceFrame()
-                            end
-                        end,
+                        set = AccountFieldThen2("targetDistanceStrata"),
                     },
                 },
                 footer = { unlockKey = "CUI_TargetDistance" },
@@ -2568,9 +2540,7 @@ CludesUI.AtOptionsLogin(function()
                         get = function()
                             return CludesUIDB and CludesUIDB.autoAcceptResCombat or false
                         end,
-                        set = function(val)
-                            Account().autoAcceptResCombat = val
-                        end,
+                        set = AccountField("autoAcceptResCombat"),
                     },
                 },
                 gap = 9,
@@ -3223,9 +3193,7 @@ CludesUI.AtOptionsLogin(function()
                 end
                 return CludesUIDB.autoInsertKeystone ~= false
             end,
-            setValue = function(val)
-                Account().autoInsertKeystone = val
-            end,
+            setValue = AccountField("autoInsertKeystone"),
         }
         local announceCfg = {
             type = "toggle",
@@ -3403,9 +3371,7 @@ CludesUI.AtOptionsLogin(function()
                             end
                             return CludesUIDB.autoOpenContainersExcludeWarbound ~= false
                         end,
-                        set = function(val)
-                            Account().autoOpenContainersExcludeWarbound = val
-                        end,
+                        set = AccountField("autoOpenContainersExcludeWarbound"),
                     },
                     {
                         type = "toggle",

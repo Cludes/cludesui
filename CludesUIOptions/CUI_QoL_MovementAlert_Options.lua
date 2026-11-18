@@ -400,6 +400,23 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
     local FONT = CludesUI._font or "Interface\\AddOns\\CludesUI\\media\\fonts\\Expressway.TTF"
     local ACC = CludesUI.CLUDES_GREEN or { r = 0.30, g = 0.79, b = 0.94 }
     local ma = MA()
+    -- Row accessors over ma: a key read (or its default) and written.
+    local function MaField(key)
+        return function(v)
+            ma[key] = v
+        end
+    end
+    local function MaFieldThen(key)
+        return function(v)
+            ma[key] = v
+            Refresh()
+        end
+    end
+    local function MaFieldOr(key, default)
+        return function()
+            return ma[key] or default
+        end
+    end
     if not ma then
         return 0
     end
@@ -508,10 +525,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         getValue = function()
             return ma.combatOnly == true
         end,
-        setValue = function(val)
-            ma.combatOnly = val
-            Refresh()
-        end,
+        setValue = MaFieldThen("combatOnly"),
     })
     posY = posY - hgt
 
@@ -684,13 +698,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         end,
         disabledTooltip = "Requires Bar display mode",
         rawTooltip = true,
-        getValue = function()
-            return ma.barTexture or "none"
-        end,
-        setValue = function(val)
-            ma.barTexture = val
-            Refresh()
-        end,
+        getValue = MaFieldOr("barTexture", "none"),
+        setValue = MaFieldThen("barTexture"),
     })
     posY = posY - hgt
 
@@ -709,10 +718,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     get = function()
                         return ma.barShowIcon ~= false
                     end,
-                    set = function(val)
-                        ma.barShowIcon = val
-                        Refresh()
-                    end,
+                    set = MaFieldThen("barShowIcon"),
                 },
                 {
                     type = "toggle",
@@ -720,10 +726,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     get = function()
                         return ma.barShowDuration ~= false
                     end,
-                    set = function(val)
-                        ma.barShowDuration = val
-                        Refresh()
-                    end,
+                    set = MaFieldThen("barShowDuration"),
                 },
             },
             gap = 9,
@@ -752,13 +755,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     min = 8,
                     max = 72,
                     step = 1,
-                    get = function()
-                        return ma.textSize or 24
-                    end,
-                    set = function(val)
-                        ma.textSize = val
-                        Refresh()
-                    end,
+                    get = MaFieldOr("textSize", 24),
+                    set = MaFieldThen("textSize"),
                 },
                 {
                     type = "slider",
@@ -771,13 +769,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     end,
                     disabledTooltip = "Requires the Icon display mode",
                     rawTooltip = true,
-                    get = function()
-                        return ma.iconSize or 40
-                    end,
-                    set = function(val)
-                        ma.iconSize = val
-                        Refresh()
-                    end,
+                    get = MaFieldOr("iconSize", 40),
+                    set = MaFieldThen("iconSize"),
                 },
                 -- View over the old numeric precision key: on = 1 decimal,
                 -- off = whole seconds.
@@ -897,12 +890,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
         end,
         disabledTooltip = "Text-to-Speech is enabled and takes priority over Sound.",
         rawTooltip = true,
-        getValue = function()
-            return ma.maSoundKey or "none"
-        end,
-        setValue = function(val)
-            ma.maSoundKey = val
-        end,
+        getValue = MaFieldOr("maSoundKey", "none"),
+        setValue = MaField("maSoundKey"),
     }, {
         type = "dropdown",
         text = "TTS Voice",
@@ -944,12 +933,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     min = 0,
                     max = 100,
                     step = 5,
-                    get = function()
-                        return ma.maTtsVolume or 100
-                    end,
-                    set = function(val)
-                        ma.maTtsVolume = val
-                    end,
+                    get = MaFieldOr("maTtsVolume", 100),
+                    set = MaField("maTtsVolume"),
                 },
             },
             gap = 9,
@@ -1380,13 +1365,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                 {
                     type = "input",
                     label = "Text Format",
-                    get = function()
-                        return ma.tsTextFormat or "FREE MOVEMENT\\n%.1f"
-                    end,
-                    set = function(val)
-                        ma.tsTextFormat = val
-                        Refresh()
-                    end,
+                    get = MaFieldOr("tsTextFormat", "FREE MOVEMENT\\n%.1f"),
+                    set = MaFieldThen("tsTextFormat"),
                 },
                 {
                     type = "colorpicker",
@@ -1410,10 +1390,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     get = function()
                         return ma.tsColorUseClass == true
                     end,
-                    set = function(val)
-                        ma.tsColorUseClass = val
-                        Refresh()
-                    end,
+                    set = MaFieldThen("tsColorUseClass"),
                 },
                 {
                     type = "dropdown",
@@ -1425,12 +1402,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     end,
                     disabledTooltip = "Text-to-Speech is enabled below and takes priority over Sound.",
                     rawTooltip = true,
-                    get = function()
-                        return ma.tsSoundKey or "none"
-                    end,
-                    set = function(val)
-                        ma.tsSoundKey = val
-                    end,
+                    get = MaFieldOr("tsSoundKey", "none"),
+                    set = MaField("tsSoundKey"),
                 },
                 {
                     type = "toggle",
@@ -1438,9 +1411,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     get = function()
                         return ma.tsTtsEnabled == true
                     end,
-                    set = function(val)
-                        ma.tsTtsEnabled = val
-                    end,
+                    set = MaField("tsTtsEnabled"),
                 },
                 {
                     type = "dropdown",
@@ -1452,12 +1423,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     end,
                     disabledTooltip = "Enable Text-to-Speech first",
                     rawTooltip = true,
-                    get = function()
-                        return ma.tsTtsVoiceID or 0
-                    end,
-                    set = function(val)
-                        ma.tsTtsVoiceID = val
-                    end,
+                    get = MaFieldOr("tsTtsVoiceID", 0),
+                    set = MaField("tsTtsVoiceID"),
                 },
                 {
                     type = "input",
@@ -1467,12 +1434,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     end,
                     disabledTooltip = "Enable Text-to-Speech first",
                     rawTooltip = true,
-                    get = function()
-                        return ma.tsTtsMessage or "Free movement"
-                    end,
-                    set = function(val)
-                        ma.tsTtsMessage = val
-                    end,
+                    get = MaFieldOr("tsTtsMessage", "Free movement"),
+                    set = MaField("tsTtsMessage"),
                 },
                 {
                     type = "slider",
@@ -1483,12 +1446,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     disabled = function()
                         return not ma.tsTtsEnabled
                     end,
-                    get = function()
-                        return ma.tsTtsVolume or 100
-                    end,
-                    set = function(val)
-                        ma.tsTtsVolume = val
-                    end,
+                    get = MaFieldOr("tsTtsVolume", 100),
+                    set = MaField("tsTtsVolume"),
                 },
             },
             footer = { unlockKey = "CUI_TimeSpiralAlert" },
@@ -1514,21 +1473,13 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     get = function()
                         return ma.gwCombatOnly == true
                     end,
-                    set = function(val)
-                        ma.gwCombatOnly = val
-                        Refresh()
-                    end,
+                    set = MaFieldThen("gwCombatOnly"),
                 },
                 {
                     type = "input",
                     label = "Text",
-                    get = function()
-                        return ma.gwText or "GATEWAY READY"
-                    end,
-                    set = function(val)
-                        ma.gwText = val
-                        Refresh()
-                    end,
+                    get = MaFieldOr("gwText", "GATEWAY READY"),
+                    set = MaFieldThen("gwText"),
                 },
                 {
                     type = "colorpicker",
@@ -1552,10 +1503,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     get = function()
                         return ma.gwColorUseClass == true
                     end,
-                    set = function(val)
-                        ma.gwColorUseClass = val
-                        Refresh()
-                    end,
+                    set = MaFieldThen("gwColorUseClass"),
                 },
                 {
                     type = "dropdown",
@@ -1567,12 +1515,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     end,
                     disabledTooltip = "Text-to-Speech is enabled below and takes priority over Sound.",
                     rawTooltip = true,
-                    get = function()
-                        return ma.gwSoundKey or "none"
-                    end,
-                    set = function(val)
-                        ma.gwSoundKey = val
-                    end,
+                    get = MaFieldOr("gwSoundKey", "none"),
+                    set = MaField("gwSoundKey"),
                 },
                 {
                     type = "toggle",
@@ -1580,9 +1524,7 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     get = function()
                         return ma.gwTtsEnabled == true
                     end,
-                    set = function(val)
-                        ma.gwTtsEnabled = val
-                    end,
+                    set = MaField("gwTtsEnabled"),
                 },
                 {
                     type = "dropdown",
@@ -1594,12 +1536,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     end,
                     disabledTooltip = "Enable Text-to-Speech first",
                     rawTooltip = true,
-                    get = function()
-                        return ma.gwTtsVoiceID or 0
-                    end,
-                    set = function(val)
-                        ma.gwTtsVoiceID = val
-                    end,
+                    get = MaFieldOr("gwTtsVoiceID", 0),
+                    set = MaField("gwTtsVoiceID"),
                 },
                 {
                     type = "input",
@@ -1609,12 +1547,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     end,
                     disabledTooltip = "Enable Text-to-Speech first",
                     rawTooltip = true,
-                    get = function()
-                        return ma.gwTtsMessage or "Gateway ready"
-                    end,
-                    set = function(val)
-                        ma.gwTtsMessage = val
-                    end,
+                    get = MaFieldOr("gwTtsMessage", "Gateway ready"),
+                    set = MaField("gwTtsMessage"),
                 },
                 {
                     type = "slider",
@@ -1625,12 +1559,8 @@ local function BuildMovementAlertPage(page, hostFrame, yOffset)
                     disabled = function()
                         return not ma.gwTtsEnabled
                     end,
-                    get = function()
-                        return ma.gwTtsVolume or 100
-                    end,
-                    set = function(val)
-                        ma.gwTtsVolume = val
-                    end,
+                    get = MaFieldOr("gwTtsVolume", 100),
+                    set = MaField("gwTtsVolume"),
                 },
             },
             footer = { unlockKey = "CUI_GatewayShardAlert" },

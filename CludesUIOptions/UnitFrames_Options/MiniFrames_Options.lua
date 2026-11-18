@@ -3684,6 +3684,18 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
             -- of this section to keep border settings consistently last.
             local function AddBossAuraBorderSettings()
                 local B = saved.profile.boss
+                -- Row accessors over B: a key read (or its default) and written.
+                local function BFieldThen(key)
+                    return function(v)
+                        B[key] = v
+                        ReloadAndUpdate()
+                    end
+                end
+                local function BFieldOr(key, default)
+                    return function()
+                        return B[key] or default
+                    end
+                end
                 local texValues, texOrder = CludesUI.GetBorderTextureDropdown()
                 local borderRow
                 borderRow, hh = Ww:DualRow(
@@ -3694,9 +3706,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         text = "Border Style",
                         values = texValues,
                         order = texOrder,
-                        getValue = function()
-                            return B.auraBorderTexture or "solid"
-                        end,
+                        getValue = BFieldOr("auraBorderTexture", "solid"),
                         setValue = function(v)
                             local color, behind, behindUnitFrame = CludesUI.GetBorderStyleSelectDefaults(v)
                             B.auraBorderTexture = v
@@ -3859,24 +3869,14 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             {
                                 type = "toggle",
                                 label = "Show Behind",
-                                get = function()
-                                    return B.auraBorderBehind or false
-                                end,
-                                set = function(v)
-                                    B.auraBorderBehind = v
-                                    ReloadAndUpdate()
-                                end,
+                                get = BFieldOr("auraBorderBehind", false),
+                                set = BFieldThen("auraBorderBehind"),
                             },
                             {
                                 type = "toggle",
                                 label = "Behind Unit Frame",
-                                get = function()
-                                    return B.auraBorderBehindUnitFrame or false
-                                end,
-                                set = function(v)
-                                    B.auraBorderBehindUnitFrame = v
-                                    ReloadAndUpdate()
-                                end,
+                                get = BFieldOr("auraBorderBehindUnitFrame", false),
+                                set = BFieldThen("auraBorderBehindUnitFrame"),
                             },
                             {
                                 type = "toggle",
@@ -3895,10 +3895,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                                 get = function()
                                     return B.auraBorderAboveEffects == true
                                 end,
-                                set = function(v)
-                                    B.auraBorderAboveEffects = v
-                                    ReloadAndUpdate()
-                                end,
+                                set = BFieldThen("auraBorderAboveEffects"),
                             },
                         },
                     })
@@ -4335,6 +4332,18 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
     -- runtime + preview so both live-update. "Show Cast Bar" off (showCastbar=false) hides it entirely (runtime disables Castbar; preview zero-heights it).
     local function bossCastBar(Ww, pp, yy)
         local B = saved.profile.boss
+        -- Row accessors over B: a key read (or its default) and written.
+        local function BFieldThen(key)
+            return function(v)
+                B[key] = v
+                ReloadAndUpdate()
+            end
+        end
+        local function BFieldOr(key, default)
+            return function()
+                return B[key] or default
+            end
+        end
         local hh
 
         -- The Show Cast Bar toggle gates the rest of the section. AddCastBlock
@@ -4398,13 +4407,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 return B.showCastbar == false
             end,
             disabledTooltip = "Show Cast Bar",
-            getValue = function()
-                return B.castbarHeight or 14
-            end,
-            setValue = function(v)
-                B.castbarHeight = v
-                ReloadAndUpdate()
-            end,
+            getValue = BFieldOr("castbarHeight", 14),
+            setValue = BFieldThen("castbarHeight"),
         })
         yy = yy - hh
         -- Inline settings cog matching target/focus, plus boss positioning.
@@ -4423,10 +4427,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         get = function()
                             return B.castbarHideWhenInactive ~= false
                         end,
-                        set = function(v)
-                            B.castbarHideWhenInactive = v
-                            ReloadAndUpdate()
-                        end,
+                        set = BFieldThen("castbarHideWhenInactive"),
                     },
                     {
                         type = "slider",
@@ -4435,13 +4436,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         max = 100,
                         step = 1,
                         tooltip = "Opacity of the cast bar fill; below 100 the world shows through the fill instead of the background.",
-                        get = function()
-                            return B.castFillOpacity or 100
-                        end,
-                        set = function(v)
-                            B.castFillOpacity = v
-                            ReloadAndUpdate()
-                        end,
+                        get = BFieldOr("castFillOpacity", 100),
+                        set = BFieldThen("castFillOpacity"),
                     },
                     {
                         type = "toggle",
@@ -4462,10 +4458,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         get = function()
                             return B.castbarKickTickEnabled ~= false
                         end,
-                        set = function(v)
-                            B.castbarKickTickEnabled = v
-                            ReloadAndUpdate()
-                        end,
+                        set = BFieldThen("castbarKickTickEnabled"),
                     },
                     {
                         type = "toggle",
@@ -4486,9 +4479,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         min = -500,
                         max = 500,
                         step = 1,
-                        get = function()
-                            return B.castbarOffsetX or 0
-                        end,
+                        get = BFieldOr("castbarOffsetX", 0),
                         set = function(v)
                             B.castbarOffsetX = v
                             ReloadAndUpdate()
@@ -4503,9 +4494,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                         min = -200,
                         max = 200,
                         step = 1,
-                        get = function()
-                            return B.castbarOffsetY or 0
-                        end,
+                        get = BFieldOr("castbarOffsetY", 0),
                         set = function(v)
                             B.castbarOffsetY = v
                             ReloadAndUpdate()
@@ -4611,10 +4600,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 getValue = function()
                     return B.showCastIcon ~= false
                 end,
-                setValue = function(v)
-                    B.showCastIcon = v
-                    ReloadAndUpdate()
-                end,
+                setValue = BFieldThen("showCastIcon"),
             }, {
                 type = "slider",
                 text = "Cast Bar Width",
@@ -4622,9 +4608,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 max = 500,
                 step = 1,
                 tooltip = "Sets a custom width for the cast bar. Set to 0 to match the boss frame width.",
-                getValue = function()
-                    return B.castbarWidth or 0
-                end,
+                getValue = BFieldOr("castbarWidth", 0),
                 -- Custom widths floor at 30 (matches the unlock-mode resize
                 -- minimum): below the cast icon size the bar layout inverts.
                 setValue = function(v)
@@ -4656,10 +4640,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             get = function()
                                 return B.castIconBorder == true
                             end,
-                            set = function(v)
-                                B.castIconBorder = v
-                                ReloadAndUpdate()
-                            end,
+                            set = BFieldThen("castIconBorder"),
                         },
                         {
                             type = "toggle",
@@ -4680,10 +4661,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                                 end
                                 return B.castbarIconInWidth ~= false
                             end,
-                            set = function(v)
-                                B.castbarIconInWidth = v
-                                ReloadAndUpdate()
-                            end,
+                            set = BFieldThen("castbarIconInWidth"),
                         },
                         {
                             type = "toggle",
@@ -4698,10 +4676,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             get = function()
                                 return B.castBorderWrapIcon == true
                             end,
-                            set = function(v)
-                                B.castBorderWrapIcon = v
-                                ReloadAndUpdate()
-                            end,
+                            set = BFieldThen("castBorderWrapIcon"),
                         },
                         {
                             type = "toggle",
@@ -4724,10 +4699,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             get = function()
                                 return B.castIconSeparator == true
                             end,
-                            set = function(v)
-                                B.castIconSeparator = v
-                                ReloadAndUpdate()
-                            end,
+                            set = BFieldThen("castIconSeparator"),
                         },
                         {
                             type = "toggle",
@@ -4736,10 +4708,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             get = function()
                                 return B.castbarIconRight == true
                             end,
-                            set = function(v)
-                                B.castbarIconRight = v
-                                ReloadAndUpdate()
-                            end,
+                            set = BFieldThen("castbarIconRight"),
                         },
                     },
                 })
@@ -4754,10 +4723,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 getValue = function()
                     return B.castReverseFill == true
                 end,
-                setValue = function(v)
-                    B.castReverseFill = v
-                    ReloadAndUpdate()
-                end,
+                setValue = BFieldThen("castReverseFill"),
             }, {
                 type = "slider",
                 text = "Bar Background",
@@ -4803,9 +4769,7 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                 text = "Spell Name",
                 values = { none = "None", left = "Left", right = "Right", center = "Center" },
                 order = { "none", "left", "right", "center" },
-                getValue = function()
-                    return B.castSpellNameSide or "left"
-                end,
+                getValue = BFieldOr("castSpellNameSide", "left"),
                 setValue = function(v)
                     B.castSpellNameSide = v
                     -- Conflict rule (mirrors player): name and the spell target may
@@ -4856,13 +4820,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             min = 6,
                             max = 20,
                             step = 1,
-                            get = function()
-                                return B.castSpellNameSize or 11
-                            end,
-                            set = function(v)
-                                B.castSpellNameSize = v
-                                ReloadAndUpdate()
-                            end,
+                            get = BFieldOr("castSpellNameSize", 11),
+                            set = BFieldThen("castSpellNameSize"),
                         },
                         {
                             type = "slider",
@@ -4870,13 +4829,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function()
-                                return B.castSpellNameX or 0
-                            end,
-                            set = function(v)
-                                B.castSpellNameX = v
-                                ReloadAndUpdate()
-                            end,
+                            get = BFieldOr("castSpellNameX", 0),
+                            set = BFieldThen("castSpellNameX"),
                         },
                         {
                             type = "slider",
@@ -4884,13 +4838,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function()
-                                return B.castSpellNameY or 0
-                            end,
-                            set = function(v)
-                                B.castSpellNameY = v
-                                ReloadAndUpdate()
-                            end,
+                            get = BFieldOr("castSpellNameY", 0),
+                            set = BFieldThen("castSpellNameY"),
                         },
                     },
                 })
@@ -4916,13 +4865,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             min = 6,
                             max = 20,
                             step = 1,
-                            get = function()
-                                return B.castDurationSize or 10
-                            end,
-                            set = function(v)
-                                B.castDurationSize = v
-                                ReloadAndUpdate()
-                            end,
+                            get = BFieldOr("castDurationSize", 10),
+                            set = BFieldThen("castDurationSize"),
                         },
                         {
                             type = "slider",
@@ -4930,13 +4874,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function()
-                                return B.castDurationX or 0
-                            end,
-                            set = function(v)
-                                B.castDurationX = v
-                                ReloadAndUpdate()
-                            end,
+                            get = BFieldOr("castDurationX", 0),
+                            set = BFieldThen("castDurationX"),
                         },
                         {
                             type = "slider",
@@ -4944,13 +4883,8 @@ function mod.UFO_BuildBossOptions(W, hostFrame, posY)
                             min = -50,
                             max = 50,
                             step = 1,
-                            get = function()
-                                return B.castDurationY or 0
-                            end,
-                            set = function(v)
-                                B.castDurationY = v
-                                ReloadAndUpdate()
-                            end,
+                            get = BFieldOr("castDurationY", 0),
+                            set = BFieldThen("castDurationY"),
                         },
                     },
                 })
