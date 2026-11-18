@@ -112,6 +112,32 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
     local function conf()
         return context.cfg()
     end
+    -- A row's getter and setter for one key of this section's settings: the
+    -- getter gives its value, or default when unset (no default: the value as
+    -- stored); the setter writes it when the settings exist, then runs after
+    -- and, with alsoPage, rebuilds the page.
+    local function ConfGetter(key, default)
+        return function()
+            local c = conf()
+            if default == nil then
+                return c and c[key]
+            end
+            return c and c[key] or default
+        end
+    end
+    local function ConfSetter(key, after, alsoPage)
+        return function(val)
+            local c = conf()
+            if not c then
+                return
+            end
+            c[key] = val
+            after()
+            if alsoPage then
+                CludesUI:RefreshPage()
+            end
+        end
+    end
     local function classOff()
         local c = conf()
         return not (c and c.enabled)
@@ -302,10 +328,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
     classEnableRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Show Class Resource",
-        getValue = function()
-            local c = conf()
-            return c and c.enabled
-        end,
+        getValue = ConfGetter("enabled"),
         -- Rows below Row 1 are hidden while off, so the flip must force the full rebuild
         setValue = CludesUI.DependentSetValue(function()
             local c = conf()
@@ -337,15 +360,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
             end
             return val
         end,
-        setValue = function(val)
-            local c = conf()
-            if not c then
-                return
-            end
-            c.pipOrientation = val
-            SmoothRefresh()
-            CludesUI:RefreshPage()
-        end,
+        setValue = ConfSetter("pipOrientation", SmoothRefresh, true),
     })
     posY = posY - hgt
     -- Class Resource cog: Simple only (Hide Power Bar if Resource is a row of
@@ -364,10 +379,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         type = "toggle",
                         label = "Draw Above Other Bars",
                         tooltip = "Draws the class resource bar above the health, power and GCD bar borders.",
-                        get = function()
-                            local c = conf()
-                            return c and c.raiseLevel or false
-                        end,
+                        get = ConfGetter("raiseLevel", false),
                         set = function(val)
                             local c = conf()
                             if not c then
@@ -415,19 +427,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
             disabled = chDis,
             disabledTooltip = chTip,
             rawTooltip = chRaw,
-            getValue = function()
-                local c = conf()
-                return c and c.pipHeight or 20
-            end,
-            setValue = function(val)
-                local c = conf()
-                if not c then
-                    return
-                end
-                c.pipHeight = val
-                SmoothRefresh()
-                CludesUI:RefreshPage()
-            end,
+            getValue = ConfGetter("pipHeight", 20),
+            setValue = ConfSetter("pipHeight", SmoothRefresh, true),
         }, {
             type = "slider",
             text = "Width",
@@ -437,19 +438,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
             disabled = cwDis,
             disabledTooltip = cwTip,
             rawTooltip = cwRaw,
-            getValue = function()
-                local c = conf()
-                return c and c.pipWidth or 214
-            end,
-            setValue = function(val)
-                local c = conf()
-                if not c then
-                    return
-                end
-                c.pipWidth = val
-                SmoothRefresh()
-                CludesUI:RefreshPage()
-            end,
+            getValue = ConfGetter("pipWidth", 214),
+            setValue = ConfSetter("pipWidth", SmoothRefresh, true),
         })
         posY = posY - hgt
         if not context.advanced and context.syncRows then
@@ -537,10 +527,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     disabledTooltip = "Class Resource",
                     values = texValues,
                     order = texOrder,
-                    getValue = function()
-                        local c = conf()
-                        return c and c.borderTexture or "solid"
-                    end,
+                    getValue = ConfGetter("borderTexture", "solid"),
                     setValue = function(val)
                         local c = conf()
                         if not c then
@@ -709,18 +696,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                                 min = 0,
                                 max = CludesUI.ROUNDED_MAX_RADIUS,
                                 step = 1,
-                                get = function()
-                                    local c = conf()
-                                    return c and c.cornerRadius or 0
-                                end,
-                                set = function(val)
-                                    local c = conf()
-                                    if not c then
-                                        return
-                                    end
-                                    c.cornerRadius = val
-                                    RebuildClass()
-                                end,
+                                get = ConfGetter("cornerRadius", 0),
+                                set = ConfSetter("cornerRadius", RebuildClass),
                             },
                         }, function()
                             local c = conf()
@@ -836,10 +813,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                         {
                             type = "toggle",
                             label = "Show Behind",
-                            get = function()
-                                local c = conf()
-                                return c and c.borderBehind or false
-                            end,
+                            get = ConfGetter("borderBehind", false),
                             set = function(val)
                                 local c = conf()
                                 if not c then
@@ -866,19 +840,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             end,
                             disabledTooltip = "This option can't be used while Border on individual pips is enabled.",
                             rawTooltip = true,
-                            get = function()
-                                local c = conf()
-                                return c and c.borderExtendTop or 0
-                            end,
-                            set = function(val)
-                                local c = conf()
-                                if not c then
-                                    return
-                                end
-                                c.borderExtendTop = val
-                                RebuildClass()
-                                CludesUI:RefreshPage()
-                            end,
+                            get = ConfGetter("borderExtendTop", 0),
+                            set = ConfSetter("borderExtendTop", RebuildClass, true),
                         },
                         {
                             type = "slider",
@@ -894,19 +857,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             end,
                             disabledTooltip = "This option can't be used while Border on individual pips is enabled.",
                             rawTooltip = true,
-                            get = function()
-                                local c = conf()
-                                return c and c.borderExtendBottom or 0
-                            end,
-                            set = function(val)
-                                local c = conf()
-                                if not c then
-                                    return
-                                end
-                                c.borderExtendBottom = val
-                                RebuildClass()
-                                CludesUI:RefreshPage()
-                            end,
+                            get = ConfGetter("borderExtendBottom", 0),
+                            set = ConfSetter("borderExtendBottom", RebuildClass, true),
                         },
                         {
                             type = "slider",
@@ -922,19 +874,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             end,
                             disabledTooltip = "This option can't be used while Border on individual pips is enabled.",
                             rawTooltip = true,
-                            get = function()
-                                local c = conf()
-                                return c and c.borderExtendLeft or 0
-                            end,
-                            set = function(val)
-                                local c = conf()
-                                if not c then
-                                    return
-                                end
-                                c.borderExtendLeft = val
-                                RebuildClass()
-                                CludesUI:RefreshPage()
-                            end,
+                            get = ConfGetter("borderExtendLeft", 0),
+                            set = ConfSetter("borderExtendLeft", RebuildClass, true),
                         },
                         {
                             type = "slider",
@@ -950,19 +891,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             end,
                             disabledTooltip = "This option can't be used while Border on individual pips is enabled.",
                             rawTooltip = true,
-                            get = function()
-                                local c = conf()
-                                return c and c.borderExtendRight or 0
-                            end,
-                            set = function(val)
-                                local c = conf()
-                                if not c then
-                                    return
-                                end
-                                c.borderExtendRight = val
-                                RebuildClass()
-                                CludesUI:RefreshPage()
-                            end,
+                            get = ConfGetter("borderExtendRight", 0),
+                            set = ConfSetter("borderExtendRight", RebuildClass, true),
                         },
                         -- Separators: None = off (edgeSep false); an art entry turns them on
                         -- with that art. The rows below pick its lines; Bar Spacing and the
@@ -1032,19 +962,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                                 local c = conf()
                                 return (c and c.edgeSep) and "Horizontal Separator" or "Separators"
                             end,
-                            get = function()
-                                local c = conf()
-                                return c and c.edgeSepY or 0
-                            end,
-                            set = function(val)
-                                local c = conf()
-                                if not c then
-                                    return
-                                end
-                                c.edgeSepY = val
-                                RebuildClass()
-                                CludesUI:RefreshPage()
-                            end,
+                            get = ConfGetter("edgeSepY", 0),
+                            set = ConfSetter("edgeSepY", RebuildClass, true),
                         },
                         {
                             type = "toggle",
@@ -1235,19 +1154,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             type = "toggle",
                             label = "Border on individual pips",
                             tooltip = "Draws a border around each pip instead of the bar as a whole.",
-                            get = function()
-                                local c = conf()
-                                return c and c.borderOnPips
-                            end,
-                            set = function(val)
-                                local c = conf()
-                                if not c then
-                                    return
-                                end
-                                c.borderOnPips = val
-                                RebuildClass()
-                                CludesUI:RefreshPage()
-                            end,
+                            get = ConfGetter("borderOnPips"),
+                            set = ConfSetter("borderOnPips", RebuildClass, true),
                         },
                         -- Background on individual pips: each pip's own backdrop in place of
                         -- the full-bar one, so the gaps stay clear (pip and rune resources;
@@ -1269,10 +1177,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             rawTooltip = function()
                                 return mod.IsBarTypeSecondary() and true or false
                             end,
-                            get = function()
-                                local c = conf()
-                                return c and c.pipBgOnPips or false
-                            end,
+                            get = ConfGetter("pipBgOnPips", false),
                             set = function(val)
                                 local c = conf()
                                 if not c then
@@ -1318,18 +1223,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 step = 1,
                 disabled = classOff,
                 disabledTooltip = "Class Resource",
-                getValue = function()
-                    local c = conf()
-                    return c and c.pipSpacing or 3
-                end,
-                setValue = function(val)
-                    local c = conf()
-                    if not c then
-                        return
-                    end
-                    c.pipSpacing = val
-                    SmoothRefresh()
-                end,
+                getValue = ConfGetter("pipSpacing", 3),
+                setValue = ConfSetter("pipSpacing", SmoothRefresh),
             }, {
                 type = "slider",
                 text = "Empty Bar Overlay",
@@ -1405,10 +1300,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                 UpdateGapSwatchState()
                 CludesUI.BuildInlineToggle({
                     region = rgn,
-                    getValue = function()
-                        local c = conf()
-                        return c and c.gapColorEnabled
-                    end,
+                    getValue = ConfGetter("gapColorEnabled"),
                     setValue = function(val)
                         local c = conf()
                         if not c then
@@ -1514,14 +1406,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             local c = conf()
                             return c and c.darkenPartialPips ~= false
                         end,
-                        set = function(val)
-                            local c = conf()
-                            if not c then
-                                return
-                            end
-                            c.darkenPartialPips = val
-                            RefreshClass()
-                        end,
+                        set = ConfSetter("darkenPartialPips", RefreshClass),
                     },
                     {
                         type = "colorpicker",
@@ -1733,14 +1618,7 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                             local c = conf()
                             return c and c.oocFadeEnabled == true
                         end,
-                        set = function(val)
-                            local c = conf()
-                            if not c then
-                                return
-                            end
-                            c.oocFadeEnabled = val
-                            RefreshClass()
-                        end,
+                        set = ConfSetter("oocFadeEnabled", RefreshClass),
                     },
                     {
                         type = "slider",
@@ -2384,37 +2262,16 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     tooltip = "Choose the color of recharging runes instead of a dimmed version of the rune color.",
                     disabled = classOff,
                     disabledTooltip = "Class Resource",
-                    getValue = function()
-                        local c = conf()
-                        return c and c.runesCustomRecharge
-                    end,
-                    setValue = function(val)
-                        local c = conf()
-                        if not c then
-                            return
-                        end
-                        c.runesCustomRecharge = val
-                        RebuildClass()
-                        CludesUI:RefreshPage()
-                    end,
+                    getValue = ConfGetter("runesCustomRecharge"),
+                    setValue = ConfSetter("runesCustomRecharge", RebuildClass, true),
                 }, {
                     type = "toggle",
                     text = "Simple Runes",
                     tooltip = "Show rune count in center and remove recharge text/animation",
                     disabled = classOff,
                     disabledTooltip = "Class Resource",
-                    getValue = function()
-                        local c = conf()
-                        return c and c.runesSimple
-                    end,
-                    setValue = function(val)
-                        local c = conf()
-                        if not c then
-                            return
-                        end
-                        c.runesSimple = val
-                        RebuildClass()
-                    end,
+                    getValue = ConfGetter("runesSimple"),
+                    setValue = ConfSetter("runesSimple", RebuildClass),
                 })
                 posY = posY - hgt
                 -- Custom recharge color inline swatch
@@ -2521,19 +2378,8 @@ function mod.ERB_BuildClassResourceSection(hostFrame, posY, context)
                     end,
                     disabledTooltip = "Requires Enhancement Shaman with Class Resource enabled.",
                     rawTooltip = true,
-                    getValue = function()
-                        local c = conf()
-                        return c and c.enhanceFiveBar
-                    end,
-                    setValue = function(val)
-                        local c = conf()
-                        if not c then
-                            return
-                        end
-                        c.enhanceFiveBar = val
-                        RebuildClass()
-                        CludesUI:RefreshPage()
-                    end,
+                    getValue = ConfGetter("enhanceFiveBar"),
+                    setValue = ConfSetter("enhanceFiveBar", RebuildClass, true),
                 }, { type = "label", text = "" })
                 posY = posY - hgt
                 -- Overflow color inline swatch

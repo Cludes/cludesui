@@ -30,6 +30,32 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
     local function conf()
         return context.cfg()
     end
+    -- A row's getter and setter for one key of this section's settings: the
+    -- getter gives its value, or default when unset (no default: the value as
+    -- stored); the setter writes it when the settings exist, then runs after
+    -- and, with alsoPage, rebuilds the page.
+    local function ConfGetter(key, default)
+        return function()
+            local c = conf()
+            if default == nil then
+                return c and c[key]
+            end
+            return c and c[key] or default
+        end
+    end
+    local function ConfSetter(key, after, alsoPage)
+        return function(val)
+            local c = conf()
+            if not c then
+                return
+            end
+            c[key] = val
+            after()
+            if alsoPage then
+                CludesUI:RefreshPage()
+            end
+        end
+    end
     local function healthOff()
         local c = conf()
         return not (c and c.enabled)
@@ -51,10 +77,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
     healthEnableRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Show Health Bar",
-        getValue = function()
-            local c = conf()
-            return c and c.enabled
-        end,
+        getValue = ConfGetter("enabled"),
         -- Rows below Row 1 are hidden while off, so the flip must force the full rebuild
         setValue = CludesUI.DependentSetValue(function()
             local c = conf()
@@ -80,14 +103,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
             local p = DB()
             return (c and c.orientation) or (p and p.general.orientation) or "HORIZONTAL"
         end,
-        setValue = function(val)
-            local c = conf()
-            if not c then
-                return
-            end
-            c.orientation = val
-            Refresh()
-        end,
+        setValue = ConfSetter("orientation", Refresh),
     })
     posY = posY - hgt
     if not CludesUI._prebuilding then
@@ -507,19 +523,8 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
             disabled = hhDis,
             disabledTooltip = hhTip,
             rawTooltip = hhRaw,
-            getValue = function()
-                local c = conf()
-                return c and c.height or 20
-            end,
-            setValue = function(val)
-                local c = conf()
-                if not c then
-                    return
-                end
-                c.height = val
-                SmoothRefresh()
-                CludesUI:RefreshPage()
-            end,
+            getValue = ConfGetter("height", 20),
+            setValue = ConfSetter("height", SmoothRefresh, true),
         }, {
             type = "slider",
             text = "Width",
@@ -529,19 +534,8 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
             disabled = hwDis,
             disabledTooltip = hwTip,
             rawTooltip = hwRaw,
-            getValue = function()
-                local c = conf()
-                return c and c.width or 220
-            end,
-            setValue = function(val)
-                local c = conf()
-                if not c then
-                    return
-                end
-                c.width = val
-                SmoothRefresh()
-                CludesUI:RefreshPage()
-            end,
+            getValue = ConfGetter("width", 220),
+            setValue = ConfSetter("width", SmoothRefresh, true),
         })
         posY = posY - hgt
         if not context.advanced and context.syncRows then
@@ -629,10 +623,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                     disabledTooltip = "Health Bar",
                     values = texValues,
                     order = texOrder,
-                    getValue = function()
-                        local c = conf()
-                        return c and c.borderTexture or "solid"
-                    end,
+                    getValue = ConfGetter("borderTexture", "solid"),
                     setValue = function(val)
                         local c = conf()
                         if not c then
@@ -799,18 +790,8 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                                 min = 0,
                                 max = CludesUI.ROUNDED_MAX_RADIUS,
                                 step = 1,
-                                get = function()
-                                    local c = conf()
-                                    return c and c.cornerRadius or 0
-                                end,
-                                set = function(val)
-                                    local c = conf()
-                                    if not c then
-                                        return
-                                    end
-                                    c.cornerRadius = val
-                                    RebuildHealth()
-                                end,
+                                get = ConfGetter("cornerRadius", 0),
+                                set = ConfSetter("cornerRadius", RebuildHealth),
                             },
                         }, function()
                             local c = conf()
@@ -943,10 +924,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                         {
                             type = "toggle",
                             label = "Show Behind",
-                            get = function()
-                                local c = conf()
-                                return c and c.borderBehind or false
-                            end,
+                            get = ConfGetter("borderBehind", false),
                             set = function(val)
                                 local c = conf()
                                 if not c then
@@ -1140,14 +1118,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                 local c = conf()
                 return (c and c.fillOpacity) or 100
             end,
-            setValue = function(val)
-                local c = conf()
-                if not c then
-                    return
-                end
-                c.fillOpacity = val
-                RebuildHealth()
-            end,
+            setValue = ConfSetter("fillOpacity", RebuildHealth),
         })
         posY = posY - hgt
         -- Fill Color inline cog: gradient settings
@@ -1164,37 +1135,16 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                     {
                         type = "toggle",
                         label = "Enable Gradient",
-                        get = function()
-                            local c = conf()
-                            return c and c.gradientEnabled
-                        end,
-                        set = function(val)
-                            local c = conf()
-                            if not c then
-                                return
-                            end
-                            c.gradientEnabled = val
-                            RebuildHealth()
-                            CludesUI:RefreshPage()
-                        end,
+                        get = ConfGetter("gradientEnabled"),
+                        set = ConfSetter("gradientEnabled", RebuildHealth, true),
                     },
                     {
                         type = "dropdown",
                         label = "Gradient Direction",
                         values = { HORIZONTAL = "Horizontal", VERTICAL = "Vertical" },
                         order = { "HORIZONTAL", "VERTICAL" },
-                        get = function()
-                            local c = conf()
-                            return c and c.gradientDir or "HORIZONTAL"
-                        end,
-                        set = function(val)
-                            local c = conf()
-                            if not c then
-                                return
-                            end
-                            c.gradientDir = val
-                            RebuildHealth()
-                        end,
+                        get = ConfGetter("gradientDir", "HORIZONTAL"),
+                        set = ConfSetter("gradientDir", RebuildHealth),
                     },
                 },
             })
@@ -1372,14 +1322,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                             local c = conf()
                             return c and c.oocFadeEnabled == true
                         end,
-                        set = function(val)
-                            local c = conf()
-                            if not c then
-                                return
-                            end
-                            c.oocFadeEnabled = val
-                            RefreshHealth()
-                        end,
+                        set = ConfSetter("oocFadeEnabled", RefreshHealth),
                     },
                     {
                         type = "slider",
@@ -1412,14 +1355,7 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                             local c = conf()
                             return c and c.showWhenMissing == true
                         end,
-                        set = function(val)
-                            local c = conf()
-                            if not c then
-                                return
-                            end
-                            c.showWhenMissing = val
-                            RefreshHealth()
-                        end,
+                        set = ConfSetter("showWhenMissing", RefreshHealth),
                     },
                 },
             })
@@ -1469,19 +1405,8 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                 "perhpnum",
                 "both",
             },
-            getValue = function()
-                local c = conf()
-                return c and c.textFormat or "none"
-            end,
-            setValue = function(val)
-                local c = conf()
-                if not c then
-                    return
-                end
-                c.textFormat = val
-                RefreshHealth()
-                CludesUI:RefreshPage()
-            end,
+            getValue = ConfGetter("textFormat", "none"),
+            setValue = ConfSetter("textFormat", RefreshHealth, true),
         }, {
             type = "multiSwatch",
             text = "Text Color",
@@ -1574,18 +1499,8 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                         values = { LEFT = "Left", CENTER = "Center", RIGHT = "Right" },
                         order = { "LEFT", "CENTER", "RIGHT" },
                         tooltip = "Anchor the text inside the bar. The X/Y offsets move it from there.",
-                        get = function()
-                            local c = conf()
-                            return c and c.textAnchor or "CENTER"
-                        end,
-                        set = function(val)
-                            local c = conf()
-                            if not c then
-                                return
-                            end
-                            c.textAnchor = val
-                            RefreshHealth()
-                        end,
+                        get = ConfGetter("textAnchor", "CENTER"),
+                        set = ConfSetter("textAnchor", RefreshHealth),
                     },
                     {
                         type = "slider",
@@ -1593,18 +1508,8 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            local c = conf()
-                            return c and c.textXOffset or 0
-                        end,
-                        set = function(val)
-                            local c = conf()
-                            if not c then
-                                return
-                            end
-                            c.textXOffset = val
-                            RefreshHealth()
-                        end,
+                        get = ConfGetter("textXOffset", 0),
+                        set = ConfSetter("textXOffset", RefreshHealth),
                     },
                     {
                         type = "slider",
@@ -1612,18 +1517,8 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
                         min = -100,
                         max = 100,
                         step = 1,
-                        get = function()
-                            local c = conf()
-                            return c and c.textYOffset or 0
-                        end,
-                        set = function(val)
-                            local c = conf()
-                            if not c then
-                                return
-                            end
-                            c.textYOffset = val
-                            RefreshHealth()
-                        end,
+                        get = ConfGetter("textYOffset", 0),
+                        set = ConfSetter("textYOffset", RefreshHealth),
                     },
                 },
             })
@@ -1640,18 +1535,8 @@ function mod.ERB_BuildHealthSection(hostFrame, posY, context)
             step = 1,
             disabled = healthTextDis,
             disabledTooltip = healthTextDisTip,
-            getValue = function()
-                local c = conf()
-                return c and c.textSize or 11
-            end,
-            setValue = function(val)
-                local c = conf()
-                if not c then
-                    return
-                end
-                c.textSize = val
-                RefreshHealth()
-            end,
+            getValue = ConfGetter("textSize", 11),
+            setValue = ConfSetter("textSize", RefreshHealth),
         }, { type = "label", text = "Threshold & Hash Lines" })
         posY = posY - hgt
         -- Threshold & Hash Lines editor: edits the health bar config (multi-spec, with the spec dropdown).
