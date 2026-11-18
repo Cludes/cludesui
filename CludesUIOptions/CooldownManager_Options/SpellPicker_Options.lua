@@ -808,6 +808,20 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                 local AB = {}
                 -- A new menu row at the menu's current bottom (mH): the row button,
                 -- full width less a pixel each side, and its left-hand caption.
+                -- A flyout row's right-hand arrow (at arrowAlpha) and its hover
+                -- highlight, which starts hidden.
+                AB.RowArrowAndHighlight = function(row, arrowAlpha)
+                    local arrow = row:CreateTexture(nil, "ARTWORK")
+                    arrow:SetSize(10, 10)
+                    arrow:SetPoint("RIGHT", row, "RIGHT", -8, 0)
+                    arrow:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\right-arrow.png")
+                    arrow:SetAlpha(arrowAlpha)
+                    local highlight = row:CreateTexture(nil, "ARTWORK")
+                    highlight:SetAllPoints()
+                    highlight:SetColorTexture(1, 1, 1, 0)
+                    highlight:SetAlpha(0)
+                    return arrow, highlight
+                end
                 AB.NewMenuRow = function(caption)
                     local row = CreateFrame("Button", nil, inner)
                     row:SetHeight(ITEM_H)
@@ -2763,16 +2777,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         PokeStrip()
                     end
 
-                    local arrow = row:CreateTexture(nil, "ARTWORK")
-                    arrow:SetSize(10, 10)
-                    arrow:SetPoint("RIGHT", row, "RIGHT", -8, 0)
-                    arrow:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\right-arrow.png")
-                    arrow:SetAlpha(RowDisabled() and 0.2 or 0.7)
-
-                    local highlight = row:CreateTexture(nil, "ARTWORK")
-                    highlight:SetAllPoints()
-                    highlight:SetColorTexture(1, 1, 1, 0)
-                    highlight:SetAlpha(0)
+                    local arrow, highlight = AB.RowArrowAndHighlight(row, RowDisabled() and 0.2 or 0.7)
 
                     local sub
                     -- Set by the first build: re-applies what a fresh open shows.
@@ -3793,15 +3798,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                         end
                         row._updateLabel = UpdateLabel
                         UpdateLabel()
-                        local arrow = row:CreateTexture(nil, "ARTWORK")
-                        arrow:SetSize(10, 10)
-                        arrow:SetPoint("RIGHT", row, "RIGHT", -8, 0)
-                        arrow:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\right-arrow.png")
-                        arrow:SetAlpha(0.7)
-                        local highlight = row:CreateTexture(nil, "ARTWORK")
-                        highlight:SetAllPoints()
-                        highlight:SetColorTexture(1, 1, 1, 0)
-                        highlight:SetAlpha(0)
+                        local arrow, highlight = AB.RowArrowAndHighlight(row, 0.7)
                         -- Show on hover, anchored to the side, like the other subnav flyouts.
                         -- Reuse BuildCogPopup but drop its slide animation + click-outside dismiss so the menu's _openSub machinery (hover-to-switch, close-with-menu) controls it.
                         local _, showFn, popFrame
@@ -4735,15 +4732,7 @@ local function ShowSpellPicker(anchor, barId, slotIndex, excludeSet, onSelect, r
                                 end
                             end
                             PaintRow()
-                            local arrow = row:CreateTexture(nil, "ARTWORK")
-                            arrow:SetSize(10, 10)
-                            arrow:SetPoint("RIGHT", row, "RIGHT", -8, 0)
-                            arrow:SetTexture("Interface\\AddOns\\CludesUI\\media\\icons\\right-arrow.png")
-                            arrow:SetAlpha(0.7)
-                            local highlight = row:CreateTexture(nil, "ARTWORK")
-                            highlight:SetAllPoints()
-                            highlight:SetColorTexture(1, 1, 1, 0)
-                            highlight:SetAlpha(0)
+                            local arrow, highlight = AB.RowArrowAndHighlight(row, 0.7)
 
                             local sub
                             local function ShowPotSub()
