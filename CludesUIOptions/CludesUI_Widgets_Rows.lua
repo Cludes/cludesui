@@ -62,6 +62,38 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
     local WidgetFactory = CludesUI.Widgets
     local ResolveDisabledTip = CludesUI.ResolveDisabledTip
 
+    -- A row slider dims (label, track and value box) and stops taking input
+    -- while conf.disabled() holds: applied now and on every widget refresh.
+    local function TrackSliderDisabled(conf, labelText, trackFrame, valBox, slThumb)
+        local function Apply()
+            if not conf.disabled then
+                return
+            end
+            local off = conf.disabled()
+            local alpha = off and 0.3 or 1
+            labelText:SetAlpha(alpha)
+            trackFrame:SetAlpha(alpha)
+            valBox:EnableMouse(not off)
+            valBox:SetAlpha(alpha)
+            if slThumb then
+                slThumb._sliderDisabled = off
+            end
+        end
+        RegisterWidgetRefresh(Apply)
+        Apply()
+    end
+
+    -- A colour swatch's own tooltip (sc.tooltip, read on each hover), added to
+    -- whatever hover it already has.
+    local function HookSwatchTooltip(swatch, sc)
+        swatch:HookScript("OnEnter", function()
+            ShowWidgetTooltip(swatch, sc.tooltip)
+        end)
+        swatch:HookScript("OnLeave", function()
+            HideWidgetTooltip()
+        end)
+    end
+
     -- A row label's tooltip: a frame a little larger than the label that, on
     -- hover, shows the disabled reason while conf.disabled() holds (and then
     -- also swallows clicks over the label), else conf.tooltip, else the full
@@ -669,28 +701,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 Pix.Point(trackFrame, "RIGHT", valBox, "LEFT", -12, 0)
                 controlFrame = nil -- slider owns its disabled state; keep the generic handler off its mouse
                 AddControlDisabledTooltip(trackFrame, conf)
-                RegisterWidgetRefresh(function()
-                    if conf.disabled then
-                        local off = conf.disabled()
-                        labelText:SetAlpha(off and 0.3 or 1)
-                        trackFrame:SetAlpha(off and 0.3 or 1)
-                        valBox:EnableMouse(not off)
-                        valBox:SetAlpha(off and 0.3 or 1)
-                        if slThumb then
-                            slThumb._sliderDisabled = off
-                        end
-                    end
-                end)
-                if conf.disabled then
-                    local off = conf.disabled()
-                    labelText:SetAlpha(off and 0.3 or 1)
-                    trackFrame:SetAlpha(off and 0.3 or 1)
-                    valBox:EnableMouse(not off)
-                    valBox:SetAlpha(off and 0.3 or 1)
-                    if slThumb then
-                        slThumb._sliderDisabled = off
-                    end
-                end
+                TrackSliderDisabled(conf, labelText, trackFrame, valBox, slThumb)
                 AttachSliderTooltip(regionFrame, labelText, conf, trackFrame, slThumb, valBox)
                 controlAnchor = trackFrame
             elseif t == "segmented" then
@@ -934,12 +945,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                         RegisterWidgetRefresh(UpdateSwatchDisabled)
                     end
                     if sc.tooltip then
-                        colorSwatch:HookScript("OnEnter", function()
-                            ShowWidgetTooltip(colorSwatch, sc.tooltip)
-                        end)
-                        colorSwatch:HookScript("OnLeave", function()
-                            HideWidgetTooltip()
-                        end)
+                        HookSwatchTooltip(colorSwatch, sc)
                     end
                     -- Per-swatch alpha refresh (dim inactive, bright active)
                     if sc.refreshAlpha then
@@ -1206,28 +1212,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 )
                 Pix.Point(valBox, "RIGHT", regionFrame, "RIGHT", -SIDE_PAD, 0)
                 Pix.Point(trackFrame, "RIGHT", valBox, "LEFT", -12, 0)
-                RegisterWidgetRefresh(function()
-                    if conf.disabled then
-                        local off = conf.disabled()
-                        labelText:SetAlpha(off and 0.3 or 1)
-                        trackFrame:SetAlpha(off and 0.3 or 1)
-                        valBox:EnableMouse(not off)
-                        valBox:SetAlpha(off and 0.3 or 1)
-                        if slThumb then
-                            slThumb._sliderDisabled = off
-                        end
-                    end
-                end)
-                if conf.disabled then
-                    local off = conf.disabled()
-                    labelText:SetAlpha(off and 0.3 or 1)
-                    trackFrame:SetAlpha(off and 0.3 or 1)
-                    valBox:EnableMouse(not off)
-                    valBox:SetAlpha(off and 0.3 or 1)
-                    if slThumb then
-                        slThumb._sliderDisabled = off
-                    end
-                end
+                TrackSliderDisabled(conf, labelText, trackFrame, valBox, slThumb)
                 AttachSliderTooltip(regionFrame, labelText, conf, trackFrame, slThumb, valBox)
                 controlAnchor = trackFrame
             elseif t == "dropdown" then
@@ -1512,12 +1497,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                     end)
                 end
                 if sc.tooltip then -- normal tooltip while enabled
-                    colorSwatch:HookScript("OnEnter", function()
-                        ShowWidgetTooltip(colorSwatch, sc.tooltip)
-                    end)
-                    colorSwatch:HookScript("OnLeave", function()
-                        HideWidgetTooltip()
-                    end)
+                    HookSwatchTooltip(colorSwatch, sc)
                 end
                 RegisterWidgetRefresh(function()
                     updateSwatch()
@@ -1540,12 +1520,7 @@ CludesUI._deferredInits[#CludesUI._deferredInits + 1] = function()
                 end
             else
                 if sc.tooltip then
-                    colorSwatch:HookScript("OnEnter", function()
-                        ShowWidgetTooltip(colorSwatch, sc.tooltip)
-                    end)
-                    colorSwatch:HookScript("OnLeave", function()
-                        HideWidgetTooltip()
-                    end)
+                    HookSwatchTooltip(colorSwatch, sc)
                 end
                 RegisterWidgetRefresh(function()
                     updateSwatch()
