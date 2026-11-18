@@ -129,10 +129,10 @@ local function StartAddon()
             end
             return
         end
-        local cx, cy = GetCursorPosition()
-        local es = CUI_Bags:GetEffectiveScale()
-        local newLeft = _bagDragStartLeft + (cx / es - _bagDragStartCX)
-        local newTop = _bagDragStartTop + (cy / es - _bagDragStartCY)
+        local cursorX, cursorY = GetCursorPosition()
+        local effScale = CUI_Bags:GetEffectiveScale()
+        local newLeft = _bagDragStartLeft + (cursorX / effScale - _bagDragStartCX)
+        local newTop = _bagDragStartTop + (cursorY / effScale - _bagDragStartCY)
         CUI_Bags:ClearAllPoints()
         CUI_Bags:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", newLeft, newTop)
     end)
@@ -145,10 +145,10 @@ local function StartAddon()
         if btnFrame ~= "LeftButton" or BP().bagWindowLocked or GetCursorInfo() then
             return
         end
-        local cx, cy = GetCursorPosition()
-        local es = self:GetEffectiveScale()
-        _bagDragStartCX = cx / es
-        _bagDragStartCY = cy / es
+        local cursorX, cursorY = GetCursorPosition()
+        local effScale = self:GetEffectiveScale()
+        _bagDragStartCX = cursorX / effScale
+        _bagDragStartCY = cursorY / effScale
         _bagDragStartLeft = self:GetLeft()
         _bagDragStartTop = self:GetTop()
         if not _bagDragStartLeft or not _bagDragStartTop then
@@ -238,10 +238,10 @@ local function StartAddon()
         end
         -- The cursor item's own location is its pickup source: a slot of the
         -- player's bags (bag 0-5, reagent bag included) when it came from them.
-        local loc = C_Cursor.GetCursorItem()
-        if loc and loc:IsBagAndSlot() then
-            local bag = loc:GetBagAndSlot()
-            if bag >= 0 and bag <= 5 then
+        local location = C_Cursor.GetCursorItem()
+        if location and location:IsBagAndSlot() then
+            local bagId = location:GetBagAndSlot()
+            if bagId >= 0 and bagId <= 5 then
                 return false
             end
         end
@@ -254,11 +254,11 @@ local function StartAddon()
             return
         end
         local special = mod.SpecialBags()
-        for bag = 0, 4 do
-            local numSlots = (special and special[bag]) and 0 or C_Container.GetContainerNumSlots(bag)
-            for slot = 1, numSlots do
-                if not C_Container.GetContainerItemInfo(bag, slot) then
-                    C_Container.PickupContainerItem(bag, slot)
+        for bagId = 0, 4 do
+            local slotCount = (special and special[bagId]) and 0 or C_Container.GetContainerNumSlots(bagId)
+            for slotId = 1, slotCount do
+                if not C_Container.GetContainerItemInfo(bagId, slotId) then
+                    C_Container.PickupContainerItem(bagId, slotId)
                     return
                 end
             end
@@ -282,73 +282,73 @@ local function StartAddon()
     -- cursor or an item lock changes; the Compact display's drop zones read the same cache
     -- and follow the same watch. The events are registered only while the
     -- bags are open; everything is built on first use.
-    local dropBorder, dropCatch
+    local dropEdge, dropCatcher
     local hoverFrame, hoverCatch = false, false
-    local extCache, extDirty = false, true
+    local extCache, extrasStale = false, true
     function mod.CursorItemExternalCached()
-        if extDirty then
+        if extrasStale then
             extCache = CursorItemIsExternal()
-            extDirty = false
+            extrasStale = false
         end
         return extCache
     end
     local function SyncDropBorder()
         local layer = mod.CursorItemExternalCached() and CUI_Bags:IsVisible()
-        if layer and not dropCatch then
-            dropCatch = CreateFrame("Frame", nil, CUI_Bags)
-            dropCatch:Hide()
-            dropCatch:EnableMouse(true)
-            dropCatch:EnableMouseWheel(true)
-            dropCatch:SetScript("OnMouseWheel", function(_, delta)
+        if layer and not dropCatcher then
+            dropCatcher = CreateFrame("Frame", nil, CUI_Bags)
+            dropCatcher:Hide()
+            dropCatcher:EnableMouse(true)
+            dropCatcher:EnableMouseWheel(true)
+            dropCatcher:SetScript("OnMouseWheel", function(_, delta)
                 local scrollFrame = CUI_Bags._scrollFrame
                 local wheel = scrollFrame and scrollFrame:GetScript("OnMouseWheel")
                 if wheel then
                     wheel(scrollFrame, delta)
                 end
             end)
-            dropCatch:SetScript("OnMouseUp", function(_, btnFrame)
+            dropCatcher:SetScript("OnMouseUp", function(_, btnFrame)
                 if btnFrame == "LeftButton" then
                     PlaceExternalCursorItem()
                 end
             end)
-            dropCatch:SetScript("OnReceiveDrag", PlaceExternalCursorItem)
-            dropCatch:SetScript("OnEnter", function()
+            dropCatcher:SetScript("OnReceiveDrag", PlaceExternalCursorItem)
+            dropCatcher:SetScript("OnEnter", function()
                 hoverCatch = true
                 SyncDropBorder()
             end)
-            dropCatch:SetScript("OnLeave", function()
+            dropCatcher:SetScript("OnLeave", function()
                 hoverCatch = false
                 SyncDropBorder()
             end)
-            dropCatch:SetScript("OnHide", function()
+            dropCatcher:SetScript("OnHide", function()
                 hoverCatch = false
             end)
         end
-        if dropCatch then
-            if layer and not dropCatch:IsShown() then
+        if dropCatcher then
+            if layer and not dropCatcher:IsShown() then
                 -- Just above the window, under the slots.
-                dropCatch:SetFrameLevel(CUI_Bags:GetFrameLevel() + 1)
-                dropCatch:ClearAllPoints()
-                dropCatch:SetAllPoints(CUI_Bags._scrollFrame)
+                dropCatcher:SetFrameLevel(CUI_Bags:GetFrameLevel() + 1)
+                dropCatcher:ClearAllPoints()
+                dropCatcher:SetAllPoints(CUI_Bags._scrollFrame)
             end
-            dropCatch:SetShown(layer and true or false)
+            dropCatcher:SetShown(layer and true or false)
         end
         local enabled = layer and (hoverFrame or hoverCatch)
-        if enabled and not dropBorder then
-            dropBorder = CreateFrame("Frame", nil, CUI_Bags)
-            dropBorder:SetAllPoints()
-            dropBorder:SetFrameLevel(CUI_Bags:GetFrameLevel() + 60)
-            dropBorder:EnableMouse(false)
-            CreateInsetBorder(dropBorder)
+        if enabled and not dropEdge then
+            dropEdge = CreateFrame("Frame", nil, CUI_Bags)
+            dropEdge:SetAllPoints()
+            dropEdge:SetFrameLevel(CUI_Bags:GetFrameLevel() + 60)
+            dropEdge:EnableMouse(false)
+            CreateInsetBorder(dropEdge)
         end
-        if not dropBorder then
+        if not dropEdge then
             return
         end
         if enabled then
             local region, g, bl = GetAccentRGB()
-            SetInsetBorderColor(dropBorder, region, g, bl, 1)
+            SetInsetBorderColor(dropEdge, region, g, bl, 1)
         end
-        dropBorder:SetShown(enabled and true or false)
+        dropEdge:SetShown(enabled and true or false)
     end
     CUI_Bags._syncDropTarget = SyncDropBorder
     CUI_Bags:HookScript("OnEnter", function()
@@ -359,27 +359,27 @@ local function StartAddon()
         hoverFrame = false
         SyncDropBorder()
     end)
-    local cursorWatch = CreateFrame("Frame")
-    cursorWatch:SetScript("OnEvent", function(_, event)
-        extDirty = true
+    local cursorWatcher = CreateFrame("Frame")
+    cursorWatcher:SetScript("OnEvent", function(_, eventName)
+        extrasStale = true
         -- A lock change only matters with an item on the cursor (the pickup's
         -- source slot locks); sorts lock and unlock slots constantly.
-        if event == "CURSOR_CHANGED" or GetCursorInfo() == "item" then
+        if eventName == "CURSOR_CHANGED" or GetCursorInfo() == "item" then
             SyncDropBorder()
             -- The Compact display's drop zones (CludesUIBags_Compact.lua)
             mod.CompactZonesSync()
         end
     end)
     CUI_Bags:HookScript("OnShow", function()
-        cursorWatch:RegisterEvent("CURSOR_CHANGED")
-        cursorWatch:RegisterEvent("ITEM_LOCK_CHANGED")
-        extDirty = true
+        cursorWatcher:RegisterEvent("CURSOR_CHANGED")
+        cursorWatcher:RegisterEvent("ITEM_LOCK_CHANGED")
+        extrasStale = true
     end)
     CUI_Bags:HookScript("OnHide", function()
-        cursorWatch:UnregisterEvent("CURSOR_CHANGED")
-        cursorWatch:UnregisterEvent("ITEM_LOCK_CHANGED")
+        cursorWatcher:UnregisterEvent("CURSOR_CHANGED")
+        cursorWatcher:UnregisterEvent("ITEM_LOCK_CHANGED")
         hoverFrame = false
-        extDirty = true
+        extrasStale = true
         SyncDropBorder()
     end)
 
@@ -391,11 +391,11 @@ local function StartAddon()
         CUI_Bags._padPlaceBtn:SetShown(CursorItemIsExternal())
     end
     local function PadPlaceButton()
-        local footer = CUI_Bags.Footer
-        local b = CreateFrame("Button", nil, footer)
+        local footerBar = CUI_Bags.Footer
+        local b = CreateFrame("Button", nil, footerBar)
         b:SetHeight(22)
-        b:SetPoint("BOTTOMLEFT", footer, "BOTTOMLEFT", 8, 5)
-        b:SetFrameLevel(footer:GetFrameLevel() + 20)
+        b:SetPoint("BOTTOMLEFT", footerBar, "BOTTOMLEFT", 8, 5)
+        b:SetFrameLevel(footerBar:GetFrameLevel() + 20)
         local backdrop = b:CreateTexture(nil, "BACKGROUND")
         backdrop:SetAllPoints()
         backdrop:SetColorTexture(0.15, 0.15, 0.15, 1)
@@ -420,9 +420,9 @@ local function StartAddon()
         end)
         b:Hide()
         CUI_Bags._padPlaceBtn = b
-        local watch = CreateFrame("Frame")
-        watch:SetScript("OnEvent", PadPlaceSync)
-        CUI_Bags._padCursorWatch = watch
+        local watcher = CreateFrame("Frame")
+        watcher:SetScript("OnEvent", PadPlaceSync)
+        CUI_Bags._padCursorWatch = watcher
     end
     -- Show edge (gated at the call): scroll aids, sidebar steps, drop button.
     PadBagsShown = function()
@@ -438,17 +438,17 @@ local function StartAddon()
             "bagSidebarCollapsed",
             enabled
         )
-        local watch = CUI_Bags._padCursorWatch
+        local watcher = CUI_Bags._padCursorWatch
         if enabled then
-            if not watch then
+            if not watcher then
                 PadPlaceButton()
-                watch = CUI_Bags._padCursorWatch
+                watcher = CUI_Bags._padCursorWatch
             end
-            watch:RegisterEvent("CURSOR_CHANGED")
-            watch:RegisterEvent("ITEM_LOCK_CHANGED")
+            watcher:RegisterEvent("CURSOR_CHANGED")
+            watcher:RegisterEvent("ITEM_LOCK_CHANGED")
             PadPlaceSync()
-        elseif watch then
-            watch:UnregisterAllEvents()
+        elseif watcher then
+            watcher:UnregisterAllEvents()
             CUI_Bags._padPlaceBtn:Hide()
         end
     end
@@ -494,10 +494,10 @@ local function StartAddon()
     end
 
     CUI_BagsReagent:RegisterEvent("BAG_UPDATE")
-    CUI_BagsReagent:SetScript("OnEvent", function(self, event)
-        if event == "BAG_UPDATE" then
-            local detach = BP().detachReagentBag or false
-            if detach and CUI_BagsReagent:IsVisible() then
+    CUI_BagsReagent:SetScript("OnEvent", function(self, eventName)
+        if eventName == "BAG_UPDATE" then
+            local detached = BP().detachReagentBag or false
+            if detached and CUI_BagsReagent:IsVisible() then
                 CUI_BagsReagent:RefreshInventory()
             end
         end
@@ -563,8 +563,8 @@ local function StartAddon()
                 CUI_Bags._doVisualSort()
             end
             CludesUIDB.bagsVisible = true
-            local detach = BP().detachReagentBag or false
-            if detach then
+            local detached = BP().detachReagentBag or false
+            if detached then
                 CUI_BagsReagent:Show()
                 CUI_BagsReagent:RefreshInventory()
             end
@@ -699,13 +699,13 @@ local function StartAddon()
             if _lastToggleTime == GetTime() then
                 wasVisible = _visibleBeforeToggle
             end
-            local open = wasVisible or mod.BagAutoWindowOn("bagAutoOpenWindows", mod.BagAutoWindowKey(widget))
-            if open and not CUI_Bags:IsVisible() then
+            local isOpen = wasVisible or mod.BagAutoWindowOn("bagAutoOpenWindows", mod.BagAutoWindowKey(widget))
+            if isOpen and not CUI_Bags:IsVisible() then
                 ToggleCUI()
-            elseif not open and CUI_Bags:IsVisible() then
+            elseif not isOpen and CUI_Bags:IsVisible() then
                 CloseBags()
             end
-            if open and not wasVisible then
+            if isOpen and not wasVisible then
                 bagsOpener = widget
             end
             KillBlizzard()
@@ -779,10 +779,10 @@ local function StartAddon()
     -- skipped: it names a type whose ammo is already counted in the bags.
     local function TallyItemCounts()
         local counts, sequence = {}, {}
-        for bag = 0, 5 do
-            local numSlots = C_Container.GetContainerNumSlots(bag)
-            for slot = 1, numSlots do
-                local details = C_Container.GetContainerItemInfo(bag, slot)
+        for bagId = 0, 5 do
+            local slotCount = C_Container.GetContainerNumSlots(bagId)
+            for slotId = 1, slotCount do
+                local details = C_Container.GetContainerItemInfo(bagId, slotId)
                 if details and details.itemID then
                     if not counts[details.itemID] then
                         sequence[#sequence + 1] = details.itemID
@@ -791,13 +791,13 @@ local function StartAddon()
                 end
             end
         end
-        for slot = INVSLOT_FIRST_EQUIPPED, CONTAINER_BAG_OFFSET + NUM_TOTAL_EQUIPPED_BAG_SLOTS do
-            local itemId = GetInventoryItemID("player", slot)
+        for slotId = INVSLOT_FIRST_EQUIPPED, CONTAINER_BAG_OFFSET + NUM_TOTAL_EQUIPPED_BAG_SLOTS do
+            local itemId = GetInventoryItemID("player", slotId)
             if itemId then
                 if not counts[itemId] then
                     sequence[#sequence + 1] = itemId
                 end
-                counts[itemId] = (counts[itemId] or 0) + (GetInventoryItemCount("player", slot) or 1)
+                counts[itemId] = (counts[itemId] or 0) + (GetInventoryItemCount("player", slotId) or 1)
             end
         end
         return counts, sequence
@@ -888,34 +888,34 @@ local function StartAddon()
     -- four 0.1 s deferrals): a loot or vendor burst that fires BAG_UPDATE every few
     -- frames rebuilds about twice a second and once more after it settles, instead
     -- of ten times a second for the whole burst. An isolated event is untouched.
-    local refreshPending, refreshAgain, refreshDefers, refreshBurst = false, false, 0, false
+    local refreshPending, rerun, refreshDefers, refreshBurst = false, false, 0, false
     CUI_Bags.refreshEnabled = true
     local function FireRefresh()
-        if refreshBurst and refreshAgain and refreshDefers < 4 then
-            refreshAgain = false
+        if refreshBurst and rerun and refreshDefers < 4 then
+            rerun = false
             refreshDefers = refreshDefers + 1
             C_Timer.After(0.1, FireRefresh)
             return
         end
-        refreshBurst = refreshAgain
+        refreshBurst = rerun
         if CUI_Bags:IsVisible() then
             CUI_Bags:RefreshInventory()
-            local detach = BP().detachReagentBag or false
-            if detach and CUI_BagsReagent:IsVisible() then
+            local detached = BP().detachReagentBag or false
+            if detached and CUI_BagsReagent:IsVisible() then
                 CUI_BagsReagent:RefreshInventory()
             end
         end
-        refreshPending, refreshAgain, refreshDefers = false, false, 0
+        refreshPending, rerun, refreshDefers = false, false, 0
     end
     local function ScheduleRefresh()
         if not CUI_Bags.refreshEnabled then
             return
         end
         if refreshPending then
-            refreshAgain = true
+            rerun = true
             return
         end
-        refreshPending, refreshAgain, refreshDefers = true, false, 0
+        refreshPending, rerun, refreshDefers = true, false, 0
         C_Timer.After(0.1, FireRefresh)
     end
 
@@ -990,8 +990,8 @@ local function StartAddon()
         if not widget or not widget.HookScript then
             return
         end
-        local function flip(open)
-            if SetItemPanelOpen("sendmail", open) and CUI_Bags:IsVisible() then
+        local function flip(isOpen)
+            if SetItemPanelOpen("sendmail", isOpen) and CUI_Bags:IsVisible() then
                 CUI_Bags:RefreshInventory()
             end
         end
@@ -1021,15 +1021,15 @@ local function StartAddon()
     if CludesUIDB and C_CurrencyInfo and C_CurrencyInfo.GetBackpackCurrencyInfo then
         -- Only seed when this character's table is empty: first install, a
         -- fresh profile, or a character whose legacy seed was empty too.
-        local co = CurrencyOrder()
+        local coroutineObj = CurrencyOrder()
         local hasAny = false
-        if co then
-            for _ in pairs(co) do
+        if coroutineObj then
+            for _ in pairs(coroutineObj) do
                 hasAny = true
                 break
             end
         end
-        if co and not hasAny then
+        if coroutineObj and not hasAny then
             local sequence = 0
             for i = 1, 20 do
                 local details = C_CurrencyInfo.GetBackpackCurrencyInfo(i)
@@ -1037,7 +1037,7 @@ local function StartAddon()
                     break
                 end
                 sequence = sequence + 1
-                co[details.currencyTypesID] = sequence
+                coroutineObj[details.currencyTypesID] = sequence
             end
         end
     end
@@ -1066,26 +1066,26 @@ local function StartAddon()
             if not CludesUIDB then
                 return
             end
-            local co = CurrencyOrder()
-            if not co then
+            local coroutineObj = CurrencyOrder()
+            if not coroutineObj then
                 return
             end
             local blizzSet = ReadBlizzSet()
-            for cID in pairs(blizzSet) do
-                if not co[cID] then
+            for containerId in pairs(blizzSet) do
+                if not coroutineObj[containerId] then
                     local maxOrder = 0
-                    for _, ord in pairs(co) do
+                    for _, ord in pairs(coroutineObj) do
                         if type(ord) == "number" and ord > maxOrder then
                             maxOrder = ord
                         end
                     end
-                    co[cID] = maxOrder + 1
+                    coroutineObj[containerId] = maxOrder + 1
                 end
             end
             -- Remove currencies that were in Blizzard's set before but aren't now
-            for cID in pairs(_lastBlizzSet) do
-                if not blizzSet[cID] then
-                    co[cID] = nil
+            for containerId in pairs(_lastBlizzSet) do
+                if not blizzSet[containerId] then
+                    coroutineObj[containerId] = nil
                 end
             end
             _lastBlizzSet = blizzSet
@@ -1108,8 +1108,8 @@ local function StartAddon()
         DetectNewItems()
     end
 
-    CUI_Bags:SetScript("OnEvent", function(self, event, interactionType)
-        if event == "PLAYER_REGEN_ENABLED" then
+    CUI_Bags:SetScript("OnEvent", function(self, eventName, interactionType)
+        if eventName == "PLAYER_REGEN_ENABLED" then
             -- Combat ended: build any slot the combat guard refused (a /reload in combat, a bag
             -- that grew while locked), shown or not, so the next fight opens a full grid; then
             -- replay any refresh deferred during combat.
@@ -1128,7 +1128,7 @@ local function StartAddon()
             end
             return
         end
-        if event == "MAIL_CLOSED" or event == "BANKFRAME_CLOSED" then
+        if eventName == "MAIL_CLOSED" or eventName == "BANKFRAME_CLOSED" then
             -- Legacy belt, doesn't reliably fire on retail; the interaction-
             -- manager HIDE below is the live driver. Settle first: mail's own
             -- delivery, or a bank auto-deposit, can still be landing items just
@@ -1140,7 +1140,7 @@ local function StartAddon()
             C_Timer.After(0.5, SnapshotKnownIDs)
             -- No return: falls through to the ITEM_PANEL_EVENTS handling below.
         end
-        if event == "PLAYER_INTERACTION_MANAGER_FRAME_HIDE" then
+        if eventName == "PLAYER_INTERACTION_MANAGER_FRAME_HIDE" then
             if
                 interactionType == Enum.PlayerInteractionType.MailInfo
                 or interactionType == Enum.PlayerInteractionType.Banker
@@ -1153,7 +1153,7 @@ local function StartAddon()
             end
             return
         end
-        local panelFrame = ITEM_PANEL_EVENTS[event]
+        local panelFrame = ITEM_PANEL_EVENTS[eventName]
         if panelFrame then
             -- Tracked even while bags are hidden: the panel that opens them (OpenAllBags) can fire in either order with this event.
             if SetItemPanelOpen(panelFrame[1], panelFrame[2]) and CUI_Bags:IsVisible() then
@@ -1165,7 +1165,7 @@ local function StartAddon()
             end
             return
         end
-        if event == "EQUIPMENT_SETS_CHANGED" then
+        if eventName == "EQUIPMENT_SETS_CHANGED" then
             -- Invalidate even while hidden: the next open must not classify with
             -- categories built from the old set list.
             CUI_Bags.InvalidateSetCategories()
@@ -1175,9 +1175,9 @@ local function StartAddon()
             return
         end
         if
-            event == "CHALLENGE_MODE_COMPLETED"
-            or event == "CHALLENGE_MODE_RESET"
-            or event == "GOSSIP_CLOSED"
+            eventName == "CHALLENGE_MODE_COMPLETED"
+            or eventName == "CHALLENGE_MODE_RESET"
+            or eventName == "GOSSIP_CLOSED"
         then
             -- A keystone downgrade here doesn't need a hidden-side invalidation:
             -- the next manual open already forces a full RefreshInventory
@@ -1187,15 +1187,15 @@ local function StartAddon()
             end
             return
         end
-        if event == "BAG_UPDATE" and CUI_Bags.refreshEnabled ~= false and not _detectQueued then
+        if eventName == "BAG_UPDATE" and CUI_Bags.refreshEnabled ~= false and not _detectQueued then
             _detectQueued = true
             C_Timer.After(0, _DetectFlush)
         end
         if not CUI_Bags:IsVisible() then
             return
         end
-        if event == "BAG_UPDATE" or event == "BAG_UPDATE_DELAYED" then
-            if event == "BAG_UPDATE_DELAYED" then
+        if eventName == "BAG_UPDATE" or eventName == "BAG_UPDATE_DELAYED" then
+            if eventName == "BAG_UPDATE_DELAYED" then
                 -- Equipped bag icons settle with the batch (bag equip / unequip)
                 if CUI_BagsWindow:IsVisible() then
                     CUI_BagsWindow:RefreshBags()
@@ -1213,7 +1213,7 @@ local function StartAddon()
                 CUI_Bags._unlockSort()
             end
             ScheduleRefresh()
-        elseif event == "ITEM_LOCK_CHANGED" then
+        elseif eventName == "ITEM_LOCK_CHANGED" then
             if not CUI_Bags.refreshEnabled then
                 return
             end
@@ -1221,7 +1221,7 @@ local function StartAddon()
                 CUI_Bags._unlockSort()
             end
             ScheduleRefresh()
-        elseif event == "CURRENCY_DISPLAY_UPDATE" then
+        elseif eventName == "CURRENCY_DISPLAY_UPDATE" then
             SyncBagFrameToFooter()
         end
     end)
@@ -1229,9 +1229,9 @@ local function StartAddon()
     CUI_Bags:HookScript("OnHide", function()
         CUI_BagsWindow:Hide()
         -- Controller cursor: the carried-item watch lives only while the bags are open.
-        local watch = CUI_Bags._padCursorWatch
-        if watch then
-            watch:UnregisterAllEvents()
+        local watcher = CUI_Bags._padCursorWatch
+        if watcher then
+            watcher:UnregisterAllEvents()
             CUI_Bags._padPlaceBtn:Hide()
         end
         -- The select modes (pin, assign, Junk Marker) end with the bags: their
@@ -1266,8 +1266,8 @@ local function ReleaseStaleSortMute()
 end
 local loader = CreateFrame("Frame")
 loader:RegisterEvent("PLAYER_LOGIN")
-loader:SetScript("OnEvent", function(self, event)
-    if event == "PLAYER_ENTERING_WORLD" then
+loader:SetScript("OnEvent", function(self, eventName)
+    if eventName == "PLAYER_ENTERING_WORLD" then
         self:UnregisterEvent("PLAYER_ENTERING_WORLD")
         CUI_Bags:WarmSlotPool(WINDOW_WARM_MS)
         return

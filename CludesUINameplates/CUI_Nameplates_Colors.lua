@@ -118,16 +118,16 @@ end
 
 -- The pet coming or going changes that answer for a solo non-tank, so the plates repaint
 -- then. Listens only while the threat colors are on (NP_RefreshThreatColorFlag).
-local petFrame, petOn
-local function PetSync(on)
-    on = on and true or false
-    if on == (petOn or false) then
+local petPlate, petOn
+local function PetSync(isOn)
+    isOn = isOn and true or false
+    if isOn == (petOn or false) then
         return
     end
-    petOn = on
-    if not petFrame then
-        petFrame = CreateFrame("Frame")
-        petFrame:SetScript("OnEvent", function()
+    petOn = isOn
+    if not petPlate then
+        petPlate = CreateFrame("Frame")
+        petPlate:SetScript("OnEvent", function()
             if not _isTankRole and not IsInGroup() then
                 for _, backing in pairs(mod.plates) do
                     backing:UpdateHealthColor()
@@ -135,10 +135,10 @@ local function PetSync(on)
             end
         end)
     end
-    if on then
-        petFrame:RegisterUnitEvent("UNIT_PET", "player")
+    if isOn then
+        petPlate:RegisterUnitEvent("UNIT_PET", "player")
     else
-        petFrame:UnregisterAllEvents()
+        petPlate:UnregisterAllEvents()
     end
 end
 
@@ -154,8 +154,8 @@ local FV_TANK_CLASS = CludesUI.IS_FOREVER
         and ({ WARRIOR = "form", DRUID = "form", PALADIN = "fury" })[select(2, UnitClass("player"))]
     or nil
 local FV_FURY = 25780
-local fvFury, fvFuryInst = false, nil
-local fvTankFrame, fvTankOn
+local fvFury, furyInstance = false, nil
+local tankFrame, fvTankOn
 local fvRoleTank = false
 
 -- The group's assigned tank, read as the watcher arms and on every roster and role event
@@ -183,8 +183,8 @@ local function FvReadFury()
         return
     end
     fvFury = aura ~= nil
-    local iid = aura and aura.auraInstanceID
-    fvFuryInst = (not issecretvalue(iid)) and iid or nil
+    local instanceId = aura and aura.auraInstanceID
+    furyInstance = (not issecretvalue(instanceId)) and instanceId or nil
 end
 
 -- The player aura event: true when Righteous Fury may have come or gone (re-read on a full
@@ -212,20 +212,20 @@ local function FvFuryProbe(details)
             if not issecretvalue(a) then
                 local spellRef = a.spellId
                 if not issecretvalue(spellRef) and spellRef == FV_FURY then
-                    local iid = a.auraInstanceID
+                    local instanceId = a.auraInstanceID
                     fvFury = true
-                    fvFuryInst = (not issecretvalue(iid)) and iid or nil
+                    furyInstance = (not issecretvalue(instanceId)) and instanceId or nil
                     return true
                 end
             end
         end
     end
     local removed = details.removedAuraInstanceIDs
-    if fvFuryInst and not issecretvalue(removed) and removed then
+    if furyInstance and not issecretvalue(removed) and removed then
         for index = 1, #removed do
-            local iid = removed[index]
-            if not issecretvalue(iid) and iid == fvFuryInst then
-                fvFury, fvFuryInst = false, nil
+            local instanceId = removed[index]
+            if not issecretvalue(instanceId) and instanceId == furyInstance then
+                fvFury, furyInstance = false, nil
                 return true
             end
         end
@@ -260,30 +260,30 @@ end
 
 -- Arms the watcher while the threat colors are on (re-reading the verdict as it arms: the
 -- shape or the aura may have changed while it slept), parks it otherwise.
-local function FvTankSync(on)
+local function FvTankSync(isOn)
     if not FV_TANK_CLASS then
         return
     end
-    on = on and true or false
-    if on == (fvTankOn or false) then
+    isOn = isOn and true or false
+    if isOn == (fvTankOn or false) then
         return
     end
-    fvTankOn = on
-    if not fvTankFrame then
-        fvTankFrame = CreateFrame("Frame")
-        fvTankFrame:SetScript("OnEvent", FvTankOnEvent)
+    fvTankOn = isOn
+    if not tankFrame then
+        tankFrame = CreateFrame("Frame")
+        tankFrame:SetScript("OnEvent", FvTankOnEvent)
     end
-    if on then
+    if isOn then
         if FV_TANK_CLASS == "fury" then
-            fvTankFrame:RegisterUnitEvent("UNIT_AURA", "player")
+            tankFrame:RegisterUnitEvent("UNIT_AURA", "player")
             FvReadFury()
         else
-            fvTankFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
+            tankFrame:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
         end
         FvReadRoleTank()
         _isTankRole = PlayerTankVerdict()
     else
-        fvTankFrame:UnregisterAllEvents()
+        tankFrame:UnregisterAllEvents()
     end
 end
 
@@ -299,12 +299,12 @@ end
 -- a pet can still change the answer.
 mod._npThreatColorsOn = false
 function mod.NP_RefreshThreatColorFlag()
-    local mode = p and p.threatColorMode
-    if mode ~= "never" and mode ~= "instances" and mode ~= "always" and mode ~= "alwaysSolo" then
-        mode = defaultSet.threatColorMode
+    local modeName = p and p.threatColorMode
+    if modeName ~= "never" and modeName ~= "instances" and modeName ~= "always" and modeName ~= "alwaysSolo" then
+        modeName = defaultSet.threatColorMode
     end
-    threatAll = mode == "alwaysSolo"
-    mod._npThreatColorsOn = (threatAll or mode == "always" or (mode == "instances" and _inThreatContent))
+    threatAll = modeName == "alwaysSolo"
+    mod._npThreatColorsOn = (threatAll or modeName == "always" or (modeName == "instances" and _inThreatContent))
             and true
         or false
     PetSync(mod._npThreatColorsOn and not threatAll)
@@ -352,22 +352,22 @@ end
 --  per unit; invalidated on QUEST_LOG_UPDATE and NAME_PLATE_UNIT_REMOVED.
 -------------------------------------------------------------------------------
 local questMobCache = {}
-local questObjectiveTypeCache = {}
+local objectiveTypeCache = {}
 -- Parallel cache of verified-clean "objectives remaining" strings, keyed by unit. Populated
 -- only while the Quest Objective Text element is on; same invalidation lifecycle. On ns (cap).
 mod._questObjText = mod._questObjText or {}
 mod._questObjType = mod._questObjType or {}
-local function ResolveQuestObjectiveType(questID, tooltipText, isOnQuest)
+local function ResolveQuestObjectiveType(questId, tooltipText, isOnQuest)
     if not issecretvalue then
         return nil
     end
-    if issecretvalue(questID) or issecretvalue(isOnQuest) or issecretvalue(tooltipText) then
+    if issecretvalue(questId) or issecretvalue(isOnQuest) or issecretvalue(tooltipText) then
         return nil
     end
     if
-        type(questID) ~= "number"
-        or questID <= 0
-        or questID % 1 ~= 0
+        type(questId) ~= "number"
+        or questId <= 0
+        or questId % 1 ~= 0
         or isOnQuest ~= true
         or type(tooltipText) ~= "string"
         or not (C_QuestLog and C_QuestLog.GetQuestObjectives)
@@ -375,18 +375,18 @@ local function ResolveQuestObjectiveType(questID, tooltipText, isOnQuest)
         return nil
     end
 
-    local objectives = questObjectiveTypeCache[questID]
-    if objectives == nil then
-        local result = C_QuestLog.GetQuestObjectives(questID)
+    local objectiveList = objectiveTypeCache[questId]
+    if objectiveList == nil then
+        local result = C_QuestLog.GetQuestObjectives(questId)
         if issecretvalue(result) or type(result) ~= "table" then
-            questObjectiveTypeCache[questID] = false
+            objectiveTypeCache[questId] = false
             return nil
         end
-        objectives = {}
-        for index, objective in ipairs(result) do
+        objectiveList = {}
+        for index, objectiveRec in ipairs(result) do
             local textValue, objectiveType
-            if not issecretvalue(objective) and objective then
-                textValue, objectiveType = objective.text, objective.type
+            if not issecretvalue(objectiveRec) and objectiveRec then
+                textValue, objectiveType = objectiveRec.text, objectiveRec.type
                 if issecretvalue(textValue) then
                     textValue = nil
                 end
@@ -400,20 +400,20 @@ local function ResolveQuestObjectiveType(questID, tooltipText, isOnQuest)
                     objectiveType = nil
                 end
             end
-            objectives[index] = { text = textValue, type = objectiveType }
+            objectiveList[index] = { text = textValue, type = objectiveType }
         end
-        questObjectiveTypeCache[questID] = objectives
-    elseif objectives == false then
+        objectiveTypeCache[questId] = objectiveList
+    elseif objectiveList == false then
         return nil
     end
 
     local matchCount, matchedType, unreadableText = 0, nil, false
-    for _, objective in ipairs(objectives) do
-        if not objective.text then
+    for _, objectiveRec in ipairs(objectiveList) do
+        if not objectiveRec.text then
             unreadableText = true
-        elseif objective.text == tooltipText then
+        elseif objectiveRec.text == tooltipText then
             matchCount = matchCount + 1
-            matchedType = objective.type
+            matchedType = objectiveRec.type
         end
     end
     if unreadableText or matchCount ~= 1 then
@@ -440,30 +440,30 @@ do
     -- Indicator, the quest mob health colour or the Quest Objective Text, each with its Show
     -- In Instances), else plus 4 (no scan: every unit reads as no quest mob). Open world: 0 / 1.
     local function ScanState()
-        local st = (mod.NP_GetQuestTextSlot() ~= "none") and 1 or 0
+        local state = (mod.NP_GetQuestTextSlot() ~= "none") and 1 or 0
         if InRealInstancedContent() then
             local success = (
                 mod.NP_ShowInInstances("quest")
                 and (mod.NP_QuestIconOn() or (p and p.questMobColorEnabled) == true)
-            ) or (st == 1 and mod.NP_ShowInInstances("questtext"))
-            st = st + (success and 2 or 4)
+            ) or (state == 1 and mod.NP_ShowInInstances("questtext"))
+            state = state + (success and 2 or 4)
         end
-        return st
+        return state
     end
     IsQuestMob = function(unitToken)
         if not (C_TooltipInfo and Enum and Enum.TooltipDataLineType) then
             return false
         end
-        local st = ScanState()
+        local state = ScanState()
         local typeOn = p and p.showQuestObjectiveTypeIcon == true or false
-        if st ~= built or typeOn ~= builtType then
+        if state ~= built or typeOn ~= builtType then
             wipe(questMobCache)
             wipe(mod._questObjText)
             if typeOn then
-                wipe(questObjectiveTypeCache)
+                wipe(objectiveTypeCache)
                 wipe(mod._questObjType)
             end
-            built = st
+            built = state
             builtType = typeOn
         end
         local cached = questMobCache[unitToken]
@@ -472,7 +472,7 @@ do
         end
 
         -- Instanced content with no consumer that shows the result there: no scan.
-        if st >= 4 then
+        if state >= 4 then
             questMobCache[unitToken] = false
             return false
         end
@@ -485,12 +485,12 @@ do
 
         local LT = Enum.TooltipDataLineType
         local onQuest = C_QuestLog and C_QuestLog.IsOnQuest
-        local wantText = (st % 2) == 1
+        local wantText = (state % 2) == 1
         local wantType = wantText and typeOn
         if wantType then
             mod._questObjType[unitToken] = nil
         end
-        local questID -- id carried by the most recent QuestTitle line
+        local questId -- id carried by the most recent QuestTitle line
         local isQuest, objText = false, nil
 
         for _, line in ipairs(details.lines) do
@@ -498,9 +498,9 @@ do
             if kind == LT.QuestTitle then
                 local ident = line.id
                 if ident and not (issecretvalue and issecretvalue(ident)) then
-                    questID = ident
+                    questId = ident
                 else
-                    questID = nil
+                    questId = nil
                 end
             elseif kind == LT.QuestObjective then
                 local done = line.completed
@@ -509,8 +509,8 @@ do
                 -- quest mob is never silently skipped.
                 if not (issecretvalue and issecretvalue(done)) and done == false then
                     local onQuestResult = true
-                    if questID and onQuest then
-                        onQuestResult = onQuest(questID)
+                    if questId and onQuest then
+                        onQuestResult = onQuest(questId)
                     end
                     if onQuestResult then
                         isQuest = true
@@ -539,14 +539,14 @@ do
                                 if
                                     wantType
                                     and objText
-                                    and questID
+                                    and questId
                                     and onQuest
                                     and issecretvalue
                                     and not issecretvalue(onQuestResult)
                                     and onQuestResult == true
                                 then
                                     mod._questObjType[unitToken] =
-                                        ResolveQuestObjectiveType(questID, lt, onQuestResult)
+                                        ResolveQuestObjectiveType(questId, lt, onQuestResult)
                                 end
                             end
                         end
@@ -577,7 +577,7 @@ function mod.InvalidateQuestObjectiveTypeCache()
     if not mod._questObjectiveTypeEnabled then
         return
     end
-    wipe(questObjectiveTypeCache)
+    wipe(objectiveTypeCache)
     wipe(mod._questObjType)
 end
 
@@ -617,8 +617,8 @@ questCacheWatcher:SetScript("OnEvent", function()
     end
 end)
 
-local function _C(key)
-    return (p and p[key]) or defaultSet[key]
+local function _C(colorKey)
+    return (p and p[colorKey]) or defaultSet[colorKey]
 end
 -- Neutral health-bar color: the enemy fallback's color while in combat (All Enemies while
 -- Simple Coloring When Not In M+ applies outside 5-man dungeons, as step 11 picks it, else
@@ -626,17 +626,17 @@ end
 -- (step 5, neutral+mini carve-out 7b, dungeon 10d).
 local function ResolveNeutralColor(unitToken)
     if UnitAffectingCombat(unitToken) then
-        local key = "enemyInCombat"
+        local colorKey = "enemyInCombat"
         if not mod._inDungeon then
             local simple = p and p.owBasicColoring
             if simple == nil then
                 simple = defaultSet.owBasicColoring
             end
             if simple then
-                key = "owBasicColor"
+                colorKey = "owBasicColor"
             end
         end
-        local c = _C(key)
+        local c = _C(colorKey)
         return c.r, c.g, c.b
     end
     local c = _C("neutral")
@@ -752,27 +752,27 @@ do
         for index = 1, #SLOTS do
             local s = SLOTS[index]
             local el = GetTextSlot(s)
-            local key = mod.NP_ElementFSKey(el, s)
+            local colorKey = mod.NP_ElementFSKey(el, s)
             if el == "custom" and not mod._npCustomTgt then
                 local parsed = mod.NP_CustomParse(s)
                 mod._npCustomTgt = (parsed and parsed.reads.tgt) or false
             end
-            if key == "totText" then
+            if colorKey == "totText" then
                 -- Painted by UpdateToT from the target's class, never the plate unit's.
                 mod._npToTSlot = s
                 mod._npToTClass = mod.NP_SlotColorMode(s) == "class"
-            elseif key and (key ~= "name" or s == nameSlot) then
-                ownerFrame[key] = mod.NP_SlotColorMode(s)
-                ownerSlot[key] = s
+            elseif colorKey and (colorKey ~= "name" or s == nameSlot) then
+                ownerFrame[colorKey] = mod.NP_SlotColorMode(s)
+                ownerSlot[colorKey] = s
             end
-            if key then
-                lastIdx[key] = index
+            if colorKey then
+                lastIdx[colorKey] = index
             end
             if index == 4 or index == 5 then
-                B[index - 3] = key or false
+                B[index - 3] = colorKey or false
             end
             if index == 6 or index == 7 then
-                T[index - 5] = key or false
+                T[index - 5] = colorKey or false
             end
         end
         for b = 1, 2 do
@@ -795,12 +795,12 @@ do
         mod._npTgtTexts = (mod._npToTSlot or mod._npCustomTgt) and true or false
         mod._npBottomUsed = (B[1] or B[2]) and true or false
         mod._npTopCornerUsed = (T[1] or T[2]) and true or false
-        for key, mode in pairs(ownerFrame) do
-            if mode == "class" then
-                L[#L + 1] = key
-            elseif mode == "level" then
-                V[#V + 1] = key
-                VC[#V] = COLOR_KEY[ownerSlot[key]]
+        for colorKey, modeName in pairs(ownerFrame) do
+            if modeName == "class" then
+                L[#L + 1] = colorKey
+            elseif modeName == "level" then
+                V[#V + 1] = colorKey
+                VC[#V] = COLOR_KEY[ownerSlot[colorKey]]
             end
         end
         mod._npSlotClassName = ownerFrame.name == "class" or ownerFrame.name == "level"
@@ -860,13 +860,13 @@ function mod.NP_PaintSlotClassColors(backing, unitToken, skipName)
             if success then
                 painted = true
                 for index = 1, #L do
-                    local key = L[index]
-                    local e = m[key]
+                    local colorKey = L[index]
+                    local e = m[colorKey]
                     if e then
                         e[1] = nil
                     end
-                    if not (skipName and key == "name") then
-                        local fontStr = backing[key]
+                    if not (skipName and colorKey == "name") then
+                        local fontStr = backing[colorKey]
                         if fontStr then
                             fontStr:SetTextColor(sr, sg, scrollBar, 1)
                         end
@@ -886,17 +886,17 @@ function mod.NP_PaintSlotClassColors(backing, unitToken, skipName)
                 region, g, b = GetEnemyNameReactionColor(unitToken)
             end
             for index = 1, #L do
-                local key = L[index]
-                local e = m[key]
+                local colorKey = L[index]
+                local e = m[colorKey]
                 if not e then
                     e = {}
-                    m[key] = e
+                    m[colorKey] = e
                 end
-                if skipName and key == "name" then
+                if skipName and colorKey == "name" then
                     e[1] = nil
                 elseif e[1] ~= region or e[2] ~= g or e[3] ~= b then
                     e[1], e[2], e[3] = region, g, b
-                    local fontStr = backing[key]
+                    local fontStr = backing[colorKey]
                     if fontStr then
                         fontStr:SetTextColor(region, g, b, 1)
                     end
@@ -908,27 +908,27 @@ function mod.NP_PaintSlotClassColors(backing, unitToken, skipName)
     if V[1] then
         local region, g, b = mod.NP_UnitLevelColor(unitToken)
         for index = 1, #V do
-            local key = V[index]
-            local e = m[key]
+            local colorKey = V[index]
+            local e = m[colorKey]
             if not e then
                 e = {}
-                m[key] = e
+                m[colorKey] = e
             end
-            if skipName and key == "name" then
+            if skipName and colorKey == "name" then
                 e[1] = nil
             elseif not region then
                 if e[1] ~= false then
                     e[1] = false
                     local ck = mod._npSlotLevelCK[index]
                     local c = (p and p[ck]) or defaultSet[ck]
-                    local fontStr = backing[key]
+                    local fontStr = backing[colorKey]
                     if fontStr then
                         fontStr:SetTextColor(c.r, c.g, c.b, 1)
                     end
                 end
             elseif e[1] ~= region or e[2] ~= g or e[3] ~= b then
                 e[1], e[2], e[3] = region, g, b
-                local fontStr = backing[key]
+                local fontStr = backing[colorKey]
                 if fontStr then
                     fontStr:SetTextColor(region, g, b, 1)
                 end
@@ -981,15 +981,15 @@ end
 -- ns._threatOkA: 1 while nothing is wrong, 0 on bad threat (a non-tank with or
 -- near aggro, a tank without or losing it), or the off-tank fold's secret answer;
 -- the debuff colors give way on the border and name channels by it.
-function mod.ResolveThreatColor(unitToken, status)
+function mod.ResolveThreatColor(unitToken, threatLevel)
     mod._threatOkA = 1
     if not mod._npThreatColorsOn then
         return
     end
-    if type(status) == "nil" then
-        status = UnitThreatSituation("player", unitToken)
+    if type(threatLevel) == "nil" then
+        threatLevel = UnitThreatSituation("player", unitToken)
     end
-    if not status then
+    if not threatLevel then
         return
     end
     local saved = p or defaultSet
@@ -998,11 +998,11 @@ function mod.ResolveThreatColor(unitToken, status)
         if not ThreatShared() then
             return
         end
-        if status >= 3 then
+        if threatLevel >= 3 then
             mod._threatOkA = 0
             local c = _C("dpsHasAggro")
             return c.r, c.g, c.b, false
-        elseif status >= 2 then
+        elseif threatLevel >= 2 then
             mod._threatOkA = 0
             local c = _C("dpsNearAggro")
             return c.r, c.g, c.b, false
@@ -1018,7 +1018,7 @@ function mod.ResolveThreatColor(unitToken, status)
         return
     end
     -- Tank arm.
-    if status >= 3 then
+    if threatLevel >= 3 then
         -- Holding it: nothing is wrong, so the has-aggro color only paints when the user
         -- explicitly asked for one (either toggle). Otherwise no tint at all, which is the
         -- point of a border channel: red border = someone else's mob, plain border = mine.
@@ -1038,7 +1038,7 @@ function mod.ResolveThreatColor(unitToken, status)
         end
         return
     end
-    if status >= 2 then
+    if threatLevel >= 2 then
         mod._threatOkA = 0
         local c = _C("tankLosingAggro")
         return c.r, c.g, c.b, false
@@ -1052,7 +1052,7 @@ function mod.ResolveThreatColor(unitToken, status)
     if saved.offTankAggroEnabled ~= nil then
         otE = saved.offTankAggroEnabled
     end
-    local base = _C("tankNoAggro")
+    local baseColor = _C("tankNoAggro")
     local targetRole, roleSecret = "NONE", false
     local unitTarget = unitToken .. "target"
     if UnitExists(unitTarget) then
@@ -1066,7 +1066,7 @@ function mod.ResolveThreatColor(unitToken, status)
     if otE and roleSecret then
         local otc = _C("offTankAggro")
         local folded, fr, fg, fb, fa =
-            mod.ComputeOffTankFold(unitToken, base.r, base.g, base.b, otc.r, otc.g, otc.b)
+            mod.ComputeOffTankFold(unitToken, baseColor.r, baseColor.g, baseColor.b, otc.r, otc.g, otc.b)
         -- Secret when an isTanking read was: those components reach setters only. A
         -- plain fold goes through the caller's memos like any other colour.
         if folded then
@@ -1074,7 +1074,7 @@ function mod.ResolveThreatColor(unitToken, status)
             return fr, fg, fb, (issecretvalue(fr) or issecretvalue(fg) or issecretvalue(fb))
         end
         mod._threatOkA = 0
-        return base.r, base.g, base.b, false
+        return baseColor.r, baseColor.g, baseColor.b, false
     end
     if targetRole == "TANK" then
         -- Co-tank holds it. With Off-Tank Color off there is no signal to show (the health
@@ -1086,7 +1086,7 @@ function mod.ResolveThreatColor(unitToken, status)
         return c.r, c.g, c.b, false
     end
     mod._threatOkA = 0
-    return base.r, base.g, base.b, false
+    return baseColor.r, baseColor.g, baseColor.b, false
 end
 -- castSeen: the plate's Color Casting Enemies memory (plate._castSeen).
 local function GetReactionColor(unitToken, castSeen)
@@ -1132,17 +1132,17 @@ local function GetReactionColor(unitToken, castSeen)
     -- Threat colors that can NEVER be overwritten:
     -- Non-tank: has aggro, near aggro Tank: losing aggro, no aggro
     local isThreatUnit = false -- set true when threat data exists
-    local threatStatus = 0
+    local threatState = 0
     -- A non-tank's threat colors apply (in a group, or solo with a pet out: ThreatShared).
-    local threatShared = false
+    local sharedThreat = false
     -- Show Threat Colors (Never / Instances / Always): one cached field read.
     if mod._npThreatColorsOn then
-        local status = UnitThreatSituation("player", unitToken)
-        mod._reactionThreatStatus = status or false
-        if status then
+        local threatLevel = UnitThreatSituation("player", unitToken)
+        mod._reactionThreatStatus = threatLevel or false
+        if threatLevel then
             isThreatUnit = true
-            threatStatus = status
-            threatShared = not _isTankRole and ThreatShared()
+            threatState = threatLevel
+            sharedThreat = not _isTankRole and ThreatShared()
             -- Threat Colors "Health Bar" channel off: the bar carries no threat color at
             -- all. Clearing isThreatUnit here is what makes that complete -- it also
             -- switches off the LOW-priority has-aggro / no-aggro steps further down
@@ -1152,19 +1152,19 @@ local function GetReactionColor(unitToken, castSeen)
             -- is still marked here; ns._reactionOffTankFold is a health-bar mechanism and
             -- deliberately stays unset (ns.ResolveThreatColor does its own fold).
             if not mod.GetThreatColorHealth() then
-                if threatShared and status >= 2 and status < 3 then
+                if sharedThreat and threatLevel >= 2 and threatLevel < 3 then
                     mod._reactionNearAggro = true
                 end
-                isThreatUnit, threatStatus, threatShared = false, 0, false
+                isThreatUnit, threatState, sharedThreat = false, 0, false
             elseif not _isTankRole then
                 -- Non-tank: has aggro / near aggro absolute priority
                 -- Only in a group or with a pet out (solo without one, the player always has aggro)
-                if threatShared then
-                    if status >= 3 then
+                if sharedThreat then
+                    if threatLevel >= 3 then
                         mod._reactionBadThreat = true
                         local c = _C("dpsHasAggro")
                         return c.r, c.g, c.b
-                    elseif status >= 2 then
+                    elseif threatLevel >= 2 then
                         mod._reactionNearAggro = true
                         mod._reactionBadThreat = true
                         local c = _C("dpsNearAggro")
@@ -1188,11 +1188,11 @@ local function GetReactionColor(unitToken, castSeen)
                 if otE then
                     mod._reactionOffTankFold = true
                 end
-                if status < 3 and status >= 2 then
+                if threatLevel < 3 and threatLevel >= 2 then
                     mod._reactionBadThreat = true
                     local c = _C("tankLosingAggro")
                     return c.r, c.g, c.b
-                elseif status < 3 then
+                elseif threatLevel < 3 then
                     -- Only show no-aggro warning if a non-tank has it.
                     -- If another tank holds aggro, this is normal offtank positioning.
                     local unitTarget = unitToken .. "target"
@@ -1239,7 +1239,7 @@ local function GetReactionColor(unitToken, castSeen)
                     end
                 end
                 -- Classic tank aggro: has-aggro overrides all mob-type colors
-                if status >= 3 then
+                if threatLevel >= 3 then
                     local classic = saved.classicTankAggro
                     if classic == nil then
                         classic = defaultSet.classicTankAggro
@@ -1316,7 +1316,7 @@ local function GetReactionColor(unitToken, castSeen)
     -- Classify the mob-type tier once up front so the tank has-aggro overrides can reason about
     -- boss vs mini-boss vs caster independently. Booleans only: mob-type colors still return at
     -- their own priority steps (7, 8, 10b).
-    local inCombat = UnitAffectingCombat(unitToken)
+    local combatNow = UnitAffectingCombat(unitToken)
     local classification = UnitClassification(unitToken)
     -- Simple Coloring When Not In M+ (inline cog on Enemy Types): outside 5-man dungeons, collapse the
     -- mob-type colors (Mini Enemies, Spell Casters, Mini-Bosses, Bosses) into flat owBasicColor
@@ -1396,13 +1396,13 @@ local function GetReactionColor(unitToken, castSeen)
         else
             mod._reactionCastTier = "Normal"
         end
-        mod._reactionCastLit = not (issecretvalue and issecretvalue(inCombat)) and inCombat == true
+        mod._reactionCastLit = not (issecretvalue and issecretvalue(combatNow)) and combatNow == true
     end
     -- DPS/healer No Aggro override state (mirrors tank has-aggro overrides at 6b). Each
     -- override independently promotes the No Aggro color above one mob-type step (mini-boss 7,
     -- caster 8). Active only for a non-tank without aggro in a group or with a pet out
     -- (matches step 10).
-    local dpsNoAggroActive = threatShared and threatStatus < 2
+    local dpsNoAggroActive = sharedThreat and threatState < 2
     if dpsNoAggroActive then
         local en = defaultSet.dpsNoAggroEnabled
         if saved.dpsNoAggroEnabled ~= nil then
@@ -1414,7 +1414,7 @@ local function GetReactionColor(unitToken, castSeen)
     -- has-aggro color above the mini-boss/caster steps, still below target/focus/enemy-class.
     -- Boss units excluded (governed by "Override Boss colors", step 9/10b). Sits between the
     -- absolute-priority Classic Tank Aggro path above and low-priority step 9.
-    if isThreatUnit and _isTankRole and threatStatus >= 3 and not _isBossUnit then
+    if isThreatUnit and _isTankRole and threatState >= 3 and not _isBossUnit then
         local hae = defaultSet.tankHasAggroEnabled
         if saved.tankHasAggroEnabled ~= nil then
             hae = saved.tankHasAggroEnabled
@@ -1446,7 +1446,7 @@ local function GetReactionColor(unitToken, castSeen)
             end
         end
         local c = _C("miniboss")
-        return MaybeDarken(c.r, c.g, c.b, inCombat)
+        return MaybeDarken(c.r, c.g, c.b, combatNow)
     end
     -- 7b. Mini Enemies promoted ABOVE Caster -- but ONLY for DPS/healers and tanks that do NOT
     -- use the special Tank Has Aggro color. Tanks WITH that option enabled skip this and keep
@@ -1472,7 +1472,7 @@ local function GetReactionColor(unitToken, castSeen)
             -- DPS "No Aggro" still wins over the promoted Mini Enemies color, so a DPS/healer
             -- without aggro sees the warning on trash. Scoped to this trash branch so Caster
             -- still outranks DPS No Aggro on non-trash casters (step 10, same condition).
-            if threatShared and threatStatus < 2 then
+            if sharedThreat and threatState < 2 then
                 local dpsNA = defaultSet.dpsNoAggroEnabled
                 if saved.dpsNoAggroEnabled ~= nil then
                     dpsNA = saved.dpsNoAggroEnabled
@@ -1484,7 +1484,7 @@ local function GetReactionColor(unitToken, castSeen)
                 end
             end
             local c = (p and p.miniEnemy) or _C("enemyInCombat")
-            return MaybeDarken(c.r, c.g, c.b, inCombat)
+            return MaybeDarken(c.r, c.g, c.b, combatNow)
         end
     end
     -- 8. Caster
@@ -1502,12 +1502,12 @@ local function GetReactionColor(unitToken, castSeen)
             end
         end
         local c = _C("caster")
-        return MaybeDarken(c.r, c.g, c.b, inCombat)
+        return MaybeDarken(c.r, c.g, c.b, combatNow)
     end
     -- 9. Tank has aggro (if enabled) below focus/caster/miniboss. Normally sits above the boss
     -- color (step 10b); with "Override Boss colors" disabled it's held below boss instead (the
     -- 10b return wins for boss units, so has-aggro lands just below bosses).
-    if isThreatUnit and _isTankRole and threatStatus >= 3 then
+    if isThreatUnit and _isTankRole and threatState >= 3 then
         local enabled = defaultSet.tankHasAggroEnabled
         if saved.tankHasAggroEnabled ~= nil then
             enabled = saved.tankHasAggroEnabled
@@ -1530,7 +1530,7 @@ local function GetReactionColor(unitToken, castSeen)
     -- ovrBoss check at step 9 above -- previously unconditional, so a DPS/healer without aggro
     -- always lost the Bosses color on engage with no way to turn that off (unlike Mini-Boss/
     -- Caster, which already had their own override toggles here, both off by default).
-    if threatShared and threatStatus < 2 then
+    if sharedThreat and threatState < 2 then
         local enabled = defaultSet.dpsNoAggroEnabled
         if saved.dpsNoAggroEnabled ~= nil then
             enabled = saved.dpsNoAggroEnabled
@@ -1552,7 +1552,7 @@ local function GetReactionColor(unitToken, castSeen)
     -- which case the has-aggro/no-aggro step above defers to this boss color for boss units).
     if _isBossUnit then
         local c = _C("boss")
-        return MaybeDarken(c.r, c.g, c.b, inCombat)
+        return MaybeDarken(c.r, c.g, c.b, combatNow)
     end
     -- 10c. Mini Enemies: non-elite trash (normal/minus), DUNGEONS ONLY -- outside dungeons
     -- these fall through to the enemy color below. Elites handled at step 7, so same-level
@@ -1565,7 +1565,7 @@ local function GetReactionColor(unitToken, castSeen)
     then
         -- Views "Enemies" (enemyInCombat) until the user sets a Mini Enemies color explicitly.
         local c = (p and p.miniEnemy) or _C("enemyInCombat")
-        return MaybeDarken(c.r, c.g, c.b, inCombat)
+        return MaybeDarken(c.r, c.g, c.b, combatNow)
     end
     -- 10d. Neutral, deferred (in dungeons, where step 5 skips it, and anywhere while it carries
     -- health-bar threat data): a neutral unit matching no mob-type/threat color lands here,
@@ -1577,7 +1577,7 @@ local function GetReactionColor(unitToken, castSeen)
     -- 11. Fallback: enemy in/out of combat. With Simple Coloring When Not In M+ active, every mob-type
     -- special above was suppressed, so all hostile mobs share the flat "All Enemies" color.
     local eic = _C(owBasic and "owBasicColor" or "enemyInCombat")
-    return MaybeDarken(eic.r, eic.g, eic.b, inCombat)
+    return MaybeDarken(eic.r, eic.g, eic.b, combatNow)
 end
 
 Inner._C, Inner.GetReactionColor, Inner.questMobCache = _C, GetReactionColor, questMobCache

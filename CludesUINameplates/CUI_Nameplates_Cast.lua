@@ -52,23 +52,23 @@ local minorScale, nonEliteScale = 1, 1
 -- UNKNOWNOBJECT) until its data arrives, so Non-Elite waits for UNIT_NAME_UPDATE then:
 -- a dungeon elite never spawns shrunk and grows back.
 function NameplateFrame:UpdateTypeScale()
-    local base = 1
+    local baseColor = 1
     local unitToken = self.unit
     if unitToken and mod._typeScaleOn then
         local c = UnitClassification(unitToken)
         if c == "minus" or c == "trivial" then
-            base = minorScale
+            baseColor = minorScale
         elseif c == "normal" and nonEliteScale ~= 1 and mod._inDungeon and not UnitIsPlayer(unitToken) then
-            local name = UnitName(unitToken)
-            if (issecretvalue and issecretvalue(name)) or name ~= UNKNOWNOBJECT then
-                base = nonEliteScale
+            local spellName = UnitName(unitToken)
+            if (issecretvalue and issecretvalue(spellName)) or spellName ~= UNKNOWNOBJECT then
+                baseColor = nonEliteScale
             end
         end
     end
-    if self._typeScale == base then
+    if self._typeScale == baseColor then
         return false
     end
-    self._typeScale = base
+    self._typeScale = baseColor
     return true
 end
 
@@ -186,12 +186,12 @@ function NameplateFrame:UpdateCastTargetGlow()
     if self._importantGlowActive then
         -- Both flags may be SECRET: folded C-side, the result only reaches SetAlpha
         -- (the kick tick's pattern).
-        local ev = C_CurveUtil.EvaluateColorValueFromBoolean
-        local isImp = self._castImportant
-        if type(isImp) == "nil" then
-            isImp = false
+        local eventName = C_CurveUtil.EvaluateColorValueFromBoolean
+        local isImportant = self._castImportant
+        if type(isImportant) == "nil" then
+            isImportant = false
         end
-        shade:SetAlpha(ev(PlayerIsSpellTarget(self.unit), ev(isImp, 0, 1), 0))
+        shade:SetAlpha(eventName(PlayerIsSpellTarget(self.unit), eventName(isImportant, 0, 1), 0))
     else
         shade:SetAlphaFromBoolean(PlayerIsSpellTarget(self.unit))
     end
@@ -232,14 +232,14 @@ function NameplateFrame:UpdateCast()
         self:ApplyNameVisibility()
         return
     end
-    local name, _, texture, _, _, _, _, kickProtected, castSpellID = UnitCastingInfo(self.unit)
-    local isChannel = false
-    local isEmpowered = false
-    if type(name) == "nil" then
-        name, _, texture, _, _, _, kickProtected, castSpellID = UnitChannelInfo(self.unit)
-        isChannel = true
+    local spellName, _, texture, _, _, _, _, kickLocked, castSpellId = UnitCastingInfo(self.unit)
+    local channeling = false
+    local empowered = false
+    if type(spellName) == "nil" then
+        spellName, _, texture, _, _, _, kickLocked, castSpellId = UnitChannelInfo(self.unit)
+        channeling = true
     end
-    if type(name) == "nil" then
+    if type(spellName) == "nil" then
         if not self._interrupted then
             self.cast:Hide()
         end
@@ -298,10 +298,10 @@ function NameplateFrame:UpdateCast()
         -- SetTexture accepts secrets natively), never a cached/leftover icon.
         if type(texture) ~= "nil" then
             self.castIcon:SetTexture(texture)
-        elseif type(castSpellID) ~= "nil" then
+        elseif type(castSpellId) ~= "nil" then
             -- Texture genuinely absent (rare): fall back to THIS cast's spell icon. pcall
             -- guards an invalid/0/unknown spellID; iconID feeds SetTexture, never branched on.
-            local okInfo, details = pcall(C_Spell.GetSpellInfo, castSpellID)
+            local okInfo, details = pcall(C_Spell.GetSpellInfo, castSpellId)
             if okInfo and type(details) == "table" then
                 self.castIcon:SetTexture(details.iconID)
             else
@@ -310,21 +310,21 @@ function NameplateFrame:UpdateCast()
         else
             self.castIcon:SetTexture(nil)
         end
-        self:UpdateCastText(name)
+        self:UpdateCastText(spellName)
         self.castTimer:SetShown(self._showCastTimer)
 
-        if type(kickProtected) == "nil" then
-            kickProtected = false
+        if type(kickLocked) == "nil" then
+            kickLocked = false
         end
-        self._kickProtected = kickProtected
+        self._kickProtected = kickLocked
         -- Cache the game's "important" flag for the cast bar colour. May be SECRET, so it is
         -- stored raw and only fed to a boolean-curve evaluator, never branched on. pcall
         -- guards a 0/invalid spellID. Persists across interruptible flips/kick ticker reuse.
         self._castImportant = false
         if C_Spell and C_Spell.IsSpellImportant then
-            local impOK, imp = pcall(C_Spell.IsSpellImportant, castSpellID or 0)
+            local impOK, importance = pcall(C_Spell.IsSpellImportant, castSpellId or 0)
             if impOK then
-                self._castImportant = imp
+                self._castImportant = importance
             end
         end
         -- A cast that starts before the last one's stop was handled skips NotifyCastStarted:
@@ -334,7 +334,7 @@ function NameplateFrame:UpdateCast()
             mod.NT_Apply(self)
         end
         local conf = p or defaultSet
-        local unintColor = conf.castBarUninterruptible or defaultSet.castBarUninterruptible
+        local lockedColor = conf.castBarUninterruptible or defaultSet.castBarUninterruptible
         if self._blizzCastArt then
             -- Blizzard Style: the overlay IS the stock grey fill art (painted
             -- white; the user's colour stays if that atlas never seated), and
@@ -342,48 +342,48 @@ function NameplateFrame:UpdateCast()
             if self._blizzShieldFill then
                 self.castBarOverlay:SetVertexColor(1, 1, 1)
             else
-                self.castBarOverlay:SetVertexColor(unintColor.r, unintColor.g, unintColor.b)
+                self.castBarOverlay:SetVertexColor(lockedColor.r, lockedColor.g, lockedColor.b)
             end
-            self._blizzCastLastKind = isChannel and "channel" or "cast"
+            self._blizzCastLastKind = channeling and "channel" or "cast"
             mod.NP_SetBlizzCastFill(self, self._blizzCastLastKind)
         else
-            self.castBarOverlay:SetVertexColor(unintColor.r, unintColor.g, unintColor.b)
+            self.castBarOverlay:SetVertexColor(lockedColor.r, lockedColor.g, lockedColor.b)
         end
         self.castShieldFrame:Show()
-        self:ApplyCastColor(kickProtected)
+        self:ApplyCastColor(kickLocked)
     end
 
     if UnitCastingDuration and self.cast.SetTimerDuration then
-        if isChannel then
-            local castDuration
+        if channeling then
+            local castLen
             -- Empowered channel duration first (Evoker empower spells): normal UnitChannelDuration
             -- can return nil during the empower phase, leaving the bar unticked despite a name.
             if UnitEmpoweredChannelDuration then
-                castDuration = UnitEmpoweredChannelDuration(self.unit, true)
-                if castDuration then
-                    isEmpowered = true
+                castLen = UnitEmpoweredChannelDuration(self.unit, true)
+                if castLen then
+                    empowered = true
                 end
             end
-            if not castDuration then
-                castDuration = UnitChannelDuration(self.unit)
+            if not castLen then
+                castLen = UnitChannelDuration(self.unit)
             end
-            if castDuration then
+            if castLen then
                 self.cast:SetReverseFill(false)
                 -- Empowered channels fill forward (elapsed time / stages);
                 -- normal channels fill backward (remaining time).
-                local direction = isEmpowered and Enum.StatusBarTimerDirection.ElapsedTime
+                local direction = empowered and Enum.StatusBarTimerDirection.ElapsedTime
                     or Enum.StatusBarTimerDirection.RemainingTime
-                self.cast:SetTimerDuration(castDuration, nil, direction)
+                self.cast:SetTimerDuration(castLen, nil, direction)
                 if not self.isCasting then
                     NotifyCastStarted(self)
                 end
                 self.isCasting = true
             end
         else
-            local castDuration = UnitCastingDuration(self.unit)
-            if castDuration then
+            local castLen = UnitCastingDuration(self.unit)
+            if castLen then
                 self.cast:SetReverseFill(false)
-                self.cast:SetTimerDuration(castDuration, nil, Enum.StatusBarTimerDirection.ElapsedTime)
+                self.cast:SetTimerDuration(castLen, nil, Enum.StatusBarTimerDirection.ElapsedTime)
             end
             if not self.isCasting then
                 NotifyCastStarted(self)
@@ -402,15 +402,15 @@ function NameplateFrame:UpdateCast()
     end
     -- Cast kind for the STOP handler (UNIT_SPELLCAST_STOP): cached here rather than
     -- read back, since the read is what can go stale/secret at the stop edge.
-    self._castIsChannel = isChannel
+    self._castIsChannel = channeling
     if isFullSetup then
         self._kickGeoDirty = nil
         self:ApplyScale()
-        self:UpdateKickTick(kickProtected, isChannel, isEmpowered)
+        self:UpdateKickTick(kickLocked, channeling, empowered)
         self:UpdateImportantCastGlow()
         self:UpdateCastTargetGlow()
         if p and p.castingEnemyColors then
-            mod.NP_NoteCastKind(self, kickProtected)
+            mod.NP_NoteCastKind(self, kickLocked)
         end
         if
             GetShowClassPower()
@@ -444,10 +444,10 @@ do
         local t = 1 - math.exp(-SPEED * elapsed)
         for backing in pairs(anim) do
             local current = backing._curScale or 1
-            local dest = backing._destScale or 1
-            local nv = current + (dest - current) * t
-            if nv - dest < SNAP and dest - nv < SNAP then
-                nv = dest
+            local destColor = backing._destScale or 1
+            local nv = current + (destColor - current) * t
+            if nv - destColor < SNAP and destColor - nv < SNAP then
+                nv = destColor
                 anim[backing] = nil
             end
             backing._curScale = nv
@@ -466,29 +466,29 @@ do
     end
 end
 function NameplateFrame:ApplyScale()
-    local base = 1
+    local baseColor = 1
     if self.unit and UnitIsUnit(self.unit, "target") then
         local ts = GetTargetScale() / 100
         if ts ~= 1 then
-            base = ts
+            baseColor = ts
         end
     elseif mod._typeScaleOn then
         -- Minor Enemy Scale: minor (minus) and trivial mobs. Non-Elite Enemy Scale: normal NPCs in
         -- dungeons (the Mini Enemies color's scope). The target keeps Target Scale.
-        base = self._typeScale or 1
+        baseColor = self._typeScale or 1
     end
     local cs = GetCastScale() / 100
-    local dest = base
+    local destColor = baseColor
     if self.isCasting and cs ~= 1 then
-        dest = base * cs
+        destColor = baseColor * cs
     end
-    self._destScale = dest
+    self._destScale = destColor
     local current = self._curScale
-    if current == nil or (dest - current < 0.004 and current - dest < 0.004) then
+    if current == nil or (destColor - current < 0.004 and current - destColor < 0.004) then
         -- Fresh/recycled plate, or already at the destination: snap instantly.
-        self._curScale = dest
+        self._curScale = destColor
         mod._scaleAnim[self] = nil
-        self:SetScale(dest)
+        self:SetScale(destColor)
     else
         -- Ease toward the new destination via the shared OnUpdate driver.
         mod._scaleAnim[self] = true
@@ -499,7 +499,7 @@ function NameplateFrame:ApplyScale()
         mod.RefreshCastOverlay(self)
     end
 end
-function NameplateFrame:ApplyCastColor(uninterruptible)
+function NameplateFrame:ApplyCastColor(cannotKick)
     local conf = p or defaultSet
     local kickReadyTint = conf.interruptReady or defaultSet.interruptReady
     local normalCastTint = conf.castBar or defaultSet.castBar
@@ -525,10 +525,10 @@ function NameplateFrame:ApplyCastColor(uninterruptible)
         importantOn = defaultSet.importantCastColorEnabled
     end
     if importantOn and C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean then
-        local imp = conf.castBarImportant or defaultSet.castBarImportant
-        local isImp = self._castImportant
-        if type(isImp) == "nil" then
-            isImp = false
+        local importance = conf.castBarImportant or defaultSet.castBarImportant
+        local isImportant = self._castImportant
+        if type(isImportant) == "nil" then
+            isImportant = false
         end
         local kickFirst = conf.importantCastKickReadyAsInterruptible
         if kickFirst == nil then
@@ -536,16 +536,16 @@ function NameplateFrame:ApplyCastColor(uninterruptible)
         end
         local impFirst = not (kickFirst and GetActiveKickSpell())
         local under = impFirst and normalCastTint or kickReadyTint
-        local ev = C_CurveUtil.EvaluateColorValueFromBoolean
+        local eventName = C_CurveUtil.EvaluateColorValueFromBoolean
         -- Scratch table (same pattern as _dispelScratch): runs per cast event per plate, a fresh color table per call was pure GC churn.
         local sc = mod._castImpScratch
         if not sc then
             sc = {}
             mod._castImpScratch = sc
         end
-        sc.r = ev(isImp, imp.r, under.r)
-        sc.g = ev(isImp, imp.g, under.g)
-        sc.b = ev(isImp, imp.b, under.b)
+        sc.r = eventName(isImportant, importance.r, under.r)
+        sc.g = eventName(isImportant, importance.g, under.g)
+        sc.b = eventName(isImportant, importance.b, under.b)
         if impFirst then
             normalCastTint = sc
         else
@@ -557,21 +557,21 @@ function NameplateFrame:ApplyCastColor(uninterruptible)
     -- Match the base cast fill to uninterruptible casts so plate opacity
     -- doesn't reveal the interruptible color underneath the overlay.
     if C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean then
-        local unintColor = blizzCast and mod._npWhite
+        local lockedColor = blizzCast and mod._npWhite
             or (conf.castBarUninterruptible or defaultSet.castBarUninterruptible)
         -- The settings-refresh callers pass the stored _kickProtected stamp,
         -- which is nil until the first cast event -- and a nil reaching the
         -- fold throws. type() is the secret-legal nil test (a plain == nil
         -- compare throws on a secret boolean), same idiom as the Important
         -- Cast block above.
-        local isUnint = uninterruptible
+        local isUnint = cannotKick
         if type(isUnint) == "nil" then
             isUnint = false
         end
-        local ev = C_CurveUtil.EvaluateColorValueFromBoolean
-        cr = ev(isUnint, unintColor.r, cr)
-        cg = ev(isUnint, unintColor.g, cg)
-        callback = ev(isUnint, unintColor.b, callback)
+        local eventName = C_CurveUtil.EvaluateColorValueFromBoolean
+        cr = eventName(isUnint, lockedColor.r, cr)
+        cg = eventName(isUnint, lockedColor.g, cg)
+        callback = eventName(isUnint, lockedColor.b, callback)
     end
     self.cast:GetStatusBarTexture():SetVertexColor(cr, cg, callback)
     -- Shield icon is opt-out: when disabled it never shows, even on uninterruptible casts. The
@@ -581,14 +581,14 @@ function NameplateFrame:ApplyCastColor(uninterruptible)
         showShield = conf.castBarShieldEnabled
     end
     if self.castBarOverlay.SetAlphaFromBoolean then
-        self.castBarOverlay:SetAlphaFromBoolean(uninterruptible)
+        self.castBarOverlay:SetAlphaFromBoolean(cannotKick)
         if showShield then
-            self.castShieldFrame:SetAlphaFromBoolean(uninterruptible)
+            self.castShieldFrame:SetAlphaFromBoolean(cannotKick)
         else
             self.castShieldFrame:SetAlpha(0)
         end
     else
-        local a = uninterruptible and 1 or 0
+        local a = cannotKick and 1 or 0
         self.castBarOverlay:SetAlpha(a)
         self.castShieldFrame:SetAlpha(showShield and a or 0)
     end
@@ -602,7 +602,7 @@ function NameplateFrame:HideKickTick()
         self._kickTicker = nil
     end
 end
-function NameplateFrame:UpdateKickTick(kickProtected, isChannel, isEmpowered)
+function NameplateFrame:UpdateKickTick(kickLocked, channeling, empowered)
     -- Two independent CLEAN toggles drive this geometry: the visible tick (kickTickEnabled)
     -- and the interrupt-ready mid-cast fill (interruptMidCastEnabled). Either needs the
     -- positioner/marker StatusBars below; each visible element is gated on its own toggle.
@@ -618,33 +618,33 @@ function NameplateFrame:UpdateKickTick(kickProtected, isChannel, isEmpowered)
     -- kickProtected is a SECRET boolean: never branch on it. Store it and apply visibility via
     -- SetAlphaFromBoolean after setup. isChannel/isEmpowered cached too (cooldown watcher
     -- re-setups from these).
-    self._kickProtected = kickProtected
-    self._kickIsChannel = isChannel
-    self._kickIsEmpowered = isEmpowered
+    self._kickProtected = kickLocked
+    self._kickIsChannel = channeling
+    self._kickIsEmpowered = empowered
     if not (C_Spell and C_Spell.GetSpellCooldownDuration) then
         self:HideKickTick()
         return
     end
     -- Midnight path: use secret duration objects
     if UnitCastingDuration and self.cast.SetTimerDuration then
-        local castDuration
-        if isChannel then
-            if isEmpowered and UnitEmpoweredChannelDuration then
-                castDuration = UnitEmpoweredChannelDuration(self.unit, true)
+        local castLen
+        if channeling then
+            if empowered and UnitEmpoweredChannelDuration then
+                castLen = UnitEmpoweredChannelDuration(self.unit, true)
             end
-            if not castDuration then
-                castDuration = UnitChannelDuration(self.unit)
+            if not castLen then
+                castLen = UnitChannelDuration(self.unit)
             end
         else
-            castDuration = UnitCastingDuration(self.unit)
+            castLen = UnitCastingDuration(self.unit)
         end
-        if not castDuration then
+        if not castLen then
             self:HideKickTick()
             return
         end
-        local totalDur = castDuration:GetTotalDuration()
-        local interruptCD = C_Spell.GetSpellCooldownDuration(GetActiveKickSpell())
-        if not interruptCD then
+        local totalDur = castLen:GetTotalDuration()
+        local kickCooldown = C_Spell.GetSpellCooldownDuration(GetActiveKickSpell())
+        if not kickCooldown then
             self:HideKickTick()
             return
         end
@@ -660,14 +660,14 @@ function NameplateFrame:UpdateKickTick(kickProtected, isChannel, isEmpowered)
         -- both are sampled at the same instant. RefreshKickTick re-pins the pair on every
         -- cooldown event. NEVER update one without the other -- a marker-only refresh drifts
         -- the tick left.
-        self.kickPositioner:SetValue(castDuration:GetElapsedDuration())
-        self.kickMarker:SetValue(interruptCD:GetRemainingDuration())
+        self.kickPositioner:SetValue(castLen:GetElapsedDuration())
+        self.kickMarker:SetValue(kickCooldown:GetRemainingDuration())
         -- Apply color
         local kr, kg, kb = GetKickTickColor()
         self.kickTick:SetColorTexture(kr, kg, kb, 1)
         -- Handle channel vs cast fill direction. Empowered channels fill
         -- forward (like a normal cast), so treat them as non-channel here.
-        if isChannel and not isEmpowered then
+        if channeling and not empowered then
             self.kickPositioner:SetFillStyle(Enum.StatusBarFillStyle.Reverse)
             self.kickMarker:SetFillStyle(Enum.StatusBarFillStyle.Reverse)
             -- LOAD-BEARING: SetFillStyle resets the inner fill to snap-ON and the global
@@ -740,12 +740,12 @@ function NameplateFrame:UpdateKickTick(kickProtected, isChannel, isEmpowered)
         self.kickReadyFill:SetShown(midOn)
         -- Compute initial tick alpha immediately (avoids split-second delay
         -- from waiting for the first ticker fire at 0.1s).
-        if interruptCD.IsZero and C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean then
-            local interruptible = C_CurveUtil.EvaluateColorValueFromBoolean(self._kickProtected, 0, 1)
-            local kickReady = interruptCD:IsZero()
-            local alpha = C_CurveUtil.EvaluateColorValueFromBoolean(kickReady, 0, interruptible)
-            self.kickTick:SetAlpha(alpha)
-            self.kickReadyFill:SetAlpha(alpha)
+        if kickCooldown.IsZero and C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean then
+            local canKick = C_CurveUtil.EvaluateColorValueFromBoolean(self._kickProtected, 0, 1)
+            local kickReady = kickCooldown:IsZero()
+            local opacity = C_CurveUtil.EvaluateColorValueFromBoolean(kickReady, 0, canKick)
+            self.kickTick:SetAlpha(opacity)
+            self.kickReadyFill:SetAlpha(opacity)
         else
             self.kickTick:SetAlpha(0)
             self.kickReadyFill:SetAlpha(0)
@@ -757,10 +757,10 @@ function NameplateFrame:UpdateKickTick(kickProtected, isChannel, isEmpowered)
         end
         -- Self-identifying ticker: a superseded ticker cancels ITSELF rather than
         -- calling HideKickTick, which would cancel its successor.
-        local myTicker
-        myTicker = C_Timer.NewTicker(0.1, function()
-            if self._kickTicker ~= myTicker then
-                myTicker:Cancel()
+        local ownTicker
+        ownTicker = C_Timer.NewTicker(0.1, function()
+            if self._kickTicker ~= ownTicker then
+                ownTicker:Cancel()
                 return
             end
             if not self.isCasting or not self.unit then
@@ -775,16 +775,16 @@ function NameplateFrame:UpdateKickTick(kickProtected, isChannel, isEmpowered)
             end
             -- Compute tick visibility: show only when kick is on CD AND cast is interruptible.
             -- Both are secret booleans, chain EvaluateColorValueFromBoolean calls to combine.
-            local icd = C_Spell.GetSpellCooldownDuration(GetActiveKickSpell())
-            if icd and icd.IsZero and C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean then
-                local interruptible = C_CurveUtil.EvaluateColorValueFromBoolean(self._kickProtected, 0, 1)
-                local kickReady = icd:IsZero()
-                local alpha = C_CurveUtil.EvaluateColorValueFromBoolean(kickReady, 0, interruptible)
-                self.kickTick:SetAlpha(alpha)
-                self.kickReadyFill:SetAlpha(alpha)
+            local interruptCd = C_Spell.GetSpellCooldownDuration(GetActiveKickSpell())
+            if interruptCd and interruptCd.IsZero and C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean then
+                local canKick = C_CurveUtil.EvaluateColorValueFromBoolean(self._kickProtected, 0, 1)
+                local kickReady = interruptCd:IsZero()
+                local opacity = C_CurveUtil.EvaluateColorValueFromBoolean(kickReady, 0, canKick)
+                self.kickTick:SetAlpha(opacity)
+                self.kickReadyFill:SetAlpha(opacity)
             end
         end)
-        self._kickTicker = myTicker
+        self._kickTicker = ownTicker
     else
         -- API not available; hide tick
         self:HideKickTick()
@@ -800,40 +800,40 @@ function NameplateFrame:RefreshKickTick()
         self:HideKickTick()
         return
     end
-    local icd = C_Spell.GetSpellCooldownDuration(GetActiveKickSpell())
-    if not icd then
+    local interruptCd = C_Spell.GetSpellCooldownDuration(GetActiveKickSpell())
+    if not interruptCd then
         -- Transient read miss during an ongoing cast: skip this refresh and keep the current
         -- tick/fill. Hiding here would make the tick and kick-ready bar blink through the
         -- rotation. Genuine cast-end is handled by cast-stop/interrupt paths.
         return
     end
     if UnitCastingDuration and self.unit then
-        local castDuration
+        local castLen
         if self._kickIsChannel then
             if self._kickIsEmpowered and UnitEmpoweredChannelDuration then
-                castDuration = UnitEmpoweredChannelDuration(self.unit, true)
+                castLen = UnitEmpoweredChannelDuration(self.unit, true)
             end
-            if not castDuration then
-                castDuration = UnitChannelDuration(self.unit)
+            if not castLen then
+                castLen = UnitChannelDuration(self.unit)
             end
         else
-            castDuration = UnitCastingDuration(self.unit)
+            castLen = UnitCastingDuration(self.unit)
         end
-        if not castDuration then
+        if not castLen then
             -- Transient read miss (see above): skip, do not hide.
             return
         end
-        self.kickPositioner:SetValue(castDuration:GetElapsedDuration())
+        self.kickPositioner:SetValue(castLen:GetElapsedDuration())
     end
-    self.kickMarker:SetValue(icd:GetRemainingDuration())
-    if icd.IsZero and C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean then
-        local interruptible = C_CurveUtil.EvaluateColorValueFromBoolean(self._kickProtected, 0, 1)
-        local alpha = C_CurveUtil.EvaluateColorValueFromBoolean(icd:IsZero(), 0, interruptible)
-        self.kickTick:SetAlpha(alpha)
-        self.kickReadyFill:SetAlpha(alpha)
+    self.kickMarker:SetValue(interruptCd:GetRemainingDuration())
+    if interruptCd.IsZero and C_CurveUtil and C_CurveUtil.EvaluateColorValueFromBoolean then
+        local canKick = C_CurveUtil.EvaluateColorValueFromBoolean(self._kickProtected, 0, 1)
+        local opacity = C_CurveUtil.EvaluateColorValueFromBoolean(interruptCd:IsZero(), 0, canKick)
+        self.kickTick:SetAlpha(opacity)
+        self.kickReadyFill:SetAlpha(opacity)
     end
 end
-function NameplateFrame:ShowInterrupted(interrupterGUID)
+function NameplateFrame:ShowInterrupted(kickerGuid)
     if self.isCasting then
         if self._castFallback then
             self._castFallback = nil
@@ -877,21 +877,21 @@ function NameplateFrame:ShowInterrupted(interrupterGUID)
 
     -- GetPlayerInfoByGUID accepts the event's SECRET interrupter GUID and may
     -- return a SECRET name/class. Keep those values opaque until native sinks.
-    local interrupterName
+    local kickerName
     local interrupterClass
-    if type(interrupterGUID) ~= "nil" then
-        local _, class, _, _, _, name = GetPlayerInfoByGUID(interrupterGUID)
+    if type(kickerGuid) ~= "nil" then
+        local _, class, _, _, _, spellName = GetPlayerInfoByGUID(kickerGuid)
         interrupterClass = class
-        interrupterName = name
-        if type(interrupterName) == "nil" then
+        kickerName = spellName
+        if type(kickerName) == "nil" then
             -- Fallback for a NON-player interrupter GUID (pet or NPC): GetPlayerInfoByGUID
             -- only resolves players, so pull the name from the GUID's live unit token instead.
             -- Non-players have no class, so interrupterClass stays nil and the class-color path
             -- is skipped. A SECRET GUID resolves to a SECRET token/name; both pass straight to
             -- SetFormattedText as display args, so the name still shows. type() is the only legal check.
-            local token = UnitTokenFromGUID(interrupterGUID)
+            local token = UnitTokenFromGUID(kickerGuid)
             if type(token) ~= "nil" then
-                interrupterName = UnitName(token)
+                kickerName = UnitName(token)
             end
         end
     end
@@ -913,11 +913,11 @@ function NameplateFrame:ShowInterrupted(interrupterGUID)
 
     -- Show the interrupter inline as "Interrupted (Name)" in the single cast-name
     -- FontString; the cast-target / timer slots are cleared during the flash.
-    local hasInterrupter = type(interrupterName) ~= "nil"
-    local castW = self.cast:GetWidth()
-    if castW and castW > 0 then
+    local hasInterrupter = type(kickerName) ~= "nil"
+    local castWidth = self.cast:GetWidth()
+    if castWidth and castWidth > 0 then
         local cnWPct = (p and p.castNameWidthPct) or defaultSet.castNameWidthPct
-        self.castName:SetWidth(hasInterrupter and math.max(castW - 8, 20) or castW * cnWPct / 100)
+        self.castName:SetWidth(hasInterrupter and math.max(castWidth - 8, 20) or castWidth * cnWPct / 100)
     end
 
     local interruptedText = (CludesUI.L("Interrupted")) or "Interrupted"
@@ -933,7 +933,7 @@ function NameplateFrame:ShowInterrupted(interrupterGUID)
         self.castName:SetFormattedText(
             "|c" .. nameHex .. "%s (|r%s|c" .. nameHex .. ")|r",
             interruptedText,
-            interrupterName
+            kickerName
         )
     else
         self.castName:SetText(interruptedText)
@@ -1144,7 +1144,7 @@ function NameplateFrame:UNIT_SPELLCAST_STOP()
         end
     end
 end
-function NameplateFrame:UNIT_SPELLCAST_CHANNEL_STOP(_, _, _, interrupterGUID)
+function NameplateFrame:UNIT_SPELLCAST_CHANNEL_STOP(_, _, _, kickerGuid)
     -- Directly hide instead of UpdateCast: in restricted execution, UnitCastingInfo can
     -- return secret values (not nil) for a stale channel, making UpdateCast think it's active.
     -- An interrupted channel carries the interrupter GUID on this event; a natural end leaves it nil.
@@ -1179,22 +1179,22 @@ function NameplateFrame:UNIT_SPELLCAST_CHANNEL_STOP(_, _, _, interrupterGUID)
     then
         UpdateClassPowerOnPlate(self)
     end
-    if type(interrupterGUID) ~= "nil" and not self._interrupted then
-        self:HandleInterrupted(interrupterGUID)
+    if type(kickerGuid) ~= "nil" and not self._interrupted then
+        self:HandleInterrupted(kickerGuid)
     end
 end
 function NameplateFrame:UNIT_SPELLCAST_FAILED()
     self:UpdateCast()
 end
-function NameplateFrame:HandleInterrupted(interrupterGUID)
+function NameplateFrame:HandleInterrupted(kickerGuid)
     local protected = self._kickProtected
-    if type(interrupterGUID) ~= "nil" and ((issecretvalue and issecretvalue(protected)) or not protected) then
+    if type(kickerGuid) ~= "nil" and ((issecretvalue and issecretvalue(protected)) or not protected) then
         self:ShowCastLockout()
     end
-    self:ShowInterrupted(interrupterGUID)
+    self:ShowInterrupted(kickerGuid)
 end
-function NameplateFrame:UNIT_SPELLCAST_INTERRUPTED(_, _, _, interrupterGUID)
-    self:HandleInterrupted(interrupterGUID)
+function NameplateFrame:UNIT_SPELLCAST_INTERRUPTED(_, _, _, kickerGuid)
+    self:HandleInterrupted(kickerGuid)
 end
 -- Mid-cast interruptibility flips: re-read protection once, store it, refresh
 -- color + kick tick + overlay. The cooldown watcher never re-reads cast info per
@@ -1203,26 +1203,26 @@ function NameplateFrame:KickProtectionChanged()
     if not self.unit then
         return
     end
-    local kickProtected
+    local kickLocked
     local sName, _, _, _, _, _, _, kp = UnitCastingInfo(self.unit)
     if type(sName) ~= "nil" then
-        kickProtected = kp
+        kickLocked = kp
     else
         local chName
         chName, _, _, _, _, _, kp = UnitChannelInfo(self.unit)
         if type(chName) == "nil" then
             return
         end
-        kickProtected = kp
+        kickLocked = kp
     end
-    if type(kickProtected) == "nil" then
-        kickProtected = false
+    if type(kickLocked) == "nil" then
+        kickLocked = false
     end
-    self._kickProtected = kickProtected
-    self:ApplyCastColor(kickProtected)
+    self._kickProtected = kickLocked
+    self:ApplyCastColor(kickLocked)
     self:RefreshKickTick()
     if p and p.castingEnemyColors then
-        mod.NP_NoteCastKind(self, kickProtected)
+        mod.NP_NoteCastKind(self, kickLocked)
     end
 end
 function NameplateFrame:UNIT_SPELLCAST_INTERRUPTIBLE()
@@ -1241,7 +1241,7 @@ function NameplateFrame:UNIT_SPELLCAST_EMPOWER_UPDATE()
     self._kickGeoDirty = true
     self:UpdateCast()
 end
-function NameplateFrame:UNIT_SPELLCAST_EMPOWER_STOP(_, _, _, _, interrupterGUID)
+function NameplateFrame:UNIT_SPELLCAST_EMPOWER_STOP(_, _, _, _, kickerGuid)
     -- Stop directly. Re-checking cast info here can return a stale secret
     -- value in PvP and look like the cast is still going. An interrupted empower
     -- carries the interrupter GUID as the 5th arg (after unit, castGUID, spellID, complete).
@@ -1276,8 +1276,8 @@ function NameplateFrame:UNIT_SPELLCAST_EMPOWER_STOP(_, _, _, _, interrupterGUID)
     then
         UpdateClassPowerOnPlate(self)
     end
-    if type(interrupterGUID) ~= "nil" and not self._interrupted then
-        self:HandleInterrupted(interrupterGUID)
+    if type(kickerGuid) ~= "nil" and not self._interrupted then
+        self:HandleInterrupted(kickerGuid)
     end
 end
 

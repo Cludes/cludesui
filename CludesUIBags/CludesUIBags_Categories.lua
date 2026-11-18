@@ -126,13 +126,13 @@ if CUI_CLIENT_FOREVER then
         [279966] = true, -- Fishing Hut
     }
 
-    for _, def in ipairs(DEFAULT_CATEGORIES) do
-        if def.name == "Consumables" or def.name == "Gear Enhancements" then
-            def.defaultGroupName = "Adventure Prep"
+    for _, catDef in ipairs(DEFAULT_CATEGORIES) do
+        if catDef.name == "Consumables" or catDef.name == "Gear Enhancements" then
+            catDef.defaultGroupName = "Adventure Prep"
         end
     end
-    for i, def in ipairs(DEFAULT_CATEGORIES) do
-        if def.name == "Gear Enhancements" then
+    for i, catDef in ipairs(DEFAULT_CATEGORIES) do
+        if catDef.name == "Gear Enhancements" then
             table.insert(DEFAULT_CATEGORIES, i + 1, {
                 name = "Camp Items",
                 itemIDs = campItemIDs,
@@ -195,187 +195,187 @@ function CategoryManager:InitCategories()
     local Lite = CludesUI and CludesUI.Lite
     self._builtReady = (Lite and Lite.IsDBReady and Lite.IsDBReady()) or false
     -- User state: { [defaultName] = { rename, groupName, groupNameCustom } }
-    local userState = BP().bagCategoryState or {}
+    local customState = BP().bagCategoryState or {}
     -- User order: list of default names in display order
-    local userOrder = BP().bagCategoryOrder
+    local customOrder = BP().bagCategoryOrder
 
     -- Build ordered list of default names
     -- Index DEFAULT_CATEGORIES by name for fast lookup
     local defByName = {}
-    for _, def in ipairs(DEFAULT_CATEGORIES) do
-        defByName[def.name] = def
+    for _, catDef in ipairs(DEFAULT_CATEGORIES) do
+        defByName[catDef.name] = catDef
     end
     -- Index user-created custom categories by key
     local userCatByKey = {}
-    local userCats = BP().bagUserCategories
-    if userCats then
-        for _, uc in ipairs(userCats) do
-            userCatByKey[uc.key] = uc
+    local customCats = BP().bagUserCategories
+    if customCats then
+        for _, userCat in ipairs(customCats) do
+            userCatByKey[userCat.key] = userCat
         end
     end
 
-    local orderedDefs = {}
-    if userOrder and #userOrder > 0 then
+    local defOrder = {}
+    if customOrder and #customOrder > 0 then
         -- Use saved order, restoring both built-in and custom categories
         -- at their saved positions
         local seen = {}
-        for _, defName in ipairs(userOrder) do
-            local def = defByName[defName]
-            if def then
-                orderedDefs[#orderedDefs + 1] = def
-                seen[defName] = true
-            elseif userCatByKey[defName] then
+        for _, catName in ipairs(customOrder) do
+            local catDef = defByName[catName]
+            if catDef then
+                defOrder[#defOrder + 1] = catDef
+                seen[catName] = true
+            elseif userCatByKey[catName] then
                 -- Custom category placeholder: mark with _isCustom so the
                 -- category builder below can create it at this position
-                orderedDefs[#orderedDefs + 1] = { name = defName, _isCustom = true }
-                seen[defName] = true
+                defOrder[#defOrder + 1] = { name = catName, _isCustom = true }
+                seen[catName] = true
             end
         end
         -- Append any new built-in defaults not in the saved order
-        for _, def in ipairs(DEFAULT_CATEGORIES) do
-            if not seen[def.name] then
-                if def.noMove then
+        for _, catDef in ipairs(DEFAULT_CATEGORIES) do
+            if not seen[catDef.name] then
+                if catDef.noMove then
                     -- noMove categories always go to the top
-                    table.insert(orderedDefs, 1, def)
-                elseif def.appendLast then
+                    table.insert(defOrder, 1, catDef)
+                elseif catDef.appendLast then
                     -- Last: no saved category's index moves (bagVisualOrder is
                     -- keyed by index)
-                    orderedDefs[#orderedDefs + 1] = def
+                    defOrder[#defOrder + 1] = catDef
                 else
                     -- Insert before catch-all
-                    local insertIdx = #orderedDefs
-                    for i, od in ipairs(orderedDefs) do
+                    local insertIdx = #defOrder
+                    for i, od in ipairs(defOrder) do
                         if od.isCatchAll then
                             insertIdx = i
                             break
                         end
                     end
-                    table.insert(orderedDefs, insertIdx, def)
+                    table.insert(defOrder, insertIdx, catDef)
                 end
             end
         end
     else
-        for _, def in ipairs(DEFAULT_CATEGORIES) do
-            orderedDefs[#orderedDefs + 1] = def
+        for _, catDef in ipairs(DEFAULT_CATEGORIES) do
+            defOrder[#defOrder + 1] = catDef
         end
     end
 
     -- Force noMove categories to the top (in their DEFAULT_CATEGORIES order)
     local pinnedSet = {}
-    for _, def in ipairs(orderedDefs) do
-        if def.noMove then
-            pinnedSet[def.name] = true
+    for _, catDef in ipairs(defOrder) do
+        if catDef.noMove then
+            pinnedSet[catDef.name] = true
         end
     end
     local pinned = {}
     -- Use DEFAULT_CATEGORIES order for noMove items (not saved order)
-    for _, def in ipairs(DEFAULT_CATEGORIES) do
-        if def.noMove and pinnedSet[def.name] then
-            pinned[#pinned + 1] = def
+    for _, catDef in ipairs(DEFAULT_CATEGORIES) do
+        if catDef.noMove and pinnedSet[catDef.name] then
+            pinned[#pinned + 1] = catDef
         end
     end
     local rest, junkDef = {}, nil
-    for _, def in ipairs(orderedDefs) do
-        if def.isJunk then
-            junkDef = def
-        elseif not def.noMove then
-            rest[#rest + 1] = def
+    for _, catDef in ipairs(defOrder) do
+        if catDef.isJunk then
+            junkDef = catDef
+        elseif not catDef.noMove then
+            rest[#rest + 1] = catDef
         end
     end
-    orderedDefs = {}
+    defOrder = {}
     for _, skinData in ipairs(pinned) do
-        orderedDefs[#orderedDefs + 1] = skinData
+        defOrder[#defOrder + 1] = skinData
     end
     for _, skinData in ipairs(rest) do
-        orderedDefs[#orderedDefs + 1] = skinData
+        defOrder[#defOrder + 1] = skinData
     end
     -- Junk goes last, and exists only while the Junk Marker is on (its marks
     -- stay saved meanwhile).
     if junkDef and self:IsJunkMarkerEnabled() then
-        orderedDefs[#orderedDefs + 1] = junkDef
+        defOrder[#defOrder + 1] = junkDef
     end
 
     -- Build runtime categories from ordered defaults + user state.
     -- Custom category placeholders (_isCustom) are expanded inline so
     -- they keep their saved position relative to built-in categories.
-    local cats = {}
+    local categoryList = {}
     local customInserted = {}
-    for _, def in ipairs(orderedDefs) do
-        if def._isCustom then
+    for _, catDef in ipairs(defOrder) do
+        if catDef._isCustom then
             -- Expand custom category placeholder at its saved position
-            local uc = userCatByKey[def.name]
-            if uc then
-                local ucState = userState[uc.key]
-                local ucIcon = uc.icon or 134400
+            local userCat = userCatByKey[catDef.name]
+            if userCat then
+                local userCatState = customState[userCat.key]
+                local ucIcon = userCat.icon or 134400
                 local ucIsAtlas = type(ucIcon) == "string"
-                cats[#cats + 1] = {
-                    _defaultName = uc.key,
-                    name = (ucState and ucState.rename) or uc.name,
+                categoryList[#categoryList + 1] = {
+                    _defaultName = userCat.key,
+                    name = (userCatState and userCatState.rename) or userCat.name,
                     types = {},
                     icon = ucIcon,
                     isAtlas = ucIsAtlas or nil,
                     isUserCreated = true,
-                    groupName = ucState and ucState.groupName,
-                    groupNameCustom = ucState and ucState.groupNameCustom,
+                    groupName = userCatState and userCatState.groupName,
+                    groupNameCustom = userCatState and userCatState.groupNameCustom,
                 }
-                customInserted[uc.key] = true
+                customInserted[userCat.key] = true
             end
         else
-            local status = userState[def.name]
+            local status = customState[catDef.name]
             -- The default group name stays raw: the seeded groups in
             -- CludesUIBags_DB.lua store it raw too, so both land in one group
             -- on every locale.
-            local groupName
+            local group
             if status and status.groupName ~= nil then
-                groupName = status.groupName
-            elseif def.defaultGroupName then
-                groupName = def.defaultGroupName
+                group = status.groupName
+            elseif catDef.defaultGroupName then
+                group = catDef.defaultGroupName
             end
-            cats[#cats + 1] = {
-                _defaultName = def.name,
-                name = (status and status.rename) or CludesUI.L(def.name),
-                types = def.types,
-                itemIDs = def.itemIDs,
-                icon = def.icon,
-                isAtlas = def.isAtlas,
-                equipSlots = def.equipSlots,
-                excludeEquipSlots = def.excludeEquipSlots,
-                isCatchAll = def.isCatchAll,
-                isSetGear = def.isSetGear,
-                isReagentBag = def.isReagentBag,
-                isSpecialBag = def.isSpecialBag,
-                isJunk = def.isJunk,
-                isPinned = def.isPinned,
-                isRecent = def.isRecent,
-                noGroup = def.noGroup,
-                noMove = def.noMove,
-                groupName = groupName,
+            categoryList[#categoryList + 1] = {
+                _defaultName = catDef.name,
+                name = (status and status.rename) or CludesUI.L(catDef.name),
+                types = catDef.types,
+                itemIDs = catDef.itemIDs,
+                icon = catDef.icon,
+                isAtlas = catDef.isAtlas,
+                equipSlots = catDef.equipSlots,
+                excludeEquipSlots = catDef.excludeEquipSlots,
+                isCatchAll = catDef.isCatchAll,
+                isSetGear = catDef.isSetGear,
+                isReagentBag = catDef.isReagentBag,
+                isSpecialBag = catDef.isSpecialBag,
+                isJunk = catDef.isJunk,
+                isPinned = catDef.isPinned,
+                isRecent = catDef.isRecent,
+                noGroup = catDef.noGroup,
+                noMove = catDef.noMove,
+                groupName = group,
                 groupNameCustom = status and status.groupNameCustom,
-                defaultGroupName = def.defaultGroupName,
+                defaultGroupName = catDef.defaultGroupName,
             }
             -- Split mode: append one child category per equipment set right after
             -- the "Item Set Gear" anchor. Runtime-only -- SaveState skips them, so
             -- per-character set names never reach the shared profile; the sidebar
             -- renders them nested one level under the anchor, wherever it sits.
-            if def.isSetGear and BP().bagSplitSetGearBySet then
+            if catDef.isSetGear and BP().bagSplitSetGearBySet then
                 local setIDs = C_EquipmentSet.GetEquipmentSetIDs()
                 if setIDs then
                     local sets = {}
-                    for _, setID in ipairs(setIDs) do
-                        local sname, sicon = C_EquipmentSet.GetEquipmentSetInfo(setID)
+                    for _, setId in ipairs(setIDs) do
+                        local sname, sicon = C_EquipmentSet.GetEquipmentSetInfo(setId)
                         if sname then
-                            sets[#sets + 1] = { id = setID, name = sname, icon = sicon }
+                            sets[#sets + 1] = { id = setId, name = sname, icon = sicon }
                         end
                     end
                     table.sort(sets, function(a, b)
                         return a.name < b.name
                     end)
                     for _, s in ipairs(sets) do
-                        cats[#cats + 1] = {
+                        categoryList[#categoryList + 1] = {
                             _defaultName = "EquipSet:" .. s.id,
                             name = s.name,
-                            types = def.types,
-                            icon = s.icon or def.icon,
+                            types = catDef.types,
+                            icon = s.icon or catDef.icon,
                             isSetGear = true, -- keeps gear sorting/type-walk exclusion
                             isEquipSet = true,
                             equipSetID = s.id,
@@ -389,33 +389,33 @@ function CategoryManager:InitCategories()
 
     -- Insert any new custom categories not in the saved order (freshly
     -- created since the last save) before the catch-all.
-    if userCats then
-        local catchIdx
-        for i, c in ipairs(cats) do
+    if customCats then
+        local catchAllIdx
+        for i, c in ipairs(categoryList) do
             if c.isCatchAll then
-                catchIdx = i
+                catchAllIdx = i
                 break
             end
         end
-        if not catchIdx then
-            catchIdx = #cats + 1
+        if not catchAllIdx then
+            catchAllIdx = #categoryList + 1
         end
-        for _, uc in ipairs(userCats) do
-            if not customInserted[uc.key] then
-                local ucState = userState[uc.key]
-                local ucIcon = uc.icon or 134400
+        for _, userCat in ipairs(customCats) do
+            if not customInserted[userCat.key] then
+                local userCatState = customState[userCat.key]
+                local ucIcon = userCat.icon or 134400
                 local ucIsAtlas = type(ucIcon) == "string"
-                table.insert(cats, catchIdx, {
-                    _defaultName = uc.key,
-                    name = (ucState and ucState.rename) or uc.name,
+                table.insert(categoryList, catchAllIdx, {
+                    _defaultName = userCat.key,
+                    name = (userCatState and userCatState.rename) or userCat.name,
                     types = {},
                     icon = ucIcon,
                     isAtlas = ucIsAtlas or nil,
                     isUserCreated = true,
-                    groupName = ucState and ucState.groupName,
-                    groupNameCustom = ucState and ucState.groupNameCustom,
+                    groupName = userCatState and userCatState.groupName,
+                    groupNameCustom = userCatState and userCatState.groupNameCustom,
                 })
-                catchIdx = catchIdx + 1
+                catchAllIdx = catchAllIdx + 1
             end
         end
     end
@@ -423,7 +423,7 @@ function CategoryManager:InitCategories()
     -- Virtual categories come last, after Junk: no saved index moves.
     if _virtual then
         for _, rec in ipairs(_virtual) do
-            cats[#cats + 1] = {
+            categoryList[#categoryList + 1] = {
                 _defaultName = "Virtual:" .. rec.id,
                 name = rec.name,
                 types = {},
@@ -436,14 +436,14 @@ function CategoryManager:InitCategories()
         end
     end
 
-    self._categories = cats
+    self._categories = categoryList
 
     -- setID -> category index, for split-mode classification. The same pass
     -- notes whether any category carries a fixed item list, so ClassifyItem
     -- skips that scan entirely when none does (every retail category).
     local setCatIdx = {}
     local hasItemIDs = false
-    for i, category in ipairs(cats) do
+    for i, category in ipairs(categoryList) do
         if category.equipSetID then
             setCatIdx[category.equipSetID] = i
         end
@@ -472,15 +472,15 @@ function CategoryManager:SaveState()
     if Lite and Lite.IsDBReady and not Lite.IsDBReady() then
         return
     end
-    local cats = self._categories
-    if not cats then
+    local categoryList = self._categories
+    if not categoryList then
         return
     end
 
-    local userState = {}
-    local userOrder = {}
+    local customState = {}
+    local customOrder = {}
     local sawJunk = false
-    for _, category in ipairs(cats) do
+    for _, category in ipairs(categoryList) do
         if category.isJunk then
             sawJunk = true
         end
@@ -490,8 +490,8 @@ function CategoryManager:SaveState()
             -- each rebuild.
             -- (skip)
         else
-            userOrder[#userOrder + 1] = category._defaultName
-            local hasState = false
+            customOrder[#customOrder + 1] = category._defaultName
+            local stateKnown = false
             local record = {}
             -- Compare against the LOCALIZED default name. cat.name is the localized
             -- display string (state.rename or L(_defaultName)) while _defaultName is the
@@ -500,21 +500,21 @@ function CategoryManager:SaveState()
             -- into the DB, so only treat it as a rename when it differs from the locale default.
             if category.name ~= CludesUI.L(category._defaultName) then
                 record.rename = category.name
-                hasState = true
+                stateKnown = true
             end
             if category.groupName then
                 record.groupName = category.groupName
-                hasState = true
+                stateKnown = true
             elseif category.defaultGroupName then
                 record.groupName = false
-                hasState = true
+                stateKnown = true
             end
             if category.groupNameCustom then
                 record.groupNameCustom = category.groupNameCustom
-                hasState = true
+                stateKnown = true
             end
-            if hasState then
-                userState[category._defaultName] = record
+            if stateKnown then
+                customState[category._defaultName] = record
             end
         end
     end
@@ -522,15 +522,15 @@ function CategoryManager:SaveState()
     if not sawJunk then
         local old = BP().bagCategoryState
         if old and old[self.JUNK_KEY] then
-            userState[self.JUNK_KEY] = old[self.JUNK_KEY]
+            customState[self.JUNK_KEY] = old[self.JUNK_KEY]
         end
     end
-    BP().bagCategoryState = userState
-    BP().bagCategoryOrder = userOrder
+    BP().bagCategoryState = customState
+    BP().bagCategoryOrder = customOrder
 
     -- Rebuild user-created categories list from runtime state
     local ucList = {}
-    for _, category in ipairs(cats) do
+    for _, category in ipairs(categoryList) do
         if category.isUserCreated then
             ucList[#ucList + 1] =
                 { key = category._defaultName, name = category._defaultName, icon = category.icon }
@@ -593,20 +593,20 @@ local function BuildSetGearLookup()
     local wantNames = BP().bagShowSetGearName == true
     -- WoW Forever crashes the client inside GetItemLocations for some sets:
     -- there the sets' item IDs are matched against the container slots instead.
-    local foreverItems = CludesUI.IS_FOREVER and _foreverSetItems
-    if foreverItems then
-        wipe(foreverItems)
+    local foreverList = CludesUI.IS_FOREVER and _foreverSetItems
+    if foreverList then
+        wipe(foreverList)
     end
-    for _, setID in ipairs(setIDs) do
+    for _, setId in ipairs(setIDs) do
         if wantNames then
-            _setNames[setID] = C_EquipmentSet.GetEquipmentSetInfo(setID)
+            _setNames[setId] = C_EquipmentSet.GetEquipmentSetInfo(setId)
         end
-        local locs = not foreverItems and C_EquipmentSet.GetItemLocations(setID)
-        local ids = foreverItems and C_EquipmentSet.GetItemIDs(setID)
+        local locs = not foreverList and C_EquipmentSet.GetItemLocations(setId)
+        local ids = foreverList and C_EquipmentSet.GetItemIDs(setId)
         if ids then
             for _, itemId in pairs(ids) do
-                if type(itemId) == "number" and itemId > 0 and not foreverItems[itemId] then
-                    foreverItems[itemId] = setID
+                if type(itemId) == "number" and itemId > 0 and not foreverList[itemId] then
+                    foreverList[itemId] = setId
                 end
             end
         end
@@ -617,20 +617,20 @@ local function BuildSetGearLookup()
                     if payload.isBags then
                         local key = payload.bag * 1000 + payload.slot
                         if not _setGearLookup[key] then
-                            _setGearLookup[key] = setID
+                            _setGearLookup[key] = setId
                         end
                     end
                 end
             end
         end
     end
-    if foreverItems and next(foreverItems) and Enum.BagIndex then
+    if foreverList and next(foreverList) and Enum.BagIndex then
         -- Every container the client knows (bags, bank, keyring); a closed bank reads empty.
-        for _, bag in pairs(Enum.BagIndex) do
-            for slot = 1, C_Container.GetContainerNumSlots(bag) or 0 do
-                local setID = foreverItems[C_Container.GetContainerItemID(bag, slot) or 0]
-                if setID then
-                    _setGearLookup[bag * 1000 + slot] = setID
+        for _, bagId in pairs(Enum.BagIndex) do
+            for slotId = 1, C_Container.GetContainerNumSlots(bagId) or 0 do
+                local setId = foreverList[C_Container.GetContainerItemID(bagId, slotId) or 0]
+                if setId then
+                    _setGearLookup[bagId * 1000 + slotId] = setId
                 end
             end
         end
@@ -664,24 +664,24 @@ local _asking = false
 -- Classify a single item. Returns category index (1-based) or nil for empty slots.
 -- bag/slot are needed for C_Container.GetContainerItemQuestInfo; quality is
 -- optional (resolved from the link when nil)
-function CategoryManager:ClassifyItem(itemLink, itemId, bag, slot, quality)
+function CategoryManager:ClassifyItem(itemLink, itemId, bagId, slotId, quality)
     if not itemLink then
         return nil
     end
 
-    local cats = self:GetCategories()
+    local categoryList = self:GetCategories()
 
     -- Reagent bag items always go to the Reagent Bag category
-    if bag == 5 then
-        for i, category in ipairs(cats) do
+    if bagId == 5 then
+        for i, category in ipairs(categoryList) do
             if category.isReagentBag then
                 return i
             end
         end
     end
     -- A WoW Forever special bag's items always go to Special Bags
-    if _classifySpecial and _classifySpecial[bag] then
-        for i, category in ipairs(cats) do
+    if _classifySpecial and _classifySpecial[bagId] then
+        for i, category in ipairs(categoryList) do
             if category.isSpecialBag then
                 return i
             end
@@ -691,10 +691,10 @@ function CategoryManager:ClassifyItem(itemLink, itemId, bag, slot, quality)
     -- User item assignments: itemID -> category _defaultName.
     -- Checked before type matching so users can override auto-classification.
     if itemId then
-        local assignments = CludesUIDB and CludesUIDB.bagItemAssignments
-        local assignedKey = assignments and assignments[itemId]
+        local assignMap = CludesUIDB and CludesUIDB.bagItemAssignments
+        local assignedKey = assignMap and assignMap[itemId]
         if assignedKey then
-            for i, category in ipairs(cats) do
+            for i, category in ipairs(categoryList) do
                 if category._defaultName == assignedKey then
                     return i
                 end
@@ -707,12 +707,12 @@ function CategoryManager:ClassifyItem(itemLink, itemId, bag, slot, quality)
     -- the pass, and counts as "no". Junk is not offered: what Sell Junk sells
     -- stays in the Junk category.
     if _virtual and not self:IsJunk(itemId, quality) then
-        local base = #cats - #_virtual
+        local base = #categoryList - #_virtual
         local claimed
         _asking = true
         for i, rec in ipairs(_virtual) do
             _virtualClaim = false
-            securecallfunction(AskVirtual, rec.classify, itemLink, itemId, bag, slot, quality)
+            securecallfunction(AskVirtual, rec.classify, itemLink, itemId, bagId, slotId, quality)
             if _virtualClaim then
                 claimed = base + i
                 break
@@ -727,7 +727,7 @@ function CategoryManager:ClassifyItem(itemLink, itemId, bag, slot, quality)
     -- Fixed item lists (Forever camp items) win over item-class matching; the
     -- scan runs only while some category carries one (see InitCategories).
     if itemId and self._hasItemIDCats then
-        for i, category in ipairs(cats) do
+        for i, category in ipairs(categoryList) do
             if category.itemIDs and category.itemIDs[itemId] then
                 return i
             end
@@ -737,7 +737,7 @@ function CategoryManager:ClassifyItem(itemLink, itemId, bag, slot, quality)
     -- Check manual overrides first
     if itemId and ITEM_TYPE_OVERRIDES[itemId] then
         local overrideClassID = ITEM_TYPE_OVERRIDES[itemId]
-        for i, category in ipairs(cats) do
+        for i, category in ipairs(categoryList) do
             if category.types then
                 for _, t in ipairs(category.types) do
                     if t == overrideClassID then
@@ -749,10 +749,10 @@ function CategoryManager:ClassifyItem(itemLink, itemId, bag, slot, quality)
     end
 
     -- Check quest status via dedicated API (catches "begins a quest" items too)
-    if bag and slot then
-        local questInfo = C_Container.GetContainerItemQuestInfo(bag, slot)
+    if bagId and slotId then
+        local questInfo = C_Container.GetContainerItemQuestInfo(bagId, slotId)
         if questInfo and (questInfo.isQuestItem or questInfo.questID) then
-            for i, category in ipairs(cats) do
+            for i, category in ipairs(categoryList) do
                 if category.types then
                     for _, t in ipairs(category.types) do
                         if t == IC_QUEST then
@@ -779,26 +779,26 @@ function CategoryManager:ClassifyItem(itemLink, itemId, bag, slot, quality)
     local _, _, _, equipSlot, _, classID = GetItemInfoInstant(itemLink)
     if not classID then
         -- Item data not available; classify as catch-all for now
-        for i, category in ipairs(cats) do
+        for i, category in ipairs(categoryList) do
             if category.isCatchAll then
                 return i
             end
         end
-        return #cats
+        return #categoryList
     end
 
     -- Equipment set gear check: if item is Armor/Weapon AND in an equipment set,
     -- route to its own set's category (split mode; first set wins for items in
     -- several) or the merged "Item Set Gear" category, before normal type matching
-    if bag and slot and (classID == IC_ARMOR or classID == IC_WEAPON) then
-        local setID = _setGearLookup[bag * 1000 + slot]
-        if setID then
+    if bagId and slotId and (classID == IC_ARMOR or classID == IC_WEAPON) then
+        local setId = _setGearLookup[bagId * 1000 + slotId]
+        if setId then
             local byID = self._setCatIdxBySetID
-            local position = byID and byID[setID]
+            local position = byID and byID[setId]
             if position then
                 return position
             end
-            for i, category in ipairs(cats) do
+            for i, category in ipairs(categoryList) do
                 -- Anchor explicitly: children are isSetGear too, and cats order
                 -- can put them first after the anchor is drag-reordered
                 if category.isSetGear and not category.isEquipSet then
@@ -809,7 +809,7 @@ function CategoryManager:ClassifyItem(itemLink, itemId, bag, slot, quality)
     end
 
     -- Walk categories and check if item classID + equip slot matches
-    for i, category in ipairs(cats) do
+    for i, category in ipairs(categoryList) do
         if category.types and #category.types > 0 and not category.isSetGear then
             local typeMatch = false
             for _, t in ipairs(category.types) do
@@ -847,12 +847,12 @@ function CategoryManager:ClassifyItem(itemLink, itemId, bag, slot, quality)
     end
 
     -- No match: use catch-all category
-    for i, category in ipairs(cats) do
+    for i, category in ipairs(categoryList) do
         if category.isCatchAll then
             return i
         end
     end
-    return #cats
+    return #categoryList
 end
 
 -- Classify all items and return counts per category + total.
@@ -864,14 +864,14 @@ local _claDisabledIdxSet = {}
 function CategoryManager:ClassifyAll(itemList)
     BuildSetGearLookup()
     _classifySpecial = mod.SpecialBags()
-    local cats = self:GetCategories()
+    local categoryList = self:GetCategories()
     -- Rebuild setID -> index every pass: drag-reorder and custom-category
     -- add/remove mutate cats in place without InitCategories, shifting indices.
     -- Refill gated on split mode (no children exist when it's off).
     local setCatIdx = self._setCatIdxBySetID or {}
     wipe(setCatIdx)
     if BP().bagSplitSetGearBySet then
-        for i, category in ipairs(cats) do
+        for i, category in ipairs(categoryList) do
             if category.equipSetID then
                 setCatIdx[category.equipSetID] = i
             end
@@ -881,9 +881,9 @@ function CategoryManager:ClassifyAll(itemList)
     -- Junk's index too, for the same reason (nil while the Junk Marker is off).
     local junkIdx
     wipe(_claCounts)
-    for i = 1, #cats do
+    for i = 1, #categoryList do
         _claCounts[i] = 0
-        if cats[i].isJunk then
+        if categoryList[i].isJunk then
             junkIdx = i
         end
     end
@@ -898,7 +898,7 @@ function CategoryManager:ClassifyAll(itemList)
     local disabledIdxSet
     if disabledCats then
         disabledIdxSet = _claDisabledIdxSet
-        for i, category in ipairs(cats) do
+        for i, category in ipairs(categoryList) do
             if category.isCatchAll then
                 catchAllIdx = i
             end
@@ -947,19 +947,19 @@ end
 -------------------------------------------------------------------------------
 --  Rename / Reorder (user-facing operations)
 -------------------------------------------------------------------------------
-function CategoryManager:RenameCategory(index, newName)
-    local cats = self:GetCategories()
-    if not cats[index] then
+function CategoryManager:RenameCategory(index, renamed)
+    local categoryList = self:GetCategories()
+    if not categoryList[index] then
         return false
     end
-    if not newName or newName == "" then
+    if not renamed or renamed == "" then
         return false
     end
-    local oldGroup = cats[index].groupName
-    local shouldRegenerate = oldGroup and not self:IsGroupNameCustom(oldGroup)
-    cats[index].name = newName
+    local prevGroup = categoryList[index].groupName
+    local shouldRegenerate = prevGroup and not self:IsGroupNameCustom(prevGroup)
+    categoryList[index].name = renamed
     if shouldRegenerate then
-        self:RegenerateGroupName(oldGroup)
+        self:RegenerateGroupName(prevGroup)
     end
     self:SaveState()
     return true
@@ -968,40 +968,40 @@ end
 -- Move category from fromIndex to toIndex.
 -- Callers should NOT adjust for remove/insert -- this function handles it internally.
 function CategoryManager:ReorderCategory(fromIndex, toIndex)
-    local cats = self:GetCategories()
-    if not cats[fromIndex] then
+    local categoryList = self:GetCategories()
+    if not categoryList[fromIndex] then
         return
     end
     -- Equip-set categories move as a block via their anchor; a single one dragged
     -- out would snap back on the next rebuild (SaveState collapses the block).
-    if cats[fromIndex].isEquipSet then
+    if categoryList[fromIndex].isEquipSet then
         return
     end
     -- Virtual categories are the list's tail: they never move, and nothing
     -- lands among or after them
-    if cats[fromIndex].isVirtual then
+    if categoryList[fromIndex].isVirtual then
         return
     end
     local last = self:GetSavedCount()
-    if toIndex > last + 1 and toIndex <= #cats + 1 then
+    if toIndex > last + 1 and toIndex <= #categoryList + 1 then
         toIndex = last + 1
     end
     -- Junk stays last: it never moves, and nothing lands after it
-    if cats[fromIndex].isJunk then
+    if categoryList[fromIndex].isJunk then
         return
     end
-    if cats[last].isJunk and toIndex > last then
+    if categoryList[last].isJunk and toIndex > last then
         toIndex = last
     end
-    if fromIndex == toIndex or toIndex < 1 or toIndex > #cats + 1 then
+    if fromIndex == toIndex or toIndex < 1 or toIndex > #categoryList + 1 then
         return
     end
-    local record = table.remove(cats, fromIndex)
+    local record = table.remove(categoryList, fromIndex)
     local insertAt = toIndex
     if fromIndex < toIndex then
         insertAt = toIndex - 1
     end
-    table.insert(cats, insertAt, record)
+    table.insert(categoryList, insertAt, record)
     self:SaveState()
 end
 
@@ -1009,60 +1009,60 @@ end
 --  Grouping
 -------------------------------------------------------------------------------
 -- Group two or more categories together under a shared name.
-function CategoryManager:GroupCategories(indices, groupName)
-    local cats = self:GetCategories()
+function CategoryManager:GroupCategories(indices, group)
+    local categoryList = self:GetCategories()
     if not indices or #indices < 2 then
         return
     end
-    if not groupName then
+    if not group then
         local nameList = {}
         for _, position in ipairs(indices) do
-            if cats[position] then
-                nameList[#nameList + 1] = cats[position].name
+            if categoryList[position] then
+                nameList[#nameList + 1] = categoryList[position].name
             end
         end
         if #nameList == 2 then
-            groupName = nameList[1] .. " & " .. nameList[2]
+            group = nameList[1] .. " & " .. nameList[2]
         elseif #nameList >= 3 then
             local last = nameList[#nameList]
             nameList[#nameList] = nil
-            groupName = table.concat(nameList, ", ") .. ", & " .. last
+            group = table.concat(nameList, ", ") .. ", & " .. last
         else
-            groupName = "Group"
+            group = "Group"
         end
     end
     for _, position in ipairs(indices) do
-        if cats[position] then
-            cats[position].groupName = groupName
-            cats[position].groupNameCustom = nil
+        if categoryList[position] then
+            categoryList[position].groupName = group
+            categoryList[position].groupNameCustom = nil
         end
     end
     self:SaveState()
 end
 
 -- Add a category to an existing group.
-function CategoryManager:AddToGroup(catIndex, groupName)
-    local cats = self:GetCategories()
-    if not cats[catIndex] or not groupName then
+function CategoryManager:AddToGroup(catIdx, group)
+    local categoryList = self:GetCategories()
+    if not categoryList[catIdx] or not group then
         return
     end
-    cats[catIndex].groupName = groupName
-    self:RegenerateGroupName(groupName)
+    categoryList[catIdx].groupName = group
+    self:RegenerateGroupName(group)
     self:SaveState()
 end
 
 -- Remove a category from its group.
-function CategoryManager:UngroupCategory(catIndex)
-    local cats = self:GetCategories()
-    if not cats[catIndex] or not cats[catIndex].groupName then
+function CategoryManager:UngroupCategory(catIdx)
+    local categoryList = self:GetCategories()
+    if not categoryList[catIdx] or not categoryList[catIdx].groupName then
         return
     end
-    local oldGroup = cats[catIndex].groupName
-    local wasCustom = self:IsGroupNameCustom(oldGroup)
-    cats[catIndex].groupName = nil
+    local prevGroup = categoryList[catIdx].groupName
+    local wasCustom = self:IsGroupNameCustom(prevGroup)
+    categoryList[catIdx].groupName = nil
     local remaining = {}
-    for i, category in ipairs(cats) do
-        if category.groupName == oldGroup then
+    for i, category in ipairs(categoryList) do
+        if category.groupName == prevGroup then
             remaining[#remaining + 1] = i
         end
     end
@@ -1070,18 +1070,18 @@ function CategoryManager:UngroupCategory(catIndex)
         -- No members left, nothing to do
     elseif #remaining == 1 then
         -- Only 1 member left, auto-disband
-        cats[remaining[1]].groupName = nil
+        categoryList[remaining[1]].groupName = nil
     elseif not wasCustom then
-        self:RegenerateGroupName(oldGroup)
+        self:RegenerateGroupName(prevGroup)
     end
     self:SaveState()
 end
 
 -- Ungroup all members of a group.
-function CategoryManager:DisbandGroup(groupName)
-    local cats = self:GetCategories()
-    for _, category in ipairs(cats) do
-        if category.groupName == groupName then
+function CategoryManager:DisbandGroup(group)
+    local categoryList = self:GetCategories()
+    for _, category in ipairs(categoryList) do
+        if category.groupName == group then
             category.groupName = nil
         end
     end
@@ -1089,14 +1089,14 @@ function CategoryManager:DisbandGroup(groupName)
 end
 
 -- Rename a group (updates all members).
-function CategoryManager:RenameGroup(oldName, newName)
-    if not newName or newName == "" then
+function CategoryManager:RenameGroup(oldName, renamed)
+    if not renamed or renamed == "" then
         return
     end
-    local cats = self:GetCategories()
-    for _, category in ipairs(cats) do
+    local categoryList = self:GetCategories()
+    for _, category in ipairs(categoryList) do
         if category.groupName == oldName then
-            category.groupName = newName
+            category.groupName = renamed
         end
     end
     self:SaveState()
@@ -1105,18 +1105,18 @@ end
 -- Built-in group names stay English in saved data (they are group keys);
 -- translate them only where they are shown.
 local DEFAULT_GROUP_NAMES = { ["The Armory"] = true, ["Adventure Prep"] = true }
-function CategoryManager:GroupDisplayName(groupName)
-    if groupName and DEFAULT_GROUP_NAMES[groupName] then
-        return CludesUI.L(groupName)
+function CategoryManager:GroupDisplayName(group)
+    if group and DEFAULT_GROUP_NAMES[group] then
+        return CludesUI.L(group)
     end
-    return groupName
+    return group
 end
 
 -- Check if the group name was manually customized by the user.
-function CategoryManager:IsGroupNameCustom(groupName)
-    local cats = self:GetCategories()
-    for _, category in ipairs(cats) do
-        if category.groupName == groupName and category.groupNameCustom then
+function CategoryManager:IsGroupNameCustom(group)
+    local categoryList = self:GetCategories()
+    for _, category in ipairs(categoryList) do
+        if category.groupName == group and category.groupNameCustom then
             return true
         end
     end
@@ -1124,10 +1124,10 @@ function CategoryManager:IsGroupNameCustom(groupName)
 end
 
 -- Mark a group name as manually customized (set on all members).
-function CategoryManager:SetGroupNameCustom(groupName, isCustom)
-    local cats = self:GetCategories()
-    for _, category in ipairs(cats) do
-        if category.groupName == groupName then
+function CategoryManager:SetGroupNameCustom(group, isCustom)
+    local categoryList = self:GetCategories()
+    for _, category in ipairs(categoryList) do
+        if category.groupName == group then
             category.groupNameCustom = isCustom or nil
         end
     end
@@ -1135,35 +1135,35 @@ function CategoryManager:SetGroupNameCustom(groupName, isCustom)
 end
 
 -- Auto-regenerate group name from member names.
-function CategoryManager:RegenerateGroupName(groupName)
-    local cats = self:GetCategories()
+function CategoryManager:RegenerateGroupName(group)
+    local categoryList = self:GetCategories()
     local nameList = {}
-    for _, category in ipairs(cats) do
-        if category.groupName == groupName then
+    for _, category in ipairs(categoryList) do
+        if category.groupName == group then
             nameList[#nameList + 1] = category.name
         end
     end
-    local newName
+    local renamed
     if #nameList == 2 then
-        newName = nameList[1] .. " & " .. nameList[2]
+        renamed = nameList[1] .. " & " .. nameList[2]
     elseif #nameList >= 3 then
         local last = nameList[#nameList]
-        newName = table.concat(nameList, ", ", 1, #nameList - 1) .. ", & " .. last
+        renamed = table.concat(nameList, ", ", 1, #nameList - 1) .. ", & " .. last
     else
         return
     end
-    if newName ~= groupName then
-        self:RenameGroup(groupName, newName)
-        self:SetGroupNameCustom(newName, false)
+    if renamed ~= group then
+        self:RenameGroup(group, renamed)
+        self:SetGroupNameCustom(renamed, false)
     end
 end
 
 -- Get all unique group names.
 function CategoryManager:GetGroupNames()
-    local cats = self:GetCategories()
+    local categoryList = self:GetCategories()
     local seen = {}
     local groups = {}
-    for _, category in ipairs(cats) do
+    for _, category in ipairs(categoryList) do
         if category.groupName and not seen[category.groupName] then
             seen[category.groupName] = true
             groups[#groups + 1] = category.groupName
@@ -1173,11 +1173,11 @@ function CategoryManager:GetGroupNames()
 end
 
 -- Get all member indices for a group.
-function CategoryManager:GetGroupMembers(groupName)
-    local cats = self:GetCategories()
+function CategoryManager:GetGroupMembers(group)
+    local categoryList = self:GetCategories()
     local members = {}
-    for i, category in ipairs(cats) do
-        if category.groupName == groupName then
+    for i, category in ipairs(categoryList) do
+        if category.groupName == group then
             members[#members + 1] = i
         end
     end
@@ -1198,8 +1198,8 @@ function CategoryManager:AddCustomCategory(name)
 
     -- Generate a unique key
     local maxN = 0
-    for _, uc in ipairs(BP().bagUserCategories) do
-        local num = tonumber(uc.key:match("Custom_(%d+)"))
+    for _, userCat in ipairs(BP().bagUserCategories) do
+        local num = tonumber(userCat.key:match("Custom_(%d+)"))
         if num and num > maxN then
             maxN = num
         end
@@ -1209,15 +1209,15 @@ function CategoryManager:AddCustomCategory(name)
     BP().bagUserCategories[#BP().bagUserCategories + 1] = { key = key, name = name }
 
     -- Insert into runtime list before catch-all
-    local cats = self:GetCategories()
-    local catchIdx = #cats + 1
-    for i, c in ipairs(cats) do
+    local categoryList = self:GetCategories()
+    local catchAllIdx = #categoryList + 1
+    for i, c in ipairs(categoryList) do
         if c.isCatchAll then
-            catchIdx = i
+            catchAllIdx = i
             break
         end
     end
-    table.insert(cats, catchIdx, {
+    table.insert(categoryList, catchAllIdx, {
         _defaultName = key,
         name = name,
         types = {},
@@ -1226,13 +1226,13 @@ function CategoryManager:AddCustomCategory(name)
         isUserCreated = true,
     })
     self:SaveState()
-    return catchIdx
+    return catchAllIdx
 end
 
 -- Remove a user-created category. Unassigns all items in it.
-function CategoryManager:RemoveCustomCategory(catIndex)
-    local cats = self:GetCategories()
-    local category = cats[catIndex]
+function CategoryManager:RemoveCustomCategory(catIdx)
+    local categoryList = self:GetCategories()
+    local category = categoryList[catIdx]
     if not category or not category.isUserCreated then
         return false
     end
@@ -1240,11 +1240,11 @@ function CategoryManager:RemoveCustomCategory(catIndex)
 
     -- Remove item assignments pointing to this category, and Junk marks'
     -- memory of it (its key comes back on the next new category)
-    local assignments = CludesUIDB and CludesUIDB.bagItemAssignments
-    if assignments then
-        for itemId, aKey in pairs(assignments) do
+    local assignMap = CludesUIDB and CludesUIDB.bagItemAssignments
+    if assignMap then
+        for itemId, aKey in pairs(assignMap) do
             if aKey == key then
-                assignments[itemId] = nil
+                assignMap[itemId] = nil
             end
         end
     end
@@ -1258,7 +1258,7 @@ function CategoryManager:RemoveCustomCategory(catIndex)
     end
 
     -- Remove from runtime list
-    table.remove(cats, catIndex)
+    table.remove(categoryList, catIdx)
 
     -- Remove from disabled list
     if BP().bagDisabledCategories then
@@ -1304,8 +1304,8 @@ function CategoryManager:AssignItem(itemId, categoryKey)
     if not CludesUIDB.bagItemAssignments then
         CludesUIDB.bagItemAssignments = {}
     end
-    local assignments = CludesUIDB.bagItemAssignments
-    local current = assignments[itemId]
+    local assignMap = CludesUIDB.bagItemAssignments
+    local current = assignMap[itemId]
     if categoryKey == self.JUNK_KEY then
         if current ~= self.JUNK_KEY then
             SetJunkPrev(itemId, current)
@@ -1313,7 +1313,7 @@ function CategoryManager:AssignItem(itemId, categoryKey)
     elseif current == self.JUNK_KEY then
         SetJunkPrev(itemId, nil)
     end
-    assignments[itemId] = categoryKey
+    assignMap[itemId] = categoryKey
     if (current == self.JUNK_KEY) ~= (categoryKey == self.JUNK_KEY) then
         self:OnJunkChanged()
     end
@@ -1326,11 +1326,11 @@ function CategoryManager:UnassignItem(itemId)
     if not itemId then
         return
     end
-    local assignments = CludesUIDB and CludesUIDB.bagItemAssignments
-    if not assignments then
+    local assignMap = CludesUIDB and CludesUIDB.bagItemAssignments
+    if not assignMap then
         return
     end
-    local wasJunk = assignments[itemId] == self.JUNK_KEY
+    local wasJunk = assignMap[itemId] == self.JUNK_KEY
     local back
     if wasJunk then
         local previous = CludesUIDB.bagJunkPrev
@@ -1349,7 +1349,7 @@ function CategoryManager:UnassignItem(itemId)
         end
     end
     SetJunkPrev(itemId, nil)
-    assignments[itemId] = back
+    assignMap[itemId] = back
     if wasJunk then
         self:OnJunkChanged()
     end
@@ -1357,9 +1357,9 @@ end
 
 -- Check if a category can accept item assignments (drag targets).
 -- Excludes Pinned, Recent, Reagent Bag and Special Bags (physical bags, not logical).
-function CategoryManager:CanAssignToCategory(catIndex)
-    local cats = self:GetCategories()
-    local category = cats[catIndex]
+function CategoryManager:CanAssignToCategory(catIdx)
+    local categoryList = self:GetCategories()
+    local category = categoryList[catIdx]
     if not category then
         return false
     end
@@ -1392,8 +1392,8 @@ function CategoryManager:IsJunk(itemId, quality)
     if not self:IsJunkMarkerEnabled() or not itemId then
         return false
     end
-    local assignments = CludesUIDB and CludesUIDB.bagItemAssignments
-    local assigned = assignments and assignments[itemId]
+    local assignMap = CludesUIDB and CludesUIDB.bagItemAssignments
+    local assigned = assignMap and assignMap[itemId]
     if assigned == self.JUNK_KEY then
         return true
     end
@@ -1413,8 +1413,8 @@ function CategoryManager:ToggleJunk(itemId)
     if not itemId then
         return
     end
-    local assignments = CludesUIDB and CludesUIDB.bagItemAssignments
-    if assignments and assignments[itemId] == self.JUNK_KEY then
+    local assignMap = CludesUIDB and CludesUIDB.bagItemAssignments
+    if assignMap and assignMap[itemId] == self.JUNK_KEY then
         self:UnassignItem(itemId)
     else
         self:AssignItem(itemId, self.JUNK_KEY)
@@ -1495,14 +1495,14 @@ local function VirtualBefore(a, b)
 end
 
 -- Registering an id again replaces it. Returns true when registered.
-function CategoryManager:RegisterVirtualCategory(ident, def)
+function CategoryManager:RegisterVirtualCategory(ident, catDef)
     if _asking then
         return false
     end
     if type(ident) ~= "string" or ident == "" then
         return false
     end
-    if type(def) ~= "table" or type(def.classify) ~= "function" then
+    if type(catDef) ~= "table" or type(catDef.classify) ~= "function" then
         return false
     end
     _virtual = _virtual or {}
@@ -1514,11 +1514,11 @@ function CategoryManager:RegisterVirtualCategory(ident, def)
     end
     _virtual[#_virtual + 1] = {
         id = ident,
-        name = type(def.name) == "string" and def.name ~= "" and def.name or ident,
-        icon = def.icon or 134400,
-        isAtlas = def.isAtlas and true or nil,
-        order = tonumber(def.order) or 0,
-        classify = def.classify,
+        name = type(catDef.name) == "string" and catDef.name ~= "" and catDef.name or ident,
+        icon = catDef.icon or 134400,
+        isAtlas = catDef.isAtlas and true or nil,
+        order = tonumber(catDef.order) or 0,
+        classify = catDef.classify,
     }
     table.sort(_virtual, VirtualBefore)
     VirtualChanged(self)
