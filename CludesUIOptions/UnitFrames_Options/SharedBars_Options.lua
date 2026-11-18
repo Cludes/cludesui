@@ -3326,29 +3326,7 @@ function mod.UFO_BuildPowerBarSection(hostFrame, posY, context)
         -- Inline eyeball: preview the cost on the live preview. Session-only.
         if not CludesUI._prebuilding then
             local rgn = costRow._leftRegion
-            local eyeBtn, eyeTex = CludesUI.NewInlineEye(rgn)
-            local function RefreshCostEye()
-                eyeTex:SetTexture(
-                    mod._ufShowPowerCostPreview and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON
-                )
-            end
-            RefreshCostEye()
-            eyeBtn:SetScript("OnClick", function()
-                mod._ufShowPowerCostPreview = not mod._ufShowPowerCostPreview
-                RefreshCostEye()
-                UpdatePreview()
-            end)
-            eyeBtn:SetScript("OnEnter", function(self)
-                CludesUI.SetGlyphAlpha(self, 0.7)
-                CludesUI.ShowWidgetTooltip(
-                    self,
-                    mod._ufShowPowerCostPreview and "Hide spell cost preview" or "Show spell cost preview"
-                )
-            end)
-            eyeBtn:SetScript("OnLeave", function(self)
-                CludesUI.SetGlyphAlpha(self, 0.4)
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.AddPreviewEye(rgn, mod, "_ufShowPowerCostPreview", "spell cost", UpdatePreview)
         end
     end
     if optionState.selectedUnit == "player" and CludesUI.IS_FOREVER == true then
@@ -4734,30 +4712,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
         -- absorb there so heal absorb shows in isolation). Session-only runtime flag.
         if not CludesUI._prebuilding then
             local rgn = healAbsorbRow._leftRegion
-            local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
-            local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
-            local eyeBtn, eyeTex = CludesUI.NewInlineEye(rgn)
-            local function RefreshHealEye()
-                eyeTex:SetTexture(optionState.showHealAbsorbPreview and EYE_INVISIBLE or EYE_VISIBLE)
-            end
-            RefreshHealEye()
-            eyeBtn:SetScript("OnClick", function()
-                optionState.showHealAbsorbPreview = not optionState.showHealAbsorbPreview
-                RefreshHealEye()
-                UpdatePreview()
-            end)
-            eyeBtn:SetScript("OnEnter", function(self)
-                CludesUI.SetGlyphAlpha(self, 0.7)
-                CludesUI.ShowWidgetTooltip(
-                    self,
-                    optionState.showHealAbsorbPreview and "Hide heal absorb preview"
-                        or "Show heal absorb preview"
-                )
-            end)
-            eyeBtn:SetScript("OnLeave", function(self)
-                CludesUI.SetGlyphAlpha(self, 0.4)
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.AddPreviewEye(rgn, optionState, "showHealAbsorbPreview", "heal absorb", UpdatePreview)
         end
         -- Inline cog: heal absorb placement (independent of shield absorb)
         do
@@ -5060,30 +5015,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
         if not CludesUI._prebuilding then
             local rgn = maxHealthRow._leftRegion
             -- Eyeball: shows a reduced maximum on the preview (session-only flag).
-            local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
-            local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
-            local eyeBtn, eyeTex = CludesUI.NewInlineEye(rgn)
-            local function RefreshMaxHealthEye()
-                eyeTex:SetTexture(optionState.showMaxHealthPreview and EYE_INVISIBLE or EYE_VISIBLE)
-            end
-            RefreshMaxHealthEye()
-            eyeBtn:SetScript("OnClick", function()
-                optionState.showMaxHealthPreview = not optionState.showMaxHealthPreview
-                RefreshMaxHealthEye()
-                UpdatePreview()
-            end)
-            eyeBtn:SetScript("OnEnter", function(self)
-                CludesUI.SetGlyphAlpha(self, 0.7)
-                CludesUI.ShowWidgetTooltip(
-                    self,
-                    optionState.showMaxHealthPreview and "Hide max health preview"
-                        or "Show max health preview"
-                )
-            end)
-            eyeBtn:SetScript("OnLeave", function(self)
-                CludesUI.SetGlyphAlpha(self, 0.4)
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.AddPreviewEye(rgn, optionState, "showMaxHealthPreview", "max health", UpdatePreview)
             CludesUI.BuildInlineCog(rgn, {
                 title = "Max Health Rendering",
                 disabled = function()
@@ -5171,30 +5103,7 @@ function mod.UFO_BuildAbsorbsHealsSection(hostFrame, posY, context)
         -- Inline eyeball: preview heal prediction on the live preview. Session-only.
         if not CludesUI._prebuilding then
             local rgn = healPredRow._leftRegion
-            local eyeBtn, eyeTex = CludesUI.NewInlineEye(rgn)
-            local function RefreshPredEye()
-                eyeTex:SetTexture(
-                    mod._ufShowHealPredPreview and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON
-                )
-            end
-            RefreshPredEye()
-            eyeBtn:SetScript("OnClick", function()
-                mod._ufShowHealPredPreview = not mod._ufShowHealPredPreview
-                RefreshPredEye()
-                UpdatePreview()
-            end)
-            eyeBtn:SetScript("OnEnter", function(self)
-                CludesUI.SetGlyphAlpha(self, 0.7)
-                CludesUI.ShowWidgetTooltip(
-                    self,
-                    mod._ufShowHealPredPreview and "Hide heal prediction preview"
-                        or "Show heal prediction preview"
-                )
-            end)
-            eyeBtn:SetScript("OnLeave", function(self)
-                CludesUI.SetGlyphAlpha(self, 0.4)
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.AddPreviewEye(rgn, mod, "_ufShowHealPredPreview", "heal prediction", UpdatePreview)
         end
         if not CludesUI._prebuilding then
             local rgn = healPredRow._leftRegion

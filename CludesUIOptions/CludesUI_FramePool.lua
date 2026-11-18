@@ -2999,3 +2999,29 @@ function CludesUI.NewInlineEye(region)
     glyph:SetAllPoints()
     return eye, glyph
 end
+
+-- An eye toggle for a preview element whose shown state is store[field]: a
+-- click flips it and calls onToggle, the glyph shows the action a click
+-- would take, and the tooltip reads "Hide <what> preview" or "Show <what>
+-- preview" to match.
+function CludesUI.AddPreviewEye(region, store, field, what, onToggle)
+    local eye, glyph = CludesUI.NewInlineEye(region)
+    local function Paint()
+        glyph:SetTexture(store[field] and CludesUI.EYE_INVISIBLE_ICON or CludesUI.EYE_VISIBLE_ICON)
+    end
+    Paint()
+    eye:SetScript("OnClick", function()
+        store[field] = not store[field]
+        Paint()
+        onToggle()
+    end)
+    eye:SetScript("OnEnter", function(self)
+        CludesUI.SetGlyphAlpha(self, 0.7)
+        CludesUI.ShowWidgetTooltip(self, (store[field] and "Hide " or "Show ") .. what .. " preview")
+    end)
+    eye:SetScript("OnLeave", function(self)
+        CludesUI.SetGlyphAlpha(self, 0.4)
+        CludesUI.HideWidgetTooltip()
+    end)
+    return eye
+end

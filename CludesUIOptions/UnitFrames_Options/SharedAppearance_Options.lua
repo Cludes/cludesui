@@ -3986,30 +3986,7 @@ function mod.UFO_BuildExtrasSection(hostFrame, posY, context)
         -- (player + target only -- the focus row is dimmed with a tooltip)
         if SVisible("combatIndicatorStyle") and not CludesUI._prebuilding then
             local ciRgn = sharedAddRow1._leftRegion
-            local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
-            local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
-            local eyeBtn, eyeTex = CludesUI.NewInlineEye(ciRgn)
-            local function RefreshCombatEye()
-                eyeTex:SetTexture(optionState.showCombatIndicatorPreview and EYE_INVISIBLE or EYE_VISIBLE)
-            end
-            RefreshCombatEye()
-            eyeBtn:SetScript("OnClick", function()
-                optionState.showCombatIndicatorPreview = not optionState.showCombatIndicatorPreview
-                RefreshCombatEye()
-                UpdatePreview()
-            end)
-            eyeBtn:SetScript("OnEnter", function(self)
-                CludesUI.SetGlyphAlpha(self, 0.7)
-                CludesUI.ShowWidgetTooltip(
-                    self,
-                    optionState.showCombatIndicatorPreview and "Hide combat indicator preview"
-                        or "Show combat indicator preview"
-                )
-            end)
-            eyeBtn:SetScript("OnLeave", function(self)
-                CludesUI.SetGlyphAlpha(self, 0.4)
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.AddPreviewEye(ciRgn, optionState, "showCombatIndicatorPreview", "combat indicator", UpdatePreview)
 
             -- Cog popup for combat indicator settings
             -- "healthbar" is the long-standing stored value for centered-on-health-bar,

@@ -3464,30 +3464,7 @@ function mod.UFO_BuildBuffsDebuffsSection(hostFrame, posY, context)
         -- Inline eyeball: preview a magic dispel overlay on the top player preview.
         if not CludesUI._prebuilding then
             local rgn = dispelRow._leftRegion
-            local EYE_VISIBLE = CludesUI.EYE_VISIBLE_ICON
-            local EYE_INVISIBLE = CludesUI.EYE_INVISIBLE_ICON
-            local eyeBtn, eyeTex = CludesUI.NewInlineEye(rgn)
-            local function RefreshDispelEye()
-                eyeTex:SetTexture(optionState.showDispelOverlayPreview and EYE_INVISIBLE or EYE_VISIBLE)
-            end
-            RefreshDispelEye()
-            eyeBtn:SetScript("OnClick", function()
-                optionState.showDispelOverlayPreview = not optionState.showDispelOverlayPreview
-                RefreshDispelEye()
-                UpdatePreview()
-            end)
-            eyeBtn:SetScript("OnEnter", function(self)
-                CludesUI.SetGlyphAlpha(self, 0.7)
-                CludesUI.ShowWidgetTooltip(
-                    self,
-                    optionState.showDispelOverlayPreview and "Hide dispel overlay preview"
-                        or "Show dispel overlay preview"
-                )
-            end)
-            eyeBtn:SetScript("OnLeave", function(self)
-                CludesUI.SetGlyphAlpha(self, 0.4)
-                CludesUI.HideWidgetTooltip()
-            end)
+            CludesUI.AddPreviewEye(rgn, optionState, "showDispelOverlayPreview", "dispel overlay", UpdatePreview)
         end
         -- Inline cog on Dispel Overlay: Overlay Opacity
         if not CludesUI._prebuilding then
