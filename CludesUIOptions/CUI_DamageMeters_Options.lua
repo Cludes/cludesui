@@ -51,6 +51,17 @@ CludesUI.AtOptionsLogin(function()
     local function Cfg(k)
         return DB()[k]
     end
+    -- Row getters over Cfg: a key's value (or a default), or whether it is true.
+    local function CfgOr(key, default)
+        return function()
+            return Cfg(key) or default
+        end
+    end
+    local function CfgIs(key)
+        return function()
+            return Cfg(key) == true
+        end
+    end
     local function Set(k, val)
         DB()[k] = val
     end
@@ -200,9 +211,7 @@ CludesUI.AtOptionsLogin(function()
                         min = 0.2,
                         max = 2,
                         step = 0.05,
-                        getValue = function()
-                            return Cfg("refreshRate") or 1
-                        end,
+                        getValue = CfgOr("refreshRate", 1),
                         setValue = SetRow("refreshRate"),
                         fmt = function(val)
                             return format("%.2fs", val)
@@ -215,9 +224,7 @@ CludesUI.AtOptionsLogin(function()
                     min = 0.5,
                     max = 2,
                     step = 0.1,
-                    getValue = function()
-                        return Cfg("refreshRate") or 1
-                    end,
+                    getValue = CfgOr("refreshRate", 1),
                     setValue = SetRow("refreshRate"),
                     fmt = function(val)
                         return format("%.2fs", val)
@@ -239,9 +246,7 @@ CludesUI.AtOptionsLogin(function()
                         type = "toggle",
                         label = "Unsafe Refresh Rate",
                         tooltip = "Lets you set Refresh Rate faster than 0.5s. The meters update more often but work much harder in combat, which can cost you frames. Only turn this on if your PC has performance to spare.",
-                        get = function()
-                            return Cfg("unsafeRefreshRate") == true
-                        end,
+                        get = CfgIs("unsafeRefreshRate"),
                         set = function(val)
                             Set("unsafeRefreshRate", val)
                             if not val then
@@ -275,9 +280,7 @@ CludesUI.AtOptionsLogin(function()
                 text = "Border Style",
                 values = windowTexValues,
                 order = windowTexOrder,
-                getValue = function()
-                    return Cfg("windowBorderTexture") or "solid"
-                end,
+                getValue = CfgOr("windowBorderTexture", "solid"),
                 setValue = function(val)
                     Set("windowBorderTexture", val)
                     Set("windowBorderOffsetX", 0)
@@ -341,9 +344,7 @@ CludesUI.AtOptionsLogin(function()
                     {
                         type = "toggle",
                         label = "Show Behind",
-                        get = function()
-                            return Cfg("windowBorderBehind") or false
-                        end,
+                        get = CfgOr("windowBorderBehind", false),
                         set = function(val)
                             Set("windowBorderBehind", val)
                             ApplyWindowBrd()
@@ -463,9 +464,7 @@ CludesUI.AtOptionsLogin(function()
             text = "Background Texture",
             values = dmTexValues,
             order = dmTexOrder,
-            getValue = function()
-                return Cfg("bgTexture") or "none"
-            end,
+            getValue = CfgOr("bgTexture", "none"),
             setValue = function(val)
                 Set("bgTexture", val)
                 mod.ApplyBackground()
@@ -476,9 +475,7 @@ CludesUI.AtOptionsLogin(function()
             min = 0,
             max = 1,
             step = 0.01,
-            getValue = function()
-                return Cfg("bgAlpha") or 0.75
-            end,
+            getValue = CfgOr("bgAlpha", 0.75),
             setValue = function(val)
                 Set("bgAlpha", val)
                 if mod.ApplyBackground then
@@ -539,9 +536,7 @@ CludesUI.AtOptionsLogin(function()
                         type = "toggle",
                         label = "Show Player Marker",
                         tooltip = "Shows a white stripe on your own bar.",
-                        get = function()
-                            return Cfg("showPlayerMarker") == true
-                        end,
+                        get = CfgIs("showPlayerMarker"),
                         set = function(val)
                             Set("showPlayerMarker", val)
                             Refresh()
@@ -595,9 +590,7 @@ CludesUI.AtOptionsLogin(function()
                     {
                         type = "toggle",
                         label = "Hide Reset Button",
-                        get = function()
-                            return Cfg("hideResetButton") == true
-                        end,
+                        get = CfgIs("hideResetButton"),
                         set = function(val)
                             Set("hideResetButton", val)
                             ApplyHdr()
@@ -621,9 +614,7 @@ CludesUI.AtOptionsLogin(function()
             min = 14,
             max = 40,
             step = 1,
-            getValue = function()
-                return Cfg("hdrHeight") or 22
-            end,
+            getValue = CfgOr("hdrHeight", 22),
             setValue = function(val)
                 Set("hdrHeight", val)
                 ApplyHdr()
@@ -635,9 +626,7 @@ CludesUI.AtOptionsLogin(function()
             min = 0,
             max = 1,
             step = 0.01,
-            getValue = function()
-                return Cfg("hdrBgAlpha") or 1
-            end,
+            getValue = CfgOr("hdrBgAlpha", 1),
             setValue = function(val)
                 Set("hdrBgAlpha", val)
                 ApplyHdr()
@@ -698,9 +687,7 @@ CludesUI.AtOptionsLogin(function()
                 min = 20,
                 max = 30,
                 step = 1,
-                getValue = function()
-                    return Cfg("hdrIconSize") or 22
-                end,
+                getValue = CfgOr("hdrIconSize", 22),
                 setValue = function(val)
                     Set("hdrIconSize", val)
                     ApplyHdr()
@@ -727,9 +714,7 @@ CludesUI.AtOptionsLogin(function()
                                 end
                                 return "Border Size"
                             end,
-                            get = function()
-                                return Cfg("hdrBottomSeparator") == true
-                            end,
+                            get = CfgIs("hdrBottomSeparator"),
                             set = function(val)
                                 Set("hdrBottomSeparator", val)
                                 ApplyHdr()
@@ -772,9 +757,7 @@ CludesUI.AtOptionsLogin(function()
                     {
                         type = "toggle",
                         label = "Mouseover Icons",
-                        get = function()
-                            return Cfg("hdrMouseoverIcons") or false
-                        end,
+                        get = CfgOr("hdrMouseoverIcons", false),
                         set = function(val)
                             Set("hdrMouseoverIcons", val)
                             ApplyHdr()
@@ -883,9 +866,7 @@ CludesUI.AtOptionsLogin(function()
             min = 8,
             max = 18,
             step = 1,
-            getValue = function()
-                return Cfg("hdrFontSize") or 11
-            end,
+            getValue = CfgOr("hdrFontSize", 11),
             setValue = function(val)
                 Set("hdrFontSize", val)
                 ApplyHdr()
@@ -906,9 +887,7 @@ CludesUI.AtOptionsLogin(function()
                         min = -20,
                         max = 20,
                         step = 1,
-                        get = function()
-                            return Cfg("hdrTextOffX") or 0
-                        end,
+                        get = CfgOr("hdrTextOffX", 0),
                         set = function(val)
                             Set("hdrTextOffX", val)
                             ApplyHdr()
@@ -920,9 +899,7 @@ CludesUI.AtOptionsLogin(function()
                         min = -20,
                         max = 20,
                         step = 1,
-                        get = function()
-                            return Cfg("hdrTextOffY") or 0
-                        end,
+                        get = CfgOr("hdrTextOffY", 0),
                         set = function(val)
                             Set("hdrTextOffY", val)
                             ApplyHdr()
@@ -1013,9 +990,7 @@ CludesUI.AtOptionsLogin(function()
                 text = "Bar Texture",
                 values = dmTexValues,
                 order = dmTexOrder,
-                getValue = function()
-                    return Cfg("barTexture") or "none"
-                end,
+                getValue = CfgOr("barTexture", "none"),
                 setValue = function(val)
                     Set("barTexture", val)
                     Refresh()
@@ -1030,9 +1005,7 @@ CludesUI.AtOptionsLogin(function()
                 min = 8,
                 max = 40,
                 step = 1,
-                getValue = function()
-                    return Cfg("barHeight") or 18
-                end,
+                getValue = CfgOr("barHeight", 18),
                 setValue = function(val)
                     Set("barHeight", val)
                     Refresh()
@@ -1129,9 +1102,7 @@ CludesUI.AtOptionsLogin(function()
             min = 0,
             max = 1,
             step = 0.01,
-            getValue = function()
-                return Cfg("barFillAlpha") or 1
-            end,
+            getValue = CfgOr("barFillAlpha", 1),
             setValue = function(val)
                 Set("barFillAlpha", val)
                 Refresh()
@@ -1147,9 +1118,7 @@ CludesUI.AtOptionsLogin(function()
             min = -1,
             max = 10,
             step = 1,
-            getValue = function()
-                return Cfg("barSpacing") or 2
-            end,
+            getValue = CfgOr("barSpacing", 2),
             setValue = function(val)
                 Set("barSpacing", val)
                 Refresh()
@@ -1159,9 +1128,7 @@ CludesUI.AtOptionsLogin(function()
             text = "Icon Style",
             values = _G._CUDM_IconStyleValues or {},
             order = _G._CUDM_IconStyleOrder or {},
-            getValue = function()
-                return Cfg("iconStyle") or "spec"
-            end,
+            getValue = CfgOr("iconStyle", "spec"),
             setValue = function(val)
                 Set("iconStyle", val)
                 ApplyIconBrd()
@@ -1204,9 +1171,7 @@ CludesUI.AtOptionsLogin(function()
                         return (Cfg("borderSize") or 0) <= 0
                     end,
                     disabledTooltip = "Border Size",
-                    get = function()
-                        return Cfg("iconSeparator") == true
-                    end,
+                    get = CfgIs("iconSeparator"),
                     set = function(val)
                         Set("iconSeparator", val)
                         Refresh()
@@ -1243,9 +1208,7 @@ CludesUI.AtOptionsLogin(function()
                 text = "Border Style",
                 values = texValues,
                 order = texOrder,
-                getValue = function()
-                    return Cfg("borderTexture") or "solid"
-                end,
+                getValue = CfgOr("borderTexture", "solid"),
                 setValue = function(val)
                     Set("borderTexture", val)
                     Set("borderTextureOffset", nil)
@@ -1403,9 +1366,7 @@ CludesUI.AtOptionsLogin(function()
                     {
                         type = "toggle",
                         label = "Custom Icon Border",
-                        get = function()
-                            return Cfg("customIconBorder") or false
-                        end,
+                        get = CfgOr("customIconBorder", false),
                         set = function(val)
                             Set("customIconBorder", val)
                             ApplyIconBrd()
@@ -1418,9 +1379,7 @@ CludesUI.AtOptionsLogin(function()
                         type = "toggle",
                         label = "Border Follows Bar",
                         tooltip = "Border wraps only the filled portion of each bar instead of the whole row. Always renders as a solid border.",
-                        get = function()
-                            return Cfg("borderFollowFill") or false
-                        end,
+                        get = CfgOr("borderFollowFill", false),
                         set = function(val)
                             Set("borderFollowFill", val)
                             ApplyBrd()
@@ -1444,9 +1403,7 @@ CludesUI.AtOptionsLogin(function()
                         requireState = function()
                             return Cfg("borderFollowFill") and "disabled" or nil
                         end,
-                        get = function()
-                            return Cfg("barSeparators") == true
-                        end,
+                        get = CfgIs("barSeparators"),
                         set = function(val)
                             Set("barSeparators", val)
                             ApplyBrd()
@@ -1459,9 +1416,7 @@ CludesUI.AtOptionsLogin(function()
                         disabled = function()
                             return not Cfg("borderFollowFill")
                         end,
-                        get = function()
-                            return Cfg("borderFollowFillIcon") or false
-                        end,
+                        get = CfgOr("borderFollowFillIcon", false),
                         set = function(val)
                             Set("borderFollowFillIcon", val)
                             ApplyBrd()
@@ -1514,9 +1469,7 @@ CludesUI.AtOptionsLogin(function()
                     text = "Icon Border Style",
                     values = texValues,
                     order = texOrder,
-                    getValue = function()
-                        return Cfg("iconBorderTexture") or "solid"
-                    end,
+                    getValue = CfgOr("iconBorderTexture", "solid"),
                     setValue = function(val)
                         Set("iconBorderTexture", val)
                         Set("iconBorderTextureOffset", nil)
@@ -1725,9 +1678,7 @@ CludesUI.AtOptionsLogin(function()
                 min = 0,
                 max = 1,
                 step = 0.01,
-                getValue = function()
-                    return Cfg("barBgAlpha") or 0
-                end,
+                getValue = CfgOr("barBgAlpha", 0),
                 setValue = function(val)
                     Set("barBgAlpha", val)
                     if mod.ApplyBarBg then
@@ -1838,9 +1789,7 @@ CludesUI.AtOptionsLogin(function()
                         label = "Bar Texture",
                         values = matchTexValues,
                         order = matchTexOrder,
-                        get = function()
-                            return Cfg("breakdownBarTexture") or "match"
-                        end,
+                        get = CfgOr("breakdownBarTexture", "match"),
                         set = function(val)
                             Set("breakdownBarTexture", val)
                             Refresh()
@@ -1867,9 +1816,7 @@ CludesUI.AtOptionsLogin(function()
                             right = "Right of Window",
                         },
                         order = { "row", "center", "left", "right" },
-                        get = function()
-                            return Cfg("breakdownAnchorPoint") or "row"
-                        end,
+                        get = CfgOr("breakdownAnchorPoint", "row"),
                         set = SetRow("breakdownAnchorPoint"),
                     },
                     {
@@ -1898,9 +1845,7 @@ CludesUI.AtOptionsLogin(function()
             text = "Number Format",
             values = { [0] = "DPS", [1] = "Damage", [2] = "Damage (DPS)", [3] = "Damage | DPS" },
             order = { 0, 1, 2, 3 },
-            getValue = function()
-                return Cfg("numberFormat") or 2
-            end,
+            getValue = CfgOr("numberFormat", 2),
             setValue = function(val)
                 Set("numberFormat", val)
                 Refresh()
@@ -1909,9 +1854,7 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Hide Rank Numbers",
             tooltip = "Hides the rank number (1. 2. 3.) before each player name.",
-            getValue = function()
-                return Cfg("hideNumbers") or false
-            end,
+            getValue = CfgOr("hideNumbers", false),
             setValue = function(val)
                 Set("hideNumbers", val)
                 Refresh()
@@ -1992,9 +1935,7 @@ CludesUI.AtOptionsLogin(function()
                     min = -20,
                     max = 20,
                     step = 1,
-                    get = function()
-                        return Cfg("leftTextOffsetX") or 0
-                    end,
+                    get = CfgOr("leftTextOffsetX", 0),
                     set = function(val)
                         Set("leftTextOffsetX", val)
                         if mod.ApplyBarTextOffsets then
@@ -2008,9 +1949,7 @@ CludesUI.AtOptionsLogin(function()
                     min = -20,
                     max = 20,
                     step = 1,
-                    get = function()
-                        return Cfg("leftTextOffsetY") or 0
-                    end,
+                    get = CfgOr("leftTextOffsetY", 0),
                     set = function(val)
                         Set("leftTextOffsetY", val)
                         if mod.ApplyBarTextOffsets then
@@ -2118,9 +2057,7 @@ CludesUI.AtOptionsLogin(function()
                         min = -20,
                         max = 20,
                         step = 1,
-                        get = function()
-                            return Cfg("rightTextOffsetX") or 0
-                        end,
+                        get = CfgOr("rightTextOffsetX", 0),
                         set = function(val)
                             Set("rightTextOffsetX", val)
                             if mod.ApplyBarTextOffsets then
@@ -2134,9 +2071,7 @@ CludesUI.AtOptionsLogin(function()
                         min = -20,
                         max = 20,
                         step = 1,
-                        get = function()
-                            return Cfg("rightTextOffsetY") or 0
-                        end,
+                        get = CfgOr("rightTextOffsetY", 0),
                         set = function(val)
                             Set("rightTextOffsetY", val)
                             if mod.ApplyBarTextOffsets then
@@ -2255,9 +2190,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Force English Units (K/M/B)",
                 tooltip = "Always use K/M/B instead of localized units.",
-                getValue = function()
-                    return Cfg("forceEnglishUnits") or false
-                end,
+                getValue = CfgOr("forceEnglishUnits", false),
                 setValue = function(val)
                     Set("forceEnglishUnits", val)
                     if mod.RebuildNumberFormat then
@@ -2291,9 +2224,7 @@ CludesUI.AtOptionsLogin(function()
         satRow, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Standalone Combat Timer",
-            getValue = function()
-                return Cfg("standaloneTimer") or false
-            end,
+            getValue = CfgOr("standaloneTimer", false),
             setValue = CludesUI.SectionToggleSetValue(function(val)
                 Set("standaloneTimer", val)
                 ApplySAT()
@@ -2381,9 +2312,7 @@ CludesUI.AtOptionsLogin(function()
                         label = "Font",
                         values = satFontValues,
                         order = satFontOrder,
-                        get = function()
-                            return Cfg("standaloneTimerFont") or "__global"
-                        end,
+                        get = CfgOr("standaloneTimerFont", "__global"),
                         set = function(val)
                             Set("standaloneTimerFont", val)
                             ApplySAT()
@@ -2395,9 +2324,7 @@ CludesUI.AtOptionsLogin(function()
                         min = 10,
                         max = 40,
                         step = 1,
-                        get = function()
-                            return Cfg("standaloneTimerSize") or 26
-                        end,
+                        get = CfgOr("standaloneTimerSize", 26),
                         set = function(val)
                             Set("standaloneTimerSize", val)
                             ApplySAT()
@@ -2413,9 +2340,7 @@ CludesUI.AtOptionsLogin(function()
                             THICKOUTLINE = "Thick",
                         },
                         order = { "INHERIT", "NONE", "OUTLINE", "THICKOUTLINE" },
-                        get = function()
-                            return Cfg("standaloneTimerOutline") or "INHERIT"
-                        end,
+                        get = CfgOr("standaloneTimerOutline", "INHERIT"),
                         set = function(val)
                             Set("standaloneTimerOutline", val)
                             ApplySAT()
@@ -2445,9 +2370,7 @@ CludesUI.AtOptionsLogin(function()
                     {
                         type = "toggle",
                         label = "Show Decimal",
-                        get = function()
-                            return Cfg("standaloneTimerDecimal") or false
-                        end,
+                        get = CfgOr("standaloneTimerDecimal", false),
                         set = function(val)
                             Set("standaloneTimerDecimal", val)
                             ApplySAT()
@@ -2459,9 +2382,7 @@ CludesUI.AtOptionsLogin(function()
                         min = 40,
                         max = 200,
                         step = 1,
-                        get = function()
-                            return Cfg("standaloneTimerWidth") or 70
-                        end,
+                        get = CfgOr("standaloneTimerWidth", 70),
                         set = function(val)
                             Set("standaloneTimerWidth", val)
                             ApplySAT()
@@ -2473,9 +2394,7 @@ CludesUI.AtOptionsLogin(function()
                         min = 20,
                         max = 80,
                         step = 1,
-                        get = function()
-                            return Cfg("standaloneTimerHeight") or 32
-                        end,
+                        get = CfgOr("standaloneTimerHeight", 32),
                         set = function(val)
                             Set("standaloneTimerHeight", val)
                             ApplySAT()
@@ -2513,9 +2432,7 @@ CludesUI.AtOptionsLogin(function()
                         min = 0,
                         max = 4,
                         step = 1,
-                        get = function()
-                            return Cfg("standaloneTimerBorderSize") or 0
-                        end,
+                        get = CfgOr("standaloneTimerBorderSize", 0),
                         set = function(val)
                             Set("standaloneTimerBorderSize", val)
                             ApplySAT()
@@ -2526,9 +2443,7 @@ CludesUI.AtOptionsLogin(function()
                         label = "Frame Strata",
                         values = CludesUI.FRAME_STRATA_LABELS,
                         order = CludesUI.FRAME_STRATA_ORDER_BASE,
-                        get = function()
-                            return Cfg("standaloneTimerStrata") or "HIGH"
-                        end,
+                        get = CfgOr("standaloneTimerStrata", "HIGH"),
                         set = function(val)
                             Set("standaloneTimerStrata", val)
                             ApplySAT()
@@ -2548,9 +2463,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Show Out of Combat",
                 tooltip = "Keep the timer visible out of combat, showing the last fight's duration.",
-                getValue = function()
-                    return Cfg("standaloneTimerShowOOC") or false
-                end,
+                getValue = CfgOr("standaloneTimerShowOOC", false),
                 setValue = function(val)
                     Set("standaloneTimerShowOOC", val)
                     ApplySAT()
@@ -2571,9 +2484,7 @@ CludesUI.AtOptionsLogin(function()
                     bottomright = "Bottom Right",
                 },
                 order = { "free", "topleft", "topright", "bottomleft", "bottomright" },
-                getValue = function()
-                    return Cfg("standaloneTimerAnchor") or "free"
-                end,
+                getValue = CfgOr("standaloneTimerAnchor", "free"),
                 setValue = function(val)
                     Set("standaloneTimerAnchor", val)
                     ApplySAT()
@@ -2592,9 +2503,7 @@ CludesUI.AtOptionsLogin(function()
                                 return not Cfg("standaloneTimerShowOOC")
                             end,
                             disabledTooltip = "Show Out of Combat",
-                            get = function()
-                                return Cfg("standaloneTimerDesatOOC") or false
-                            end,
+                            get = CfgOr("standaloneTimerDesatOOC", false),
                             set = function(val)
                                 Set("standaloneTimerDesatOOC", val)
                                 ApplySAT()
@@ -2614,9 +2523,7 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     text = "Lock Position & Disable Click",
                     tooltip = "Lock the timer in place and make it click-through; no dragging and no mouse interaction until unlocked.",
-                    getValue = function()
-                        return Cfg("standaloneTimerLocked") or false
-                    end,
+                    getValue = CfgOr("standaloneTimerLocked", false),
                     setValue = function(val)
                         Set("standaloneTimerLocked", val)
                         ApplySAT()
@@ -2657,9 +2564,7 @@ CludesUI.AtOptionsLogin(function()
                     {
                         type = "toggle",
                         label = "Include Combat Timer",
-                        get = function()
-                            return Cfg("toggleIncludeTimer") == true
-                        end,
+                        get = CfgIs("toggleIncludeTimer"),
                         set = function(val)
                             Set("toggleIncludeTimer", val)
                             if mod.ApplyDMToggleState then
@@ -2670,9 +2575,7 @@ CludesUI.AtOptionsLogin(function()
                     {
                         type = "toggle",
                         label = "Include Spell History",
-                        get = function()
-                            return Cfg("toggleIncludeSpellHistory") == true
-                        end,
+                        get = CfgIs("toggleIncludeSpellHistory"),
                         set = function(val)
                             Set("toggleIncludeSpellHistory", val)
                             -- Forced: turning the option off has to reach Spell History

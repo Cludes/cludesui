@@ -156,6 +156,12 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
         db.profile[k] = v
         Refresh()
     end
+    -- Row setters over PtSet: the key written with the row's value.
+    local function PtSetRow(key)
+        return function(v)
+            PtSet(key, v)
+        end
+    end
     local function RunWidgetRefresh()
         C_Timer.After(0, function()
             local rl = CludesUI._widgetRefreshList
@@ -404,9 +410,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
         disabledTooltip = "Only available in Detached or Inside modes",
         rawTooltip = true,
         getValue = PVRow("partyPortraitSize", 0),
-        setValue = function(v)
-            PtSet("partyPortraitSize", v)
-        end,
+        setValue = PtSetRow("partyPortraitSize"),
     }, {
         type = "dropdown",
         text = "Position",
@@ -462,9 +466,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 max = 100,
                 step = 1,
                 get = PVRow("partyPortraitArtScale", 100),
-                set = function(v)
-                    PtSet("partyPortraitArtScale", v)
-                end,
+                set = PtSetRow("partyPortraitArtScale"),
             },
             {
                 type = "slider",
@@ -474,9 +476,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 step = 1,
                 tooltip = "Above 300 the camera pulls back to show the whole character.",
                 get = PVRow("partyPortrait3dZoom", 100),
-                set = function(v)
-                    PtSet("partyPortrait3dZoom", v)
-                end,
+                set = PtSetRow("partyPortrait3dZoom"),
             },
             {
                 type = "slider",
@@ -491,9 +491,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 end,
                 disabledTooltip = "This option requires an Inside position",
                 get = PVRow("partyPortraitCharScale", 100),
-                set = function(v)
-                    PtSet("partyPortraitCharScale", v)
-                end,
+                set = PtSetRow("partyPortraitCharScale"),
             },
         },
     })
@@ -507,9 +505,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 max = 100,
                 step = 1,
                 get = PVRow("partyPortraitX", 0),
-                set = function(v)
-                    PtSet("partyPortraitX", v)
-                end,
+                set = PtSetRow("partyPortraitX"),
             },
             {
                 type = "slider",
@@ -518,9 +514,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 max = 100,
                 step = 1,
                 get = PVRow("partyPortraitY", 0),
-                set = function(v)
-                    PtSet("partyPortraitY", v)
-                end,
+                set = PtSetRow("partyPortraitY"),
             },
         },
         disabled = function()
@@ -558,9 +552,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
             end
         end,
         getValue = PVRow("partyPortraitShape", "portrait"),
-        setValue = function(v)
-            PtSet("partyPortraitShape", v)
-        end,
+        setValue = PtSetRow("partyPortraitShape"),
     }, {
         type = "multiSwatch",
         text = "Shape Border",
@@ -622,9 +614,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 max = 7,
                 step = 1,
                 get = PVRow("partyPortraitBorderSize", 7),
-                set = function(v)
-                    PtSet("partyPortraitBorderSize", v)
-                end,
+                set = PtSetRow("partyPortraitBorderSize"),
             },
             {
                 type = "slider",
@@ -633,9 +623,7 @@ function mod.RF_BuildPartyPortrait(hostFrame, posY, W, PSSet)
                 max = 100,
                 step = 1,
                 get = PVRow("partyPortraitBorderOpacity", 100),
-                set = function(v)
-                    PtSet("partyPortraitBorderOpacity", v)
-                end,
+                set = PtSetRow("partyPortraitBorderOpacity"),
             },
         },
     })
@@ -675,6 +663,12 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
         db.profile[k] = v
         mod.PT_Refresh()
         Preview()
+    end
+    -- Row setters over PtSet: the key written with the row's value.
+    local function PtSetRow(key)
+        return function(v)
+            PtSet(key, v)
+        end
     end
     -- Size, side and offsets: the delta-gated layout (combat-deferred).
     local function LaySet(k, v)
@@ -762,9 +756,7 @@ function mod.RF_BuildPartyTargets(hostFrame, posY, W)
         disabledTooltip = DARK_TIP,
         rawTooltip = true,
         getValue = PVRow("partyTargetBgDarkness", 50),
-        setValue = function(v)
-            PtSet("partyTargetBgDarkness", v)
-        end,
+        setValue = PtSetRow("partyTargetBgDarkness"),
     })
     posY = posY - hgt
     -- Custom fill swatch: live only in Custom mode, dimmed and blocked otherwise.

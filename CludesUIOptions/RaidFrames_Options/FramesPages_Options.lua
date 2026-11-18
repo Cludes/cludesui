@@ -2006,6 +2006,12 @@ local function PSSet(key, val)
     end
     PartyReloadAndUpdate()
 end
+-- Row setters over PSSet: the key written with the row's value.
+local function PSSetRow(key)
+    return function(v)
+        PSSet(key, v)
+    end
+end
 
 local function BuildPartyPage(page, hostFrame, yOffset)
     local environ = mod._RFO_OptEnv
@@ -2102,9 +2108,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
                         get = function()
                             return db.profile.partyKitSpacing or mod.RF_KIT_SPACING or 6
                         end,
-                        set = function(v)
-                            PSSet("partyKitSpacing", v)
-                        end,
+                        set = PSSetRow("partyKitSpacing"),
                     },
                 },
             })
@@ -2120,9 +2124,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
                 getValue = function()
                     return db.profile.partyKitDebuffSize or 15
                 end,
-                setValue = function(v)
-                    PSSet("partyKitDebuffSize", v)
-                end,
+                setValue = PSSetRow("partyKitDebuffSize"),
             }, {
                 type = "slider",
                 text = "Buff Size",
@@ -2132,9 +2134,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
                 getValue = function()
                     return db.profile.partyKitBuffSize or 15
                 end,
-                setValue = function(v)
-                    PSSet("partyKitBuffSize", v)
-                end,
+                setValue = PSSetRow("partyKitBuffSize"),
             })
             posY = posY - hgt
             CludesUI.BuildInlineCog(kitAuraRow._leftRegion, {
@@ -2149,9 +2149,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
                         get = function()
                             return db.profile.partyKitDebuffX or 0
                         end,
-                        set = function(v)
-                            PSSet("partyKitDebuffX", v)
-                        end,
+                        set = PSSetRow("partyKitDebuffX"),
                     },
                     {
                         type = "slider",
@@ -2162,9 +2160,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
                         get = function()
                             return db.profile.partyKitDebuffY or 0
                         end,
-                        set = function(v)
-                            PSSet("partyKitDebuffY", v)
-                        end,
+                        set = PSSetRow("partyKitDebuffY"),
                     },
                 },
             })
@@ -2213,9 +2209,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
                         get = function()
                             return db.profile.partyKitBuffX or 0
                         end,
-                        set = function(v)
-                            PSSet("partyKitBuffX", v)
-                        end,
+                        set = PSSetRow("partyKitBuffX"),
                     },
                     {
                         type = "slider",
@@ -2226,9 +2220,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
                         get = function()
                             return db.profile.partyKitBuffY or 0
                         end,
-                        set = function(v)
-                            PSSet("partyKitBuffY", v)
-                        end,
+                        set = PSSetRow("partyKitBuffY"),
                     },
                 },
             })
@@ -2423,9 +2415,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
             max = 300,
             step = 1,
             getValue = SValRow("partyFrameWidth", 125),
-            setValue = function(v)
-                PSSet("partyFrameWidth", v)
-            end,
+            setValue = PSSetRow("partyFrameWidth"),
         }),
         mod.RF_PartyKitGate({
             type = "slider",
@@ -2434,9 +2424,7 @@ local function BuildPartyPage(page, hostFrame, yOffset)
             max = 150,
             step = 1,
             getValue = SValRow("partyFrameHeight", 60),
-            setValue = function(v)
-                PSSet("partyFrameHeight", v)
-            end,
+            setValue = PSSetRow("partyFrameHeight"),
         })
     )
     posY = posY - hgt

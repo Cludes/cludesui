@@ -34,6 +34,17 @@ CludesUI.AtOptionsLogin(function()
     local function Cfg(k)
         return DB()[k]
     end
+    -- Row getters over Cfg: a key's value (or a default), or whether it is true.
+    local function CfgOr(key, default)
+        return function()
+            return Cfg(key) or default
+        end
+    end
+    local function CfgIs(key)
+        return function()
+            return Cfg(key) == true
+        end
+    end
     local function Set(k, val)
         DB()[k] = val
     end
@@ -115,9 +126,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Lock Main Chat Size",
                 tooltip = "Hides the resize handle on the main chat frame, preventing accidental resizing.",
-                getValue = function()
-                    return Cfg("lockChatSize") or false
-                end,
+                getValue = CfgOr("lockChatSize", false),
                 setValue = function(val)
                     Set("lockChatSize", val)
                     if CHAT.ApplyLockChatSize then
@@ -160,9 +169,7 @@ CludesUI.AtOptionsLogin(function()
                     min = 0,
                     max = 1,
                     step = 0.05,
-                    getValue = function()
-                        return Cfg("bgAlpha") or 0.65
-                    end,
+                    getValue = CfgOr("bgAlpha", 0.65),
                     setValue = function(val)
                         Set("bgAlpha", val)
                         RefreshAll()
@@ -173,9 +180,7 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Texture drawn over the chat background color.",
                     values = btValues,
                     order = btOrder,
-                    getValue = function()
-                        return Cfg("bgTexture") or "none"
-                    end,
+                    getValue = CfgOr("bgTexture", "none"),
                     setValue = function(val)
                         Set("bgTexture", val)
                         RefreshAll()
@@ -216,9 +221,7 @@ CludesUI.AtOptionsLogin(function()
                     text = "Font",
                     values = fontValues,
                     order = fontOrder,
-                    getValue = function()
-                        return Cfg("font") or "__global"
-                    end,
+                    getValue = CfgOr("font", "__global"),
                     setValue = function(val)
                         Set("font", val)
                         CludesUI:ShowConfirmPopup({
@@ -274,9 +277,7 @@ CludesUI.AtOptionsLogin(function()
                                 label = "Outline Mode",
                                 values = outlineValues,
                                 order = outlineOrder,
-                                get = function()
-                                    return Cfg("outlineMode") or "__global"
-                                end,
+                                get = CfgOr("outlineMode", "__global"),
                                 set = function(val)
                                     Set("outlineMode", val)
                                     CludesUI:ShowConfirmPopup({
@@ -308,9 +309,7 @@ CludesUI.AtOptionsLogin(function()
                         text = "Border Style",
                         values = texValues,
                         order = texOrder,
-                        getValue = function()
-                            return Cfg("panelBorderTexture") or "solid"
-                        end,
+                        getValue = CfgOr("panelBorderTexture", "solid"),
                         setValue = function(val)
                             Set("panelBorderTexture", val)
                             Set("panelBorderOffsetX", nil)
@@ -427,9 +426,7 @@ CludesUI.AtOptionsLogin(function()
                             {
                                 type = "toggle",
                                 label = "Show Behind",
-                                get = function()
-                                    return Cfg("panelBorderBehind") or false
-                                end,
+                                get = CfgOr("panelBorderBehind", false),
                                 set = function(val)
                                     Set("panelBorderBehind", val)
                                     if CHAT.ApplyExtendedBackground then
@@ -656,9 +653,7 @@ CludesUI.AtOptionsLogin(function()
                     return Cfg("idleFadeEnabled") == false
                 end,
                 disabledTooltip = "Enable Idle Fade",
-                getValue = function()
-                    return Cfg("idleFadeDelay") or 15
-                end,
+                getValue = CfgOr("idleFadeDelay", 15),
                 setValue = function(val)
                     Set("idleFadeDelay", val)
                     if CHAT.ResetIdleTimer then
@@ -679,9 +674,7 @@ CludesUI.AtOptionsLogin(function()
                     return Cfg("idleFadeEnabled") == false
                 end,
                 disabledTooltip = "Enable Idle Fade",
-                getValue = function()
-                    return Cfg("idleFadeStrength") or 40
-                end,
+                getValue = CfgOr("idleFadeStrength", 40),
                 setValue = function(val)
                     Set("idleFadeStrength", val)
                     if CHAT.ResetIdleTimer then
@@ -744,9 +737,7 @@ CludesUI.AtOptionsLogin(function()
                     text = "Sidebar Visibility",
                     values = sidebarVisValues,
                     order = sidebarVisOrder,
-                    getValue = function()
-                        return Cfg("sidebarVisibility") or "always"
-                    end,
+                    getValue = CfgOr("sidebarVisibility", "always"),
                     setValue = function(val)
                         Set("sidebarVisibility", val)
                         if CHAT.ApplySidebarVisibility then
@@ -764,9 +755,7 @@ CludesUI.AtOptionsLogin(function()
                 end)({
                     type = "toggle",
                     text = "Hide Sidebar Background",
-                    getValue = function()
-                        return Cfg("hideSidebarBg") or false
-                    end,
+                    getValue = CfgOr("hideSidebarBg", false),
                     setValue = function(val)
                         Set("hideSidebarBg", val)
                         if CHAT.ApplySidebarBackground then
@@ -784,9 +773,7 @@ CludesUI.AtOptionsLogin(function()
                         {
                             type = "toggle",
                             label = "Show Sidebar on Right",
-                            get = function()
-                                return Cfg("sidebarRight") or false
-                            end,
+                            get = CfgOr("sidebarRight", false),
                             set = function(val)
                                 Set("sidebarRight", val)
                                 if CHAT.ApplySidebarPosition then
@@ -820,9 +807,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Separate Sidebar",
                 tooltip = "Separates the sidebar from the chat panel and gives it its own background and border.",
-                getValue = function()
-                    return Cfg("sidebarSeparate") or false
-                end,
+                getValue = CfgOr("sidebarSeparate", false),
                 setValue = function(val)
                     Set("sidebarSeparate", val)
                     if CHAT.ApplySidebarPosition then
@@ -850,9 +835,7 @@ CludesUI.AtOptionsLogin(function()
                             min = 0,
                             max = 30,
                             step = 1,
-                            get = function()
-                                return Cfg("sidebarSeparateSpacing") or 8
-                            end,
+                            get = CfgOr("sidebarSeparateSpacing", 8),
                             set = function(val)
                                 Set("sidebarSeparateSpacing", val)
                                 if CHAT.ApplySidebarPosition then
@@ -1008,9 +991,7 @@ CludesUI.AtOptionsLogin(function()
                 min = 0.5,
                 max = 2.0,
                 step = 0.05,
-                getValue = function()
-                    return Cfg("sidebarIconScale") or 1.0
-                end,
+                getValue = CfgOr("sidebarIconScale", 1.0),
                 setValue = function(val)
                     Set("sidebarIconScale", val)
                     if CHAT.ApplySidebarIconScale then
@@ -1021,9 +1002,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Free Move Icons",
                 tooltip = "When enabled, Shift+Click any sidebar icon to drag it to a custom position.",
-                getValue = function()
-                    return Cfg("freeMoveIcons") or false
-                end,
+                getValue = CfgOr("freeMoveIcons", false),
                 setValue = function(val)
                     Set("freeMoveIcons", val)
                     if CHAT.ApplySidebarIcons then
@@ -1100,9 +1079,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Scroll Button on Chat Panel",
                 tooltip = "Anchors the Scroll to Bottom button to the bottom-right corner of the chat panel instead of the sidebar.",
-                getValue = function()
-                    return Cfg("scrollButtonOnChat") == true
-                end,
+                getValue = CfgIs("scrollButtonOnChat"),
                 setValue = function(val)
                     Set("scrollButtonOnChat", val)
                     if CHAT.ApplySidebarIcons then
@@ -1128,9 +1105,7 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     text = "Tabs Inside Chat Panel",
                     tooltip = "Places the tabs inside one continuous chat panel background, including the sidebar when visible.",
-                    getValue = function()
-                        return Cfg("extendBgBehindTabs") or false
-                    end,
+                    getValue = CfgOr("extendBgBehindTabs", false),
                     setValue = function(val)
                         Set("extendBgBehindTabs", val)
                         if CHAT.ApplyTabPadding then
@@ -1152,9 +1127,7 @@ CludesUI.AtOptionsLogin(function()
                     end,
                     disabledTooltip = "Tabs Inside Chat Panel",
                     requireState = "disabled",
-                    getValue = function()
-                        return Cfg("tabSpacing") or 1
-                    end,
+                    getValue = CfgOr("tabSpacing", 1),
                     setValue = function(val)
                         Set("tabSpacing", val)
                         if CHAT.ApplyTabSpacing then
@@ -1170,9 +1143,7 @@ CludesUI.AtOptionsLogin(function()
                     min = 18,
                     max = 40,
                     step = 1,
-                    getValue = function()
-                        return Cfg("tabHeight") or 24
-                    end,
+                    getValue = CfgOr("tabHeight", 24),
                     setValue = function(val)
                         Set("tabHeight", val)
                         if CHAT.ApplyTabLayout then
@@ -1185,9 +1156,7 @@ CludesUI.AtOptionsLogin(function()
                     min = 0,
                     max = 30,
                     step = 1,
-                    getValue = function()
-                        return Cfg("tabInnerPaddingX") or 12
-                    end,
+                    getValue = CfgOr("tabInnerPaddingX", 12),
                     setValue = function(val)
                         Set("tabInnerPaddingX", val)
                         if CHAT.ApplyTabLayout then
@@ -1207,9 +1176,7 @@ CludesUI.AtOptionsLogin(function()
                     text = "Tab Font",
                     values = fontValues,
                     order = fontOrder,
-                    getValue = function()
-                        return Cfg("tabFont") or "__global"
-                    end,
+                    getValue = CfgOr("tabFont", "__global"),
                     setValue = function(val)
                         Set("tabFont", val)
                         if CHAT.ApplyTabAppearance then
@@ -1225,9 +1192,7 @@ CludesUI.AtOptionsLogin(function()
                     min = 8,
                     max = 24,
                     step = 1,
-                    getValue = function()
-                        return Cfg("tabFontSize") or 11
-                    end,
+                    getValue = CfgOr("tabFontSize", 11),
                     setValue = function(val)
                         Set("tabFontSize", val)
                         if CHAT.ApplyTabAppearance then
@@ -1550,9 +1515,7 @@ CludesUI.AtOptionsLogin(function()
                     tooltip = "Texture drawn over the tab background colors.",
                     values = btValues,
                     order = btOrder,
-                    getValue = function()
-                        return Cfg("tabBackgroundTexture") or "none"
-                    end,
+                    getValue = CfgOr("tabBackgroundTexture", "none"),
                     setValue = function(val)
                         Set("tabBackgroundTexture", val)
                         if CHAT.ApplyTabAppearance then
@@ -1618,9 +1581,7 @@ CludesUI.AtOptionsLogin(function()
                         requireState = "disabled",
                         values = texValues,
                         order = texOrder,
-                        getValue = function()
-                            return Cfg("tabBorderTexture") or "solid"
-                        end,
+                        getValue = CfgOr("tabBorderTexture", "solid"),
                         setValue = function(val)
                             Set("tabBorderTexture", val)
                             Set("tabBorderOffsetX", nil)
@@ -1941,9 +1902,7 @@ CludesUI.AtOptionsLogin(function()
                     min = 10,
                     max = 60,
                     step = 1,
-                    getValue = function()
-                        return Cfg("editBoxHeight") or 23
-                    end,
+                    getValue = CfgOr("editBoxHeight", 23),
                     setValue = function(val)
                         Set("editBoxHeight", val)
                         if CHAT.ApplyInputPosition then
@@ -1957,9 +1916,7 @@ CludesUI.AtOptionsLogin(function()
                     _, hgt = W:DualRow(hostFrame, posY, {
                         type = "toggle",
                         text = "Input on Top",
-                        getValue = function()
-                            return Cfg("inputOnTop") or false
-                        end,
+                        getValue = CfgOr("inputOnTop", false),
                         setValue = function(val)
                             Set("inputOnTop", val)
                             if CHAT.ApplyInputPosition then
@@ -1980,9 +1937,7 @@ CludesUI.AtOptionsLogin(function()
                     text = "Edit Box Font",
                     values = fontValues,
                     order = fontOrder,
-                    getValue = function()
-                        return Cfg("editBoxFont") or "__chat"
-                    end,
+                    getValue = CfgOr("editBoxFont", "__chat"),
                     setValue = function(val)
                         Set("editBoxFont", val)
                         if CHAT.ApplyFonts then
@@ -2025,9 +1980,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Remember Last Chat Lines",
                 tooltip = "Saves the most recent lines per chat tab (per character), except Blizzard's combat log window, so they reappear after /reload or relog. Stored separately from layout profiles.",
-                getValue = function()
-                    return Cfg("persistChatHistory") == true
-                end,
+                getValue = CfgIs("persistChatHistory"),
                 setValue = function(val)
                     Set("persistChatHistory", val)
                     if CHAT.OnSessionHistoryToggled then
@@ -2039,9 +1992,7 @@ CludesUI.AtOptionsLogin(function()
             }, {
                 type = "toggle",
                 text = "Hide Tooltip on Hover",
-                getValue = function()
-                    return Cfg("hideTooltipOnHover") or false
-                end,
+                getValue = CfgOr("hideTooltipOnHover", false),
                 setValue = function(val)
                     Set("hideTooltipOnHover", val)
                 end,
@@ -2057,9 +2008,7 @@ CludesUI.AtOptionsLogin(function()
                             min = 20,
                             max = 300,
                             step = 10,
-                            get = function()
-                                return Cfg("persistChatHistoryMaxLines") or 100
-                            end,
+                            get = CfgOr("persistChatHistoryMaxLines", 100),
                             set = function(val)
                                 Set("persistChatHistoryMaxLines", val)
                             end,
@@ -2114,9 +2063,7 @@ CludesUI.AtOptionsLogin(function()
             local hideBordersCfg = {
                 type = "toggle",
                 text = "Hide Borders",
-                getValue = function()
-                    return Cfg("hideBorders") or false
-                end,
+                getValue = CfgOr("hideBorders", false),
                 setValue = function(val)
                     Set("hideBorders", val)
                     if CHAT.ApplyBorders then
@@ -2135,9 +2082,7 @@ CludesUI.AtOptionsLogin(function()
                 tooltip = "Blizzard Default keeps the game's whisper sound. Any other sound replaces it, and None plays no sound.",
                 values = whisperSoundValues,
                 order = whisperSoundOrder,
-                getValue = function()
-                    return Cfg("whisperSoundKey") or "none"
-                end,
+                getValue = CfgOr("whisperSoundKey", "none"),
                 setValue = function(val)
                     Set("whisperSoundKey", val)
                     CHAT.ApplyWhisperMute()
@@ -2270,9 +2215,7 @@ CludesUI.AtOptionsLogin(function()
                         return (Cfg("timestampFormat") or "%I:%M ") == "none"
                     end,
                     disabledTooltip = "Set a Timestamps format first",
-                    getValue = function()
-                        return Cfg("timestampAll") == true
-                    end,
+                    getValue = CfgIs("timestampAll"),
                     setValue = function(val)
                         Set("timestampAll", val)
                         if CHAT.ApplyTimestampCVar then
@@ -2287,9 +2230,7 @@ CludesUI.AtOptionsLogin(function()
                     text = "Timestamps",
                     values = tsValues,
                     order = tsOrder,
-                    getValue = function()
-                        return Cfg("timestampFormat") or "%I:%M "
-                    end,
+                    getValue = CfgOr("timestampFormat", "%I:%M "),
                     setValue = function(val)
                         Set("timestampFormat", val)
                         if CHAT.ApplyTimestampCVar then
@@ -2307,9 +2248,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Shortened Channel Names",
                 tooltip = "Abbreviates channel prefixes, like [Party] to [P] and [Guild] to [G]; world channels show their number.",
-                getValue = function()
-                    return Cfg("abbreviateChannels") == true
-                end,
+                getValue = CfgIs("abbreviateChannels"),
                 setValue = function(val)
                     Set("abbreviateChannels", val)
                     if CHAT.EngineSetChannelAbbrev then
@@ -2324,9 +2263,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Class Colored Names",
                 tooltip = "Colors group and raid member names by their class when they appear in the text of Say, Yell, Party, and Raid messages.",
-                getValue = function()
-                    return Cfg("classColorNames") == true
-                end,
+                getValue = CfgIs("classColorNames"),
                 setValue = function(val)
                     Set("classColorNames", val)
                     if CHAT.ApplyClassColorNames then
@@ -2352,9 +2289,7 @@ CludesUI.AtOptionsLogin(function()
                             type = "toggle",
                             label = "Use Letters",
                             tooltip = "Shows General, Trade, Local Defense, World Defense and LFG as letters instead of their channel numbers.",
-                            get = function()
-                                return Cfg("abbreviateChannelLetters") == true
-                            end,
+                            get = CfgIs("abbreviateChannelLetters"),
                             set = function(val)
                                 Set("abbreviateChannelLetters", val)
                                 if CHAT.EngineSetChannelAbbrevLetters then

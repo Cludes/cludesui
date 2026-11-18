@@ -36,6 +36,17 @@ CludesUI.AtOptionsLogin(function()
     local function Cfg(k)
         return DB()[k]
     end
+    -- Row getters over Cfg: a key's value (or a default), or whether it is true.
+    local function CfgOr(key, default)
+        return function()
+            return Cfg(key) or default
+        end
+    end
+    local function CfgIs(key)
+        return function()
+            return Cfg(key) == true
+        end
+    end
     local function Set(k, val)
         DB()[k] = val
     end
@@ -285,9 +296,7 @@ CludesUI.AtOptionsLogin(function()
                 step = 1,
                 disabled = Off,
                 disabledTooltip = "Custom Quest Tracker",
-                getValue = function()
-                    return Cfg("customWidth") or 260
-                end,
+                getValue = CfgOr("customWidth", 260),
                 setValue = function(val)
                     Set("customWidth", val)
                     ApplySize()
@@ -301,9 +310,7 @@ CludesUI.AtOptionsLogin(function()
                 step = 1,
                 disabled = Off,
                 disabledTooltip = "Custom Quest Tracker",
-                getValue = function()
-                    return Cfg("customMaxHeight") or 450
-                end,
+                getValue = CfgOr("customMaxHeight", 450),
                 setValue = function(val)
                     Set("customMaxHeight", val)
                     ApplySize()
@@ -334,9 +341,7 @@ CludesUI.AtOptionsLogin(function()
                 order = { "always", "hover", "hidden" },
                 disabled = Off,
                 disabledTooltip = "Custom Quest Tracker",
-                getValue = function()
-                    return Cfg("customScrollbar") or "always"
-                end,
+                getValue = CfgOr("customScrollbar", "always"),
                 setValue = SetRowThen("customScrollbar"),
             })
             posY = posY - hgt
@@ -350,9 +355,7 @@ CludesUI.AtOptionsLogin(function()
                 order = { "collapse", "map", "details" },
                 disabled = Off,
                 disabledTooltip = "Custom Quest Tracker",
-                getValue = function()
-                    return Cfg("customClickAction") or "collapse"
-                end,
+                getValue = CfgOr("customClickAction", "collapse"),
                 setValue = SetRowThen("customClickAction"),
             }, {
                 type = "toggle",
@@ -360,9 +363,7 @@ CludesUI.AtOptionsLogin(function()
                 tooltip = "Hides the objectives of quests that are ready to turn in. Click a quest to expand it.",
                 disabled = Off,
                 disabledTooltip = "Custom Quest Tracker",
-                getValue = function()
-                    return Cfg("customCollapseCompleted") or false
-                end,
+                getValue = CfgOr("customCollapseCompleted", false),
                 setValue = SetRowThen("customCollapseCompleted"),
             })
             posY = posY - hgt
@@ -376,9 +377,7 @@ CludesUI.AtOptionsLogin(function()
                 step = 1,
                 disabled = Off,
                 disabledTooltip = "Custom Quest Tracker",
-                getValue = function()
-                    return Cfg("customQuestSpacing") or 4
-                end,
+                getValue = CfgOr("customQuestSpacing", 4),
                 setValue = SetRowThen("customQuestSpacing"),
             }, {
                 type = "slider",
@@ -388,9 +387,7 @@ CludesUI.AtOptionsLogin(function()
                 step = 1,
                 disabled = Off,
                 disabledTooltip = "Custom Quest Tracker",
-                getValue = function()
-                    return Cfg("customObjSpacing") or 1
-                end,
+                getValue = CfgOr("customObjSpacing", 1),
                 setValue = SetRowThen("customObjSpacing"),
             })
             posY = posY - hgt
@@ -402,9 +399,7 @@ CludesUI.AtOptionsLogin(function()
                 tooltip = "Adds a focus button beside each quest, and Focus to its right-click menu. A focused quest gets the map waypoint.",
                 disabled = Off,
                 disabledTooltip = "Custom Quest Tracker",
-                getValue = function()
-                    return Cfg("customFocusClick") or false
-                end,
+                getValue = CfgOr("customFocusClick", false),
                 setValue = SetRowThen("customFocusClick"),
             }, {
                 type = "toggle",
@@ -438,9 +433,7 @@ CludesUI.AtOptionsLogin(function()
                 step = 1,
                 disabled = Off,
                 disabledTooltip = "Custom Quest Tracker",
-                getValue = function()
-                    return Cfg("customZoneFontSize") or 13
-                end,
+                getValue = CfgOr("customZoneFontSize", 13),
                 setValue = SetRowThen("customZoneFontSize"),
             })
             posY = posY - hgt
@@ -452,9 +445,7 @@ CludesUI.AtOptionsLogin(function()
                 tooltip = "Adds a button beside quests that have a usable item. In combat, buttons stay where they are until combat ends.",
                 disabled = Off,
                 disabledTooltip = "Custom Quest Tracker",
-                getValue = function()
-                    return Cfg("customItemButtons") or false
-                end,
+                getValue = CfgOr("customItemButtons", false),
                 setValue = SetRowThen("customItemButtons"),
             }, {
                 type = "toggle",
@@ -462,9 +453,7 @@ CludesUI.AtOptionsLogin(function()
                 tooltip = "Briefly highlights an objective when its progress changes.",
                 disabled = Off,
                 disabledTooltip = "Custom Quest Tracker",
-                getValue = function()
-                    return Cfg("customFlashUpdates") or false
-                end,
+                getValue = CfgOr("customFlashUpdates", false),
                 setValue = SetRowThen("customFlashUpdates"),
             })
             posY = posY - hgt
@@ -498,9 +487,7 @@ CludesUI.AtOptionsLogin(function()
             tooltip = "Always: hide the tracker the whole time you are in a raid.\nBoss Combat: keep it visible and only hide during boss encounters.\nNever: keep it visible in raids; only the Visibility options hide it.",
             values = { always = "Always", boss = "Boss Combat", never = "Never" },
             order = { "always", "boss", "never" },
-            getValue = function()
-                return Cfg("hideInRaidMode") or "boss"
-            end,
+            getValue = CfgOr("hideInRaidMode", "boss"),
             setValue = function(val)
                 Set("hideInRaidMode", val)
                 if EQT.UpdateVisibility then
@@ -521,9 +508,7 @@ CludesUI.AtOptionsLogin(function()
                 min = 0,
                 max = 1,
                 step = 0.05,
-                getValue = function()
-                    return Cfg("bgAlpha") or 0.5
-                end,
+                getValue = CfgOr("bgAlpha", 0.5),
                 setValue = function(val)
                     Set("bgAlpha", val)
                     if EQT.ApplyBackground then
@@ -555,9 +540,7 @@ CludesUI.AtOptionsLogin(function()
                             {
                                 type = "toggle",
                                 label = "Show Only When Hovered",
-                                get = function()
-                                    return Cfg("customBgHover") or false
-                                end,
+                                get = CfgOr("customBgHover", false),
                                 set = SetRowThen("customBgHover"),
                             },
                             {
@@ -608,9 +591,7 @@ CludesUI.AtOptionsLogin(function()
                 min = 8,
                 max = 24,
                 step = 1,
-                getValue = function()
-                    return Cfg("headerFontSize") or 13
-                end,
+                getValue = CfgOr("headerFontSize", 13),
                 setValue = SetRowThen("headerFontSize"),
             }, {
                 type = "slider",
@@ -618,9 +599,7 @@ CludesUI.AtOptionsLogin(function()
                 min = 8,
                 max = 24,
                 step = 1,
-                getValue = function()
-                    return Cfg("titleFontSize") or 12
-                end,
+                getValue = CfgOr("titleFontSize", 12),
                 setValue = SetRowThen("titleFontSize"),
             })
             posY = posY - hgt
@@ -634,18 +613,14 @@ CludesUI.AtOptionsLogin(function()
                     min = 8,
                     max = 24,
                     step = 1,
-                    getValue = function()
-                        return Cfg("objectiveFontSize") or 10
-                    end,
+                    getValue = CfgOr("objectiveFontSize", 10),
                     setValue = SetRowThen("objectiveFontSize"),
                 }, {
                     type = "dropdown",
                     text = "Font",
                     values = fontValues,
                     order = fontOrder,
-                    getValue = function()
-                        return Cfg("font") or "__global"
-                    end,
+                    getValue = CfgOr("font", "__global"),
                     setValue = function(val)
                         Set("font", val)
                         -- The custom tracker restyles live.
@@ -672,9 +647,7 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Show Quest Icons",
             tooltip = "Show Blizzard's native quest type icons/buttons on the right instead of CludesUI's custom icons. Requires a UI reload.",
-            getValue = function()
-                return Cfg("showQuestIcons") or false
-            end,
+            getValue = CfgOr("showQuestIcons", false),
             setValue = function(val)
                 Set("showQuestIcons", val)
                 CludesUI:ShowConfirmPopup({
@@ -972,9 +945,7 @@ CludesUI.AtOptionsLogin(function()
                                 type = "toggle",
                                 text = "Color Objectives by Progress",
                                 tooltip = "Colors objectives by how far along they are.",
-                                getValue = function()
-                                    return Cfg("objProgressColor") or false
-                                end,
+                                getValue = CfgOr("objProgressColor", false),
                                 setValue = function(val)
                                     Set("objProgressColor", val)
                                     RefreshAll()
@@ -1023,9 +994,7 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     text = "Dim Completed Objectives",
                     tooltip = "Fades objective lines that are already done.",
-                    getValue = function()
-                        return Cfg("objDimCompleted") or false
-                    end,
+                    getValue = CfgOr("objDimCompleted", false),
                     setValue = function(val)
                         Set("objDimCompleted", val)
                         RefreshAll()
@@ -1045,9 +1014,7 @@ CludesUI.AtOptionsLogin(function()
                             min = 10,
                             max = 100,
                             step = 5,
-                            get = function()
-                                return Cfg("objDimAlpha") or 45
-                            end,
+                            get = CfgOr("objDimAlpha", 45),
                             set = SetRowThen("objDimAlpha"),
                         },
                     },
@@ -1152,9 +1119,7 @@ CludesUI.AtOptionsLogin(function()
                 type = "toggle",
                 text = "Announce Progress",
                 tooltip = "Posts each quest objective you complete to party or instance chat, with a link to the quest. Never in raids.",
-                getValue = function()
-                    return Cfg("announceProgress") or false
-                end,
+                getValue = CfgOr("announceProgress", false),
                 setValue = function(val)
                     Set("announceProgress", val)
                     ApplyProgress()
@@ -1165,9 +1130,7 @@ CludesUI.AtOptionsLogin(function()
                 text = "Objective Complete Sound",
                 values = sndValues,
                 order = sndOrder,
-                getValue = function()
-                    return Cfg("soundObjective") or "none"
-                end,
+                getValue = CfgOr("soundObjective", "none"),
                 setValue = function(val)
                     Set("soundObjective", val)
                     ApplyProgress()
@@ -1178,9 +1141,7 @@ CludesUI.AtOptionsLogin(function()
                 text = "Quest Complete Sound",
                 values = sndValues,
                 order = sndOrder,
-                getValue = function()
-                    return Cfg("soundQuest") or "none"
-                end,
+                getValue = CfgOr("soundQuest", "none"),
                 setValue = function(val)
                     Set("soundQuest", val)
                     ApplyProgress()
@@ -1222,9 +1183,7 @@ CludesUI.AtOptionsLogin(function()
                             label = "Completed Quests",
                             values = { mixed = "Mixed In", top = "Top", bottom = "Bottom" },
                             order = { "mixed", "top", "bottom" },
-                            get = function()
-                                return Cfg("questSortCompleted") or "mixed"
-                            end,
+                            get = CfgOr("questSortCompleted", "mixed"),
                             set = function(val)
                                 Set("questSortCompleted", val)
                                 ApplyWatches()
@@ -1247,9 +1206,7 @@ CludesUI.AtOptionsLogin(function()
                             end,
                             disabledTooltip = "Requires Sort Quests set to something other than Quest Log Order.",
                             rawTooltip = true,
-                            get = function()
-                                return Cfg("questSortThenBy") or "none"
-                            end,
+                            get = CfgOr("questSortThenBy", "none"),
                             set = function(val)
                                 Set("questSortThenBy", val)
                                 ApplyWatches()
@@ -1264,9 +1221,7 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     text = "Filter Quests",
                     tooltip = "Untracks quests that match the filters in the cog until they no longer match.",
-                    getValue = function()
-                        return Cfg("filterEnabled") or false
-                    end,
+                    getValue = CfgOr("filterEnabled", false),
                     setValue = function(val)
                         Set("filterEnabled", val)
                         ApplyWatches()
@@ -1276,9 +1231,7 @@ CludesUI.AtOptionsLogin(function()
                     type = "toggle",
                     text = "Auto Track Zone Quests",
                     tooltip = "Tracks your current zone's or dungeon's quests and untracks them when you leave.",
-                    getValue = function()
-                        return Cfg("autoTrackZone") or false
-                    end,
+                    getValue = CfgOr("autoTrackZone", false),
                     setValue = function(val)
                         Set("autoTrackZone", val)
                         ApplyWatches()
@@ -1319,9 +1272,7 @@ CludesUI.AtOptionsLogin(function()
         row, hgt = W:DualRow(hostFrame, posY, {
             type = "toggle",
             text = "Auto Accept Quests",
-            getValue = function()
-                return Cfg("autoAccept") or false
-            end,
+            getValue = CfgOr("autoAccept", false),
             setValue = function(val)
                 Set("autoAccept", val)
                 if EQT.SyncAutoQuests then
@@ -1331,9 +1282,7 @@ CludesUI.AtOptionsLogin(function()
         }, {
             type = "toggle",
             text = "Auto Turn In Quests",
-            getValue = function()
-                return Cfg("autoTurnIn") or false
-            end,
+            getValue = CfgOr("autoTurnIn", false),
             setValue = function(val)
                 Set("autoTurnIn", val)
                 if EQT.SyncAutoQuests then
@@ -1354,9 +1303,7 @@ CludesUI.AtOptionsLogin(function()
             {
                 type = "toggle",
                 label = "Hold Shift to Enable",
-                get = function()
-                    return Cfg("autoAcceptShiftEnable") == true
-                end,
+                get = CfgIs("autoAcceptShiftEnable"),
                 set = function(val)
                     Set("autoAcceptShiftEnable", val)
                     if val then
@@ -1380,9 +1327,7 @@ CludesUI.AtOptionsLogin(function()
             {
                 type = "toggle",
                 label = "Ignore Low Level Quests",
-                get = function()
-                    return Cfg("autoAcceptIgnoreTrivial") or false
-                end,
+                get = CfgOr("autoAcceptIgnoreTrivial", false),
                 set = SetRow("autoAcceptIgnoreTrivial"),
             },
         }
@@ -1391,9 +1336,7 @@ CludesUI.AtOptionsLogin(function()
             acceptRows[#acceptRows + 1] = {
                 type = "toggle",
                 label = "Ignore Older Expansion Quests",
-                get = function()
-                    return Cfg("autoAcceptIgnoreOldExpansion") or false
-                end,
+                get = CfgOr("autoAcceptIgnoreOldExpansion", false),
                 set = SetRow("autoAcceptIgnoreOldExpansion"),
             }
         end
@@ -1408,9 +1351,7 @@ CludesUI.AtOptionsLogin(function()
                 {
                     type = "toggle",
                     label = "Hold Shift to Enable",
-                    get = function()
-                        return Cfg("autoTurnInShiftEnable") == true
-                    end,
+                    get = CfgIs("autoTurnInShiftEnable"),
                     set = function(val)
                         Set("autoTurnInShiftEnable", val)
                         if val then
@@ -1441,9 +1382,7 @@ CludesUI.AtOptionsLogin(function()
             type = "toggle",
             text = "Wowhead Quest Links",
             tooltip = "Adds a copyable Wowhead link to the right-click menu of quests in the quest tracker and quest log.",
-            getValue = function()
-                return Cfg("wowheadQuestLinks") == true
-            end,
+            getValue = CfgIs("wowheadQuestLinks"),
             setValue = function(val)
                 Set("wowheadQuestLinks", val)
                 EQT.ApplyQuestLinks()
@@ -1460,17 +1399,13 @@ CludesUI.AtOptionsLogin(function()
                 {
                     type = "toggle",
                     label = "Use Client Language",
-                    get = function()
-                        return Cfg("wowheadQuestClientLanguage") == true
-                    end,
+                    get = CfgIs("wowheadQuestClientLanguage"),
                     set = SetRow("wowheadQuestClientLanguage"),
                 },
                 {
                     type = "toggle",
                     label = "Jump to Comments",
-                    get = function()
-                        return Cfg("wowheadQuestComments") == true
-                    end,
+                    get = CfgIs("wowheadQuestComments"),
                     set = SetRow("wowheadQuestComments"),
                 },
             },

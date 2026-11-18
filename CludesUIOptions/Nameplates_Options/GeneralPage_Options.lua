@@ -33,6 +33,17 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     local environ = mod._NPO_OptEnv
     local DB, DBVal, defaultSet, FOCUS_LETTER_ANCHOR_ORDER =
         environ.DB, environ.DBVal, environ.defaults, environ.FOCUS_LETTER_ANCHOR_ORDER
+    -- Row getters over DBVal: a key's value (or a default), or whether it is true.
+    local function DBValOr(key, default)
+        return function()
+            return DBVal(key) or default
+        end
+    end
+    local function DBValIs(key)
+        return function()
+            return DBVal(key) == true
+        end
+    end
     local FOCUS_LETTER_ANCHORS, GetFocusLetterAnchor, GetNPOptOutline, npDispelGlowDesc =
         environ.FOCUS_LETTER_ANCHORS,
         environ.GetFocusLetterAnchor,
@@ -184,9 +195,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                     min = -50,
                     max = 50,
                     step = 1,
-                    get = function()
-                        return DBVal("friendlyPlateYOffset") or 0
-                    end,
+                    get = DBValOr("friendlyPlateYOffset", 0),
                     set = function(val)
                         DB().friendlyPlateYOffset = val
                         if mod.RefreshFriendlyPlateYOffset then
@@ -297,9 +306,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                 {
                     type = "toggle",
                     label = "Class Colored Names",
-                    get = function()
-                        return DBVal("friendlyNameClassColor") == true
-                    end,
+                    get = DBValIs("friendlyNameClassColor"),
                     set = function(val)
                         DB().friendlyNameClassColor = val and true or false
                         if not InCombatLockdown() then
@@ -332,9 +339,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                         return not CludesUI.BlizzStyle.Get("nameplates")
                     end,
                     requireState = "disabled",
-                    get = function()
-                        return DBVal("friendlyTargetBorderFx") == true
-                    end,
+                    get = DBValIs("friendlyTargetBorderFx"),
                     set = function(val)
                         DB().friendlyTargetBorderFx = val
                         -- Applies to (or restores) the friendly target now.
@@ -512,9 +517,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         disabledTooltip = "Show CUI Friendly Player Nameplates",
         values = { none = "None", title = "Player Title", guild = "Guild Name", both = "Title & Guild" },
         order = { "none", "title", "guild", "both" },
-        getValue = function()
-            return DBVal("friendlyBelowName") or "none"
-        end,
+        getValue = DBValOr("friendlyBelowName", "none"),
         setValue = function(val)
             DB().friendlyBelowName = val
             if mod.RefreshFriendlyBelowName then
@@ -564,9 +567,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                 {
                     type = "toggle",
                     label = "Show Level",
-                    get = function()
-                        return DBVal("friendlyShowLevel") == true
-                    end,
+                    get = DBValIs("friendlyShowLevel"),
                     set = function(val)
                         DB().friendlyShowLevel = val and true or false
                         if mod.RefreshFriendlyBelowName then
@@ -582,9 +583,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                     end,
                     disabledTooltip = "This option requires Show Level",
                     rawTooltip = true,
-                    get = function()
-                        return DBVal("friendlyLevelDiffColor") == true
-                    end,
+                    get = DBValIs("friendlyLevelDiffColor"),
                     set = function(val)
                         DB().friendlyLevelDiffColor = val and true or false
                         if mod.RefreshFriendlyBelowName then
@@ -616,9 +615,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     npcRow, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Show Friendly NPC Nameplates",
-        getValue = function()
-            return DBVal("showFriendlyNPCs") == true
-        end,
+        getValue = DBValIs("showFriendlyNPCs"),
         setValue = function(val)
             DB().showFriendlyNPCs = val
             pcall(CludesUI.SetCVar, "nameplateShowFriendlyNPCs", val and 1 or 0, "CludesUINameplates")
@@ -835,9 +832,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Friendly Names Not Clickable",
         tooltip = "Make friendly player and NPC nameplates click-through so their names never block your mouse or cause accidental friendly targeting.\n\nUse this when friendly names get in the way of clicking the world or the enemy nameplates behind them.",
-        getValue = function()
-            return DBVal("friendlyClickThrough") == true
-        end,
+        getValue = DBValIs("friendlyClickThrough"),
         setValue = function(val)
             DB().friendlyClickThrough = val
             if mod.UpdateFriendlyClickThrough then
@@ -847,9 +842,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     }, {
         type = "toggle",
         text = "Show Enemy Pet Nameplates",
-        getValue = function()
-            return DBVal("showEnemyPets") == true
-        end,
+        getValue = DBValIs("showEnemyPets"),
         setValue = function(val)
             DB().showEnemyPets = val
             pcall(CludesUI.SetCVar, "nameplateShowEnemyPets", val and 1 or 0, "CludesUINameplates")
@@ -1166,9 +1159,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Show Buff / Debuff Tooltips",
         tooltip = "Show the spell tooltip when you hover a buff or debuff icon on a nameplate.\n\nWhile the cursor is over an icon, the plate behind it will not highlight or take mouseover targeting.",
-        getValue = function()
-            return DBVal("showAuraTooltips") == true
-        end,
+        getValue = DBValIs("showAuraTooltips"),
         setValue = function(val)
             DB().showAuraTooltips = val
             if mod.NPC_ReloadAll then
@@ -1314,9 +1305,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                     type = "toggle",
                     label = "Dispellable By Me",
                     tooltip = "With Important or Only Dispellable, count only the buffs you or your group can dispel, purge or soothe as dispellable, instead of every dispellable buff.",
-                    get = function()
-                        return DBVal("npEnemyBuffDispelByMe") == true
-                    end,
+                    get = DBValIs("npEnemyBuffDispelByMe"),
                     set = function(val)
                         DB().npEnemyBuffDispelByMe = val or nil
                         RefreshAllAuras()
@@ -1344,9 +1333,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
     row, hgt = W:DualRow(hostFrame, posY, {
         type = "toggle",
         text = "Show Hash Line on Target at Percent",
-        getValue = function()
-            return DBVal("hashLineEnabled") or false
-        end,
+        getValue = DBValOr("hashLineEnabled", false),
         setValue = function(val)
             DB().hashLineEnabled = val
             RefreshAllPlates()
@@ -1452,9 +1439,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         min = 0,
         max = 100,
         step = 1,
-        getValue = function()
-            return DBVal("nonTargetAlpha") or 100
-        end,
+        getValue = DBValOr("nonTargetAlpha", 100),
         setValue = function(val)
             DB().nonTargetAlpha = val
             if mod.NT_RefreshSetting then
@@ -1596,9 +1581,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Focus Letter",
         tooltip = "Draws a white letter F on your current focus target's nameplate.",
-        getValue = function()
-            return DBVal("focusLetterEnabled") == true
-        end,
+        getValue = DBValIs("focusLetterEnabled"),
         setValue = function(val)
             DB().focusLetterEnabled = val
             RefreshAllPlates()
@@ -1696,9 +1679,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Distance to Target Text (Range)",
         tooltip = "Shows the approximate distance to your current target on its nameplate as a range bracket, e.g. 15+ when the target is 15-20 yards away.",
-        getValue = function()
-            return DBVal("rangeTextEnabled") == true
-        end,
+        getValue = DBValIs("rangeTextEnabled"),
         setValue = function(val)
             DB().rangeTextEnabled = val
             if mod.RangeText_Apply then
@@ -1738,9 +1719,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                     min = -200,
                     max = 200,
                     step = 1,
-                    get = function()
-                        return DBVal("rangeTextOffsetX") or 0
-                    end,
+                    get = DBValOr("rangeTextOffsetX", 0),
                     set = function(val)
                         DB().rangeTextOffsetX = val
                         if mod.RangeText_Refresh then
@@ -1754,9 +1733,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                     min = -200,
                     max = 200,
                     step = 1,
-                    get = function()
-                        return DBVal("rangeTextOffsetY") or 0
-                    end,
+                    get = DBValOr("rangeTextOffsetY", 0),
                     set = function(val)
                         DB().rangeTextOffsetY = val
                         if mod.RangeText_Refresh then
@@ -1823,9 +1800,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Hide Enemy Name While Casting",
         tooltip = "Hide the enemy name text while that nameplate's cast bar is visible.",
-        getValue = function()
-            return DBVal("hideEnemyNameWhileCasting") == true
-        end,
+        getValue = DBValIs("hideEnemyNameWhileCasting"),
         setValue = function(val)
             DB().hideEnemyNameWhileCasting = val
             mod.RefreshAllSettings()
@@ -1856,9 +1831,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Name Raid Marker",
         tooltip = "Shows the target marker directly before the enemy name text. Uses its own size and does not use the Core Positions raid marker slot.",
-        getValue = function()
-            return DBVal("nameRaidMarkerEnabled") == true
-        end,
+        getValue = DBValIs("nameRaidMarkerEnabled"),
         setValue = function(val)
             DB().nameRaidMarkerEnabled = val
             mod.RefreshAllSettings()
@@ -1869,9 +1842,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Experimental: Cast Lockout as CC Icon",
         tooltip = "Show successful interrupt lockouts in the crowd-control icon slot.\n\nDue to addon restrictions, the duration shown is a generic 4 seconds for all classes, so it is not 100% accurate.",
-        getValue = function()
-            return DBVal("showCastLockoutAsCrowdControl") == true
-        end,
+        getValue = DBValIs("showCastLockoutAsCrowdControl"),
         setValue = function(val)
             DB().showCastLockoutAsCrowdControl = val
             RefreshAllAuras()
@@ -1919,9 +1890,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
             min = 0,
             max = 100,
             step = 1,
-            getValue = function()
-                return DBVal("outOfCombatAlpha") or 100
-            end,
+            getValue = DBValOr("outOfCombatAlpha", 100),
             setValue = function(val)
                 DB().outOfCombatAlpha = val
                 if mod.NT_RefreshSetting then
@@ -2055,9 +2024,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Execute Pulse Glow",
         tooltip = "Pulses a red glow on enemy nameplates below 30% health.",
-        getValue = function()
-            return DBVal("lowHpGlow") == true
-        end,
+        getValue = DBValIs("lowHpGlow"),
         setValue = function(val)
             DB().lowHpGlow = val
             mod.RefreshAllSettings()
@@ -2066,9 +2033,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
         type = "toggle",
         text = "Hide Enemy Nameplates out of Combat",
         tooltip = "Hide enemy nameplates while you are out of combat; they return the moment combat starts. Drives the same game setting as the Show Enemy Name Plates keybind.",
-        getValue = function()
-            return DBVal("hideEnemyPlatesOOC") == true
-        end,
+        getValue = DBValIs("hideEnemyPlatesOOC"),
         setValue = function(val)
             DB().hideEnemyPlatesOOC = val
             if mod.ApplyOOCPlates then
@@ -2107,9 +2072,7 @@ local function BuildGeneralPage(page, hostFrame, yOffset)
                 type = "toggle",
                 text = "Show Sunder Armor",
                 tooltip = "Shows Sunder Armor and its stacks on enemy nameplates, including stacks applied by other warriors.",
-                getValue = function()
-                    return DBVal("showSunderArmor") == true
-                end,
+                getValue = DBValIs("showSunderArmor"),
                 setValue = function(val)
                     DB().showSunderArmor = val
                     if mod.NPC_ReloadAll then
